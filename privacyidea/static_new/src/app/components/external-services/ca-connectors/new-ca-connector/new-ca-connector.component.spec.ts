@@ -24,6 +24,9 @@ import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from "@angular/material/dialog";
 import { of } from "rxjs";
 import { CaConnectorService } from "../../../../services/ca-connector/ca-connector.service";
+import { ContentService } from "../../../../services/content/content.service";
+import { PendingChangesService } from "../../../../services/pending-changes/pending-changes.service";
+import { ROUTE_PATHS } from "../../../../route_paths";
 
 describe("NewCaConnectorComponent", () => {
   let component: NewCaConnectorComponent;
@@ -33,6 +36,10 @@ describe("NewCaConnectorComponent", () => {
   let dialogMock: any;
 
   beforeEach(async () => {
+    caConnectorServiceMock = {
+      getCaSpecificOptions: jest.fn().mockResolvedValue({ available_cas: ["CA1", "CA2"] }),
+      postCaConnector: jest.fn().mockResolvedValue(undefined)
+    };
 
     dialogRefMock = {
       disableClose: false,
@@ -42,7 +49,18 @@ describe("NewCaConnectorComponent", () => {
     };
 
     dialogMock = {
-      open: jest.fn().mockReturnValue({ afterClosed: () => of(true) }),
+      open: jest.fn().mockReturnValue({ afterClosed: () => of(true) })
+    };
+
+    const contentServiceMock = {
+      routeUrl: () => ROUTE_PATHS.EXTERNAL_SERVICES_CA_CONNECTORS
+    };
+
+    const pendingChangesServiceMock = {
+      registerHasChanges: jest.fn(),
+      registerSave: jest.fn(),
+      unregisterHasChanges: jest.fn(),
+      save: jest.fn()
     };
 
     await TestBed.configureTestingModule({
@@ -52,14 +70,11 @@ describe("NewCaConnectorComponent", () => {
         provideHttpClientTesting(),
         { provide: MAT_DIALOG_DATA, useValue: null },
         { provide: MatDialogRef, useValue: dialogRefMock },
+        { provide: MatDialog, useValue: dialogMock },
         { provide: CaConnectorService, useValue: caConnectorServiceMock },
+        { provide: ContentService, useValue: contentServiceMock },
+        { provide: PendingChangesService, useValue: pendingChangesServiceMock }
       ]
-    }).overrideComponent(NewCaConnectorComponent, {
-      add: {
-        providers: [
-          { provide: MatDialog, useValue: dialogMock }
-        ]
-      }
     }).compileComponents();
 
     fixture = TestBed.createComponent(NewCaConnectorComponent);
@@ -85,8 +100,14 @@ describe("NewCaConnectorComponent", () => {
   it("should load available CAs for microsoft type", async () => {
     component.caConnectorForm.get("type")?.setValue("microsoft");
     component.caConnectorForm.patchValue({ hostname: "test", port: "123" });
-    await component.loadAvailableCas();
-    expect(caConnectorServiceMock.getCaSpecificOptions).toHaveBeenCalled();
+
+    component.loadAvailableCas();
+    await caConnectorServiceMock.getCaSpecificOptions.mock.results[0].value;
+
+    expect(caConnectorServiceMock.getCaSpecificOptions).toHaveBeenCalledWith(
+      "microsoft",
+      expect.objectContaining({ hostname: "test", port: "123" })
+    );
     expect(component.availableCas()).toEqual(["CA1", "CA2"]);
   });
 
@@ -98,7 +119,9 @@ describe("NewCaConnectorComponent", () => {
       cakey: "key",
       "openssl.cnf": "cnf"
     });
+
     await component.save();
+
     expect(caConnectorServiceMock.postCaConnector).toHaveBeenCalled();
     expect(dialogRefMock.close).toHaveBeenCalledWith(true);
   });

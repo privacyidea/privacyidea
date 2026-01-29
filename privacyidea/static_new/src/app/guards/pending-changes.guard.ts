@@ -20,48 +20,55 @@ import { inject } from "@angular/core";
 import { CanDeactivateFn, Router } from "@angular/router";
 import { PendingChangesService } from "../services/pending-changes/pending-changes.service";
 import { MatDialog } from "@angular/material/dialog";
-import { ConfirmationDialogComponent } from "../components/shared/confirmation-dialog/confirmation-dialog.component";
-import { map, of } from "rxjs";
+import {
+  ConfirmationDialogComponent,
+  ConfirmationDialogResult
+} from "../components/shared/confirmation-dialog/confirmation-dialog.component";
+import { from, map, of, switchMap } from "rxjs";
 
 export const pendingChangesGuard: CanDeactivateFn<any> = () => {
   const pendingChangesService = inject(PendingChangesService);
   const dialog = inject(MatDialog);
 
-  if (pendingChangesService.hasChanges) {
-    const url = inject(Router).url;
-    let type = "resolver";
-    if (url.includes("smtp")) {
-      type = "smtp-server";
-    } else if (url.includes("tokengroups")) {
-      type = "tokengroup";
-    } else if (url.includes("service-ids")) {
-      type = "service-id";
-    } else if (url.includes("ca-connectors")) {
-      type = "ca-connector";
-    } else if (url.includes("sms")) {
-      type = "sms-gateway";
-    } else if (url.includes("radius")) {
-      type = "radius-server";
-    } else if (url.includes("privacyidea")) {
-      type = "privacyidea-server";
-    }
-    return dialog.open(ConfirmationDialogComponent, {
+  if (!pendingChangesService.hasChanges) return of(true);
+
+  const url = inject(Router).url;
+  let type = "resolver";
+  if (url.includes("smtp")) type = "smtp-server";
+  else if (url.includes("tokengroups")) type = "tokengroup";
+  else if (url.includes("service-ids")) type = "service-id";
+  else if (url.includes("ca-connectors")) type = "ca-connector";
+  else if (url.includes("sms")) type = "sms-gateway";
+  else if (url.includes("radius")) type = "radius-server";
+  else if (url.includes("privacyidea")) type = "privacyidea-server";
+
+  return dialog
+    .open(ConfirmationDialogComponent, {
       data: {
         title: $localize`Discard changes`,
         action: "discard",
-        type: type
+        type,
+        allowSaveExit: true
       }
-    }).afterClosed().pipe(
-      map(result => {
-        if (result) {
-            // If the user confirms discarding changes, unregister the check
-            pendingChangesService.unregisterHasChanges();
-            return true;
+    })
+    .afterClosed()
+    .pipe(
+      switchMap((result: ConfirmationDialogResult | undefined) => {
+        if (result === "discard") {
+          pendingChangesService.unregisterHasChanges();
+          return of(true);
         }
-        return false;
+
+        if (result === "save-exit") {
+          return from(Promise.resolve(pendingChangesService.save())).pipe(
+            map(() => {
+              pendingChangesService.unregisterHasChanges();
+              return true;
+            })
+          );
+        }
+
+        return of(false);
       })
     );
-  }
-
-  return of(true);
 };

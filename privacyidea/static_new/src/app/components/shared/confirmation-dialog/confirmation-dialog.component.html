@@ -47,18 +47,28 @@
 
 <mat-dialog-actions>
   <button
-    [mat-dialog-close]="false"
+    [mat-dialog-close]="'cancel'"
     i18n
-    mat-button
-    mat-dialog-close>
-    Cancel
+    mat-button>Cancel
   </button>
+
   <button
-    [mat-dialog-close]="true"
     [class.dialog-button-delete]="data.action === 'remove' || data.action === 'delete'"
     [class.dialog-button-warn]="data.action === 'revoke' || data.action === 'discard'"
-    [class.dialog-button-primary]="data.action === 'search' || data.action === 'unassign'"
+    [mat-dialog-close]="'discard'"
     mat-button>
     {{ data.action.charAt(0).toUpperCase() + data.action.slice(1) }}
   </button>
+
+  @if (data.action === "discard" && data.allowSaveExit) {
+    <button
+      [disabled]="!!data.saveExitDisabled"
+      [mat-dialog-close]="'save-exit'"
+      class="action-button-1"
+      i18n
+      mat-stroked-button>
+      <mat-icon>save</mat-icon>
+      Save &amp; Exit
+    </button>
+  }
 </mat-dialog-actions>

@@ -168,6 +168,7 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
     }
 
     this.pendingChangesService.registerHasChanges(() => this.hasChanges);
+    this.pendingChangesService.registerSave(() => this.onSave());
 
     effect(() => {
       if (!this.contentService.routeUrl().startsWith(ROUTE_PATHS.USERS)) {

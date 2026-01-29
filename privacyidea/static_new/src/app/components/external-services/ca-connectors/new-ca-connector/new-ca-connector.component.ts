@@ -16,7 +16,6 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-
 import { Component, effect, inject, OnDestroy, OnInit, signal } from "@angular/core";
 import { MAT_DIALOG_DATA, MatDialog, MatDialogModule, MatDialogRef } from "@angular/material/dialog";
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
@@ -32,7 +31,10 @@ import { MatButtonModule } from "@angular/material/button";
 import { CommonModule } from "@angular/common";
 import { MatIconModule } from "@angular/material/icon";
 import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
-import { ConfirmationDialogComponent } from "../../../shared/confirmation-dialog/confirmation-dialog.component";
+import {
+  ConfirmationDialogComponent,
+  ConfirmationDialogResult
+} from "../../../shared/confirmation-dialog/confirmation-dialog.component";
 import { ROUTE_PATHS } from "../../../../route_paths";
 import { Router } from "@angular/router";
 import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
@@ -86,6 +88,7 @@ export class NewCaConnectorComponent implements OnInit, OnDestroy {
     }
 
     this.pendingChangesService.registerHasChanges(() => this.hasChanges);
+    this.pendingChangesService.registerSave(() => this.save());
 
     effect(() => {
       if (!this.contentService.routeUrl().startsWith(ROUTE_PATHS.EXTERNAL_SERVICES_CA_CONNECTORS)) {
@@ -96,6 +99,10 @@ export class NewCaConnectorComponent implements OnInit, OnDestroy {
 
   get hasChanges(): boolean {
     return !this.caConnectorForm.pristine;
+  }
+
+  get canSave(): boolean {
+    return this.caConnectorForm.valid;
   }
 
   ngOnInit(): void {
@@ -182,17 +189,20 @@ export class NewCaConnectorComponent implements OnInit, OnDestroy {
 
     if (params.hostname && params.port) {
       this.isLoadingCas.set(true);
-      this.caConnectorService.getCaSpecificOptions("microsoft", params).then(res => {
-        this.availableCas.set(res.available_cas || []);
-        this.isLoadingCas.set(false);
-        this.updateValidators(this.caConnectorForm.get("type")?.value);
-      }).catch(() => {
-        this.isLoadingCas.set(false);
-      });
+      this.caConnectorService
+        .getCaSpecificOptions("microsoft", params)
+        .then(res => {
+          this.availableCas.set(res.available_cas || []);
+          this.isLoadingCas.set(false);
+          this.updateValidators(this.caConnectorForm.get("type")?.value);
+        })
+        .catch(() => {
+          this.isLoadingCas.set(false);
+        });
     }
   }
 
-  save(): void {
+  save(): Promise<void> | void {
     if (this.caConnectorForm.valid) {
       const formValue = this.caConnectorForm.getRawValue();
       const type = formValue.type;
@@ -201,14 +211,35 @@ export class NewCaConnectorComponent implements OnInit, OnDestroy {
       const data: Record<string, any> = { type };
 
       if (type === "local") {
-        const localFields = ["cacert", "cakey", "openssl.cnf", "templates", "WorkingDir", "CSRDir", "CertificateDir", "CRL", "CRL_Validity_Period", "CRL_Overlap_Period"];
+        const localFields = [
+          "cacert",
+          "cakey",
+          "openssl.cnf",
+          "templates",
+          "WorkingDir",
+          "CSRDir",
+          "CertificateDir",
+          "CRL",
+          "CRL_Validity_Period",
+          "CRL_Overlap_Period"
+        ];
         localFields.forEach(f => {
           if (formValue[f] !== undefined && formValue[f] !== "") {
             data[f] = formValue[f];
           }
         });
       } else if (type === "microsoft") {
-        const microsoftFields = ["hostname", "port", "http_proxy", "use_ssl", "ssl_ca_cert", "ssl_client_cert", "ssl_client_key", "ssl_client_key_password", "ca"];
+        const microsoftFields = [
+          "hostname",
+          "port",
+          "http_proxy",
+          "use_ssl",
+          "ssl_ca_cert",
+          "ssl_client_cert",
+          "ssl_client_key",
+          "ssl_client_key_password",
+          "ca"
+        ];
         microsoftFields.forEach(f => {
           if (formValue[f] !== undefined && formValue[f] !== "") {
             data[f] = formValue[f];
@@ -222,7 +253,7 @@ export class NewCaConnectorComponent implements OnInit, OnDestroy {
         data
       };
 
-      this.caConnectorService.postCaConnector(connector).then(() => {
+      return this.caConnectorService.postCaConnector(connector).then(() => {
         this.dialogRef.close(true);
       });
     }
@@ -230,17 +261,29 @@ export class NewCaConnectorComponent implements OnInit, OnDestroy {
 
   onCancel(): void {
     if (this.hasChanges) {
-      this.dialog.open(ConfirmationDialogComponent, {
-        data: {
-          title: $localize`Discard changes`,
-          action: "discard",
-          type: "ca-connector"
-        }
-      }).afterClosed().subscribe(result => {
-        if (result) {
-          this.closeActual();
-        }
-      });
+      this.dialog
+        .open(ConfirmationDialogComponent, {
+          data: {
+            title: $localize`Discard changes`,
+            action: "discard",
+            type: "ca-connector",
+            allowSaveExit: true,
+            saveExitDisabled: !this.canSave
+          }
+        })
+        .afterClosed()
+        .subscribe((result: ConfirmationDialogResult | undefined) => {
+          if (result === "discard") {
+            this.pendingChangesService.unregisterHasChanges();
+            this.closeActual();
+          } else if (result === "save-exit") {
+            if (!this.canSave) return;
+            Promise.resolve(this.pendingChangesService.save()).then(() => {
+              this.pendingChangesService.unregisterHasChanges();
+              this.closeActual();
+            });
+          }
+        });
     } else {
       this.closeActual();
     }

@@ -28,7 +28,10 @@ import { MatButtonModule } from "@angular/material/button";
 import { CommonModule } from "@angular/common";
 import { MatIconModule } from "@angular/material/icon";
 import { MatTooltip } from "@angular/material/tooltip";
-import { ConfirmationDialogComponent } from "../../../shared/confirmation-dialog/confirmation-dialog.component";
+import {
+  ConfirmationDialogComponent,
+  ConfirmationDialogResult
+} from "../../../shared/confirmation-dialog/confirmation-dialog.component";
 import { ROUTE_PATHS } from "../../../../route_paths";
 import { Router } from "@angular/router";
 import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
@@ -79,6 +82,7 @@ export class NewSmtpServerComponent implements OnInit, OnDestroy {
     }
 
     this.pendingChangesService.registerHasChanges(() => this.hasChanges);
+    this.pendingChangesService.registerSave(() => this.save());
 
     effect(() => {
       if (!this.contentService.routeUrl().startsWith(ROUTE_PATHS.EXTERNAL_SERVICES_SMTP)) {
@@ -89,6 +93,10 @@ export class NewSmtpServerComponent implements OnInit, OnDestroy {
 
   get hasChanges(): boolean {
     return !this.smtpForm.pristine;
+  }
+
+  get canSave(): boolean {
+    return this.smtpForm.valid;
   }
 
   ngOnInit(): void {
@@ -116,12 +124,12 @@ export class NewSmtpServerComponent implements OnInit, OnDestroy {
     this.pendingChangesService.unregisterHasChanges();
   }
 
-  save(): void {
+  save(): Promise<void> | void {
     if (this.smtpForm.valid) {
       const server: SmtpServer = {
         ...this.smtpForm.getRawValue()
       };
-      this.smtpService.postSmtpServer(server).then(() => {
+      return this.smtpService.postSmtpServer(server).then(() => {
         this.dialogRef.close(true);
       });
     }
@@ -139,17 +147,29 @@ export class NewSmtpServerComponent implements OnInit, OnDestroy {
 
   onCancel(): void {
     if (this.hasChanges) {
-      this.dialog.open(ConfirmationDialogComponent, {
-        data: {
-          title: $localize`Discard changes`,
-          action: "discard",
-          type: "smtp-server"
-        }
-      }).afterClosed().subscribe(result => {
-        if (result) {
-          this.closeActual();
-        }
-      });
+      this.dialog
+        .open(ConfirmationDialogComponent, {
+          data: {
+            title: $localize`Discard changes`,
+            action: "discard",
+            type: "smtp-server",
+            allowSaveExit: true,
+            saveExitDisabled: !this.canSave
+          }
+        })
+        .afterClosed()
+        .subscribe((result: ConfirmationDialogResult | undefined) => {
+          if (result === "discard") {
+            this.pendingChangesService.unregisterHasChanges();
+            this.closeActual();
+          } else if (result === "save-exit") {
+            if (!this.canSave) return;
+            Promise.resolve(this.pendingChangesService.save()).then(() => {
+              this.pendingChangesService.unregisterHasChanges();
+              this.closeActual();
+            });
+          }
+        });
     } else {
       this.closeActual();
     }

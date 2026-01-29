@@ -16,7 +16,6 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-
 import { Component, effect, inject, OnDestroy, OnInit, signal } from "@angular/core";
 import { MAT_DIALOG_DATA, MatDialog, MatDialogModule, MatDialogRef } from "@angular/material/dialog";
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
@@ -32,7 +31,10 @@ import { MatButtonModule } from "@angular/material/button";
 import { CommonModule } from "@angular/common";
 import { MatIconModule } from "@angular/material/icon";
 import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
-import { ConfirmationDialogComponent } from "../../../shared/confirmation-dialog/confirmation-dialog.component";
+import {
+  ConfirmationDialogComponent,
+  ConfirmationDialogResult
+} from "../../../shared/confirmation-dialog/confirmation-dialog.component";
 import { ROUTE_PATHS } from "../../../../route_paths";
 import { Router } from "@angular/router";
 import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
@@ -83,6 +85,7 @@ export class NewPrivacyideaServerComponent implements OnInit, OnDestroy {
     }
 
     this.pendingChangesService.registerHasChanges(() => this.hasChanges);
+    this.pendingChangesService.registerSave(() => this.save());
 
     effect(() => {
       if (!this.contentService.routeUrl().startsWith(ROUTE_PATHS.EXTERNAL_SERVICES_PRIVACYIDEA)) {
@@ -93,6 +96,10 @@ export class NewPrivacyideaServerComponent implements OnInit, OnDestroy {
 
   get hasChanges(): boolean {
     return !this.privacyideaForm.pristine;
+  }
+
+  get canSave(): boolean {
+    return this.privacyideaForm.valid;
   }
 
   ngOnInit(): void {
@@ -115,12 +122,12 @@ export class NewPrivacyideaServerComponent implements OnInit, OnDestroy {
     this.pendingChangesService.unregisterHasChanges();
   }
 
-  save(): void {
+  save(): Promise<void> | void {
     if (this.privacyideaForm.valid) {
       const server: PrivacyideaServer = {
         ...this.privacyideaForm.getRawValue()
       };
-      this.privacyideaServerService.postPrivacyideaServer(server).then(() => {
+      return this.privacyideaServerService.postPrivacyideaServer(server).then(() => {
         this.dialogRef.close(true);
       });
     }
@@ -138,17 +145,29 @@ export class NewPrivacyideaServerComponent implements OnInit, OnDestroy {
 
   onCancel(): void {
     if (this.hasChanges) {
-      this.dialog.open(ConfirmationDialogComponent, {
-        data: {
-          title: $localize`Discard changes`,
-          action: "discard",
-          type: "privacyidea-server"
-        }
-      }).afterClosed().subscribe(result => {
-        if (result) {
-          this.closeActual();
-        }
-      });
+      this.dialog
+        .open(ConfirmationDialogComponent, {
+          data: {
+            title: $localize`Discard changes`,
+            action: "discard",
+            type: "privacyidea-server",
+            allowSaveExit: true,
+            saveExitDisabled: !this.canSave
+          }
+        })
+        .afterClosed()
+        .subscribe((result: ConfirmationDialogResult | undefined) => {
+          if (result === "discard") {
+            this.pendingChangesService.unregisterHasChanges();
+            this.closeActual();
+          } else if (result === "save-exit") {
+            if (!this.canSave) return;
+            Promise.resolve(this.pendingChangesService.save()).then(() => {
+              this.pendingChangesService.unregisterHasChanges();
+              this.closeActual();
+            });
+          }
+        });
     } else {
       this.closeActual();
     }

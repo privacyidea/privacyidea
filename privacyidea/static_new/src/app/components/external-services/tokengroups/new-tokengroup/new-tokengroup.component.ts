@@ -29,7 +29,10 @@ import { MatInputModule } from "@angular/material/input";
 import { MatButtonModule } from "@angular/material/button";
 import { CommonModule } from "@angular/common";
 import { MatIconModule } from "@angular/material/icon";
-import { ConfirmationDialogComponent } from "../../../shared/confirmation-dialog/confirmation-dialog.component";
+import {
+  ConfirmationDialogComponent,
+  ConfirmationDialogResult
+} from "../../../shared/confirmation-dialog/confirmation-dialog.component";
 import { ROUTE_PATHS } from "../../../../route_paths";
 import { Router } from "@angular/router";
 import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
@@ -77,6 +80,7 @@ export class NewTokengroupComponent implements OnInit, OnDestroy {
     }
 
     this.pendingChangesService.registerHasChanges(() => this.hasChanges);
+    this.pendingChangesService.registerSave(() => this.save());
 
     effect(() => {
       if (!this.contentService.routeUrl().startsWith(ROUTE_PATHS.EXTERNAL_SERVICES_TOKENGROUPS)) {
@@ -87,6 +91,10 @@ export class NewTokengroupComponent implements OnInit, OnDestroy {
 
   get hasChanges(): boolean {
     return !this.tokengroupForm.pristine;
+  }
+
+  get canSave(): boolean {
+    return this.tokengroupForm.valid;
   }
 
   ngOnInit(): void {
@@ -105,12 +113,12 @@ export class NewTokengroupComponent implements OnInit, OnDestroy {
     this.pendingChangesService.unregisterHasChanges();
   }
 
-  save(): void {
+  save(): Promise<void> | void {
     if (this.tokengroupForm.valid) {
       const group: Tokengroup = {
         ...this.tokengroupForm.getRawValue()
       };
-      this.tokengroupService.postTokengroup(group).then(() => {
+      return this.tokengroupService.postTokengroup(group).then(() => {
         this.dialogRef.close(true);
       });
     }
@@ -118,17 +126,29 @@ export class NewTokengroupComponent implements OnInit, OnDestroy {
 
   onCancel(): void {
     if (this.hasChanges) {
-      this.dialog.open(ConfirmationDialogComponent, {
-        data: {
-          title: $localize`Discard changes`,
-          action: "discard",
-          type: "tokengroup"
-        }
-      }).afterClosed().subscribe(result => {
-        if (result) {
-          this.closeActual();
-        }
-      });
+      this.dialog
+        .open(ConfirmationDialogComponent, {
+          data: {
+            title: $localize`Discard changes`,
+            action: "discard",
+            type: "tokengroup",
+            allowSaveExit: true,
+            saveExitDisabled: !this.canSave
+          }
+        })
+        .afterClosed()
+        .subscribe((result: ConfirmationDialogResult | undefined) => {
+          if (result === "discard") {
+            this.pendingChangesService.unregisterHasChanges();
+            this.closeActual();
+          } else if (result === "save-exit") {
+            if (!this.canSave) return;
+            Promise.resolve(this.pendingChangesService.save()).then(() => {
+              this.pendingChangesService.unregisterHasChanges();
+              this.closeActual();
+            });
+          }
+        });
     } else {
       this.closeActual();
     }

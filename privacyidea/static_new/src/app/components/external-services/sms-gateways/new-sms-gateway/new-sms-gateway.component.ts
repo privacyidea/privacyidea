@@ -16,7 +16,6 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-
 import { CommonModule } from "@angular/common";
 import { Component, computed, effect, inject, OnDestroy, OnInit, signal, untracked } from "@angular/core";
 import { toSignal } from "@angular/core/rxjs-interop";
@@ -39,7 +38,10 @@ import {
 } from "../../../../services/sms-gateway/sms-gateway.service";
 import { PendingChangesService } from "../../../../services/pending-changes/pending-changes.service";
 import { ROUTE_PATHS } from "../../../../route_paths";
-import { ConfirmationDialogComponent } from "../../../shared/confirmation-dialog/confirmation-dialog.component";
+import {
+  ConfirmationDialogComponent,
+  ConfirmationDialogResult
+} from "../../../shared/confirmation-dialog/confirmation-dialog.component";
 
 type KeyValueRow = { key: string; value: string };
 
@@ -121,6 +123,7 @@ export class NewSmsGatewayComponent implements OnInit, OnDestroy {
     }
 
     this.pendingChangesService.registerHasChanges(() => this.hasChanges);
+    this.pendingChangesService.registerSave(() => this.save());
 
     effect(() => {
       if (!this.contentService.routeUrl().startsWith(ROUTE_PATHS.EXTERNAL_SERVICES_SMS)) {
@@ -166,6 +169,10 @@ export class NewSmsGatewayComponent implements OnInit, OnDestroy {
   parameterEntries(): Array<{ key: string; value: any }> {
     const paramsObj = this.selectedProvider()?.parameters ?? {};
     return Object.entries(paramsObj).map(([key, value]) => ({ key, value }));
+  }
+
+  get canSave(): boolean {
+    return this.smsForm.valid;
   }
 
   ngOnInit(): void {
@@ -221,7 +228,7 @@ export class NewSmsGatewayComponent implements OnInit, OnDestroy {
     this.pendingChangesService.unregisterHasChanges();
   }
 
-  save(): void {
+  save(): Promise<void> | void {
     if (this.smsForm.valid && this.parametersForm.valid) {
       const formValue = this.smsForm.getRawValue();
       const paramValue = this.parametersForm.getRawValue();
@@ -248,7 +255,7 @@ export class NewSmsGatewayComponent implements OnInit, OnDestroy {
         payload[`header.${key}`] = value;
       });
 
-      this.smsGatewayService.postSmsGateway(payload).then(() => {
+      return this.smsGatewayService.postSmsGateway(payload).then(() => {
         this.dialogRef.close(true);
       });
     }
@@ -261,13 +268,21 @@ export class NewSmsGatewayComponent implements OnInit, OnDestroy {
           data: {
             title: $localize`Discard changes`,
             action: "discard",
-            type: "sms-gateway"
+            type: "sms-gateway",
+            allowSaveExit: true,
+            saveExitDisabled: !this.canSave
           }
         })
         .afterClosed()
-        .subscribe(result => {
-          if (result) {
+        .subscribe((result: ConfirmationDialogResult | undefined) => {
+          if (result === "discard") {
+            this.pendingChangesService.unregisterHasChanges();
             this.closeActual();
+          } else if (result === "save-exit") {
+            Promise.resolve(this.pendingChangesService.save()).then(() => {
+              this.pendingChangesService.unregisterHasChanges();
+              this.closeActual();
+            });
           }
         });
     } else {
