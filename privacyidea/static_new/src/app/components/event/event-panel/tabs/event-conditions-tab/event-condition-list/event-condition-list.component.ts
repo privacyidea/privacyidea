@@ -28,7 +28,6 @@ import {
   NgZone,
   output,
   QueryList,
-  signal,
   ViewChildren
 } from "@angular/core";
 import { EventService } from "../../../../../../services/event/event.service";
@@ -91,7 +90,7 @@ export class EventConditionListComponent {
 
   @ViewChildren("selectedConditionInput") selectedConditionInput!: QueryList<ElementRef | MatSelect>;
 
-  constructor(private ngZone: NgZone) {}
+  constructor() {}
 
   protected focusEffect = effect(() => {
     const conditionName = this.focusConditionName();
@@ -101,23 +100,21 @@ export class EventConditionListComponent {
   });
 
   private focusInputByConditionName(conditionName: string) {
-    this.ngZone.runOutsideAngular(() => {
-      setTimeout(() => {
-        const inputs = this.selectedConditionInput.toArray();
-        // Try to find the input by name attribute or index
-        for (const input of inputs) {
-          if (input instanceof ElementRef) {
-            if (input.nativeElement && input.nativeElement.name === `conditionInput_${conditionName}`) {
-              input.nativeElement.focus();
-              break;
-            }
-          } else if (input instanceof MatSelect) {
-            // For MatSelect, try to match by a custom property if needed
-            // (Assume order matches for now)
-            // Optionally, add logic to match by conditionName if possible
+    setTimeout(() => {
+      const inputs = this.selectedConditionInput.toArray();
+      // Try to find the input by name attribute or index
+      for (const input of inputs) {
+        if (input instanceof ElementRef) {
+          if (input.nativeElement && input.nativeElement.name === `conditionInput_${conditionName}`) {
+            input.nativeElement.focus();
+            break;
           }
+        } else if (input instanceof MatSelect) {
+          // For MatSelect, try to match by a custom property if needed
+          // (Assume order matches for now)
+          // Optionally, add logic to match by conditionName if possible
         }
-      });
+      }
     });
   }
 
