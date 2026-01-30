@@ -18,7 +18,7 @@
  **/
 
 import { CommonModule } from "@angular/common";
-import { Component, input, output, inject } from "@angular/core";
+import { Component, input, output, inject, effect } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MatIconModule } from "@angular/material/icon";
@@ -47,8 +47,14 @@ export class AddedActionsListComponent {
   actionsChange = output<{ name: string; value: any }[]>();
   actionRemove = output<string>();
   isEditMode = input.required<boolean>();
-  selectedAction = input.required<{ name: string; value: any } | null>();
+  selectedAction = input<{ name: string; value: any } | null>();
   selectedActionChange = output<{ name: string; value: any } | null>();
+
+  constructor() {
+    effect(() => {
+      console.log("AddedActionsListComponent - actions changed:", this.actions());
+    });
+  }
 
   // Services
   private policyService = inject(PolicyService);

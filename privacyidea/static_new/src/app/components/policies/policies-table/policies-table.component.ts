@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, input, inject, signal, linkedSignal } from "@angular/core";
+import { Component, input, inject, signal } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { MatTableModule } from "@angular/material/table";
 import { MatSortModule } from "@angular/material/sort";
@@ -37,9 +37,9 @@ import { DialogService, DialogServiceInterface } from "../../../services/dialog/
 import { MatInputModule } from "@angular/material/input";
 import { MatPaginatorModule } from "@angular/material/paginator";
 import { PoliciesTableActionsComponent } from "./policies-table-actions/policies-table-actions.component";
-import { MatCheckboxModule } from "@angular/material/checkbox";
+import { MatCheckboxChange, MatCheckboxModule } from "@angular/material/checkbox";
 import { trigger, state, style, transition, animate } from "@angular/animations";
-import { PolicyPanelViewComponent } from "./policy-panels/policy-panel-edit-view/policy-panel-view/policy-panel-view.component";
+import { PoliciesViewActionRowComponent } from "./policies-view-action-row/policies-view-action-row.component";
 
 @Component({
   selector: "app-policies-table",
@@ -55,7 +55,7 @@ import { PolicyPanelViewComponent } from "./policy-panels/policy-panel-edit-view
     MatPaginatorModule,
     PoliciesTableActionsComponent,
     MatCheckboxModule,
-    PolicyPanelViewComponent
+    PoliciesViewActionRowComponent
   ],
   templateUrl: "./policies-table.component.html",
   styleUrl: "./policies-table.component.scss",
@@ -76,21 +76,7 @@ export class PoliciesTableComponent {
   readonly policiesListFiltered = input.required<PolicyDetail[]>();
   readonly selectedPolicies = signal<Set<string>>(new Set<string>());
 
-  displayedColumns: string[] = ["select", "priority", "name", "scope", "description", "active", "actions"];
-  expandedElements = linkedSignal<{ policiesListFiltered: PolicyDetail[]; isFiltered: boolean }, Set<PolicyDetail>>({
-    source: () => ({ policiesListFiltered: this.policiesListFiltered(), isFiltered: this.isFiltered() }),
-    computation: (source, previous) => {
-      const { policiesListFiltered, isFiltered } = source;
-      if (isFiltered) {
-        return new Set<PolicyDetail>(policiesListFiltered);
-      }
-      return new Set<PolicyDetail>();
-    }
-  });
-
-  isExpanded(policy: PolicyDetail): boolean {
-    return this.expandedElements().has(policy);
-  }
+  displayedColumns: string[] = ["select", "priority", "name", "scope", "description", "actions", "active"];
 
   async deletePolicy(policyName: string): Promise<void> {
     if (
@@ -156,14 +142,15 @@ export class PoliciesTableComponent {
   isSelected(policyName: string): boolean {
     return this.selectedPolicies().has(policyName);
   }
-  toggleSelection(policyName: string) {
+  updateSelection($event: MatCheckboxChange, policyName: string) {
+    console.log("Checkbox change event:", $event, "for policy:", policyName);
     const selected = this.selectedPolicies();
-    if (selected.has(policyName)) {
-      selected.delete(policyName);
-    } else {
+    if ($event.checked) {
       selected.add(policyName);
+    } else {
+      selected.delete(policyName);
     }
-    this.selectedPolicies.set(selected);
+    this.selectedPolicies.set(new Set<string>(selected));
   }
   isAllSelected(): boolean {
     const selected = this.selectedPolicies();
@@ -179,23 +166,6 @@ export class PoliciesTableComponent {
         newSelected.add(policy.name);
       }
       this.selectedPolicies.set(newSelected);
-    }
-  }
-  toggleExpansion(policy: PolicyDetail) {
-    if (this.isFiltered()) {
-      const expandedElements = this.expandedElements();
-      if (expandedElements.has(policy)) {
-        expandedElements.delete(policy);
-      } else {
-        expandedElements.add(policy);
-      }
-      this.expandedElements.set(expandedElements);
-      return;
-    }
-    if (this.expandedElements().has(policy)) {
-      this.expandedElements.set(new Set<PolicyDetail>());
-    } else {
-      this.expandedElements.set(new Set<PolicyDetail>([policy]));
     }
   }
 }

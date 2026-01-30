@@ -48,8 +48,7 @@
   </div>
 
   @if (activeTab() === "actions") {
-    <app-action-tab
-      [isEditMode]="true"
+    <app-edit-action-tab
       [policy]="editedPolicy()"
       (actionsUpdate)="updateActions($event)"
       (policyScopeChange)="onPolicyScopeChange($event)" />

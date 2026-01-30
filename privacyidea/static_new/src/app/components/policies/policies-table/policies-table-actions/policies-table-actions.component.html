@@ -15,20 +15,22 @@
  License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
  SPDX-License-Identifier: AGPL-3.0-or-later
--->
-<div class="flex-row margin-bottom-1 margin-top-1 gap-8">
-  <button
-    (click)="createNewPoilicy()"
-    class="action-button-1"
-    mat-stroked-button>
-    <mat-icon> add_moderator</mat-icon>
-    Create Policy
-  </button>
-  @if (authService.oneActionAllowed(["policydelete", "policywrite"])) {
+ -->
+@if (authService.oneActionAllowed(["policydelete", "policywrite"])) {
+  <div class="flex-row margin-bottom-1 margin-top-1 gap-8">
+    @if (authService.actionAllowed("policywrite")) {
+      <button
+        (click)="createNewPoilicy()"
+        class="action-button-1"
+        mat-stroked-button>
+        <mat-icon> add_moderator</mat-icon>
+        Create Policy
+      </button>
+    }
     @if (authService.actionAllowed("policydelete")) {
       <button
         (click)="deleteSelectedPolicies()"
-        [disabled]="policySelection().values.length"
+        [disabled]="policySelection().size < 1"
         class="action-button-delete"
         i18n
         mat-stroked-button>
@@ -39,16 +41,15 @@
     @if (authService.actionAllowed("policywrite")) {
       <button
         (click)="copySelectedPolicies()"
-        [disabled]="policySelection().values.length"
+        [disabled]="policySelection().size < 1"
         class="action-button-1"
         i18n
         mat-stroked-button>
         <mat-icon> content_copy</mat-icon>
         Copy Selected
       </button>
-    }
 
-    <!-- <button
+      <!-- <button
       [matMenuTriggerFor]="advancedFilterMenu"
       class="action-button-1"
       mat-stroked-button>
@@ -58,12 +59,13 @@
     <mat-menu #advancedFilterMenu="matMenu">
       @for (keyword of advancedApiFilter; track keyword) {
         <button
-          (click)="onAdvancedFilterClick(keyword)"
-          mat-menu-item>
-          <mat-icon class="margin-right-1">{{ getFilterIconName(keyword) }}</mat-icon>
+        (click)="onAdvancedFilterClick(keyword)"
+        mat-menu-item>
+        <mat-icon class="margin-right-1">{{ getFilterIconName(keyword) }}</mat-icon>
           {{ keyword }}
         </button>
       }
     </mat-menu> -->
-  }
-</div>
+    }
+  </div>
+}

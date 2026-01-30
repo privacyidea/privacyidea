@@ -35,17 +35,6 @@
   }
 }
 
-.policy-action-item:hover {
-  background-color: var(--mat-sys-primary-light);
-  color: var(--mat-sys-on-primary);
-  cursor: pointer;
-}
-
-.policy-action-item-selected {
-  background-color: var(--mat-sys-primary-base);
-  color: var(--mat-sys-on-primary);
-  font-weight: 600;
-}
 .add-action-button {
   &:focus-visible {
     outline: 1px solid var(--mat-sys-primary-light);

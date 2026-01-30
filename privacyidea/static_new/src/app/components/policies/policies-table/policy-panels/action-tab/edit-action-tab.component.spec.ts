@@ -17,24 +17,23 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { By } from "@angular/platform-browser";
-import { AddedActionsListComponent } from "../action-tab/added-actions-list/added-actions-list.component";
+import { AddedActionsListComponent } from "./added-actions-list/added-actions-list.component";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { ActionTabComponent } from "./action-tab.component";
-import { PolicyDetail, PolicyService } from "../../../../services/policies/policies.service";
+import { EditActionTabComponent } from "./edit-action-tab.component";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { MockPolicyService } from "../../../../../testing/mock-services/mock-policies-service";
-
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { provideHttpClient } from "@angular/common/http";
+import { MockPolicyService } from "../../../../../../testing/mock-services/mock-policies-service";
+import { PolicyService, PolicyDetail } from "../../../../../services/policies/policies.service";
 
-describe("ActionTabComponent", () => {
-  let component: ActionTabComponent;
-  let fixture: ComponentFixture<ActionTabComponent>;
+describe("EditActionTabComponent", () => {
+  let component: EditActionTabComponent;
+  let fixture: ComponentFixture<EditActionTabComponent>;
   let policyServiceMock: MockPolicyService;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ActionTabComponent, NoopAnimationsModule],
+      imports: [EditActionTabComponent, NoopAnimationsModule],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
@@ -42,7 +41,7 @@ describe("ActionTabComponent", () => {
       ]
     }).compileComponents();
 
-    fixture = TestBed.createComponent(ActionTabComponent);
+    fixture = TestBed.createComponent(EditActionTabComponent);
     policyServiceMock = TestBed.inject(PolicyService) as unknown as MockPolicyService;
     component = fixture.componentInstance;
     policyServiceMock.isEditMode.set(false);

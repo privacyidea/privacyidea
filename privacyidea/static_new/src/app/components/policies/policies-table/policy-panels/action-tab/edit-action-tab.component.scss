@@ -31,16 +31,3 @@
   flex-direction: column;
   gap: var(--global-gap);
 }
-
-.view-mode-container {
-  column-count: 2;
-  gap: calc(var(--global-gap) / 2);
-  width: 100%;
-}
-
-.view-item-wrapper {
-  display: inline-block;
-  width: 100%;
-  margin-bottom: calc(var(--global-gap) / 2);
-  break-inside: avoid;
-}

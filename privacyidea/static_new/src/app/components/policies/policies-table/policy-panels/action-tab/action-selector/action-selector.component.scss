@@ -30,7 +30,6 @@
   display: flex;
   flex-direction: column;
   gap: calc(var(--global-gap) / 2);
-
   overflow-y: none;
 }
 
@@ -45,4 +44,12 @@
   background-color: var(--mat-sys-primary-base);
   color: var(--mat-sys-on-primary);
   font-weight: 600;
+}
+
+.flex-column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: calc(var(--global-gap) / 4);
 }

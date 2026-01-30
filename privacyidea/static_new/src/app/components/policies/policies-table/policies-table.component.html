@@ -47,7 +47,7 @@
         *matCellDef="let policy">
         <mat-checkbox
           (click)="$event.stopPropagation()"
-          (change)="toggleSelection(policy.name)"
+          (change)="updateSelection($event, policy.name)"
           [checked]="isSelected(policy.name)"
           aria-label="Select Policy"
           i18n-aria-label>
@@ -123,6 +123,23 @@
       </td>
     </ng-container>
 
+    <ng-container matColumnDef="actions">
+      <th
+        mat-header-cell
+        *matHeaderCellDef
+        class="col-actions">
+        Actions
+      </th>
+      <td
+        mat-cell
+        *matCellDef="let policy"
+        class="col-actions">
+        <div class="actions-wrapper">
+          <app-policies-view-action-row [actions]="policy.action" />
+        </div>
+      </td>
+    </ng-container>
+
     <ng-container matColumnDef="active">
       <th
         mat-header-cell
@@ -146,55 +163,14 @@
       </td>
     </ng-container>
 
-    <ng-container matColumnDef="actions">
-      <th
-        mat-header-cell
-        *matHeaderCellDef
-        class="col-actions">
-        Actions
-      </th>
-      <td
-        mat-cell
-        *matCellDef="let policy"
-        class="col-actions">
-        <div class="actions-wrapper">
-          @if (authService.actionAllowed("policydelete")) {
-            <button
-              mat-icon-button
-              (click)="$event.stopPropagation(); deletePolicy(policy.name)">
-              <mat-icon>delete</mat-icon>
-            </button>
-          }
-        </div>
-      </td>
-    </ng-container>
-
-    <ng-container matColumnDef="expandedDetail">
-      <td
-        mat-cell
-        *matCellDef="let policy"
-        [attr.colspan]="displayedColumns.length">
-        <div
-          [@detailExpand]="expandedElements().has(policy) ? 'expanded' : 'collapsed'"
-          class="expanded-detail">
-          <app-policy-panel-view [policy]="policy"></app-policy-panel-view>
-        </div>
-      </td>
-    </ng-container>
-
     <tr
       mat-header-row
       *matHeaderRowDef="displayedColumns"></tr>
     <tr
       mat-row
       *matRowDef="let policy; columns: displayedColumns"
-      class="policy-row"
-      [class.expanded-row]="expandedElements().has(policy)"
-      (click)="toggleExpansion(policy)"></tr>
-    <tr
-      mat-row
-      *matRowDef="let row; columns: ['expandedDetail']"
-      class="detail-row"></tr>
+      class="policy-row"></tr>
+
     <tr
       *matNoDataRow
       aria-label="No Data Row"

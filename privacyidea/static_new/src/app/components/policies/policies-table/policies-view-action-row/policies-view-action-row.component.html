@@ -1,0 +1,9 @@
+<div class="view-mode-container">
+  @if (actionsList().length > 0) {
+    <div class="view-item-wrapper">
+      <app-added-actions-list
+        [isEditMode]="false"
+        [actions]="actionsList()" />
+    </div>
+  }
+</div>

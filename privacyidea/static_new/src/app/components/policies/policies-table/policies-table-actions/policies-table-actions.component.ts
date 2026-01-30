@@ -1,12 +1,16 @@
 import { CommonModule } from "@angular/common";
-import { Component, inject, input } from "@angular/core";
+import { Component, effect, inject, input } from "@angular/core";
 import { MatIconModule } from "@angular/material/icon";
 import { DialogServiceInterface, DialogService } from "../../../../services/dialog/dialog.service";
 import { EditPolicyDialogComponent } from "../../dialog/edit-policy-dialog/edit-policy-dialog.component";
 import { AuthServiceInterface, AuthService } from "../../../../services/auth/auth.service";
 import { PolicyServiceInterface, PolicyService } from "../../../../services/policies/policies.service";
-import { SimpleConfirmationDialogComponent } from "../../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { MatButtonModule } from "@angular/material/button";
+import {
+  SimpleConfirmationDialogComponent,
+  SimpleConfirmationDialogData
+} from "../../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { lastValueFrom } from "rxjs";
 
 @Component({
   selector: "app-policies-table-actions",
@@ -24,6 +28,14 @@ export class PoliciesTableActionsComponent {
   readonly authService: AuthServiceInterface = inject(AuthService);
   readonly policyService: PolicyServiceInterface = inject(PolicyService);
 
+  constructor() {
+    effect(() => {
+      const selectedPolicies = this.policySelection();
+      console.log("Selected policies changed:", selectedPolicies);
+      console.log("policySelection().values.length < 1 =", selectedPolicies.size < 1);
+    });
+  }
+
   createNewPoilicy() {
     this.dialogService.openDialog({
       component: EditPolicyDialogComponent,
@@ -32,11 +44,21 @@ export class PoliciesTableActionsComponent {
   }
 
   async deleteSelectedPolicies() {
-    const confirmation = await this.dialogService.confirm({
-      title: $localize`Delete Policies`,
-      message: $localize`Are you sure you want to delete the selected policies?`,
-      confirmButtonText: $localize`Delete`
-    });
+    const confirmation = await lastValueFrom(
+      this.dialogService
+        .openDialog({
+          component: SimpleConfirmationDialogComponent,
+          data: {
+            title: $localize`Delete Policies`,
+            items: Array.from(this.policySelection()),
+            itemType: $localize`Policies`,
+            confirmAction: { label: $localize`Delete`, value: true, type: "destruct" },
+            cancelAction: { label: $localize`Cancel`, value: false, type: "cancel" }
+          }
+        })
+        .afterClosed()
+    );
+
     if (!confirmation) {
       return;
     }

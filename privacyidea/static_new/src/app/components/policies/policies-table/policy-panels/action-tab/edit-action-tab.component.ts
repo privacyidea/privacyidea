@@ -35,16 +35,14 @@ import { AddedActionsListComponent } from "./added-actions-list/added-actions-li
 import { DialogServiceInterface, DialogService } from "../../../../../services/dialog/dialog.service";
 
 @Component({
-  selector: "app-action-tab",
+  selector: "app-edit-action-tab",
   standalone: true,
   imports: [AddedActionsListComponent, ActionSelectorComponent, ActionDetailComponent],
-  templateUrl: "./action-tab.component.html",
-  styleUrl: "./action-tab.component.scss"
+  templateUrl: "./edit-action-tab.component.html",
+  styleUrl: "./edit-action-tab.component.scss"
 })
-export class ActionTabComponent {
+export class EditActionTabComponent {
   readonly dialogService: DialogServiceInterface = inject(DialogService);
-
-  isEditMode = input.required<boolean>();
 
   policy = input.required<PolicyDetail>();
   policyScopeChange = output<string>();

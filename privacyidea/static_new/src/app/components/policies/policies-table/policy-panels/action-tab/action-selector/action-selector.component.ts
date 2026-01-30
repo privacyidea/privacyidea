@@ -40,6 +40,7 @@ import {
 } from "../../../../../../services/policies/policies.service";
 import { SelectorButtonsComponent } from "../selector-buttons/selector-buttons.component";
 import { PolicyActionItemComponent } from "./policy-action-item/policy-action-item-new.component";
+import { ClearableInputComponent } from "../../../../../shared/clearable-input/clearable-input.component";
 
 @Component({
   selector: "app-action-selector",
@@ -50,7 +51,8 @@ import { PolicyActionItemComponent } from "./policy-action-item/policy-action-it
     MatIconModule,
     SelectorButtonsComponent,
     MatTooltipModule,
-    PolicyActionItemComponent
+    PolicyActionItemComponent,
+    ClearableInputComponent
   ],
   templateUrl: "./action-selector.component.html",
   styleUrls: ["./action-selector.component.scss"]

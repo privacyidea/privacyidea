@@ -40,7 +40,6 @@ import {
   SimpleConfirmationDialogData,
   SimpleConfirmationDialogComponent
 } from "../../../../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
-import { ActionTabComponent } from "../../action-tab/action-tab.component";
 import { ConditionsTabComponent } from "../../conditions-tab/conditions-tab.component";
 
 @Component({
@@ -59,7 +58,6 @@ import { ConditionsTabComponent } from "../../conditions-tab/conditions-tab.comp
     MatFormFieldModule,
     MatSelectModule,
     MatOptionModule,
-    ActionTabComponent,
     ConditionsTabComponent
   ],
   templateUrl: "./policy-panel-view.component.html",

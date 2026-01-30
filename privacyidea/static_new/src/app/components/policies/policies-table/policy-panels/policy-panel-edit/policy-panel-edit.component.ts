@@ -26,11 +26,11 @@ import { MatButtonToggleModule } from "@angular/material/button-toggle";
 import { FormsModule } from "@angular/forms";
 import { MatExpansionModule, MatExpansionPanel } from "@angular/material/expansion";
 import { MatSlideToggleModule } from "@angular/material/slide-toggle";
-import { PolicyDetail, PolicyService, PolicyServiceInterface } from "../../../../../services/policies/policies.service";
+import { PolicyDetail } from "../../../../../services/policies/policies.service";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatSelectModule } from "@angular/material/select";
 import { MatOptionModule } from "@angular/material/core";
-import { ActionTabComponent } from "../action-tab/action-tab.component";
+import { EditActionTabComponent } from "../action-tab/edit-action-tab.component";
 import { ConditionsTabComponent } from "../conditions-tab/conditions-tab.component";
 import { DialogService, DialogServiceInterface } from "../../../../../services/dialog/dialog.service";
 import {
@@ -58,7 +58,7 @@ import { PolicyNameEditComponent } from "./policy-name-edit/policy-name-edit.com
     MatFormFieldModule,
     MatSelectModule,
     MatOptionModule,
-    ActionTabComponent,
+    EditActionTabComponent,
     ConditionsTabComponent,
     PolicyDescriptionEditComponent,
     PolicyPriorityEditComponent,

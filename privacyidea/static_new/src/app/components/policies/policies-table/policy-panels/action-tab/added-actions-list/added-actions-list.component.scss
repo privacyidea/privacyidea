@@ -47,13 +47,6 @@
   background-color: var(--mat-sys-primary-container);
 }
 
-.action-card-in-panel:hover {
-  background-color: var(--mat-sys-primary-light);
-  color: var(--mat-sys-on-primary);
-  cursor: pointer;
-  font-size: 600;
-}
-
 .action-card-in-panel-selected {
   background-color: var(--mat-sys-primary-base);
   color: var(--mat-sys-on-primary);
