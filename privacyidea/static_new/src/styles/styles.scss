@@ -51,6 +51,7 @@ body {
   --eighth-global-padding: calc(var(--global-padding) / 8);
 
   --global-gap: 16px;
+  --half-global-gap: calc(var(--global-gap) / 2);
 
   --light: #f3f3f3;
 

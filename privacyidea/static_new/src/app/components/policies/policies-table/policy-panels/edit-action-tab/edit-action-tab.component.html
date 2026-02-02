@@ -8,7 +8,6 @@
         (actionRemove)="onActionRemove($event)"
         [(selectedAction)]="selectedAction" />
     }
-
     <app-action-selector
       [selectedPolicyAction]="selectedAction()"
       (selectedPolicyActionChange)="onSelectedActionChange($event)"
@@ -16,7 +15,6 @@
       (policyScopeChange)="onPolicyScopeChange($event)"
       (actionAdd)="onActionAdd($event)" />
   </div>
-
   <app-action-detail
     class="flex-detail"
     [isEditMode]="true"

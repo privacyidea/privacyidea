@@ -10,7 +10,7 @@
 // --- Tab Buttons ---
 .tab-buttons {
   display: flex;
-  gap: calc(var(--global-gap) / 2);
+  gap: var(--half-global-gap);
   align-items: center;
   flex-direction: row;
   flex-wrap: nowrap;
@@ -34,7 +34,7 @@
 .actions-list {
   display: flex;
   flex-direction: column;
-  gap: calc(var(--global-gap) / 2);
+  gap: var(--half-global-gap);
 }
 
 .action-card {
@@ -70,7 +70,7 @@
 .add-action-details {
   display: flex;
   flex-direction: column;
-  gap: calc(var(--global-gap) / 2);
+  gap: var(--half-global-gap);
   max-height: 200px;
   overflow-y: auto;
   padding-right: var(

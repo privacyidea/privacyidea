@@ -28,140 +28,103 @@
     [dataSource]="policiesListFiltered()"
     class="policies-table"
     multiTemplateDataRows>
-    <ng-container matColumnDef="select">
-      <th
-        *matHeaderCellDef
-        class="table-checkbox"
-        mat-header-cell>
-        <mat-checkbox
-          (change)="masterToggle()"
-          [checked]="isAllSelected()"
-          [indeterminate]="selectedPolicies().size > 0 && !isAllSelected()"
-          aria-label="Select All Policies"
-          i18n-aria-label>
-        </mat-checkbox>
-      </th>
-      <td
-        mat-cell
-        class="table-checkbox"
-        *matCellDef="let policy">
-        <mat-checkbox
-          (click)="$event.stopPropagation()"
-          (change)="updateSelection($event, policy.name)"
-          [checked]="isSelected(policy.name)"
-          aria-label="Select Policy"
-          i18n-aria-label>
-        </mat-checkbox>
-      </td>
-    </ng-container>
-    <ng-container matColumnDef="priority">
-      <th
-        mat-header-cell
-        *matHeaderCellDef
-        class="col-priority">
-        Priority
-      </th>
-      <td
-        mat-cell
-        *matCellDef="let policy"
-        class="col-priority">
-        {{ policy.priority }}
-      </td>
-    </ng-container>
-
-    <ng-container matColumnDef="name">
-      <th
-        mat-header-cell
-        *matHeaderCellDef
-        class="col-name">
-        Name
-      </th>
-      <td
-        mat-cell
-        *matCellDef="let policy"
-        class="col-name">
-        @if (authService.actionAllowed("policywrite")) {
-          <button
-            mat-button
-            class="text-link-button"
-            (click)="$event.stopPropagation(); editPolicy(policy)">
-            {{ policy.name }}
-          </button>
+    @for (column of columnKeysMap; track column) {
+      <ng-container [matColumnDef]="column.key">
+        @if (column.key === "select") {
+          <th
+            *matHeaderCellDef
+            class="table-checkbox"
+            mat-header-cell>
+            <mat-checkbox
+              (change)="masterToggle()"
+              [checked]="isAllSelected()"
+              [indeterminate]="selectedPolicies().size > 0 && !isAllSelected()"
+              aria-label="Select All Policies"
+              i18n-aria-label>
+            </mat-checkbox>
+          </th>
         } @else {
-          {{ policy.name }}
+          <th
+            *matHeaderCellDef
+            [class]="'col-' + column.key"
+            mat-header-cell>
+            <div class="flex ali-center">
+              {{ column.label }}
+              <div class="margin-left-1 flex">
+                @if (isFilterable(column.key)) {
+                  <button
+                    (click)="onFilterClick(column.key)"
+                    class="filter-button"
+                    mat-icon-button>
+                    <mat-icon class="keyword-button-icon margin-left-0">
+                      {{ getFilterIconName(column.key) }}
+                    </mat-icon>
+                  </button>
+                }
+              </div>
+            </div>
+          </th>
         }
-      </td>
-    </ng-container>
-
-    <ng-container matColumnDef="scope">
-      <th
-        mat-header-cell
-        *matHeaderCellDef
-        class="col-scope">
-        Scope
-      </th>
-      <td
-        mat-cell
-        *matCellDef="let policy"
-        class="col-scope">
-        {{ policy.scope ? policy.scope.toLocaleUpperCase() : "NO SCOPE" }}
-      </td>
-    </ng-container>
-
-    <ng-container matColumnDef="description">
-      <th
-        mat-header-cell
-        *matHeaderCellDef
-        class="col-description">
-        Description
-      </th>
-      <td
-        mat-cell
-        *matCellDef="let policy"
-        class="col-description">
-        {{ policy.description }}
-      </td>
-    </ng-container>
-
-    <ng-container matColumnDef="actions">
-      <th
-        mat-header-cell
-        *matHeaderCellDef
-        class="col-actions">
-        Actions
-      </th>
-      <td
-        mat-cell
-        *matCellDef="let policy"
-        class="col-actions">
-        <div class="actions-wrapper">
-          <app-policies-view-action-row [actions]="policy.action" />
-        </div>
-      </td>
-    </ng-container>
-
-    <ng-container matColumnDef="active">
-      <th
-        mat-header-cell
-        *matHeaderCellDef
-        class="col-active">
-        Active
-      </th>
-      <td
-        mat-cell
-        *matCellDef="let policy"
-        class="col-active">
-        <div class="centered-content">
-          <mat-slide-toggle
-            class="small-toggle"
-            [checked]="policy.active"
-            (change)="policyService.togglePolicyActive(policy, $event.checked)"
-            (click)="$event.stopPropagation()"
-            [disableRipple]="true">
-          </mat-slide-toggle>
-        </div>
-      </td>
-    </ng-container>
+        <td
+          [class]="'col-' + column.key"
+          mat-cell
+          *matCellDef="let policy">
+          @switch (column.key) {
+            @case ("select") {
+              <mat-checkbox
+                (click)="$event.stopPropagation()"
+                (change)="updateSelection($event, policy.name)"
+                [checked]="isSelected(policy.name)"
+                aria-label="Select Policy"
+                i18n-aria-label>
+              </mat-checkbox>
+            }
+            @case ("priority") {
+              {{ policy.priority }}
+            }
+            @case ("name") {
+              <div class="name-wrapper">
+                @if (authService.actionAllowed("policywrite")) {
+                  <mat-icon
+                    class="minimal-icon-button"
+                    [class.inactive-icon]="!policy.active"
+                    [class.active-icon]="policy.active"
+                    (click)="$event.stopPropagation(); policyService.togglePolicyActive(policy)">
+                    check_circle
+                  </mat-icon>
+                  <div
+                    class="text-link-button"
+                    (click)="$event.stopPropagation(); editPolicy(policy)">
+                    {{ policy.name }}
+                  </div>
+                } @else {
+                  <mat-icon
+                    [class.inactive-icon]="!policy.active"
+                    [class.active-icon]="policy.active">
+                    check_circle
+                  </mat-icon>
+                  {{ policy.name }}
+                }
+              </div>
+            }
+            @case ("scope") {
+              {{ policy.scope ? policy.scope.toLocaleUpperCase() : "NO SCOPE" }}
+            }
+            @case ("description") {
+              {{ policy.description }}
+            }
+            @case ("actions") {
+              <app-policies-view-action-column [actions]="policy.action" />
+            }
+            @case ("conditions") {
+              <app-conditions-tab
+                [policy]="policy"
+                [isEditMode]="false" />
+            }
+          }
+        </td>
+      </ng-container>
+    }
 
     <tr
       mat-header-row

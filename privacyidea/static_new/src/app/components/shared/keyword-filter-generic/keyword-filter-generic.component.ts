@@ -17,105 +17,11 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { NgClass } from "@angular/common";
-import { Component, inject, input, output, signal } from "@angular/core";
+import { Component, input, output, signal } from "@angular/core";
 import { MatFabButton } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
-import { TableUtilsService, TableUtilsServiceInterface } from "../../../services/table-utils/table-utils.service";
 import { FilterValueGeneric as GenericFilter } from "../../../core/models/filter_value_generic/filter_value_generic";
 import { MatTooltip } from "@angular/material/tooltip";
-
-/*
-export class FilterKeyword {
-  keyword: string;
-  label: string;
-  isSelected: (filterValue: FilterValueGeneric) => boolean;
-
-  getIconName: (filterValue: FilterValueGeneric) => "remove_circle" | "add_circle" | "change_circle";
-  toggleKeyword: (filterValue: FilterValueGeneric) => FilterValueGeneric;
-  constructor(args: {
-    key: string;
-    label: string;
-    isSelected?: (filterValue: FilterValueGeneric) => boolean;
-    iconName?: (filterValue: FilterValueGeneric) => "remove_circle" | "add_circle" | "change_circle";
-    toggle?: (filterValue: FilterValueGeneric) => FilterValueGeneric;
-  }) {
-    const { key, label, isSelected, iconName, toggle } = args;
-    this.keyword = key;
-    this.label = label;
-    this.isSelected =
-      isSelected ??
-      ((filterValue: FilterValueGeneric) =>
-        FilterKeyword.defaultIsSelected({
-          keyword: this.keyword,
-          filterValue: filterValue
-        }));
-    this.getIconName =
-      iconName ??
-      ((filterValue: FilterValueGeneric) =>
-        FilterKeyword.defaultIconName({
-          isSelected: this.isSelected,
-          keyword: this.keyword,
-          filterValue: filterValue
-        }));
-    this.toggleKeyword =
-      toggle ??
-      ((filterValue: FilterValueGeneric) =>
-        FilterKeyword.defaultToggler({
-          keyword: this.keyword,
-          filterValue: filterValue
-        }));
-  }
-  static defaultIsSelected(named: { keyword: string; filterValue: FilterValueGeneric }) {
-    const { keyword, filterValue } = named;
-    return filterValue.hasKey(keyword);
-  }
-
-  static defaultIconName(named: {
-    isSelected?: (filterValue: FilterValueGeneric) => boolean;
-    keyword: string;
-    filterValue: FilterValueGeneric;
-  }) {
-    const { isSelected, keyword, filterValue } = named;
-    const filterIsSelected = isSelected
-      ? isSelected(filterValue)
-      : FilterKeyword.defaultIsSelected({
-          keyword: keyword,
-          filterValue: filterValue
-        });
-    return filterIsSelected ? "remove_circle" : "add_circle";
-  }
-
-  static defaultToggler(named: { keyword: string; filterValue: FilterValueGeneric }): FilterValueGeneric {
-    const { keyword, filterValue } = named;
-    return filterValue.toggleKey(keyword);
-  }
-
-  static getValue(named: { keyword: string; filterValue: FilterValueGeneric }): string | null {
-    const { keyword, filterValue } = named;
-    return filterValue.getValueOfKey(keyword);
-  }
-
-  static toggleActive(filterValue: string): string {
-    const activeRegex = /active:\s*(\S+)/i;
-    const match = filterValue.match(activeRegex);
-
-    if (!match) {
-      return (filterValue.trim() + " active: true").trim();
-    } else {
-      const existingValue = match[1].toLowerCase();
-
-      if (existingValue === "true") {
-        return filterValue.replace(activeRegex, "active: false");
-      } else if (existingValue === "false") {
-        const removed = filterValue.replace(activeRegex, "").trim();
-        return removed.replace(/\s{2,}/g, " ");
-      } else {
-        return filterValue.replace(activeRegex, "active: true");
-      }
-    }
-  }
-}
-*/
 
 export class FilterOption<T = any> {
   key: string;
@@ -199,10 +105,6 @@ export class KeywordFilterGenericComponent<T> {
   onToggleAdvancedFilter(): void {
     this.showAdvancedFilter.update((b) => !b);
   }
-
-  // isFilterSelected(filter: string, inputValue: FilterValueGeneric): boolean {
-  //   // return this.filterValue().isSelected(filterKeyword);
-  // }
 
   getFilterIconName(filterKeyword: FilterOption): "remove_circle" | "add_circle" | "change_circle" {
     return this.filter().getFilterIconNameOf(filterKeyword);

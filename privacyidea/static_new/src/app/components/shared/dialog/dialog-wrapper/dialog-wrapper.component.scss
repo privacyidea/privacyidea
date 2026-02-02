@@ -29,7 +29,7 @@
     justify-content: flex-end;
     padding: var(--half-global-padding) var(--global-padding);
 
-    gap: calc(var(--global-gap) / 2);
+    gap: var(--half-global-gap);
   }
 
   .dialog-action-button-default {

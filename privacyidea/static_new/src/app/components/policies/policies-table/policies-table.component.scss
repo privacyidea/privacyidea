@@ -3,81 +3,145 @@
 .policies-table-layout {
   @include styles.table-container-styles;
   @include styles.base-table-structure(".policies-table", ".policies-table-filter", ".table-scroll-container");
-  max-height: var(--max-height);
   max-width: calc(100vw - var(--global-padding) * 5 - 48px);
   overflow: auto;
   display: grid;
-}
 
-.policies-table {
-  table-layout: auto;
-  width: 100%;
-  border-collapse: collapse;
-
-  // Fixe schmale Spalten
-  .table-checkbox,
-  .col-priority,
-  .col-scope,
-  .col-active {
-    width: 1%;
-    white-space: nowrap;
+  th,
+  td {
+    padding: 0 var(--half-global-padding);
+    text-align: left;
   }
 
-  // Die Description-Spalte
-  .col-description {
-    // Dieser Trick zwingt die Spalte, den Restplatz zu nehmen
-    // UND den overflow-wrap zu triggern:
-    width: 99%;
-    min-width: 200px; // Verhindert, dass sie zu klein wird
+  .policies-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: auto;
 
-    white-space: normal;
-    word-break: break-word; // Bricht lange Wörter
-    overflow-wrap: anywhere;
+    td.col-description,
+    td.col-actions,
+    td.col-conditions {
+      vertical-align: top;
+    }
 
-    // Optional: Text linksbündig, da mehrzeilig
-    text-align: left !important;
+    td.table-checkbox,
+    td.col-priority,
+    td.col-scope,
+    td.col-actions {
+      width: 1%;
+      max-width: 100% !important;
+      white-space: nowrap;
+      text-align: center;
+    }
+
+    td.col-name {
+      vertical-align: middle;
+
+      .name-wrapper {
+        display: flex;
+        align-items: center;
+        flex-direction: row;
+        gap: var(--half-global-gap);
+      }
+
+      .minimal-icon-button,
+      .text-link-button {
+        background: none;
+        border: none;
+        padding: 0;
+        margin: 0;
+        cursor: pointer;
+        outline: none;
+        &:hover {
+          opacity: 0.8;
+        }
+      }
+
+      .minimal-icon-button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        color: inherit;
+        mat-icon {
+          width: 18px;
+          height: 18px;
+        }
+      }
+
+      .text-link-button {
+        color: var(--mat-sys-primary);
+        text-decoration: underline;
+      }
+
+      .inactive-icon {
+        color: var(--mat-sys-on-surface-variant);
+        opacity: 0.5;
+      }
+      .active-icon {
+        color: var(--mat-sys-primary-base);
+        opacity: 1;
+      }
+    }
+
+    td.col-description {
+      min-width: 200px;
+      max-width: 400px;
+      white-space: normal;
+      word-break: break-word;
+      padding-top: var(--half-global-padding);
+      padding-bottom: var(--half-global-padding);
+    }
+
+    td.col-actions {
+      padding: 0;
+      .added-actions-container {
+        display: flex;
+        flex-direction: column;
+        .action-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 4px 0;
+          &:not(:last-child) {
+            border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+          }
+        }
+      }
+    }
+
+    td.col-conditions {
+      width: 400px;
+      max-width: 100% !important;
+      white-space: normal;
+      word-break: break-word;
+    }
   }
-}
 
-.col-active {
-  width: 80px;
-}
+  .detail-row {
+    height: 0;
+  }
 
-.policy-row {
-  cursor: pointer;
-  &:hover {
+  .expanded-row {
     background-color: var(--mat-sys-surface-container-low);
   }
-}
 
-.detail-row {
-  height: 0;
-}
+  .selfservice-paginator-container {
+    justify-content: end;
+    display: flex;
+  }
 
-.expanded-row {
-  background-color: var(--mat-sys-surface-container-low);
-}
+  .realm-break {
+    margin-top: 3px;
+  }
 
-.selfservice-paginator-container {
-  justify-content: end;
-  display: flex;
-}
-
-.self-service-table-container {
-  overflow-y: auto;
-  max-width: 70.5rem;
-}
-
-.realm-break {
-  margin-top: 3px;
-}
-.expanded-detail {
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  border-top-width: 0;
-  td {
-    border-top-width: 0px !important;
-    border-bottom-width: 0px !important;
+  .expanded-detail {
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    border-top-width: 0;
+    td {
+      border-top-width: 0px !important;
+      border-bottom-width: 0px !important;
+    }
   }
 }

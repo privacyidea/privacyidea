@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, input, inject, signal } from "@angular/core";
+import { Component, input, inject, signal, model } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { MatTableModule } from "@angular/material/table";
 import { MatSortModule } from "@angular/material/sort";
@@ -39,7 +39,22 @@ import { MatPaginatorModule } from "@angular/material/paginator";
 import { PoliciesTableActionsComponent } from "./policies-table-actions/policies-table-actions.component";
 import { MatCheckboxChange, MatCheckboxModule } from "@angular/material/checkbox";
 import { trigger, state, style, transition, animate } from "@angular/animations";
-import { PoliciesViewActionRowComponent } from "./policies-view-action-row/policies-view-action-row.component";
+import { PoliciesViewActionColumnComponent } from "./policies-view-action-column/policies-view-action-column.component";
+import { ConditionsTabComponent } from "./policy-panels/conditions-tab/conditions-tab.component";
+import { MatTooltipModule } from "@angular/material/tooltip";
+import { FilterValueGeneric } from "../../../core/models/filter_value_generic/filter_value_generic";
+import { FilterOption } from "../../shared/keyword-filter-generic/keyword-filter-generic.component";
+import { TableUtilsService, TableUtilsServiceInterface } from "../../../services/table-utils/table-utils.service";
+
+const columnKeysMap = [
+  { key: "select", label: "" },
+  { key: "priority", label: "Priority" },
+  { key: "name", label: "Name" },
+  { key: "scope", label: "Scope" },
+  { key: "description", label: "Description" },
+  { key: "actions", label: "Actions" },
+  { key: "conditions", label: "Conditions" }
+];
 
 @Component({
   selector: "app-policies-table",
@@ -55,7 +70,9 @@ import { PoliciesViewActionRowComponent } from "./policies-view-action-row/polic
     MatPaginatorModule,
     PoliciesTableActionsComponent,
     MatCheckboxModule,
-    PoliciesViewActionRowComponent
+    ConditionsTabComponent,
+    PoliciesViewActionColumnComponent,
+    MatTooltipModule
   ],
   templateUrl: "./policies-table.component.html",
   styleUrl: "./policies-table.component.scss",
@@ -71,12 +88,16 @@ export class PoliciesTableComponent {
   readonly policyService: PolicyServiceInterface = inject(PolicyService);
   readonly dialogService: DialogServiceInterface = inject(DialogService);
   readonly authService: AuthServiceInterface = inject(AuthService);
+  readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
 
-  readonly isFiltered = input.required<boolean>();
+  readonly filter = model.required<FilterValueGeneric<PolicyDetail>>();
+  readonly policyFilterOptions = input.required<FilterOption[]>();
   readonly policiesListFiltered = input.required<PolicyDetail[]>();
+  readonly isFiltered = input.required<boolean>();
   readonly selectedPolicies = signal<Set<string>>(new Set<string>());
 
-  displayedColumns: string[] = ["select", "priority", "name", "scope", "description", "actions", "active"];
+  readonly columnKeysMap = columnKeysMap;
+  readonly displayedColumns: string[] = columnKeysMap.map((c) => c.key);
 
   async deletePolicy(policyName: string): Promise<void> {
     if (
@@ -167,5 +188,31 @@ export class PoliciesTableComponent {
       }
       this.selectedPolicies.set(newSelected);
     }
+  }
+
+  onFilterClick(filterKeyword: string): void {
+    this.toggleFilter(filterKeyword);
+  }
+
+  toggleFilter(filterKeyword: string): void {
+    const filterOption = this.policyFilterOptions().find((option) => option.key === filterKeyword);
+    console.log("Toggling filter for keyword:", filterKeyword, "Found option:", filterOption);
+    if (filterOption) {
+      console.log("Option found, toggling filter.");
+      const newFilter = this.filter().toggleFilterKeyword(filterOption);
+      this.filter.set(newFilter);
+    }
+  }
+
+  getFilterIconName(keyword: string): string {
+    const filterOption = this.policyFilterOptions().find((option) => option.key === keyword);
+    if (filterOption && filterOption.getIconName) {
+      return filterOption.getIconName(this.filter());
+    }
+    return "filter_alt";
+  }
+
+  isFilterable(columnKey: string): boolean {
+    return !!this.policyFilterOptions().find((option) => option.key === columnKey);
   }
 }

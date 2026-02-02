@@ -29,7 +29,7 @@
 .add-action-details {
   display: flex;
   flex-direction: column;
-  gap: calc(var(--global-gap) / 2);
+  gap: var(--half-global-gap);
   overflow-y: none;
 }
 

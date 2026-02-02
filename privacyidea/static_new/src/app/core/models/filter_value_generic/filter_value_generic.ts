@@ -1,10 +1,5 @@
-import {
-  DummyFilterOption,
-  FilterOption
-} from "../../../components/shared/keyword-filter-generic/keyword-filter-generic.component";
-
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -21,6 +16,11 @@ import {
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+
+import {
+  DummyFilterOption,
+  FilterOption
+} from "../../../components/shared/keyword-filter-generic/keyword-filter-generic.component";
 export class FilterValueGeneric<T> {
   constructor(
     args:
@@ -46,18 +46,6 @@ export class FilterValueGeneric<T> {
     this.filterMap = args.filterMap ?? new Map<string, FilterOption>();
     this.hiddenFilterMap = args.hiddenFilterMap ?? new Map<string, FilterOption>();
   }
-
-  // // private _value: string;
-
-  // get value(): string {
-  //   return this._value;
-  // }
-
-  // // private _hiddenValue: string;
-
-  // get hiddenValue(): string {
-  //   return this._hiddenValue;
-  // }
 
   /**
    * Returns true when there is no visible filter set.
@@ -91,7 +79,6 @@ export class FilterValueGeneric<T> {
     const array = Array.from(this.filterMap.values());
     const filterStrings = array.map((option) => {
       if ((option as any).isDummy) {
-        // return option.key;
         if (option.value === null) {
           return option.key;
         } else {
@@ -296,6 +283,15 @@ export class FilterValueGeneric<T> {
       updatedFilterValue = updatedFilterValue.setValueOfKey(key, value);
     }
     return updatedFilterValue;
+  }
+
+  clear(): FilterValueGeneric<T> {
+    this.filterMap.clear();
+    this.hiddenFilterMap.clear();
+    return this._copyWith({
+      filterMap: new Map<string, FilterOption>(),
+      hiddenFilterMap: new Map<string, FilterOption>()
+    });
   }
 }
 const PAIR_RE_SRC = String.raw`([A-Za-z0-9_]+):(?:\s*(?:"((?:\\.|[^"\\])*)"|'((?:\\.|[^'\\])*)'|([^ :]+(?![A-Za-z0-9_]*:))))?|([A-Za-z0-9_]+)(?![A-Za-z0-9_]*:)`;

@@ -4,10 +4,10 @@
 
 .readonly-grid-container {
   display: grid;
-  grid-template-columns: 140px minmax(0, 1fr);
+  grid-template-columns: auto minmax(0, 1fr);
   gap: var(--half-global-padding);
   align-items: baseline;
-  padding: var(--half-global-padding) 0;
+  padding: var(--quarter-global-padding) 0;
 
   .readonly-label {
     font-weight: 500;

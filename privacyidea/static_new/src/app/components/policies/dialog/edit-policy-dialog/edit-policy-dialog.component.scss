@@ -14,7 +14,7 @@
 
 .tab-buttons {
   display: flex;
-  gap: calc(var(--global-gap) / 2);
+  gap: var(--half-global-gap);
   align-items: center;
   flex-direction: row;
   flex-wrap: nowrap;

@@ -1,4 +1,5 @@
 .conditions-grid-container {
+  min-width: 350px;
   display: flex;
   flex-direction: column;
   gap: calc(var(--global-gap) / 4 * 3);

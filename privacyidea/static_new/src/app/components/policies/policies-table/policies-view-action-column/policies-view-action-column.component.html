@@ -16,20 +16,14 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<div
-  class="policies-layout"
-  aria-label="Policies Layout">
-  @if (authService.actionAllowed("policyread")) {
-    <app-policy-filter
-      (filteredPoliciesChange)="onPolicyListFilteredChange($event)"
-      [(filter)]="filter"
-      [unfilteredPolicies]="policyService.allPolicies()">
-    </app-policy-filter>
+
+<div class="added-actions-container">
+  @for (action of actionsList(); track action.name) {
+    <div class="action-row">
+      <span class="action-label">{{ action.name }}</span>
+      @if (!isBooleanAction(action.name)) {
+        <span class="action-value">{{ action.value }}</span>
+      }
+    </div>
   }
-  <app-policies-table
-    [policiesListFiltered]="policiesListFiltered()"
-    [isFiltered]="policiesIsFiltered()"
-    [(filter)]="filter"
-    [policyFilterOptions]="policyFilterOptions">
-  </app-policies-table>
 </div>

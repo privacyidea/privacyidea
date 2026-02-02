@@ -195,7 +195,7 @@ export interface PolicyServiceInterface {
   policyHasActions(policy: PolicyDetail): boolean;
   savePolicyEdits(policyName: string, edits: Partial<PolicyDetail>): void;
   isPolicyEdited(editedPolicy: PolicyDetail, originalPolicy: PolicyDetail): boolean;
-  togglePolicyActive(policy: PolicyDetail, active: boolean): void;
+  togglePolicyActive(policy: PolicyDetail): void;
   updatePolicyOptimistic(updatedPolicy: Partial<PolicyDetail>): void;
   allPoliciesRecource: HttpResourceRef<PiResponse<PolicyDetail[], unknown> | undefined>;
 }
@@ -619,10 +619,20 @@ export class PolicyService implements PolicyServiceInterface {
     }
     return result;
   }
-  togglePolicyActive(policy: PolicyDetail, active: boolean): void {
-    const action = active ? this.enablePolicy(policy.name) : this.disablePolicy(policy.name);
+  togglePolicyActive(policy: PolicyDetail): void {
+    const action = policy.active ? this.disablePolicy(policy.name) : this.enablePolicy(policy.name);
+    // Optimistic update
+    const currentPolicies = this.allPolicies();
+    this.allPolicies.set(currentPolicies.map((p) => (p.name === policy.name ? { ...p, active: !policy.active } : p)));
+    // Do request
     action.catch((error) => {
+      // Rollback optimistic update
+      this.allPolicies.set(currentPolicies);
       console.error("Error toggling policy active state: ", error);
+    });
+    // Reload policies to ensure state is correct (in case other properties changed)
+    action.then(() => {
+      this.allPoliciesRecource.reload();
     });
   }
   enablePolicy(name: string): Promise<PiResponse<any>> {

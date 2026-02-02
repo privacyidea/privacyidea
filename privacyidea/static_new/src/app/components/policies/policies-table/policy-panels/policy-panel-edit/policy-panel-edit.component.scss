@@ -5,11 +5,11 @@
 .policy-panel-edit-container {
   display: flex;
   flex-direction: column;
-  gap: calc(var(--global-gap) / 2);
+  gap: var(--half-global-gap);
 
   .tab-buttons {
     display: flex;
-    gap: calc(var(--global-gap) / 2);
+    gap: var(--half-global-gap);
     align-items: center;
     flex-direction: row;
     flex-wrap: nowrap;

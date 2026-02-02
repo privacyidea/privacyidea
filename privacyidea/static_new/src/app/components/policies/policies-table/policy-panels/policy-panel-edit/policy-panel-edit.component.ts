@@ -30,7 +30,7 @@ import { PolicyDetail } from "../../../../../services/policies/policies.service"
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatSelectModule } from "@angular/material/select";
 import { MatOptionModule } from "@angular/material/core";
-import { EditActionTabComponent } from "../action-tab/edit-action-tab.component";
+import { EditActionTabComponent } from "../edit-action-tab/edit-action-tab.component";
 import { ConditionsTabComponent } from "../conditions-tab/conditions-tab.component";
 import { DialogService, DialogServiceInterface } from "../../../../../services/dialog/dialog.service";
 import {
