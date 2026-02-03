@@ -2,7 +2,7 @@ import { CommonModule } from "@angular/common";
 import { Component, effect, inject, input } from "@angular/core";
 import { MatIconModule } from "@angular/material/icon";
 import { DialogServiceInterface, DialogService } from "../../../../services/dialog/dialog.service";
-import { EditPolicyDialogComponent } from "../../dialog/edit-policy-dialog/edit-policy-dialog.component";
+import { EditPolicyDialogComponent } from "../../dialogs/edit-policy-dialog/edit-policy-dialog.component";
 import { AuthServiceInterface, AuthService } from "../../../../services/auth/auth.service";
 import { PolicyServiceInterface, PolicyService } from "../../../../services/policies/policies.service";
 import { MatButtonModule } from "@angular/material/button";

@@ -3,11 +3,11 @@
   border-radius: var(--border-radius);
   box-shadow: var(--mat-sys-level2);
   color: var(--mat-sys-on-surface);
-  min-width: 0;
-  padding: var(--three-quarters-global-padding);
-  gap: var(--global-gap);
   display: flex;
   flex-direction: column;
+  gap: var(--global-gap);
+  min-width: 0;
+  padding: var(--three-quarters-global-padding);
 }
 
 .search-input {
@@ -47,9 +47,9 @@
 }
 
 .flex-column {
+  align-items: center;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
   gap: calc(var(--global-gap) / 4);
+  justify-content: center;
 }

@@ -29,7 +29,6 @@ import { TokenTableComponent } from "./components/token/token-table/token-table.
 import { UserDetailsComponent } from "./components/user/user-details/user-details.component";
 import { UserTableComponent } from "./components/user/user-table/user-table.component";
 import { AuditComponent } from "./components/audit/audit.component";
-import { PoliciesComponent } from "./components/policies/policies.component";
 import { TokenImportComponent } from "./components/token/token-import/token-import.component";
 import { ContainerTemplatesComponent } from "./components/token/container-templates/container-templates.component";
 import { RealmTableComponent } from "./components/user/realm-table/realm-table.component";
@@ -38,6 +37,7 @@ import { MachineResolverComponent } from "./components/machine-resolver/machine-
 import { PeriodicTaskComponent } from "./components/configuration/periodic-task/periodic-task.component";
 import { UserResolversComponent } from "./components/user/user-sources/user-resolvers.component";
 import { pendingChangesGuard } from "./guards/pending-changes.guard";
+import { PoliciesTableComponent } from "./components/policies/policies-table/policies-table.component";
 
 export const routes: Routes = [
   {
@@ -72,7 +72,7 @@ export const routes: Routes = [
   },
   {
     path: "policies",
-    children: [{ path: "", component: PoliciesComponent }]
+    children: [{ path: "", component: PoliciesTableComponent }]
   },
   {
     path: "configuration",

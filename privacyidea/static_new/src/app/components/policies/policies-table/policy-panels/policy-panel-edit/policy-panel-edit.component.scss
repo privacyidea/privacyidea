@@ -1,5 +1,5 @@
 @use "../../../../../../styles" as styles;
-@use "../../../policies.component.scss";
+
 @use "@angular/material" as mat;
 
 .policy-panel-edit-container {
@@ -8,11 +8,11 @@
   gap: var(--half-global-gap);
 
   .tab-buttons {
-    display: flex;
-    gap: var(--half-global-gap);
     align-items: center;
+    display: flex;
     flex-direction: row;
     flex-wrap: nowrap;
+    gap: var(--half-global-gap);
     justify-content: center;
     padding: var(--half-global-padding) 0;
   }
@@ -21,9 +21,9 @@
     padding: var(--global-padding);
   }
   .name-priority-row {
+    align-items: stretch;
     display: flex;
     flex-direction: row;
-    align-items: stretch;
     gap: var(--global-gap);
 
     app-policy-name {

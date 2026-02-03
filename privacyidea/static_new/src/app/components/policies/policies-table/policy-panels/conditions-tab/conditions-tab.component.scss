@@ -1,6 +1,13 @@
 .conditions-grid-container {
-  min-width: 350px;
   display: flex;
   flex-direction: column;
   gap: calc(var(--global-gap) / 4 * 3);
+  min-width: 350px;
+}
+@mixin compact-badge-base {
+  border-radius: 4px;
+  flex-shrink: 0;
+  font-size: 13px;
+  line-height: 1.4;
+  padding: 2px 8px;
 }

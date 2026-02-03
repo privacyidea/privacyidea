@@ -1,11 +1,73 @@
 @use "../../../../styles";
+@use "@angular/material" as mat;
+
+.policies-layout {
+  @include styles.table-container-styles;
+  display: flex;
+  flex-direction: column;
+
+  height: 100%;
+  max-height: var(--max-height, 80vh);
+  width: 1500px;
+  max-width: 100%;
+  overflow-y: auto;
+  scrollbar-width: thin;
+
+  app-policies-table,
+  app-policy-panel-new {
+    flex: none;
+    overflow: visible;
+  }
+
+  ::ng-deep .mat-accordion .mat-expansion-panel:last-of-type .mat-expansion-panel-header {
+    padding: var(--half-global-padding) !important;
+    padding-right: var(--global-padding) !important;
+
+    .mat-content {
+      align-items: center;
+    }
+
+    &:not(.scope-is-selectable) {
+      height: 1.5rem;
+    }
+
+    &.mat-expanded.scope-is-selectable {
+      padding: 0 var(--global-padding) !important;
+      height: auto !important;
+      min-height: 1.5rem;
+    }
+  }
+
+  ::ng-deep mat-expansion-panel.mat-expansion-panel-spacing {
+    margin: 0;
+  }
+}
+
+.policy-name-input {
+  background-color: transparent;
+  border: none;
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 0;
+  box-sizing: border-box;
+  font-size: 1rem;
+  margin: 2px;
+  padding: var(--quarter-global-padding) 0;
+  width: 100%;
+}
+@mixin compact-badge-base {
+  border-radius: 4px;
+  flex-shrink: 0;
+  font-size: 13px;
+  line-height: 1.4;
+  padding: 2px 8px;
+}
 
 .policies-table-layout {
   @include styles.table-container-styles;
   @include styles.base-table-structure(".policies-table", ".policies-table-filter", ".table-scroll-container");
+  display: grid;
   max-width: calc(100vw - var(--global-padding) * 5 - 48px);
   overflow: auto;
-  display: grid;
 
   th,
   td {
@@ -14,9 +76,9 @@
   }
 
   .policies-table {
-    width: 100%;
     border-collapse: collapse;
     table-layout: auto;
+    width: 100%;
 
     td.col-description,
     td.col-actions,
@@ -28,18 +90,18 @@
     td.col-priority,
     td.col-scope,
     td.col-actions {
-      width: 1%;
       max-width: 100% !important;
-      white-space: nowrap;
       text-align: center;
+      width: 1%;
+      white-space: nowrap;
     }
 
     td.col-name {
       vertical-align: middle;
 
       .name-wrapper {
-        display: flex;
         align-items: center;
+        display: flex;
         flex-direction: row;
         gap: var(--half-global-gap);
       }
@@ -48,23 +110,23 @@
       .text-link-button {
         background: none;
         border: none;
-        padding: 0;
-        margin: 0;
         cursor: pointer;
+        margin: 0;
         outline: none;
+        padding: 0;
         &:hover {
           opacity: 0.8;
         }
       }
 
       .minimal-icon-button {
-        display: inline-flex;
         align-items: center;
-        justify-content: center;
         color: inherit;
+        display: inline-flex;
+        justify-content: center;
         mat-icon {
-          width: 18px;
           height: 18px;
+          width: 18px;
         }
       }
 
@@ -84,12 +146,12 @@
     }
 
     td.col-description {
-      min-width: 200px;
       max-width: 400px;
+      min-width: 200px;
+      padding-bottom: var(--half-global-padding);
+      padding-top: var(--half-global-padding);
       white-space: normal;
       word-break: break-word;
-      padding-top: var(--half-global-padding);
-      padding-bottom: var(--half-global-padding);
     }
 
     td.col-actions {
@@ -98,9 +160,9 @@
         display: flex;
         flex-direction: column;
         .action-row {
+          align-items: center;
           display: flex;
           justify-content: space-between;
-          align-items: center;
           padding: 4px 0;
           &:not(:last-child) {
             border-bottom: 1px solid rgba(0, 0, 0, 0.12);
@@ -110,8 +172,8 @@
     }
 
     td.col-conditions {
-      width: 400px;
       max-width: 100% !important;
+      width: 400px;
       white-space: normal;
       word-break: break-word;
     }
@@ -126,8 +188,8 @@
   }
 
   .selfservice-paginator-container {
-    justify-content: end;
     display: flex;
+    justify-content: end;
   }
 
   .realm-break {
@@ -135,13 +197,13 @@
   }
 
   .expanded-detail {
-    overflow: hidden;
+    border-top-width: 0;
     display: flex;
     flex-direction: column;
-    border-top-width: 0;
+    overflow: hidden;
     td {
-      border-top-width: 0px !important;
       border-bottom-width: 0px !important;
+      border-top-width: 0px !important;
     }
   }
 }

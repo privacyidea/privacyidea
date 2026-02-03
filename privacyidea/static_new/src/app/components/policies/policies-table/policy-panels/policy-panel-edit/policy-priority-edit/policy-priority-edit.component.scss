@@ -16,7 +16,7 @@
     margin: 0;
   }
   .priority-input {
-    @include action-tab.action-tab-input;
+    @include edit-action-tab.action-tab-input;
   }
 
   :focus-within {

@@ -22,6 +22,13 @@
   aria-label="Policy Table"
   class="policies-table-layout"
   i18n-aria-label>
+  @if (authService.actionAllowed("policyread")) {
+    <app-policy-filter
+      (filteredPoliciesChange)="onPolicyListFilteredChange($event)"
+      [(filter)]="filter"
+      [unfilteredPolicies]="policyService.allPolicies()">
+    </app-policy-filter>
+  }
   <app-policies-table-actions [policySelection]="selectedPolicies()" />
   <table
     mat-table

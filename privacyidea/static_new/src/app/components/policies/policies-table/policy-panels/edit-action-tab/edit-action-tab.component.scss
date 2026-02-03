@@ -1,25 +1,25 @@
 @use "../../../../../../styles" as styles;
 
 @mixin action-tab-input {
-  width: 100%;
-  font-size: 1rem;
   background-color: transparent;
   border: none;
   border-bottom: 1px solid var(--mat-sys-outline-variant);
   border-radius: 0;
   box-sizing: border-box;
+  font-size: 1rem;
   resize: vertical;
+  width: 100%;
 
   &:focus {
-    outline: none;
     border-bottom-color: var(--mat-sys-primary);
+    outline: none;
   }
 }
 
 .policy-flex-row {
-  width: 100%;
   min-width: 0;
   overflow-y: auto;
+  width: 100%;
 
   &.view-mode {
     display: block;

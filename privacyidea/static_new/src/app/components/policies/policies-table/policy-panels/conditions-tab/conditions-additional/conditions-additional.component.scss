@@ -1,12 +1,11 @@
 @use "../../../../../../../styles" as styles;
-@use "../../../../policies.component.scss";
 @use "@angular/material" as mat;
 
 .additional-conditions-container {
   background-color: var(--mat-sys-surface-container);
   border: 1px solid var(--mat-sys-outline-variant);
-  box-shadow: var(--mat-sys-level1);
   border-radius: var(--border-radius);
+  box-shadow: var(--mat-sys-level1);
   padding: var(--half-global-padding) var(--three-quarters-global-padding);
 }
 
@@ -16,25 +15,23 @@
   margin: 0 0 var(--half-global-padding);
 }
 
-// --- Hilfsklasse für Zentrierung (Active/Actions) ---
 .center {
+  align-items: center;
   display: flex;
   justify-content: center;
-  align-items: center;
 }
 
-// --- Edit Mode Grid Definition ---
 $edit-grid-layout: 60px 1.2fr 2fr 1.2fr 2fr 1.2fr 60px;
 
 .additional-condition-header {
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+  color: var(--mat-sys-on-surface-variant);
   display: grid;
-  grid-template-columns: $edit-grid-layout;
-  gap: 12px;
-  padding: 8px 12px;
   font-size: 0.85rem;
   font-weight: 600;
-  color: var(--mat-sys-on-surface-variant);
-  border-bottom: 1px solid var(--mat-sys-outline-variant);
+  gap: 12px;
+  grid-template-columns: $edit-grid-layout;
+  padding: 8px 12px;
 }
 
 .additional-conditions-list {
@@ -43,46 +40,43 @@ $edit-grid-layout: 60px 1.2fr 2fr 1.2fr 2fr 1.2fr 60px;
 }
 
 .additional-condition-row {
-  display: grid;
-  grid-template-columns: $edit-grid-layout;
-  gap: 12px;
   align-items: center;
-  padding: 8px 12px;
   background-color: var(--mat-sys-surface-container-high);
   border-radius: 4px;
-  margin-top: 4px;
   cursor: pointer;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: $edit-grid-layout;
+  margin-top: 4px;
+  padding: 8px 12px;
   transition: background-color 0.2s;
 
   &:hover {
     background-color: var(--mat-sys-surface-container-highest);
   }
   &.selected {
-    border: 1px solid var(--mat-sys-primary);
     background-color: var(--mat-sys-primary-container);
+    border: 1px solid var(--mat-sys-primary);
   }
 }
 
-// Force Wrap Logik für Edit Mode
 .additional-condition-row > div,
 .additional-condition-row > span,
 .additional-condition-row > strong {
   font-size: 13px;
-  overflow-wrap: break-word;
-  word-break: break-word;
-  white-space: normal;
   min-width: 0;
+  overflow-wrap: break-word;
+  white-space: normal;
+  word-break: break-word;
 }
 
-// --- Button nach rechts verschieben ---
 .add-condition-button-container {
   display: flex;
-  justify-content: flex-end; // Schiebt den Button nach rechts
-  width: 100%;
+  justify-content: flex-end;
   padding-top: 12px;
+  width: 100%;
 }
 
-// --- Readonly Mode ---
 .readonly-conditions-grid {
   display: flex;
   flex-direction: row;
@@ -91,27 +85,27 @@ $edit-grid-layout: 60px 1.2fr 2fr 1.2fr 2fr 1.2fr 60px;
 }
 
 .readonly-condition-item {
+  background-color: var(--mat-sys-surface-container-low);
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 8px;
   display: flex;
+  flex: 1 1 350px;
   flex-direction: column;
   gap: 8px;
-  background-color: var(--mat-sys-surface-container-low);
-  padding: 10px 12px;
-  border-radius: 8px;
-  border: 1px solid var(--mat-sys-outline-variant);
-  min-width: 350px;
-  flex: 1 1 350px;
   max-width: 100%;
+  min-width: 350px;
+  padding: 10px 12px;
 }
 
 .status-row {
-  display: flex;
   align-items: center;
+  display: flex;
   gap: 8px;
 
   .active-status mat-icon {
     font-size: 18px;
-    width: 18px;
     height: 18px;
+    width: 18px;
     &.active {
       color: var(--mat-sys-primary);
     }
@@ -121,31 +115,31 @@ $edit-grid-layout: 60px 1.2fr 2fr 1.2fr 2fr 1.2fr 60px;
   }
 
   .readonly-badge {
-    font-size: 10px;
-    text-transform: uppercase;
     background: var(--mat-sys-secondary-container);
-    color: var(--mat-sys-on-secondary-container);
-    padding: 1px 6px;
     border-radius: 4px;
+    color: var(--mat-sys-on-secondary-container);
+    font-size: 10px;
+    padding: 1px 6px;
+    text-transform: uppercase;
   }
 }
 
 .data-row {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
   align-items: start;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(4, 1fr);
   width: 100%;
 }
 
 .force-wrap {
-  font-size: 13px;
   color: var(--mat-sys-on-surface);
   display: block;
-  overflow-wrap: break-word;
-  word-break: break-word;
-  white-space: normal;
+  font-size: 13px;
   min-width: 0;
+  overflow-wrap: break-word;
+  white-space: normal;
+  word-break: break-word;
 }
 
 // --- Form & Divider ---
@@ -170,6 +164,6 @@ $edit-grid-layout: 60px 1.2fr 2fr 1.2fr 2fr 1.2fr 60px;
 
 .form-actions {
   display: flex;
-  justify-content: flex-end;
   gap: 8px;
+  justify-content: flex-end;
 }

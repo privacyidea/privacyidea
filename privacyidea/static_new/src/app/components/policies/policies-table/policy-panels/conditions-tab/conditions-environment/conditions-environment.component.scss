@@ -1,12 +1,12 @@
 @use "../../../../../../../styles" as styles;
-@use "../../../../policies.component.scss" as policiesStyles;
+@use "../../conditions-tab/conditions-tab.component.scss";
 @use "@angular/material" as mat;
 
 .nodes-container {
   background-color: var(--mat-sys-surface-container);
   border: 1px solid var(--mat-sys-outline-variant);
-  box-shadow: var(--mat-sys-level1);
   border-radius: var(--border-radius);
+  box-shadow: var(--mat-sys-level1);
   padding: var(--half-global-padding) var(--three-quarters-global-padding);
 }
 
@@ -22,23 +22,23 @@
 }
 
 .user-agent-chip-edit {
-  @include policiesStyles.compact-badge-base;
-  display: flex;
+  @include conditions-tab.compact-badge-base;
   align-items: center;
   background-color: var(--mat-sys-surface-container-high);
+  display: flex;
 }
 
 .user-agent-list-wrapper {
-  display: flex;
   align-items: flex-end;
+  display: flex;
   gap: 12px;
   width: 100%;
 }
 
 .user-agent-list {
   display: flex;
-  flex-wrap: wrap;
   flex-grow: 1;
+  flex-wrap: wrap;
   gap: 6px;
   padding-bottom: var(--half-global-padding);
   scrollbar-width: thin;
@@ -51,8 +51,8 @@
 }
 
 .user-agent-input-container {
-  display: flex;
   align-items: center;
+  display: flex;
 }
 
 .user-agent-select {
@@ -60,19 +60,19 @@
 }
 
 .remove-user-agent-btn {
-  width: 18px;
+  align-items: center;
+  display: flex;
   height: 18px;
+  justify-content: center;
   margin-left: 4px;
   padding: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  width: 18px;
 }
 
 .remove-user-agent-icon {
   font-size: 14px;
-  width: 14px;
   height: 14px;
+  width: 14px;
 }
 
 .flex-row-stretch {
@@ -82,23 +82,23 @@
 }
 
 .select-search-header {
+  background-color: var(--mat-sys-surface-container);
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+  padding: 10px 16px;
   position: sticky;
   top: 0;
   z-index: 10;
-  background-color: var(--mat-sys-surface-container);
-  padding: 10px 16px;
-  border-bottom: 1px solid var(--mat-sys-outline-variant);
 }
 
 .select-search-input {
-  width: 100%;
   background: transparent;
   border: none;
-  outline: none;
   color: var(--mat-sys-on-surface);
   font-size: 0.9rem;
+  outline: none;
+  width: 100%;
 }
 .gap-div-8px {
-  width: 8px;
   height: 8px;
+  width: 8px;
 }

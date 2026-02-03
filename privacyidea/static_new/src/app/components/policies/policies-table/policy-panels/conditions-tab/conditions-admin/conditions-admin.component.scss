@@ -1,12 +1,12 @@
 @use "../../../../../../../styles" as styles;
-@use "../../../../policies.component.scss" as policiesStyles;
+@use "../../conditions-tab/conditions-tab.component.scss";
 @use "@angular/material" as mat;
 
 .admin-container {
   background-color: var(--mat-sys-surface-container);
   border: 1px solid var(--mat-sys-outline-variant);
-  box-shadow: var(--mat-sys-level1);
   border-radius: var(--border-radius);
+  box-shadow: var(--mat-sys-level1);
   padding: var(--half-global-padding) var(--three-quarters-global-padding);
 }
 
@@ -22,15 +22,15 @@
 }
 
 .admin-chip-edit {
-  @include policiesStyles.compact-badge-base;
-  display: flex;
+  @include conditions-tab.compact-badge-base;
   align-items: center;
   background-color: var(--mat-sys-surface-container-high);
+  display: flex;
   max-width: 300px;
 
   span {
-    text-overflow: ellipsis;
     overflow: hidden;
+    text-overflow: ellipsis;
     white-space: nowrap;
   }
 }
@@ -38,15 +38,15 @@
 .admin-list {
   display: flex;
   flex-wrap: nowrap;
-  overflow-x: auto;
   gap: 6px;
+  overflow-x: auto;
   padding-bottom: var(--half-global-padding);
   scrollbar-width: thin;
 }
 
 .admin-input-container {
-  display: flex;
   align-items: center;
+  display: flex;
 }
 
 .add-admin-input {
@@ -54,17 +54,17 @@
 }
 
 .remove-admin-btn {
-  width: 18px;
+  align-items: center;
+  display: flex;
   height: 18px;
+  justify-content: center;
   margin-left: 4px;
   padding: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  width: 18px;
 }
 
 .remove-admin-icon {
   font-size: 14px;
-  width: 14px;
   height: 14px;
+  width: 14px;
 }

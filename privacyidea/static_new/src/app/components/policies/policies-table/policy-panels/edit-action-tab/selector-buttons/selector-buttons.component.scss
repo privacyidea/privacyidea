@@ -1,5 +1,5 @@
 @use "../../../../../../../styles" as styles;
-@use "../../../../policies.component.scss";
+
 @use "@angular/material" as mat;
 
 .button-row {
@@ -10,28 +10,28 @@
 }
 
 .button-item {
+  align-items: center;
   border: 1px solid var(--mat-sys-outline);
   border-radius: 0;
+  color: var(--mat-sys-on-surface);
   cursor: pointer;
+  display: flex;
   flex: 1;
+  justify-content: center;
   margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
   padding: var(--half-global-padding) var(--global-padding);
   text-align: center;
-  color: var(--mat-sys-on-surface);
   white-space: normal;
   word-break: break-word;
-  overflow-wrap: anywhere;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 0;
   :first-child {
-    border-top-left-radius: var(--border-radius);
     border-bottom-left-radius: var(--border-radius);
+    border-top-left-radius: var(--border-radius);
   }
   :last-child {
-    border-top-right-radius: var(--border-radius);
     border-bottom-right-radius: var(--border-radius);
+    border-top-right-radius: var(--border-radius);
   }
   :hover {
     background-color: var(--mat-sys-primary-light);
@@ -45,10 +45,10 @@
   }
   // Disabled state
   &[disabled] {
-    cursor: not-allowed;
     background-color: var(--mat-sys-surface-variant);
-    color: var(--mat-sys-on-surface-variant);
     border-color: var(--mat-sys-outline-variant);
+    color: var(--mat-sys-on-surface-variant);
+    cursor: not-allowed;
     :hover {
       background-color: var(--mat-sys-surface-variant);
       color: var(--mat-sys-on-surface-variant);

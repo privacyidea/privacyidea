@@ -39,10 +39,10 @@ import {
 } from "../../../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { lastValueFrom } from "rxjs";
 import { PolicyDescriptionEditComponent } from "./policy-description/policy-description-edit.component";
-import { PolicyTab } from "../../../policies.component";
+
 import { PolicyPriorityEditComponent } from "./policy-priority-edit/policy-priority-edit.component";
 import { PolicyNameEditComponent } from "./policy-name-edit/policy-name-edit.component";
-
+export type PolicyTab = "actions" | "conditions";
 @Component({
   selector: "app-policy-panel-edit",
   standalone: true,
@@ -111,46 +111,6 @@ export class PolicyPanelEditComponent {
   setActiveTab(tab: PolicyTab): void {
     this.activeTab.set(tab);
   }
-
-  // togglePolicyActive(policy: PolicyDetail, activate: boolean) {
-  //   if (activate) {
-  //     this.policyService.enablePolicy(policy.name);
-  //   } else {
-  //     this.policyService.disablePolicy(policy.name);
-  //   }
-  // }
-
-  // async deletePolicy(policyName: string): Promise<void> {
-  //   if (
-  //     await this._confirm({
-  //       title: "Confirm Deletion",
-  //       confirmAction: {
-  //         type: "destruct",
-  //         label: "Delete",
-  //         value: true
-  //       },
-  //       cancelAction: {
-  //         type: "cancel",
-  //         label: "Cancel",
-  //         value: false
-  //       },
-  //       items: [policyName],
-  //       itemType: "policy"
-  //     })
-  //   ) {
-  //     this.policyService.deletePolicy(policyName);
-  //   }
-  // }
-
-  // State-checking Methods
-  // canSavePolicy(): boolean {
-  //   if (!this.isPolicyEdited()) return false;
-  //   const edits = this.policyEdits();
-  //   if (edits.name !== undefined && edits.name?.trim() === "") {
-  //     return false;
-  //   }
-  //   return true;
-  // }
 
   async confirmDiscardChanges(): Promise<boolean> {
     if (this.isPolicyEdited()) {

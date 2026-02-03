@@ -1,6 +1,6 @@
 @use "../../../../../styles" as styles;
 @use "../../../../../styles/buttons.scss";
-@use "../../policies.component.scss";
+
 @use "@angular/material" as mat;
 
 .dialog-content {
@@ -13,11 +13,11 @@
 }
 
 .tab-buttons {
-  display: flex;
-  gap: var(--half-global-gap);
   align-items: center;
+  display: flex;
   flex-direction: row;
   flex-wrap: nowrap;
+  gap: var(--half-global-gap);
   justify-content: center;
   padding: var(--half-global-padding) 0;
 }
@@ -26,9 +26,9 @@
   padding: var(--global-padding);
 }
 .priority-description {
+  align-items: stretch;
   display: flex;
   flex-direction: row;
-  align-items: stretch;
   gap: var(--global-gap);
   app-policy-priority {
     flex: 1 1 0;

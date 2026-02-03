@@ -1,18 +1,18 @@
 @use "../../../../../../../styles" as styles;
-@use "../../../../policies.component.scss" as policiesStyles;
+@use "../../conditions-tab/conditions-tab.component.scss";
 @use "@angular/material" as mat;
 
 .readonly-grid-container {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: var(--half-global-padding);
   align-items: baseline;
+  display: grid;
+  gap: var(--half-global-padding);
+  grid-template-columns: auto minmax(0, 1fr);
   padding: var(--quarter-global-padding) 0;
 
   .readonly-label {
-    font-weight: 500;
     color: var(--mat-sys-on-surface-variant);
     font-size: 0.9rem;
+    font-weight: 500;
     white-space: nowrap;
   }
   .readonly-chips-container {
@@ -20,19 +20,19 @@
     flex-wrap: wrap;
     gap: 6px;
     .readonly-chip {
-      @include policiesStyles.compact-badge-base;
+      @include conditions-tab.compact-badge-base;
       background-color: var(--mat-sys-surface-container-high);
-      color: var(--mat-sys-on-surface);
       border: 1px solid transparent;
+      color: var(--mat-sys-on-surface);
       max-width: 200px;
-      text-overflow: ellipsis;
       overflow: hidden;
+      text-overflow: ellipsis;
       white-space: nowrap;
     }
     .marker-chip {
-      @include policiesStyles.compact-badge-base;
-      border: 1px solid var(--mat-sys-outline-variant);
+      @include conditions-tab.compact-badge-base;
       background-color: transparent;
+      border: 1px solid var(--mat-sys-outline-variant);
       color: var(--mat-sys-on-surface);
     }
   }
