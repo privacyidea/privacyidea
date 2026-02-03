@@ -3,19 +3,13 @@
 # SPDX-License-Identifier: CC0-1.0
 
 [project]
-name = "privacyIDEA"
-description = "privacyIDEA: multifactor authentication management system"
+name = "connectmfa"
+description = "connectmfa: multifactor authentication management system"
 readme = "README.rst"
 requires-python = ">=3.10"
 license = "AGPL-3.0-or-later"
 license-files = ["LICENSE"]
 keywords = ["OTP", "two-factor authentication", "management", "security", "2fa", "mfa", "fido", "passkey", "webauthn"]
-authors = [
-    { name = "Cornelius Kölbel", email = "cornelius@privacyidea.org" }
-]
-maintainers = [
-    { name = "Cornelius Kölbel", email = "cornelius@privacyidea.org" }
-]
 classifiers = [
     "Framework :: Flask",
     "Programming Language :: Python",
@@ -102,11 +96,6 @@ kerberos = [
 ]
 
 [project.urls]
-"Homepage" = "https://privacyidea.org"
-"Documentation" = "https://privacyidea.readthedocs.io"
-"Source Code" = "https://github.com/privacyidea/privacyidea"
-"Changelog" = "https://github.com/privacyidea/privacyidea/blob/master/Changelog"
-"Forum" = "https://community.privacyidea.org"
 
 [project.scripts]
 pi-manage = "privacyidea.cli.pimanage:cli"
