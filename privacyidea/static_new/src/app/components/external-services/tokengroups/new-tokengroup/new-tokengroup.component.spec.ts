@@ -24,6 +24,7 @@ import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from "@angular/material/dialog";
 import { of } from "rxjs";
 import { TokengroupService } from "../../../../services/tokengroup/tokengroup.service";
+import { MockTokengroupService } from "../../../../../testing/mock-services/mock-tokengroup-service";
 
 describe("NewTokengroupComponent", () => {
   let component: NewTokengroupComponent;
@@ -33,10 +34,6 @@ describe("NewTokengroupComponent", () => {
   let dialogMock: any;
 
   beforeEach(async () => {
-    tokengroupServiceMock = {
-      postTokengroup: jest.fn().mockResolvedValue(true),
-    };
-
     dialogRefMock = {
       disableClose: false,
       backdropClick: jest.fn().mockReturnValue(of()),
@@ -55,7 +52,7 @@ describe("NewTokengroupComponent", () => {
         provideHttpClientTesting(),
         { provide: MAT_DIALOG_DATA, useValue: null },
         { provide: MatDialogRef, useValue: dialogRefMock },
-        { provide: TokengroupService, useValue: tokengroupServiceMock },
+        { provide: TokengroupService, useClass: MockTokengroupService },
       ]
     }).overrideComponent(NewTokengroupComponent, {
       add: {
@@ -64,6 +61,8 @@ describe("NewTokengroupComponent", () => {
         ]
       }
     }).compileComponents();
+
+    tokengroupServiceMock = TestBed.inject(TokengroupService);
 
     fixture = TestBed.createComponent(NewTokengroupComponent);
     component = fixture.componentInstance;

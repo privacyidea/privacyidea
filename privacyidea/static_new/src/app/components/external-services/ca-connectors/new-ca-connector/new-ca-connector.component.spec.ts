@@ -24,6 +24,7 @@ import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from "@angular/material/dialog";
 import { of } from "rxjs";
 import { CaConnectorService } from "../../../../services/ca-connector/ca-connector.service";
+import { MockCaConnectorService } from "../../../../../testing/mock-services/mock-ca-connector-service";
 import { ContentService } from "../../../../services/content/content.service";
 import { PendingChangesService } from "../../../../services/pending-changes/pending-changes.service";
 import { ROUTE_PATHS } from "../../../../route_paths";
@@ -36,11 +37,6 @@ describe("NewCaConnectorComponent", () => {
   let dialogMock: any;
 
   beforeEach(async () => {
-    caConnectorServiceMock = {
-      getCaSpecificOptions: jest.fn().mockResolvedValue({ available_cas: ["CA1", "CA2"] }),
-      postCaConnector: jest.fn().mockResolvedValue(undefined)
-    };
-
     dialogRefMock = {
       disableClose: false,
       backdropClick: jest.fn().mockReturnValue(of()),
@@ -71,11 +67,14 @@ describe("NewCaConnectorComponent", () => {
         { provide: MAT_DIALOG_DATA, useValue: null },
         { provide: MatDialogRef, useValue: dialogRefMock },
         { provide: MatDialog, useValue: dialogMock },
-        { provide: CaConnectorService, useValue: caConnectorServiceMock },
+        { provide: CaConnectorService, useClass: MockCaConnectorService },
         { provide: ContentService, useValue: contentServiceMock },
         { provide: PendingChangesService, useValue: pendingChangesServiceMock }
       ]
     }).compileComponents();
+
+    caConnectorServiceMock = TestBed.inject(CaConnectorService);
+    caConnectorServiceMock.getCaSpecificOptions.mockResolvedValue({ available_cas: ["CA1", "CA2"] });
 
     fixture = TestBed.createComponent(NewCaConnectorComponent);
     component = fixture.componentInstance;

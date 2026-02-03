@@ -24,7 +24,7 @@ import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from "@angular/material/dialog";
 import { of } from "rxjs";
 import { SmsGatewayService } from "../../../../services/sms-gateway/sms-gateway.service";
-import { signal } from "@angular/core";
+import { MockSmsGatewayService } from "../../../../../testing/mock-services/mock-sms-gateway-service";
 
 describe("NewSmsGatewayComponent", () => {
   let component: NewSmsGatewayComponent;
@@ -34,15 +34,6 @@ describe("NewSmsGatewayComponent", () => {
   let dialogMock: any;
 
   beforeEach(async () => {
-    smsGatewayServiceMock = {
-      smsProvidersResource: { value: signal({
-        result: { value: {
-          mod1: { parameters: { p1: { description: "desc1" } } }
-        } }
-      }) },
-      postSmsGateway: jest.fn().mockResolvedValue(true),
-    };
-
     dialogRefMock = {
       disableClose: false,
       backdropClick: jest.fn().mockReturnValue(of()),
@@ -61,7 +52,7 @@ describe("NewSmsGatewayComponent", () => {
         provideHttpClientTesting(),
         { provide: MAT_DIALOG_DATA, useValue: null },
         { provide: MatDialogRef, useValue: dialogRefMock },
-        { provide: SmsGatewayService, useValue: smsGatewayServiceMock },
+        { provide: SmsGatewayService, useClass: MockSmsGatewayService },
       ]
     }).overrideComponent(NewSmsGatewayComponent, {
       add: {
@@ -70,6 +61,15 @@ describe("NewSmsGatewayComponent", () => {
         ]
       }
     }).compileComponents();
+
+    smsGatewayServiceMock = TestBed.inject(SmsGatewayService);
+    (smsGatewayServiceMock.smsProvidersResource as any).value.set({
+      result: {
+        value: {
+          mod1: { parameters: { p1: { description: "desc1" } } }
+        }
+      }
+    });
 
     fixture = TestBed.createComponent(NewSmsGatewayComponent);
     component = fixture.componentInstance;

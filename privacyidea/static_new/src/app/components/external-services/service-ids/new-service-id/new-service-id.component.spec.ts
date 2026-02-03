@@ -24,6 +24,7 @@ import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from "@angular/material/dialog";
 import { of } from "rxjs";
 import { ServiceIdService } from "../../../../services/service-id/service-id.service";
+import { MockServiceIdService } from "../../../../../testing/mock-services/mock-service-id-service";
 
 describe("NewServiceIdComponent", () => {
   let component: NewServiceIdComponent;
@@ -33,10 +34,6 @@ describe("NewServiceIdComponent", () => {
   let dialogMock: any;
 
   beforeEach(async () => {
-    serviceIdServiceMock = {
-      postServiceId: jest.fn().mockResolvedValue(true),
-    };
-
     dialogRefMock = {
       disableClose: false,
       backdropClick: jest.fn().mockReturnValue(of()),
@@ -55,7 +52,7 @@ describe("NewServiceIdComponent", () => {
         provideHttpClientTesting(),
         { provide: MAT_DIALOG_DATA, useValue: null },
         { provide: MatDialogRef, useValue: dialogRefMock },
-        { provide: ServiceIdService, useValue: serviceIdServiceMock },
+        { provide: ServiceIdService, useClass: MockServiceIdService },
       ]
     }).overrideComponent(NewServiceIdComponent, {
       add: {
@@ -64,6 +61,8 @@ describe("NewServiceIdComponent", () => {
         ]
       }
     }).compileComponents();
+
+    serviceIdServiceMock = TestBed.inject(ServiceIdService);
 
     fixture = TestBed.createComponent(NewServiceIdComponent);
     component = fixture.componentInstance;

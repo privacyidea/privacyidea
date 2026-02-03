@@ -24,6 +24,7 @@ import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from "@angular/material/dialog";
 import { of } from "rxjs";
 import { PrivacyideaServerService } from "../../../../services/privacyidea-server/privacyidea-server.service";
+import { MockPrivacyideaServerService } from "../../../../../testing/mock-services/mock-privacyidea-server-service";
 
 describe("NewPrivacyideaServerComponent", () => {
   let component: NewPrivacyideaServerComponent;
@@ -33,11 +34,6 @@ describe("NewPrivacyideaServerComponent", () => {
   let dialogMock: any;
 
   beforeEach(async () => {
-    privacyideaServerServiceMock = {
-      postPrivacyideaServer: jest.fn().mockResolvedValue(true),
-      testPrivacyideaServer: jest.fn().mockResolvedValue(true),
-    };
-
     dialogRefMock = {
       disableClose: false,
       backdropClick: jest.fn().mockReturnValue(of()),
@@ -56,7 +52,7 @@ describe("NewPrivacyideaServerComponent", () => {
         provideHttpClientTesting(),
         { provide: MAT_DIALOG_DATA, useValue: null },
         { provide: MatDialogRef, useValue: dialogRefMock },
-        { provide: PrivacyideaServerService, useValue: privacyideaServerServiceMock },
+        { provide: PrivacyideaServerService, useClass: MockPrivacyideaServerService },
       ]
     }).overrideComponent(NewPrivacyideaServerComponent, {
       add: {
@@ -65,6 +61,8 @@ describe("NewPrivacyideaServerComponent", () => {
         ]
       }
     }).compileComponents();
+
+    privacyideaServerServiceMock = TestBed.inject(PrivacyideaServerService);
 
     fixture = TestBed.createComponent(NewPrivacyideaServerComponent);
     component = fixture.componentInstance;
@@ -89,7 +87,7 @@ describe("NewPrivacyideaServerComponent", () => {
         provideHttpClientTesting(),
         { provide: MAT_DIALOG_DATA, useValue: { identifier: "test", url: "http://test", tls: true } },
         { provide: MatDialogRef, useValue: dialogRefMock },
-        { provide: PrivacyideaServerService, useValue: privacyideaServerServiceMock },
+        { provide: PrivacyideaServerService, useClass: MockPrivacyideaServerService },
       ]
     }).overrideComponent(NewPrivacyideaServerComponent, {
       add: {
@@ -98,6 +96,9 @@ describe("NewPrivacyideaServerComponent", () => {
         ]
       }
     }).compileComponents();
+
+    privacyideaServerServiceMock = TestBed.inject(PrivacyideaServerService);
+
     fixture = TestBed.createComponent(NewPrivacyideaServerComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();

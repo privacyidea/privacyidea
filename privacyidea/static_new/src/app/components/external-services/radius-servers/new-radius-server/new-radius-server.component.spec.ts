@@ -24,6 +24,7 @@ import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from "@angular/material/dialog";
 import { of } from "rxjs";
 import { RadiusService } from "../../../../services/radius/radius.service";
+import { MockRadiusService } from "../../../../../testing/mock-services/mock-radius-service";
 
 describe("NewRadiusServerComponent", () => {
   let component: NewRadiusServerComponent;
@@ -33,11 +34,6 @@ describe("NewRadiusServerComponent", () => {
   let dialogMock: any;
 
   beforeEach(async () => {
-    radiusServiceMock = {
-      postRadiusServer: jest.fn().mockResolvedValue(true),
-      testRadiusServer: jest.fn().mockResolvedValue(true),
-    };
-
     dialogRefMock = {
       disableClose: false,
       backdropClick: jest.fn().mockReturnValue(of()),
@@ -56,7 +52,7 @@ describe("NewRadiusServerComponent", () => {
         provideHttpClientTesting(),
         { provide: MAT_DIALOG_DATA, useValue: null },
         { provide: MatDialogRef, useValue: dialogRefMock },
-        { provide: RadiusService, useValue: radiusServiceMock },
+        { provide: RadiusService, useClass: MockRadiusService },
       ]
     }).overrideComponent(NewRadiusServerComponent, {
       add: {
@@ -65,6 +61,8 @@ describe("NewRadiusServerComponent", () => {
         ]
       }
     }).compileComponents();
+
+    radiusServiceMock = TestBed.inject(RadiusService);
 
     fixture = TestBed.createComponent(NewRadiusServerComponent);
     component = fixture.componentInstance;

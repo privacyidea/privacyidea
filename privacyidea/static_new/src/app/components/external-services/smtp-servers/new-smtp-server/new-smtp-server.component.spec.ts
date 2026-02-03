@@ -24,6 +24,7 @@ import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from "@angular/material/dialog";
 import { of } from "rxjs";
 import { SmtpService } from "../../../../services/smtp/smtp.service";
+import { MockSmtpService } from "../../../../../testing/mock-services/mock-smtp-service";
 
 describe("NewSmtpServerComponent", () => {
   let component: NewSmtpServerComponent;
@@ -33,10 +34,6 @@ describe("NewSmtpServerComponent", () => {
   let dialogMock: any;
 
   beforeEach(async () => {
-    smtpServiceMock = {
-      postSmtpServer: jest.fn().mockResolvedValue(true),
-      testSmtpServer: jest.fn().mockResolvedValue(true),
-    };
 
     dialogRefMock = {
       disableClose: false,
@@ -46,7 +43,7 @@ describe("NewSmtpServerComponent", () => {
     };
 
     dialogMock = {
-      open: jest.fn().mockReturnValue({ afterClosed: () => of(true) }),
+      open: jest.fn().mockReturnValue({ afterClosed: () => of(true) })
     };
 
     await TestBed.configureTestingModule({
@@ -56,7 +53,7 @@ describe("NewSmtpServerComponent", () => {
         provideHttpClientTesting(),
         { provide: MAT_DIALOG_DATA, useValue: null },
         { provide: MatDialogRef, useValue: dialogRefMock },
-        { provide: SmtpService, useValue: smtpServiceMock },
+        { provide: SmtpService, useClass: MockSmtpService }
       ]
     }).overrideComponent(NewSmtpServerComponent, {
       add: {
@@ -65,6 +62,8 @@ describe("NewSmtpServerComponent", () => {
         ]
       }
     }).compileComponents();
+
+    smtpServiceMock = TestBed.inject(SmtpService);
 
     fixture = TestBed.createComponent(NewSmtpServerComponent);
     component = fixture.componentInstance;
