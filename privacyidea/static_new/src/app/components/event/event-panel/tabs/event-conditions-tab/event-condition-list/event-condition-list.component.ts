@@ -25,7 +25,6 @@ import {
   inject,
   input,
   linkedSignal,
-  NgZone,
   output,
   QueryList,
   ViewChildren
