@@ -200,7 +200,7 @@ class SQLResolverTestCase(MyTestCase):
                     i = 0
                     break
                 if i > 25:
-                    self.fail("Could not delete user {username} with uid {uid}")
+                    self.fail(f"Could not delete user {username} with uid {uid}")
                 y.delete_user(uid)
 
     def test_01_sqlite_resolver(self):
