@@ -27,9 +27,9 @@ export class SubscriptionExpiryService {
   private readonly dialog = inject(MatDialog);
   private readonly auth: AuthServiceInterface = inject(AuthService);
   private readonly subscriptions = inject(SubscriptionService);
-  private readonly opened = signal<boolean>(false);
+  readonly opened = signal<boolean>(false);
 
-  private readonly thresholdDays = 3000;
+  private readonly thresholdDays = 30;
 
   constructor() {
     effect(() => {

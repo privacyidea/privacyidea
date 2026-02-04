@@ -25,7 +25,7 @@ import { WelcomeDialogComponent } from "../../components/shared/welcome-dialog/w
 export class WelcomeDialogService {
   private readonly dialog = inject(MatDialog);
   private readonly auth: AuthServiceInterface = inject(AuthService);
-  private readonly opened = signal<boolean>(false);
+  readonly opened = signal<boolean>(false);
 
   constructor() {
     effect(() => {

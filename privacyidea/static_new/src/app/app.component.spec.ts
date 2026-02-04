@@ -30,20 +30,7 @@ import { AuthGuard } from "./guards/auth.guard";
 import { AuthService } from "./services/auth/auth.service";
 import { NotificationService } from "./services/notification/notification.service";
 import { SessionTimerService } from "./services/session-timer/session-timer.service";
-
-class MockAuthService {
-  isAuthenticated = jest.fn(() => false);
-  role = jest.fn(() => "admin");
-}
-
-class MockNotificationService {
-  openSnackBar = jest.fn();
-}
-
-class MockSessionTimerService {
-  startTimer = jest.fn();
-  resetTimer = jest.fn();
-}
+import { MockAuthService, MockNotificationService, MockSessionTimerService } from "../testing/mock-services";
 
 describe("AppComponent", () => {
   beforeEach(async () => {
@@ -83,12 +70,11 @@ describe("AppComponent", () => {
     const timer = TestBed.inject(SessionTimerService) as unknown as MockSessionTimerService;
     const note = TestBed.inject(NotificationService) as unknown as MockNotificationService;
 
-    auth.isAuthenticated.mockReturnValue(true);
+    auth.isAuthenticated.set(true);
 
     TestBed.createComponent(AppComponent).detectChanges();
 
     expect(timer.startTimer).toHaveBeenCalled();
-    expect(auth.isAuthenticated).toHaveBeenCalled();
     expect(note.openSnackBar).toHaveBeenCalledWith("User is already logged in.");
   });
 
@@ -127,8 +113,8 @@ describe("AppComponent", () => {
       location = TestBed.inject(Location);
       auth = TestBed.inject(AuthService) as unknown as MockAuthService;
 
-      auth.isAuthenticated.mockReturnValue(true);
-      auth.role.mockReturnValue("admin");
+      auth.isAuthenticated.set(true);
+      auth.role.set("admin");
 
       await router.navigateByUrl("/");
       jest.runOnlyPendingTimers();

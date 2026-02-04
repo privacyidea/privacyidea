@@ -1148,6 +1148,9 @@ export class MockLocalService implements LocalServiceInterface {
 
 export class MockSessionTimerService {
   remainingTime = signal(300);
+
+  startTimer = jest.fn();
+  resetTimer = jest.fn();
 }
 
 export class MockChallengesService {
@@ -1239,6 +1242,8 @@ export class MockAuthService {
   jwtData = signal<JwtData | null>(null);
   role = signal<AuthRole>("user");
   realm = signal("defrealm");
+  hideWelcome = signal(false);
+  subscriptionStatus = signal(0);
   actionAllowed = jest.fn((action: string) => true);
   getHeaders = jest.fn(() => new HttpHeaders());
 }

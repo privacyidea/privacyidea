@@ -42,7 +42,7 @@ export class SubscriptionExpiryDialogComponent {
   readonly data = inject<SubscriptionExpiryDialogData>(MAT_DIALOG_DATA);
 
   remainingDays(item: SubscriptionExpiryItem): number {
-    // timedelta is negative before expiry, positive after; show absolute remaining days
-    return Math.max(0, Math.ceil(Math.abs(item.timedelta)));
+    // timedelta is negative before expiry (days until expiry), positive after; clamp to zero when past expiry
+    return Math.max(0, Math.ceil(-item.timedelta));
   }
 }
