@@ -25,10 +25,11 @@ import {
   MatDialogContent,
   MatDialogTitle
 } from "@angular/material/dialog";
+import { MatIcon } from "@angular/material/icon";
 
 @Component({
   selector: "app-confirmation-dialog",
-  imports: [MatDialogContent, MatDialogTitle, MatDialogActions, MatButton, MatDialogClose],
+  imports: [MatDialogContent, MatDialogTitle, MatDialogActions, MatButton, MatDialogClose, MatIcon],
   templateUrl: "./confirmation-dialog.component.html",
   styleUrl: "./confirmation-dialog.component.scss"
 })
@@ -36,10 +37,21 @@ export class ConfirmationDialogComponent {
   public readonly data: ConfirmationDialogData = inject(MAT_DIALOG_DATA);
 }
 
+export type ConfirmationDialogResult = "cancel" | "discard" | "save-exit";
+
 export type ConfirmationDialogData = {
   numberOfTokens?: string;
   type: "token" | string;
   serialList?: string[];
   title: string;
-  action: "remove" | "delete" | "revoke" | "search" | "unassign" | "discard" | "proceed-despite-error";
+  action:
+    | "remove"
+    | "delete"
+    | "revoke"
+    | "search"
+    | "unassign"
+    | "discard"
+    | "proceed-despite-error";
+  allowSaveExit?: boolean;
+  saveExitDisabled?: boolean;
 };

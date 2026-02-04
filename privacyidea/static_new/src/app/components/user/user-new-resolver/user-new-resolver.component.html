@@ -64,7 +64,7 @@
         }
       </mat-form-field>
 
-      <mat-form-field class="width-238">
+      <mat-form-field class="width-238 margin-left-1 type-selecting-height">
         <mat-label i18n>Type</mat-label>
         <mat-select
           (ngModelChange)="onTypeChange($event)"
@@ -142,7 +142,7 @@
           [disabled]="!resolverName || !resolverType || !isAdditionalFieldsValid"
           class="action-button-1 width-238"
           mat-stroked-button>
-          <mat-icon>add</mat-icon>
+          <mat-icon>save</mat-icon>
           Save
         </button>
 

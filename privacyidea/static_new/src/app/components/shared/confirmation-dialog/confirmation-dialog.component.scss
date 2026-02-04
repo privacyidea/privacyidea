@@ -1,4 +1,5 @@
-@use "../../../../styles/buttons.scss" as buttonStyles;
+@use "../../../../styles";
+@use "@angular/material" as mat;
 
 ul {
   column-count: 4;

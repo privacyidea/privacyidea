@@ -20,8 +20,8 @@
   <div class="type-section">
     <div class="form-grid">
       <h3 i18n>Connection Details</h3>
-
-      <mat-form-field class="field-lg">
+      <br />
+      <mat-form-field>
         <mat-label i18n>Server URI</mat-label>
         <app-clearable-input
           (onClick)="ldapUriControl.setValue('')"
@@ -36,6 +36,17 @@
           <mat-error i18n>Server URI is <strong>required</strong>.</mat-error>
         }
       </mat-form-field>
+
+      @if (ldapUriControl.value.startsWith("ldap:")) {
+        <mat-checkbox
+          [formControl]="startTlsControl"
+          class="checkbox-inline"
+          i18n>
+          STARTTLS
+        </mat-checkbox>
+      } @else {
+        <br />
+      }
 
       <mat-form-field>
         <mat-label i18n>TLS Version</mat-label>

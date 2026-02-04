@@ -18,11 +18,15 @@
  **/
 import { Injectable, signal } from "@angular/core";
 
-@Injectable({
-  providedIn: "root",
-})
+@Injectable({ providedIn: "root" })
 export class PendingChangesService {
   private _hasChangesFn = signal<(() => boolean) | null>(null);
+  private _saveFn = signal<(() => Promise<void> | void) | null>(null);
+
+  get hasChanges(): boolean {
+    const fn = this._hasChangesFn();
+    return fn ? fn() : false;
+  }
 
   registerHasChanges(fn: () => boolean): void {
     this._hasChangesFn.set(fn);
@@ -30,10 +34,15 @@ export class PendingChangesService {
 
   unregisterHasChanges(): void {
     this._hasChangesFn.set(null);
+    this._saveFn.set(null);
   }
 
-  get hasChanges(): boolean {
-    const fn = this._hasChangesFn();
-    return fn ? fn() : false;
+  registerSave(fn: () => Promise<void> | void): void {
+    this._saveFn.set(fn);
+  }
+
+  save(): Promise<void> | void {
+    const fn = this._saveFn();
+    return fn ? fn() : undefined;
   }
 }

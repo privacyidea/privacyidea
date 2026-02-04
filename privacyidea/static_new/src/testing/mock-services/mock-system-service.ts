@@ -33,7 +33,10 @@ function createMockHttpResource(result: any = []) {
 }
 
 export class MockSystemService implements SystemServiceInterface {
-  nodes = signal<PiNode[]>([{name: "node1", uuid: "1234-5678"}]);
+  nodes = signal<PiNode[]>([
+    { name: "Node 1", uuid: "node-1" },
+    { name: "Node 2", uuid: "node-2" }
+  ]);
   systemConfig = signal({});
   nodesResource: any = {
     value: jest.fn().mockReturnValue({ result: { value: [] } }),
