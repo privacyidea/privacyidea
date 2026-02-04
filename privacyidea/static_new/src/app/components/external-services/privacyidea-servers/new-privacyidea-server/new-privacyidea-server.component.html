@@ -1,14 +1,33 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+
 @if (isEditMode) {
   <h2
     i18n
     mat-dialog-title>
-    Edit privacyIDEA server {{ data?.identifier }}
+    Edit privacyIDEA Server {{ data?.identifier }}
   </h2>
 } @else {
   <h2
     i18n
     mat-dialog-title>
-    Create a new privacyIDEA server
+    Create a New privacyIDEA Server
   </h2>
 }
 
@@ -29,7 +48,7 @@
 
     <mat-form-field
       class="margin-top-1">
-      <mat-label i18n>URL of the privacyIDEA server</mat-label>
+      <mat-label i18n>URL of the privacyIDEA Server</mat-label>
       <input
         formControlName="url"
         matInput
@@ -40,7 +59,7 @@
 
     <div class="margin-top-1">
       <mat-checkbox formControlName="tls">
-        <span i18n>Verify the certificate</span>
+        <span i18n>Verify the Certificate</span>
       </mat-checkbox>
       <p
         class="mat-hint"

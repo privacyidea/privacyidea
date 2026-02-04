@@ -1,16 +1,27 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
  * SPDX-License-Identifier: AGPL-3.0-or-later
- */
-import { HttpParams } from "@angular/common/http";
+ **/
 import { computed, Signal, signal, WritableSignal } from "@angular/core";
 import { of, Subject } from "rxjs";
 import { FilterValue } from "../../app/core/models/filter_value";
 import {
   ContainerDetailData,
   ContainerDetails,
-  ContainerDetailToken,
-  ContainerRegisterData,
   ContainerServiceInterface,
   ContainerTemplate,
   ContainerType,
@@ -67,7 +78,17 @@ export class MockContainerService implements ContainerServiceInterface {
   containerDetailResource = new MockHttpResourceRef(
     MockPiResponse.fromValue({
       containers: [
-        { serial: "CONT-1", users: [{ user_realm: "", user_name: "", user_resolver: "", user_id: "" }], tokens: [], realms: [], states: [], type: "", select: "", description: "", info: {} }
+        {
+          serial: "CONT-1",
+          users: [{ user_realm: "", user_name: "", user_resolver: "", user_id: "" }],
+          tokens: [],
+          realms: [],
+          states: [],
+          type: "",
+          select: "",
+          description: "",
+          info: {}
+        }
       ],
       count: 1
     })
@@ -108,7 +129,23 @@ export class MockContainerService implements ContainerServiceInterface {
   assignContainer = jest.fn().mockReturnValue(of(null));
   unassignContainer = jest.fn().mockReturnValue(of(null));
   pollContainerRolloutState = jest.fn();
-  getContainerData = jest.fn().mockReturnValue(of({ result: { value: { containers: [ { serial: "CONT-1", users: [], tokens: [], realms: [], states: [], type: "", select: "", description: "" }, { serial: "CONT-2", users: [], tokens: [], realms: [], states: [], type: "", select: "", description: "" } ], count: 2 } } }));
+  getContainerData = jest.fn().mockReturnValue(of({
+    result: {
+      value: {
+        containers: [{
+          serial: "CONT-1",
+          users: [],
+          tokens: [],
+          realms: [],
+          states: [],
+          type: "",
+          select: "",
+          description: ""
+        }, { serial: "CONT-2", users: [], tokens: [], realms: [], states: [], type: "", select: "", description: "" }],
+        count: 2
+      }
+    }
+  }));
 
   getContainerDetails(_containerSerial: string) {
     throw new Error("Method not implemented.");
