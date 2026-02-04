@@ -1,0 +1,77 @@
+@use "mixins";
+@use "@angular/material" as mat;
+
+.user-container {
+  background-color: var(--mat-sys-surface-container);
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: var(--border-radius);
+  box-shadow: var(--mat-sys-level1);
+  padding: var(--half-global-padding) var(--three-quarters-global-padding);
+}
+
+.user-container:focus-within {
+  outline: 2px solid var(--mat-sys-primary-base);
+  outline-offset: -2px;
+}
+
+.user-title {
+  font-size: 1.2em;
+  font-weight: 500;
+  margin: 0 0 var(--half-global-padding);
+}
+
+.user-chip-edit {
+  @include mixins.compact-badge-base;
+  align-items: center;
+  background-color: var(--mat-sys-surface-container-high);
+  display: flex;
+}
+
+.user-list-wrapper {
+  align-items: flex-end;
+  display: flex;
+  gap: 12px;
+  width: 100%;
+}
+
+.user-list {
+  display: flex;
+  flex-grow: 1;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-bottom: var(--half-global-padding);
+}
+
+.user-buttons-container {
+  display: flex;
+  flex-direction: row;
+  flex-shrink: 0;
+  gap: 8px;
+  margin-left: auto;
+  padding-bottom: var(--half-global-padding);
+}
+
+.user-input-container {
+  align-items: center;
+  display: flex;
+}
+
+.add-user-input {
+  flex-grow: 1;
+}
+
+.remove-user-btn {
+  align-items: center;
+  display: flex;
+  height: 18px;
+  justify-content: center;
+  margin-left: 4px;
+  padding: 0;
+  width: 18px;
+}
+
+.remove-user-icon {
+  font-size: 14px;
+  height: 14px;
+  width: 14px;
+}

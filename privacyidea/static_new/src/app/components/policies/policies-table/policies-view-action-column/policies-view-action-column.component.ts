@@ -1,5 +1,5 @@
 import { Component, computed, inject, input } from "@angular/core";
-import { AddedActionsListComponent } from "../policy-panels/edit-action-tab/added-actions-list/added-actions-list.component";
+import { AddedActionsListComponent } from "../../dialogs/edit-policy-dialog/policy-panels/edit-action-tab/added-actions-list/added-actions-list.component";
 import { PolicyService, PolicyServiceInterface } from "../../../../services/policies/policies.service";
 
 @Component({

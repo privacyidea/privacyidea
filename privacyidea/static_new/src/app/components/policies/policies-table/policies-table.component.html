@@ -124,9 +124,7 @@
               <app-policies-view-action-column [actions]="policy.action" />
             }
             @case ("conditions") {
-              <app-conditions-tab
-                [policy]="policy"
-                [isEditMode]="false" />
+              <app-view-conditions-column [policy]="policy" />
             }
           }
         </td>

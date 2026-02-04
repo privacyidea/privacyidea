@@ -39,12 +39,13 @@ import { MatPaginatorModule } from "@angular/material/paginator";
 import { PoliciesTableActionsComponent } from "./policies-table-actions/policies-table-actions.component";
 import { MatCheckboxChange, MatCheckboxModule } from "@angular/material/checkbox";
 import { PoliciesViewActionColumnComponent } from "./policies-view-action-column/policies-view-action-column.component";
-import { ConditionsTabComponent } from "./policy-panels/conditions-tab/conditions-tab.component";
+import { EditConditionsTabComponent } from "../dialogs/edit-policy-dialog/policy-panels/edit-conditions-tab/edit-conditions-tab.component";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { FilterValueGeneric } from "../../../core/models/filter_value_generic/filter_value_generic";
 import { FilterOption } from "../../shared/keyword-filter-generic/keyword-filter-generic.component";
 import { TableUtilsService, TableUtilsServiceInterface } from "../../../services/table-utils/table-utils.service";
 import { PolicyFilterComponent } from "../policy-filter/policy-filter.component";
+import { ConditionsTabComponent } from "./view-conditions-column/view-conditions-column.component";
 
 const columnKeysMap = [
   { key: "select", label: "" },
@@ -70,10 +71,10 @@ const columnKeysMap = [
     MatPaginatorModule,
     PoliciesTableActionsComponent,
     MatCheckboxModule,
-    ConditionsTabComponent,
     PoliciesViewActionColumnComponent,
     MatTooltipModule,
-    PolicyFilterComponent
+    PolicyFilterComponent,
+    ConditionsTabComponent
   ],
   templateUrl: "./policies-table.component.html",
   styleUrl: "./policies-table.component.scss"

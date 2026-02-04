@@ -1,8 +1,9 @@
-@use "../../../../styles";
+@use "styles";
+@use "table";
 @use "@angular/material" as mat;
 
 .policies-layout {
-  @include styles.table-container-styles;
+  @include table.table-container-styles;
   display: flex;
   flex-direction: column;
 
@@ -54,17 +55,10 @@
   padding: var(--quarter-global-padding) 0;
   width: 100%;
 }
-@mixin compact-badge-base {
-  border-radius: 4px;
-  flex-shrink: 0;
-  font-size: 13px;
-  line-height: 1.4;
-  padding: 2px 8px;
-}
 
 .policies-table-layout {
-  @include styles.table-container-styles;
-  @include styles.base-table-structure(".policies-table", ".policies-table-filter", ".table-scroll-container");
+  @include table.table-container-styles;
+  @include table.base-table-structure(".policies-table", ".policies-table-filter", ".table-scroll-container");
   display: grid;
   max-width: calc(100vw - var(--global-padding) * 5 - 48px);
   overflow: auto;

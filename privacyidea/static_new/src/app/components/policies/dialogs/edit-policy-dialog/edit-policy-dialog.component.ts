@@ -13,10 +13,7 @@ import {
   SimpleConfirmationDialogComponent
 } from "../../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { DialogAction } from "../../../../models/dialog";
-import {
-  PolicyPanelEditComponent,
-  PolicyTab
-} from "../../policies-table/policy-panels/policy-panel-edit/policy-panel-edit.component";
+import { PolicyPanelEditComponent, PolicyTab } from "./policy-panels/policy-panel-edit/policy-panel-edit.component";
 export function mustBeDifferentValidator(originalValue: string | null): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null => {
     const isSame = control.value === originalValue;

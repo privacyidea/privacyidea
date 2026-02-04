@@ -1,6 +1,4 @@
-@use "../../../../../styles" as styles;
-@use "../../../../../styles/buttons.scss";
-
+@use "buttons";
 @use "@angular/material" as mat;
 
 .dialog-content {

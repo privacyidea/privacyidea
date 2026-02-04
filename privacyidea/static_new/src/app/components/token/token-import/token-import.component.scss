@@ -1,7 +1,8 @@
-@use "../../../../styles";
+@use "styles";
+@use "table";
 
 .token-import-container {
-  @include styles.table-container-styles;
+  @include table.table-container-styles;
   width: 56rem;
   max-height: var(--max-height);
   overflow: auto;

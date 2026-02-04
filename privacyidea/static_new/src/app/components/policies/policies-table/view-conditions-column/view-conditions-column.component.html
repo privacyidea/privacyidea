@@ -1,0 +1,134 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<!-- <div class="conditions-grid-container">
+  @if (showAdminConditions()) {
+    <app-conditions-admin
+      [policy]="policy()"
+      (policyEdit)="onPolicyEdit($event)"
+      [isEditMode]="isEditMode()" />
+  }
+  @if (showUserConditions()) {
+    <app-conditions-user
+      [policy]="policy()"
+      (policyEdit)="onPolicyEdit($event)"
+      [isEditMode]="isEditMode()" />
+  }
+  @if (showEnvironmentConditions()) {
+    <app-conditions-environment
+      [policy]="policy()"
+      (policyEdit)="onPolicyEdit($event)"
+      [isEditMode]="isEditMode()" />
+  }
+  @if (showAdditionalConditions()) {
+    <app-conditions-additional
+      [policy]="policy()"
+      (policyEdit)="onPolicyEdit($event)"
+      [isEditMode]="isEditMode()" />
+  }
+</div> -->
+
+<!-- Admin Conditions -->
+@if (selectedAdminrealm().length > 0) {
+  <app-view-condition-section
+    class="readonly-grid-container"
+    [label]="'Admin Realms'"
+    [values]="selectedAdminrealm()">
+  </app-view-condition-section>
+}
+@if (selectedAdmins().length > 0) {
+  <app-view-condition-section
+    class="readonly-grid-container"
+    [label]="'Admins'"
+    [values]="selectedAdmins()">
+  </app-view-condition-section>
+}
+
+<!-- User Conditions -->
+@if (selectedRealms().length > 0) {
+  <app-view-condition-section
+    [label]="'Realms'"
+    [values]="selectedRealms()">
+  </app-view-condition-section>
+}
+@if (selectedResolvers().length > 0) {
+  <app-view-condition-section
+    [label]="'Resolvers'"
+    [values]="selectedResolvers()">
+  </app-view-condition-section>
+}
+@if (selectedUsers().length > 0) {
+  <app-view-condition-section
+    [label]="'Users'"
+    [values]="selectedUsers()"
+    [marker]="userCaseInsensitive() ? 'case-insensitive' : 'case-sensitive'">
+  </app-view-condition-section>
+}
+
+<!-- Environment Conditions -->
+@if (selectedPinodes().length > 0) {
+  <app-view-condition-section
+    class="readonly-grid-container"
+    [label]="'privacyIDEA Nodes'"
+    [values]="selectedPinodes()">
+  </app-view-condition-section>
+}
+@if (selectedValidTime() !== "") {
+  <app-view-condition-section
+    class="readonly-grid-container"
+    [label]="'Valid time'"
+    [values]="[selectedValidTime()]">
+  </app-view-condition-section>
+}
+@if (selectedClient() && selectedClient().length > 0) {
+  <app-view-condition-section
+    class="readonly-grid-container"
+    [label]="'Client'"
+    [values]="selectedClient()">
+  </app-view-condition-section>
+}
+@if (selectedUserAgents().length > 0) {
+  <app-view-condition-section
+    class="readonly-grid-container"
+    [label]="'User Agents'"
+    [values]="selectedUserAgents()">
+  </app-view-condition-section>
+}
+
+<!-- Additional Conditions -->
+@if (additionalConditions().length === 0) {
+  <div class="additional-conditions-grid">
+    @for (condition of additionalConditions(); track $index) {
+      <div class="additional-condition-item">
+        <div class="status-row">
+          <div class="active-status">
+            <mat-icon [class.active]="!condition[4]">{{ !condition[4] ? "check_circle" : "cancel" }}</mat-icon>
+          </div>
+          <span class="additional-condition-badge">{{ getSectionLabel(condition[0]) }}</span>
+        </div>
+
+        <div class="data-row">
+          <strong class="force-wrap">{{ condition[1] }}</strong>
+          <span class="force-wrap">{{ getComparatorLabel(condition[2]) }}</span>
+          <strong class="force-wrap">{{ condition[3] }}</strong>
+          <span class="missing-data-info force-wrap">When Missing: {{ getMissingDataLabel(condition[5]) }}</span>
+        </div>
+      </div>
+    }
+  </div>
+}

@@ -1,0 +1,15 @@
+.policy-flex-row {
+  min-width: 0;
+  overflow-y: auto;
+  width: 100%;
+
+  &.view-mode {
+    display: block;
+  }
+}
+
+.flex-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--global-gap);
+}

@@ -1,4 +1,5 @@
-@use "../../../../../styles";
+@use "styles";
+@use "table";
 
 :host {
   display: block;
@@ -54,7 +55,7 @@ textarea[matInput] {
   margin: 12px 0 8px;
 }
 
-@include styles.base-table-structure(".mapping-table");
+@include table.base-table-structure(".mapping-table");
 
 .mapping-table {
   width: 100%;
@@ -130,7 +131,7 @@ textarea[matInput] {
 
 .hint {
   font-size: var(--mat-sys-body-small-size);
-  color: var(--mat-sys-primary)
+  color: var(--mat-sys-primary);
 }
 
 .checkbox-inline {

@@ -17,15 +17,14 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { PolicyPanelNewComponent } from "./policy-panel-new.component";
-import { PolicyService } from "../../../../services/policies/policies.service";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { MatExpansionModule } from "@angular/material/expansion";
-import { MockPolicyService } from "../../../../../testing/mock-services/mock-policies-service";
-
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { MatExpansionModule } from "@angular/material/expansion";
+import { NoopAnimationsModule } from "@angular/platform-browser/animations";
+import { PolicyService } from "src/app/services/policies/policies.service";
+import { MockPolicyService } from "src/testing/mock-services/mock-policies-service";
+import { PolicyPanelNewComponent } from "./policy-panel-new.component";
 
 describe("PolicyPanelNewComponent", () => {
   let component: PolicyPanelNewComponent;

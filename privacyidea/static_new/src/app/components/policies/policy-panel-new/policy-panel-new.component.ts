@@ -33,7 +33,7 @@ import { lastValueFrom, map } from "rxjs";
 import { DialogServiceInterface, DialogService } from "../../../services/dialog/dialog.service";
 import { PolicyServiceInterface, PolicyService, PolicyDetail } from "../../../services/policies/policies.service";
 import { SimpleConfirmationDialogComponent } from "../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
-import { PolicyPanelEditComponent } from "../policies-table/policy-panels/policy-panel-edit/policy-panel-edit.component";
+import { PolicyPanelEditComponent } from "../dialogs/edit-policy-dialog/policy-panels/policy-panel-edit/policy-panel-edit.component";
 
 type PolicyTab = "actions" | "conditions";
 
