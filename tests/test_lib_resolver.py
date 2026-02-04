@@ -649,7 +649,7 @@ class SQLResolverTestCase(MyTestCase):
         self.assertTrue(stored_pw.startswith("{SSHA256}"))
 
         # 2. Check the password, this should trigger the re-hash
-        self.assertTrue(y.checkPass(uid, "password123")),
+        self.assertTrue(y.checkPass(uid, "password123"))
 
         # 3. Verify the new hash is Argon2
         new_stored_pw = y.session.execute(
