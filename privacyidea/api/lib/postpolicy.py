@@ -66,7 +66,6 @@ from privacyidea.lib.info.rss import FETCH_DAYS
 from privacyidea.lib.machine import get_auth_items
 from privacyidea.lib.policy import (DEFAULT_ANDROID_APP_URL, DEFAULT_IOS_APP_URL, DEFAULT_PREFERRED_CLIENT_MODE_LIST,
                                     SCOPE, AUTOASSIGNVALUE, AUTHORIZED, Match)
-from privacyidea.lib.realm import get_default_realm
 from privacyidea.lib.subscriptions import (subscription_status,
                                            get_subscription,
                                            check_subscription,
@@ -83,7 +82,9 @@ from ...lib.container import (get_all_containers, init_container, init_registrat
                               create_container_tokens_from_template)
 from ...lib.containers.container_info import SERVER_URL, CHALLENGE_TTL, REGISTRATION_TTL, SSL_VERIFY, RegistrationState
 from ...lib.policies.actions import PolicyAction
+from ...lib.user import User
 from ...lib.users.custom_user_attributes import InternalCustomUserAttributes
+from ...models import Challenge
 
 log = logging.getLogger(__name__)
 
@@ -543,7 +544,7 @@ def save_pin_change(request, response, serial=None):
 
                 # If there is a change_pin_every policy, we need to set the PIN anew.
                 policy = Match.token(g, scope=SCOPE.ENROLL, action=PolicyAction.CHANGE_PIN_EVERY,
-                                       token=token).action_values(unique=True)
+                                     token=token).action_values(unique=True)
                 if policy:
                     token.set_next_pin_change(diff=list(policy)[0])
 
@@ -985,6 +986,27 @@ def hide_specific_error_message(request, response):
             response.set_data(json.dumps(content))
 
     return response
+
+
+def get_passkey_enroll_offline_data(serial: str, user: User, challenge: Challenge) -> dict | None:
+    if not challenge:
+        return None
+    if not serial:
+        return None
+
+    if not Match.user(g, scope=SCOPE.AUTH,
+                      action=PolicyAction.ENROLL_VIA_MULTICHALLENGE_PASSKEY_OFFLINE,
+                      user_object=user).any():
+        return None
+
+    data = challenge.get_data()
+    if not data or not isinstance(data, dict):
+        return None
+    if not PolicyAction.ENROLL_VIA_MULTICHALLENGE in data or not data[PolicyAction.ENROLL_VIA_MULTICHALLENGE]:
+        return None
+    auth_items = get_auth_items(serial=serial, application="offline",
+                                user_agent=g.request.user_agent.string)
+    return auth_items
 
 
 def multichallenge_enroll_via_validate(request, response):

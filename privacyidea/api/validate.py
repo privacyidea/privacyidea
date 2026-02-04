@@ -84,7 +84,7 @@ from privacyidea.api.lib.postpolicy import (postpolicy,
                                             add_user_detail_to_response, construct_radius_response,
                                             mangle_challenge_response, is_authorized,
                                             multichallenge_enroll_via_validate, preferred_client_mode,
-                                            hide_specific_error_message)
+                                            hide_specific_error_message, get_passkey_enroll_offline_data)
 from privacyidea.api.lib.prepolicy import (prepolicy, set_realm,
                                            api_key_required, mangle,
                                            save_client_application_type,
@@ -106,7 +106,7 @@ from privacyidea.lib.container import find_container_for_token, find_container_b
 from privacyidea.lib.error import ParameterError, PolicyError, ResourceNotFoundError, ERROR
 from privacyidea.lib.event import EventConfiguration
 from privacyidea.lib.event import event
-from privacyidea.lib.machine import list_machine_tokens
+from privacyidea.lib.machine import list_machine_tokens, get_auth_items, attach_token
 from privacyidea.lib.policy import Match
 from ..lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import PolicyClass, SCOPE
@@ -256,10 +256,10 @@ def offlinerefill():
 
     except Exception as e:
         if Match.user(
-            g,
-            scope=SCOPE.TOKEN,
-            action=PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE_FOR_OFFLINE_REFILL,
-            user_object=request.User if hasattr(request, "User") else None,
+                g,
+                scope=SCOPE.TOKEN,
+                action=PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE_FOR_OFFLINE_REFILL,
+                user_object=request.User if hasattr(request, "User") else None,
         ).any():
             return send_error("Failed offline token refill", error_code=ERROR.VALIDATE), map_error_to_code(e)
         raise
@@ -448,170 +448,258 @@ def check():
     (like "myOwn") which you can define in the LDAP resolver in the attribute
     mapping.
     """
-    user: User = request.User
-    serial: str = get_optional(request.all_data, "serial")
-    password: str = get_optional(request.all_data, "pass")
-    otp_only: bool = get_optional(request.all_data, "otponly")
-    token_type: str = get_optional(request.all_data, "type")
+    # Handle Enrollment Cancellation (Immediate Return)
+    if is_true(request.all_data.get("cancel_enrollment")):
+        return _handle_enrollment_cancellation(request.all_data)
 
-    # Add all params to the options
-    options: dict = {}
-    options.update(request.all_data)
-    options.update({"g": g, "clientip": g.client_ip, "user": user})
+    # This dictionary carries state across the extracted helper functions
+    # to avoid changing the functional signatures of the underlying libraries yet.
+    context = {
+        "user": request.User,
+        "result": False,
+        "details": {},
+        "response_params": {},
+        "serial_list": [],
+        "is_container_challenge": False,
+        "options": request.all_data.copy()
+    }
+    # Add standard context to options
+    context["options"].update({"g": g, "clientip": g.client_ip, "user": context["user"]})
 
-    details: dict = {}
-    is_container_challenge = False
+    # Dispatch to Logic Handlers
+    credential_id = get_optional_one_of(request.all_data, ["credential_id", "credentialid"])
+    serial = get_optional(request.all_data, "serial")
 
-    if "cancel_enrollment" in request.all_data and is_true(request.all_data["cancel_enrollment"]):
-        transaction_id = get_required(request.all_data, "transaction_id")
-        success = cancel_enrollment_via_multichallenge(transaction_id)
-        if success:
-            details.update({"message": gettext("Cancelled enrollment via multichallenge")})
-            ret = send_result(True, rid=2, details=details)
-            action_detail = (gettext("Cancelled enrollment via multichallenge for transaction_id ") +
-                             f"{transaction_id}")
-        else:
-            details.update({"message": gettext("Failed to cancel enrollment via multichallenge")})
-            ret = send_result(False, rid=2, details=details)
-            action_detail = (gettext("Failed to cancel enrollment via multichallenge for transaction_id ")
-                             + f"{transaction_id}")
-        g.audit_object.log({
-            "success": success,
-            "authentication": ret.json.get("result").get("authentication") or "",
-            "action_detail": action_detail,
-        })
-        return ret
-
-    # Passkey/FIDO2: Identify the user by the credential ID
-    credential_id: str = get_optional_one_of(request.all_data, ["credential_id", "credentialid"])
-    # If only the credential ID is given, try to use it to identify the token
     if credential_id:
-        # Find the token that responded to the challenge
-        transaction_id: str = get_required(request.all_data, "transaction_id")
-        if serial:
-            token = get_one_token(serial=serial)
-        else:
-            token = get_fido2_token_by_credential_id(credential_id)
-        if not token:
-            log.debug(f"No token found for the given credential id {credential_id}. "
-                      f"Trying to get the token by transaction id...")
-            # For compatibility with the existing WebAuthn token, try to get the token via the transaction_id
-            token = get_fido2_token_by_transaction_id(transaction_id, credential_id)
-            if not token:
-                log.debug(f"No token found for the given transaction id {transaction_id}.")
-                return send_result(False, rid=2, details={
-                    "message": "No token found for the given credential ID or transaction ID!"})
-
-        # Check if tokentype is disabled
-        if (PolicyAction.DISABLED_TOKEN_TYPES in request.all_data and
-                token.get_type() in request.all_data[PolicyAction.DISABLED_TOKEN_TYPES]):
-            raise PolicyError(f"The authentication method is not available.")
-
-        if not token.user:
-            return send_result(False, rid=2, details={
-                "message": "No user found for the token with the given credential ID!"})
-        user = token.user
-        request.User = user
-        # The request could also be an enrollment via validate. In that case, the param "attestationObject" is present
-        # This does behave correctly but is obviously not a good solution in the long run
-        attestation_object: str = get_optional_one_of(request.all_data, ["attestationObject", "attestationobject"])
-        result = False
-        if attestation_object:
-            request.all_data.update({"type": "passkey"})
-            fido2_enroll(request, None)
-            try:
-                _ = token.update(request.all_data)
-                result = True
-            except Exception as ex:
-                log.error(f"Error updating token: {ex}")
-        else:
-
-            if not check_last_auth_policy(g, token):
-                log.debug(f"Last authentication policy check failed for token {token.get_serial()}.")
-                details["message"] = gettext("Last authentication policy check failed for token {serial}").format(
-                    serial=token.get_serial())
-                return send_result(False, rid=2, details=details)
-            elif not token.is_active():
-                log.debug(f"Authentication attempted with disabled token {token.get_serial()}")
-                g.audit_object.log({"info": log_used_user(user, "Token is disabled"),
-                                    "success": False,
-                                    "authentication": AUTH_RESPONSE.REJECT,
-                                    "serial": token.get_serial(),
-                                    "token_type": details.get("type")})
-                return send_result(False, rid=2, details={"message": "Token is disabled"})
-
-            result = verify_fido2_challenge(transaction_id, token, request.all_data) > 0
-        success = result
-        if success:
-            # If the authentication was successful, return the username of the token owner
-            # TODO what is returned could be configurable, attribute mapping
-            details = {
-                "username": token.user.login,
-                "message": gettext("Found matching challenge"),
-                "serial": token.get_serial()
-            }
-    # End Passkey
+        _handle_fido2_auth(context, credential_id)
     elif serial:
-        if user:
-            # Check if the given token belongs to the user
-            try:
-                tokens = get_tokens(user=user, serial=serial, count=True)
-            except ResourceNotFoundError:
-                tokens = []
+        _handle_serial_auth(context, serial)
+    else:
+        _handle_standard_auth(context)
+
+    # Finalize and Return
+    return _finalize_auth_response(context)
+
+
+def _handle_enrollment_cancellation(data):
+    """
+    Handles the specific case where a user cancels enroll_via_multichallenge (possible if policy is enabled).
+    Returns the Flask response object directly.
+    """
+    transaction_id = get_required(data, "transaction_id")
+    success = cancel_enrollment_via_multichallenge(transaction_id)
+
+    details = {}
+    if success:
+        details["message"] = gettext("Cancelled enrollment via multichallenge")
+        message = gettext("Cancelled enrollment via multichallenge for transaction_id ") + f"{transaction_id}"
+    else:
+        details["message"] = gettext("Failed to cancel enrollment via multichallenge")
+        message = gettext("Failed to cancel enrollment via multichallenge for transaction_id ") + f"{transaction_id}"
+
+    ret = send_result(success, rid=2, details=details)
+
+    g.audit_object.log({
+        "success": success,
+        "authentication": ret.json.get("result", {}).get("authentication", ""),
+        "action_detail": message,
+    })
+    return ret
+
+
+def _handle_fido2_auth(context, credential_id):
+    """
+    Handles FIDO2/Passkey authentication and enroll_via_multichallenge of passkeys.
+    Updates the context with the result.
+    """
+    transaction_id = get_required(request.all_data, "transaction_id")
+    serial = get_optional(request.all_data, "serial")
+
+    # Resolve Token
+    if serial:
+        token = get_one_token(serial=serial)
+    else:
+        token = get_fido2_token_by_credential_id(credential_id)
+
+    if not token:
+        log.debug(f"No token found for credential id {credential_id}. Checking transaction id...")
+        token = get_fido2_token_by_transaction_id(transaction_id, credential_id)
+        if not token:
+            log.debug(f"No token found for transaction id {transaction_id}.")
+            context["details"]["message"] = "No token found for the given credential ID or transaction ID!"
+            return  # Result remains False
+
+    # Policy Checks
+    if (PolicyAction.DISABLED_TOKEN_TYPES in request.all_data and
+            token.get_type() in request.all_data[PolicyAction.DISABLED_TOKEN_TYPES]):
+        raise PolicyError("The authentication method is not available.")
+
+    if not token.user:
+        context["details"]["message"] = "No user found for the token with the given credential ID!"
+        return  # Result remains False
+
+    # Update User in Context
+    user = token.user
+    request.User = user
+    context["user"] = user
+
+    # Handle Enrollment vs Authentication
+    attestation_object = get_optional_one_of(request.all_data, ["attestationObject", "attestationobject"])
+
+    if attestation_object:
+        # Enrollment
+        request.all_data.update({"type": "passkey"})
+        fido2_enroll(request, None)
+        try:
+            registration_details = token.update(request.all_data)
+            evm = registration_details.pop(PolicyAction.ENROLL_VIA_MULTICHALLENGE, None)
+
+            # Check if offline data should be appended here already (policy)
+            if evm and Match.user(g, scope=SCOPE.AUTH,
+                                  action=PolicyAction.ENROLL_VIA_MULTICHALLENGE_PASSKEY_OFFLINE,
+                                  user_object=user).any():
+                _ = attach_token(token.get_serial(), "offline")
+                offline_data = get_auth_items(serial=token.get_serial(), application="offline",
+                                              user_agent=request.user_agent.string)
+                if offline_data:
+                    context["response_params"]["auth_items"] = offline_data
+
+            context["result"] = True
+        except Exception as ex:
+            log.error(f"Error updating token: {ex}")
+            context["result"] = False
+    else:
+        # Actual Authentication
+        if not check_last_auth_policy(g, token):
+            log.debug(f"Last authentication policy check failed for token {token.get_serial()}.")
+            context["details"]["message"] = gettext(
+                "Last authentication policy check failed for token {serial}").format(
+                serial=token.get_serial())
+            return
+
+        if not token.is_active():
+            log.debug(f"Authentication attempted with disabled token {token.get_serial()}")
+            context["details"]["message"] = "Token is disabled"
+            # Explicit audit for disabled token
+            g.audit_object.log({
+                "info": log_used_user(user, "Token is disabled"),
+                "success": False,
+                "authentication": AUTH_RESPONSE.REJECT,
+                "serial": token.get_serial(),
+                "token_type": context["details"].get("type")
+            })
+            return
+
+        fido_verification_result = verify_fido2_challenge(transaction_id, token, request.all_data)
+        context["result"] = fido_verification_result.success > 0
+
+    # Success Handling
+    if context["result"]:
+        context["details"].update({
+            "username": token.user.login,
+            "message": gettext("Found matching challenge"),
+            "serial": token.get_serial()
+        })
+        context["serial_list"].append(token.get_serial())
+
+
+def _handle_serial_auth(context, serial):
+    """
+    Handles authentication with serial provided
+    """
+    user = context["user"]
+    password = get_optional(request.all_data, "pass")
+    otp_only = get_optional(request.all_data, "otponly")
+
+    # Validate ownership if user is present
+    if user:
+        try:
+            tokens = get_tokens(user=user, serial=serial, count=True)
             if not tokens:
                 raise ParameterError("Given serial does not belong to given user!")
-        if not otp_only:
-            success, details = check_serial_pass(serial, password, options=options)
+        except ResourceNotFoundError:
+            pass
+
+    # Perform Check
+    if not otp_only:
+        success, details = check_serial_pass(serial, password, options=context["options"])
+    else:
+        success, details = check_otp(serial, password)
+
+    context["result"] = success
+    context["details"] = details
+
+    if "serial" in details:
+        context["serial_list"].append(details["serial"])
+
+
+def _handle_standard_auth(context):
+    """
+    Handles username+otp/password authentication, or container challenges.
+    Also handles SAML attribute population.
+    """
+    transaction_id = request.all_data.get("transaction_id")
+    container_result = check_container_challenge(transaction_id)
+
+    success = container_result.get("success", False)
+    details = container_result.get("details", {})
+    context["is_container_challenge"] = success
+
+    if not success:
+        # Fallback to standard user check
+        token_type = get_optional(request.all_data, "type")
+        context["options"]["token_type"] = token_type
+
+        success, details = check_user_pass(context["user"], get_optional(request.all_data, "pass"),
+                                           options=context["options"])
+
+        # SAML Check Special Case
+        if request.path.endswith("samlcheck"):
+            context["result"] = {"auth": success, "attributes": {}}
+            if return_saml_attributes():
+                if success or return_saml_attributes_on_fail():
+                    user_info = context["user"].info
+                    # privacyIDEA's own attribute map
+                    attributes = {
+                        "username": user_info.get("username"),
+                        "realm": context["user"].realm,
+                        "resolver": context["user"].resolver,
+                        "email": user_info.get("email"),
+                        "surname": user_info.get("surname"),
+                        "givenname": user_info.get("givenname"),
+                        "mobile": user_info.get("mobile"),
+                        "phone": user_info.get("phone")
+                    }
+                    attributes.update(user_info)
+                    context["result"]["attributes"] = attributes
         else:
-            success, details = check_otp(serial, password)
-        result = success
-
+            context["result"] = success
     else:
-        # Check if the transaction_id belongs to a container challenge
-        transaction_id = request.all_data.get("transaction_id")
-        container_result = check_container_challenge(transaction_id)
-        success = result = container_result.get("success", False)
-        details = container_result.get("details", {})
-        is_container_challenge = success
+        context["result"] = success
 
-        if not success:
-            # Challenge is for a token
-            options["token_type"] = token_type
-            success, details = check_user_pass(user, password, options=options)
-            result = success
-            if request.path.endswith("samlcheck"):
-                result = {"auth": success, "attributes": {}}
-                if return_saml_attributes():
-                    if success or return_saml_attributes_on_fail():
-                        # privacyIDEA's own attribute map
-                        user_info = user.info
-                        result["attributes"] = {
-                            "username": user_info.get("username"),
-                            "realm": user.realm,
-                            "resolver": user.resolver,
-                            "email": user_info.get("email"),
-                            "surname": user_info.get("surname"),
-                            "givenname": user_info.get("givenname"),
-                            "mobile": user_info.get("mobile"),
-                            "phone": user_info.get("phone")
-                        }
-                        # Additional attributes
-                        result["attributes"].update(user_info)
-    # At this point there will be a user, even for FIDO2 credentials
-    g.audit_object.log({"user": user.login, "resolver": user.resolver, "realm": user.realm})
+    context["details"] = details
 
-    # update last authentication for all tokens
+    # Extract serials for logging
     if 'multi_challenge' in details:
-        serial_list = [challenge_info["serial"] for challenge_info in details["multi_challenge"]]
+        context["serial_list"].extend([c["serial"] for c in details["multi_challenge"]])
     elif "serial" in details:
-        serial_list = [details.get("serial")]
-    else:
-        serial_list = []
+        context["serial_list"].append(details["serial"])
 
+
+def _finalize_auth_response(context):
+    """
+    Handles final state updates (last_auth), audit logging, and response construction.
+    """
+    user = context["user"]
+    details = context["details"]
+    success = context["result"] if not isinstance(context["result"], dict) else context["result"].get("auth", False)
+
+    # 1. Update Last Authentication (Standard Tokens)
+    # FIDO2 tokens update this internally during verify, so we skip them here mostly,
+    # but the logic checks if we have serials from standard flows.
     if success:
-        for serial in serial_list:
-            # update container last_authentication
-            if not is_container_challenge:
+        for serial in context["serial_list"]:
+            if not context["is_container_challenge"]:
                 try:
                     container = find_container_for_token(serial)
                     if container:
@@ -619,27 +707,31 @@ def check():
                 except Exception as e:
                     log.debug(f"Could not find container for token {serial}: {e}")
 
-            # check policy if client mode per user shall be set
-            client_mode_per_user_pol = Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.CLIENT_MODE_PER_USER,
-                                                  user_object=user).allowed()
-            if client_mode_per_user_pol:
-                # set the used token type as the preferred one for the user to indicate the preferred client mode for
-                # the next authentication
+            # Client Mode Per User Policy
+            if Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.CLIENT_MODE_PER_USER,
+                          user_object=user).allowed():
                 token = get_one_token(serial=serial, silent_fail=True)
                 if token:
-                    token_type = token.get_tokentype()
                     user_agent, _, _ = get_plugin_info_from_useragent(request.user_agent.string)
                     if user.exist():
                         user.set_attribute(f"{InternalCustomUserAttributes.LAST_USED_TOKEN}_{user_agent}",
-                                           token_type, INTERNAL_USAGE)
+                                           token.get_tokentype(), INTERNAL_USAGE)
 
-    serials = ",".join(serial_list)
-    ret = send_result(result, rid=2, details=details)
-    g.audit_object.log({"info": log_used_user(user, details.get("message")),
-                        "success": success,
-                        "authentication": ret.json.get("result").get("authentication") or "",
-                        "serial": serials,
-                        "token_type": details.get("type")})
+    # 2. Audit Logging
+    # Ensure user is logged even if we switched users (e.g. FIDO2)
+    g.audit_object.log({"user": user.login, "resolver": user.resolver, "realm": user.realm})
+
+    serials_str = ",".join(context["serial_list"])
+    ret = send_result(context["result"], rid=2, details=details, **context["response_params"])
+
+    g.audit_object.log({
+        "info": log_used_user(user, details.get("message")),
+        "success": success,
+        "authentication": ret.json.get("result", {}).get("authentication", ""),
+        "serial": serials_str,
+        "token_type": details.get("type")
+    })
+
     return ret
 
 

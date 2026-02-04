@@ -27,12 +27,16 @@ import logging
 from passlib.hash import pbkdf2_sha512
 
 from privacyidea.lib.applications import MachineApplicationBase
+from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.config import get_prepend_pin
 from privacyidea.lib.crypto import geturandom
 from privacyidea.lib.error import ValidateError, ParameterError
 from privacyidea.lib.fido2.token_info import FIDO2TokenInfo
+from privacyidea.lib.machine import get_auth_items
+from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import TYPE
 from privacyidea.lib.token import get_one_token
+from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.utils import get_computer_name_from_user_agent
 
 log = logging.getLogger(__name__)
