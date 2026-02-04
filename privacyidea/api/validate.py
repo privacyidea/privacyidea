@@ -84,7 +84,7 @@ from privacyidea.api.lib.postpolicy import (postpolicy,
                                             add_user_detail_to_response, construct_radius_response,
                                             mangle_challenge_response, is_authorized,
                                             multichallenge_enroll_via_validate, preferred_client_mode,
-                                            hide_specific_error_message, get_passkey_enroll_offline_data)
+                                            hide_specific_error_message)
 from privacyidea.api.lib.prepolicy import (prepolicy, set_realm,
                                            api_key_required, mangle,
                                            save_client_application_type,
@@ -108,24 +108,24 @@ from privacyidea.lib.event import EventConfiguration
 from privacyidea.lib.event import event
 from privacyidea.lib.machine import list_machine_tokens, get_auth_items, attach_token
 from privacyidea.lib.policy import Match
-from ..lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import PolicyClass, SCOPE
 from privacyidea.lib.subscriptions import CheckSubscription
 from privacyidea.lib.token import (check_user_pass, check_serial_pass,
                                    check_otp, create_challenges_from_tokens, get_one_token)
-from .lib.policyhelper import check_last_auth_policy, get_realm_for_authentication
-from ..lib.fido2.util import get_fido2_token_by_credential_id, get_fido2_token_by_transaction_id
-from ..lib.fido2.challenge import create_fido2_challenge, verify_fido2_challenge
 from privacyidea.lib.token import get_tokens
 from privacyidea.lib.tokenclass import CHALLENGE_SESSION
-from privacyidea.lib.user import get_user_from_param, log_used_user, User, split_user
+from privacyidea.lib.user import log_used_user, User, split_user
 from privacyidea.lib.utils import get_client_ip, get_plugin_info_from_useragent, AUTH_RESPONSE
 from privacyidea.lib.utils import is_true, get_computer_name_from_user_agent
-from .lib.utils import required
+from .lib.policyhelper import check_last_auth_policy, get_realm_for_authentication
 from .lib.utils import getParam, get_required, map_error_to_code, send_error, send_result
+from .lib.utils import required
 from ..lib.decorators import (check_user_serial_or_cred_id_in_request)
+from ..lib.fido2.challenge import create_fido2_challenge, verify_fido2_challenge
 from ..lib.fido2.policy_action import FIDO2PolicyAction
+from ..lib.fido2.util import get_fido2_token_by_credential_id, get_fido2_token_by_transaction_id
 from ..lib.framework import get_app_config_value
+from ..lib.policies.actions import PolicyAction
 from ..lib.realm import get_default_realm
 from ..lib.users.custom_user_attributes import InternalCustomUserAttributes, INTERNAL_USAGE
 

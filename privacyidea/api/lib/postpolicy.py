@@ -988,27 +988,6 @@ def hide_specific_error_message(request, response):
     return response
 
 
-def get_passkey_enroll_offline_data(serial: str, user: User, challenge: Challenge) -> dict | None:
-    if not challenge:
-        return None
-    if not serial:
-        return None
-
-    if not Match.user(g, scope=SCOPE.AUTH,
-                      action=PolicyAction.ENROLL_VIA_MULTICHALLENGE_PASSKEY_OFFLINE,
-                      user_object=user).any():
-        return None
-
-    data = challenge.get_data()
-    if not data or not isinstance(data, dict):
-        return None
-    if not PolicyAction.ENROLL_VIA_MULTICHALLENGE in data or not data[PolicyAction.ENROLL_VIA_MULTICHALLENGE]:
-        return None
-    auth_items = get_auth_items(serial=serial, application="offline",
-                                user_agent=g.request.user_agent.string)
-    return auth_items
-
-
 def multichallenge_enroll_via_validate(request, response):
     """
     This is a post decorator to allow enrolling tokens via /validate/check.
