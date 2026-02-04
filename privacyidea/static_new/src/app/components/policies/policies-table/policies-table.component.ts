@@ -54,7 +54,8 @@ const columnKeysMap = [
   { key: "scope", label: "Scope" },
   { key: "description", label: "Description" },
   { key: "actions", label: "Actions" },
-  { key: "conditions", label: "Conditions" }
+  { key: "conditions", label: "Conditions" },
+  { key: "active", label: "" }
 ];
 
 @Component({
@@ -278,9 +279,9 @@ const policyFilterOptions = [
     },
     iconName: (filter: FilterValueGeneric<PolicyDetail>) => {
       const value = filter.getValueOfKey("active")?.toLowerCase();
-      if (value === "true") return "change_circle";
-      if (value === "false") return "remove_circle";
-      return "add_circle";
+      if (value === "true") return "screen_rotation_alt ";
+      if (value === "false") return "filter_alt_off";
+      return "filter_alt";
     },
     matches: (item: PolicyDetail, filter: FilterValueGeneric<PolicyDetail>) => {
       const value = filter.getValueOfKey("active")?.toLowerCase();
@@ -290,11 +291,11 @@ const policyFilterOptions = [
     }
   }),
   new FilterOption({
-    key: "policy_name",
+    key: "name",
     label: $localize`Policy Name`,
     hint: $localize`Filter by policy name.`,
     matches: (item: PolicyDetail, filter: FilterValueGeneric<PolicyDetail>) => {
-      const value = filter.getValueOfKey("policy_name");
+      const value = filter.getValueOfKey("name");
       if (!value) return true;
       return item.name.includes(value);
     }

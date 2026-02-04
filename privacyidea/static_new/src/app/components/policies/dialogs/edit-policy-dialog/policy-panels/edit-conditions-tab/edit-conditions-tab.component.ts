@@ -45,12 +45,6 @@ export class EditConditionsTabComponent {
 
   policy = input.required<PolicyDetail>();
   policyEdit = output<Partial<PolicyDetail>>();
-  showAdminConditions = computed(
-    () => this.policy().scope === "admin" && this.policyService.policyHasAdminConditions(this.policy())
-  );
-  showUserConditions = computed(() => this.policyService.policyHasUserConditions(this.policy()));
-  showEnvironmentConditions = computed(() => this.policyService.policyHasEnviromentConditions(this.policy()));
-  showAdditionalConditions = computed(() => this.policyService.policyHasAdditionalConditions(this.policy()));
 
   onPolicyEdit($event: Partial<PolicyDetail>) {
     this.policyEdit.emit($event);

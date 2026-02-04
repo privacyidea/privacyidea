@@ -30,7 +30,7 @@ export class FilterOption<T = any> {
   hint?: string;
   matches: (item: T, filterValue: GenericFilter<T>) => boolean;
   isSelected?: (filterValue: GenericFilter<T>) => boolean;
-  getIconName?: (filterValue: GenericFilter<T>) => "remove_circle" | "add_circle" | "change_circle";
+  getIconName?: (filterValue: GenericFilter<T>) => string;
   toggleKeyword?: (filterValue: GenericFilter<T>) => GenericFilter<T>;
 
   constructor(args: {
@@ -40,7 +40,7 @@ export class FilterOption<T = any> {
     hint?: string;
     matches: (item: T, filterValue: GenericFilter<T>) => boolean;
     isSelected?: (filterValue: GenericFilter<T>) => boolean;
-    iconName?: (filterValue: GenericFilter<T>) => "remove_circle" | "add_circle" | "change_circle";
+    iconName?: (filterValue: GenericFilter<T>) => string;
     toggle?: (filterValue: GenericFilter<T>) => GenericFilter<T>;
   }) {
     this.key = args.key;
@@ -106,7 +106,7 @@ export class KeywordFilterGenericComponent<T> {
     this.showAdvancedFilter.update((b) => !b);
   }
 
-  getFilterIconName(filterKeyword: FilterOption): "remove_circle" | "add_circle" | "change_circle" {
+  getFilterIconName(filterKeyword: FilterOption): string {
     return this.filter().getFilterIconNameOf(filterKeyword);
   }
 

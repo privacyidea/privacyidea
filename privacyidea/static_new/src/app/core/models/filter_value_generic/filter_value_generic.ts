@@ -267,7 +267,7 @@ export class FilterValueGeneric<T> {
     }
   }
 
-  public getFilterIconNameOf(filterKeyword: FilterOption): "remove_circle" | "add_circle" | "change_circle" {
+  public getFilterIconNameOf(filterKeyword: FilterOption): string {
     if (filterKeyword.getIconName) {
       return filterKeyword.getIconName(this);
     }

@@ -92,13 +92,6 @@
             @case ("name") {
               <div class="name-wrapper">
                 @if (authService.actionAllowed("policywrite")) {
-                  <mat-icon
-                    class="minimal-icon-button"
-                    [class.inactive-icon]="!policy.active"
-                    [class.active-icon]="policy.active"
-                    (click)="$event.stopPropagation(); policyService.togglePolicyActive(policy)">
-                    check_circle
-                  </mat-icon>
                   <div
                     class="text-link-button"
                     (click)="$event.stopPropagation(); editPolicy(policy)">
@@ -125,6 +118,15 @@
             }
             @case ("conditions") {
               <app-view-conditions-column [policy]="policy" />
+            }
+            @case ("active") {
+              <mat-icon
+                class="minimal-icon-button"
+                [class.inactive-icon]="!policy.active"
+                [class.active-icon]="policy.active"
+                (click)="$event.stopPropagation(); policyService.togglePolicyActive(policy)">
+                check_circle
+              </mat-icon>
             }
           }
         </td>

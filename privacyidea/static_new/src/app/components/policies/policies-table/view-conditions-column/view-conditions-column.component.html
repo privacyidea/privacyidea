@@ -16,119 +16,88 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<!-- <div class="conditions-grid-container">
-  @if (showAdminConditions()) {
-    <app-conditions-admin
-      [policy]="policy()"
-      (policyEdit)="onPolicyEdit($event)"
-      [isEditMode]="isEditMode()" />
+<div class="view-conditions-container">
+  <!-- Admin Conditions -->
+  @if (selectedAdminrealm().length > 0) {
+    <app-view-condition-section
+      [label]="'Admin Realms'"
+      [values]="selectedAdminrealm()">
+    </app-view-condition-section>
   }
-  @if (showUserConditions()) {
-    <app-conditions-user
-      [policy]="policy()"
-      (policyEdit)="onPolicyEdit($event)"
-      [isEditMode]="isEditMode()" />
+  @if (selectedAdmins().length > 0) {
+    <app-view-condition-section
+      [label]="'Admins'"
+      [values]="selectedAdmins()">
+    </app-view-condition-section>
   }
-  @if (showEnvironmentConditions()) {
-    <app-conditions-environment
-      [policy]="policy()"
-      (policyEdit)="onPolicyEdit($event)"
-      [isEditMode]="isEditMode()" />
+
+  <!-- User Conditions -->
+  @if (selectedRealms().length > 0) {
+    <app-view-condition-section
+      [label]="'Realms'"
+      [values]="selectedRealms()">
+    </app-view-condition-section>
   }
-  @if (showAdditionalConditions()) {
-    <app-conditions-additional
-      [policy]="policy()"
-      (policyEdit)="onPolicyEdit($event)"
-      [isEditMode]="isEditMode()" />
+  @if (selectedResolvers().length > 0) {
+    <app-view-condition-section
+      [label]="'Resolvers'"
+      [values]="selectedResolvers()">
+    </app-view-condition-section>
   }
-</div> -->
+  @if (selectedUsers().length > 0) {
+    <app-view-condition-section
+      [label]="'Users'"
+      [values]="selectedUsers()"
+      [marker]="userCaseInsensitive() ? 'case-insensitive' : 'case-sensitive'">
+    </app-view-condition-section>
+  }
 
-<!-- Admin Conditions -->
-@if (selectedAdminrealm().length > 0) {
-  <app-view-condition-section
-    class="readonly-grid-container"
-    [label]="'Admin Realms'"
-    [values]="selectedAdminrealm()">
-  </app-view-condition-section>
-}
-@if (selectedAdmins().length > 0) {
-  <app-view-condition-section
-    class="readonly-grid-container"
-    [label]="'Admins'"
-    [values]="selectedAdmins()">
-  </app-view-condition-section>
-}
+  <!-- Environment Conditions -->
+  @if (selectedPinodes().length > 0) {
+    <app-view-condition-section
+      [label]="'privacyIDEA Nodes'"
+      [values]="selectedPinodes()">
+    </app-view-condition-section>
+  }
+  @if (selectedValidTime() !== "") {
+    <app-view-condition-section
+      [label]="'Valid time'"
+      [values]="[selectedValidTime()]">
+    </app-view-condition-section>
+  }
+  @if (selectedClient() && selectedClient().length > 0) {
+    <app-view-condition-section
+      [label]="'Client'"
+      [values]="selectedClient()">
+    </app-view-condition-section>
+  }
+  @if (selectedUserAgents().length > 0) {
+    <app-view-condition-section
+      [label]="'User Agents'"
+      [values]="selectedUserAgents()">
+    </app-view-condition-section>
+  }
 
-<!-- User Conditions -->
-@if (selectedRealms().length > 0) {
-  <app-view-condition-section
-    [label]="'Realms'"
-    [values]="selectedRealms()">
-  </app-view-condition-section>
-}
-@if (selectedResolvers().length > 0) {
-  <app-view-condition-section
-    [label]="'Resolvers'"
-    [values]="selectedResolvers()">
-  </app-view-condition-section>
-}
-@if (selectedUsers().length > 0) {
-  <app-view-condition-section
-    [label]="'Users'"
-    [values]="selectedUsers()"
-    [marker]="userCaseInsensitive() ? 'case-insensitive' : 'case-sensitive'">
-  </app-view-condition-section>
-}
-
-<!-- Environment Conditions -->
-@if (selectedPinodes().length > 0) {
-  <app-view-condition-section
-    class="readonly-grid-container"
-    [label]="'privacyIDEA Nodes'"
-    [values]="selectedPinodes()">
-  </app-view-condition-section>
-}
-@if (selectedValidTime() !== "") {
-  <app-view-condition-section
-    class="readonly-grid-container"
-    [label]="'Valid time'"
-    [values]="[selectedValidTime()]">
-  </app-view-condition-section>
-}
-@if (selectedClient() && selectedClient().length > 0) {
-  <app-view-condition-section
-    class="readonly-grid-container"
-    [label]="'Client'"
-    [values]="selectedClient()">
-  </app-view-condition-section>
-}
-@if (selectedUserAgents().length > 0) {
-  <app-view-condition-section
-    class="readonly-grid-container"
-    [label]="'User Agents'"
-    [values]="selectedUserAgents()">
-  </app-view-condition-section>
-}
-
-<!-- Additional Conditions -->
-@if (additionalConditions().length === 0) {
-  <div class="additional-conditions-grid">
-    @for (condition of additionalConditions(); track $index) {
-      <div class="additional-condition-item">
-        <div class="status-row">
-          <div class="active-status">
-            <mat-icon [class.active]="!condition[4]">{{ !condition[4] ? "check_circle" : "cancel" }}</mat-icon>
+  <!-- Additional Conditions -->
+  @if (additionalConditions().length === 0) {
+    <div class="additional-conditions-grid">
+      @for (condition of additionalConditions(); track $index) {
+        <div class="additional-condition-item">
+          <div class="status-row">
+            <div class="active-status">
+              <mat-icon [class.active]="!condition[4]">{{ !condition[4] ? "check_circle" : "cancel" }}</mat-icon>
+            </div>
+            <span class="additional-condition-badge">{{ getSectionLabel(condition[0]) }}</span>
           </div>
-          <span class="additional-condition-badge">{{ getSectionLabel(condition[0]) }}</span>
-        </div>
 
-        <div class="data-row">
-          <strong class="force-wrap">{{ condition[1] }}</strong>
-          <span class="force-wrap">{{ getComparatorLabel(condition[2]) }}</span>
-          <strong class="force-wrap">{{ condition[3] }}</strong>
-          <span class="missing-data-info force-wrap">When Missing: {{ getMissingDataLabel(condition[5]) }}</span>
+          <div class="data-row">
+            <strong class="force-wrap">{{ condition[1] }}</strong>
+            <span class="force-wrap">{{ getComparatorLabel(condition[2]) }}</span>
+            <strong class="force-wrap">{{ condition[3] }}</strong>
+            <span class="missing-data-info force-wrap">When Missing: {{ getMissingDataLabel(condition[5]) }}</span>
+          </div>
         </div>
-      </div>
-    }
-  </div>
-}
+      }
+    </div>
+  }
+</div>
