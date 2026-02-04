@@ -604,7 +604,8 @@ body {
       margin-left: -340px;
     }
 
-    &:has(.welcome-dialog-panel) {
+    &:has(.welcome-dialog-panel),
+    &:has(.global-dialog-panel) {
       margin-left: 0;
       width: 100%;
 

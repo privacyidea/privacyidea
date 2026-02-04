@@ -19,27 +19,40 @@
 import { effect, inject, Injectable, signal } from "@angular/core";
 import { MatDialog } from "@angular/material/dialog";
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
-import { WelcomeDialogComponent } from "../../components/shared/welcome-dialog/welcome-dialog.component";
+import { SubscriptionService } from "./subscription.service";
+import { SubscriptionExpiryDialogComponent } from "../../components/shared/subscription-expiry-dialog/subscription-expiry-dialog.component";
 
 @Injectable({ providedIn: "root" })
-export class WelcomeDialogService {
+export class SubscriptionExpiryService {
   private readonly dialog = inject(MatDialog);
   private readonly auth: AuthServiceInterface = inject(AuthService);
+  private readonly subscriptions = inject(SubscriptionService);
   private readonly opened = signal<boolean>(false);
+
+  private readonly thresholdDays = 3000;
 
   constructor() {
     effect(() => {
       const isAuth = this.auth.isAuthenticated();
-      const hideWelcome = this.auth.hideWelcome();
-      const subStatus = this.auth.subscriptionStatus();
+      if (!isAuth || this.opened()) {
+        return;
+      }
 
-      if (isAuth && !(hideWelcome && subStatus === 3)) {
+      const value = this.subscriptions.subscriptionsResource.value()?.result?.value;
+      const items = value ? Object.values(value) : [];
+
+      const expiring = items
+        .filter((s) => s.timedelta < 0 && Math.abs(s.timedelta) <= this.thresholdDays)
+        .map((s) => ({ application: s.application, date_till: s.date_till, timedelta: s.timedelta }));
+
+      if (expiring.length > 0) {
         this.opened.set(true);
-        this.dialog.open(WelcomeDialogComponent, {
-          disableClose: true,
+        this.dialog.open(SubscriptionExpiryDialogComponent, {
+          disableClose: false,
           autoFocus: false,
-          width: "720px",
-          panelClass: "welcome-dialog-panel"
+          width: "640px",
+          panelClass: "global-dialog-panel",
+          data: { items: expiring }
         });
       }
     });

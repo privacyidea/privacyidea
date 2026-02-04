@@ -21,6 +21,7 @@ import { MatButton } from "@angular/material/button";
 import { CommonModule } from "@angular/common";
 import { MatDialogRef } from "@angular/material/dialog";
 import { MatIcon } from "@angular/material/icon";
+import { AuthService } from "../../../services/auth/auth.service";
 
 @Component({
   selector: "app-welcome-dialog",
@@ -31,10 +32,23 @@ import { MatIcon } from "@angular/material/icon";
 })
 export class WelcomeDialogComponent {
   private dialogRef = inject(MatDialogRef<WelcomeDialogComponent>);
+  private auth = inject(AuthService);
   step = signal<number>(0);
 
+  constructor() {
+    if (this.auth.hideWelcome()) {
+      this.step.set(4);
+    }
+  }
+
   nextWelcome(): void {
-    const nextStep = this.step() + 1;
+    let nextStep = this.step() + 1;
+
+    const status = this.auth.subscriptionStatus();
+    if (nextStep === 4 && !(status === 1)) {
+      nextStep = 5;
+    }
+
     if (nextStep >= 5) {
       this.dialogRef.close();
     } else {
