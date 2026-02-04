@@ -710,7 +710,7 @@ class SQLResolverTestCase(MyTestCase):
         self.assertTrue(original_hash.startswith("{SSHA256}"))
 
         # 2. Check with wrong password
-        self.assertFalse(y.checkPass(uid, "wrongpassword")),
+        self.assertFalse(y.checkPass(uid, "wrongpassword"))
 
         # 3. Verify the hash has not changed
         new_hash = y.session.execute(
