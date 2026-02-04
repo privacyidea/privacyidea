@@ -37,7 +37,8 @@ export class WelcomeDialogService {
         this.dialog.open(WelcomeDialogComponent, {
           disableClose: true,
           autoFocus: false,
-          width: "720px"
+          width: "720px",
+          panelClass: "welcome-dialog-panel"
         });
       }
     });
