@@ -40,6 +40,7 @@ import { UserResolversComponent } from "./components/user/user-sources/user-reso
 import { pendingChangesGuard } from "./guards/pending-changes.guard";
 import { Subscription } from "rxjs";
 import { SubscriptionComponent } from "./components/configuration/subscription/subscription.component";
+import { EventComponent } from "./components/event/event.component";
 
 export const routes: Routes = [
   {
@@ -75,6 +76,10 @@ export const routes: Routes = [
   {
     path: "policies",
     children: [{ path: "", component: PoliciesComponent }]
+  },
+  {
+    path: "events",
+    children: [{ path: "", component: EventComponent, canDeactivate: [pendingChangesGuard] }]
   },
   {
     path: "configuration",
