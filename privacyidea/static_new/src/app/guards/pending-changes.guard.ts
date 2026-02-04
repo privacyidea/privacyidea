@@ -36,7 +36,7 @@ export const pendingChangesGuard: CanDeactivateFn<any> = () => {
       }
     }).afterClosed().pipe(
       map(result => {
-        if (result) {
+        if (result?.confirmed) {
             // If the user confirms discarding changes, unregister the check
             pendingChangesService.unregisterHasChanges();
             return true;

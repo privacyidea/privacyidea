@@ -8,7 +8,7 @@
 .progress-bar {
   position: fixed;
   top: calc(
-    100% - max(var(--mdc-linear-progress-track-height, 4px), var(--mdc-linear-progress-active-indicator-height, 4px))
+          100% - max(var(--mdc-linear-progress-track-height, 4px), var(--mdc-linear-progress-active-indicator-height, 4px))
   );
   left: 0;
   width: 100%;
@@ -109,13 +109,14 @@
     border-top-left-radius: inherit !important;
     border-top-right-radius: inherit !important;
   }
+
   .mat-accordion .mat-expansion-panel:last-of-type .mat-expansion-panel-header {
     border-bottom-left-radius: inherit !important;
     border-bottom-right-radius: inherit !important;
   }
+
   mat-panel-title.mat-expansion-panel-header-title .mat-icon {
     color: var(--mat-expansion-header-description-color, var(--mat-sys-on-surface-variant));
     margin-right: 16px;
   }
 }
-

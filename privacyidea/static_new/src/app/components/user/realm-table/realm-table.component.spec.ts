@@ -42,7 +42,7 @@ import { MockResolverService } from "../../../../testing/mock-services/mock-reso
 import { UserNewResolverComponent } from "../user-new-resolver/user-new-resolver.component";
 
 class LocalMockMatDialog {
-  result$ = of(true);
+  result$ = of({ confirmed: true });
 
   open = jest.fn(() => ({
     afterClosed: () => this.result$
@@ -492,7 +492,7 @@ describe("RealmTableComponent", () => {
   });
 
   it("onDeleteRealm should delete realm when confirmed", () => {
-    dialog.result$ = of(true);
+    dialog.result$ = of({ confirmed: true });
     const row = { name: "realmA" } as any;
 
     component.onDeleteRealm(row);
@@ -504,7 +504,7 @@ describe("RealmTableComponent", () => {
   });
 
   it("onDeleteRealm should not delete when dialog is cancelled", () => {
-    dialog.result$ = of(false);
+    dialog.result$ = of({ confirmed: false });
     const row = { name: "realmA" } as any;
 
     component.onDeleteRealm(row);

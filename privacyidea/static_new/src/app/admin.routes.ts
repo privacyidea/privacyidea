@@ -38,6 +38,7 @@ import { MachineResolverComponent } from "./components/machine-resolver/machine-
 import { PeriodicTaskComponent } from "./components/configuration/periodic-task/periodic-task.component";
 import { UserResolversComponent } from "./components/user/user-sources/user-resolvers.component";
 import { pendingChangesGuard } from "./guards/pending-changes.guard";
+import { EventComponent } from "./components/event/event.component";
 
 export const routes: Routes = [
   {
@@ -73,6 +74,10 @@ export const routes: Routes = [
   {
     path: "policies",
     children: [{ path: "", component: PoliciesComponent }]
+  },
+  {
+    path: "events",
+    children: [{ path: "", component: EventComponent, canDeactivate: [pendingChangesGuard] }]
   },
   {
     path: "configuration",

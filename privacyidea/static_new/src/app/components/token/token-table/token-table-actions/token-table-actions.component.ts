@@ -92,7 +92,7 @@ export class TokenTableActionsComponent {
       .afterClosed()
       .subscribe({
         next: (result) => {
-          if (result) {
+          if (result?.confirmed) {
             this.tokenService
               .revokeToken(this.tokenSerial())
               .pipe(switchMap(() => this.tokenService.getTokenDetails(this.tokenSerial())))
@@ -120,7 +120,7 @@ export class TokenTableActionsComponent {
       .afterClosed()
       .subscribe({
         next: (result) => {
-          if (result) {
+          if (result?.confirmed) {
             this.tokenService.deleteToken(this.tokenSerial()).subscribe({
               next: () => {
                 this.router.navigateByUrl(ROUTE_PATHS.TOKENS).then();
@@ -187,7 +187,7 @@ export class TokenTableActionsComponent {
       .afterClosed()
       .subscribe({
         next: (result) => {
-          if (result) {
+          if (result?.confirmed) {
             this.tokenService.bulkUnassignTokens(selectedTokens).subscribe({
               next: (response: PiResponse<BulkResult, any>) => {
                 const failedTokens = response.result?.value?.failed || [];
