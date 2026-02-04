@@ -739,7 +739,7 @@ class SQLResolverTestCase(MyTestCase):
 
         # 2. Verify checkPass returns False and does not raise an exception
         with LogCapture(level=logging.ERROR) as lc:
-            self.assertFalse(y.checkPass(uid, "password123")),
+            self.assertFalse(y.checkPass(uid, "password123"))
             # No errors should be logged, as this is a graceful failure
             self.assertEqual(len(lc.records), 0)
 
