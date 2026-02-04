@@ -38,6 +38,8 @@ import { MachineResolverComponent } from "./components/machine-resolver/machine-
 import { PeriodicTaskComponent } from "./components/configuration/periodic-task/periodic-task.component";
 import { UserResolversComponent } from "./components/user/user-sources/user-resolvers.component";
 import { pendingChangesGuard } from "./guards/pending-changes.guard";
+import { Subscription } from "rxjs";
+import { SubscriptionComponent } from "./components/configuration/subscription/subscription.component";
 
 export const routes: Routes = [
   {
@@ -76,7 +78,12 @@ export const routes: Routes = [
   },
   {
     path: "configuration",
-    children: [{ path: "machine_resolver", component: MachineResolverComponent }]
+    children: [
+      // { path: "", component: SystemComponent },
+      { path: "machine_resolver", component: MachineResolverComponent },
+      { path: "periodic-tasks", component: PeriodicTaskComponent },
+      { path: "subscription", component: SubscriptionComponent }
+    ]
   },
   {
     path: "audit",
@@ -85,8 +92,4 @@ export const routes: Routes = [
       { path: "clients", component: ClientsComponent }
     ]
   },
-  {
-    path: "configuration",
-    children: [{ path: "periodic-tasks", component: PeriodicTaskComponent }]
-  }
 ];

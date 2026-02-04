@@ -1,0 +1,84 @@
+@use "../../../../styles" as styles;
+
+.subscription-layout {
+  @include styles.table-container-styles;
+  @include styles.base-table-structure(".token-table", ".token-table-filter", ".table-scroll-container");
+  max-height: var(--max-height);
+  max-width: calc(100vw - var(--global-padding) * 5 - 48px);
+  overflow: auto;
+  display: grid;
+}
+
+.application-color {
+  color: var(--mat-sys-primary)
+}
+
+.subscription-details {
+  border-radius: var(--border-radius);
+  border: solid 1px var(--mat-sys-surface-container-highest);
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1rem;
+
+  .subscription-info-grid {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0.5rem 1rem;
+    align-items: baseline;
+    margin-bottom: 1rem;
+
+    strong {
+      white-space: nowrap;
+    }
+  }
+
+  p {
+    line-height: 2rem;
+    margin: 0 0 16px;
+  }
+}
+
+.info-panels {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+
+  mat-card {
+    flex: 1;
+    min-width: 300px;
+    border-radius: var(--border-radius);
+  }
+
+  mat-card-header {
+    background-color: var(--grey-100);
+    padding: 8px 16px;
+    font-weight: 500;
+  }
+
+  mat-card-content {
+    padding: 16px;
+  }
+}
+
+.alert {
+  padding: 8px 12px;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+  font-weight: 500;
+}
+
+.alert-success {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.alert-warning {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.alert-danger {
+  background-color: #f8d7da;
+  color: #721c24;
+}

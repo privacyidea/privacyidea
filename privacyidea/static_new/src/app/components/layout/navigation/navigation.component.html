@@ -498,6 +498,17 @@
         <mat-list-item>
           <button
             class="card-button-1"
+            [ngClass]="contentService.routeUrl() === ROUTE_PATHS.SUBSCRIPTION ? 'card-button-active' :
+            'card-button-1'"
+            [routerLink]="[ROUTE_PATHS.SUBSCRIPTION]"
+            mat-stroked-button>
+            <mat-icon>event_repeat</mat-icon>
+            Subscription
+          </button>
+        </mat-list-item>
+        <mat-list-item>
+          <button
+            class="card-button-1"
             disabled
             mat-stroked-button>
             <mat-icon>safety_check</mat-icon>
