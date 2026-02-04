@@ -677,7 +677,7 @@ class SQLResolverTestCase(MyTestCase):
         self.assertTrue(original_hash.startswith("$argon2id$"))
 
         # 2. Check the password
-        self.assertTrue(y.checkPass(uid, "password123")),
+        self.assertTrue(y.checkPass(uid, "password123"))
 
         # 3. Verify the hash has not changed
         new_hash = y.session.execute(
