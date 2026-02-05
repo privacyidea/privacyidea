@@ -67,10 +67,12 @@ def create_fido2_challenge(rp_id: str, user_verification: str = "preferred", tra
         "user_verification": user_verification
     }
 
+
 @dataclass
 class FIDOVerificationResult:
-    success:int
+    success: int
     challenge: Challenge
+
 
 def verify_fido2_challenge(transaction_id: str, token: TokenClass, params: dict) -> FIDOVerificationResult:
     """
