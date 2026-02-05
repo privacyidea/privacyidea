@@ -23,13 +23,10 @@ limitations under the License.
 """
 import inspect
 import smtplib
-
-from collections.abc import Sequence, Sized
-
 from collections import namedtuple
+from collections.abc import Sequence, Sized
 from functools import update_wrapper
 from smtplib import SMTPException
-
 
 Call = namedtuple('Call', ['request', 'response'])
 
@@ -78,6 +75,7 @@ class CallList(Sequence, Sized):
     def reset(self):
         self._calls = []
 
+
 class SmtpMock(object):
 
     def __init__(self):
@@ -89,6 +87,7 @@ class SmtpMock(object):
     def reset(self):
         self._request_data = {}
         self._calls.reset()
+        self.sent_message = None
 
     def get_smtp_ssl(self):
         return self.smtp_ssl
@@ -96,7 +95,7 @@ class SmtpMock(object):
     def setdata(self, response=None, authenticated=True,
                 config=None, exception=False, support_tls=True):
         if response is None:
-                response = {}
+            response = {}
         config = config or {}
         self.support_tls = support_tls
         self.exception = exception
@@ -141,7 +140,7 @@ class SmtpMock(object):
             response = (535, "authentication failed (#5.7.1)")
         return {self._request_data.get("recipient"): response}
 
-#    def _on_init(self, SMTP_instance, host, port=25, timeout=3):
+    #    def _on_init(self, SMTP_instance, host, port=25, timeout=3):
     def _on_init(self, *args, **kwargs):
         SMTP_instance = args[0]
         host = args[1]
@@ -175,6 +174,7 @@ class SmtpMock(object):
         def unbound_on_send(SMTP, sender, recipient, msg, *a, **kwargs):
             self.sent_message = msg
             return self._on_request(SMTP, sender, recipient, msg, *a, **kwargs)
+
         self._patcher = mock.patch('smtplib.SMTP.sendmail',
                                    unbound_on_send)
         self._patcher.start()
