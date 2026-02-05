@@ -1,6 +1,6 @@
-<div class="additional-conditions-container">
+<div class="conditions-container">
   <h2
-    class="additional-conditions-title"
+    class="conditions-title"
     i18n>
     Additional Conditions
   </h2>
@@ -138,14 +138,20 @@
       <div class="form-actions">
         <button
           mat-button
-          (click)="cancelEdit()">
+          class="action-button-cancel"
+          (click)="cancelEdit()"
+          i18n>
           Cancel
         </button>
         <button
-          mat-raised-button
-          color="primary"
+          mat-stroked-button
+          class="action-button-1"
           (click)="saveCondition()">
-          {{ editIndex() !== null ? "Save Condition" : "Add Condition" }}
+          @if (editIndex() !== null) {
+            <div i18n>Update Condition</div>
+          } @else {
+            <div i18n>Add Condition</div>
+          }
         </button>
       </div>
     </div>
@@ -153,7 +159,9 @@
     <div class="add-condition-button-container">
       <button
         mat-stroked-button
-        (click)="showAddConditionForm.set(true)">
+        (click)="showAddConditionForm.set(true)"
+        class="action-button-1"
+        i18n>
         <mat-icon>add</mat-icon> Create a New Condition
       </button>
     </div>

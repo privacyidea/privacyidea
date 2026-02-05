@@ -79,7 +79,6 @@ export class EditUserConditionsComponent {
   availableRealms = computed(() => {
     const selectedResolvers = this.selectedResolvers();
     if (selectedResolvers.length === 0) {
-      // No resolvers selected, return all realms
       return this.realmService.realmOptions();
     }
     const realms = this.realmService.realms();
@@ -95,7 +94,6 @@ export class EditUserConditionsComponent {
   availableResolvers = computed(() => {
     const selectedRealms = this.selectedRealms();
     if (selectedRealms.length === 0) {
-      // No realms selected, return all resolvers
       return this.resolverService.resolverOptions();
     }
     const realms = this.realmService.realms();

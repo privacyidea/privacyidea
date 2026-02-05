@@ -1,24 +1,7 @@
 @use "mixins";
-@use "@angular/material" as mat;
-
-.nodes-container {
-  background-color: var(--mat-sys-surface-container);
-  border: 1px solid var(--mat-sys-outline-variant);
-  border-radius: var(--border-radius);
-  box-shadow: var(--mat-sys-level1);
-  padding: var(--half-global-padding) var(--three-quarters-global-padding);
-}
-
-.nodes-container:focus-within {
-  outline: 2px solid var(--mat-sys-primary-base);
-  outline-offset: -2px;
-}
-
-.nodes-title {
-  font-size: 1.2em;
-  font-weight: 500;
-  margin: 0 0 var(--half-global-padding);
-}
+@use "styles";
+@use "@angular/material";
+@use "../edit-conditions-tab.component.scss";
 
 .user-agent-chip-edit {
   @include mixins.compact-badge-base;

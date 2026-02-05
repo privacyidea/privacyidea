@@ -71,7 +71,7 @@ export class PolicyPanelEditComponent {
   readonly dialogService: DialogServiceInterface = inject(DialogService);
 
   readonly policy = input.required<PolicyDetail>();
-  readonly isNewPolicy = input.required<boolean>();
+
   readonly policyEdits = linkedSignal<PolicyDetail, Partial<PolicyDetail>>({
     source: () => this.policy(),
     computation: (source, previous) => {

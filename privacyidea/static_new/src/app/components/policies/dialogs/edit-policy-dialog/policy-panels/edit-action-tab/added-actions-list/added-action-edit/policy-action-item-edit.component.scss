@@ -3,10 +3,13 @@
   height: 8px;
 }
 
-.action-button-in-panel {
+.delete-icon-button {
   flex-shrink: 0;
   margin: auto -4px;
-  --mat-icon-button-state-layer-color: var(--mat-sys-surface-container-high);
+  color: var(--mat-sys-on-error-container);
+  &:hover {
+    background-color: var(--mat-sys-error-container);
+  }
 }
 
 .action-card-in-panel {
@@ -30,9 +33,4 @@
   .half-width {
     width: 50%;
   }
-}
-
-.action-card-in-panel:focus-within {
-  outline: 2px solid var(--mat-sys-primary-base);
-  outline-offset: -2px;
 }

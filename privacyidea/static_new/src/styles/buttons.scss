@@ -443,20 +443,33 @@ $button-low-contrast-variant: linear-gradient(
   background-color: var(--mat-sys-surface-container-lowest);
   border-radius: var(--border-radius);
   justify-content: start;
+  border-style: solid;
+  border-width: 1px;
+  transition:
+    background-color 0.2s ease-in-out,
+    color 0.2s ease-in-out;
 
   mat-icon.mat-icon.notranslate.material-icons {
     font-size: 20px;
   }
-}
 
-@mixin action-button-variant($color, $background-color) {
-  color: $color;
-  border-color: $color;
-  &:hover {
-    background-color: $background-color;
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+    background-color: var(--mat-sys-surface-variant);
+    color: var(--mat-sys-on-surface-variant);
+    border-color: var(--mat-sys-outline);
   }
 }
 
+@mixin action-button-variant($color, $hover-bg) {
+  color: $color;
+  border-color: $color;
+
+  &:not(:disabled):hover {
+    background-color: $hover-bg;
+  }
+}
 .action-button-1 {
   @extend %action-button-base;
 
@@ -476,9 +489,7 @@ $button-low-contrast-variant: linear-gradient(
 .action-button-cancel {
   @extend %action-button-base;
 
-  &:not([disabled]) {
-    @include action-button-variant(var(--grey-base), var(--grey-light));
-  }
+  @include action-button-variant(var(--grey-base), var(--mat-sys-surface-container-highest));
 }
 
 .action-button-active {

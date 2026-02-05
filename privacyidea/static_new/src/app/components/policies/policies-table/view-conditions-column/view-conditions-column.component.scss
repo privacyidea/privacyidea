@@ -3,11 +3,13 @@
 .view-conditions-container {
   display: flex;
   flex-direction: column;
-  div {
-    border-bottom: 1px solid var(--mat-sys-outline-variant);
 
-    &:last-child {
-      border-bottom: none;
+  * {
+    font-size: 12px;
+    padding: 0 var(--half-global-padding) !important;
+
+    &:not(:last-child) {
+      border-bottom: 1px solid var(--mat-sys-outline-variant);
     }
   }
 }

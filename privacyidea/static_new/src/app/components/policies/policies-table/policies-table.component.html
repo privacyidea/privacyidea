@@ -24,6 +24,7 @@
   i18n-aria-label>
   @if (authService.actionAllowed("policyread")) {
     <app-policy-filter
+      #filterComponent
       (filteredPoliciesChange)="onPolicyListFilteredChange($event)"
       [(filter)]="filter"
       [unfilteredPolicies]="policyService.allPolicies()">
@@ -32,9 +33,13 @@
   <app-policies-table-actions [policySelection]="selectedPolicies()" />
   <table
     mat-table
-    [dataSource]="policiesListFiltered()"
+    [dataSource]="sortedFilteredPolicies()"
     class="policies-table"
-    multiTemplateDataRows>
+    multiTemplateDataRows
+    matSort
+    matSortActive="priority"
+    matSortDirection="asc"
+    (matSortChange)="onSortChange($event)">
     @for (column of columnKeysMap; track column) {
       <ng-container [matColumnDef]="column.key">
         @if (column.key === "select") {
@@ -54,21 +59,28 @@
           <th
             *matHeaderCellDef
             [class]="'col-' + column.key"
-            mat-header-cell>
-            <div class="flex ali-center">
-              {{ column.label }}
-              <div class="margin-left-1 flex">
-                @if (isFilterable(column.key)) {
+            mat-header-cell
+            [mat-sort-header]="column.key"
+            [disabled]="['actions', 'conditions'].includes(column.key)">
+            <div class="table-header-container">
+              @if (column.label) {
+                <div>
+                  {{ column.label }}
+                </div>
+              }
+              @if (isFilterable(column.key)) {
+                <div class="flex">
                   <button
                     (click)="onFilterClick(column.key)"
                     class="filter-button"
+                    [matTooltip]="getFilterTooltipText(column.key)"
                     mat-icon-button>
                     <mat-icon class="keyword-button-icon margin-left-0">
                       {{ getFilterIconName(column.key) }}
                     </mat-icon>
                   </button>
-                }
-              </div>
+                </div>
+              }
             </div>
           </th>
         }
@@ -114,7 +126,7 @@
               {{ policy.description }}
             }
             @case ("actions") {
-              <app-policies-view-action-column [actions]="policy.action" />
+              <app-view-action-column [actions]="policy.action" />
             }
             @case ("conditions") {
               <app-view-conditions-column [policy]="policy" />

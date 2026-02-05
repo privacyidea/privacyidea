@@ -176,7 +176,7 @@ export interface PolicyServiceInterface {
   readonly allPolicies: Signal<PolicyDetail[]>;
   canSavePolicy(policy: PolicyDetail): boolean;
   getDetailsOfAction(actionName: string): PolicyActionDetail | null;
-  copyPolicy(policyDetail: PolicyDetail, newName: string): Promise<PiResponse<any>>;
+  copyPolicy(oldName: string, newName: string): Promise<PiResponse<any>>;
   createPolicy(policyData: PolicyDetail): Promise<PiResponse<any>>;
   updatePolicy(oldPolicyName: String, policyData: PolicyDetail): Promise<PiResponse<any>>;
   deletePolicy(name: string): Promise<PiResponse<number>>;
@@ -556,7 +556,9 @@ export class PolicyService implements PolicyServiceInterface {
     return result;
   }
 
-  copyPolicy(policyData: PolicyDetail, newName: string): Promise<PiResponse<any>> {
+  copyPolicy(oldName: string, newName: string): Promise<PiResponse<any>> {
+    const policyData = this.allPolicies().find((p) => p.name === oldName);
+    if (!policyData) return Promise.reject("Policy not found");
     const copiedPolicy: PolicyDetail = { ...policyData, name: String(newName) };
     return this.createPolicy(copiedPolicy);
   }

@@ -79,7 +79,7 @@
   }
 
   <!-- Additional Conditions -->
-  @if (additionalConditions().length === 0) {
+  @if (additionalConditions().length > 0) {
     <div class="additional-conditions-grid">
       @for (condition of additionalConditions(); track $index) {
         <div class="additional-condition-item">

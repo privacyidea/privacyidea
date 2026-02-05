@@ -4,6 +4,7 @@
 
 .layout {
   --max-height: calc(100vh - 64px - var(--global-padding) * 2);
+  --drawer-width: 298px;
 }
 
 .progress-bar {
@@ -45,6 +46,8 @@
 .drawer-content {
   justify-content: center;
   display: flex;
+  height: calc(100% - 32px * 2);
+  align-items: baseline;
 }
 
 .drawer-button-div {

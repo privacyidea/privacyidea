@@ -1,3 +1,7 @@
+@use "styles";
+@use "buttons";
+@use "@angular/material";
+
 .policy-action-item {
   align-items: center;
   border-radius: var(--border-radius);

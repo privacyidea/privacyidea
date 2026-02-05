@@ -17,10 +17,10 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, input, inject, signal, computed, linkedSignal } from "@angular/core";
+import { Component, input, inject, signal, computed, linkedSignal, viewChild } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { MatTableModule } from "@angular/material/table";
-import { MatSortModule } from "@angular/material/sort";
+import { MatSortModule, Sort } from "@angular/material/sort";
 import { MatIconModule } from "@angular/material/icon";
 import { MatButtonModule } from "@angular/material/button";
 import { MatSlideToggleModule } from "@angular/material/slide-toggle";
@@ -38,8 +38,7 @@ import { MatInputModule } from "@angular/material/input";
 import { MatPaginatorModule } from "@angular/material/paginator";
 import { PoliciesTableActionsComponent } from "./policies-table-actions/policies-table-actions.component";
 import { MatCheckboxChange, MatCheckboxModule } from "@angular/material/checkbox";
-import { PoliciesViewActionColumnComponent } from "./policies-view-action-column/policies-view-action-column.component";
-import { EditConditionsTabComponent } from "../dialogs/edit-policy-dialog/policy-panels/edit-conditions-tab/edit-conditions-tab.component";
+import { PoliciesViewActionColumnComponent as ViewActionColumnComponent } from "./view-action-column/view-action-column.component";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { FilterValueGeneric } from "../../../core/models/filter_value_generic/filter_value_generic";
 import { FilterOption } from "../../shared/keyword-filter-generic/keyword-filter-generic.component";
@@ -72,7 +71,7 @@ const columnKeysMap = [
     MatPaginatorModule,
     PoliciesTableActionsComponent,
     MatCheckboxModule,
-    PoliciesViewActionColumnComponent,
+    ViewActionColumnComponent,
     MatTooltipModule,
     PolicyFilterComponent,
     ConditionsTabComponent
@@ -89,12 +88,74 @@ export class PoliciesTableComponent {
   readonly authService: AuthServiceInterface = inject(AuthService);
   readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
 
-  readonly policiesListFiltered = linkedSignal<PolicyDetail[], PolicyDetail[]>({
-    source: () => this.policyService.allPolicies(),
-    computation: (allPolicies) => allPolicies
+  readonly filterComponent = viewChild.required<PolicyFilterComponent>("filterComponent");
+
+  readonly sort = signal<Sort>({ active: "priority", direction: "asc" });
+
+  readonly policiesListFiltered = linkedSignal<
+    { filter: FilterValueGeneric<PolicyDetail>; allPolicies: PolicyDetail[] },
+    PolicyDetail[]
+  >({
+    source: () => ({ filter: this.filter(), allPolicies: this.policyService.allPolicies() }),
+    computation: (source) => source.filter.filterItems(source.allPolicies)
   });
+
+  readonly sortedFilteredPolicies = computed(() => {
+    const policies = this.policiesListFiltered();
+    const sort = this.sort();
+    console.log("Sorting policies by", sort);
+    if (!sort.active || sort.direction === "") {
+      return policies;
+    }
+
+    const sortedPolicies = [...policies].sort((a, b) => {
+      const isAsc = sort.direction === "asc";
+      switch (sort.active) {
+        case "priority":
+          return this.compare(a.priority, b.priority, isAsc);
+        case "name":
+          return this.compare(a.name, b.name, isAsc);
+        case "scope":
+          return this.compare(a.scope, b.scope, isAsc);
+        case "description":
+          console.log("Comparing descriptions", a.description, b.description);
+          console.log("Result:", this.compare(a.description ?? "", b.description ?? "", isAsc));
+          return this.compare(a.description ?? "", b.description ?? "", isAsc);
+        case "active":
+          return this.compare(a.active, b.active, isAsc);
+        default:
+          return 0;
+      }
+    });
+
+    console.log("Unsorted policies:", policies);
+    console.log("Sorted policies:", sortedPolicies);
+    return sortedPolicies;
+  });
+
+  onSortChange(sort: Sort) {
+    this.sort.set(sort);
+  }
+
+  private compare(a: number | string | boolean, b: number | string | boolean, isAsc: boolean) {
+    return (a < b ? -1 : 1) * (isAsc ? 1 : -1);
+  }
+
   readonly isFiltered = input.required<boolean>();
-  readonly selectedPolicies = signal<Set<string>>(new Set<string>());
+  readonly selectedPolicies = linkedSignal<PolicyDetail[], Set<string>>({
+    source: () => this.policiesListFiltered(),
+
+    computation: (source, previous) => {
+      const selectedPolicies = previous?.value;
+      if (!selectedPolicies) return new Set<string>();
+      for (const selectedPolicy of selectedPolicies) {
+        if (!source.some((policy) => policy.name === selectedPolicy)) {
+          selectedPolicies.delete(selectedPolicy);
+        }
+      }
+      return selectedPolicies;
+    }
+  });
 
   readonly filter = signal<FilterValueGeneric<PolicyDetail>>(
     new FilterValueGeneric({ availableFilters: policyFilterOptions })
@@ -134,20 +195,6 @@ export class PoliciesTableComponent {
       this.policyService.updatePolicyOptimistic(result);
     }
   }
-  async copyPolicy(policy: PolicyDetail) {
-    const newName = await lastValueFrom(
-      this.dialogService
-        .openDialog({
-          component: CopyPolicyDialogComponent,
-          data: policy.name
-        })
-        .afterClosed()
-    );
-    if (!newName) {
-      return;
-    }
-    this.policyService.copyPolicy(policy, newName);
-  }
 
   async _confirm(data: SimpleConfirmationDialogData): Promise<boolean> {
     return (
@@ -165,7 +212,6 @@ export class PoliciesTableComponent {
     return this.selectedPolicies().has(policyName);
   }
   updateSelection($event: MatCheckboxChange, policyName: string) {
-    console.log("Checkbox change event:", $event, "for policy:", policyName);
     const selected = this.selectedPolicies();
     if ($event.checked) {
       selected.add(policyName);
@@ -175,8 +221,9 @@ export class PoliciesTableComponent {
     this.selectedPolicies.set(new Set<string>(selected));
   }
   isAllSelected(): boolean {
-    const selected = this.selectedPolicies();
     const filtered = this.policiesListFiltered();
+    if (filtered.length === 0) return false;
+    const selected = this.selectedPolicies();
     return selected.size === filtered.length && filtered.every((policy) => selected.has(policy.name));
   }
   masterToggle() {
@@ -193,16 +240,26 @@ export class PoliciesTableComponent {
 
   onFilterClick(filterKeyword: string): void {
     this.toggleFilter(filterKeyword);
+    const filterComponent = this.filterComponent();
+    if (filterComponent) {
+      filterComponent.focusInput();
+    }
   }
 
   toggleFilter(filterKeyword: string): void {
     const filterOption = policyFilterOptions.find((option) => option.key === filterKeyword);
-    console.log("Toggling filter for keyword:", filterKeyword, "Found option:", filterOption);
     if (filterOption) {
-      console.log("Option found, toggling filter.");
       const newFilter = this.filter().toggleFilterKeyword(filterOption);
       this.filter.set(newFilter);
     }
+  }
+
+  getFilterTooltipText(filterKeyword: string): string {
+    const filterOption = policyFilterOptions.find((option) => option.key === filterKeyword);
+    if (filterOption) {
+      return filterOption.hint ?? "";
+    }
+    return "";
   }
 
   getFilterIconName(keyword: string): string {
@@ -285,6 +342,7 @@ const policyFilterOptions = [
     },
     matches: (item: PolicyDetail, filter: FilterValueGeneric<PolicyDetail>) => {
       const value = filter.getValueOfKey("active")?.toLowerCase();
+      console.log("Filtering active with value:", value, "on item:", item.active);
       if (value === "true") return item.active === true;
       if (value === "false") return item.active === false;
       return true;
@@ -321,13 +379,68 @@ const policyFilterOptions = [
     }
   }),
   new FilterOption({
-    key: "realm",
-    label: $localize`Realm`,
-    hint: $localize`Filter by realm.`,
+    key: "conditions",
+    label: $localize`Conditions`,
+    hint: $localize`Filter policies by conditions. Matches policies that have at least one condition containing the filter value in its name or value.`,
     matches: (item: PolicyDetail, filter: FilterValueGeneric<PolicyDetail>) => {
-      const value = filter.getValueOfKey("realm");
-      if (!value) return true;
-      return item.realm.includes(value);
+      const substring = filter.getValueOfKey("conditions")?.toLocaleLowerCase();
+      if (!substring) return true;
+      function _isSubstringInList(substring: string, list: string[]): boolean {
+        return list.some((item) => item.includes(substring));
+      }
+
+      // Admin conditions
+      if (
+        ("admin realms".includes(substring) && item.adminrealm.length > 0) ||
+        _isSubstringInList(substring, item.adminrealm)
+      ) {
+        return true;
+      }
+      if (
+        ("admin users".includes(substring) && item.adminuser.length > 0) ||
+        _isSubstringInList(substring, item.adminuser)
+      ) {
+        return true;
+      }
+      // User conditions
+      if (("user realms".includes(substring) && item.realm.length > 0) || _isSubstringInList(substring, item.realm)) {
+        return true;
+      }
+      if (("user users".includes(substring) && item.user.length > 0) || _isSubstringInList(substring, item.user)) {
+        return true;
+      }
+      // Environment conditions
+      if (
+        ("privacyidea nodes".includes(substring) && item.pinode.length > 0) ||
+        _isSubstringInList(substring, item.pinode)
+      ) {
+        return true;
+      }
+      if (("valid time".includes(substring) && item.time.length > 0) || item.time.includes(substring)) {
+        return true;
+      }
+      if (("clients".includes(substring) && item.client.length > 0) || _isSubstringInList(substring, item.client)) {
+        return true;
+      }
+      if (
+        ("user agents".includes(substring) && item.user_agents.length > 0) ||
+        _isSubstringInList(substring, item.user_agents)
+      ) {
+        return true;
+      }
+      // Additional conditions
+      if ("additional conditions".includes(substring) && item.conditions.length > 0) {
+        return true;
+      }
+      for (const condition of item.conditions) {
+        for (const conditionItem of condition) {
+          if (conditionItem.toString().toLowerCase().includes(substring)) {
+            return true;
+          }
+        }
+      }
+
+      return false;
     }
   })
 ];

@@ -11,6 +11,7 @@ import {
   SimpleConfirmationDialogData
 } from "../../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { lastValueFrom } from "rxjs";
+import { CopyPolicyDialogComponent } from "@components/policies/dialogs/copy-policy-dialog/copy-policy-dialog.component";
 
 @Component({
   selector: "app-policies-table-actions",
@@ -20,9 +21,6 @@ import { lastValueFrom } from "rxjs";
   styleUrl: "./policies-table-actions.component.scss"
 })
 export class PoliciesTableActionsComponent {
-  copySelectedPolicies() {
-    throw new Error("Method not implemented.");
-  }
   readonly policySelection = input.required<Set<string>>();
   readonly dialogService: DialogServiceInterface = inject(DialogService);
   readonly authService: AuthServiceInterface = inject(AuthService);
@@ -64,6 +62,26 @@ export class PoliciesTableActionsComponent {
     }
     for (const policyName of this.policySelection()) {
       await this.policyService.deletePolicy(policyName);
+    }
+  }
+
+  async copySelectedPolicies() {
+    for (const policyName of this.policySelection()) {
+      const newName = await lastValueFrom(
+        this.dialogService
+          .openDialog({
+            component: CopyPolicyDialogComponent,
+            data: policyName
+          })
+          .afterClosed()
+      );
+      if (newName) {
+        try {
+          this.policyService.copyPolicy(policyName, newName);
+        } catch (e) {
+          console.error("Error copying policy:", e);
+        }
+      }
     }
   }
 }

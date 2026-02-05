@@ -16,9 +16,9 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<div class="user-container">
+<div class="conditions-container">
   <h2
-    class="user-title"
+    class="conditions-title"
     i18n>
     Users Conditions
   </h2>
@@ -68,7 +68,8 @@
         <button
           mat-stroked-button
           class="action-button-1"
-          (click)="clearUsers()">
+          (click)="clearUsers()"
+          i18n>
           Clear users
         </button>
       </div>
@@ -85,9 +86,7 @@
         [formControl]="userFormControl"
         #userInput
         (keyup.enter)="
-          userFormControl.markAsTouched();
-          addUser(userInput.value);
-          !userFormControl.invalid && (userInput.value = '')
+          userFormControl.markAsTouched(); addUser(userInput.value); !userFormControl.invalid && (userInput.value = '')
         " />
       @if (userFormControl.hasError("includesComma")) {
         <mat-error i18n>User must not contain commas.</mat-error>

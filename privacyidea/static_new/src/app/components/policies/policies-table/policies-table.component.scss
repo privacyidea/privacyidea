@@ -2,46 +2,9 @@
 @use "table";
 @use "@angular/material" as mat;
 
-.policies-layout {
-  @include table.table-container-styles;
-  display: flex;
-  flex-direction: column;
-
-  height: 100%;
-  max-height: var(--max-height, 80vh);
-  width: 1500px;
-  max-width: 100%;
-  overflow-y: auto;
-  scrollbar-width: thin;
-
-  app-policies-table,
-  app-policy-panel-new {
-    flex: none;
-    overflow: visible;
-  }
-
-  ::ng-deep .mat-accordion .mat-expansion-panel:last-of-type .mat-expansion-panel-header {
-    padding: var(--half-global-padding) !important;
-    padding-right: var(--global-padding) !important;
-
-    .mat-content {
-      align-items: center;
-    }
-
-    &:not(.scope-is-selectable) {
-      height: 1.5rem;
-    }
-
-    &.mat-expanded.scope-is-selectable {
-      padding: 0 var(--global-padding) !important;
-      height: auto !important;
-      min-height: 1.5rem;
-    }
-  }
-
-  ::ng-deep mat-expansion-panel.mat-expansion-panel-spacing {
-    margin: 0;
-  }
+:host {
+  flex: 1;
+  align-self: stretch;
 }
 
 .policy-name-input {
@@ -59,21 +22,38 @@
 .policies-table-layout {
   @include table.table-container-styles;
   @include table.base-table-structure(".policies-table", ".policies-table-filter", ".table-scroll-container");
-  display: grid;
-  max-width: calc(100vw - var(--global-padding) * 5 - 48px);
-  height: calc(100vh - var(--global-padding) * 5);
+  min-width: calc(100% - var(--global-padding) * 2);
+  max-width: calc(100% - var(--global-padding) * 2);
+  min-height: calc(100% - var(--global-padding) * 2);
+  max-height: calc(100% - var(--global-padding) * 2);
   overflow: auto;
-
-  th,
-  td {
-    padding: 0 var(--half-global-padding);
-    text-align: left;
-  }
 
   .policies-table {
     border-collapse: collapse;
     table-layout: auto;
     width: 100%;
+
+    th,
+    td {
+      padding: 0 var(--half-global-padding);
+      text-align: left;
+    }
+
+    .mat-mdc-row {
+      height: 0;
+    }
+
+    .table-header-container {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: var(--half-global-gap);
+      white-space: nowrap;
+      flex-wrap: nowrap;
+      > div {
+        flex-shrink: 0;
+      }
+    }
 
     td.col-description,
     td.col-actions,
@@ -91,6 +71,19 @@
       white-space: nowrap;
     }
 
+    .minimal-icon-button,
+    .text-link-button {
+      background: none;
+      border: none;
+      cursor: pointer;
+      margin: 0;
+      outline: none;
+      padding: 0;
+      &:hover {
+        opacity: 0.8;
+      }
+    }
+
     td.col-name {
       vertical-align: middle;
 
@@ -99,19 +92,6 @@
         display: flex;
         flex-direction: row;
         gap: var(--half-global-gap);
-      }
-
-      .minimal-icon-button,
-      .text-link-button {
-        background: none;
-        border: none;
-        cursor: pointer;
-        margin: 0;
-        outline: none;
-        padding: 0;
-        &:hover {
-          opacity: 0.8;
-        }
       }
 
       .text-link-button {
@@ -147,6 +127,7 @@
     }
 
     td.col-conditions {
+      padding: 0;
       max-width: 100% !important;
       width: 400px;
       white-space: normal;

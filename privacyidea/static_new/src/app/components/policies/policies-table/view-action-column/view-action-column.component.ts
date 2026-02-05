@@ -3,10 +3,10 @@ import { AddedActionsListComponent } from "../../dialogs/edit-policy-dialog/poli
 import { PolicyService, PolicyServiceInterface } from "../../../../services/policies/policies.service";
 
 @Component({
-  selector: "app-policies-view-action-column",
+  selector: "app-view-action-column",
   standalone: true,
-  templateUrl: "./policies-view-action-column.component.html",
-  styleUrl: "./policies-view-action-column.component.scss"
+  templateUrl: "./view-action-column.component.html",
+  styleUrl: "./view-action-column.component.scss"
 })
 export class PoliciesViewActionColumnComponent {
   readonly policyService: PolicyServiceInterface = inject(PolicyService);
