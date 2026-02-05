@@ -463,8 +463,9 @@ def check():
         "is_container_challenge": False,
         "options": request.all_data.copy()
     }
-    # Add standard context to options
-    context["options"].update({"g": g, "clientip": g.client_ip, "user": context["user"]})
+    # Add standard context to options and the user object again, because options is passed down to every function
+    context["options"].update({"g": g, "clientip": g.client_ip})
+    context["options"]["user"] = context["user"]
 
     # Dispatch to Logic Handlers
     credential_id = get_optional_one_of(request.all_data, ["credential_id", "credentialid"])
@@ -542,7 +543,7 @@ def _handle_fido2_auth(context, credential_id):
     user = token.user
     request.User = user
     context["user"] = user
-
+    context["options"]["user"] = user
     # Handle Enrollment vs Authentication
     attestation_object = get_optional_one_of(request.all_data, ["attestationObject", "attestationobject"])
 
@@ -618,7 +619,7 @@ def _handle_serial_auth(context, serial):
             if not tokens:
                 raise ParameterError("Given serial does not belong to given user!")
         except ResourceNotFoundError:
-            pass
+            raise ParameterError("Given serial does not belong to given user!")
 
     # Perform Check
     if not otp_only:
