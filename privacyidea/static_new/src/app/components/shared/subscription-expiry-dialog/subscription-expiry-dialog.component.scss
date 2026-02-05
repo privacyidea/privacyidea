@@ -1,0 +1,43 @@
+@use "../../../../styles" as styles;
+
+.expiry-container {
+  max-width: 720px;
+  padding: 16px;
+}
+
+h2 {
+  margin: 0 0 12px;
+}
+
+.content {
+  line-height: 1.6;
+  margin-left: 16px;
+  margin-bottom: 12px;
+}
+
+.items {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.app {
+  font-weight: 600;
+}
+
+.value {
+  font-family: monospace;
+}
+
+.actions {
+  margin-top: 16px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}

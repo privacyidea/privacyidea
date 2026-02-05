@@ -22,6 +22,8 @@ import { RouterOutlet } from "@angular/router";
 import { AuthService, AuthServiceInterface } from "./services/auth/auth.service";
 import { NotificationService, NotificationServiceInterface } from "./services/notification/notification.service";
 import { SessionTimerService, SessionTimerServiceInterface } from "./services/session-timer/session-timer.service";
+import { WelcomeDialogService } from "./services/welcome/welcome-dialog.service";
+import { SubscriptionExpiryService } from "./services/subscription/subscription-expiry.service";
 
 export interface PiResponse<Value, Detail = unknown> {
   id: number;
@@ -121,6 +123,9 @@ export class AppComponent implements OnInit {
       console.warn("User is already logged in.");
       this.notificationService.openSnackBar("User is already logged in.");
     }
+
+    const _welcomeInit = inject(WelcomeDialogService);
+    const _subscriptionExpiryInit = inject(SubscriptionExpiryService);
   }
 
   ngOnInit(): void {}
