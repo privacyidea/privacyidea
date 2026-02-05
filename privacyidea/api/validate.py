@@ -695,9 +695,9 @@ def _finalize_auth_response(context):
     details = context["details"]
     success = context["result"] if not isinstance(context["result"], dict) else context["result"].get("auth", False)
 
-    # 1. Update Last Authentication (Standard Tokens)
+    # Update Last Authentication
     # FIDO2 tokens update this internally during verify, so we skip them here mostly,
-    # but the logic checks if we have serials from standard flows.
+    # but check if we have serials from standard flows.
     if success:
         for serial in context["serial_list"]:
             if not context["is_container_challenge"]:
@@ -718,7 +718,7 @@ def _finalize_auth_response(context):
                         user.set_attribute(f"{InternalCustomUserAttributes.LAST_USED_TOKEN}_{user_agent}",
                                            token.get_tokentype(), INTERNAL_USAGE)
 
-    # 2. Audit Logging
+    # Audit Logging
     # Ensure user is logged even if we switched users (e.g. FIDO2)
     g.audit_object.log({"user": user.login, "resolver": user.resolver, "realm": user.realm})
 

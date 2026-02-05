@@ -46,9 +46,10 @@ class PasskeyAPITestBase(MyApiTestCase, PasskeyTestBase):
         self.user = User(login="hans", realm=self.realm1,
                          resolver=self.resolvername1)
 
-        self.set_policy_with_cleanup("passkey_rp_id", scope=SCOPE.ENROLL, action=f"{FIDO2PolicyAction.RELYING_PARTY_ID}={self.rp_id}")
+        self.set_policy_with_cleanup("passkey_rp_id", scope=SCOPE.ENROLL,
+                                     action=f"{FIDO2PolicyAction.RELYING_PARTY_ID}={self.rp_id}")
         self.set_policy_with_cleanup("passkey_rp_name", scope=SCOPE.ENROLL,
-                   action=f"{FIDO2PolicyAction.RELYING_PARTY_NAME}={self.rp_id}")
+                                     action=f"{FIDO2PolicyAction.RELYING_PARTY_NAME}={self.rp_id}")
         self.pk_headers = {'ORIGIN': self.expected_origin, 'Authorization': self.at}
         # Delete all token
         tokens = get_tokens(user=self.user)
@@ -175,11 +176,12 @@ class PasskeyAPITest(PasskeyAPITestBase):
         serial = self._enroll_static_passkey()
 
         self.set_policy_with_cleanup("key_algorithm", scope=SCOPE.ENROLL,
-                   action=f"{FIDO2PolicyAction.PUBLIC_KEY_CREDENTIAL_ALGORITHMS}=ecdsa")
-        self.set_policy_with_cleanup("attestation", scope=SCOPE.ENROLL, action=f"{PasskeyAction.AttestationConveyancePreference}="
-                                                             f"{AttestationConveyancePreference.ENTERPRISE.value}")
+                                     action=f"{FIDO2PolicyAction.PUBLIC_KEY_CREDENTIAL_ALGORITHMS}=ecdsa")
+        self.set_policy_with_cleanup("attestation", scope=SCOPE.ENROLL,
+                                     action=f"{PasskeyAction.AttestationConveyancePreference}="
+                                            f"{AttestationConveyancePreference.ENTERPRISE.value}")
         self.set_policy_with_cleanup("user_verification", scope=SCOPE.ENROLL,
-                   action=f"{FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT}=required")
+                                     action=f"{FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT}=required")
 
         with patch('privacyidea.lib.fido2.challenge.get_fido2_nonce') as get_nonce:
             get_nonce.return_value = self.registration_challenge
@@ -235,7 +237,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
         """
         serial = self._enroll_static_passkey()
         self.set_policy_with_cleanup("user_verification", scope=SCOPE.AUTH,
-                   action=f"{FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT}=required")
+                                     action=f"{FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT}=required")
         passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_no_uv)
         self.assertIn("user_verification", passkey_challenge)
         self.assertEqual("required", passkey_challenge["user_verification"])
@@ -262,7 +264,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
     def test_04_authenticate_with_uv(self):
         serial = self._enroll_static_passkey()
         self.set_policy_with_cleanup("user_verification", scope=SCOPE.AUTH,
-                   action=f"{FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT}=required")
+                                     action=f"{FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT}=required")
         passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_uv)
         self.assertIn("user_verification", passkey_challenge)
         self.assertEqual("required", passkey_challenge["user_verification"])
@@ -298,14 +300,15 @@ class PasskeyAPITest(PasskeyAPITestBase):
             self.assertFalse(res.json["result"]["value"])
 
         # Set the policy to trigger the passkey with the PIN, UV=discouraged and a challenge text
-        self.set_policy_with_cleanup("passkey_trigger_with_pin", scope=SCOPE.AUTH, action=f"{PasskeyAction.EnableTriggerByPIN}=true")
+        self.set_policy_with_cleanup("passkey_trigger_with_pin", scope=SCOPE.AUTH,
+                                     action=f"{PasskeyAction.EnableTriggerByPIN}=true")
         self.set_policy_with_cleanup("user_verification", scope=SCOPE.AUTH,
-                   action=f"{FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT}=discouraged")
+                                     action=f"{FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT}=discouraged")
         self.set_policy_with_cleanup("challenge_text", scope=SCOPE.AUTH, action=f"passkey_challenge_text=test text")
 
         # Test with authz policy add_user_in_response
         self.set_policy_with_cleanup("user_in_response", scope=SCOPE.AUTHZ,
-                   action=f"{PolicyAction.ADDUSERINRESPONSE}, {PolicyAction.ADDRESOLVERINRESPONSE}")
+                                     action=f"{PolicyAction.ADDUSERINRESPONSE}, {PolicyAction.ADDRESOLVERINRESPONSE}")
 
         with patch('privacyidea.lib.fido2.challenge.get_fido2_nonce') as get_nonce:
             get_nonce.return_value = self.authentication_challenge_no_uv
@@ -375,7 +378,8 @@ class PasskeyAPITest(PasskeyAPITestBase):
         Challenges triggered via /validate/check should be bound to a specific serial.
         Trying to answer the challenge with a token with a different serial should fail.
         """
-        self.set_policy_with_cleanup("passkey_trigger_with_pin", scope=SCOPE.AUTH, action=f"{PasskeyAction.EnableTriggerByPIN}=true")
+        self.set_policy_with_cleanup("passkey_trigger_with_pin", scope=SCOPE.AUTH,
+                                     action=f"{PasskeyAction.EnableTriggerByPIN}=true")
         serial = self._enroll_static_passkey()
         with patch('privacyidea.lib.fido2.challenge.get_fido2_nonce') as get_nonce:
             get_nonce.return_value = self.authentication_challenge_no_uv
@@ -410,7 +414,8 @@ class PasskeyAPITest(PasskeyAPITestBase):
         Just test if the challenge is returned by /validate/triggerchallenge. The response would be sent to
         /validate/check and that is already tested. Requires the passkey_trigger_with_pin policy to be set.
         """
-        self.set_policy_with_cleanup("passkey_trigger_with_pin", scope=SCOPE.AUTH, action=f"{PasskeyAction.EnableTriggerByPIN}=true")
+        self.set_policy_with_cleanup("passkey_trigger_with_pin", scope=SCOPE.AUTH,
+                                     action=f"{PasskeyAction.EnableTriggerByPIN}=true")
         serial = self._enroll_static_passkey()
         with patch('privacyidea.lib.fido2.challenge.get_fido2_nonce') as get_nonce:
             get_nonce.return_value = self.authentication_challenge_no_uv
@@ -580,7 +585,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
         action = "enroll_via_multichallenge=PASSKEY, enroll_via_multichallenge_text=enrollVia multichallenge test text"
         self.set_policy_with_cleanup("enroll_passkey", scope=SCOPE.AUTH, action=action)
         self.set_policy_with_cleanup("enroll_passkey_offline", scope=SCOPE.AUTH,
-                   action=f"{PolicyAction.ENROLL_VIA_MULTICHALLENGE_PASSKEY_OFFLINE}=true")
+                                     action=f"{PolicyAction.ENROLL_VIA_MULTICHALLENGE_PASSKEY_OFFLINE}=true")
         self.pk_headers.update({"User-Agent": "privacyidea-cp/1.1.1 Windows/Laptop-1231312"})
         # Using the spass token should result in a challenge to enroll a passkey
         with patch('privacyidea.lib.fido2.challenge.get_fido2_nonce') as get_nonce:
@@ -756,7 +761,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
         Test an authentication with a wrong response and without user verification.
         """
         self.set_policy_with_cleanup("user_verification", scope=SCOPE.AUTH,
-                   action=f"{FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT}=required")
+                                     action=f"{FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT}=required")
         serial = self._enroll_static_passkey()
         passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_no_uv)
         data = self.authentication_response_no_uv
@@ -799,7 +804,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
         transaction_id = passkey_challenge["transaction_id"]
         data["transaction_id"] = transaction_id
         self.set_policy_with_cleanup("user_verification", scope=SCOPE.AUTH,
-                   action=f"{FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT}=required")
+                                     action=f"{FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT}=required")
         with self.app.test_request_context('/auth', method='POST',
                                            data=data,
                                            headers={"Origin": self.expected_origin}):
@@ -853,7 +858,8 @@ class PasskeyAPITest(PasskeyAPITestBase):
         a successful authentication.
         """
         self.set_policy_with_cleanup("evm", scope=SCOPE.AUTH, action=f"{PolicyAction.ENROLL_VIA_MULTICHALLENGE}=hotp")
-        self.set_policy_with_cleanup("evm_optional", scope=SCOPE.AUTH, action=f"{PolicyAction.ENROLL_VIA_MULTICHALLENGE_OPTIONAL}=true")
+        self.set_policy_with_cleanup("evm_optional", scope=SCOPE.AUTH,
+                                     action=f"{PolicyAction.ENROLL_VIA_MULTICHALLENGE_OPTIONAL}=true")
         self.set_policy_with_cleanup("user_in_response", scope=SCOPE.AUTHZ, action=PolicyAction.ADDUSERINRESPONSE)
         serial = self._enroll_static_passkey()
         passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_no_uv)
@@ -901,10 +907,12 @@ class PasskeyAPITest(PasskeyAPITestBase):
         Verify that enroll_via_multichallenge_optional=true allows cancellation of the enrollment and is followed by
         a successful authentication.
         """
-        self.set_policy_with_cleanup("evm", scope=SCOPE.AUTH, action=f"{PolicyAction.ENROLL_VIA_MULTICHALLENGE}=smartphone")
+        self.set_policy_with_cleanup("evm", scope=SCOPE.AUTH,
+                                     action=f"{PolicyAction.ENROLL_VIA_MULTICHALLENGE}=smartphone")
         self.set_policy_with_cleanup("container_enroll", scope=SCOPE.CONTAINER,
-                   action=f"{PolicyAction.CONTAINER_SERVER_URL}=https://doesntmatter.com")
-        self.set_policy_with_cleanup("evm_optional", scope=SCOPE.AUTH, action=f"{PolicyAction.ENROLL_VIA_MULTICHALLENGE_OPTIONAL}=true")
+                                     action=f"{PolicyAction.CONTAINER_SERVER_URL}=https://doesntmatter.com")
+        self.set_policy_with_cleanup("evm_optional", scope=SCOPE.AUTH,
+                                     action=f"{PolicyAction.ENROLL_VIA_MULTICHALLENGE_OPTIONAL}=true")
         self.set_policy_with_cleanup("user_in_response", scope=SCOPE.AUTHZ, action=PolicyAction.ADDUSERINRESPONSE)
         serial = self._enroll_static_passkey()
         passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_no_uv)
@@ -1184,7 +1192,8 @@ class PasskeyAPITest(PasskeyAPITestBase):
         """
         The 'disable_token_type' policy will disable passkey, both for initialize and check.
         """
-        self.set_policy_with_cleanup("disable_passkey", scope=SCOPE.AUTH, action=f"{PolicyAction.DISABLED_TOKEN_TYPES}=passkey")
+        self.set_policy_with_cleanup("disable_passkey", scope=SCOPE.AUTH,
+                                     action=f"{PolicyAction.DISABLED_TOKEN_TYPES}=passkey")
         serial = self._enroll_static_passkey()
 
         # /validate/initialize will not allow passkey
@@ -1199,9 +1208,10 @@ class PasskeyAPITest(PasskeyAPITestBase):
             self.assertEqual("The authentication method is not available.", result["error"]["message"])
 
         # /validate/check will not allow passkey even if a challenge exists
-        delete_policy("disable_passkey") # Temporarily enable to trigger challenge
+        delete_policy("disable_passkey")  # Temporarily enable to trigger challenge
         passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_no_uv)
-        self.set_policy_with_cleanup("disable_passkey", scope=SCOPE.AUTH, action=f"{PolicyAction.DISABLED_TOKEN_TYPES}=passkey") # Re-enable policy
+        self.set_policy_with_cleanup("disable_passkey", scope=SCOPE.AUTH,
+                                     action=f"{PolicyAction.DISABLED_TOKEN_TYPES}=passkey")  # Re-enable policy
         transaction_id = passkey_challenge["transaction_id"]
         data = self.authentication_response_no_uv
         data["transaction_id"] = transaction_id
