@@ -31,7 +31,7 @@
   "devDependencies": {
     "@angular-builders/jest": "^19.0.1",
     "@angular-devkit/build-angular": "^19.2.6",
-    "@angular/cli": "^19.2.6",
+    "@angular/cli": "^21.1.2",
     "@angular/compiler-cli": "^19.0.3",
     "@angular/localize": "^19.2.5",
     "@types/crypto-js": "^4.2.2",
