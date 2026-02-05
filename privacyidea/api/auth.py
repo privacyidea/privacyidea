@@ -289,12 +289,13 @@ def get_auth_token():
 
         # TODO For the WebUI login, always require user_verification so that it is a 2FA
         request.all_data.update({FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT: "required"})
-        passkey_login_success = verify_fido2_challenge(transaction_id, token, request.all_data) > 0
-        if passkey_login_success:
+        passkey_login_result = verify_fido2_challenge(transaction_id, token, request.all_data)
+        if passkey_login_result.success > 0:
             user = token.user
             login_name = user.login
             realm = user.realm
             username = user.login
+            passkey_login_success = True
         else:
             raise AuthError(_("Authentication failure using passkey."), id=ERROR.AUTHENTICATE_WRONG_CREDENTIALS)
     # End passkey login

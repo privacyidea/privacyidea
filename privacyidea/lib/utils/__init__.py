@@ -1167,7 +1167,7 @@ def get_version():
     return "privacyIDEA {0!s}".format(version)
 
 
-def prepare_result(obj, rid=1, details=None):
+def prepare_result(obj, rid=1, details=None, **kwargs):
     """
     This is used to preformat the dictionary to be sent by the API response
 
@@ -1177,6 +1177,7 @@ def prepare_result(obj, rid=1, details=None):
     :type rid: int
     :param details: optional parameter, which allows to provide more detail
     :type  details: None or simple type like dict, list or string/Unicode
+    :param kwargs: additional key-value pairs to be added to the root of the response
 
     :return: json rendered sting result
     :rtype: string
@@ -1190,6 +1191,7 @@ def prepare_result(obj, rid=1, details=None):
            "versionnumber": get_version_number(),
            "id": rid,
            "time": time.time()}
+    res.update(kwargs)
     if details is not None and len(details) > 0:
         details["threadid"] = threading.current_thread().ident
         res["detail"] = details

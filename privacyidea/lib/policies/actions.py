@@ -140,6 +140,7 @@ class PolicyAction:
     ENROLL_VIA_MULTICHALLENGE_TEXT = "enroll_via_multichallenge_text"
     ENROLL_VIA_MULTICHALLENGE_TEMPLATE = "enroll_via_multichallenge_template"
     ENROLL_VIA_MULTICHALLENGE_OPTIONAL = "enroll_via_multichallenge_optional"
+    ENROLL_VIA_MULTICHALLENGE_PASSKEY_OFFLINE = "enroll_via_multichallenge_passkey_offline"
     CLIENTTYPE = "clienttype"
     REGISTERBODY = "registration_body"
     RESETALLTOKENS = "reset_all_user_tokens"
