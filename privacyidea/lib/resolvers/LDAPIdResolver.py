@@ -217,7 +217,7 @@ def cache(func):
             tdelta = datetime.timedelta(seconds=self.cache_timeout)
             if resolver_id not in CACHE:
                 CACHE[resolver_id] = {"getUserId": {},
-                                      "getUserInfo": {},
+                                      "get_user_info": {},
                                       "_getDN": {}}
             else:
                 # Clean up the cache in the current resolver and the current function
