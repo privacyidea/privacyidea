@@ -179,6 +179,10 @@ body {
   align-items: end;
 }
 
+.align-baseline {
+  align-items: baseline;
+}
+
 .just-center {
   justify-content: center;
 }
@@ -290,7 +294,7 @@ body {
   margin-top: 0;
 }
 
-.margin-top-1 {
+.margin-top-16 {
   margin-top: 16px;
 }
 
@@ -310,7 +314,7 @@ body {
   margin-top: 64px;
 }
 
-.margin-bottom-1 {
+.margin-bottom-16 {
   margin-bottom: 16px;
 }
 
