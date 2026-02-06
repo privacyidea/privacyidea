@@ -50,7 +50,7 @@ import hashlib
 import logging
 import traceback
 
-from sqlalchemy import select, update, delete
+from sqlalchemy import select, delete
 
 from privacyidea.lib.error import ParameterError, ResolverError, UserError
 from privacyidea.models import CustomUserAttribute, db
@@ -325,7 +325,7 @@ class User(object):
         if uid is None:
             return {}
         y = get_resolver_object(self.resolver)
-        user_info = y.getUserInfo(uid)
+        user_info = y.get_user_info(uid)
         # Now add the custom attributes, this is used e.g. in ADDUSERINRESPONSE
         user_info.update(self.attributes)
         return user_info
@@ -353,7 +353,7 @@ class User(object):
             attribute_id = existing_attribute.id
         else:
             new_attribute = CustomUserAttribute(user_id=self.uid, resolver=self.resolver, realm_id=self.realm_id,
-                                     Key=attrkey, Value=attrvalue, Type=attrtype)
+                                                Key=attrkey, Value=attrvalue, Type=attrtype)
             db.session.add(new_attribute)
             db.session.flush()
             attribute_id = new_attribute.id
@@ -731,7 +731,7 @@ def get_user_from_param(param, optionalOrRequired=optional):
 
 
 @log_with(log)
-def get_user_list(param=None, user=None, custom_attributes=False):
+def get_user_list(param=None, user=None, custom_attributes=False, requested_attributes: list[str] = None):
     """
     This function returns a list of user dictionaries.
 
@@ -807,7 +807,7 @@ def get_user_list(param=None, user=None, custom_attributes=False):
             if not y:
                 continue
             log.debug("With this search dictionary: %r", search_dict)
-            ulist = y.getUserList(search_dict)
+            ulist = y.getUserList(search_dict, requested_attributes)
             # Add resolvername to the list
             realm_id = get_realm_id(param_realm or user_realm)
             for ue in ulist:
