@@ -21,10 +21,10 @@
   @if (postTopHtml?.hasContent) {
     <div
       [innerHTML]="postTopHtml?.sanitized"
-      class="margin-top-1"></div>
+      class="margin-top-16"></div>
   } @else {
     <h2>Token successfully enrolled</h2>
-    <div class="margin-bottom-1">
+    <div class="margin-bottom-16">
       <span>The token was successfully enrolled with serial number <a (click)="tokenSelected(serial)"> {{ serial }} </a>.
       </span>
       @if (url && showQRCode()) {
@@ -74,7 +74,7 @@
 
   <div
     [innerHTML]="postBottomHtml$ | async"
-    class="margin-bottom-1"></div>
+    class="margin-bottom-16"></div>
 </mat-dialog-content>
 
 <mat-dialog-actions>
