@@ -39,6 +39,7 @@ import { MatButtonToggle, MatButtonToggleGroup } from "@angular/material/button-
 import { HttpConfigComponent } from "./http-config/http-config.component";
 import { ClearableInputComponent } from "../../../shared/clearable-input/clearable-input.component";
 import { parseBooleanValue } from "../../../../utils/parse-boolean-value";
+import { HttpGroupsAttributeComponent } from "./http-groups-attribute/http-groups-attribute.component";
 
 export type AttributeMappingRow = {
   privacyideaAttr: string | null;
@@ -71,7 +72,8 @@ export type AttributeMappingRow = {
     MatButtonToggleGroup,
     MatButtonToggle,
     HttpConfigComponent,
-    ClearableInputComponent
+    ClearableInputComponent,
+    HttpGroupsAttributeComponent
   ],
   templateUrl: "./http-resolver.component.html",
   styleUrl: "./http-resolver.component.scss"
@@ -122,6 +124,12 @@ export class HttpResolverComponent {
   });
 
   attributeMappingControl = new FormControl<Record<string, string>>({}, { nonNullable: true });
+  userGroupsControl = new FormGroup({
+    active: new FormControl<boolean>(false, { nonNullable: true }),
+    user_groups_attribute: new FormControl<string>(""),
+    method: new FormControl<string>("GET"),
+    endpoint: new FormControl<string>("")
+  });
 
   configAuthorizationGroup = this.createConfigGroup();
   configUserAuthGroup = this.createConfigGroup();
@@ -177,6 +185,7 @@ export class HttpResolverComponent {
       controls["config_create_user"] = this.configCreateUserGroup;
       controls["config_edit_user"] = this.configEditUserGroup;
       controls["config_delete_user"] = this.configDeleteUserGroup;
+      controls["config_get_user_groups"] = this.userGroupsControl;
 
       if (this.type() === "entraidresolver") {
         controls["tenant"] = this.tenantControl;
@@ -344,6 +353,7 @@ export class HttpResolverComponent {
     } else {
       this.syncMappingToData();
     }
+    this.syncGroup(this.userGroupsControl, data.config_get_user_groups);
 
     this.syncGroup(this.configAuthorizationGroup, data.config_authorization);
     this.syncGroup(this.configUserAuthGroup, data.config_user_auth);

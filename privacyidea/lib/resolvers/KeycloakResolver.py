@@ -27,7 +27,8 @@ from privacyidea.lib.resolvers.HTTPResolver import (HTTPResolver, METHOD, ENDPOI
                                                     CONFIG_GET_USER_BY_NAME, CONFIG_GET_USER_LIST, REQUEST_MAPPING,
                                                     RequestConfig, HEADERS, ADVANCED, RESPONSE_MAPPING,
                                                     CONFIG_CREATE_USER, CONFIG_DELETE_USER, CONFIG_EDIT_USER,
-                                                    CONFIG_USER_AUTH, Error)
+                                                    CONFIG_USER_AUTH, Error, CONFIG_GET_USER_GROUPS, ACTIVE,
+                                                    USER_GROUPS_ATTRIBUTE)
 from privacyidea.lib.resolvers.util import delete_user_error_handling_no_content
 
 log = logging.getLogger(__name__)
@@ -45,7 +46,8 @@ class KeycloakResolver(HTTPResolver):
                             CONFIG_GET_USER_BY_NAME: {METHOD: "GET", ENDPOINT: "/admin/realms/{realm}/users",
                                                       REQUEST_MAPPING: '{"username": "{username}", "exact": true}'},
                             CONFIG_GET_USER_LIST: {METHOD: "GET", ENDPOINT: "/admin/realms/{realm}/users"},
-                            CONFIG_CREATE_USER: {METHOD: "POST", ENDPOINT: "/admin/realms/{realm}/users", REQUEST_MAPPING: '{"enabled": true}'},
+                            CONFIG_CREATE_USER: {METHOD: "POST", ENDPOINT: "/admin/realms/{realm}/users",
+                                                 REQUEST_MAPPING: '{"enabled": true}'},
                             CONFIG_EDIT_USER: {METHOD: "PUT", ENDPOINT: "/admin/realms/{realm}/users/{userid}"},
                             CONFIG_DELETE_USER: {METHOD: "DELETE", ENDPOINT: "/admin/realms/{realm}/users/{userid}"},
                             CONFIG_USER_AUTH: {METHOD: "POST",
@@ -54,6 +56,9 @@ class KeycloakResolver(HTTPResolver):
                                                REQUEST_MAPPING: "grant_type=password&client_id=admin-cli&"
                                                                 "username={username}&password={password}"}
                             })
+        self.config_get_user_groups = {ACTIVE: True, METHOD: "get",
+                                       ENDPOINT: "/admin/realms/{realm}/users/{userid}/groups",
+                                       USER_GROUPS_ATTRIBUTE: "name"}
         self.attribute_mapping_pi_to_user_store = {"username": "username",
                                                    "userid": "id",
                                                    "givenname": "firstName",

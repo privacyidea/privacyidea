@@ -49,6 +49,9 @@ CONFIG_EDIT_USER = "config_edit_user"
 CONFIG_DELETE_USER = "config_delete_user"
 CONFIG_AUTHORIZATION = "config_authorization"
 CONFIG_USER_AUTH = "config_user_auth"
+CONFIG_GET_USER_GROUPS = "config_get_user_groups"
+ACTIVE = "active"
+USER_GROUPS_ATTRIBUTE = "user_groups_attribute"
 METHOD = "method"
 ENDPOINT = "endpoint"
 PARAMS = "params"
@@ -226,6 +229,7 @@ class HTTPResolver(UserIdResolver):
         self.config = {}
         self.headers = {}
         self.config_get_user_by_id = {}
+        self.config_get_user_groups = {}
         self.config_user_auth = {}
         self.attribute_mapping_pi_to_user_store = {}
         self.attribute_mapping_user_store_to_pi = {}
@@ -290,6 +294,7 @@ class HTTPResolver(UserIdResolver):
             CONFIG_DELETE_USER: 'dict',
             CONFIG_AUTHORIZATION: 'dict',
             CONFIG_USER_AUTH: 'dict',
+            CONFIG_GET_USER_GROUPS: 'dict',
             ADVANCED: 'bool',
             USERNAME: 'string',
             PASSWORD: 'password',
@@ -310,6 +315,7 @@ class HTTPResolver(UserIdResolver):
         censored_config[VERIFY_TLS] = self._verify_tls
         censored_config["type"] = self.getResolverType()
         censored_config[TIMEOUT] = self.timeout
+        censored_config[CONFIG_GET_USER_GROUPS] = self.config_get_user_groups
         if self.base_url:
             censored_config[BASE_URL] = self.base_url
         if self.attribute_mapping_pi_to_user_store:
@@ -378,26 +384,32 @@ class HTTPResolver(UserIdResolver):
         """
         Returns the username for the given user ID.
         """
-        user_info = self.getUserInfo(userid)
+        user_info = self.get_user_info(userid, attributes=["username"])
         user_name = user_info.get("username", "")
         return user_name
 
-    def getUserInfo(self, userid: str) -> dict:
+    def get_user_info(self, user_id: int or str, attributes: list[str] = None) -> dict:
         """
         This function returns all user information for a given user object
         identified by UserID.
 
-        :param userid: ID of the user in the resolver
+        :param user_id: ID of the user in the resolver
+        :param attributes: list of attribute names to be returned for the user. If None, all attributes are returned.
         :return:  dictionary, if no object is found, the dictionary is empty
         """
-        config = RequestConfig(self.config_get_user_by_id, self.headers, {"userid": userid}, "")
-        user_info = self._get_user(userid, config)
+        config = RequestConfig(self.config_get_user_by_id, self.headers, {"userid": user_id}, "")
+        user_info = self._get_user(user_id, config)
         return user_info
 
-    def getUserList(self, search_dict: Optional[dict] = None) -> list[dict]:
+    def getUserList(self, search_dict: Optional[dict] = None, attributes: list[str] = None) -> list[dict]:
         """
         Fetches all users from the user store according to the search dictionary.
         If the endpoint is not configured to list all users, an empty list is returned.
+
+        :param search_dict: dictionary containing search criteria for user attributes.
+        :param attributes: list of attributes to be returned for each user
+
+        :return: list users represented as dictionaries
         """
         config_get_user_list = self.config.get(CONFIG_GET_USER_LIST)
         if not config_get_user_list:
@@ -405,7 +417,7 @@ class HTTPResolver(UserIdResolver):
             return []
 
         config = RequestConfig(config_get_user_list, self.headers, search_dict, self.wildcard)
-        user_list = self._get_user_list(search_dict, config)
+        user_list = self._get_user_list(search_dict, config, attributes)
         return user_list
 
     def add_user(self, attributes: Optional[dict] = None) -> str:
@@ -624,6 +636,7 @@ class HTTPResolver(UserIdResolver):
             self.attribute_mapping_pi_to_user_store = attribute_mapping
             self.attribute_mapping_user_store_to_pi = {store_key: pi_key for pi_key, store_key in
                                                        self.attribute_mapping_pi_to_user_store.items()}
+        self.config_get_user_groups = self.config.get(CONFIG_GET_USER_GROUPS, self.config_get_user_groups)
         self.authorization_config = config.get(CONFIG_AUTHORIZATION, self.authorization_config)
         if self.authorization_config:
             self.username = config.get(USERNAME)
@@ -780,11 +793,36 @@ class HTTPResolver(UserIdResolver):
 
         return success, description
 
+    def get_user_groups(self, user: dict) -> list:
+        """
+        Gets all groups of a user
+        """
+        # Request
+        user_id = user.get(self.attribute_mapping_pi_to_user_store.get("userid", ""), "")
+        config = RequestConfig(self.config_get_user_groups, self.headers, {"userid": user_id}, "")
+        config.headers.update(self._get_auth_header())
+        params = config.request_mapping if config.request_mapping else {}
+
+        try:
+            response = self._do_request(config, params)
+        except ResolverError:
+            log.warning(f"Failed to get groups for user '{user_id}'.")
+            return []
+
+        success = self.default_error_handling(response, config)
+        if not success:
+            log.warning(f"Failed to get groups for user '{user_id}'.")
+            return []
+
+        data = response.json()
+        groups = [group.get(self.config_get_user_groups.get(USER_GROUPS_ATTRIBUTE, "name"), "") for group in data]
+        return groups
+
     #
     #   Private methods
     #
 
-    def _user_store_user_to_pi_user(self, user: dict) -> dict:
+    def _user_store_user_to_pi_user(self, user: dict, attributes: list[str] = None) -> dict:
         """
         Maps the attributes from the user store to the attributes used in privacyidea.
 
@@ -792,9 +830,21 @@ class HTTPResolver(UserIdResolver):
         :return: Dictionary containing user attributes mapped to privacyidea
         """
         pi_user = {}
-        for key, value in user.items():
-            if key in self.attribute_mapping_user_store_to_pi:
-                pi_user[self.attribute_mapping_user_store_to_pi[key]] = value
+
+        if (not attributes or "groups" in attributes) and self.config_get_user_groups.get(ACTIVE, False):
+            pi_user["groups"] = self.get_user_groups(user)
+
+        if not attributes:
+            attributes = self.attribute_mapping_pi_to_user_store.keys()
+
+        for pi_attribute in attributes:
+            user_store_attribute = self.attribute_mapping_pi_to_user_store.get(pi_attribute)
+            if user_store_attribute:
+                pi_user[pi_attribute] = user.get(user_store_attribute, "")
+            else:
+                # We do not know the related user store attribute for the requested one
+                pi_user[pi_attribute] = ""
+
         return pi_user
 
     def _pi_user_to_user_store_user(self, pi_user: dict) -> dict:
@@ -892,39 +942,48 @@ class HTTPResolver(UserIdResolver):
             params = None
 
         start_time = time.time()
-        if config.method == HTTPMethod.GET:
-            response = requests.get(config.endpoint, params=urlencode(params or {}), headers=config.headers,
-                                    timeout=self.timeout,
-                                    verify=self.tls)
-        elif config.method == HTTPMethod.POST:
-            response = requests.post(config.endpoint, json=json_params, data=params, headers=config.headers,
-                                     timeout=self.timeout,
-                                     verify=self.tls)
-        elif config.method == HTTPMethod.PUT:
-            response = requests.put(config.endpoint, json=json_params, data=params, headers=config.headers,
-                                    timeout=self.timeout,
-                                    verify=self.tls)
-        elif config.method == HTTPMethod.PATCH:
-            response = requests.patch(config.endpoint, json=json_params, data=params, headers=config.headers,
-                                      timeout=self.timeout,
-                                      verify=self.tls)
-        elif config.method == HTTPMethod.DELETE:
-            response = requests.delete(config.endpoint, params=urlencode(params or {}), headers=config.headers,
-                                       timeout=self.timeout, verify=self.tls)
-        else:  # pragma: no cover
-            # Should not happen as the method is already checked in the config object
-            raise ResolverError(f"Unsupported HTTP method: {config.method}")
+        try:
+            if config.method == HTTPMethod.GET:
+                response = requests.get(config.endpoint, params=urlencode(params or {}), headers=config.headers,
+                                        timeout=self.timeout,
+                                        verify=self.tls)
+            elif config.method == HTTPMethod.POST:
+                response = requests.post(config.endpoint, json=json_params, data=params, headers=config.headers,
+                                         timeout=self.timeout,
+                                         verify=self.tls)
+            elif config.method == HTTPMethod.PUT:
+                response = requests.put(config.endpoint, json=json_params, data=params, headers=config.headers,
+                                        timeout=self.timeout,
+                                        verify=self.tls)
+            elif config.method == HTTPMethod.PATCH:
+                response = requests.patch(config.endpoint, json=json_params, data=params, headers=config.headers,
+                                          timeout=self.timeout,
+                                          verify=self.tls)
+            elif config.method == HTTPMethod.DELETE:
+                response = requests.delete(config.endpoint, params=urlencode(params or {}), headers=config.headers,
+                                           timeout=self.timeout, verify=self.tls)
+            else:  # pragma: no cover
+                # Should not happen as the method is already checked in the config object
+                raise ResolverError(f"Unsupported HTTP method: {config.method}")
+        except Exception as error:
+            log.warning(f"Failed to perform HTTP request: {error}")
+            raise ResolverError("Failed to perform HTTP request!")
         end_time = time.time()
-        log.debug(f"Request took {end_time - start_time:.2f} seconds: {config.method.value.upper()} {config.endpoint}")
+
+        request_url = response.request.url or config.endpoint
+        log.debug(f"Perform {config.method.value.upper()} request to user store: {request_url}")
+        log.debug(f"Request took {end_time - start_time:.2f} seconds")
+        log.debug(f"Response: {response.status_code} - {response.text}")
 
         return response
 
-    def _get_user(self, user_identifier: str, config: RequestConfig) -> dict:
+    def _get_user(self, user_identifier: str, config: RequestConfig, attributes: list[str] = None) -> dict:
         """
         Fetches a single user from the user store
 
         :param user_identifier: Either the UID or the username
         :param config: Configuration to fetch the user
+        :param attributes: list of attributes to be returned for the user
         :return: Dictionary containing pi conform user attributes
         """
         # Request
@@ -944,7 +1003,7 @@ class HTTPResolver(UserIdResolver):
                 user_info = self._apply_response_mapping(config, user_info)
             if self.attribute_mapping_user_store_to_pi:
                 # Apply general attribute mapping
-                user_info = self._user_store_user_to_pi_user(user_info)
+                user_info = self._user_store_user_to_pi_user(user_info, attributes)
 
         return user_info
 
@@ -980,7 +1039,7 @@ class HTTPResolver(UserIdResolver):
                     f"Search parameter '{key}' not found in attribute mapping. Searching without this parameter.")
         return request_parameters
 
-    def _get_user_list(self, search_dict: dict, config: RequestConfig) -> list[dict]:
+    def _get_user_list(self, search_dict: dict, config: RequestConfig, attributes: list[str] = None) -> list[dict]:
         """
         Fetches a list of users from the user store.
 
@@ -1000,7 +1059,7 @@ class HTTPResolver(UserIdResolver):
         json_result = response.json()
         json_result = self._apply_response_mapping(config, json_result)
         user_store_users = self._get_user_list_from_response(json_result)
-        users = [self._user_store_user_to_pi_user(user) for user in user_store_users]
+        users = [self._user_store_user_to_pi_user(user, attributes) for user in user_store_users]
 
         return users
 

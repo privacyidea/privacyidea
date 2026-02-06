@@ -40,7 +40,7 @@
       </mat-button-toggle>
     </mat-button-toggle-group>
 
-    <mat-divider class="margin-top-1 margin-bottom-1" />
+    <mat-divider class="margin-top-16 margin-bottom-16" />
   }
 
   @if (!isAdvanced && basicSettings()) {
@@ -297,7 +297,11 @@
       the user store.
     </mat-hint>
 
-    <div class="form-grid margin-top-1">
+    <app-http-groups-attribute
+      [userGroupsControl]="userGroupsControl"
+      [resolverType]="type()"></app-http-groups-attribute>
+
+    <div class="form-grid margin-top-16">
       <mat-form-field class="field-lg">
         <mat-label i18n>Headers (JSON Format)</mat-label>
         <textarea
@@ -352,7 +356,7 @@
         <mat-hint i18n>Time in seconds privacyIDEA tries to reach the user store server.</mat-hint>
       </mat-form-field>
     </div>
-    <div class="margin-top-1">
+    <div class="margin-top-16">
       <mat-accordion>
         <mat-expansion-panel [expanded]="isAuthorizationExpanded">
           <mat-expansion-panel-header>

@@ -447,6 +447,7 @@ angular.module("privacyideaApp")
                     if ($scope.params.emailFilter) {
                         params.email = "*" + $scope.params.emailFilter + "*";
                     }
+                    params.attributes = "username,givenname,surname,email,phone,mobile,description,userid";
                     UserFactory.getUsers(params,
                         function (data) {
                             //debug: console.log("success");
@@ -516,14 +517,26 @@ angular.module("privacyideaApp")
                             delete userinfo["userid"];
                             break;
                         case "httpresolver":
+                            userinfo = resolver.data.attribute_mapping || {};
+                            delete userinfo["userid"];
+                            if (resolver.data.config_get_user_groups.active) {
+                                userinfo["groups"] = [];
+                            }
+                            break;
                         case "entraidresolver":
                             userinfo = resolver.data.attribute_mapping || {};
                             delete userinfo["userid"];
                             userinfo["password"] = "";
+                            if (resolver.data.config_get_user_groups.active) {
+                                userinfo["groups"] = [];
+                            }
                             break;
                         case "keycloakresolver":
                             userinfo = resolver.data.attribute_mapping || {};
                             delete userinfo["userid"];
+                            if (resolver.data.config_get_user_groups.active) {
+                                userinfo["groups"] = [];
+                            }
                             break;
                     }
                     const fields = [];
