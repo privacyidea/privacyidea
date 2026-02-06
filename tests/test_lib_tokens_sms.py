@@ -404,7 +404,7 @@ class SMSTokenTestCase(MyTestCase):
         # if the email is a multi-value attribute, the first address should be chosen
         new_user_info = token.user.info.copy()
         new_user_info['mobile'] = ['1234', '5678']
-        with mock.patch('privacyidea.lib.resolvers.PasswdIdResolver.IdResolver.getUserInfo') as mock_user_info:
+        with mock.patch('privacyidea.lib.resolvers.PasswdIdResolver.IdResolver.get_user_info') as mock_user_info:
             mock_user_info.return_value = new_user_info
             c = token.create_challenge(transactionid)
             self.assertTrue(c[0], c)

@@ -1608,7 +1608,7 @@ class EntraIDResolverTestCase(MyTestCase):
             del params[CONFIG_USER_AUTH]
 
         # Invalid read configs
-        responses.add(responses.GET, "https://graph.microsoft.com/v1.0/users?%24select=aboutMe&%24expand=memberOf",
+        responses.add(responses.GET, "https://graph.microsoft.com/v1.0/users?%24select=aboutMe",
                       status=501,
                       body="""{"error": {"code": "501", "message": "Not Implemented"}}""")
         with mock.patch("privacyidea.lib.resolvers.EntraIDResolver.msal.ConfidentialClientApplication",
