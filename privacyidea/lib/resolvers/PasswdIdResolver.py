@@ -213,19 +213,20 @@ class IdResolver (UserIdResolver):
                         "found in file")
             return False
 
-    def getUserInfo(self, userId, no_passwd=False):
+    def get_user_info(self, user_id: int or str, attributes: list[str] = None, no_passwd: bool = False) -> dict:
         """
         get some info about the user
         as we only have the loginId, we have to traverse the dict for the value
 
-        :param userId: the to be searched user
+        :param user_id: the to be searched user
+        :param attributes: list of attribute names to be returned for the user. If None, all attributes are returned.
         :param no_passwd: return no password
         :return: dict of user info
         """
         ret = {}
 
-        if userId in self.reverse_dict:
-            fields = self.description_dict.get(userId, [])
+        if user_id in self.reverse_dict:
+            fields = self.description_dict.get(user_id, [])
 
             for key in self.search_field_indices:
                 if no_passwd and key == "cryptpass":
@@ -234,13 +235,13 @@ class IdResolver (UserIdResolver):
                 if index < len(fields):
                     ret[key] = fields[index]
 
-            ret['givenname'] = self.given_name_dict.get(userId)
-            ret['surname'] = self.surname_dict.get(userId)
-            ret['phone'] = self.home_phone_dict.get(userId)
-            ret['mobile'] = self.office_phone_dict.get(userId)
-            ret['email'] = self.email_dict.get(userId)
+            ret['givenname'] = self.given_name_dict.get(user_id)
+            ret['surname'] = self.surname_dict.get(user_id)
+            ret['phone'] = self.home_phone_dict.get(user_id)
+            ret['mobile'] = self.office_phone_dict.get(user_id)
+            ret['email'] = self.email_dict.get(user_id)
         else:
-            log.debug("User with user ID %s could not be found.", userId)
+            log.debug("User with user ID %s could not be found.", user_id)
 
         return ret
 
@@ -296,11 +297,12 @@ class IdResolver (UserIdResolver):
 
         return self.search_fields
 
-    def getUserList(self, search_dict=None):
+    def getUserList(self, search_dict: dict = None, attributes: list[str] = None) -> list[dict]:
         """
         get a list of all users matching the search criteria of the searchdict
 
         :param search_dict: dict of search expressions
+        :param attributes: list of attributes to be returned for each user
         """
         ret = []
 
@@ -331,7 +333,7 @@ class IdResolver (UserIdResolver):
                 uid = ""
                 if uid_index < len(line):
                     uid = line[self.search_field_indices["userid"]]
-                info = self.getUserInfo(uid, no_passwd=True)
+                info = self.get_user_info(uid, no_passwd=True)
                 ret.append(info)
 
         return ret

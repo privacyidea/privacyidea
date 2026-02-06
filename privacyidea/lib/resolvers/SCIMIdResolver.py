@@ -67,7 +67,7 @@ class IdResolver (UserIdResolver):
         # TODO: Implement password checking with SCIM
         return False
 
-    def getUserInfo(self, userid):
+    def get_user_info(self, user_id: int or str, attributes: list[str] = None) -> dict:
         """
         returns the user information for a given uid.
         """
@@ -76,7 +76,7 @@ class IdResolver (UserIdResolver):
         # Alas, we can not map the ID to any other attribute
         res = self._get_user(self.resource_server,
                              self.access_token,
-                             userid)
+                             user_id)
         user = res
         ret = self._fill_user_schema_1_0(user)
 
@@ -134,7 +134,7 @@ class IdResolver (UserIdResolver):
         # It seems that the userName is the userId
         return convert_column_to_unicode(loginName)
 
-    def getUserList(self, search_dict=None):
+    def getUserList(self, search_dict=None, attributes: list[str] = None):
         """
         Return the list of users
         """

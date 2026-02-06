@@ -142,19 +142,18 @@ class UserIdResolver(object):
         """
         return "dummy_user_name"
 
-    def getUserInfo(self, userid):
+    def get_user_info(self, user_id: int or str, attributes: list[str] = None) -> dict:
         """
         This function returns all user information for a given user object
         identified by UserID.
 
-        :param userid: ID of the user in the resolver
-        :type userid: int or string
+        :param user_id: ID of the user in the resolver
+        :param attributes: list of attribute names to be returned for the user. If None, all attributes are returned.
         :return:  dictionary, if no object is found, the dictionary is empty
-        :rtype: dict
         """
         return {}
 
-    def getUserList(self, search_dict=None):
+    def getUserList(self, search_dict: dict = None, attributes: list[str] = None) -> list[dict]:
         """
         This function finds the user objects,
         that have the term 'value' in the user object field 'key'
@@ -162,11 +161,10 @@ class UserIdResolver(object):
         :param search_dict:  dict with key values of user attributes -
                     the key may be something like 'loginname' or 'email'
                     the value is a regular expression.
-        :type search_dict: dict
+        :param attributes: list of attributes to be returned for each user
 
         :return: list of dictionaries (each dictionary contains a
                  user object) or an empty string if no object is found.
-        :rtype: list of dicts
         """
         search_dict = search_dict or {}
         return [{}]
