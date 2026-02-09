@@ -1033,7 +1033,7 @@ def multichallenge_enroll_via_validate(request, response):
         if len(get_tokens(tokentype=tokentype, user=user)) == 0:
             # Check if another policy restricts the token count and exit early if true
             try:
-                check_max_token_user(request=request)
+                check_max_token_user(request=request, token_type=tokentype)
                 check_max_token_realm(request=request)
             except PolicyError as e:
                 g.audit_object.log({"success": True, "action_detail": f"{e}"})
