@@ -549,6 +549,8 @@ export class MockContentService implements ContentServiceInterface {
 
   onEvents: Signal<boolean> = computed(() => this.routeUrl() === ROUTE_PATHS.EVENTS);
 
+  onConfigurationSystem: Signal<boolean> = computed(() => this.routeUrl() === ROUTE_PATHS.CONFIGURATION_SYSTEM);
+
   tokenSelected = jest.fn().mockImplementation((serial: string) => {
     this.tokenSerial.set(serial);
   });
