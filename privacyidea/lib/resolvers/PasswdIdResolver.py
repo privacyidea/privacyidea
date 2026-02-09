@@ -245,6 +245,17 @@ class IdResolver (UserIdResolver):
 
         return ret
 
+    def get_available_info_keys(self) -> list[str]:
+        """
+        This function returns a list of known privacyIDEA user attributes which can be used, e.g. for getUserList or
+        get_user_info
+
+        :return: list of possible keys for searching users
+        """
+        attributes = ["givenname", "surname", "phone", "mobile", "email"]
+        attributes.extend(self.search_field_indices.keys())
+        return attributes
+
     def getUsername(self, userId):
         '''
         Returns the username/loginname for a given userid

@@ -153,6 +153,15 @@ class UserIdResolver(object):
         """
         return {}
 
+    def get_available_info_keys(self) -> list[str]:
+        """
+        This function returns a list of known privacyIDEA user attributes which can be used, e.g. for getUserList or
+        get_user_info
+
+        :return: list of possible keys for searching users
+        """
+        return []
+
     def getUserList(self, search_dict: dict = None, attributes: list[str] = None) -> list[dict]:
         """
         This function finds the user objects,

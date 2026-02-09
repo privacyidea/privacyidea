@@ -286,6 +286,15 @@ class IdResolver (UserIdResolver):
 
         return userinfo
 
+    def get_available_info_keys(self) -> list[str]:
+        """
+        This function returns a list of known privacyIDEA user attributes which can be used, e.g. for getUserList or
+        get_user_info
+
+        :return: list of possible keys for searching users
+        """
+        return list(self.map.keys())
+
     def _get_userid_filter(self, userId):
         column = self.TABLE.columns[self.map.get("userid")]
         if isinstance(column.type, String):

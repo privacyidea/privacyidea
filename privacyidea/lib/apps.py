@@ -111,7 +111,7 @@ def create_google_authenticator_url(key=None, user=None,
 
     # policy depends on some lib.util
 
-    user = user_obj or User()
+    user_obj = user_obj or User()
     if tokentype == "hotp":
         counter = "counter=1&"
     else:
@@ -133,7 +133,7 @@ def create_google_authenticator_url(key=None, user=None,
     label = tokenlabel.replace("<s>",
                                serial).replace("<u>",
                                                user).replace("<r>", realm)
-    user_info = user.get_specific_info(["givenname", "surname"])
+    user_info = user_obj.get_specific_info(["givenname", "surname"])
     label = label.format(serial=serial, user=user, realm=realm,
                          givenname=user_info.get("givenname", ""),
                          surname=user_info.get("surname", ""))

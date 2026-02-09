@@ -454,7 +454,7 @@ class EmailTokenClass(HotpTokenClass):
         message = message.replace("<otp>", otp)
         message = message.replace("<serial>", serial)
 
-        user_info = self.user.get_specific_info(["givenname", "surname"])
+        user_info = self.user.get_specific_info(["givenname", "surname"]) if self.user else {}
         tags = create_tag_dict(serial=serial,
                                tokenowner=self.user,
                                tokentype=self.get_tokentype(),

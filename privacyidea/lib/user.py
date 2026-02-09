@@ -333,10 +333,32 @@ class User(object):
         if uid is None:
             return {}
         y = get_resolver_object(self.resolver)
-        user_info = y.get_user_info(uid, attributes)
+
+        available_attributes = y.get_available_info_keys()
+        # For now, only exclude groups if not requested as this one might be expensive to retrieve, but request all
+        # others to not completely break the LDAP cache
+        if attributes is not None and "groups" not in attributes and "groups" in available_attributes:
+            available_attributes.remove("groups")
+        full_user_info = y.get_user_info(uid, available_attributes)
+        # only return requested attributes
+        user_info = {key: value for key, value in full_user_info.items() if attributes is None or key in attributes}
         # Now add the custom attributes, this is used e.g. in ADDUSERINRESPONSE
         user_info.update(self.attributes)
         return user_info
+
+    @property
+    def available_info_keys(self):
+        """
+        returns the possible keys for user information for this user
+
+        :return: a list of possible keys for user information
+        :rtype: list
+        """
+        if self.is_empty() or not self.exist():
+            # An empty user has no info
+            return []
+        y = get_resolver_object(self.resolver)
+        return y.get_available_info_keys()
 
     @log_with(log)
     def set_attribute(self, attrkey, attrvalue, attrtype=None):

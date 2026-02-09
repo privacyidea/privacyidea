@@ -401,6 +401,18 @@ class HTTPResolver(UserIdResolver):
         user_info = self._get_user(user_id, config, attributes)
         return user_info
 
+    def get_available_info_keys(self) -> list[str]:
+        """
+        This function returns a list of known privacyIDEA user attributes which can be used, e.g. for getUserList or
+        get_user_info
+
+        :return: list of possible keys for searching users
+        """
+        attributes = list(self.attribute_mapping_pi_to_user_store.keys())
+        if self.config_get_user_groups.get(ACTIVE):
+            attributes.append("groups")
+        return attributes
+
     def getUserList(self, search_dict: Optional[dict] = None, attributes: list[str] = None) -> list[dict]:
         """
         Fetches all users from the user store according to the search dictionary.

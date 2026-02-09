@@ -1283,7 +1283,7 @@ def create_tag_dict(logged_in_user=None,
     time = datetime.now().strftime("%H:%M:%S")
     date = datetime.now().strftime("%Y-%m-%d")
     recipient = recipient or {}
-    user_info = tokenowner.get_user_info(["givenname", "surname"]) if tokenowner else {}
+    user_info = tokenowner.get_specific_info(["givenname", "surname"]) if tokenowner else {}
     tags = dict(admin=logged_in_user.get("username") if logged_in_user else "",
                 realm=logged_in_user.get("realm") if logged_in_user else "",
                 action=request.path if request else "",

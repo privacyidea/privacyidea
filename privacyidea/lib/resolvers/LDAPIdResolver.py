@@ -241,8 +241,16 @@ def cache(func):
             r_cache = CACHE.get(resolver_id).get(func.__name__)
             entry = r_cache.get(args[0])
             if entry and now < entry.get("timestamp") + tdelta:
-                log.debug("Reading {0!r} from cache for {1!r}".format(args[0], func.__name__))
-                return entry.get("value")
+                valid_cache_entry = True
+                if args[0] == "get_user_info":
+                    # Check if requested attributes are available in the cache
+                    requested_attributes = set(kwds.get("attributes", []))
+                    cached_attributes = set(entry.get("value").keys())
+                    if not requested_attributes.issubset(cached_attributes):
+                        valid_cache_entry = False
+                if valid_cache_entry:
+                    log.debug("Reading {0!r} from cache for {1!r}".format(args[0], func.__name__))
+                    return entry.get("value")
 
         f_result = func(self, *args, **kwds)
 
@@ -610,6 +618,15 @@ class IdResolver(UserIdResolver):
             user_info = self._ldap_attributes_to_user_object(ldap_user, attributes)
 
         return user_info
+
+    def get_available_info_keys(self) -> list[str]:
+        """
+        This function returns a list of known privacyIDEA user attributes which can be used, e.g. for getUserList or
+        get_user_info
+
+        :return: list of possible keys for searching users
+        """
+        return list(self.userinfo.keys())
 
     def _get_user_groups_recursive(self, user_info: dict) -> list[str]:
         """
