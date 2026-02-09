@@ -35,6 +35,7 @@ import { ROUTE_PATHS } from "../../../../route_paths";
 import { Router } from "@angular/router";
 import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
 import { PendingChangesService } from "../../../../services/pending-changes/pending-changes.service";
+import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
 
 @Component({
   selector: "app-new-radius-server",
@@ -62,6 +63,7 @@ export class NewRadiusServerComponent implements OnInit, OnDestroy {
   private readonly router = inject(Router);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly pendingChangesService = inject(PendingChangesService);
+  private readonly authService: AuthServiceInterface = inject(AuthService);
 
   radiusForm!: FormGroup;
   isEditMode = false;
@@ -95,7 +97,7 @@ export class NewRadiusServerComponent implements OnInit, OnDestroy {
   }
 
   get canSave(): boolean {
-    return this.radiusForm.valid;
+    return this.authService.actionAllowed("radiusserver_write") && this.radiusForm.valid;
   }
 
   ngOnInit(): void {

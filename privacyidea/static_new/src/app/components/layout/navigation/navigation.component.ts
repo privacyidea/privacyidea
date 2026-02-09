@@ -58,6 +58,13 @@ import { PeriodicTaskService } from "../../../services/periodic-task/periodic-ta
 import { SmtpService, SmtpServiceInterface } from "../../../services/smtp/smtp.service";
 import { RadiusService, RadiusServiceInterface } from "../../../services/radius/radius.service";
 import { SmsGatewayService, SmsGatewayServiceInterface } from "../../../services/sms-gateway/sms-gateway.service";
+import {
+  PrivacyideaServerService,
+  PrivacyideaServerServiceInterface
+} from "../../../services/privacyidea-server/privacyidea-server.service";
+import { TokengroupService, TokengroupServiceInterface } from "../../../services/tokengroup/tokengroup.service";
+import { CaConnectorService, CaConnectorServiceInterface } from "../../../services/ca-connector/ca-connector.service";
+import { ServiceIdService, ServiceIdServiceInterface } from "../../../services/service-id/service-id.service";
 
 @Component({
   selector: "app-navigation",
@@ -107,6 +114,10 @@ export class NavigationComponent {
   private readonly smtpService: SmtpServiceInterface = inject(SmtpService);
   private readonly radiusService: RadiusServiceInterface = inject(RadiusService);
   private readonly smsGatewayService: SmsGatewayServiceInterface = inject(SmsGatewayService);
+  private readonly privacyideaService: PrivacyideaServerServiceInterface = inject(PrivacyideaServerService);
+  private readonly tokengroupService: TokengroupServiceInterface = inject(TokengroupService);
+  private readonly caConnectorService: CaConnectorServiceInterface = inject(CaConnectorService);
+  private readonly serviceIdService: ServiceIdServiceInterface = inject(ServiceIdService);
   protected readonly periodicTaskService = inject(PeriodicTaskService);
   protected readonly router: Router = inject(Router);
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
@@ -181,6 +192,18 @@ export class NavigationComponent {
         break;
       case ROUTE_PATHS.EXTERNAL_SERVICES_SMS:
         this.smsGatewayService.smsGatewayResource.reload();
+        break;
+      case ROUTE_PATHS.EXTERNAL_SERVICES_PRIVACYIDEA:
+        this.privacyideaService.privacyideaServerResource.reload();
+        break;
+      case ROUTE_PATHS.EXTERNAL_SERVICES_TOKENGROUPS:
+        this.tokengroupService.tokengroupResource.reload();
+        break;
+      case ROUTE_PATHS.EXTERNAL_SERVICES_CA_CONNECTORS:
+        this.caConnectorService.caConnectorResource.reload();
+        break;
+      case ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS:
+        this.serviceIdService.serviceIdResource.reload();
         break;
     }
   }

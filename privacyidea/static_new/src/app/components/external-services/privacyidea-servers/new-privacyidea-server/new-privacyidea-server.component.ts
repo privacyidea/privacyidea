@@ -39,6 +39,7 @@ import { ROUTE_PATHS } from "../../../../route_paths";
 import { Router } from "@angular/router";
 import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
 import { PendingChangesService } from "../../../../services/pending-changes/pending-changes.service";
+import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
 
 @Component({
   selector: "app-privacyidea-edit-dialog",
@@ -66,6 +67,7 @@ export class NewPrivacyideaServerComponent implements OnInit, OnDestroy {
   private readonly router = inject(Router);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly pendingChangesService = inject(PendingChangesService);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
 
   privacyideaForm!: FormGroup;
   isEditMode = false;
@@ -99,7 +101,7 @@ export class NewPrivacyideaServerComponent implements OnInit, OnDestroy {
   }
 
   get canSave(): boolean {
-    return this.privacyideaForm.valid;
+    return this.authService.rights().includes("privacyidea_write") && this.privacyideaForm.valid;
   }
 
   ngOnInit(): void {

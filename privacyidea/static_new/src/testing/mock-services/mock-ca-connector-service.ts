@@ -22,7 +22,7 @@ import { PiResponse } from "../../app/app.component";
 import { CaConnector, CaConnectors, CaConnectorServiceInterface } from "../../app/services/ca-connector/ca-connector.service";
 
 export class MockCaConnectorService implements CaConnectorServiceInterface {
-  caConnectorServiceResource: HttpResourceRef<PiResponse<CaConnectors> | undefined> = {
+  caConnectorResource: HttpResourceRef<PiResponse<CaConnectors> | undefined> = {
     value: signal(undefined),
     status: signal(0) as any,
     error: signal(null),

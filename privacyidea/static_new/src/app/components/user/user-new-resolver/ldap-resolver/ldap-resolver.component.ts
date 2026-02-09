@@ -27,6 +27,7 @@ import { MatButtonModule } from "@angular/material/button";
 import { LDAPResolverData, ResolverService } from "../../../../services/resolver/resolver.service";
 import { ClearableInputComponent } from "../../../shared/clearable-input/clearable-input.component";
 import { parseBooleanValue } from "../../../../utils/parse-boolean-value";
+import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
 
 @Component({
   selector: "app-ldap-resolver",
@@ -73,7 +74,7 @@ export class LdapResolverComponent {
   loginNameAttributeControl = new FormControl<string>("", { nonNullable: true, validators: [Validators.required] });
   ldapSearchFilterControl = new FormControl<string>("", { nonNullable: true, validators: [Validators.required] });
   userInfoControl = new FormControl<string>("", { nonNullable: true, validators: [Validators.required] });
-  startTlsControl = new FormControl<boolean>(false, { nonNullable: true });
+  startTlsControl = new FormControl<boolean>(true, { nonNullable: true });
 
   tlsVersionControl = new FormControl<string>("TLSv1_3", { nonNullable: true });
   tlsVerifyControl = new FormControl<boolean>(true, { nonNullable: true });

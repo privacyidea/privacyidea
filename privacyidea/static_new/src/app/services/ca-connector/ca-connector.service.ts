@@ -34,7 +34,7 @@ export interface CaConnector {
 export type CaConnectors = CaConnector[];
 
 export interface CaConnectorServiceInterface {
-  caConnectorServiceResource: HttpResourceRef<PiResponse<CaConnectors> | undefined>;
+  caConnectorResource: HttpResourceRef<PiResponse<CaConnectors> | undefined>;
   caConnectors: WritableSignal<CaConnectors>;
 
   postCaConnector(connector: CaConnector): Promise<void>;
@@ -52,14 +52,14 @@ export class CaConnectorService implements CaConnectorServiceInterface {
 
   readonly caConnectorBaseUrl = environment.proxyUrl + "/caconnector/";
 
-  caConnectorServiceResource = httpResource<PiResponse<CaConnectors>>(() => ({
+  caConnectorResource = httpResource<PiResponse<CaConnectors>>(() => ({
     url: this.caConnectorBaseUrl,
     method: "GET",
     headers: this.authService.getHeaders()
   }));
 
   caConnectors: WritableSignal<CaConnectors> = linkedSignal({
-    source: this.caConnectorServiceResource.value,
+    source: this.caConnectorResource.value,
     computation: (source, previous) => source?.result?.value ?? previous?.value ?? []
   });
 
@@ -70,7 +70,7 @@ export class CaConnectorService implements CaConnectorServiceInterface {
     return lastValueFrom(request)
       .then(() => {
         this.notificationService.openSnackBar($localize`Successfully saved CA connector.`);
-        this.caConnectorServiceResource.reload();
+        this.caConnectorResource.reload();
       })
       .catch((error) => {
         const message = error.error?.result?.error?.message || "";
@@ -86,7 +86,7 @@ export class CaConnectorService implements CaConnectorServiceInterface {
     return lastValueFrom(request)
       .then(() => {
         this.notificationService.openSnackBar($localize`Successfully deleted CA connector: ${connectorname}.`);
-        this.caConnectorServiceResource.reload();
+        this.caConnectorResource.reload();
       })
       .catch((error) => {
         const message = error.error?.result?.error?.message || "";
