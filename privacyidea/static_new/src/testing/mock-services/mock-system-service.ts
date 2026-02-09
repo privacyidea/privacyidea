@@ -16,11 +16,12 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { computed, Signal } from "@angular/core";
-import { of } from "rxjs";
+import { computed, Signal, WritableSignal } from "@angular/core";
+import { Observable, of } from "rxjs";
 import { HttpResourceRef } from "@angular/common/http";
 import { MockHttpResourceRef, MockPiResponse } from "../mock-services";
 import { SystemServiceInterface } from "../../app/services/system/system.service";
+import { CaConnectors } from "../../app/services/ca-connector/ca-connector.service";
 
 export class MockSystemService implements SystemServiceInterface {
   systemConfigResource: HttpResourceRef<any>;
@@ -59,6 +60,12 @@ export class MockSystemService implements SystemServiceInterface {
       return this.nodesResource.value()?.result?.value ?? [];
     });
   }
+
+  caConnectorResource?: HttpResourceRef<any> | undefined;
+    caConnectors?: WritableSignal<CaConnectors> | undefined;
+    getDocumentation(): Observable<string> {
+        throw new Error("Method not implemented.");
+    }
 
   saveSystemConfig(config: any) {
     return of(MockPiResponse.fromValue({ status: true }));

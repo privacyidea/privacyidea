@@ -24,6 +24,7 @@ import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { MatSelectChange } from "@angular/material/select";
 import { MockPolicyService } from "../../../../../../testing/mock-services/mock-policies-service";
 import { MockSystemService } from "../../../../../../testing/mock-services/mock-system-service";
+import { signal } from "@angular/core";
 
 describe("ConditionsNodesComponent", () => {
   let component: ConditionsNodesComponent;
@@ -52,7 +53,7 @@ describe("ConditionsNodesComponent", () => {
   });
 
   it("should toggle all nodes", () => {
-    systemServiceMock.nodes.set([
+    systemServiceMock.nodes = signal([
       { name: "node1", uuid: "1" },
       { name: "node2", uuid: "2" },
       { name: "node2", uuid: "3" }
