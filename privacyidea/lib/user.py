@@ -318,6 +318,14 @@ class User(object):
         :return: a dict with all the userinformation
         :rtype: dict
         """
+        return self.get_specific_info()
+
+    def get_specific_info(self, attributes: list[str] = None) -> dict:
+        """
+        returns the specified attributes for the user or all if attributes is None
+
+        :return: a dict with the specified user information
+        """
         if self.is_empty() or not self.exist():
             # An empty user has no info
             return {}
@@ -325,7 +333,7 @@ class User(object):
         if uid is None:
             return {}
         y = get_resolver_object(self.resolver)
-        user_info = y.get_user_info(uid)
+        user_info = y.get_user_info(uid, attributes)
         # Now add the custom attributes, this is used e.g. in ADDUSERINRESPONSE
         user_info.update(self.attributes)
         return user_info
@@ -399,7 +407,7 @@ class User(object):
 
         :returns: list with phone numbers of this user object
         """
-        userinfo = self.info
+        userinfo = self.get_specific_info([phone_type])
         if phone_type in userinfo:
             phone = userinfo[phone_type]
             log.debug("got user phone {0!r} of type {1!r}".format(phone, phone_type))

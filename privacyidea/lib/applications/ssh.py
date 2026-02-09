@@ -81,7 +81,7 @@ class MachineApplication(MachineApplicationBase):
                     # the ssh key accordingly
                     user_object = toks[0].user
                     if user_object:
-                        uInfo = user_object.info
+                        uInfo = user_object.get_specific_info(["username"])
                         if "username" in uInfo:
                             ret["username"] = uInfo.get("username")
                 else:

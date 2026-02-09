@@ -1981,7 +1981,8 @@ def indexedsecret_force_attribute(request, action):
             # If there is no policy set, we simply do nothing
             return True
 
-        attribute_value = request.User.info.get(list(attributes)[0])
+        attribute_key = list(attributes)[0]
+        attribute_value = request.User.get_specific_info([attribute_key]).get(attribute_key)
         request.all_data["otpkey"] = attribute_value
 
     return True

@@ -2967,7 +2967,7 @@ def challenge_text_replace(message, user, token_obj, additional_tags: dict = Non
 
     if token_type == "email":
         if is_true(TokenClass.get_tokeninfo(token_obj, "dynamic_email")):
-            email = token_obj.user.info.get(token_obj.EMAIL_ADDRESS_KEY)
+            email = token_obj.user.get_specific_info([token_obj.EMAIL_ADDRESS_KEY]).get(token_obj.EMAIL_ADDRESS_KEY)
             if isinstance(email, list) and email:
                 # If there is a non-empty list, we use the first entry
                 email = email[0]

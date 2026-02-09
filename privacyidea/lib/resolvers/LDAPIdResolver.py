@@ -321,11 +321,12 @@ class IdResolver(UserIdResolver):
                 return False
             # We need to check credentials with kerberos differently since we
             # can not use bind for every user
-            upn = self.get_user_info(uid).get('upn')
+            user_info = self.get_user_info(uid, ["upn", "username"])
+            upn = user_info.get('upn')
             if upn is not None and upn != "None" and upn != "":
                 name = gssapi.Name(upn.upper())
             else:
-                name = gssapi.Name(self.get_user_info(uid).get('username'))
+                name = gssapi.Name(user_info.get('username'))
             try:
                 gssapi.raw.ext_password.acquire_cred_with_password(name, to_bytes(password))
             except gssapi.exceptions.GSSError as e:
@@ -338,7 +339,7 @@ class IdResolver(UserIdResolver):
             # which would be of the format DOMAIN\username and compose the
             # bind_user to DOMAIN\sAMAccountName
             domain_name = self.binddn.split('\\')[0]
-            uinfo = self.get_user_info(uid)
+            uinfo = self.get_user_info(uid, ["username"])
             # In fact, we need the sAMAccountName. If the username mapping is
             # another attribute than the sAMAccountName the authentication
             # will fail!
@@ -583,7 +584,7 @@ class IdResolver(UserIdResolver):
         This function returns all user info for a given userid/object.
 
         :param user_id: The userid of the object
-        :type user_id: string
+        :param attributes: list of attribute names to be returned for the user. If None, all attributes are returned.
         :return: A dictionary with the keys defined in self.userinfo
         :rtype: dict
         """
@@ -605,8 +606,8 @@ class IdResolver(UserIdResolver):
             raise ResolverError(f"Found more than one object for uid {user_id!r}")
 
         for entry in result:
-            attributes = entry.get("attributes")
-            user_info = self._ldap_attributes_to_user_object(attributes)
+            ldap_user = entry.get("attributes")
+            user_info = self._ldap_attributes_to_user_object(ldap_user, attributes)
 
         return user_info
 
@@ -694,7 +695,7 @@ class IdResolver(UserIdResolver):
         :return: username
         :rtype: string
         """
-        info = self.get_user_info(user_id)
+        info = self.get_user_info(user_id, attributes=["username"])
         return info.get('username', "")
 
     @cache
@@ -1345,7 +1346,7 @@ class IdResolver(UserIdResolver):
         :return: dict with attribute name as keys and values
         """
         modify_changes = {}
-        uinfo = self.get_user_info(uid)
+        uinfo = self.get_user_info(uid, list(attributes.keys()))
 
         for fieldname, value in attributes.items():
             if value:

@@ -250,7 +250,7 @@ class EntraIDResolver(HTTPResolver):
         header = {"Authorization": f"Bearer {access_token}"}
         return header
 
-    def _get_search_params(self, search_dict: dict) -> dict:
+    def _get_search_params(self, search_dict: dict, allow_endswith: bool = True) -> dict:
         """
         Returns a dictionary containing the search parameters in the format expected by the user store API.
         All search parameters are mapped to the EntraID attributes according to the attribute mapping and concatenated
@@ -283,7 +283,7 @@ class EntraIDResolver(HTTPResolver):
                 headers = user_list_config.get(HEADERS, "{}")
                 try:
                     headers = json.loads(headers)
-                    advanced_query = headers.get("ConsistencyLevel", "") == "eventual"
+                    advanced_query = headers.get("ConsistencyLevel", "") == "eventual" and allow_endswith
                 except json.JSONDecodeError:
                     advanced_query = False
 
@@ -481,22 +481,17 @@ class EntraIDResolver(HTTPResolver):
         :return: List of dictionaries containing pi conform user attributes
         """
         request_params = config.request_mapping if config.request_mapping else {}
-        request_params.update(self._get_search_params(search_dict))
+        search_for_groups = self.config_get_user_groups.get(ACTIVE) and (not attributes or "groups" in attributes)
+        request_params.update(self._get_search_params(search_dict, allow_endswith=search_for_groups))
         config.headers.update(self._get_auth_header())
 
-        if self.config_get_user_groups.get(ACTIVE) and (not attributes or "groups" in attributes) and not search_dict:
-            if not search_dict:
-                # TODO: since only endswith seems to be not supported with the memberOf property, it might be better to
-                #  limit the search query on startswith and still fetch the user groups
-                log.debug(
-                    "Can not fetch user groups. EntraID does not support fetching groups in combination with search queries.")
+        if search_for_groups:
+            # If groups are requested, we need to expand the memberOf relationship
+            if "$expand" in request_params:
+                if "memberOf" not in request_params["$expand"]:
+                    request_params["$expand"] += ",memberOf"
             else:
-                # If groups are requested, we need to expand the memberOf relationship
-                if "$expand" in request_params:
-                    if "memberOf" not in request_params["$expand"]:
-                        request_params["$expand"] += ",memberOf"
-                else:
-                    request_params["$expand"] = "memberOf"
+                request_params["$expand"] = "memberOf"
 
         response = self._do_request(config, request_params)
 

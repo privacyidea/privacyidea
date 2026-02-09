@@ -376,7 +376,7 @@ class HTTPResolver(UserIdResolver):
             return login_name
 
         config = RequestConfig(config_get_user_by_name, self.headers, {"username": login_name}, "")
-        user_info = self._get_user(login_name, config)
+        user_info = self._get_user(login_name, config, ["userid"])
         user_id = user_info.get("userid", "")
         return user_id
 
@@ -398,7 +398,7 @@ class HTTPResolver(UserIdResolver):
         :return:  dictionary, if no object is found, the dictionary is empty
         """
         config = RequestConfig(self.config_get_user_by_id, self.headers, {"userid": user_id}, "")
-        user_info = self._get_user(user_id, config)
+        user_info = self._get_user(user_id, config, attributes)
         return user_info
 
     def getUserList(self, search_dict: Optional[dict] = None, attributes: list[str] = None) -> list[dict]:

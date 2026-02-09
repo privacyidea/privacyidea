@@ -342,9 +342,10 @@ def export_token_data(token_list, attributes=None):
         try:
             user = token_obj.user
             if user:
-                token_data.append("{0!s}".format(user.info.get("username", "")))
-                token_data.append("{0!s}".format(user.info.get("givenname", "")))
-                token_data.append("{0!s}".format(user.info.get("surname", "")))
+                user_info = user.get_specific_info(["username", "givenname", "surname"])
+                token_data.append("{0!s}".format(user_info.get("username", "")))
+                token_data.append("{0!s}".format(user_info.get("givenname", "")))
+                token_data.append("{0!s}".format(user_info.get("surname", "")))
                 token_data.append("{0!s}".format(user.uid))
                 token_data.append("{0!s}".format(user.resolver))
                 token_data.append("{0!s}".format(user.realm))
@@ -380,10 +381,13 @@ def export_user_data(token_list, attributes=None):
                 token_obj.token.serial
             ))
         if user:
+            request_attributes = attributes.split(",") if attributes else []
+            request_attributes += ["username", "givenname", "surname"]
+            user_info = user.get_specific_info(request_attributes)
             uid = "'{0!s}','{1!s}','{2!s}','{3!s}','{4!s}','{5!s}'".format(
-                user.info.get("username", ""),
-                user.info.get("givenname", ""),
-                user.info.get("surname", ""),
+                user_info.get("username", ""),
+                user_info.get("givenname", ""),
+                user_info.get("surname", ""),
                 user.uid,
                 user.resolver,
                 user.realm
@@ -391,7 +395,7 @@ def export_user_data(token_list, attributes=None):
             if attributes:
                 for att in attributes.split(","):
                     uid += ",'{0!s}'".format(
-                        user.info.get(att, "")
+                        user_info.get(att, "")
                     )
         else:
             uid = "N/A" + ", " * 5

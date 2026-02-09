@@ -135,7 +135,7 @@ class KeycloakResolver(HTTPResolver):
         config_get_user_by_name = self.config.get(CONFIG_GET_USER_BY_NAME)
         config = RequestConfig(config_get_user_by_name, self.headers, {"username": login_name}, "")
         try:
-            users = self._get_user_list({}, config)
+            users = self._get_user_list({}, config, ["userid"])
         except ResolverError as error:
             log.info(f"Failed to resolve user '{login_name}': {error}")
             return ""
