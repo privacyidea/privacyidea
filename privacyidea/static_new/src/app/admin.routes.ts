@@ -39,6 +39,7 @@ import { PeriodicTaskComponent } from "./components/configuration/periodic-task/
 import { UserResolversComponent } from "./components/user/user-sources/user-resolvers.component";
 import { pendingChangesGuard } from "./guards/pending-changes.guard";
 import { EventComponent } from "./components/event/event.component";
+import { SystemConfigComponent } from "./components/config/system/system-config.component";
 
 export const routes: Routes = [
   {
@@ -81,7 +82,11 @@ export const routes: Routes = [
   },
   {
     path: "configuration",
-    children: [{ path: "machine_resolver", component: MachineResolverComponent }]
+    children: [
+      { path: "machine_resolver", component: MachineResolverComponent },
+      { path: "periodic-tasks", component: PeriodicTaskComponent },
+      { path: "system", component: SystemConfigComponent }
+    ]
   },
   {
     path: "audit",
@@ -89,9 +94,5 @@ export const routes: Routes = [
       { path: "", component: AuditComponent },
       { path: "clients", component: ClientsComponent }
     ]
-  },
-  {
-    path: "configuration",
-    children: [{ path: "periodic-tasks", component: PeriodicTaskComponent }]
   }
 ];

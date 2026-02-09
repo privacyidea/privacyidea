@@ -1,0 +1,78 @@
+@use "../../../../styles";
+
+.system-config-container {
+  @include styles.table-container-styles;
+  max-width: 100%;
+  max-height: var(--max-height);
+  overflow: auto;
+  display: grid;
+}
+
+.system-config-scroll-container {
+  @include styles.base-table-structure(".system-config-form", ".system-config-filter", ".system-config-scroll-container");
+}
+
+.well {
+  background-color: var(--mat-sys-surface-container-low);
+  border: 1px solid var(--mat-sys-outline-variant);
+  padding: 1rem;
+  border-radius: var(--border-radius);
+  display: grid;
+  gap: 16px;
+  grid-template-columns: auto auto;
+
+  h4 {
+    margin-top: 0;
+  }
+}
+
+.form-group {
+  @extend .flex-center-vertical;
+  margin-bottom: 8px;
+}
+
+.input-height {
+  min-height: 3rem;
+}
+
+.flex-row-space-between {
+  @extend .flex-row;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+
+  button {
+    flex-shrink: 0;
+    align-self: flex-end;
+  }
+}
+
+form {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0 2rem;
+  align-items: start;
+}
+
+.full-width-grid-column {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 768px) {
+  form {
+    grid-template-columns: 1fr;
+  }
+  .flex-row-space-between {
+    flex-direction: column;
+    align-items: stretch;
+
+    button {
+      align-self: stretch;
+      margin-top: 0.5rem;
+    }
+  }
+}
+
+.save-button {
+  margin: 12px 0 16px;
+}

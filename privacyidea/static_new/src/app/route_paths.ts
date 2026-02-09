@@ -40,6 +40,7 @@ export const ROUTE_PATHS = {
   MACHINE_RESOLVER: "/configuration/machine_resolver",
   USERS_REALMS: "/users/realms",
   CONFIGURATION_PERIODIC_TASKS: "/configuration/periodic-tasks",
+  CONFIGURATION_SYSTEM: "/configuration/system",
   USERS_RESOLVERS: "/users/resolvers",
   EVENTS: "/events"
 };

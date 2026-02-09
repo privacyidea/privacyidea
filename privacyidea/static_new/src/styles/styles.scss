@@ -245,6 +245,10 @@ body {
   width: 238px;
 }
 
+.min-width-238 {
+  min-width: 238px;
+}
+
 .width-288px {
   width: 288px;
 }
@@ -284,6 +288,10 @@ body {
 
 .margin-left-1 {
   margin-left: 16px;
+}
+
+.margin-right-32 {
+  margin-right: 32px;
 }
 
 .margin-top-0 {
@@ -336,6 +344,14 @@ body {
 
 .margin-left--8 {
   margin-left: -8px;
+}
+
+.margin-right-auto {
+  margin-right: auto;
+}
+
+.margin-left-auto {
+  margin-left: auto;
 }
 
 .width-32 {

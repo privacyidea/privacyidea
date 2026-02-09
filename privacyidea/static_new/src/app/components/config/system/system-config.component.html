@@ -1,0 +1,237 @@
+<!--
+ (c) NetKnights GmbH 2025,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<div
+  #scrollContainer
+  appScrollToTop
+  aria-label="System Configuration"
+  class="system-config-container"
+  i18n-aria-label>
+
+  <div class="system-config-scroll-container margin-top-1 margin-bottom-32">
+    <form
+      #systemConfigForm="ngForm"
+      class="system-config-form">
+      <div class="flex-row full-width-grid-column">
+        <div class="margin-left-1 margin-right-auto">
+          <h3 i18n>
+            System Configuration
+          </h3>
+        </div>
+        @if (hasConfigWritePermission()) {
+          <button
+            (click)="saveSystemConfig()"
+            [disabled]="!systemConfigForm.form.valid || !authService.actionAllowed('configwrite')"
+            class="action-button-1 width-238 save-button"
+            mat-stroked-button>
+            <mat-icon>save</mat-icon>
+            <span i18n>Save System Config</span>
+          </button>
+        }
+      </div>
+
+      <div class="form-group margin-bottom-1">
+        <mat-checkbox
+          [(ngModel)]="params.splitAtSign"
+          class="margin-left-1"
+          name="splitAtSign">
+          Use &#64; sign to split the username and the realm
+        </mat-checkbox>
+      </div>
+
+      <div class="form-group margin-bottom-1">
+        <mat-checkbox
+          [(ngModel)]="params.IncFailCountOnFalsePin"
+          class="margin-left-1"
+          name="IncFailCountOnFalsePin">
+          Increase the failcounter if the wrong PIN was entered
+        </mat-checkbox>
+      </div>
+
+      <div class="form-row margin-bottom-1">
+        <mat-form-field class="width-50 input-height">
+          <mat-label i18n>Clear failcounter after minutes</mat-label>
+          <input
+            [(ngModel)]="params.failcounter_clear_timeout"
+            matInput
+            name="failcounter_clear_timeout"
+            placeholder="0" />
+        </mat-form-field>
+      </div>
+
+      <div class="form-group margin-bottom-1">
+        <mat-checkbox
+          [(ngModel)]="params.no_auth_counter"
+          class="margin-left-1"
+          name="no_auth_counter">
+          Do not use an authentication counter per token
+        </mat-checkbox>
+      </div>
+
+      <div class="form-group margin-bottom-1">
+        <mat-checkbox
+          [(ngModel)]="params.PrependPin"
+          class="margin-left-1"
+          name="PrependPin">
+          Prepend the PIN in front of the OTP value. Otherwise it will be post pended
+        </mat-checkbox>
+      </div>
+
+      <div class="form-group margin-bottom-1">
+        <mat-checkbox
+          [(ngModel)]="params.ReturnSamlAttributes"
+          class="margin-left-1"
+          name="ReturnSamlAttributes">
+          Include SAML attributes in the authentication response
+        </mat-checkbox>
+      </div>
+
+      <div class="form-group margin-bottom-1">
+        <mat-checkbox
+          [(ngModel)]="params.ReturnSamlAttributesOnFail"
+          [disabled]="!params.ReturnSamlAttributes"
+          class="margin-left-1"
+          name="ReturnSamlAttributesOnFail">
+          Include SAML attributes even if the user failed to authenticate
+        </mat-checkbox>
+      </div>
+
+      <div class="form-group margin-bottom-1">
+        <mat-checkbox
+          [(ngModel)]="params.AutoResync"
+          class="margin-left-1"
+          name="AutoResync">
+          Automatic resync during authentication
+        </mat-checkbox>
+      </div>
+
+      <div class="form-row full-width-grid-column flex-center gap-16">
+        <mat-form-field class="input-height width-100">
+          <mat-label i18n>Auto resync timeout</mat-label>
+          <input
+            [(ngModel)]="params.AutoResyncTimeout"
+            [disabled]="!params.AutoResync"
+            matInput
+            name="AutoResyncTimeout"
+            placeholder="300" />
+        </mat-form-field>
+
+        <mat-form-field class="input-height width-100">
+          <mat-label i18n>User Cache expiration in seconds</mat-label>
+          <input
+            [(ngModel)]="params.UserCacheExpiration"
+            matInput
+            name="UserCacheExpiration"
+            placeholder="0" />
+        </mat-form-field>
+        <button
+          (click)="deleteUserCache()"
+          class="action-button-1 min-width-238"
+          i18n
+          mat-stroked-button>
+          <mat-icon>delete</mat-icon>
+          Delete User Cache
+        </button>
+      </div>
+
+      <div class="form-row margin-bottom-1 full-width-grid-column">
+        <mat-form-field class="width-100 input-height">
+          <mat-label i18n>Override Authorization Clients</mat-label>
+          <input
+            [(ngModel)]="params.OverrideAuthorizationClient"
+            matInput
+            name="OverrideAuthorizationClient"
+            placeholder="127.0.0.1, 10.0.0.8" />
+          <mat-hint i18n>
+            These client IP addresses or subnets are allowed to masquerade as another client
+          </mat-hint>
+        </mat-form-field>
+      </div>
+
+      <div class="form-row margin-bottom-1 full-width-grid-column">
+        <mat-form-field class="width-100 input-height">
+          <mat-label i18n>SMTP server for password recovery</mat-label>
+          <mat-select
+            [(ngModel)]="params['recovery.identifier']"
+            name="recovery.identifier">
+            @for (identifier of smtpIdentifiers; track identifier) {
+              <mat-option [value]="identifier">{{ identifier }}</mat-option>
+            }
+          </mat-select>
+          <mat-hint i18n>
+            Select a predefined
+            <!-- TODO update link here -->
+            <a [routerLink]="[ROUTE_PATHS.TOKENS]">SMTP server configuration</a>
+          </mat-hint>
+        </mat-form-field>
+      </div>
+
+      <div class="well margin-top-1 padding-16 border-radius-1 full-width-grid-column">
+        <h4
+          class="margin-bottom-1"
+          i18n>Default Settings for New Tokens
+        </h4>
+
+        <mat-form-field class="width-100 input-height">
+          <mat-label i18n>OTP length of newly enrolled tokens</mat-label>
+          <input
+            [(ngModel)]="params.DefaultOtpLen"
+            matInput
+            name="DefaultOtpLen"
+            placeholder="6" />
+        </mat-form-field>
+
+        <mat-form-field class="width-100 input-height">
+          <mat-label i18n>Count Window of newly enrolled tokens</mat-label>
+          <input
+            [(ngModel)]="params.DefaultCountWindow"
+            matInput
+            name="DefaultCountWindow"
+            placeholder="10" />
+        </mat-form-field>
+
+        <mat-form-field class="width-100 input-height">
+          <mat-label i18n>Max Failcount of newly enrolled tokens</mat-label>
+          <input
+            [(ngModel)]="params.DefaultMaxFailCount"
+            matInput
+            name="DefaultMaxFailCount"
+            placeholder="10" />
+        </mat-form-field>
+
+        <mat-form-field class="width-100 input-height">
+          <mat-label i18n>Sync Window of newly enrolled tokens</mat-label>
+          <input
+            [(ngModel)]="params.DefaultSyncWindow"
+            matInput
+            name="DefaultSyncWindow"
+            placeholder="1000" />
+        </mat-form-field>
+
+        <mat-form-field class="width-100 input-height">
+          <mat-label i18n>The challenge validity time</mat-label>
+          <input
+            [(ngModel)]="params.DefaultChallengeValidityTime"
+            matInput
+            name="DefaultChallengeValidityTime"
+            placeholder="120" />
+        </mat-form-field>
+      </div>
+    </form>
+  </div>
+</div>

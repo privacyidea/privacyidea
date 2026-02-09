@@ -56,6 +56,7 @@ import { RealmService, RealmServiceInterface } from "../../../services/realm/rea
 import { ResolverService, ResolverServiceInterface } from "../../../services/resolver/resolver.service";
 import { PeriodicTaskService } from "../../../services/periodic-task/periodic-task.service";
 import { EventService, EventServiceInterface } from "../../../services/event/event.service";
+import { SystemService, SystemServiceInterface } from "../../../services/system/system.service";
 
 @Component({
   selector: "app-navigation",
@@ -104,6 +105,7 @@ export class NavigationComponent {
   private readonly resolverService: ResolverServiceInterface = inject(ResolverService);
   protected readonly periodicTaskService = inject(PeriodicTaskService);
   protected readonly eventService: EventServiceInterface = inject(EventService);
+  protected readonly systemService: SystemServiceInterface = inject(SystemService);
   protected readonly router: Router = inject(Router);
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
 
@@ -165,6 +167,9 @@ export class NavigationComponent {
         break;
       case ROUTE_PATHS.CONFIGURATION_PERIODIC_TASKS:
         this.periodicTaskService.periodicTasksResource.reload();
+        break;
+      case ROUTE_PATHS.CONFIGURATION_SYSTEM:
+        this.systemService.systemConfigResource.reload();
         break;
       case ROUTE_PATHS.USERS_RESOLVERS:
         this.resolverService.resolversResource.reload();
