@@ -95,7 +95,7 @@ describe("EnrollPushComponent", () => {
 
     expect(addSpy).toHaveBeenCalledWith({});
     expect(clickSpy).toHaveBeenCalled();
-    const emitted = clickSpy.mock.calls[0][0] as (opts: any) => Promise<EnrollmentResponse | null>;
+    const emitted = clickSpy.mock.calls[0][0] as unknown as (opts: any) => Promise<EnrollmentResponse | null>;
     expect(typeof emitted).toBe("function");
   });
 

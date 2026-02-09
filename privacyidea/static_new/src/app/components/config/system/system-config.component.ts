@@ -22,13 +22,16 @@ import { SystemService, SystemServiceInterface } from "../../../services/system/
 import { NotificationService, NotificationServiceInterface } from "../../../services/notification/notification.service";
 import { AuthService } from "../../../services/auth/auth.service";
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
-import { MatFormField, MatHint, MatInput, MatLabel } from "@angular/material/input";
+import { MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
+import { MatInput } from "@angular/material/input";
 import { MatOption, MatSelect } from "@angular/material/select";
 import { RouterLink } from "@angular/router";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatButton } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 import { ROUTE_PATHS } from "../../../route_paths";
+import { SystemDocumentationDialogComponent } from "./system-documentation-dialog/system-documentation-dialog.component";
+import { MatDialog } from "@angular/material/dialog";
 
 @Component({
   selector: "app-system-config",
@@ -53,6 +56,7 @@ export class SystemConfigComponent implements OnInit {
   private readonly systemService: SystemServiceInterface = inject(SystemService);
   protected readonly authService: AuthService = inject(AuthService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
+  private readonly dialog = inject(MatDialog);
   @ViewChild("scrollContainer", { static: true }) scrollContainer!: ScrollToTopDirective;
   @ViewChild("systemConfigForm", { static: true }) systemConfigForm!: NgForm;
 
@@ -149,4 +153,18 @@ export class SystemConfigComponent implements OnInit {
   }
 
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
+
+  protected openDocumentationDialog() {
+    this.systemService.getDocumentation().subscribe({
+      next: (documentation) => {
+        this.dialog.open(SystemDocumentationDialogComponent, {
+          data: { documentation },
+        });
+      },
+      error: (error: any) => {
+        console.error("Error loading system documentation:", error);
+        this.notificationService.openSnackBar("Error loading system documentation.");
+      }
+    });
+  }
 }

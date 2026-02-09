@@ -50,6 +50,8 @@ export interface SystemServiceInterface {
   deleteUserCache(): Observable<PiResponse<any>>;
 
   loadSmtpIdentifiers(): Observable<PiResponse<any>>;
+
+  getDocumentation(): Observable<string>;
 }
 
 @Injectable({
@@ -139,5 +141,12 @@ export class SystemService implements SystemServiceInterface {
   loadSmtpIdentifiers(): Observable<PiResponse<any>> {
     return this.http.get<PiResponse<any>>(`${this.systemBaseUrl}names/smtp`,
       { headers: this.authService.getHeaders() });
+  }
+
+  getDocumentation(): Observable<string> {
+    return this.http.get(`${this.systemBaseUrl}documentation`, {
+      headers: this.authService.getHeaders(),
+      responseType: "text"
+    });
   }
 }

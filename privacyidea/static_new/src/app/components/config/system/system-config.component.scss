@@ -73,6 +73,9 @@ form {
   }
 }
 
-.save-button {
+.save-buttons {
+  display: flex;
+  align-items: center;
   margin: 12px 0 16px;
+  gap: 16px;
 }
