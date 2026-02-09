@@ -34,17 +34,19 @@
     class="sticky-header">
     <div class="sticky-controls">
       <div class="select-type">
-        <mat-form-field subscriptSizing="dynamic">
+        <mat-form-field
+          class="width-66"
+          subscriptSizing="dynamic">
           <mat-label i18n>File Type</mat-label>
           <mat-select
             [(ngModel)]="fileType"
-            [value]="fileType()"
             [ngModelOptions]="{ standalone: true }"
-            [panelClass]="'single-column-panel'">
+            [panelClass]="'single-column-panel'"
+            [value]="fileType()">
             @for (type of Object.keys(fileTypes); track type) {
               <mat-option
-                class="select-option"
-                [value]="type">{{ fileTypes[type] }}
+                [value]="type"
+                class="select-option">{{ fileTypes[type] }}
               </mat-option>
             }
           </mat-select>
@@ -52,10 +54,10 @@
       </div>
       <div>
         <button
-          mat-stroked-button
-          class="action-button-1 width-238"
+          (click)="importTokens()"
           [disabled]="!inputForm.valid"
-          (click)="importTokens()">
+          class="action-button-1 width-238"
+          mat-stroked-button>
           <mat-icon>input</mat-icon>
           Import
         </button>
@@ -101,14 +103,13 @@
           <mat-form-field class="width-100 margin-bottom-1">
             <mat-label>Pre Shared Key</mat-label>
             <input
-              matInput
               [formControl]="preSharedKey"
+              matInput
               placeholder="Pre Shared Key in hex format" />
             <mat-hint>As the values are encrypted with AES128-CBC, you need to give a 32 characters long hex string.
             </mat-hint>
             @if (!preSharedKey.valid) {
-              <mat-error>As the values are encrypted with AES128-CBC, you need to give a 32 characters long hex
-                         string.
+              <mat-error>As the values are encrypted with AES128-CBC, you need to give a 32 characters long hex string.
               </mat-error>
             }
           </mat-form-field>
@@ -117,9 +118,9 @@
           <mat-form-field class="width-100">
             <mat-label>Password</mat-label>
             <input
-              matInput
               [(ngModel)]="pskPassword"
               [value]="pskPassword()"
+              matInput
               placeholder="Password" />
           </mat-form-field>
         </div>
@@ -146,9 +147,9 @@
     <mat-form-field class="width-50 input-height margin-bottom-1">
       <mat-label>Select Realm for Tokens</mat-label>
       <mat-select
-        multiple
         [(ngModel)]="selectedRealms"
-        [value]="selectedRealms()">
+        [value]="selectedRealms()"
+        multiple>
         <!--                <mat-option [value]="'-'"> -</mat-option>-->
         @for (option of realmService.realmOptions(); track option) {
           <mat-option [value]="option">{{ option }}</mat-option>
@@ -168,8 +169,8 @@
         <span class="file-name">{{ fileName() }}</span>
         <button
           (click)="clearFileSelection()"
-          type="button"
-          mat-icon-button>
+          mat-icon-button
+          type="button">
           <mat-icon>add_circle</mat-icon>
         </button>
       } @else {
@@ -186,16 +187,16 @@
       </div>
 
       <input
-        type="file"
-        class="file-input"
+        #fileUpload
         (change)="onFileSelected($event)"
-        #fileUpload>
+        class="file-input"
+        type="file">
 
       <div>
         <button
-          mat-stroked-button
+          (click)="fileUpload.click()"
           class="action-button-1 text-center just-center"
-          (click)="fileUpload.click()">
+          mat-stroked-button>
           <mat-icon>folder_open</mat-icon>
           Browse Files
         </button>
