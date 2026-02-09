@@ -58,7 +58,7 @@ import { PendingChangesService } from "../../../../services/pending-changes/pend
   styleUrl: "./new-privacyidea-server.component.scss"
 })
 export class NewPrivacyideaServerComponent implements OnInit, OnDestroy {
-  private readonly fb = inject(FormBuilder);
+  private readonly formBuilder = inject(FormBuilder);
   private readonly dialogRef = inject(MatDialogRef<NewPrivacyideaServerComponent>);
   protected readonly data = inject<PrivacyideaServer | null>(MAT_DIALOG_DATA);
   protected readonly privacyideaServerService: PrivacyideaServerServiceInterface = inject(PrivacyideaServerService);
@@ -104,7 +104,7 @@ export class NewPrivacyideaServerComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.isEditMode = !!this.data;
-    this.privacyideaForm = this.fb.group({
+    this.privacyideaForm = this.formBuilder.group({
       identifier: [this.data?.identifier || "", [Validators.required]],
       url: [this.data?.url || "", [Validators.required]],
       tls: [this.data?.tls ?? true],

@@ -54,7 +54,7 @@ import { PendingChangesService } from "../../../../services/pending-changes/pend
   styleUrl: "./new-service-id.component.scss"
 })
 export class NewServiceIdComponent implements OnInit, OnDestroy {
-  private readonly fb = inject(FormBuilder);
+  private readonly formBuilder = inject(FormBuilder);
   private readonly dialogRef = inject(MatDialogRef<NewServiceIdComponent>);
   protected readonly data = inject<ServiceId | null>(MAT_DIALOG_DATA);
   protected readonly serviceIdService: ServiceIdServiceInterface = inject(ServiceIdService);
@@ -99,7 +99,7 @@ export class NewServiceIdComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.isEditMode = !!this.data;
-    this.serviceIdForm = this.fb.group({
+    this.serviceIdForm = this.formBuilder.group({
       servicename: [this.data?.servicename || "", [Validators.required]],
       description: [this.data?.description || ""]
     });

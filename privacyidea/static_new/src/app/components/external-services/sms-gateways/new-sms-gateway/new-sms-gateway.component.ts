@@ -65,7 +65,7 @@ type KeyValueRow = { key: string; value: string };
   styleUrl: "./new-sms-gateway.component.scss"
 })
 export class NewSmsGatewayComponent implements OnInit, OnDestroy {
-  private readonly fb = inject(FormBuilder);
+  private readonly formBuilder = inject(FormBuilder);
   private readonly dialogRef = inject(MatDialogRef<NewSmsGatewayComponent>);
   protected readonly data = inject<SmsGateway | null>(MAT_DIALOG_DATA);
   protected readonly smsGatewayService: SmsGatewayServiceInterface = inject(SmsGatewayService);
@@ -74,13 +74,13 @@ export class NewSmsGatewayComponent implements OnInit, OnDestroy {
   private readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly pendingChangesService = inject(PendingChangesService);
 
-  smsForm: FormGroup = this.fb.group({
+  smsForm: FormGroup = this.formBuilder.group({
     name: [this.data?.name || "", [Validators.required]],
     providermodule: [this.data?.providermodule || "", [Validators.required]],
     description: [this.data?.description || ""]
   });
 
-  parametersForm: FormGroup = this.fb.group({});
+  parametersForm: FormGroup = this.formBuilder.group({});
   isEditMode = false;
 
   customOptions: Record<string, string> = {};
@@ -207,7 +207,7 @@ export class NewSmsGatewayComponent implements OnInit, OnDestroy {
       });
     }
 
-    this.parametersForm = this.fb.group(group);
+    this.parametersForm = this.formBuilder.group(group);
 
     if (this.isEditMode && this.data) {
       const paramKeys = provider ? Object.keys(provider.parameters) : [];

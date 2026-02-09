@@ -54,7 +54,7 @@ import { PendingChangesService } from "../../../../services/pending-changes/pend
   styleUrl: "./new-radius-server.component.scss"
 })
 export class NewRadiusServerComponent implements OnInit, OnDestroy {
-  private readonly fb = inject(FormBuilder);
+  private readonly formBuilder = inject(FormBuilder);
   private readonly dialogRef = inject(MatDialogRef<NewRadiusServerComponent>);
   protected readonly data = inject<RadiusServer | null>(MAT_DIALOG_DATA);
   protected readonly radiusService: RadiusServiceInterface = inject(RadiusService);
@@ -100,7 +100,7 @@ export class NewRadiusServerComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.isEditMode = !!this.data;
-    this.radiusForm = this.fb.group({
+    this.radiusForm = this.formBuilder.group({
       identifier: [this.data?.identifier || "", [Validators.required]],
       server: [this.data?.server || "", [Validators.required]],
       port: [this.data?.port || 1812],

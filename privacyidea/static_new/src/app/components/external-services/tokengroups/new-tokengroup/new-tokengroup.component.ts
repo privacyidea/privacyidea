@@ -54,7 +54,7 @@ import { PendingChangesService } from "../../../../services/pending-changes/pend
   styleUrl: "./new-tokengroup.component.scss"
 })
 export class NewTokengroupComponent implements OnInit, OnDestroy {
-  private readonly fb = inject(FormBuilder);
+  private readonly formBuilder = inject(FormBuilder);
   private readonly dialogRef = inject(MatDialogRef<NewTokengroupComponent>);
   protected readonly data = inject<Tokengroup | null>(MAT_DIALOG_DATA);
   protected readonly tokengroupService: TokengroupServiceInterface = inject(TokengroupService);
@@ -99,7 +99,7 @@ export class NewTokengroupComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.isEditMode = !!this.data;
-    this.tokengroupForm = this.fb.group({
+    this.tokengroupForm = this.formBuilder.group({
       groupname: [this.data?.groupname || "", [Validators.required]],
       description: [this.data?.description || ""]
     });

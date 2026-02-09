@@ -60,7 +60,7 @@ import { MatSelectModule } from "@angular/material/select";
   styleUrl: "./new-ca-connector.component.scss"
 })
 export class NewCaConnectorComponent implements OnInit, OnDestroy {
-  private readonly fb = inject(FormBuilder);
+  private readonly formBuilder = inject(FormBuilder);
   private readonly dialogRef = inject(MatDialogRef<NewCaConnectorComponent>);
   protected readonly data = inject<CaConnector | null>(MAT_DIALOG_DATA);
   protected readonly caConnectorService: CaConnectorServiceInterface = inject(CaConnectorService);
@@ -109,7 +109,7 @@ export class NewCaConnectorComponent implements OnInit, OnDestroy {
     this.isEditMode = !!this.data;
     const connectorData = this.data?.data || {};
 
-    this.caConnectorForm = this.fb.group({
+    this.caConnectorForm = this.formBuilder.group({
       connectorname: [this.data?.connectorname || "", [Validators.required]],
       type: [this.data?.type || "local", [Validators.required]],
       // Local CA fields

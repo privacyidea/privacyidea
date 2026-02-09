@@ -55,7 +55,7 @@ import { PendingChangesService } from "../../../../services/pending-changes/pend
   styleUrl: "./new-smtp-server.component.scss"
 })
 export class NewSmtpServerComponent implements OnInit, OnDestroy {
-  private readonly fb = inject(FormBuilder);
+  private readonly formBuilder = inject(FormBuilder);
   private readonly dialogRef = inject(MatDialogRef<NewSmtpServerComponent>);
   protected readonly data = inject<SmtpServer | null>(MAT_DIALOG_DATA);
   protected readonly smtpService: SmtpServiceInterface = inject(SmtpService);
@@ -101,7 +101,7 @@ export class NewSmtpServerComponent implements OnInit, OnDestroy {
 
   ngOnInit(): void {
     this.isEditMode = !!this.data;
-    this.smtpForm = this.fb.group({
+    this.smtpForm = this.formBuilder.group({
       identifier: [this.data?.identifier || "", [Validators.required]],
       server: [this.data?.server || "", [Validators.required]],
       port: [this.data?.port || 25],
