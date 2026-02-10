@@ -26,5 +26,5 @@
     type="number"
     class="priority-input"
     [ngModel]="priority()"
-    (ngModelChange)="updatePolicyPriority($event)" />
+    (ngModelChange)="priority.set($event)" />
 </div>

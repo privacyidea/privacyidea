@@ -19,52 +19,92 @@
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { AddedActionsListComponent } from "./added-actions-list.component";
-import { PolicyService } from "../../../../../services/policies/policies.service";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { MockPolicyService } from "../../../../../../testing/mock-services/mock-policies-service";
+import { PolicyService } from "../../../../../../../services/policies/policies.service";
+import { MockPolicyService } from "src/testing/mock-services/mock-policies-service";
+import { provideNoopAnimations } from "@angular/platform-browser/animations";
+import { Component, input, output } from "@angular/core";
+import { By } from "@angular/platform-browser";
+
+@Component({
+  selector: "app-policy-action-item-edit",
+  standalone: true,
+  template: "<div></div>"
+})
+class MockPolicyActionItemEditComponent {
+  action = input.required<{ name: string; value: any }>();
+  actionDetail = input.required<any>();
+  onRemoveAction = output<void>();
+  onUpdateAction = output<any>();
+}
 
 describe("AddedActionsListComponent", () => {
   let component: AddedActionsListComponent;
   let fixture: ComponentFixture<AddedActionsListComponent>;
   let policyServiceMock: MockPolicyService;
 
+  const mockActions = [
+    { name: "action1", value: "val1" },
+    { name: "action2", value: true }
+  ];
+
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [AddedActionsListComponent, NoopAnimationsModule],
-      providers: [{ provide: PolicyService, useClass: MockPolicyService }]
-    }).compileComponents();
+      imports: [AddedActionsListComponent],
+      providers: [{ provide: PolicyService, useClass: MockPolicyService }, provideNoopAnimations()]
+    })
+      .overrideComponent(AddedActionsListComponent, {
+        set: {
+          imports: [MockPolicyActionItemEditComponent]
+        }
+      })
+      .compileComponents();
 
     fixture = TestBed.createComponent(AddedActionsListComponent);
-    policyServiceMock = TestBed.inject(PolicyService) as unknown as MockPolicyService;
     component = fixture.componentInstance;
-    fixture.componentRef.setInput("actions", []);
+    policyServiceMock = TestBed.inject(PolicyService) as unknown as MockPolicyService;
+
+    fixture.componentRef.setInput("actions", mockActions);
+    fixture.componentRef.setInput("isEditMode", true);
+    fixture.detectChanges();
   });
 
   it("should create", () => {
     expect(component).toBeTruthy();
   });
 
-  it("should display a list of actions", () => {
-    const actions = [
-      { name: "action1", value: "value1" },
-      { name: "action2", value: "value2" }
-    ];
-    fixture.componentRef.setInput("actions", actions);
-    fixture.detectChanges();
-
-    const actionElements = fixture.nativeElement.querySelectorAll(".action-card");
-    expect(actionElements.length).toBe(actions.length);
+  it("should render a list of actions", () => {
+    const items = fixture.debugElement.queryAll(By.directive(MockPolicyActionItemEditComponent));
+    expect(items.length).toBe(2);
   });
 
-  it("should select an action on click", () => {
-    const actions = [{ name: "action1", value: "value1" }];
-    fixture.componentRef.setInput("actions", actions);
-    fixture.detectChanges();
+  it("should emit updated actions when an action is removed", () => {
+    const spy = jest.spyOn(component.actionsChange, "emit");
+    component.removeActionFromSelectedPolicy("action1");
+    expect(spy).toHaveBeenCalledWith([{ name: "action2", value: true }]);
+  });
 
-    const actionElement = fixture.nativeElement.querySelector(".action-card");
-    actionElement.click();
+  it("should emit updated actions when an action value is updated", () => {
+    const spy = jest.spyOn(component.actionsChange, "emit");
+    component.updateActionInSelectedPolicy("action1", "new_value");
+    expect(spy).toHaveBeenCalledWith([
+      { name: "action1", value: "new_value" },
+      { name: "action2", value: true }
+    ]);
+  });
 
-    const selectedAction = policyServiceMock.selectedAction();
-    expect(selectedAction).toBe(actions[0]);
+  it("should identify boolean actions via policyService", () => {
+    const spy = jest.spyOn(policyServiceMock, "getDetailsOfAction").mockReturnValue({ type: "bool", desc: "" });
+    const result = component.isBooleanAction("action2");
+    expect(spy).toHaveBeenCalledWith("action2");
+    expect(result).toBe(true);
+  });
+
+  it("should call actionsChange when toggle changes", () => {
+    const spy = jest.spyOn(component.actionsChange, "emit");
+    component.onToggleChange("action2", false);
+    expect(spy).toHaveBeenCalledWith([
+      { name: "action1", value: "val1" },
+      { name: "action2", value: false }
+    ]);
   });
 });

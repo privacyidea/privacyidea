@@ -18,61 +18,55 @@
 -->
 <div class="filter-keyword-container">
   <div class="filter-keyword-title">
-    <mat-icon [ngClass]="{ 'filter-icon': true, 'yellow-light': !filterIsEmpty() }">filter_alt</mat-icon>
+    <mat-icon [ngClass]="{ 'filter-icon': true, 'active-filter': !filterIsEmpty() }"> filter_alt </mat-icon>
     <span i18n>Filter by:&nbsp;</span>
   </div>
-  @for (filterOption of filterOptions(); track filterOption) {
+
+  @for (option of filterOptions(); track option.key) {
     <button
       mat-fab
       extended
-      [matTooltip]="filterOption.hint"
-      (click)="onKeywordClick(filterOption)"
+      [matTooltip]="option.hint || ''"
+      (click)="onKeywordClick(option)"
       class="keyword-button">
       <mat-icon
         class="keyword-button-icon"
-        [ngClass]="
-          {
-            change_circle: 'change-keyword',
-            remove_circle: 'remove-keyword',
-            add_circle: 'add-keyword'
-          }[getFilterIconName(filterOption)]
-        ">
-        {{ getFilterIconName(filterOption) }}
+        [ngClass]="getFilterIconClass(option)">
+        {{ getFilterIconName(option) }}
       </mat-icon>
-      {{ filterOption.label }}
+      {{ option.label }}
     </button>
   }
-  @if (advancedKeywordFilters.length > 0) {
+
+  @if (advancedKeywordFilters().length > 0) {
     <button
       (click)="onToggleAdvancedFilter()"
       class="more-keyword-button"
       extended
       mat-fab>
       <mat-icon class="keyword-button-icon">
-        {{ showAdvancedFilter() ? "remove" : "add" }}
+        {{ showAdvancedFilter() ? "expand_less" : "expand_more" }}
       </mat-icon>
     </button>
   }
+
   @if (showAdvancedFilter()) {
-    @for (filterOption of advancedKeywordFilters(); track filterOption) {
-      <button
-        mat-fab
-        extended
-        (click)="onKeywordClick(filterOption)"
-        class="keyword-button">
-        <mat-icon
-          class="keyword-button-icon"
-          [ngClass]="
-            {
-              change_circle: 'change-keyword',
-              remove_circle: 'remove-keyword',
-              add_circle: 'add-keyword'
-            }[getFilterIconName(filterOption)]
-          ">
-          {{ getFilterIconName(filterOption) }}
-        </mat-icon>
-        {{ filterOption }}
-      </button>
-    }
+    <div class="advanced-filters-row">
+      @for (option of advancedKeywordFilters(); track option.key) {
+        <button
+          mat-fab
+          extended
+          [matTooltip]="option.hint || ''"
+          (click)="onKeywordClick(option)"
+          class="keyword-button">
+          <mat-icon
+            class="keyword-button-icon"
+            [ngClass]="getFilterIconClass(option)">
+            {{ getFilterIconName(option) }}
+          </mat-icon>
+          {{ option.label }}
+        </button>
+      }
+    </div>
   }
 </div>

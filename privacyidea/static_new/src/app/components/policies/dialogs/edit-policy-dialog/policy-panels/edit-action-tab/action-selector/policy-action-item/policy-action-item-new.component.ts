@@ -23,7 +23,7 @@ import { FormsModule } from "@angular/forms";
 import { MatAutocompleteModule } from "@angular/material/autocomplete";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
-import { MatSelect } from "@angular/material/select";
+import { MatSelect, MatSelectModule } from "@angular/material/select";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import {
   PolicyServiceInterface,
@@ -42,7 +42,7 @@ import { SelectorButtonsComponent } from "../../selector-buttons/selector-button
     MatTooltipModule,
     SelectorButtonsComponent,
     MatInputModule,
-    MatSelect,
+    MatSelectModule,
     MatAutocompleteModule
   ],
   templateUrl: "./policy-action-item-new.component.html",
@@ -54,7 +54,6 @@ export class PolicyActionItemComponent {
   readonly actionName = input.required<string>();
   readonly actionValue = input.required<any>();
   readonly actionDetail = input.required<PolicyActionDetail | null>();
-  readonly isSelected = input.required<boolean>();
   readonly isBooleanAction = computed(() => this.actionDetail()?.type === "bool");
   readonly inputIsValid = computed<boolean>(() => {
     const actionDetail = this.actionDetail();
@@ -76,11 +75,9 @@ export class PolicyActionItemComponent {
   });
 
   addAction(value?: any) {
-    let currentAction = this.currentAction();
-    if (value !== undefined) {
-      currentAction.value = value;
-    }
-    this.actionAdd.emit(currentAction);
+    const name = this.actionName();
+    const finalValue = value !== undefined ? value : this.currentAction().value;
+    this.actionAdd.emit({ name, value: finalValue });
   }
 
   updateSelectedActionValue(value: any) {
@@ -106,7 +103,6 @@ export class PolicyActionItemComponent {
       const select = this.selectEl();
       const button = this.buttonEl()?.nativeElement;
       const selector = this.selectorComponent();
-      console.log("Focusing first input among:", { input, select, selector, button });
       if (input) {
         input.focus();
         return;

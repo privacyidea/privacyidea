@@ -21,11 +21,12 @@
     <app-policy-name-edit
       [policyName]="editedPolicy().name"
       (policyNameChange)="addPolicyEdit({ name: $event })" />
-    <div></div>
+    <div class="spacer"></div>
     <app-policy-priority-edit
       [priority]="editedPolicy().priority"
       (priorityChange)="addPolicyEdit({ priority: $event })" />
   </div>
+
   <app-policy-description-edit
     [description]="editedPolicy().description ?? ''"
     (descriptionChange)="addPolicyEdit({ description: $event })" />
@@ -35,14 +36,16 @@
       mat-stroked-button
       class="action-button-1"
       [class.action-button-active]="activeTab() === 'actions'"
-      (click)="setActiveTab('actions')">
+      (click)="setActiveTab('actions')"
+      i18n>
       ACTIONS
     </button>
     <button
       mat-stroked-button
       class="action-button-1"
       [class.action-button-active]="activeTab() === 'conditions'"
-      (click)="setActiveTab('conditions')">
+      (click)="setActiveTab('conditions')"
+      i18n>
       CONDITIONS
     </button>
   </div>
@@ -53,9 +56,10 @@
       (actionsUpdate)="updateActions($event)"
       (policyScopeChange)="onPolicyScopeChange($event)" />
   }
+
   @if (activeTab() === "conditions") {
     <app-edit-conditions-tab
-      [policy]="editedPolicy()!"
+      [policy]="editedPolicy()"
       (policyEdit)="addPolicyEdit($event)" />
   }
 </div>

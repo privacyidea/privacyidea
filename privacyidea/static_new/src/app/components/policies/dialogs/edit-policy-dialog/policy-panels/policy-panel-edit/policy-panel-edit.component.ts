@@ -17,47 +17,27 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, effect, inject, input, linkedSignal, output, signal } from "@angular/core";
+import { Component, computed, inject, input, linkedSignal, output, signal } from "@angular/core";
 import { CommonModule } from "@angular/common";
-import { MatCardModule } from "@angular/material/card";
-import { MatIconModule } from "@angular/material/icon";
 import { MatButtonModule } from "@angular/material/button";
-import { MatButtonToggleModule } from "@angular/material/button-toggle";
 import { FormsModule } from "@angular/forms";
-import { MatExpansionModule, MatExpansionPanel } from "@angular/material/expansion";
-import { MatSlideToggleModule } from "@angular/material/slide-toggle";
 import { PolicyDetail } from "../../../../../../services/policies/policies.service";
-import { MatFormFieldModule } from "@angular/material/form-field";
-import { MatSelectModule } from "@angular/material/select";
-import { MatOptionModule } from "@angular/material/core";
 import { EditActionTabComponent } from "../edit-action-tab/edit-action-tab.component";
 import { EditConditionsTabComponent } from "../edit-conditions-tab/edit-conditions-tab.component";
 import { DialogService, DialogServiceInterface } from "../../../../../../services/dialog/dialog.service";
-import {
-  SimpleConfirmationDialogComponent,
-  SimpleConfirmationDialogData
-} from "../../../../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
-import { lastValueFrom } from "rxjs";
 import { PolicyDescriptionEditComponent } from "./policy-description/policy-description-edit.component";
-
 import { PolicyPriorityEditComponent } from "./policy-priority-edit/policy-priority-edit.component";
 import { PolicyNameEditComponent } from "./policy-name-edit/policy-name-edit.component";
+
 export type PolicyTab = "actions" | "conditions";
+
 @Component({
   selector: "app-policy-panel-edit",
   standalone: true,
   imports: [
     CommonModule,
-    MatCardModule,
-    MatIconModule,
     MatButtonModule,
-    MatButtonToggleModule,
     FormsModule,
-    MatExpansionModule,
-    MatSlideToggleModule,
-    MatFormFieldModule,
-    MatSelectModule,
-    MatOptionModule,
     EditActionTabComponent,
     EditConditionsTabComponent,
     PolicyDescriptionEditComponent,
@@ -68,112 +48,77 @@ export type PolicyTab = "actions" | "conditions";
   styleUrl: "./policy-panel-edit.component.scss"
 })
 export class PolicyPanelEditComponent {
-  readonly dialogService: DialogServiceInterface = inject(DialogService);
+  private readonly dialogService: DialogServiceInterface = inject(DialogService);
 
+  /**
+   * Initial policy data from parent.
+   */
   readonly policy = input.required<PolicyDetail>();
 
-  readonly policyEdits = linkedSignal<PolicyDetail, Partial<PolicyDetail>>({
-    source: () => this.policy(),
-    computation: (source, previous) => {
-      const lastEdit = previous?.value;
-      if (!lastEdit) {
-        return {};
-      }
-      // remove values from lastEdit that are now equal to source
-      const cleanedEdits: Partial<PolicyDetail> = {};
-      for (const key in lastEdit) {
-        if ((source as any)[key] !== (lastEdit as any)[key]) {
-          (cleanedEdits as any)[key] = (lastEdit as any)[key];
-        }
-      }
-      return cleanedEdits;
-    }
-  });
-  readonly editedPolicy = computed<PolicyDetail>(() => ({ ...this.policy(), ...this.policyEdits() }));
-  readonly isPolicyEdited = computed(() => {
-    const currentPolicy = this.policy;
-    const editedPolicyFields = this.policyEdits();
-    return (
-      Object.keys(editedPolicyFields).length > 0 &&
-      Object.keys(editedPolicyFields).some((key) => {
-        return (currentPolicy as any)[key] !== (editedPolicyFields as any)[key];
-      })
-    );
-  });
-  // Component State Signals
-  readonly activeTab = signal<PolicyTab>("actions");
-
+  /**
+   * Notifies the parent about any attribute changes.
+   */
   readonly onPolicyEdit = output<Partial<PolicyDetail>>();
 
-  onNameChange(name: string): void {
-    this.addPolicyEdit({ name });
-  }
+  readonly activeTab = signal<PolicyTab>("actions");
 
-  setActiveTab(tab: PolicyTab): void {
+  /**
+   * Puffer for local changes.
+   * It resets to an empty object whenever the source 'policy' input changes.
+   */
+  readonly policyEdits = linkedSignal<PolicyDetail, Partial<PolicyDetail>>({
+    source: () => this.policy(),
+    computation: () => ({}) // Reset local edits if a new policy is loaded
+  });
+
+  /**
+   * Merged view of the original policy and local edits.
+   */
+  readonly editedPolicy = computed<PolicyDetail>(() => ({
+    ...this.policy(),
+    ...this.policyEdits()
+  }));
+
+  /**
+   * Helper to check if the current draft has unsaved changes.
+   */
+  readonly isPolicyEdited = computed(() => Object.keys(this.policyEdits()).length > 0);
+
+  public setActiveTab(tab: PolicyTab): void {
     this.activeTab.set(tab);
   }
 
-  async confirmDiscardChanges(): Promise<boolean> {
-    if (this.isPolicyEdited()) {
-      return this._confirm({
-        title: "Discard Changes",
-        confirmAction: {
-          type: "destruct",
-          label: "Discard",
-          value: true
-        },
-        cancelAction: {
-          type: "cancel",
-          label: "Keep Editing",
-          value: false
-        },
-        items: [],
-        itemType: ""
-      });
-    }
-    return true;
-  }
-
-  selectPolicyScope(scope: string) {
-    this.addPolicyEdit({ scope });
-  }
-
-  updateActions(actions: { [actionName: string]: string }) {
-    this.addPolicyEdit({ action: actions });
-  }
-  addPolicyEdit(edits: Partial<PolicyDetail>) {
+  /**
+   * Stores a local edit and propagates it to the parent.
+   */
+  public addPolicyEdit(edits: Partial<PolicyDetail>): void {
     this.policyEdits.set({ ...this.policyEdits(), ...edits });
     this.onPolicyEdit.emit(edits);
   }
 
-  async _confirm(data: SimpleConfirmationDialogData): Promise<boolean> {
-    return (
-      (await lastValueFrom(
-        this.dialogService
-          .openDialog({
-            component: SimpleConfirmationDialogComponent,
-            data: data
-          })
-          .afterClosed()
-      )) === true
-    );
+  public updateActions(actions: { [actionName: string]: any }): void {
+    this.addPolicyEdit({ action: actions });
   }
 
-  async onPolicyScopeChange($event: string) {
-    console.log("Changing policy scope to", $event);
-    const action = this.policy().action;
-    const currentActions = action ? Object.keys(action) : [];
-    if (currentActions.length > 0) {
+  /**
+   * Handles scope changes with a safety confirmation if actions are present.
+   */
+  public async onPolicyScopeChange(newScope: string): Promise<void> {
+    const currentActions = this.editedPolicy().action;
+
+    if (currentActions && Object.keys(currentActions).length > 0) {
       const confirm = await this.dialogService.confirm({
         title: $localize`Change Policy Scope`,
         message: $localize`Changing the policy scope will remove all currently added actions. Do you want to proceed?`,
         confirmButtonText: $localize`Yes, change scope`
       });
-      if (!confirm) {
-        return;
-      }
-      this.onPolicyEdit.emit({ action: {} });
+
+      if (!confirm) return;
+
+      // Clear actions on scope change
+      this.addPolicyEdit({ scope: newScope, action: {} });
+    } else {
+      this.addPolicyEdit({ scope: newScope });
     }
-    this.addPolicyEdit({ scope: $event });
   }
 }

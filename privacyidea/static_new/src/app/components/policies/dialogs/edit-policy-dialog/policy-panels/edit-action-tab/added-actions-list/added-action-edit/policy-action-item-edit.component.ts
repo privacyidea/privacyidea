@@ -25,8 +25,9 @@ import { MatButtonModule } from "@angular/material/button";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
-import { MatSelect } from "@angular/material/select";
+import { MatSelectModule } from "@angular/material/select";
 import { MatSlideToggleModule } from "@angular/material/slide-toggle";
+import { MatFormFieldModule } from "@angular/material/form-field";
 import {
   PolicyActionDetail,
   PolicyServiceInterface,
@@ -45,7 +46,8 @@ import { SelectorButtonsComponent } from "../../selector-buttons/selector-button
     MatExpansionModule,
     SelectorButtonsComponent,
     MatInputModule,
-    MatSelect,
+    MatSelectModule,
+    MatFormFieldModule,
     MatAutocompleteModule,
     FormsModule
   ],
@@ -57,21 +59,24 @@ export class PolicyActionItemEditComponent {
   readonly actionDetail = input.required<PolicyActionDetail | null>();
   readonly onRemoveAction = output<void>();
   readonly onUpdateAction = output<string | number>();
+
+  readonly policyService: PolicyServiceInterface = inject(PolicyService);
+
   readonly inputIsValid = computed<boolean>(() => {
     const actionDetail = this.actionDetail();
     const actionValue = this.action()?.value;
     if (actionDetail === null || actionValue === undefined) return false;
     return this.policyService.actionValueIsValid(actionDetail, actionValue);
   });
-  readonly policyService: PolicyServiceInterface = inject(PolicyService);
 
-  // Type Checking Methods
   isBooleanAction(actionName: string): boolean {
     return this.policyService.getDetailsOfAction(actionName)?.type === "bool";
   }
+
   removeAction() {
     this.onRemoveAction.emit();
   }
+
   updateAction(newValue: string | number): void {
     this.onUpdateAction.emit(newValue);
   }

@@ -27,6 +27,7 @@
     class="description-textarea"
     [ngModel]="description()"
     (ngModelChange)="updatePolicyDescription($event)"
+    i18n-placeholder
     placeholder="(optional) Enter a description for this policy..."
     cdkTextareaAutosize
     cdkAutosizeMinRows="3"

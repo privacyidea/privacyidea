@@ -18,18 +18,30 @@
 
   .action-button-1 {
     padding: var(--global-padding);
+
+    &.action-button-active {
+      background-color: var(--mat-sys-primary-container);
+      color: var(--mat-sys-on-primary-container);
+      border-color: var(--mat-sys-primary);
+    }
   }
+
   .name-priority-row {
     align-items: stretch;
     display: flex;
     flex-direction: row;
     gap: var(--global-gap);
 
-    app-policy-name {
+    app-policy-name-edit {
       flex: 1;
     }
-    div {
+
+    .spacer {
       flex: 1;
+    }
+
+    app-policy-priority-edit {
+      flex: 0 0 auto;
     }
   }
 }

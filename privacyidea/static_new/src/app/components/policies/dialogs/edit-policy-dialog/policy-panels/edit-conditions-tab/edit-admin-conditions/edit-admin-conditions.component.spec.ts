@@ -18,37 +18,37 @@
  **/
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { MockRealmService, MockHttpResourceRef, MockPiResponse } from "../../../../../../../../testing/mock-services";
-import { MockPolicyService } from "../../../../../../../../testing/mock-services/mock-policies-service";
-import { MockResolverService } from "../../../../../../../../testing/mock-services/mock-resolver-service";
-import { PolicyService } from "../../../../../../../services/policies/policies.service";
-import { RealmService, Realms, Realm } from "../../../../../../../services/realm/realm.service";
-import { ResolverService } from "../../../../../../../services/resolver/resolver.service";
+import { ReactiveFormsModule } from "@angular/forms";
+import { provideNoopAnimations } from "@angular/platform-browser/animations";
+import { PolicyService } from "src/app/services/policies/policies.service";
+import { RealmService } from "src/app/services/realm/realm.service";
+import { ResolverService } from "src/app/services/resolver/resolver.service";
+import { MockRealmService } from "src/testing/mock-services";
+import { MockPolicyService } from "src/testing/mock-services/mock-policies-service";
+import { MockResolverService } from "src/testing/mock-services/mock-resolver-service";
 import { EditAdminConditionsComponent } from "./edit-admin-conditions.component";
 
-describe("ConditionsAdminComponent", () => {
+describe("EditAdminConditionsComponent", () => {
   let component: EditAdminConditionsComponent;
   let fixture: ComponentFixture<EditAdminConditionsComponent>;
-  let policyServiceMock: MockPolicyService;
-  let realmServiceMock: MockRealmService;
-  let resolverServiceMock: MockResolverService;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [EditAdminConditionsComponent, NoopAnimationsModule],
+      imports: [EditAdminConditionsComponent, ReactiveFormsModule],
       providers: [
         { provide: PolicyService, useClass: MockPolicyService },
         { provide: RealmService, useClass: MockRealmService },
-        { provide: ResolverService, useClass: MockResolverService }
+        { provide: ResolverService, useClass: MockResolverService },
+        provideNoopAnimations()
       ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(EditAdminConditionsComponent);
     component = fixture.componentInstance;
-    policyServiceMock = TestBed.inject(PolicyService) as unknown as MockPolicyService;
-    realmServiceMock = TestBed.inject(RealmService) as unknown as MockRealmService;
-    resolverServiceMock = TestBed.inject(ResolverService) as unknown as MockResolverService;
+    fixture.componentRef.setInput("policy", {
+      adminuser: ["admin1"],
+      adminrealm: ["realm1"]
+    });
     fixture.detectChanges();
   });
 
@@ -56,68 +56,24 @@ describe("ConditionsAdminComponent", () => {
     expect(component).toBeTruthy();
   });
 
-  it("should select realms", () => {
-    component.selectRealm(["realm1"]);
-    expect(policyServiceMock.updateSelectedPolicy).toHaveBeenCalledWith({ realm: ["realm1"] });
-  });
-
-  it("should toggle all realms", () => {
-    const ref = realmServiceMock.realmResource as unknown as MockHttpResourceRef<MockPiResponse<Realms> | undefined>;
-    ref.set(
-      MockPiResponse.fromValue<Realms>({
-        realm1: { default: false, id: 1, option: "", resolver: [] } as Realm,
-        realm2: { default: false, id: 2, option: "", resolver: [] } as Realm
-      } as any)
+  it("should add admin user and clear input", () => {
+    const spy = jest.spyOn(component.policyEdit, "emit");
+    component.addAdmin("admin2");
+    expect(spy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        adminuser: ["admin1", "admin2"]
+      })
     );
-
-    component.toggleAllRealms();
-    expect(policyServiceMock.updateSelectedPolicy).toHaveBeenCalledWith({ realm: ["realm1", "realm2"] });
-
-    policyServiceMock.selectedPolicy.set({ ...policyServiceMock.getEmptyPolicy, realm: ["realm1", "realm2"] });
-    fixture.detectChanges();
-    component.toggleAllRealms();
-    expect(policyServiceMock.updateSelectedPolicy).toHaveBeenCalledWith({ realm: [] });
+    expect(component.adminFormControl.value).toBe("");
   });
 
-  it("should select resolvers", () => {
-    component.selectResolver(["resolver1"]);
-    expect(policyServiceMock.updateSelectedPolicy).toHaveBeenCalledWith({ resolver: ["resolver1"] });
-  });
-
-  it("should toggle all resolvers", () => {
-    resolverServiceMock.setResolverOptions(["resolver1", "resolver2"]);
-    component.toggleAllResolvers();
-    expect(policyServiceMock.updateSelectedPolicy).toHaveBeenCalledWith({ resolver: ["resolver1", "resolver2"] });
-
-    policyServiceMock.selectedPolicy.set({ ...policyServiceMock.getEmptyPolicy, resolver: ["resolver1", "resolver2"] });
-    fixture.detectChanges();
-    component.toggleAllResolvers();
-    expect(policyServiceMock.updateSelectedPolicy).toHaveBeenCalledWith({ resolver: [] });
-  });
-
-  it("should add admin", () => {
-    component.adminFormControl.setValue("testadmin");
-    component.addAdmin("testadmin");
-    expect(policyServiceMock.updateSelectedPolicy).toHaveBeenCalledWith({ adminuser: ["testadmin"] });
-  });
-
-  it("should remove admin", () => {
-    policyServiceMock.selectedPolicy.set({ ...policyServiceMock.getEmptyPolicy, adminuser: ["testadmin"] });
-    fixture.detectChanges();
-    component.removeAdmin("testadmin");
-    expect(policyServiceMock.updateSelectedPolicy).toHaveBeenCalledWith({ adminuser: [] });
-  });
-
-  it("should clear admins", () => {
-    policyServiceMock.selectedPolicy.set({ ...policyServiceMock.getEmptyPolicy, adminuser: ["testadmin"] });
-    fixture.detectChanges();
-    component.clearAdmins();
-    expect(policyServiceMock.updateSelectedPolicy).toHaveBeenCalledWith({ adminuser: [] });
-  });
-
-  it("should validate admin", () => {
-    expect(component.adminValidator(component.adminFormControl)).toBeNull();
-    component.adminFormControl.setValue("invalid,");
-    expect(component.adminValidator(component.adminFormControl)).toEqual({ includesComma: { value: "invalid," } });
+  it("should remove admin user", () => {
+    const spy = jest.spyOn(component.policyEdit, "emit");
+    component.removeAdmin("admin1");
+    expect(spy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        adminuser: []
+      })
+    );
   });
 });

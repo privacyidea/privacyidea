@@ -18,7 +18,7 @@
  **/
 
 import { CommonModule } from "@angular/common";
-import { Component, input, output, inject, effect } from "@angular/core";
+import { Component, input, output, inject } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MatIconModule } from "@angular/material/icon";
@@ -42,38 +42,17 @@ import { PolicyActionItemEditComponent } from "./added-action-edit/policy-action
   styleUrl: "./added-actions-list.component.scss"
 })
 export class AddedActionsListComponent {
-  // Inputs
-  actions = input.required<{ name: string; value: any }[]>();
-  actionsChange = output<{ name: string; value: any }[]>();
-  actionRemove = output<string>();
-  isEditMode = input.required<boolean>();
-  selectedAction = input<{ name: string; value: any } | null>();
-  selectedActionChange = output<{ name: string; value: any } | null>();
+  readonly actions = input.required<{ name: string; value: any }[]>();
+  readonly actionsChange = output<{ name: string; value: any }[]>();
+  readonly actionRemove = output<string>();
+  readonly isEditMode = input.required<boolean>();
 
-  constructor() {
-    effect(() => {
-      console.log("AddedActionsListComponent - actions changed:", this.actions());
-    });
-  }
-
-  // Services
   private policyService = inject(PolicyService);
 
-  // Helper functions
   parseBooleanValue = parseBooleanValue;
 
-  // Type Checking Methods
   isBooleanAction(actionName: string): boolean {
     return this.policyService.getDetailsOfAction(actionName)?.type === "bool";
-  }
-
-  // Event Handlers
-  onActionClick(action: { name: string; value: any }) {
-    if (this.selectedAction()?.name === action.name) {
-      this.selectedActionChange.emit(null);
-    } else {
-      this.selectedActionChange.emit(action);
-    }
   }
 
   onToggleChange(actionName: string, newValue: boolean): void {
@@ -90,8 +69,8 @@ export class AddedActionsListComponent {
   getDetailsOfAction(actionName: string): PolicyActionDetail | null {
     return this.policyService.getDetailsOfAction(actionName);
   }
-  uodateActionInSelectedPolicy(actionName: string, newValue: string | number) {
-    console.log("Updating action", actionName, "with value", newValue);
+
+  updateActionInSelectedPolicy(actionName: string, newValue: string | number) {
     const updatedActions = this.actions().map((action) =>
       action.name === actionName ? { name: action.name, value: newValue } : action
     );

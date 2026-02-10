@@ -23,34 +23,34 @@
   text-align: center;
   white-space: normal;
   word-break: break-word;
-  :first-child {
+
+  &:first-child {
     border-bottom-left-radius: var(--border-radius);
     border-top-left-radius: var(--border-radius);
   }
-  :last-child {
+
+  &:last-child {
     border-bottom-right-radius: var(--border-radius);
     border-top-right-radius: var(--border-radius);
   }
-  :hover {
+
+  &:hover:not([disabled]) {
     background-color: var(--mat-sys-primary-light);
     color: var(--mat-sys-on-primary);
   }
-  :focus {
+
+  &:focus {
     outline: 2px solid var(--mat-sys-primary-base);
     outline-offset: -2px;
     position: relative;
     z-index: 1;
   }
-  // Disabled state
+
   &[disabled] {
     background-color: var(--mat-sys-surface-variant);
     border-color: var(--mat-sys-outline-variant);
     color: var(--mat-sys-on-surface-variant);
     cursor: not-allowed;
-    :hover {
-      background-color: var(--mat-sys-surface-variant);
-      color: var(--mat-sys-on-surface-variant);
-    }
   }
 }
 
@@ -62,9 +62,13 @@
   background-color: var(--mat-sys-primary-base);
   color: var(--mat-sys-on-primary);
   font-weight: 600;
+  z-index: 1;
+
   &[disabled] {
     background-color: var(--mat-sys-primary-base);
     color: var(--mat-sys-on-primary);
-    font-weight: 600;
+    opacity: 0.7;
+    border-color: var(--mat-sys-outline-variant);
+    filter: grayscale(0.3);
   }
 }

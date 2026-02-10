@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, inject, input, output, computed } from "@angular/core";
+import { Component, inject, input, output } from "@angular/core";
 import {
   PolicyServiceInterface,
   PolicyService,
@@ -41,12 +41,12 @@ import { EditUserConditionsComponent } from "./edit-user-conditions/edit-user-co
   styleUrl: "./edit-conditions-tab.component.scss"
 })
 export class EditConditionsTabComponent {
-  policyService: PolicyServiceInterface = inject(PolicyService);
+  readonly policyService: PolicyServiceInterface = inject(PolicyService);
 
-  policy = input.required<PolicyDetail>();
-  policyEdit = output<Partial<PolicyDetail>>();
+  readonly policy = input.required<PolicyDetail>();
+  readonly policyEdit = output<Partial<PolicyDetail>>();
 
-  onPolicyEdit($event: Partial<PolicyDetail>) {
+  onPolicyEdit($event: Partial<PolicyDetail>): void {
     this.policyEdit.emit($event);
   }
 }

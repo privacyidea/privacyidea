@@ -10,6 +10,7 @@
   gap: var(--global-gap);
   min-width: 0;
   padding: var(--three-quarters-global-padding);
+
   .name-header {
     font-size: 1.17em;
     font-weight: bold;
@@ -19,7 +20,8 @@
   .name-input {
     @include inputs.action-tab-input;
   }
-  :focus-within {
+
+  &:focus-within {
     outline: 2px solid var(--mat-sys-primary-base);
     outline-offset: -2px;
   }

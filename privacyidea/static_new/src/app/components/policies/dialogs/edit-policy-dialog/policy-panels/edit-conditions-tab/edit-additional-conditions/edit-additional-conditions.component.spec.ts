@@ -18,100 +18,60 @@
  **/
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { MockPolicyService } from "../../../../../../../../testing/mock-services/mock-policies-service";
-import { PolicyService, AdditionalCondition } from "../../../../../../../services/policies/policies.service";
 import { EditAdditionalConditionsComponent } from "./edit-additional-conditions.component";
+import { PolicyService, AdditionalCondition } from "../../../../../../../services/policies/policies.service";
+import { MockPolicyService } from "src/testing/mock-services/mock-policies-service";
+import { provideNoopAnimations } from "@angular/platform-browser/animations";
+import { By } from "@angular/platform-browser";
 
-describe("ConditionsAdditionalComponent", () => {
+describe("EditAdditionalConditionsComponent", () => {
   let component: EditAdditionalConditionsComponent;
   let fixture: ComponentFixture<EditAdditionalConditionsComponent>;
-  let policyServiceMock: MockPolicyService;
+
+  const mockCondition: AdditionalCondition = ["token", "serial", "equals", "12345", false, "condition_is_false"];
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [EditAdditionalConditionsComponent, NoopAnimationsModule],
-      providers: [
-        {
-          provide: PolicyService,
-          useClass: MockPolicyService
-        }
-      ]
+      imports: [EditAdditionalConditionsComponent],
+      providers: [{ provide: PolicyService, useClass: MockPolicyService }, provideNoopAnimations()]
     }).compileComponents();
 
     fixture = TestBed.createComponent(EditAdditionalConditionsComponent);
-
     component = fixture.componentInstance;
-    policyServiceMock = TestBed.inject(PolicyService) as unknown as MockPolicyService;
+    fixture.componentRef.setInput("policy", { name: "test", conditions: [mockCondition] });
+    fixture.detectChanges();
   });
 
   it("should create", () => {
     expect(component).toBeTruthy();
   });
 
-  it("should display additional conditions", () => {
-    const conditions: AdditionalCondition[] = [
-      ["userinfo", "username", "equals", "testuser", false, "condition_is_false"],
-      ["token", "hour", ">", "12", true, "raise_error"]
-    ];
+  it("should handle condition life cycle (edit, update, save)", () => {
+    const spy = jest.spyOn(component.policyEdit, "emit");
 
-    policyServiceMock.selectedPolicyHasAdditionalConditions.set(true);
-    policyServiceMock.selectedPolicy.set({ ...policyServiceMock.getEmptyPolicy, conditions });
+    // Start Edit
+    component.startEditCondition(mockCondition, 0);
+    expect(component.conditionValue()).toBe("12345");
 
-    fixture.detectChanges();
-
-    const conditionElements = fixture.nativeElement.querySelectorAll(".additional-condition-row");
-
-    expect(conditionElements.length).toBe(conditions.length);
-    expect(conditionElements[0].textContent).toContain("userinfo");
-    expect(conditionElements[1].textContent).toContain("raise_error");
-  });
-
-  it("should add a new condition", () => {
-    policyServiceMock.isEditMode.set(true);
-    fixture.detectChanges();
-
-    component.conditionSection.set("userinfo");
-    component.conditionKey.set("username");
-    component.conditionComparator.set("equals");
-    component.conditionValue.set("newuser");
-    component.conditionActive.set(true);
-    component.conditionHandleMissingData.set("condition_is_false");
-
+    // Change value
+    component.conditionValue.set("67890");
     component.saveCondition();
 
-    const conditions: AdditionalCondition[] = [
-      ["userinfo", "username", "equals", "newuser", true, "condition_is_false"]
-    ];
-
-    expect(policyServiceMock.updateSelectedPolicy).toHaveBeenCalledWith({
-      conditions: conditions
-    });
+    expect(spy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        conditions: [["token", "serial", "equals", "67890", false, "condition_is_false"]]
+      })
+    );
   });
 
-  it("should remove a condition", () => {
-    const conditions: AdditionalCondition[] = [
-      ["userinfo", "username", "equals", "testuser", false, "condition_is_false"]
-    ];
-    policyServiceMock.selectedPolicy.set({ ...policyServiceMock.getEmptyPolicy, conditions });
-    fixture.detectChanges();
+  it("should update active state correctly", () => {
+    const spy = jest.spyOn(component.policyEdit, "emit");
+    component.updateActiveState(0, false); // Toggle to inactive
 
-    component.removeCondition(0);
-
-    expect(policyServiceMock.updateSelectedPolicy).toHaveBeenCalledWith({ conditions: [] });
-  });
-
-  it("should update active state of a condition", () => {
-    const conditions: AdditionalCondition[] = [
-      ["userinfo", "username", "equals", "testuser", false, "condition_is_false"]
-    ];
-    policyServiceMock.selectedPolicy.set({ ...policyServiceMock.getEmptyPolicy, conditions });
-    fixture.detectChanges();
-
-    component.updateActiveState(0, true);
-
-    expect(policyServiceMock.updateSelectedPolicy).toHaveBeenCalledWith({
-      conditions: [["userinfo", "username", "equals", "testuser", false, "condition_is_false"]]
-    });
+    expect(spy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        conditions: [["token", "serial", "equals", "12345", true, "condition_is_false"]]
+      })
+    );
   });
 });

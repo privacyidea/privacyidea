@@ -19,45 +19,47 @@
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { SelectorButtonsComponent } from "./selector-buttons.component";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-// import "@angular/localize/init";
+import { By } from "@angular/platform-browser";
+import { provideNoopAnimations } from "@angular/platform-browser/animations";
 
-describe("BoolSelectButtonsComponent", () => {
-  let component: SelectorButtonsComponent<any>;
-  let fixture: ComponentFixture<SelectorButtonsComponent<any>>;
+describe("SelectorButtonsComponent", () => {
+  let component: SelectorButtonsComponent<string>;
+  let fixture: ComponentFixture<SelectorButtonsComponent<string>>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [SelectorButtonsComponent, NoopAnimationsModule]
+      imports: [SelectorButtonsComponent],
+      providers: [provideNoopAnimations()]
     }).compileComponents();
 
-    fixture = TestBed.createComponent(SelectorButtonsComponent);
+    fixture = TestBed.createComponent<SelectorButtonsComponent<string>>(SelectorButtonsComponent as any);
     component = fixture.componentInstance;
-    fixture.componentRef.setInput("initialValue", true);
-    component.values = [true, false];
+
+    fixture.componentRef.setInput("values", ["A", "B", "C"]);
+    fixture.componentRef.setInput("initialValue", "A");
+    fixture.detectChanges();
   });
 
   it("should create", () => {
     expect(component).toBeTruthy();
   });
 
-  it("should display buttons for each value", () => {
-    fixture.detectChanges();
-    const buttons = fixture.nativeElement.querySelectorAll("button");
-    expect(buttons.length).toBe(component.values.length);
+  it("should have selected-button class on the initial value", () => {
+    const selectedBtn = fixture.debugElement.query(By.css(".selected-button"));
+    expect(selectedBtn.nativeElement.textContent.trim()).toBe("A");
   });
 
-  it("should emit value on button click", () => {
-    jest.spyOn(component.onSelect, "emit");
+  it("should not lose selection class when becoming disabled", () => {
+    fixture.componentRef.setInput("disabled", true);
     fixture.detectChanges();
-    const button = fixture.nativeElement.querySelector("button");
-    button.click();
-    expect(component.onSelect.emit).toHaveBeenCalledWith(component.values[0]);
+
+    const selectedBtn = fixture.debugElement.query(By.css(".selected-button"));
+    expect(selectedBtn).toBeTruthy();
+    expect(selectedBtn.nativeElement.disabled).toBe(true);
   });
 
-  it("should set the selected value on init", () => {
-    fixture.componentRef.setInput("initialValue", false);
-    fixture.detectChanges();
-    expect(component.selectedValue()).toBe(false);
+  it("should properly apply 'last-button' class to the correct element", () => {
+    const buttons = fixture.debugElement.queryAll(By.css(".button-item"));
+    expect(buttons[2].nativeElement.classList).toContain("last-button");
   });
 });

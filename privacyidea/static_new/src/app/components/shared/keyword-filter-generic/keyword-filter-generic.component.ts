@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,72 +16,14 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+
 import { NgClass } from "@angular/common";
 import { Component, input, output, signal } from "@angular/core";
 import { MatFabButton } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
-import { FilterValueGeneric as GenericFilter } from "../../../core/models/filter_value_generic/filter_value_generic";
 import { MatTooltip } from "@angular/material/tooltip";
-
-export class FilterOption<T = any> {
-  key: string;
-  value: string | null;
-  label: string;
-  hint?: string;
-  matches: (item: T, filterValue: GenericFilter<T>) => boolean;
-  isSelected?: (filterValue: GenericFilter<T>) => boolean;
-  getIconName?: (filterValue: GenericFilter<T>) => string;
-  toggleKeyword?: (filterValue: GenericFilter<T>) => GenericFilter<T>;
-
-  constructor(args: {
-    key: string;
-    value?: string | null;
-    label: string;
-    hint?: string;
-    matches: (item: T, filterValue: GenericFilter<T>) => boolean;
-    isSelected?: (filterValue: GenericFilter<T>) => boolean;
-    iconName?: (filterValue: GenericFilter<T>) => string;
-    toggle?: (filterValue: GenericFilter<T>) => GenericFilter<T>;
-  }) {
-    this.key = args.key;
-    this.value = args.value ?? null;
-    this.label = args.label;
-    this.hint = args.hint;
-    this.matches = args.matches;
-    this.isSelected = args.isSelected;
-    this.getIconName = args.iconName;
-    this.toggleKeyword = args.toggle;
-  }
-
-  withValue(value: string | null): FilterOption<T> {
-    return new FilterOption<T>({
-      key: this.key,
-      value: value,
-      label: this.label,
-      hint: this.hint,
-      matches: this.matches,
-      isSelected: this.isSelected,
-      iconName: this.getIconName,
-      toggle: this.toggleKeyword
-    });
-  }
-}
-
-export class DummyFilterOption extends FilterOption {
-  isDummy = true;
-  constructor(args: { key: string; value?: string | null }) {
-    super({
-      key: args.key,
-      label: args.key,
-      value: args.value ?? null,
-      matches: () => true
-    });
-  }
-
-  override withValue(value: string): FilterOption<any> {
-    return new DummyFilterOption({ key: this.key, value: value });
-  }
-}
+import { FilterValueGeneric } from "../../../core/models/filter_value_generic/filter-value-generic";
+import { FilterOption } from "src/app/core/models/filter_value_generic/filter-option";
 
 @Component({
   selector: "app-keyword-filter-generic",
@@ -91,33 +33,42 @@ export class DummyFilterOption extends FilterOption {
   styleUrl: "./keyword-filter-generic.component.scss"
 })
 export class KeywordFilterGenericComponent<T> {
-  readonly filterOptions = input.required<FilterOption[]>();
-  readonly advancedKeywordFilters = input<FilterOption[]>([]);
+  readonly filterOptions = input.required<FilterOption<T>[]>();
+  readonly advancedKeywordFilters = input<FilterOption<T>[]>([]);
   readonly filterHTMLInputElement = input.required<HTMLInputElement>();
-  readonly filter = input.required<GenericFilter<T>>();
-  readonly filterChange = output<GenericFilter<T>>();
+  readonly filter = input.required<FilterValueGeneric<T>>();
+
+  readonly filterChange = output<FilterValueGeneric<T>>();
+
   showAdvancedFilter = signal(false);
 
-  onKeywordClick(filterKeyword: FilterOption): void {
-    this.toggleFilter(filterKeyword);
-  }
-
-  onToggleAdvancedFilter(): void {
-    this.showAdvancedFilter.update((b) => !b);
-  }
-
-  getFilterIconName(filterKeyword: FilterOption): string {
-    return this.filter().getFilterIconNameOf(filterKeyword);
-  }
-
-  toggleFilter(filterKeyword: FilterOption): void {
-    const newFilterValue = this.filter().toggleFilterKeyword(filterKeyword);
-    this.filterChange.emit(newFilterValue);
-    // Focus the input element after changing the filter
+  /**
+   * Toggles a filter key and ensures the input retains focus.
+   */
+  public onKeywordClick(filterOption: FilterOption<T>): void {
+    const nextFilter = this.filter().toggleKey(filterOption.key);
+    this.filterChange.emit(nextFilter);
     this.filterHTMLInputElement().focus();
   }
 
-  filterIsEmpty(): boolean {
+  public onToggleAdvancedFilter(): void {
+    this.showAdvancedFilter.update((v) => !v);
+  }
+
+  public getFilterIconName(filterOption: FilterOption<T>): string {
+    return this.filter().getFilterIconNameOf(filterOption);
+  }
+
+  public getFilterIconClass(option: FilterOption<T>): Record<string, boolean> {
+    const icon = this.getFilterIconName(option);
+    return {
+      "change-keyword": icon === "change_circle",
+      "remove-keyword": icon === "remove_circle",
+      "add-keyword": icon === "add_circle"
+    };
+  }
+
+  public filterIsEmpty(): boolean {
     return this.filter().isEmpty;
   }
 }

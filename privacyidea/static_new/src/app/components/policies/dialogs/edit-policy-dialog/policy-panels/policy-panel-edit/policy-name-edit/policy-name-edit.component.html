@@ -8,6 +8,7 @@
     type="text"
     class="name-input"
     [ngModel]="policyName()"
-    (ngModelChange)="updatePolicyName($event)"
+    (ngModelChange)="policyName.set($event)"
+    i18n-placeholder
     placeholder="Enter policy name..." />
 </div>

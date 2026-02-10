@@ -18,54 +18,27 @@
  **/
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { MockDocumentationService } from "../../../../../../../../testing/mock-services/mock-documentation-service";
-import { MockPolicyService } from "../../../../../../../../testing/mock-services/mock-policies-service";
-import { DocumentationService } from "../../../../../../../services/documentation/documentation.service";
-import { PolicyDetail, PolicyService } from "../../../../../../../services/policies/policies.service";
 import { PolicyDescriptionEditComponent } from "./policy-description-edit.component";
+import { FormsModule } from "@angular/forms";
+import { NoopAnimationsModule } from "@angular/platform-browser/animations";
+import { DocumentationService } from "../../../../../../../services/documentation/documentation.service";
+import { MockDocumentationService } from "src/testing/mock-services/mock-documentation-service";
 
 describe("PolicyDescriptionEditComponent", () => {
   let component: PolicyDescriptionEditComponent;
   let fixture: ComponentFixture<PolicyDescriptionEditComponent>;
-  let policyServiceMock: MockPolicyService;
-  let documentationServiceMock: MockDocumentationService;
-  const policyDetail: PolicyDetail = {
-    action: null,
-    active: true,
-    adminrealm: [],
-    adminuser: [],
-    check_all_resolvers: false,
-    client: [],
-    conditions: [],
-    description: "test description",
-    name: "test-policy",
-    pinode: [],
-    priority: 1,
-    realm: [],
-    resolver: [],
-    scope: "",
-    time: "",
-    user: [],
-    user_agents: [],
-    user_case_insensitive: false
-  };
+  let docService: MockDocumentationService;
+
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [PolicyDescriptionEditComponent, NoopAnimationsModule],
-      providers: [
-        { provide: PolicyService, useClass: MockPolicyService },
-        { provide: DocumentationService, useClass: MockDocumentationService }
-      ]
+      imports: [PolicyDescriptionEditComponent, FormsModule, NoopAnimationsModule],
+      providers: [{ provide: DocumentationService, useClass: MockDocumentationService }]
     }).compileComponents();
 
     fixture = TestBed.createComponent(PolicyDescriptionEditComponent);
-    policyServiceMock = TestBed.inject(PolicyService) as unknown as MockPolicyService;
-    documentationServiceMock = TestBed.inject(DocumentationService) as unknown as MockDocumentationService;
     component = fixture.componentInstance;
-    policyServiceMock.isEditMode.set(false);
-
-    policyServiceMock.selectedPolicy.set(policyDetail);
+    docService = TestBed.inject(DocumentationService) as unknown as MockDocumentationService;
+    fixture.componentRef.setInput("description", "Initial description");
     fixture.detectChanges();
   });
 
@@ -73,65 +46,15 @@ describe("PolicyDescriptionEditComponent", () => {
     expect(component).toBeTruthy();
   });
 
-  it("should update policy description on input", () => {
-    const description = "new test description";
-    component.updatePolicyDescription(description);
-    expect(policyServiceMock.updateSelectedPolicy).toHaveBeenCalledWith({ description });
+  it("should emit descriptionChange when updatePolicyDescription is called", () => {
+    const spy = jest.spyOn(component.descriptionChange, "emit");
+    component.updatePolicyDescription("Updated description");
+    expect(spy).toHaveBeenCalledWith("Updated description");
   });
 
-  it("should open documentation on button click", () => {
-    const page = "test-page";
-    component.openDocumentation(page);
-    expect(documentationServiceMock.openDocumentation).toHaveBeenCalledWith(page);
-  });
-
-  describe("non-edit mode", () => {
-    beforeEach(() => {
-      policyServiceMock.isEditMode.set(false);
-      fixture.detectChanges();
-    });
-
-    it("should display the description when available", () => {
-      const html = fixture.nativeElement.innerHTML;
-      expect(html).toContain(policyDetail.description);
-    });
-
-    it("should not display the description section when description is null", () => {
-      policyServiceMock.selectedPolicy.set({
-        ...policyServiceMock.selectedPolicy()!,
-        description: null
-      });
-      fixture.detectChanges();
-      const descriptionContainer = fixture.nativeElement.querySelector(".action-description-container");
-      expect(descriptionContainer).toBeFalsy();
-    });
-  });
-
-  describe("edit mode", () => {
-    beforeEach(() => {
-      policyServiceMock.isEditMode.set(true);
-      fixture.detectChanges();
-    });
-
-    it("should display a textarea", () => {
-      const textareaEl = fixture.nativeElement.querySelector("textarea");
-      expect(textareaEl).toBeTruthy();
-      expect(textareaEl.value).toBe("test description");
-    });
-
-    it("should have the correct placeholder", () => {
-      const textareaEl = fixture.nativeElement.querySelector("textarea");
-      expect(textareaEl.placeholder).toBe("(optional) Enter a description for this policy...");
-    });
-
-    it("should call updatePolicyDescription when textarea value changes", async () => {
-      const spy = jest.spyOn(component, "updatePolicyDescription");
-      const textareaEl = fixture.nativeElement.querySelector("textarea");
-      textareaEl.value = "updated description";
-      textareaEl.dispatchEvent(new Event("input"));
-      fixture.detectChanges();
-      await fixture.whenStable();
-      expect(spy).toHaveBeenCalledWith("updated description");
-    });
+  it("should call documentationService when openDocumentation is called", () => {
+    const spy = jest.spyOn(docService, "openDocumentation");
+    component.openDocumentation("test-page");
+    expect(spy).toHaveBeenCalledWith("test-page");
   });
 });

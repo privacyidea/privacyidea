@@ -29,7 +29,6 @@ import {
   inject
 } from "@angular/core";
 import { PolicyDetail, PolicyActionDetail } from "../../../../../../services/policies/policies.service";
-import { ActionDetailComponent } from "./action-detail/action-detail.component";
 import { ActionSelectorComponent } from "./action-selector/action-selector.component";
 import { AddedActionsListComponent } from "./added-actions-list/added-actions-list.component";
 import { DialogServiceInterface, DialogService } from "../../../../../../services/dialog/dialog.service";
@@ -37,35 +36,28 @@ import { DialogServiceInterface, DialogService } from "../../../../../../service
 @Component({
   selector: "app-edit-action-tab",
   standalone: true,
-  imports: [AddedActionsListComponent, ActionSelectorComponent, ActionDetailComponent],
+  imports: [AddedActionsListComponent, ActionSelectorComponent],
   templateUrl: "./edit-action-tab.component.html",
   styleUrl: "./edit-action-tab.component.scss"
 })
 export class EditActionTabComponent {
   readonly dialogService: DialogServiceInterface = inject(DialogService);
 
-  policy = input.required<PolicyDetail>();
-  policyScopeChange = output<string>();
-  actionsUpdate = output<{
-    [actionName: string]: string;
+  readonly policy = input.required<PolicyDetail>();
+  readonly policyScopeChange = output<string>();
+  readonly actionsUpdate = output<{
+    [actionName: string]: any;
   }>();
 
-  selectedAction: WritableSignal<{ name: string; value: any } | null> = linkedSignal({
+  readonly selectedAction: WritableSignal<{ name: string; value: any } | null> = linkedSignal({
     source: () => ({
       scope: this.policy().scope
     }),
     computation: () => null
   });
-  selectedActionDetail = signal<PolicyActionDetail | null>(null);
+  readonly selectedActionDetail = signal<PolicyActionDetail | null>(null);
 
-  actionsFirstHalf = computed(() => this.actions().filter((_, index) => index % 2 === 0));
-  actionsSecondHalf = computed(() => this.actions().filter((_, index) => index % 2 !== 0));
-
-  onSelectedActionChange(action: { name: string; value: any }) {
-    this.selectedAction.set(action);
-  }
-
-  actions: Signal<{ name: string; value: any }[]> = computed(() => {
+  readonly actions: Signal<{ name: string; value: any }[]> = computed(() => {
     const policy = this.policy();
     if (!policy || !policy.action) return [];
     return Object.entries(policy.action).map(([name, value]) => ({ name: name, value }));
@@ -78,15 +70,9 @@ export class EditActionTabComponent {
     });
     this.actionsUpdate.emit(newActions);
   }
+
   onActionAdd(action: { name: string; value: any }) {
     const newActions = [...this.actions(), action];
-    this.onActionsChange(newActions);
-    if (this.selectedAction()?.name === action.name) {
-      this.selectedAction.set(null);
-    }
-  }
-  onActionUpdate(action: { name: string; value: any }) {
-    const newActions = this.actions().map((a) => (a.name === action.name ? action : a));
     this.onActionsChange(newActions);
     if (this.selectedAction()?.name === action.name) {
       this.selectedAction.set(null);
@@ -101,7 +87,7 @@ export class EditActionTabComponent {
     }
   }
 
-  async onPolicyScopeChange($event: string) {
+  onPolicyScopeChange($event: string) {
     this.policyScopeChange.emit($event);
   }
 }

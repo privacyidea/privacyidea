@@ -17,75 +17,164 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { ComponentFixture, TestBed, fakeAsync, tick } from "@angular/core/testing";
 import { PolicyPanelEditComponent } from "./policy-panel-edit.component";
+import { DialogService } from "../../../../../../services/dialog/dialog.service";
 import { PolicyService } from "../../../../../../services/policies/policies.service";
+import { MockPolicyService } from "src/testing/mock-services/mock-policies-service";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { MatExpansionModule } from "@angular/material/expansion";
-import { MockPolicyService } from "../../../../../../../testing/mock-services/mock-policies-service";
+import { Component, input, output } from "@angular/core";
+import { of } from "rxjs";
 
-import { provideHttpClient } from "@angular/common/http";
-import { provideHttpClientTesting } from "@angular/common/http/testing";
+/**
+ * Concrete Mock class for DialogService.
+ */
+class MockDialogService {
+  confirm = jest.fn().mockResolvedValue(true);
+}
 
-describe("PolicyPanelEditComponent", () => {
+// Child Stubs
+@Component({ selector: "app-policy-name-edit", standalone: true, template: "" })
+class MockNameComp {
+  policyName = input<string>("");
+  policyNameChange = output<string>();
+}
+
+@Component({ selector: "app-policy-priority-edit", standalone: true, template: "" })
+class MockPrioComp {
+  priority = input<number>(0);
+  priorityChange = output<number>();
+}
+
+@Component({ selector: "app-policy-description-edit", standalone: true, template: "" })
+class MockDescComp {
+  description = input<string>("");
+  descriptionChange = output<string>();
+}
+
+@Component({ selector: "app-edit-action-tab", standalone: true, template: "" })
+class MockActionTab {
+  policy = input.required<any>();
+  actionsUpdate = output<any>();
+  policyScopeChange = output<any>();
+}
+
+@Component({ selector: "app-edit-conditions-tab", standalone: true, template: "" })
+class MockCondTab {
+  policy = input.required<any>();
+  policyEdit = output<any>();
+}
+
+describe("PolicyPanelEditComponent - Extended Tests", () => {
   let component: PolicyPanelEditComponent;
   let fixture: ComponentFixture<PolicyPanelEditComponent>;
-  let policyServiceMock: MockPolicyService;
+  let dialogService: MockDialogService;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [PolicyPanelEditComponent, NoopAnimationsModule, MatExpansionModule],
+      imports: [PolicyPanelEditComponent, NoopAnimationsModule],
       providers: [
-        provideHttpClient(),
-        provideHttpClientTesting(),
-        { provide: PolicyService, useClass: MockPolicyService }
+        { provide: PolicyService, useClass: MockPolicyService },
+        { provide: DialogService, useClass: MockDialogService }
       ]
-    }).compileComponents();
+    })
+      .overrideComponent(PolicyPanelEditComponent, {
+        set: {
+          imports: [MockNameComp, MockPrioComp, MockDescComp, MockActionTab, MockCondTab]
+        }
+      })
+      .compileComponents();
 
     fixture = TestBed.createComponent(PolicyPanelEditComponent);
-    policyServiceMock = TestBed.inject(PolicyService) as unknown as MockPolicyService;
     component = fixture.componentInstance;
+    dialogService = TestBed.inject(DialogService) as unknown as MockDialogService;
+
+    fixture.componentRef.setInput("policy", {
+      name: "Base Policy",
+      priority: 5,
+      action: {},
+      scope: "user"
+    });
+
+    fixture.detectChanges();
   });
 
-  it("should create", () => {
-    expect(component).toBeTruthy();
+  it("should accumulate multiple edits correctly", () => {
+    component.addPolicyEdit({ name: "Step 1" });
+    component.addPolicyEdit({ priority: 10 });
+
+    const finalPolicy = component.editedPolicy();
+    expect(finalPolicy.name).toBe("Step 1");
+    expect(finalPolicy.priority).toBe(10);
+    expect(Object.keys(component.policyEdits()).length).toBe(2);
   });
 
-  describe("existing policy", () => {
-    const policyName = "Test Policy";
+  it("should switch between actions and conditions tabs", () => {
+    expect(component.activeTab()).toBe("actions");
 
-    beforeEach(() => {
-      fixture.componentRef.setInput("policy", { ...policyServiceMock.getEmptyPolicy, name: policyName });
-      fixture.detectChanges();
-    });
+    component.setActiveTab("conditions");
+    expect(component.activeTab()).toBe("conditions");
 
-    it("should display the policy name", () => {
-      expect(fixture.nativeElement).toBeTruthy();
-      const policyNameElement = fixture.nativeElement.querySelector(".policy-name");
-      expect(policyNameElement).toBeTruthy();
-      expect(policyNameElement.textContent).toContain(policyName);
-    });
-
-    it("should select policy on expansion", () => {
-      const panel = fixture.nativeElement.querySelector("mat-expansion-panel");
-      panel.dispatchEvent(new Event("opened"));
-      fixture.detectChanges();
-      expect(policyServiceMock.selectPolicyByName).toHaveBeenCalledWith(policyName);
-    });
+    component.setActiveTab("actions");
+    expect(component.activeTab()).toBe("actions");
   });
 
-  describe("new policy", () => {
-    beforeEach(() => {
-      // component.isNew = input(true);
-      fixture.componentRef.setInput("isNew", true);
-      fixture.detectChanges();
-    });
+  it("should NOT trigger a confirmation dialog on scope change if actions are empty", async () => {
+    // Current policy has action: {} (empty)
+    await component.onPolicyScopeChange("admin");
 
-    it("should initialize new policy on expansion", () => {
-      const panel = fixture.nativeElement.querySelector("mat-expansion-panel");
-      panel.dispatchEvent(new Event("opened"));
-      fixture.detectChanges();
-      expect(policyServiceMock.initializeNewPolicy).toHaveBeenCalled();
+    expect(dialogService.confirm).not.toHaveBeenCalled();
+    expect(component.editedPolicy().scope).toBe("admin");
+  });
+
+  it("should emit onPolicyEdit whenever addPolicyEdit is called", () => {
+    const emitSpy = jest.spyOn(component.onPolicyEdit, "emit");
+    const editPayload = { description: "New Description" };
+
+    component.addPolicyEdit(editPayload);
+
+    expect(emitSpy).toHaveBeenCalledWith(editPayload);
+  });
+
+  it("should correctly handle updateActions via a dedicated method", () => {
+    const newActions = { login_mode: "privacy", otppin: "true" };
+    component.updateActions(newActions);
+
+    expect(component.editedPolicy().action).toEqual(newActions);
+    expect(component.isPolicyEdited()).toBe(true);
+  });
+
+  it("should reset all local edits if the linkedSignal source (input policy) changes", () => {
+    // 1. Make an edit
+    component.addPolicyEdit({ name: "Local Modification" });
+    expect(component.isPolicyEdited()).toBe(true);
+
+    // 2. Simulate parent providing a new policy object reference
+    fixture.componentRef.setInput("policy", {
+      name: "Brand New Policy",
+      priority: 1,
+      action: {},
+      scope: "web"
     });
+    fixture.detectChanges();
+
+    // 3. Edits should be gone
+    expect(component.isPolicyEdited()).toBe(false);
+    expect(component.editedPolicy().name).toBe("Brand New Policy");
+  });
+
+  it("should handle nullish description correctly in the template", () => {
+    fixture.componentRef.setInput("policy", {
+      name: "No Desc",
+      priority: 1,
+      action: {},
+      scope: "user",
+      description: undefined
+    });
+    fixture.detectChanges();
+
+    // The editedPolicy() should reflect the input, and the getter for description
+    // in the template (description ?? '') will handle the string conversion.
+    expect(component.editedPolicy().description).toBeUndefined();
   });
 });

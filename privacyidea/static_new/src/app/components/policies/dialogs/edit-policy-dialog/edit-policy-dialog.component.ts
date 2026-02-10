@@ -1,196 +1,96 @@
+/**
+ * (c) NetKnights GmbH 2026,  https://netknights.it
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ **/
+
 import { Component, computed, inject, signal } from "@angular/core";
-import { DialogWrapperComponent } from "../../../shared/dialog/dialog-wrapper/dialog-wrapper.component";
 import { CommonModule } from "@angular/common";
+import { ReactiveFormsModule } from "@angular/forms";
+import { DialogWrapperComponent } from "../../../shared/dialog/dialog-wrapper/dialog-wrapper.component";
 import { AbstractDialogComponent } from "../../../shared/dialog/abstract-dialog/abstract-dialog.component";
-import { AbstractControl, ReactiveFormsModule, ValidationErrors, ValidatorFn } from "@angular/forms";
-import { MatFormFieldModule } from "@angular/material/form-field";
-import { MatInputModule } from "@angular/material/input";
-import { lastValueFrom } from "rxjs";
-import { DialogServiceInterface, DialogService } from "../../../../services/dialog/dialog.service";
-import { PolicyServiceInterface, PolicyService, PolicyDetail } from "../../../../services/policies/policies.service";
-import {
-  SimpleConfirmationDialogData,
-  SimpleConfirmationDialogComponent
-} from "../../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { PolicyService, PolicyDetail, PolicyServiceInterface } from "../../../../services/policies/policies.service";
 import { DialogAction } from "../../../../models/dialog";
-import { PolicyPanelEditComponent, PolicyTab } from "./policy-panels/policy-panel-edit/policy-panel-edit.component";
-export function mustBeDifferentValidator(originalValue: string | null): ValidatorFn {
-  return (control: AbstractControl): ValidationErrors | null => {
-    const isSame = control.value === originalValue;
-    return isSame ? { notChanged: true } : null;
-  };
-}
+import { PolicyPanelEditComponent } from "./policy-panels/policy-panel-edit/policy-panel-edit.component";
+import { DialogServiceInterface, DialogService } from "src/app/services/dialog/dialog.service";
+
 @Component({
   selector: "app-edit-policy-dialog",
-  templateUrl: "./edit-policy-dialog.component.html",
-  styleUrls: ["./edit-policy-dialog.component.scss"],
   standalone: true,
-  imports: [
-    DialogWrapperComponent,
-    CommonModule,
-    ReactiveFormsModule,
-    MatFormFieldModule,
-    MatInputModule,
-    PolicyPanelEditComponent
-  ]
+  imports: [DialogWrapperComponent, CommonModule, ReactiveFormsModule, PolicyPanelEditComponent],
+  templateUrl: "./edit-policy-dialog.component.html",
+  styleUrl: "./edit-policy-dialog.component.scss"
 })
 export class EditPolicyDialogComponent extends AbstractDialogComponent<
   { policyDetail: PolicyDetail; mode: "edit" | "create" },
   Partial<PolicyDetail> | null
 > {
-  readonly policyService: PolicyServiceInterface = inject(PolicyService);
+  private readonly policyService: PolicyServiceInterface = inject(PolicyService);
   readonly dialogService: DialogServiceInterface = inject(DialogService);
 
   readonly policy = signal<PolicyDetail>(this.data.policyDetail);
-
   readonly policyEdits = signal<Partial<PolicyDetail>>({});
-  readonly editedPolicy = computed<PolicyDetail>(() => ({ ...this.policy(), ...this.policyEdits() }));
-  readonly isPolicyEdited = computed(() => {
-    const currentPolicy = this.policy;
-    const editedPolicyFields = this.policyEdits();
-    return (
-      Object.keys(editedPolicyFields).length > 0 &&
-      Object.keys(editedPolicyFields).some((key) => {
-        return (currentPolicy as any)[key] !== (editedPolicyFields as any)[key];
-      })
-    );
-  });
-  // Component State Signals
-  readonly activeTab = signal<PolicyTab>("actions");
+  readonly editedPolicy = computed(() => ({ ...this.policy(), ...this.policyEdits() }));
+  readonly isPolicyEdited = computed(() => Object.keys(this.policyEdits()).length > 0);
 
-  onNameChange(name: string): void {
-    this.addPolicyEdit({ name });
-  }
-
-  setActiveTab(tab: PolicyTab): void {
-    this.activeTab.set(tab);
-  }
-
-  togglePolicyActive(policy: PolicyDetail, activate: boolean) {
-    if (activate) {
-      this.policyService.enablePolicy(policy.name);
-    } else {
-      this.policyService.disablePolicy(policy.name);
-    }
-  }
-
-  async deletePolicy(policyName: string): Promise<void> {
-    if (
-      await this._confirm({
-        title: "Confirm Deletion",
-        confirmAction: {
-          type: "destruct",
-          label: "Delete",
-          value: true
-        },
-        cancelAction: {
-          type: "cancel",
-          label: "Cancel",
-          value: false
-        },
-        items: [policyName],
-        itemType: "policy"
-      })
-    ) {
-      this.policyService.deletePolicy(policyName);
-    }
-  }
-
-  async cancelEditMode() {
-    if (!(await this.confirmDiscardChanges())) return;
-
-    this.policyEdits.set({});
-    this.dialogRef.close(null);
-  }
-
-  // State-checking Methods
-  canSavePolicy(): boolean {
-    if (!this.isPolicyEdited()) return false;
-    const edits = this.editedPolicy();
-    if (edits.name === undefined || edits.name?.trim() === "") {
-      return false;
-    }
-    return true;
-  }
-
-  async confirmDiscardChanges(): Promise<boolean> {
-    if (this.isPolicyEdited()) {
-      return this._confirm({
-        title: "Discard Changes",
-        confirmAction: {
-          type: "destruct",
-          label: "Discard",
-          value: true
-        },
-        cancelAction: {
-          type: "cancel",
-          label: "Keep Editing",
-          value: false
-        },
-        items: [],
-        itemType: ""
-      });
-    }
-    return true;
-  }
-
-  selectPolicyScope(scope: string) {
-    this.addPolicyEdit({ scope });
-  }
-
-  updatePolicyPriority(priority: number) {
-    this.addPolicyEdit({ priority });
-  }
-  updateActions(actions: { [actionName: string]: string }) {
-    this.addPolicyEdit({ action: actions });
-  }
-  addPolicyEdit(edits: Partial<PolicyDetail>) {
-    this.policyEdits.set({ ...this.policyEdits(), ...edits });
-  }
-
-  async _confirm(data: SimpleConfirmationDialogData): Promise<boolean> {
-    return (
-      (await lastValueFrom(
-        this.dialogService
-          .openDialog({
-            component: SimpleConfirmationDialogComponent,
-            data: data
-          })
-          .afterClosed()
-      )) === true
-    );
-  }
-
-  actions: DialogAction<"submit" | null>[] = [
+  readonly actions: DialogAction<"submit" | null>[] = [
     {
       label: this.data.mode === "create" ? $localize`Create Policy` : $localize`Save Changes`,
       value: "submit",
       type: "confirm",
-      disabled: () => {
-        return !this.canSavePolicy();
-      }
+      disabled: () => !this.canSave()
     }
   ];
 
+  addPolicyEdit(edits: Partial<PolicyDetail>): void {
+    this.policyEdits.set({ ...this.policyEdits(), ...edits });
+  }
+
+  canSave(): boolean {
+    return this.isPolicyEdited() && !!this.editedPolicy().name?.trim();
+  }
+
   onAction(value: "submit" | null): void {
-    if (value === "submit") {
-      if (this.data.mode === "create") {
-        this.saveNewPolicy();
-      } else {
-        this.savePolicy();
-      }
+    if (value !== "submit") return;
+
+    const finalPolicy = this.editedPolicy();
+    if (this.data.mode === "create") {
+      this.policyService.saveNewPolicy(finalPolicy);
+    } else {
+      this.policyService.savePolicyEdits(this.policy().name, this.policyEdits());
     }
-  }
-
-  savePolicy() {
-    if (!this.canSavePolicy()) return;
-    this.policyService.savePolicyEdits(this.policy().name, this.policyEdits());
     this.dialogRef.close(this.policyEdits());
   }
 
-  saveNewPolicy() {
-    if (!this.canSavePolicy()) return;
-    this.policyService.saveNewPolicy({ ...this.policy(), ...this.policyEdits() });
-    this.dialogRef.close(this.policyEdits());
+  protected override close(dialogResult?: Partial<PolicyDetail> | null): void {
+    if (!this.isPolicyEdited()) {
+      super.close(dialogResult);
+      return;
+    }
+
+    this.dialogService
+      .confirm({
+        title: $localize`Discard Changes?`,
+        message: $localize`You have unsaved changes. Are you sure you want to discard them?`,
+        confirmButtonText: $localize`Discard Changes`
+      })
+      .then((confirmed) => {
+        if (confirmed) {
+          super.close(dialogResult);
+        }
+      });
   }
 }

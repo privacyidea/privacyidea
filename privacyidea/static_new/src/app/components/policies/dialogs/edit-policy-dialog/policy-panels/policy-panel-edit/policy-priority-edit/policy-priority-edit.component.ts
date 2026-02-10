@@ -17,25 +17,19 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, input, output } from "@angular/core";
+import { Component, model } from "@angular/core";
+import { FormsModule } from "@angular/forms";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
-import { FormsModule } from "@angular/forms";
 import { TextFieldModule } from "@angular/cdk/text-field";
 
 @Component({
   selector: "app-policy-priority-edit",
   templateUrl: "./policy-priority-edit.component.html",
-  styleUrls: ["./policy-priority-edit.component.scss"],
+  styleUrl: "./policy-priority-edit.component.scss",
   standalone: true,
   imports: [MatFormFieldModule, MatInputModule, FormsModule, TextFieldModule]
 })
 export class PolicyPriorityEditComponent {
-  // Inputs
-  priority = input.required<number>();
-  priorityChange = output<number>();
-
-  updatePolicyPriority(event: number) {
-    this.priorityChange.emit(event);
-  }
+  readonly priority = model.required<number>();
 }

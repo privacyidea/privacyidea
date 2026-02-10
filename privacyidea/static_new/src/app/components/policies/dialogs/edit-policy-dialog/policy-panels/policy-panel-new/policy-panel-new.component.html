@@ -1,28 +1,9 @@
-<!--
- (c) NetKnights GmbH 2026,  https://netknights.it
-
- This code is free software; you can redistribute it and/or
- modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
- as published by the Free Software Foundation; either
- version 3 of the License, or any later version.
-
- This code is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- GNU AFFERO GENERAL PUBLIC LICENSE for more details.
-
- You should have received a copy of the GNU Affero General Public
- License along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
- SPDX-License-Identifier: AGPL-3.0-or-later
--->
-
 <div class="list-item-card">
   <mat-expansion-panel
     #panel
     [disabled]="isPolicyEdited()"
-    (opened)="handleExpansion()"
-    (closed)="handleCollapse(panel)">
+    (opened)="onPanelOpened()"
+    (closed)="onPanelClosed(panel)">
     <mat-expansion-panel-header
       class="mat-expansion-panel-header"
       [class.scope-is-selectable]="policyService.isScopeChangeable(newPolicy())">
@@ -32,19 +13,21 @@
             type="number"
             class="policy-priority-input"
             [ngModel]="newPolicy().priority"
-            (ngModelChange)="onPriorityChange($event)"
+            (ngModelChange)="updatePolicy({ priority: $event })"
             (click)="$event.stopPropagation()"
             (keydown)="$event.stopPropagation()" />
+
           <input
             type="text"
             class="policy-name-input"
             placeholder="Policy Name"
+            i18n-placeholder
             [ngModel]="newPolicy().name"
-            (ngModelChange)="onNameChange($event)"
+            (ngModelChange)="updatePolicy({ name: $event })"
             (click)="$event.stopPropagation()"
             (keydown)="$event.stopPropagation()" />
         } @else {
-          <p i18n>New Policy</p>
+          <p i18n>Create New Policy</p>
         }
       </mat-panel-title>
 
@@ -60,26 +43,29 @@
                 <mat-label i18n>Scope</mat-label>
                 <mat-select
                   [value]="newPolicy().scope"
-                  (selectionChange)="selectPolicyScope($event.value)">
+                  (selectionChange)="updatePolicy({ scope: $event.value })">
                   @for (scopeOption of policyService.allPolicyScopes(); track scopeOption) {
-                    <mat-option [value]="scopeOption">{{ scopeOption }}</mat-option>
+                    <mat-option [value]="scopeOption">{{ scopeOption | uppercase }}</mat-option>
                   }
                 </mat-select>
               </mat-form-field>
             } @else {
-              <span>{{ newPolicy().scope.toLocaleUpperCase() }}</span>
+              <span class="scope-badge">{{ newPolicy().scope | uppercase }}</span>
             }
           </div>
+
           <div class="actions">
             <button
               mat-icon-button
+              color="primary"
               [disabled]="!canSavePolicy()"
               (click)="$event.stopPropagation(); savePolicy(panel)">
               <mat-icon>save</mat-icon>
             </button>
             <button
               mat-icon-button
-              (click)="$event.stopPropagation(); resetPolicy()">
+              color="warn"
+              (click)="$event.stopPropagation(); resetPolicy(panel)">
               <mat-icon>close</mat-icon>
             </button>
           </div>
@@ -87,10 +73,11 @@
       </mat-panel-description>
     </mat-expansion-panel-header>
 
-    <app-policy-panel-edit
-      class="width-100"
-      [policy]="newPolicy()"
-      [isNewPolicy]="true"
-      (onPolicyEdit)="onPolicyEdit($event)" />
+    <div class="panel-inner-content">
+      <app-policy-panel-edit
+        class="width-100"
+        [policy]="newPolicy()"
+        (onPolicyEdit)="updatePolicy($event)" />
+    </div>
   </mat-expansion-panel>
 </div>

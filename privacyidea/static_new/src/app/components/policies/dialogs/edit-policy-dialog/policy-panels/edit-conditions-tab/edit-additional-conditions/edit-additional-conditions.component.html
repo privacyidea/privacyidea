@@ -1,3 +1,22 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+
 <div class="conditions-container">
   <h2
     class="conditions-title"
@@ -58,9 +77,7 @@
       <div class="form-row">
         <mat-form-field appearance="outline">
           <mat-label>Section</mat-label>
-          <mat-select
-            [(ngModel)]="conditionSection"
-            panelClass="auto-width-dropdown">
+          <mat-select [(ngModel)]="conditionSection">
             @for (option of SECTION_OPTIONS; track option.key) {
               <mat-option [value]="option.key">{{ option.label }}</mat-option>
             }
@@ -69,9 +86,7 @@
 
         <mat-form-field appearance="outline">
           <mat-label>If Data Missing</mat-label>
-          <mat-select
-            [(ngModel)]="conditionHandleMissingData"
-            panelClass="auto-width-dropdown">
+          <mat-select [(ngModel)]="conditionHandleMissingData">
             @for (opt of HANDLE_MISSING_DATA_OPTIONS; track opt.key) {
               <mat-option [value]="opt.key">{{ opt.label }}</mat-option>
             }
@@ -80,47 +95,16 @@
       </div>
 
       <div class="form-row">
-        @if (conditionSection() === "token") {
-          <mat-form-field appearance="outline">
-            <mat-label>Token Key</mat-label>
-            <input
-              type="text"
-              matInput
-              [(ngModel)]="conditionKey"
-              [matAutocomplete]="autoToken" />
-            <mat-autocomplete #autoToken="matAutocomplete">
-              @for (key of tokenKeysFiltered(); track key) {
-                <mat-option [value]="key">{{ key }}</mat-option>
-              }
-            </mat-autocomplete>
-          </mat-form-field>
-        } @else if (conditionSection() === "container") {
-          <mat-form-field appearance="outline">
-            <mat-label>Container Key</mat-label>
-            <input
-              type="text"
-              matInput
-              [(ngModel)]="conditionKey"
-              [matAutocomplete]="autoContainer" />
-            <mat-autocomplete #autoContainer="matAutocomplete">
-              @for (key of containerKeys; track key) {
-                <mat-option [value]="key">{{ key }}</mat-option>
-              }
-            </mat-autocomplete>
-          </mat-form-field>
-        } @else {
-          <mat-form-field appearance="outline">
-            <mat-label>Key</mat-label>
-            <input
-              matInput
-              [(ngModel)]="conditionKey" />
-          </mat-form-field>
-        }
+        <mat-form-field appearance="outline">
+          <mat-label>Key</mat-label>
+          <input
+            matInput
+            [(ngModel)]="conditionKey" />
+        </mat-form-field>
+
         <mat-form-field appearance="outline">
           <mat-label>Comparator</mat-label>
-          <mat-select
-            [(ngModel)]="conditionComparator"
-            panelClass="auto-width-dropdown">
+          <mat-select [(ngModel)]="conditionComparator">
             @for (opt of COMPARATOR_OPTIONS; track opt.key) {
               <mat-option [value]="opt.key">{{ opt.label }}</mat-option>
             }
@@ -138,19 +122,18 @@
       <div class="form-actions">
         <button
           mat-button
-          class="action-button-cancel"
           (click)="cancelEdit()"
           i18n>
           Cancel
         </button>
         <button
           mat-stroked-button
-          class="action-button-1"
+          color="primary"
           (click)="saveCondition()">
           @if (editIndex() !== null) {
-            <div i18n>Update Condition</div>
+            <span i18n>Update Condition</span>
           } @else {
-            <div i18n>Add Condition</div>
+            <span i18n>Add Condition</span>
           }
         </button>
       </div>
@@ -159,10 +142,10 @@
     <div class="add-condition-button-container">
       <button
         mat-stroked-button
-        (click)="showAddConditionForm.set(true)"
         class="action-button-1"
-        i18n>
-        <mat-icon>add</mat-icon> Create a New Condition
+        (click)="showAddConditionForm.set(true)"
+        color="primary">
+        <mat-icon>add</mat-icon> <span i18n>Create a New Condition</span>
       </button>
     </div>
   }

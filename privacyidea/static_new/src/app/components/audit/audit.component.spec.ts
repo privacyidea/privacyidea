@@ -16,27 +16,27 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+
+import { provideHttpClient } from "@angular/common/http";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { MatTableDataSource } from "@angular/material/table";
+import { provideNoopAnimations } from "@angular/platform-browser/animations";
+import { ActivatedRoute } from "@angular/router";
+import { of } from "rxjs";
+import { AuditService } from "src/app/services/audit/audit.service";
+import { AuthService } from "src/app/services/auth/auth.service";
+import { ContentService } from "src/app/services/content/content.service";
+import { TableUtilsService } from "src/app/services/table-utils/table-utils.service";
 import {
   MockAuditService,
   MockContentService,
   MockLocalService,
-  MockNotificationService,
-  MockTableUtilsService
-} from "../../../testing/mock-services";
-
-import { ActivatedRoute } from "@angular/router";
+  MockNotificationService
+} from "src/testing/mock-services";
+import { MockAuthService } from "src/testing/mock-services/mock-auth-service";
+import { MockTableUtilsService } from "src/testing/mock-services/mock-table-utils-service";
 import { AuditComponent } from "./audit.component";
-import { AuditService } from "../../services/audit/audit.service";
-import { AuthService } from "../../services/auth/auth.service";
-import { ContentService } from "../../services/content/content.service";
-import { MatTableDataSource } from "@angular/material/table";
-import { TableUtilsService } from "../../services/table-utils/table-utils.service";
-import { of } from "rxjs";
-import { provideHttpClient } from "@angular/common/http";
 import { AuditSelfServiceComponent } from "./audit.self-service.component";
-import { provideNoopAnimations } from "@angular/platform-browser/animations";
-import { MockAuthService } from "../../../testing/mock-services/mock-auth-service";
 
 describe("AuditComponent (unit)", () => {
   let fixture: ComponentFixture<AuditComponent>;

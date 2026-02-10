@@ -16,35 +16,66 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { By } from "@angular/platform-browser";
-import { AddedActionsListComponent } from "./added-actions-list/added-actions-list.component";
+
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { EditActionTabComponent } from "./edit-action-tab.component";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { provideHttpClient } from "@angular/common/http";
-import { MockPolicyService } from "../../../../../../../testing/mock-services/mock-policies-service";
-import { PolicyService, PolicyDetail } from "../../../../../../services/policies/policies.service";
+import { DialogService } from "../../../../../../services/dialog/dialog.service";
+import { PolicyDetail } from "../../../../../../services/policies/policies.service";
+import { Component, input, output } from "@angular/core";
+import { provideNoopAnimations } from "@angular/platform-browser/animations";
+
+@Component({
+  selector: "app-added-actions-list",
+  template: "",
+  standalone: true
+})
+class MockAddedActionsListComponent {
+  isEditMode = input.required<boolean>();
+  actions = input.required<any[]>();
+  actionsChange = output<any[]>();
+  actionRemove = output<string>();
+}
+
+@Component({
+  selector: "app-action-selector",
+  template: "",
+  standalone: true
+})
+class MockActionSelectorComponent {
+  policy = input.required<any>();
+  actionAdd = output<any>();
+}
+
+class MockDialogService {}
 
 describe("EditActionTabComponent", () => {
   let component: EditActionTabComponent;
   let fixture: ComponentFixture<EditActionTabComponent>;
-  let policyServiceMock: MockPolicyService;
+
+  const mockPolicy: PolicyDetail = {
+    name: "test-policy",
+    scope: "admin",
+    action: {
+      "action-1": "value-1",
+      "action-2": "value-2"
+    }
+  } as any;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [EditActionTabComponent, NoopAnimationsModule],
-      providers: [
-        provideHttpClient(),
-        provideHttpClientTesting(),
-        { provide: PolicyService, useClass: MockPolicyService }
-      ]
-    }).compileComponents();
+      imports: [EditActionTabComponent],
+      providers: [{ provide: DialogService, useClass: MockDialogService }, provideNoopAnimations()]
+    })
+      .overrideComponent(EditActionTabComponent, {
+        set: {
+          imports: [MockAddedActionsListComponent, MockActionSelectorComponent]
+        }
+      })
+      .compileComponents();
 
     fixture = TestBed.createComponent(EditActionTabComponent);
-    policyServiceMock = TestBed.inject(PolicyService) as unknown as MockPolicyService;
     component = fixture.componentInstance;
-    policyServiceMock.isEditMode.set(false);
+    fixture.componentRef.setInput("policy", mockPolicy);
     fixture.detectChanges();
   });
 
@@ -52,129 +83,59 @@ describe("EditActionTabComponent", () => {
     expect(component).toBeTruthy();
   });
 
-  it("should display actions for a selected policy", () => {
-    const policy: PolicyDetail = {
-      name: "test-policy",
-      scope: "test",
-      action: { action1: "value1", action2: "value2" },
-      active: false,
-      adminrealm: [],
-      adminuser: [],
-      check_all_resolvers: false,
-      client: [],
-      conditions: [],
-      description: null,
-      pinode: [],
-      priority: 0,
-      realm: [],
-      resolver: [],
-      time: "",
-      user: [],
-      user_agents: [],
-      user_case_insensitive: false
-    };
-    policyServiceMock.selectedPolicy.set(policy);
-    fixture.detectChanges();
-
-    const actionElements = fixture.nativeElement.querySelectorAll("app-added-actions-list");
-    expect(actionElements.length).toBe(1);
+  it("should transform policy actions into an array for children", () => {
+    const actions = component.actions();
+    expect(actions.length).toBe(2);
+    expect(actions).toContainEqual({ name: "action-1", value: "value-1" });
+    expect(actions).toContainEqual({ name: "action-2", value: "value-2" });
   });
 
-  it("should not display actions if no policy is selected", () => {
-    policyServiceMock.selectedPolicy.set(null);
-    fixture.detectChanges();
-
-    const actionElements = fixture.nativeElement.querySelectorAll("app-added-actions-list");
-    expect(actionElements.length).toBe(0);
-  });
-
-  it("should display app-action-selector when in edit mode", () => {
-    policyServiceMock.isEditMode.set(true);
-    fixture.detectChanges();
-    const actionSelector = fixture.nativeElement.querySelector("app-action-selector");
-    expect(actionSelector).toBeTruthy();
-  });
-
-  it("should not display app-action-selector when not in edit mode", () => {
-    policyServiceMock.isEditMode.set(false);
-    fixture.detectChanges();
-    const actionSelector = fixture.nativeElement.querySelector("app-action-selector");
-    expect(actionSelector).toBeFalsy();
-  });
-
-  it("should always display app-action-detail", () => {
-    const actionDetail = fixture.nativeElement.querySelector("app-action-detail");
-    expect(actionDetail).toBeTruthy();
-
-    policyServiceMock.isEditMode.set(true);
-    fixture.detectChanges();
-    const actionDetailAfterEditMode = fixture.nativeElement.querySelector("app-action-detail");
-    expect(actionDetailAfterEditMode).toBeTruthy();
-  });
-
-  it("should correctly transform policy actions into an array", () => {
-    const policy: PolicyDetail = {
-      name: "test-policy",
-      scope: "test",
-      action: { action1: "value1", action2: "value2" },
-      active: false,
-      adminrealm: [],
-      adminuser: [],
-      check_all_resolvers: false,
-      client: [],
-      conditions: [],
-      description: null,
-      pinode: [],
-      priority: 0,
-      realm: [],
-      resolver: [],
-      time: "",
-      user: [],
-      user_agents: [],
-      user_case_insensitive: false
-    };
-    policyServiceMock.selectedPolicy.set(policy);
-    fixture.detectChanges();
-
-    const expectedActions = [
-      { name: "action1", value: "value1" },
-      { name: "action2", value: "value2" }
+  it("should emit actionsUpdate as an object when onActionsChange is called", () => {
+    const spy = jest.spyOn(component.actionsUpdate, "emit");
+    const updatedArray = [
+      { name: "action-1", value: "new-value" },
+      { name: "action-3", value: "value-3" }
     ];
-    expect(component.actions()).toEqual(expectedActions);
 
-    policyServiceMock.selectedPolicy.set(null);
-    fixture.detectChanges();
-    expect(component.actions()).toEqual([]);
+    component.onActionsChange(updatedArray);
+
+    expect(spy).toHaveBeenCalledWith({
+      "action-1": "new-value",
+      "action-3": "value-3"
+    });
   });
 
-  it("should pass the correct actions to app-added-actions-list", () => {
-    const policy: PolicyDetail = {
-      name: "test-policy",
-      scope: "test",
-      action: { action1: "value1", action2: "value2" },
-      active: false,
-      adminrealm: [],
-      adminuser: [],
-      check_all_resolvers: false,
-      client: [],
-      conditions: [],
-      description: null,
-      pinode: [],
-      priority: 0,
-      realm: [],
-      resolver: [],
-      time: "",
-      user: [],
-      user_agents: [],
-      user_case_insensitive: false
-    };
-    policyServiceMock.selectedPolicy.set(policy);
+  it("should handle adding a new action", () => {
+    const spy = jest.spyOn(component.actionsUpdate, "emit");
+    const newAction = { name: "action-new", value: "val-new" };
+
+    component.onActionAdd(newAction);
+
+    expect(spy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        "action-1": "value-1",
+        "action-2": "value-2",
+        "action-new": "val-new"
+      })
+    );
+  });
+
+  it("should handle removing an action", () => {
+    const spy = jest.spyOn(component.actionsUpdate, "emit");
+
+    component.onActionRemove("action-1");
+
+    expect(spy).toHaveBeenCalledWith({
+      "action-2": "value-2"
+    });
+  });
+
+  it("should reset selectedAction when the policy scope changes (linkedSignal)", () => {
+    component.selectedAction.set({ name: "some", value: "val" });
+
+    fixture.componentRef.setInput("policy", { ...mockPolicy, scope: "user" });
     fixture.detectChanges();
 
-    const selectedActionsListDebugElement = fixture.debugElement.query(By.directive(AddedActionsListComponent));
-    expect(selectedActionsListDebugElement).toBeTruthy();
-
-    const selectedActionsListComponent = selectedActionsListDebugElement.componentInstance;
-    expect(selectedActionsListComponent.actions()).toEqual(component.actions());
+    expect(component.selectedAction()).toBeNull();
   });
 });

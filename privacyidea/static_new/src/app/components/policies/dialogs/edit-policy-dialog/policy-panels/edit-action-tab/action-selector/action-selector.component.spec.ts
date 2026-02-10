@@ -16,99 +16,117 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+
+import { Component, input, model, output, ViewChild } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { ActionSelectorComponent } from "./action-selector.component";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
+import { FormsModule } from "@angular/forms";
+import { CommonModule } from "@angular/common";
 import { By } from "@angular/platform-browser";
-import { SelectorButtonsComponent } from "../selector-buttons/selector-buttons.component";
-import { MockPolicyService } from "../../../../../../../../testing/mock-services/mock-policies-service";
-import { PolicyService } from "../../../../../../../services/policies/policies.service";
+import { provideNoopAnimations } from "@angular/platform-browser/animations";
+import { PolicyDetail, PolicyService } from "src/app/services/policies/policies.service";
+import { ActionSelectorComponent } from "./action-selector.component";
+import { MockPolicyService } from "src/testing/mock-services/mock-policies-service";
+import { ClearableInputComponent } from "src/app/components/shared/clearable-input/clearable-input.component";
+
+@Component({
+  selector: "app-policy-action-item-new",
+  template: "<div></div>",
+  standalone: true
+})
+class MockPolicyActionItemComponent {
+  actionName = input.required<string>();
+  actionDetail = input.required<any>();
+  actionValue = input.required<any>();
+  focusFirstInput = jest.fn();
+}
+
+@Component({
+  selector: "app-selector-buttons",
+  template: "<div></div>",
+  standalone: true
+})
+class MockSelectorButtonsComponent {
+  values = input.required<string[]>();
+  initialValue = input<string>();
+  allowDeselect = input<boolean>();
+  disabled = input<boolean>();
+  onSelect = output<string | null>();
+}
+
+@Component({
+  standalone: true,
+  imports: [ActionSelectorComponent, CommonModule, ClearableInputComponent, FormsModule],
+  template: ` <app-action-selector [(policy)]="policy" /> `
+})
+class TestHostComponent {
+  policy = model<PolicyDetail>({
+    name: "Test Policy",
+    scope: "",
+    conditions: [],
+    action: {},
+    description: "",
+    adminrealm: [],
+    adminuser: [],
+    check_all_resolvers: false,
+    client: [],
+    pinode: [],
+    priority: 0,
+    realm: [],
+    resolver: [],
+    time: "",
+    user: [],
+    user_agents: [],
+    user_case_insensitive: false,
+    active: true
+  });
+
+  @ViewChild(ActionSelectorComponent)
+  public component!: ActionSelectorComponent;
+}
 
 describe("ActionSelectorComponent", () => {
+  let hostComponent: TestHostComponent;
+  let fixture: ComponentFixture<TestHostComponent>;
   let component: ActionSelectorComponent;
-  let fixture: ComponentFixture<ActionSelectorComponent>;
-  let policyServiceMock: MockPolicyService;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ActionSelectorComponent, NoopAnimationsModule],
-      providers: [{ provide: PolicyService, useClass: MockPolicyService }]
-    }).compileComponents();
+      imports: [TestHostComponent],
+      providers: [{ provide: PolicyService, useClass: MockPolicyService }, provideNoopAnimations()]
+    })
+      .overrideComponent(ActionSelectorComponent, {
+        set: {
+          imports: [
+            CommonModule,
+            FormsModule,
+            MockPolicyActionItemComponent,
+            MockSelectorButtonsComponent,
+            ClearableInputComponent
+          ]
+        }
+      })
+      .compileComponents();
 
-    fixture = TestBed.createComponent(ActionSelectorComponent);
-    policyServiceMock = TestBed.inject(PolicyService) as unknown as MockPolicyService;
-    component = fixture.componentInstance;
-    jest.spyOn(policyServiceMock.actionFilter, "set");
-    jest.spyOn(policyServiceMock.selectedActionGroup, "set");
+    fixture = TestBed.createComponent(TestHostComponent);
+    hostComponent = fixture.componentInstance;
+    fixture.detectChanges();
+    component = hostComponent.component;
   });
 
   it("should create", () => {
     expect(component).toBeTruthy();
   });
 
-  it("should display available actions", () => {
-    policyServiceMock.actionNamesOfSelectedGroup.set(["action1", "action2"]);
-    fixture.detectChanges();
-    const actionElements = fixture.nativeElement.querySelectorAll(".policy-action-item");
-    expect(actionElements.length).toBe(2);
-    expect(actionElements[0].textContent).toContain("action1");
-    expect(actionElements[1].textContent).toContain("action2");
+  it("should handle null group selection by falling back to empty string", () => {
+    component.selectActionGroup(null);
+    expect(component.selectedActionGroup()).toBe("");
   });
 
-  it("should select an action on click", () => {
-    const actions = ["action1", "action2"];
-    policyServiceMock.actionNamesOfSelectedGroup.set(actions);
+  it("should select a scope and update policy asynchronously", async () => {
+    component.selectActionScope("admin");
+    await new Promise((resolve) => setTimeout(resolve, 0));
     fixture.detectChanges();
 
-    const actionElement = fixture.nativeElement.querySelectorAll(".policy-action-item");
-    actionElement[1].click();
-
-    expect(policyServiceMock.selectActionByName).toHaveBeenCalledWith(actions[1]);
-  });
-
-  it("should apply selected class to selected action", () => {
-    const actions = ["action1", "action2"];
-    policyServiceMock.actionNamesOfSelectedGroup.set(actions);
-    policyServiceMock.selectedAction.set({ name: "action1", value: "" });
-    fixture.detectChanges();
-
-    const actionElements = fixture.nativeElement.querySelectorAll(".policy-action-item");
-    expect(actionElements[0].classList).toContain("policy-action-item-selected");
-    expect(actionElements[1].classList).not.toContain("policy-action-item-selected");
-  });
-
-  it("should filter actions based on input", () => {
-    fixture.detectChanges();
-    const input: HTMLInputElement = fixture.nativeElement.querySelector(".search-input");
-
-    input.value = "test";
-    input.dispatchEvent(new Event("input"));
-
-    const actionFilter = policyServiceMock.actionFilter();
-    expect(actionFilter).toBe("test");
-
-    expect(policyServiceMock.actionFilter.set).toHaveBeenCalledWith("test");
-  });
-
-  it("should show group selector if more than one group exists", () => {
-    policyServiceMock.groupNamesOfSelectedScope.set(["group1", "group2"]);
-    fixture.detectChanges();
-    const groupSelector = fixture.nativeElement.querySelector("app-selector-buttons");
-    expect(groupSelector).toBeTruthy();
-  });
-
-  it("should not show group selector if only one group exists", () => {
-    policyServiceMock.groupNamesOfSelectedScope.set(["group1"]);
-    fixture.detectChanges();
-    const groupSelector = fixture.nativeElement.querySelector("app-selector-buttons");
-    expect(groupSelector).toBeFalsy();
-  });
-
-  it("should call service when group is selected", () => {
-    policyServiceMock.groupNamesOfSelectedScope.set(["group1", "group2"]);
-    fixture.detectChanges();
-    const groupSelector = fixture.debugElement.query(By.directive(SelectorButtonsComponent));
-    groupSelector.triggerEventHandler("onSelect", "group2");
-    expect(policyServiceMock.selectedActionGroup.set).toHaveBeenCalledWith("group2");
+    expect(component.policy().scope).toBe("admin");
   });
 });

@@ -28,8 +28,9 @@ import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ActivatedRoute, Router } from "@angular/router";
 import { MockResolverService } from "../../../../testing/mock-services/mock-resolver-service";
-import { MockNotificationService, MockTableUtilsService } from "../../../../testing/mock-services";
+import { MockNotificationService } from "../../../../testing/mock-services";
 import { MockAuthService } from "../../../../testing/mock-services/mock-auth-service";
+import { MockTableUtilsService } from "src/testing/mock-services/mock-table-utils-service";
 
 class LocalMockMatDialog {
   result$ = of(true);
@@ -70,8 +71,7 @@ describe("UserSourcesComponent", () => {
           }
         }
       ]
-    })
-      .compileComponents();
+    }).compileComponents();
 
     fixture = TestBed.createComponent(UserResolversComponent);
     component = fixture.componentInstance;
@@ -93,7 +93,6 @@ describe("UserSourcesComponent", () => {
     expect(component.columnKeys).not.toContain("actions");
   });
 
-
   it("should filter resolvers", () => {
     const resolvers = [
       { resolvername: "admin", type: "passwdresolver", censor_keys: [], data: {} },
@@ -114,9 +113,7 @@ describe("UserSourcesComponent", () => {
   });
 
   it("filterPredicate should match name or type", () => {
-    const resolvers = [
-      { resolvername: "admin", type: "passwdresolver", censor_keys: [], data: {} }
-    ] as Resolver[];
+    const resolvers = [{ resolvername: "admin", type: "passwdresolver", censor_keys: [], data: {} }] as Resolver[];
     resolverService.setResolvers(resolvers);
     fixture.detectChanges();
 
@@ -131,25 +128,31 @@ describe("UserSourcesComponent", () => {
     const resolver = { resolvername: "res1", type: "sqlresolver", censor_keys: [], data: {} } as Resolver;
     component.onEditResolver(resolver);
 
-    expect(dialog.open).toHaveBeenCalledWith(expect.any(Function), expect.objectContaining({
-      data: { resolver },
-      height: "auto",
-      maxHeight: "100vh",
-      maxWidth: "100vw",
-      width: "auto"
-    }));
+    expect(dialog.open).toHaveBeenCalledWith(
+      expect.any(Function),
+      expect.objectContaining({
+        data: { resolver },
+        height: "auto",
+        maxHeight: "100vh",
+        maxWidth: "100vw",
+        width: "auto"
+      })
+    );
   });
 
   it("onNewResolver should open dialog", () => {
     component.onNewResolver();
 
-    expect(dialog.open).toHaveBeenCalledWith(expect.any(Function), expect.objectContaining({
-      data: { resolver: undefined },
-      height: "auto",
-      maxHeight: "100vh",
-      maxWidth: "100vw",
-      width: "auto"
-    }));
+    expect(dialog.open).toHaveBeenCalledWith(
+      expect.any(Function),
+      expect.objectContaining({
+        data: { resolver: undefined },
+        height: "auto",
+        maxHeight: "100vh",
+        maxWidth: "100vw",
+        width: "auto"
+      })
+    );
   });
 
   it("onDeleteResolver should delete after confirmation", () => {

@@ -50,125 +50,108 @@ import { MultiSelectOnlyComponent } from "../../../../../../shared/multi-select-
   styleUrl: "./edit-user-conditions.component.scss"
 })
 export class EditUserConditionsComponent {
-  // ViewChild
   @ViewChild("resolverSelect") resolverSelect!: MatSelect;
   @ViewChild("realmSelect") realmSelect!: MatSelect;
-  // Services
-  realmService: RealmServiceInterface = inject(RealmService);
-  resolverService: ResolverServiceInterface = inject(ResolverService);
-  policyService = inject(PolicyService);
-  // Component State
 
-  policy = input.required<PolicyDetail>();
-  policyEdit = output<Partial<PolicyDetail>>();
-  emitEdits(edits: Partial<PolicyDetail>) {
-    this.policyEdit.emit(edits);
-  }
+  readonly realmService: RealmServiceInterface = inject(RealmService);
+  readonly resolverService: ResolverServiceInterface = inject(ResolverService);
+  readonly policyService = inject(PolicyService);
 
-  // Form Controls
-  userFormControl = new FormControl<string>("", this.userValidator.bind(this));
-  // Computed Properties
-  selectedRealms = computed(() => this.policy().realm || []);
-  selectedResolvers = computed(() => this.policy().resolver || []);
-  selectedUsers = computed(() => this.policy().user || []);
-  userCaseInsensitive = computed(() => this.policy().user_case_insensitive || false);
-  isAllRealmsSelected = computed(() => this.selectedRealms().length === this.realmService.realmOptions().length);
-  isAllResolversSelected = computed(
+  readonly policy = input.required<PolicyDetail>();
+  readonly policyEdit = output<Partial<PolicyDetail>>();
+
+  userFormControl = new FormControl<string>("", {
+    nonNullable: true,
+    validators: [this.userValidator.bind(this)]
+  });
+
+  readonly selectedRealms = computed(() => this.policy().realm || []);
+  readonly selectedResolvers = computed(() => this.policy().resolver || []);
+  readonly selectedUsers = computed(() => this.policy().user || []);
+  readonly userCaseInsensitive = computed(() => this.policy().user_case_insensitive || false);
+
+  readonly isAllRealmsSelected = computed(
+    () => this.selectedRealms().length === this.realmService.realmOptions().length
+  );
+  readonly isAllResolversSelected = computed(
     () => this.selectedResolvers().length === this.resolverService.resolverOptions().length
   );
-  availableRealms = computed(() => {
+
+  readonly availableRealms = computed(() => {
     const selectedResolvers = this.selectedResolvers();
     if (selectedResolvers.length === 0) {
       return this.realmService.realmOptions();
     }
     const realms = this.realmService.realms();
-    let availableRealms: string[] = [];
-    for (const [realmName, realm] of Object.entries(realms)) {
-      const realmResolvers = realm.resolver.map((r) => r.name);
-      if (selectedResolvers.some((sr) => realmResolvers.includes(sr))) {
-        availableRealms.push(realmName);
-      }
-    }
-    return availableRealms;
+    return Object.entries(realms)
+      .filter(([, realm]) => realm.resolver.some((r) => selectedResolvers.includes(r.name)))
+      .map(([name]) => name);
   });
-  availableResolvers = computed(() => {
+
+  readonly availableResolvers = computed(() => {
     const selectedRealms = this.selectedRealms();
     if (selectedRealms.length === 0) {
       return this.resolverService.resolverOptions();
     }
     const realms = this.realmService.realms();
-    let availableResolversSet: Set<string> = new Set();
-    for (const realmName of selectedRealms) {
-      const realm = realms[realmName];
-      if (realm) {
-        realm.resolver.forEach((r) => {
-          return availableResolversSet.add(r.name);
-        });
-      }
-    }
-    return Array.from(availableResolversSet);
+    const resolversSet = new Set<string>();
+    selectedRealms.forEach((realmName) => {
+      realms[realmName]?.resolver.forEach((r) => resolversSet.add(r.name));
+    });
+    return Array.from(resolversSet);
   });
-  selectResolverTooltip = computed(() => {
-    if (this.availableResolvers().length === 0) {
-      return $localize`No resolvers available for the selected realms.`;
-    }
-    return "";
-  });
-  selectRealmTooltip = computed(() => {
-    if (this.availableRealms().length === 0) {
-      return $localize`No realms available for the selected resolvers.`;
-    }
-    return "";
-  });
-  // Realm Management
+
+  readonly selectResolverTooltip = computed(() =>
+    this.availableResolvers().length === 0 ? $localize`No resolvers available for the selected realms.` : ""
+  );
+
+  readonly selectRealmTooltip = computed(() =>
+    this.availableRealms().length === 0 ? $localize`No realms available for the selected resolvers.` : ""
+  );
+
+  emitEdits(edits: Partial<PolicyDetail>) {
+    this.policyEdit.emit(edits);
+  }
+
   selectRealm(realmNames: string[]): void {
     this.emitEdits({ realm: realmNames });
   }
+
   toggleAllRealms() {
-    if (this.isAllRealmsSelected()) {
-      this.emitEdits({ realm: [] });
-    } else {
-      const allRealms = this.realmService.realmOptions();
-      this.emitEdits({ realm: allRealms });
-    }
-    setTimeout(() => {
-      this.realmSelect.close();
-    });
+    this.emitEdits({ realm: this.isAllRealmsSelected() ? [] : this.realmService.realmOptions() });
+    setTimeout(() => this.realmSelect?.close());
   }
-  // Resolver Management
+
   selectResolver(resolverNames: string[]): void {
     this.emitEdits({ resolver: resolverNames });
   }
+
   toggleAllResolvers() {
-    if (this.isAllResolversSelected()) {
-      this.emitEdits({ resolver: [] });
-    } else {
-      const allResolvers = this.resolverService.resolverOptions();
-      this.emitEdits({ resolver: allResolvers });
-    }
-    setTimeout(() => {
-      this.resolverSelect.close();
-    });
+    this.emitEdits({ resolver: this.isAllResolversSelected() ? [] : this.resolverService.resolverOptions() });
+    setTimeout(() => this.resolverSelect?.close());
   }
-  // User Management
+
   addUser(user: string) {
-    if (this.userFormControl.invalid) {
-      return;
-    }
-    if (user && !this.selectedUsers().includes(user)) {
-      this.emitEdits({ user: [...this.selectedUsers(), user] });
+    const trimmed = user?.trim();
+    if (this.userFormControl.invalid || !trimmed) return;
+    if (!this.selectedUsers().includes(trimmed)) {
+      this.emitEdits({ user: [...this.selectedUsers(), trimmed] });
+      this.userFormControl.setValue("");
     }
   }
+
   removeUser(user: string) {
     this.emitEdits({ user: this.selectedUsers().filter((u) => u !== user) });
   }
+
   clearUsers() {
     this.emitEdits({ user: [] });
   }
+
   toggleUserCaseInsensitive() {
     this.emitEdits({ user_case_insensitive: !this.userCaseInsensitive() });
   }
-  // Validators
+
   userValidator(control: AbstractControl): ValidationErrors | null {
     return /[,]/.test(control.value) ? { includesComma: { value: control.value } } : null;
   }

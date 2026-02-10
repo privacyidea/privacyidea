@@ -16,16 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import {
-  Component,
-  input,
-  OnInit,
-  linkedSignal,
-  WritableSignal,
-  output,
-  viewChildren,
-  ElementRef
-} from "@angular/core";
+
+import { Component, input, linkedSignal, WritableSignal, output, viewChildren, ElementRef } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 
 @Component({
@@ -35,17 +27,16 @@ import { MatButtonModule } from "@angular/material/button";
   templateUrl: "./selector-buttons.component.html",
   styleUrl: "./selector-buttons.component.scss"
 })
-// Implement OnInit to use the hook
-export class SelectorButtonsComponent<T> implements OnInit {
+export class SelectorButtonsComponent<T> {
   // Inputs
-  initialValue = input.required<T | null>();
-  values = input.required<T[]>();
-  labels = input<T[] | undefined>(undefined);
-  allowDeselect = input<boolean>(false);
-  disabled = input<boolean>(false);
+  readonly initialValue = input.required<T | null>();
+  readonly values = input.required<T[]>();
+  readonly labels = input<T[] | undefined>(undefined);
+  readonly allowDeselect = input<boolean>(false);
+  readonly disabled = input<boolean>(false);
 
   // Outputs
-  onSelect = output<T>();
+  readonly onSelect = output<T | null>();
 
   // Component State
   selectedValue: WritableSignal<T | null> = linkedSignal({
@@ -53,30 +44,28 @@ export class SelectorButtonsComponent<T> implements OnInit {
     computation: (source) => source
   });
 
-  // Lifecycle Hooks
-  ngOnInit() {
-    const parsedValue = this.initialValue();
-    this.selectedValue.set(parsedValue);
-  }
+  buttons = viewChildren<ElementRef<HTMLButtonElement>>("btn");
 
   // Public Methods
   selectValue(value: T): void {
+    if (this.disabled()) {
+      return;
+    }
+
     if (this.selectedValue() === value) {
       if (this.allowDeselect()) {
         this.selectedValue.set(null);
-        this.onSelect.emit(null as any);
+        this.onSelect.emit(null);
       }
       return;
     }
     this.selectedValue.set(value);
     this.onSelect.emit(value);
   }
-  buttons = viewChildren<ElementRef<HTMLButtonElement>>("btn");
+
   public focusFirst(): void {
     const firstButton = this.buttons()[0]?.nativeElement;
-    console.log("Focusing first button:", firstButton);
     if (firstButton) {
-      console.log("Button found, setting focus.");
       firstButton.focus();
     }
   }

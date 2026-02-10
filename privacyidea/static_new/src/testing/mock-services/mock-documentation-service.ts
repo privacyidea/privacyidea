@@ -17,17 +17,17 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { signal, WritableSignal } from "@angular/core";
 import { DocumentationServiceInterface } from "../../app/services/documentation/documentation.service";
 
 export class MockDocumentationService implements DocumentationServiceInterface {
-  openDocumentation = jest.fn();
-  getVersionUrl = jest.fn().mockReturnValue("mock-version-url");
-  getFallbackUrl = jest.fn().mockReturnValue("mock-fallback-url");
+  openDocumentation = jest.fn().mockResolvedValue(undefined);
+  getVersionUrl = jest.fn().mockReturnValue("https://example.com/versioned-docs/");
+  getFallbackUrl = jest.fn().mockReturnValue("https://example.com/fallback-docs/");
   checkFullUrl = jest.fn().mockResolvedValue(true);
-  checkPageUrl = jest.fn().mockResolvedValue("mock-page-url");
+  checkPageUrl = jest.fn().mockResolvedValue("https://example.com/versioned-docs/");
   openDocumentationPage = jest.fn().mockResolvedValue(true);
-
-  policyActionSectionId: WritableSignal<string | null> = signal(null);
-  policyActionDocumentation: WritableSignal<{ actionDocu: string[]; actionNotes: string[] } | null> = signal(null);
+  getPolicyActionDocumentation = jest.fn().mockResolvedValue({
+    info: ["Doc Info"],
+    notes: ["Doc Notes"]
+  });
 }

@@ -32,7 +32,6 @@ import {
   MockLocalService,
   MockNotificationService,
   MockOverflowService,
-  MockTableUtilsService,
   MockTokenService
 } from "../../../../../testing/mock-services";
 import { AuthService } from "../../../../services/auth/auth.service";
@@ -47,6 +46,7 @@ import { SimpleConfirmationDialogComponent } from "../../../shared/dialog/confir
 import { ContentService } from "../../../../services/content/content.service";
 
 import { MockAuthService } from "../../../../../testing/mock-services/mock-auth-service";
+import { MockTableUtilsService } from "src/testing/mock-services/mock-table-utils-service";
 
 const routerEvents$ = new Subject<NavigationEnd>();
 routerEvents$.next(new NavigationEnd(1, "/", "/"));

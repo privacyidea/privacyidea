@@ -26,7 +26,6 @@ import {
   DocumentationService,
   DocumentationServiceInterface
 } from "../../../../../../../services/documentation/documentation.service";
-import { PolicyDetail } from "../../../../../../../services/policies/policies.service";
 
 @Component({
   selector: "app-policy-description-edit",
@@ -36,18 +35,16 @@ import { PolicyDetail } from "../../../../../../../services/policies/policies.se
   imports: [MatFormFieldModule, MatInputModule, FormsModule, TextFieldModule]
 })
 export class PolicyDescriptionEditComponent {
-  // Services
-  documentationService: DocumentationServiceInterface = inject(DocumentationService);
+  readonly documentationService: DocumentationServiceInterface = inject(DocumentationService);
 
-  // Component State
-  description = input.required<string>();
-  descriptionChange = output<string>();
+  readonly description = input.required<string>();
+  readonly descriptionChange = output<string>();
 
-  openDocumentation(page: string) {
+  openDocumentation(page: string): void {
     this.documentationService.openDocumentation(page);
   }
 
-  updatePolicyDescription($event: string) {
-    this.descriptionChange.emit($event);
+  updatePolicyDescription(value: string): void {
+    this.descriptionChange.emit(value);
   }
 }

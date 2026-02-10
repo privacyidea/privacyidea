@@ -51,7 +51,7 @@ export type PolicyActionGroups = {
 export type PoliciesList = PolicyDetail[];
 
 export type PolicyDetail = {
-  action: { [actionName: string]: string } | null;
+  action: { [actionName: string]: string | boolean } | null;
   active: boolean;
   adminrealm: string[];
   adminuser: string[];

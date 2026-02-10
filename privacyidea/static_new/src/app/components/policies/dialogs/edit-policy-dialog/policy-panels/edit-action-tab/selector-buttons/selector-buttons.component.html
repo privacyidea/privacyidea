@@ -20,6 +20,7 @@
   @for (value of values(); track $index) {
     <button
       #btn
+      type="button"
       class="button-item"
       [class.selected-button]="selectedValue() === value"
       [class.last-button]="$index === values().length - 1"

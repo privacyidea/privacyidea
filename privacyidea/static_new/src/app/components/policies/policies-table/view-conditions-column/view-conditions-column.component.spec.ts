@@ -19,36 +19,119 @@
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { ConditionsTabComponent } from "./view-conditions-column.component";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { provideHttpClient } from "@angular/common/http";
-import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { MockPolicyService } from "../../../../../testing/mock-services/mock-policies-service";
-import { PolicyService } from "../../../../services/policies/policies.service";
+import { MatIconModule } from "@angular/material/icon";
+import { ViewConditionSectionComponent } from "./view-condition-section/view-condition-section.component";
+import { provideNoopAnimations } from "@angular/platform-browser/animations";
+import { PolicyDetail } from "src/app/services/policies/policies.service";
 
 describe("ConditionsTabComponent", () => {
   let component: ConditionsTabComponent;
   let fixture: ComponentFixture<ConditionsTabComponent>;
-  let policyServiceMock: MockPolicyService;
+
+  const mockPolicy: PolicyDetail = {
+    check_all_resolvers: false,
+    name: "test-policy",
+    priority: 10,
+    active: true,
+    scope: "authentication",
+    adminrealm: ["adminRealm1"],
+    adminuser: ["adminUser1"],
+    realm: ["userRealm1"],
+    resolver: ["resolver1"],
+    user: ["user1"],
+    user_case_insensitive: true,
+    pinode: ["node1"],
+    time: "08:00-17:00",
+    client: ["client1"],
+    user_agents: ["userAgent1"],
+    conditions: [["token", "testKey", "equals", "testValue", true, "raise_error"]],
+    action: {},
+    description: "Test Description"
+  };
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ConditionsTabComponent, NoopAnimationsModule],
-      providers: [
-        provideHttpClient(),
-        provideHttpClientTesting(),
-        {
-          provide: PolicyService,
-          useClass: MockPolicyService
-        }
-      ]
+      imports: [ConditionsTabComponent, MatIconModule, ViewConditionSectionComponent],
+      providers: [provideNoopAnimations()]
     }).compileComponents();
 
     fixture = TestBed.createComponent(ConditionsTabComponent);
-    policyServiceMock = TestBed.inject(PolicyService) as unknown as MockPolicyService;
     component = fixture.componentInstance;
+    fixture.componentRef.setInput("policy", mockPolicy);
+    fixture.detectChanges();
   });
 
   it("should create", () => {
     expect(component).toBeTruthy();
+  });
+
+  it("should correctly compute selectedAdmins", () => {
+    expect(component.selectedAdmins()).toEqual(["adminUser1"]);
+  });
+
+  it("should correctly compute selectedAdminrealm", () => {
+    expect(component.selectedAdminrealm()).toEqual(["adminRealm1"]);
+  });
+
+  it("should correctly compute selectedRealms", () => {
+    expect(component.selectedRealms()).toEqual(["userRealm1"]);
+  });
+
+  it("should correctly compute selectedResolvers", () => {
+    expect(component.selectedResolvers()).toEqual(["resolver1"]);
+  });
+
+  it("should correctly compute selectedUsers", () => {
+    expect(component.selectedUsers()).toEqual(["user1"]);
+  });
+
+  it("should correctly compute userCaseInsensitive", () => {
+    expect(component.userCaseInsensitive()).toBeTruthy();
+  });
+
+  it("should correctly compute selectedPinodes", () => {
+    expect(component.selectedPinodes()).toEqual(["node1"]);
+  });
+
+  it("should correctly compute selectedValidTime", () => {
+    expect(component.selectedValidTime()).toEqual("08:00-17:00");
+  });
+
+  it("should correctly compute selectedClient", () => {
+    expect(component.selectedClient()).toEqual(["client1"]);
+  });
+
+  it("should correctly compute selectedUserAgents", () => {
+    expect(component.selectedUserAgents()).toEqual(["userAgent1"]);
+  });
+
+  it("should correctly compute additionalConditions", () => {
+    expect(component.additionalConditions()).toEqual([
+      ["token", "testKey", "equals", "testValue", true, "raise_error"]
+    ]);
+  });
+
+  it("should return correct section label", () => {
+    expect(component.getSectionLabel("token")).toBe("Token");
+  });
+
+  it("should return correct comparator label", () => {
+    expect(component.getComparatorLabel("equals")).toBe("Equals");
+  });
+
+  it("should return correct missing data label", () => {
+    expect(component.getMissingDataLabel("raise_error")).toBe("Raise error");
+  });
+
+  it("should return key if section label not found", () => {
+    expect(component.getSectionLabel("nonExistentKey" as any)).toBe("nonExistentKey");
+  });
+
+  it("should return key if comparator label not found", () => {
+    expect(component.getComparatorLabel("nonExistentKey" as any)).toBe("nonExistentKey");
+  });
+
+  it("should return key if missing data label not found", () => {
+    expect(component.getMissingDataLabel("nonExistentKey" as any)).toBe("nonExistentKey");
   });
 });

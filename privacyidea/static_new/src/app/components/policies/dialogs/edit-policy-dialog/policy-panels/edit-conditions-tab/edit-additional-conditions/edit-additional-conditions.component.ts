@@ -16,6 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+
 import { Component, computed, inject, output, signal, linkedSignal, input } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { MatExpansionModule } from "@angular/material/expansion";
@@ -24,11 +25,11 @@ import { MatInputModule } from "@angular/material/input";
 import { MatSelectModule } from "@angular/material/select";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { FormsModule } from "@angular/forms";
-
 import { MatButtonModule, MatIconButton } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
 import { MatSlideToggleModule } from "@angular/material/slide-toggle";
 import { MatDividerModule } from "@angular/material/divider";
+import { MatAutocompleteModule } from "@angular/material/autocomplete";
 import {
   PolicyService,
   PolicyDetail,
@@ -40,7 +41,6 @@ import {
   HandleMissingDataOptionKey,
   AdditionalCondition
 } from "../../../../../../../services/policies/policies.service";
-import { MatAutocompleteModule } from "@angular/material/autocomplete";
 
 @Component({
   selector: "app-edit-additional-conditions",
@@ -64,97 +64,41 @@ import { MatAutocompleteModule } from "@angular/material/autocomplete";
   styleUrls: ["./edit-additional-conditions.component.scss"]
 })
 export class EditAdditionalConditionsComponent {
-  readonly tokenKeys = [
-    "id",
-    "description",
-    "serial",
-    "tokentype",
-    "info",
-    "resolver",
-    "user_id",
-    "otplen",
-    "maxfail",
-    "active",
-    "revoked",
-    "locked",
-    "failcount",
-    "count",
-    "count_window",
-    "sync_window",
-    "rollout_state"
-  ];
-  readonly tokenKeysFiltered = computed(() => {
-    const filterString = this.conditionKey();
-    return this.tokenKeys.filter((key) => key.includes(filterString));
-  });
+  readonly policyService: PolicyService = inject(PolicyService);
 
-  readonly containerKeys = [
-    "type",
-    "serial",
-    "description",
-    "last_authentication",
-    "last_synchronized",
-    "states",
-    "info",
-    "internal_info_keys",
-    "realms",
-    "users",
-    "tokens",
-    "templates"
-  ];
-  readonly containerKeysFiltered = computed(() => {
-    const filterString = this.conditionKey();
-    return this.containerKeys.filter((key) => key.includes(filterString));
-  });
+  // Inputs/Outputs
+  readonly policy = input.required<PolicyDetail>();
+  readonly policyEdit = output<Partial<PolicyDetail>>();
 
-  // Services
-  policyService: PolicyService = inject(PolicyService);
+  // UI State
+  readonly showAddConditionForm = signal(false);
+  readonly editIndex = signal<number | null>(null);
 
-  // Component State
+  // Constants
+  readonly SECTION_OPTIONS = SECTION_OPTIONS;
+  readonly COMPARATOR_OPTIONS = COMPARATOR_OPTIONS;
+  readonly HANDLE_MISSING_DATA_OPTIONS = HANDLE_MISSING_DATA_OPTIONS;
 
-  policy = input.required<PolicyDetail>();
-  policyEdit = output<Partial<PolicyDetail>>();
-
-  showAddConditionForm = signal(false);
-  editIndex = signal<number | null>(null);
-
-  // Constants for Template
-  SECTION_OPTIONS = SECTION_OPTIONS;
-  COMPARATOR_OPTIONS = COMPARATOR_OPTIONS;
-  HANDLE_MISSING_DATA_OPTIONS = HANDLE_MISSING_DATA_OPTIONS;
-
-  // Form Signals - Now using Key types instead of Option objects
-  conditionSection = linkedSignal<boolean, SectionOptionKey | "">({
-    source: () => true, // Always in edit mode
-    computation: () => ""
-  });
-  conditionKey = linkedSignal<boolean, string>({ source: () => true, computation: () => "" });
-  conditionComparator = linkedSignal<boolean, ComparatorOptionKey | "">({
+  // Form Signals - Typed using the provided keys
+  readonly conditionSection = linkedSignal<boolean, SectionOptionKey | "">({
     source: () => true,
     computation: () => ""
   });
-  conditionValue = linkedSignal<boolean, string>({ source: () => true, computation: () => "" });
-  conditionActive = linkedSignal<boolean, boolean>({ source: () => true, computation: () => false });
-  conditionHandleMissingData = linkedSignal<boolean, HandleMissingDataOptionKey | "">({
+  readonly conditionKey = linkedSignal<boolean, string>({ source: () => true, computation: () => "" });
+  readonly conditionComparator = linkedSignal<boolean, ComparatorOptionKey | "">({
     source: () => true,
     computation: () => ""
   });
-  isSelected(index: number): boolean {
-    return this.editIndex() === index;
-  }
-
-  // Computed Properties
-  additionalConditions = computed<AdditionalCondition[]>(() => {
-    return this.policy().conditions || [];
+  readonly conditionValue = linkedSignal<boolean, string>({ source: () => true, computation: () => "" });
+  readonly conditionActive = linkedSignal<boolean, boolean>({ source: () => true, computation: () => true });
+  readonly conditionHandleMissingData = linkedSignal<boolean, HandleMissingDataOptionKey | "">({
+    source: () => true,
+    computation: () => "condition_is_false"
   });
 
-  emitEdits(edits: Partial<PolicyDetail>) {
-    this.policyEdit.emit({ ...edits });
-  }
+  readonly additionalConditions = computed<AdditionalCondition[]>(() => this.policy().conditions || []);
 
-  // Condition Form Management
   startEditCondition(condition: AdditionalCondition, index: number) {
-    // No need for isEditMode check here, as this component is always in edit mode
     this.editIndex.set(index);
     this.showAddConditionForm.set(true);
 
@@ -162,7 +106,7 @@ export class EditAdditionalConditionsComponent {
     this.conditionKey.set(condition[1]);
     this.conditionComparator.set(condition[2]);
     this.conditionValue.set(condition[3]);
-    this.conditionActive.set(!condition[4]); // UI expects "active", storage is "disabled"
+    this.conditionActive.set(!condition[4]);
     this.conditionHandleMissingData.set(condition[5]);
   }
 
@@ -170,27 +114,29 @@ export class EditAdditionalConditionsComponent {
     const section = this.conditionSection();
     const comparator = this.conditionComparator();
     const missingData = this.conditionHandleMissingData();
+    const key = this.conditionKey().trim();
 
-    if (section === "" || comparator === "" || missingData === "" || this.conditionKey() === "") {
-      return;
-    }
+    if (!section || !comparator || !missingData || !key) return;
 
     const condition: AdditionalCondition = [
       section,
-      this.conditionKey(),
+      key,
       comparator,
       this.conditionValue(),
-      !this.conditionActive(), // Store as negated boolean (disabled)
+      !this.conditionActive(),
       missingData
     ];
 
+    const currentConditions = [...this.additionalConditions()];
     const index = this.editIndex();
+
     if (index !== null) {
-      this.updateCondition(index, condition);
+      currentConditions[index] = condition;
     } else {
-      this.addCondition(condition);
+      currentConditions.push(condition);
     }
 
+    this.policyEdit.emit({ conditions: currentConditions });
     this.cancelEdit();
   }
 
@@ -201,49 +147,30 @@ export class EditAdditionalConditionsComponent {
     this.conditionKey.set("");
     this.conditionComparator.set("");
     this.conditionValue.set("");
-    this.conditionActive.set(false);
-    this.conditionHandleMissingData.set("");
+    this.conditionActive.set(true);
+    this.conditionHandleMissingData.set("condition_is_false");
   }
 
-  // Condition State Management
   updateActiveState(index: number, active: boolean) {
-    const condition = this.additionalConditions()[index];
-    if (!condition) return;
+    const conditions = [...this.additionalConditions()];
+    if (!conditions[index]) return;
 
-    const updatedCondition: AdditionalCondition = [...condition];
-    updatedCondition[4] = !active; // Store as negated (disabled)
+    conditions[index] = [...conditions[index]];
+    conditions[index][4] = !active;
 
-    this.updateCondition(index, updatedCondition);
+    this.policyEdit.emit({ conditions });
 
     if (this.editIndex() === index) {
       this.conditionActive.set(active);
     }
   }
 
-  updateCondition(index: number, updated: AdditionalCondition) {
-    const conditions = [...this.additionalConditions()];
-    conditions[index] = updated;
-    this.updateSelectedPolicy({ conditions });
-  }
-
-  addCondition(condition: AdditionalCondition) {
-    this.updateSelectedPolicy({ conditions: [...this.additionalConditions(), condition] });
-  }
-
   removeCondition(index: number) {
-    this.updateSelectedPolicy({
-      conditions: this.additionalConditions().filter((_, i) => i !== index)
-    });
-    if (this.editIndex() === index) {
-      this.editIndex.set(null);
-    }
+    const conditions = this.additionalConditions().filter((_, i) => i !== index);
+    this.policyEdit.emit({ conditions });
+    if (this.editIndex() === index) this.cancelEdit();
   }
 
-  updateSelectedPolicy(patch: Partial<PolicyDetail>) {
-    this.emitEdits({ ...patch });
-  }
-
-  // Label Helpers
   getSectionLabel(key: SectionOptionKey): string {
     return SECTION_OPTIONS.find((o) => o.key === key)?.label ?? key;
   }

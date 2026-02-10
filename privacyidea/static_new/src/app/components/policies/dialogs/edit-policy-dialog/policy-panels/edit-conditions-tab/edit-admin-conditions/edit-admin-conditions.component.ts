@@ -50,34 +50,33 @@ import { MultiSelectOnlyComponent } from "../../../../../../shared/multi-select-
   styleUrl: "./edit-admin-conditions.component.scss"
 })
 export class EditAdminConditionsComponent {
-  // ViewChild
   @ViewChild("resolverSelect") resolverSelect!: MatSelect;
   @ViewChild("realmSelect") realmSelect!: MatSelect;
 
-  // Services
-  realmService: RealmServiceInterface = inject(RealmService);
-  resolverService: ResolverServiceInterface = inject(ResolverService);
-  policyService = inject(PolicyService);
+  readonly realmService: RealmServiceInterface = inject(RealmService);
+  readonly resolverService: ResolverServiceInterface = inject(ResolverService);
+  readonly policyService = inject(PolicyService);
 
-  // Component State
-  policy = input.required<PolicyDetail>();
-  policyEdit = output<PolicyDetail>();
+  readonly policy = input.required<PolicyDetail>();
+  readonly policyEdit = output<PolicyDetail>();
 
-  // Form Controls
-  adminFormControl = new FormControl<string>("", this.adminValidator.bind(this));
+  adminFormControl = new FormControl<string>("", {
+    nonNullable: true,
+    validators: [this.adminValidator.bind(this)]
+  });
 
-  // Computed Properties
-  selectedRealms = computed(() => this.policy().realm || []);
-  selectedResolvers = computed(() => this.policy().resolver || []);
-  selectedAdmins = computed(() => this.policy().adminuser || []);
-  selectedAdminrealm = computed(() => this.policy().adminrealm || []);
+  readonly selectedRealms = computed(() => this.policy().realm || []);
+  readonly selectedResolvers = computed(() => this.policy().resolver || []);
+  readonly selectedAdmins = computed(() => this.policy().adminuser || []);
+  readonly selectedAdminrealm = computed(() => this.policy().adminrealm || []);
 
-  isAllRealmsSelected = computed(() => this.selectedRealms().length === this.realmService.realmOptions().length);
-  isAllResolversSelected = computed(
+  readonly isAllRealmsSelected = computed(
+    () => this.selectedRealms().length === this.realmService.realmOptions().length
+  );
+  readonly isAllResolversSelected = computed(
     () => this.selectedResolvers().length === this.resolverService.resolverOptions().length
   );
 
-  // Realm Management
   selectRealm(realmNames: string[]): void {
     this.updatePolicy({ realm: realmNames });
   }
@@ -90,11 +89,12 @@ export class EditAdminConditionsComponent {
       this.updatePolicy({ realm: allRealms });
     }
     setTimeout(() => {
-      this.realmSelect.close();
+      if (this.realmSelect) {
+        this.realmSelect.close();
+      }
     });
   }
 
-  // Resolver Management
   selectResolver(resolverNames: string[]): void {
     this.updatePolicy({ resolver: resolverNames });
   }
@@ -107,21 +107,24 @@ export class EditAdminConditionsComponent {
       this.updatePolicy({ resolver: allResolvers });
     }
     setTimeout(() => {
-      this.resolverSelect.close();
+      if (this.resolverSelect) {
+        this.resolverSelect.close();
+      }
     });
   }
 
-  // Admin Management
   selectAdminRealm($event: string[]) {
     this.updatePolicy({ adminrealm: $event });
   }
 
   addAdmin(adminuser: string) {
-    if (this.adminFormControl.invalid) {
+    const trimmed = adminuser?.trim();
+    if (this.adminFormControl.invalid || !trimmed) {
       return;
     }
-    if (adminuser && !this.selectedAdmins().includes(adminuser)) {
-      this.updatePolicy({ adminuser: [...this.selectedAdmins(), adminuser] });
+    if (!this.selectedAdmins().includes(trimmed)) {
+      this.updatePolicy({ adminuser: [...this.selectedAdmins(), trimmed] });
+      this.adminFormControl.setValue("");
     }
   }
 
@@ -133,7 +136,6 @@ export class EditAdminConditionsComponent {
     this.updatePolicy({ adminuser: [] });
   }
 
-  // Validators
   adminValidator(control: AbstractControl): ValidationErrors | null {
     return /[,]/.test(control.value) ? { includesComma: { value: control.value } } : null;
   }

@@ -16,21 +16,23 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-
 <div
   appScrollToTop
   aria-label="Policy Table"
   class="policies-table-layout"
   i18n-aria-label>
+
   @if (authService.actionAllowed("policyread")) {
     <app-policy-filter
       #filterComponent
-      (filteredPoliciesChange)="onPolicyListFilteredChange($event)"
-      [(filter)]="filter"
-      [unfilteredPolicies]="policyService.allPolicies()">
+      [initialFilter]="filter()"
+      [unfilteredPolicies]="policyService.allPolicies()"
+      (filterChange)="onFilterUpdate($event)">
     </app-policy-filter>
   }
+
   <app-policies-table-actions [policySelection]="selectedPolicies()" />
+
   <table
     mat-table
     [dataSource]="sortedFilteredPolicies()"
@@ -40,8 +42,10 @@
     matSortActive="priority"
     matSortDirection="asc"
     (matSortChange)="onSortChange($event)">
-    @for (column of columnKeysMap; track column) {
+
+    @for (column of columnKeysMap; track column.key) {
       <ng-container [matColumnDef]="column.key">
+
         @if (column.key === "select") {
           <th
             *matHeaderCellDef
@@ -64,14 +68,12 @@
             [disabled]="['actions', 'conditions'].includes(column.key)">
             <div class="table-header-container">
               @if (column.label) {
-                <div>
-                  {{ column.label }}
-                </div>
+                <div>{{ column.label }}</div>
               }
               @if (isFilterable(column.key)) {
                 <div class="flex">
                   <button
-                    (click)="onFilterClick(column.key)"
+                    (click)="$event.stopPropagation(); onFilterClick(column.key)"
                     class="filter-button"
                     [matTooltip]="getFilterTooltipText(column.key)"
                     mat-icon-button>
@@ -84,6 +86,7 @@
             </div>
           </th>
         }
+
         <td
           [class]="'col-' + column.key"
           mat-cell
@@ -98,9 +101,7 @@
                 i18n-aria-label>
               </mat-checkbox>
             }
-            @case ("priority") {
-              {{ policy.priority }}
-            }
+            @case ("priority") { {{ policy.priority }} }
             @case ("name") {
               <div class="name-wrapper">
                 @if (authService.actionAllowed("policywrite")) {
@@ -119,18 +120,10 @@
                 }
               </div>
             }
-            @case ("scope") {
-              {{ policy.scope ? policy.scope.toLocaleUpperCase() : "NO SCOPE" }}
-            }
-            @case ("description") {
-              {{ policy.description }}
-            }
-            @case ("actions") {
-              <app-view-action-column [actions]="policy.action" />
-            }
-            @case ("conditions") {
-              <app-view-conditions-column [policy]="policy" />
-            }
+            @case ("scope") { {{ policy.scope ? policy.scope.toLocaleUpperCase() : "NO SCOPE" }} }
+            @case ("description") { {{ policy.description }} }
+            @case ("actions") { <app-view-action-column [actions]="policy.action" /> }
+            @case ("conditions") { <app-view-conditions-column [policy]="policy" /> }
             @case ("active") {
               <mat-icon
                 class="minimal-icon-button"
@@ -145,25 +138,14 @@
       </ng-container>
     }
 
-    <tr
-      mat-header-row
-      *matHeaderRowDef="displayedColumns"></tr>
+    <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
     <tr
       mat-row
       *matRowDef="let policy; columns: displayedColumns"
       class="policy-row"></tr>
 
-    <tr
-      *matNoDataRow
-      aria-label="No Data Row"
-      i18n-aria-label>
-      <td
-        [attr.colspan]="displayedColumns.length"
-        aria-label="No Data Cell"
-        i18n
-        i18n-aria-label>
-        No policies found.
-      </td>
+    <tr *matNoDataRow aria-label="No Data Row" i18n-aria-label>
+      <td [attr.colspan]="displayedColumns.length" i18n>No policies found.</td>
     </tr>
   </table>
 </div>

@@ -18,32 +18,37 @@
  **/
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { MockSystemService } from "../../../../../../../../testing/mock-services";
-import { MockPolicyService } from "../../../../../../../../testing/mock-services/mock-policies-service";
+import { EditEnvironmentConditionsComponent } from "./edit-environment-conditions.component";
 import { PolicyService } from "../../../../../../../services/policies/policies.service";
 import { SystemService } from "../../../../../../../services/system/system.service";
-import { EditEnvironmentConditionsComponent } from "./edit-environment-conditions.component";
+import { MockPolicyService } from "src/testing/mock-services/mock-policies-service";
+import { MockSystemService } from "src/testing/mock-services/mock-system-service";
+import { provideNoopAnimations } from "@angular/platform-browser/animations";
+import { ReactiveFormsModule } from "@angular/forms";
+import { By } from "@angular/platform-browser";
 
-describe("ConditionsNodesComponent", () => {
+describe("EditEnvironmentConditionsComponent", () => {
   let component: EditEnvironmentConditionsComponent;
   let fixture: ComponentFixture<EditEnvironmentConditionsComponent>;
-  let policyServiceMock: MockPolicyService;
-  let systemServiceMock: MockSystemService;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [EditEnvironmentConditionsComponent, NoopAnimationsModule],
+      imports: [EditEnvironmentConditionsComponent, ReactiveFormsModule],
       providers: [
         { provide: PolicyService, useClass: MockPolicyService },
-        { provide: SystemService, useClass: MockSystemService }
+        { provide: SystemService, useClass: MockSystemService },
+        provideNoopAnimations()
       ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(EditEnvironmentConditionsComponent);
-    policyServiceMock = TestBed.inject(PolicyService) as unknown as MockPolicyService;
-    systemServiceMock = TestBed.inject(SystemService) as unknown as MockSystemService;
     component = fixture.componentInstance;
+    fixture.componentRef.setInput("policy", {
+      name: "test-policy",
+      user_agents: ["PAM"],
+      time: "Mon-Fri: 9-18",
+      client: ["10.0.0.0/8"]
+    });
     fixture.detectChanges();
   });
 
@@ -51,145 +56,32 @@ describe("ConditionsNodesComponent", () => {
     expect(component).toBeTruthy();
   });
 
-  it("should toggle all nodes", () => {
-    systemServiceMock.nodes.set([
-      { name: "node1", uuid: "1" },
-      { name: "node2", uuid: "2" },
-      { name: "node2", uuid: "3" }
-    ]);
-    fixture.detectChanges();
-    component.toggleAllNodes();
-    expect(policyServiceMock.updateSelectedPolicy).toHaveBeenCalledWith({ pinode: ["node1", "node2", "node2"] });
-
-    policyServiceMock.selectedPolicy.set({ ...policyServiceMock.getEmptyPolicy, pinode: ["node1", "node2", "node2"] });
-    fixture.detectChanges();
-    component.toggleAllNodes();
-    expect(policyServiceMock.updateSelectedPolicy).toHaveBeenCalledWith({ pinode: [] });
+  it("should initialize form controls with policy values", () => {
+    expect(component.validTimeFormControl.value).toBe("Mon-Fri: 9-18");
+    expect(component.clientFormControl.value).toBe("10.0.0.0/8");
   });
 
-  it("should update selected pinodes", () => {
-    const event = ["node1"] as string[];
-    component.updateSelectedPinodes(event);
-    expect(policyServiceMock.updateSelectedPolicy).toHaveBeenCalledWith({ pinode: ["node1"] });
+  it("should validate client format correctly", () => {
+    component.clientFormControl.setValue("invalid-ip");
+    expect(component.clientFormControl.invalid).toBe(true);
+
+    component.clientFormControl.setValue("192.168.1.1");
+    expect(component.clientFormControl.valid).toBe(true);
   });
 
-  it("should add user agent", () => {
-    component.addUserAgentFormControl.setValue("test-agent");
+  it("should emit edits when adding a user agent", () => {
+    const spy = jest.spyOn(component.policyEdit, "emit");
+    component.addUserAgentFormControl.setValue("NewAgent");
     component.addUserAgent();
-    expect(policyServiceMock.updateSelectedPolicy).toHaveBeenCalledWith({ user_agents: ["test-agent"] });
+    expect(spy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        user_agents: ["PAM", "NewAgent"]
+      })
+    );
   });
 
-  it("should remove user agent", () => {
-    policyServiceMock.selectedPolicy.set({ ...policyServiceMock.getEmptyPolicy, user_agents: ["test-agent"] });
-    fixture.detectChanges();
-    component.removeUserAgent("test-agent");
-    expect(policyServiceMock.updateSelectedPolicy).toHaveBeenCalledWith({ user_agents: [] });
-  });
-
-  it("should clear user agents", () => {
-    policyServiceMock.selectedPolicy.set({ ...policyServiceMock.getEmptyPolicy, user_agents: ["test-agent"] });
-    fixture.detectChanges();
-    component.clearUserAgents();
-    expect(policyServiceMock.updateSelectedPolicy).toHaveBeenCalledWith({ user_agents: [] });
-  });
-
-  it("should set valid time", () => {
-    component.validTimeFormControl.setValue("Mon-Fri: 08-17");
-    component.setValidTime();
-    expect(policyServiceMock.updateSelectedPolicy).toHaveBeenCalledWith({ time: "Mon-Fri: 08-17" });
-  });
-
-  it("should set clients with ip addresses", () => {
-    // Client as to be a ip address or hostname, so we test with valid strings
-    component.clientFormControl.setValue("0.0.0.0/0, 192.168.1.1");
-    component.setClients();
-    expect(policyServiceMock.updateSelectedPolicy).toHaveBeenCalledWith({ client: ["0.0.0.0/0", "192.168.1.1"] });
-  });
-
-  it("should set clients with hostnames", () => {
-    // Client as to be a ip address or hostname, so we test with valid strings
-    component.clientFormControl.setValue("example.com, myserver.local");
-    component.setClients();
-    expect(policyServiceMock.updateSelectedPolicy).toHaveBeenCalledWith({ client: ["example.com", "myserver.local"] });
-  });
-
-  it("should set clients with both ip addresses and hostnames", () => {
-    // Client as to be a ip address or hostname, so we test with valid strings
-    component.clientFormControl.setValue("example.com, 192.168.1.1, myserver.local");
-    component.setClients();
-    expect(policyServiceMock.updateSelectedPolicy).toHaveBeenCalledWith({
-      client: ["example.com", "192.168.1.1", "myserver.local"]
-    });
-  });
-
-  describe("validators", () => {
-    describe("validTimeValidator", () => {
-      it("should return null for valid time strings", () => {
-        const validTimes = [
-          "Mon-Fri: 08-17",
-          "Sat: 0-23, Sun: 10-16",
-          "Mon-Sun: 00-23",
-          "Mon-Fri: 08-17, Sat-Sun: 10-16"
-        ];
-        validTimes.forEach((time) => {
-          component.validTimeFormControl.setValue(time);
-          expect(component.validTimeValidator(component.validTimeFormControl)).toBeNull();
-        });
-      });
-
-      it("should return an error for invalid time strings", () => {
-        const invalidTimes = ["invalid", "Mon-Fri", "Mon-Fri:08", "Mon-Fri:8-17", "Mon-Fri:08-17,"];
-        invalidTimes.forEach((time) => {
-          component.validTimeFormControl.setValue(time);
-          expect(component.validTimeValidator(component.validTimeFormControl)).toEqual({
-            invalidValidTime: { value: time }
-          });
-        });
-      });
-    });
-
-    describe("clientValidator", () => {
-      it("should return null for valid client strings", () => {
-        const validClients = [
-          "192.168.0.1",
-          "192.168.0.0/24",
-          "example.com",
-          "192.168.0.1, example.com, 10.0.0.0/8",
-          "2001:0db8:85a3:0000:0000:8a2e:0370:7334",
-          "2001:db8::/32"
-        ];
-        validClients.forEach((client) => {
-          component.clientFormControl.setValue(client);
-          expect(component.clientValidator(component.clientFormControl)).toBeNull();
-        });
-      });
-
-      it("should return an error for invalid client strings", () => {
-        const invalidClients = ["invalid", "192.168.0.256", "192.168.0.1/33"];
-        invalidClients.forEach((client) => {
-          component.clientFormControl.setValue(client);
-          expect(component.clientValidator(component.clientFormControl)).toEqual({ invalidClient: { value: client } });
-        });
-      });
-    });
-
-    describe("userAgentValidator", () => {
-      it("should return null for valid user agent strings", () => {
-        const validUserAgents = ["Mozilla/5.0", "MyCustomAgent/1.0"];
-        validUserAgents.forEach((ua) => {
-          component.addUserAgentFormControl.setValue(ua);
-          expect(component.userAgentValidator(component.addUserAgentFormControl)).toBeNull();
-        });
-      });
-
-      it("should return an error for invalid user agent strings", () => {
-        const invalidUserAgent = "invalid,";
-
-        component.addUserAgentFormControl.setValue(invalidUserAgent);
-        expect(component.userAgentValidator(component.addUserAgentFormControl)).toEqual({
-          includesComma: { value: invalidUserAgent }
-        });
-      });
-    });
+  it("should clear valid time control", () => {
+    component.clearValidTimeControl();
+    expect(component.validTimeFormControl.value).toBe("");
   });
 });

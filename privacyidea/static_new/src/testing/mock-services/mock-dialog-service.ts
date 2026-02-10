@@ -27,4 +27,5 @@ export class MockDialogService implements DialogServiceInterface {
   closeAllDialogs = jest.fn();
   isDialogOpen = jest.fn().mockReturnValue(false);
   isAnyDialogOpen = jest.fn().mockReturnValue(false);
+  confirm = jest.fn().mockResolvedValue(true);
 }

@@ -380,7 +380,6 @@ export class TableUtilsService implements TableUtilsServiceInterface {
   }
 
   getSortIcon(columnKey: string, sort: Sort): string {
-
     if (sort.active !== columnKey || !sort.direction) {
       return "unfold_more";
     }

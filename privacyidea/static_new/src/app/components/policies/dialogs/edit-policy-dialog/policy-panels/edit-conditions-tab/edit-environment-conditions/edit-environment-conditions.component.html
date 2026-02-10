@@ -1,8 +1,8 @@
 <!--
-  (c) NetKnights GmbH 2026,  https://netknights.it
+ (c) NetKnights GmbH 2026,  https://netknights.it
 
-  This code is free software; you can redistribute it and/or
-  modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
  as published by the Free Software Foundation; either
  version 3 of the License, or any later version.
 
@@ -15,7 +15,8 @@
  License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
  SPDX-License-Identifier: AGPL-3.0-or-later
- -->
+-->
+
 <div class="conditions-container">
   <h2
     class="conditions-title"
@@ -138,11 +139,7 @@
         matInput
         [formControl]="addUserAgentFormControl"
         #userAgentInput
-        (keyup.enter)="
-          addUserAgentFormControl.markAsTouched();
-          addUserAgentFormControl.invalid ? null : (userAgentInput.value = '');
-          addUserAgent()
-        " />
+        (keyup.enter)="addUserAgent()" />
       @if (addUserAgentFormControl.hasError("includesComma")) {
         <mat-error i18n>User Agent must not contain commas.</mat-error>
       }
@@ -151,7 +148,7 @@
     <button
       class="input-attached-button"
       [disabled]="!userAgentInput.value.trim() || addUserAgentFormControl.invalid"
-      (click)="addUserAgent(); userAgentInput.value = ''">
+      (click)="addUserAgent()">
       <mat-icon>add</mat-icon>
     </button>
   </div>

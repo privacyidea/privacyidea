@@ -20,33 +20,33 @@
   <div class="flex-row margin-bottom-1 margin-top-1 gap-8">
     @if (authService.actionAllowed("policywrite")) {
       <button
-        (click)="createNewPoilicy()"
+        (click)="createNewPolicy()"
         class="action-button-1"
         mat-stroked-button>
-        <mat-icon> add_moderator</mat-icon>
-        Create Policy
+        <mat-icon>add_moderator</mat-icon>
+        <span i18n>Create Policy</span>
       </button>
     }
+
     @if (authService.actionAllowed("policydelete")) {
       <button
         (click)="deleteSelectedPolicies()"
         [disabled]="policySelection().size < 1"
         class="action-button-delete"
-        i18n
         mat-stroked-button>
-        <mat-icon> delete_sweep</mat-icon>
-        Delete Selected
+        <mat-icon>delete_sweep</mat-icon>
+        <span i18n>Delete Selected</span>
       </button>
     }
+
     @if (authService.actionAllowed("policywrite")) {
       <button
         (click)="copySelectedPolicies()"
         [disabled]="policySelection().size < 1"
         class="action-button-1"
-        i18n
         mat-stroked-button>
-        <mat-icon> content_copy</mat-icon>
-        Copy Selected
+        <mat-icon>content_copy</mat-icon>
+        <span i18n>Copy Selected</span>
       </button>
     }
   </div>

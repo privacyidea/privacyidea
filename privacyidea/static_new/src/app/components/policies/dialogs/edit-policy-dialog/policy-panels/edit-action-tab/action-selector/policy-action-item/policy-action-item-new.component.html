@@ -18,7 +18,6 @@
 -->
 <div
   class="policy-action-item"
-  [class.policy-action-item-selected]="isSelected()"
   (click)="selectActionByName.emit(actionName())">
   <span class="detail-label">{{ actionName() }}</span>
 
@@ -31,7 +30,7 @@
           #selectorComponent
           [initialValue]="currentAction().value"
           [class]="actionValues.length === 1 ? 'half-width' : 'full-width'"
-          [values]="actionDetail()?.value!"
+          [values]="actionValues"
           (onSelect)="addAction($event)" />
       } @else {
         <mat-form-field
@@ -40,8 +39,9 @@
           subscriptSizing="dynamic">
           <mat-select
             #selectElement
+            [value]="currentAction().value"
             (selectionChange)="addAction($event.value)">
-            @for (option of actionDetail()?.value; track option) {
+            @for (option of actionValues; track option) {
               <mat-option [value]="option">{{ option }}</mat-option>
             }
           </mat-select>

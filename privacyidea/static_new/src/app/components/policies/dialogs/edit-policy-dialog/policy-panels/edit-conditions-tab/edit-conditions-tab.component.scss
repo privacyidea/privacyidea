@@ -5,13 +5,8 @@
   flex-direction: column;
   gap: calc(var(--global-gap) / 4 * 3);
   min-width: 350px;
-
-  // *:not(:last-child) {
-  //   border-bottom: 1px solid var(--mat-sys-outline-variant);
-  //   padding-bottom: var(--global-gap);
-  //   margin-bottom: var(--global-gap);
-  // }
 }
+
 .conditions-container {
   background-color: var(--mat-sys-surface-container);
   border: 1px solid var(--mat-sys-outline-variant);

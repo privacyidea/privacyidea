@@ -290,9 +290,12 @@ export class ContainerService implements ContainerServiceInterface {
     computation: () => 0
   });
 
-  loadAllContainers = computed(() => this.contentService.onTokensEnrollment() ||
-    this.contentService.onTokenDetails() ||
-    this.contentService.onUserDetails());
+  loadAllContainers = computed(
+    () =>
+      this.contentService.onTokensEnrollment() ||
+      this.contentService.onTokenDetails() ||
+      this.contentService.onUserDetails()
+  );
 
   private readonly uniqueCompatibleType = computed<string | null>(() => {
     const tt = this.compatibleWithSelectedTokenType();

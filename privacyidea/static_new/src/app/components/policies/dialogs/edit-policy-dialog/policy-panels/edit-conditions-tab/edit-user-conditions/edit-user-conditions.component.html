@@ -16,6 +16,7 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
+
 <div class="conditions-container">
   <h2
     class="conditions-title"
@@ -31,15 +32,13 @@
     (selectionChange)="selectRealm($event)">
   </app-multi-select-only>
 
-  @if (this.realmService.selectedRealms()) {
-    <app-multi-select-only
-      label="Select Resolvers"
-      [items]="availableResolvers()"
-      [selectedItems]="selectedResolvers()"
-      [tooltipText]="selectResolverTooltip()"
-      (selectionChange)="selectResolver($event)">
-    </app-multi-select-only>
-  }
+  <app-multi-select-only
+    label="Select Resolvers"
+    [items]="availableResolvers()"
+    [selectedItems]="selectedResolvers()"
+    [tooltipText]="selectResolverTooltip()"
+    (selectionChange)="selectResolver($event)">
+  </app-multi-select-only>
 
   <div class="user-list-wrapper">
     <div class="user-list">
@@ -63,7 +62,7 @@
           class="action-button-1"
           [class.action-button-active]="userCaseInsensitive()"
           (click)="toggleUserCaseInsensitive()">
-          Case insensitive
+          <span i18n>Case insensitive</span>
         </button>
         <button
           mat-stroked-button
@@ -85,9 +84,7 @@
         matInput
         [formControl]="userFormControl"
         #userInput
-        (keyup.enter)="
-          userFormControl.markAsTouched(); addUser(userInput.value); !userFormControl.invalid && (userInput.value = '')
-        " />
+        (keyup.enter)="addUser(userInput.value); !userFormControl.invalid && (userInput.value = '')" />
       @if (userFormControl.hasError("includesComma")) {
         <mat-error i18n>User must not contain commas.</mat-error>
       }

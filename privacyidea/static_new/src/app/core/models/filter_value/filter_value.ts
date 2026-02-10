@@ -127,13 +127,12 @@ export class FilterValue {
    */
   public setFromMap(map: Map<string, string>): void {
     const needsQuoting = (v: string) => /[\s"']/.test(v);
-    const quoteAndEscape = (v: string) =>
-      `"${v.replace(/\\/g, "\\\\").replace(/"/g, "\\\"")}"`; // double-quote strategy
+    const quoteAndEscape = (v: string) => `"${v.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`; // double-quote strategy
 
     const entries: string[] = [];
     map.forEach((value, key) => {
       const val = value ?? "";
-      const rendered = val === "" ? "" : (needsQuoting(val) ? quoteAndEscape(val) : val);
+      const rendered = val === "" ? "" : needsQuoting(val) ? quoteAndEscape(val) : val;
       entries.push(`${key}: ${rendered}`);
     });
     this._value = entries.join(" ").trim();
@@ -160,21 +159,16 @@ export class FilterValue {
     this.setHiddenFromMap(map);
     return new FilterValue({ value: this._value, hiddenValue: this._hiddenValue });
   }
-
 }
 
-const PAIR_RE_SRC =
-  String.raw`(?<=^|\s)([A-Za-z0-9_]+):\s*(?:"((?:\\.|[^"\\])*)"|'((?:\\.|[^'\\])*)'|(.*?))(?=\s*(?:[A-Za-z0-9_]+:|$))`;
+const PAIR_RE_SRC = String.raw`(?<=^|\s)([A-Za-z0-9_]+):\s*(?:"((?:\\.|[^"\\])*)"|'((?:\\.|[^'\\])*)'|(.*?))(?=\s*(?:[A-Za-z0-9_]+:|$))`;
 
 function escapeRe(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 function keySegmentRe(key: string): RegExp {
-  return new RegExp(
-    `(?<=^|\\s)(${key}):\\s*(?:"[^"]*"|'[^']*'|.*?)(?=\\s*(?:[A-Za-z0-9_]+:|$))`,
-    "g"
-  );
+  return new RegExp(`(?<=^|\\s)(${key}):\\s*(?:"[^"]*"|'[^']*'|.*?)(?=\\s*(?:[A-Za-z0-9_]+:|$))`, "g");
 }
 
 function keyPresenceRe(key: string): RegExp {
@@ -191,7 +185,7 @@ function parseToMap(text: string): Map<string, string> {
     const key = m[1];
     const valRaw =
       m[2] != null
-        ? m[2].replace(/\\"/g, "\"").replace(/\\\\/g, "\\")
+        ? m[2].replace(/\\"/g, '"').replace(/\\\\/g, "\\")
         : m[3] != null
           ? m[3].replace(/\\'/g, "'").replace(/\\\\/g, "\\")
           : (m[4] ?? "").trim();

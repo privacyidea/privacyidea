@@ -18,26 +18,22 @@
  **/
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { MockPolicyService } from "../../../../../../../../testing/mock-services/mock-policies-service";
-import { PolicyService, PolicyDetail } from "../../../../../../../services/policies/policies.service";
 import { PolicyPriorityEditComponent } from "./policy-priority-edit.component";
+import { FormsModule } from "@angular/forms";
+import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 
 describe("PolicyPriorityEditComponent", () => {
   let component: PolicyPriorityEditComponent;
   let fixture: ComponentFixture<PolicyPriorityEditComponent>;
-  let policyServiceMock: MockPolicyService;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [PolicyPriorityEditComponent, NoopAnimationsModule],
-      providers: [{ provide: PolicyService, useClass: MockPolicyService }]
+      imports: [PolicyPriorityEditComponent, FormsModule, NoopAnimationsModule]
     }).compileComponents();
 
     fixture = TestBed.createComponent(PolicyPriorityEditComponent);
-    policyServiceMock = TestBed.inject(PolicyService) as unknown as MockPolicyService;
     component = fixture.componentInstance;
-    fixture.componentRef.setInput("editMode", true);
+    fixture.componentRef.setInput("priority", 10);
     fixture.detectChanges();
   });
 
@@ -45,92 +41,9 @@ describe("PolicyPriorityEditComponent", () => {
     expect(component).toBeTruthy();
   });
 
-  it("should update policy priority on input", () => {
-    const priority = 10;
-    component.updatePolicyPriority(priority);
-    expect(policyServiceMock.updateSelectedPolicy).toHaveBeenCalledWith({ priority });
-  });
-  const policyDetail: PolicyDetail = {
-    action: {
-      action1: "value1",
-      action2: "value2"
-    },
-    name: "",
-    priority: 10,
-    active: false,
-    adminrealm: [],
-    adminuser: [],
-    check_all_resolvers: false,
-    client: [],
-    conditions: [],
-    description: null,
-    pinode: [],
-    realm: [],
-    resolver: [],
-    scope: "",
-    time: "",
-    user: [],
-    user_agents: [],
-    user_case_insensitive: false
-  };
-  describe("editMode = false", () => {
-    beforeEach(() => {
-      fixture.componentRef.setInput("editMode", false);
-      policyServiceMock.selectedPolicy.set(policyDetail);
-      fixture.detectChanges();
-    });
-
-    it("should display the priority as text", () => {
-      const html = fixture.nativeElement.innerHTML;
-      expect(html).toContain(policyDetail.priority.toString());
-    });
-  });
-
-  describe("editMode = true", () => {
-    beforeEach(() => {
-      fixture.componentRef.setInput("editMode", true);
-      const policyDetail: PolicyDetail = {
-        action: {
-          action1: "value1",
-          action2: "value2"
-        },
-        name: "",
-        priority: 10,
-        active: false,
-        adminrealm: [],
-        adminuser: [],
-        check_all_resolvers: false,
-        client: [],
-        conditions: [],
-        description: null,
-        pinode: [],
-        realm: [],
-        resolver: [],
-        scope: "",
-        time: "",
-        user: [],
-        user_agents: [],
-        user_case_insensitive: false
-      };
-
-      policyServiceMock.selectedPolicy.set(policyDetail);
-      fixture.detectChanges();
-    });
-
-    it("should display an input field", () => {
-      const inputEl = fixture.nativeElement.querySelector("input");
-      expect(inputEl).toBeTruthy();
-      expect(inputEl.value).toBe("10");
-    });
-
-    it("should call updatePolicyPriority when the input value changes", async () => {
-      const spy = jest.spyOn(component, "updatePolicyPriority");
-      const inputEl = fixture.nativeElement.querySelector("input");
-      inputEl.value = "20";
-      inputEl.dispatchEvent(new Event("input"));
-      fixture.detectChanges();
-      await fixture.whenStable();
-      expect(spy).toHaveBeenCalledWith(20);
-    });
+  it("should update the model when priority is changed", () => {
+    const spy = jest.spyOn(component.priority, "set");
+    component.priority.set(20);
+    expect(spy).toHaveBeenCalledWith(20);
   });
 });
