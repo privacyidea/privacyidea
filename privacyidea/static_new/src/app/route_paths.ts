@@ -48,6 +48,5 @@ export const ROUTE_PATHS = {
   EXTERNAL_SERVICES_TOKENGROUPS: "/external-services/tokengroups",
   EXTERNAL_SERVICES_SERVICE_IDS: "/external-services/service-ids",
   USERS_RESOLVERS: "/users/resolvers",
-  USERS_RESOLVERS: "/users/resolvers",
   EVENTS: "/events"
 };

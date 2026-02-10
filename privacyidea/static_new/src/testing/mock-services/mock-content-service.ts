@@ -50,6 +50,7 @@ export class MockContentService implements ContentServiceInterface {
   onAnyTokensRoute = computed(() => this.routeUrl() === "/tokens" || this.routeUrl().startsWith("/tokens/"));
   onAnyUsersRoute = computed(() => this.routeUrl() === "/users" || this.routeUrl().startsWith("/users/"));
   onTokensContainersTemplates: WritableSignal<boolean> = signal(false);
+  onEvents = computed(() => this.routeUrl() === "/events");
 
   tokenSelected = jest.fn();
   containerSelected = jest.fn();
