@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, Inject } from "@angular/core";
+import { Component, ElementRef, Inject, inject, ViewChild, AfterViewInit } from "@angular/core";
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from "@angular/material/dialog";
 import { FormsModule } from "@angular/forms";
 import { MatFormField, MatLabel } from "@angular/material/form-field";
@@ -24,6 +24,7 @@ import { MatInput } from "@angular/material/input";
 import { MatButton } from "@angular/material/button";
 import { CdkTextareaAutosize } from "@angular/cdk/text-field";
 import { CopyButtonComponent } from "../../../shared/copy-button/copy-button.component";
+import { SystemService } from "../../../../services/system/system.service";
 
 @Component({
   selector: "app-system-documentation-dialog",
@@ -41,7 +42,8 @@ import { CopyButtonComponent } from "../../../shared/copy-button/copy-button.com
     CopyButtonComponent
   ]
 })
-export class SystemDocumentationDialogComponent {
+export class SystemDocumentationDialogComponent implements AfterViewInit {
+  @ViewChild("autosize", { read: ElementRef }) textareaElement!: ElementRef<HTMLTextAreaElement>;
   documentation: string = "";
 
   constructor(
@@ -49,6 +51,19 @@ export class SystemDocumentationDialogComponent {
     @Inject(MAT_DIALOG_DATA) public data: { documentation: string }
   ) {
     this.documentation = data.documentation || "";
+  }
+
+  ngAfterViewInit(): void {
+    setTimeout(() => {
+      const element = this.textareaElement?.nativeElement as HTMLTextAreaElement | undefined;
+      if (element) {
+        try {
+          element.setSelectionRange(0, 0);
+        } catch {
+        }
+        element.scrollTop = 0;
+      }
+    });
   }
 
   onClose(): void {
