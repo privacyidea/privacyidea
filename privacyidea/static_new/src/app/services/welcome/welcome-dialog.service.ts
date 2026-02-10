@@ -33,7 +33,7 @@ export class WelcomeDialogService {
       const hideWelcome = this.auth.hideWelcome();
       const subStatus = this.auth.subscriptionStatus();
 
-      if (isAuth && !(hideWelcome && subStatus === 3)) {
+      if (isAuth && !hideWelcome) {
         this.opened.set(true);
         this.dialog.open(WelcomeDialogComponent, {
           disableClose: true,

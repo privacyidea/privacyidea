@@ -29,7 +29,7 @@ export class SubscriptionExpiryService {
   private readonly subscriptions = inject(SubscriptionService);
   readonly opened = signal<boolean>(false);
 
-  private readonly thresholdDays = 30;
+  private readonly thresholdDays = 3000;
 
   constructor() {
     effect(() => {

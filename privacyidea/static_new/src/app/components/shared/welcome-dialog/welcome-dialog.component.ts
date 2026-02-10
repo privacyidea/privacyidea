@@ -35,12 +35,6 @@ export class WelcomeDialogComponent {
   private auth = inject(AuthService);
   step = signal<number>(0);
 
-  constructor() {
-    if (this.auth.hideWelcome()) {
-      this.step.set(4);
-    }
-  }
-
   nextWelcome(): void {
     let nextStep = this.step() + 1;
 

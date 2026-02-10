@@ -39,117 +39,122 @@
       type="file" />
   </div>
 
-  @for (subscription of subscriptions(); track subscription.application) {
-    <div class="subscription-details">
+  <div class="subscriptions-grid">
+    @for (subscription of subscriptions(); track subscription.application) {
+      <div class="subscription-details">
 
-      <div class="margin-left-1 flex-row ali-center gap-16">
-        <h4>Application:</h4>
-        <h4 class="application-color">{{ subscription.application }}</h4>
+        <div class="margin-left-1 flex-row ali-center gap-16">
+          <h4>Application:</h4>
+          <h4 class="application-color">{{ subscription.application }}</h4>
 
-        @if (authService.actionAllowed('delete')) {
-          <button
-            (click)="deleteSubscription(subscription.application)"
-            class="action-button-delete"
-            i18n-matTooltip
-            mat-stroked-button
-            matTooltip="Delete Subscription">
-            <mat-icon>delete</mat-icon>
-            Delete
-          </button>
+          @if (authService.actionAllowed('delete')) {
+            <button
+              (click)="deleteSubscription(subscription.application)"
+              class="action-button-delete"
+              i18n-matTooltip
+              mat-stroked-button
+              matTooltip="Delete Subscription">
+              <mat-icon>delete</mat-icon>
+              Delete
+            </button>
+          }
+        </div>
+
+        @if (subscription.timedelta < -14) {
+          <div
+            class="alert alert-success"
+            i18n>
+            Valid subscription
+          </div>
         }
-      </div>
+        @if (subscription.timedelta < 0 && subscription.timedelta >= -14) {
+          <div
+            class="alert alert-warning"
+            i18n>
+            Subscription about to expire
+          </div>
+        }
+        @if (subscription.timedelta >= 0) {
+          <div
+            class="alert alert-danger"
+            i18n>
+            Subscription expired
+          </div>
+        }
 
-      @if (subscription.timedelta < -14) {
-        <div
-          class="alert alert-success"
-          i18n>
-          Valid subscription
+        <div class="subscription-info-grid">
+          <strong i18n>Level:</strong>
+          <span> {{ subscription.level }} </span>
+
+          <strong i18n>Users:</strong>
+          <span> {{ subscription.num_users }} ({{ subscription.active_users }}
+            <span i18n>distinct users with active tokens</span>, {{ subscription.num_users - subscription.active_users }}
+            <span i18n>remaining</span>) </span>
+
+          <strong i18n>Tokens:</strong>
+          <span> {{ subscription.num_tokens }} ({{ subscription.active_tokens }}
+            <span i18n>active, assigned tokens</span>, {{ subscription.num_tokens - subscription.active_tokens }}
+            <span i18n>remaining</span>)
+        </span>
+
+          <strong i18n>Clients:</strong>
+          <span> {{ subscription.num_clients }} </span>
+
+          <strong i18n>From:</strong>
+          <span> {{ subscription.date_from }} </span>
+
+          <strong i18n>To:</strong>
+          <span> {{ subscription.date_till }} </span>
         </div>
-      }
-      @if (subscription.timedelta < 0 && subscription.timedelta >= -14) {
-        <div
-          class="alert alert-warning"
-          i18n>
-          Subscription about to expire
+
+        <div class="info-panels">
+          <mat-card>
+            <mat-card-header>
+              <mat-card-title i18n>Subscription Issued To:</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+              {{ subscription.for_name }}
+              <br>
+              <a [href]="'mailto:' + subscription.for_email">
+                {{ subscription.for_email }}
+              </a>
+              <br>
+              {{ subscription.for_address }}
+              <br>
+              {{ subscription.for_phone }}
+              <br>
+              <a
+                [href]="subscription.for_url"
+                target="_blank">{{ subscription.for_url }}
+              </a>
+              <br>
+              {{ subscription.for_comment }}
+            </mat-card-content>
+          </mat-card>
+
+          <mat-card>
+            <mat-card-header>
+              <mat-card-title i18n>Issuer:</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+              {{ subscription.by_name }}
+              <br>
+              <a
+                [href]="subscription.by_url"
+                target="_blank">{{ subscription.by_url }}
+              </a>
+              <br>
+              {{ subscription.by_address }}
+              <br>
+              <a [href]="'mailto:' + subscription.by_email">
+                {{ subscription.by_email }}
+              </a>
+              <br>
+              {{ subscription.by_phone }}
+            </mat-card-content>
+          </mat-card>
         </div>
-      }
-      @if (subscription.timedelta >= 0) {
-        <div
-          class="alert alert-danger"
-          i18n>
-          Subscription expired
-        </div>
-      }
-
-      <div class="subscription-info-grid">
-        <strong i18n>Level:</strong>
-        <span> {{ subscription.level }} </span>
-
-        <strong i18n>Users:</strong>
-        <span> {{ subscription.num_users }} ({{ subscription.active_users }}
-          <span i18n>distinct users with active tokens</span>) </span>
-
-        <strong i18n>Tokens:</strong>
-        <span> {{ subscription.num_tokens }} ({{ subscription.active_tokens }}
-          <span i18n>active, assigned tokens</span>) </span>
-
-        <strong i18n>Clients:</strong>
-        <span> {{ subscription.num_clients }} </span>
-
-        <strong i18n>From:</strong>
-        <span> {{ subscription.date_from }} </span>
-
-        <strong i18n>To:</strong>
-        <span> {{ subscription.date_till }} </span>
       </div>
-
-      <div class="info-panels">
-        <mat-card>
-          <mat-card-header>
-            <mat-card-title i18n>Subscription Issued To:</mat-card-title>
-          </mat-card-header>
-          <mat-card-content>
-            {{ subscription.for_name }}
-            <br>
-            <a [href]="'mailto:' + subscription.for_email">
-              {{ subscription.for_email }}
-            </a>
-            <br>
-            {{ subscription.for_address }}
-            <br>
-            {{ subscription.for_phone }}
-            <br>
-            <a
-              [href]="subscription.for_url"
-              target="_blank">{{ subscription.for_url }}
-            </a>
-            <br>
-            {{ subscription.for_comment }}
-          </mat-card-content>
-        </mat-card>
-
-        <mat-card>
-          <mat-card-header>
-            <mat-card-title i18n>Issuer:</mat-card-title>
-          </mat-card-header>
-          <mat-card-content>
-            {{ subscription.by_name }}
-            <br>
-            <a
-              [href]="subscription.by_url"
-              target="_blank">{{ subscription.by_url }}
-            </a>
-            <br>
-            {{ subscription.by_address }}
-            <br>
-            <a [href]="'mailto:' + subscription.by_email">
-              {{ subscription.by_email }}
-            </a>
-            <br>
-            {{ subscription.by_phone }}
-          </mat-card-content>
-        </mat-card>
-      </div>
-    </div>
-  }
+    }
+  </div>
 </div>
