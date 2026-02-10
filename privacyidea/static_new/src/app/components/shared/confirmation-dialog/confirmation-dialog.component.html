@@ -47,7 +47,7 @@
 
 <mat-dialog-actions>
   <button
-    [mat-dialog-close]="'cancel'"
+    [mat-dialog-close]="false"
     i18n
     mat-button>Cancel
   </button>
@@ -55,7 +55,7 @@
   <button
     [class.dialog-button-delete]="data.action === 'remove' || data.action === 'delete'"
     [class.dialog-button-warn]="data.action === 'revoke' || data.action === 'discard'"
-    [mat-dialog-close]="'discard'"
+    [mat-dialog-close]="data.action"
     mat-button>
     {{ data.action.charAt(0).toUpperCase() + data.action.slice(1) }}
   </button>

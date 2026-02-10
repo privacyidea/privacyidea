@@ -37,7 +37,16 @@ export class ConfirmationDialogComponent {
   public readonly data: ConfirmationDialogData = inject(MAT_DIALOG_DATA);
 }
 
-export type ConfirmationDialogResult = "cancel" | "discard" | "save-exit";
+export type ConfirmationDialogResult =
+  | "remove"
+  | "delete"
+  | "revoke"
+  | "search"
+  | "unassign"
+  | "discard"
+  | "proceed-despite-error"
+  | "save-exit"
+  | boolean;
 
 export type ConfirmationDialogData = {
   numberOfTokens?: string;

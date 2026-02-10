@@ -166,7 +166,7 @@ export class DialogService implements DialogServiceInterface {
         config
       );
 
-      dialogRef.afterClosed().subscribe((result) => resolve(result ?? false));
+      dialogRef.afterClosed().subscribe((result) => resolve(!!result));
     });
   }
 
