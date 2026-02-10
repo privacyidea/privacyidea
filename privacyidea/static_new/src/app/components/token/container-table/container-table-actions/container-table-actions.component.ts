@@ -71,7 +71,7 @@ export class ContainerTableActionsComponent {
       .afterClosed()
       .subscribe({
         next: (result) => {
-          if (result?.confirmed) {
+          if (result) {
             forkJoin(
               selectedContainers.map((container) => this.containerService.deleteContainer(container.serial))
             ).subscribe({

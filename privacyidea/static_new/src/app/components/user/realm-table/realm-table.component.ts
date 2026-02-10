@@ -264,7 +264,6 @@ export class RealmTableComponent {
         if (!normalizedFilter) {
           return true;
         }
-        // simple contains across name and resolvers text
         return (
           (data.name ?? "").toLowerCase().includes(normalizedFilter) ||
           (data.resolversText ?? "").toLowerCase().includes(normalizedFilter)

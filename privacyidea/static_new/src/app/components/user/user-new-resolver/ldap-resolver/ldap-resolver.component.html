@@ -19,9 +19,11 @@
 <div class="type-sections-container">
   <div class="type-section">
     <div class="form-grid">
-      <h3 i18n>Connection Details</h3>
-
-      <mat-form-field class="field-lg">
+      <h3
+        class="margin-bottom-1"
+        i18n>Connection Details
+      </h3>
+      <mat-form-field>
         <mat-label i18n>Server URI</mat-label>
         <app-clearable-input
           (onClick)="ldapUriControl.setValue('')"
@@ -37,9 +39,22 @@
         }
       </mat-form-field>
 
+      @if (ldapUriControl.value.startsWith("ldap:")) {
+        <mat-checkbox
+          [formControl]="startTlsControl"
+          class="checkbox-inline"
+          i18n>
+          STARTTLS
+        </mat-checkbox>
+      } @else {
+        <br />
+      }
+
       <mat-form-field>
         <mat-label i18n>TLS Version</mat-label>
-        <mat-select [formControl]="tlsVersionControl">
+        <mat-select
+          [disabled]="!startTlsControl.value"
+          [formControl]="tlsVersionControl">
           <mat-option
             i18n
             value="TLSv1">TLS v1.0
@@ -60,14 +75,16 @@
       </mat-form-field>
 
       <mat-checkbox
+        [disabled]="!startTlsControl.value"
         [formControl]="tlsVerifyControl"
         class="checkbox-inline"
         i18n>
         Verify TLS certificate of the server.
       </mat-checkbox>
 
-      @if (tlsVerifyControl.value) {
-        <mat-form-field class="margin-bottom-1">
+      @if (tlsVerifyControl.value && startTlsControl.value) {
+        <mat-form-field
+          class="margin-bottom-1">
           <mat-label i18n>CA Certificate</mat-label>
           <mat-hint i18n>
             The file containing the CA certificate which signed the LDAP TLS certificate.

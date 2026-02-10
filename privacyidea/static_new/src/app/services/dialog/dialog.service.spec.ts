@@ -17,36 +17,17 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { TestBed } from "@angular/core/testing";
+import { provideRouter } from "@angular/router";
 import { Subject } from "rxjs";
 import { MatDialog } from "@angular/material/dialog";
 import { DialogService } from "./dialog.service";
 import { AuthService } from "../auth/auth.service";
-import { MockLocalService, MockNotificationService } from "../../../testing/mock-services";
+import { LocalService } from "../local/local.service";
+import { NotificationService } from "../notification/notification.service";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { MockAuthService } from "../../../testing/mock-services/mock-auth-service";
-
-jest.mock(
-  "../../components/token/token-enrollment/token-enrollment-firtst-step-dialog/token-enrollment-first-step-dialog.component",
-  () => ({
-    TokenEnrollmentFirstStepDialogComponent: class TokenEnrollmentFirstStepDialogComponent {}
-  })
-);
-jest.mock(
-  "../../components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component",
-  () => ({
-    TokenEnrollmentLastStepDialogComponent: class TokenEnrollmentLastStepDialogComponent {}
-  })
-);
-jest.mock(
-  "../../components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.self-service.component",
-  () => ({
-    TokenEnrollmentLastStepDialogSelfServiceComponent: class TokenEnrollmentLastStepDialogSelfServiceComponent {}
-  })
-);
-jest.mock("../../components/shared/confirmation-dialog/confirmation-dialog.component", () => ({
-  ConfirmationDialogComponent: class ConfirmationDialogComponent {}
-}));
+import { MockLocalService, MockNotificationService } from "../../../testing/mock-services";
 
 const matDialogStub = {
   openDialogs: [] as any[],
@@ -74,12 +55,13 @@ describe("DialogService", () => {
     matDialogStub.openDialogs.length = 0;
     TestBed.configureTestingModule({
       providers: [
+        provideRouter([]),
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: MatDialog, useValue: matDialogStub },
         { provide: AuthService, useClass: MockAuthService },
-        MockLocalService,
-        MockNotificationService
+        { provide: LocalService, useClass: MockLocalService },
+        { provide: NotificationService, useClass: MockNotificationService }
       ]
     });
     dialogService = TestBed.inject(DialogService);

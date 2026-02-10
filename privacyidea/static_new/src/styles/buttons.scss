@@ -14,21 +14,21 @@ $profile-hover-bg: var(--background-yellow-inset);
 
 $grad-surface: linear-gradient(145deg, var(--mat-sys-surface-container), var(--mat-sys-surface-container-low));
 $grad-surface-hover: linear-gradient(
-  145deg,
-  var(--mat-sys-surface-container-lowest),
-  var(--mat-sys-surface-container-low)
+                145deg,
+                var(--mat-sys-surface-container-lowest),
+                var(--mat-sys-surface-container-low)
 );
 
 $background-low-contrast: linear-gradient(
-  145deg,
-  var(--mat-sys-surface-container-highest),
-  var(--mat-sys-surface-container-low)
+                145deg,
+                var(--mat-sys-surface-container-highest),
+                var(--mat-sys-surface-container-low)
 );
 
 $button-low-contrast-variant: linear-gradient(
-  145deg,
-  var(--mat-sys-surface-container-low),
-  var(--mat-sys-surface-container-highest)
+                145deg,
+                var(--mat-sys-surface-container-low),
+                var(--mat-sys-surface-container-highest)
 );
 
 @mixin button-base($height, $width, $background-color, $border-color, $color) {
@@ -61,11 +61,11 @@ $button-low-contrast-variant: linear-gradient(
 
 @mixin card-button-variant($background-color, $border-color, $color) {
   @include button-base(
-    $height: $button-height,
-    $width: $button-width,
-    $background-color: $background-color,
-    $border-color: $border-color,
-    $color: $color
+          $height: $button-height,
+          $width: $button-width,
+          $background-color: $background-color,
+          $border-color: $border-color,
+          $color: $color
   );
 }
 
@@ -140,9 +140,9 @@ $button-low-contrast-variant: linear-gradient(
 
 .card-button-1 {
   @include card-button-variant(
-    var(--mat-sys-surface-container),
-    var(--mat-sys-surface-container-highest),
-    var(--mat-sys-on-surface-variant)
+                  var(--mat-sys-surface-container),
+                  var(--mat-sys-surface-container-highest),
+                  var(--mat-sys-on-surface-variant)
   );
 }
 
@@ -152,9 +152,9 @@ $button-low-contrast-variant: linear-gradient(
 
 .card-button-support {
   @include card-button-variant(
-    var(--mat-sys-surface-container-lowest),
-    var(--green-brand-light),
-    var(--green-brand-light)
+                  var(--mat-sys-surface-container-lowest),
+                  var(--green-brand-light),
+                  var(--green-brand-light)
   );
 }
 
@@ -416,9 +416,8 @@ $button-low-contrast-variant: linear-gradient(
   padding: var(--half-global-padding) var(--global-padding);
   border: 1px solid var(--mat-sys-outline);
   background-color: var(--mat-sys-surface);
-  transition:
-    background-color 0.2s ease-in-out,
-    color 0.2s ease-in-out;
+  transition: background-color 0.2s ease-in-out,
+  color 0.2s ease-in-out;
 }
 
 .mat-mdc-outlined-button .mat-icon {
@@ -577,4 +576,9 @@ $button-low-contrast-variant: linear-gradient(
 
 .scroll-to-top-fab-icon {
   width: 24px;
+}
+
+::ng-deep mat-icon {
+  display: flex !important;
+  align-items: center !important;
 }

@@ -1,0 +1,163 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<div class="service-ids-layout">
+  <div
+    appScrollToTop
+    class="service-ids-container">
+    <div class="header-row">
+      <div class="filter-paginator-container margin-bottom-1">
+        <div class="flex-row ali-center">
+          <mat-form-field
+            class="table-filter"
+            subscriptSizing="dynamic">
+            <mat-label i18n>Filter Service IDs...</mat-label>
+            <app-clearable-input
+              (onClick)="resetFilter()"
+              [showClearButton]="filterString().length > 0">
+              <input
+                #filterHTMLInputElement
+                (input)="onFilterInput(filterHTMLInputElement.value)"
+                [value]="filterString()"
+                aria-label="Filter Input"
+                i18n-aria-label
+                i18n-placeholder
+                matInput
+                placeholder="Filter by name or description" />
+            </app-clearable-input>
+          </mat-form-field>
+          <button
+            (click)="openEditDialog()"
+            class="action-button-1 margin-left-1"
+            i18n
+            mat-stroked-button>
+            <mat-icon>add</mat-icon>
+            Create Service ID
+          </button>
+        </div>
+        <mat-paginator
+          [length]="totalLength()"
+          [pageSizeOptions]="pageSizeOptions()"
+          [pageSize]="pageSizeOptions()[1]"
+          showFirstLastButtons />
+      </div>
+    </div>
+
+    <p
+      class="margin-bottom-1"
+      i18n>
+      Service IDs can be used to attach e.g. SSH keys to certain machines and services. To view attached tokens go to
+      <a [routerLink]="[ROUTE_PATHS.TOKENS_APPLICATIONS]">token applications</a>
+      .
+    </p>
+
+    <table
+      [dataSource]="serviceIdDataSource()"
+      class="service-ids-table"
+      mat-table
+      matSort>
+
+      <ng-container matColumnDef="id">
+        <th
+          *matHeaderCellDef
+          i18n
+          mat-header-cell
+          mat-sort-header> Id
+        </th>
+        <td
+          *matCellDef="let service"
+          mat-cell>
+          {{ service.id }}
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="servicename">
+        <th
+          *matHeaderCellDef
+          i18n
+          mat-header-cell
+          mat-sort-header> Name
+        </th>
+        <td
+          *matCellDef="let service"
+          mat-cell>
+          <div class="flex-row">
+            <a
+              (click)="openEditDialog(service)"
+              class="flex ali-center">
+              {{ service.servicename }}
+            </a>
+            <app-copy-button [copyText]="service.servicename" />
+          </div>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="description">
+        <th
+          *matHeaderCellDef
+          i18n
+          mat-header-cell
+          mat-sort-header> Description
+        </th>
+        <td
+          *matCellDef="let service"
+          mat-cell> {{ service.description }}
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="actions">
+        <th
+          *matHeaderCellDef
+          i18n
+          mat-header-cell> Actions
+        </th>
+        <td
+          *matCellDef="let service"
+          mat-cell>
+          <div class="flex just-center">
+            <button
+              (click)="deleteServiceId(service)"
+              color="warn"
+              i18n-matTooltip
+              mat-icon-button
+              matTooltip="Delete">
+              <mat-icon>delete</mat-icon>
+            </button>
+          </div>
+        </td>
+      </ng-container>
+
+      <tr
+        *matHeaderRowDef="displayedColumns"
+        mat-header-row></tr>
+      <tr
+        *matRowDef="let row; columns: displayedColumns;"
+        mat-row></tr>
+
+      <tr
+        *matNoDataRow
+        class="mat-row">
+        <td
+          class="mat-cell"
+          colspan="4"
+          i18n>No service IDs found.
+        </td>
+      </tr>
+    </table>
+  </div>
+</div>

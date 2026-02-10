@@ -1,0 +1,187 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<h2
+  i18n
+  mat-dialog-title>
+  {{ isEditMode ? 'Edit SMTP Server' : 'Create SMTP Server' }}
+</h2>
+
+<mat-dialog-content class="smtp-dialog-content">
+  <form
+    [formGroup]="smtpForm"
+    class="smtp-form">
+    <mat-form-field
+      appearance="fill"
+      class="width-100 margin-bottom-1">
+      <mat-label i18n>Identifier</mat-label>
+      <input
+        formControlName="identifier"
+        matInput
+        placeholder="mySmtpServer" />
+      <mat-hint i18n>The unique identifying name of the SMTP server definition.</mat-hint>
+      @if (smtpForm.get('identifier')?.hasError('required')) {
+        <mat-error
+          i18n>Identifier is required
+        </mat-error>
+      }
+    </mat-form-field>
+
+    <div class="row">
+      <mat-form-field
+        appearance="fill"
+        class="flex-size-2">
+        <mat-label i18n>IP or FQDN</mat-label>
+        <input
+          formControlName="server"
+          matInput
+          placeholder="smtp://mail.example.com" />
+        @if (smtpForm.get('server')?.hasError('required')) {
+          <mat-error
+            i18n>Server is required
+          </mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field
+        appearance="fill"
+        class="flex-size-1">
+        <mat-label i18n>Port</mat-label>
+        <input
+          formControlName="port"
+          matInput
+          placeholder="25"
+          type="number" />
+      </mat-form-field>
+    </div>
+
+    <div class="row">
+      <mat-form-field
+        appearance="fill"
+        class="flex-size-1">
+        <mat-label i18n>Timeout</mat-label>
+        <input
+          formControlName="timeout"
+          matInput
+          placeholder="10"
+          type="number" />
+      </mat-form-field>
+
+      <mat-form-field
+        appearance="fill"
+        class="flex-size-1">
+        <mat-label i18n>Sender Email</mat-label>
+        <input
+          formControlName="sender"
+          matInput
+          placeholder="privacyidea@example.com" />
+        @if (smtpForm.get('sender')?.hasError('required')) {
+          <mat-error
+            i18n>Sender email is required
+          </mat-error>
+        }
+        @if (smtpForm.get('sender')?.hasError('email')) {
+          <mat-error
+            i18n>Invalid email format
+          </mat-error>
+        }
+      </mat-form-field>
+    </div>
+
+    <mat-form-field
+      appearance="fill"
+      class="width-100 margin-bottom-1">
+      <mat-label i18n>Username</mat-label>
+      <input
+        formControlName="username"
+        matInput
+        placeholder="user@example.com" />
+      <mat-hint i18n>If the SMTP server requires authentication.</mat-hint>
+    </mat-form-field>
+
+    <mat-form-field
+      appearance="fill"
+      class="width-100">
+      <mat-label i18n>Password</mat-label>
+      <input
+        formControlName="password"
+        matInput
+        placeholder="topsecret"
+        type="password" />
+    </mat-form-field>
+
+    <mat-form-field
+      appearance="fill"
+      class="width-100">
+      <mat-label i18n>Description</mat-label>
+      <input
+        formControlName="description"
+        matInput
+        placeholder="some wise words" />
+    </mat-form-field>
+
+    <div class="checkbox-group">
+      <mat-checkbox
+        formControlName="tls"
+        i18n>Use StartTLS
+      </mat-checkbox>
+      <mat-checkbox
+        formControlName="enqueue_job"
+        i18n>Send mail from job queue
+      </mat-checkbox>
+    </div>
+
+    <div class="test-section">
+      <mat-form-field
+        appearance="fill"
+        class="width-100">
+        <mat-label i18n>Recipient for Testing</mat-label>
+        <input
+          formControlName="recipient"
+          matInput />
+        <button
+          (click)="test()"
+          [disabled]="isTesting()"
+          class="margin-right-1"
+          i18n-matTooltip
+          mat-icon-button
+          matSuffix
+          matTooltip="Send Test Email">
+          <mat-icon>send</mat-icon>
+        </button>
+      </mat-form-field>
+    </div>
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button
+    (click)="onCancel()"
+    i18n
+    mat-button>Cancel
+  </button>
+  <button
+    (click)="save()"
+    [disabled]="smtpForm.invalid"
+    class="action-button-1 width-238"
+    i18n
+    mat-stroked-button>
+    <mat-icon>save</mat-icon>
+    Save
+  </button>
+</mat-dialog-actions>

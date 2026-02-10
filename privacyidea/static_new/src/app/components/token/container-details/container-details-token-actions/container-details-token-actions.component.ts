@@ -98,7 +98,7 @@ export class ContainerDetailsTokenActionsComponent {
       .afterClosed()
       .subscribe({
         next: (result) => {
-          if (result?.confirmed) {
+          if (result) {
             this.tokenService.unassignUserFromAll(tokenSerials).subscribe({
               next: () => {
                 this.containerService.containerDetailResource.reload();
@@ -165,7 +165,7 @@ export class ContainerDetailsTokenActionsComponent {
       .afterClosed()
       .subscribe({
         next: (result) => {
-          if (result?.confirmed) {
+          if (result) {
             this.containerService.removeAll(this.containerSerial).subscribe({
               next: () => {
                 this.containerService.containerDetailResource.reload();

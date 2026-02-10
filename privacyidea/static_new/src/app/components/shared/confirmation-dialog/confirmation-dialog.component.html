@@ -46,28 +46,29 @@
 </mat-dialog-content>
 
 <mat-dialog-actions>
-  @if (data.action === "discard") {
-    <button
-      [mat-dialog-close]="{confirmed: false, furtherAction: 'saveAndExit'}"
-      mat-button
-      class="dialog-button-primary"
-      i18n>
-      Save and Exit
-    </button>
-  }
   <button
-    [mat-dialog-close]="{confirmed: false}"
+    [mat-dialog-close]="false"
     i18n
-    mat-button
-    mat-dialog-close>
-    Cancel
+    mat-button>Cancel
   </button>
+
   <button
-    [mat-dialog-close]="{confirmed: true}"
     [class.dialog-button-delete]="data.action === 'remove' || data.action === 'delete'"
     [class.dialog-button-warn]="data.action === 'revoke' || data.action === 'discard'"
-    [class.dialog-button-primary]="data.action === 'search' || data.action === 'unassign'"
+    [mat-dialog-close]="data.action"
     mat-button>
     {{ data.action.charAt(0).toUpperCase() + data.action.slice(1) }}
   </button>
+
+  @if (data.action === "discard" && data.allowSaveExit) {
+    <button
+      [disabled]="!!data.saveExitDisabled"
+      [mat-dialog-close]="'save-exit'"
+      class="action-button-1 width-238"
+      i18n
+      mat-stroked-button>
+      <mat-icon>save</mat-icon>
+      Save &amp; Exit
+    </button>
+  }
 </mat-dialog-actions>

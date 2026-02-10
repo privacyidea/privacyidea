@@ -23,6 +23,39 @@ import { MockHttpResourceRef, MockPiResponse } from "../mock-services";
 import { SystemServiceInterface } from "../../app/services/system/system.service";
 import { CaConnectors } from "../../app/services/ca-connector/ca-connector.service";
 
+/**
+ * function createMockHttpResource(result: any = []) {
+ *   // Use a writable signal to store the value
+ *   const valueSignal = signal({ result: { value: result } });
+ *   return {
+ *     value: () => valueSignal(),
+ *     reload: jest.fn(),
+ *     // Optionally allow tests to update the value
+ *     setValue: (newResult: any) => valueSignal.set({ result: { value: newResult } })
+ *   };
+ * }
+ *
+ * export class MockSystemService implements SystemServiceInterface {
+ *   nodes = signal<PiNode[]>([
+ *     { name: "Node 1", uuid: "node-1" },
+ *     { name: "Node 2", uuid: "node-2" }
+ *   ]);
+ *   systemConfig = signal({});
+ *   nodesResource: any = {
+ *     value: jest.fn().mockReturnValue({ result: { value: [] } }),
+ *     reload: jest.fn()
+ *   };
+ *   radiusServerResource: any = {
+ *     value: jest.fn().mockReturnValue({ result: { value: [] } }),
+ *     reload: jest.fn()
+ *   };
+ *   systemConfigResource: any = {
+ *     value: jest.fn().mockReturnValue({ result: { value: [] } }),
+ *     reload: jest.fn()
+ *   };
+ * }
+ * **/
+
 export class MockSystemService implements SystemServiceInterface {
   systemConfigResource: HttpResourceRef<any>;
   radiusServerResource: HttpResourceRef<any>;
