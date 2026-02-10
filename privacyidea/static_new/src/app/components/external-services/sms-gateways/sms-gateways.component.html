@@ -106,7 +106,7 @@
         </th>
         <td
           *matCellDef="let gateway"
-          mat-cell> {{ gateway.providermodule }}
+          mat-cell> {{ gateway.providermodule.split('.').pop() }}
         </td>
       </ng-container>
 
