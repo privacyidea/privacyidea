@@ -119,7 +119,7 @@ describe("DialogService", () => {
 
   it("confirm resolves true and false", async () => {
     const pTrue = dialogService.confirm({ data: {} } as any);
-    matDialogStub.openDialogs.at(-1)?.close(true);
+    matDialogStub.openDialogs.at(-1)?.close({ confirmed: true });
     await expect(pTrue).resolves.toBe(true);
 
     const pFalse = dialogService.confirm({ data: {} } as any);

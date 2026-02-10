@@ -595,7 +595,7 @@ export class RealmTableComponent {
       .afterClosed()
       .subscribe({
         next: (result) => {
-          if (!result) {
+          if (!result?.confirmed) {
             return;
           }
 

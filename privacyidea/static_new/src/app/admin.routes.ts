@@ -45,6 +45,7 @@ import { TokengroupsComponent } from "./components/external-services/tokengroups
 import { ServiceIdsComponent } from "./components/external-services/service-ids/service-ids.component";
 import { UserResolversComponent } from "./components/user/user-sources/user-resolvers.component";
 import { pendingChangesGuard } from "./guards/pending-changes.guard";
+import { EventComponent } from "./components/event/event.component";
 
 export const routes: Routes = [
   {
@@ -80,6 +81,10 @@ export const routes: Routes = [
   {
     path: "policies",
     children: [{ path: "", component: PoliciesComponent }]
+  },
+  {
+    path: "events",
+    children: [{ path: "", component: EventComponent, canDeactivate: [pendingChangesGuard] }]
   },
   {
     path: "configuration",

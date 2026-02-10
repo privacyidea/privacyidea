@@ -237,6 +237,11 @@ th:nth-child(even) {
   padding-right: 0;
 }
 
+.flex-column {
+  display: flex;
+  flex-direction: column;
+}
+
 .height-auto {
   height: auto;
 }

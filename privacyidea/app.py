@@ -25,69 +25,106 @@
 #
 import atexit
 import datetime
-from importlib import metadata
-from importlib.metadata import PackageNotFoundError
 import json
-import os
-import os.path
 import logging
 import logging.config
+import os
+import os.path
 import secrets
 import sys
 import uuid
+from importlib import metadata
+from importlib.metadata import PackageNotFoundError
 from pathlib import Path
 
+import sqlalchemy as sa
 import yaml
 from flask import Flask, render_template, jsonify, request
 from flask_babel import Babel
 from flask_migrate import Migrate
+from flask_talisman import Talisman
 from flaskext.versioned import Versioned
-import sqlalchemy as sa
 
 # we need this import to add the before/after request function to the blueprints
 # noinspection PyUnresolvedReferences
 import privacyidea.api.before_after  # noqa: F401
-from privacyidea.api.container import container_blueprint
-from privacyidea.api.healthcheck import healthz_blueprint
-from privacyidea.api.lib.utils import send_html
-from privacyidea.api.validate import validate_blueprint
-from privacyidea.api.token import token_blueprint
-from privacyidea.api.system import system_blueprint
-from privacyidea.api.resolver import resolver_blueprint
-from privacyidea.api.realm import realm_blueprint
-from privacyidea.api.realm import defaultrealm_blueprint
-from privacyidea.api.policy import policy_blueprint
-from privacyidea.api.user import user_blueprint
-from privacyidea.api.audit import audit_blueprint
 from privacyidea.api.application import application_blueprint
-from privacyidea.api.caconnector import caconnector_blueprint
-from privacyidea.api.register import register_blueprint
+from privacyidea.api.audit import audit_blueprint
 from privacyidea.api.auth import jwtauth
-from privacyidea.webui.login import login_blueprint, get_accepted_language
-from privacyidea.webui.certificate import cert_blueprint
-from privacyidea.api.machineresolver import machineresolver_blueprint
-from privacyidea.api.machine import machine_blueprint
-from privacyidea.api.ttype import ttype_blueprint
-from privacyidea.api.smtpserver import smtpserver_blueprint
-from privacyidea.api.radiusserver import radiusserver_blueprint
-from privacyidea.api.periodictask import periodictask_blueprint
-from privacyidea.api.privacyideaserver import privacyideaserver_blueprint
-from privacyidea.api.recover import recover_blueprint
-from privacyidea.api.event import eventhandling_blueprint
-from privacyidea.api.smsgateway import smsgateway_blueprint
+from privacyidea.api.caconnector import caconnector_blueprint
 from privacyidea.api.clienttype import client_blueprint
-from privacyidea.api.subscriptions import subscriptions_blueprint
-from privacyidea.api.monitoring import monitoring_blueprint
-from privacyidea.api.tokengroup import tokengroup_blueprint
-from privacyidea.api.serviceid import serviceid_blueprint
+from privacyidea.api.container import container_blueprint
+from privacyidea.api.event import eventhandling_blueprint
+from privacyidea.api.healthcheck import healthz_blueprint
 from privacyidea.api.info import info_blueprint
-from privacyidea.lib import queue
-from privacyidea.lib.log import DEFAULT_LOGGING_CONFIG, DOCKER_LOGGING_CONFIG
+from privacyidea.api.lib.utils import send_html
+from privacyidea.api.machine import machine_blueprint
+from privacyidea.api.machineresolver import machineresolver_blueprint
+from privacyidea.api.monitoring import monitoring_blueprint
+from privacyidea.api.periodictask import periodictask_blueprint
+from privacyidea.api.policy import policy_blueprint
+from privacyidea.api.privacyideaserver import privacyideaserver_blueprint
+from privacyidea.api.radiusserver import radiusserver_blueprint
+from privacyidea.api.realm import defaultrealm_blueprint
+from privacyidea.api.realm import realm_blueprint
+from privacyidea.api.recover import recover_blueprint
+from privacyidea.api.register import register_blueprint
+from privacyidea.api.resolver import resolver_blueprint
+from privacyidea.api.serviceid import serviceid_blueprint
+from privacyidea.api.smsgateway import smsgateway_blueprint
+from privacyidea.api.smtpserver import smtpserver_blueprint
+from privacyidea.api.subscriptions import subscriptions_blueprint
+from privacyidea.api.system import system_blueprint
+from privacyidea.api.token import token_blueprint
+from privacyidea.api.tokengroup import tokengroup_blueprint
+from privacyidea.api.ttype import ttype_blueprint
+from privacyidea.api.user import user_blueprint
+from privacyidea.api.validate import validate_blueprint
 from privacyidea.config import config, DockerConfig, ConfigKey, DefaultConfigValues
-from privacyidea.models import db, NodeName
+from privacyidea.lib import queue
 from privacyidea.lib.crypto import init_hsm
+from privacyidea.lib.log import DEFAULT_LOGGING_CONFIG, DOCKER_LOGGING_CONFIG
+from privacyidea.models import db, NodeName
+from privacyidea.webui.certificate import cert_blueprint
+from privacyidea.webui.login import login_blueprint, get_accepted_language
 
 ENV_KEY = "PRIVACYIDEA_CONFIGFILE"
+
+CSP = {
+    'default-src': [
+        '\'self\'',
+        'community.privacyidea.org',
+        'privacyidea.readthedocs.io'
+    ],
+    'img-src': [
+        '\'self\'',
+        'data:',
+        'community.privacyidea.org',
+        'privacyidea.readthedocs.io'
+    ],
+    'script-src': [
+        '\'self\''
+    ],
+    'style-src': [
+        '\'self\'',
+        "'unsafe-hashes'",
+        "'sha256-1PxuDsPyGK6n+LZsMv0gG4lMX3i3XigG6h0CzPIjwrE='",
+        "'sha256-PDYg/vkWbGnl+ya8uasRQlyo8wGc+3ANz5x3d3aNWUI='",
+        "'sha256-UtUbbZ5pLwzvjGTHwLTsbIxr5p5bX60ndOEI8wF3bo4='",
+        "'sha256-QG3Eg3DGi8tPwqt0K2eUwBqB1GNl19PjW/3Ex5i5mPk='",
+        "'sha256-pSJ3mKkpKCRMub/4VC+QXgZS+y+3+5w9EMRavXs3s38='",
+        "'sha256-j3gGPuXMDPpU+BxRYg+qUVF0TSGtFEKcp1muBBATanE='",
+        "'sha256-3RgHoWfZTUIYaaqXpyMi4osn0e3W0oyKtFnPAFo1uvI='",
+        "'sha256-n9t4cSjdGHb1Hj8yhaCQy3nxaXjPnaDbPkrwYo97sdI='",
+        "'sha256-biLFinpqYMtWHmXfkA1BPeCY0/fNt46SAZ+BBk5YUog='",
+        "'sha256-7Pu3hinXdj8VFYmteOTmNXWMU+7rB6e//vfADReF/io='",
+        "'sha256-KpSV7LuPYEu58+3u9LJr9v5Drm0uIKEv0h3u/+NVNm8='",
+        "'sha256-N90MKmRow2DpYEVeqcc3uc8pOUsS4Rg4sNmkau1k0xQ='",
+        "'sha256-Vois/bpqZahvBcyohHpVvTSyXN1GBToEOBP1fnFv8OQ='",
+        "'sha256-YwVkay1kjkGiuRM9oW8JUzwK2yXE5Dz412KzI4K7I9w='",
+        "'sha256-QdXSwG0lFVqEzH3nNnFcjWceQ68gfeuFj6C0DdxGekE='"
+    ]
+}
 
 migrate = Migrate()
 babel = Babel()
@@ -278,7 +315,6 @@ def create_app(config_name="development",
                     index_html))
         return jsonify(error="Not found"), 404
 
-
     # Overwrite default config with environment setting
     config_name = os.environ.get(ConfigKey.CONFIG_NAME, config_name)
     if app.config.get(ConfigKey.VERBOSE):
@@ -304,6 +340,13 @@ def create_app(config_name="development",
             if app.config.get(ConfigKey.VERBOSE):
                 sys.stderr.write(f"  ({e})\n")
             sys.stderr.write("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n")
+
+    # CSP with Talisman
+    if app.config.get(ConfigKey.ENABLE_CSP, False):
+        Talisman(app, content_security_policy=CSP, force_https=app.config.get(ConfigKey.FORCE_HTTPS, True),
+                 session_cookie_secure=app.config.get(ConfigKey.SESSION_COOKIE_SECURE, True))
+        if app.config.get(ConfigKey.VERBOSE):
+            print("Enabling CSP with Talisman")
 
     # Setup logging
     if config_name == "docker":
@@ -354,8 +397,8 @@ def create_app(config_name="development",
     with app.app_context():
         engine = db.session.get_bind()
         if engine.name == "oracle":
-            engine.dialect._json_serializer=lambda obj: json.dumps(obj, ensure_ascii=False)
-            engine.dialect._json_deserializer=lambda obj: json.loads(obj)
+            engine.dialect._json_serializer = lambda obj: json.dumps(obj, ensure_ascii=False)
+            engine.dialect._json_deserializer = lambda obj: json.loads(obj)
 
     log.debug(f"Reading application from the static folder {app.static_folder} "
               f"and the template folder {app.template_folder}")
@@ -401,6 +444,13 @@ def create_docker_app():
 
     # And then we check if we have a minimal viable config
     _check_config(app)
+
+    # CSP with Talisman
+    if app.config.get(ConfigKey.ENABLE_CSP, False):
+        Talisman(app, content_security_policy=CSP, force_https=app.config.get(ConfigKey.FORCE_HTTPS, True),
+                 session_cookie_secure=app.config.get(ConfigKey.SESSION_COOKIE_SECURE, True))
+        if app.debug:
+            sys.stderr.write("Enabling CSP with Talisman")
 
     if app.debug:
         DOCKER_LOGGING_CONFIG["loggers"]["privacyidea"]["level"] = logging.DEBUG

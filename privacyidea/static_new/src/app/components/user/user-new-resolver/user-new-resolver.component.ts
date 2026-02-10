@@ -333,8 +333,8 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
             requestMapping:
               "{\"accountEnabled\": true, \"displayName\": \"{givenname} {surname}\", \"mailNickname\": \"{givenname}\", \"passwordProfile\": {\"password\": \"{password}\"}}"
           },
-          config_edit_user: { method: "PATCH", endpoint: "/users/{userid}" },
-          config_delete_user: { method: "DELETE", endpoint: "/users/{userid}" },
+          config_edit_user: { "method": "PATCH", "endpoint": "/users/{userid}" },
+          config_delete_user: { "method": "DELETE", "endpoint": "/users/{userid}" },
           config_user_auth: {
             method: "POST",
             headers: "{\"Content-Type\": \"application/x-www-form-urlencoded\"}",

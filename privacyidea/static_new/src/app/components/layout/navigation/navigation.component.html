@@ -60,11 +60,10 @@
         width="575" />
     </a>
     <p
-      class="margin-0"
-      style="font-size: 12px">
+      class="margin-0 version-text">
       Version {{ versioningService.version() }}
     </p>
-    <p style="font-size: 12px; margin-bottom: 6px">
+    <p class="footer-text">
       An open-source project
       <a
         href="https://netknights.it/"
@@ -349,7 +348,7 @@
         [disabled]="true"
         [ngClass]="{ 'childless-expension-panel-header-active': this.contentService.onPolicies() }"
         class="childless-expension-panel-header">
-        <mat-expansion-panel-header (click)="onPoliciesHeaderClick($event)">
+        <mat-expansion-panel-header (click)="onSingleHeaderClick($event, ROUTE_PATHS.POLICIES)">
           <mat-panel-title>
             <mat-icon>gavel</mat-icon>
             Policies
@@ -362,17 +361,24 @@
         </mat-expansion-panel-header>
       </mat-expansion-panel>
     }
-    <mat-expansion-panel disabled>
-      <mat-expansion-panel-header>
-        <mat-panel-title>
-          <mat-icon>flag</mat-icon>
-          Events
-        </mat-panel-title>
-      </mat-expansion-panel-header>
-      <mat-list>
-        <mat-list-item></mat-list-item>
-      </mat-list>
-    </mat-expansion-panel>
+    @if (authService.actionAllowed("eventhandling_read")) {
+      <mat-expansion-panel
+        [disabled]="true"
+        [ngClass]="{ 'childless-expension-panel-header-active': this.contentService.onEvents() }"
+        class="childless-expension-panel-header">
+        <mat-expansion-panel-header (click)="onSingleHeaderClick($event, ROUTE_PATHS.EVENTS)">
+          <mat-panel-title>
+            <mat-icon>flag</mat-icon>
+            Events
+          </mat-panel-title>
+          <mat-icon
+            [class.active]="router.url.startsWith(ROUTE_PATHS.EVENTS)"
+            class="childless-expansion-panel-arrow">
+            chevron_right
+          </mat-icon>
+        </mat-expansion-panel-header>
+      </mat-expansion-panel>
+    }
 
     <mat-expansion-panel [expanded]="router.url.startsWith(ROUTE_PATHS.AUDIT)">
       <mat-expansion-panel-header (click)="router.navigate([ROUTE_PATHS.AUDIT])">

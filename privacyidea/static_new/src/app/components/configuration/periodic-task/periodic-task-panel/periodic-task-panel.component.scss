@@ -2,6 +2,6 @@
 
 .task-name {
   white-space: nowrap;
-  overflow: hidden;
+  overflow: inherit;
   text-overflow: ellipsis;
 }

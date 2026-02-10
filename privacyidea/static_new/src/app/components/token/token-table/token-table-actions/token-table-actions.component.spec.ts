@@ -62,7 +62,7 @@ describe("TokenTableActionsComponent", () => {
   beforeEach(async () => {
     const dialogMock = {
       open: jest.fn().mockReturnValue({
-        afterClosed: () => of(true)
+        afterClosed: () => of({ confirmed: true })
       } as unknown as MatDialogRef<ConfirmationDialogComponent>)
     };
 
@@ -179,7 +179,7 @@ describe("TokenTableActionsComponent", () => {
       const reloadSpy = jest.spyOn(tokenService.tokenResource, "reload");
 
       const dialogSpy = jest.spyOn(dialog, "open").mockReturnValue({
-        afterClosed: () => of(true)
+        afterClosed: () => of({ confirmed: true })
       } as any);
 
       component.tokenSelection.set(mockTokens);

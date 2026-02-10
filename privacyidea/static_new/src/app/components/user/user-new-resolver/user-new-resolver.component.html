@@ -39,7 +39,7 @@
     <div
       #leftColumn
       class="flex-row margin-bottom-0">
-      <mat-form-field class="min-width-40">
+      <mat-form-field subscriptSizing="dynamic" class="min-width-40">
         <mat-label i18n>Resolver Name</mat-label>
         <mat-hint>
           @if (isEditMode) {
@@ -143,7 +143,7 @@
           class="action-button-1 width-238"
           mat-stroked-button>
           <mat-icon>save</mat-icon>
-          Save
+          <span i18n>Save</span>
         </button>
 
         <button

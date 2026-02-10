@@ -69,6 +69,11 @@ export interface DialogServiceInterface {
   isAnyDialogOpen(): boolean;
 }
 
+export type DialogReturnData = {
+  confirmed: boolean;
+  furtherAction?: string;
+};
+
 @Injectable({ providedIn: "root" })
 export class DialogService implements DialogServiceInterface {
   private readonly dialog: MatDialog = inject(MatDialog);
@@ -161,12 +166,12 @@ export class DialogService implements DialogServiceInterface {
 
   confirm(config: MatDialogConfigRequired<ConfirmationDialogData>): Promise<boolean> {
     return new Promise((resolve) => {
-      const dialogRef = this.dialog.open<ConfirmationDialogComponent, ConfirmationDialogData, boolean>(
+      const dialogRef = this.dialog.open<ConfirmationDialogComponent, ConfirmationDialogData, DialogReturnData>(
         ConfirmationDialogComponent,
         config
       );
 
-      dialogRef.afterClosed().subscribe((result) => resolve(!!result));
+      dialogRef.afterClosed().subscribe((result) => resolve(result?.confirmed ?? false));
     });
   }
 

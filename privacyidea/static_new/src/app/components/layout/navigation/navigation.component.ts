@@ -65,6 +65,7 @@ import {
 import { TokengroupService, TokengroupServiceInterface } from "../../../services/tokengroup/tokengroup.service";
 import { CaConnectorService, CaConnectorServiceInterface } from "../../../services/ca-connector/ca-connector.service";
 import { ServiceIdService, ServiceIdServiceInterface } from "../../../services/service-id/service-id.service";
+import { EventService, EventServiceInterface } from "../../../services/event/event.service";
 
 @Component({
   selector: "app-navigation",
@@ -119,6 +120,7 @@ export class NavigationComponent {
   private readonly caConnectorService: CaConnectorServiceInterface = inject(CaConnectorService);
   private readonly serviceIdService: ServiceIdServiceInterface = inject(ServiceIdService);
   protected readonly periodicTaskService = inject(PeriodicTaskService);
+  protected readonly eventService: EventServiceInterface = inject(EventService);
   protected readonly router: Router = inject(Router);
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
 
@@ -205,14 +207,17 @@ export class NavigationComponent {
       case ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS:
         this.serviceIdService.serviceIdResource.reload();
         break;
+      case ROUTE_PATHS.EVENTS:
+        this.eventService.allEventsResource.reload();
+        break;
     }
   }
 
-  onPoliciesHeaderClick(event: MouseEvent): void {
+  onSingleHeaderClick(event: MouseEvent, route_path: string): void {
     event.preventDefault();
     (event as any).stopImmediatePropagation?.();
     event.stopPropagation();
 
-    this.router.navigate([ROUTE_PATHS.POLICIES]);
+    this.router.navigate([route_path]);
   }
 }
