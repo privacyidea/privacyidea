@@ -187,6 +187,10 @@ body {
   justify-content: end;
 }
 
+.just-space-between {
+  justify-content: space-between;
+}
+
 .flex {
   display: flex;
 }
@@ -602,6 +606,19 @@ body {
 
     .mat-mdc-tooltip {
       margin-left: -340px;
+    }
+
+    &:has(.welcome-dialog-panel),
+    &:has(.global-dialog-panel) {
+      margin-left: 0;
+      width: 100%;
+
+      .mat-mdc-select-panel,
+      .mat-mdc-autocomplete-panel,
+      .mat-mdc-menu-panel,
+      .mat-mdc-tooltip {
+        margin-left: 0;
+      }
     }
   }
 }
