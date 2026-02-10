@@ -116,7 +116,7 @@ class EmailTokenClass(HotpTokenClass):
     @property
     def _email_address(self):
         if is_true(self.get_tokeninfo("dynamic_email")):
-            email = self.user.info.get(self.EMAIL_ADDRESS_KEY)
+            email = self.user.get_specific_info([self.EMAIL_ADDRESS_KEY]).get(self.EMAIL_ADDRESS_KEY)
             if isinstance(email, list) and email:
                 # If there is a non-empty list, we use the first entry
                 email = email[0]
@@ -454,11 +454,12 @@ class EmailTokenClass(HotpTokenClass):
         message = message.replace("<otp>", otp)
         message = message.replace("<serial>", serial)
 
+        user_info = self.user.get_specific_info(["givenname", "surname"]) if self.user else {}
         tags = create_tag_dict(serial=serial,
                                tokenowner=self.user,
                                tokentype=self.get_tokentype(),
-                               recipient={"givenname": self.user.info.get("givenname") if self.user else "",
-                                          "surname": self.user.info.get("surname") if self.user else ""},
+                               recipient={"givenname": user_info.get("givenname") if self.user else "",
+                                          "surname": user_info.get("surname") if self.user else ""},
                                escape_html=mimetype.lower() == "html",
                                challenge=challenge)
 

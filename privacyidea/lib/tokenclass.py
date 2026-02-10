@@ -373,9 +373,9 @@ class TokenClass(object):
 
         :return: tuple
         """
-        user_object = self.user
-        user_info = user_object.info
-        user_identifier = "{0!s}_{1!s}".format(user_object.login, user_object.realm)
+        user = self.user
+        user_info = user.get_specific_info(["givenname", "surname"])
+        user_identifier = "{0!s}_{1!s}".format(user.login, user.realm)
         user_displayname = "{0!s} {1!s}".format(user_info.get("givenname", "."),
                                                 user_info.get("surname", "."))
         return user_identifier, user_displayname

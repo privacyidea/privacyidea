@@ -19,10 +19,10 @@
 import copy
 import json
 import logging
-import msal
 from enum import Enum
 from typing import Union, Optional
 
+import msal
 from requests import Response
 
 from privacyidea.api.lib.utils import get_required, get_optional
@@ -33,7 +33,7 @@ from privacyidea.lib.resolvers.HTTPResolver import (HTTPResolver, METHOD, ENDPOI
                                                     CONFIG_GET_USER_BY_ID, RequestConfig, ADVANCED,
                                                     CONFIG_CREATE_USER, CONFIG_EDIT_USER,
                                                     CONFIG_DELETE_USER, REQUEST_MAPPING, HEADERS, CONFIG_USER_AUTH,
-                                                    Error)
+                                                    Error, USER_GROUPS_ATTRIBUTE, ACTIVE)
 from privacyidea.lib.resolvers.util import delete_user_error_handling_no_content
 
 CLIENT_ID = "client_id"
@@ -87,6 +87,7 @@ class EntraIDResolver(HTTPResolver):
                                                REQUEST_MAPPING: "client_id={client_id}&scope=https://graph.microsoft.com"
                                                                 "/.default&username={username}&password={password}&"
                                                                 "grant_type=password&client_secret={client_credential}"}})
+        self.config_get_user_groups = {"active": False, USER_GROUPS_ATTRIBUTE: "displayName"}
         self.wildcard = ""  # No wildcards supported
 
         # Custom attributes
@@ -221,6 +222,17 @@ class EntraIDResolver(HTTPResolver):
         else:
             return super().checkPass(uid, password, username)
 
+    def get_user_groups(self, user: dict) -> list:
+        """
+        Gets all groups of a user
+
+        :param user: user representation from the user store as dict
+        """
+        group_attribute = self.config_get_user_groups.get(USER_GROUPS_ATTRIBUTE, "displayName")
+        member_of = user.get("memberOf", [])
+        groups = [group.get(group_attribute, "") for group in member_of]
+        return groups
+
     def _get_auth_header(self) -> dict:
         """
         Creates the authorization header containing the access token for the Microsoft Graph API requests. First it
@@ -238,7 +250,7 @@ class EntraIDResolver(HTTPResolver):
         header = {"Authorization": f"Bearer {access_token}"}
         return header
 
-    def _get_search_params(self, search_dict: dict) -> dict:
+    def _get_search_params(self, search_dict: dict, allow_endswith: bool = True) -> dict:
         """
         Returns a dictionary containing the search parameters in the format expected by the user store API.
         All search parameters are mapped to the EntraID attributes according to the attribute mapping and concatenated
@@ -271,7 +283,7 @@ class EntraIDResolver(HTTPResolver):
                 headers = user_list_config.get(HEADERS, "{}")
                 try:
                     headers = json.loads(headers)
-                    advanced_query = headers.get("ConsistencyLevel", "") == "eventual"
+                    advanced_query = headers.get("ConsistencyLevel", "") == "eventual" and allow_endswith
                 except json.JSONDecodeError:
                     advanced_query = False
 
@@ -459,3 +471,75 @@ class EntraIDResolver(HTTPResolver):
             # Custom errors can also occur in successful responses
             success = self._custom_error_handling(response, config)
         return success
+
+    def _get_user_list(self, search_dict: dict, config: RequestConfig, attributes: list[str] = None) -> list[dict]:
+        """
+        Fetches a list of users from the user store.
+
+        :param search_dict: Dictionary containing search parameters that are added as query to the endpoint url
+        :param config: Configuration contains all information of the api endpoint to fetch the users.
+        :return: List of dictionaries containing pi conform user attributes
+        """
+        request_params = config.request_mapping if config.request_mapping else {}
+        search_for_groups = self.config_get_user_groups.get(ACTIVE) and (not attributes or "groups" in attributes)
+        request_params.update(self._get_search_params(search_dict, allow_endswith=search_for_groups))
+        config.headers.update(self._get_auth_header())
+
+        if search_for_groups:
+            # If groups are requested, we need to expand the memberOf relationship
+            if "$expand" in request_params:
+                if "memberOf" not in request_params["$expand"]:
+                    request_params["$expand"] += ",memberOf"
+            else:
+                request_params["$expand"] = "memberOf"
+
+        response = self._do_request(config, request_params)
+
+        self._get_user_list_error_handling(response, config)
+
+        # Map user store attributes to pi attributes
+        json_result = response.json()
+        json_result = self._apply_response_mapping(config, json_result)
+        user_store_users = self._get_user_list_from_response(json_result)
+        users = [self._user_store_user_to_pi_user(user, attributes) for user in user_store_users]
+
+        return users
+
+    def _get_user(self, user_identifier: str, config: RequestConfig, attributes: list[str] = None) -> dict:
+        """
+        Fetches a single user from the user store
+
+        :param user_identifier: Either the UID or the username
+        :param config: Configuration to fetch the user
+        :param attributes: list of attributes to be returned for the user
+        :return: Dictionary containing pi conform user attributes
+        """
+        # Request
+        config.headers.update(self._get_auth_header())
+        request_params = config.request_mapping if config.request_mapping else {}
+
+        if self.config_get_user_groups.get(ACTIVE) and (not attributes or "groups" in attributes):
+            # If groups are requested, we need to expand the memberOf relationship
+            if "$expand" in request_params:
+                if "memberOf" not in request_params["$expand"]:
+                    request_params["$expand"] += ",memberOf"
+            else:
+                request_params["$expand"] = "memberOf"
+
+        response = self._do_request(config, request_params)
+
+        # Error handling
+        success = self._get_user_error_handling(response, config, user_identifier)
+
+        # Map user store attributes to pi attributes
+        user_info = {}
+        if success:
+            user_info = response.json()
+            if config.response_mapping:
+                # Apply custom response mapping
+                user_info = self._apply_response_mapping(config, user_info)
+            if self.attribute_mapping_user_store_to_pi:
+                # Apply general attribute mapping
+                user_info = self._user_store_user_to_pi_user(user_info, attributes)
+
+        return user_info

@@ -526,9 +526,10 @@ class CertificateTokenClass(TokenClass):
                 req.get_subject().localityName = 'xxx'
                 req.get_subject().organizationName = 'xxx'
                 """
-                if "email" in subject_components and user.info.get("email"):
+                user_email = user.get_specific_info(["email"]).get("email")
+                if "email" in subject_components and user_email:
                     subject_name.append(
-                        x509.NameAttribute(x509.NameOID.EMAIL_ADDRESS, user.info.get("email"))
+                        x509.NameAttribute(x509.NameOID.EMAIL_ADDRESS, user_email)
                     )
                 if "realm" in subject_components:
                     subject_name.append(

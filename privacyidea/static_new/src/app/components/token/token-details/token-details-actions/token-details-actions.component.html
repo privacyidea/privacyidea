@@ -28,12 +28,12 @@
       <app-set-pin-action
         [repeatPinValue]="repeatPinValue"
         [setPinValue]="setPinValue" />
-      <mat-divider class="margin-top-1 margin-bottom-1" />
+      <mat-divider class="margin-top-16 margin-bottom-16" />
     </div>
   }
   @if (tokenType() !== "passkey" && authService.actionAllowed("resync")) {
     <app-resync-token-action />
-    <mat-divider class="margin-top-1 margin-bottom-1" />
+    <mat-divider class="margin-top-16 margin-bottom-16" />
   }
   @if (tokenType() !== "passkey") {
     <app-test-otp-pin-action />
@@ -87,7 +87,7 @@
         Use Offline
       </button>
     }
-    <mat-divider class="margin-top-1 margin-bottom-1" />
+    <mat-divider class="margin-top-16 margin-bottom-16" />
     @if ((tokenIsActive() && authService.actionAllowed("disable")) ||
     (!tokenIsActive() && authService.actionAllowed("enable"))) {
       <button

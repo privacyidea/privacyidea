@@ -44,44 +44,117 @@ SPDX-License-Identifier: AGPL-3.0-or-later
         <label for="attributeMapping" class="col-sm-3 control-label text-right" translate>Attribute Mapping</label>
 
         <div class="col-sm-9" id="attributeMapping">
-            <table class="table table-bordered table-striped table-capitalize-header">
-                <thead>
-                <tr>
-                    <th translate>PrivacyIDEA Attribute</th>
-                    <th translate>User Store Attribute</th>
-                    <th></th>
-                </tr>
-                </thead>
-                <tbody>
-                <tr ng-repeat="(piAttribute, userStoreAttribute) in advancedParams.attribute_mapping">
-                    <td>{{ piAttribute }}</td>
-                    <td>
-                        <input type="text" class="form-control"
-                               ng-model="advancedParams.attribute_mapping[piAttribute]"
-                               placeholder="{{ piAttribute }}"/>
-                    </td>
-                    <td>
-                        <button class="btn btn-transparent btn-sm btn-danger" ng-click="removeAttribute(piAttribute)">
-                            <span class="glyphicon glyphicon-trash"></span>
-                        </button>
-                    </td>
-                </tr>
-                <tr ng-hide="getRemainingAttributes().length === 0">
-                    <td>
-                        <select ng-model="selectedName" ng-options="attribute for attribute in getRemainingAttributes()"
-                                class="form-control" ng-change="addAttribute(selectedName)">
-                            <option value="" disabled selected translate>Select PrivacyIDEA Attribute</option>
-                        </select>
-                    </td>
-                    <td></td>
-                    <td></td>
-                </tr>
-                </tbody>
-            </table>
-            <p class="help-block" translate>
-                The left column defines the user attributes used in privacyIDEA and the right column the equivalent
-                attribute in the user store.
+            <div>
+                <table class="table table-bordered table-striped table-capitalize-header margin-bottom-8">
+                    <thead>
+                    <tr>
+                        <th translate>PrivacyIDEA Attribute</th>
+                        <th translate>User Store Attribute</th>
+                        <th></th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr ng-repeat="(piAttribute, userStoreAttribute) in advancedParams.attribute_mapping">
+                        <td>{{ piAttribute }}</td>
+                        <td>
+                            <input type="text" class="form-control"
+                                   ng-model="advancedParams.attribute_mapping[piAttribute]"
+                                   placeholder="{{ piAttribute }}"/>
+                        </td>
+                        <td>
+                            <button class="btn btn-transparent btn-sm btn-danger"
+                                    ng-click="removeAttribute(piAttribute)">
+                                <span class="glyphicon glyphicon-trash"></span>
+                            </button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>
+                            <table class="table-responsive table-transparent">
+                                <tr>
+                                    <td colspan="2">
+                                        <select ng-model="selectedName"
+                                                ng-options="attribute for attribute in getRemainingAttributes()"
+                                                class="form-control" ng-change="addAttribute(selectedName)">
+                                            <option value="" disabled selected translate>Select PrivacyIDEA Attribute
+                                            </option>
+                                        </select>
+                                    </td>
+                                    <td></td>
+                                </tr>
+                                <tr>
+                                    <td colspan="2">
+                                        <div class="form-group"></div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <input type="text" class="form-control" ng-model="customAttribute.value">
+                                    </td>
+                                    <td>
+                                        <button class="btn btn-default" ng-click="addCustomKey()">
+                                            Add custom attribute
+                                        </button>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                        <td></td>
+                        <td></td>
+                    </tr>
+                    </tbody>
+                </table>
+                <p class="help-block" translate>
+                    The left column defines the user attributes used in privacyIDEA and the right column the equivalent
+                    attribute in the user store.
+                </p>
+                <h1 class="horizontal-line-invisible"></h1>
+            </div>
+            <div></div>
+            <div class="row">
+                <div class="gap-8 col-sm-2">
+                    <input type="checkbox" ng-model="groups_config.active">
+                    <label>Groups</label>
+                </div>
+                <div ng-class="params.type === 'entraidresolver' ? 'col-sm-10' : 'col-sm-2'">
+                    <input type="text" id="group_attribute" class="form-control"
+                           ng-model="groups_config.user_groups_attribute"
+                           placeholder="" ng-disabled="!groups_config.active">
+                    <p class="help-block">
+                        <span ng-show="params.type !== 'entraidresolver'" translate>User Store Attribute</span>
+                        <span ng-show="params.type === 'entraidresolver'" translate>Group Attribute in EntraID</span>
+                    </p>
+                </div>
+                <div class="col-sm-2" ng-show="params.type !== 'entraidresolver'">
+                    <select name="method" ng-model="groups_config.method" class="form-control"
+                            ng-disabled="!groups_config.active">
+                        <option ng-repeat="(value, displayName) in methods"
+                                value="{{ value }}">{{ displayName }}</option>
+                    </select>
+                    <p class="help-block">
+                        <span translate>HTTP Method</span>
+                    </p>
+                </div>
+                <div class="col-sm-6" ng-show="params.type !== 'entraidresolver'">
+                    <input type="text" id="endpoint" class="form-control" ng-model="groups_config.endpoint"
+                           placeholder="" ng-disabled="!groups_config.active">
+                    <p class="help-block">
+                        <span translate>Endpoint with possible tags: </span><span
+                            ng-repeat="tag in ['realm', 'userid']"> <code>{{ tag }}</code> </span>
+                    </p>
+                </div>
+            </div>
+            <p class="help-block">
+                <span ng-show="params.type !== 'entraidresolver'" translate>
+                    User groups are received in a separate request and stored under the privacyIDEA attribute
+                    <code>groups</code>.
+                </span>
+                <span ng-show="params.type === 'entraidresolver'" translate>
+                    Receive the users groups via the <code>memberOf</code> user attribute and store them under the
+                    privacyIDEA attribute <code>groups</code>.
+                </span>
             </p>
+            <div class="form-group"></div>
         </div>
     </div>
 
@@ -221,9 +294,10 @@ SPDX-License-Identifier: AGPL-3.0-or-later
                                         This credential type does not support to check the user's password.
                                     </p>
                                     <p class="help-block" translate>
-                                        Specify the path to the private key file of the servers certificate. If you use an
-                                        encrypted key, add the password here, otherwise leave the field empty. The server
-                                        certificate must be uploaded in Entra's app registration as client credential.
+                                        Specify the path to the private key file of the servers certificate. If you use
+                                        an encrypted key, add the password here, otherwise leave the field empty. The
+                                        server certificate must be uploaded in Entra's app registration as client
+                                        credential.
                                     </p>
                                 </div>
                             </div>

@@ -63,13 +63,13 @@
     </div>
   </div>
 
-  <div class="margin-top-1 margin-bottom-32">
+  <div class="margin-top-16 margin-bottom-32">
     @switch (fileType()) {
       @case ("aladdin-xml") {
         Here you can upload an XML file from Aladdin or SafeNet as it was used with Aladdin TMS or SafeNet SAM.
       }
       @case ("OATH CSV") {
-        <div class="margin-bottom-1">
+        <div class="margin-bottom-16">
           The file is supposed to contain one token per line. At least the serial number and the seed are required.
           Other parameters are optional. If not defined, the following default values are used:
           <ul>
@@ -80,7 +80,7 @@
         </div>
 
         <div>HOTP and TOTP tokens:</div>
-        <div class="italic margin-bottom-1">serial number, seed, type, otp length, time step</div>
+        <div class="italic margin-bottom-16">serial number, seed, type, otp length, time step</div>
 
         <div>OCRA tokens:</div>
         <div class="italic">serial number, seed, type, ocrasuite</div>
@@ -98,7 +98,7 @@
           format or the password.
         </div>
         <div>
-          <mat-form-field class="width-100 margin-bottom-1">
+          <mat-form-field class="width-100 margin-bottom-16">
             <mat-label>Pre Shared Key</mat-label>
             <input
               matInput
@@ -141,9 +141,9 @@
     }
   </div>
 
-  <div class="margin-bottom-1">
+  <div class="margin-bottom-16">
     <h4 class="sub-headings">Realm</h4>
-    <mat-form-field class="width-50 input-height margin-bottom-1">
+    <mat-form-field class="width-50 input-height margin-bottom-16">
       <mat-label>Select Realm for Tokens</mat-label>
       <mat-select
         multiple
@@ -177,8 +177,8 @@
       }
     </div>
 
-    <div class="drag-and-drop-zone margin-bottom-1">
-      <div class="margin-top-1 margin-bottom-1">
+    <div class="drag-and-drop-zone margin-bottom-16">
+      <div class="margin-top-16 margin-bottom-16">
         <div>
           <mat-icon>upload_file</mat-icon>
         </div>

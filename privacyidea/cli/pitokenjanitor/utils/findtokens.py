@@ -279,6 +279,7 @@ def export_token_data(token_list: list, token_attributes: list = None,
                 user_data = {}
                 user = token_obj.user
                 if user:
+                    user_info = user.get_specific_info(user_attributes)
                     for att in user_attributes:
                         if att == "uid":
                             user_data[att] = f'{user.uid}'
@@ -287,8 +288,8 @@ def export_token_data(token_list: list, token_attributes: list = None,
                         elif att == "realm":
                             user_data[att] = f'{user.realm}'
                         else:
-                            if att in user.info:
-                                user_data[att] = f'{user.info[att]}'
+                            if att in user_info:
+                                user_data[att] = f'{user_info[att]}'
                 token_data["user"] = user_data
             except Exception as e:
                 token_data["user"] = {"error": f"failed to resolve user: {e}"}

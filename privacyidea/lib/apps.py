@@ -133,13 +133,14 @@ def create_google_authenticator_url(key=None, user=None,
     label = tokenlabel.replace("<s>",
                                serial).replace("<u>",
                                                user).replace("<r>", realm)
+    user_info = user_obj.get_specific_info(["givenname", "surname"])
     label = label.format(serial=serial, user=user, realm=realm,
-                         givenname=user_obj.info.get("givenname", ""),
-                         surname=user_obj.info.get("surname", ""))
+                         givenname=user_info.get("givenname", ""),
+                         surname=user_info.get("surname", ""))
 
     issuer = issuer.format(serial=serial, user=user, realm=realm,
-                           givenname=user_obj.info.get("givenname", ""),
-                           surname=user_obj.info.get("surname", ""))
+                           givenname=user_info.get("givenname", ""),
+                           surname=user_info.get("surname", ""))
 
     label = label[0:allowed_label_len]
     url_label = quote(label.encode("utf-8"))

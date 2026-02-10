@@ -23,16 +23,17 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from flask import g, Blueprint, request
 import logging
+
+from flask import g, Blueprint, request
 
 from privacyidea.api.auth import admin_required, user_required
 from privacyidea.api.lib.prepolicy import prepolicy, check_base_action, realmadmin, check_custom_user_attributes
 from privacyidea.api.lib.utils import getParam, send_result
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.event import event
-from privacyidea.lib.policy import get_allowed_custom_attributes
 from privacyidea.lib.policies.actions import PolicyAction
+from privacyidea.lib.policy import get_allowed_custom_attributes
 from privacyidea.lib.user import get_user_list, create_user, User, is_attribute_at_all
 from privacyidea.lib.users.custom_user_attributes import InternalCustomUserAttributes
 
@@ -57,6 +58,9 @@ def get_users():
                   from this realm
     :query resolver: a distinct resolvername
     :query <searchexpr>: a search expression, that depends on the ResolverClass
+    :query attributes: a comma separated list of attributes that should be returned for each user. If not given, all
+        attributes are returned. If an attribute is not available in the user store, an empty value is returned for
+        this attribute.
 
     :return: json result with "result": true and the userlist in "value".
 
@@ -98,8 +102,15 @@ def get_users():
         }
     """
     realm = getParam(request.all_data, "realm")
-    attr = is_attribute_at_all()
-    users = get_user_list(request.all_data, custom_attributes=attr)
+    search_parameters = request.all_data
+    # TODO: How to handle custom attributes in case only specific attributes are requested?
+    custom_attributes = is_attribute_at_all()
+    requested_attributes = request.all_data.get("attributes")
+    if requested_attributes:
+        requested_attributes = [attr.strip() for attr in requested_attributes.split(",")]
+        del search_parameters['attributes']
+    users = get_user_list(search_parameters, custom_attributes=custom_attributes,
+                          requested_attributes=requested_attributes)
 
     g.audit_object.log({'success': True,
                         'info': "realm: {0!s}".format(realm)})

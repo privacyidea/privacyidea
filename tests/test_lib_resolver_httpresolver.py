@@ -3,8 +3,9 @@ import json
 from typing import Optional, Union
 
 import mock
-import responses
 import pytest
+import responses
+from requests.exceptions import SSLError
 
 from privacyidea.api.lib.utils import get_required
 from privacyidea.lib.error import ResolverError, ParameterError
@@ -18,7 +19,8 @@ from privacyidea.lib.resolvers.HTTPResolver import (HTTPResolver, RequestConfig,
                                                     CONFIG_AUTHORIZATION, PASSWORD, USERNAME, VERIFY_TLS, TLS_CA_PATH,
                                                     TIMEOUT, CONFIG_GET_USER_LIST, CONFIG_GET_USER_BY_ID,
                                                     CONFIG_GET_USER_BY_NAME, ADVANCED, CONFIG_CREATE_USER,
-                                                    CONFIG_USER_AUTH, CONFIG_DELETE_USER, CONFIG_EDIT_USER, HTTPMethod)
+                                                    CONFIG_USER_AUTH, CONFIG_DELETE_USER, CONFIG_EDIT_USER, HTTPMethod,
+                                                    CONFIG_GET_USER_GROUPS, ACTIVE, USER_GROUPS_ATTRIBUTE)
 from privacyidea.lib.resolvers.KeycloakResolver import KeycloakResolver, REALM
 from tests.base import MyTestCase
 
@@ -402,6 +404,32 @@ class HTTPResolverTestCase(MyTestCase):
         self.assertRaises(ResolverError, instance.getUserList)
 
     @responses.activate
+    def test_05_get_user_list_groups(self):
+        instance = HTTPResolver()
+        config = copy.deepcopy(self.advanced_config)
+        config[CONFIG_GET_USER_GROUPS] = {ACTIVE: True, METHOD: "GET", ENDPOINT: "/users/{userid}/groups",
+                                          USER_GROUPS_ATTRIBUTE: "name"}
+        instance.loadConfig(config)
+        responses.add(responses.GET, "https://example.com/users", status=200,
+                      body="""[{"login": "testuser", "first_name": "Test", "last_name": "User", "id": "1234", "businessPhone": "+1234567890"}]""")
+        responses.add(responses.GET, "https://example.com/users/1234/groups", status=200,
+                      body="""[{"name": "group1"}, {"name": "group2"}]""")
+
+        # Get all user attributes including groups
+        users = instance.getUserList()
+        self.assertEqual(len(users), 1)
+        user = users[0]
+        self.assertIn('groups', user)
+        self.assertSetEqual({"group1", "group2"}, set(user['groups']))
+
+        # Requesting attributes does not contain groups
+        users = instance.getUserList(attributes=['username', 'userid'])
+        self.assertEqual(len(users), 1)
+        user = users[0]
+        self.assertNotIn('groups', user)
+        self.assertSetEqual({"username", "userid"}, set(user.keys()))
+
+    @responses.activate
     def test_06_get_username(self):
         # Basic resolver
         responses.add(self.METHOD, self.ENDPOINT, status=200, adding_headers=json.loads(self.HEADERS),
@@ -757,14 +785,14 @@ class HTTPResolverTestCase(MyTestCase):
         # Test with valid response
         instance = HTTPResolver()
         instance.loadConfig(self.basic_config)
-        response = instance.getUserInfo('PepePerez')
+        response = instance.get_user_info('PepePerez')
         self.assertEqual(response.get('username'), 'PepePerez')
         self.assertEqual(response.get('email'), 'pepe@perez.com')
         self.assertEqual(response.get('mobile'), '+1123568974')
         self.assertEqual(response.get('a_static_key'), 'a static value')
 
         # Test with invalid response
-        self.assertDictEqual({}, instance.getUserInfo('PepePerez'))
+        self.assertDictEqual({}, instance.get_user_info('PepePerez'))
 
     def test_15_get_config(self):
         resolver = HTTPResolver()
@@ -950,6 +978,46 @@ class HTTPResolverTestCase(MyTestCase):
         resolver = HTTPResolver()
         resolver.loadConfig(self.basic_config)
         self.assertFalse(resolver.checkPass("111-aaa-333", "testpassword", "testuser"))
+
+    @responses.activate
+    def test_25_get_user_groups(self):
+        instance = HTTPResolver()
+        config = copy.deepcopy(self.advanced_config)
+        config[CONFIG_GET_USER_GROUPS] = {ACTIVE: True, METHOD: "GET", ENDPOINT: "/users/{userid}/groups",
+                                          USER_GROUPS_ATTRIBUTE: "name"}
+        instance.loadConfig(config)
+        user = {"id": "1234"}
+
+        # success
+        responses.add(responses.GET, "https://example.com/users/1234/groups", status=200,
+                      body="""[{"name": "group1"}, {"name": "group2"}]""")
+        groups = instance.get_user_groups(user)
+        self.assertSetEqual({"group1", "group2"}, set(groups))
+
+        # failed http request
+        responses.add(responses.GET, "https://example.com/users/1234/groups", status=403,
+                      body="""{"error":"HTTP 403 Forbidden","error_description":"For more on this error consult the server log at the debug level."}""")
+        groups = instance.get_user_groups(user)
+        self.assertListEqual([], groups)
+
+        # SSL error
+        with mock.patch('requests.get', side_effect=SSLError("SSL error message")):
+            groups = instance.get_user_groups(user)
+            self.assertListEqual([], groups)
+
+        # defined group name attribute does not exist
+        responses.add(responses.GET, "https://example.com/users/1234/groups", status=200,
+                      body="""[{"id": "group1"}, {"id": "group2"}]""")
+        groups = instance.get_user_groups(user)
+        self.assertListEqual(["", ""], groups)
+
+        # group name attribute not defined (uses 'name' as default)
+        config[CONFIG_GET_USER_GROUPS] = {ACTIVE: True, METHOD: "GET", ENDPOINT: "/users/{userid}/groups"}
+        instance.loadConfig(config)
+        responses.add(responses.GET, "https://example.com/users/1234/groups", status=200,
+                      body="""[{"id": "group1"}, {"id": "group2"}]""")
+        groups = instance.get_user_groups(user)
+        self.assertListEqual(["", ""], groups)
 
 
 class ConfidentialClientApplicationMock:
@@ -1167,7 +1235,8 @@ class EntraIDResolverTestCase(MyTestCase):
     def test_06_getUserList_success(self):
         resolver = self.set_up_resolver()
 
-        responses.add(responses.GET, "https://graph.microsoft.com/v1.0/users", status=200,
+        # with groups
+        responses.add(responses.GET, "https://graph.microsoft.com/v1.0/users?%24expand=memberOf", status=200,
                       body="""{"@odata.context": "https://graph.microsoft.com/v1.0/$metadata#users",
                      "value": [{"businessPhones": [],
                                 "displayName": "Conf Room Adams",
@@ -1179,7 +1248,8 @@ class EntraIDResolverTestCase(MyTestCase):
                                 "preferredLanguage": null,
                                 "surname": null,
                                 "userPrincipalName": "Adams@contoso.com",
-                                "id": "6ea91a8d-e32e-41a1-b7bd-d2d185eed0e0"},
+                                "id": "6ea91a8d-e32e-41a1-b7bd-d2d185eed0e0",
+                                "memberOf": [{"id": "1234", "displayName": "Group1"}, {"id": "5678", "displayName": "Group2"}]},
                                {"businessPhones": ["425-555-0100"],
                                 "displayName": "MOD Administrator",
                                 "givenName": "MOD",
@@ -1190,10 +1260,51 @@ class EntraIDResolverTestCase(MyTestCase):
                                 "preferredLanguage": "en-US",
                                 "surname": "Administrator",
                                 "userPrincipalName": "admin@contoso.com",
-                                "id": "4562bcc8-c436-4f95-b7c0-4f8ce89dca5e"}]}""")
+                                "id": "4562bcc8-c436-4f95-b7c0-4f8ce89dca5e",
+                                "memberOf": []}]}""")
+        # without groups
+        responses.add(responses.GET, "https://graph.microsoft.com/v1.0/users", status=200,
+                      body="""{"@odata.context": "https://graph.microsoft.com/v1.0/$metadata#users",
+                             "value": [{"businessPhones": [],
+                                        "displayName": "Conf Room Adams",
+                                        "givenName": null,
+                                        "jobTitle": null,
+                                        "mail": "Adams@contoso.com",
+                                        "mobilePhone": null,
+                                        "officeLocation": null,
+                                        "preferredLanguage": null,
+                                        "surname": null,
+                                        "userPrincipalName": "Adams@contoso.com",
+                                        "id": "6ea91a8d-e32e-41a1-b7bd-d2d185eed0e0"},
+                                       {"businessPhones": ["425-555-0100"],
+                                        "displayName": "MOD Administrator",
+                                        "givenName": "MOD",
+                                        "jobTitle": null,
+                                        "mail": null,
+                                        "mobilePhone": "425-555-0101",
+                                        "officeLocation": null,
+                                        "preferredLanguage": "en-US",
+                                        "surname": "Administrator",
+                                        "userPrincipalName": "admin@contoso.com",
+                                        "id": "4562bcc8-c436-4f95-b7c0-4f8ce89dca5e"}]}""")
 
+        # without groups
         user_list = resolver.getUserList()
         self.assertEqual(2, len(user_list))
+        self.assertSetEqual({"Adams@contoso.com", "admin@contoso.com"}, set(user["username"] for user in user_list))
+        for user in user_list:
+            self.assertNotIn("groups", user)
+
+        # with groups
+        resolver.config_get_user_groups = {ACTIVE: True, USER_GROUPS_ATTRIBUTE: "displayName"}
+        user_list = resolver.getUserList()
+        self.assertEqual(2, len(user_list))
+        self.assertSetEqual({"Adams@contoso.com", "admin@contoso.com"}, set(user["username"] for user in user_list))
+        for user in user_list:
+            if user["username"] == "Adams@contoso.com":
+                self.assertSetEqual({"Group1", "Group2"}, set(user["groups"]))
+            else:
+                self.assertListEqual([], user["groups"])
 
     @responses.activate
     def test_07_getUserList_fails(self):
@@ -1233,7 +1344,7 @@ class EntraIDResolverTestCase(MyTestCase):
                                "id": "87d349ed-44d7-43e1-9a83-5f2406dee5bd"
                             }""")
 
-        user_info = resolver.getUserInfo(user_id)
+        user_info = resolver.get_user_info(user_id)
         self.assertEqual(user_id, user_info["userid"])
         self.assertEqual("AdeleV@contoso.com", user_info["username"])
         self.assertEqual("Adele", user_info["givenname"])
@@ -1253,24 +1364,24 @@ class EntraIDResolverTestCase(MyTestCase):
                       body="""{"error": {"code": "Request_ResourceNotFound", 
                                "message": "Resource '12345789' does not exist or one of its queried reference-property objects are not present."}}"""
                       )
-        self.assertDictEqual({}, resolver.getUserInfo(user_id))
+        self.assertDictEqual({}, resolver.get_user_info(user_id))
         responses.add(responses.GET, f"https://graph.microsoft.com/v1.0/users/{user_id}", status=404, body="{}")
-        self.assertDictEqual({}, resolver.getUserInfo(user_id))
+        self.assertDictEqual({}, resolver.get_user_info(user_id))
 
         # Server is busy
         responses.add(responses.GET, f"https://graph.microsoft.com/v1.0/users/{user_id}", status=202, body="{}")
-        self.assertDictEqual({}, resolver.getUserInfo(user_id))
+        self.assertDictEqual({}, resolver.get_user_info(user_id))
 
         # Missing error message in response
         responses.add(responses.GET, f"https://graph.microsoft.com/v1.0/users/{user_id}", status=400, body="{}")
-        self.assertDictEqual({}, resolver.getUserInfo(user_id))
+        self.assertDictEqual({}, resolver.get_user_info(user_id))
 
         # Custom error handling for successful response without user info
         resolver.config[CONFIG_GET_USER_BY_ID][HAS_ERROR_HANDLER] = True
         resolver.config[CONFIG_GET_USER_BY_ID][ERROR_RESPONSE] = {"success": False, "message": "User not found"}
         responses.add(responses.GET, f"https://graph.microsoft.com/v1.0/users/{user_id}", status=200,
                       body="""{"success": false, "message": "User not found"}""")
-        self.assertDictEqual({}, resolver.getUserInfo(user_id))
+        self.assertDictEqual({}, resolver.get_user_info(user_id))
 
     @responses.activate
     def test_10_getUsername(self):
@@ -1497,7 +1608,8 @@ class EntraIDResolverTestCase(MyTestCase):
             del params[CONFIG_USER_AUTH]
 
         # Invalid read configs
-        responses.add(responses.GET, "https://graph.microsoft.com/v1.0/users?%24select=aboutMe", status=501,
+        responses.add(responses.GET, "https://graph.microsoft.com/v1.0/users?%24select=aboutMe",
+                      status=501,
                       body="""{"error": {"code": "501", "message": "Not Implemented"}}""")
         with mock.patch("privacyidea.lib.resolvers.EntraIDResolver.msal.ConfidentialClientApplication",
                         new=ConfidentialClientApplicationMock):
@@ -1838,6 +1950,39 @@ class EntraIDResolverTestCase(MyTestCase):
                            match="User authentication with password is not supported when using a certificate for the client"):
             resolver.checkPass("111-aaa-333", "testpassword", "testuser")
 
+    def test_25_get_user_groups(self):
+        resolver = EntraIDResolver()
+
+        entra_user = {"id": "1234", "displayName": "Test User",
+                      "memberOf": [{"displayName": "Group 1", "id": "group-1"},
+                                   {"displayName": "Group 2", "id": "group-2"}]}
+
+        # everything valid
+        resolver.config_get_user_groups = {ACTIVE: True, USER_GROUPS_ATTRIBUTE: "id"}
+        groups = resolver.get_user_groups(entra_user)
+        self.assertSetEqual({"group-1", "group-2"}, set(groups))
+
+        # No user group attribute set uses displayName by default
+        resolver.config_get_user_groups = {ACTIVE: True}
+        groups = resolver.get_user_groups(entra_user)
+        self.assertSetEqual({"Group 1", "Group 2"}, set(groups))
+
+        # Defined group attribute not available returns empty string for group names
+        resolver.config_get_user_groups = {ACTIVE: True, USER_GROUPS_ATTRIBUTE: "non-existing"}
+        groups = resolver.get_user_groups(entra_user)
+        self.assertListEqual(["", ""], groups)
+
+        # No memberOf attribute available returns empty list
+        entra_user = {"id": "1234", "displayName": "Test User"}
+        resolver.config_get_user_groups = {ACTIVE: True, USER_GROUPS_ATTRIBUTE: "id"}
+        groups = resolver.get_user_groups(entra_user)
+        self.assertListEqual([], groups)
+
+        # User is in no group
+        entra_user = {"id": "1234", "displayName": "Test User", "memberOf": []}
+        groups = resolver.get_user_groups(entra_user)
+        self.assertListEqual([], groups)
+
 
 class KeycloakResolverTestCase(MyTestCase):
 
@@ -1930,6 +2075,56 @@ class KeycloakResolverTestCase(MyTestCase):
         self.assertEqual(2, len(user_list))
 
     @responses.activate
+    def test_03_getUserList_with_groups(self):
+        resolver = self.set_up_resolver()
+        config = resolver.config
+        config[CONFIG_GET_USER_GROUPS] = {ACTIVE: True, METHOD: "get",
+                                          ENDPOINT: "/admin/realms/{realm}/users/{userid}/groups"}
+        resolver.loadConfig(config)
+
+        # Mock users API
+        responses.add(responses.GET, "http://localhost:8080/admin/realms/master/users", status=200,
+                      body="""[{"username": "elizabeth", "firstName": "Elizabeth", "lastName": "Zott", 
+                                    "id": "6ea91a8d-e32e-41a1-b7bd-d2d185eed0e0"}]""")
+        # Mock groups API
+        responses.add(responses.GET,
+                      "http://localhost:8080/admin/realms/master/users/6ea91a8d-e32e-41a1-b7bd-d2d185eed0e0/groups",
+                      status=200,
+                      body="""[{"id":"ea2b739d-053b-4dbe-931f-78e365f56b0b","name":"child-group","path":"/test-group/child-group","parentId":"032b2010-215...14","subGroups":[]},
+                      {"id":"ae4482c9-af0b-47bb-b22d-54a2d9b46205","name":"second-group","path":"/second-group","subGroups":[]}]""")
+
+        user_list = resolver.getUserList()
+        self.assertEqual(1, len(user_list))
+        user = user_list[0]
+        self.assertIn("groups", user)
+        self.assertEqual(2, len(user["groups"]))
+        self.assertSetEqual({"child-group", "second-group"}, set(user["groups"]))
+
+    @responses.activate
+    def test_03_getUserList_groups_disabled(self):
+        resolver = self.set_up_resolver()
+        config = resolver.config
+        config[CONFIG_GET_USER_GROUPS] = {ACTIVE: False, METHOD: "get",
+                                          ENDPOINT: "/admin/realms/{realm}/users/{userid}/groups"}
+        resolver.loadConfig(config)
+
+        # Mock users API
+        responses.add(responses.GET, "http://localhost:8080/admin/realms/master/users", status=200,
+                      body="""[{"username": "elizabeth", "firstName": "Elizabeth", "lastName": "Zott", 
+                                        "id": "6ea91a8d-e32e-41a1-b7bd-d2d185eed0e0"}]""")
+        # Mock groups API
+        responses.add(responses.GET,
+                      "http://localhost:8080/admin/realms/master/users/6ea91a8d-e32e-41a1-b7bd-d2d185eed0e0/groups",
+                      status=200,
+                      body="""[{"id":"ea2b739d-053b-4dbe-931f-78e365f56b0b","name":"child-group","path":"/test-group/child-group","parentId":"032b2010-215...14","subGroups":[]},
+                          {"id":"ae4482c9-af0b-47bb-b22d-54a2d9b46205","name":"second-group","path":"/second-group","subGroups":[]}]""")
+
+        user_list = resolver.getUserList()
+        self.assertEqual(1, len(user_list))
+        user = user_list[0]
+        self.assertNotIn("groups", user)
+
+    @responses.activate
     def test_04_getUserList_fails(self):
         # Could not get access token
         resolver = self.set_up_resolver()
@@ -1964,7 +2159,7 @@ class KeycloakResolverTestCase(MyTestCase):
                       body="""{"username": "elizabeth", "firstName": "Elizabeth", "lastName": "Zott",
                                 "id": "6ea91a8d-e32e-41a1-b7bd-d2d185eed0e0"}""")
 
-        user_info = resolver.getUserInfo(user_id)
+        user_info = resolver.get_user_info(user_id)
         self.assertEqual(user_id, user_info["userid"])
         self.assertEqual("elizabeth", user_info["username"])
         self.assertEqual("Elizabeth", user_info["givenname"])
@@ -1978,22 +2173,22 @@ class KeycloakResolverTestCase(MyTestCase):
         # Mock users API: Unknown user ID
         responses.add(responses.GET, f"http://localhost:8080/admin/realms/master/users/{user_id}", status=404,
                       body='{"error": "User not found", "error_description": "User not found"}')
-        self.assertDictEqual({}, resolver.getUserInfo(user_id))
+        self.assertDictEqual({}, resolver.get_user_info(user_id))
         responses.add(responses.GET, f"http://localhost:8080/admin/realms/master/users/{user_id}", status=400,
                       body='{"error": "User not found", "error_description": "User not found"}')
-        self.assertDictEqual({}, resolver.getUserInfo(user_id))
+        self.assertDictEqual({}, resolver.get_user_info(user_id))
 
         # Unknown error response
         responses.add(responses.GET, f"http://localhost:8080/admin/realms/master/users/{user_id}", status=500,
                       body='{"description": "Internal Server Error"}')
-        self.assertDictEqual({}, resolver.getUserInfo(user_id))
+        self.assertDictEqual({}, resolver.get_user_info(user_id))
 
         # Custom error handling
         resolver.config[CONFIG_GET_USER_BY_ID][HAS_ERROR_HANDLER] = True
         resolver.config[CONFIG_GET_USER_BY_ID][ERROR_RESPONSE] = {}
         responses.add(responses.GET, f"http://localhost:8080/admin/realms/master/users/{user_id}", status=200,
                       body='{}')
-        self.assertDictEqual({}, resolver.getUserInfo(user_id))
+        self.assertDictEqual({}, resolver.get_user_info(user_id))
 
     @responses.activate
     def test_07_getUsername(self):

@@ -50,7 +50,7 @@ import hashlib
 import logging
 import traceback
 
-from sqlalchemy import select, update, delete
+from sqlalchemy import select, delete
 
 from privacyidea.lib.error import ParameterError, ResolverError, UserError
 from privacyidea.models import CustomUserAttribute, db
@@ -318,6 +318,14 @@ class User(object):
         :return: a dict with all the userinformation
         :rtype: dict
         """
+        return self.get_specific_info()
+
+    def get_specific_info(self, attributes: list[str] = None) -> dict:
+        """
+        returns the specified attributes for the user or all if attributes is None
+
+        :return: a dict with the specified user information
+        """
         if self.is_empty() or not self.exist():
             # An empty user has no info
             return {}
@@ -325,10 +333,32 @@ class User(object):
         if uid is None:
             return {}
         y = get_resolver_object(self.resolver)
-        user_info = y.getUserInfo(uid)
+
+        available_attributes = y.get_available_info_keys()
+        # For now, only exclude groups if not requested as this one might be expensive to retrieve, but request all
+        # others to not completely break the LDAP cache
+        if attributes is not None and "groups" not in attributes and "groups" in available_attributes:
+            available_attributes.remove("groups")
+        full_user_info = y.get_user_info(uid, available_attributes)
+        # only return requested attributes
+        user_info = {key: value for key, value in full_user_info.items() if attributes is None or key in attributes}
         # Now add the custom attributes, this is used e.g. in ADDUSERINRESPONSE
         user_info.update(self.attributes)
         return user_info
+
+    @property
+    def available_info_keys(self):
+        """
+        returns the possible keys for user information for this user
+
+        :return: a list of possible keys for user information
+        :rtype: list
+        """
+        if self.is_empty() or not self.exist():
+            # An empty user has no info
+            return []
+        y = get_resolver_object(self.resolver)
+        return y.get_available_info_keys()
 
     @log_with(log)
     def set_attribute(self, attrkey, attrvalue, attrtype=None):
@@ -353,7 +383,7 @@ class User(object):
             attribute_id = existing_attribute.id
         else:
             new_attribute = CustomUserAttribute(user_id=self.uid, resolver=self.resolver, realm_id=self.realm_id,
-                                     Key=attrkey, Value=attrvalue, Type=attrtype)
+                                                Key=attrkey, Value=attrvalue, Type=attrtype)
             db.session.add(new_attribute)
             db.session.flush()
             attribute_id = new_attribute.id
@@ -399,7 +429,7 @@ class User(object):
 
         :returns: list with phone numbers of this user object
         """
-        userinfo = self.info
+        userinfo = self.get_specific_info([phone_type])
         if phone_type in userinfo:
             phone = userinfo[phone_type]
             log.debug("got user phone {0!r} of type {1!r}".format(phone, phone_type))
@@ -731,7 +761,7 @@ def get_user_from_param(param, optionalOrRequired=optional):
 
 
 @log_with(log)
-def get_user_list(param=None, user=None, custom_attributes=False):
+def get_user_list(param=None, user=None, custom_attributes=False, requested_attributes: list[str] = None):
     """
     This function returns a list of user dictionaries.
 
@@ -807,7 +837,7 @@ def get_user_list(param=None, user=None, custom_attributes=False):
             if not y:
                 continue
             log.debug("With this search dictionary: %r", search_dict)
-            ulist = y.getUserList(search_dict)
+            ulist = y.getUserList(search_dict, requested_attributes)
             # Add resolvername to the list
             realm_id = get_realm_id(param_realm or user_realm)
             for ue in ulist:

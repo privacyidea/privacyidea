@@ -332,13 +332,14 @@ class UserNotificationEventHandler(BaseEventHandler):
 
         if notify_type == NOTIFY_TYPE.TOKENOWNER and not tokenowner.is_empty():
             email = handler_options.get("To " + NOTIFY_TYPE.TOKENOWNER, 'email')
+            user_info = tokenowner.get_specific_info(["givenname", "surname", email, "mobile"])
             recipient = {
-                "givenname": tokenowner.info.get("givenname"),
-                "surname": tokenowner.info.get("surname"),
+                "givenname": user_info.get("givenname"),
+                "surname": user_info.get("surname"),
                 "username": tokenowner.login,
                 "userrealm": tokenowner.realm,
-                "email": tokenowner.info.get(email),
-                "mobile": tokenowner.info.get("mobile")
+                "email": user_info.get(email),
+                "mobile": user_info.get("mobile")
             }
         elif notify_type == NOTIFY_TYPE.INTERNAL_ADMIN:
             username = handler_options.get("To " + NOTIFY_TYPE.INTERNAL_ADMIN)
@@ -371,15 +372,16 @@ class UserNotificationEventHandler(BaseEventHandler):
                     }
             else:
                 # Try to find the user in the specified realm
-                user_obj = User(logged_in_user.get("username"),
+                user = User(logged_in_user.get("username"),
                                 logged_in_user.get("realm"))
                 email = handler_options.get("To " + NOTIFY_TYPE.LOGGED_IN_USER, 'email')
-                if user_obj:
+                if user:
+                    user_info = user.get_specific_info(["givenname", "surname", email, "mobile"])
                     recipient = {
-                        "givenname": user_obj.info.get("givenname"),
-                        "surname": user_obj.info.get("surname"),
-                        "email": user_obj.info.get(email),
-                        "mobile": user_obj.info.get("mobile")
+                        "givenname": user_info.get("givenname"),
+                        "surname": user_info.get("surname"),
+                        "email": user_info.get(email),
+                        "mobile": user_info.get("mobile")
                     }
 
         elif notify_type == NOTIFY_TYPE.EMAIL:
@@ -493,10 +495,10 @@ class UserNotificationEventHandler(BaseEventHandler):
 
                         else:
                             # Try to find the user in the specified realm
-                            user_obj = User(logged_in_user.get("username"),
+                            user = User(logged_in_user.get("username"),
                                             logged_in_user.get("realm"))
-                            if user_obj:
-                                reply_to = user_obj.info.get(email) if user_obj else ""
+                            if user:
+                                reply_to = user.get_specific_info(email).get(email) if user else ""
 
                     elif reply_to_type == NOTIFY_TYPE.EMAIL:
                         email = handler_options.get("reply_to " + NOTIFY_TYPE.EMAIL, "").split(",")

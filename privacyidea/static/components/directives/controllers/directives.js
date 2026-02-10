@@ -146,9 +146,10 @@ myApp.directive('assignUser', ["$http", "$rootScope", "userUrl", "AuthFactory", 
                     return scope.newUserObject.loadedUsers;
                 }
                 const auth_token = AuthFactory.getAuthToken();
+                const attributesParam = "&attributes=userid,username,givenname,surname,email,mobile,phone";
                 return $http({
                     method: 'GET',
-                    url: userUrl + "/?username=*" + $viewValue + "*" + "&realm=" + scope.newUserObject.realm,
+                    url: userUrl + "/?username=*" + $viewValue + "*" + "&realm=" + scope.newUserObject.realm + attributesParam,
                     headers: {'PI-Authorization': auth_token}
                 }).then(function ($response) {
                     scope.newUserObject.loadedUsers = $response.data.result.value.map(function (item) {

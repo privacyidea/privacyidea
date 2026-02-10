@@ -220,7 +220,7 @@ class SQLResolverTestCase(MyTestCase):
         self.assertTrue("config" in rdesc.get("sqlresolver"), rdesc)
         self.assertTrue("clazz" in rdesc.get("sqlresolver"), rdesc)
 
-        uinfo = y.getUserInfo(user_id)
+        uinfo = y.get_user_info(user_id)
         self.assertEqual("cornelius", uinfo.get("username"), uinfo)
 
         ret = y.getUserList({"username": "cornelius"})
@@ -600,7 +600,7 @@ class SQLResolverTestCase(MyTestCase):
         y.loadConfig(self.parameters)
         y.map["userid"] = "username"
         user = "cornelius"
-        user_info = y.getUserInfo(user)
+        user_info = y.get_user_info(user)
         self.assertEqual(user_info.get("userid"), "cornelius")
 
     def test_99_testconnection_fail(self):
@@ -749,7 +749,7 @@ class SCIMResolverTestCase(MyTestCase):
         y.loadConfig({'Authserver': self.AUTHSERVER, 'Resourceserver': self.RESOURCESERVER, 'Client': self.CLIENT,
                       'Secret': self.SECRET, 'Mapping': "{username: 'userName'}"})
 
-        r = y.getUserInfo("bjensen")
+        r = y.get_user_info("bjensen")
         self.assertEqual(r.get("username"), "bjensen")
         self.assertEqual(r.get("phone"), "555-555-8377")
         self.assertEqual(r.get("givenname"), "Barbara")
@@ -882,7 +882,7 @@ class LDAPResolverTestCase(MyTestCase):
         self.assertTrue("config" in rdesc.get("ldapresolver"), rdesc)
         self.assertTrue("clazz" in rdesc.get("ldapresolver"), rdesc)
 
-        uinfo = y.getUserInfo(user_id)
+        uinfo = y.get_user_info(user_id)
         self.assertTrue(uinfo.get("username") == "bob", uinfo)
 
         ret = y.getUserList({"username": "bob"})
@@ -974,7 +974,7 @@ class LDAPResolverTestCase(MyTestCase):
                       'UIDTYPE': 'DN',
                       })
 
-        uinfo = y.getUserInfo("cn=bob,ou=example,o=test")
+        uinfo = y.get_user_info("cn=bob,ou=example,o=test")
         self.assertTrue(uinfo.get("email") == "bob@example.com", uinfo)
 
         ret = y.getUserList({"username": "bob@example.com"})
@@ -1066,7 +1066,7 @@ class LDAPResolverTestCase(MyTestCase):
         self.assertTrue("config" in rdesc.get("ldapresolver"), rdesc)
         self.assertTrue("clazz" in rdesc.get("ldapresolver"), rdesc)
 
-        uinfo = y.getUserInfo("3")
+        uinfo = y.get_user_info("3")
         self.assertTrue(uinfo.get("username") == "bob", uinfo)
 
         ret = y.getUserList({"username": "bob"})
@@ -1378,7 +1378,7 @@ class LDAPResolverTestCase(MyTestCase):
                      )
         uid = y.getUserId("bob")
         self.assertEqual(uid, 'cn=bob,ou=example,o=test')
-        userinfo = y.getUserInfo(uid)
+        userinfo = y.get_user_info(uid)
         self.assertEqual(userinfo.get("additionalAttr"), "/home/bob")
 
     @ldap3mock.activate
@@ -1458,26 +1458,26 @@ class LDAPResolverTestCase(MyTestCase):
         # Test MODIFY_DELETE
         r = y.update_user(user_id, {"email": ""})
         self.assertTrue(r)
-        userinfo = y.getUserInfo(user_id)
+        userinfo = y.get_user_info(user_id)
         self.assertFalse(userinfo.get("email"))
 
         # Test MODIFY_REPLACE
         r = y.update_user(user_id, {"surname": "Smith"})
         self.assertTrue(r)
-        userinfo = y.getUserInfo(user_id)
+        userinfo = y.get_user_info(user_id)
         self.assertEqual(userinfo.get("surname"), "Smith")
 
         # Test MODIFY_ADD
         r = y.update_user(user_id, {"email": "bob@testing.com"})
         self.assertTrue(r)
-        userinfo = y.getUserInfo(user_id)
+        userinfo = y.get_user_info(user_id)
         self.assertEqual(userinfo.get("email"), "bob@testing.com")
 
         # Test multiple changes in a single transaction
         r = y.update_user(user_id, {"email": "",
                                     "givenname": "Charlie"})
         self.assertTrue(r)
-        userinfo = y.getUserInfo(user_id)
+        userinfo = y.get_user_info(user_id)
         self.assertEqual(userinfo.get("givenname"), "Charlie")
         self.assertFalse(userinfo.get("email"))
 
@@ -1557,7 +1557,7 @@ class LDAPResolverTestCase(MyTestCase):
                       'CACHE_TIMEOUT': 0
                       })
         user_id = y.getUserId("bob")
-        user_info = y.getUserInfo(user_id)
+        user_info = y.get_user_info(user_id)
         self.assertEqual(user_info.get("username"), "bob")
         self.assertEqual(user_info.get("surname"), "Marley")
         self.assertEqual(user_info.get("givenname"), "Robert")
@@ -1615,7 +1615,7 @@ class LDAPResolverTestCase(MyTestCase):
         # but in the full LDAP there is a "alice". We need to find it, since it
         # is not cached yet in the new resolver cache
         user_id = y.getUserId("alice")
-        user_info = y.getUserInfo(user_id)
+        user_info = y.get_user_info(user_id)
         self.assertEqual(user_info.get("username"), "alice")
         self.assertEqual(user_info.get("surname"), "Cooper")
         self.assertEqual(user_info.get("givenname"), "Alice")
@@ -1801,7 +1801,7 @@ class LDAPResolverTestCase(MyTestCase):
         self.assertTrue("config" in rdesc.get("ldapresolver"), rdesc)
         self.assertTrue("clazz" in rdesc.get("ldapresolver"), rdesc)
 
-        uinfo = y.getUserInfo(user_id)
+        uinfo = y.get_user_info(user_id)
         self.assertEqual(to_bytes(uinfo.get("username")), user, uinfo)
 
         ret = y.getUserList({"username": user})
@@ -1855,7 +1855,7 @@ class LDAPResolverTestCase(MyTestCase):
         self.assertTrue("config" in rdesc.get("ldapresolver"), rdesc)
         self.assertTrue("clazz" in rdesc.get("ldapresolver"), rdesc)
 
-        uinfo = y.getUserInfo(user_id)
+        uinfo = y.get_user_info(user_id)
         self.assertEqual(to_unicode(uinfo.get("username")), user, uinfo)
 
         ret = y.getUserList({"username": user})
@@ -1927,7 +1927,7 @@ class LDAPResolverTestCase(MyTestCase):
         user = "kölbel"
         user_id = y.getUserId(user)
         self.assertEqual(user_id, "cn=kölbel,ou=example,o=test")
-        info = y.getUserInfo(user_id)
+        info = y.get_user_info(user_id)
         self.assertTrue("value1" in info.get("piAttr"))
         self.assertTrue("value2" in info.get("piAttr"))
 
@@ -2079,7 +2079,7 @@ class LDAPResolverTestCase(MyTestCase):
         uid = y.getUserId(objectGUIDs[0])
         self.assertEqual(uid, objectGUIDs[0])
 
-        info = y.getUserInfo(uid)
+        info = y.get_user_info(uid)
         self.assertEqual(info['username'], objectGUIDs[0])
 
     @ldap3mock.activate
@@ -2736,7 +2736,7 @@ class ResolverTestCase(MyTestCase):
         name = y.getUsername("some user")
         self.assertTrue(name == "dummy_user_name", name)
 
-        self.assertTrue(y.getUserInfo("dummy") == {})
+        self.assertTrue(y.get_user_info("dummy") == {})
         self.assertTrue(len(y.getUserList()) == 1)
         self.assertTrue(len(y.getUserList()) == 1)
         rid = y.getResolverId()

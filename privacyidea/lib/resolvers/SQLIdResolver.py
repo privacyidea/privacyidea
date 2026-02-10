@@ -240,7 +240,7 @@ class IdResolver (UserIdResolver):
         """
 
         res = False
-        userinfo = self.getUserInfo(uid)
+        userinfo = self.get_user_info(uid)
 
         database_pw = userinfo.get("password", "XXXXXXX")
 
@@ -260,19 +260,18 @@ class IdResolver (UserIdResolver):
 
         return res
 
-    def getUserInfo(self, userId):
+    def get_user_info(self, user_id: int or str, attributes: list[str] = None) -> dict:
         """
         This function returns all user info for a given userid/object.
 
-        :param userId: The userid of the object
-        :type userId: string
+        :param user_id: The userid of the object
+        :param attributes: list of attribute names to be returned for the user. If None, all attributes are returned.
         :return: A dictionary with the keys defined in self.map
-        :rtype: dict
         """
         userinfo = {}
 
         try:
-            conditions = [self._get_userid_filter(userId)]
+            conditions = [self._get_userid_filter(user_id)]
             conditions = self._append_where_filter(conditions, self.TABLE,
                                                    self.where)
             filter_condition = and_(*conditions)
@@ -280,12 +279,21 @@ class IdResolver (UserIdResolver):
 
             for r in result.mappings():
                 if userinfo:  # pragma: no cover
-                    raise Exception("More than one user with userid {0!s} found!".format(userId))
+                    raise Exception("More than one user with userid {0!s} found!".format(user_id))
                 userinfo = self._get_user_from_mapped_object(r)
         except Exception as exx:  # pragma: no cover
             log.error("Could not get the user information: {0!r}".format(exx))
 
         return userinfo
+
+    def get_available_info_keys(self) -> list[str]:
+        """
+        This function returns a list of known privacyIDEA user attributes which can be used, e.g. for getUserList or
+        get_user_info
+
+        :return: list of possible keys for searching users
+        """
+        return list(self.map.keys())
 
     def _get_userid_filter(self, userId):
         column = self.TABLE.columns[self.map.get("userid")]
@@ -307,7 +315,7 @@ class IdResolver (UserIdResolver):
         :return: username
         :rtype: string
         """
-        info = self.getUserInfo(userId)
+        info = self.get_user_info(userId)
         return info.get('username', "")
 
     def getUserId(self, LoginName):
@@ -375,10 +383,11 @@ class IdResolver (UserIdResolver):
 
         return user
 
-    def getUserList(self, search_dict=None):
+    def getUserList(self, search_dict: dict = None, attributes: list[str] = None) -> list[dict]:
         """
         :param search_dict: A dictionary with search parameters
         :type search_dict: dict
+        :param attributes: list of attributes to be returned for each user
         :return: list of users, where each user is a dictionary
         :raises ParameterError: when the search key does not exist in the
           mapping or database

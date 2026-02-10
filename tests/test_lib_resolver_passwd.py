@@ -96,7 +96,7 @@ class PasswdResolverTest(MyTestCase):
     def test_06_non_ascii_user(self):
         self.assertEqual("nönäscii", self.resolver.getUsername("1116"))
         self.assertEqual("1116", self.resolver.getUserId("nönäscii"))
-        self.assertEqual("Nön", self.resolver.getUserInfo("1116").get('givenname'))
+        self.assertEqual("Nön", self.resolver.get_user_info("1116").get('givenname'))
         self.assertFalse(self.resolver.checkPass("1116", "wrong"))
         self.assertTrue(self.resolver.checkPass("1116", "pässwörd"))
         r = self.resolver.getUserList({"username": "*ö*"})
@@ -133,7 +133,7 @@ class PasswdResolverTest(MyTestCase):
         self.assertFalse(self.resolver.check_attribute(line, "", "unknownattribute"))
 
     def test_10_get_user_info(self):
-        user_info = self.resolver.getUserInfo("1001")
+        user_info = self.resolver.get_user_info("1001")
         self.assertEqual("shadow", user_info.get("username"))
         self.assertEqual("1001", user_info.get("userid"))
         self.assertEqual("x", user_info.get("cryptpass"))
@@ -145,5 +145,5 @@ class PasswdResolverTest(MyTestCase):
         self.assertEqual("", user_info.get("mobile"))
 
         # Get unknown user
-        user_info = self.resolver.getUserInfo("9999")
+        user_info = self.resolver.get_user_info("9999")
         self.assertDictEqual({}, user_info)
