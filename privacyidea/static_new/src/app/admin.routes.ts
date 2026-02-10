@@ -36,6 +36,13 @@ import { RealmTableComponent } from "./components/user/realm-table/realm-table.c
 import { ClientsComponent } from "./components/audit/clients/clients.component";
 import { MachineResolverComponent } from "./components/machine-resolver/machine-resolver.component";
 import { PeriodicTaskComponent } from "./components/configuration/periodic-task/periodic-task.component";
+import { SmtpServersComponent } from "./components/external-services/smtp-servers/smtp-servers.component";
+import { RadiusServersComponent } from "./components/external-services/radius-servers/radius-servers.component";
+import { SmsGatewaysComponent } from "./components/external-services/sms-gateways/sms-gateways.component";
+import { PrivacyideaServersComponent } from "./components/external-services/privacyidea-servers/privacyidea-servers.component";
+import { CaConnectorsComponent } from "./components/external-services/ca-connectors/ca-connectors.component";
+import { TokengroupsComponent } from "./components/external-services/tokengroups/tokengroups.component";
+import { ServiceIdsComponent } from "./components/external-services/service-ids/service-ids.component";
 import { UserResolversComponent } from "./components/user/user-sources/user-resolvers.component";
 import { pendingChangesGuard } from "./guards/pending-changes.guard";
 import { Subscription } from "rxjs";
@@ -97,4 +104,20 @@ export const routes: Routes = [
       { path: "clients", component: ClientsComponent }
     ]
   },
+  {
+    path: "external-services",
+    children: [
+      { path: "smtp", component: SmtpServersComponent, canDeactivate: [pendingChangesGuard] },
+      { path: "radius", component: RadiusServersComponent, canDeactivate: [pendingChangesGuard] },
+      { path: "sms", component: SmsGatewaysComponent, canDeactivate: [pendingChangesGuard] },
+      { path: "privacyidea", component: PrivacyideaServersComponent, canDeactivate: [pendingChangesGuard] },
+      { path: "ca-connectors", component: CaConnectorsComponent, canDeactivate: [pendingChangesGuard] },
+      { path: "tokengroups", component: TokengroupsComponent, canDeactivate: [pendingChangesGuard] },
+      { path: "service-ids", component: ServiceIdsComponent, canDeactivate: [pendingChangesGuard] }
+    ]
+  },
+  {
+    path: "configuration",
+    children: [{ path: "periodic-tasks", component: PeriodicTaskComponent }]
+  }
 ];

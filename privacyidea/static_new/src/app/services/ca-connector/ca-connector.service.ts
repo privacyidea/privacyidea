@@ -16,39 +16,98 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { httpResource, HttpResourceRef } from "@angular/common/http";
-import { Injectable, linkedSignal, WritableSignal } from "@angular/core";
+import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
+import { inject, Injectable, linkedSignal, Signal, WritableSignal } from "@angular/core";
 import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
-import { AuthService } from "../auth/auth.service";
-
-export type CaConnectors = CaConnector[];
+import { AuthService, AuthServiceInterface } from "../auth/auth.service";
+import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
+import { lastValueFrom } from "rxjs";
 
 export interface CaConnector {
   connectorname: string;
+  type: string;
+  data: Record<string, any>;
   templates?: Record<string, any>;
 }
 
+export type CaConnectors = CaConnector[];
+
 export interface CaConnectorServiceInterface {
-  caConnectorServiceResource: HttpResourceRef<PiResponse<CaConnectors> | undefined>;
+  caConnectorResource: HttpResourceRef<PiResponse<CaConnectors> | undefined>;
   caConnectors: WritableSignal<CaConnectors>;
+
+  postCaConnector(connector: CaConnector): Promise<void>;
+  deleteCaConnector(connectorname: string): Promise<void>;
+  getCaSpecificOptions(catype: string, params: any): Promise<any>;
 }
 
 @Injectable({
   providedIn: "root"
 })
-export class CaConnectorService {
-  caConnectorServiceResource = httpResource<PiResponse<CaConnectors>>(() => ({
-    url: environment.proxyUrl + "/caconnector/",
+export class CaConnectorService implements CaConnectorServiceInterface {
+  private readonly authService: AuthServiceInterface = inject(AuthService);
+  private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
+  private readonly http: HttpClient = inject(HttpClient);
+
+  readonly caConnectorBaseUrl = environment.proxyUrl + "/caconnector/";
+
+  caConnectorResource = httpResource<PiResponse<CaConnectors>>(() => ({
+    url: this.caConnectorBaseUrl,
     method: "GET",
     headers: this.authService.getHeaders()
   }));
 
   caConnectors: WritableSignal<CaConnectors> = linkedSignal({
-    source: this.caConnectorServiceResource.value,
+    source: this.caConnectorResource.value,
     computation: (source, previous) => source?.result?.value ?? previous?.value ?? []
   });
 
-  constructor(private authService: AuthService) {
+  async postCaConnector(connector: CaConnector): Promise<void> {
+    const url = `${this.caConnectorBaseUrl}${connector.connectorname}`;
+    const request = this.http.post<PiResponse<any>>(url, connector.data, { headers: this.authService.getHeaders() });
+
+    return lastValueFrom(request)
+      .then(() => {
+        this.notificationService.openSnackBar($localize`Successfully saved CA connector.`);
+        this.caConnectorResource.reload();
+      })
+      .catch((error) => {
+        const message = error.error?.result?.error?.message || "";
+        this.notificationService.openSnackBar($localize`Failed to save CA connector. ` + message);
+        throw new Error("post-failed");
+      });
+  }
+
+  async deleteCaConnector(connectorname: string): Promise<void> {
+    const request = this.http.delete<PiResponse<any>>(`${this.caConnectorBaseUrl}${connectorname}`, {
+      headers: this.authService.getHeaders()
+    });
+    return lastValueFrom(request)
+      .then(() => {
+        this.notificationService.openSnackBar($localize`Successfully deleted CA connector: ${connectorname}.`);
+        this.caConnectorResource.reload();
+      })
+      .catch((error) => {
+        const message = error.error?.result?.error?.message || "";
+        this.notificationService.openSnackBar($localize`Failed to delete CA connector. ` + message);
+        throw new Error("delete-failed");
+      });
+  }
+
+  async getCaSpecificOptions(catype: string, params: any): Promise<any> {
+    const pstring = new URLSearchParams(params).toString();
+    const url = `${this.caConnectorBaseUrl}specific/${catype}?${pstring}`;
+    const request = this.http.get<PiResponse<any>>(url, { headers: this.authService.getHeaders() });
+
+    return lastValueFrom(request)
+      .then((res) => {
+        return res?.result?.value;
+      })
+      .catch((error) => {
+        const message = error.error?.result?.error?.message || "";
+        this.notificationService.openSnackBar($localize`Failed to fetch CA specific options. ` + message);
+        throw new Error("fetch-failed");
+      });
   }
 }

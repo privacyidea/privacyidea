@@ -19,10 +19,8 @@
 import { computed, inject, Injectable, Signal } from "@angular/core";
 import { MatDialog, MatDialogConfig, MatDialogRef } from "@angular/material/dialog";
 
-import {
-  ConfirmationDialogComponent,
-  ConfirmationDialogData
-} from "../../components/shared/confirmation-dialog/confirmation-dialog.component";
+import { ConfirmationDialogComponent } from "../../components/shared/confirmation-dialog/confirmation-dialog.component";
+import type { ConfirmationDialogData } from "../../components/shared/confirmation-dialog/confirmation-dialog.component";
 import { TokenEnrollmentFirstStepDialogComponent } from "../../components/token/token-enrollment/token-enrollment-firtst-step-dialog/token-enrollment-first-step-dialog.component";
 import {
   TokenEnrollmentLastStepDialogComponent,
@@ -171,7 +169,7 @@ export class DialogService implements DialogServiceInterface {
         config
       );
 
-      dialogRef.afterClosed().subscribe((result) => resolve(result?.confirmed ?? false));
+      dialogRef.afterClosed().subscribe((result) => resolve(!!result));
     });
   }
 

@@ -21,7 +21,9 @@ import { SubscriptionExpiryService } from "./subscription-expiry.service";
 import { MatDialog } from "@angular/material/dialog";
 import { AuthService } from "../auth/auth.service";
 import { signal } from "@angular/core";
-import { MockAuthService, MockPiResponse, MockSubscriptionService } from "../../../testing/mock-services";
+import { MockAuthService } from "../../../testing/mock-services/mock-auth-service";
+import { MockPiResponse } from "../../../testing/mock-services";
+import { MockSubscriptionService } from "../../../testing/mock-services/mock-subscription-serivce";
 
 function makeSubs(value: Record<string, any>) {
   return MockPiResponse.fromValue<Record<string, any>>(value);

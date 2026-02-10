@@ -55,6 +55,16 @@ import { FormsModule } from "@angular/forms";
 import { RealmService, RealmServiceInterface } from "../../../services/realm/realm.service";
 import { ResolverService, ResolverServiceInterface } from "../../../services/resolver/resolver.service";
 import { PeriodicTaskService } from "../../../services/periodic-task/periodic-task.service";
+import { SmtpService, SmtpServiceInterface } from "../../../services/smtp/smtp.service";
+import { RadiusService, RadiusServiceInterface } from "../../../services/radius/radius.service";
+import { SmsGatewayService, SmsGatewayServiceInterface } from "../../../services/sms-gateway/sms-gateway.service";
+import {
+  PrivacyideaServerService,
+  PrivacyideaServerServiceInterface
+} from "../../../services/privacyidea-server/privacyidea-server.service";
+import { TokengroupService, TokengroupServiceInterface } from "../../../services/tokengroup/tokengroup.service";
+import { CaConnectorService, CaConnectorServiceInterface } from "../../../services/ca-connector/ca-connector.service";
+import { ServiceIdService, ServiceIdServiceInterface } from "../../../services/service-id/service-id.service";
 import { EventService, EventServiceInterface } from "../../../services/event/event.service";
 
 @Component({
@@ -102,6 +112,13 @@ export class NavigationComponent {
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   protected readonly sessionTimerService: SessionTimerServiceInterface = inject(SessionTimerService);
   private readonly resolverService: ResolverServiceInterface = inject(ResolverService);
+  private readonly smtpService: SmtpServiceInterface = inject(SmtpService);
+  private readonly radiusService: RadiusServiceInterface = inject(RadiusService);
+  private readonly smsGatewayService: SmsGatewayServiceInterface = inject(SmsGatewayService);
+  private readonly privacyideaService: PrivacyideaServerServiceInterface = inject(PrivacyideaServerService);
+  private readonly tokengroupService: TokengroupServiceInterface = inject(TokengroupService);
+  private readonly caConnectorService: CaConnectorServiceInterface = inject(CaConnectorService);
+  private readonly serviceIdService: ServiceIdServiceInterface = inject(ServiceIdService);
   protected readonly periodicTaskService = inject(PeriodicTaskService);
   protected readonly eventService: EventServiceInterface = inject(EventService);
   protected readonly router: Router = inject(Router);
@@ -169,12 +186,32 @@ export class NavigationComponent {
       case ROUTE_PATHS.USERS_RESOLVERS:
         this.resolverService.resolversResource.reload();
         break;
+      case ROUTE_PATHS.EXTERNAL_SERVICES_SMTP:
+        this.smtpService.smtpServerResource.reload();
+        break;
+      case ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS:
+        this.radiusService.radiusServerResource.reload();
+        break;
+      case ROUTE_PATHS.EXTERNAL_SERVICES_SMS:
+        this.smsGatewayService.smsGatewayResource.reload();
+        break;
+      case ROUTE_PATHS.EXTERNAL_SERVICES_PRIVACYIDEA:
+        this.privacyideaService.privacyideaServerResource.reload();
+        break;
+      case ROUTE_PATHS.EXTERNAL_SERVICES_TOKENGROUPS:
+        this.tokengroupService.tokengroupResource.reload();
+        break;
+      case ROUTE_PATHS.EXTERNAL_SERVICES_CA_CONNECTORS:
+        this.caConnectorService.caConnectorResource.reload();
+        break;
+      case ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS:
+        this.serviceIdService.serviceIdResource.reload();
+        break;
       case ROUTE_PATHS.EVENTS:
         this.eventService.allEventsResource.reload();
         break;
     }
   }
-
 
   onSingleHeaderClick(event: MouseEvent, route_path: string): void {
     event.preventDefault();
