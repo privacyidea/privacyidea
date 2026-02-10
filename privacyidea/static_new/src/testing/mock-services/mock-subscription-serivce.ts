@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2026,  https://netknights.it
+ * (c) NetKnights GmbH 2025,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,10 +16,15 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { signal } from "@angular/core";
+import { of } from "rxjs";
+import { MockHttpResourceRef, MockPiResponse } from "./mock-utils";
+import { PiResponse } from "../../app/app.component";
 
-export class MockSessionTimerService {
-  remainingTime = signal(300);
-  startTimer = jest.fn();
-  resetTimer = jest.fn();
+export class MockSubscriptionService {
+  reload = jest.fn();
+  deleteSubscription = jest.fn(() => of(MockPiResponse.fromValue(true)));
+  uploadSubscriptionFile = jest.fn(() => of(MockPiResponse.fromValue({})));
+  subscriptionsResource = new MockHttpResourceRef<PiResponse<Record<string, any>>>(
+    MockPiResponse.fromValue({})
+  );
 }

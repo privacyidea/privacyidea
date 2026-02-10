@@ -23,9 +23,11 @@ import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { SubscriptionService } from "../../../services/subscription/subscription.service";
 import { NotificationService } from "../../../services/notification/notification.service";
 import { AuthService } from "../../../services/auth/auth.service";
-import { MockAuthService, MockNotificationService, MockPiResponse, MockSubscriptionService } from "../../../../testing/mock-services";
 import { of } from "rxjs";
 import { By } from "@angular/platform-browser";
+import { MockSubscriptionService } from "../../../../testing/mock-services/mock-subscription-serivce";
+import { MockNotificationService, MockPiResponse } from "../../../../testing/mock-services";
+import { MockAuthService } from "../../../../testing/mock-services/mock-auth-service";
 
 describe("SubscriptionComponent", () => {
   let component: SubscriptionComponent;

@@ -30,7 +30,8 @@ import { AuthGuard } from "./guards/auth.guard";
 import { AuthService } from "./services/auth/auth.service";
 import { NotificationService } from "./services/notification/notification.service";
 import { SessionTimerService } from "./services/session-timer/session-timer.service";
-import { MockAuthService, MockNotificationService, MockSessionTimerService } from "../testing/mock-services";
+import { MockAuthService } from "../testing/mock-services/mock-auth-service";
+import { MockNotificationService, MockSessionTimerService } from "../testing/mock-services";
 
 describe("AppComponent", () => {
   beforeEach(async () => {
@@ -114,7 +115,6 @@ describe("AppComponent", () => {
       auth = TestBed.inject(AuthService) as unknown as MockAuthService;
 
       auth.isAuthenticated.set(true);
-      auth.role.set("admin");
 
       await router.navigateByUrl("/");
       jest.runOnlyPendingTimers();
