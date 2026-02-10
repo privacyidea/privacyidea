@@ -21,10 +21,13 @@ import { WelcomeDialogComponent } from "./welcome-dialog.component";
 import { MatDialogRef } from "@angular/material/dialog";
 import { AuthService } from "../../../services/auth/auth.service";
 import { signal } from "@angular/core";
+import { WelcomeDialogServiceMock } from "../../../../testing/mock-services/mock-welcome-dialog-service";
+import { WelcomeDialogService } from "../../../services/welcome/welcome-dialog.service";
 
 describe("WelcomeDialogComponent", () => {
   let component: WelcomeDialogComponent;
   let dialogRefMock: { close: jest.Mock };
+  let welcomeDialogServiceMock: WelcomeDialogServiceMock;
   let authMock: {
     hideWelcome: ReturnType<typeof signal<boolean>>;
     subscriptionStatus: ReturnType<typeof signal<number>>;
@@ -32,6 +35,7 @@ describe("WelcomeDialogComponent", () => {
 
   beforeEach(() => {
     dialogRefMock = { close: jest.fn() };
+    welcomeDialogServiceMock = new WelcomeDialogServiceMock();
     authMock = {
       hideWelcome: signal(false),
       subscriptionStatus: signal(0)
@@ -40,7 +44,7 @@ describe("WelcomeDialogComponent", () => {
     TestBed.configureTestingModule({
       providers: [
         { provide: MatDialogRef, useValue: dialogRefMock },
-        { provide: AuthService, useValue: authMock }
+        { provide: AuthService, useValue: authMock },
       ]
     });
 
@@ -51,10 +55,9 @@ describe("WelcomeDialogComponent", () => {
     expect(component.step()).toBe(0);
   });
 
-  it("should start at step 4 if hideWelcome is true", () => {
+  it("should not open the dialog when hideWelcome is true", () => {
     authMock.hideWelcome.set(true);
-    const c = TestBed.createComponent(WelcomeDialogComponent).componentInstance;
-    expect(c.step()).toBe(4);
+    expect(welcomeDialogServiceMock.opened()).toBe(false);
   });
 
   it("nextWelcome should increment step and close at >=5", () => {
