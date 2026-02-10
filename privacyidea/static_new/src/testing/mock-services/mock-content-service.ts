@@ -16,9 +16,10 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { computed, signal, WritableSignal } from "@angular/core";
+import { computed, Signal, signal, WritableSignal } from "@angular/core";
 import { Router } from "@angular/router";
 import { ContentServiceInterface } from "../../app/services/content/content.service";
+import { ROUTE_PATHS } from "../../app/route_paths";
 
 export class MockContentService implements ContentServiceInterface {
   detailsUsername = signal("");
@@ -27,7 +28,6 @@ export class MockContentService implements ContentServiceInterface {
   previousUrl = signal("");
   tokenSerial = signal("");
   containerSerial = signal("");
-
   onLogin = computed(() => this.routeUrl() === "/login");
   onAudit = computed(() => this.routeUrl() === "/audit");
   onTokens = computed(() => this.routeUrl() === "/tokens");
@@ -51,7 +51,7 @@ export class MockContentService implements ContentServiceInterface {
   onAnyUsersRoute = computed(() => this.routeUrl() === "/users" || this.routeUrl().startsWith("/users/"));
   onTokensContainersTemplates: WritableSignal<boolean> = signal(false);
   onEvents = computed(() => this.routeUrl() === "/events");
-
+  onConfigurationSystem: Signal<boolean> = computed(() => this.routeUrl() === ROUTE_PATHS.CONFIGURATION_SYSTEM);
   tokenSelected = jest.fn();
   containerSelected = jest.fn();
   userSelected = jest.fn();

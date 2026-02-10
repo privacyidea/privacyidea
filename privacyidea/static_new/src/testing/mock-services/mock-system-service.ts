@@ -16,12 +16,12 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { computed, Signal, WritableSignal } from "@angular/core";
+import { computed, signal, Signal, WritableSignal } from "@angular/core";
 import { Observable, of } from "rxjs";
 import { HttpResourceRef } from "@angular/common/http";
-import { MockHttpResourceRef, MockPiResponse } from "../mock-services";
-import { SystemServiceInterface } from "../../app/services/system/system.service";
+import { PiNode, SystemServiceInterface } from "../../app/services/system/system.service";
 import { CaConnectors } from "../../app/services/ca-connector/ca-connector.service";
+import { MockHttpResourceRef, MockPiResponse } from "./mock-utils";
 
 /**
  * function createMockHttpResource(result: any = []) {
@@ -61,7 +61,7 @@ export class MockSystemService implements SystemServiceInterface {
   radiusServerResource: HttpResourceRef<any>;
   nodesResource: HttpResourceRef<any>;
   systemConfig: Signal<any>;
-  nodes: Signal<any>;
+  nodes: Signal<PiNode[]>;
 
   constructor() {
     const mockConfig = {
@@ -84,12 +84,15 @@ export class MockSystemService implements SystemServiceInterface {
       MockPiResponse.fromValue({})
     );
     this.nodesResource = new MockHttpResourceRef(
-      MockPiResponse.fromValue([])
+      MockPiResponse.fromValue<PiNode[]>([
+        { name: "Node 1", uuid: "node-1" },
+        { name: "Node 2", uuid: "node-2" }
+      ])
     );
     this.systemConfig = computed(() => {
       return this.systemConfigResource.value()?.result?.value ?? {};
     });
-    this.nodes = computed(() => {
+    this.nodes = computed<PiNode[]>(() => {
       return this.nodesResource.value()?.result?.value ?? [];
     });
   }
