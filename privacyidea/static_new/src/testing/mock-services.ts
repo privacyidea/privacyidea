@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Audit, AuditServiceInterface } from "../app/services/audit/audit.service";
-import { AuthData, AuthDetail, AuthResponse, AuthRole } from "../app/services/auth/auth.service";
+import { AuthData, AuthDetail, AuthResponse, AuthRole, JwtData } from "../app/services/auth/auth.service";
 import {
   ContainerDetailData,
   ContainerDetails,
@@ -1148,6 +1148,9 @@ export class MockLocalService implements LocalServiceInterface {
 
 export class MockSessionTimerService {
   remainingTime = signal(300);
+
+  startTimer = jest.fn();
+  resetTimer = jest.fn();
 }
 
 export class MockChallengesService {
@@ -1232,6 +1235,26 @@ export class MockApplicationService {
 
 export class MockVersioningService {
   version = { set: jest.fn() } as any;
+}
+
+export class MockAuthService {
+  isAuthenticated = signal(false);
+  jwtData = signal<JwtData | null>(null);
+  role = signal<AuthRole>("user");
+  realm = signal("defrealm");
+  hideWelcome = signal(false);
+  subscriptionStatus = signal(0);
+  actionAllowed = jest.fn((action: string) => true);
+  getHeaders = jest.fn(() => new HttpHeaders());
+}
+
+export class MockSubscriptionService {
+  reload = jest.fn();
+  deleteSubscription = jest.fn(() => of(MockPiResponse.fromValue(true)));
+  uploadSubscriptionFile = jest.fn(() => of(MockPiResponse.fromValue({})));
+  subscriptionsResource = new MockHttpResourceRef<PiResponse<Record<string, any>>>(
+    MockPiResponse.fromValue({})
+  );
 }
 
 export class MockSystemService {
