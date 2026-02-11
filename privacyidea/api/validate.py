@@ -619,8 +619,7 @@ def _handle_serial_auth(context: dict, serial: str):
             if not tokens:
                 raise ParameterError("Given serial does not belong to given user!")
         except ResourceNotFoundError:
-            #raise ParameterError("Given serial does not belong to given user!")
-            return
+            raise ParameterError("Given serial does not belong to given user!")
 
     # Perform Check
     if not otp_only:
