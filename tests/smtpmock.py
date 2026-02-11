@@ -140,7 +140,6 @@ class SmtpMock(object):
             response = (535, "authentication failed (#5.7.1)")
         return {self._request_data.get("recipient"): response}
 
-    #    def _on_init(self, SMTP_instance, host, port=25, timeout=3):
     def _on_init(self, *args, **kwargs):
         SMTP_instance = args[0]
         host = args[1]

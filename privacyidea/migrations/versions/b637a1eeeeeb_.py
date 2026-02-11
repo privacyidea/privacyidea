@@ -17,8 +17,8 @@ depends_on = None
 
 def upgrade():
     with op.batch_alter_table('smtpserver', schema=None) as batch_op:
-        batch_op.add_column(sa.Column('smime', sa.Boolean(), nullable=False))
-        batch_op.add_column(sa.Column('dont_send_on_error', sa.Boolean(), nullable=False))
+        batch_op.add_column(sa.Column('smime', sa.Boolean(), nullable=True))
+        batch_op.add_column(sa.Column('dont_send_on_error', sa.Boolean(), nullable=True))
         batch_op.add_column(sa.Column('private_key', sa.Unicode(length=255), nullable=True))
         batch_op.add_column(sa.Column('certificate', sa.Unicode(length=255), nullable=True))
         batch_op.add_column(sa.Column('private_key_password', sa.Unicode(length=255), nullable=True))

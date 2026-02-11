@@ -112,56 +112,60 @@
             <label for="tls" translate>Use StartTLS</label>
         </div>
     </div>
-    <div class="form-group">
-        <label for="certificate" class="col-sm-3 control-label"
-               translate>Certificate</label>
-        <div class="col-sm-9">
-            <input name="certificate" class="form-control"
-                   ng-model="params.certificate"
-                   placeholder="The path to the certificate file"/>
+    <fieldset style="border: 1px solid #ccc; padding: 10px; margin-bottom: 15px;">
+        <legend style="width: auto; border-bottom: none; margin-bottom: 0; font-size: 16px; font-weight: bold; padding: 0 5px;" translate>S/MIME</legend>
+        <div class="form-group">
+            <label for="certificate" class="col-sm-3 control-label"
+                   translate>Certificate</label>
+            <div class="col-sm-9">
+                <input name="certificate" class="form-control"
+                       ng-model="params.certificate"
+                       placeholder="The path to the certificate file"/>
+            </div>
         </div>
-    </div>
-    <div class="form-group">
-        <label for="private_key" class="col-sm-3 control-label"
-               translate>Private Key</label>
-        <div class="col-sm-9">
-            <input name="private_key" class="form-control"
-                   ng-model="params.private_key"
-                   placeholder="The path to the private key file"/>
+        <div class="form-group">
+            <label for="private_key" class="col-sm-3 control-label"
+                   translate>Private Key</label>
+            <div class="col-sm-9">
+                <input name="private_key" class="form-control"
+                       ng-model="params.private_key"
+                       placeholder="The path to the private key file"/>
+            </div>
         </div>
-    </div>
-    <div class="form-group">
-        <label for="private_key_password" class="col-sm-3 control-label"
-               translate>Password for the private key</label>
-        <div class="col-sm-9">
-            <input name="private_key_password" class="form-control"
-                   type="password" autocomplete="new-password"
-                   ng-model="params.private_key_password"
-                   placeholder="topsecret"/>
+        <div class="form-group">
+            <label for="private_key_password" class="col-sm-3 control-label"
+                   translate>Password for the private key</label>
+            <div class="col-sm-9">
+                <input name="private_key_password" class="form-control"
+                       type="password" autocomplete="new-password"
+                       ng-model="params.private_key_password"
+                       placeholder="topsecret"/>
+            </div>
         </div>
-    </div>
-    <div class="form-group">
-        <div class="col-sm-3 control-label"></div>
-        <div class="col-sm-9">
-            <input type="checkbox"
-                   ng-model="params.smime"
-                   ng-checked="isChecked(params.smime)"
-                   name="smime"
-                   id="smime">
-            <label for="smime" translate>S/MIME signing</label>
+        <div class="form-group">
+            <div class="col-sm-3 control-label"></div>
+            <div class="col-sm-9">
+                <div class="row">
+                    <div class="col-sm-6">
+                        <input type="checkbox"
+                               ng-model="params.smime"
+                               ng-checked="isChecked(params.smime)"
+                               name="smime"
+                               id="smime">
+                        <label for="smime" translate>S/MIME signing</label>
+                    </div>
+                    <div class="col-sm-6">
+                        <input type="checkbox"
+                               ng-model="params.dont_send_on_error"
+                               ng-checked="isChecked(params.dont_send_on_error)"
+                               name="dont_send_on_error"
+                               id="dont_send_on_error">
+                        <label for="dont_send_on_error" translate>Don't send on signing error</label>
+                    </div>
+                </div>
+            </div>
         </div>
-    </div>
-    <div class="form-group">
-        <div class="col-sm-3 control-label"></div>
-        <div class="col-sm-9">
-            <input type="checkbox"
-                   ng-model="params.dont_send_on_error"
-                   ng-checked="isChecked(params.dont_send_on_error)"
-                   name="dont_send_on_error"
-                   id="dont_send_on_error">
-            <label for="dont_send_on_error" translate>Don't send on signing error</label>
-        </div>
-    </div>
+    </fieldset>
     <div class="form-group" ng-if="hasJobQueue">
         <div class="col-sm-3 control-label"></div>
         <div class="col-sm-9">
@@ -200,4 +204,3 @@
     </div>
 
 </form>
-

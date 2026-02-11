@@ -16,14 +16,16 @@ depends_on = None
 
 
 def upgrade():
-    op.alter_column('pidea_audit', 'signature',
-                    existing_type=sa.VARCHAR(length=620),
-                    type_=sa.Unicode(length=1100),
-                    existing_nullable=True)
+    with op.batch_alter_table('pidea_audit') as batch_op:
+        batch_op.alter_column('signature',
+                              existing_type=sa.VARCHAR(length=620),
+                              type_=sa.Unicode(length=1100),
+                              existing_nullable=True)
 
 
 def downgrade():
-    op.alter_column('pidea_audit', 'signature',
-                    existing_type=sa.Unicode(length=1100),
-                    type_=sa.VARCHAR(length=620),
-                    existing_nullable=True)
+    with op.batch_alter_table('pidea_audit') as batch_op:
+        batch_op.alter_column('signature',
+                              existing_type=sa.Unicode(length=1100),
+                              type_=sa.VARCHAR(length=620),
+                              existing_nullable=True)
