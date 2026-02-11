@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2016 NetKnights GmbH <https://netknights.it>
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 #  2016-08-30 Cornelius Kölbel <cornelius.koelbel@netknights.it>
 #             Save client application information for authentication requests
 #
@@ -30,7 +33,7 @@ from typing import Union
 
 from netaddr import IPAddress
 from sqlalchemy import func, select
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, OperationalError
 
 from privacyidea.lib.config import get_privacyidea_node
 from .log import log_with
@@ -70,7 +73,7 @@ def save_clientapplication(ip: Union[IPAddress, str], clienttype: str):
         db.session.add(client_app)
     try:
         db.session.commit()
-    except IntegrityError as e:  # pragma: no cover
+    except (IntegrityError, OperationalError) as e:  # pragma: no cover
         log.info(f'Unable to write ClientApplication entry to db: {e}')
         log.debug(traceback.format_exc())
 
