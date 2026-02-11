@@ -59,32 +59,32 @@ body {
   --background-green-brand: linear-gradient(145deg, var(--green-brand-light), var(--green-brand-base));
 
   --box-shadow: var(--shadow-distance) var(--shadow-distance) var(--blur) var(--mat-sys-shadow),
-    var(--light-distance) var(--light-distance) var(--blur) var(--mat-sys-light);
+  var(--light-distance) var(--light-distance) var(--blur) var(--mat-sys-light);
   --box-shadow-white: var(--shadow-distance) var(--shadow-distance) var(--blur) var(--mat-sys-shadow),
-    var(--light-distance) var(--light-distance) var(--blur) var(--mat-sys-light);
+  var(--light-distance) var(--light-distance) var(--blur) var(--mat-sys-light);
   --box-shadow-inset: inset var(--shadow-distance) var(--shadow-distance) var(--blur) var(--mat-sys-shadow),
-    inset var(--light-distance) var(--light-distance) var(--blur) var(--mat-sys-light);
+  inset var(--light-distance) var(--light-distance) var(--blur) var(--mat-sys-light);
 
   --background-blue: linear-gradient(145deg, var(--mat-sys-primary-dark), var(--mat-sys-primary));
   --background-blue-inset: linear-gradient(145deg, var(--mat-sys-primary-light-active), var(--mat-sys-primary-light));
   --box-shadow-blue: inset var(--shadow-distance) var(--shadow-distance) var(--blur) var(--mat-sys-primary-light-active),
-    inset var(--light-distance) var(--light-distance) var(--blur) var(--mat-sys-primary-dark);
+  inset var(--light-distance) var(--light-distance) var(--blur) var(--mat-sys-primary-dark);
   --box-shadow-blue-inset: inset var(--shadow-distance) var(--shadow-distance) var(--blur) var(--mat-sys-primary-dark),
-    inset var(--light-distance) var(--light-distance) var(--blur) var(--mat-sys-primary-light-active);
+  inset var(--light-distance) var(--light-distance) var(--blur) var(--mat-sys-primary-light-active);
 
   --background-green: linear-gradient(145deg, var(--green-base), var(--green-light));
   --background-green-inset: linear-gradient(145deg, var(--green-light), var(--green-base));
   --box-shadow-green: inset var(--shadow-distance) var(--shadow-distance) var(--blur) var(--green-light-active),
-    inset var(--light-distance) var(--light-distance) var(--blur) var(--green-dark);
+  inset var(--light-distance) var(--light-distance) var(--blur) var(--green-dark);
   --box-shadow-green-inset: inset var(--shadow-distance) var(--shadow-distance) var(--blur) var(--green-dark),
-    inset var(--light-distance) var(--light-distance) var(--blur) var(--green-light-active);
+  inset var(--light-distance) var(--light-distance) var(--blur) var(--green-light-active);
 
   --background-red: linear-gradient(145deg, var(--red-base), var(--red-light));
   --background-red-inset: linear-gradient(145deg, var(--red-light), var(--red-base));
   --box-shadow-red: inset var(--shadow-distance) var(--shadow-distance) var(--blur) var(--red-light-active),
-    inset var(--light-distance) var(--light-distance) var(--blur) var(--red-dark);
+  inset var(--light-distance) var(--light-distance) var(--blur) var(--red-dark);
   --box-shadow-red-inset: inset var(--shadow-distance) var(--shadow-distance) var(--blur) var(--red-dark),
-    inset var(--light-distance) var(--light-distance) var(--blur) var(--red-light-active);
+  inset var(--light-distance) var(--light-distance) var(--blur) var(--red-light-active);
 
   --background-yellow: linear-gradient(145deg, var(--yellow-base), var(--yellow-light));
   --background-yellow-inset: linear-gradient(145deg, var(--yellow-light), var(--yellow-base));
@@ -93,9 +93,9 @@ body {
   --background-gray-inset: linear-gradient(145deg, var(--grey-light), var(--grey-base));
 
   --box-shadow-gray: inset var(--shadow-distance) var(--shadow-distance) var(--blur) var(--grey-light-active),
-    inset var(--light-distance) var(--light-distance) var(--blur) var(--grey-dark);
+  inset var(--light-distance) var(--light-distance) var(--blur) var(--grey-dark);
   --box-shadow-gray-inset: inset var(--shadow-distance) var(--shadow-distance) var(--blur) var(--grey-dark),
-    inset var(--light-distance) var(--light-distance) var(--blur) var(--grey-light-active);
+  inset var(--light-distance) var(--light-distance) var(--blur) var(--grey-light-active);
 
   --box-shadow-header: 4px 2px var(--blur) var(--mat-sys-shadow);
   --box-dialog-shadow: 0px 4px 20px var(--mat-sys-shadow-color-high);
@@ -185,6 +185,10 @@ body {
 
 .just-end {
   justify-content: end;
+}
+
+.just-space-between {
+  justify-content: space-between;
 }
 
 .flex {
@@ -286,6 +290,10 @@ body {
   margin-left: 16px;
 }
 
+.margin-right-1 {
+  margin-right: 16px;
+}
+
 .margin-top-0 {
   margin-top: 0;
 }
@@ -296,6 +304,10 @@ body {
 
 .margin-top-8 {
   margin-top: 8px;
+}
+
+.margin-top-16 {
+  margin-top: 16px;
 }
 
 .margin-top-2 {
@@ -316,6 +328,10 @@ body {
 
 .margin-bottom-8 {
   margin-bottom: 8px;
+}
+
+.margin-bottom-16 {
+  margin-bottom: 16px;
 }
 
 .margin-bottom-32 {
@@ -358,6 +374,10 @@ body {
   height: auto;
 }
 
+.gap-0 {
+  gap: 0;
+}
+
 .gap-16 {
   gap: 16px;
 }
@@ -385,33 +405,43 @@ body {
 .overflow {
   overflow: auto;
 }
+
 .padding-2 {
   padding: 2px;
 }
+
 .padding-4 {
   padding: 4px;
 }
+
 .padding-8 {
   padding: 8px;
 }
+
 .padding-16 {
   padding: 16px;
 }
+
 .padding-32 {
   padding: 32px;
 }
+
 .margin-2 {
   margin: 2px;
 }
+
 .margin-4 {
   margin: 4px;
 }
+
 .margin-8 {
   margin: 8px;
 }
+
 .margin-16 {
   margin: 16px;
 }
+
 .margin-32 {
   margin: 32px;
 }
@@ -432,6 +462,11 @@ body {
   display: flex !important;
   justify-content: center;
   color: #d0d0d0;
+}
+
+.highlight {
+  background-color: var(--green-brand-light) !important;
+  padding: 0 2px;
 }
 
 ::ng-deep {
@@ -493,6 +528,7 @@ body {
   background-color: var(--mat-sys-surface-container-lowest);
   padding: 16px;
   transition: box-shadow 0.3s ease-in-out;
+  border-radius: var(--border-radius);
 }
 
 .sticky-header.is-sticky {
@@ -505,9 +541,8 @@ body {
   gap: var(--global-gap);
 }
 
-.sticky-controls .mat-mdc-form-field {
-  flex-grow: 1;
-  width: 100%;
+.sticky-controls .mat-mdc-form-field-subscript-wrapper {
+  height: 0;
 }
 
 .flex-row-stretch {
@@ -520,10 +555,10 @@ body {
   display: flex;
   flex-direction: column;
 }
+
 .flex-row {
   display: flex;
   flex-direction: row;
-  gap: var(--global-gap);
 }
 
 .flex-grow-1 {
@@ -544,12 +579,46 @@ body {
   }
 
   .mat-mdc-select-panel[aria-multiselectable="false"]
-    .mat-mdc-option.mdc-list-item--selected:not(.mdc-list-item--disabled)
-    .mdc-list-item__primary-text {
+  .mat-mdc-option.mdc-list-item--selected:not(.mdc-list-item--disabled)
+  .mdc-list-item__primary-text {
     color: white !important;
   }
 
   .mat-mdc-option:hover:not(.mdc-list-item--selected, .mdc-list-item--disabled) {
     background-color: #f2f9fd;
+  }
+
+  .cdk-overlay-container {
+    margin-left: 297px;
+    width: calc(100% - 297px);
+
+    .mat-mdc-select-panel {
+      margin-left: -297px;
+    }
+
+    .mat-mdc-autocomplete-panel {
+      margin-left: -297px;
+    }
+
+    .mat-mdc-menu-panel {
+      margin-left: -297px;
+    }
+
+    .mat-mdc-tooltip {
+      margin-left: -340px;
+    }
+
+    &:has(.welcome-dialog-panel),
+    &:has(.global-dialog-panel) {
+      margin-left: 0;
+      width: 100%;
+
+      .mat-mdc-select-panel,
+      .mat-mdc-autocomplete-panel,
+      .mat-mdc-menu-panel,
+      .mat-mdc-tooltip {
+        margin-left: 0;
+      }
+    }
   }
 }

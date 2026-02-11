@@ -14,21 +14,21 @@ $profile-hover-bg: var(--background-yellow-inset);
 
 $grad-surface: linear-gradient(145deg, var(--mat-sys-surface-container), var(--mat-sys-surface-container-low));
 $grad-surface-hover: linear-gradient(
-  145deg,
-  var(--mat-sys-surface-container-lowest),
-  var(--mat-sys-surface-container-low)
+                145deg,
+                var(--mat-sys-surface-container-lowest),
+                var(--mat-sys-surface-container-low)
 );
 
 $background-low-contrast: linear-gradient(
-  145deg,
-  var(--mat-sys-surface-container-highest),
-  var(--mat-sys-surface-container-low)
+                145deg,
+                var(--mat-sys-surface-container-highest),
+                var(--mat-sys-surface-container-low)
 );
 
 $button-low-contrast-variant: linear-gradient(
-  145deg,
-  var(--mat-sys-surface-container-low),
-  var(--mat-sys-surface-container-highest)
+                145deg,
+                var(--mat-sys-surface-container-low),
+                var(--mat-sys-surface-container-highest)
 );
 
 @mixin button-base($height, $width, $background-color, $border-color, $color) {
@@ -61,11 +61,11 @@ $button-low-contrast-variant: linear-gradient(
 
 @mixin card-button-variant($background-color, $border-color, $color) {
   @include button-base(
-    $height: $button-height,
-    $width: $button-width,
-    $background-color: $background-color,
-    $border-color: $border-color,
-    $color: $color
+          $height: $button-height,
+          $width: $button-width,
+          $background-color: $background-color,
+          $border-color: $border-color,
+          $color: $color
   );
 }
 
@@ -140,9 +140,9 @@ $button-low-contrast-variant: linear-gradient(
 
 .card-button-1 {
   @include card-button-variant(
-    var(--mat-sys-surface-container),
-    var(--mat-sys-surface-container-highest),
-    var(--mat-sys-on-surface-variant)
+                  var(--mat-sys-surface-container),
+                  var(--mat-sys-surface-container-highest),
+                  var(--mat-sys-on-surface-variant)
   );
 }
 
@@ -152,9 +152,9 @@ $button-low-contrast-variant: linear-gradient(
 
 .card-button-support {
   @include card-button-variant(
-    var(--mat-sys-surface-container-lowest),
-    var(--green-brand-light),
-    var(--green-brand-light)
+                  var(--mat-sys-surface-container-lowest),
+                  var(--green-brand-light),
+                  var(--green-brand-light)
   );
 }
 
@@ -214,7 +214,7 @@ $button-low-contrast-variant: linear-gradient(
 }
 
 .delete-info-button {
-  margin-top: 16px;
+  margin: 10px 4px 0 4px;
 }
 
 .refresh-btn {
@@ -309,7 +309,21 @@ $button-low-contrast-variant: linear-gradient(
   display: inline-block;
   width: 1em;
   height: 1em;
-  --svg: url("data:image/svg+xml,%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%20-960%20960%20960%27%3E%3Cpath%20fill%3D%27%2523000%27%20d%3D%27M480-120q-151%200-255.5-46.5T120-280v-400q0-66%20105.5-113T480-840q149%200%20254.5%2047T840-680v400q0%2067-104.5%20113.5T480-120Zm0-479q89%200%20179-25.5T760-679q-11-29-100.5-55T480-760q-91%200-178.5%2025.5T200-679q14%2030%20101.5%2055T480-599Zm0%20199q42%200%2081-4t74.5-11.5q35.5-7.5%2067-18.5t57.5-25v-120q-26%2014-57.5%2025t-67%2018.5Q600-528%20561-524t-81%204q-42%200-82-4t-75.5-11.5Q287-543%20256-554t-56-25v120q25%2014%2056%2025t66.5%2018.5Q358-408%20398-404t82%204Zm0%20200q46%200%2093.5-7t87.5-18.5q40-11.5%2067-26t32-29.5v-98q-26%2014-57.5%2025t-67%2018.5Q600-328%20561-324t-81%204q-42%200-82-4t-75.5-11.5Q287-343%20256-354t-56-25v99q5%2015%2031.5%2029t66.5%2025.5q40%2011.5%2088%2018.5t94%207Z%27%2F%3E%3C%2Fsvg%3E");
+  --svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 -960 960 960'%3E%3Cpath fill='currentColor' d='M480-120q-151 0-255.5-46.5T120-280v-400q0-66 105.5-113T480-840q149 0 254.5 47T840-680v400q0 67-104.5 113.5T480-120Zm0-479q89 0 179-25.5T760-679q-11-29-100.5-55T480-760q-91 0-178.5 25.5T200-679q14 30 101.5 55T480-599Zm0 199q42 0 81-4t74.5-11.5q35.5-7.5 67-18.5t57.5-25v-120q-26 14-57.5 25t-67 18.5Q600-528 561-524t-81 4q-42 0-82-4t-75.5-11.5Q287-543 256-554t-56-25v120q25 14 56 25t66.5 18.5Q358-408 398-404t82 4Zm0 200q46 0 93.5-7t87.5-18.5q40-11.5 67-26t32-29.5v-98q-26 14-57.5 25t-67 18.5Q600-328 561-324t-81 4q-42 0-82-4t-75.5-11.5Q287-343 256-354t-56-25v99q5 15 31.5 29t66.5 25.5q40 11.5 88 18.5t94 7Z'/%3E%3Cpath fill='currentColor' d='M740-700h40v40h40v40h-40v40h-40v-40h-40v-40h40v-40Z'/%3E%3C/svg%3E");
+  background-color: currentColor;
+  -webkit-mask-image: var(--svg);
+  mask-image: var(--svg);
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+}
+
+.ms--add-database {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  --svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 -960 960 960'%3E%3Cpath fill='currentColor' d='M 467 -120 q -73 -1 -136 -14 t -110 -34.5 q -47 -21.5 -74 -50 T 120 -280 q 0 33 27 61.5 t 74 50 Q 268 -147 331 -134 t 136 14 Z m -15 -200 q -38 -2 -73.5 -6.5 t -67.5 -12 q -32 -7.5 -60 -17.5 t -51 -23 q 23 13 51 23 t 60 17.5 q 32 7.5 67.5 12 T 452 -320 Z m 28 -279 q 89 0 179 -26.5 T 760 -679 q -11 -29 -100.5 -55 T 480 -760 q -91 0 -178.5 25.5 T 200 -679 q 14 27 101.5 53.5 T 480 -599 Z M 639 -413 h 80 v 80 h 80 v 80 h -80 v 80 h -80 v -80 h -80 v -80 h 80 Z Z M 443 -201 q 3 22 9 42 t 15 39 q -73 -1 -136 -14 t -110 -34.5 q -47 -21.5 -74 -50 T 120 -280 v -400 q 0 -66 105.5 -113 T 480 -840 q 149 0 254.5 47 T 840 -680 v 187 q -19 -9 -39 -15 t -41 -9 v -62 q -52 29 -124 44 t -156 15 q -85 0 -157 -15 t -123 -44 v 101 q 51 47 130.5 62.5 T 480 -400 h 11 q -13 18 -22.5 38 T 452 -320 q -76 -4 -141 -18.5 T 200 -379 v 99 q 7 13 30 26.5 t 56 24 q 33 10.5 73.5 18 T 443 -201 Z'/%3E%3Cpath fill='currentColor' d='M740-700h40v40h40v40h-40v40h-40v-40h-40v-40h40v-40Z'/%3E%3C/svg%3E");
   background-color: currentColor;
   -webkit-mask-image: var(--svg);
   mask-image: var(--svg);
@@ -402,9 +416,8 @@ $button-low-contrast-variant: linear-gradient(
   padding: var(--half-global-padding) var(--global-padding);
   border: 1px solid var(--mat-sys-outline);
   background-color: var(--mat-sys-surface);
-  transition:
-    background-color 0.2s ease-in-out,
-    color 0.2s ease-in-out;
+  transition: background-color 0.2s ease-in-out,
+  color 0.2s ease-in-out;
 }
 
 .mat-mdc-outlined-button .mat-icon {
@@ -542,4 +555,30 @@ $button-low-contrast-variant: linear-gradient(
       height: 36px !important;
     }
   }
+}
+
+.scroll-to-top-fab {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: var(--mat-sys-surface-container-lowest);
+  height: 48px;
+  width: 48px;
+  color: var(--mat-sys-on-surface-variant);
+  border-radius: var(--border-radius);
+  border: unset;
+  @include mat.elevation(5);
+
+  &:hover {
+    @include mat.elevation(8);
+  }
+}
+
+.scroll-to-top-fab-icon {
+  width: 24px;
+}
+
+::ng-deep mat-icon {
+  display: flex !important;
+  align-items: center !important;
 }

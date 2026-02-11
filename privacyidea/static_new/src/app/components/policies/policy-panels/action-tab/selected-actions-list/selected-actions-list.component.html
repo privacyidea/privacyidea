@@ -22,7 +22,7 @@
       class="action-card"
       [class.action-card-selected]="policyService.selectedAction()?.name === action.name"
       (click)="onActionClick(action)">
-      <div class="action-row">
+      <div class="action-card-row">
         <span class="action-label">{{ action.name }}</span>
         @if (!isBooleanAction(action.name)) {
           <span class="action-value">{{ action.value }}</span>

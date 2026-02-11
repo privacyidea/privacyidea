@@ -29,34 +29,6 @@
       href="assets/favicon.ico"
       rel="icon"
       type="image/x-icon" />
-
-    <script>
-      window.appConfig =
-        {
-          instance: {{ instance | safe }},
-          backendUrl: {{ backendUrl | safe }},
-          browserLang: {{ browser_lang | safe }},
-          remoteUser: {{ remote_user | safe }},
-          forceRemoteUser: {{ force_remote_user | safe }},
-          theme: {{ theme | safe }},
-          translationWarning: {{ translation_warning | safe }},
-          passwordReset: {{ password_reset | safe }},
-          hsmReady: {{ hsm_ready | safe }},
-          hasJobQueue: {{ has_job_queue | safe }},
-          customization: {{ customization | safe }},
-          customCss: {{ custom_css | safe }},
-          customizationMenuFile: {{ customization_menu_file | safe }},
-          customizationBaselineFile: {{ customization_baseline_file | safe }},
-          realms: {{ realms | safe }},
-          showNode: {{ show_node | safe }},
-          externalLinks: {{ external_links | safe }},
-          loginText: {{ login_text | safe }},
-          gdprLink: {{ gdpr_link | safe }},
-          logo: {{ logo | safe }},
-          pageTitle: {{ page_title | safe }},
-          otpPinSetRandomUser: {{ otp_pin_set_random_user | safe }}
-        };
-    </script>
   </head>
   <body class="mat-typography">
     <app-root></app-root>

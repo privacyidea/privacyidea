@@ -27,7 +27,7 @@ import { forkJoin, lastValueFrom, Observable, of, throwError } from "rxjs";
 import { catchError } from "rxjs/operators";
 import { NotificationService } from "../notification/notification.service";
 import { ConfirmationDialogComponent } from "../../components/shared/confirmation-dialog/confirmation-dialog.component";
-import { BulkResult } from "../token/token.service";
+import { DialogReturnData } from "../dialog/dialog.service";
 
 export type PeriodicTask = {
   "id": string;
@@ -99,10 +99,15 @@ export interface PeriodicTaskServiceInterface {
   moduleOptions: WritableSignal<Record<string, Record<string, PeriodicTaskOption>>>;
 
   enablePeriodicTask(taskId: string): Promise<any>;
+
   disablePeriodicTask(taskId: string): Promise<any>;
+
   deletePeriodicTask(taskId: string): Observable<PiResponse<number, any>>;
+
   deleteWithConfirmDialog(task: PeriodicTask, dialog: any, afterDelete?: () => void): void;
+
   savePeriodicTask(task: PeriodicTask): Observable<PiResponse<number, any> | undefined>;
+
   fetchAllModuleOptions(): void;
 }
 
@@ -147,7 +152,6 @@ export class PeriodicTaskService implements PeriodicTaskServiceInterface {
       { headers: headers }
     ).pipe(
       catchError((error) => {
-        console.log("Failed to enable periodic task:", error);
         this.periodicTasksResource.reload();
         this.notificationService.openSnackBar("Failed to enable periodic task!");
         return of(undefined);
@@ -163,7 +167,6 @@ export class PeriodicTaskService implements PeriodicTaskServiceInterface {
       { headers: headers }
     ).pipe(
       catchError((error) => {
-        console.log("Failed to disable periodic task:", error);
         this.periodicTasksResource.reload();
         this.notificationService.openSnackBar("Failed to disable periodic task!");
         return of(undefined);
@@ -201,7 +204,7 @@ export class PeriodicTaskService implements PeriodicTaskServiceInterface {
       })
       .afterClosed()
       .subscribe({
-        next: (result: any) => {
+        next: (result: DialogReturnData) => {
           if (result) {
             this.deletePeriodicTask(task.id).subscribe({
               next: (response: PiResponse<number, any>) => {

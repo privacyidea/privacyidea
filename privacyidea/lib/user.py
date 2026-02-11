@@ -520,7 +520,7 @@ class User(object):
             # try to load the UserIdResolver Class
             try:
                 y = get_resolver_object(reso)
-                sf = y.getSearchFields()
+                sf = y.get_search_fields()
                 searchFields[reso] = sf
 
             except Exception as e:  # pragma: no cover

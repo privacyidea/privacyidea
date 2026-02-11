@@ -17,22 +17,67 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { TestBed } from "@angular/core/testing";
-
 import { ServiceIdService } from "./service-id.service";
 import { provideHttpClient } from "@angular/common/http";
-import { provideHttpClientTesting } from "@angular/common/http/testing";
+import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
+import { AuthService } from "../auth/auth.service";
+import { NotificationService } from "../notification/notification.service";
+import { environment } from "../../../environments/environment";
 
 describe("ServiceIdService", () => {
-  let serviceIdService: ServiceIdService;
+  let service: ServiceIdService;
+  let httpMock: HttpTestingController;
+  let notificationService: NotificationService;
 
   beforeEach(() => {
+    const authServiceMock = {
+      getHeaders: jest.fn().mockReturnValue({}),
+    };
+    const notificationServiceMock = {
+      openSnackBar: jest.fn(),
+    };
+
     TestBed.configureTestingModule({
-      providers: [provideHttpClient(), provideHttpClientTesting()]
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: AuthService, useValue: authServiceMock },
+        { provide: NotificationService, useValue: notificationServiceMock },
+      ]
     });
-    serviceIdService = TestBed.inject(ServiceIdService);
+    service = TestBed.inject(ServiceIdService);
+    httpMock = TestBed.inject(HttpTestingController);
+    notificationService = TestBed.inject(NotificationService);
+  });
+
+  afterEach(() => {
+    httpMock.verify();
   });
 
   it("should be created", () => {
-    expect(serviceIdService).toBeTruthy();
+    expect(service).toBeTruthy();
+  });
+
+  it("should post service ID", async () => {
+    const serviceId = { servicename: "test", description: "desc" };
+    const promise = service.postServiceId(serviceId);
+
+    const req = httpMock.expectOne(`${environment.proxyUrl}/serviceid/test`);
+    expect(req.request.method).toBe("POST");
+    req.flush({ result: { status: true } });
+
+    await promise;
+    expect(notificationService.openSnackBar).toHaveBeenCalledWith("Successfully saved service ID.");
+  });
+
+  it("should delete service ID", async () => {
+    const promise = service.deleteServiceId("test");
+
+    const req = httpMock.expectOne(`${environment.proxyUrl}/serviceid/test`);
+    expect(req.request.method).toBe("DELETE");
+    req.flush({ result: { status: true } });
+
+    await promise;
+    expect(notificationService.openSnackBar).toHaveBeenCalledWith("Successfully deleted service ID: test.");
   });
 });

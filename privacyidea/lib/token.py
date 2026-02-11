@@ -62,7 +62,6 @@ tokenclass implementations like lib.tokens.hotptoken)
 
 This is the middleware/glue between the HTTP API and the database
 """
-import base64
 import datetime
 import logging
 import os
@@ -76,11 +75,11 @@ from typing import Union
 from dateutil.tz import tzlocal
 from flask import Request
 from flask_sqlalchemy.session import Session
-from sqlalchemy import (and_, func, String)
-from sqlalchemy import or_, select
+from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.sql import Select
-from sqlalchemy.sql.expression import FunctionElement, delete
+from sqlalchemy.sql.expression import delete
+from sqlalchemy.sql.functions import FunctionElement
 
 from privacyidea.api.lib.utils import send_result
 from privacyidea.lib import _
@@ -128,10 +127,10 @@ ENCODING = "utf-8"
 # Configuration to generate a complete random serial
 PI_TOKEN_SERIAL_RANDOM = "PI_TOKEN_SERIAL_RANDOM"  # nosec B105
 
-B32_ALPHABET = base64._b32alphabet.decode()
+B32_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567'
 
 
-# Define function to convert Oracle CLOBs to VARCHAR before using them in a
+# Define a function to convert Oracle CLOBs to VARCHAR before using them in a
 # compare operation.
 # By using <https://docs.sqlalchemy.org/en/13/core/compiler.html> we can
 # differentiate between different dialects.
@@ -184,7 +183,7 @@ def create_tokenclass_object(db_token):
         try:
             token_object = token_class(db_token)
         except Exception as e:  # pragma: no cover
-            raise TokenAdminError(_("create_tokenclass_object failed:  {0!r}").format(e),
+            raise TokenAdminError(_("create_tokenclass_object failed: {0!r}").format(e),
                                   id=1609)
     else:
         log.error('type {0!r} not found in tokenclasses'.format(tokentype))
@@ -366,7 +365,7 @@ def _create_token_query(tokentype=None, token_type_list=None, realm=None, assign
         key, value = list(tokeninfo.items())[0]
         sql_query = sql_query.join(TokenInfo, TokenInfo.token_id == Token.id)
         sql_query = sql_query.where(TokenInfo.Key == key)
-        sql_query = sql_query.where(func.cast(TokenInfo.Value, String) == value)
+        sql_query = sql_query.where(clob_to_varchar(TokenInfo.Value) == value)
 
     # Filtering by container_serial
     if container_serial is not None:
@@ -1389,7 +1388,7 @@ def init_token(param: dict, user: User = None, tokenrealms: list[str] = None, to
                 db_token.delete()
         raise
 
-    # We only set the tokenkind here, if it was explicitly set in the init_token call.
+    # We only set the tokenkind here if it was explicitly set in the init_token call.
     # In all other cases it is set in the update method of the tokenclass.
     if tokenkind:
         token.add_tokeninfo("tokenkind", tokenkind)
@@ -1832,7 +1831,7 @@ def set_hashlib(serial, hashlib="sha1", user=None):
 def set_count_auth(serial, count, user=None, max=False, success=False):
     """
     The auth counters are stored in the token info database field.
-    There are different counters, that can be set::
+    There are different counters that can be set::
 
         count_auth -> max=False, success=False
         count_auth_max -> max=True, success=False

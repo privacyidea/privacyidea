@@ -2,6 +2,19 @@
 This file contains all styles for actions as used e.g. in policies, event handlers, periodic tasks, etc.
 */
 
+.action-selector-container {
+  background-color: var(--mat-sys-surface-container);
+  border-radius: var(--border-radius);
+  box-shadow: var(--mat-sys-level2);
+  color: var(--mat-sys-on-surface);
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--global-gap) / 2);
+  min-width: 0;
+  overflow: scroll;
+  padding: var(--three-quarters-global-padding);
+}
+
 .selected-actions-container {
   display: flex;
   flex-direction: column;
@@ -30,20 +43,22 @@ This file contains all styles for actions as used e.g. in policies, event handle
   --mdc-icon-button-icon-color: currentColor;
 }
 
-.action-row {
+// The row inside an action card showing label and value
+.action-card-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
-.action-row:not(:last-child) {
+.action-card-row:not(:last-child) {
   padding-bottom: var(--half-global-padding);
 }
 
-.action-row:not(:first-child) {
+.action-card-row:not(:first-child) {
   padding-top: var(--half-global-padding);
 }
 
+// Label and value inside an action card row
 .action-label {
   font-weight: 500;
 }

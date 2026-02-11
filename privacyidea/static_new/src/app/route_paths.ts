@@ -39,5 +39,15 @@ export const ROUTE_PATHS = {
   TOKENS_CONTAINERS_WIZARD: "/tokens/containers/wizard",
   MACHINE_RESOLVER: "/configuration/machine_resolver",
   USERS_REALMS: "/users/realms",
-  CONFIGURATION_PERIODIC_TASKS: "/configuration/periodic-tasks"
+  CONFIGURATION_PERIODIC_TASKS: "/configuration/periodic-tasks",
+  EXTERNAL_SERVICES_SMTP: "/external-services/smtp",
+  EXTERNAL_SERVICES_RADIUS: "/external-services/radius",
+  EXTERNAL_SERVICES_SMS: "/external-services/sms",
+  EXTERNAL_SERVICES_PRIVACYIDEA: "/external-services/privacyidea",
+  EXTERNAL_SERVICES_CA_CONNECTORS: "/external-services/ca-connectors",
+  EXTERNAL_SERVICES_TOKENGROUPS: "/external-services/tokengroups",
+  EXTERNAL_SERVICES_SERVICE_IDS: "/external-services/service-ids",
+  USERS_RESOLVERS: "/users/resolvers",
+  SUBSCRIPTION: "/configuration/subscription",
+  EVENTS: "/events"
 };

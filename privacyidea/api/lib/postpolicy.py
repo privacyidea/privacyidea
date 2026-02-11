@@ -66,7 +66,6 @@ from privacyidea.lib.info.rss import FETCH_DAYS
 from privacyidea.lib.machine import get_auth_items
 from privacyidea.lib.policy import (DEFAULT_ANDROID_APP_URL, DEFAULT_IOS_APP_URL, DEFAULT_PREFERRED_CLIENT_MODE_LIST,
                                     SCOPE, AUTOASSIGNVALUE, AUTHORIZED, Match)
-from privacyidea.lib.realm import get_default_realm
 from privacyidea.lib.subscriptions import (subscription_status,
                                            get_subscription,
                                            check_subscription,
@@ -83,7 +82,9 @@ from ...lib.container import (get_all_containers, init_container, init_registrat
                               create_container_tokens_from_template)
 from ...lib.containers.container_info import SERVER_URL, CHALLENGE_TTL, REGISTRATION_TTL, SSL_VERIFY, RegistrationState
 from ...lib.policies.actions import PolicyAction
+from ...lib.user import User
 from ...lib.users.custom_user_attributes import InternalCustomUserAttributes
+from ...models import Challenge
 
 log = logging.getLogger(__name__)
 
@@ -95,8 +96,7 @@ DEFAULT_PAGE_SIZE = 15
 DEFAULT_TOKENTYPE = "hotp"
 DEFAULT_CONTAINER_TYPE = "generic"
 DEFAULT_TIMEOUT_ACTION = "lockscreen"
-DEFAULT_POLICY_TEMPLATE_URL = "https://raw.githubusercontent.com/privacyidea/" \
-                              "policy-templates/master/templates/"
+DEFAULT_POLICY_TEMPLATE_URL = "/static/policy-templates/"
 BODY_TEMPLATE = lazy_gettext("""
 <--- Please describe your Problem in detail --->
 
@@ -544,7 +544,7 @@ def save_pin_change(request, response, serial=None):
 
                 # If there is a change_pin_every policy, we need to set the PIN anew.
                 policy = Match.token(g, scope=SCOPE.ENROLL, action=PolicyAction.CHANGE_PIN_EVERY,
-                                       token=token).action_values(unique=True)
+                                     token=token).action_values(unique=True)
                 if policy:
                     token.set_next_pin_change(diff=list(policy)[0])
 
@@ -1033,7 +1033,7 @@ def multichallenge_enroll_via_validate(request, response):
         if len(get_tokens(tokentype=tokentype, user=user)) == 0:
             # Check if another policy restricts the token count and exit early if true
             try:
-                check_max_token_user(request=request)
+                check_max_token_user(request=request, token_type=tokentype)
                 check_max_token_realm(request=request)
             except PolicyError as e:
                 g.audit_object.log({"success": True, "action_detail": f"{e}"})

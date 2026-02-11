@@ -27,7 +27,7 @@ import {
   PrivacyideaServerService,
   PrivacyideaServerServiceInterface,
   RemoteServer
-} from "../../../../services/privavyidea-server/privacyidea-server.service";
+} from "../../../../services/privacyidea-server/privacyidea-server.service";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 
 import {

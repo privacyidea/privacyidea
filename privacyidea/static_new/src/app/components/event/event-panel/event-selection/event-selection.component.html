@@ -1,0 +1,75 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<form>
+  <mat-form-field
+    class="width-100"
+    floatLabel="always">
+    <mat-label>Events</mat-label>
+    <mat-chip-grid
+      #chipGrid
+      required
+      [formControl]="selectedEvents"
+      aria-label="Event selection">
+      @for (event of selectedEvents.value; track $index) {
+        <mat-chip-row (removed)="removeEvent(event)">
+          {{ event }}
+          <button
+            matChipRemove
+            [attr.aria-label]="'remove ' + event">
+            <mat-icon>cancel</mat-icon>
+          </button>
+        </mat-chip-row>
+      }
+    </mat-chip-grid>
+    <input
+      matInput
+      placeholder="New Event..."
+      [value]="searchTerm()"
+      (input)="onSearchInputChanges($event)"
+      [matChipInputFor]="chipGrid"
+      [matAutocomplete]="auto"
+      [matChipInputSeparatorKeyCodes]="separatorKeysCodes"
+      (matChipInputTokenEnd)="addEvent($event.value)"
+      #autocompleteTrigger="matAutocompleteTrigger"
+      matAutocompleteTrigger
+      (focus)="autocompleteTrigger.openPanel()" />
+    @if (searchTerm() !== "") {
+      <app-clear-button
+        class="suffix-bottom"
+        matSuffix
+        [toolTipText]="toolTipClearSearch"
+        (onClick)="clearSearchTerm()"></app-clear-button>
+    }
+    <mat-autocomplete
+      #auto="matAutocomplete"
+      (optionSelected)="selected($event)">
+      @for (event of remainingEvents(); track event) {
+        <mat-option [value]="event">
+          {{ event }}
+        </mat-option>
+      }
+    </mat-autocomplete>
+    <mat-hint i18n>
+      Events that should trigger this event handler.
+    </mat-hint>
+    <mat-error i18n>
+      At least one event must be selected.
+    </mat-error>
+  </mat-form-field>
+</form>

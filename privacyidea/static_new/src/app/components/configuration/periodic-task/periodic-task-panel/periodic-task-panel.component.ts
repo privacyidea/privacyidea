@@ -89,7 +89,6 @@ export class PeriodicTaskPanelComponent {
   savePeriodicTask(): void {
     // Get the edited task from the edit component
     const editedTask = this.editComponent?.editTask();
-    console.log(editedTask);
     if (editedTask && this.canSave) {
       this.periodicTaskService.savePeriodicTask(editedTask).subscribe({
         next: (response) => {

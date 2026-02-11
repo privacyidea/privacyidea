@@ -1,0 +1,18 @@
+@use "../../../../styles" as styles;
+
+.welcome-container {
+  max-width: 720px;
+  padding: 16px;
+}
+
+.content {
+  line-height: 1.6;
+  margin-left: 16px;
+}
+
+.actions {
+  margin-top: 16px;
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}

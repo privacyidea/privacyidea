@@ -76,13 +76,13 @@
                       </mat-icon>
                     </button>
                   }
-                    <button
-                      (click)="tableUtilsService.onSortButtonClick(column.key, sort)"
-                      class="sort-button"
-                      mat-icon-button
-                      type="button">
-                      <mat-icon>{{ tableUtilsService.getSortIcon(column.key, sort()) }}</mat-icon>
-                    </button>
+                  <button
+                    (click)="tableUtilsService.onSortButtonClick(column.key, sort)"
+                    class="sort-button"
+                    mat-icon-button
+                    type="button">
+                    <mat-icon>{{ tableUtilsService.getSortIcon(column.key, sort()) }}</mat-icon>
+                  </button>
                 </div>
               </div>
             </th>
@@ -101,6 +101,14 @@
                       (click)="onClickUsername(element)"
                       attr.aria-label="{{ column.label }} Link"
                       routerLink="/users/details/{{ element.username }}">
+                      {{ element[column.key] }}
+                    </a>
+                  }
+                  @case ("resolver") {
+                    <a
+                      (click)="onClickResolver(element[column.key]); $event.preventDefault()"
+                      attr.aria-label="{{ column.label }} Link"
+                      role="button">
                       {{ element[column.key] }}
                     </a>
                   }

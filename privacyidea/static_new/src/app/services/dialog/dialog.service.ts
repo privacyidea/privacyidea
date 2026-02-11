@@ -19,10 +19,8 @@
 import { computed, inject, Injectable, Signal } from "@angular/core";
 import { MatDialog, MatDialogConfig, MatDialogRef } from "@angular/material/dialog";
 
-import {
-  ConfirmationDialogComponent,
-  ConfirmationDialogData
-} from "../../components/shared/confirmation-dialog/confirmation-dialog.component";
+import { ConfirmationDialogComponent } from "../../components/shared/confirmation-dialog/confirmation-dialog.component";
+import type { ConfirmationDialogData } from "../../components/shared/confirmation-dialog/confirmation-dialog.component";
 import { TokenEnrollmentFirstStepDialogComponent } from "../../components/token/token-enrollment/token-enrollment-firtst-step-dialog/token-enrollment-first-step-dialog.component";
 import {
   TokenEnrollmentLastStepDialogComponent,
@@ -68,6 +66,11 @@ export interface DialogServiceInterface {
 
   isAnyDialogOpen(): boolean;
 }
+
+export type DialogReturnData = {
+  confirmed: boolean;
+  furtherAction?: string;
+};
 
 @Injectable({ providedIn: "root" })
 export class DialogService implements DialogServiceInterface {
@@ -161,12 +164,12 @@ export class DialogService implements DialogServiceInterface {
 
   confirm(config: MatDialogConfigRequired<ConfirmationDialogData>): Promise<boolean> {
     return new Promise((resolve) => {
-      const dialogRef = this.dialog.open<ConfirmationDialogComponent, ConfirmationDialogData, boolean>(
+      const dialogRef = this.dialog.open<ConfirmationDialogComponent, ConfirmationDialogData, DialogReturnData>(
         ConfirmationDialogComponent,
         config
       );
 
-      dialogRef.afterClosed().subscribe((result) => resolve(result ?? false));
+      dialogRef.afterClosed().subscribe((result) => resolve(!!result));
     });
   }
 

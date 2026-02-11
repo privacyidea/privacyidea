@@ -1472,15 +1472,15 @@ def set_policy(name: Optional[str] = None, scope: Optional[str] = None, action: 
         ret = policy.id
         # Since we create a new policy we always set the conditions, even if the list is empty
         set_policy_conditions(conditions_data, policy)
-    if description:
-        description_stmt = select(PolicyDescription).where(PolicyDescription.object_id == ret,
-                                                              PolicyDescription.object_type == "policy")
-        description_db = db.session.scalars(description_stmt).first()
-        if description_db:
-            description_db.description = description
-        else:
-            new_description = PolicyDescription(object_id=ret, object_type="policy", description=description)
-            db.session.add(new_description)
+
+    description_stmt = select(PolicyDescription).where(PolicyDescription.object_id == ret,
+                                                       PolicyDescription.object_type == "policy")
+    description_db = db.session.scalars(description_stmt).first()
+    if description_db:
+        description_db.description = description
+    else:
+        new_description = PolicyDescription(object_id=ret, object_type="policy", description=description)
+        db.session.add(new_description)
     save_config_timestamp()
     db.session.commit()
     return ret
@@ -2579,6 +2579,11 @@ def get_static_policy_definitions(scope=None):
                 'desc': _('If enabled, the user can choose to skip enrollment of the token during authentication. '
                           'If disabled, the user must enroll a token. This is also the default behavior.'),
             },
+            PolicyAction.ENROLL_VIA_MULTICHALLENGE_PASSKEY_OFFLINE: {
+                'type': 'bool',
+                'desc': _('If enabled, a successful registration with the enroll_via_multichallenge action for passkeys '
+                          'will directly mark the token for offline use and send the offline data.')
+            },
             PolicyAction.PASSTHRU: {
                 'type': 'str',
                 'value': radiusconfigs,
@@ -2848,8 +2853,7 @@ def get_static_policy_definitions(scope=None):
                 'type': 'str',
                 'desc': _("The URL of a repository, where the policy "
                           "templates can be found.  (Default "
-                          "https: //raw.githubusercontent.com/ privacyidea/"
-                          "policy-templates /master/templates/)")
+                          "/static/policy-templates/")
             },
             PolicyAction.LOGOUT_REDIRECT: {
                 'type': 'str',

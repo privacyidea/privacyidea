@@ -23,7 +23,7 @@
   i18n-aria-label>
   <div class="details-header">
     <h3 i18n>Details for User:</h3>
-    <h3 style="color: var(--mat-sys-primary); margin-right: -8px">{{ userService.detailsUsername() }}</h3>
+    <h3 class="username-header">{{ userService.detailsUsername() }}</h3>
     <app-copy-button [copyText]="userService.detailsUsername()"></app-copy-button>
     <h3>in Realm {{ userService.selectedUserRealm() }}</h3>
     <button

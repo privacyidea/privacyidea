@@ -16,23 +16,33 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { TestBed } from "@angular/core/testing";
+import { Injectable, signal } from "@angular/core";
 
-import { PrivacyideaServerService } from "./privacyidea-server.service";
-import { provideHttpClient } from "@angular/common/http";
-import { provideHttpClientTesting } from "@angular/common/http/testing";
+@Injectable({ providedIn: "root" })
+export class PendingChangesService {
+  private _hasChangesFn = signal<(() => boolean) | null>(null);
+  private _saveFn = signal<(() => Promise<void> | void) | null>(null);
 
-describe("PrivacyideaServerService", () => {
-  let privacyideaServerService: PrivacyideaServerService;
+  get hasChanges(): boolean {
+    const fn = this._hasChangesFn();
+    return fn ? fn() : false;
+  }
 
-  beforeEach(() => {
-    TestBed.configureTestingModule({
-      providers: [provideHttpClient(), provideHttpClientTesting()]
-    });
-    privacyideaServerService = TestBed.inject(PrivacyideaServerService);
-  });
+  registerHasChanges(fn: () => boolean): void {
+    this._hasChangesFn.set(fn);
+  }
 
-  it("should be created", () => {
-    expect(privacyideaServerService).toBeTruthy();
-  });
-});
+  unregisterHasChanges(): void {
+    this._hasChangesFn.set(null);
+    this._saveFn.set(null);
+  }
+
+  registerSave(fn: () => Promise<void> | void): void {
+    this._saveFn.set(fn);
+  }
+
+  save(): Promise<void> | void {
+    const fn = this._saveFn();
+    return fn ? fn() : undefined;
+  }
+}

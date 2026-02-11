@@ -874,13 +874,12 @@ class TokenContainerClass:
         for user in self.get_users():
             user_info["user_realm"] = user.realm
             user_info["user_resolver"] = user.resolver
-            if user.uid:
+            user_info["user_id"] = user.uid
+            if user.login:
                 user_info["user_name"] = user.login
-                user_info["user_id"] = user.uid
             else:
-                # In case we have a User object without an uid, we assume a resolver error.
+                # In case we have a User object without a login, we assume a resolver error.
                 user_info["user_name"] = "**resolver error**"
-                user_info["user_id"] = "**resolver error**"
             users.append(user_info)
         details["users"] = users
 

@@ -6,10 +6,10 @@
 name = "privacyIDEA"
 description = "privacyIDEA: multifactor authentication management system"
 readme = "README.rst"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 license = "AGPL-3.0-or-later"
 license-files = ["LICENSE"]
-keywords = ["OTP", "two-factor authentication", "management", "security", "2fa", "mfa"]
+keywords = ["OTP", "two-factor authentication", "management", "security", "2fa", "mfa", "fido", "passkey", "webauthn"]
 authors = [
     { name = "Cornelius Kölbel", email = "cornelius@privacyidea.org" }
 ]
@@ -28,11 +28,11 @@ classifiers = [
     "Topic :: System :: Systems Administration :: Authentication/Directory",
     'Programming Language :: Python',
     'Programming Language :: Python :: 3',
-    'Programming Language :: Python :: 3.9',
     'Programming Language :: Python :: 3.10',
     'Programming Language :: Python :: 3.11',
     'Programming Language :: Python :: 3.12',
-    'Programming Language :: Python :: 3.13'
+    'Programming Language :: Python :: 3.13',
+    'Programming Language :: Python :: 3.14'
 ]
 
 dynamic = ["version"]
@@ -50,10 +50,11 @@ dependencies = [
     "Flask-Migrate",
     "Flask-SQLAlchemy",
     "Flask-Versioned",
+    "Flask-Talisman",
     "feedparser",
     "google-auth",
     "grpcio",
-    "huey[redis]",
+    "huey[backends]",
     "ldap3<2.9",
     "msal",
     "netaddr",
@@ -67,6 +68,7 @@ dependencies = [
     "python-dateutil",
     "python-gnupg",
     "PyYAML",
+    "redis",
     "requests",
     "segno",
     "smpplib",

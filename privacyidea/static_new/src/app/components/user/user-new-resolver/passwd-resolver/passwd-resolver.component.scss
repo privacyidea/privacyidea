@@ -1,0 +1,43 @@
+@use "../../../../../styles";
+
+:host {
+  display: block;
+  width: 100%;
+}
+
+.type-section {
+  padding: 1rem;
+  border: 1px solid var(--pi-border-color, #dcdcdc);
+  border-radius: var(--border-radius);
+  background: var(--mat-sys-surface-container-low);
+  margin-bottom: 16px;
+
+  h3 {
+    margin-top: 0;
+    margin-bottom: 1rem;
+    font-size: 1.2rem;
+    font-weight: 500;
+  }
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+
+  @media (max-width: 1100px) {
+    grid-template-columns: 1fr;
+  }
+
+  mat-form-field {
+    width: 100%;
+  }
+
+  .field-lg {
+    grid-column: span 2;
+
+    @media (max-width: 1100px) {
+      grid-column: span 1;
+    }
+  }
+}
