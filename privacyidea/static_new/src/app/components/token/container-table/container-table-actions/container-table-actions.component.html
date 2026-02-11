@@ -17,6 +17,13 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div class="flex-row margin-bottom-1 margin-top-1 gap-8">
+  <button
+    [routerLink]="[ROUTE_PATHS.TOKENS_CONTAINERS_CREATE]"
+    class="action-button-1"
+    mat-stroked-button>
+    <mat-icon> create_new_folder</mat-icon>
+    Create Container
+  </button>
   @if (authService.actionAllowed("container_delete")) {
     <button
       (click)="deleteSelectedContainer()"
@@ -28,13 +35,6 @@
       Delete Selected
     </button>
   }
-  <button
-    [routerLink]="[ROUTE_PATHS.TOKENS_CONTAINERS_CREATE]"
-    class="action-button-1"
-    mat-stroked-button>
-    <mat-icon> create_new_folder</mat-icon>
-    Create Container
-  </button>
   <button
     [matMenuTriggerFor]="advancedFilterMenu"
     class="action-button-1"

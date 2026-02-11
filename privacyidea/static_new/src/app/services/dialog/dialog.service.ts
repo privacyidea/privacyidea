@@ -36,6 +36,11 @@ export interface DialogServiceInterface {
   isDialogOpen(ref: MatDialogRef<any>): boolean;
 }
 
+export type DialogReturnData = {
+  confirmed: boolean;
+  furtherAction?: string;
+};
+
 @Injectable({ providedIn: "root" })
 export class DialogService implements DialogServiceInterface {
   private readonly dialog: MatDialog = inject(MatDialog);

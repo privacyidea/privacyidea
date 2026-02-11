@@ -11,7 +11,6 @@
   @include styles.base-table-structure(".token-table", ".token-table-filter", ".table-scroll-container");
   max-height: var(--max-height);
   max-width: calc(100vw - var(--global-padding) * 5 - 48px);
-  width: 1370px;
   display: grid;
   overflow: auto;
 }
@@ -76,6 +75,7 @@
 
 .new-realm-name-field {
   width: 100%;
+  min-width: 238px;
 }
 
 .node-resolvers-groups {

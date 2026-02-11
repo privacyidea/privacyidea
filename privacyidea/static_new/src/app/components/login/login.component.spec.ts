@@ -180,8 +180,8 @@ describe("LoginComponent", () => {
       expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.TOKENS);
     });
 
-    it("should call authService.authenticate not with realm '-'", () => {
-      component.realm.set("-");
+    it("should call authService.authenticate not with empty realm", () => {
+      component.realm.set("");
       component.onSubmit();
 
       expect(authService.authenticate).toHaveBeenCalledWith({
@@ -439,7 +439,7 @@ describe("LoginComponent Realm Selection", () => {
     });
     fixture.detectChanges();
 
-    expect(component.realms()).toEqual(["realm1", "realm2", "-"]);
+    expect(component.realms()).toEqual(["realm1", "realm2"]);
     expect(component.realm()).toEqual("realm1");
     const realmSelect = fixture.debugElement.query(By.css("mat-select"));
     expect(realmSelect).toBeTruthy();
@@ -449,10 +449,9 @@ describe("LoginComponent Realm Selection", () => {
     fixture.detectChanges();
 
     const options = fixture.debugElement.queryAll(By.css("mat-option"));
-    expect(options.length).toBe(3);
+    expect(options.length).toBe(2);
     expect(options[0].nativeElement.textContent).toContain("realm1");
     expect(options[1].nativeElement.textContent).toContain("realm2");
-    expect(options[2].nativeElement.textContent).toContain("-");
   });
 
   it("should preselect the first realm", () => {

@@ -26,7 +26,7 @@ The code of this module is tested in tests/test_api_events.py
 """
 from flask import (Blueprint,
                    request)
-from .lib.utils import getParam, send_result
+from .lib.utils import getParam, send_result, get_required
 from ..lib.log import log_with
 from ..lib.event import set_event, delete_event, enable_event
 from flask import g
@@ -116,7 +116,7 @@ def get_module_conditions(handlermodule=None):
 
     :param handlermodule: Identifier of the handler module like
         "UserNotification"
-    :return: list oft actions
+    :return: list of conditions
     """
     ret = []
     h_obj = get_handler_object(handlermodule)
@@ -145,17 +145,17 @@ def set_eventhandling():
     :param options.: A list of possible options.
     """
     param = request.all_data
-    name = getParam(param, "name", optional=False)
-    event = getParam(param, "event", optional=False)
-    eid = getParam(param, "id", optional=True)
-    active = is_true(getParam(param, "active", default=True))
+    name = get_required(param, "name")
+    event = get_required(param, "event")
+    eid = param.get("id")
+    active = is_true(param.get("active", True))
     if eid:
         eid = int(eid)
-    handlermodule = getParam(param, "handlermodule", optional=False)
-    action = getParam(param, "action", optional=False)
-    ordering = getParam(param, "ordering", optional=True, default=0)
-    position = getParam(param, "position", optional=True, default="post")
-    conditions = getParam(param, "conditions", optional=True, default={})
+    handlermodule = get_required(param, "handlermodule")
+    action = get_required(param, "action")
+    ordering = param.get("ordering", 0)
+    position = param.get("position", "post")
+    conditions = param.get("conditions", {})
     if type(conditions) is not dict:
         conditions = json.loads(conditions)
     options = {}

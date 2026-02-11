@@ -61,11 +61,13 @@ import {
 } from "../../../services/realm/realm.service";
 import { NodeInfo, SystemService, SystemServiceInterface } from "../../../services/system/system.service";
 import { NotificationService, NotificationServiceInterface } from "../../../services/notification/notification.service";
-import { SimpleConfirmationDialogComponent } from "../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
+
 import { MatTooltip } from "@angular/material/tooltip";
 import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
 import { ResolverService, ResolverServiceInterface } from "../../../services/resolver/resolver.service";
 import { DialogService, DialogServiceInterface } from "../../../services/dialog/dialog.service";
+import { SimpleConfirmationDialogComponent } from "../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { UserNewResolverComponent } from "../user-new-resolver/user-new-resolver.component";
 
 type ResolverWithPriority = { name: string; priority: number | null };
 type NodeResolversMap = { [nodeId: string]: ResolverWithPriority[] };
@@ -124,6 +126,7 @@ export class RealmTableComponent {
   protected readonly realmService: RealmServiceInterface = inject(RealmService);
   protected readonly systemService: SystemServiceInterface = inject(SystemService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
+  protected readonly dialog = inject(MatDialog);
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly resolverService: ResolverServiceInterface = inject(ResolverService);
@@ -168,10 +171,6 @@ export class RealmTableComponent {
     ];
   });
 
-  /**
-   * Resolver options are now loaded from the resolver API via ResolverService,
-   * not derived from realmResource.
-   */
   resolverOptions = computed(() => {
     const resolvers = this.resolverService.resolvers();
     return resolvers.map((resolver) => ({
@@ -262,7 +261,6 @@ export class RealmTableComponent {
         if (!normalizedFilter) {
           return true;
         }
-        // simple contains across name and resolvers text
         return (
           (data.name ?? "").toLowerCase().includes(normalizedFilter) ||
           (data.resolversText ?? "").toLowerCase().includes(normalizedFilter)
@@ -589,7 +587,6 @@ export class RealmTableComponent {
           if (!result) {
             return;
           }
-
           this.realmService.deleteRealm(row.name).subscribe({
             next: () => {
               this.notificationService.openSnackBar($localize`Realm "${row.name}" deleted.`);
@@ -626,6 +623,19 @@ export class RealmTableComponent {
           this.notificationService.openSnackBar($localize`Failed to set default realm. ${message}`);
         }
       });
+  }
+
+  onClickResolver(resolverName: unknown): void {
+    const resolver = this.resolverService.resolvers().find((r) => r.resolvername === resolverName);
+    if (resolver) {
+      this.dialog.open(UserNewResolverComponent, {
+        data: { resolver },
+        width: "auto",
+        height: "auto",
+        maxWidth: "100vw",
+        maxHeight: "100vh"
+      });
+    }
   }
 
   private clientsideSortRealmData(data: RealmRow[], s: Sort): RealmRow[] {

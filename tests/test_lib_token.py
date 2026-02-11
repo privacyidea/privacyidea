@@ -22,6 +22,7 @@ import warnings
 import mock
 from dateutil import parser
 from dateutil.tz import tzlocal
+from sqlalchemy import select
 from testfixtures import log_capture, LogCapture
 
 from privacyidea.lib.challenge import get_challenges
@@ -64,7 +65,8 @@ from privacyidea.lib.token import (create_tokenclass_object,
                                    set_validity_period_end,
                                    set_validity_period_start, remove_token, delete_tokeninfo,
                                    import_token, get_one_token, get_tokens_from_serial_or_user,
-                                   get_tokens_paginated_generator, assign_tokengroup, unassign_tokengroup)
+                                   get_tokens_paginated_generator, assign_tokengroup, unassign_tokengroup,
+                                   set_tokengroups)
 from privacyidea.lib.token import log as token_log
 from privacyidea.lib.token import weigh_token_type, import_tokens, export_tokens
 from privacyidea.lib.tokenclass import DATE_FORMAT, ROLLOUTSTATE
@@ -75,7 +77,7 @@ from privacyidea.lib.tokengroup import set_tokengroup, delete_tokengroup
 from privacyidea.lib.tokens.totptoken import TotpTokenClass
 from privacyidea.lib.user import (User)
 from privacyidea.lib.utils import b32encode_and_unicode, hexlify_and_unicode
-from privacyidea.models import (db, Token, Challenge, TokenRealm)
+from privacyidea.models import (db, Token, Challenge, TokenRealm, Tokengroup)
 from .base import MyTestCase, FakeAudit, FakeFlaskG
 
 PWFILE = "tests/testdata/passwords"
@@ -132,8 +134,8 @@ class TokenTestCase(MyTestCase):
         # Check if these are valid tokentypes
         self.assertGreater(len(tokenobject_list), 0, tokenobject_list)
         for token_object in tokenobject_list:
-            self.assertTrue(token_object.type in get_token_types(),
-                            token_object.type)
+            self.assertIn(token_object.type, get_token_types(),
+                          token_object.type)
 
         # get assigned tokens
         tokenobject_list = get_tokens(assigned=True)
@@ -143,14 +145,14 @@ class TokenTestCase(MyTestCase):
         self.assertGreater(len(tokenobject_list), 0, tokenobject_list)
         # This will interpret the value as true as the functions expects a bool
         tokenobject_list = get_tokens(assigned="True")
-        self.assertEqual(len(tokenobject_list), 0, tokenobject_list)
+        self.assertEqual(0, len(tokenobject_list), tokenobject_list)
 
         # get tokens of type HOTP
         tokenobject_list = get_tokens(tokentype="hotp")
-        self.assertTrue(len(tokenobject_list) == 0, tokenobject_list)
+        self.assertEqual(0, len(tokenobject_list), tokenobject_list)
         # get tokens of type TOTP
         tokenobject_list = get_tokens(tokentype="totp")
-        self.assertTrue(len(tokenobject_list) > 0, tokenobject_list)
+        self.assertGreater(len(tokenobject_list), 0, tokenobject_list)
         # get tokens of type TOTP and HOTP
         spass_token = init_token(param={'serial': 'SPAS01', 'type': 'spass'})
         self.assertIn("creation_date", spass_token.get_tokeninfo(), spass_token)
@@ -159,50 +161,44 @@ class TokenTestCase(MyTestCase):
                         wraps=datetime.datetime) as mock_datetime:
             mock_datetime.now.return_value = create_now
             hotp_token = init_token(param={'serial': 'HOTP01', 'type': 'hotp', 'otpkey': '123'})
-        self.assertEqual(hotp_token.get_tokeninfo("creation_date"),
-                         create_now.isoformat(timespec="seconds"), hotp_token)
+        self.assertEqual(create_now.isoformat(timespec="seconds"), hotp_token.get_tokeninfo("creation_date"),
+                         hotp_token)
         tokenobject_list = get_tokens(token_type_list=["hotp", "totp"])
-        self.assertTrue(len(tokenobject_list) > 0, tokenobject_list)
+        self.assertGreater(len(tokenobject_list), 0, tokenobject_list)
         for token in tokenobject_list:
             self.assertIn(token.type, ["hotp", "totp"], token)
         spass_token.delete_token()
         hotp_token.delete_token()
 
         # Search for tokens in realm
-        db_token = Token("hotptoken",
-                         tokentype="hotp",
-                         userid=1000,
-                         resolver=self.resolvername1,
-                         realm=self.realm1)
-        db_token.update_otpkey(self.otpkey)
-        db_token.save()
+        init_token({"type": "hotp", "serial": "hotptoken", "otpkey": self.otpkey},
+                   user=User(uid=1000, realm=self.realm1, resolver=self.resolvername1))
         tokenobject_list = get_tokens(realm=self.realm1)
-        self.assertTrue(len(tokenobject_list) == 1, tokenobject_list)
-        self.assertTrue(tokenobject_list[0].type == "hotp",
-                        tokenobject_list[0].type)
+        self.assertEqual(1, len(tokenobject_list), tokenobject_list)
+        self.assertEqual("hotp", tokenobject_list[0].type,
+                         tokenobject_list[0].type)
 
         # get tokens for a given serial number
         tokenobject_list = get_tokens(serial="hotptoken")
-        self.assertTrue(len(tokenobject_list) == 1, tokenobject_list)
+        self.assertEqual(1, len(tokenobject_list), tokenobject_list)
 
         # ...but not in an unassigned state!
         tokenobject_list = get_tokens(serial="hotptoken", assigned=False)
-        self.assertTrue(len(tokenobject_list) == 0, tokenobject_list)
+        self.assertEqual(0, len(tokenobject_list), tokenobject_list)
         # get the tokens for the given user
         tokenobject_list = get_tokens(user=User(login="cornelius",
                                                 realm=self.realm1))
-        self.assertTrue(len(tokenobject_list) == 1, tokenobject_list)
+        self.assertEqual(1, len(tokenobject_list), tokenobject_list)
 
         # get tokens for a given tokeninfo of the token!!!
         token = init_token({"type": "yubikey",
                             "serial": "yk1",
                             "yubikey.prefix": "vv123456",
                             "otpkey": self.yubikey_token_key})
-        self.assertEqual(token.token.serial, "yk1")
+        self.assertEqual("yk1", token.token.serial)
         tokenobject_list = get_tokens(tokeninfo={"yubikey.prefix": "vv123456"})
-        self.assertEqual(len(tokenobject_list), 1)
-        self.assertEqual(tokenobject_list[0].get_tokeninfo("yubikey.prefix"),
-                         "vv123456")
+        self.assertEqual(1, len(tokenobject_list))
+        self.assertEqual("vv123456", tokenobject_list[0].get_tokeninfo("yubikey.prefix"))
         remove_token("yk1")
 
         # Tokeninfo with more than one entry is not supported
@@ -216,13 +212,13 @@ class TokenTestCase(MyTestCase):
 
         # wildcard matches do not work for the ``serial`` parameter
         tokenobject_list = get_tokens(serial="hotptoke*")
-        self.assertEqual(len(tokenobject_list), 0)
+        self.assertEqual(0, len(tokenobject_list))
         # get tokens with a wildcard serial
         tokenobject_list = get_tokens(serial_wildcard="SE*")
-        self.assertEqual(len(tokenobject_list), 3)
+        self.assertEqual(3, len(tokenobject_list))
         # get all tokens
         tokenobject_list = get_tokens(serial_wildcard="*")
-        self.assertEqual(len(tokenobject_list), 4)
+        self.assertEqual(4, len(tokenobject_list))
 
     def test_03_get_token_type(self):
         ttype = get_token_type("hotptoken")
@@ -243,19 +239,19 @@ class TokenTestCase(MyTestCase):
 
     def test_05_get_num_tokens_in_realm(self):
         # one active token
-        self.assertTrue(get_num_tokens_in_realm(self.realm1) == 1,
-                        "{0!r}".format(get_num_tokens_in_realm(self.realm1)))
+        self.assertEqual(1, get_num_tokens_in_realm(self.realm1),
+                         "{0!r}".format(get_num_tokens_in_realm(self.realm1)))
         # No active tokens
-        self.assertTrue(get_num_tokens_in_realm(self.realm1, active=False) == 0)
+        self.assertEqual(0, get_num_tokens_in_realm(self.realm1, active=False))
 
     def test_05_get_token_in_resolver(self):
         tokenobject_list = get_tokens_in_resolver(self.resolvername1)
-        self.assertTrue(len(tokenobject_list) > 0)
+        self.assertGreater(len(tokenobject_list), 0)
 
     def test_06_get_realms_of_token(self):
         # Return a list of realmnames for a token
-        self.assertTrue(get_realms_of_token("hotptoken") == [self.realm1],
-                        "{0!s}".format(get_realms_of_token("hotptoken")))
+        self.assertSetEqual({self.realm1}, set(get_realms_of_token("hotptoken")),
+                            "{0!s}".format(get_realms_of_token("hotptoken")))
 
     def test_07_token_exist(self):
         self.assertTrue(token_exist("hotptoken"))
@@ -462,9 +458,15 @@ class TokenTestCase(MyTestCase):
                                 realm=self.realm1))
             token.set_realms(realms=[''])
             self.assertEqual(token.get_realms(), ['realm1'], token.get_realms())
-            mock_log.assert_called_with('The realm of an assigned user cannot be removed from'
-                                        ' token {0!s} (realm: {1!s})'.format(serial, 'realm1'))
-            token.delete_token()
+            mock_log.assert_called_with(f'The realms ({self.realm1}) of assigned users cannot be removed from the '
+                                        f'token {serial}.')
+            
+        # Deleting the token also deletes the token realm relationship
+        token_id = token.token.id
+        token.delete_token()
+        stmt = select(TokenRealm).filter_by(token_id=token_id)
+        token_realm_db = db.session.execute(stmt).one_or_none()
+        self.assertIsNone(token_realm_db)
 
     def test_17_set_defaults(self):
         serial = "SETTOKEN"
@@ -1979,6 +1981,7 @@ class TokenTestCase(MyTestCase):
         totptoken.set_description("this will be replaced by the import")
         self.assertEqual(hotptoken.token.description, "this will be replaced by the import")
         self.assertEqual(totptoken.token.description, "this will be replaced by the import")
+        db.session.commit()
 
         updated_tokens = import_tokens(exported_tokens, update_existing_tokens=True)
         self.assertEqual(hotptoken.token.description, "Hotp Token")
@@ -1990,6 +1993,7 @@ class TokenTestCase(MyTestCase):
         totptoken.set_description("this will not be replaced by the import")
         self.assertEqual(hotptoken.token.description, "this will not be replaced by the import")
         self.assertEqual(totptoken.token.description, "this will not be replaced by the import")
+        db.session.commit()
 
         updated_tokens = import_tokens(exported_tokens, update_existing_tokens=False)
         self.assertEqual(hotptoken.token.description, "this will not be replaced by the import")
@@ -2136,6 +2140,7 @@ class TokenFailCounterTestCase(MyTestCase):
         self.assertTrue(res)
         # Set the failcounter to maximum failcount
         token.set_failcount(10)
+        db.session.commit()
         # Authentication must fail, since the failcounter is reached
         res, reply = check_user_pass(user, "test47359152")
         self.assertFalse(res)
@@ -2165,6 +2170,7 @@ class TokenFailCounterTestCase(MyTestCase):
         self.assertTrue(res)
         # Set the failcounter to maximum failcount
         token.set_failcount(10)
+        db.session.commit()
         # Authentication must fail, since the failcounter is reached
         res, reply = check_user_pass(user, pin + "032819",
                                      options={"initTime": 47251648 * 30})
@@ -2529,7 +2535,8 @@ class PINChangeTestCase(MyTestCase):
 
 class TokenGroupTestCase(MyTestCase):
 
-    def test_01_add_tokengroups(self):
+    @log_capture()
+    def test_01_add_tokengroups(self, capture):
         # Create tokens
         serials = ["s1", "s2"]
         for s in serials:
@@ -2546,12 +2553,27 @@ class TokenGroupTestCase(MyTestCase):
 
         # Check the tokengroups of the first token
         tok1 = get_one_token(serial="s1")
-        self.assertEqual(tok1.token.tokengroup_list[0].tokengroup.name, "g1")
-        self.assertEqual(tok1.token.tokengroup_list[1].tokengroup.name, "g2")
+        self.assertSetEqual({"g1", "g2"}, {tg.name for tg in tok1.token.tokengroup_list})
 
         # check the tokengroups of the 2nd token
         tok2 = get_one_token(serial="s2")
-        self.assertEqual(tok2.token.tokengroup_list[0].tokengroup.name, "g2")
+        self.assertSetEqual({"g2"}, {tg.name for tg in tok2.token.tokengroup_list})
+
+        # Try to add an already added group
+        logger = logging.getLogger('privacyidea.lib.tokenclass')
+        logger.setLevel(logging.DEBUG)
+        assign_tokengroup("s1", "g1")
+        expected_message = "Token s1 is already assigned to tokengroup g1."
+        actual_messages = [record.getMessage() for record in capture.records]
+        self.assertIn(expected_message, actual_messages, msg=f"Available log messages: {actual_messages}")
+
+        # Try to add non-existing group
+        with self.assertRaises(ResourceNotFoundError) as exception:
+            assign_tokengroup("s1", "random")
+        self.assertEqual("The tokengroup does not exist.", exception.exception.message)
+        expected_message = "Tokengroup random does not exist. Cannot add it to token s1."
+        actual_messages = [record.getMessage() for record in capture.records]
+        self.assertIn(expected_message, actual_messages, msg=f"Available log messages: {actual_messages}")
 
         # Test a missing group information
         self.assertRaises(ResourceNotFoundError, assign_tokengroup, "s1")
@@ -2562,15 +2584,17 @@ class TokenGroupTestCase(MyTestCase):
         # one token in group1
         grouplist = list_tokengroups("g1")
         self.assertEqual(len(grouplist), 1)
-        self.assertEqual(grouplist[0].token.serial, "s1")
+        group_g1 = db.session.scalar(select(Tokengroup).where(Tokengroup.name == "g1"))
+        self.assertEqual(1, len(group_g1.tokens))
+        self.assertEqual("s1", group_g1.tokens[0].serial)
         # two tokens in group2
         grouplist = list_tokengroups("g2")
         self.assertEqual(len(grouplist), 2)
 
         # Remove tokengroup "g1" from token "s1"
-        tok1.del_tokengroup("g1")
+        tok1.delete_tokengroup("g1")
         # Only the 2nd group remains
-        self.assertEqual(tok1.token.tokengroup_list[0].tokengroup.name, "g2")
+        self.assertEqual(tok1.token.tokengroup_list[0].name, "g2")
         # Remove it from token "s2"
         unassign_tokengroup("s2", "g2")
         tok2 = get_one_token(serial="s2")
@@ -2580,7 +2604,7 @@ class TokenGroupTestCase(MyTestCase):
         self.assertRaises(privacyIDEAError, delete_tokengroup, name='g2')
 
         # Remove all tokengroups from token "s1"
-        tok1.del_tokengroup()
+        tok1.delete_tokengroup()
         self.assertEqual(len(tok1.token.tokengroup_list), 0)
 
         # Cleanup
@@ -2589,6 +2613,82 @@ class TokenGroupTestCase(MyTestCase):
         delete_tokengroup('g1')
         delete_tokengroup('g2')
 
+    @log_capture()
+    def test_02_set_token_groups(self, capture):
+        # Create token
+        token = init_token({"serial": "s1", "type": "spass"})
+
+        # create token groups
+        groups = [("g1", "Test A"), ("g2", "test B"), ("g3", "test C")]
+        for g in groups:
+            set_tokengroup(g[0], g[1])
+
+        # Set two groups
+        set_tokengroups("s1", ["g1", "g2"])
+        token = get_one_token(serial="s1")
+        self.assertSetEqual({"g1", "g2"}, {tg.name for tg in token.token.tokengroup_list})
+
+        # Set one different group
+        set_tokengroups("s1", ["g3", "g1"])
+        token = get_one_token(serial="s1")
+        self.assertSetEqual({"g1", "g3"}, {tg.name for tg in token.token.tokengroup_list})
+
+        # Set empty list removes all groups
+        set_tokengroups("s1", [])
+        token = get_one_token(serial="s1")
+        self.assertSetEqual(set(), {tg.name for tg in token.token.tokengroup_list})
+
+        # Set non-existing group
+        set_tokengroups("s1", ["random", "g2"])
+        token = get_one_token(serial="s1")
+        self.assertSetEqual({"g2"}, {tg.name for tg in token.token.tokengroup_list})
+        expected_message = "Tokengroup random does not exist. Cannot add it to token s1."
+        actual_messages = [record.getMessage() for record in capture.records]
+        self.assertIn(expected_message, actual_messages, msg=f"Available log messages: {actual_messages}")
+
+        token.delete_token()
+        delete_tokengroup('g1')
+        delete_tokengroup('g2')
+        delete_tokengroup('g3')
+
+    def test_03_delete_token_group(self):
+        # Create token
+        token = init_token({"serial": "s1", "type": "spass"})
+
+        # create token groups
+        g1_id = set_tokengroup("g1", "Test A")
+        g2_id = set_tokengroup("g2", "Test B")
+        g3_id = set_tokengroup("g3", "Test C")
+
+        # Set two groups
+        set_tokengroups("s1", ["g1", "g2"])
+        token = get_one_token(serial="s1")
+        self.assertSetEqual({"g1", "g2"}, {tg.name for tg in token.token.tokengroup_list})
+
+        # delete one group by name
+        unassign_tokengroup("s1", tokengroup="g1")
+        token = get_one_token(serial="s1")
+        self.assertSetEqual({"g2"}, {tg.name for tg in token.token.tokengroup_list})
+
+        # delete one token by id
+        unassign_tokengroup("s1", tokengroup_id=g2_id)
+        token = get_one_token(serial="s1")
+        self.assertSetEqual(set(), {tg.name for tg in token.token.tokengroup_list})
+
+        # Set two groups
+        set_tokengroups("s1", ["g1", "g2"])
+        token = get_one_token(serial="s1")
+        self.assertSetEqual({"g1", "g2"}, {tg.name for tg in token.token.tokengroup_list})
+
+        # Remove all groups
+        unassign_tokengroup("s1")
+        token = get_one_token(serial="s1")
+        self.assertSetEqual(set(), {tg.name for tg in token.token.tokengroup_list})
+
+        token.delete_token()
+        delete_tokengroup('g1')
+        delete_tokengroup('g2')
+        delete_tokengroup('g3')
 
 class ExportAndReencryptTestCase(MyTestCase):
 

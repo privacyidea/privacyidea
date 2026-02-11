@@ -20,12 +20,12 @@ jobs:
       contents: read
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       with:
         persist-credentials: false
     # Build the new WebUI using node.js
     - name: Set up Node.js for building the new WebUI
-      uses: actions/setup-node@395ad3262231945c25e8478fd5baf05154b1d79f # v6.1.0
+      uses: actions/setup-node@6044e13b5dc448c55e2357c09f80417699197238 # v6.2.0
       with:
         node-version: lts/*  # Use the latest LTS-release
         package-manager-cache: false  # Disable cache for release builds
@@ -37,7 +37,7 @@ jobs:
       run: npm run build -- --configuration production
       working-directory: ./privacyidea/static_new
     - name: Upload WebUI build artifact
-      uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+      uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
       with:
         name: webui-artifact
         path: ./privacyidea/static_new/dist
@@ -50,12 +50,12 @@ jobs:
     needs: build-webui
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       with:
         persist-credentials: false
     # Get the new WebUI from the build artifacts
     - name: Get new WebUI build artifacts
-      uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
+      uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
       with:
         name: webui-artifact
         path: ./privacyidea/static_new/dist
@@ -63,7 +63,7 @@ jobs:
       run: ls -R ./privacyidea/static_new/dist
     - run: mkdir -p dist
     - name: Set up Python 3.13
-      uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # v6.1.0
+      uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
       with:
         python-version: "3.13"
     - name: Install build environment
@@ -73,7 +73,7 @@ jobs:
       run: >-
         python -m build --sdist --wheel --outdir dist/
     - name: Upload packages to artifacts
-      uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+      uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
       with:
         path: dist/*
     - name: Create GitHub pre-release

@@ -16,36 +16,48 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component } from "@angular/core";
-import { MatButton } from "@angular/material/button";
-import { MatDialogActions, MatDialogClose, MatDialogContent } from "@angular/material/dialog";
+import { Component, inject } from "@angular/core";
 import { AbstractDialogComponent } from "../../../shared/dialog/abstract-dialog/abstract-dialog.component";
 import { DialogWrapperComponent } from "../../../shared/dialog/dialog-wrapper/dialog-wrapper.component";
 import { DialogAction } from "../../../../models/dialog";
+import { Router } from "@angular/router";
+import { ROUTE_PATHS } from "../../../../route_paths";
+import { DialogServiceInterface, DialogService } from "../../../../services/dialog/dialog.service";
 
 export type GetSerialResultDialogData = {
   foundSerial: string;
   otpValue: string;
-  onClickSerial: () => void;
-  reset: () => void;
 };
+
+export type GetSerialResultDialogReturn = "reset";
 
 @Component({
   selector: "app-get-serial-result-dialog",
-  imports: [MatDialogContent, MatDialogActions, MatButton, MatDialogClose, DialogWrapperComponent],
+  imports: [DialogWrapperComponent],
   templateUrl: "./get-serial-result-dialog.component.html",
   styleUrl: "./get-serial-result-dialog.component.scss",
   standalone: true
 })
-export class GetSerialResultDialogComponent extends AbstractDialogComponent<GetSerialResultDialogData, true> {
-  action: DialogAction<true> = {
+export class GetSerialResultDialogComponent extends AbstractDialogComponent<
+  GetSerialResultDialogData,
+  GetSerialResultDialogReturn
+> {
+  readonly router = inject(Router);
+  readonly dialogService: DialogServiceInterface = inject(DialogService);
+
+  action: DialogAction<GetSerialResultDialogReturn> = {
     type: "confirm",
     label: $localize`OK`,
-
-    value: true
+    value: "reset"
   };
 
-  onAction(value: true) {
+  onClickSerial() {
+    const serial = this.data.foundSerial;
+    this.router.navigateByUrl(ROUTE_PATHS.TOKENS_DETAILS + serial);
+    this.dialogService.closeAllDialogs();
+  }
+
+  onAction(value: GetSerialResultDialogReturn) {
     this.close(value);
   }
 }

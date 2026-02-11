@@ -17,20 +17,21 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 #
-from privacyidea.models import PasswordReset
+import logging
+from datetime import datetime, timezone
+
+from sqlalchemy import select, delete
+
+from privacyidea.lib.config import get_from_config
 from privacyidea.lib.crypto import (hash_with_pepper, verify_with_pepper,
                                     generate_password)
-import logging
-from privacyidea.lib.log import log_with
 from privacyidea.lib.error import UserError, privacyIDEAError, ConfigAdminError
-from privacyidea.lib.smtpserver import send_email_identifier
-from privacyidea.lib.config import get_from_config
-from privacyidea.lib.resolver import get_resolver_list
-from privacyidea.lib.policy import SCOPE, Match
+from privacyidea.lib.log import log_with
 from privacyidea.lib.policies.actions import PolicyAction
-from sqlalchemy import and_
-from datetime import datetime
-
+from privacyidea.lib.policy import SCOPE, Match
+from privacyidea.lib.resolver import get_resolver_list
+from privacyidea.lib.smtpserver import send_email_identifier
+from privacyidea.models import PasswordReset, db
 
 __doc__ = """
 This is the library for creating a recovery code for password reset.
@@ -112,14 +113,13 @@ def check_recoverycode(user, recoverycode):
     """
     recoverycode_valid = False
     # delete old entries
-    r = PasswordReset.query.filter(and_(PasswordReset.expiration <
-                                      datetime.now())).delete()
-    log.debug("{0!s} old password recoverycodes deleted.".format(r))
-    sql_query = PasswordReset.query.filter(and_(PasswordReset.username ==
-                                            user.login,
-                                                PasswordReset.realm
-                                                == user.realm))
-    for pwr in sql_query:
+    delete_expired_stmt = delete(PasswordReset).where(
+        PasswordReset.expiration < datetime.now(timezone.utc).replace(tzinfo=None))
+    delete_result = db.session.execute(delete_expired_stmt)
+    log.debug("{0!s} old password recoverycodes deleted.".format(delete_result.rowcount))
+    stmt = select(PasswordReset).where(PasswordReset.username == user.login, PasswordReset.realm == user.realm)
+    pw_resets = db.session.scalars(stmt).all()
+    for pwr in pw_resets:
         if verify_with_pepper(pwr.recoverycode, recoverycode):
             recoverycode_valid = True
             log.debug("Found valid recoverycode for user {0!r}".format(user))
@@ -127,6 +127,7 @@ def check_recoverycode(user, recoverycode):
             r = pwr.delete()
             log.debug("{0!s} used password recoverycode deleted.".format(r))
 
+    db.session.commit()
     return recoverycode_valid
 
 

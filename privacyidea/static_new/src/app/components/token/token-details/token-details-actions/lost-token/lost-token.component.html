@@ -57,10 +57,36 @@
       </p>
 
       <p i18n>
+        The serial of the new token is
+        <a (click)="tokenSelected(lostTokenData?.serial)"> {{ lostTokenData?.serial ?? "" }}</a>
+        <br />
+        The password that needs to be combined with the OTP PIN:
+      </p>
+
+      <p class="lost-password">
+        {{ lostTokenData?.password }}
+      </p>
+
+      <p
+        i18n
+        class="bold-warning">
+        The password can not be shown again later!
+      </p>
+
+      <p i18n>
         The token is valid until {{ lostTokenData?.end_date | date: "longDate" }} at{{
           lostTokenData?.end_date | date: "shortTime"
         }}.
       </p>
+
+      <div class="dialog-div">
+        <button
+          mat-button
+          mat-dialog-close
+          i18n>
+          Close
+        </button>
+      </div>
     }
   </div>
 </app-dialog-wrapper>

@@ -44,9 +44,8 @@ import { FilterValue } from "../../core/models/filter_value";
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
 import { StringUtils } from "../../utils/string.utils";
+import { DialogReturnData, DialogService, DialogServiceInterface } from "../dialog/dialog.service";
 import { SimpleConfirmationDialogComponent } from "../../components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
-import { DialogService, DialogServiceInterface } from "../dialog/dialog.service";
-import { DialogAction } from "../../models/dialog";
 
 export type TokenTypeKey =
   | "hotp"
@@ -585,45 +584,46 @@ export class TokenService implements TokenServiceInterface {
       })
       .afterClosed()
       .subscribe({
-        next: (result: any) => {
-          if (result) {
-            this.bulkDeleteTokens(serialList).subscribe({
-              next: (response: PiResponse<BulkResult, any>) => {
-                const failedTokens = response.result?.value?.failed || [];
-                const unauthorizedTokens = response.result?.value?.unauthorized || [];
-                const count_success = response.result?.value?.count_success || 0;
-                const messages: string[] = [];
-                if (count_success) {
-                  messages.push(`Successfully deleted ${count_success} token${count_success === 1 ? "" : "s"}.`);
-                }
-
-                if (failedTokens.length > 0) {
-                  messages.push(`The following tokens failed to delete: ${failedTokens.join(", ")}`);
-                }
-
-                if (unauthorizedTokens.length > 0) {
-                  messages.push(
-                    `You are not authorized to delete the following tokens: ${unauthorizedTokens.join(", ")}`
-                  );
-                }
-
-                if (messages.length > 0) {
-                  this.notificationService.openSnackBar(messages.join("\n"));
-                }
-
-                if (afterDelete) {
-                  afterDelete();
-                }
-              },
-              error: (err) => {
-                let message = "An error occurred while deleting tokens.";
-                if (err.error?.result?.error?.message) {
-                  message = err.error.result.error.message;
-                }
-                this.notificationService.openSnackBar(message);
-              }
-            });
+        next: (result) => {
+          if (!result) {
+            return;
           }
+          this.bulkDeleteTokens(serialList).subscribe({
+            next: (response: PiResponse<BulkResult, any>) => {
+              const failedTokens = response.result?.value?.failed || [];
+              const unauthorizedTokens = response.result?.value?.unauthorized || [];
+              const count_success = response.result?.value?.count_success || 0;
+              const messages: string[] = [];
+              if (count_success) {
+                messages.push(`Successfully deleted ${count_success} token${count_success === 1 ? "" : "s"}.`);
+              }
+
+              if (failedTokens.length > 0) {
+                messages.push(`The following tokens failed to delete: ${failedTokens.join(", ")}`);
+              }
+
+              if (unauthorizedTokens.length > 0) {
+                messages.push(
+                  `You are not authorized to delete the following tokens: ${unauthorizedTokens.join(", ")}`
+                );
+              }
+
+              if (messages.length > 0) {
+                this.notificationService.openSnackBar(messages.join("\n"));
+              }
+
+              if (afterDelete) {
+                afterDelete();
+              }
+            },
+            error: (err) => {
+              let message = "An error occurred while deleting tokens.";
+              if (err.error?.result?.error?.message) {
+                message = err.error.result.error.message;
+              }
+              this.notificationService.openSnackBar(message);
+            }
+          });
         }
       });
   }

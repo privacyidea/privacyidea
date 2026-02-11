@@ -3,14 +3,14 @@
     class="pi-dialog-header"
     mat-dialog-title>
     @if (title()) {
-      <h4>
+      <h2>
         @if (icon()) {
           <mat-icon [style.margin-right.px]="8">{{ icon() }}</mat-icon>
         }
         {{ title() }}
-      </h4>
+      </h2>
     } @else {
-      <h4 i18n>Dialog</h4>
+      <h2 i18n>Dialog</h2>
     }
     @if (showCloseButton()) {
       <button

@@ -1,0 +1,12 @@
+{
+  "name": "selfservice1",
+  "scope": "user",
+  "action": {
+    "assign": true,
+    "auditlog": true,
+    "enrollHOTP": true,
+    "resync": true,
+    "reset": true,
+    "setpin": true
+  }
+}

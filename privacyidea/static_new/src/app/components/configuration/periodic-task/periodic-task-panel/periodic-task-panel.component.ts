@@ -60,8 +60,9 @@ export class PeriodicTaskPanelComponent {
   task = input<PeriodicTask>(EMPTY_PERIODIC_TASK);
   isEditMode = signal(false);
 
-  deleteTask(): void {
-    this.periodicTaskService.deleteWithConfirmDialog(this.task(), this.dialog, () => this.periodicTaskService.periodicTasksResource.reload());
+  async deleteTask(): Promise<void> {
+    await this.periodicTaskService.deleteWithConfirmDialog(this.task());
+    this.periodicTaskService.periodicTasksResource.reload();
   }
 
   toggleActive(activate: boolean): void {
@@ -89,7 +90,6 @@ export class PeriodicTaskPanelComponent {
   savePeriodicTask(): void {
     // Get the edited task from the edit component
     const editedTask = this.editComponent?.editTask();
-    console.log(editedTask);
     if (editedTask && this.canSave) {
       this.periodicTaskService.savePeriodicTask(editedTask).subscribe({
         next: (response) => {

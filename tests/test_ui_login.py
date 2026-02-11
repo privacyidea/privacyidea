@@ -3,21 +3,24 @@ This file tests the web UI Login
 
 implementation is contained webui/login.py
 """
-from flask_babel import refresh
-from .base import MyTestCase, MyApiTestCase
-from privacyidea.lib.policy import set_policy, SCOPE, PolicyClass, delete_all_policies
-from privacyidea.lib.policies.actions import PolicyAction
-from privacyidea.lib.utils import to_unicode, get_version_number
+import pathlib
 import re
+
+from flask_babel import refresh
+
 from privacyidea.app import create_app
+from privacyidea.lib.policies.actions import PolicyAction
+from privacyidea.lib.policy import set_policy, SCOPE, PolicyClass, delete_all_policies
+from privacyidea.lib.utils import to_unicode, get_version_number
 from privacyidea.models import db, save_config_timestamp
+from .base import MyTestCase, MyApiTestCase
 
 
 class AlternativeWebUI(MyTestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.app = create_app('altUI', "")
+        cls.app = create_app('altUI', pathlib.Path.cwd() / "tests/testdata/test_pi.cfg", "")
         cls.app_context = cls.app.app_context()
         cls.app_context.push()
         db.create_all()
@@ -58,12 +61,14 @@ class LoginUITestCase(MyTestCase):
         self.app.config['PI_UI_DEACTIVATED'] = False
 
     def test_03_realm_dropdown(self):
+        self.setUp_user_realms()
+        self.setUp_user_realm2()
         set_policy("realmdrop", scope=SCOPE.WEBUI,
-                   action="{0!s}=Hello World".format(PolicyAction.REALMDROPDOWN))
+                   action=f"{PolicyAction.REALMDROPDOWN}={self.realm1} {self.realm2}")
         with self.app.test_request_context('/', method='GET'):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
-            self.assertIsNotNone(re.search(r'id="REALMS" value=".*World.*"',
+            self.assertIsNotNone(re.search(r'id="REALMS" value=".*realm1.*realm2.*"',
                                            to_unicode(res.data)), res)
 
     def test_04_custom_menu_baseline(self):
@@ -144,6 +149,7 @@ class LanguageTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.json['result']['value']['totp'], 'TOTP: Zeitbasiertes Einmalpasswort.')
 
+
 class ConfigTestCase(MyApiTestCase):
     """
     Tests the endpoint to receive the UI configuration as JSON.
@@ -176,12 +182,14 @@ class ConfigTestCase(MyApiTestCase):
             self.assertEqual(get_version_number(), config["privacyideaVersionNumber"])
 
     def test_02_get_ui_config_custom_values(self):
+        self.setUp_user_realms()
+        self.setUp_user_realm2()
         self.app.config['PI_CUSTOMIZATION'] = '/my/custom/path'
         self.app.config["PI_LOGO"] = 'mylogo.png'
         self.app.config["PI_PAGE_TITLE"] = 'My Custom Title'
 
         set_policy("ui", scope=SCOPE.WEBUI,
-                   action=f"{PolicyAction.REALMDROPDOWN}=realm1 realm2,{PolicyAction.SHOW_NODE},"
+                   action=f"{PolicyAction.REALMDROPDOWN}={self.realm1} {self.realm2},{PolicyAction.SHOW_NODE},"
                           f"{PolicyAction.CUSTOM_MENU}=myMenu.html,{PolicyAction.LOGIN_TEXT}=Please log in")
 
         with self.app.test_request_context("/config",

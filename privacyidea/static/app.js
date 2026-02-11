@@ -117,6 +117,8 @@ myApp.run(['$rootScope', '$state', '$stateParams', 'gettextCatalog',
             // to active whenever 'contacts.list' or one of its descendents is active.
             $rootScope.$state = $state;
             $rootScope.$stateParams = $stateParams;
+
+            const browserLanguage = document.body.dataset.browserLang;
             gettextCatalog.setCurrentLanguage(browserLanguage);
 
             // we set this, so we can use it in templates

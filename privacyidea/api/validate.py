@@ -103,7 +103,7 @@ from privacyidea.lib.config import (return_saml_attributes, get_from_config,
                                     return_saml_attributes_on_fail,
                                     SYSCONF, ensure_no_config_object, get_privacyidea_node)
 from privacyidea.lib.container import find_container_for_token, find_container_by_serial, check_container_challenge
-from privacyidea.lib.error import ParameterError, PolicyError, ResourceNotFoundError
+from privacyidea.lib.error import ParameterError, PolicyError, ResourceNotFoundError, ERROR
 from privacyidea.lib.event import EventConfiguration
 from privacyidea.lib.event import event
 from privacyidea.lib.machine import list_machine_tokens
@@ -113,19 +113,20 @@ from privacyidea.lib.policy import PolicyClass, SCOPE
 from privacyidea.lib.subscriptions import CheckSubscription
 from privacyidea.lib.token import (check_user_pass, check_serial_pass,
                                    check_otp, create_challenges_from_tokens, get_one_token)
-from .lib.policyhelper import check_last_auth_policy
+from .lib.policyhelper import check_last_auth_policy, get_realm_for_authentication
 from ..lib.fido2.util import get_fido2_token_by_credential_id, get_fido2_token_by_transaction_id
 from ..lib.fido2.challenge import create_fido2_challenge, verify_fido2_challenge
 from privacyidea.lib.token import get_tokens
 from privacyidea.lib.tokenclass import CHALLENGE_SESSION
-from privacyidea.lib.user import get_user_from_param, log_used_user, User
+from privacyidea.lib.user import get_user_from_param, log_used_user, User, split_user
 from privacyidea.lib.utils import get_client_ip, get_plugin_info_from_useragent, AUTH_RESPONSE
 from privacyidea.lib.utils import is_true, get_computer_name_from_user_agent
 from .lib.utils import required
-from .lib.utils import send_result, getParam, get_required
+from .lib.utils import getParam, get_required, map_error_to_code, send_error, send_result
 from ..lib.decorators import (check_user_serial_or_cred_id_in_request)
 from ..lib.fido2.policy_action import FIDO2PolicyAction
 from ..lib.framework import get_app_config_value
+from ..lib.realm import get_default_realm
 from ..lib.users.custom_user_attributes import InternalCustomUserAttributes, INTERNAL_USAGE
 
 log = logging.getLogger(__name__)
@@ -145,7 +146,6 @@ def before_request():
     g.request_data = get_all_params(request)
     request.all_data = copy.deepcopy(g.request_data)
 
-    request.User = get_user_from_param(request.all_data)
     privacyidea_server = get_app_config_value("PI_AUDIT_SERVERNAME", get_privacyidea_node(request.host))
     # Create a policy_object, that reads the database audit settings
     # and contains the complete policy definition during the request.
@@ -163,6 +163,19 @@ def before_request():
     g.serial = getParam(request.all_data, "serial", default=None)
     ua_name, ua_version, _ua_comment = get_plugin_info_from_useragent(request.user_agent.string)
     g.user_agent = ua_name
+
+    # Get user
+    username = request.all_data.get("user", "")
+    username, realm = split_user(username)
+    realm = request.all_data.get("realm", realm)
+    if username and not realm:
+        realm = get_default_realm()
+    # Check if a policy defines the realm
+    realm = get_realm_for_authentication(g, username, realm)
+    resolver = request.all_data.get("resolver")
+    request.User = User(username, realm, resolver)
+    request.all_data["realm"] = realm
+
     g.audit_object.log({"success": False,
                         "action_detail": "",
                         "client": g.client_ip,
@@ -200,10 +213,11 @@ def offlinerefill():
     serial = getParam(request.all_data, "serial", required)
     refilltoken_request = getParam(request.all_data, "refilltoken", required)
     password = getParam(request.all_data, "pass", required)
-    tokens = get_tokens(serial=serial)
-    if len(tokens) != 1:
-        raise ParameterError("The token does not exist")
-    else:
+    try:
+        tokens = get_tokens(serial=serial)
+        if len(tokens) != 1:
+            raise ParameterError("The token does not exist")
+
         token = tokens[0]
         # check if token is disabled or otherwise not fit for auth
         message_list = []
@@ -239,6 +253,16 @@ def offlinerefill():
                 response.set_data(json.dumps(content))
                 return response
         raise ParameterError("Token is not an offline token or refill token is incorrect")
+
+    except Exception as e:
+        if Match.user(
+            g,
+            scope=SCOPE.TOKEN,
+            action=PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE_FOR_OFFLINE_REFILL,
+            user_object=request.User if hasattr(request, "User") else None,
+        ).any():
+            return send_error("Failed offline token refill", error_code=ERROR.VALIDATE), map_error_to_code(e)
+        raise
 
 
 @validate_blueprint.route('/check', methods=['POST', 'GET'])
@@ -478,9 +502,14 @@ def check():
                 return send_result(False, rid=2, details={
                     "message": "No token found for the given credential ID or transaction ID!"})
 
-            if not token.user:
-                return send_result(False, rid=2, details={
-                    "message": "No user found for the token with the given credential ID!"})
+        # Check if tokentype is disabled
+        if (PolicyAction.DISABLED_TOKEN_TYPES in request.all_data and
+                token.get_type() in request.all_data[PolicyAction.DISABLED_TOKEN_TYPES]):
+            raise PolicyError(f"The authentication method is not available.")
+
+        if not token.user:
+            return send_result(False, rid=2, details={
+                "message": "No user found for the token with the given credential ID!"})
         user = token.user
         request.User = user
         # The request could also be an enrollment via validate. In that case, the param "attestationObject" is present
@@ -600,8 +629,9 @@ def check():
                 if token:
                     token_type = token.get_tokentype()
                     user_agent, _, _ = get_plugin_info_from_useragent(request.user_agent.string)
-                    user.set_attribute(f"{InternalCustomUserAttributes.LAST_USED_TOKEN}_{user_agent}",
-                                       token_type, INTERNAL_USAGE)
+                    if user.exist():
+                        user.set_attribute(f"{InternalCustomUserAttributes.LAST_USED_TOKEN}_{user_agent}",
+                                           token_type, INTERNAL_USAGE)
 
     serials = ",".join(serial_list)
     ret = send_result(result, rid=2, details=details)
@@ -858,6 +888,7 @@ def poll_transaction(transaction_id=None):
 
 @validate_blueprint.route('/initialize', methods=['POST', 'GET'])
 @prepolicy(fido2_auth, request=request)
+@prepolicy(disabled_token_types, request=request)
 def initialize():
     """
     Start an authentication by requesting a challenge for a token type. Currently, supports only type passkey
@@ -865,9 +896,12 @@ def initialize():
     """
     token_type = get_required(request.all_data, "type")
     details = {}
+    if PolicyAction.DISABLED_TOKEN_TYPES in request.all_data:
+        if token_type in request.all_data[PolicyAction.DISABLED_TOKEN_TYPES]:
+            raise PolicyError(f"The authentication method is not available.")
+
     if token_type.lower() == "passkey":
-        rp_id = get_first_policy_value(policy_action=FIDO2PolicyAction.RELYING_PARTY_ID, default="",
-                                       scope=SCOPE.ENROLL)
+        rp_id = request.all_data[FIDO2PolicyAction.RELYING_PARTY_ID]
         if not rp_id:
             raise PolicyError(
                 f"Missing policy for {FIDO2PolicyAction.RELYING_PARTY_ID}, unable to create challenge!")
@@ -881,6 +915,7 @@ def initialize():
         details["transaction_id"] = challenge["transaction_id"]
     else:
         raise ParameterError(f"Unsupported token type '{token_type}' for authentication initialization!")
+
     g.audit_object.log({"success": True})
     response = send_result(False, rid=2, details=details)
     return response

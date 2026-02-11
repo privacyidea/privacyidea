@@ -17,12 +17,19 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from datetime import datetime
+from typing import Optional
 
-from sqlalchemy import Sequence
+from sqlalchemy import (
+    Integer,
+    Sequence,
+    Interval,
+    Unicode,
+)
+from sqlalchemy.orm import Mapped, mapped_column
 
+from privacyidea.lib.utils import convert_column_to_unicode
 from privacyidea.models import db
 from privacyidea.models.utils import MethodsMixin
-from privacyidea.lib.utils import convert_column_to_unicode
 
 audit_column_length = {"signature": 1100,
                        "action": 200,
@@ -45,88 +52,65 @@ audit_column_length = {"signature": 1100,
                        "policies": 255,
                        "container_serial": 40,
                        "container_type": 100}
+
 AUDIT_TABLE_NAME = 'pidea_audit'
 
 
 class Audit(MethodsMixin, db.Model):
-    """
-    This class stores the Audit entries
-    """
     __tablename__ = AUDIT_TABLE_NAME
-    id = db.Column(db.Integer, Sequence("audit_seq"), primary_key=True)
-    date = db.Column(db.DateTime, index=True)
-    startdate = db.Column(db.DateTime)
-    duration = db.Column(db.Interval(second_precision=6))
-    signature = db.Column(db.Unicode(audit_column_length.get("signature")))
-    action = db.Column(db.Unicode(audit_column_length.get("action")))
-    success = db.Column(db.Integer)
-    authentication = db.Column(db.Unicode(audit_column_length.get("authentication")))
-    serial = db.Column(db.Unicode(audit_column_length.get("serial")))
-    token_type = db.Column(db.Unicode(audit_column_length.get("token_type")))
-    container_serial = db.Column(db.Unicode(audit_column_length.get("container_serial")))
-    container_type = db.Column(db.Unicode(audit_column_length.get("container_type")))
-    user = db.Column(db.Unicode(audit_column_length.get("user")), index=True)
-    realm = db.Column(db.Unicode(audit_column_length.get("realm")))
-    resolver = db.Column(db.Unicode(audit_column_length.get("resolver")))
-    administrator = db.Column(db.Unicode(audit_column_length.get("administrator")))
-    action_detail = db.Column(db.Unicode(audit_column_length.get("action_detail")))
-    info = db.Column(db.Unicode(audit_column_length.get("info")))
-    privacyidea_server = db.Column(db.Unicode(audit_column_length.get("privacyidea_server")))
-    client = db.Column(db.Unicode(audit_column_length.get("client")))
-    user_agent = db.Column(db.Unicode(audit_column_length.get("user_agent")))
-    user_agent_version = db.Column(db.Unicode(audit_column_length.get("user_agent_version")))
-    loglevel = db.Column(db.Unicode(audit_column_length.get("loglevel")))
-    clearance_level = db.Column(db.Unicode(audit_column_length.get("clearance_level")))
-    thread_id = db.Column(db.Unicode(audit_column_length.get("thread_id")))
-    policies = db.Column(db.Unicode(audit_column_length.get("policies")))
+    id: Mapped[int] = mapped_column(Sequence("audit_seq"), primary_key=True)
+    date: Mapped[Optional[datetime]] = mapped_column(default=datetime.now, index=True)
+    startdate: Mapped[Optional[datetime]]
+    duration: Mapped[Optional[Interval]] = mapped_column(Interval(second_precision=6))
+    signature: Mapped[Optional[str]] = mapped_column(Unicode(audit_column_length.get("signature")), default="")
+    action: Mapped[Optional[str]] = mapped_column(Unicode(audit_column_length.get("action")), default="")
+    success: Mapped[Optional[int]] = mapped_column(Integer, default=0)
+    authentication: Mapped[Optional[str]] = mapped_column(Unicode(audit_column_length.get("authentication")),
+                                                          default="")
+    serial: Mapped[Optional[str]] = mapped_column(Unicode(audit_column_length.get("serial")), default="")
+    token_type: Mapped[Optional[str]] = mapped_column(Unicode(audit_column_length.get("token_type")), default="")
+    container_serial: Mapped[Optional[str]] = mapped_column(Unicode(audit_column_length.get("container_serial")),
+                                                            default="")
+    container_type: Mapped[Optional[str]] = mapped_column(Unicode(audit_column_length.get("container_type")),
+                                                          default="")
+    user: Mapped[Optional[str]] = mapped_column(Unicode(audit_column_length.get("user")), default="", index=True)
+    realm: Mapped[Optional[str]] = mapped_column(Unicode(audit_column_length.get("realm")), default="")
+    resolver: Mapped[Optional[str]] = mapped_column(Unicode(audit_column_length.get("resolver")), default="")
+    administrator: Mapped[Optional[str]] = mapped_column(Unicode(audit_column_length.get("administrator")), default="")
+    action_detail: Mapped[Optional[str]] = mapped_column(Unicode(audit_column_length.get("action_detail")), default="")
+    info: Mapped[Optional[str]] = mapped_column(Unicode(audit_column_length.get("info")), default="")
+    privacyidea_server: Mapped[Optional[str]] = mapped_column(Unicode(audit_column_length.get("privacyidea_server")),
+                                                              default="")
+    client: Mapped[Optional[str]] = mapped_column(Unicode(audit_column_length.get("client")), default="")
+    user_agent: Mapped[Optional[str]] = mapped_column(Unicode(audit_column_length.get("user_agent")), default="")
+    user_agent_version: Mapped[Optional[str]] = mapped_column(Unicode(audit_column_length.get("user_agent_version")),
+                                                              default="")
+    loglevel: Mapped[Optional[str]] = mapped_column(Unicode(audit_column_length.get("loglevel")), default="default")
+    clearance_level: Mapped[Optional[str]] = mapped_column(Unicode(audit_column_length.get("clearance_level")),
+                                                           default="default")
+    thread_id: Mapped[Optional[str]] = mapped_column(Unicode(audit_column_length.get("thread_id")), default="0")
+    policies: Mapped[Optional[str]] = mapped_column(Unicode(audit_column_length.get("policies")), default="")
 
-    def __init__(self,
-                 action="",
-                 success=0,
-                 authentication="",
-                 serial="",
-                 token_type="",
-                 container_serial="",
-                 container_type="",
-                 user="",
-                 realm="",
-                 resolver="",
-                 administrator="",
-                 action_detail="",
-                 info="",
-                 privacyidea_server="",
-                 client="",
-                 user_agent="",
-                 user_agent_version="",
-                 loglevel="default",
-                 clearance_level="default",
-                 thread_id="0",
-                 policies="",
-                 startdate=None,
-                 duration=None
-                 ):
-        self.signature = ""
-        self.date = datetime.now()
-        self.startdate = startdate
-        self.duration = duration
-        self.action = convert_column_to_unicode(action)
-        self.success = success
-        self.authentication = convert_column_to_unicode(authentication)
-        self.serial = convert_column_to_unicode(serial)
-        self.token_type = convert_column_to_unicode(token_type)
-        self.container_serial = convert_column_to_unicode(container_serial)
-        self.container_type = convert_column_to_unicode(container_type)
-        self.user = convert_column_to_unicode(user)
-        self.realm = convert_column_to_unicode(realm)
-        self.resolver = convert_column_to_unicode(resolver)
-        self.administrator = convert_column_to_unicode(administrator)
-        self.action_detail = convert_column_to_unicode(action_detail)
-        self.info = convert_column_to_unicode(info)
-        self.privacyidea_server = convert_column_to_unicode(privacyidea_server)
-        self.client = convert_column_to_unicode(client)
-        self.loglevel = convert_column_to_unicode(loglevel)
-        self.clearance_level = convert_column_to_unicode(clearance_level)
-        self.thread_id = convert_column_to_unicode(thread_id)
-        self.policies = convert_column_to_unicode(policies)
-        self.user_agent = convert_column_to_unicode(user_agent)
-        self.user_agent_version = convert_column_to_unicode(user_agent_version)
+    def __init__(self, **kw):
+        super().__init__(**kw)
+        self.signature = convert_column_to_unicode(self.signature)
+        self.action = convert_column_to_unicode(self.action)
+        self.authentication = convert_column_to_unicode(self.authentication)
+        self.serial = convert_column_to_unicode(self.serial)
+        self.token_type = convert_column_to_unicode(self.token_type)
+        self.container_serial = convert_column_to_unicode(self.container_serial)
+        self.container_type = convert_column_to_unicode(self.container_type)
+        self.user = convert_column_to_unicode(self.user)
+        self.realm = convert_column_to_unicode(self.realm)
+        self.resolver = convert_column_to_unicode(self.resolver)
+        self.administrator = convert_column_to_unicode(self.administrator)
+        self.action_detail = convert_column_to_unicode(self.action_detail)
+        self.info = convert_column_to_unicode(self.info)
+        self.privacyidea_server = convert_column_to_unicode(self.privacyidea_server)
+        self.client = convert_column_to_unicode(self.client)
+        self.loglevel = convert_column_to_unicode(self.loglevel)
+        self.clearance_level = convert_column_to_unicode(self.clearance_level)
+        self.thread_id = convert_column_to_unicode(self.thread_id)
+        self.policies = convert_column_to_unicode(self.policies)
+        self.user_agent = convert_column_to_unicode(self.user_agent)
+        self.user_agent_version = convert_column_to_unicode(self.user_agent_version)

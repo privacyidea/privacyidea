@@ -155,7 +155,7 @@ export class TokenGetSerialComponent {
             .afterClosed()
             .subscribe({
               next: (result) => {
-                if (result) {
+                if (result?.confirmed) {
                   this.findSerial();
                 } else {
                   this.resetSteps();
@@ -183,17 +183,18 @@ export class TokenGetSerialComponent {
     this.serialSubscription = this.tokenService.getSerial(this.otpValue(), params).subscribe({
       next: (response) => {
         const serial = response.result?.value?.serial ?? "";
-        this.dialogService.openDialog({
-          component: GetSerialResultDialogComponent,
-          data: {
-            foundSerial: serial,
-            otpValue: this.otpValue(),
-            onClickSerial: () => {
-              this.tokenSerial.set(serial);
-              this.router.navigateByUrl(ROUTE_PATHS.TOKENS_DETAILS + serial);
-              this.dialogService.closeAllDialogs();
-            },
-            reset: () => {
+        const afterClosed = this.dialogService
+          .openDialog({
+            component: GetSerialResultDialogComponent,
+            data: {
+              foundSerial: serial,
+              otpValue: this.otpValue()
+            }
+          })
+          .afterClosed();
+        afterClosed.subscribe({
+          next: (result) => {
+            if (result === "reset") {
               this.resetSteps();
             }
           }

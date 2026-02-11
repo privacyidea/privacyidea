@@ -47,6 +47,8 @@ The file should contain the following contents::
    # PI_INIT_CHECK_HOOK = 'your.module.function'
    # PI_CSS = '/location/of/theme.css'
    # PI_UI_DEACTIVATED = True
+   # PI_ENABLE_CSP = True
+   # PI_FORCE_HTTPS = True
 
 .. note:: The config file is parsed as python code, so you can use variables to
    set the path and you need to take care of the indentation.
@@ -100,6 +102,12 @@ can be set, for example::
 
 Further information on possible parameters can be found in the
 `PassLib documentation <https://passlib.readthedocs.io/en/stable/lib/passlib.hash.html>`_.
+
+Security
+--------
+
+``PI_ENABLE_CSP`` will make the server return a strict Content Security Policy for the browser.
+``PI_FORCE_HTTPS`` will enforce the use of HTTPS.
 
 Translation
 -----------
@@ -338,6 +346,8 @@ in ``pi.cfg`` using the parameter ``PI_TOKEN_MODULES``::
 
 Enable Enrollment of Deprecated Token Types
 ...........................................
+
+.. versionadded:: 3.12
 
 The *u2f* token type is deprecated because it has been superseded by WebAuthn/FIDO2, which are more modern and secure authentication standards.
 No new tokens of this type can be enrolled. However, existing tokens of this type can still be used.

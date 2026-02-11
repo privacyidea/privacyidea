@@ -31,6 +31,7 @@ from privacyidea.lib.token import remove_token, init_token, get_tokens, get_one_
 from privacyidea.lib.tokens.webauthn import CoseAlgorithm
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import AUTH_RESPONSE
+from privacyidea.models import db
 from tests.base import MyApiTestCase, OverrideConfigTestCase
 from tests.passkey_base import PasskeyTestBase
 
@@ -38,6 +39,8 @@ from tests.passkey_base import PasskeyTestBase
 class PasskeyAPITestBase(MyApiTestCase, PasskeyTestBase):
 
     def setUp(self):
+        # Clear session before each test to avoid side effects
+        db.session.expunge_all()
         PasskeyTestBase.setUp(self)
         self.setUp_user_realms()
         self.user = User(login="hans", realm=self.realm1,
@@ -1162,6 +1165,46 @@ class PasskeyAPITest(PasskeyAPITestBase):
             self.assertFalse(result["value"])
 
         remove_token(serial)
+
+    def test_21_disabled_token_type(self):
+        """
+        The 'disable_token_type' policy will disable passkey, both for initialize and check.
+        """
+        set_policy("disable_passkey", scope=SCOPE.AUTH, action=f"{PolicyAction.DISABLED_TOKEN_TYPES}=passkey")
+        serial = self._enroll_static_passkey()
+
+        # /validate/initialize will not allow passkey
+        with self.app.test_request_context('/validate/initialize', method='POST', data={"type": "passkey"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(403, res.status_code)
+            self.assertIn("result", res.json)
+            self.assertIn("status", res.json["result"])
+            result = res.json["result"]
+            self.assertIn("error", result)
+            self.assertEqual(303, result["error"]["code"])
+            self.assertEqual("The authentication method is not available.", result["error"]["message"])
+
+        # /validate/check will not allow passkey even if a challenge exists
+        delete_policy("disable_passkey")
+        passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_no_uv)
+        set_policy("disable_passkey", scope=SCOPE.AUTH, action=f"{PolicyAction.DISABLED_TOKEN_TYPES}=passkey")
+        transaction_id = passkey_challenge["transaction_id"]
+        data = self.authentication_response_no_uv
+        data["transaction_id"] = transaction_id
+        with self.app.test_request_context('/validate/check', method='POST',
+                                           data=data,
+                                           headers={"Origin": self.expected_origin}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(403, res.status_code)
+            self.assertIn("result", res.json)
+            self.assertIn("status", res.json["result"])
+            result = res.json["result"]
+            self.assertIn("error", result)
+            self.assertEqual(303, result["error"]["code"])
+            self.assertEqual("The authentication method is not available.", result["error"]["message"])
+
+        remove_token(serial)
+        delete_policy("disable_passkey")
 
 class PasskeyAuthAPITest(PasskeyAPITestBase, OverrideConfigTestCase):
     """

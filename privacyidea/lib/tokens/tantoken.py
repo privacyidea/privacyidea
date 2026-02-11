@@ -176,7 +176,7 @@ class TanTokenClass(PaperTokenClass):
             if tankey.startswith("tan.tan"):
                 salt, tan = tanvalue.split(":")
                 if tan == hash(anOtpVal, salt):
-                    self.del_tokeninfo(tankey)
+                    self.delete_tokeninfo(tankey)
                     return 1
 
         return res

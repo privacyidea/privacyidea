@@ -3,22 +3,20 @@ This test file tests the lib.policy.py
 
 The lib.policy.py only depends on the database model.
 """
+import re
+
 import dateutil
 import mock
 from werkzeug.datastructures.headers import Headers, EnvironHeaders
 
 from privacyidea.lib.auditmodules.base import Audit
+from privacyidea.lib.auth import ROLE
 from privacyidea.lib.container import init_container, find_container_by_serial
-from privacyidea.lib.containers.container_info import RegistrationState
+from privacyidea.lib.containers.container_info import RegistrationState, TokenContainerInfoData
+from privacyidea.lib.error import ParameterError, privacyIDEAError
+from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policies.conditions import (PolicyConditionClass, ConditionSection,
                                                  ConditionHandleMissingData)
-from privacyidea.lib.token import init_token
-from privacyidea.lib.tokens.emailtoken import EMAILACTION
-from privacyidea.lib.utils.compare import PrimaryComparators
-from privacyidea.models import PolicyDescription, Policy, PolicyCondition, db, NodeName
-from .base import MyTestCase, FakeFlaskG, FakeAudit
-
-from privacyidea.lib.auth import ROLE
 from privacyidea.lib.policy import (set_policy, delete_policy, delete_policies,
                                     import_policies, export_policies,
                                     get_static_policy_definitions,
@@ -28,12 +26,15 @@ from privacyidea.lib.policy import (set_policy, delete_policy, delete_policies,
                                     get_action_values_from_options, Match, MatchingError,
                                     get_allowed_custom_attributes, convert_action_dict_to_python_dict,
                                     set_policy_conditions, validate_actions, get_policies)
-from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.realm import (set_realm, delete_realm, get_realms)
 from privacyidea.lib.resolver import (save_resolver, get_resolver_list,
                                       delete_resolver)
-from privacyidea.lib.error import ParameterError, privacyIDEAError
+from privacyidea.lib.token import init_token
+from privacyidea.lib.tokens.emailtoken import EMAILACTION
 from privacyidea.lib.user import User
+from privacyidea.lib.utils.compare import PrimaryComparators
+from privacyidea.models import PolicyDescription, Policy, PolicyCondition, db, NodeName
+from .base import MyTestCase, FakeFlaskG, FakeAudit
 from .base import PWFILE as FILE_PASSWORDS
 from .base import PWFILE2 as FILE_PASSWD
 
@@ -268,13 +269,13 @@ class PolicyTestCase(MyTestCase):
 
     def test_04_delete_policy(self):
         d1 = PolicyDescription.query.filter_by().all()
-        self.assertEqual(len(d1), 1)
+        self.assertEqual(len(d1), 5)
         delete_policy(name="pol4")
         P = PolicyClass()
         pol4 = P.match_policies(name="pol4")
         self.assertTrue(pol4 == [], pol4)
         d1 = PolicyDescription.query.filter_by().all()
-        self.assertEqual(len(d1), 0)
+        self.assertEqual(len(d1), 4)
 
     def test_05_export_policies(self):
         P = PolicyClass()
@@ -819,10 +820,12 @@ class PolicyTestCase(MyTestCase):
 
     def test_18_policy_match_policies_with_time(self):
         # Set valid times
-        set_policy(name="test", scope=SCOPE.AUTHZ, action=f"{PolicyAction.TOKENTYPE}=hotp totp", time="Mon-Fri: 08:00-16:30")
+        set_policy(name="test", scope=SCOPE.AUTHZ, action=f"{PolicyAction.TOKENTYPE}=hotp totp",
+                   time="Mon-Fri: 08:00-16:30")
         set_policy(name="test", scope=SCOPE.AUTHZ, action=f"{PolicyAction.TOKENTYPE}=hotp totp", time="Tue-Thu:6-22")
         set_policy(name="test", scope=SCOPE.AUTHZ, action=f"{PolicyAction.TOKENTYPE}=hotp totp", time="Wed: 13:30-18")
-        set_policy(name="test", scope=SCOPE.AUTHZ, action=f"{PolicyAction.TOKENTYPE}=hotp totp", time="Sat-Sun: 20-23:59")
+        set_policy(name="test", scope=SCOPE.AUTHZ, action=f"{PolicyAction.TOKENTYPE}=hotp totp",
+                   time="Sat-Sun: 20-23:59")
         policy = Policy.query.filter_by(name="test").first()
         self.assertEqual("Sat-Sun: 20-23:59", policy.time)
         # set empty string removes time
@@ -1547,31 +1550,39 @@ class PolicyTestCase(MyTestCase):
         P = PolicyClass()
         # Check what the user "import_admin" is allowed to do
         # Allowed to import on pinode 1
-        pols = P.match_policies(scope=SCOPE.ADMIN, adminuser="import_admin", action=PolicyAction.IMPORT, pinode="pinode1")
+        pols = P.match_policies(scope=SCOPE.ADMIN, adminuser="import_admin", action=PolicyAction.IMPORT,
+                                pinode="pinode1")
         self.assertSetEqual({"import_node1"}, set(p['name'] for p in pols), )
         # Not allowed to import on pinode 2
-        pols = P.match_policies(scope=SCOPE.ADMIN, adminuser="import_admin", action=PolicyAction.IMPORT, pinode="pinode2")
+        pols = P.match_policies(scope=SCOPE.ADMIN, adminuser="import_admin", action=PolicyAction.IMPORT,
+                                pinode="pinode2")
         self.assertSetEqual(set(), set(p['name'] for p in pols))
         # not allowed to delete on any node
         pols = P.match_policies(scope=SCOPE.ADMIN, adminuser="import_admin", action=PolicyAction.DELETE)
         self.assertSetEqual(set(), set(p['name'] for p in pols))
 
         # Check what the user "delete_admin" is allowerd to do
-        pols = P.match_policies(scope=SCOPE.ADMIN, adminuser="delete_admin", action=PolicyAction.IMPORT, pinode="pinode1")
+        pols = P.match_policies(scope=SCOPE.ADMIN, adminuser="delete_admin", action=PolicyAction.IMPORT,
+                                pinode="pinode1")
         self.assertSetEqual({"import_node1"}, set(p['name'] for p in pols))
         # Not allowed to import on pinode 2
-        pols = P.match_policies(scope=SCOPE.ADMIN, adminuser="delete_admin", action=PolicyAction.IMPORT, pinode="pinode2")
+        pols = P.match_policies(scope=SCOPE.ADMIN, adminuser="delete_admin", action=PolicyAction.IMPORT,
+                                pinode="pinode2")
         self.assertSetEqual(set(), set(p['name'] for p in pols))
         # Allowed to delete on node 1 and node 2
-        pols = P.match_policies(scope=SCOPE.ADMIN, adminuser="delete_admin", action=PolicyAction.DELETE, pinode="pinode1")
+        pols = P.match_policies(scope=SCOPE.ADMIN, adminuser="delete_admin", action=PolicyAction.DELETE,
+                                pinode="pinode1")
         self.assertSetEqual({"delete_node2"}, set(p['name'] for p in pols))
-        pols = P.match_policies(scope=SCOPE.ADMIN, adminuser="delete_admin", action=PolicyAction.DELETE, pinode="pinode2")
+        pols = P.match_policies(scope=SCOPE.ADMIN, adminuser="delete_admin", action=PolicyAction.DELETE,
+                                pinode="pinode2")
         self.assertSetEqual({"delete_node2"}, set(p['name'] for p in pols))
 
         # Check what the user "enable_admin" is allowed to do
-        pols = P.match_policies(scope=SCOPE.ADMIN, adminuser="enable_admin", action=PolicyAction.ENABLE, pinode="pinode1")
+        pols = P.match_policies(scope=SCOPE.ADMIN, adminuser="enable_admin", action=PolicyAction.ENABLE,
+                                pinode="pinode1")
         self.assertSetEqual({"enable"}, set(p['name'] for p in pols))
-        pols = P.match_policies(scope=SCOPE.ADMIN, adminuser="enable_admin", action=PolicyAction.ENABLE, pinode="pinode2")
+        pols = P.match_policies(scope=SCOPE.ADMIN, adminuser="enable_admin", action=PolicyAction.ENABLE,
+                                pinode="pinode2")
         self.assertSetEqual({"enable"}, set(p['name'] for p in pols))
 
         # Now check the Match-Object, which uses the pinode from the config: In testing environment it is "Node1".
@@ -1662,7 +1673,7 @@ class PolicyTestCase(MyTestCase):
         self.assertSetEqual(set(), _names(P.match_policies(user_object=user1)))
 
         delete_policy("setpin_pol")
-        db_token.delete()
+        token.delete_token()
 
     def test_32_filter_by_conditions_token(self):
         def _names(policies):
@@ -1755,7 +1766,8 @@ class PolicyTestCase(MyTestCase):
         self.assertEqual({"set": {}, "delete": []}, d)
 
         set_policy("custom_attr", scope=SCOPE.ADMIN, action=f"{PolicyAction.SET_USER_ATTRIBUTES}=:hello: one two")
-        set_policy("custom_attr2", scope=SCOPE.ADMIN, action=f"{PolicyAction.SET_USER_ATTRIBUTES}=:hello2: * :hello: three")
+        set_policy("custom_attr2", scope=SCOPE.ADMIN,
+                   action=f"{PolicyAction.SET_USER_ATTRIBUTES}=:hello2: * :hello: three")
         set_policy("custom_attr3", scope=SCOPE.ADMIN, action=f"{PolicyAction.SET_USER_ATTRIBUTES}=:*: on off")
         set_policy("custom_attr4", scope=SCOPE.ADMIN, action=f"{PolicyAction.DELETE_USER_ATTRIBUTES}=*")
         # Also check, that a double entry "one" only appears once
@@ -1807,11 +1819,15 @@ class PolicyTestCase(MyTestCase):
                    user="userA")
         set_policy(name="disable_realm2_userA", scope=SCOPE.ADMIN, action=PolicyAction.DISABLE, realm=self.realm2,
                    user="userA")
-        set_policy(name="disable_resolver1", scope=SCOPE.ADMIN, action=PolicyAction.DISABLE, resolver=self.resolvername1)
-        set_policy(name="disable_resolver3", scope=SCOPE.ADMIN, action=PolicyAction.DISABLE, resolver=self.resolvername3)
-        set_policy(name="disable_realm1_userA_resolver1", scope=SCOPE.ADMIN, action=PolicyAction.DISABLE, realm=self.realm1,
+        set_policy(name="disable_resolver1", scope=SCOPE.ADMIN, action=PolicyAction.DISABLE,
+                   resolver=self.resolvername1)
+        set_policy(name="disable_resolver3", scope=SCOPE.ADMIN, action=PolicyAction.DISABLE,
+                   resolver=self.resolvername3)
+        set_policy(name="disable_realm1_userA_resolver1", scope=SCOPE.ADMIN, action=PolicyAction.DISABLE,
+                   realm=self.realm1,
                    user="userA", resolver=self.resolvername1)
-        set_policy(name="disable_realm1_userA_resolver3", scope=SCOPE.ADMIN, action=PolicyAction.DISABLE, realm=self.realm1,
+        set_policy(name="disable_realm1_userA_resolver3", scope=SCOPE.ADMIN, action=PolicyAction.DISABLE,
+                   realm=self.realm1,
                    user="userA", resolver=self.resolvername3)
         P = PolicyClass()
 
@@ -1836,7 +1852,8 @@ class PolicyTestCase(MyTestCase):
         self.assertSetEqual(correct_policies, policy_names)
 
         # get policies applicable of userA in realmA of resolver1
-        policies = P.list_policies(action=PolicyAction.DISABLE, realm=self.realm1, user="userA", resolver=self.resolvername1)
+        policies = P.list_policies(action=PolicyAction.DISABLE, realm=self.realm1, user="userA",
+                                   resolver=self.resolvername1)
         policy_names = {p["name"] for p in policies}
         self.assertEqual(5, len(policies))
         correct_policies = {"disable", "disable_realm1", "disable_realm1_userA", "disable_resolver1",
@@ -1844,7 +1861,8 @@ class PolicyTestCase(MyTestCase):
         self.assertSetEqual(correct_policies, policy_names)
 
         # get policies applicable to userA in realm1 of resolver1 or realm2+resolver1
-        policies = P.list_policies(action=PolicyAction.DISABLE, realm=self.realm1, user="userA", resolver=self.resolvername1,
+        policies = P.list_policies(action=PolicyAction.DISABLE, realm=self.realm1, user="userA",
+                                   resolver=self.resolvername1,
                                    additional_realms=[self.realm2])
         policy_names = {p["name"] for p in policies}
         self.assertEqual(6, len(policies))
@@ -2148,7 +2166,8 @@ class PolicyTestCase(MyTestCase):
         delete_policy("policy")
 
     def test_52_validate_actions(self):
-        action_dict = {PolicyAction.ENABLE: True, PolicyAction.HIDE_TOKENINFO: "hashlib private_server_key", PolicyAction.DISABLE: True}
+        action_dict = {PolicyAction.ENABLE: True, PolicyAction.HIDE_TOKENINFO: "hashlib private_server_key",
+                       PolicyAction.DISABLE: True}
         action_str = f"{PolicyAction.ENABLE}, {PolicyAction.HIDE_TOKENINFO}=hashlib private_server_key ,{PolicyAction.DISABLE}"
         action_list = [PolicyAction.ENABLE, PolicyAction.TOKENINFO, PolicyAction.DISABLE]
 
@@ -2160,55 +2179,96 @@ class PolicyTestCase(MyTestCase):
         self.assertTrue(validate_actions(SCOPE.USER, action_dict))
         self.assertTrue(validate_actions(SCOPE.USER, action_str))
 
+        def check_actions_in_exception(exception, expected_actions):
+            self.assertTrue(exception.exception.message.startswith("Invalid actions "))
+            invalid_actions = re.findall(r"\[(.*?)\]", exception.exception.message)[0].split(", ")
+            self.assertSetEqual(expected_actions, set([action.strip("'") for action in invalid_actions]))
+
         # Invalid actions for enroll scope
         with self.assertRaises(ParameterError) as exception:
             validate_actions(SCOPE.ENROLL, action_dict)
-            self.assertEqual(f"Invalid actions [{PolicyAction.ENABLE}, {PolicyAction.HIDE_TOKENINFO}, {PolicyAction.DISABLE}]",
-                             exception.exception.message)
+        check_actions_in_exception(exception, {PolicyAction.ENABLE, PolicyAction.HIDE_TOKENINFO, PolicyAction.DISABLE})
+
         with self.assertRaises(ParameterError) as exception:
             validate_actions(SCOPE.ENROLL, action_str)
-            self.assertEqual(f"Invalid actions [{PolicyAction.ENABLE}, {PolicyAction.HIDE_TOKENINFO}, {PolicyAction.DISABLE}]",
-                             exception.exception.message)
+        check_actions_in_exception(exception, {PolicyAction.ENABLE, PolicyAction.HIDE_TOKENINFO, PolicyAction.DISABLE})
 
         # Invalid for non-existing scope
         with self.assertRaises(ParameterError) as exception:
             validate_actions("non-exisiting-scope", action_dict)
-            self.assertEqual(f"Invalid actions [{PolicyAction.ENABLE}, {PolicyAction.HIDE_TOKENINFO}, {PolicyAction.DISABLE}]",
-                             exception.exception.message)
+        check_actions_in_exception(exception, {PolicyAction.ENABLE, PolicyAction.HIDE_TOKENINFO, PolicyAction.DISABLE})
+
         with self.assertRaises(ParameterError) as exception:
             validate_actions("non-exisiting-scope", action_str)
-            self.assertEqual(f"Invalid actions [{PolicyAction.ENABLE}, {PolicyAction.HIDE_TOKENINFO}, {PolicyAction.DISABLE}]",
-                             exception.exception.message)
+        check_actions_in_exception(exception, {PolicyAction.ENABLE, PolicyAction.HIDE_TOKENINFO, PolicyAction.DISABLE})
 
         # Invalid action type
         with self.assertRaises(ParameterError) as exception:
             validate_actions(SCOPE.ADMIN, action_list)
-            self.assertEqual("Invalid actions type 'list'. Must be a string or a dictionary.",
-                             exception.exception.message)
+        self.assertEqual("Invalid actions type <class 'list'>. Must be a string or a dictionary.",
+                         exception.exception.message)
 
         # Use wildcard
         self.assertTrue(validate_actions(SCOPE.ADMIN, "*"))
 
         # Exclude actions from wildcard
-        self.assertTrue(validate_actions(SCOPE.ADMIN, f"*, -{PolicyAction.ENABLE}, {PolicyAction.DISABLE}, !{PolicyAction.DELETE}"))
+        self.assertTrue(
+            validate_actions(SCOPE.ADMIN, f"*, -{PolicyAction.ENABLE}, {PolicyAction.DISABLE}, !{PolicyAction.DELETE}"))
 
         # Exclude invalid actions passes (excluded actions are not checked anyway)
         with self.assertRaises(ParameterError) as exception:
             validate_actions(SCOPE.ADMIN, f"*, -i_am_invalid, {PolicyAction.DISABLE}, !not-existing")
-            self.assertEqual("Invalid actions: ['i_am_invalid', 'not-existing']", exception.exception.message)
+        check_actions_in_exception(exception, {'i_am_invalid', 'not-existing'})
 
         # Invalid action set to false are also not accepted
         with self.assertRaises(ParameterError) as exception:
             validate_actions(SCOPE.ADMIN, {"i_am_invalid": False})
-            self.assertEqual("Invalid actions: ['i_am_invalid']", exception.exception.message)
+        check_actions_in_exception(exception, {'i_am_invalid'})
 
         # Invalid action string (actions can not be extracted correctly)
         action_str = (f"{PolicyAction.ENABLE}, {PolicyAction.HIDE_TOKENINFO}:hashlib private_server_key ,"
                       f"{PolicyAction.DISABLE}; {PolicyAction.DELETE}")
         with self.assertRaises(ParameterError) as exception:
             validate_actions(SCOPE.ADMIN, action_str)
-            self.assertEqual(f"Invalid actions: ['{PolicyAction.HIDE_TOKENINFO}:hashlib private_server_key', "
-                             f"'{PolicyAction.DISABLE}; {PolicyAction.DELETE}']", exception.exception.message)
+        check_actions_in_exception(exception,
+                                   {f'{PolicyAction.HIDE_TOKENINFO}:hashlib private_server_key',
+                                    f"{PolicyAction.DISABLE}; {PolicyAction.DELETE}"})
+
+        # Valid realm list
+        self.setUp_user_realms()
+        self.setUp_user_realm2()
+        action_str = f"{PolicyAction.REALMDROPDOWN}={self.realm1} {self.realm2}"
+        self.assertTrue(validate_actions(SCOPE.WEBUI, action_str))
+
+        # Invalid realm in realm list
+        def check_realms_in_exception(exception, expected_realms):
+            self.assertTrue(
+                exception.exception.message.startswith(
+                    f"Invalid value for action '{PolicyAction.REALMDROPDOWN}': The following realms do not exist: "),
+                exception.exception.message)
+            invalid_realms = re.findall(r"\[(.*?)\]", exception.exception.message)[0].split(", ")
+            self.assertSetEqual(expected_realms, set([realm.strip("'") for realm in invalid_realms]))
+
+        action_str = f"{PolicyAction.REALMDROPDOWN}=invalid_realm {self.realm1} random"
+        with self.assertRaises(ParameterError) as exception:
+            validate_actions(SCOPE.WEBUI, action_str)
+        check_realms_in_exception(exception, {"invalid_realm", "random"})
+
+        action_dict = {PolicyAction.REALMDROPDOWN: f"invalid_realm {self.realm1} random"}
+        with self.assertRaises(ParameterError) as exception:
+            validate_actions(SCOPE.WEBUI, action_dict)
+        check_realms_in_exception(exception, {"invalid_realm", "random"})
+
+        # No realm defined
+        with self.assertRaises(ParameterError) as exception:
+            validate_actions(SCOPE.WEBUI, f"{PolicyAction.REALMDROPDOWN}=")
+        self.assertEqual(f"Invalid value for action '{PolicyAction.REALMDROPDOWN}': No realms specified!",
+                         exception.exception.message)
+
+        with self.assertRaises(ParameterError) as exception:
+            validate_actions(SCOPE.WEBUI, {PolicyAction.REALMDROPDOWN: ""})
+        self.assertEqual(f"Invalid value for action '{PolicyAction.REALMDROPDOWN}': No realms specified!",
+                         exception.exception.message)
 
     def test_53_set_policy_validate_realms(self):
         """
@@ -2359,7 +2419,8 @@ class PolicyTestCase(MyTestCase):
         node2 = NodeName(id="56789", name="testnode")
         db.session.add_all([node1, node2])
         set_policy(name="basic", scope=SCOPE.WEBUI, action=PolicyAction.HIDE_WELCOME)
-        set_policy(name="user", scope=SCOPE.USER, action=PolicyAction.DELETE, active=False, realm=[self.realm1, self.realm3],
+        set_policy(name="user", scope=SCOPE.USER, action=PolicyAction.DELETE, active=False,
+                   realm=[self.realm1, self.realm3],
                    resolver=[self.resolvername1, self.resolvername3], pinode="localnode", user=["hans", "corny"],
                    client="1.2.3.4", time="Mon-Fri: 9-18", priority=10, user_agents="privacyidea-cp, PAM")
         set_policy(name="user_agent", scope=SCOPE.AUTH,
@@ -2983,7 +3044,8 @@ class PolicyConditionClassTestCase(MyTestCase):
         self.assertTrue(isinstance(data.available_keys, list))
 
         # Everything available
-        container.set_container_info({"registration_state": RegistrationState.CLIENT_WAIT.value})
+        container.set_container_info(
+            [TokenContainerInfoData("registration_state", RegistrationState.CLIENT_WAIT.value)])
         data = condition.get_container_data(container_serial)
         self.assertEqual("container", data.object_name)
         self.assertTrue(data.object_available)
@@ -3236,6 +3298,57 @@ class PolicyMatchTestCase(MyTestCase):
         with self.assertRaises(MatchingError):
             self.check_names(Match.admin_or_user(g, PolicyAction.ENABLE, User("cornelius", "realm1")).policies(),
                              {"pol4"})
+
+    def test_06_token(self):
+        self.setUp_user_realm4_with_2_resolvers()
+        g = FakeFlaskG()
+        g.client_ip = "127.0.0.1"
+        g.audit_object = mock.Mock()
+        g.audit_object.audit_data = {}
+        g.policy_object = PolicyClass()
+
+        # define policies with different conditions
+        set_policy(name="no_condition", scope=SCOPE.ENROLL, action=PolicyAction.CHANGE_PIN_EVERY)
+        set_policy(name="realm4", scope=SCOPE.ENROLL, action=PolicyAction.CHANGE_PIN_EVERY, realm=self.realm4)
+        set_policy(name="hans", scope=SCOPE.ENROLL, action=PolicyAction.CHANGE_PIN_EVERY, user="hans",
+                   realm=self.realm4)
+        set_policy(name="resolver1", scope=SCOPE.ENROLL, action=PolicyAction.CHANGE_PIN_EVERY, realm=self.realm4,
+                   resolver=self.resolvername1)
+        set_policy(name="resolver3", scope=SCOPE.ENROLL, action=PolicyAction.CHANGE_PIN_EVERY, realm=self.realm4,
+                   resolver=self.resolvername3)
+        set_policy(name="realm1", scope=SCOPE.ENROLL, action=PolicyAction.CHANGE_PIN_EVERY, realm=self.realm1)
+
+        # create tokens
+        token_no_user = init_token({"type": "hotp"})
+        token_hans = init_token({"type": "hotp"}, user=User("hans", self.realm4))
+        token_corny = init_token({"type": "totp"}, user=User("corny", self.realm4))
+
+        self.check_names(Match.token(g, SCOPE.ENROLL, PolicyAction.CHANGE_PIN_EVERY, token_no_user).policies(),
+                         {"no_condition"})
+        self.check_names(Match.token(g, SCOPE.ENROLL, PolicyAction.CHANGE_PIN_EVERY, token_hans).policies(),
+                         {"no_condition", "realm4", "hans", "resolver1"})
+        self.check_names(Match.token(g, SCOPE.ENROLL, PolicyAction.CHANGE_PIN_EVERY, token_corny).policies(),
+                         {"no_condition", "realm4", "resolver3"})
+        # Match policy without token
+        self.check_names(Match.token(g, SCOPE.ENROLL, PolicyAction.CHANGE_PIN_EVERY, None).policies(),
+                         {"no_condition"})
+
+        # Add token to realm1 should also match policies from this realm
+        token_corny.set_realms([self.realm4, self.realm1])
+        self.check_names(Match.token(g, SCOPE.ENROLL, PolicyAction.CHANGE_PIN_EVERY, token_corny).policies(),
+                         {"no_condition", "realm4", "resolver3", "realm1"})
+
+        # Add an extended condition
+        set_policy(name="realm1", scope=SCOPE.ENROLL, action=PolicyAction.CHANGE_PIN_EVERY, realm=self.realm1,
+                   conditions=[(ConditionSection.TOKEN, "realms", PrimaryComparators.NOT_CONTAINS, self.realm4, True)])
+        self.check_names(Match.token(g, SCOPE.ENROLL, PolicyAction.CHANGE_PIN_EVERY, token_corny).policies(),
+                         {"no_condition", "realm4", "resolver3"})
+
+        # Clean up
+        delete_policies(["no_condition", "realm4", "hans", "resolver1", "resolver3", "realm1"])
+        token_corny.delete_token()
+        token_hans.delete_token()
+        token_no_user.delete_token()
 
     @classmethod
     def tearDownClass(cls):

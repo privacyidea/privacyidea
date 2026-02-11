@@ -57,7 +57,7 @@ const routerMock = {
 } as unknown as jest.Mocked<Router>;
 
 function makeDialogResult(result: boolean) {
-  return { afterClosed: () => of(result) } as any;
+  return { afterClosed: () => of({ confirmed: result }) } as any;
 }
 
 const matDialogMock = {

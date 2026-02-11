@@ -33,12 +33,13 @@ import {
   MockPiResponse,
   MockRealmService,
   MockSystemService,
-  MockTableUtilsService,
+  MockTableUtilsService
 } from "../../../../testing/mock-services";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ResolverService } from "../../../services/resolver/resolver.service";
 import { MockResolverService } from "../../../../testing/mock-services/mock-resolver-service";
+import { UserNewResolverComponent } from "../user-new-resolver/user-new-resolver.component";
 
 class LocalMockMatDialog {
   result$ = of(true);
@@ -195,9 +196,7 @@ describe("RealmTableComponent", () => {
       },
       realmB: {
         default: false,
-        resolver: [
-          { name: "resOther", type: "http", node: "node-2", priority: 3 }
-        ]
+        resolver: [{ name: "resOther", type: "http", node: "node-2", priority: 3 }]
       }
     } as any;
 
@@ -335,18 +334,12 @@ describe("RealmTableComponent", () => {
     const callGlobal = (realmService.createRealm as jest.Mock).mock.calls[0];
     expect(callGlobal[0]).toBe("realmA");
     expect(callGlobal[1]).toBe("");
-    expect(callGlobal[2]).toEqual([
-      { name: "res1", priority: 10 },
-      { name: "res2" }
-    ]);
+    expect(callGlobal[2]).toEqual([{ name: "res1", priority: 10 }, { name: "res2" }]);
 
     const callNode = (realmService.createRealm as jest.Mock).mock.calls[1];
     expect(callNode[0]).toBe("realmA");
     expect(callNode[1]).toBe("node-1");
-    expect(callNode[2]).toEqual([
-      { name: "res3", priority: 5 },
-      { name: "res4" }
-    ]);
+    expect(callNode[2]).toEqual([{ name: "res3", priority: 5 }, { name: "res4" }]);
 
     expect(notificationService.openSnackBar).toHaveBeenCalledWith("Realm created.");
     expect(component.newRealmName()).toBe("");
@@ -377,16 +370,12 @@ describe("RealmTableComponent", () => {
         {
           nodeId: "",
           nodeLabel: "All nodes",
-          resolvers: [
-            { name: "res1", type: "ldap", priority: null }
-          ]
+          resolvers: [{ name: "res1", type: "ldap", priority: null }]
         },
         {
           nodeId: "node-1",
           nodeLabel: "Node 1",
-          resolvers: [
-            { name: "res2", type: "sql", priority: 5 }
-          ]
+          resolvers: [{ name: "res2", type: "sql", priority: 5 }]
         }
       ]
     };
@@ -455,9 +444,7 @@ describe("RealmTableComponent", () => {
         { name: "res1", priority: 10 },
         { name: "res2", priority: null }
       ],
-      "node-1": [
-        { name: "res3", priority: 7 }
-      ]
+      "node-1": [{ name: "res3", priority: 7 }]
     });
 
     component.saveEditedRealm(row);
@@ -467,17 +454,12 @@ describe("RealmTableComponent", () => {
     const callGlobal = (realmService.createRealm as jest.Mock).mock.calls[0];
     expect(callGlobal[0]).toBe("realmA");
     expect(callGlobal[1]).toBe("");
-    expect(callGlobal[2]).toEqual([
-      { name: "res1", priority: 10 },
-      { name: "res2" }
-    ]);
+    expect(callGlobal[2]).toEqual([{ name: "res1", priority: 10 }, { name: "res2" }]);
 
     const callNode = (realmService.createRealm as jest.Mock).mock.calls[1];
     expect(callNode[0]).toBe("realmA");
     expect(callNode[1]).toBe("node-1");
-    expect(callNode[2]).toEqual([
-      { name: "res3", priority: 7 }
-    ]);
+    expect(callNode[2]).toEqual([{ name: "res3", priority: 7 }]);
 
     expect(notificationService.openSnackBar).toHaveBeenCalledWith('Realm "realmA" updated.');
     expect(component.editingRealmName()).toBeNull();
@@ -526,5 +508,26 @@ describe("RealmTableComponent", () => {
     expect(notificationService.openSnackBar).toHaveBeenCalledWith('Realm "realmA" set as default.');
     expect(realmService.realmResource.reload).toHaveBeenCalled();
     expect(realmService.defaultRealmResource.reload).toHaveBeenCalled();
+  });
+
+  it("onClickResolver should open UserNewResolverComponent with resolver data", () => {
+    const resolver = { resolvername: "res1", type: "ldapresolver" } as any;
+    resolverService.setResolvers([resolver]);
+
+    component.onClickResolver("res1");
+
+    expect(dialog.open).toHaveBeenCalledWith(UserNewResolverComponent, {
+      data: { resolver },
+      width: "auto",
+      height: "auto",
+      maxWidth: "100vw",
+      maxHeight: "100vh"
+    });
+  });
+
+  it("onClickResolver should do nothing if resolver not found", () => {
+    resolverService.setResolvers([]);
+    component.onClickResolver("non-existing");
+    expect(dialog.open).not.toHaveBeenCalled();
   });
 });

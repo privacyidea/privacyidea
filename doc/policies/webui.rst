@@ -175,7 +175,7 @@ default URL is a Github repository [#defaulturl]_.
 .. note:: When setting a template_url policy the modified URL will only get
    active after the user has logged out and in again.
 
-.. [#defaulturl] https://github.com/privacyidea/policy-templates/.
+.. [#defaulturl] "/static/policy-templates/".
 
 
 .. index:: Default tokentype
@@ -200,7 +200,7 @@ type: ``string``
 Defines the default container type when creating a new container in the WebUI. This container type will be selected
 when entering the container create dialog. If this policy is not set, the default type is `Generic`.
 
-New in version 3.11
+.. versionadded:: 3.11
 
 .. index:: Wizard, Token wizard
 .. _policy_token_wizard:
@@ -296,7 +296,7 @@ user is not known at this moment.
 
 The type of this action was changed to "string" in version 2.16. You can set
 a space separated list of realm names. Only these realm names are displayed in
-the dropdown box.
+the dropdown box. The first realm in the list will be preselected.
 
 .. note:: The realm names in the policy are not checked, if they really exist!
 

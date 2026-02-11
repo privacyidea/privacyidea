@@ -27,7 +27,7 @@ export abstract class AbstractDialogComponent<T = any, R = any> {
    * that any inheriting class must expect this structure (title, content, etc.) in its data.
    */
   public readonly data: T = inject(MAT_DIALOG_DATA);
-  protected dialogRef: MatDialogRef<T, R> = inject(MatDialogRef);
+  public dialogRef: MatDialogRef<T, R> = inject(MatDialogRef);
 
   /**
    * Closes the dialog with an optional result.

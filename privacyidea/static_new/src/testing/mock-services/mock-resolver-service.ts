@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { signal, Signal, WritableSignal } from "@angular/core";
+import { ResourceStatus, signal, Signal, WritableSignal } from "@angular/core";
 import { Observable, of } from "rxjs";
 import { Resolver, ResolverServiceInterface } from "../../app/services/resolver/resolver.service";
 import { PiResponse } from "../../app/app.component";
@@ -30,20 +30,19 @@ export class MockResolverService implements ResolverServiceInterface {
     reload: jest.fn()
   };
   selectedResolverName: WritableSignal<string> = signal("");
+  selectedResolverResource: any = {
+    value: signal(undefined),
+    status: signal(ResourceStatus.Resolved),
+    reload: jest.fn()
+  };
   resolvers: Signal<Resolver[]> = this._resolversValue.asReadonly();
   resolverOptions: Signal<string[]> = this._resolverOptionsValue.asReadonly();
 
-  postResolverTest(): Observable<any> {
-    return of({} as PiResponse<any>);
-  }
+  postResolverTest = jest.fn(() => of({} as PiResponse<any, any>));
 
-  postResolver(resolverName: string, data: any): Observable<any> {
-    return of({} as PiResponse<any>);
-  }
+  postResolver = jest.fn((resolverName: string, data: any) => of({} as PiResponse<any, any>));
 
-  deleteResolver(resolverName: string): Observable<any> {
-    return of({} as PiResponse<any>);
-  }
+  deleteResolver = jest.fn((resolverName: string) => of({} as PiResponse<any, any>));
 
   setResolvers(data: Resolver[]): void {
     this._resolversValue.set(data);
