@@ -67,7 +67,13 @@
         <mat-panel-title i18n>TOTP Token settings</mat-panel-title>
       </mat-expansion-panel-header>
       <div class="panel-content">
-        <p i18n>The TOTP Token is a time based one time password token. It is described in RFC 6238.</p>
+        <p i18n>The TOTP Token is a time based one time password token. It is described in
+          <a
+            href="https://datatracker.ietf.org/doc/html/rfc6238"
+            target="_blank">RFC 6238
+          </a>
+                .
+        </p>
         <p i18n>Here you can define settings, that will be set as default values, when enrolling a TOTP token. Note that
                 the user/admin policies
           <span class="policy-highlight">totp_hashlib</span>
@@ -129,7 +135,8 @@
         </p>
 
         <mat-form-field
-          appearance="fill">
+          appearance="fill"
+          class="margin-bottom-32">
           <mat-label i18n>appId</mat-label>
           <input
             [(ngModel)]="formData()['u2f.appId']"
@@ -169,7 +176,8 @@
         </p>
 
         <mat-form-field
-          appearance="fill">
+          appearance="fill"
+          class="margin-bottom-32">
           <mat-label i18n>trust_anchor_dir</mat-label>
           <input
             [(ngModel)]="formData()['webauthn.trust_anchor_dir']"
@@ -211,6 +219,13 @@
               <mat-option [value]="id">{{ id }}</mat-option>
             }
           </mat-select>
+          <mat-hint i18n>Select a predefined
+            <a
+              routerLink="/external-services/radius"
+              target="_blank">RADIUS server configuration
+            </a>
+                         .
+          </mat-hint>
         </mat-form-field>
       </div>
     </mat-expansion-panel>
@@ -248,8 +263,10 @@
       </mat-expansion-panel-header>
       <div class="panel-content">
         <p i18n>The SMS Token is an event based token. After the user has tried to authenticate with the OTP PIN, an SMS
-                with an OTP value is sent to the users mobile phone.
+                with an OTP value is sent to the users mobile phone. Then user can authenticate with this OTP value in a
+                second step.
         </p>
+        <p i18n>Here you can define how the SMS will be sent - via which kind of gateway.</p>
 
         <mat-form-field
           appearance="fill">
@@ -259,6 +276,13 @@
               <mat-option [value]="gw.name">{{ gw.name }}</mat-option>
             }
           </mat-select>
+          <mat-hint i18n>Select a predefined
+            <a
+              routerLink="/external-services/sms"
+              target="_blank">SMS Gateway configuration
+            </a>
+                         .
+          </mat-hint>
         </mat-form-field>
 
         <mat-form-field
@@ -308,7 +332,8 @@
         </p>
 
         <mat-form-field
-          appearance="fill">
+          appearance="fill"
+          class="margin-bottom-16">
           <mat-label i18n>TiQR Registration Server</mat-label>
           <input
             [(ngModel)]="formData()['tiqr.regServer']"
@@ -316,35 +341,49 @@
             placeholder="http://pi.server/ttype/tiqr"
             required
             type="url">
+          <mat-hint i18n>The Registration Server is this privacyIDEA server. Note that the privacyIDEA server needs to
+                         be accessible from the users smartphone.
+          </mat-hint>
         </mat-form-field>
 
         <mat-form-field
-          appearance="fill">
+          appearance="fill"
+          class="margin-bottom-16">
           <mat-label i18n>TiQR Authentication Server</mat-label>
           <input
             [(ngModel)]="formData()['tiqr.authServer']"
             matInput
             type="url">
+          <mat-hint i18n>The Authentication Server is this privacyIDEA server. Note that the privacyIDEA server needs to
+                         be accessible from the users smartphone.
+          </mat-hint>
         </mat-form-field>
 
         <mat-form-field
-          appearance="fill">
+          appearance="fill"
+          class="margin-bottom-16">
           <mat-label i18n>TiQR Service Displayname</mat-label>
           <input
             [(ngModel)]="formData()['tiqr.serviceDisplayname']"
             matInput>
+          <mat-hint i18n>This is the display name of your service in the TiQR app.</mat-hint>
         </mat-form-field>
 
         <mat-form-field
-          appearance="fill">
+          appearance="fill"
+          class="margin-bottom-16">
           <mat-label i18n>TiQR Service Identifier</mat-label>
           <input
             [(ngModel)]="formData()['tiqr.serviceIdentifier']"
             matInput>
+          <mat-hint i18n>This is the service identifier that will be passed to the TiQR app. This should contain a
+                         reverse FQDN (defaults to org.privacyidea).
+          </mat-hint>
         </mat-form-field>
 
         <mat-form-field
-          appearance="fill">
+          appearance="fill"
+          class="margin-bottom-16">
           <mat-label i18n>TiQR Logo URL</mat-label>
           <input
             [(ngModel)]="formData()['tiqr.logoUrl']"
@@ -352,10 +391,12 @@
             placeholder="https://pi.server/static/css/privacyIDEA1.png"
             required
             type="url">
+          <mat-hint i18n>The URL that contains the logo of the service.</mat-hint>
         </mat-form-field>
 
         <mat-form-field
-          appearance="fill">
+          appearance="fill"
+          class="margin-bottom-16">
           <mat-label i18n>TiQR Info URL</mat-label>
           <input
             [(ngModel)]="formData()['tiqr.infoUrl']"
@@ -363,15 +404,24 @@
             placeholder="https://www.privacyidea.org"
             required
             type="url">
+          <mat-hint i18n>The website of the identity provider</mat-hint>
         </mat-form-field>
 
         <mat-form-field
-          appearance="fill">
+          appearance="fill"
+          class="margin-bottom-16">
           <mat-label i18n>OCRA Suite</mat-label>
           <input
             [(ngModel)]="formData()['tiqr.ocrasuite']"
             matInput>
-          <mat-hint i18n>The default OCRA suite is OCRA-1:HOTP-SHA1-6:QN10.</mat-hint>
+          <mat-hint i18n>This is the OCRA suite used by the TiQR App. The default OCRA suite is OCRA-1:HOTP-SHA1-6:QN10.
+                         For more details see the
+            <a
+              href="https://tools.ietf.org/html/rfc6287#page-8"
+              target="_blank">RFC 6287
+            </a>
+                         .
+          </mat-hint>
         </mat-form-field>
       </div>
     </mat-expansion-panel>
@@ -382,20 +432,31 @@
         <mat-panel-title i18n>EMail Token settings</mat-panel-title>
       </mat-expansion-panel-header>
       <div class="panel-content">
-        <p i18n>The EMail token is a challenge response token that sends the OTP value to the given email address.</p>
+        <p i18n>The EMail token is a challenge response token that sends the OTP value to the given email address, when
+                the correct OTP PIN was presented by the user.
+        </p>
 
         <mat-form-field
-          appearance="fill">
+          appearance="fill"
+          class="margin-bottom-16">
           <mat-label i18n>SMTP server configuration</mat-label>
           <mat-select [(ngModel)]="formData()['email.identifier']">
             @for (server of smtpServers(); track server.identifier) {
               <mat-option [value]="server.identifier">{{ server.identifier }}</mat-option>
             }
           </mat-select>
+          <mat-hint i18n>Select a predefined
+            <a
+              routerLink="/external-services/smtp"
+              target="_blank">SMTP server configuration
+            </a>
+                         .
+          </mat-hint>
         </mat-form-field>
 
         <mat-form-field
-          appearance="fill">
+          appearance="fill"
+          class="margin-bottom-16">
           <mat-label i18n>OTP validity time</mat-label>
           <input
             [(ngModel)]="formData()['email.validtime']"
@@ -412,7 +473,10 @@
         <mat-panel-title i18n>Questionnaire Token settings</mat-panel-title>
       </mat-expansion-panel-header>
       <div class="panel-content">
-        <p i18n>The questionnaire lets you define a set of questions.</p>
+        <p i18n>The questionnaire lets you define a set of questions. The questionnaire token needs to define answers to
+                these questions and the user will be presented with a random questions and needs to provide his
+                previously defined answer.
+        </p>
 
         <mat-form-field
           appearance="fill">
@@ -462,7 +526,8 @@
               <mat-form-field
                 appearance="outline">
                 <input
-                  [(ngModel)]="formData()['question.question.' + nextQuestion()]"
+                  [(ngModel)]="newQuestionText"
+                  [ngModelOptions]="{standalone: true}"
                   i18n-placeholder
                   matInput
                   placeholder="New Question">
@@ -471,8 +536,8 @@
             <td>
               <button
                 (click)="addQuestion()"
-                color="primary"
-                mat-flat-button>
+                class="action-button-1 width-238"
+                mat-stroked-button>
                 <mat-icon>add</mat-icon>
                 <span i18n>Add new question</span>
               </button>
@@ -489,7 +554,18 @@
         <mat-panel-title i18n>Yubico Token settings</mat-panel-title>
       </mat-expansion-panel-header>
       <div class="panel-content">
-        <p i18n>The Yubico Token is a Yubikey that is registered with the YubiCloud service.</p>
+        <p i18n>The Yubico Token is a Yubikey that is registered with the YubiCloud service. The Yubikey emits a 44
+                character one time password. The first 12 characters are a unique ID which is used to bind the device to
+                the user.
+        </p>
+        <p i18n>The authentication request is forwarded to the YubiCloud. For accessing the YubiCloud you need to enter
+                an API Client ID and an API Key, which you can request
+          <a
+            href="https://upgrade.yubico.com/getapikey/"
+            target="_blank">here
+          </a>
+                .
+        </p>
 
         <mat-form-field
           appearance="fill">
@@ -530,7 +606,21 @@
         <mat-panel-title i18n>Yubikey Token settings</mat-panel-title>
       </mat-expansion-panel-header>
       <div class="panel-content">
-        <p i18n>This is a Yubikey in the Yubico Mode authenticated against privacyIDEA.</p>
+        <p i18n>This is a Yubikey in the Yubico Mode authenticated against privacyIDEA. The Yubikey emits a 44 character
+                on time password.
+        </p>
+        <p i18n>The authentication request can be handled by the default privacyIDEA
+          <a
+            href="https://privacyidea.readthedocs.io/en/latest/modules/api/validate.html"
+            target="_blank">validate API
+          </a>
+                but can also be handled by the
+          <a
+            href="https://privacyidea.readthedocs.io/en/latest/modules/lib/tokentypes/yubikey.html#privacyidea.lib.tokens.yubikeytoken.YubikeyTokenClass.api_endpoint"
+            target="_blank">Yubico Validation Protocol
+          </a>
+                .
+        </p>
 
         <table class="table">
           <thead>

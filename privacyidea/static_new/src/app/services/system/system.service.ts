@@ -48,6 +48,8 @@ export interface SystemServiceInterface {
 
   saveSystemConfig(config: any): Observable<PiResponse<any>>;
 
+  deleteSystemConfig(key: string): Observable<PiResponse<any>>;
+
   deleteUserCache(): Observable<PiResponse<any>>;
 
   loadSmtpIdentifiers(): Observable<PiResponse<any>>;
@@ -134,6 +136,11 @@ export class SystemService implements SystemServiceInterface {
 
   saveSystemConfig(config: any): Observable<PiResponse<any>> {
     return this.http.post<PiResponse<any>>(this.systemBaseUrl + "setConfig", config,
+      { headers: this.authService.getHeaders() });
+  }
+
+  deleteSystemConfig(key: string): Observable<PiResponse<any>> {
+    return this.http.delete<PiResponse<any>>(`${this.systemBaseUrl}${key}`,
       { headers: this.authService.getHeaders() });
   }
 

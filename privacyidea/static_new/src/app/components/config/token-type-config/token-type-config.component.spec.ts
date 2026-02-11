@@ -9,6 +9,7 @@ import { SmtpService } from "../../../services/smtp/smtp.service";
 import { MockSystemService } from "../../../../testing/mock-services";
 import { signal } from "@angular/core";
 import { NotificationService } from "../../../services/notification/notification.service";
+import { provideRouter } from "@angular/router";
 
 describe("TokenTypeConfigComponent", () => {
   let component: TokenTypeConfigComponent;
@@ -36,7 +37,8 @@ describe("TokenTypeConfigComponent", () => {
             smtpServerResource: { value: () => ({ result: { value: {} } }) }
           }
         },
-        { provide: NotificationService, useValue: { openSnackBar: jest.fn() } }
+        { provide: NotificationService, useValue: { openSnackBar: jest.fn() } },
+        provideRouter([])
       ]
     }).compileComponents();
 
@@ -80,19 +82,28 @@ describe("TokenTypeConfigComponent", () => {
     expect(saveSpy).toHaveBeenCalledWith(component.formData());
   });
 
-  it("should increment nextQuestion and call save on addQuestion", () => {
+  it("should add new question to formData and increment nextQuestion without saving", () => {
     const saveSpy = jest.spyOn(component, 'save');
     const initialNext = component.nextQuestion();
+    component.newQuestionText.set("My new question?");
+
     component.addQuestion();
-    expect(saveSpy).toHaveBeenCalled();
+
+    expect(component.formData()[`question.question.${initialNext}`]).toBe("My new question?");
     expect(component.nextQuestion()).toBe(initialNext + 1);
+    expect(component.newQuestionText()).toBe("");
+    expect(saveSpy).not.toHaveBeenCalled();
   });
 
-  it("should remove entry on deleteSystemEntry", () => {
-    component.formData.set({ "test.key": "value", "other": "val" });
-    component.deleteSystemEntry("test.key");
-    expect(component.formData()["test.key"]).toBeUndefined();
-    expect(component.formData()["other"]).toBe("val");
+  it("should call deleteSystemConfig and reload on deleteSystemEntry", () => {
+    const systemService = TestBed.inject(SystemService);
+    const deleteSpy = jest.spyOn(systemService as any, 'deleteSystemConfig');
+    const reloadSpy = jest.spyOn((systemService as any).systemConfigResource, 'reload');
+
+    component.deleteSystemEntry("question.question.14");
+
+    expect(deleteSpy).toHaveBeenCalledWith("question.question.14");
+    expect(reloadSpy).toHaveBeenCalled();
   });
 
   it("should update formData on onCheckboxChange", () => {

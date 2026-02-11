@@ -36,6 +36,7 @@ import { HttpClient } from "@angular/common/http";
 import { environment } from "../../../../environments/environment";
 import { lastValueFrom } from "rxjs";
 import { PiResponse } from "../../../app.component";
+import { RouterLink } from "@angular/router";
 
 @Component({
   selector: "app-token-type-config",
@@ -50,7 +51,8 @@ import { PiResponse } from "../../../app.component";
     MatCheckboxModule,
     MatButtonModule,
     MatIconModule,
-    MatDividerModule
+    MatDividerModule,
+    RouterLink
   ],
   templateUrl: "./token-type-config.component.html",
   styleUrl: "./token-type-config.component.scss"
@@ -66,6 +68,7 @@ export class TokenTypeConfigComponent {
   formData = signal<Record<string, any>>({});
   nextQuestion = signal(0);
   newApiId = signal("");
+  newQuestionText = signal("");
 
   systemConfig = this.systemService.systemConfig;
   systemConfigInit = this.systemService.systemConfigInit;
@@ -113,15 +116,33 @@ export class TokenTypeConfigComponent {
   }
 
   addQuestion() {
-    this.save();
+    const text = String(this.newQuestionText() ?? "").trim();
+    if (!text) {
+      this.notificationService.openSnackBar($localize`Please enter a question.`);
+      return;
+    }
+    const index = this.nextQuestion();
+    this.formData.update(f => ({
+      ...f,
+      [`question.question.${index}`]: text
+    }));
+    this.newQuestionText.set("");
     this.nextQuestion.update(n => n + 1);
   }
 
   deleteSystemEntry(key: string) {
-    this.formData.update(f => {
-      const newForm = { ...f };
-      delete newForm[key];
-      return newForm;
+    this.systemService.deleteSystemConfig(key).subscribe({
+      next: (response) => {
+        if (response?.result?.status) {
+          this.notificationService.openSnackBar($localize`System entry deleted.`);
+          this.systemService.systemConfigResource.reload();
+        } else {
+          this.notificationService.openSnackBar($localize`Failed to delete system entry.`);
+        }
+      },
+      error: () => {
+        this.notificationService.openSnackBar($localize`Failed to delete system entry.`);
+      }
     });
   }
 

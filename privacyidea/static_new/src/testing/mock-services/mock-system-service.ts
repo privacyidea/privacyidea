@@ -117,6 +117,10 @@ export class MockSystemService implements SystemServiceInterface {
     return of(MockPiResponse.fromValue({ status: true }));
   }
 
+  deleteSystemConfig(key: string) {
+    return of(MockPiResponse.fromValue({ status: true }));
+  }
+
   deleteUserCache() {
     return of(MockPiResponse.fromValue({ status: true }));
   }
