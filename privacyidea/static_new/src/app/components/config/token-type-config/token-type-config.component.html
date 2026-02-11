@@ -1,0 +1,632 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<div class="token-type-config-container">
+  <div class="flex-row just-space-between ali-center">
+    <h2 i18n>Token Type Configuration</h2>
+    <button
+      (click)="save()"
+      [disabled]="!authService.actionAllowed('configwrite')"
+      class="action-button-1 width-238"
+      mat-stroked-button>
+      <mat-icon>save</mat-icon>
+      <span i18n>Save Configuration</span>
+    </button>
+  </div>
+  <mat-accordion multi="true">
+
+    <!-- HOTP -->
+    <mat-expansion-panel>
+      <mat-expansion-panel-header>
+        <mat-panel-title i18n>HOTP Token settings</mat-panel-title>
+      </mat-expansion-panel-header>
+      <div class="panel-content">
+        <p i18n>The HOTP Token is an event based one time password token. It is described in
+          <a
+            href="https://datatracker.ietf.org/doc/html/rfc4226"
+            target="_blank">RFC 4226
+          </a>
+                .
+        </p>
+        <p i18n>Here you can define settings, that will be set as default values, when enrolling a HOTP token. Note that
+                the user/admin policy
+          <span class="policy-highlight">hotp_hashlib</span>
+                always have precedence over this default value.
+        </p>
+
+        <mat-form-field
+          appearance="fill">
+          <mat-label i18n>Default Hashlib</mat-label>
+          <mat-select [(ngModel)]="formData()['hotp.hashlib']">
+            @for (hashlib of hashLibs(); track hashlib) {
+              <mat-option [value]="hashlib">{{ hashlib }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      </div>
+    </mat-expansion-panel>
+
+    <!-- TOTP -->
+    <mat-expansion-panel>
+      <mat-expansion-panel-header>
+        <mat-panel-title i18n>TOTP Token settings</mat-panel-title>
+      </mat-expansion-panel-header>
+      <div class="panel-content">
+        <p i18n>The TOTP Token is a time based one time password token. It is described in RFC 6238.</p>
+        <p i18n>Here you can define settings, that will be set as default values, when enrolling a TOTP token. Note that
+                the user/admin policies
+          <span class="policy-highlight">totp_hashlib</span>
+                and
+          <span class="policy-highlight">totp_timestep</span>
+                always have precedence over these default values.
+        </p>
+
+        <mat-form-field
+          appearance="fill">
+          <mat-label i18n>Default Time Step</mat-label>
+          <mat-select [(ngModel)]="formData()['totp.timeStep']">
+            @for (step of totpSteps(); track step) {
+              <mat-option [value]="step">{{ step }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field
+          appearance="fill">
+          <mat-label i18n>Default Time Window</mat-label>
+          <input
+            [(ngModel)]="formData()['totp.timeWindow']"
+            matInput
+            placeholder="180"
+            type="number">
+        </mat-form-field>
+
+        <mat-form-field
+          appearance="fill">
+          <mat-label i18n>Default Time Shift</mat-label>
+          <input
+            [(ngModel)]="formData()['totp.timeShift']"
+            matInput
+            placeholder="0"
+            type="number">
+        </mat-form-field>
+
+        <mat-form-field
+          appearance="fill">
+          <mat-label i18n>Default Hashlib</mat-label>
+          <mat-select [(ngModel)]="formData()['totp.hashlib']">
+            @for (hashlib of hashLibs(); track hashlib) {
+              <mat-option [value]="hashlib">{{ hashlib }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      </div>
+    </mat-expansion-panel>
+
+    <!-- U2F -->
+    <mat-expansion-panel>
+      <mat-expansion-panel-header>
+        <mat-panel-title i18n>U2F Token settings</mat-panel-title>
+      </mat-expansion-panel-header>
+      <div class="panel-content">
+        <p i18n>The U2F token is a hardware token, that communicates with the browser. You need to set the correct
+                appId, which in fact is the URL of your privacyIDEA installation.
+        </p>
+
+        <mat-form-field
+          appearance="fill">
+          <mat-label i18n>appId</mat-label>
+          <input
+            [(ngModel)]="formData()['u2f.appId']"
+            matInput
+            placeholder="https://pi.server.com"
+            required
+            type="url">
+          <mat-hint i18n>The URL of your privacyIDEA installation. This must be a valid FQDN with also a valid top level
+                         domain - otherwise you might receive a U2F Error 2 (Bad Request).
+          </mat-hint>
+        </mat-form-field>
+
+        @if (formData()['u2f.appId'] && !formData()['u2f.appId'].startsWith('https:')) {
+          <div
+            class="alert alert-warning"
+            i18n>The AppID needs to start with "https".
+          </div>
+        }
+        @if (formData()['u2f.appId'] && formData()['u2f.appId'].endsWith('/')) {
+          <div
+            class="alert alert-warning"
+            i18n>The AppID must not end with a "/".
+          </div>
+        }
+      </div>
+    </mat-expansion-panel>
+
+    <!-- WebAuthn -->
+    <mat-expansion-panel>
+      <mat-expansion-panel-header>
+        <mat-panel-title i18n>WebAuthn Token settings</mat-panel-title>
+      </mat-expansion-panel-header>
+      <div class="panel-content">
+        <p i18n>The WebAuthn token is a hardware token, that communicates with the browser. You may set a trust anchor
+                directory, which is a path to a directory containing certificates to trust for WebAuthn authenticator
+                attestation.
+        </p>
+
+        <mat-form-field
+          appearance="fill">
+          <mat-label i18n>trust_anchor_dir</mat-label>
+          <input
+            [(ngModel)]="formData()['webauthn.trust_anchor_dir']"
+            matInput
+            placeholder="/etc/privacyidea/trusted_attestation_roots">
+          <mat-hint i18n>The path to the directory containing the trust anchors. This should be a path to a local
+                         directory on the server, that privacyIDEA has read access to.
+          </mat-hint>
+        </mat-form-field>
+
+        @if (formData()['webauthn.trust_anchor_dir'] && !formData()['webauthn.trust_anchor_dir'].startsWith('/')) {
+          <div
+            class="alert alert-warning"
+            i18n>The trust_anchor_dir must be an absolute path.
+          </div>
+        }
+        @if (formData()['webauthn.trust_anchor_dir'] && formData()['webauthn.trust_anchor_dir'].endsWith('/')) {
+          <div
+            class="alert alert-warning"
+            i18n>The trust_anchor_dir must not end with a "/".
+          </div>
+        }
+      </div>
+    </mat-expansion-panel>
+
+    <!-- RADIUS -->
+    <mat-expansion-panel>
+      <mat-expansion-panel-header>
+        <mat-panel-title i18n>RADIUS Token settings</mat-panel-title>
+      </mat-expansion-panel-header>
+      <div class="panel-content">
+        <p i18n>The RADIUS token forwards the authentication request to another RADIUS server.</p>
+
+        <mat-form-field
+          appearance="fill">
+          <mat-label i18n>RADIUS server configuration</mat-label>
+          <mat-select [(ngModel)]="formData()['radius.identifier']">
+            @for (id of systemService.radiusServerResource.value()?.result?.value; track id) {
+              <mat-option [value]="id">{{ id }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      </div>
+    </mat-expansion-panel>
+
+    <!-- Remote -->
+    <mat-expansion-panel>
+      <mat-expansion-panel-header>
+        <mat-panel-title i18n>Remote Token settings</mat-panel-title>
+      </mat-expansion-panel-header>
+      <div class="panel-content">
+        <p i18n>The Remote token forwards the authentication request to another privacyIDEA server.</p>
+
+        <mat-checkbox
+          (change)="onCheckboxChange('remote.verify_ssl_certificate', $event)"
+          [checked]="isChecked(formData()['remote.verify_ssl_certificate'])"
+          i18n>Verify SSL certificate
+        </mat-checkbox>
+
+        <mat-form-field
+          appearance="fill">
+          <mat-label i18n>Default Remote Server</mat-label>
+          <input
+            [(ngModel)]="formData()['remote.server']"
+            matInput
+            placeholder="https://your.other.privacyidea.server"
+            required>
+        </mat-form-field>
+      </div>
+    </mat-expansion-panel>
+
+    <!-- SMS -->
+    <mat-expansion-panel>
+      <mat-expansion-panel-header>
+        <mat-panel-title i18n>SMS Token settings</mat-panel-title>
+      </mat-expansion-panel-header>
+      <div class="panel-content">
+        <p i18n>The SMS Token is an event based token. After the user has tried to authenticate with the OTP PIN, an SMS
+                with an OTP value is sent to the users mobile phone.
+        </p>
+
+        <mat-form-field
+          appearance="fill">
+          <mat-label i18n>SMS Gateway configuration</mat-label>
+          <mat-select [(ngModel)]="formData()['sms.identifier']">
+            @for (gw of smsGateways(); track gw.name) {
+              <mat-option [value]="gw.name">{{ gw.name }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field
+          appearance="fill">
+          <mat-label i18n>OTP validity time</mat-label>
+          <input
+            [(ngModel)]="formData()['sms.providerTimeout']"
+            matInput
+            placeholder="300"
+            type="number">
+          <mat-hint i18n>The time in seconds for which the sent OTP value is valid for authentication.</mat-hint>
+        </mat-form-field>
+
+        <h3 i18n>Obsolete settings</h3>
+        <mat-form-field
+          appearance="fill">
+          <mat-label i18n>SMS Provider</mat-label>
+          <mat-select
+            [(ngModel)]="formData()['sms.Provider']"
+            [disabled]="true">
+            @for (prov of smsProviders(); track prov) {
+              <mat-option [value]="prov">{{ prov }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field
+          appearance="fill">
+          <mat-label i18n>Provider Config</mat-label>
+          <textarea
+            [(ngModel)]="formData()['sms.providerConfig']"
+            [disabled]="true"
+            matInput
+            rows="6"></textarea>
+        </mat-form-field>
+      </div>
+    </mat-expansion-panel>
+
+    <!-- TiQR -->
+    <mat-expansion-panel>
+      <mat-expansion-panel-header>
+        <mat-panel-title i18n>TiQR Token settings</mat-panel-title>
+      </mat-expansion-panel-header>
+      <div class="panel-content">
+        <p i18n>The TiQR Token is an OCRA based Smartphone Token, that can be used to authenticate by just scanning a QR
+                code.
+        </p>
+
+        <mat-form-field
+          appearance="fill">
+          <mat-label i18n>TiQR Registration Server</mat-label>
+          <input
+            [(ngModel)]="formData()['tiqr.regServer']"
+            matInput
+            placeholder="http://pi.server/ttype/tiqr"
+            required
+            type="url">
+        </mat-form-field>
+
+        <mat-form-field
+          appearance="fill">
+          <mat-label i18n>TiQR Authentication Server</mat-label>
+          <input
+            [(ngModel)]="formData()['tiqr.authServer']"
+            matInput
+            type="url">
+        </mat-form-field>
+
+        <mat-form-field
+          appearance="fill">
+          <mat-label i18n>TiQR Service Displayname</mat-label>
+          <input
+            [(ngModel)]="formData()['tiqr.serviceDisplayname']"
+            matInput>
+        </mat-form-field>
+
+        <mat-form-field
+          appearance="fill">
+          <mat-label i18n>TiQR Service Identifier</mat-label>
+          <input
+            [(ngModel)]="formData()['tiqr.serviceIdentifier']"
+            matInput>
+        </mat-form-field>
+
+        <mat-form-field
+          appearance="fill">
+          <mat-label i18n>TiQR Logo URL</mat-label>
+          <input
+            [(ngModel)]="formData()['tiqr.logoUrl']"
+            matInput
+            placeholder="https://pi.server/static/css/privacyIDEA1.png"
+            required
+            type="url">
+        </mat-form-field>
+
+        <mat-form-field
+          appearance="fill">
+          <mat-label i18n>TiQR Info URL</mat-label>
+          <input
+            [(ngModel)]="formData()['tiqr.infoUrl']"
+            matInput
+            placeholder="https://www.privacyidea.org"
+            required
+            type="url">
+        </mat-form-field>
+
+        <mat-form-field
+          appearance="fill">
+          <mat-label i18n>OCRA Suite</mat-label>
+          <input
+            [(ngModel)]="formData()['tiqr.ocrasuite']"
+            matInput>
+          <mat-hint i18n>The default OCRA suite is OCRA-1:HOTP-SHA1-6:QN10.</mat-hint>
+        </mat-form-field>
+      </div>
+    </mat-expansion-panel>
+
+    <!-- EMail -->
+    <mat-expansion-panel>
+      <mat-expansion-panel-header>
+        <mat-panel-title i18n>EMail Token settings</mat-panel-title>
+      </mat-expansion-panel-header>
+      <div class="panel-content">
+        <p i18n>The EMail token is a challenge response token that sends the OTP value to the given email address.</p>
+
+        <mat-form-field
+          appearance="fill">
+          <mat-label i18n>SMTP server configuration</mat-label>
+          <mat-select [(ngModel)]="formData()['email.identifier']">
+            @for (server of smtpServers(); track server.identifier) {
+              <mat-option [value]="server.identifier">{{ server.identifier }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field
+          appearance="fill">
+          <mat-label i18n>OTP validity time</mat-label>
+          <input
+            [(ngModel)]="formData()['email.validtime']"
+            matInput
+            type="number">
+          <mat-hint i18n>The time in seconds for which the sent OTP value is valid for authentication.</mat-hint>
+        </mat-form-field>
+      </div>
+    </mat-expansion-panel>
+
+    <!-- Questionnaire -->
+    <mat-expansion-panel>
+      <mat-expansion-panel-header>
+        <mat-panel-title i18n>Questionnaire Token settings</mat-panel-title>
+      </mat-expansion-panel-header>
+      <div class="panel-content">
+        <p i18n>The questionnaire lets you define a set of questions.</p>
+
+        <mat-form-field
+          appearance="fill">
+          <mat-label i18n>Number of answers</mat-label>
+          <input
+            [(ngModel)]="formData()['question.num_answers']"
+            matInput
+            placeholder="5"
+            required
+            type="number">
+          <mat-hint i18n>This is the number of answers a user needs to define to enroll a token.</mat-hint>
+        </mat-form-field>
+
+        <h3 i18n>Questionnaire</h3>
+        <p i18n>These are the possible questions, a user may define answers to.</p>
+
+        <table class="table">
+          <thead>
+          <tr>
+            <th i18n>Question</th>
+            <th></th>
+          </tr>
+          </thead>
+          <tbody>
+            @for (key of questionKeys; track key) {
+              <tr>
+                <td>
+                  <mat-form-field
+                    appearance="outline">
+                    <input
+                      [(ngModel)]="formData()[key]"
+                      matInput>
+                  </mat-form-field>
+                </td>
+                <td>
+                  <button
+                    (click)="deleteSystemEntry(key)"
+                    color="warn"
+                    mat-icon-button>
+                    <mat-icon>delete</mat-icon>
+                  </button>
+                </td>
+              </tr>
+            }
+          <tr>
+            <td>
+              <mat-form-field
+                appearance="outline">
+                <input
+                  [(ngModel)]="formData()['question.question.' + nextQuestion()]"
+                  i18n-placeholder
+                  matInput
+                  placeholder="New Question">
+              </mat-form-field>
+            </td>
+            <td>
+              <button
+                (click)="addQuestion()"
+                color="primary"
+                mat-flat-button>
+                <mat-icon>add</mat-icon>
+                <span i18n>Add new question</span>
+              </button>
+            </td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+    </mat-expansion-panel>
+
+    <!-- Yubico -->
+    <mat-expansion-panel>
+      <mat-expansion-panel-header>
+        <mat-panel-title i18n>Yubico Token settings</mat-panel-title>
+      </mat-expansion-panel-header>
+      <div class="panel-content">
+        <p i18n>The Yubico Token is a Yubikey that is registered with the YubiCloud service.</p>
+
+        <mat-form-field
+          appearance="fill">
+          <mat-label i18n>API client ID</mat-label>
+          <input
+            [(ngModel)]="formData()['yubico.id']"
+            matInput
+            placeholder="The client ID"
+            required>
+        </mat-form-field>
+
+        <mat-form-field
+          appearance="fill">
+          <mat-label i18n>API Key</mat-label>
+          <input
+            [(ngModel)]="formData()['yubico.secret']"
+            matInput
+            placeholder="API Key"
+            required>
+        </mat-form-field>
+
+        <mat-form-field
+          appearance="fill">
+          <mat-label i18n>Yubico URL</mat-label>
+          <input
+            [(ngModel)]="formData()['yubico.url']"
+            matInput
+            placeholder="https://api.yubico.com/wsapi/2.0/verify"
+            required
+            type="url">
+        </mat-form-field>
+      </div>
+    </mat-expansion-panel>
+
+    <!-- Yubikey -->
+    <mat-expansion-panel>
+      <mat-expansion-panel-header>
+        <mat-panel-title i18n>Yubikey Token settings</mat-panel-title>
+      </mat-expansion-panel-header>
+      <div class="panel-content">
+        <p i18n>This is a Yubikey in the Yubico Mode authenticated against privacyIDEA.</p>
+
+        <table class="table">
+          <thead>
+          <tr>
+            <th i18n>Client ID</th>
+            <th i18n>API Key</th>
+            <th></th>
+          </tr>
+          </thead>
+          <tbody>
+            @for (key of yubikeyApiIds; track key) {
+              <tr>
+                <td>{{ key.replace('yubikey.apiid.', '') }}</td>
+                <td>{{ formData()[key] }}</td>
+                <td>
+                  <button
+                    (click)="deleteSystemEntry(key)"
+                    color="warn"
+                    mat-icon-button>
+                    <mat-icon>delete</mat-icon>
+                  </button>
+                </td>
+              </tr>
+            }
+          <tr>
+            <td>
+              <mat-form-field
+                appearance="outline">
+                <input
+                  [(ngModel)]="newApiId"
+                  [ngModelOptions]="{standalone: true}"
+                  i18n-placeholder
+                  matInput
+                  placeholder="Client ID">
+              </mat-form-field>
+            </td>
+            <td>
+              <mat-form-field
+                appearance="outline">
+                <input
+                  [(ngModel)]="formData()['yubikey.apiid.' + newApiId()]"
+                  i18n-placeholder
+                  matInput
+                  placeholder="API Key">
+              </mat-form-field>
+            </td>
+            <td>
+              <button
+                (click)="yubikeyCreateNewKey(newApiId())"
+                color="primary"
+                mat-flat-button>
+                <mat-icon>refresh</mat-icon>
+                <span i18n>Create new API key</span>
+              </button>
+            </td>
+          </tr>
+          </tbody>
+        </table>
+      </div>
+    </mat-expansion-panel>
+
+    <!-- DayPassword -->
+    <mat-expansion-panel>
+      <mat-expansion-panel-header>
+        <mat-panel-title i18n>DayPassword Token settings</mat-panel-title>
+      </mat-expansion-panel-header>
+      <div class="panel-content">
+        <p i18n>The DayPassword Token is a time based password token based on TOTP, but can be used more than once. Note
+                that the user/admin policies
+          <span class="policy-highlight">daypassword_hashlib</span>
+                and
+          <span class="policy-highlight">daypassword_timestep</span>
+                always have precedence over these default values.
+        </p>
+
+        <mat-form-field
+          appearance="fill">
+          <mat-label i18n>Default Time Step</mat-label>
+          <input
+            [(ngModel)]="formData()['daypassword.timeStep']"
+            matInput
+            placeholder="60"
+            required
+            type="number">
+        </mat-form-field>
+
+        <mat-form-field
+          appearance="fill">
+          <mat-label i18n>Default Hashlib</mat-label>
+          <mat-select [(ngModel)]="formData()['daypassword.hashlib']">
+            @for (hashlib of hashLibs(); track hashlib) {
+              <mat-option [value]="hashlib">{{ hashlib }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      </div>
+    </mat-expansion-panel>
+  </mat-accordion>
+</div>

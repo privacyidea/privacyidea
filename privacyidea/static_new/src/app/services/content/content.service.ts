@@ -54,6 +54,7 @@ export interface ContentServiceInterface {
   onTokensContainersTemplates: Signal<boolean>;
   onEvents: Signal<boolean>;
   onConfigurationSystem: Signal<boolean>;
+  onConfigurationTokenTypes: Signal<boolean>;
 
   tokenSelected: (serial: string) => void;
   containerSelected: (containerSerial: string) => void;
@@ -105,6 +106,7 @@ export class ContentService implements ContentServiceInterface {
   onTokensContainersTemplates = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS_CONTAINERS_TEMPLATES);
   onEvents = computed(() => this.routeUrl() === ROUTE_PATHS.EVENTS);
   onConfigurationSystem = computed(() => this.routeUrl() === ROUTE_PATHS.CONFIGURATION_SYSTEM);
+  onConfigurationTokenTypes = computed(() => this.routeUrl() === ROUTE_PATHS.CONFIGURATION_TOKENTYPES);
 
   tokenSelected(serial: string): void {
     this.router.navigateByUrl(ROUTE_PATHS.TOKENS_DETAILS + serial);

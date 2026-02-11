@@ -61,6 +61,7 @@ export class MockSystemService implements SystemServiceInterface {
   radiusServerResource: HttpResourceRef<any>;
   nodesResource: HttpResourceRef<any>;
   systemConfig: Signal<any>;
+  systemConfigInit: Signal<any>;
   nodes: Signal<PiNode[]>;
 
   constructor() {
@@ -77,11 +78,17 @@ export class MockSystemService implements SystemServiceInterface {
       someOtherConfig: "test_value"
     };
 
+    const mockInit = {
+      hashlibs: ["sha1", "sha256", "sha512"],
+      totpSteps: [30, 60],
+      smsProviders: ["provider1", "provider2"]
+    };
+
     this.systemConfigResource = new MockHttpResourceRef(
-      MockPiResponse.fromValue(mockConfig)
+      MockPiResponse.fromValue(mockConfig, {}, mockInit)
     );
     this.radiusServerResource = new MockHttpResourceRef(
-      MockPiResponse.fromValue({})
+      MockPiResponse.fromValue([])
     );
     this.nodesResource = new MockHttpResourceRef(
       MockPiResponse.fromValue<PiNode[]>([
@@ -91,6 +98,9 @@ export class MockSystemService implements SystemServiceInterface {
     );
     this.systemConfig = computed(() => {
       return this.systemConfigResource.value()?.result?.value ?? {};
+    });
+    this.systemConfigInit = computed(() => {
+      return this.systemConfigResource.value()?.result?.init ?? {};
     });
     this.nodes = computed<PiNode[]>(() => {
       return this.nodesResource.value()?.result?.value ?? [];

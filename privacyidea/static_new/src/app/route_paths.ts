@@ -41,6 +41,7 @@ export const ROUTE_PATHS = {
   USERS_REALMS: "/users/realms",
   CONFIGURATION_PERIODIC_TASKS: "/configuration/periodic-tasks",
   CONFIGURATION_SYSTEM: "/configuration/system",
+  CONFIGURATION_TOKENTYPES: "/configuration/tokens",
   EXTERNAL_SERVICES_SMTP: "/external-services/smtp",
   EXTERNAL_SERVICES_RADIUS: "/external-services/radius",
   EXTERNAL_SERVICES_SMS: "/external-services/sms",

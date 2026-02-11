@@ -215,6 +215,9 @@ export class NavigationComponent {
       case ROUTE_PATHS.EVENTS:
         this.eventService.allEventsResource.reload();
         break;
+      case ROUTE_PATHS.CONFIGURATION_TOKENTYPES:
+        this.systemService.systemConfigResource.reload();
+        break;
     }
   }
 

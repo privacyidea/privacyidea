@@ -533,7 +533,8 @@
         <mat-list-item>
           <button
             class="card-button-1"
-            disabled
+            [ngClass]="contentService.routeUrl() === ROUTE_PATHS.CONFIGURATION_TOKENTYPES ? 'card-button-active' : 'card-button-1'"
+            [routerLink]="[ROUTE_PATHS.CONFIGURATION_TOKENTYPES]"
             mat-stroked-button>
             <mat-icon>safety_check</mat-icon>
             Tokentypes

@@ -43,6 +43,7 @@ export interface SystemServiceInterface {
   caConnectors?: WritableSignal<CaConnectors>;
   nodesResource: HttpResourceRef<any>;
   systemConfig: Signal<any>;
+  systemConfigInit: Signal<any>;
   nodes: Signal<PiNode[]>;
 
   saveSystemConfig(config: any): Observable<PiResponse<any>>;
@@ -64,7 +65,7 @@ export class SystemService implements SystemServiceInterface {
   private readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly http: HttpClient = inject(HttpClient);
   private onAllowedRoutes = computed(() => {
-    return this.contentService.onTokensEnrollment() || this.contentService.onTokensWizard() || this.contentService.onConfigurationSystem();
+    return this.contentService.onTokensEnrollment() || this.contentService.onTokensWizard() || this.contentService.onConfigurationSystem() || this.contentService.onConfigurationTokenTypes();
   });
 
   systemConfigResource = httpResource<any>(() => {
@@ -123,6 +124,9 @@ export class SystemService implements SystemServiceInterface {
   });
   systemConfig = computed<any>(() => {
     return this.systemConfigResource.value()?.result?.value ?? {};
+  });
+  systemConfigInit = computed<any>(() => {
+    return this.systemConfigResource.value()?.result?.init ?? {};
   });
   nodes = computed<PiNode[]>(() => {
     return this.nodesResource.value()?.result?.value ?? [];

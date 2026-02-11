@@ -49,6 +49,7 @@ import { Subscription } from "rxjs";
 import { SubscriptionComponent } from "./components/configuration/subscription/subscription.component";
 import { EventComponent } from "./components/event/event.component";
 import { SystemConfigComponent } from "./components/config/system/system-config.component";
+import { TokenTypeConfigComponent } from "./components/config/token-type-config/token-type-config.component";
 
 export const routes: Routes = [
   {
@@ -96,7 +97,8 @@ export const routes: Routes = [
       { path: "machine_resolver", component: MachineResolverComponent },
       { path: "periodic-tasks", component: PeriodicTaskComponent },
       { path: "subscription", component: SubscriptionComponent },
-      { path: "system", component: SystemConfigComponent }
+      { path: "system", component: SystemConfigComponent },
+      { path: "tokens", component: TokenTypeConfigComponent }
     ]
   },
   {
@@ -117,9 +119,5 @@ export const routes: Routes = [
       { path: "tokengroups", component: TokengroupsComponent, canDeactivate: [pendingChangesGuard] },
       { path: "service-ids", component: ServiceIdsComponent, canDeactivate: [pendingChangesGuard] }
     ]
-  },
-  {
-    path: "configuration",
-    children: [{ path: "periodic-tasks", component: PeriodicTaskComponent }]
   }
 ];
