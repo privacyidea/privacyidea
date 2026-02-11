@@ -70,7 +70,7 @@ import json
 import logging
 import threading
 
-from flask import (Blueprint, request, g, current_app)
+from flask import (Blueprint, request, g, current_app, Response)
 from flask_babel import gettext
 
 from privacyidea.api.auth import admin_required
@@ -482,7 +482,7 @@ def check():
     return _finalize_auth_response(context)
 
 
-def _handle_enrollment_cancellation(data):
+def _handle_enrollment_cancellation(data: dict) -> Response:
     """
     Handles the specific case where a user cancels enroll_via_multichallenge (possible if policy is enabled).
     Returns the Flask response object directly.
@@ -508,7 +508,7 @@ def _handle_enrollment_cancellation(data):
     return ret
 
 
-def _handle_fido2_auth(context, credential_id):
+def _handle_fido2_auth(context: dict, credential_id: str):
     """
     Handles FIDO2/Passkey authentication and enroll_via_multichallenge of passkeys.
     Updates the context with the result.
@@ -604,7 +604,7 @@ def _handle_fido2_auth(context, credential_id):
         context["serial_list"].append(token.get_serial())
 
 
-def _handle_serial_auth(context, serial):
+def _handle_serial_auth(context: dict, serial: str):
     """
     Handles authentication with serial provided
     """
@@ -619,7 +619,8 @@ def _handle_serial_auth(context, serial):
             if not tokens:
                 raise ParameterError("Given serial does not belong to given user!")
         except ResourceNotFoundError:
-            raise ParameterError("Given serial does not belong to given user!")
+            #raise ParameterError("Given serial does not belong to given user!")
+            return
 
     # Perform Check
     if not otp_only:
@@ -634,7 +635,7 @@ def _handle_serial_auth(context, serial):
         context["serial_list"].append(details["serial"])
 
 
-def _handle_standard_auth(context):
+def _handle_standard_auth(context: dict):
     """
     Handles username+otp/password authentication, or container challenges.
     Also handles SAML attribute population.
