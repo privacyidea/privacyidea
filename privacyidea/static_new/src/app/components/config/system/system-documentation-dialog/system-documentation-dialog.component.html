@@ -16,38 +16,40 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<h2
-  i18n
-  mat-dialog-title>System Documentation
-</h2>
-<mat-dialog-content>
-  <p
-    i18n>
-    This documentation contains the current configuration of your system in restructured text. You can use this to
-    document your installed system.
-  </p>
-
-  <mat-form-field class="width-100">
-    <mat-label i18n>System Documentation</mat-label>
-    <textarea
-      #autosize="cdkTextareaAutosize"
-      [ngModel]="documentation"
-      cdkAutosizeMaxRows="30"
-      cdkAutosizeMinRows="15"
-      cdkTextareaAutosize
-      matInput
-      readonly
-      rows="15">
-    </textarea>
-  </mat-form-field>
-  Copy System Documentation:
-  <app-copy-button
-    [copyText]="documentation" />
-</mat-dialog-content>
-<mat-dialog-actions align="end">
-  <button
-    (click)="onClose()"
+<div class="system-documentation-dialog-container">
+  <h2
     i18n
-    mat-button>Close
-  </button>
-</mat-dialog-actions>
+    mat-dialog-title>System Documentation
+  </h2>
+  <mat-dialog-content>
+    <p
+      i18n>
+      This documentation contains the current configuration of your system in restructured text. You can use this to
+      document your installed system.
+    </p>
+
+    <mat-form-field class="width-100">
+      <mat-label i18n>System Documentation</mat-label>
+      <textarea
+        #autosize="cdkTextareaAutosize"
+        [ngModel]="documentation"
+        cdkAutosizeMaxRows="30"
+        cdkAutosizeMinRows="15"
+        cdkTextareaAutosize
+        matInput
+        readonly
+        rows="15">
+    </textarea>
+    </mat-form-field>
+    Copy System Documentation:
+    <app-copy-button
+      [copyText]="documentation" />
+  </mat-dialog-content>
+  <mat-dialog-actions align="end">
+    <button
+      (click)="onClose()"
+      i18n
+      mat-button>Close
+    </button>
+  </mat-dialog-actions>
+</div>
