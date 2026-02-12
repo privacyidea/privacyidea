@@ -6,6 +6,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
+import { MatDivider } from "@angular/material/list";
 
 @Component({
   selector: 'app-questionnaire-config',
@@ -17,14 +18,11 @@ import { MatIconModule } from '@angular/material/icon';
     MatFormFieldModule,
     MatInputModule,
     MatButtonModule,
-    MatIconModule
+    MatIconModule,
+    MatDivider
   ],
   templateUrl: './questionnaire-config.component.html',
-  styles: `
-    :host {
-      display: block;
-    }
-  `
+  styleUrl: './questionnaire-config.component.scss'
 })
 export class QuestionnaireConfigComponent {
   formData = input.required<Record<string, any>>();

@@ -65,12 +65,15 @@
 
     .table {
       width: 100%;
-      border-collapse: collapse;
       margin-top: 0;
+      border: 1px solid var(--mat-sys-surface-container-highest);
+      border-radius: var(--border-radius);
+      padding: 8px;
 
       th, td {
-        padding: 8px;
+        padding: 4px;
         text-align: left;
+        background: var(--table-color);
       }
     }
   }

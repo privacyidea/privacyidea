@@ -3,20 +3,20 @@
     <mat-panel-title i18n>Yubikey Token Settings</mat-panel-title>
   </mat-expansion-panel-header>
   <div class="panel-content">
-    <p i18n>This is a Yubikey in the Yubico Mode authenticated against privacyIDEA. The Yubikey emits a 44 character
-      on time password.
+    <p i18n>This is a Yubikey in the Yubico Mode authenticated against privacyIDEA. The Yubikey emits a 44 character on
+            time password.
     </p>
     <p i18n>The authentication request can be handled by the default privacyIDEA
       <a
         href="https://privacyidea.readthedocs.io/en/latest/modules/api/validate.html"
         target="_blank">validate API
       </a>
-      but can also be handled by the
+            but can also be handled by the
       <a
         href="https://privacyidea.readthedocs.io/en/latest/modules/lib/tokentypes/yubikey.html#privacyidea.lib.tokens.yubikeytoken.YubikeyTokenClass.api_endpoint"
         target="_blank">Yubico Validation Protocol
       </a>
-      .
+            .
     </p>
 
     <table class="table">
@@ -30,8 +30,14 @@
       <tbody>
         @for (key of yubikeyApiIds(); track key) {
           <tr>
-            <td>{{ key }}</td>
-            <td>{{ formData()[key] }}</td>
+            <td>
+              {{ key }}
+              <mat-divider class="margin-top-4" />
+            </td>
+            <td>
+              {{ formData()[key] }}
+              <mat-divider class="margin-top-4" />
+            </td>
             <td>
               <button
                 (click)="deleteEntry(key)"
@@ -42,40 +48,36 @@
             </td>
           </tr>
         }
-      <tr>
-        <td>
-          <mat-form-field
-            appearance="fill">
-            <mat-label i18n>Client ID</mat-label>
-            <input
-              [(ngModel)]="newYubikeyApiId"
-              matInput
-              placeholder="Client ID"
-              required>
-          </mat-form-field>
-        </td>
-        <td>
-          <mat-form-field
-            appearance="fill">
-            <mat-label i18n>API Key</mat-label>
-            <input
-              [(ngModel)]="formData()['yubikey.apiid.' + newYubikeyApiId()]"
-              matInput
-              placeholder="API Key"
-              required>
-          </mat-form-field>
-        </td>
-        <td>
-          <button
-            (click)="createNewKey()"
-            color="primary"
-            mat-flat-button>
-            <mat-icon>refresh</mat-icon>
-            <span i18n>Create new API key</span>
-          </button>
-        </td>
-      </tr>
       </tbody>
     </table>
+  </div>
+  <div class="new-api-key-row">
+    <mat-form-field
+      appearance="fill"
+      class="width-33">
+      <mat-label i18n>Client ID</mat-label>
+      <input
+        [(ngModel)]="newYubikeyApiId"
+        matInput
+        placeholder="Client ID"
+        required>
+    </mat-form-field>
+    <mat-form-field
+      appearance="fill"
+      class="width-33">
+      <mat-label i18n>API Key</mat-label>
+      <input
+        [(ngModel)]="formData()['yubikey.apiid.' + newYubikeyApiId()]"
+        matInput
+        placeholder="API Key"
+        required>
+    </mat-form-field>
+    <button
+      (click)="createNewKey()"
+      class="action-button-1 width-238 margin-bottom-1"
+      mat-stroked-button>
+      <mat-icon>add</mat-icon>
+      <span i18n>Create new API key</span>
+    </button>
   </div>
 </mat-expansion-panel>

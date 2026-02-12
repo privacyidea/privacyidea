@@ -3,9 +3,9 @@
     <mat-panel-title i18n>Questionnaire Token Settings</mat-panel-title>
   </mat-expansion-panel-header>
   <div class="panel-content">
-    <p i18n>The questionnaire lets you define a set of questions. The questionnaire token needs to define answers
-      to these questions and the user will be presented with random questions and needs to provide his previously
-      defined answer.
+    <p i18n>The questionnaire lets you define a set of questions. The questionnaire token needs to define answers to
+            these questions and the user will be presented with random questions and needs to provide his previously
+            defined answer.
     </p>
 
     <mat-form-field
@@ -33,7 +33,10 @@
       <tbody>
         @for (key of questionKeys(); track key) {
           <tr>
-            <td>{{ formData()[key] }}</td>
+            <td>
+              {{ formData()[key] }}
+              <mat-divider class="margin-top-4" />
+            </td>
             <td>
               <button
                 (click)="deleteEntry(key)"
@@ -44,28 +47,24 @@
             </td>
           </tr>
         }
-      <tr>
-        <td>
-          <mat-form-field
-            appearance="fill">
-            <mat-label i18n>Question</mat-label>
-            <input
-              [(ngModel)]="newQuestionText"
-              matInput
-              placeholder="Question">
-          </mat-form-field>
-        </td>
-        <td>
-          <button
-            (click)="addQuestion()"
-            color="primary"
-            mat-flat-button>
-            <mat-icon>add</mat-icon>
-            <span i18n>Add new question</span>
-          </button>
-        </td>
-      </tr>
       </tbody>
     </table>
+    <div class="new-question-row">
+      <mat-form-field
+        appearance="fill">
+        <mat-label i18n>Question</mat-label>
+        <input
+          [(ngModel)]="newQuestionText"
+          matInput
+          placeholder="Enter new question here">
+      </mat-form-field>
+      <button
+        (click)="addQuestion()"
+        class="action-button-1 width-238 margin-bottom-1"
+        mat-stroked-button>
+        <mat-icon>add</mat-icon>
+        <span i18n>Add new question</span>
+      </button>
+    </div>
   </div>
 </mat-expansion-panel>

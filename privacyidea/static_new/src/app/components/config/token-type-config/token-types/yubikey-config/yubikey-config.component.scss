@@ -1,0 +1,10 @@
+@use "../../../../../../styles";
+
+.new-api-key-row {
+  display: flex;
+  flex-direction: row;
+  gap: 16px;
+  align-items: center;
+  margin-top: 16px;
+}
+

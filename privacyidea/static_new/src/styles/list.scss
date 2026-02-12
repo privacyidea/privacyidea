@@ -3,7 +3,6 @@
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: calc(var(--global-gap) / 4);
   overflow: auto;
 }
 
@@ -12,10 +11,6 @@
 
   mat-expansion-panel {
     border-radius: var(--border-radius);
-  }
-
-  mat-expansion-panel-header {
-    padding: 0 var(--half-global-padding);
   }
 
   mat-panel-title {
