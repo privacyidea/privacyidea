@@ -1,0 +1,19 @@
+.save-and-exit-dialog-container {
+  padding: 20px;
+
+  .mat-mdc-dialog-title {
+    margin-bottom: 20px;
+    font-size: 1.5em;
+    font-weight: bold;
+  }
+
+  .mat-mdc-dialog-content {
+    margin-bottom: 20px;
+  }
+
+  .mat-mdc-dialog-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+  }
+}

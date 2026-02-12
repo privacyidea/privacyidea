@@ -28,14 +28,16 @@ import { MatButtonModule } from "@angular/material/button";
 import { CommonModule } from "@angular/common";
 import { MatIconModule } from "@angular/material/icon";
 import { MatTooltip } from "@angular/material/tooltip";
-import {
-  ConfirmationDialogComponent,
-  ConfirmationDialogResult
-} from "../../../shared/confirmation-dialog/confirmation-dialog.component";
+
 import { ROUTE_PATHS } from "../../../../route_paths";
 import { Router } from "@angular/router";
 import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
 import { PendingChangesService } from "../../../../services/pending-changes/pending-changes.service";
+import { DialogServiceInterface, DialogService } from "../../../../services/dialog/dialog.service";
+import {
+  SaveAndExitDialogComponent,
+  SaveAndExitDialogResult
+} from "../../../shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 
 @Component({
   selector: "app-smtp-edit-dialog",
@@ -59,7 +61,7 @@ export class NewSmtpServerComponent implements OnInit, OnDestroy {
   private readonly dialogRef = inject(MatDialogRef<NewSmtpServerComponent>);
   protected readonly data = inject<SmtpServer | null>(MAT_DIALOG_DATA);
   protected readonly smtpService: SmtpServiceInterface = inject(SmtpService);
-  private readonly dialog = inject(MatDialog);
+  private readonly dialogService: DialogServiceInterface = inject(DialogService);
   private readonly router = inject(Router);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly pendingChangesService = inject(PendingChangesService);
@@ -74,7 +76,7 @@ export class NewSmtpServerComponent implements OnInit, OnDestroy {
       this.dialogRef.backdropClick().subscribe(() => {
         this.onCancel();
       });
-      this.dialogRef.keydownEvents().subscribe(event => {
+      this.dialogRef.keydownEvents().subscribe((event) => {
         if (event.key === "Escape") {
           this.onCancel();
         }
@@ -147,35 +149,35 @@ export class NewSmtpServerComponent implements OnInit, OnDestroy {
 
   onCancel(): void {
     if (this.hasChanges) {
-      this.dialog
-        .open(ConfirmationDialogComponent, {
+      this.dialogService
+        .openDialog({
+          component: SaveAndExitDialogComponent,
           data: {
             title: $localize`Discard changes`,
-            action: "discard",
-            type: "smtp-server",
+            message: $localize`You have unsaved changes. Do you want to save them before exiting?`,
             allowSaveExit: true,
             saveExitDisabled: !this.canSave
           }
         })
         .afterClosed()
-        .subscribe((result: ConfirmationDialogResult | undefined) => {
+        .subscribe((result) => {
           if (result === "discard") {
             this.pendingChangesService.unregisterHasChanges();
-            this.closeActual();
+            this.closeCurrent();
           } else if (result === "save-exit") {
             if (!this.canSave) return;
             Promise.resolve(this.pendingChangesService.save()).then(() => {
               this.pendingChangesService.unregisterHasChanges();
-              this.closeActual();
+              this.closeCurrent();
             });
           }
         });
     } else {
-      this.closeActual();
+      this.closeCurrent();
     }
   }
 
-  private closeActual(): void {
+  private closeCurrent(): void {
     if (this.dialogRef) {
       this.dialogRef.close();
     } else {

@@ -464,22 +464,22 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
         })
         .afterClosed()
         .subscribe((result) => {
-          if (result) {
+          if (result === true) {
             if (!this.canSave) return;
             Promise.resolve(this.pendingChangesService.save()).then(() => {
               this.pendingChangesService.unregisterHasChanges();
-              this.closeActual();
+              this.closeCurrent();
             });
-          } else {
+          } else if (result === false) {
             this.pendingChangesService.unregisterHasChanges();
-            this.closeActual();
+            this.closeCurrent();
           }
         });
     } else {
-      this.closeActual();
+      this.closeCurrent();
     }
   }
-  private closeActual(): void {
+  private closeCurrent(): void {
     if (this.dialogRef) {
       this.dialogRef.close();
     } else {

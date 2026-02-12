@@ -19,8 +19,12 @@
 import { inject, Injectable } from "@angular/core";
 import { MatDialog, MatDialogConfig, MatDialogRef } from "@angular/material/dialog";
 import { ComponentType } from "@angular/cdk/overlay";
-import { take } from "rxjs";
+import { lastValueFrom, take } from "rxjs";
 import { AbstractDialogComponent } from "../../components/shared/dialog/abstract-dialog/abstract-dialog.component";
+import {
+  SimpleConfirmationDialogComponent,
+  SimpleConfirmationDialogData
+} from "../../components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 
 export interface DialogServiceInterface {
   closeDialog<R>(ref: MatDialogRef<any, R>, result?: R): boolean;
@@ -34,12 +38,8 @@ export interface DialogServiceInterface {
   closeAllDialogs(): void;
   isAnyDialogOpen(): boolean;
   isDialogOpen(ref: MatDialogRef<any>): boolean;
+  confirm(args: { title: string; message: string; confirmButtonText: string }): Promise<boolean>;
 }
-
-export type DialogReturnData = {
-  confirmed: boolean;
-  furtherAction?: string;
-};
 
 @Injectable({ providedIn: "root" })
 export class DialogService implements DialogServiceInterface {
@@ -104,5 +104,18 @@ export class DialogService implements DialogServiceInterface {
 
   isAnyDialogOpen(): boolean {
     return this.dialog.openDialogs.length > 0;
+  }
+
+  async confirm(args: { title: string; message: string; confirmButtonText: string }): Promise<boolean> {
+    const dialogRef = this.openDialog({
+      component: SimpleConfirmationDialogComponent,
+      data: {
+        title: args.title,
+        confirmAction: { type: "confirm", label: args.confirmButtonText, value: true },
+        items: [args.message],
+        itemType: ""
+      }
+    });
+    return lastValueFrom(dialogRef.afterClosed()).then((result) => result === true);
   }
 }

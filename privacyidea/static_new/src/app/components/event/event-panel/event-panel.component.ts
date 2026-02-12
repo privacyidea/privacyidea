@@ -57,6 +57,7 @@ import { MatSlideToggle } from "@angular/material/slide-toggle";
 import { MatTooltip } from "@angular/material/tooltip";
 import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
 import { SimpleConfirmationDialogComponent } from "../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { DialogService, DialogServiceInterface } from "../../../services/dialog/dialog.service";
 
 export type eventTab = "events" | "action" | "conditions";
 
@@ -101,7 +102,7 @@ export class EventPanelComponent implements AfterViewInit, OnDestroy {
   protected readonly authService = inject(AuthService);
   protected readonly notificationService = inject(NotificationService);
   private readonly pendingChangesService = inject(PendingChangesService);
-  private readonly dialog: MatDialog = inject(MatDialog);
+  private readonly dialogService: DialogServiceInterface = inject(DialogService);
   public readonly data = inject(MAT_DIALOG_DATA, { optional: false });
   protected readonly renderer: Renderer2 = inject(Renderer2);
   private readonly contentService = inject(ContentService);
@@ -201,28 +202,31 @@ export class EventPanelComponent implements AfterViewInit, OnDestroy {
 
   cancelEdit(): void {
     if (this.hasChanges()) {
-      this.dialog
-        .open(SimpleConfirmationDialogComponent, {
+      this.dialogService
+        .openDialog({
+          component: SimpleConfirmationDialogComponent,
           data: {
             title: $localize`Discard changes`,
-            action: "discard",
-            type: "resolver"
+            confirmAction: { label: "Save and exit", type: "confirm", value: true },
+            cancelAction: { label: "Discard", type: "destruct", value: false },
+            itemType: "resolver",
+            items: []
           }
         })
         .afterClosed()
         .subscribe((result) => {
-          if (result?.confirmed) {
-            this.closeActual();
-          } else if (result?.furtherAction === "saveAndExit") {
+          if (result === true) {
             this.saveEvent();
+          } else if (result === false) {
+            this.closeCurrent();
           }
         });
     } else {
-      this.closeActual();
+      this.closeCurrent();
     }
   }
 
-  private closeActual(): void {
+  private closeCurrent(): void {
     this.editEvent.set(this.event());
     this.eventService.selectedHandlerModule.set(this.eventService.eventHandlerModules()[0] || "");
     if (this.dialogRef) {

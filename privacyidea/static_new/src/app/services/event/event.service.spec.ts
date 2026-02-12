@@ -60,7 +60,7 @@ describe("EventService", () => {
     authServiceMock = TestBed.inject(AuthService) as unknown as MockAuthService;
     authServiceMock.actionAllowed.mockReturnValue(true);
     dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
-    confirmClosed = new Subject<boolean>();
+    confirmClosed = new Subject();
     const dialogRefMock = new MockMatDialogRef();
     dialogRefMock.afterClosed.mockReturnValue(confirmClosed);
 

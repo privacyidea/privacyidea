@@ -155,7 +155,7 @@ export class TokenGetSerialComponent {
             .afterClosed()
             .subscribe({
               next: (result) => {
-                if (result?.confirmed) {
+                if (result) {
                   this.findSerial();
                 } else {
                   this.resetSteps();

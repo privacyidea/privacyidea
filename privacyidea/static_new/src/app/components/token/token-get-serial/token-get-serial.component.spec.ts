@@ -30,7 +30,6 @@ import {
   MockContentService
 } from "../../../../testing/mock-services";
 import { ContentService } from "../../../services/content/content.service";
-import { DialogReturnData, DialogService } from "../../../services/dialog/dialog.service";
 import { NotificationService } from "../../../services/notification/notification.service";
 import { TokenService } from "../../../services/token/token.service";
 import {
@@ -39,12 +38,13 @@ import {
 } from "./get-serial-result-dialog/get-serial-result-dialog.component";
 import { TokenGetSerialComponent } from "./token-get-serial.component";
 import { SearchTokenDialogComponent } from "./search-token-dialog/search-token-dialog";
+import { DialogService } from "../../../services/dialog/dialog.service";
 
 const makeCountResp = (count: number) => ({ result: { value: { count } } }) as any;
 
 const makeSerialResp = (serial?: string) => ({ result: { value: { serial } } }) as any;
 
-let confirmClosed$: Subject<DialogReturnData | GetSerialResultDialogReturn>;
+let confirmClosed$: Subject<boolean | GetSerialResultDialogReturn>;
 let lastResultDialogData: any;
 
 const routerMock = {
@@ -83,7 +83,7 @@ describe("TokenGetSerialComponent", () => {
     dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
 
     (tokenServiceMock as any).getSerial = jest.fn();
-    confirmClosed$ = new Subject<DialogReturnData | GetSerialResultDialogReturn>();
+    confirmClosed$ = new Subject<boolean | GetSerialResultDialogReturn>();
     let dialogRefMock = new MockMatDialogRef();
     dialogRefMock.afterClosed.mockReturnValue(confirmClosed$);
     dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
@@ -162,7 +162,7 @@ describe("TokenGetSerialComponent", () => {
     TestBed.flushEffects();
     expect(component.currentStep()).toBe("countDone");
     expect(dialogServiceMock.openDialog).toHaveBeenCalledWith({ component: SearchTokenDialogComponent, data: "150" });
-    confirmClosed$.next({ confirmed: true });
+    confirmClosed$.next(true);
     expect(dialogServiceMock.openDialog).toHaveBeenCalledWith({
       component: GetSerialResultDialogComponent,
       data: {
@@ -181,7 +181,7 @@ describe("TokenGetSerialComponent", () => {
     component.countTokens();
     expect(component.currentStep()).toBe("countDone");
 
-    confirmClosed$.next({ confirmed: false });
+    confirmClosed$.next(false);
     confirmClosed$.next("reset");
     confirmClosed$.complete();
 

@@ -25,24 +25,27 @@ import { MatDialog, MatDialogModule } from "@angular/material/dialog";
 import { TokengroupService } from "../../../services/tokengroup/tokengroup.service";
 import { DialogService } from "../../../services/dialog/dialog.service";
 import { signal } from "@angular/core";
+import { M } from "@angular/cdk/keycodes";
+import { MockDialogService } from "../../../../testing/mock-services/mock-dialog-service";
+import { Subject } from "rxjs";
+import { MockMatDialogRef } from "../../../../testing/mock-mat-dialog-ref";
+import { SaveAndExitDialogResult } from "../../shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
+import { NewPrivacyideaServerComponent } from "../privacyidea-servers/new-privacyidea-server/new-privacyidea-server.component";
 
 describe("TokengroupsComponent", () => {
   let component: TokengroupsComponent;
   let fixture: ComponentFixture<TokengroupsComponent>;
   let tokengroupServiceMock: any;
-  let dialogServiceMock: any;
+  let dialogServiceMock: MockDialogService;
+  let confirmClosed: Subject<SaveAndExitDialogResult>;
 
   beforeEach(async () => {
     tokengroupServiceMock = {
       tokengroups: signal([
         { groupname: "group1", description: "desc1", id: 1 },
-        { groupname: "group2", description: "desc2", id: 2 },
+        { groupname: "group2", description: "desc2", id: 2 }
       ]),
-      deleteTokengroup: jest.fn(),
-    };
-
-    dialogServiceMock = {
-      confirm: jest.fn().mockResolvedValue(true),
+      deleteTokengroup: jest.fn()
     };
 
     await TestBed.configureTestingModule({
@@ -51,17 +54,22 @@ describe("TokengroupsComponent", () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: TokengroupService, useValue: tokengroupServiceMock },
-        { provide: DialogService, useValue: dialogServiceMock },
+        { provide: DialogService, useClass: MockDialogService }
       ]
-    }).overrideComponent(TokengroupsComponent, {
-      add: {
-        providers: [
-          { provide: MatDialog, useValue: { open: jest.fn() } }
-        ]
-      }
-    }).compileComponents();
+    })
+      .overrideComponent(TokengroupsComponent, {
+        add: {
+          providers: [{ provide: MatDialog, useValue: { open: jest.fn() } }]
+        }
+      })
+      .compileComponents();
 
     fixture = TestBed.createComponent(TokengroupsComponent);
+    dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
+    confirmClosed = new Subject();
+    let dialogRefMock = new MockMatDialogRef();
+    dialogRefMock.afterClosed.mockReturnValue(confirmClosed);
+    dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });
@@ -87,11 +95,12 @@ describe("TokengroupsComponent", () => {
     expect(dialog.open).toHaveBeenCalled();
   });
 
-  it("should delete group after confirmation", async () => {
+  it("should delete group after confirmation", () => {
     const group = tokengroupServiceMock.tokengroups()[0];
     component.deleteTokengroup(group);
-    expect(dialogServiceMock.confirm).toHaveBeenCalled();
-    await Promise.resolve();
+    expect(dialogServiceMock.openDialog).toHaveBeenCalled();
+    confirmClosed.next("discard");
+    confirmClosed.complete();
     expect(tokengroupServiceMock.deleteTokengroup).toHaveBeenCalledWith("group1");
   });
 });
