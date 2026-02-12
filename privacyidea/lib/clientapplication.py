@@ -74,6 +74,7 @@ def save_clientapplication(ip: Union[IPAddress, str], clienttype: str):
     try:
         db.session.commit()
     except (IntegrityError, OperationalError) as e:  # pragma: no cover
+        db.session.rollback()
         log.info(f'Unable to write ClientApplication entry to db: {e}')
         log.debug(traceback.format_exc())
 
