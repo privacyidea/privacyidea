@@ -2458,7 +2458,7 @@ def create_challenges_from_tokens(token_list, reply_dict, options=None):
                     options["passkey_nonce"] = passkey_nonce
 
                 reply_dict["multi_challenge"].append(challenge_info)
-                reply_dict.update(challenge_info) # FIXME: This is deprecated and should be remove one day
+                reply_dict.update(challenge_info)  # FIXME: This is deprecated and should be removed one day
 
     if message_list:
         unique_messages = set(message_list)
