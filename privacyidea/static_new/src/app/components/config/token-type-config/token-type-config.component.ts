@@ -18,41 +18,53 @@
  **/
 import { Component, computed, effect, inject, signal, untracked } from "@angular/core";
 import { CommonModule } from "@angular/common";
-import { FormsModule } from "@angular/forms";
 import { MatExpansionModule } from "@angular/material/expansion";
-import { MatFormFieldModule } from "@angular/material/form-field";
-import { MatInputModule } from "@angular/material/input";
-import { MatSelectModule } from "@angular/material/select";
-import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
-import { MatDividerModule } from "@angular/material/divider";
 import { SystemService, SystemServiceInterface } from "../../../services/system/system.service";
-import { SmsGatewayService, SmsGatewayServiceInterface } from "../../../services/sms-gateway/sms-gateway.service";
-import { SmtpService, SmtpServiceInterface } from "../../../services/smtp/smtp.service";
+import { SmsGateway, SmsGatewayService, SmsGatewayServiceInterface } from "../../../services/sms-gateway/sms-gateway.service";
+import { SmtpServer, SmtpService, SmtpServiceInterface } from "../../../services/smtp/smtp.service";
 import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
 import { NotificationService, NotificationServiceInterface } from "../../../services/notification/notification.service";
 import { HttpClient } from "@angular/common/http";
 import { environment } from "../../../../environments/environment";
 import { lastValueFrom } from "rxjs";
 import { PiResponse } from "../../../app.component";
-import { RouterLink } from "@angular/router";
+import { HotpConfigComponent } from "./token-types/hotp-config/hotp-config.component";
+import { TotpConfigComponent } from "./token-types/totp-config/totp-config.component";
+import { U2fConfigComponent } from "./token-types/u2f-config/u2f-config.component";
+import { WebauthnConfigComponent } from "./token-types/webauthn-config/webauthn-config.component";
+import { RadiusConfigComponent } from "./token-types/radius-config/radius-config.component";
+import { RemoteConfigComponent } from "./token-types/remote-config/remote-config.component";
+import { SmsConfigComponent } from "./token-types/sms-config/sms-config.component";
+import { TiqrConfigComponent } from "./token-types/tiqr-config/tiqr-config.component";
+import { EmailConfigComponent } from "./token-types/email-config/email-config.component";
+import { QuestionnaireConfigComponent } from "./token-types/questionnaire-config/questionnaire-config.component";
+import { YubicoConfigComponent } from "./token-types/yubico-config/yubico-config.component";
+import { YubikeyConfigComponent } from "./token-types/yubikey-config/yubikey-config.component";
+import { DaypasswordConfigComponent } from "./token-types/daypassword-config/daypassword-config.component";
 
 @Component({
   selector: "app-token-type-config",
   standalone: true,
   imports: [
     CommonModule,
-    FormsModule,
     MatExpansionModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatSelectModule,
-    MatCheckboxModule,
     MatButtonModule,
     MatIconModule,
-    MatDividerModule,
-    RouterLink
+    HotpConfigComponent,
+    TotpConfigComponent,
+    U2fConfigComponent,
+    WebauthnConfigComponent,
+    RadiusConfigComponent,
+    RemoteConfigComponent,
+    SmsConfigComponent,
+    TiqrConfigComponent,
+    EmailConfigComponent,
+    QuestionnaireConfigComponent,
+    YubicoConfigComponent,
+    YubikeyConfigComponent,
+    DaypasswordConfigComponent
   ],
   templateUrl: "./token-type-config.component.html",
   styleUrl: "./token-type-config.component.scss"
@@ -67,13 +79,14 @@ export class TokenTypeConfigComponent {
 
   formData = signal<Record<string, any>>({});
   nextQuestion = signal(0);
-  newApiId = signal("");
-  newQuestionText = signal("");
 
   systemConfig = this.systemService.systemConfig;
   systemConfigInit = this.systemService.systemConfigInit;
   smsGateways = this.smsGatewayService.smsGateways;
   smtpServers = this.smtpService.smtpServers;
+
+  smsGatewayNames = computed(() => this.smsGateways().map(g => g.name));
+  smtpServerIdentifiers = computed(() => this.smtpServers().map(s => s.identifier));
 
   // Fallbacks when backend does not provide init values
   hashLibs = computed<string[]>(() => this.systemConfigInit()?.hashlibs ?? ["sha1", "sha256", "sha512"]);
@@ -81,7 +94,6 @@ export class TokenTypeConfigComponent {
     const steps = this.systemConfigInit()?.totpSteps ?? [30, 60];
     return (Array.isArray(steps) ? steps : [steps]).map((s: any) => String(s));
   });
-  smsProviders = computed<string[]>(() => this.systemConfigInit()?.smsProviders ?? []);
 
   constructor() {
     effect(() => {
@@ -115,8 +127,7 @@ export class TokenTypeConfigComponent {
     return Object.keys(this.formData()).filter(k => k.startsWith("yubikey.apiid."));
   }
 
-  addQuestion() {
-    const text = String(this.newQuestionText() ?? "").trim();
+  addQuestion(text: string) {
     if (!text) {
       this.notificationService.openSnackBar($localize`Please enter a question.`);
       return;
@@ -126,7 +137,6 @@ export class TokenTypeConfigComponent {
       ...f,
       [`question.question.${index}`]: text
     }));
-    this.newQuestionText.set("");
     this.nextQuestion.update(n => n + 1);
   }
 

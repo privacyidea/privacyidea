@@ -1,0 +1,29 @@
+<mat-expansion-panel>
+  <mat-expansion-panel-header>
+    <mat-panel-title i18n>HOTP Token Settings</mat-panel-title>
+  </mat-expansion-panel-header>
+  <div class="panel-content">
+    <p i18n>The HOTP Token is an event based one time password token. It is described in
+      <a
+        href="https://datatracker.ietf.org/doc/html/rfc4226"
+        target="_blank">RFC 4226
+      </a>
+      .
+    </p>
+    <p i18n>Here you can define settings, that will be set as default values, when enrolling a HOTP token. Note that
+      the user/admin policy
+      <span class="policy-highlight">hotp_hashlib</span>
+      always have precedence over this default value.
+    </p>
+
+    <mat-form-field
+      appearance="fill">
+      <mat-label i18n>Default Hashlib</mat-label>
+      <mat-select [(ngModel)]="formData()['hotp.hashlib']">
+        @for (hashlib of hashLibs(); track hashlib) {
+          <mat-option [value]="hashlib">{{ hashlib }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+  </div>
+</mat-expansion-panel>

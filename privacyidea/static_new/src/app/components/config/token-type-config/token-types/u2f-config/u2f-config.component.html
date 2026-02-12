@@ -1,0 +1,38 @@
+<mat-expansion-panel>
+  <mat-expansion-panel-header>
+    <mat-panel-title i18n>U2F Token Settings</mat-panel-title>
+  </mat-expansion-panel-header>
+  <div class="panel-content">
+    <p i18n>The U2F token is a hardware token, that communicates with the browser. You need to set the correct
+      appId, which in fact is the URL of your privacyIDEA installation.
+    </p>
+
+    <mat-form-field
+      appearance="fill"
+      class="margin-bottom-32">
+      <mat-label i18n>AppID</mat-label>
+      <input
+        [(ngModel)]="formData()['u2f.appId']"
+        matInput
+        placeholder="https://pi.server.com"
+        required
+        type="url">
+      <mat-hint i18n>The URL of your privacyIDEA installation. This must be a valid FQDN with also a valid top level
+        domain - otherwise you might receive a U2F Error 2 (Bad Request).
+      </mat-hint>
+    </mat-form-field>
+
+    @if (formData()['u2f.appId'] && !formData()['u2f.appId'].startsWith('https:')) {
+      <div
+        class="alert alert-warning"
+        i18n>The AppID needs to start with "https".
+      </div>
+    }
+    @if (formData()['u2f.appId'] && formData()['u2f.appId'].endsWith('/')) {
+      <div
+        class="alert alert-warning"
+        i18n>The AppID must not end with a "/".
+      </div>
+    }
+  </div>
+</mat-expansion-panel>

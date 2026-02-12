@@ -1,0 +1,71 @@
+<mat-expansion-panel>
+  <mat-expansion-panel-header>
+    <mat-panel-title i18n>Questionnaire Token Settings</mat-panel-title>
+  </mat-expansion-panel-header>
+  <div class="panel-content">
+    <p i18n>The questionnaire lets you define a set of questions. The questionnaire token needs to define answers
+      to these questions and the user will be presented with random questions and needs to provide his previously
+      defined answer.
+    </p>
+
+    <mat-form-field
+      appearance="fill">
+      <mat-label i18n>Number of answers</mat-label>
+      <input
+        [(ngModel)]="formData()['question.num_answers']"
+        matInput
+        placeholder="5"
+        required
+        type="number">
+      <mat-hint i18n>This is the number of answers a user needs to define to enroll a token.</mat-hint>
+    </mat-form-field>
+
+    <h4 i18n>Questionnaire</h4>
+    <p i18n>These are the possible questions, a user may define answers to.</p>
+
+    <table class="table">
+      <thead>
+      <tr>
+        <th i18n>Question</th>
+        <th></th>
+      </tr>
+      </thead>
+      <tbody>
+        @for (key of questionKeys(); track key) {
+          <tr>
+            <td>{{ formData()[key] }}</td>
+            <td>
+              <button
+                (click)="deleteEntry(key)"
+                color="warn"
+                mat-icon-button>
+                <mat-icon>delete</mat-icon>
+              </button>
+            </td>
+          </tr>
+        }
+      <tr>
+        <td>
+          <mat-form-field
+            appearance="fill">
+            <mat-label i18n>Question</mat-label>
+            <input
+              [(ngModel)]="newQuestionText"
+              matInput
+              placeholder="Question">
+          </mat-form-field>
+        </td>
+        <td>
+          <button
+            (click)="addQuestion()"
+            color="primary"
+            mat-flat-button>
+            <mat-icon>add</mat-icon>
+            <span i18n>Add new question</span>
+          </button>
+        </td>
+      </tr>
+      </tbody>
+    </table>
+  </div>
+</mat-expansion-panel>

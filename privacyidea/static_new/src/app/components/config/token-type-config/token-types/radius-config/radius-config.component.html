@@ -1,0 +1,24 @@
+<mat-expansion-panel>
+  <mat-expansion-panel-header>
+    <mat-panel-title i18n>RADIUS Token Settings</mat-panel-title>
+  </mat-expansion-panel-header>
+  <div class="panel-content">
+    <p i18n>The RADIUS token forwards the authentication request to another RADIUS server.</p>
+
+    <mat-form-field
+      appearance="fill">
+      <mat-label i18n>RADIUS Server Configuration</mat-label>
+      <mat-select [(ngModel)]="formData()['radius.identifier']">
+        @for (id of radiusServers(); track id) {
+          <mat-option [value]="id">{{ id }}</mat-option>
+        }
+      </mat-select>
+      <mat-hint i18n>Select a predefined
+        <a
+          [routerLink]="[ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS]"><strong>RADIUS server configuration</strong>
+        </a>
+                     .
+      </mat-hint>
+    </mat-form-field>
+  </div>
+</mat-expansion-panel>

@@ -85,13 +85,12 @@ describe("TokenTypeConfigComponent", () => {
   it("should add new question to formData and increment nextQuestion without saving", () => {
     const saveSpy = jest.spyOn(component, 'save');
     const initialNext = component.nextQuestion();
-    component.newQuestionText.set("My new question?");
+    const newQuestion = "My new question?";
 
-    component.addQuestion();
+    component.addQuestion(newQuestion);
 
-    expect(component.formData()[`question.question.${initialNext}`]).toBe("My new question?");
+    expect(component.formData()[`question.question.${initialNext}`]).toBe(newQuestion);
     expect(component.nextQuestion()).toBe(initialNext + 1);
-    expect(component.newQuestionText()).toBe("");
     expect(saveSpy).not.toHaveBeenCalled();
   });
 
@@ -148,7 +147,6 @@ describe("TokenTypeConfigComponent", () => {
     // But we can check that it has the values from MockSystemService (which has init data).
     expect(component.hashLibs()).toEqual(["sha1", "sha256", "sha512"]);
     expect(component.totpSteps()).toEqual(["30", "60"]);
-    expect(component.smsProviders()).toEqual(["provider1", "provider2"]);
   });
 
   it("should evaluate isChecked correctly for various inputs", () => {

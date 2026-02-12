@@ -1,0 +1,103 @@
+<mat-expansion-panel>
+  <mat-expansion-panel-header>
+    <mat-panel-title i18n>TiQR Token Settings</mat-panel-title>
+  </mat-expansion-panel-header>
+  <div class="panel-content">
+    <p i18n>The TiQR Token is an OCRA based Smartphone Token, that can be used to authenticate by just scanning a QR
+            code.
+    </p>
+
+    <mat-form-field
+      appearance="fill"
+      class="margin-bottom-16">
+      <mat-label i18n>TiQR Registration Server</mat-label>
+      <input
+        [(ngModel)]="formData()['tiqr.regServer']"
+        matInput
+        placeholder="http://pi.server/ttype/tiqr"
+        required
+        type="url">
+      <mat-hint i18n>The Registration Server is this privacyIDEA server. Note that the privacyIDEA server needs to be
+                     accessible from the users smartphone.
+      </mat-hint>
+    </mat-form-field>
+
+    <mat-form-field
+      appearance="fill"
+      class="margin-bottom-16">
+      <mat-label i18n>TiQR Authentication Server</mat-label>
+      <input
+        [(ngModel)]="formData()['tiqr.authServer']"
+        matInput
+        type="url">
+      <mat-hint i18n>The Authentication Server is this privacyIDEA server. Note that the privacyIDEA server needs to be
+                     accessible from the users smartphone.
+      </mat-hint>
+    </mat-form-field>
+
+    <mat-form-field
+      appearance="fill"
+      class="margin-bottom-16">
+      <mat-label i18n>TiQR Service Displayname</mat-label>
+      <input
+        [(ngModel)]="formData()['tiqr.serviceDisplayname']"
+        matInput>
+      <mat-hint i18n>This is the display name of your service in the TiQR app.</mat-hint>
+    </mat-form-field>
+
+    <mat-form-field
+      appearance="fill"
+      class="margin-bottom-16">
+      <mat-label i18n>TiQR Service Identifier</mat-label>
+      <input
+        [(ngModel)]="formData()['tiqr.serviceIdentifier']"
+        matInput>
+      <mat-hint i18n>This is the service identifier that will be passed to the TiQR app. This should contain a reverse
+                     FQDN (defaults to org.privacyidea).
+      </mat-hint>
+    </mat-form-field>
+
+    <mat-form-field
+      appearance="fill"
+      class="margin-bottom-16">
+      <mat-label i18n>TiQR Logo URL</mat-label>
+      <input
+        [(ngModel)]="formData()['tiqr.logoUrl']"
+        matInput
+        placeholder="https://pi.server/static/css/privacyIDEA1.png"
+        required
+        type="url">
+      <mat-hint i18n>The URL that contains the logo of the service.</mat-hint>
+    </mat-form-field>
+
+    <mat-form-field
+      appearance="fill"
+      class="margin-bottom-16">
+      <mat-label i18n>TiQR Info URL</mat-label>
+      <input
+        [(ngModel)]="formData()['tiqr.infoUrl']"
+        matInput
+        placeholder="https://www.privacyidea.org"
+        required
+        type="url">
+      <mat-hint i18n>The website of the identity provider</mat-hint>
+    </mat-form-field>
+
+    <mat-form-field
+      appearance="fill"
+      class="margin-bottom-16">
+      <mat-label i18n>OCRA Suite</mat-label>
+      <input
+        [(ngModel)]="formData()['tiqr.ocrasuite']"
+        matInput>
+      <mat-hint i18n>This is the OCRA suite used by the TiQR App. The default OCRA suite is OCRA-1:HOTP-SHA1-6:QN10. For
+                     more details see the
+        <a
+          href="http://tools.ietf.org/html/rfc6287#page-8"
+          target="_blank">RFC 6287
+        </a>
+                     .
+      </mat-hint>
+    </mat-form-field>
+  </div>
+</mat-expansion-panel>

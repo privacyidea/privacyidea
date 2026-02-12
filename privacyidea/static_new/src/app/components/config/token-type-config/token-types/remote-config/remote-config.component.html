@@ -1,0 +1,23 @@
+<mat-expansion-panel>
+  <mat-expansion-panel-header>
+    <mat-panel-title i18n>Remote Token Settings</mat-panel-title>
+  </mat-expansion-panel-header>
+  <div class="panel-content">
+    <p i18n>The Remote token forwards the authentication request to another privacyIDEA server.</p>
+
+    <mat-checkbox
+      [(ngModel)]="formData()['remote.verify_ssl_certificate']"
+      i18n>Verify SSL certificate
+    </mat-checkbox>
+
+    <mat-form-field
+      appearance="fill">
+      <mat-label i18n>Default Remote Server</mat-label>
+      <input
+        [(ngModel)]="formData()['remote.server']"
+        matInput
+        placeholder="https://your.other.privacyidea.server"
+        required>
+    </mat-form-field>
+  </div>
+</mat-expansion-panel>

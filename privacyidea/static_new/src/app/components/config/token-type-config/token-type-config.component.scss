@@ -11,70 +11,73 @@
     margin-bottom: 20px;
   }
 
-  .panel-content {
-    padding: 0;
+  ::ng-deep {
+    .panel-content {
+      padding: 0;
 
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 16px;
-    align-items: start;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+      align-items: start;
 
-    p,
-    h3,
-    .alert,
-    table,
-    .table {
-      grid-column: 1 / -1;
+      p,
+      h3,
+      h4,
+      .alert,
+      table,
+      .table {
+        grid-column: 1 / -1;
+      }
+
+      mat-form-field {
+        width: 100%;
+      }
+
+      @media (max-width: 900px) {
+        grid-template-columns: 1fr;
+      }
+
+      p {
+        margin: 0;
+        color: var(--mat-sys-on-surface-variant);
+      }
     }
 
-    mat-form-field {
-      width: 100%;
+    .policy-highlight {
+      background: var(--inline-warning-bg);
+      border-radius: var(--border-radius);
+      color: var(--red-base);
+      padding: 4px;
     }
 
-    @media (max-width: 900px) {
-      grid-template-columns: 1fr;
-    }
-
-    p {
+    .alert {
+      padding: 15px;
       margin-bottom: 0;
-      color: var(--mat-sys-on-surface-variant);
+      border: 1px solid transparent;
+      border-radius: 4px;
     }
-  }
 
-  .policy-highlight {
-    background: var(--inline-warning-bg);
-    border-radius: var(--border-radius);
-    color: var(--red-base);
-    padding: 4px;
+    .alert-warning {
+      color: #8a6d3b;
+      background-color: #fcf8e3;
+      border-color: #faebcc;
+    }
+
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 0;
+
+      th, td {
+        padding: 8px;
+        text-align: left;
+      }
+    }
   }
 
   .actions-container {
     margin-top: 20px;
     display: flex;
     justify-content: center;
-  }
-
-  .alert {
-    padding: 15px;
-    margin-bottom: 0;
-    border: 1px solid transparent;
-    border-radius: 4px;
-  }
-
-  .alert-warning {
-    color: #8a6d3b;
-    background-color: #fcf8e3;
-    border-color: #faebcc;
-  }
-
-  .table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 0;
-
-    th, td {
-      padding: 8px;
-      text-align: left;
-    }
   }
 }

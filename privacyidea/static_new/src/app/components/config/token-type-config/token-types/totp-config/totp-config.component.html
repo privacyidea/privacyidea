@@ -1,0 +1,61 @@
+<mat-expansion-panel>
+  <mat-expansion-panel-header>
+    <mat-panel-title i18n>TOTP Token Settings</mat-panel-title>
+  </mat-expansion-panel-header>
+  <div class="panel-content">
+    <p i18n>The TOTP Token is a time based one time password token. It is described in
+      <a
+        href="https://datatracker.ietf.org/doc/html/rfc6238"
+        target="_blank">RFC 6238
+      </a>
+      .
+    </p>
+    <p i18n>Here you can define settings, that will be set as default values, when enrolling a TOTP token. Note that
+      the user/admin policies
+      <span class="policy-highlight">totp_hashlib</span>
+      and
+      <span class="policy-highlight">totp_timestep</span>
+      always have precedence over these default values.
+    </p>
+
+    <mat-form-field
+      appearance="fill">
+      <mat-label i18n>Default Time Step</mat-label>
+      <mat-select [(ngModel)]="formData()['totp.timeStep']">
+        @for (step of totpSteps(); track step) {
+          <mat-option [value]="step">{{ step }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field
+      appearance="fill">
+      <mat-label i18n>Default Time Window</mat-label>
+      <input
+        [(ngModel)]="formData()['totp.timeWindow']"
+        matInput
+        placeholder="180"
+        type="number">
+    </mat-form-field>
+
+    <mat-form-field
+      appearance="fill">
+      <mat-label i18n>Default Time Shift</mat-label>
+      <input
+        [(ngModel)]="formData()['totp.timeShift']"
+        matInput
+        placeholder="0"
+        type="number">
+    </mat-form-field>
+
+    <mat-form-field
+      appearance="fill">
+      <mat-label i18n>Default Hashlib</mat-label>
+      <mat-select [(ngModel)]="formData()['totp.hashlib']">
+        @for (hashlib of hashLibs(); track hashlib) {
+          <mat-option [value]="hashlib">{{ hashlib }}</mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+  </div>
+</mat-expansion-panel>

@@ -1,0 +1,81 @@
+<mat-expansion-panel>
+  <mat-expansion-panel-header>
+    <mat-panel-title i18n>Yubikey Token Settings</mat-panel-title>
+  </mat-expansion-panel-header>
+  <div class="panel-content">
+    <p i18n>This is a Yubikey in the Yubico Mode authenticated against privacyIDEA. The Yubikey emits a 44 character
+      on time password.
+    </p>
+    <p i18n>The authentication request can be handled by the default privacyIDEA
+      <a
+        href="https://privacyidea.readthedocs.io/en/latest/modules/api/validate.html"
+        target="_blank">validate API
+      </a>
+      but can also be handled by the
+      <a
+        href="https://privacyidea.readthedocs.io/en/latest/modules/lib/tokentypes/yubikey.html#privacyidea.lib.tokens.yubikeytoken.YubikeyTokenClass.api_endpoint"
+        target="_blank">Yubico Validation Protocol
+      </a>
+      .
+    </p>
+
+    <table class="table">
+      <thead>
+      <tr>
+        <th i18n>Client ID</th>
+        <th i18n>API Key</th>
+        <th></th>
+      </tr>
+      </thead>
+      <tbody>
+        @for (key of yubikeyApiIds(); track key) {
+          <tr>
+            <td>{{ key }}</td>
+            <td>{{ formData()[key] }}</td>
+            <td>
+              <button
+                (click)="deleteEntry(key)"
+                color="warn"
+                mat-icon-button>
+                <mat-icon>delete</mat-icon>
+              </button>
+            </td>
+          </tr>
+        }
+      <tr>
+        <td>
+          <mat-form-field
+            appearance="fill">
+            <mat-label i18n>Client ID</mat-label>
+            <input
+              [(ngModel)]="newYubikeyApiId"
+              matInput
+              placeholder="Client ID"
+              required>
+          </mat-form-field>
+        </td>
+        <td>
+          <mat-form-field
+            appearance="fill">
+            <mat-label i18n>API Key</mat-label>
+            <input
+              [(ngModel)]="formData()['yubikey.apiid.' + newYubikeyApiId()]"
+              matInput
+              placeholder="API Key"
+              required>
+          </mat-form-field>
+        </td>
+        <td>
+          <button
+            (click)="createNewKey()"
+            color="primary"
+            mat-flat-button>
+            <mat-icon>refresh</mat-icon>
+            <span i18n>Create new API key</span>
+          </button>
+        </td>
+      </tr>
+      </tbody>
+    </table>
+  </div>
+</mat-expansion-panel>
