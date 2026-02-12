@@ -114,7 +114,7 @@ def verify_fido2_challenge(transaction_id: str, token: TokenClass, params: dict)
 
     # Get the user_verification requirement from the challenge data
     data = challenge.get_data()
-    if not "user_verification" in data:
+    if not isinstance(dict, data) or not "user_verification" in data:
         log.error(f"Invalid user_verification data in challenge with transaction_id {transaction_id}.")
         raise AuthError(f"Invalid user_verification data in challenge {transaction_id}.")
     user_verification = data["user_verification"]

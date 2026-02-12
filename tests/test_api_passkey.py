@@ -121,11 +121,11 @@ class PasskeyAPITestBase(MyApiTestCase, PasskeyTestBase):
             self.assertEqual(200, res.status_code)
             self._assert_result_value_true(res.json)
 
-    def _enroll_static_passkey(self, exclude_credential_size: int = 0) -> str:
+    def _enroll_static_passkey(self, exclude_credentials_size: int = 0) -> str:
         """
         Returns the serial of the enrolled passkey token
         """
-        data = self._token_init_step_one(exclude_credential_size)
+        data = self._token_init_step_one(exclude_credentials_size)
         detail = data["detail"]
         serial = detail["serial"]
         transaction_id = detail["transaction_id"]
