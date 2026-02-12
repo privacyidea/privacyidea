@@ -18,11 +18,7 @@ import { MatSelectModule } from '@angular/material/select';
     MatSelectModule
   ],
   templateUrl: './totp-config.component.html',
-  styles: `
-    :host {
-      display: block;
-    }
-  `
+  styleUrl: './totp-config.component.scss'
 })
 export class TotpConfigComponent {
   formData = input.required<Record<string, any>>();

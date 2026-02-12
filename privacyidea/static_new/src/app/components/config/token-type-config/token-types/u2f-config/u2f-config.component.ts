@@ -16,11 +16,7 @@ import { MatInputModule } from '@angular/material/input';
     MatInputModule
   ],
   templateUrl: './u2f-config.component.html',
-  styles: `
-    :host {
-      display: block;
-    }
-  `
+  styleUrl: './u2f-config.component.scss'
 })
 export class U2fConfigComponent {
   formData = input.required<Record<string, any>>();

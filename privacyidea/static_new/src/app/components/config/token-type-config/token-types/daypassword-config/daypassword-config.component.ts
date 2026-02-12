@@ -18,11 +18,7 @@ import { MatSelectModule } from '@angular/material/select';
     MatSelectModule
   ],
   templateUrl: './daypassword-config.component.html',
-  styles: `
-    :host {
-      display: block;
-    }
-  `
+  styleUrl: './daypassword-config.component.scss'
 })
 export class DaypasswordConfigComponent {
   formData = input.required<Record<string, any>>();

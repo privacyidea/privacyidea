@@ -16,11 +16,7 @@ import { MatInputModule } from '@angular/material/input';
     MatInputModule
   ],
   templateUrl: './webauthn-config.component.html',
-  styles: `
-    :host {
-      display: block;
-    }
-  `
+  styleUrl: './webauthn-config.component.scss'
 })
 export class WebauthnConfigComponent {
   formData = input.required<Record<string, any>>();

@@ -16,11 +16,7 @@ import { MatInputModule } from '@angular/material/input';
     MatInputModule
   ],
   templateUrl: './tiqr-config.component.html',
-  styles: `
-    :host {
-      display: block;
-    }
-  `
+  styleUrl: './tiqr-config.component.scss'
 })
 export class TiqrConfigComponent {
   formData = input.required<Record<string, any>>();

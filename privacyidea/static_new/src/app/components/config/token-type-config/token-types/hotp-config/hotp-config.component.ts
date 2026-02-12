@@ -16,11 +16,7 @@ import { MatSelectModule } from '@angular/material/select';
     MatSelectModule
   ],
   templateUrl: './hotp-config.component.html',
-  styles: `
-    :host {
-      display: block;
-    }
-  `
+  styleUrl: './hotp-config.component.scss'
 })
 export class HotpConfigComponent {
   formData = input.required<Record<string, any>>();

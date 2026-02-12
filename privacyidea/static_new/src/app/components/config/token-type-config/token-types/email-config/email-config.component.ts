@@ -21,11 +21,7 @@ import { ROUTE_PATHS } from "../../../../../route_paths";
     RouterLink
   ],
   templateUrl: './email-config.component.html',
-  styles: `
-    :host {
-      display: block;
-    }
-  `
+  styleUrl: './email-config.component.scss'
 })
 export class EmailConfigComponent {
   formData = input.required<Record<string, any>>();

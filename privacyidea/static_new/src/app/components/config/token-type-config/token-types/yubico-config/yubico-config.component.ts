@@ -16,11 +16,7 @@ import { MatInputModule } from '@angular/material/input';
     MatInputModule
   ],
   templateUrl: './yubico-config.component.html',
-  styles: `
-    :host {
-      display: block;
-    }
-  `
+  styleUrl: './yubico-config.component.scss'
 })
 export class YubicoConfigComponent {
   formData = input.required<Record<string, any>>();

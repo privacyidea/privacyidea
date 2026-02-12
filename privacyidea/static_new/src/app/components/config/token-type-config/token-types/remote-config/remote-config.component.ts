@@ -18,11 +18,7 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
     MatCheckboxModule
   ],
   templateUrl: './remote-config.component.html',
-  styles: `
-    :host {
-      display: block;
-    }
-  `
+  styleUrl: './remote-config.component.scss'
 })
 export class RemoteConfigComponent {
   formData = input.required<Record<string, any>>();

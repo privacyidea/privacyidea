@@ -19,11 +19,7 @@ import { ROUTE_PATHS } from "../../../../../route_paths";
     RouterLink
   ],
   templateUrl: './radius-config.component.html',
-  styles: `
-    :host {
-      display: block;
-    }
-  `
+  styleUrl: './radius-config.component.scss'
 })
 export class RadiusConfigComponent {
   formData = input.required<Record<string, any>>();

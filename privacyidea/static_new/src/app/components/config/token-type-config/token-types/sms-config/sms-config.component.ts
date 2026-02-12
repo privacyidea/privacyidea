@@ -21,11 +21,7 @@ import { ROUTE_PATHS } from "../../../../../route_paths";
     RouterLink
   ],
   templateUrl: './sms-config.component.html',
-  styles: `
-    :host {
-      display: block;
-    }
-  `
+  styleUrl: './sms-config.component.scss'
 })
 export class SmsConfigComponent {
   formData = input.required<Record<string, any>>();
