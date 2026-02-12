@@ -290,8 +290,8 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
         # UserVerification is preferred by default
         authentication_response = self.authentication_response_no_uv
         authentication_response["HTTP_ORIGIN"] = self.expected_origin
-        success = verify_fido2_challenge(challenge["transaction_id"], token, authentication_response)
-        self.assertEqual(success, 1)
+        verification_result = verify_fido2_challenge(challenge["transaction_id"], token, authentication_response)
+        self.assertEqual(verification_result.success, 1)
         remove_token(serial=token.get_serial())
 
     def test_07_authenticate_fails(self):
@@ -306,8 +306,8 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
         authentication_response = self.authentication_response_no_uv
         authentication_response["HTTP_ORIGIN"] = self.expected_origin
         authentication_response["signature"] = authentication_response["signature"].replace("a", "b")
-        success = verify_fido2_challenge(challenge["transaction_id"], token, authentication_response)
-        self.assertEqual(success, -1)
+        verification_result = verify_fido2_challenge(challenge["transaction_id"], token, authentication_response)
+        self.assertEqual(verification_result.success, -1)
         remove_token(serial=token.get_serial())
 
     def test_08_no_tokencredentialidhash_entry(self):
@@ -416,8 +416,8 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
         # UserVerification is preferred by default
         authentication_response = self.authentication_response_no_uv
         authentication_response["HTTP_ORIGIN"] = self.expected_origin
-        success = verify_fido2_challenge(challenge["transaction_id"], token, authentication_response)
-        self.assertEqual(success, 1)
+        verification_result = verify_fido2_challenge(challenge["transaction_id"], token, authentication_response)
+        self.assertEqual(verification_result.success, 1)
 
         # Clean up
         remove_token(token.token.serial)

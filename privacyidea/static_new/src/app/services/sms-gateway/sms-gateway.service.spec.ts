@@ -17,22 +17,67 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { TestBed } from "@angular/core/testing";
-
 import { SmsGatewayService } from "./sms-gateway.service";
 import { provideHttpClient } from "@angular/common/http";
-import { provideHttpClientTesting } from "@angular/common/http/testing";
+import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
+import { AuthService } from "../auth/auth.service";
+import { NotificationService } from "../notification/notification.service";
+import { environment } from "../../../environments/environment";
 
 describe("SmsGatewayService", () => {
-  let smsGatewayService: SmsGatewayService;
+  let service: SmsGatewayService;
+  let httpMock: HttpTestingController;
+  let notificationService: NotificationService;
 
   beforeEach(() => {
+    const authServiceMock = {
+      getHeaders: jest.fn().mockReturnValue({}),
+    };
+    const notificationServiceMock = {
+      openSnackBar: jest.fn(),
+    };
+
     TestBed.configureTestingModule({
-      providers: [provideHttpClient(), provideHttpClientTesting()]
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: AuthService, useValue: authServiceMock },
+        { provide: NotificationService, useValue: notificationServiceMock },
+      ]
     });
-    smsGatewayService = TestBed.inject(SmsGatewayService);
+    service = TestBed.inject(SmsGatewayService);
+    httpMock = TestBed.inject(HttpTestingController);
+    notificationService = TestBed.inject(NotificationService);
+  });
+
+  afterEach(() => {
+    httpMock.verify();
   });
 
   it("should be created", () => {
-    expect(smsGatewayService).toBeTruthy();
+    expect(service).toBeTruthy();
+  });
+
+  it("should post SMS gateway", async () => {
+    const gateway = { name: "test", providermodule: "mod" } as any;
+    const promise = service.postSmsGateway(gateway);
+
+    const req = httpMock.expectOne(`${environment.proxyUrl}/smsgateway/`);
+    expect(req.request.method).toBe("POST");
+    req.flush({ result: { status: true } });
+
+    await promise;
+    expect(notificationService.openSnackBar).toHaveBeenCalledWith("Successfully saved SMS gateway.");
+  });
+
+  it("should delete SMS gateway", async () => {
+    const promise = service.deleteSmsGateway("test");
+
+    const req = httpMock.expectOne(`${environment.proxyUrl}/smsgateway/test`);
+    expect(req.request.method).toBe("DELETE");
+    req.flush({ result: { status: true } });
+
+    await promise;
+    expect(notificationService.openSnackBar).toHaveBeenCalledWith("Successfully deleted SMS gateway: test.");
   });
 });

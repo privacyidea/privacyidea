@@ -57,6 +57,7 @@ import { ROUTE_PATHS } from "../../../route_paths";
 import { ContentService } from "../../../services/content/content.service";
 import { PendingChangesService } from "../../../services/pending-changes/pending-changes.service";
 import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
+import { DialogService, DialogServiceInterface } from "../../../services/dialog/dialog.service";
 import { SimpleConfirmationDialogComponent } from "../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
 
 @Component({
@@ -94,7 +95,7 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly contentService = inject(ContentService);
-  private readonly dialog = inject(MatDialog);
+  private readonly dialogService: DialogServiceInterface = inject(DialogService);
   private readonly pendingChangesService = inject(PendingChangesService);
   protected readonly renderer: Renderer2 = inject(Renderer2);
   public readonly dialogRef = inject(MatDialogRef<UserNewResolverComponent>, { optional: true });
@@ -169,6 +170,7 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
     }
 
     this.pendingChangesService.registerHasChanges(() => this.hasChanges);
+    this.pendingChangesService.registerSave(() => this.onSave());
 
     effect(() => {
       if (!this.contentService.routeUrl().startsWith(ROUTE_PATHS.USERS)) {
@@ -228,6 +230,12 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
 
   get isAdditionalFieldsValid(): boolean {
     return Object.values(this.additionalFormFields()).every((control) => control.valid);
+  }
+
+  get canSave(): boolean {
+    const nameOk = this.resolverName.trim().length > 0;
+    const typeOk = !!this.resolverType;
+    return nameOk && typeOk && this.isAdditionalFieldsValid && !this.isSaving;
   }
 
   get hasChanges(): boolean {
@@ -370,7 +378,7 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
     }
   }
 
-  onSave(): void {
+  onSave(): Promise<void> | void {
     const name = this.resolverName.trim();
     if (!name) {
       this.notificationService.openSnackBar($localize`Please enter a resolver name.`);
@@ -380,7 +388,6 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
       this.notificationService.openSnackBar($localize`Please select a resolver type.`);
       return;
     }
-
     if (!this.isAdditionalFieldsValid) {
       this.notificationService.openSnackBar($localize`Please fill in all required fields.`);
       return;
@@ -398,34 +405,40 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
 
     this.isSaving = true;
 
-    this.resolverService
-      .postResolver(name, payload)
-      .subscribe({
-        next: (res: PiResponse<any, any>) => {
-          if (res.result?.status === true && (res.result.value ?? 0) >= 0) {
-            this.notificationService.openSnackBar(
-              this.isEditMode ? $localize`Resolver "${name}" updated.` : $localize`Resolver "${name}" created.`
-            );
-            this.resolverService.resolversResource.reload?.();
+    return new Promise<void>((resolve) => {
+      this.resolverService
+        .postResolver(name, payload)
+        .subscribe({
+          next: (res: PiResponse<any, any>) => {
+            if (res.result?.status === true && (res.result.value ?? 0) >= 0) {
+              this.notificationService.openSnackBar(
+                this.isEditMode ? $localize`Resolver "${name}" updated.` : $localize`Resolver "${name}" created.`
+              );
+              this.resolverService.resolversResource.reload?.();
 
-            if (this.dialogRef) {
-              this.dialogRef.close(true);
-            } else if (!this.isEditMode) {
-              this.resolverName = "";
-              this.formData = {};
-              this.router.navigateByUrl(ROUTE_PATHS.USERS_RESOLVERS);
+              if (this.dialogRef) {
+                this.dialogRef.close(true);
+              } else if (!this.isEditMode) {
+                this.resolverName = "";
+                this.formData = {};
+                this.router.navigateByUrl(ROUTE_PATHS.USERS_RESOLVERS);
+              }
+            } else {
+              const message =
+                res.detail?.description || res.result?.error?.message || $localize`Unknown error occurred.`;
+              this.notificationService.openSnackBar($localize`Failed to save resolver. ${message}`);
             }
-          } else {
-            const message = res.detail?.description || res.result?.error?.message || $localize`Unknown error occurred.`;
+          },
+          error: (err: HttpErrorResponse) => {
+            const message = err.error?.result?.error?.message || err.message;
             this.notificationService.openSnackBar($localize`Failed to save resolver. ${message}`);
           }
-        },
-        error: (err: HttpErrorResponse) => {
-          const message = err.error?.result?.error?.message || err.message;
-          this.notificationService.openSnackBar($localize`Failed to save resolver. ${message}`);
-        }
-      })
-      .add(() => (this.isSaving = false));
+        })
+        .add(() => {
+          this.isSaving = false;
+          resolve();
+        });
+    });
   }
 
   onTest(): void {
@@ -438,26 +451,35 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
 
   onCancel(): void {
     if (this.hasChanges) {
-      this.dialog
-        .open(SimpleConfirmationDialogComponent, {
+      this.dialogService
+        .openDialog({
+          component: SimpleConfirmationDialogComponent,
           data: {
             title: $localize`Discard changes`,
-            action: "discard",
-            type: "resolver"
+            confirmAction: { label: "Save and exit", type: "confirm", value: true },
+            cancelAction: { label: "Discard", type: "destruct", value: false },
+            items: [this.resolverName || "New Resolver"],
+            itemType: "resolver"
           }
         })
         .afterClosed()
         .subscribe((result) => {
-          if (result) {
-            this.closeActual();
+          if (result === true) {
+            if (!this.canSave) return;
+            Promise.resolve(this.pendingChangesService.save()).then(() => {
+              this.pendingChangesService.unregisterHasChanges();
+              this.closeCurrent();
+            });
+          } else if (result === false) {
+            this.pendingChangesService.unregisterHasChanges();
+            this.closeCurrent();
           }
         });
     } else {
-      this.closeActual();
+      this.closeCurrent();
     }
   }
-
-  private closeActual(): void {
+  private closeCurrent(): void {
     if (this.dialogRef) {
       this.dialogRef.close();
     } else {
@@ -503,7 +525,6 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
       .subscribe({
         next: (res: PiResponse<any, any>) => {
           if (res.result?.status === true && (res.result.value ?? 0) >= 0) {
-            console.log(res.result.value);
             this.notificationService.openSnackBar($localize`Resolver test executed: ${res.detail.description}`, 20000);
           } else {
             const message = res.detail?.description || res.result?.error?.message || $localize`Unknown error occurred.`;

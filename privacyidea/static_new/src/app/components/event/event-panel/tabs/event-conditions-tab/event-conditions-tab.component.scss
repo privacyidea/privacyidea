@@ -1,0 +1,52 @@
+@use "../../../../../../styles" as styles;
+
+.conditions-container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  gap: 32px;
+  width: 100%;
+}
+
+.condition-column {
+  flex: 1 1 0;
+}
+
+// override hover style for read only view to not change on hover
+.selected-actions-container .action-card:hover {
+  background-color: var(--mat-sys-surface-container) !important;
+  color: var(--mat-sys-on-surface) !important;
+  cursor: default !important;
+}
+
+.add-conditions-container {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--global-gap) / 2);
+  overflow: scroll;
+  padding: 6px;
+}
+
+.small-icon {
+  font-size: 20px; /* or any smaller value you prefer */
+  width: 20px;
+  height: 20px;
+  line-height: 20px;
+  align-self: center;
+}
+
+.add-conditions-list-container {
+  max-height: 22.1rem;
+  overflow-y: scroll;
+  margin-top: calc(var(--global-gap) / 2);
+}
+
+.configured-conditions-list-container {
+  max-height: 30rem;
+  overflow-y: scroll;
+  margin-top: calc(var(--global-gap) / 2);
+}
+
+.mat-mdc-card {
+  border-radius: var(--border-radius);
+}

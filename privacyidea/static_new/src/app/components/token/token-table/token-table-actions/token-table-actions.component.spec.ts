@@ -16,39 +16,34 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { ComponentFixture, TestBed } from "@angular/core/testing";
 
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { provideNoopAnimations } from "@angular/platform-browser/animations";
-import { of } from "rxjs";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MatDialog, MatDialogRef } from "@angular/material/dialog";
-import { ActivatedRoute, NavigationEnd, Router } from "@angular/router";
-
-import { TokenTableActionsComponent } from "./token-table-actions.component";
-
+import { provideNoopAnimations } from "@angular/platform-browser/animations";
+import { Router, NavigationEnd, ActivatedRoute } from "@angular/router";
+import { of } from "rxjs";
 import {
-  NotificationService,
-  NotificationServiceInterface
-} from "../../../../services/notification/notification.service";
-
-import { BulkResult, TokenDetails, TokenService } from "../../../../services/token/token.service";
-
-import { VersioningService } from "../../../../services/version/version.service";
-import { SimpleConfirmationDialogComponent } from "../../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
-import { ContentService } from "../../../../services/content/content.service";
-import { AuthService } from "../../../../services/auth/auth.service";
-import { AuditService } from "../../../../services/audit/audit.service";
-
-import {
-  MockAuditService,
-  MockContentService,
-  MockNotificationService,
-  MockPiResponse,
   MockTokenService,
-  MockVersioningService
+  MockVersioningService,
+  MockNotificationService,
+  MockContentService,
+  MockAuditService,
+  MockPiResponse
 } from "../../../../../testing/mock-services";
 import { MockAuthService } from "../../../../../testing/mock-services/mock-auth-service";
+import { AuditService } from "../../../../services/audit/audit.service";
+import { AuthService } from "../../../../services/auth/auth.service";
+import { ContentService } from "../../../../services/content/content.service";
+import {
+  NotificationServiceInterface,
+  NotificationService
+} from "../../../../services/notification/notification.service";
+import { TokenService, TokenDetails, BulkResult } from "../../../../services/token/token.service";
+import { VersioningService } from "../../../../services/version/version.service";
+import { SimpleConfirmationDialogComponent } from "../../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { TokenTableActionsComponent } from "./token-table-actions.component";
 
 describe("TokenTableActionsComponent", () => {
   let component: TokenTableActionsComponent;
@@ -62,7 +57,7 @@ describe("TokenTableActionsComponent", () => {
   beforeEach(async () => {
     const dialogMock = {
       open: jest.fn().mockReturnValue({
-        afterClosed: () => of(true)
+        afterClosed: () => of({ confirmed: true })
       } as unknown as MatDialogRef<SimpleConfirmationDialogComponent>)
     };
 
@@ -175,7 +170,7 @@ describe("TokenTableActionsComponent", () => {
       const reloadSpy = jest.spyOn(tokenService.tokenResource, "reload");
 
       const dialogSpy = jest.spyOn(dialog, "open").mockReturnValue({
-        afterClosed: () => of(true)
+        afterClosed: () => of({ confirmed: true })
       } as any);
 
       component.tokenSelection.set(mockTokens);

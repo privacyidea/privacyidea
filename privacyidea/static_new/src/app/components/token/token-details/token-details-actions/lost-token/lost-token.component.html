@@ -17,48 +17,76 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <app-dialog-wrapper
-  [title]="'Token ' + data.tokenSerial() + ' is lost?'"
   (close)="close()"
   (onAction)="onAction($event)"
-  [actions]="actions()">
-  <p i18n>
-    If the token is lost, you can enroll a temporary password based token and give the password to the user. The OTP PIN
-    of the old token is still the same.
-  </p>
-  <p i18n>The user will have to authenticate with the old OTP PIN he knows and this newly generated password.</p>
-  <p i18n>The old token {{ data.tokenSerial() }} will be disabled and can be deleted or enabled later.</p>
-  @if (data.isLost()) {
-    <mat-card
-      appearance="outlined"
-      class="lost-card">
-      <mat-card-content
+  [actions]="actions()"
+  [title]="'Token ' + data.tokenSerial() + ' is lost?'">
+  <div class="lost-content">
+    <p i18n>
+      If the token is lost, you can enroll a temporary password based token and give the password to the user. The OTP
+      PIN of the old token is still the same.
+    </p>
+    <p i18n>The user will have to authenticate with the old OTP PIN he knows and this newly generated password.</p>
+    <p i18n>The old token {{ data.tokenSerial() }} will be disabled and can be deleted or enabled later.</p>
+    @if (data.isLost()) {
+      <mat-card
+        appearance="outlined"
+        class="lost-card">
+        <mat-card-content
+          class="lost-card-content"
+          i18n>
+          Token was marked as lost successfully.
+        </mat-card-content>
+      </mat-card>
+
+      <p i18n>
+        The serial of the new token is
+        <a (click)="tokenSelected(lostTokenData?.serial)"> {{ lostTokenData?.serial ?? "" }}</a>
+        <br />
+        The password that needs to be combined with the OTP PIN:
+      </p>
+
+      <p class="lost-password">
+        {{ lostTokenData?.password }}
+      </p>
+
+      <p
         i18n
-        class="lost-card-content">
-        Token was marked as lost successfully.
-      </mat-card-content>
-    </mat-card>
+        style="font-weight: bold">
+        The password can not be shown again later!
+      </p>
 
-    <p i18n>
-      The serial of the new token is
-      <a (click)="tokenSelected(lostTokenData?.serial)"> {{ lostTokenData?.serial ?? "" }}</a>
-      <br />
-      The password that needs to be combined with the OTP PIN:
-    </p>
+      <p i18n>
+        The serial of the new token is
+        <a (click)="tokenSelected(lostTokenData?.serial)"> {{ lostTokenData?.serial ?? "" }}</a>
+        <br />
+        The password that needs to be combined with the OTP PIN:
+      </p>
 
-    <p class="lost-password">
-      {{ lostTokenData?.password }}
-    </p>
+      <p class="lost-password">
+        {{ lostTokenData?.password }}
+      </p>
 
-    <p
-      i18n
-      class="bold-warning">
-      The password can not be shown again later!
-    </p>
+      <p
+        i18n
+        class="bold-warning">
+        The password can not be shown again later!
+      </p>
 
-    <p i18n>
-      The token is valid until {{ lostTokenData?.end_date | date: "longDate" }} at{{
-        lostTokenData?.end_date | date: "shortTime"
-      }}.
-    </p>
-  }
+      <p i18n>
+        The token is valid until {{ lostTokenData?.end_date | date: "longDate" }} at{{
+          lostTokenData?.end_date | date: "shortTime"
+        }}.
+      </p>
+
+      <div class="dialog-div">
+        <button
+          mat-button
+          mat-dialog-close
+          i18n>
+          Close
+        </button>
+      </div>
+    }
+  </div>
 </app-dialog-wrapper>

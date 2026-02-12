@@ -16,20 +16,23 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, EventEmitter, Output } from "@angular/core";
+import { Component, EventEmitter, input, Output } from "@angular/core";
 import { MatIcon } from "@angular/material/icon";
 import { MatIconButton } from "@angular/material/button";
+import { MatTooltip } from "@angular/material/tooltip";
 
 @Component({
   selector: "app-clear-button",
   templateUrl: "./clear-button.component.html",
   imports: [
     MatIcon,
-    MatIconButton
+    MatIconButton,
+    MatTooltip
   ],
   styleUrls: ["./clear-button.component.scss"]
 })
 export class ClearButtonComponent {
+  toolTipText = input<string>();
   @Output() onClick = new EventEmitter<void>();
 
   clearInput(): void {

@@ -1,0 +1,26 @@
+<div class="expiry-container">
+  <h2 i18n>Subscription expires soon</h2>
+  <div class="content">
+    <p i18n>
+      One or more subscriptions will expire within the next month. Please review your subscriptions.
+    </p>
+
+    <ul class="items">
+      @for (item of data.items; track item.application) {
+        <li>
+          <div class="row">
+            <span class="app">{{ item.application }}</span>
+            <span class="date" i18n>Valid until:</span>
+            <span class="value">{{ item.date_till }}</span>
+            <span class="days" i18n>Remaining days:</span>
+            <span class="value">{{ remainingDays(item) }}</span>
+          </div>
+        </li>
+      }
+    </ul>
+  </div>
+
+  <div class="actions">
+    <button mat-stroked-button matDialogClose i18n>Close</button>
+  </div>
+</div>

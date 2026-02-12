@@ -28,7 +28,7 @@ import { DialogAction } from "../../../../models/dialog";
   standalone: true,
   imports: [DialogWrapperComponent]
 })
-export class SearchTokenDialogComponent extends AbstractDialogComponent<string> {
+export class SearchTokenDialogComponent extends AbstractDialogComponent<string, boolean> {
   action: DialogAction<true> = {
     label: $localize`Start Search`,
     value: true,

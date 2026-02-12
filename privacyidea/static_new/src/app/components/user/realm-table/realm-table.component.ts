@@ -16,58 +16,56 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+
+import { NgClass } from "@angular/common";
 import { HttpErrorResponse } from "@angular/common/http";
-import { Component, computed, inject, linkedSignal, signal, ViewChild, WritableSignal } from "@angular/core";
+import { Component, inject, ViewChild, signal, computed, WritableSignal, linkedSignal } from "@angular/core";
+import { FormsModule } from "@angular/forms";
+import { MatButtonModule } from "@angular/material/button";
+import { MatDialog } from "@angular/material/dialog";
+import { MatIconModule } from "@angular/material/icon";
+import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
+import { MatPaginator } from "@angular/material/paginator";
+import { MatSelectModule } from "@angular/material/select";
+import { Sort } from "@angular/material/sort";
 import {
   MatCell,
   MatCellDef,
-  MatColumnDef,
-  MatFooterCell,
-  MatFooterCellDef,
-  MatFooterRow,
-  MatFooterRowDef,
+  MatTable,
   MatHeaderCell,
   MatHeaderCellDef,
+  MatColumnDef,
   MatHeaderRow,
   MatHeaderRowDef,
-  MatNoDataRow,
   MatRow,
   MatRowDef,
-  MatTable,
+  MatNoDataRow,
+  MatFooterRow,
+  MatFooterRowDef,
+  MatFooterCell,
+  MatFooterCellDef,
   MatTableDataSource
 } from "@angular/material/table";
-import { MatPaginator } from "@angular/material/paginator";
-import { Sort } from "@angular/material/sort";
-import { FormsModule } from "@angular/forms";
-import { NgClass } from "@angular/common";
-import { MatFormField, MatLabel } from "@angular/material/form-field";
-import { MatInput } from "@angular/material/input";
-import { MatSelectModule } from "@angular/material/select";
-import { MatIconModule } from "@angular/material/icon";
-import { MatButtonModule } from "@angular/material/button";
-import { MatDialog } from "@angular/material/dialog";
+import { MatTooltip } from "@angular/material/tooltip";
+import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { concat, last, take } from "rxjs";
-
-import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
-import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
-import { TableUtilsService, TableUtilsServiceInterface } from "../../../services/table-utils/table-utils.service";
-import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
+import { AuthServiceInterface, AuthService } from "src/app/services/auth/auth.service";
+import { ContentServiceInterface, ContentService } from "src/app/services/content/content.service";
+import { DialogServiceInterface, DialogService } from "src/app/services/dialog/dialog.service";
+import { NotificationServiceInterface, NotificationService } from "src/app/services/notification/notification.service";
 import {
+  RealmServiceInterface,
+  RealmService,
   RealmRow,
   Realms,
-  RealmService,
-  RealmServiceInterface,
   ResolverGroup
-} from "../../../services/realm/realm.service";
-import { NodeInfo, SystemService, SystemServiceInterface } from "../../../services/system/system.service";
-import { NotificationService, NotificationServiceInterface } from "../../../services/notification/notification.service";
-import { SimpleConfirmationDialogComponent } from "../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
-
+} from "src/app/services/realm/realm.service";
+import { ResolverServiceInterface, ResolverService } from "src/app/services/resolver/resolver.service";
+import { SystemServiceInterface, SystemService, NodeInfo } from "src/app/services/system/system.service";
+import { TableUtilsServiceInterface, TableUtilsService } from "src/app/services/table-utils/table-utils.service";
 import { UserNewResolverComponent } from "../user-new-resolver/user-new-resolver.component";
-import { MatTooltip } from "@angular/material/tooltip";
-import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
-import { ResolverService, ResolverServiceInterface } from "../../../services/resolver/resolver.service";
-import { DialogService, DialogServiceInterface } from "../../../services/dialog/dialog.service";
 
 type ResolverWithPriority = { name: string; priority: number | null };
 type NodeResolversMap = { [nodeId: string]: ResolverWithPriority[] };
@@ -126,10 +124,10 @@ export class RealmTableComponent {
   protected readonly realmService: RealmServiceInterface = inject(RealmService);
   protected readonly systemService: SystemServiceInterface = inject(SystemService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
+  protected readonly dialog = inject(MatDialog);
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly resolverService: ResolverServiceInterface = inject(ResolverService);
-  protected readonly dialog: MatDialog = inject(MatDialog);
 
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: any;
@@ -261,7 +259,6 @@ export class RealmTableComponent {
         if (!normalizedFilter) {
           return true;
         }
-        // simple contains across name and resolvers text
         return (
           (data.name ?? "").toLowerCase().includes(normalizedFilter) ||
           (data.resolversText ?? "").toLowerCase().includes(normalizedFilter)
@@ -588,7 +585,6 @@ export class RealmTableComponent {
           if (!result) {
             return;
           }
-
           this.realmService.deleteRealm(row.name).subscribe({
             next: () => {
               this.notificationService.openSnackBar($localize`Realm "${row.name}" deleted.`);

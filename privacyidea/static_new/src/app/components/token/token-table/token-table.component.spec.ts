@@ -43,8 +43,8 @@ import { MockAuthService } from "../../../../testing/mock-services/mock-auth-ser
 import { MockDialogService } from "../../../../testing/mock-services/mock-dialog-service";
 import { MockMatDialogRef } from "../../../../testing/mock-mat-dialog-ref";
 
-class MockMatDialog {
-  result = true;
+class MatDialogMock {
+  result = { confirmed: true };
   open = jest.fn(() => ({
     afterClosed: () => of(this.result)
   }));
@@ -60,7 +60,7 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
   let tokenService: MockTokenService;
   let authServiceMock: MockAuthService;
   let dialogServiceMock: MockDialogService;
-  let dialogMock: MockMatDialog;
+  let dialogMock: MatDialogMock;
 
   beforeAll(() => {
     Object.defineProperty(window, "matchMedia", {
@@ -112,7 +112,7 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
         { provide: DialogService, useClass: MockDialogService },
         { provide: AuthService, useClass: MockAuthService },
         { provide: ContainerService, useClass: MockContainerService },
-        { provide: MatDialog, useClass: MockMatDialog },
+        { provide: MatDialog, useClass: MatDialogMock },
         MockLocalService,
         MockNotificationService
       ]
@@ -127,7 +127,7 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
     tokenService = TestBed.inject(TokenService) as unknown as MockTokenService;
     authServiceMock = TestBed.inject(AuthService) as unknown as MockAuthService;
     dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
-    dialogMock = TestBed.inject(MatDialog) as unknown as MockMatDialog;
+    dialogMock = TestBed.inject(MatDialog) as unknown as MatDialogMock;
 
     tokenService.toggleActive.mockReturnValue(of({}));
     tokenService.resetFailCount.mockReturnValue(of(null));
@@ -311,50 +311,5 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
       expect.arrayContaining(["serial", "tokentype", "description", "container_serial", "active", "failcount"])
     );
     expect(c2.columnKeysSelfService).not.toEqual(expect.arrayContaining(["revoke", "delete"]));
-  });
-
-  it("revokeToken: always calls service; reloads only when dialog returns true", () => {
-    const serial = "R-1";
-    let dialogRefMock = new MockMatDialogRef();
-    dialogRefMock.afterClosed.mockReturnValue(of(true));
-    dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
-
-    component.revokeToken(serial);
-
-    expect(dialogServiceMock.openDialog).toHaveBeenCalledTimes(1);
-    expect((tokenService as any).revokeToken).toHaveBeenCalledWith(serial);
-    expect(tokenService.tokenResource.reload).toHaveBeenCalledTimes(1);
-
-    jest.clearAllMocks();
-
-    dialogRefMock = new MockMatDialogRef();
-    dialogRefMock.afterClosed.mockReturnValue(of(false));
-    dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
-    component.revokeToken(serial);
-    expect(dialogServiceMock.openDialog).toHaveBeenCalledTimes(1);
-    expect((tokenService as any).revokeToken).toHaveBeenCalledWith(serial);
-    expect(tokenService.tokenResource.reload).not.toHaveBeenCalled();
-  });
-
-  it("deleteToken: always calls service; reloads only when dialog returns true", () => {
-    const serial = "D-1";
-
-    let dialogRefMock = new MockMatDialogRef();
-    dialogRefMock.afterClosed.mockReturnValue(of(true));
-    dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
-    component.deleteToken(serial);
-    expect(dialogServiceMock.openDialog).toHaveBeenCalledTimes(1);
-    expect((tokenService as any).deleteToken).toHaveBeenCalledWith(serial);
-    expect(tokenService.tokenResource.reload).toHaveBeenCalledTimes(1);
-
-    jest.clearAllMocks();
-
-    dialogRefMock = new MockMatDialogRef();
-    dialogRefMock.afterClosed.mockReturnValue(of(false));
-    dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
-    component.deleteToken(serial);
-    expect(dialogServiceMock.openDialog).toHaveBeenCalledTimes(1);
-    expect((tokenService as any).deleteToken).toHaveBeenCalledWith(serial);
-    expect(tokenService.tokenResource.reload).not.toHaveBeenCalled();
   });
 });

@@ -91,7 +91,7 @@
   <h3>Options</h3>
   @for (option of Object.keys(task().options); track option) {
     <div class="action-card">
-      <div class="action-row">
+      <div class="action-card-row">
         <span class="action-label">{{ option }}</span>
         @if (!isBooleanAction(task().options[option])) {
           <span class="action-value">{{ task().options[option] }}</span>

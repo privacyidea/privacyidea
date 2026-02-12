@@ -14,7 +14,16 @@
   }
 
   mat-expansion-panel-header {
-    padding: 0 var(--global-padding);
+    padding: 0 var(--half-global-padding);
+  }
+
+  mat-panel-title {
+    flex: 1 1 0;
+    overflow: auto;
+  }
+
+  mat-panel-description {
+    flex: 2 1 0;
   }
 
   .header-description {

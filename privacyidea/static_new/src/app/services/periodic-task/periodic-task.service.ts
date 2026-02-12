@@ -16,18 +16,18 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { AuthService, AuthServiceInterface } from "../auth/auth.service";
-import { inject, Injectable, signal, WritableSignal } from "@angular/core";
-import { ContentService, ContentServiceInterface } from "../content/content.service";
+
+import { HttpResourceRef, HttpClient, httpResource } from "@angular/common/http";
+import { WritableSignal, Injectable, inject, signal } from "@angular/core";
+import { Observable, lastValueFrom, catchError, of, throwError, forkJoin } from "rxjs";
 import { environment } from "../../../environments/environment";
-import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
 import { PiResponse } from "../../app.component";
-import { ROUTE_PATHS } from "../../route_paths";
-import { forkJoin, lastValueFrom, Observable, of, throwError } from "rxjs";
-import { catchError } from "rxjs/operators";
-import { NotificationService } from "../notification/notification.service";
-import { MessageDialogComponent } from "../../components/shared/dialog/message-dialog/message-dialog.component";
 import { SimpleConfirmationDialogComponent } from "../../components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { ROUTE_PATHS } from "../../route_paths";
+import { AuthServiceInterface, AuthService } from "../auth/auth.service";
+import { ContentServiceInterface, ContentService } from "../content/content.service";
+import { DialogReturnData, DialogService, DialogServiceInterface } from "../dialog/dialog.service";
+import { NotificationService } from "../notification/notification.service";
 
 export type PeriodicTask = {
   id: string;
@@ -97,11 +97,10 @@ export interface PeriodicTaskServiceInterface {
   periodicTasksResource: HttpResourceRef<PiResponse<PeriodicTask[]> | undefined>;
   periodicTaskModuleResource: HttpResourceRef<PiResponse<PeriodicTaskModule[]> | undefined>;
   moduleOptions: WritableSignal<Record<string, Record<string, PeriodicTaskOption>>>;
-
   enablePeriodicTask(taskId: string): Promise<any>;
   disablePeriodicTask(taskId: string): Promise<any>;
   deletePeriodicTask(taskId: string): Observable<PiResponse<number, any>>;
-  deleteWithConfirmDialog(task: PeriodicTask, dialog: any, afterDelete?: () => void): void;
+  deleteWithConfirmDialog(task: PeriodicTask): Promise<PiResponse<number, any> | undefined>;
   savePeriodicTask(task: PeriodicTask): Observable<PiResponse<number, any> | undefined>;
   fetchAllModuleOptions(): void;
 }
@@ -112,6 +111,7 @@ export interface PeriodicTaskServiceInterface {
 export class PeriodicTaskService implements PeriodicTaskServiceInterface {
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
+  private readonly dialogService: DialogServiceInterface = inject(DialogService);
   private readonly http: HttpClient = inject(HttpClient);
   private readonly notificationService = inject(NotificationService);
 
@@ -180,35 +180,34 @@ export class PeriodicTaskService implements PeriodicTaskServiceInterface {
     );
   }
 
-  deleteWithConfirmDialog(task: PeriodicTask, dialog: any, afterDelete?: () => void) {
-    dialog
-      .open(SimpleConfirmationDialogComponent, {
-        data: {
-          serialList: [task.name],
-          title: "Delete Periodic Task",
-          type: "periodicTask",
-          action: "delete",
-          numberOfTokens: 1
-        }
-      })
-      .afterClosed()
-      .subscribe({
-        next: (result: any) => {
-          if (result) {
-            this.deletePeriodicTask(task.id).subscribe({
-              next: (response: PiResponse<number, any>) => {
-                this.notificationService.openSnackBar("Successfully deleted periodic task.");
-                if (afterDelete) {
-                  afterDelete();
-                }
-              },
-              error: (err) => {
-                // error already handled
-              }
-            });
+  async deleteWithConfirmDialog(task: PeriodicTask): Promise<PiResponse<number, any> | undefined> {
+    const confirmation = await lastValueFrom(
+      this.dialogService
+        .openDialog({
+          component: SimpleConfirmationDialogComponent,
+          data: {
+            title: $localize`Delete Periodic Task`,
+            items: [task.name],
+            itemType: $localize`periodic task`,
+            confirmAction: { label: $localize`Delete`, value: true, type: "destruct" },
+            cancelAction: { label: $localize`Cancel`, value: false, type: "cancel" }
           }
-        }
-      });
+        })
+        .afterClosed()
+    );
+    if (!confirmation) {
+      return;
+    }
+    try {
+      const response = await lastValueFrom(this.deletePeriodicTask(task.id));
+      if (response?.result?.value !== undefined) {
+        this.notificationService.openSnackBar("Successfully deleted periodic task.");
+      }
+      return response;
+    } catch (error) {
+      // error already handled in deletePeriodicTask
+    }
+    return undefined;
   }
 
   convertNodesArrayToString(nodes: any): string {

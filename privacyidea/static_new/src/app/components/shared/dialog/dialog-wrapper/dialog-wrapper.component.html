@@ -36,7 +36,10 @@
           [class.dialog-action-button-destruct]="action.type === 'destruct'"
           [class.dialog-action-button-cancel]="action.type === 'cancel'"
           (click)="onActionClick(action)"
-          [disabled]="isDisabled(action)">
+          [disabled]="action.disabled">
+          @if (action.icon) {
+            <mat-icon>{{ action.icon }}</mat-icon>
+          }
           {{ action.label }}
         </button>
       }

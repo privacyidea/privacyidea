@@ -222,7 +222,7 @@ describe("ContainerTableSelfServiceComponent", () => {
     TestBed.resetTestingModule();
 
     dialogOpen = jest.fn().mockReturnValue({
-      afterClosed: () => of(true) // default: confirm
+      afterClosed: () => of({ confirmed: true }) // default: confirm
     });
 
     await TestBed.configureTestingModule({
@@ -286,7 +286,7 @@ describe("ContainerTableSelfServiceComponent", () => {
 
   it("deleteContainer does nothing when dialog closes with falsy value", () => {
     // Make dialog return false now
-    (dialogOpen as jest.Mock).mockReturnValueOnce({ afterClosed: () => of(false) });
+    (dialogOpen as jest.Mock).mockReturnValueOnce({ afterClosed: () => of({ confirmed: false }) });
 
     const serial = "CONT-NOOP";
     const deleteSpy = jest.spyOn(containerService, "deleteContainer");

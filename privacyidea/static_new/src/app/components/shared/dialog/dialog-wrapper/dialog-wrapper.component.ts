@@ -23,12 +23,13 @@ import { DialogAction } from "../../../../models/dialog";
 import { CommonModule } from "@angular/common";
 import { MatDialogModule } from "@angular/material/dialog";
 import { MatIconModule } from "@angular/material/icon";
+import { MatIconButton } from "@angular/material/button";
 
 @Component({
   selector: "app-dialog-wrapper",
   templateUrl: "./dialog-wrapper.component.html",
   standalone: true,
-  imports: [CommonModule, MatDialogModule, MatIconModule],
+  imports: [CommonModule, MatDialogModule, MatIconModule, MatIconButton],
   styleUrls: ["./dialog-wrapper.component.scss"]
 })
 export class DialogWrapperComponent<R = any> {
