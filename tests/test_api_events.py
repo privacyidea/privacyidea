@@ -1,15 +1,16 @@
+import mock
+
+from privacyidea.lib.config import set_privacyidea_config
 from privacyidea.lib.container import init_container, add_token_to_container, find_container_by_serial
 from privacyidea.lib.event import set_event, delete_event
 from privacyidea.lib.eventhandler.containerhandler import (ContainerEventHandler, ACTION_TYPE as C_ACTION_TYPE)
 from privacyidea.lib.eventhandler.customuserattributeshandler import ACTION_TYPE, USER_TYPE
-from privacyidea.lib.policy import SCOPE, set_policy, delete_policy
 from privacyidea.lib.policies.actions import PolicyAction
+from privacyidea.lib.policy import SCOPE, set_policy, delete_policy
 from privacyidea.lib.token import init_token, remove_token
 from privacyidea.lib.user import User
-from .base import MyApiTestCase, FakeFlaskG
 from . import smtpmock
-import mock
-from privacyidea.lib.config import set_privacyidea_config
+from .base import MyApiTestCase, FakeFlaskG
 from .test_lib_events import ContainerEventTestCase
 from .test_lib_tokencontainer import MockSmartphone
 
@@ -812,7 +813,7 @@ class EventWrapperTestCase(MyApiTestCase):
             # Check warning in log
             expected = "Failed to send a notification email to user {'email': ['pretzel@example.com']}"
             mock_log.assert_called_once_with(expected)
-            msg = smtpmock.get_sent_message()
+            msg = smtpmock.get_sent_message().decode('utf-8')
             self.assertIn('To: pretzel@example.com', msg)
         delete_event(r)
 
@@ -845,7 +846,7 @@ class EventWrapperTestCase(MyApiTestCase):
             expected = "Failed to send a notification email to user {'email': ['donut@example.com']}"
             mock_log.assert_called_once_with(expected)
 
-            msg = smtpmock.get_sent_message()
+            msg = smtpmock.get_sent_message().decode('utf-8')
             self.assertIn('To: donut@example.com', msg)
         delete_event(r)
 
@@ -944,7 +945,8 @@ class ContainerHandlerTestCase(MyApiTestCase):
                                position="post")
 
         # Init rollover
-        set_policy("policy", scope=SCOPE.CONTAINER, action={PolicyAction.CONTAINER_SERVER_URL: "https://pi.net/"}, priority=2)
+        set_policy("policy", scope=SCOPE.CONTAINER, action={PolicyAction.CONTAINER_SERVER_URL: "https://pi.net/"},
+                   priority=2)
         result = self.request_assert_success(f'container/register/initialize',
                                              {"container_serial": container.serial, "rollover": True},
                                              self.at, 'POST')
@@ -1071,7 +1073,7 @@ class ContainerHandlerTestCase(MyApiTestCase):
             # Check warning in log
             expected = "Failed to send a notification email to user {'email': ['pretzel@example.com']}"
             mock_log.assert_called_once_with(expected)
-            msg = smtpmock.get_sent_message()
+            msg = smtpmock.get_sent_message().decode('utf-8')
             self.assertIn('To: pretzel@example.com', msg)
             self.assertIn("Container Registration", msg)
         delete_event(r)
@@ -1126,7 +1128,7 @@ class ContainerHandlerTestCase(MyApiTestCase):
             # Check warning in log
             expected = "Failed to send a notification email to user {'email': ['pretzel@example.com']}"
             mock_log.assert_called_once_with(expected)
-            msg = smtpmock.get_sent_message()
+            msg = smtpmock.get_sent_message().decode('utf-8')
             self.assertIn('To: pretzel@example.com', msg)
             self.assertIn("Your container was unregistered.", msg)
         delete_event(r)
@@ -1171,7 +1173,8 @@ class ContainerHandlerTestCase(MyApiTestCase):
         # Register container
         mock_smph = ContainerEventTestCase.register_smartphone(container)
         set_policy("policy", scope=SCOPE.CONTAINER,
-                   action={PolicyAction.CONTAINER_SERVER_URL: "https://pi.net/", PolicyAction.CONTAINER_CLIENT_ROLLOVER: True})
+                   action={PolicyAction.CONTAINER_SERVER_URL: "https://pi.net/",
+                           PolicyAction.CONTAINER_CLIENT_ROLLOVER: True})
         # Create Challenge for rollover
         scope = "https://pi.net/container/rollover"
         challenge_data = container.create_challenge(scope)
@@ -1188,7 +1191,7 @@ class ContainerHandlerTestCase(MyApiTestCase):
             # Check warning in log
             expected = "Failed to send a notification email to user {'email': ['pretzel@example.com']}"
             mock_log.assert_called_once_with(expected)
-            msg = smtpmock.get_sent_message()
+            msg = smtpmock.get_sent_message().decode('utf-8')
             self.assertIn('To: pretzel@example.com', msg)
             self.assertIn("Container Rollover", msg)
         delete_event(r)
@@ -1240,7 +1243,8 @@ class ContainerHandlerTestCase(MyApiTestCase):
                          support_tls=False)
 
         set_policy("policy", scope=SCOPE.CONTAINER,
-                   action={PolicyAction.CONTAINER_SERVER_URL: "https://pi.net/", PolicyAction.CONTAINER_CLIENT_ROLLOVER: True})
+                   action={PolicyAction.CONTAINER_SERVER_URL: "https://pi.net/",
+                           PolicyAction.CONTAINER_CLIENT_ROLLOVER: True})
 
         # Register container
         ContainerEventTestCase.register_smartphone(container)
@@ -1253,7 +1257,7 @@ class ContainerHandlerTestCase(MyApiTestCase):
             # Check warning in log
             expected = "Failed to send a notification email to user {'email': ['pretzel@example.com']}"
             mock_log.assert_called_once_with(expected)
-            msg = smtpmock.get_sent_message()
+            msg = smtpmock.get_sent_message().decode('utf-8')
             self.assertIn('To: pretzel@example.com', msg)
             self.assertIn("Container Rollover", msg)
 
@@ -1289,7 +1293,8 @@ class ContainerHandlerTestCase(MyApiTestCase):
                          support_tls=False)
 
         set_policy("policy", scope=SCOPE.CONTAINER,
-                   action={PolicyAction.CONTAINER_SERVER_URL: "https://pi.net/", PolicyAction.CONTAINER_CLIENT_ROLLOVER: True})
+                   action={PolicyAction.CONTAINER_SERVER_URL: "https://pi.net/",
+                           PolicyAction.CONTAINER_CLIENT_ROLLOVER: True})
 
         with mock.patch("logging.Logger.warning") as mock_log:
             self.request_assert_success(f'/container/register/initialize',

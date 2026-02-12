@@ -1,7 +1,7 @@
 import logging
 from datetime import datetime, timezone
 from typing import Union
-
+from dataclasses import dataclass
 from sqlalchemy import select
 from webauthn.helpers import bytes_to_base64url
 
@@ -68,7 +68,13 @@ def create_fido2_challenge(rp_id: str, user_verification: str = "preferred", tra
     }
 
 
-def verify_fido2_challenge(transaction_id: str, token: TokenClass, params: dict) -> int:
+@dataclass
+class FIDOVerificationResult:
+    success: int
+    challenge: Challenge
+
+
+def verify_fido2_challenge(transaction_id: str, token: TokenClass, params: dict) -> FIDOVerificationResult:
     """
     Verify the response for a fido2 challenge with the given token.
     Params is required to have the keys:
@@ -126,10 +132,11 @@ def verify_fido2_challenge(transaction_id: str, token: TokenClass, params: dict)
         options.update({"credential_id": get_required_one_of(params, ["credential_id", "credentialid"])})
     options.update({"user": token.user})
     ret = token.check_otp(None, options=options)
+    result = FIDOVerificationResult(ret, challenge)
     # On success, remove all challenges with the transaction_id
-    if ret > 0:
+    if result.success > 0:
         for db_challenge in db_challenges:
             db_challenge.delete()
         # Update the last_auth token info
         token.add_tokeninfo(PolicyAction.LASTAUTH, datetime.now(timezone.utc).isoformat(timespec="seconds"))
-    return ret
+    return result
