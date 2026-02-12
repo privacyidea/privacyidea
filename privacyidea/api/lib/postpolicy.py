@@ -573,8 +573,6 @@ def offline_info(request, response):
                 if auth_items:
                     content["auth_items"] = auth_items
                     response.set_data(json.dumps(content))
-                    # Also update JSON in the response object
-                    response.get_jsons()
             except Exception as exx:
                 log.info(exx)
     return response
