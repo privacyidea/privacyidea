@@ -32,11 +32,13 @@ export class YubikeyConfigComponent {
   onDeleteEntry = output<string>();
 
   newYubikeyApiId = signal('');
+  newYubikeyApiKey = signal('');
 
   createNewKey() {
     if (this.newYubikeyApiId()) {
       this.onYubikeyCreateNewKey.emit(this.newYubikeyApiId());
       this.newYubikeyApiId.set('');
+      this.newYubikeyApiKey.set('');
     }
   }
 

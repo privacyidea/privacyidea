@@ -14,9 +14,8 @@
             but can also be handled by the
       <a
         href="https://privacyidea.readthedocs.io/en/latest/modules/lib/tokentypes/yubikey.html#privacyidea.lib.tokens.yubikeytoken.YubikeyTokenClass.api_endpoint"
-        target="_blank">Yubico Validation Protocol
+        target="_blank">Yubico Validation Protocol.
       </a>
-            .
     </p>
 
     <table class="table">
@@ -57,7 +56,8 @@
       class="width-33">
       <mat-label i18n>Client ID</mat-label>
       <input
-        [(ngModel)]="newYubikeyApiId"
+        [ngModel]="newYubikeyApiId()"
+        (ngModelChange)="newYubikeyApiId.set($event)"
         matInput
         placeholder="Client ID"
         required>
@@ -67,7 +67,8 @@
       class="width-33">
       <mat-label i18n>API Key</mat-label>
       <input
-        [(ngModel)]="formData()['yubikey.apiid.' + newYubikeyApiId()]"
+        [ngModel]="newYubikeyApiKey()"
+        (ngModelChange)="newYubikeyApiKey.set($event)"
         matInput
         placeholder="API Key"
         required>
