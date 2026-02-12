@@ -77,13 +77,13 @@ describe("TokenTypeConfigComponent", () => {
 
   it("should call saveSystemConfig on save", () => {
     const systemService = TestBed.inject(SystemService);
-    const saveSpy = jest.spyOn(systemService, 'saveSystemConfig');
+    const saveSpy = jest.spyOn(systemService, "saveSystemConfig");
     component.save();
     expect(saveSpy).toHaveBeenCalledWith(component.formData());
   });
 
   it("should add new question to formData and increment nextQuestion without saving", () => {
-    const saveSpy = jest.spyOn(component, 'save');
+    const saveSpy = jest.spyOn(component, "save");
     const initialNext = component.nextQuestion();
     const newQuestion = "My new question?";
 
@@ -96,8 +96,8 @@ describe("TokenTypeConfigComponent", () => {
 
   it("should call deleteSystemConfig and reload on deleteSystemEntry", () => {
     const systemService = TestBed.inject(SystemService);
-    const deleteSpy = jest.spyOn(systemService as any, 'deleteSystemConfig');
-    const reloadSpy = jest.spyOn((systemService as any).systemConfigResource, 'reload');
+    const deleteSpy = jest.spyOn(systemService as any, "deleteSystemConfig");
+    const reloadSpy = jest.spyOn((systemService as any).systemConfigResource, "reload");
 
     component.deleteSystemEntry("question.question.14");
 
@@ -114,7 +114,7 @@ describe("TokenTypeConfigComponent", () => {
 
   it("should create new yubikey key", async () => {
     const promise = component.yubikeyCreateNewKey("myID");
-    
+
     const req = httpMock.expectOne(req => req.url.endsWith("/system/random?len=20&encode=b64"));
     expect(req.request.method).toBe("GET");
     req.flush({ result: { status: true, value: "new-random-key" } });
@@ -125,18 +125,18 @@ describe("TokenTypeConfigComponent", () => {
 
   it("should show error if yubikeyCreateNewKey called without apiId", () => {
     const notificationService = component.notificationService;
-    const snackBarSpy = jest.spyOn(notificationService, 'openSnackBar');
+    const snackBarSpy = jest.spyOn(notificationService, "openSnackBar");
     component.yubikeyCreateNewKey("");
     expect(snackBarSpy).toHaveBeenCalledWith(expect.stringContaining("Please enter a Client ID"));
   });
 
   it("should handle error in yubikeyCreateNewKey", async () => {
     const notificationService = component.notificationService;
-    const snackBarSpy = jest.spyOn(notificationService, 'openSnackBar');
+    const snackBarSpy = jest.spyOn(notificationService, "openSnackBar");
     const promise = component.yubikeyCreateNewKey("myID");
-    
+
     const req = httpMock.expectOne(req => req.url.endsWith("/system/random?len=20&encode=b64"));
-    req.error(new ProgressEvent('error'));
+    req.error(new ProgressEvent("error"));
 
     await promise;
     expect(snackBarSpy).toHaveBeenCalledWith(expect.stringContaining("Failed to generate API key"));

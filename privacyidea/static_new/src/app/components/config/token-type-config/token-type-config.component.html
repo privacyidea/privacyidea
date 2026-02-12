@@ -29,18 +29,39 @@
     </button>
   </div>
   <mat-accordion multi="true">
-    <app-hotp-config [formData]="formData()" [hashLibs]="hashLibs()"></app-hotp-config>
-    <app-totp-config [formData]="formData()" [hashLibs]="hashLibs()" [totpSteps]="totpSteps()"></app-totp-config>
+    <app-hotp-config
+      [formData]="formData()"
+      [hashLibs]="hashLibs()"></app-hotp-config>
+    <app-totp-config
+      [formData]="formData()"
+      [hashLibs]="hashLibs()"
+      [totpSteps]="totpSteps()"></app-totp-config>
     <app-u2f-config [formData]="formData()"></app-u2f-config>
     <app-webauthn-config [formData]="formData()"></app-webauthn-config>
-    <app-radius-config [formData]="formData()" [radiusServers]="systemService.radiusServerResource.value()?.result?.value ?? []"></app-radius-config>
+    <app-radius-config
+      [formData]="formData()"
+      [radiusServers]="systemService.radiusServerResource.value()?.result?.value ?? []"></app-radius-config>
     <app-remote-config [formData]="formData()"></app-remote-config>
-    <app-sms-config [formData]="formData()" [smsGateways]="smsGatewayNames()"></app-sms-config>
+    <app-sms-config
+      [formData]="formData()"
+      [smsGateways]="smsGatewayNames()"></app-sms-config>
     <app-tiqr-config [formData]="formData()"></app-tiqr-config>
-    <app-email-config [formData]="formData()" [smtpServers]="smtpServerIdentifiers()"></app-email-config>
-    <app-questionnaire-config (onAddQuestion)="addQuestion($event)" (onDeleteEntry)="deleteSystemEntry($event)" [formData]="formData()" [questionKeys]="questionKeys"></app-questionnaire-config>
+    <app-email-config
+      [formData]="formData()"
+      [smtpServers]="smtpServerIdentifiers()"></app-email-config>
+    <app-questionnaire-config
+      (onAddQuestion)="addQuestion($event)"
+      (onDeleteEntry)="deleteSystemEntry($event)"
+      [formData]="formData()"
+      [questionKeys]="questionKeys"></app-questionnaire-config>
     <app-yubico-config [formData]="formData()"></app-yubico-config>
-    <app-yubikey-config (onDeleteEntry)="deleteSystemEntry($event)" (onYubikeyCreateNewKey)="yubikeyCreateNewKey($event)" [formData]="formData()" [yubikeyApiIds]="yubikeyApiIds"></app-yubikey-config>
-    <app-daypassword-config [formData]="formData()" [hashLibs]="hashLibs()"></app-daypassword-config>
+    <app-yubikey-config
+      (onDeleteEntry)="deleteSystemEntry($event)"
+      (onYubikeyCreateNewKey)="yubikeyCreateNewKey($event)"
+      [formData]="formData()"
+      [yubikeyApiIds]="yubikeyApiIds"></app-yubikey-config>
+    <app-daypassword-config
+      [formData]="formData()"
+      [hashLibs]="hashLibs()"></app-daypassword-config>
   </mat-accordion>
 </div>

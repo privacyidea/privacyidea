@@ -1,3 +1,21 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
 <mat-expansion-panel>
   <mat-expansion-panel-header>
     <mat-panel-title i18n>Yubikey Token Settings</mat-panel-title>
@@ -56,8 +74,8 @@
       class="width-33">
       <mat-label i18n>Client ID</mat-label>
       <input
-        [ngModel]="newYubikeyApiId()"
         (ngModelChange)="newYubikeyApiId.set($event)"
+        [ngModel]="newYubikeyApiId()"
         matInput
         placeholder="Client ID"
         required>
@@ -67,8 +85,8 @@
       class="width-33">
       <mat-label i18n>API Key</mat-label>
       <input
-        [ngModel]="newYubikeyApiKey()"
         (ngModelChange)="newYubikeyApiKey.set($event)"
+        [ngModel]="newYubikeyApiKey()"
         matInput
         placeholder="API Key"
         required>
