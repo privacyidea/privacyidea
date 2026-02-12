@@ -580,7 +580,11 @@ class PushAPITestCase(MyApiTestCase):
             challenge_messages = [m.strip() for m in detail.get("message").split(",")]
             challenge = get_challenges(serial=self.serial_push, transaction_id=transaction_id)[0]
             # The correct answer is always appended to the available options
-            presence_answer = challenge.get_data().split(',').pop()
+            # Updated to use JSON structure
+            challenge_data = challenge.get_data()
+            self.assertIsInstance(challenge_data, dict)
+            self.assertEqual(challenge_data.get("type"), "presence")
+            presence_answer = challenge_data.get("correct_answer")
             # Check that we get a presence required message
             challenge_text = DEFAULT_CHALLENGE_TEXT + f" Please press: {presence_answer}"
             self.assertTrue(challenge_text in challenge_messages)
@@ -769,3 +773,105 @@ class PushAPITestCase(MyApiTestCase):
         delete_policy("pol_push_config")
         delete_policy("pol_push_require_presence")
         delete_policy("pol_push_wait")
+
+    def test_17_push_require_presence_reverse(self):
+        self.setUp_user_realms()
+        # Setup PUSH policies
+        set_policy("push_config", scope=SCOPE.ENROLL,
+                   action="{0!s}={1!s},{2!s}={3!s}".format(
+                       PUSH_ACTION.FIREBASE_CONFIG, POLL_ONLY,
+                       PUSH_ACTION.REGISTRATION_URL, REGISTRATION_URL))
+        # Add the require_presence_reverse policy
+        set_policy("push_require_presence_reverse", scope=SCOPE.AUTH,
+                   action=f"{PUSH_ACTION.REQUIRE_PRESENCE_REVERSE}=1")
+        # Create push token for user
+        # 1st step
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"type": "push",
+                                                 "pin": "push_pin",
+                                                 "user": "selfservice",
+                                                 "realm": self.realm1,
+                                                 "serial": self.serial_push,
+                                                 "genkey": 1},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            detail = res.json.get("detail")
+            enrollment_credential = detail.get("enrollment_credential")
+
+        # 2nd step: as performed by the smartphone
+        with self.app.test_request_context('/ttype/push',
+                                           method='POST',
+                                           data={"enrollment_credential": enrollment_credential,
+                                                 "serial": self.serial_push,
+                                                 "pubkey": self.smartphone_public_key_pem_urlsafe,
+                                                 "fbtoken": "firebaseT"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            self.assertTrue(res.json.get("result").get("status"), res.json)
+            self.assertTrue(res.json.get("result").get("value"), res.json)
+            detail = res.json.get("detail")
+            # Now the smartphone gets a public key from the server
+            self.assertIn("public_key", detail, detail)
+            self.assertEqual(ROLLOUTSTATE.ENROLLED, detail.get("rollout_state"), detail)
+
+        #############################################################
+        # Run authentication with push token
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "selfservice",
+                                                 "pass": "push_pin"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            detail = res.json.get("detail")
+            # Get the challenge data
+            transaction_id = detail.get("transaction_id")
+            self.assertTrue(transaction_id)
+            # The result should be a challenge
+            self.assertEqual(AUTH_RESPONSE.CHALLENGE,
+                             res.json.get("result").get("authentication"), res.json)
+
+            # Check that the challenge data contains the OTP
+            challenge = get_challenges(serial=self.serial_push, transaction_id=transaction_id)[0]
+            challenge_data = challenge.get_data()
+            self.assertIsInstance(challenge_data, dict)
+            self.assertEqual(challenge_data.get("type"), "reverse")
+            otp = challenge_data.get("otp")
+            self.assertTrue(otp)
+            self.assertEqual(len(str(otp)), 6) # Default length
+
+        # We do poll only, so we need to poll to verify the app gets the OTP
+        timestamp = datetime.datetime.now(tz=datetime.timezone.utc).isoformat()
+        sign_string = "{serial}|{timestamp}".format(serial=self.serial_push,
+                                                    timestamp=timestamp)
+        sig = self.smartphone_private_key.sign(sign_string.encode('utf8'),
+                                               padding.PKCS1v15(),
+                                               hashes.SHA256())
+        # now check that we receive the challenge when polling
+        with self.app.test_request_context('/ttype/push',
+                                           method='GET',
+                                           query_string={"serial": self.serial_push,
+                                                         "timestamp": timestamp,
+                                                         "signature": b32encode(sig)}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            value = res.json.get("result").get("value")
+            # Check that the OTP is in the response
+            self.assertEqual(str(otp), value[0].get("otp"))
+
+        # Finalize authentication with the OTP
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "selfservice", "pass": otp,
+                                                 "transaction_id": transaction_id},
+                                           headers={"user_agent": "privacyidea-cp/2.0"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            self.assertTrue(res.json.get("result").get("status"), res.json)
+            self.assertTrue(res.json.get("result").get("value"), res.json)
+            self.assertEqual(AUTH_RESPONSE.ACCEPT,
+                             res.json.get("result").get("authentication"), res.json)
+
+        remove_token(self.serial_push)
+        delete_policy("push_config")
+        delete_policy("push_require_presence_reverse")
