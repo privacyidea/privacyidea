@@ -2579,6 +2579,11 @@ def get_static_policy_definitions(scope=None):
                 'desc': _('If enabled, the user can choose to skip enrollment of the token during authentication. '
                           'If disabled, the user must enroll a token. This is also the default behavior.'),
             },
+            PolicyAction.ENROLL_VIA_MULTICHALLENGE_PASSKEY_OFFLINE: {
+                'type': 'bool',
+                'desc': _('If enabled, a successful registration with the enroll_via_multichallenge action for passkeys '
+                          'will directly mark the token for offline use and send the offline data.')
+            },
             PolicyAction.PASSTHRU: {
                 'type': 'str',
                 'value': radiusconfigs,

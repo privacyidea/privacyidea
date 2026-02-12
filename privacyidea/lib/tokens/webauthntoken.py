@@ -762,7 +762,7 @@ class WebAuthnTokenClass(TokenClass):
         challengetext = get_optional(options, f"{self.get_class_type()}_{PolicyAction.CHALLENGETEXT!s}")
         return challengetext.format(self.token.description) if challengetext else ""
 
-    def _get_webauthn_user(self, user):
+    def _get_webauthn_user(self, user: User):
         return WebAuthnUser(
             user_id=self.token.serial,
             user_name=user.login,

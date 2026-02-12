@@ -157,7 +157,7 @@ def getParam(param, key, optional=True, default=None, allow_empty=True, allowed_
     return ret
 
 
-def send_result(obj, rid=1, details=None) -> Response:
+def send_result(obj, rid=1, details=None, **kwargs) -> Response:
     """
     sendResult - return a json result document
 
@@ -171,7 +171,7 @@ def send_result(obj, rid=1, details=None) -> Response:
     :return: json rendered string result
     :rtype: string
     """
-    return jsonify(prepare_result(obj, rid, details))
+    return jsonify(prepare_result(obj, rid, details, **kwargs))
 
 
 def send_error(errstring, rid=1, context=None, error_code=-311, details=None):
