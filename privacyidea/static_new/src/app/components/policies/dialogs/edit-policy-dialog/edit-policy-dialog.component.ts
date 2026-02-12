@@ -46,14 +46,14 @@ export class EditPolicyDialogComponent extends AbstractDialogComponent<
   readonly editedPolicy = computed(() => ({ ...this.policy(), ...this.policyEdits() }));
   readonly isPolicyEdited = computed(() => Object.keys(this.policyEdits()).length > 0);
 
-  readonly actions: DialogAction<"submit" | null>[] = [
+  readonly actions = computed<DialogAction<"submit" | null>[]>(() => [
     {
       label: this.data.mode === "create" ? $localize`Create Policy` : $localize`Save Changes`,
       value: "submit",
       type: "confirm",
-      disabled: () => !this.canSave()
+      disabled: !this.canSave()
     }
-  ];
+  ]);
 
   addPolicyEdit(edits: Partial<PolicyDetail>): void {
     this.policyEdits.set({ ...this.policyEdits(), ...edits });

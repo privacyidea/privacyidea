@@ -1,7 +1,7 @@
 <app-dialog-wrapper
   [title]="'Copy Policy'"
   (close)="close()"
-  [actions]="actions"
+  [actions]="actions()"
   (onAction)="onAction($event)">
   <div class="dialog-content">
     <p>Please enter a unique name for the copied policy.</p>

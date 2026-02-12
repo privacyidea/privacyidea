@@ -25,12 +25,16 @@ import { MatDialog, MatDialogModule } from "@angular/material/dialog";
 import { RadiusService } from "../../../services/radius/radius.service";
 import { DialogService } from "../../../services/dialog/dialog.service";
 import { signal } from "@angular/core";
+import { MockDialogService } from "src/testing/mock-services/mock-dialog-service";
+import { Subject } from "rxjs";
+import { MockMatDialogRef } from "src/testing/mock-mat-dialog-ref";
 
 describe("RadiusServersComponent", () => {
   let component: RadiusServersComponent;
   let fixture: ComponentFixture<RadiusServersComponent>;
   let radiusServiceMock: any;
-  let dialogServiceMock: any;
+  let dialogServiceMock: MockDialogService;
+  let confirmClosed: Subject<boolean>;
 
   beforeEach(async () => {
     radiusServiceMock = {
@@ -41,27 +45,30 @@ describe("RadiusServersComponent", () => {
       deleteRadiusServer: jest.fn()
     };
 
-    dialogServiceMock = {
-      confirm: jest.fn().mockResolvedValue(true)
-    };
-
     await TestBed.configureTestingModule({
       imports: [RadiusServersComponent, NoopAnimationsModule, MatDialogModule],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: RadiusService, useValue: radiusServiceMock },
-        { provide: DialogService, useValue: dialogServiceMock }
+        { provide: DialogService, useClass: MockDialogService }
       ]
-    }).overrideComponent(RadiusServersComponent, {
-      add: {
-        providers: [
-          { provide: MatDialog, useValue: { open: jest.fn() } }
-        ]
-      }
-    }).compileComponents();
+    })
+      .overrideComponent(RadiusServersComponent, {
+        add: {
+          providers: [{ provide: MatDialog, useValue: { open: jest.fn() } }]
+        }
+      })
+      .compileComponents();
 
     fixture = TestBed.createComponent(RadiusServersComponent);
+
+    dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
+    confirmClosed = new Subject();
+    let dialogRefMock = new MockMatDialogRef();
+    dialogRefMock.afterClosed.mockReturnValue(confirmClosed);
+    dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
+
     component = fixture.componentInstance;
     fixture.detectChanges();
   });
@@ -87,13 +94,15 @@ describe("RadiusServersComponent", () => {
     expect(dialog.open).toHaveBeenCalled();
   });
 
-  it("should delete server after confirmation", async () => {
+  it("should delete server after confirmation", () => {
     const server = radiusServiceMock.radiusServers()[0];
 
     component.deleteServer(server);
 
-    expect(dialogServiceMock.confirm).toHaveBeenCalled();
-    await Promise.resolve();
+    expect(dialogServiceMock.openDialog).toHaveBeenCalled();
+    confirmClosed.next(true);
+    confirmClosed.complete();
+
     expect(radiusServiceMock.deleteRadiusServer).toHaveBeenCalledWith("server1");
   });
 });

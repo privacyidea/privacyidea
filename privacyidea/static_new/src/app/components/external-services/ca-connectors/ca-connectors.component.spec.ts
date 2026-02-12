@@ -25,24 +25,24 @@ import { MatDialog, MatDialogModule } from "@angular/material/dialog";
 import { CaConnectorService } from "../../../services/ca-connector/ca-connector.service";
 import { DialogService } from "../../../services/dialog/dialog.service";
 import { signal } from "@angular/core";
+import { MockDialogService } from "src/testing/mock-services";
+import { Subject } from "rxjs";
+import { MockMatDialogRef } from "src/testing/mock-mat-dialog-ref";
 
 describe("CaConnectorsComponent", () => {
   let component: CaConnectorsComponent;
   let fixture: ComponentFixture<CaConnectorsComponent>;
   let caConnectorServiceMock: any;
-  let dialogServiceMock: any;
+  let dialogServiceMock: MockDialogService;
+  let confirmClosed: Subject<boolean>;
 
   beforeEach(async () => {
     caConnectorServiceMock = {
       caConnectors: signal([
         { connectorname: "conn1", type: "local" },
-        { connectorname: "conn2", type: "microsoft" },
+        { connectorname: "conn2", type: "microsoft" }
       ]),
-      deleteCaConnector: jest.fn(),
-    };
-
-    dialogServiceMock = {
-      confirm: jest.fn().mockResolvedValue(true),
+      deleteCaConnector: jest.fn()
     };
 
     await TestBed.configureTestingModule({
@@ -51,17 +51,22 @@ describe("CaConnectorsComponent", () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: CaConnectorService, useValue: caConnectorServiceMock },
-        { provide: DialogService, useValue: dialogServiceMock },
+        { provide: DialogService, useClass: MockDialogService }
       ]
-    }).overrideComponent(CaConnectorsComponent, {
-      add: {
-        providers: [
-          { provide: MatDialog, useValue: { open: jest.fn() } }
-        ]
-      }
-    }).compileComponents();
+    })
+      .overrideComponent(CaConnectorsComponent, {
+        add: {
+          providers: [{ provide: MatDialog, useValue: { open: jest.fn() } }]
+        }
+      })
+      .compileComponents();
 
     fixture = TestBed.createComponent(CaConnectorsComponent);
+    dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
+    confirmClosed = new Subject();
+    let dialogRefMock = new MockMatDialogRef();
+    dialogRefMock.afterClosed.mockReturnValue(confirmClosed);
+    dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });
@@ -87,11 +92,13 @@ describe("CaConnectorsComponent", () => {
     expect(dialog.open).toHaveBeenCalled();
   });
 
-  it("should delete connector after confirmation", async () => {
+  it("should delete connector after confirmation", () => {
     const connector = caConnectorServiceMock.caConnectors()[0];
     component.deleteConnector(connector);
-    expect(dialogServiceMock.confirm).toHaveBeenCalled();
-    await Promise.resolve();
+    expect(dialogServiceMock.openDialog).toHaveBeenCalled();
+    confirmClosed.next(true);
+    confirmClosed.complete();
+
     expect(caConnectorServiceMock.deleteCaConnector).toHaveBeenCalledWith("conn1");
   });
 });

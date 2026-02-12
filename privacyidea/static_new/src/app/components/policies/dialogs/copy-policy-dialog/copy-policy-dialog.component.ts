@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component } from "@angular/core";
+import { Component, computed } from "@angular/core";
 import { DialogWrapperComponent } from "../../../shared/dialog/dialog-wrapper/dialog-wrapper.component";
 import { CommonModule } from "@angular/common";
 import { DialogAction } from "../../../../models/dialog";
@@ -56,14 +56,14 @@ export class CopyPolicyDialogComponent extends AbstractDialogComponent<string, s
     initialValue: this.nameControl.invalid
   });
 
-  readonly actions: DialogAction<"submit" | null>[] = [
+  readonly actions = computed<DialogAction<"submit" | null>[]>(() => [
     {
-      label: "Copy Policy",
+      label: $localize`Copy Policy`,
       value: "submit",
       type: "confirm",
-      disabled: () => this.isInvalid()
+      disabled: this.isInvalid()
     }
-  ];
+  ]);
 
   onAction(value: "submit" | null): void {
     if (value === "submit" && this.nameControl.valid) {

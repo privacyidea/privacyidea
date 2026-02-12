@@ -102,9 +102,8 @@ describe("CopyPolicyDialogComponent", () => {
     component.nameControl.setValue(initialPolicyName);
     fixture.detectChanges();
 
-    const submitAction = component.actions.find((a) => a.value === "submit");
-    const isDisabled = typeof submitAction?.disabled === "function" ? submitAction.disabled() : submitAction?.disabled;
+    const submitAction = component.actions().find((a) => a.value === "submit");
 
-    expect(isDisabled).toBe(true);
+    expect(submitAction?.disabled).toBe(true);
   });
 });

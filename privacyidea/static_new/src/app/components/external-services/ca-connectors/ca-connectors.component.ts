@@ -39,6 +39,7 @@ import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
 import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
 import { TableUtilsService, TableUtilsServiceInterface } from "../../../services/table-utils/table-utils.service";
 import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
+import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 
 @Component({
   selector: "app-ca-connectors",
@@ -97,18 +98,22 @@ export class CaConnectorsComponent {
   }
 
   deleteConnector(connector: CaConnector): void {
-    this.dialogService.confirm({
-      data: {
-        title: $localize`Delete CA Connector`,
-        serialList: [connector.connectorname],
-        type: "ca-connector",
-        action: "delete"
-      }
-    }).then(result => {
-      if (result) {
-        this.caConnectorService.deleteCaConnector(connector.connectorname);
-      }
-    });
+    this.dialogService
+      .openDialog({
+        component: SimpleConfirmationDialogComponent,
+        data: {
+          title: $localize`Delete CA Connector`,
+          items: [connector.connectorname],
+          itemType: "ca-connector",
+          confirmAction: { label: $localize`Delete`, value: true, type: "destruct" }
+        }
+      })
+      .afterClosed()
+      .subscribe({
+        next: (result) => {
+          if (result) this.caConnectorService.deleteCaConnector(connector.connectorname);
+        }
+      });
   }
 
   onFilterInput(value: string): void {

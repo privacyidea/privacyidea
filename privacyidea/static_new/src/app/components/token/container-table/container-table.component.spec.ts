@@ -20,7 +20,7 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { of } from "rxjs";
+import { of, Subject } from "rxjs";
 import { ActivatedRoute, NavigationEnd, Router } from "@angular/router";
 import { signal, WritableSignal } from "@angular/core";
 import { MatPaginator, PageEvent } from "@angular/material/paginator";
@@ -40,11 +40,14 @@ import { ContainerDetailData, ContainerService } from "../../../services/contain
 import {
   MockContainerService,
   MockContentService,
+  MockDialogService,
   MockLocalService,
   MockNotificationService,
   MockTableUtilsService
 } from "../../../../testing/mock-services";
 import { MockAuthService } from "../../../../testing/mock-services/mock-auth-service";
+import { DialogService } from "src/app/services/dialog/dialog.service";
+import { MockMatDialogRef } from "src/testing/mock-mat-dialog-ref";
 
 function makeResource<T>(initial: T) {
   return {
@@ -216,14 +219,11 @@ describe("ContainerTableSelfServiceComponent", () => {
   let component: ContainerTableSelfServiceComponent;
   let fixture: ComponentFixture<ContainerTableSelfServiceComponent>;
   let containerService: MockContainerService;
-  let dialogOpen: jest.Mock;
+  let dialogServiceMock: MockDialogService;
+  let confirmClosed: Subject<boolean>;
 
   beforeEach(async () => {
     TestBed.resetTestingModule();
-
-    dialogOpen = jest.fn().mockReturnValue({
-      afterClosed: () => of({ confirmed: true }) // default: confirm
-    });
 
     await TestBed.configureTestingModule({
       imports: [ContainerTableSelfServiceComponent, BrowserAnimationsModule, MatDialogModule],
@@ -235,7 +235,7 @@ describe("ContainerTableSelfServiceComponent", () => {
         { provide: TableUtilsService, useClass: MockTableUtilsService },
         { provide: NotificationService, useClass: MockNotificationService },
         { provide: ContentService, useClass: MockContentService },
-        { provide: MatDialog, useValue: { open: dialogOpen } },
+        { provide: DialogService, useClass: MockDialogService },
         { provide: MAT_DIALOG_DATA, useValue: {} },
         { provide: MatDialogRef, useValue: { close: () => {} } },
         {
@@ -258,6 +258,13 @@ describe("ContainerTableSelfServiceComponent", () => {
 
     fixture = TestBed.createComponent(ContainerTableSelfServiceComponent);
     containerService = TestBed.inject(ContainerService) as unknown as MockContainerService;
+
+    dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
+    confirmClosed = new Subject();
+    let dialogRefMock = new MockMatDialogRef();
+    dialogRefMock.afterClosed.mockReturnValue(confirmClosed);
+    dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
+
     component = fixture.componentInstance;
     fixture.detectChanges();
   });
@@ -278,23 +285,25 @@ describe("ContainerTableSelfServiceComponent", () => {
     const reloadSpy = jest.spyOn(containerService.containerResource, "reload");
 
     component.deleteContainer(serial);
+    confirmClosed.next(true);
+    confirmClosed.complete();
 
-    expect(dialogOpen).toHaveBeenCalled();
+    expect(dialogServiceMock.openDialog).toHaveBeenCalled();
     expect(deleteSpy).toHaveBeenCalledWith(serial);
     expect(reloadSpy).toHaveBeenCalled();
   });
 
   it("deleteContainer does nothing when dialog closes with falsy value", () => {
-    // Make dialog return false now
-    (dialogOpen as jest.Mock).mockReturnValueOnce({ afterClosed: () => of({ confirmed: false }) });
-
     const serial = "CONT-NOOP";
     const deleteSpy = jest.spyOn(containerService, "deleteContainer");
     const reloadSpy = jest.spyOn(containerService.containerResource, "reload");
 
     component.deleteContainer(serial);
 
-    expect(dialogOpen).toHaveBeenCalled();
+    confirmClosed.next(false);
+    confirmClosed.complete();
+
+    expect(dialogServiceMock.openDialog).toHaveBeenCalled();
     expect(deleteSpy).not.toHaveBeenCalled();
     expect(reloadSpy).not.toHaveBeenCalled();
   });

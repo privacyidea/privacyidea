@@ -25,25 +25,25 @@ import { MatDialog, MatDialogModule } from "@angular/material/dialog";
 import { PrivacyideaServerService } from "../../../services/privacyidea-server/privacyidea-server.service";
 import { DialogService } from "../../../services/dialog/dialog.service";
 import { signal } from "@angular/core";
+import { MockDialogService } from "src/testing/mock-services/mock-dialog-service";
+import { Subject } from "rxjs";
+import { MockMatDialogRef } from "src/testing/mock-mat-dialog-ref";
 
 describe("PrivacyideaServersComponent", () => {
   let component: PrivacyideaServersComponent;
   let fixture: ComponentFixture<PrivacyideaServersComponent>;
   let privacyideaServerServiceMock: any;
-  let dialogServiceMock: any;
+  let dialogServiceMock: MockDialogService;
+  let confirmClosed: Subject<boolean>;
   let dialog: MatDialog;
 
   beforeEach(async () => {
     privacyideaServerServiceMock = {
       privacyideaServers: signal([
         { identifier: "server1", url: "http://s1", tls: true, description: "desc1" },
-        { identifier: "server2", url: "http://s2", tls: false, description: "desc2" },
+        { identifier: "server2", url: "http://s2", tls: false, description: "desc2" }
       ]),
-      deletePrivacyideaServer: jest.fn(),
-    };
-
-    dialogServiceMock = {
-      confirm: jest.fn().mockResolvedValue(true),
+      deletePrivacyideaServer: jest.fn()
     };
 
     await TestBed.configureTestingModule({
@@ -52,17 +52,22 @@ describe("PrivacyideaServersComponent", () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: PrivacyideaServerService, useValue: privacyideaServerServiceMock },
-        { provide: DialogService, useValue: dialogServiceMock },
+        { provide: DialogService, useClass: MockDialogService }
       ]
-    }).overrideComponent(PrivacyideaServersComponent, {
-      add: {
-        providers: [
-          { provide: MatDialog, useValue: { open: jest.fn() } }
-        ]
-      }
-    }).compileComponents();
+    })
+      .overrideComponent(PrivacyideaServersComponent, {
+        add: {
+          providers: [{ provide: MatDialog, useValue: { open: jest.fn() } }]
+        }
+      })
+      .compileComponents();
 
     fixture = TestBed.createComponent(PrivacyideaServersComponent);
+    dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
+    confirmClosed = new Subject();
+    let dialogRefMock = new MockMatDialogRef();
+    dialogRefMock.afterClosed.mockReturnValue(confirmClosed);
+    dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });
@@ -95,12 +100,13 @@ describe("PrivacyideaServersComponent", () => {
     expect(dialog.open).toHaveBeenCalled();
   });
 
-  it("should delete server after confirmation", async () => {
+  it("should delete server after confirmation", () => {
     const server = privacyideaServerServiceMock.privacyideaServers()[0];
     component.deleteServer(server);
-    expect(dialogServiceMock.confirm).toHaveBeenCalled();
-    // Wait for the microtask queue to empty because of the .then() in deleteServer
-    await Promise.resolve();
+    expect(dialogServiceMock.openDialog).toHaveBeenCalled();
+    confirmClosed.next(true);
+    confirmClosed.complete();
+
     expect(privacyideaServerServiceMock.deletePrivacyideaServer).toHaveBeenCalledWith("server1");
   });
 });

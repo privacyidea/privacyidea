@@ -44,7 +44,7 @@ import { FilterValue } from "../../core/models/filter_value/filter_value";
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
 import { StringUtils } from "../../utils/string.utils";
-import { DialogReturnData, DialogService, DialogServiceInterface } from "../dialog/dialog.service";
+import { DialogService, DialogServiceInterface } from "../dialog/dialog.service";
 import { SimpleConfirmationDialogComponent } from "../../components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 
 export type TokenTypeKey =

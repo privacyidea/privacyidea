@@ -26,24 +26,24 @@ import { provideRouter } from "@angular/router";
 import { ServiceIdService } from "../../../services/service-id/service-id.service";
 import { DialogService } from "../../../services/dialog/dialog.service";
 import { signal } from "@angular/core";
+import { MockDialogService } from "src/testing/mock-services/mock-dialog-service";
+import { Subject } from "rxjs";
+import { MockMatDialogRef } from "src/testing/mock-mat-dialog-ref";
 
 describe("ServiceIdsComponent", () => {
   let component: ServiceIdsComponent;
   let fixture: ComponentFixture<ServiceIdsComponent>;
   let serviceIdServiceMock: any;
-  let dialogServiceMock: any;
+  let dialogServiceMock: MockDialogService;
+  let confirmClosed: Subject<boolean>;
 
   beforeEach(async () => {
     serviceIdServiceMock = {
       serviceIds: signal([
         { servicename: "service1", description: "desc1", id: 1 },
-        { servicename: "service2", description: "desc2", id: 2 },
+        { servicename: "service2", description: "desc2", id: 2 }
       ]),
-      deleteServiceId: jest.fn(),
-    };
-
-    dialogServiceMock = {
-      confirm: jest.fn().mockResolvedValue(true),
+      deleteServiceId: jest.fn()
     };
 
     await TestBed.configureTestingModule({
@@ -53,17 +53,22 @@ describe("ServiceIdsComponent", () => {
         provideHttpClientTesting(),
         provideRouter([]),
         { provide: ServiceIdService, useValue: serviceIdServiceMock },
-        { provide: DialogService, useValue: dialogServiceMock },
+        { provide: DialogService, useClass: MockDialogService }
       ]
-    }).overrideComponent(ServiceIdsComponent, {
-      add: {
-        providers: [
-          { provide: MatDialog, useValue: { open: jest.fn() } }
-        ]
-      }
-    }).compileComponents();
+    })
+      .overrideComponent(ServiceIdsComponent, {
+        add: {
+          providers: [{ provide: MatDialog, useValue: { open: jest.fn() } }]
+        }
+      })
+      .compileComponents();
 
     fixture = TestBed.createComponent(ServiceIdsComponent);
+    dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
+    confirmClosed = new Subject();
+    let dialogRefMock = new MockMatDialogRef();
+    dialogRefMock.afterClosed.mockReturnValue(confirmClosed);
+    dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });
@@ -92,8 +97,9 @@ describe("ServiceIdsComponent", () => {
   it("should delete service ID after confirmation", async () => {
     const serviceId = serviceIdServiceMock.serviceIds()[0];
     component.deleteServiceId(serviceId);
-    expect(dialogServiceMock.confirm).toHaveBeenCalled();
-    await Promise.resolve();
+    expect(dialogServiceMock.openDialog).toHaveBeenCalled();
+    confirmClosed.next(true);
+    confirmClosed.complete();
     expect(serviceIdServiceMock.deleteServiceId).toHaveBeenCalledWith("service1");
   });
 });
