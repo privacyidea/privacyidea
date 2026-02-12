@@ -2406,6 +2406,7 @@ def create_challenges_from_tokens(token_list, reply_dict, options=None):
     """
     options = options or {}
     options["push_triggered"] = False
+    options["passkey_nonce"] = None
     reply_dict["multi_challenge"] = []
     transaction_id = None
     message_list = []
