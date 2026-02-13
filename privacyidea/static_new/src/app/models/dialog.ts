@@ -24,6 +24,7 @@ export type DialogAction<R = any> = {
     | "auxiliary"; // Help/Navigation/Secondary Actions
   label: string;
   value: R;
+  hidden?: boolean;
   disabled?: boolean;
   icon?: string;
 };

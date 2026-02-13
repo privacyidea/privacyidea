@@ -29,6 +29,9 @@
         </button>
       }
       @for (action of actions(); track $index) {
+        @if (action.hidden) {
+          continue;
+        }
         <button
           [class.action-button-1]="action.type === 'confirm' || action.type === 'auxiliary' || !action.type"
           [class.action-button-delete]="action.type === 'destruct'"

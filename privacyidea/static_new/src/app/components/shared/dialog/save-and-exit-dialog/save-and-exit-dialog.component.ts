@@ -8,7 +8,6 @@ export interface SaveAndExitDialogData {
   message: string;
   saveButtonText?: string;
   discardButtonText?: string;
-  cancelButtonText?: string;
   allowSaveExit: boolean;
   saveExitDisabled: boolean;
 }
@@ -26,22 +25,16 @@ export class SaveAndExitDialogComponent extends AbstractDialogComponent<
   SaveAndExitDialogData,
   SaveAndExitDialogResult
 > {
-  actions = computed<DialogAction<SaveAndExitDialogResult>[]>(() => {
-    if (this.data.allowSaveExit) {
-      return [
-        { label: this.data.discardButtonText || ("Discard" as any), value: "discard", type: "destruct" },
-        {
-          label: this.data.saveButtonText || ("Save & Exit" as any),
-          value: "save-exit",
-          type: "confirm",
-          disabled: this.data.saveExitDisabled,
-          show: this.data.allowSaveExit
-        }
-      ];
-    } else {
-      return [{ label: this.data.discardButtonText || ("Discard" as any), value: "discard", type: "destruct" }];
+  actions = computed<DialogAction<SaveAndExitDialogResult>[]>(() => [
+    { label: this.data.discardButtonText || ("Discard" as any), value: "discard", type: "destruct" },
+    {
+      label: this.data.saveButtonText || ("Save & Exit" as any),
+      value: "save-exit",
+      type: "confirm",
+      disabled: this.data.saveExitDisabled,
+      hidden: !this.data.allowSaveExit
     }
-  });
+  ]);
 
   onAction(result: SaveAndExitDialogResult): void {
     this.dialogRef.close(result);
