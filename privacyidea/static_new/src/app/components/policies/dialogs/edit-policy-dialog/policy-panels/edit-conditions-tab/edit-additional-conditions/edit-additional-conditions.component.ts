@@ -64,6 +64,40 @@ import {
   styleUrls: ["./edit-additional-conditions.component.scss"]
 })
 export class EditAdditionalConditionsComponent {
+  readonly TOKEN_KEYS = [
+    "id",
+    "description",
+    "serial",
+    "tokentype",
+    "info",
+    "resolver",
+    "user_id",
+    "otplen",
+    "maxfail",
+    "active",
+    "revoked",
+    "locked",
+    "failcount",
+    "count",
+    "count_window",
+    "sync_window",
+    "rollout_state"
+  ];
+
+  readonly CONTAINER_KEYS = [
+    "type",
+    "serial",
+    "description",
+    "last_authentication",
+    "last_synchronization",
+    "states",
+    "info",
+    "realms",
+    "users",
+    "tokens",
+    "templates"
+  ];
+
   readonly policyService: PolicyService = inject(PolicyService);
 
   // Inputs/Outputs
@@ -83,6 +117,16 @@ export class EditAdditionalConditionsComponent {
   readonly conditionSection = linkedSignal<boolean, SectionOptionKey | "">({
     source: () => true,
     computation: () => ""
+  });
+  readonly availableKeys = computed<string[]>(() => {
+    const section = this.conditionSection();
+    const currentKey = this.conditionKey();
+    if (section === "token") {
+      return this.TOKEN_KEYS.filter((key) => key.includes(currentKey));
+    } else if (section === "container") {
+      return this.CONTAINER_KEYS.filter((key) => key.includes(currentKey));
+    }
+    return [];
   });
   readonly conditionKey = linkedSignal<boolean, string>({ source: () => true, computation: () => "" });
   readonly conditionComparator = linkedSignal<boolean, ComparatorOptionKey | "">({
