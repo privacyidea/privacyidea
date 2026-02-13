@@ -704,7 +704,7 @@ angular.module("privacyideaApp")
 
             $scope.clearRealmSelection = function () {
                 $scope.login.realm = "";
-            }
+            };
         }]);
 
 angular.module("privacyideaApp")

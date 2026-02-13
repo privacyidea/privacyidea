@@ -181,7 +181,7 @@ def get_render_context():
 
     passkey_login_policy = Match.action_only(g, scope=SCOPE.WEBUI, action=PolicyAction.PASSKEY_LOGIN).action_values(
         unique=True, write_to_audit_log=False)
-    passkey_login = list(passkey_login_policy.keys())[0] if len(
+    passkey_login = list(passkey_login_policy)[0] if len(
         passkey_login_policy) else PasskeyLoginButtonOptions.SHOW
 
     render_context: dict = {

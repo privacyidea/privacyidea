@@ -56,13 +56,12 @@
                        ng-model="login.username" required
                        placeholder="{{ 'Username'|translate }}"
                        autofocus/>
-                <div class="realm-row">
+                <div class="realm-row" ng-show="piRealms.length > 0">
                     <div class="realm-selection">
                         <label for="realm" class="sr-only" translate>Realm</label>
                         <select class="form-control round-none"
                                 name="realm"
                                 placeholder="Realm"
-                                ng-show="piRealms.length > 0"
                                 id="realm"
                                 ng-model="login.realm"
                                 ng-options="realm for realm in piRealms">
@@ -71,7 +70,8 @@
                         </select>
                     </div>
                     <div class="clear-btn-container">
-                        <button class="clear-button" ng-click="clearRealmSelection()">
+                        <button class="clear-button" ng-click="clearRealmSelection()"
+                                aria-label="Clear Realm selection">
                             <span class="glyphicon glyphicon-remove-circle"></span>
                         </button>
                     </div>
