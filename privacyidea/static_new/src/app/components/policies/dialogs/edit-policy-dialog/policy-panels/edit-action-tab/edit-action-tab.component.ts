@@ -74,10 +74,10 @@ export class EditActionTabComponent {
   onActionAdd(event: { action: { name: string; value: any }; newScope?: string | null }) {
     const { action, newScope } = event;
     const newActions = [...this.actions(), action];
-    this.onActionsChange(newActions);
     if (newScope && newScope !== this.policy().scope) {
       this.policyScopeChange.emit(newScope);
     }
+    this.onActionsChange(newActions);
     if (this.selectedAction()?.name === action.name) {
       this.selectedAction.set(null);
     }
