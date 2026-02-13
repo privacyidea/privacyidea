@@ -56,17 +56,26 @@
                        ng-model="login.username" required
                        placeholder="{{ 'Username'|translate }}"
                        autofocus/>
-                <label for="realm" class="sr-only" translate>Realm</label>
-                <select class="form-control round-none"
-                        name="realm"
-                        placeholder="Realm"
-                        ng-show="piRealms.length > 0"
-                        id="realm"
-                        ng-model="login.realm"
-                        ng-options="realm for realm in piRealms">
-                    <!-- We add a placeholder '-' for an empty realm -->
-                    <option ng-hide="piRealms[0]===''" value="" selected >-</option>
-                </select>
+                <div class="realm-row" ng-show="piRealms.length > 0">
+                    <div class="realm-selection">
+                        <label for="realm" class="sr-only" translate>Realm</label>
+                        <select class="form-control round-none"
+                                name="realm"
+                                placeholder="Realm"
+                                id="realm"
+                                ng-model="login.realm"
+                                ng-options="realm for realm in piRealms">
+                            <!-- We add a placeholder '-' for an empty realm -->
+                            <option ng-hide="piRealms[0]===''" value="" selected>-</option>
+                        </select>
+                    </div>
+                    <div class="clear-btn-container">
+                        <button class="clear-button" ng-click="clearRealmSelection()"
+                                aria-label="Clear Realm selection">
+                            <span class="glyphicon glyphicon-remove-circle"></span>
+                        </button>
+                    </div>
+                </div>
                 <label for="password" class="sr-only" translate>Password</label>
                 <input name="password" type="password"
                        id="password" class="form-control round-bottom"
@@ -78,7 +87,8 @@
                             ng-disabled="formSignin.$invalid"
                             class="btn btn-primary btn-block" translate>Log In
                     </button>
-                    <button ng-click="passkeyLogin()"
+                    <button ng-if="passkeyLoginEnabled"
+                            ng-click="passkeyLogin()"
                             class="btn btn-transparent btn-block"
                             translate>
                         Passkey Log In

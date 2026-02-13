@@ -88,6 +88,8 @@ angular.module("privacyideaApp")
             obj = angular.element(document.querySelector('#PRIVACYIDEA_VERSION_NUMBER'));
             $scope.privacyideaVersionNumber = obj.val();
             $rootScope.privacyideaVersionNumber = obj.val();
+            obj = angular.element(document.querySelector("#PASSKEY_LOGIN"));
+            $scope.passkeyLoginEnabled = obj.val() !== "hide";
 
             // Check if registration is allowed
             $scope.registrationAllowed = false;
@@ -698,6 +700,10 @@ angular.module("privacyideaApp")
             $scope.reload = function () {
                 // emit a signal to the scope, that just listens
                 $scope.$broadcast("piReload");
+            };
+
+            $scope.clearRealmSelection = function () {
+                $scope.login.realm = "";
             };
         }]);
 
