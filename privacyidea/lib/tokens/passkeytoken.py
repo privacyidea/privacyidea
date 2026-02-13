@@ -49,7 +49,7 @@ from privacyidea.lib.fido2.util import hash_credential_id, save_credential_id_ha
 from privacyidea.lib.log import log_with
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import SCOPE
-from privacyidea.lib.tokenclass import TokenClass, ROLLOUTSTATE, CLIENTMODE, AUTHENTICATIONMODE
+from privacyidea.lib.tokenclass import TokenClass, RolloutState, ClientMode, AuthenticationMode
 from privacyidea.models import Challenge
 
 log = logging.getLogger(__name__)
@@ -66,8 +66,8 @@ class PasskeyTokenClass(TokenClass):
         - USER_VERIFICATION_REQUIREMENT (default: PREFERRED)
         - PUBLIC_KEY_CREDENTIAL_ALGORITHMS (default: ECDSA_SHA_256, RSASSA_PKCS1_v1_5_SHA_256)
     """
-    mode = [AUTHENTICATIONMODE.CHALLENGE]
-    client_mode = CLIENTMODE.WEBAUTHN
+    mode = [AuthenticationMode.CHALLENGE]
+    client_mode = ClientMode.WEBAUTHN
 
     def __init__(self, db_token):
         super().__init__(db_token)
@@ -140,7 +140,7 @@ class PasskeyTokenClass(TokenClass):
         - FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT (default: PREFERRED)
         - PasskeyAction.AttestationConveyancePreference (default: NONE)
         """
-        if self.token.rollout_state == ROLLOUTSTATE.CLIENTWAIT:
+        if self.token.rollout_state == RolloutState.CLIENTWAIT:
             token_user = self.user or user
             if not token_user:
                 raise ParameterError("User must be provided for passkey enrollment!",
@@ -244,14 +244,14 @@ class PasskeyTokenClass(TokenClass):
         attestation = get_optional(param, "attestationObject")
         client_data = get_optional(param, "clientDataJSON")
 
-        if not (attestation and client_data) and not self.token.rollout_state == ROLLOUTSTATE.CLIENTWAIT:
-            self.token.rollout_state = ROLLOUTSTATE.CLIENTWAIT
+        if not (attestation and client_data) and not self.token.rollout_state == RolloutState.CLIENTWAIT:
+            self.token.rollout_state = RolloutState.CLIENTWAIT
             self.token.active = False
             # Set the description in the first enrollment step
             if "description" in param:
                 self.set_description(param["description"])
 
-        elif attestation and client_data and self.token.rollout_state == ROLLOUTSTATE.CLIENTWAIT:
+        elif attestation and client_data and self.token.rollout_state == RolloutState.CLIENTWAIT:
             # Finalize the registration by verifying the registration data from the authenticator
             credential_id = get_required(param, "credential_id")
             credential_id_raw = get_required(param, "rawId")
@@ -298,7 +298,7 @@ class PasskeyTokenClass(TokenClass):
             response_detail.update({PolicyAction.ENROLL_VIA_MULTICHALLENGE: evm_value})
 
             # Verification successful, set the token to enrolled and save information returned by the authenticator
-            self.token.rollout_state = ROLLOUTSTATE.ENROLLED
+            self.token.rollout_state = RolloutState.ENROLLED
             # Protect the credential_id by setting it as the token secret
             self.set_otpkey(bytes_to_base64url(registration_verification.credential_id))
 

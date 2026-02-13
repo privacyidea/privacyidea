@@ -48,7 +48,7 @@ from privacyidea.lib.config import get_from_config
 from privacyidea.api.lib.utils import getParam
 from privacyidea.lib.log import log_with
 from privacyidea.lib.policydecorators import challenge_response_allowed
-from privacyidea.lib.tokenclass import TokenClass, TOKENKIND, AUTHENTICATIONMODE
+from privacyidea.lib.tokenclass import TokenClass, Tokenkind, AuthenticationMode
 from privacyidea.lib.privacyideaserver import get_privacyideaserver
 from privacyidea.lib import _
 from privacyidea.lib.policy import SCOPE, GROUP
@@ -72,7 +72,7 @@ class RemoteTokenClass(TokenClass):
     Using the Remote token you can assign one physical token to many
     different users.
     """
-    mode = [AUTHENTICATIONMODE.AUTHENTICATE, AUTHENTICATIONMODE.CHALLENGE]
+    mode = [AuthenticationMode.AUTHENTICATE, AuthenticationMode.CHALLENGE]
 
     def __init__(self, db_token):
         """
@@ -170,7 +170,7 @@ class RemoteTokenClass(TokenClass):
             if val is not None:
                 self.add_tokeninfo(key, val)
 
-        self.add_tokeninfo("tokenkind", TOKENKIND.VIRTUAL)
+        self.add_tokeninfo("tokenkind", Tokenkind.VIRTUAL)
 
     @property
     def check_pin_local(self):

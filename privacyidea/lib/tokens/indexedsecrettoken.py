@@ -33,7 +33,7 @@ returns -1.
 
 import logging
 import datetime
-from privacyidea.lib.tokenclass import TokenClass, AUTHENTICATIONMODE
+from privacyidea.lib.tokenclass import TokenClass, AuthenticationMode
 from privacyidea.lib.policy import (SCOPE, GROUP, comma_escape_text,
                                     get_action_values_from_options)
 from privacyidea.lib.policies.actions import PolicyAction
@@ -63,7 +63,7 @@ class IndexedSecretTokenClass(TokenClass):
     Implementation of the Indexed Secret Token Class, that asks the user for certain
     positions in a shared secret.
     """
-    mode = [AUTHENTICATIONMODE.CHALLENGE]
+    mode = [AuthenticationMode.CHALLENGE]
 
     # The token type provides means to verify the enrollment
     can_verify_enrollment = True

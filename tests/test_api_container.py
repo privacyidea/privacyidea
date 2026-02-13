@@ -33,7 +33,7 @@ from privacyidea.lib.token import (get_one_token, get_tokens_from_serial_or_user
                                    get_tokeninfo, get_tokens)
 from privacyidea.lib.token import init_token, get_tokens_paginate, unassign_token
 from privacyidea.lib.tokens.papertoken import PAPERACTION
-from privacyidea.lib.tokens.pushtoken import PUSH_ACTION
+from privacyidea.lib.tokens.pushtoken import PushAction
 from privacyidea.lib.tokens.tantoken import TANACTION
 from privacyidea.lib.user import User
 from privacyidea.lib.utils.compare import PrimaryComparators
@@ -4113,8 +4113,8 @@ class APIContainerSynchronization(APIContainerTest):
                      FirebaseConfig.TTL: 10}
         set_smsgateway("fb1", 'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider', "myFB",
                        fb_config)
-        set_policy("push", scope=SCOPE.ENROLL, action={PUSH_ACTION.FIREBASE_CONFIG: "fb1",
-                                                       PUSH_ACTION.REGISTRATION_URL: "http://test/ttype/push"})
+        set_policy("push", scope=SCOPE.ENROLL, action={PushAction.FIREBASE_CONFIG: "fb1",
+                                                       PushAction.REGISTRATION_URL: "http://test/ttype/push"})
 
         # Challenge
         scope = "https://pi.net/container/synchronize"
@@ -4161,8 +4161,8 @@ class APIContainerSynchronization(APIContainerTest):
         smartphone.add_token(push_fb)
 
         # policies: push config is spread over multiple policies
-        set_policy("push_1", scope=SCOPE.ENROLL, action={PUSH_ACTION.FIREBASE_CONFIG: "poll only"})
-        set_policy("push_2", scope=SCOPE.ENROLL, action={PUSH_ACTION.REGISTRATION_URL: "http://test/ttype/push"})
+        set_policy("push_1", scope=SCOPE.ENROLL, action={PushAction.FIREBASE_CONFIG: "poll only"})
+        set_policy("push_2", scope=SCOPE.ENROLL, action={PushAction.REGISTRATION_URL: "http://test/ttype/push"})
 
         # Challenge
         scope = "https://pi.net/container/synchronize"
@@ -4956,8 +4956,8 @@ class APIContainerSynchronization(APIContainerTest):
         # tokens
         self.setUp_user_realms()
 
-        push = init_token({"genkey": "1", "type": "push", PUSH_ACTION.FIREBASE_CONFIG: "poll only"})
-        self.assertEqual("poll only", push.get_tokeninfo()[PUSH_ACTION.FIREBASE_CONFIG])
+        push = init_token({"genkey": "1", "type": "push", PushAction.FIREBASE_CONFIG: "poll only"})
+        self.assertEqual("poll only", push.get_tokeninfo()[PushAction.FIREBASE_CONFIG])
         smartphone.add_token(push)
 
         hotp_params = {"type": "hotp",
@@ -4994,8 +4994,8 @@ class APIContainerSynchronization(APIContainerTest):
                      FirebaseConfig.TTL: 10}
         set_smsgateway("firebase", 'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider', "myFB",
                        fb_config)
-        set_policy("push", scope=SCOPE.ENROLL, action={PUSH_ACTION.FIREBASE_CONFIG: "firebase",
-                                                       PUSH_ACTION.REGISTRATION_URL: "http://test/ttype/push"})
+        set_policy("push", scope=SCOPE.ENROLL, action={PushAction.FIREBASE_CONFIG: "firebase",
+                                                       PushAction.REGISTRATION_URL: "http://test/ttype/push"})
 
         # Rollover init
         data = {"container_serial": mock_smph.container_serial, "rollover": True,
@@ -5082,7 +5082,7 @@ class APIContainerSynchronization(APIContainerTest):
         self.assertEqual("sha256", daypassword.hashlib)
         self.assertEqual(30, daypassword.timestep)
         # due to new policy push token config changed to firebase
-        self.assertEqual("firebase", push.get_tokeninfo()[PUSH_ACTION.FIREBASE_CONFIG])
+        self.assertEqual("firebase", push.get_tokeninfo()[PushAction.FIREBASE_CONFIG])
 
         # smartphone got new token secrets: rollover completed
         self.assertEqual(RegistrationState.REGISTERED, smartphone.registration_state)
@@ -5755,8 +5755,8 @@ class APIContainerTemplate(APIContainerTest):
     def test_09_create_container_with_template_all_tokens_success(self):
         self.setUp_user_realm3()
         # Policies
-        set_policy("push", scope=SCOPE.ENROLL, action={PUSH_ACTION.FIREBASE_CONFIG: "poll only",
-                                                       PUSH_ACTION.REGISTRATION_URL: "http://test/ttype/push",
+        set_policy("push", scope=SCOPE.ENROLL, action={PushAction.FIREBASE_CONFIG: "poll only",
+                                                       PushAction.REGISTRATION_URL: "http://test/ttype/push",
                                                        PolicyAction.TOKENISSUER: "{realm}",
                                                        PolicyAction.TOKENLABEL: "serial_{serial}"})
         set_policy("admin", SCOPE.ADMIN, action={PolicyAction.CONTAINER_CREATE: True,

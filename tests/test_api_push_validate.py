@@ -15,9 +15,9 @@ from .base import MyApiTestCase
 from privacyidea.lib.user import User
 from privacyidea.lib.token import (get_tokens, init_token, remove_token,
                                    get_one_token, enable_token)
-from privacyidea.lib.tokenclass import CLIENTMODE, ROLLOUTSTATE
+from privacyidea.lib.tokenclass import ClientMode, RolloutState
 from privacyidea.lib.policy import SCOPE, set_policy, delete_policy
-from privacyidea.lib.tokens.pushtoken import (PUSH_ACTION, strip_key, POLL_ONLY,
+from privacyidea.lib.tokens.pushtoken import (PushAction, strip_key, POLL_ONLY,
                                               DEFAULT_CHALLENGE_TEXT)
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway
@@ -84,12 +84,12 @@ class PushAPITestCase(MyApiTestCase):
         the push token is not evaluated anymore.
         """
         # set policy
-        set_policy("push1", action="{0!s}=20".format(PUSH_ACTION.WAIT), scope=SCOPE.AUTH)
+        set_policy("push1", action="{0!s}=20".format(PushAction.WAIT), scope=SCOPE.AUTH)
         set_policy("push2", scope=SCOPE.ENROLL,
                    action="{0!s}={1!s},{2!s}={3!s},{4!s}={5!s}".format(
-                       PUSH_ACTION.FIREBASE_CONFIG, self.firebase_config_name,
-                       PUSH_ACTION.REGISTRATION_URL, REGISTRATION_URL,
-                       PUSH_ACTION.TTL, TTL))
+                       PushAction.FIREBASE_CONFIG, self.firebase_config_name,
+                       PushAction.REGISTRATION_URL, REGISTRATION_URL,
+                       PushAction.TTL, TTL))
         # Create push config
         r = set_smsgateway(self.firebase_config_name,
                            'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider',
@@ -152,7 +152,7 @@ class PushAPITestCase(MyApiTestCase):
             self.assertEqual(tokeninfo.get("public_key_server").strip().strip("-BEGIN END RSA PUBLIC KEY-").strip(),
                              pubkey)
             # The token should also contain the firebase config
-            self.assertEqual(tokeninfo.get(PUSH_ACTION.FIREBASE_CONFIG), self.firebase_config_name)
+            self.assertEqual(tokeninfo.get(PushAction.FIREBASE_CONFIG), self.firebase_config_name)
 
         # create spass token for user
         init_token({"serial": "spass01", "type": "spass", "pin": "otppin"},
@@ -192,11 +192,11 @@ class PushAPITestCase(MyApiTestCase):
         The PIN will only trigger the HOTP, push will not wait, since it is disabled.
         """
         # set policy
-        set_policy("push1", action="{0!s}=20".format(PUSH_ACTION.WAIT), scope=SCOPE.AUTH)
+        set_policy("push1", action="{0!s}=20".format(PushAction.WAIT), scope=SCOPE.AUTH)
         set_policy("push2", scope=SCOPE.ENROLL,
                    action="{0!s}={1!s},{2!s}={3!s}".format(
-                       PUSH_ACTION.FIREBASE_CONFIG, self.firebase_config_name,
-                       PUSH_ACTION.REGISTRATION_URL, REGISTRATION_URL))
+                       PushAction.FIREBASE_CONFIG, self.firebase_config_name,
+                       PushAction.REGISTRATION_URL, REGISTRATION_URL))
         set_policy("chalresp", action="{0!s}=hotp".format(PolicyAction.CHALLENGERESPONSE), scope=SCOPE.AUTH)
         # Create push config
         r = set_smsgateway(self.firebase_config_name,
@@ -260,7 +260,7 @@ class PushAPITestCase(MyApiTestCase):
             self.assertEqual(tokeninfo.get("public_key_server").strip().strip("-BEGIN END RSA PUBLIC KEY-").strip(),
                              pubkey)
             # The token should also contain the firebase config
-            self.assertEqual(tokeninfo.get(PUSH_ACTION.FIREBASE_CONFIG), self.firebase_config_name)
+            self.assertEqual(tokeninfo.get(PushAction.FIREBASE_CONFIG), self.firebase_config_name)
 
         # create HOTP token for user
         init_token({"serial": "hotp01", "type": "hotp", "pin": "otppin",
@@ -308,8 +308,8 @@ class PushAPITestCase(MyApiTestCase):
         # set policy
         set_policy("push2", scope=SCOPE.ENROLL,
                    action="{0!s}={1!s},{2!s}={3!s}".format(
-                       PUSH_ACTION.FIREBASE_CONFIG, self.firebase_config_name,
-                       PUSH_ACTION.REGISTRATION_URL, REGISTRATION_URL))
+                       PushAction.FIREBASE_CONFIG, self.firebase_config_name,
+                       PushAction.REGISTRATION_URL, REGISTRATION_URL))
         # Create push config
         r = set_smsgateway(self.firebase_config_name,
                            'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider',
@@ -409,10 +409,10 @@ class PushAPITestCase(MyApiTestCase):
         # Set Policy scope:enrollment, action:push_config
         set_policy("pol_push2", scope=SCOPE.ENROLL,
                    action="{0!s}={1!s},{2!s}={3!s},{4!s}={5!s},{6!s}={7!s}".format(
-                       PUSH_ACTION.FIREBASE_CONFIG, self.firebase_config_name,
-                       PUSH_ACTION.REGISTRATION_URL, REGISTRATION_URL,
-                       PUSH_ACTION.SSL_VERIFY, 1,
-                       PUSH_ACTION.TTL, TTL))
+                       PushAction.FIREBASE_CONFIG, self.firebase_config_name,
+                       PushAction.REGISTRATION_URL, REGISTRATION_URL,
+                       PushAction.SSL_VERIFY, 1,
+                       PushAction.TTL, TTL))
         # Create push config
         r = set_smsgateway(self.firebase_config_name,
                            'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider',
@@ -435,9 +435,9 @@ class PushAPITestCase(MyApiTestCase):
             self.assertTrue(detail.get(PolicyAction.ENROLL_VIA_MULTICHALLENGE))
             self.assertFalse(detail.get(PolicyAction.ENROLL_VIA_MULTICHALLENGE_OPTIONAL))
             # Get image and client_mode
-            self.assertEqual(CLIENTMODE.POLL, detail.get("client_mode"))
+            self.assertEqual(ClientMode.POLL, detail.get("client_mode"))
             # Check, that multi_challenge is also contained.
-            self.assertEqual(CLIENTMODE.POLL, detail.get("multi_challenge")[0].get("client_mode"))
+            self.assertEqual(ClientMode.POLL, detail.get("multi_challenge")[0].get("client_mode"))
             self.assertIn("image", detail)
             self.assertIn("link", detail)
             link = detail.get("link")
@@ -491,7 +491,7 @@ class PushAPITestCase(MyApiTestCase):
             self.assertEqual(tokeninfo.get("public_key_server").strip().strip("-BEGIN END RSA PUBLIC KEY-").strip(),
                              pubkey)
             # The token should also contain the firebase config
-            self.assertEqual(tokeninfo.get(PUSH_ACTION.FIREBASE_CONFIG), self.firebase_config_name)
+            self.assertEqual(tokeninfo.get(PushAction.FIREBASE_CONFIG), self.firebase_config_name)
 
         # The Application polls, if the token is readily enrolled
         with self.app.test_request_context('/validate/polltransaction',
@@ -530,11 +530,11 @@ class PushAPITestCase(MyApiTestCase):
         # Setup PUSH policies
         set_policy("push_config", scope=SCOPE.ENROLL,
                    action="{0!s}={1!s},{2!s}={3!s}".format(
-                       PUSH_ACTION.FIREBASE_CONFIG, POLL_ONLY,
-                       PUSH_ACTION.REGISTRATION_URL, REGISTRATION_URL))
+                       PushAction.FIREBASE_CONFIG, POLL_ONLY,
+                       PushAction.REGISTRATION_URL, REGISTRATION_URL))
         # Add the require_presence policy
         set_policy("push_require_presence", scope=SCOPE.AUTH,
-                   action=f"{PUSH_ACTION.REQUIRE_PRESENCE}=1")
+                   action=f"{PushAction.REQUIRE_PRESENCE}=1")
         # Create push token for user
         # 1st step
         with self.app.test_request_context('/token/init',
@@ -564,7 +564,7 @@ class PushAPITestCase(MyApiTestCase):
             detail = res.json.get("detail")
             # Now the smartphone gets a public key from the server
             self.assertIn("public_key", detail, detail)
-            self.assertEqual(ROLLOUTSTATE.ENROLLED, detail.get("rollout_state"), detail)
+            self.assertEqual(RolloutState.ENROLLED, detail.get("rollout_state"), detail)
 
         #############################################################
         # Run authentication with push token
@@ -711,14 +711,14 @@ class PushAPITestCase(MyApiTestCase):
         # Setup PUSH policies
         set_policy("pol_push_config", scope=SCOPE.ENROLL,
                    action="{0!s}={1!s},{2!s}={3!s}".format(
-                       PUSH_ACTION.FIREBASE_CONFIG, POLL_ONLY,
-                       PUSH_ACTION.REGISTRATION_URL, REGISTRATION_URL))
+                       PushAction.FIREBASE_CONFIG, POLL_ONLY,
+                       PushAction.REGISTRATION_URL, REGISTRATION_URL))
         # Add the require_presence policy
         set_policy("pol_push_require_presence", scope=SCOPE.AUTH,
-                   action=f"{PUSH_ACTION.REQUIRE_PRESENCE}=1")
+                   action=f"{PushAction.REQUIRE_PRESENCE}=1")
         # Add the push_wait policy (set timeout to 1 second to avoid blocking the tests)
         set_policy("pol_push_wait", scope=SCOPE.AUTH,
-                   action=f"{PUSH_ACTION.WAIT}=1")
+                   action=f"{PushAction.WAIT}=1")
         # Create push token for user
         # 1st step
         with self.app.test_request_context('/token/init',
@@ -748,7 +748,7 @@ class PushAPITestCase(MyApiTestCase):
             detail = res.json.get("detail")
             # Now the smartphone gets a public key from the server
             self.assertIn("public_key", detail, detail)
-            self.assertEqual(ROLLOUTSTATE.ENROLLED, detail.get("rollout_state"), detail)
+            self.assertEqual(RolloutState.ENROLLED, detail.get("rollout_state"), detail)
 
         #############################################################
         # Run authentication with push token and with push_wait
@@ -775,15 +775,20 @@ class PushAPITestCase(MyApiTestCase):
         delete_policy("pol_push_wait")
 
     def test_17_push_require_presence_reverse(self):
+        """
+        Test the push token in require_presence_reverse mode. This means a number will be pushed to (or polled by) the
+        smartphone. The user then has to enter the
+        """
+
         self.setUp_user_realms()
         # Setup PUSH policies
         set_policy("push_config", scope=SCOPE.ENROLL,
                    action="{0!s}={1!s},{2!s}={3!s}".format(
-                       PUSH_ACTION.FIREBASE_CONFIG, POLL_ONLY,
-                       PUSH_ACTION.REGISTRATION_URL, REGISTRATION_URL))
+                       PushAction.FIREBASE_CONFIG, POLL_ONLY,
+                       PushAction.REGISTRATION_URL, REGISTRATION_URL))
         # Add the require_presence_reverse policy
         set_policy("push_require_presence_reverse", scope=SCOPE.AUTH,
-                   action=f"{PUSH_ACTION.REQUIRE_PRESENCE_REVERSE}=1")
+                   action=f"{PushAction.REQUIRE_PRESENCE_REVERSE}=1")
         # Create push token for user
         # 1st step
         with self.app.test_request_context('/token/init',
@@ -813,7 +818,7 @@ class PushAPITestCase(MyApiTestCase):
             detail = res.json.get("detail")
             # Now the smartphone gets a public key from the server
             self.assertIn("public_key", detail, detail)
-            self.assertEqual(ROLLOUTSTATE.ENROLLED, detail.get("rollout_state"), detail)
+            self.assertEqual(RolloutState.ENROLLED, detail.get("rollout_state"), detail)
 
         #############################################################
         # Run authentication with push token
@@ -835,10 +840,11 @@ class PushAPITestCase(MyApiTestCase):
             challenge = get_challenges(serial=self.serial_push, transaction_id=transaction_id)[0]
             challenge_data = challenge.get_data()
             self.assertIsInstance(challenge_data, dict)
-            self.assertEqual(challenge_data.get("type"), "reverse")
+            self.assertEqual(challenge_data.get("type"), "push")
+            self.assertEqual(challenge_data.get("mode"), "reverse")
             otp = challenge_data.get("otp")
             self.assertTrue(otp)
-            self.assertEqual(len(str(otp)), 6) # Default length
+            self.assertEqual(len(str(otp)), 2) # Default length
 
         # We do poll only, so we need to poll to verify the app gets the OTP
         timestamp = datetime.datetime.now(tz=datetime.timezone.utc).isoformat()

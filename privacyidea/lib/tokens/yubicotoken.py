@@ -54,7 +54,7 @@ from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib.log import log_with
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import SCOPE, GROUP
-from privacyidea.lib.tokenclass import TokenClass, TOKENKIND
+from privacyidea.lib.tokenclass import TokenClass, Tokenkind
 from privacyidea.lib.tokens.yubikeytoken import (yubico_check_api_signature,
                                                  yubico_api_signature)
 
@@ -144,7 +144,7 @@ class YubicoTokenClass(TokenClass):
         param['otplen'] = 44
         TokenClass.update(self, param)
         self.add_tokeninfo("yubico.tokenid", self.tokenid)
-        self.add_tokeninfo("tokenkind", TOKENKIND.HARDWARE)
+        self.add_tokeninfo("tokenkind", Tokenkind.HARDWARE)
 
     @log_with(log)
     @check_token_locked

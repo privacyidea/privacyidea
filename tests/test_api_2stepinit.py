@@ -7,7 +7,7 @@ import time
 from privacyidea.lib.policy import set_policy, SCOPE, delete_policy
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.token import init_token
-from privacyidea.lib.tokenclass import ROLLOUTSTATE
+from privacyidea.lib.tokenclass import RolloutState
 from privacyidea.lib.tokens.HMAC import HmacOtp
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import b32encode_and_unicode
@@ -728,7 +728,7 @@ class TwoStepRolloverAndVerify(MyApiTestCase):
             detail = res.json.get("detail")
             assert detail.get("2step_difficulty") == 12345
             assert detail.get("2step_salt") == 11
-            assert detail.get("rollout_state") == ROLLOUTSTATE.CLIENTWAIT
+            assert detail.get("rollout_state") == RolloutState.CLIENTWAIT
 
         # Second step of 2step-rollover
         # Calculate the client component (when using 'hex', parameter 'otpkeyformat' is not needed)
@@ -749,7 +749,7 @@ class TwoStepRolloverAndVerify(MyApiTestCase):
             assert result.get("status")
             detail = res.json.get("detail")
             assert detail.get("verify").get("message") == "Please enter a valid OTP value of the new token."
-            assert detail.get("rollout_state") == ROLLOUTSTATE.VERIFYPENDING
+            assert detail.get("rollout_state") == RolloutState.VERIFY_PENDING
             otpkey_url = detail.get("otpkey", {}).get("value")
             otpkey = otpkey_url.split("/")[2]
 
@@ -768,7 +768,7 @@ class TwoStepRolloverAndVerify(MyApiTestCase):
             result = res.json.get("result")
             assert result.get("status")
             detail = res.json.get("detail")
-            assert detail.get("rollout_state") == ROLLOUTSTATE.ENROLLED
+            assert detail.get("rollout_state") == RolloutState.ENROLLED
 
         # And do a final authentication with the new otp-key
         otp_value = HmacOtp().generate(key=otpkey_bin, counter=2)

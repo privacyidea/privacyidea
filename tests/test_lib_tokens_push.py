@@ -33,8 +33,8 @@ from privacyidea.lib.policy import (SCOPE, set_policy, delete_policy, LOGINMODE,
 from privacyidea.lib.smsprovider.FirebaseProvider import FirebaseConfig
 from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway, delete_smsgateway
 from privacyidea.lib.token import get_tokens, remove_token, init_token, import_tokens
-from privacyidea.lib.tokenclass import CHALLENGE_SESSION
-from privacyidea.lib.tokens.pushtoken import (PushTokenClass, PUSH_ACTION,
+from privacyidea.lib.tokenclass import ChallengeSession
+from privacyidea.lib.tokens.pushtoken import (PushTokenClass, PushAction,
                                               DEFAULT_CHALLENGE_TEXT, strip_key,
                                               PUBLIC_KEY_SMARTPHONE, PRIVATE_KEY_SERVER,
                                               PUBLIC_KEY_SERVER, AVAILABLE_PRESENCE_OPTIONS_ALPHABETIC,
@@ -107,7 +107,7 @@ class PushTokenTestCase(MyTestCase):
         token_param = {"type": "push", "genkey": 1}
         token_param.update(FB_CONFIG_VALS)
         token = init_token(param=token_param)
-        token.add_tokeninfo(PUSH_ACTION.FIREBASE_CONFIG, self.firebase_config_name)
+        token.add_tokeninfo(PushAction.FIREBASE_CONFIG, self.firebase_config_name)
         token.add_tokeninfo(PUBLIC_KEY_SMARTPHONE, self.smartphone_public_key_pem_urlsafe)
         token.add_tokeninfo("firebase_token", "firebaseT")
         token.add_tokeninfo(PUBLIC_KEY_SERVER, self.server_public_key_pem)
@@ -128,7 +128,7 @@ class PushTokenTestCase(MyTestCase):
         self.assertEqual(class_prefix, "PIPU")
         self.assertEqual(token.get_class_type(), "push")
         self.assertEqual([x for x in PushPresenceOptions.__members__],
-                         token.get_class_info(key="policy")[SCOPE.AUTH][PUSH_ACTION.PRESENCE_OPTIONS]["value"],
+                         token.get_class_info(key="policy")[SCOPE.AUTH][PushAction.PRESENCE_OPTIONS]["value"],
                          token.get_class_info())
 
         # Test to do the 2nd step, although the token is not yet in clientwait
@@ -166,7 +166,7 @@ class PushTokenTestCase(MyTestCase):
         # set policy to use pia scheme
         detail = token.get_init_detail(params={"policies": {"firebase_config": self.firebase_config_name,
                                                             "push_registration_url": "https://privacyidea.com/enroll",
-                                                            PUSH_ACTION.USE_PIA_SCHEME: True}})
+                                                            PushAction.USE_PIA_SCHEME: True}})
         self.assertEqual(detail.get("serial"), self.serial1)
         self.assertEqual(detail.get("rollout_state"), "clientwait")
         enrollment_credential = detail.get("enrollment_credential")
@@ -209,8 +209,8 @@ class PushTokenTestCase(MyTestCase):
         token_param = {"type": "push", "genkey": 1}
         token_param.update(FB_CONFIG_VALS)
         token = init_token(param=token_param)
-        detail = token.get_init_detail(params={"policies": {PUSH_ACTION.FIREBASE_CONFIG: POLL_ONLY,
-                                                            PUSH_ACTION.REGISTRATION_URL: "https://privacyidea.com/enroll"},
+        detail = token.get_init_detail(params={"policies": {PushAction.FIREBASE_CONFIG: POLL_ONLY,
+                                                            PushAction.REGISTRATION_URL: "https://privacyidea.com/enroll"},
                                                PolicyAction.APP_FORCE_UNLOCK: "pin"})
         self.assertIn('app_force_unlock=pin', detail["pushurl"]["value"])
         remove_token(token.get_serial())
@@ -221,7 +221,7 @@ class PushTokenTestCase(MyTestCase):
                            "myFB", FB_CONFIG_VALS)
         self.assertTrue(r > 0)
         set_policy("push1", scope=SCOPE.ENROLL,
-                   action=f"{PUSH_ACTION.FIREBASE_CONFIG}={self.firebase_config_name}")
+                   action=f"{PushAction.FIREBASE_CONFIG}={self.firebase_config_name}")
         token = self._create_push_token()
         remove_token(token.get_serial())
 
@@ -234,9 +234,9 @@ class PushTokenTestCase(MyTestCase):
                        "privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider",
                        "myFB", FB_CONFIG_VALS)
         set_policy("push1", scope=SCOPE.ENROLL,
-                   action=f"{PUSH_ACTION.FIREBASE_CONFIG}={self.firebase_config_name},"
-                          f"{PUSH_ACTION.REGISTRATION_URL}={REGISTRATION_URL},"
-                          f"{PUSH_ACTION.TTL}={TTL}")
+                   action=f"{PushAction.FIREBASE_CONFIG}={self.firebase_config_name},"
+                          f"{PushAction.REGISTRATION_URL}={REGISTRATION_URL},"
+                          f"{PushAction.TTL}={TTL}")
         # create push token
         token = self._create_push_token()
         serial = token.get_serial()
@@ -312,7 +312,7 @@ class PushTokenTestCase(MyTestCase):
             # Now disable polling and check that no challenge is created
             # disallow polling through a policy
             set_policy("push_poll", SCOPE.AUTH,
-                       action=f"{PUSH_ACTION.ALLOW_POLLING}={PushAllowPolling.DENY}")
+                       action=f"{PushAction.ALLOW_POLLING}={PushAllowPolling.DENY}")
 
             with mock.patch("logging.Logger.warning") as mock_log:
                 with self.app.test_request_context("/validate/check",
@@ -331,7 +331,7 @@ class PushTokenTestCase(MyTestCase):
             self.assertEqual(len(get_challenges(serial=token.token.serial)), 0)
             # disallow polling the specific token through a policy
             set_policy("push_poll", SCOPE.AUTH,
-                       action=f"{PUSH_ACTION.ALLOW_POLLING}={PushAllowPolling.TOKEN}")
+                       action=f"{PushAction.ALLOW_POLLING}={PushAllowPolling.TOKEN}")
             token.add_tokeninfo(POLLING_ALLOWED, False)
             with mock.patch("logging.Logger.warning") as mock_log:
                 with self.app.test_request_context("/validate/check",
@@ -369,7 +369,7 @@ class PushTokenTestCase(MyTestCase):
             # add responses, to simulate the successful communication to firebase
             # We also add the presence_required policy.
             set_policy("push_presence", SCOPE.AUTH,
-                       action=f"{PUSH_ACTION.REQUIRE_PRESENCE}=1")
+                       action=f"{PushAction.REQUIRE_PRESENCE}=1")
             responses.replace(responses.POST,
                               "https://fcm.googleapis.com/v1/projects/test-123456/messages:send",
                               body="""{}""",
@@ -403,7 +403,7 @@ class PushTokenTestCase(MyTestCase):
                        "privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider",
                        "myFB", FB_CONFIG_VALS)
         set_policy("push_config", scope=SCOPE.ENROLL,
-                   action=f"{PUSH_ACTION.FIREBASE_CONFIG}={self.firebase_config_name}")
+                   action=f"{PushAction.FIREBASE_CONFIG}={self.firebase_config_name}")
         # create push token
         token = self._create_push_token()
         serial = token.get_serial()
@@ -525,7 +525,7 @@ class PushTokenTestCase(MyTestCase):
                 # Clear session before recreating a new challenge to avoid conflicts
                 db.session.expunge_all()
 
-                set_policy("push1", scope=SCOPE.AUTH, action=f"{PUSH_ACTION.WAIT}=20")
+                set_policy("push1", scope=SCOPE.AUTH, action=f"{PushAction.WAIT}=20")
                 # Send the first authentication request to trigger the challenge
                 with self.app.test_request_context("/validate/check",
                                                    method="POST",
@@ -558,7 +558,7 @@ class PushTokenTestCase(MyTestCase):
                           body="""{}""",
                           content_type="application/json")
 
-            set_policy("push1", scope=SCOPE.AUTH, action=f"{PUSH_ACTION.WAIT}=1")
+            set_policy("push1", scope=SCOPE.AUTH, action=f"{PushAction.WAIT}=1")
             # Send the first authentication request to trigger the challenge
             with self.app.test_request_context("/validate/check",
                                                method="POST",
@@ -761,7 +761,7 @@ class PushTokenTestCase(MyTestCase):
                        'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider',
                        "myFB", FB_CONFIG_VALS)
         set_policy("push_config", scope=SCOPE.ENROLL,
-                   action="{0!s}={1!s}".format(PUSH_ACTION.FIREBASE_CONFIG,
+                   action="{0!s}={1!s}".format(PushAction.FIREBASE_CONFIG,
                                                self.firebase_config_name))
         # create push token
         tokenobj = self._create_push_token()
@@ -846,7 +846,7 @@ class PushTokenTestCase(MyTestCase):
 
         # The challenge is still in the database, but it is marked as declined
         challenge = challengeobject_list[0]
-        self.assertEqual(CHALLENGE_SESSION.DECLINED, challenge.session)
+        self.assertEqual(ChallengeSession.DECLINED, challenge.session)
 
         with self.app.test_request_context('/validate/polltransaction', method='GET',
                                            query_string={'transaction_id': transaction_id}):
@@ -873,7 +873,7 @@ class PushTokenTestCase(MyTestCase):
                        'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider',
                        "myFB", FB_CONFIG_VALS)
         set_policy("push_config", scope=SCOPE.ENROLL,
-                   action="{0!s}={1!s}".format(PUSH_ACTION.FIREBASE_CONFIG,
+                   action="{0!s}={1!s}".format(PushAction.FIREBASE_CONFIG,
                                                self.firebase_config_name))
         # create push token
         tokenobj = self._create_push_token()
@@ -887,7 +887,7 @@ class PushTokenTestCase(MyTestCase):
         set_policy("webui", scope=SCOPE.WEBUI,
                    action="{}={}".format(PolicyAction.LOGINMODE, LOGINMODE.PRIVACYIDEA))
         # Set a PUSH_WAIT action which will be ignored by privacyIDEA
-        set_policy("push1", scope=SCOPE.AUTH, action="{0!s}=20".format(PUSH_ACTION.WAIT))
+        set_policy("push1", scope=SCOPE.AUTH, action="{0!s}=20".format(PushAction.WAIT))
         with mock.patch('privacyidea.lib.smsprovider.FirebaseProvider.service_account.Credentials'
                         '.from_service_account_file') as mySA:
             # alternative: side_effect instead of return_value
@@ -903,7 +903,7 @@ class PushTokenTestCase(MyTestCase):
                                                data={"username": "cornelius",
                                                      "realm": self.realm1,
                                                      # this will be overwritten by pushtoken_disable_wait
-                                                     PUSH_ACTION.WAIT: "10",
+                                                     PushAction.WAIT: "10",
                                                      "password": "pushpin"}):
                 res = self.app.full_dispatch_request()
                 self.assertEqual(res.status_code, 200)
@@ -981,7 +981,7 @@ class PushTokenTestCase(MyTestCase):
                        'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider',
                        "myFB", FB_CONFIG_VALS)
         set_policy("push_config", scope=SCOPE.ENROLL,
-                   action=f"{PUSH_ACTION.FIREBASE_CONFIG}={self.firebase_config_name}")
+                   action=f"{PushAction.FIREBASE_CONFIG}={self.firebase_config_name}")
 
         user = User("cornelius", self.realm1)
 
@@ -1002,7 +1002,7 @@ class PushTokenTestCase(MyTestCase):
 
         # Set policies
         set_policy("webui", scope=SCOPE.WEBUI, action=f"{PolicyAction.LOGINMODE}={LOGINMODE.PRIVACYIDEA}")
-        set_policy("push_require_presence", scope=SCOPE.AUTH, action=f"{PUSH_ACTION.REQUIRE_PRESENCE}=1")
+        set_policy("push_require_presence", scope=SCOPE.AUTH, action=f"{PushAction.REQUIRE_PRESENCE}=1")
         set_policy("totp_challenge_response", scope=SCOPE.AUTH, action=f"{PolicyAction.CHALLENGERESPONSE}=totp")
 
         with mock.patch('privacyidea.lib.smsprovider.FirebaseProvider.service_account.Credentials'
@@ -1020,7 +1020,7 @@ class PushTokenTestCase(MyTestCase):
                                                data={"username": "cornelius",
                                                      "realm": self.realm1,
                                                      # This will be overwritten by pushtoken_disable_wait
-                                                     PUSH_ACTION.WAIT: "10",
+                                                     PushAction.WAIT: "10",
                                                      "password": "pushpin"}):
                 res = self.app.full_dispatch_request()
                 self.assertEqual(200, res.status_code)
@@ -1110,9 +1110,9 @@ class PushTokenTestCase(MyTestCase):
                        'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider',
                        "myFB", FB_CONFIG_VALS)
         set_policy("push_config", scope=SCOPE.ENROLL,
-                   action=f"{PUSH_ACTION.FIREBASE_CONFIG}={self.firebase_config_name}")
+                   action=f"{PushAction.FIREBASE_CONFIG}={self.firebase_config_name}")
         set_policy("push_numeric", scope=SCOPE.AUTH,
-                   action=f"{PUSH_ACTION.PRESENCE_OPTIONS}={PushPresenceOptions.NUMERIC.name}")
+                   action=f"{PushAction.PRESENCE_OPTIONS}={PushPresenceOptions.NUMERIC.name}")
         # Create push token
         token_object = self._create_push_token()
 
@@ -1124,10 +1124,10 @@ class PushTokenTestCase(MyTestCase):
         set_policy("webui", scope=SCOPE.WEBUI,
                    action=f"{PolicyAction.LOGINMODE}={LOGINMODE.PRIVACYIDEA}")
         # Set a policy to require presence
-        set_policy("push_require_presence", scope=SCOPE.AUTH, action=f"{PUSH_ACTION.REQUIRE_PRESENCE}=1")
+        set_policy("push_require_presence", scope=SCOPE.AUTH, action=f"{PushAction.REQUIRE_PRESENCE}=1")
         # Test that the default value of presence options is 3 if it was configured > 10
         set_policy("push_presence_num_opts", scope=SCOPE.AUTH,
-                   action=f"{PUSH_ACTION.PRESENCE_NUM_OPTIONS}=15")
+                   action=f"{PushAction.PRESENCE_NUM_OPTIONS}=15")
         with mock.patch('privacyidea.lib.smsprovider.FirebaseProvider.service_account.Credentials'
                         '.from_service_account_file') as fb_service_account:
             # Alternative: side_effect instead of return_value
@@ -1143,7 +1143,7 @@ class PushTokenTestCase(MyTestCase):
                                                data={"username": "cornelius",
                                                      "realm": self.realm1,
                                                      # This will be overwritten by pushtoken_disable_wait
-                                                     PUSH_ACTION.WAIT: "10",
+                                                     PushAction.WAIT: "10",
                                                      "password": "pushpin"}):
                 res = self.app.full_dispatch_request()
                 self.assertEqual(res.status_code, 200)
@@ -1229,13 +1229,13 @@ class PushTokenTestCase(MyTestCase):
                        'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider',
                        "myFB", FB_CONFIG_VALS)
         set_policy("push_config", scope=SCOPE.ENROLL,
-                   action=f"{PUSH_ACTION.FIREBASE_CONFIG}={self.firebase_config_name}")
+                   action=f"{PushAction.FIREBASE_CONFIG}={self.firebase_config_name}")
         set_policy("push_custom", scope=SCOPE.AUTH,
-                   action=f"{PUSH_ACTION.PRESENCE_OPTIONS}={PushPresenceOptions.CUSTOM.name}")
+                   action=f"{PushAction.PRESENCE_OPTIONS}={PushPresenceOptions.CUSTOM.name}")
         set_policy("push_custom_options", scope=SCOPE.AUTH,
-                   action=f"{PUSH_ACTION.PRESENCE_CUSTOM_OPTIONS}={custom_presence_options}")
+                   action=f"{PushAction.PRESENCE_CUSTOM_OPTIONS}={custom_presence_options}")
         set_policy("push_presence_num_opts", scope=SCOPE.AUTH,
-                   action=f"{PUSH_ACTION.PRESENCE_NUM_OPTIONS}=9")
+                   action=f"{PushAction.PRESENCE_NUM_OPTIONS}=9")
         # create push token
         token = self._create_push_token()
 
@@ -1247,7 +1247,7 @@ class PushTokenTestCase(MyTestCase):
         set_policy("webui", scope=SCOPE.WEBUI,
                    action=f"{PolicyAction.LOGINMODE}={LOGINMODE.PRIVACYIDEA}")
         # Set a policy to require presence
-        set_policy("push_require_presence", scope=SCOPE.AUTH, action=f"{PUSH_ACTION.REQUIRE_PRESENCE}=1")
+        set_policy("push_require_presence", scope=SCOPE.AUTH, action=f"{PushAction.REQUIRE_PRESENCE}=1")
         with mock.patch('privacyidea.lib.smsprovider.FirebaseProvider.service_account.Credentials'
                         '.from_service_account_file') as mock_service_account:
             # alternative: side_effect instead of return_value
@@ -1263,7 +1263,7 @@ class PushTokenTestCase(MyTestCase):
                                                    data={"username": "cornelius",
                                                          "realm": self.realm1,
                                                          # this will be overwritten by pushtoken_disable_wait
-                                                         PUSH_ACTION.WAIT: "10",
+                                                         PushAction.WAIT: "10",
                                                          "password": "pushpin"}):
                     res = self.app.full_dispatch_request()
                     self.assertEqual(res.status_code, 200)
@@ -1348,12 +1348,12 @@ class PushTokenTestCase(MyTestCase):
         # Set a loginmode policy
         set_policy("webui", scope=SCOPE.WEBUI, action=f"{PolicyAction.LOGINMODE}={LOGINMODE.PRIVACYIDEA}")
         # Set a policy to require presence
-        set_policy("push_require_presence", scope=SCOPE.AUTH, action=f"{PUSH_ACTION.REQUIRE_PRESENCE}=1")
+        set_policy("push_require_presence", scope=SCOPE.AUTH, action=f"{PushAction.REQUIRE_PRESENCE}=1")
         set_policy("text", scope=SCOPE.AUTH, action="challenge_text=the answer is {presence_answer}")
 
         self.setUp_user_realms()
         token = self._create_push_token()
-        token.add_tokeninfo(PUSH_ACTION.FIREBASE_CONFIG, POLL_ONLY)
+        token.add_tokeninfo(PushAction.FIREBASE_CONFIG, POLL_ONLY)
         token.set_pin("pushpin")
         token.add_user(User("cornelius", self.realm1))
         with self.app.test_request_context('/auth',
@@ -1560,9 +1560,9 @@ class PushTokenTestCase(MyTestCase):
     def test_15_poll_endpoint(self):
         g = FakeFlaskG()
         set_policy("push1", scope=SCOPE.ENROLL,
-                   action=f"{PUSH_ACTION.FIREBASE_CONFIG}={self.firebase_config_name},"
-                          f"{PUSH_ACTION.REGISTRATION_URL}={REGISTRATION_URL},"
-                          f"{PUSH_ACTION.TTL}={TTL}")
+                   action=f"{PushAction.FIREBASE_CONFIG}={self.firebase_config_name},"
+                          f"{PushAction.REGISTRATION_URL}={REGISTRATION_URL},"
+                          f"{PushAction.TTL}={TTL}")
         g.policy_object = PolicyClass()
         # set up the Firebase Gateway
         r = set_smsgateway(self.firebase_config_name,
@@ -1642,7 +1642,7 @@ class PushTokenTestCase(MyTestCase):
         self.assertEqual(res[1]['result']['value'], [], res[1]['result']['value'])
 
         # disallow polling through a policy
-        set_policy('push_poll', SCOPE.AUTH, action=f'{PUSH_ACTION.ALLOW_POLLING}={PushAllowPolling.DENY}')
+        set_policy('push_poll', SCOPE.AUTH, action=f'{PushAction.ALLOW_POLLING}={PushAllowPolling.DENY}')
         with mock.patch('privacyidea.models.utils.utc_now',
                         return_value=timestamp_polling), mock.patch(
                 'privacyidea.lib.tokens.pushtoken.datetime') as mock_dt2:
@@ -1652,7 +1652,7 @@ class PushTokenTestCase(MyTestCase):
                                    PushTokenClass.api_endpoint, request, g)
 
         # disallow polling based on a per token configuration
-        set_policy('push_poll', SCOPE.AUTH, action=f'{PUSH_ACTION.ALLOW_POLLING}={PushAllowPolling.TOKEN}')
+        set_policy('push_poll', SCOPE.AUTH, action=f'{PushAction.ALLOW_POLLING}={PushAllowPolling.TOKEN}')
         # If no tokeninfo is set, allow polling
         with mock.patch('privacyidea.models.utils.utc_now',
                         return_value=timestamp_polling), mock.patch(
@@ -1684,7 +1684,7 @@ class PushTokenTestCase(MyTestCase):
         # allows polling, the tokeninfo is ignored
         token.add_tokeninfo(POLLING_ALLOWED, 'False')
         set_policy('push_poll', SCOPE.AUTH,
-                   action=f'{PUSH_ACTION.ALLOW_POLLING}={PushAllowPolling.ALLOW}')
+                   action=f'{PushAction.ALLOW_POLLING}={PushAllowPolling.ALLOW}')
         with mock.patch('privacyidea.models.utils.utc_now',
                         return_value=timestamp_polling), mock.patch(
                 'privacyidea.lib.tokens.pushtoken.datetime') as mock_dt2:
@@ -1762,7 +1762,7 @@ class PushTokenTestCase(MyTestCase):
                                PushTokenClass.api_endpoint, request, g)
 
         # wrongly configured push token (no firebase config)
-        token.delete_tokeninfo(PUSH_ACTION.FIREBASE_CONFIG)
+        token.delete_tokeninfo(PushAction.FIREBASE_CONFIG)
         # We are missing a registration URL, thus polling of challenges fails
         delete_policy("push1")
         request.all_data = {'serial': serial,
@@ -1778,7 +1778,7 @@ class PushTokenTestCase(MyTestCase):
                                    PushTokenClass.api_endpoint, request, g)
 
         # unknown firebase configuration
-        token.add_tokeninfo(PUSH_ACTION.FIREBASE_CONFIG, 'my unknown firebase config')
+        token.add_tokeninfo(PushAction.FIREBASE_CONFIG, 'my unknown firebase config')
         request.all_data = {'serial': serial,
                             'timestamp': timestamp_str,
                             'signature': b32encode(signature)}
@@ -1805,7 +1805,7 @@ class PushTokenTestCase(MyTestCase):
                        'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider',
                        "myFB", FB_CONFIG_VALS)
         set_policy("push_config", scope=SCOPE.ENROLL,
-                   action=f"{PUSH_ACTION.FIREBASE_CONFIG}={self.firebase_config_name}")
+                   action=f"{PushAction.FIREBASE_CONFIG}={self.firebase_config_name}")
         # create push token
         token1 = self._create_push_token()
         serial1 = token1.get_serial()
@@ -1820,7 +1820,7 @@ class PushTokenTestCase(MyTestCase):
         token2.add_user(User("cornelius", self.realm1))
 
         # set the policy for require presence
-        set_policy('push_presence', SCOPE.AUTH, action=f'{PUSH_ACTION.REQUIRE_PRESENCE}=1')
+        set_policy('push_presence', SCOPE.AUTH, action=f'{PushAction.REQUIRE_PRESENCE}=1')
 
         cached_fbtoken = {
             'firebase_token': {

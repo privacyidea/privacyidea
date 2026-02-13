@@ -41,7 +41,7 @@ from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import (SCOPE, GROUP, comma_escape_text,
                                     get_action_values_from_options, Match)
 from privacyidea.lib.token import get_tokens
-from privacyidea.lib.tokenclass import TokenClass, CLIENTMODE, ROLLOUTSTATE
+from privacyidea.lib.tokenclass import TokenClass, ClientMode, RolloutState
 from privacyidea.lib.tokens.u2f import (check_registration_data, url_decode,
                                         parse_registration_data, url_encode,
                                         parse_response_data, check_response,
@@ -212,7 +212,7 @@ class U2fTokenClass(TokenClass):
     The U2F Token implementation.
     """
 
-    client_mode = CLIENTMODE.U2F
+    client_mode = ClientMode.U2F
 
     @staticmethod
     def get_class_type():
@@ -333,11 +333,11 @@ class U2fTokenClass(TokenClass):
         reg_data = getParam(param, "regdata")
         verify_cert = is_true(getParam(param, "u2f.verify_cert", default=True))
         if not reg_data:
-            self.token.rollout_state = ROLLOUTSTATE.CLIENTWAIT
+            self.token.rollout_state = RolloutState.CLIENTWAIT
             # Set the description in the first enrollment step
             if "description" in param:
                 self.set_description(getParam(param, "description", default=""))
-        elif reg_data and self.token.rollout_state == ROLLOUTSTATE.CLIENTWAIT:
+        elif reg_data and self.token.rollout_state == RolloutState.CLIENTWAIT:
             attestation_cert, user_pub_key, key_handle, \
                 signature, automatic_description = parse_registration_data(reg_data,
                                                                            verify_cert=verify_cert)
@@ -374,7 +374,7 @@ class U2fTokenClass(TokenClass):
         """
         response_detail = {}
         # get_init_details runs after "update" method. So in the first step clientwait has already been set
-        if self.token.rollout_state == ROLLOUTSTATE.CLIENTWAIT:
+        if self.token.rollout_state == RolloutState.CLIENTWAIT:
             # This is the first step of the init request
             app_id = get_from_config("u2f.appId", "").strip("/")
             from privacyidea.lib.error import TokenAdminError
@@ -490,7 +490,7 @@ class U2fTokenClass(TokenClass):
         image_url = IMAGES.get(self.token.description.lower().split()[0], "")
         dataimage = convert_imagefile_to_dataimage(image_url) if image_url else ""
         reply_dict = {"attributes": {"u2fSignRequest": u2f_sign_request,
-                                     "hideResponseInput": self.client_mode != CLIENTMODE.INTERACTIVE,
+                                     "hideResponseInput": self.client_mode != ClientMode.INTERACTIVE,
                                      "img": dataimage},
                       "image": dataimage}
 

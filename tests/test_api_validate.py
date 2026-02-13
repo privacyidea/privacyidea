@@ -39,11 +39,11 @@ from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway
 from privacyidea.lib.token import (get_tokens, init_token, remove_token,
                                    reset_token, enable_token, revoke_token,
                                    set_pin, get_one_token, unassign_token)
-from privacyidea.lib.tokenclass import (CLIENTMODE, FAILCOUNTER_EXCEEDED,
+from privacyidea.lib.tokenclass import (ClientMode, FAILCOUNTER_EXCEEDED,
                                         FAILCOUNTER_CLEAR_TIMEOUT, DATE_FORMAT,
                                         AUTH_DATE_FORMAT)
 from privacyidea.lib.tokens.passwordtoken import DEFAULT_LENGTH as DEFAULT_LENGTH_PW
-from privacyidea.lib.tokens.pushtoken import PUSH_ACTION, strip_key, POLL_ONLY
+from privacyidea.lib.tokens.pushtoken import PushAction, strip_key, POLL_ONLY
 from privacyidea.lib.tokens.registrationtoken import DEFAULT_LENGTH as DEFAULT_LENGTH_REG
 from privacyidea.lib.tokens.registrationtoken import RegistrationTokenClass
 from privacyidea.lib.tokens.smstoken import SmsTokenClass
@@ -4398,9 +4398,9 @@ class MultiChallenge(MyApiTestCase):
         from privacyidea.lib.tokens.pushtoken import POLL_ONLY
         set_policy("push2", scope=SCOPE.ENROLL,
                    action="{0!s}={1!s},{2!s}={3!s},{4!s}={5!s}".format(
-                       PUSH_ACTION.FIREBASE_CONFIG, POLL_ONLY,
-                       PUSH_ACTION.REGISTRATION_URL, REGISTRATION_URL,
-                       PUSH_ACTION.TTL, TTL))
+                       PushAction.FIREBASE_CONFIG, POLL_ONLY,
+                       PushAction.REGISTRATION_URL, REGISTRATION_URL,
+                       PushAction.TTL, TTL))
 
         pin = "otppin"
         # create push token for user with PIN
@@ -4528,9 +4528,9 @@ class MultiChallenge(MyApiTestCase):
         user = User("selfservice", self.realm1)
 
         # set policy
-        set_policy("push", scope=SCOPE.ENROLL, action=f"{PUSH_ACTION.FIREBASE_CONFIG}={POLL_ONLY},"
-                                                      f"{PUSH_ACTION.REGISTRATION_URL}={REGISTRATION_URL},"
-                                                      f"{PUSH_ACTION.TTL}={TTL}")
+        set_policy("push", scope=SCOPE.ENROLL, action=f"{PushAction.FIREBASE_CONFIG}={POLL_ONLY},"
+                                                      f"{PushAction.REGISTRATION_URL}={REGISTRATION_URL},"
+                                                      f"{PushAction.TTL}={TTL}")
 
         pin = "otppin"
         # create push token for user with PIN
@@ -4778,12 +4778,12 @@ class PushChallengeTags(MyApiTestCase):
         from privacyidea.lib.tokens.pushtoken import POLL_ONLY
         set_policy("push2", scope=SCOPE.ENROLL,
                    action="{0!s}={1!s},{2!s}={3!s},{4!s}={5!s}".format(
-                       PUSH_ACTION.FIREBASE_CONFIG, POLL_ONLY,
-                       PUSH_ACTION.REGISTRATION_URL, REGISTRATION_URL,
-                       PUSH_ACTION.TTL, TTL))
+                       PushAction.FIREBASE_CONFIG, POLL_ONLY,
+                       PushAction.REGISTRATION_URL, REGISTRATION_URL,
+                       PushAction.TTL, TTL))
 
         set_policy("push1", scope=SCOPE.AUTH,
-                   action=PUSH_ACTION.MOBILE_TEXT + "=Login von UserAgent: {ua_string} via {client_ip}/{tokentype}.")
+                   action=PushAction.MOBILE_TEXT + "=Login von UserAgent: {ua_string} via {client_ip}/{tokentype}.")
 
         # create push token for user with PIN
         # 1st step
@@ -6305,10 +6305,10 @@ class MultiChallengeEnrollTest(MyApiTestCase):
             self.assertTrue(detail.get(PolicyAction.ENROLL_VIA_MULTICHALLENGE))
             self.assertFalse(detail.get(PolicyAction.ENROLL_VIA_MULTICHALLENGE_OPTIONAL))
             # Get image and client_mode
-            self.assertEqual(CLIENTMODE.INTERACTIVE, detail.get("client_mode"), detail)
+            self.assertEqual(ClientMode.INTERACTIVE, detail.get("client_mode"), detail)
             # Check, that multi_challenge is also contained.
             chal = detail.get("multi_challenge")[0]
-            self.assertEqual(CLIENTMODE.INTERACTIVE, chal.get("client_mode"), detail)
+            self.assertEqual(ClientMode.INTERACTIVE, chal.get("client_mode"), detail)
             self.assertIn("image", detail, detail)
             self.assertIn("link", detail)
             link = detail.get("link")
@@ -6412,9 +6412,9 @@ class MultiChallengeEnrollTest(MyApiTestCase):
             self.assertTrue("Please scan the QR code and enter the OTP value!" in detail.get("message"),
                             detail.get("message"))
             # Get image and client_mode
-            self.assertEqual(CLIENTMODE.INTERACTIVE, detail.get("client_mode"))
+            self.assertEqual(ClientMode.INTERACTIVE, detail.get("client_mode"))
             # Check, that multi_challenge is also contained.
-            self.assertEqual(CLIENTMODE.INTERACTIVE, detail.get("multi_challenge")[0].get("client_mode"))
+            self.assertEqual(ClientMode.INTERACTIVE, detail.get("multi_challenge")[0].get("client_mode"))
             self.assertIn("image", detail)
             self.assertIn("link", detail)
             link = detail.get("link")
@@ -6513,9 +6513,9 @@ class MultiChallengeEnrollTest(MyApiTestCase):
             transaction_id = detail.get("transaction_id")
             self.assertTrue("Please enter your new email address!" in detail.get("message"), detail.get("message"))
             # Get image and client_mode
-            self.assertEqual(CLIENTMODE.INTERACTIVE, detail.get("client_mode"))
+            self.assertEqual(ClientMode.INTERACTIVE, detail.get("client_mode"))
             # Check, that multi_challenge is also contained.
-            self.assertEqual(CLIENTMODE.INTERACTIVE, detail.get("multi_challenge")[0].get("client_mode"))
+            self.assertEqual(ClientMode.INTERACTIVE, detail.get("multi_challenge")[0].get("client_mode"))
             self.assertIn("image", detail)
             serial = detail.get("serial")
 
@@ -6600,9 +6600,9 @@ class MultiChallengeEnrollTest(MyApiTestCase):
             transaction_id = detail.get("transaction_id")
             self.assertTrue("Please enter your new email address!" in detail.get("message"), detail.get("message"))
             # Get image and client_mode
-            self.assertEqual(CLIENTMODE.INTERACTIVE, detail.get("client_mode"))
+            self.assertEqual(ClientMode.INTERACTIVE, detail.get("client_mode"))
             # Check, that multi_challenge is also contained.
-            self.assertEqual(CLIENTMODE.INTERACTIVE, detail.get("multi_challenge")[0].get("client_mode"))
+            self.assertEqual(ClientMode.INTERACTIVE, detail.get("multi_challenge")[0].get("client_mode"))
             self.assertIn("image", detail)
 
         # 3. Enter an invalid email address and finalize the token
@@ -6674,9 +6674,9 @@ class MultiChallengeEnrollTest(MyApiTestCase):
             transaction_id = detail.get("transaction_id")
             self.assertTrue("Phone number enter you must!" in detail.get("message"), detail.get("message"))
             # Get image and client_mode
-            self.assertEqual(CLIENTMODE.INTERACTIVE, detail.get("client_mode"))
+            self.assertEqual(ClientMode.INTERACTIVE, detail.get("client_mode"))
             # Check, that multi_challenge is also contained.
-            self.assertEqual(CLIENTMODE.INTERACTIVE, detail.get("multi_challenge")[0].get("client_mode"))
+            self.assertEqual(ClientMode.INTERACTIVE, detail.get("multi_challenge")[0].get("client_mode"))
             self.assertIn("image", detail)
             serial = detail.get("serial")
 
@@ -6764,9 +6764,9 @@ class MultiChallengeEnrollTest(MyApiTestCase):
             transaction_id = detail.get("transaction_id")
             self.assertTrue("Please enter your new email address!" in detail.get("message"), detail.get("message"))
             # Get image and client_mode
-            self.assertEqual(CLIENTMODE.INTERACTIVE, detail.get("client_mode"))
+            self.assertEqual(ClientMode.INTERACTIVE, detail.get("client_mode"))
             # Check, that multi_challenge is also contained.
-            self.assertEqual(CLIENTMODE.INTERACTIVE, detail.get("multi_challenge")[0].get("client_mode"))
+            self.assertEqual(ClientMode.INTERACTIVE, detail.get("multi_challenge")[0].get("client_mode"))
             self.assertIn("image", detail)
 
         # 3. Enter an inncorrect email address and finalize the token
@@ -6999,10 +6999,10 @@ class MultiChallengeEnrollTest(MyApiTestCase):
             transaction_id = detail.get("transaction_id")
             self.assertIn("Please scan the QR code to register the container", detail.get("message"))
             # Get image and client_mode
-            self.assertEqual(CLIENTMODE.POLL, detail.get("client_mode"))
+            self.assertEqual(ClientMode.POLL, detail.get("client_mode"))
             # Check, that multi_challenge is also contained.
             challenge = detail.get("multi_challenge")[0]
-            self.assertEqual(CLIENTMODE.POLL, challenge.get("client_mode"))
+            self.assertEqual(ClientMode.POLL, challenge.get("client_mode"))
             self.assertIn("image", detail)
             self.assertIn("link", detail)
             link = detail.get("link")

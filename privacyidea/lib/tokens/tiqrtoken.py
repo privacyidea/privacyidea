@@ -82,7 +82,7 @@ from urllib.parse import quote, quote_plus
 
 from privacyidea.api.lib.utils import getParam
 from privacyidea.lib.config import get_from_config
-from privacyidea.lib.tokenclass import TokenClass, AUTHENTICATIONMODE, CLIENTMODE
+from privacyidea.lib.tokenclass import TokenClass, AuthenticationMode, ClientMode
 from privacyidea.lib.log import log_with
 from privacyidea.lib.crypto import generate_otpkey
 from privacyidea.lib.utils import create_img
@@ -118,8 +118,8 @@ class TiqrTokenClass(OcraTokenClass):
     """
     The TiQR Token implementation.
     """
-    mode = [AUTHENTICATIONMODE.AUTHENTICATE, AUTHENTICATIONMODE.CHALLENGE, AUTHENTICATIONMODE.OUTOFBAND]
-    client_mode = CLIENTMODE.POLL
+    mode = [AuthenticationMode.AUTHENTICATE, AuthenticationMode.CHALLENGE, AuthenticationMode.OUTOFBAND]
+    client_mode = ClientMode.POLL
 
     @staticmethod
     def get_class_type():
@@ -434,8 +434,8 @@ class TiqrTokenClass(OcraTokenClass):
         image = create_img(authurl)
         attributes = {"img": image,
                       "value": authurl,
-                      "poll": self.client_mode == CLIENTMODE.POLL,
-                      "hideResponseInput": self.client_mode != CLIENTMODE.INTERACTIVE}
+                      "poll": self.client_mode == ClientMode.POLL,
+                      "hideResponseInput": self.client_mode != ClientMode.INTERACTIVE}
         reply_dict = {"attributes": attributes,
                       "image": image}
 

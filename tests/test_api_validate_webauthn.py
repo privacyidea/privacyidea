@@ -9,7 +9,7 @@ from privacyidea.lib.policy import SCOPE, set_policy, delete_policy, delete_poli
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.token import (get_tokens, init_token, remove_token,
                                    get_one_token)
-from privacyidea.lib.tokenclass import ROLLOUTSTATE
+from privacyidea.lib.tokenclass import RolloutState
 from privacyidea.lib.tokens.webauthn import webauthn_b64_decode
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import hexlify_and_unicode
@@ -359,7 +359,7 @@ class WebAuthn(MyApiTestCase):
 
         # The token is now in the client_wait rollout state. We do not do the 2nd enrollment step
         tokens = get_tokens(serial=self.serial)
-        self.assertEqual(ROLLOUTSTATE.CLIENTWAIT, tokens[0].rollout_state)
+        self.assertEqual(RolloutState.CLIENTWAIT, tokens[0].rollout_state)
 
         # Now we create the 2nd token of the user, an HOTP token
         with self.app.test_request_context('/token/init',

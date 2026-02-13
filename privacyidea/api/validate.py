@@ -113,7 +113,7 @@ from privacyidea.lib.subscriptions import CheckSubscription
 from privacyidea.lib.token import (check_user_pass, check_serial_pass,
                                    check_otp, create_challenges_from_tokens, get_one_token)
 from privacyidea.lib.token import get_tokens
-from privacyidea.lib.tokenclass import CHALLENGE_SESSION
+from privacyidea.lib.tokenclass import ChallengeSession
 from privacyidea.lib.user import log_used_user, User, split_user
 from privacyidea.lib.utils import get_client_ip, get_plugin_info_from_useragent, AUTH_RESPONSE
 from privacyidea.lib.utils import is_true, get_computer_name_from_user_agent
@@ -928,7 +928,7 @@ def poll_transaction(transaction_id=None):
     else:
         result = False
         for challenge in matching_challenges:
-            if challenge.session == CHALLENGE_SESSION.DECLINED:
+            if challenge.session == ChallengeSession.DECLINED:
                 declined_challenges.append(challenge)
         if declined_challenges:
             log_challenges = declined_challenges
