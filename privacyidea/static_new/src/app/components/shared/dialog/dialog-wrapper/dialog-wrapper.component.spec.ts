@@ -98,7 +98,6 @@ describe("DialogWrapperComponent", () => {
 
   it("should throw an error if no actions and no close button", () => {
     const fixtureWrapper = TestBed.createComponent(DialogWrapperComponent);
-    const componentWrapper = fixtureWrapper.componentInstance;
     fixtureWrapper.componentRef.setInput("actions", []);
     fixtureWrapper.componentRef.setInput("showCloseButton", false);
     expect(() => fixtureWrapper.detectChanges()).toThrow("Dialog must have at least one action or a close button.");

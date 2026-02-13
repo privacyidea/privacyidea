@@ -25,12 +25,10 @@ import { MatDialog, MatDialogModule } from "@angular/material/dialog";
 import { TokengroupService } from "../../../services/tokengroup/tokengroup.service";
 import { DialogService } from "../../../services/dialog/dialog.service";
 import { signal } from "@angular/core";
-import { M } from "@angular/cdk/keycodes";
 import { MockDialogService } from "../../../../testing/mock-services/mock-dialog-service";
 import { Subject } from "rxjs";
 import { MockMatDialogRef } from "../../../../testing/mock-mat-dialog-ref";
 import { SaveAndExitDialogResult } from "../../shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
-import { NewPrivacyideaServerComponent } from "../privacyidea-servers/new-privacyidea-server/new-privacyidea-server.component";
 
 describe("TokengroupsComponent", () => {
   let component: TokengroupsComponent;

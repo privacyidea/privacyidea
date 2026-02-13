@@ -41,7 +41,6 @@ import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { MockAuthService } from "../../../../testing/mock-services/mock-auth-service";
 import { MockDialogService } from "../../../../testing/mock-services/mock-dialog-service";
-import { MockMatDialogRef } from "../../../../testing/mock-mat-dialog-ref";
 
 class MatDialogMock {
   result = { confirmed: true };

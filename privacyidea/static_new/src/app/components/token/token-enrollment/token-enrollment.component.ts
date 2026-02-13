@@ -108,7 +108,6 @@ import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.
 import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
 import { UserAssignmentComponent } from "../user-assignment/user-assignment.component";
 import { TokenEnrollmentLastStepDialogComponent } from "./token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
-import { MatDialogConfig } from "@angular/material/dialog";
 import { TokenEnrollmentLastStepDialogData } from "./token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.self-service.component";
 
 export type enrollmentArgsGetterFn<T extends TokenEnrollmentData = TokenEnrollmentData> = (
