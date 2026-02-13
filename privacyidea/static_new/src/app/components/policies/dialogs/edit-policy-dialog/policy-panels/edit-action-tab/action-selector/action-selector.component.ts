@@ -61,8 +61,10 @@ import { ClearableInputComponent } from "../../../../../../shared/clearable-inpu
 export class ActionSelectorComponent {
   readonly policyService: PolicyServiceInterface = inject(PolicyService);
 
-  readonly policy = model.required<PolicyDetail>();
-  readonly actionAdd = output<{ name: string; value: any }>();
+  readonly policy = input.required<PolicyDetail>();
+  readonly actionAdd = output<{ action: { name: string; value: any }; newScope?: string | null }>();
+  readonly scopeChange = output<string | null>();
+
   readonly allPolicyScopes = this.policyService.allPolicyScopes();
 
   readonly selectedActionGroup: WritableSignal<string> = linkedSignal({
@@ -120,24 +122,14 @@ export class ActionSelectorComponent {
     this.selectedActionGroup.set(group ?? "");
   }
 
-  addPolicyAction(event: { name: string; value: any }) {
-    const scope = this.policy().scope || this.policyService.getScopeOfAction(event.name);
-
-    if (scope) {
-      setTimeout(() => {
-        this.policy.update((policy) => ({
-          ...policy,
-          scope: scope,
-          action: {
-            ...(policy.action || {}),
-            [event.name]: event.value
-          }
-        }));
-      });
+  addPolicyAction(action: { name: string; value: any }) {
+    if (this.policy().scope) {
+      this.actionAdd.emit({ action });
+    } else {
+      const scope = this.policy().scope || this.policyService.getScopeOfAction(action.name);
+      this.actionAdd.emit({ action, newScope: scope });
     }
-
-    this.actionAdd.emit(event);
-    this.focusNextActionItem(event.name);
+    this.focusNextActionItem(action.name);
   }
 
   focusNextActionItem(currentActionName: string) {
@@ -151,13 +143,7 @@ export class ActionSelectorComponent {
     });
   }
 
-  selectActionScope($event: string | null) {
-    setTimeout(() => {
-      this.selectedActionGroup.set("");
-      this.policy.update((policy) => ({
-        ...policy,
-        scope: $event ?? ""
-      }));
-    });
+  selectActionScope(scope: string | null) {
+    this.scopeChange.emit(scope);
   }
 }

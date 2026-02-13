@@ -87,10 +87,7 @@ export class PoliciesTableComponent {
     PolicyDetail[]
   >({
     source: () => ({ filter: this.filter(), allPolicies: this.policyService.allPolicies() }),
-    computation: (source) => {
-      console.log("Recomputing filtered policies with filter:", source.filter.rawValue);
-      return source.filter.filterItems(source.allPolicies);
-    }
+    computation: (source) => source.filter.filterItems(source.allPolicies)
   });
 
   readonly sortedFilteredPolicies = computed(() => {
