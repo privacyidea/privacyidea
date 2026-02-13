@@ -21,23 +21,20 @@ import { MatDialog, MatDialogConfig, MatDialogRef } from "@angular/material/dial
 import { ComponentType } from "@angular/cdk/overlay";
 import { lastValueFrom, take } from "rxjs";
 import { AbstractDialogComponent } from "../../components/shared/dialog/abstract-dialog/abstract-dialog.component";
-import {
-  SimpleConfirmationDialogComponent,
-  SimpleConfirmationDialogData
-} from "../../components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { SimpleConfirmationDialogComponent } from "../../components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 
 export interface DialogServiceInterface {
-  closeDialog<R>(ref: MatDialogRef<any, R>, result?: R): boolean;
-  openDialog<T, R>(args: {
-    component: ComponentType<AbstractDialogComponent<T, R>>;
-    data?: T;
-    configOverride?: Partial<MatDialogConfig<T>>;
-  }): MatDialogRef<T, R>;
+  closeDialog<R>(ref: MatDialogRef<AbstractDialogComponent<any, R>, R>, result?: R): boolean;
+  openDialog<D, R>(args: {
+    component: ComponentType<AbstractDialogComponent<D, R>>;
+    data?: D;
+    configOverride?: Partial<MatDialogConfig<D>>;
+  }): MatDialogRef<AbstractDialogComponent<D, R>, R>;
 
   closeLatestDialog(): void;
   closeAllDialogs(): void;
   isAnyDialogOpen(): boolean;
-  isDialogOpen(ref: MatDialogRef<any>): boolean;
+  isDialogOpen(ref: MatDialogRef<AbstractDialogComponent>): boolean;
   confirm(args: { title: string; message: string; confirmButtonText: string }): Promise<boolean>;
 }
 
@@ -61,19 +58,19 @@ export class DialogService implements DialogServiceInterface {
    * @param T - The type of the payload data in MatDialogConfig.data.
    * @param R - The type of the return value when the dialog is closed.
    */
-  openDialog<T, R>(args: {
-    component: ComponentType<AbstractDialogComponent<T, R>>;
-    data?: T;
-    configOverride?: Partial<MatDialogConfig<T>>;
-  }): MatDialogRef<T, R> {
+  openDialog<D, R>(args: {
+    component: ComponentType<AbstractDialogComponent<D, R>>;
+    data?: D;
+    configOverride?: Partial<MatDialogConfig<D>>;
+  }): MatDialogRef<AbstractDialogComponent, R> {
     const { component, data, configOverride } = args;
-    const config: MatDialogConfig<T> = {
+    const config: MatDialogConfig<D> = {
       disableClose: false,
       hasBackdrop: true,
       data,
       ...configOverride
     };
-    const dialogRef = this.dialog.open(component, config) as MatDialogRef<T, R>;
+    const dialogRef = this.dialog.open(component, config) as MatDialogRef<AbstractDialogComponent, R>;
     this.openDialogs.add(dialogRef);
     dialogRef
       .afterClosed()
@@ -90,7 +87,7 @@ export class DialogService implements DialogServiceInterface {
    * @param result The optional return value of the dialog.
    * @returns true if the dialog was found and closed.
    */
-  closeDialog<R>(ref: MatDialogRef<any, R>, result?: R): boolean {
+  closeDialog<R>(ref: MatDialogRef<AbstractDialogComponent, R>, result?: R): boolean {
     if (this.openDialogs.has(ref)) {
       ref.close(result);
       return true;
@@ -98,7 +95,7 @@ export class DialogService implements DialogServiceInterface {
     return false;
   }
 
-  isDialogOpen(ref: MatDialogRef<any>): boolean {
+  isDialogOpen(ref: MatDialogRef<AbstractDialogComponent>): boolean {
     return this.openDialogs.has(ref);
   }
 

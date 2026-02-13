@@ -36,6 +36,7 @@ import { PiResponse } from "../../../../app.component";
 import { lastValueFrom } from "rxjs";
 import { MatDialogRef } from "@angular/material/dialog";
 import { TokenEnrollmentFirstStepDialogComponent } from "../token-enrollment-firtst-step-dialog/token-enrollment-first-step-dialog.component";
+import { AbstractDialogComponent } from "../../../shared/dialog/abstract-dialog/abstract-dialog.component";
 
 @Component({
   selector: "app-enroll-push",
@@ -109,12 +110,7 @@ export class EnrollPushComponent implements OnInit {
       };
     }
   }
-  firstStepDialogRef: MatDialogRef<
-    {
-      enrollmentResponse: EnrollmentResponse<EnrollmentResponseDetail>;
-    },
-    boolean
-  > | null = null;
+  firstStepDialogRef: MatDialogRef<AbstractDialogComponent, boolean> | null = null;
 
   private pollTokenRolloutState = (
     initResponse: EnrollmentResponse,
@@ -140,12 +136,7 @@ export class EnrollPushComponent implements OnInit {
     return lastValueFrom(observable);
   };
 
-  private _openStepOneDialog(enrollmentResponse: EnrollmentResponse): MatDialogRef<
-    {
-      enrollmentResponse: EnrollmentResponse<EnrollmentResponseDetail>;
-    },
-    boolean
-  > {
+  private _openStepOneDialog(enrollmentResponse: EnrollmentResponse): MatDialogRef<AbstractDialogComponent, boolean> {
     this.reopenDialogChange.emit(async () => {
       if (this.firstStepDialogRef && this.dialogService.isDialogOpen(this.firstStepDialogRef)) {
         return null;

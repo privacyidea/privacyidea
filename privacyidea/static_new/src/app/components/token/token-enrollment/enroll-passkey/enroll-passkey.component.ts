@@ -41,6 +41,7 @@ import {
   TokenApiPayloadMapper,
   TokenEnrollmentData
 } from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
+import { AbstractDialogComponent } from "../../../shared/dialog/abstract-dialog/abstract-dialog.component";
 
 @Component({
   selector: "app-enroll-passkey",
@@ -136,22 +137,12 @@ export class EnrollPasskeyComponent implements OnInit {
     return resposeLastStep;
   }
 
-  currentStepOneRef?: MatDialogRef<
-    {
-      enrollmentResponse: EnrollmentResponse<EnrollmentResponseDetail>;
-    },
-    boolean
-  >;
+  currentStepOneRef?: MatDialogRef<AbstractDialogComponent, boolean>;
 
   openStepOneDialog(args: {
     enrollmentInitData: PasskeyEnrollmentData;
     enrollmentResponse: EnrollmentResponse;
-  }): MatDialogRef<
-    {
-      enrollmentResponse: EnrollmentResponse<EnrollmentResponseDetail>;
-    },
-    boolean
-  > {
+  }): MatDialogRef<AbstractDialogComponent, boolean> {
     const { enrollmentInitData, enrollmentResponse } = args;
 
     this.reopenDialogChange.emit(async () => {

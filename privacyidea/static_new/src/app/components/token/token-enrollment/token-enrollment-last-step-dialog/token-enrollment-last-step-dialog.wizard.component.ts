@@ -42,6 +42,7 @@ import { DialogWrapperComponent } from "../../../shared/dialog/dialog-wrapper/di
 import { TokenEnrollmentLastStepDialogComponent } from "./token-enrollment-last-step-dialog.component";
 import { TokenEnrollmentLastStepDialogData } from "./token-enrollment-last-step-dialog.self-service.component";
 import { DialogAction } from "../../../../models/dialog";
+import { MatButtonModule } from "@angular/material/button";
 @Component({
   selector: "app-token-enrollment-last-step-dialog-wizard",
   imports: [
@@ -52,7 +53,8 @@ import { DialogAction } from "../../../../models/dialog";
     RegistrationCodeComponent,
     OtpValuesComponent,
     QrCodeTextComponent,
-    DialogWrapperComponent
+    DialogWrapperComponent,
+    MatButtonModule
   ],
   templateUrl: "./token-enrollment-last-step-dialog.wizard.component.html",
   styleUrl: "./token-enrollment-last-step-dialog.component.scss"
