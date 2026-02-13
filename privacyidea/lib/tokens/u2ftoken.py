@@ -201,7 +201,7 @@ optional = True
 required = False
 
 
-class U2FACTION(object):
+class U2FAction:
     FACETS = "u2f_facets"
     REQ = "u2f_req"
     NO_VERIFY_CERT = "u2f_no_verify_certificate"
@@ -255,7 +255,7 @@ class U2fTokenClass(TokenClass):
                'ui_enroll': ["admin", "user"],
                'policy': {
                    SCOPE.AUTH: {
-                       U2FACTION.FACETS: {
+                       U2FAction.FACETS: {
                            'type': 'str',
                            'desc': _("This is a list of FQDN hostnames "
                                      "trusting the registered U2F tokens.")},
@@ -269,7 +269,7 @@ class U2fTokenClass(TokenClass):
                        }
                    },
                    SCOPE.AUTHZ: {
-                       U2FACTION.REQ: {
+                       U2FAction.REQ: {
                            'type': 'str',
                            'desc': _("Only specified U2F tokens are "
                                      "authorized."),
@@ -277,12 +277,12 @@ class U2fTokenClass(TokenClass):
                        }
                    },
                    SCOPE.ENROLL: {
-                       U2FACTION.REQ: {
+                       U2FAction.REQ: {
                            'type': 'str',
                            'desc': _("Only specified U2F tokens are allowed "
                                      "to be registered."),
                            'group': GROUP.TOKEN},
-                       U2FACTION.NO_VERIFY_CERT: {
+                       U2FAction.NO_VERIFY_CERT: {
                            'type': 'bool',
                            'desc': _("Do not verify the U2F attestation certificate."),
                            'group': GROUP.TOKEN
@@ -552,7 +552,7 @@ class U2fTokenClass(TokenClass):
                             Match
                                     .user(options.get("g"),
                                           scope=SCOPE.AUTHZ,
-                                          action=U2FACTION.REQ,
+                                          action=U2FAction.REQ,
                                           user_object=self.user if self.user else None)
                                     .action_values(unique=False)
                     ):
@@ -589,7 +589,7 @@ class U2fTokenClass(TokenClass):
         app_id = configured_app_id.strip("/")
 
         # Read the facets from the policies
-        pol_facets = Match.action_only(g, scope=SCOPE.AUTH, action=U2FACTION.FACETS).action_values(unique=False)
+        pol_facets = Match.action_only(g, scope=SCOPE.AUTH, action=U2FAction.FACETS).action_values(unique=False)
         facet_list = ["https://{0!s}".format(x) for x in pol_facets]
         facet_list.append(app_id)
 

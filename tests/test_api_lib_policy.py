@@ -84,8 +84,8 @@ from privacyidea.lib.tokens.indexedsecrettoken import PIIXACTION
 from privacyidea.lib.tokens.papertoken import PAPERACTION
 from privacyidea.lib.tokens.pushtoken import PushAction
 from privacyidea.lib.tokens.registrationtoken import DEFAULT_LENGTH, DEFAULT_CONTENTS
-from privacyidea.lib.tokens.smstoken import SMSACTION
-from privacyidea.lib.tokens.tantoken import TANACTION
+from privacyidea.lib.tokens.smstoken import SMSAction
+from privacyidea.lib.tokens.tantoken import TANAction
 from privacyidea.lib.tokens.webauthn import (webauthn_b64_decode, AuthenticatorAttachmentType,
                                              AttestationLevel, AttestationForm,
                                              UserVerificationLevel)
@@ -1740,7 +1740,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         req = Request(env)
         set_policy(name="tanpol",
                    scope=SCOPE.ENROLL,
-                   action="{0!s}=10".format(TANACTION.TANTOKEN_COUNT))
+                   action="{0!s}=10".format(TANAction.TANTOKEN_COUNT))
         g.policy_object = PolicyClass()
 
         # request, that matches the policy
@@ -1756,7 +1756,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
     def test_21_u2f_verify_cert(self):
         # Usually the attestation certificate gets verified during enrollment unless
         # we set the policy scope=enrollment, action=no_verify
-        from privacyidea.lib.tokens.u2ftoken import U2FACTION
+        from privacyidea.lib.tokens.u2ftoken import U2FAction
         g.logged_in_user = {"username": "user1",
                             "realm": "",
                             "role": "user"}
@@ -1778,7 +1778,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # Set a policy that defines to NOT verify the certificate
         set_policy(name="polu2f1",
                    scope=SCOPE.ENROLL,
-                   action=U2FACTION.NO_VERIFY_CERT)
+                   action=U2FAction.NO_VERIFY_CERT)
         g.policy_object = PolicyClass()
         req.all_data = {
             "type": "u2f"}
@@ -1790,8 +1790,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
     def test_01_sms_identifier(self):
         # every admin is allowed to enroll sms token with gw1 or gw2
-        set_policy("sms1", scope=SCOPE.ADMIN, action="{0!s}=gw1 gw2".format(SMSACTION.GATEWAYS))
-        set_policy("sms2", scope=SCOPE.ADMIN, action="{0!s}=gw3".format(SMSACTION.GATEWAYS))
+        set_policy("sms1", scope=SCOPE.ADMIN, action="{0!s}=gw1 gw2".format(SMSAction.GATEWAYS))
+        set_policy("sms2", scope=SCOPE.ADMIN, action="{0!s}=gw3".format(SMSAction.GATEWAYS))
 
         g.logged_in_user = {"username": "admin1",
                             "realm": "",
@@ -1814,7 +1814,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         self.assertRaises(PolicyError, sms_identifiers, req)
 
         # Users are allowed to choose gw4
-        set_policy("sms1", scope=SCOPE.USER, action="{0!s}=gw4".format(SMSACTION.GATEWAYS))
+        set_policy("sms1", scope=SCOPE.USER, action="{0!s}=gw4".format(SMSAction.GATEWAYS))
 
         g.logged_in_user = {"username": "root",
                             "realm": "",

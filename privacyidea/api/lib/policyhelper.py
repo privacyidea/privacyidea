@@ -34,6 +34,7 @@ from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policies.conditions import ConditionSection
 from privacyidea.lib.policy import Match, SCOPE
 from privacyidea.lib.realm import realm_is_defined
+from privacyidea.lib.tokens.push_types import PushAction
 from privacyidea.lib.token import get_tokens_from_serial_or_user, get_token_owner
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.user import User
@@ -109,7 +110,6 @@ def get_pushtoken_add_config(g, params=None, user_obj=None):
     :return: modified request parameters
     """
     params = params or {}
-    from privacyidea.lib.tokens.pushtoken import PushAction
 
     user = user_obj or None
 

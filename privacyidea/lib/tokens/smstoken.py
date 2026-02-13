@@ -76,7 +76,7 @@ keylen = {'sha1': 20,
           'sha512': 64}
 
 
-class SMSACTION(object):
+class SMSAction:
     SMSTEXT = "smstext"
     SMSAUTO = "smsautosend"
     GATEWAYS = "sms_gateways"
@@ -202,14 +202,14 @@ class SmsTokenClass(HotpTokenClass):
                'ui_enroll': ["admin", "user"],
                'policy': {
                    SCOPE.AUTH: {
-                       SMSACTION.SMSTEXT: {
+                       SMSAction.SMSTEXT: {
                            'type': 'str',
                            'desc': _('The text that will be send via SMS for '
                                      'an SMS token. Use tags like {otp} and {serial} '
                                      'as parameters.')
                                    + " " + comma_escape_text
                        },
-                       SMSACTION.SMSAUTO: {
+                       SMSAction.SMSAUTO: {
                            'type': 'bool',
                            'desc': _('If set, a new SMS OTP will be sent '
                                      'after successful authentication with '
@@ -224,7 +224,7 @@ class SmsTokenClass(HotpTokenClass):
                        }
                    },
                    SCOPE.ADMIN: {
-                       SMSACTION.GATEWAYS: {
+                       SMSAction.GATEWAYS: {
                            'type': 'str',
                            'desc': "{0!s} ({1!s})".format(
                                _('Choose the gateways the administrator is allowed to set.'),
@@ -232,7 +232,7 @@ class SmsTokenClass(HotpTokenClass):
                        }
                    },
                    SCOPE.USER: {
-                       SMSACTION.GATEWAYS: {
+                       SMSAction.GATEWAYS: {
                            'type': 'str',
                            'desc': "{0!s} ({1!s})".format(
                                _('Choose the gateways the user is allowed to set.'),
@@ -534,7 +534,7 @@ class SmsTokenClass(HotpTokenClass):
         g = options.get("g")
         user_object = options.get("user")
         if g:
-            messages = Match.user(g, scope=SCOPE.AUTH, action=SMSACTION.SMSTEXT,
+            messages = Match.user(g, scope=SCOPE.AUTH, action=SMSAction.SMSTEXT,
                                   user_object=user_object if user_object else None).action_values(
                 allow_white_space_in_action=True, unique=True)
             if len(messages) == 1:
@@ -558,7 +558,7 @@ class SmsTokenClass(HotpTokenClass):
         g = options.get("g")
         user_object = options.get("user")
         if g:
-            autosmspol = Match.user(g, scope=SCOPE.AUTH, action=SMSACTION.SMSAUTO, user_object=user_object).policies()
+            autosmspol = Match.user(g, scope=SCOPE.AUTH, action=SMSAction.SMSAUTO, user_object=user_object).policies()
             autosms = len(autosmspol) >= 1
 
         return autosms

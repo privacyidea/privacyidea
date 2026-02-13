@@ -34,7 +34,7 @@ from privacyidea.lib.token import (get_one_token, get_tokens_from_serial_or_user
 from privacyidea.lib.token import init_token, get_tokens_paginate, unassign_token
 from privacyidea.lib.tokens.papertoken import PAPERACTION
 from privacyidea.lib.tokens.pushtoken import PushAction
-from privacyidea.lib.tokens.tantoken import TANACTION
+from privacyidea.lib.tokens.tantoken import TANAction
 from privacyidea.lib.user import User
 from privacyidea.lib.utils.compare import PrimaryComparators
 from privacyidea.models import Realm
@@ -5962,7 +5962,7 @@ class APIContainerTemplate(APIContainerTest):
     def test_11_create_container_with_template_max_token_policies(self):
         # Limit number of tokens per user and type
         set_policy("max_token", scope=SCOPE.ENROLL, action={PolicyAction.MAXTOKENUSER: 6,
-                                                            TANACTION.TANTOKEN_COUNT: 2,
+                                                            TANAction.TANTOKEN_COUNT: 2,
                                                             PAPERACTION.PAPERTOKEN_COUNT: 2,
                                                             PolicyAction.MAXTOKENREALM: 7})
         self.setUp_user_realms()

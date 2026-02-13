@@ -52,7 +52,7 @@ from privacyidea.lib.token import (get_tokens, remove_token, get_one_token,
 from privacyidea.lib.tokenclass import DATE_FORMAT
 from privacyidea.lib.tokenclass import RolloutState
 from privacyidea.lib.tokens.hotptoken import VERIFY_ENROLLMENT_MESSAGE
-from privacyidea.lib.tokens.smstoken import SMSACTION
+from privacyidea.lib.tokens.smstoken import SMSAction
 from privacyidea.lib.user import User
 from privacyidea.models import db
 from .base import MyApiTestCase, PWFILE2
@@ -3200,7 +3200,7 @@ class APITokenTestCase(MyApiTestCase):
                    action="{0!s}=sms".format(PolicyAction.VERIFY_ENROLLMENT))
         sms_text = "YOUR SMS TOKEN: {otp}"
         set_policy(name="smstext", scope=SCOPE.AUTH,
-                   action=f"{SMSACTION.SMSTEXT}={sms_text}")
+                   action=f"{SMSAction.SMSTEXT}={sms_text}")
         set_policy("enroll", scope=SCOPE.ADMIN, action=["enrollSMS"])
 
         # Enroll an SMS token

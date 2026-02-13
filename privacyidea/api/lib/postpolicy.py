@@ -82,9 +82,7 @@ from ...lib.container import (get_all_containers, init_container, init_registrat
                               create_container_tokens_from_template)
 from ...lib.containers.container_info import SERVER_URL, CHALLENGE_TTL, REGISTRATION_TTL, SSL_VERIFY, RegistrationState
 from ...lib.policies.actions import PolicyAction
-from ...lib.user import User
 from ...lib.users.custom_user_attributes import InternalCustomUserAttributes
-from ...models import Challenge
 
 log = logging.getLogger(__name__)
 

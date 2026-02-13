@@ -41,8 +41,7 @@ def check_token_locked(func):
         # The token object
         token = args[0]
         if token.is_locked():
-            raise TokenAdminError(_("This action is not possible, since the "
-                                    "token is locked"), id=1007)
+            raise TokenAdminError(_("This action is not possible, since the token is locked"), id=1007)
         f_result = func(*args, **kwds)
         return f_result
 

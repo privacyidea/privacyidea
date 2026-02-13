@@ -101,8 +101,8 @@ from privacyidea.lib.tokenclass import RolloutState
 from privacyidea.lib.tokens.certificatetoken import ACTION as CERTIFICATE_ACTION
 from privacyidea.lib.tokens.indexedsecrettoken import PIIXACTION
 from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
-from privacyidea.lib.tokens.pushtoken import PushAction
-from privacyidea.lib.tokens.u2ftoken import (U2FACTION, parse_registration_data)
+from privacyidea.lib.tokens.push_types import PushAction
+from privacyidea.lib.tokens.u2ftoken import (U2FAction, parse_registration_data)
 # Token specific imports!
 from privacyidea.lib.tokens.webauthn import (WebAuthnRegistrationResponse,
                                              AUTHENTICATOR_ATTACHMENT_TYPES,
@@ -402,8 +402,8 @@ def sms_identifiers(request=None, action=None):
     """
     sms_identifier = request.all_data.get("sms.identifier")
     if sms_identifier:
-        from privacyidea.lib.tokens.smstoken import SMSACTION
-        pols = Match.admin_or_user(g, action=SMSACTION.GATEWAYS, user_obj=request.User).action_values(unique=False)
+        from privacyidea.lib.tokens.smstoken import SMSAction
+        pols = Match.admin_or_user(g, action=SMSAction.GATEWAYS, user_obj=request.User).action_values(unique=False)
         gateway_identifiers = []
 
         for p in pols:
@@ -449,8 +449,8 @@ def tantoken_count(request=None, action=None):
     :param action:
     :return:
     """
-    from privacyidea.lib.tokens.tantoken import TANACTION
-    pols = Match.user(g, scope=SCOPE.ENROLL, action=TANACTION.TANTOKEN_COUNT,
+    from privacyidea.lib.tokens.tantoken import TANAction
+    pols = Match.user(g, scope=SCOPE.ENROLL, action=TANAction.TANTOKEN_COUNT,
                       user_object=request.User).action_values(unique=True)
     if pols:
         tantoken_count = list(pols)[0]
@@ -1901,7 +1901,7 @@ def u2ftoken_verify_cert(request, action):
         # Add the default to verify the cert.
         request.all_data["u2f.verify_cert"] = True
         user_object = request.User
-        do_not_verify_the_cert = Match.user(g, scope=SCOPE.ENROLL, action=U2FACTION.NO_VERIFY_CERT,
+        do_not_verify_the_cert = Match.user(g, scope=SCOPE.ENROLL, action=U2FAction.NO_VERIFY_CERT,
                                             user_object=user_object if user_object else None).policies()
         if do_not_verify_the_cert:
             request.all_data["u2f.verify_cert"] = False
@@ -1942,7 +1942,7 @@ def u2ftoken_allowed(request, action):
             signature, description = parse_registration_data(reg_data,
                                                              verify_cert=False)
 
-        allowed_certs_pols = Match.user(g, scope=SCOPE.ENROLL, action=U2FACTION.REQ,
+        allowed_certs_pols = Match.user(g, scope=SCOPE.ENROLL, action=U2FAction.REQ,
                                         user_object=request.User if request.User else None) \
             .action_values(unique=False)
 
