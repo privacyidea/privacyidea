@@ -29,7 +29,7 @@ import { TableUtilsServiceInterface, TableUtilsService } from "src/app/services/
 import { EditPolicyDialogComponent } from "../dialogs/edit-policy-dialog/edit-policy-dialog.component";
 import { PoliciesTableActionsComponent } from "./policies-table-actions/policies-table-actions.component";
 import { PolicyFilterComponent } from "./policy-filter/policy-filter.component";
-import { ConditionsTabComponent } from "./view-conditions-column/view-conditions-column.component";
+import { ViewConditionsColumnComponent } from "./view-conditions-column/view-conditions-column.component";
 import { ViewActionColumnComponent } from "./view-action-column/view-action-column.component";
 
 const columnKeysMap = [
@@ -60,7 +60,7 @@ const columnKeysMap = [
     ViewActionColumnComponent,
     MatTooltipModule,
     PolicyFilterComponent,
-    ConditionsTabComponent
+    ViewConditionsColumnComponent
   ],
   templateUrl: "./policies-table.component.html",
   styleUrl: "./policies-table.component.scss"

@@ -38,7 +38,7 @@ import { MatIconModule } from "@angular/material/icon";
   templateUrl: "./view-conditions-column.component.html",
   styleUrl: "./view-conditions-column.component.scss"
 })
-export class ConditionsTabComponent {
+export class ViewConditionsColumnComponent {
   policy = input.required<PolicyDetail>();
 
   // Admin Conditions

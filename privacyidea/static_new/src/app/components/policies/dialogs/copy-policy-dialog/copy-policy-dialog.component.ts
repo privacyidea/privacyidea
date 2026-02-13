@@ -67,13 +67,9 @@ export class CopyPolicyDialogComponent extends AbstractDialogComponent<string, s
 
   onAction(value: "submit" | null): void {
     if (value === "submit" && this.nameControl.valid) {
-      setTimeout(() => {
-        this.close(this.nameControl.value);
-      });
+      this.close(this.nameControl.value);
     } else {
-      setTimeout(() => {
-        this.close(null);
-      });
+      this.close(null);
     }
   }
 }

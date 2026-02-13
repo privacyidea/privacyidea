@@ -18,15 +18,15 @@
  **/
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { ConditionsTabComponent } from "./view-conditions-column.component";
+import { ViewConditionsColumnComponent } from "./view-conditions-column.component";
 import { MatIconModule } from "@angular/material/icon";
 import { ViewConditionSectionComponent } from "./view-condition-section/view-condition-section.component";
 import { provideNoopAnimations } from "@angular/platform-browser/animations";
 import { PolicyDetail } from "src/app/services/policies/policies.service";
 
 describe("ConditionsTabComponent", () => {
-  let component: ConditionsTabComponent;
-  let fixture: ComponentFixture<ConditionsTabComponent>;
+  let component: ViewConditionsColumnComponent;
+  let fixture: ComponentFixture<ViewConditionsColumnComponent>;
 
   const mockPolicy: PolicyDetail = {
     check_all_resolvers: false,
@@ -51,11 +51,11 @@ describe("ConditionsTabComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ConditionsTabComponent, MatIconModule, ViewConditionSectionComponent],
+      imports: [ViewConditionsColumnComponent, MatIconModule, ViewConditionSectionComponent],
       providers: [provideNoopAnimations()]
     }).compileComponents();
 
-    fixture = TestBed.createComponent(ConditionsTabComponent);
+    fixture = TestBed.createComponent(ViewConditionsColumnComponent);
     component = fixture.componentInstance;
     fixture.componentRef.setInput("policy", mockPolicy);
     fixture.detectChanges();

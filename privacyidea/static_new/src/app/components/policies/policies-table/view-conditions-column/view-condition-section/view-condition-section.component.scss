@@ -18,16 +18,7 @@
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
-    .conditions-chip {
-      @include mixins.compact-badge-base;
-      background-color: var(--mat-sys-surface-container-high);
-      border: 1px solid transparent;
-      color: var(--mat-sys-on-surface);
-      max-width: 200px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
+
     .marker-chip {
       @include mixins.compact-badge-base;
       background-color: transparent;
