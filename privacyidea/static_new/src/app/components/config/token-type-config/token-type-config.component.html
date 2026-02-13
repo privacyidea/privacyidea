@@ -1,0 +1,67 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<div class="token-type-config-container">
+  <div class="flex-row just-space-between ali-center">
+    <h2 i18n>Token Type Configuration</h2>
+    <button
+      (click)="save()"
+      [disabled]="!authService.actionAllowed('configwrite')"
+      class="action-button-1 width-238"
+      mat-stroked-button>
+      <mat-icon>save</mat-icon>
+      <span i18n>Save Configuration</span>
+    </button>
+  </div>
+  <mat-accordion multi="true">
+    <app-hotp-config
+      [formData]="formData()"
+      [hashLibs]="hashLibs()"></app-hotp-config>
+    <app-totp-config
+      [formData]="formData()"
+      [hashLibs]="hashLibs()"
+      [totpSteps]="totpSteps()"></app-totp-config>
+    <app-u2f-config [formData]="formData()"></app-u2f-config>
+    <app-webauthn-config [formData]="formData()"></app-webauthn-config>
+    <app-radius-config
+      [formData]="formData()"
+      [radiusServers]="systemService.radiusServerResource.value()?.result?.value ?? []"></app-radius-config>
+    <app-remote-config [formData]="formData()"></app-remote-config>
+    <app-sms-config
+      [formData]="formData()"
+      [smsGateways]="smsGatewayNames()"></app-sms-config>
+    <app-tiqr-config [formData]="formData()"></app-tiqr-config>
+    <app-email-config
+      [formData]="formData()"
+      [smtpServers]="smtpServerIdentifiers()"></app-email-config>
+    <app-questionnaire-config
+      (onAddQuestion)="addQuestion($event)"
+      (onDeleteEntry)="deleteSystemEntry($event)"
+      [formData]="formData()"
+      [questionKeys]="questionKeys"></app-questionnaire-config>
+    <app-yubico-config [formData]="formData()"></app-yubico-config>
+    <app-yubikey-config
+      (onDeleteEntry)="deleteSystemEntry($event)"
+      (onYubikeyCreateNewKey)="yubikeyCreateNewKey($event)"
+      [formData]="formData()"
+      [yubikeyApiIds]="yubikeyApiIds"></app-yubikey-config>
+    <app-daypassword-config
+      [formData]="formData()"
+      [hashLibs]="hashLibs()"></app-daypassword-config>
+  </mat-accordion>
+</div>

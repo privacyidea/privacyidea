@@ -1,0 +1,10 @@
+@use "../../../../../../styles";
+
+.new-question-row {
+  display: flex;
+  flex-direction: row;
+  gap: 16px;
+  grid-column: 1 / -1;
+  align-items: center;
+}
+

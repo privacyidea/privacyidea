@@ -138,8 +138,7 @@
 
   <mat-accordion>
     <mat-expansion-panel
-      [expanded]="router.url.startsWith(ROUTE_PATHS.TOKENS) && !router.url.includes('containers')"
-      class="nav-expension-panel">
+      [expanded]="router.url.startsWith(ROUTE_PATHS.TOKENS) && !router.url.includes('containers')">
       <mat-expansion-panel-header (click)="router.navigate([ROUTE_PATHS.TOKENS])">
         <mat-panel-title>
           <mat-icon>shield</mat-icon>
@@ -507,21 +506,24 @@
         </mat-panel-title>
       </mat-expansion-panel-header>
       <mat-list>
+        @if (authService.actionAllowed('configread')) {
+          <mat-list-item>
+            <button
+              [ngClass]="contentService.routeUrl() === ROUTE_PATHS.CONFIGURATION_SYSTEM
+              ? 'card-button-active' : 'card-button-1'"
+              [routerLink]="[ROUTE_PATHS.CONFIGURATION_SYSTEM]"
+              mat-stroked-button>
+              <mat-icon>build</mat-icon>
+              System
+            </button>
+          </mat-list-item>
+        }
         <mat-list-item>
           <button
-            class="card-button-1"
-            disabled
-            mat-stroked-button>
-            <mat-icon>build</mat-icon>
-            System
-          </button>
-        </mat-list-item>
-        <mat-list-item>
-          <button
-            class="card-button-1"
             [ngClass]="contentService.routeUrl() === ROUTE_PATHS.SUBSCRIPTION ? 'card-button-active' :
             'card-button-1'"
             [routerLink]="[ROUTE_PATHS.SUBSCRIPTION]"
+            class="card-button-1"
             mat-stroked-button>
             <mat-icon>event_repeat</mat-icon>
             Subscription
@@ -529,8 +531,9 @@
         </mat-list-item>
         <mat-list-item>
           <button
+            [ngClass]="contentService.routeUrl() === ROUTE_PATHS.CONFIGURATION_TOKENTYPES ? 'card-button-active' : 'card-button-1'"
+            [routerLink]="[ROUTE_PATHS.CONFIGURATION_TOKENTYPES]"
             class="card-button-1"
-            disabled
             mat-stroked-button>
             <mat-icon>safety_check</mat-icon>
             Tokentypes

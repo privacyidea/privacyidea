@@ -1,0 +1,88 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<mat-expansion-panel>
+  <mat-expansion-panel-header>
+    <mat-panel-title i18n>Questionnaire Token Settings</mat-panel-title>
+  </mat-expansion-panel-header>
+  <div class="panel-content">
+    <p i18n>The questionnaire lets you define a set of questions. The questionnaire token needs to define answers to
+            these questions and the user will be presented with random questions and needs to provide his previously
+            defined answer.
+    </p>
+
+    <mat-form-field
+      appearance="fill">
+      <mat-label i18n>Number of answers</mat-label>
+      <input
+        [(ngModel)]="formData()['question.num_answers']"
+        matInput
+        placeholder="5"
+        required
+        type="number">
+      <mat-hint i18n>This is the number of answers a user needs to define to enroll a token.</mat-hint>
+    </mat-form-field>
+
+    <h4 i18n>Questionnaire</h4>
+    <p i18n>These are the possible questions, a user may define answers to.</p>
+
+    <table class="table">
+      <thead>
+      <tr>
+        <th i18n>Question</th>
+        <th></th>
+      </tr>
+      </thead>
+      <tbody>
+        @for (key of questionKeys(); track key) {
+          <tr>
+            <td>
+              {{ formData()[key] }}
+              <mat-divider class="margin-top-4" />
+            </td>
+            <td>
+              <button
+                (click)="deleteEntry(key)"
+                color="warn"
+                mat-icon-button>
+                <mat-icon>delete</mat-icon>
+              </button>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+    <div class="new-question-row">
+      <mat-form-field
+        appearance="fill">
+        <mat-label i18n>Question</mat-label>
+        <input
+          [(ngModel)]="newQuestionText"
+          matInput
+          placeholder="Enter new question here">
+      </mat-form-field>
+      <button
+        (click)="addQuestion()"
+        class="action-button-1 width-238 margin-bottom-1"
+        mat-stroked-button>
+        <mat-icon>add</mat-icon>
+        <span i18n>Add new question</span>
+      </button>
+    </div>
+  </div>
+</mat-expansion-panel>

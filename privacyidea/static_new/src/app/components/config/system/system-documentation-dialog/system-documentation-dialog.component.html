@@ -1,0 +1,55 @@
+<!--
+ (c) NetKnights GmbH 2025,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<div class="system-documentation-dialog-container">
+  <h2
+    i18n
+    mat-dialog-title>System Documentation
+  </h2>
+  <mat-dialog-content>
+    <p
+      i18n>
+      This documentation contains the current configuration of your system in restructured text. You can use this to
+      document your installed system.
+    </p>
+
+    <mat-form-field class="width-100">
+      <mat-label i18n>System Documentation</mat-label>
+      <textarea
+        #autosize="cdkTextareaAutosize"
+        [ngModel]="documentation"
+        cdkAutosizeMaxRows="30"
+        cdkAutosizeMinRows="15"
+        cdkTextareaAutosize
+        matInput
+        readonly
+        rows="15">
+    </textarea>
+    </mat-form-field>
+    Copy System Documentation:
+    <app-copy-button
+      [copyText]="documentation" />
+  </mat-dialog-content>
+  <mat-dialog-actions align="end">
+    <button
+      (click)="onClose()"
+      i18n
+      mat-button>Close
+    </button>
+  </mat-dialog-actions>
+</div>
