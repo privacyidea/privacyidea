@@ -16,40 +16,38 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
+
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { of, Subject } from "rxjs";
 import { signal } from "@angular/core";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MatTableDataSource } from "@angular/material/table";
+import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { NavigationEnd, Router } from "@angular/router";
-
-import { ContainerDetailsTokenTableComponent } from "./container-details-token-table.component";
+import { Subject, of } from "rxjs";
+import { MockMatDialogRef } from "../../../../../testing/mock-mat-dialog-ref";
 import {
   MockContainerService,
-  MockContentService,
-  MockDialogService,
-  MockLocalService,
-  MockNotificationService,
+  MockTokenService,
   MockOverflowService,
-  MockTokenService
+  MockTableUtilsService,
+  MockNotificationService,
+  MockDialogService,
+  MockContentService,
+  MockLocalService
 } from "../../../../../testing/mock-services";
+import { MockAuthService } from "../../../../../testing/mock-services/mock-auth-service";
 import { AuthService } from "../../../../services/auth/auth.service";
 import { ContainerService } from "../../../../services/container/container.service";
-import { TokenService } from "../../../../services/token/token.service";
-import { TableUtilsService } from "../../../../services/table-utils/table-utils.service";
-import { OverflowService } from "../../../../services/overflow/overflow.service";
+import { ContentService } from "../../../../services/content/content.service";
+import { DialogService } from "../../../../services/dialog/dialog.service";
 import { NotificationService } from "../../../../services/notification/notification.service";
-import { MatDialog } from "@angular/material/dialog";
+import { OverflowService } from "../../../../services/overflow/overflow.service";
+import { TableUtilsService } from "../../../../services/table-utils/table-utils.service";
+import { TokenService } from "../../../../services/token/token.service";
 import { UserService } from "../../../../services/user/user.service";
 import { SimpleConfirmationDialogComponent } from "../../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
-import { ContentService } from "../../../../services/content/content.service";
-
-import { MockAuthService } from "../../../../../testing/mock-services/mock-auth-service";
-import { MockTableUtilsService } from "src/testing/mock-services/mock-table-utils-service";
-import { DialogService } from "src/app/services/dialog/dialog.service";
-import { MockMatDialogRef } from "src/testing/mock-mat-dialog-ref";
+import { ContainerDetailsTokenTableComponent } from "./container-details-token-table.component";
 
 const routerEvents$ = new Subject<NavigationEnd>();
 routerEvents$.next(new NavigationEnd(1, "/", "/"));

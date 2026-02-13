@@ -26,8 +26,8 @@ import { SmtpService } from "../../../services/smtp/smtp.service";
 import { DialogService } from "../../../services/dialog/dialog.service";
 import { signal } from "@angular/core";
 import { Subject } from "rxjs";
-import { MockMatDialogRef } from "src/testing/mock-mat-dialog-ref";
-import { MockDialogService } from "src/testing/mock-services";
+import { MockMatDialogRef } from "../../../../testing/mock-mat-dialog-ref";
+import { MockDialogService } from "../../../../testing/mock-services";
 
 describe("SmtpServersComponent", () => {
   let component: SmtpServersComponent;

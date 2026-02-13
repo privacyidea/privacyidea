@@ -18,7 +18,7 @@
  **/
 
 import { Component, effect, inject, OnDestroy, OnInit, signal } from "@angular/core";
-import { MAT_DIALOG_DATA, MatDialog, MatDialogModule, MatDialogRef } from "@angular/material/dialog";
+import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from "@angular/material/dialog";
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
 import { SmtpServer, SmtpService, SmtpServiceInterface } from "../../../../services/smtp/smtp.service";
 import { MatFormFieldModule } from "@angular/material/form-field";
@@ -28,16 +28,12 @@ import { MatButtonModule } from "@angular/material/button";
 import { CommonModule } from "@angular/common";
 import { MatIconModule } from "@angular/material/icon";
 import { MatTooltip } from "@angular/material/tooltip";
-
 import { ROUTE_PATHS } from "../../../../route_paths";
 import { Router } from "@angular/router";
 import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
 import { PendingChangesService } from "../../../../services/pending-changes/pending-changes.service";
 import { DialogServiceInterface, DialogService } from "../../../../services/dialog/dialog.service";
-import {
-  SaveAndExitDialogComponent,
-  SaveAndExitDialogResult
-} from "../../../shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
+import { SaveAndExitDialogComponent } from "../../../shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 
 @Component({
   selector: "app-smtp-edit-dialog",

@@ -16,12 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { HttpParams } from "@angular/common/http";
-import { Signal, signal, WritableSignal } from "@angular/core";
+import { signal, WritableSignal } from "@angular/core";
 import { Sort } from "@angular/material/sort";
-import { Observable, of, Subject } from "rxjs";
-
-import { FilterValue } from "src/app/core/models/filter_value/filter_value";
 import {
   BulkResult,
   LostTokenResponse,
@@ -33,6 +29,8 @@ import {
 } from "../../app/services/token/token.service";
 import { MockHttpResourceRef, MockPiResponse } from "./mock-utils";
 import { PiResponse } from "../../app/app.component";
+import { of, Subject } from "rxjs";
+import { FilterValue } from "src/app/core/models/filter_value/filter_value";
 
 function makeTokenDetailResponse(tokentype: string): PiResponse<Tokens> {
   return {

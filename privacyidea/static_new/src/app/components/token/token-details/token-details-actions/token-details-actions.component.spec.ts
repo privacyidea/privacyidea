@@ -19,7 +19,6 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { signal } from "@angular/core";
 import { of } from "rxjs";
-
 import { TokenDetailsActionsComponent } from "./token-details-actions.component";
 import { TokenService } from "../../../../services/token/token.service";
 import { ValidateService } from "../../../../services/validate/validate.service";
@@ -39,9 +38,6 @@ import { MatDialog } from "@angular/material/dialog";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { MockAuthService } from "../../../../../testing/mock-services/mock-auth-service";
-import { MockMatDialogRef } from "../../../../../testing/mock-mat-dialog-ref";
-import { DialogService } from "../../../../services/dialog/dialog.service";
-import { MockDialogService } from "../../../../../testing/mock-services/mock-dialog-service";
 
 describe("TokenDetailsActionsComponent", () => {
   let fixture: ComponentFixture<TokenDetailsActionsComponent>;

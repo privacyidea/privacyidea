@@ -30,7 +30,6 @@ import { ContentService } from "../content/content.service";
 import { AuthService } from "../auth/auth.service";
 import { DialogService } from "../dialog/dialog.service";
 import { MockMatDialogRef } from "../../../testing/mock-mat-dialog-ref";
-import { SimpleConfirmationDialogComponent } from "../../components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 
 describe("EventService", () => {
   let service: EventService;

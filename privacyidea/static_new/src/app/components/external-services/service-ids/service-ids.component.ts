@@ -40,7 +40,7 @@ import { TableUtilsService, TableUtilsServiceInterface } from "../../../services
 import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
 import { ROUTE_PATHS } from "../../../route_paths";
 import { RouterLink } from "@angular/router";
-import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { SimpleConfirmationDialogComponent } from "../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
 
 @Component({
   selector: "app-service-ids",

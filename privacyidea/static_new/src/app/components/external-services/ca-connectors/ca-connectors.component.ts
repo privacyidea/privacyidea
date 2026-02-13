@@ -39,7 +39,7 @@ import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
 import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
 import { TableUtilsService, TableUtilsServiceInterface } from "../../../services/table-utils/table-utils.service";
 import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
-import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { SimpleConfirmationDialogComponent } from "../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
 
 @Component({
   selector: "app-ca-connectors",

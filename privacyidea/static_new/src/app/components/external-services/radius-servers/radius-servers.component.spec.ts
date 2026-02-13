@@ -16,18 +16,19 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { RadiusServersComponent } from "./radius-servers.component";
+
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { MatDialog, MatDialogModule } from "@angular/material/dialog";
-import { RadiusService } from "../../../services/radius/radius.service";
-import { DialogService } from "../../../services/dialog/dialog.service";
 import { signal } from "@angular/core";
-import { MockDialogService } from "src/testing/mock-services/mock-dialog-service";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { MatDialogModule, MatDialog } from "@angular/material/dialog";
+import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { Subject } from "rxjs";
-import { MockMatDialogRef } from "src/testing/mock-mat-dialog-ref";
+import { MockMatDialogRef } from "../../../../testing/mock-mat-dialog-ref";
+import { MockDialogService } from "../../../../testing/mock-services";
+import { DialogService } from "../../../services/dialog/dialog.service";
+import { RadiusService } from "../../../services/radius/radius.service";
+import { RadiusServersComponent } from "./radius-servers.component";
 
 describe("RadiusServersComponent", () => {
   let component: RadiusServersComponent;

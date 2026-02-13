@@ -28,7 +28,6 @@ import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { of, Subject } from "rxjs";
 import { MockMatDialogRef } from "../../../../testing/mock-mat-dialog-ref";
 import { DialogService } from "../../../services/dialog/dialog.service";
-import { SaveAndExitDialogResult } from "../../shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 
 global.IntersectionObserver = class IntersectionObserver {
   constructor() {}

@@ -21,15 +21,15 @@ import { Component, input, output } from "@angular/core";
 import { assert } from "../../../../utils/assert";
 import { DialogAction } from "../../../../models/dialog";
 import { CommonModule } from "@angular/common";
-import { MatDialogModule } from "@angular/material/dialog";
-import { MatIconModule } from "@angular/material/icon";
-import { MatIconButton } from "@angular/material/button";
+import { MatDialogClose, MatDialogModule } from "@angular/material/dialog";
+import { MatIcon, MatIconModule } from "@angular/material/icon";
+import { MatButton } from "@angular/material/button";
 
 @Component({
   selector: "app-dialog-wrapper",
   templateUrl: "./dialog-wrapper.component.html",
   standalone: true,
-  imports: [CommonModule, MatDialogModule, MatIconModule, MatIconButton],
+  imports: [CommonModule, MatDialogModule, MatIconModule, MatButton, MatDialogClose, MatIcon],
   styleUrls: ["./dialog-wrapper.component.scss"]
 })
 export class DialogWrapperComponent<R = any> {
@@ -43,10 +43,6 @@ export class DialogWrapperComponent<R = any> {
 
   onActionClick(action: DialogAction<R>): void {
     this.onAction.emit(action.value);
-  }
-
-  onCloseClick(): void {
-    this.close.emit();
   }
 
   ngOnInit() {

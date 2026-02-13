@@ -46,8 +46,8 @@ import {
   MockTableUtilsService
 } from "../../../../testing/mock-services";
 import { MockAuthService } from "../../../../testing/mock-services/mock-auth-service";
-import { DialogService } from "src/app/services/dialog/dialog.service";
-import { MockMatDialogRef } from "src/testing/mock-mat-dialog-ref";
+import { MockMatDialogRef } from "../../../../testing/mock-mat-dialog-ref";
+import { DialogService } from "../../../services/dialog/dialog.service";
 
 function makeResource<T>(initial: T) {
   return {

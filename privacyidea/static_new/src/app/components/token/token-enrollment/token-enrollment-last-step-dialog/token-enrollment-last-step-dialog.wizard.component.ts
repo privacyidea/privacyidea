@@ -19,7 +19,7 @@
 import { AsyncPipe } from "@angular/common";
 import { HttpClient } from "@angular/common/http";
 import { Component, computed, inject, SecurityContext, Signal } from "@angular/core";
-import { MAT_DIALOG_DATA, MatDialogContent, MatDialogRef } from "@angular/material/dialog";
+import { MAT_DIALOG_DATA, MatDialogContent } from "@angular/material/dialog";
 import { DomSanitizer } from "@angular/platform-browser";
 import { map } from "rxjs";
 import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";

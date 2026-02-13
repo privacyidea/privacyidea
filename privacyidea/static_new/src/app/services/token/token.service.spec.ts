@@ -31,7 +31,6 @@ import { ROUTE_PATHS } from "../../route_paths";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
 import { environment } from "../../../environments/environment";
 import { MockAuthService } from "../../../testing/mock-services/mock-auth-service";
-import { Dialog } from "@angular/cdk/dialog";
 import { DialogService } from "../dialog/dialog.service";
 import { MockDialogService } from "../../../testing/mock-services/mock-dialog-service";
 import { MockMatDialogRef } from "../../../testing/mock-mat-dialog-ref";

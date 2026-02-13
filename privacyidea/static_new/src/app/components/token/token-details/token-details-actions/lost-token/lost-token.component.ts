@@ -17,11 +17,10 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { DatePipe } from "@angular/common";
-import { Component, computed, effect, inject, WritableSignal } from "@angular/core";
+import { Component, effect, inject, WritableSignal } from "@angular/core";
 import { MatButton } from "@angular/material/button";
 import { MatCard, MatCardContent } from "@angular/material/card";
-import { MatDialogClose, MatDialogTitle } from "@angular/material/dialog";
-import { MatIcon } from "@angular/material/icon";
+import { MatIcon, MatIconModule } from "@angular/material/icon";
 import {
   NotificationService,
   NotificationServiceInterface
@@ -29,12 +28,11 @@ import {
 import { LostTokenData, TokenService, TokenServiceInterface } from "../../../../../services/token/token.service";
 import { AbstractDialogComponent } from "../../../../shared/dialog/abstract-dialog/abstract-dialog.component";
 import { DialogWrapperComponent } from "../../../../shared/dialog/dialog-wrapper/dialog-wrapper.component";
-import { DialogAction } from "../../../../../models/dialog";
 
 @Component({
   selector: "app-lost-token",
   standalone: true,
-  imports: [MatCard, MatCardContent, DatePipe, DialogWrapperComponent],
+  imports: [MatCard, MatCardContent, DatePipe, DialogWrapperComponent, MatIconModule, MatButton, MatIcon],
   templateUrl: "./lost-token.component.html",
   styleUrl: "./lost-token.component.scss"
 })
@@ -49,33 +47,10 @@ export class LostTokenComponent extends AbstractDialogComponent<
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   lostTokenData?: LostTokenData;
 
-  actions = computed<DialogAction<string>[]>(() => {
-    if (!this.data.isLost()) {
-      return [this.markLostAction];
-    } else {
-      return [];
-    }
-  });
-  markLostAction = {
-    label: $localize`Mark as Lost`,
-    value: "mark_lost",
-    type: "destruct"
-  } as DialogAction<string>;
-
-  onAction(actionValue: string): void {
-    if (actionValue === "mark_lost") {
-      this.lostToken();
-    }
-  }
-
   constructor() {
     super();
     effect(() => {
       this.dialogRef.disableClose = this.data.isLost();
-    });
-
-    this.dialogRef.afterClosed().subscribe(() => {
-      this.data.isLost.set(false);
     });
   }
 
