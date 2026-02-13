@@ -61,11 +61,11 @@ from privacyidea.lib.error import ParameterError
 from privacyidea.lib.log import log_with
 from privacyidea.lib.policy import SCOPE, GROUP, Match
 from privacyidea.lib.token import init_token
-from privacyidea.lib.tokenclass import CLIENTMODE
+from privacyidea.lib.tokenclass import ClientMode
 from privacyidea.lib.tokenclass import (TokenClass,
                                         TWOSTEP_DEFAULT_DIFFICULTY,
                                         TWOSTEP_DEFAULT_CLIENTSIZE,
-                                        TOKENKIND)
+                                        Tokenkind)
 from privacyidea.lib.utils import (create_img, is_true, b32encode_and_unicode,
                                    hexlify_and_unicode, determine_logged_in_userparams)
 from .HMAC import HmacOtp
@@ -394,7 +394,7 @@ class HotpTokenClass(TokenClass):
 
         # check the tokenkind
         if self.token.serial.startswith("UB"):
-            self.add_tokeninfo("tokenkind", TOKENKIND.HARDWARE)
+            self.add_tokeninfo("tokenkind", Tokenkind.HARDWARE)
 
     @property
     def hashlib(self):
@@ -888,7 +888,7 @@ class HotpTokenClass(TokenClass):
         chal = {"transaction_id": c[2],
                 "image": init_details.get("googleurl").get("img"),
                 "link": init_details.get("googleurl").get("value"),
-                "client_mode": CLIENTMODE.INTERACTIVE,
+                "client_mode": ClientMode.INTERACTIVE,
                 "serial": token_obj.token.serial,
                 "type": token_obj.type,
                 "message": message}

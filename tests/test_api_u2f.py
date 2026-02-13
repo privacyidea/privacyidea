@@ -10,7 +10,7 @@ from privacyidea.lib.user import User
 from privacyidea.lib.config import set_privacyidea_config
 from privacyidea.lib.tokens.u2f import (check_response, url_encode)
 from privacyidea.lib.policy import set_policy, delete_policy, SCOPE
-from privacyidea.lib.tokens.u2ftoken import U2FACTION
+from privacyidea.lib.tokens.u2ftoken import U2FAction
 from privacyidea.models import Challenge
 from privacyidea.lib.utils import hexlify_and_unicode, to_bytes
 from privacyidea.lib.error import ERROR
@@ -266,7 +266,7 @@ class APIU2fTestCase(MyApiTestCase):
             self.assertTrue("trustedFacets" in data)
 
         set_policy(name="facet1", scope=SCOPE.AUTH,
-                   action="{0!s}=host1 host2 host3".format(U2FACTION.FACETS))
+                   action="{0!s}=host1 host2 host3".format(U2FAction.FACETS))
 
         with self.app.test_request_context('/ttype/u2f',
                                            method='GET'):
@@ -331,7 +331,7 @@ class APIU2fTestCase(MyApiTestCase):
         db_challenge.save()
 
         set_policy(name="u2f01", scope=SCOPE.AUTHZ,
-                   action="{0!s}=issuer/.*Yubico.*/".format(U2FACTION.REQ) )
+                   action="{0!s}=issuer/.*Yubico.*/".format(U2FAction.REQ))
 
         # Successful C/R authentication
         with self.app.test_request_context('/validate/check',
@@ -404,7 +404,7 @@ class APIU2fTestCase(MyApiTestCase):
         db_challenge.save()
 
         set_policy(name="u2f01", scope=SCOPE.AUTHZ,
-                   action="{0!s}=issuer/.*Plugup.*/".format(U2FACTION.REQ))
+                   action="{0!s}=issuer/.*Plugup.*/".format(U2FAction.REQ))
 
         # Successful C/R authentication
         with self.app.test_request_context('/validate/check',
@@ -455,7 +455,7 @@ class APIU2fTestCase(MyApiTestCase):
             self.assertEqual(result.get("value"), True)
 
         set_policy(name="u2f01", scope=SCOPE.ENROLL,
-                   action="{0!s}=issuer/.*Plugup.*/".format(U2FACTION.REQ))
+                   action="{0!s}=issuer/.*Plugup.*/".format(U2FAction.REQ))
 
         # Init step 2
         with self.app.test_request_context('/token/init',

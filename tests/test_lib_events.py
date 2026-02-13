@@ -66,7 +66,7 @@ from privacyidea.lib.event import (delete_event, set_event,
                                    enable_event)
 from privacyidea.lib.token import (init_token, remove_token, get_realms_of_token, get_tokens,
                                    add_tokeninfo, unassign_token, get_tokens_paginate)
-from privacyidea.lib.tokenclass import DATE_FORMAT, CHALLENGE_SESSION
+from privacyidea.lib.tokenclass import DATE_FORMAT, ChallengeSession
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import is_true
 from privacyidea.models import Challenge
@@ -576,7 +576,7 @@ class BaseEventHandlerTestCase(MyTestCase):
                     "type": "pw", "otppin": "test", "otpkey": "secret"},
                    user=user)
         # Prepare a challenge
-        chal = Challenge(serial=serial, session=CHALLENGE_SESSION.DECLINED, transaction_id=tid)
+        chal = Challenge(serial=serial, session=ChallengeSession.DECLINED, transaction_id=tid)
         chal.save()
         # One token with one declined challenge
         uhandler = BaseEventHandler()
@@ -586,20 +586,20 @@ class BaseEventHandlerTestCase(MyTestCase):
         options = self.setup_request(req_data=req_data, all_data=req_data, user=user, resp_data=resp_data)
 
         # Check if the condition matches
-        options["handler_def"] = {"conditions": {CONDITION.CHALLENGE_SESSION: CHALLENGE_SESSION.DECLINED}}
+        options["handler_def"] = {"conditions": {CONDITION.CHALLENGE_SESSION: ChallengeSession.DECLINED}}
         r = uhandler.check_condition(options)
         self.assertTrue(r)
 
         # Check if the condition does not match
-        options["handler_def"] = {"conditions": {CONDITION.CHALLENGE_SESSION: CHALLENGE_SESSION.ENROLLMENT}}
+        options["handler_def"] = {"conditions": {CONDITION.CHALLENGE_SESSION: ChallengeSession.ENROLLMENT}}
         r = uhandler.check_condition(options)
         self.assertFalse(r)
 
         # We have two declined challenges, add a 2nd one.
-        chal = Challenge(serial=serial, session=CHALLENGE_SESSION.DECLINED, transaction_id=tid)
+        chal = Challenge(serial=serial, session=ChallengeSession.DECLINED, transaction_id=tid)
         chal.save()
         # Check if the condition matches
-        options["handler_def"] = {"conditions": {CONDITION.CHALLENGE_SESSION: CHALLENGE_SESSION.DECLINED}}
+        options["handler_def"] = {"conditions": {CONDITION.CHALLENGE_SESSION: ChallengeSession.DECLINED}}
         r = uhandler.check_condition(options)
         # We will receive a False and a log.warning
         self.assertFalse(r)

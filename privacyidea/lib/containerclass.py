@@ -38,7 +38,7 @@ from privacyidea.lib.log import log_with
 from privacyidea.lib.machine import is_offline_token
 from privacyidea.lib.token import (create_tokenclass_object, get_tokens, get_serial_by_otp_list,
                                    get_tokens_from_serial_or_user)
-from privacyidea.lib.tokenclass import TokenClass, CHALLENGE_SESSION
+from privacyidea.lib.tokenclass import TokenClass, ChallengeSession
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import is_true
 from privacyidea.models import (TokenContainerOwner, Realm, Token, db, TokenContainerStates,
@@ -789,7 +789,7 @@ class TokenContainerClass:
                               f"device_model={device_model}, key={key}, container={container} ")
                     continue
 
-                if challenge.session == CHALLENGE_SESSION.ENROLLMENT:
+                if challenge.session == ChallengeSession.ENROLLMENT:
                     # challenge was created during the enrollment. It is still required, hence we only set the state to
                     # answered, but not delete it.
                     challenge.set_otp_status(True)
