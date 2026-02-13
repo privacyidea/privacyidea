@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -34,7 +34,7 @@ import { DialogService, DialogServiceInterface } from "../../../services/dialog/
 import { NotificationService, NotificationServiceInterface } from "../../../services/notification/notification.service";
 import { RealmService, RealmServiceInterface } from "../../../services/realm/realm.service";
 import { TokenService, TokenServiceInterface } from "../../../services/token/token.service";
-import { UserService, UserServiceInterface } from "../../../services/user/user.service";
+import { UserData, UserService, UserServiceInterface } from "../../../services/user/user.service";
 import { VersioningService, VersioningServiceInterface } from "../../../services/version/version.service";
 import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
@@ -70,6 +70,9 @@ import {
   CustomDateAdapter,
   TokenEnrollmentComponent
 } from "./token-enrollment.component";
+import { TokenEnrollmentLastStepDialogComponent } from "./token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
+import { TokenEnrollmentLastStepDialogData } from "./token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.self-service.component";
+import { EnrollmentResponse } from "../../../mappers/token-api-payload/_token-api-payload.mapper";
 
 @Component({
   selector: "app-token-enrollment-self-service",
@@ -141,5 +144,29 @@ export class TokenEnrollmentSelfServiceComponent extends TokenEnrollmentComponen
 
   constructor() {
     super();
+  }
+
+  protected override openLastStepDialog(args: { response: EnrollmentResponse | null; user: UserData | null }): void {
+    const { response, user } = args;
+    if (!response) {
+      this.notificationService.openSnackBar("No enrollment response available.");
+      return;
+    }
+
+    const dialogData: TokenEnrollmentLastStepDialogData = {
+      tokentype: this.tokenService.selectedTokenType(),
+      response: response,
+      serial: this.serial,
+      enrollToken: this.enrollToken.bind(this),
+      user: user,
+      userRealm: this.userService.selectedUserRealm(),
+      onlyAddToRealm: this.userAssignmentComponent?.onlyAddToRealm() ?? false
+    };
+    this._lastTokenEnrollmentLastStepDialogData.set(dialogData);
+
+    this.dialogService.openDialog({
+      component: TokenEnrollmentLastStepDialogComponent,
+      data: dialogData
+    });
   }
 }

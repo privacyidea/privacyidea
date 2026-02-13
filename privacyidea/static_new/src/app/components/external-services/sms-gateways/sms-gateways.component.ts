@@ -24,7 +24,11 @@ import { MatSort, MatSortModule } from "@angular/material/sort";
 import { MatIconModule } from "@angular/material/icon";
 import { MatButtonModule } from "@angular/material/button";
 import { MatDialog, MatDialogModule } from "@angular/material/dialog";
-import { SmsGateway, SmsGatewayService, SmsGatewayServiceInterface } from "../../../services/sms-gateway/sms-gateway.service";
+import {
+  SmsGateway,
+  SmsGatewayService,
+  SmsGatewayServiceInterface
+} from "../../../services/sms-gateway/sms-gateway.service";
 import { NewSmsGatewayComponent } from "./new-sms-gateway/new-sms-gateway.component";
 import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
 import { MatTooltipModule } from "@angular/material/tooltip";
@@ -35,6 +39,7 @@ import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
 import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
 import { TableUtilsService, TableUtilsServiceInterface } from "../../../services/table-utils/table-utils.service";
 import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
+import { SimpleConfirmationDialogComponent } from "../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
 
 @Component({
   selector: "app-sms-gateways",
@@ -93,18 +98,23 @@ export class SmsGatewaysComponent {
   }
 
   deleteGateway(gateway: SmsGateway): void {
-    this.dialogService.confirm({
-      data: {
-        title: $localize`Delete SMS Gateway`,
-        serialList: [gateway.name],
-        type: "sms-gateway",
-        action: "delete"
-      }
-    }).then(result => {
-      if (result) {
-        this.smsGatewayService.deleteSmsGateway(gateway.name);
-      }
-    });
+    this.dialogService
+      .openDialog({
+        component: SimpleConfirmationDialogComponent,
+        data: {
+          title: $localize`Delete SMS Gateway`,
+          items: [gateway.name],
+          itemType: "sms-gateway",
+          confirmAction: { label: $localize`Delete`, value: true, type: "destruct" },
+          cancelAction: { label: $localize`Cancel`, value: false, type: "cancel" }
+        }
+      })
+      .afterClosed()
+      .subscribe((result) => {
+        if (result) {
+          this.smsGatewayService.deleteSmsGateway(gateway.name);
+        }
+      });
   }
 
   onFilterInput(value: string): void {

@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -22,7 +22,7 @@ import { MatButtonModule } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
 import { BulkResult, TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
-import { ConfirmationDialogComponent } from "../../../shared/confirmation-dialog/confirmation-dialog.component";
+import { SimpleConfirmationDialogComponent } from "../../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { PiResponse } from "../../../../app.component";
 import { catchError, concatMap, EMPTY, filter, from, reduce, switchMap } from "rxjs";
 import { SelectedUserAssignDialogComponent } from "./selected-user-attach-dialog/selected-user-attach-dialog.component";
@@ -42,6 +42,7 @@ import {
   DocumentationServiceInterface
 } from "../../../../services/documentation/documentation.service";
 import { Router, RouterLink } from "@angular/router";
+import { DialogService, DialogServiceInterface } from "../../../../services/dialog/dialog.service";
 import { MatMenuModule } from "@angular/material/menu";
 import { TableUtilsService, TableUtilsServiceInterface } from "../../../../services/table-utils/table-utils.service";
 
@@ -59,7 +60,7 @@ export class TokenTableActionsComponent {
   protected readonly versioningService: VersioningServiceInterface = inject(VersioningService);
   protected readonly documentationService: DocumentationServiceInterface = inject(DocumentationService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
-  private readonly dialog: MatDialog = inject(MatDialog);
+  private readonly dialogService: DialogServiceInterface = inject(DialogService);
   protected readonly auditService: AuditServiceInterface = inject(AuditService);
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   readonly ROUTE_PATHS = ROUTE_PATHS;
@@ -79,14 +80,14 @@ export class TokenTableActionsComponent {
   }
 
   revokeToken(): void {
-    this.dialog
-      .open(ConfirmationDialogComponent, {
+    this.dialogService
+      .openDialog({
+        component: SimpleConfirmationDialogComponent,
         data: {
-          serialList: [this.tokenSerial()],
           title: "Revoke Token",
-          type: "token",
-          action: "revoke",
-          numberOfTokens: 1
+          items: [this.tokenSerial()],
+          itemType: "token",
+          confirmAction: { label: "Revoke", value: true, type: "destruct" }
         }
       })
       .afterClosed()
@@ -107,14 +108,14 @@ export class TokenTableActionsComponent {
   }
 
   deleteToken(): void {
-    this.dialog
-      .open(ConfirmationDialogComponent, {
+    this.dialogService
+      .openDialog({
+        component: SimpleConfirmationDialogComponent,
         data: {
-          serialList: [this.tokenSerial()],
           title: "Delete Token",
-          type: "token",
-          action: "delete",
-          numberOfTokens: 1
+          items: [this.tokenSerial()],
+          itemType: "token",
+          confirmAction: { label: "Delete", value: true, type: "destruct" }
         }
       })
       .afterClosed()
@@ -134,12 +135,12 @@ export class TokenTableActionsComponent {
 
   deleteSelectedTokens(): void {
     const serialList = this.tokenSelection().map((token) => token.serial);
-    this.tokenService.bulkDeleteWithConfirmDialog(serialList, this.dialog, () => this.tokenService.tokenResource.reload());
+    this.tokenService.bulkDeleteWithConfirmDialog(serialList, () => this.tokenService.tokenResource.reload());
   }
 
   assignSelectedTokens() {
-    this.dialog
-      .open(SelectedUserAssignDialogComponent)
+    this.dialogService
+      .openDialog({ component: SelectedUserAssignDialogComponent })
       .afterClosed()
       .pipe(
         filter(Boolean),
@@ -174,14 +175,14 @@ export class TokenTableActionsComponent {
 
   unassignSelectedTokens() {
     const selectedTokens = this.tokenSelection();
-    this.dialog
-      .open(ConfirmationDialogComponent, {
+    this.dialogService
+      .openDialog({
+        component: SimpleConfirmationDialogComponent,
         data: {
-          serialList: selectedTokens.map((token) => token.serial),
           title: "Unassign Selected Tokens",
-          type: "token",
-          action: "unassign",
-          numberOfTokens: selectedTokens.length
+          items: selectedTokens.map((token) => token.serial),
+          itemType: "token",
+          confirmAction: { label: "Unassign", value: true, type: "destruct" }
         }
       })
       .afterClosed()

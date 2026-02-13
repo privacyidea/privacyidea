@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -19,22 +19,11 @@
 import { AsyncPipe } from "@angular/common";
 import { HttpClient } from "@angular/common/http";
 import { Component, computed, inject, SecurityContext, Signal } from "@angular/core";
-import { MatButton } from "@angular/material/button";
-import {
-  MAT_DIALOG_DATA,
-  MatDialogActions,
-  MatDialogClose,
-  MatDialogContent,
-  MatDialogRef
-} from "@angular/material/dialog";
+import { MAT_DIALOG_DATA, MatDialogContent } from "@angular/material/dialog";
 import { DomSanitizer } from "@angular/platform-browser";
 import { map } from "rxjs";
 import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
-import {
-  TokenEnrollmentLastStepDialogComponent,
-  TokenEnrollmentLastStepDialogData
-} from "./token-enrollment-last-step-dialog.component";
 import { OtpKeyComponent } from "./otp-key/otp-key.component";
 import { TiqrEnrollUrlComponent } from "./tiqr-enroll-url/tiqr-enroll-url.component";
 import { RegistrationCodeComponent } from "./registration-code/registration-code.component";
@@ -49,75 +38,95 @@ import { ROUTE_PATHS } from "../../../../route_paths";
 import { QrCodeTextComponent } from "./qr-code-text/qr-code-text.component";
 import { StringUtils } from "../../../../utils/string.utils";
 import { environment } from "../../../../../environments/environment";
-
+import { DialogWrapperComponent } from "../../../shared/dialog/dialog-wrapper/dialog-wrapper.component";
+import { TokenEnrollmentLastStepDialogComponent } from "./token-enrollment-last-step-dialog.component";
+import { TokenEnrollmentLastStepDialogData } from "./token-enrollment-last-step-dialog.self-service.component";
+import { DialogAction } from "../../../../models/dialog";
+import { MatButtonModule } from "@angular/material/button";
 @Component({
   selector: "app-token-enrollment-last-step-dialog-wizard",
   imports: [
-    MatButton,
-    MatDialogActions,
-    MatDialogClose,
     MatDialogContent,
     AsyncPipe,
     OtpKeyComponent,
     TiqrEnrollUrlComponent,
     RegistrationCodeComponent,
     OtpValuesComponent,
-    RouterLink,
-    QrCodeTextComponent
+    QrCodeTextComponent,
+    DialogWrapperComponent,
+    MatButtonModule
   ],
   templateUrl: "./token-enrollment-last-step-dialog.wizard.component.html",
   styleUrl: "./token-enrollment-last-step-dialog.component.scss"
 })
 export class TokenEnrollmentLastStepDialogWizardComponent extends TokenEnrollmentLastStepDialogComponent {
-  protected override readonly Object = Object;
+  protected readonly actions: DialogAction<"create_container" | "logout">[] = [
+    {
+      type: "auxiliary",
+      label: "Create Container",
+      value: "create_container"
+    },
+    {
+      type: "auxiliary",
+      label: "Logout",
+      value: "logout"
+    }
+  ];
 
+  protected override readonly Object = Object;
   private readonly http: HttpClient = inject(HttpClient);
   private readonly sanitizer: DomSanitizer = inject(DomSanitizer);
-
-  protected override readonly dialogRef: MatDialogRef<TokenEnrollmentLastStepDialogComponent> = inject(MatDialogRef);
   public override readonly data: TokenEnrollmentLastStepDialogData = inject(MAT_DIALOG_DATA);
   protected override readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected override readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly router: Router = inject(Router);
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
-
   tagData: Signal<Record<string, string>> = computed(() => ({
     serial: this.serial,
     qrCode: this.qrCode,
     url: this.url
   }));
-
   // TODO: Get custom path from pi.cfg
   customizationPath = "/static/public/customize/";
-
   readonly postTopHtml$ = this.http
-    .get(environment.proxyUrl + this.customizationPath+ "token-enrollment.wizard.post.top.html", {
+    .get(environment.proxyUrl + this.customizationPath + "token-enrollment.wizard.post.top.html", {
       responseType: "text"
     })
-    .pipe(map((raw) => ({
+    .pipe(
+      map((raw) => ({
         hasContent: !!raw && raw.trim().length > 0,
         sanitized: this.sanitizer.sanitize(SecurityContext.HTML, StringUtils.replaceWithTags(raw, this.tagData()))
       }))
     );
-
   readonly postBottomHtml$ = this.http
     .get(environment.proxyUrl + this.customizationPath + "token-enrollment.wizard.post.bottom.html", {
       responseType: "text"
     })
-    .pipe(map((raw) => this.sanitizer.sanitize(SecurityContext.HTML,
-        StringUtils.replaceWithTags(raw, this.tagData()))
-      )
+    .pipe(
+      map((raw) => this.sanitizer.sanitize(SecurityContext.HTML, StringUtils.replaceWithTags(raw, this.tagData())))
     );
-
-  logout(): void {
-    this.authService.logout();
-  }
 
   constructor() {
     super();
   }
-
   protected readonly RouterLink = RouterLink;
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
+
+  onAction(value: "create_container" | "logout"): void {
+    switch (value) {
+      case "create_container":
+        this.createContainer();
+        break;
+      case "logout":
+        this.logout();
+        break;
+    }
+  }
+  private createContainer(): void {
+    this.router.navigate([ROUTE_PATHS.TOKENS_CONTAINERS_WIZARD]);
+  }
+  logout(): void {
+    this.authService.logout();
+  }
 }
