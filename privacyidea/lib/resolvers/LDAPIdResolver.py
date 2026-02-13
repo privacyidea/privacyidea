@@ -63,13 +63,6 @@ from ..lifecycle import register_finalizer
 
 log = logging.getLogger(__name__)
 
-try:
-    import gssapi
-    have_gssapi = True
-except ImportError:
-    log.info('Could not import gssapi package. Kerberos authentication not available')
-    have_gssapi = False
-
 CACHE = {}
 
 ENCODING = "utf-8"
@@ -303,7 +296,7 @@ class IdResolver(UserIdResolver):
         self.group_name_attribute = ""
         self.group_search_filter = ""
         self.group_attribute_mapping_key = ""
-        # The number of seconds that ldap3 waits if no server is left in the pool, before
+        # The number of seconds that ldap3 waits if no server is left in the pool before
         # starting the next round
         pooling_loop_timeout = get_app_config_value("PI_LDAP_POOLING_LOOP_TIMEOUT", 10)
         log.debug("Setting system-wide POOLING_LOOP_TIMEOUT to {0!s}.".format(pooling_loop_timeout))
@@ -313,16 +306,17 @@ class IdResolver(UserIdResolver):
     def checkPass(self, uid, password):
         """
         This function checks the password for a given uid.
-        - returns true in case of success
-        -         false if password does not match
+        - returns true in case of success or false if the password does not match
 
         """
         if self.authtype == AUTHTYPE.SASL_KERBEROS:
-            if not have_gssapi:
-                log.warning('gssapi module not available. Kerberos authentication not possible')
+            try:
+                import gssapi
+            except ImportError:
+                log.error('Could not import gssapi package. Kerberos authentication is not possible!')
                 return False
             # We need to check credentials with kerberos differently since we
-            # can not use bind for every user
+            # cannot use bind for every user
             upn = self.getUserInfo(uid).get('upn')
             if upn is not None and upn != "None" and upn != "":
                 name = gssapi.Name(upn.upper())
@@ -612,6 +606,7 @@ class IdResolver(UserIdResolver):
 
         return user_info
 
+    @cache
     def _get_user_groups_recursive(self, user_info: dict) -> list[str]:
         """
         Do a separate search to retrieve the groups of a user. This can be done recursively to all groups including
@@ -1128,6 +1123,7 @@ class IdResolver(UserIdResolver):
                                 'DN_TEMPLATE': 'string',
                                 'MULTIVALUEATTRIBUTES': 'string',
                                 'group_name_attribute': 'string',
+                                'group_base_dn': 'string',
                                 'group_search_filter': 'string',
                                 'group_attribute_mapping_key': 'string',
                                 'recursive_group_search': 'bool'}
@@ -1425,10 +1421,10 @@ class IdResolver(UserIdResolver):
                      'collect_usage': True}
 
         if not user:
-            # without a user we can only use an anonymous binds
+            # without a user we can only use an anonymous bind
             conn_opts.update({'authentication': ldap3.ANONYMOUS})
         elif authtype == AUTHTYPE.SIMPLE:
-            # SIMPLE works with passwords as UTF8 and unicode
+            # SIMPLE works with passwords as Unicode
             password = to_unicode(password)
             conn_opts.update({'user': user,
                               'password': password,
