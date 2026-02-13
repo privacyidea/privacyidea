@@ -22,13 +22,13 @@ import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { DialogService } from "../../../../services/dialog/dialog.service";
 
 @Directive()
-export abstract class AbstractDialogComponent<T = any, R = any> {
+export abstract class AbstractDialogComponent<D = any, R = any> {
   /**
    * The injected data. By initializing it in the constructor, we enforce
    * that any inheriting class must expect this structure (title, content, etc.) in its data.
    */
-  public readonly data: T = inject(MAT_DIALOG_DATA);
-  public dialogRef: MatDialogRef<T, R> = inject(MatDialogRef);
+  public readonly data: D = inject(MAT_DIALOG_DATA);
+  public dialogRef: MatDialogRef<AbstractDialogComponent<D, R>, R> = inject(MatDialogRef);
 
   /**
    * Closes the dialog with an optional result.

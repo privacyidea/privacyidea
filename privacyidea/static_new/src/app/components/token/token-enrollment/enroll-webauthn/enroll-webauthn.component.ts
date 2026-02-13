@@ -41,6 +41,7 @@ import {
 import { firstValueFrom } from "rxjs";
 import { TokenEnrollmentFirstStepDialogComponent } from "../token-enrollment-firtst-step-dialog/token-enrollment-first-step-dialog.component";
 import { MatDialogRef } from "@angular/material/dialog";
+import { AbstractDialogComponent } from "../../../shared/dialog/abstract-dialog/abstract-dialog.component";
 
 @Component({
   selector: "app-enroll-webauthn",
@@ -197,12 +198,7 @@ export class EnrollWebauthnComponent implements OnInit {
     return publicKeyCred;
   };
 
-  stepOneDialogRef: MatDialogRef<
-    {
-      enrollmentResponse: EnrollmentResponse;
-    },
-    boolean
-  > | null = null;
+  stepOneDialogRef: MatDialogRef<AbstractDialogComponent, boolean> | null = null;
 
   openStepOneDialog(args: {
     webauthnEnrollmentData: WebAuthnEnrollmentData;

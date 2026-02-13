@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, WritableSignal } from "@angular/core";
-import { MatButton } from "@angular/material/button";
+import { MatButtonModule } from "@angular/material/button";
 import { MatDialogContent } from "@angular/material/dialog";
 import { MatIcon } from "@angular/material/icon";
 import { EnrollmentResponse } from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
@@ -44,7 +44,7 @@ export type TokenEnrollmentLastStepDialogData = {
 @Component({
   selector: "app-token-enrollment-last-step-dialog-self-service",
   imports: [
-    MatButton,
+    MatButtonModule,
     MatDialogContent,
     MatIcon,
     QrCodeTextComponent,

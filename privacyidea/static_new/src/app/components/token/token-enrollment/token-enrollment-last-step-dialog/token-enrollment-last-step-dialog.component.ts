@@ -34,6 +34,7 @@ import { MatIconModule } from "@angular/material/icon";
 import { QrCodeTextComponent } from "./qr-code-text/qr-code-text.component";
 import { TokenEnrollmentLastStepDialogData } from "./token-enrollment-last-step-dialog.self-service.component";
 import { AbstractDialogComponent } from "../../../shared/dialog/abstract-dialog/abstract-dialog.component";
+import { MatButtonModule } from "@angular/material/button";
 
 @Component({
   selector: "app-token-enrollment-last-step-dialog",
@@ -47,7 +48,8 @@ import { AbstractDialogComponent } from "../../../shared/dialog/abstract-dialog/
     TiqrEnrollUrlComponent,
     OtpKeyComponent,
     MatIconModule,
-    QrCodeTextComponent
+    QrCodeTextComponent,
+    MatButtonModule
   ]
 })
 export class TokenEnrollmentLastStepDialogComponent extends AbstractDialogComponent<TokenEnrollmentLastStepDialogData> {
