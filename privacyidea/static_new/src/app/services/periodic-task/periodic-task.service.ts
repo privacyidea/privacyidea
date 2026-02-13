@@ -26,7 +26,7 @@ import { SimpleConfirmationDialogComponent } from "../../components/shared/dialo
 import { ROUTE_PATHS } from "../../route_paths";
 import { AuthServiceInterface, AuthService } from "../auth/auth.service";
 import { ContentServiceInterface, ContentService } from "../content/content.service";
-import { DialogReturnData, DialogService, DialogServiceInterface } from "../dialog/dialog.service";
+import { DialogService, DialogServiceInterface } from "../dialog/dialog.service";
 import { NotificationService } from "../notification/notification.service";
 
 export type PeriodicTask = {

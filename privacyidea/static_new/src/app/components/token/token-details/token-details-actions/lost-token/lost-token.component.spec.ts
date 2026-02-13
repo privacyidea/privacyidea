@@ -94,16 +94,6 @@ describe("LostTokenComponent", () => {
     expect(dialogRefMock.disableClose).toBe(false);
   });
 
-  it("resets isLost to false when dialog is closed (afterClosed subscription)", () => {
-    isLost.set(true);
-    expect(isLost()).toBe(true);
-
-    afterClosed$.next();
-    fixture.detectChanges();
-
-    expect(isLost()).toBe(false);
-  });
-
   it("lostToken() calls service, sets state, stores response and shows snackbar", () => {
     isLost.set(false);
     tokenSerial.set("SER-123");

@@ -1,80 +1,27 @@
 @use "../../../../../styles";
 
 .pi-dialog {
-  background-color: var(--mat-sys-surface);
+  background-color: var(--mat-sys-surface-container-low);
   border-radius: var(--border-radius);
   overflow: auto;
-}
+  --mat-dialog-content-padding: 0 var(--global-padding);
 
-.pi-dialog-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: var(--global-padding);
-}
-
-.pi-dialog-header h4 {
-  margin: 0 auto 0 0;
-}
-
-.pi-close-button {
-  color: var(--mat-sys-on-surface);
-}
-
-.pi-dialog-body {
-  padding: var(--global-padding);
-  color: var(--mat-sys-on-surface);
-  font-size: 1rem;
-}
-
-.pi-dialog-footer {
-  display: flex;
-  justify-content: flex-end;
-  padding: var(--global-padding);
-
-  gap: calc(var(--global-gap) / 2);
-}
-
-.dialog-action-button-default {
-  @extend styles, .button, .action-button-1 !optional;
-  border-width: thin;
-  padding: var(--third-global-padding);
-  font-size: 1rem;
-  transition:
-    background-color 0.2s ease-in-out,
-    box-shadow 0.2s ease-in-out;
-
-  &:not(:disabled):hover {
-    background-color: var(--mat-sys-primary-base-hover);
-    box-shadow: 0 4px 8px var(--mat-sys-shadow-color-high);
-    cursor: pointer;
+  .pi-dialog-header {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: var(--half-global-padding) var(--global-padding);
   }
-}
 
-.dialog-action-button-destruct {
-  @extend styles, .button, .action-button-delete !optional;
-  border-width: thin;
-  padding: var(--third-global-padding);
-  font-size: 1rem;
-  transition: background-color 0.1s ease;
-
-  &:not(:disabled):hover {
-    background-color: var(--red-base-hover);
-    box-shadow: 0 4px 8px var(--mat-sys-shadow-color-high);
-    cursor: pointer;
+  .pi-dialog-header h2 {
+    margin: 0;
   }
-}
 
-.dialog-action-button-cancel {
-  @extend styles, .button, .action-button-cancel !optional;
-  border-width: thin;
-  padding: var(--third-global-padding);
-  font-size: 1rem;
-  transition: background-color 0.1s ease;
+  .pi-dialog-footer {
+    display: flex;
+    justify-content: flex-end;
+    padding: var(--half-global-padding) var(--global-padding);
 
-  &:not(:disabled):hover {
-    background-color: var(--grey-base-hover);
-    box-shadow: 0 4px 8px var(--mat-sys-shadow-color-high);
-    cursor: pointer;
+    gap: var(--half-global-gap);
   }
 }

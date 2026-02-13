@@ -12,31 +12,27 @@
     } @else {
       <h2 i18n>Dialog</h2>
     }
-    @if (showCloseButton()) {
-      <button
-        mat-icon-button
-        class="pi-close-button"
-        (click)="onCloseClick()">
-        <mat-icon>close</mat-icon>
-      </button>
-    }
   </div>
   <mat-dialog-content>
-    <div class="margin-bottom-1">
-      <div class="pi-dialog-body">
-        <ng-content></ng-content>
-      </div>
+    <div class="pi-dialog-body">
+      <ng-content></ng-content>
     </div>
   </mat-dialog-content>
-  @if (actions().length > 0) {
+  @if (showCloseButton() || actions().length > 0) {
     <div class="pi-dialog-footer">
+      @if (showCloseButton()) {
+        <button
+          mat-button
+          mat-dialog-close
+          i18n>
+          Close
+        </button>
+      }
       @for (action of actions(); track $index) {
         <button
-          [class.dialog-action-button-default]="
-            action.type === 'confirm' || action.type === 'auxiliary' || !action.type
-          "
-          [class.dialog-action-button-destruct]="action.type === 'destruct'"
-          [class.dialog-action-button-cancel]="action.type === 'cancel'"
+          [class.action-button-1]="action.type === 'confirm' || action.type === 'auxiliary' || !action.type"
+          [class.action-button-delete]="action.type === 'destruct'"
+          [class.action-button-cancel]="action.type === 'cancel'"
           (click)="onActionClick(action)"
           [disabled]="action.disabled">
           @if (action.icon) {
