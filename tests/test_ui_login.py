@@ -9,7 +9,7 @@ import re
 from flask_babel import refresh
 
 from privacyidea.app import create_app
-from privacyidea.lib.policies.actions import PolicyAction
+from privacyidea.lib.policies.actions import PolicyAction, PasskeyLoginButtonOptions
 from privacyidea.lib.policy import set_policy, SCOPE, PolicyClass, delete_all_policies
 from privacyidea.lib.utils import to_unicode, get_version_number
 from privacyidea.models import db, save_config_timestamp
@@ -167,7 +167,7 @@ class ConfigTestCase(MyApiTestCase):
                                 "translation_warning", "password_reset", "hsm_ready", "has_job_queue", "customization",
                                 "custom_css", "customization_menu_file", "customization_baseline_file", "realms",
                                 "show_node", "external_links", "login_text", "gdpr_link", "logo", "page_title",
-                                "otp_pin_set_random_user", "privacyideaVersionNumber"}
+                                "otp_pin_set_random_user", "privacyideaVersionNumber", "passkey_login"}
             self.assertSetEqual(expected_entries, set(config.keys()))
 
             self.assertEqual("static/customize", config["customization"])
@@ -180,6 +180,7 @@ class ConfigTestCase(MyApiTestCase):
             self.assertEqual("templates/baseline.html", config["customization_baseline_file"])
             self.assertEqual("", config["login_text"])
             self.assertEqual(get_version_number(), config["privacyideaVersionNumber"])
+            self.assertEqual(PasskeyLoginButtonOptions.SHOW, config["passkey_login"])
 
     def test_02_get_ui_config_custom_values(self):
         self.setUp_user_realms()
@@ -190,7 +191,8 @@ class ConfigTestCase(MyApiTestCase):
 
         set_policy("ui", scope=SCOPE.WEBUI,
                    action=f"{PolicyAction.REALMDROPDOWN}={self.realm1} {self.realm2},{PolicyAction.SHOW_NODE},"
-                          f"{PolicyAction.CUSTOM_MENU}=myMenu.html,{PolicyAction.LOGIN_TEXT}=Please log in")
+                          f"{PolicyAction.CUSTOM_MENU}=myMenu.html,{PolicyAction.LOGIN_TEXT}=Please log in,"
+                          f"{PolicyAction.PASSKEY_LOGIN}=hide")
 
         with self.app.test_request_context("/config",
                                            method="GET"):
@@ -208,3 +210,4 @@ class ConfigTestCase(MyApiTestCase):
             self.assertEqual("myMenu.html", config["customization_menu_file"])
             self.assertEqual("templates/baseline.html", config["customization_baseline_file"])
             self.assertEqual("Please log in", config["login_text"])
+            self.assertEqual("hide", config["passkey_login"])

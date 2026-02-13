@@ -220,3 +220,10 @@ class PolicyAction:
     HIDE_SPECIFIC_ERROR_MESSAGE_FOR_OFFLINE_REFILL = "hide_specific_error_message_for_offline_refill"
     HIDE_SPECIFIC_ERROR_MESSAGE_FOR_TTYPE = "hide_specific_error_message_for_ttype"
     REQUIRE_AUTH_FOR_RESOLVER_DETAILS = "require_auth_for_resolver_details"
+    PASSKEY_LOGIN = "passkey_login"
+
+
+class PasskeyLoginButtonOptions:
+    __doc__ = """This is the list of options for passkey login."""
+    SHOW = "show"
+    HIDE = "hide"
