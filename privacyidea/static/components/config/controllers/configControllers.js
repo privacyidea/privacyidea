@@ -1115,13 +1115,14 @@ myApp.controller("LdapResolverController", ["$scope", "ConfigFactory", "$state",
         };
 
         $scope.testResolver = function (size_limit) {
-            var params = $.extend({}, $scope.params);
+            let params = $.extend({}, $scope.params);
             params["SIZELIMIT"] = size_limit;
             params["resolver"] = $scope.resolvername;
-            if (params['AUTHTYPE'] === $scope.authtypes['Anonymous']) {
-                params['AUTHTYPE'] = $scope.authtypes['Simple'];
-                params['BINDPW'] = '';
-                params['BINDDN'] = '';
+            if (!$scope.params.recursive_group_search) {
+                params["group_base_dn"] = "";
+                params["group_name_attribute"] = "";
+                params["group_search_filter"] = "";
+                params["group_attribute_mapping_key"] = "";
             }
             ConfigFactory.testResolver(params, function (data) {
                 if (data.result.value === true) {
