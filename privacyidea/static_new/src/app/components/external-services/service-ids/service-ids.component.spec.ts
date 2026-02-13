@@ -16,34 +16,35 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { ServiceIdsComponent } from "./service-ids.component";
+
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { MatDialog, MatDialogModule } from "@angular/material/dialog";
-import { provideRouter } from "@angular/router";
-import { ServiceIdService } from "../../../services/service-id/service-id.service";
-import { DialogService } from "../../../services/dialog/dialog.service";
 import { signal } from "@angular/core";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { MatDialogModule, MatDialog } from "@angular/material/dialog";
+import { NoopAnimationsModule } from "@angular/platform-browser/animations";
+import { provideRouter } from "@angular/router";
+import { Subject } from "rxjs";
+import { MockMatDialogRef } from "../../../../testing/mock-mat-dialog-ref";
+import { MockDialogService } from "../../../../testing/mock-services";
+import { DialogService } from "../../../services/dialog/dialog.service";
+import { ServiceIdService } from "../../../services/service-id/service-id.service";
+import { ServiceIdsComponent } from "./service-ids.component";
 
 describe("ServiceIdsComponent", () => {
   let component: ServiceIdsComponent;
   let fixture: ComponentFixture<ServiceIdsComponent>;
   let serviceIdServiceMock: any;
-  let dialogServiceMock: any;
+  let dialogServiceMock: MockDialogService;
+  let confirmClosed: Subject<boolean>;
 
   beforeEach(async () => {
     serviceIdServiceMock = {
       serviceIds: signal([
         { servicename: "service1", description: "desc1", id: 1 },
-        { servicename: "service2", description: "desc2", id: 2 },
+        { servicename: "service2", description: "desc2", id: 2 }
       ]),
-      deleteServiceId: jest.fn(),
-    };
-
-    dialogServiceMock = {
-      confirm: jest.fn().mockResolvedValue(true),
+      deleteServiceId: jest.fn()
     };
 
     await TestBed.configureTestingModule({
@@ -53,17 +54,22 @@ describe("ServiceIdsComponent", () => {
         provideHttpClientTesting(),
         provideRouter([]),
         { provide: ServiceIdService, useValue: serviceIdServiceMock },
-        { provide: DialogService, useValue: dialogServiceMock },
+        { provide: DialogService, useClass: MockDialogService }
       ]
-    }).overrideComponent(ServiceIdsComponent, {
-      add: {
-        providers: [
-          { provide: MatDialog, useValue: { open: jest.fn() } }
-        ]
-      }
-    }).compileComponents();
+    })
+      .overrideComponent(ServiceIdsComponent, {
+        add: {
+          providers: [{ provide: MatDialog, useValue: { open: jest.fn() } }]
+        }
+      })
+      .compileComponents();
 
     fixture = TestBed.createComponent(ServiceIdsComponent);
+    dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
+    confirmClosed = new Subject();
+    let dialogRefMock = new MockMatDialogRef();
+    dialogRefMock.afterClosed.mockReturnValue(confirmClosed);
+    dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });
@@ -92,8 +98,9 @@ describe("ServiceIdsComponent", () => {
   it("should delete service ID after confirmation", async () => {
     const serviceId = serviceIdServiceMock.serviceIds()[0];
     component.deleteServiceId(serviceId);
-    expect(dialogServiceMock.confirm).toHaveBeenCalled();
-    await Promise.resolve();
+    expect(dialogServiceMock.openDialog).toHaveBeenCalled();
+    confirmClosed.next(true);
+    confirmClosed.complete();
     expect(serviceIdServiceMock.deleteServiceId).toHaveBeenCalledWith("service1");
   });
 });

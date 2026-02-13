@@ -35,8 +35,9 @@ import { NotificationService } from "../../../services/notification/notification
 import { AuthService } from "../../../services/auth/auth.service";
 import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
-import { ConfirmationDialogComponent } from "../../shared/confirmation-dialog/confirmation-dialog.component";
 import { UserNewResolverComponent } from "../user-new-resolver/user-new-resolver.component";
+import { SimpleConfirmationDialogComponent } from "../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { DialogService, DialogServiceInterface } from "../../../services/dialog/dialog.service";
 
 const columnKeysMap = [
   { key: "resolvername", label: "Name" },
@@ -71,6 +72,7 @@ export class UserResolversComponent {
   protected readonly tableUtilsService = inject(TableUtilsService);
   protected readonly notificationService = inject(NotificationService);
   protected readonly dialog = inject(MatDialog);
+  protected readonly dialogService: DialogServiceInterface = inject(DialogService);
   protected readonly authService = inject(AuthService);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
@@ -139,15 +141,22 @@ export class UserResolversComponent {
   }
 
   onDeleteResolver(resolver: Resolver): void {
-    this.dialog.open(ConfirmationDialogComponent, {
-      data: {
-        serialList: [resolver.resolvername],
-        title: $localize`Delete Resolver`,
-        type: "resolver",
-        action: "delete"
-      }
-    }).afterClosed().subscribe(result => {
-      if (result?.confirmed) {
+    this.dialogService
+      .openDialog({
+        component: SimpleConfirmationDialogComponent,
+        data: {
+          title: $localize`Delete Resolver`,
+          items: [resolver.resolvername],
+          itemType: "resolver",
+          confirmAction: { label: $localize`Delete`, value: true, type: "destruct" },
+          cancelAction: { label: $localize`Cancel`, value: false, type: "cancel" }
+        }
+      })
+      .afterClosed()
+      .subscribe((result) => {
+        if (!result) {
+          return;
+        }
         this.resolverService.deleteResolver(resolver.resolvername).subscribe({
           next: () => {
             this.notificationService.openSnackBar($localize`Resolver "${resolver.resolvername}" deleted.`);
@@ -158,7 +167,6 @@ export class UserResolversComponent {
             this.notificationService.openSnackBar($localize`Failed to delete resolver. ${message}`);
           }
         });
-      }
-    });
+      });
   }
 }

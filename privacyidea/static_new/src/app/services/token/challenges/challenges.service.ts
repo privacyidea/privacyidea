@@ -22,7 +22,7 @@ import { httpResource, HttpResourceRef } from "@angular/common/http";
 import { computed, inject, Injectable, linkedSignal, signal, WritableSignal } from "@angular/core";
 import { TokenService, TokenServiceInterface } from "../token.service";
 
-import { FilterValue } from "../../../core/models/filter_value";
+import { FilterValue } from "../../../core/models/filter_value/filter_value";
 import { PiResponse } from "../../../app.component";
 import { Sort } from "@angular/material/sort";
 import { StringUtils } from "../../../utils/string.utils";

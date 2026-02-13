@@ -1,9 +1,8 @@
-
 .list-layout {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: calc(var(--global-gap) / 4);
+  gap: var(--half-global-gap);
   overflow: auto;
 }
 
@@ -45,8 +44,10 @@
   .mat-expansion-panel-body {
     gap: var(--global-gap);
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     border-radius: var(--border-radius);
+    padding: var(--three-quarters-global-padding);
+    padding-top: 0;
   }
 
   .actions {

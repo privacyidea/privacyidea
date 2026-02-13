@@ -106,6 +106,7 @@ $description-width: 18rem;
 
 table {
   background-color: $table-bg;
+  border: 1px solid var(--mat-sys-outline-variant);
 }
 
 a {
@@ -116,7 +117,7 @@ a {
 
 td:nth-child(even),
 th:nth-child(even) {
-  background: var(--mat-sys-surface-container-low);
+  background: var(--mat-sys-surface-variant);
 }
 
 .mat-mdc-form-field {

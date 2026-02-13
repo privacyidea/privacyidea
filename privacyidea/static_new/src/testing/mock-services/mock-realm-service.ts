@@ -4,16 +4,20 @@
  */
 import { computed, Signal, signal, WritableSignal } from "@angular/core";
 import { of } from "rxjs";
-import { Realm, Realms, RealmServiceInterface } from "../../app/services/realm/realm.service";
+import { AdminRealms, Realm, Realms, RealmServiceInterface } from "../../app/services/realm/realm.service";
 import { PiResponse } from "../../app/app.component";
 import { MockHttpResourceRef, MockPiResponse } from "./mock-utils";
+import { HttpResourceRef } from "@angular/common/http";
 
 export class MockRealmService implements RealmServiceInterface {
+  realms: WritableSignal<Realms> = signal({});
+  adminRealmResource: HttpResourceRef<PiResponse<AdminRealms, unknown> | undefined> = new MockHttpResourceRef(
+    MockPiResponse.fromValue([])
+  );
+  adminRealmOptions: WritableSignal<string[]> = signal([]);
   selectedRealms = signal<string[]>([]);
 
-  realmResource = new MockHttpResourceRef<PiResponse<Realms> | undefined>(
-    MockPiResponse.fromValue<Realms>({} as any)
-  );
+  realmResource = new MockHttpResourceRef<PiResponse<Realms> | undefined>(MockPiResponse.fromValue<Realms>({} as any));
 
   realmOptions: Signal<string[]> = computed(() => {
     const realms = this.realmResource.value()?.result?.value as any;
@@ -31,22 +35,29 @@ export class MockRealmService implements RealmServiceInterface {
     return data ? Object.keys(data)[0] : "";
   });
 
-  createRealm = jest.fn().mockImplementation((realm: string, nodeId: string, resolvers: { name: string; priority?: number | null }[]) => {
-    const current = (this.realmResource.value()?.result?.value as any) ?? {};
-    const existing: Realm | undefined = current[realm];
+  createRealm = jest
+    .fn()
+    .mockImplementation((realm: string, nodeId: string, resolvers: { name: string; priority?: number | null }[]) => {
+      const current = (this.realmResource.value()?.result?.value as any) ?? {};
+      const existing: Realm | undefined = current[realm];
 
-    const newResolverEntries = resolvers.map((r) => ({ name: r.name, node: nodeId, type: "mock", priority: r.priority ?? null }));
+      const newResolverEntries = resolvers.map((r) => ({
+        name: r.name,
+        node: nodeId,
+        type: "mock",
+        priority: r.priority ?? null
+      }));
 
-    const updatedRealm: Realm = existing
-      ? { ...existing, resolver: [...(existing.resolver ?? []), ...newResolverEntries] }
-      : { default: false, id: Object.keys(current).length + 1, option: "", resolver: newResolverEntries } as Realm;
+      const updatedRealm: Realm = existing
+        ? { ...existing, resolver: [...(existing.resolver ?? []), ...newResolverEntries] }
+        : ({ default: false, id: Object.keys(current).length + 1, option: "", resolver: newResolverEntries } as Realm);
 
-    const updatedRealms = { ...current, [realm]: updatedRealm };
-    (this.realmResource as MockHttpResourceRef<PiResponse<Realms> | undefined>).set(
-      MockPiResponse.fromValue<Realms>(updatedRealms as any)
-    );
-    return of(MockPiResponse.fromValue<any>({ realm, nodeId, resolvers }));
-  });
+      const updatedRealms = { ...current, [realm]: updatedRealm };
+      (this.realmResource as MockHttpResourceRef<PiResponse<Realms> | undefined>).set(
+        MockPiResponse.fromValue<Realms>(updatedRealms as any)
+      );
+      return of(MockPiResponse.fromValue<any>({ realm, nodeId, resolvers }));
+    });
 
   deleteRealm = jest.fn().mockImplementation((realm: string) => {
     const current = (this.realmResource.value()?.result?.value as any) ?? {};
@@ -72,8 +83,7 @@ export class MockRealmService implements RealmServiceInterface {
 
     (this.defaultRealmResource as MockHttpResourceRef<PiResponse<Realms> | undefined>).set(
       MockPiResponse.fromValue<Realms>({
-        [realm]:
-          current[realm] ?? ({ default: true, id: 1, option: "", resolver: [] } as Realm)
+        [realm]: current[realm] ?? ({ default: true, id: 1, option: "", resolver: [] } as Realm)
       } as any)
     );
 

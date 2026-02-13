@@ -1,0 +1,151 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<div
+  appScrollToTop
+  aria-label="Policy Table"
+  class="policies-table-layout"
+  i18n-aria-label>
+
+  @if (authService.actionAllowed("policyread")) {
+    <app-policy-filter
+      #filterComponent
+      [initialFilter]="filter()"
+      [unfilteredPolicies]="policyService.allPolicies()"
+      (filterChange)="onFilterUpdate($event)">
+    </app-policy-filter>
+  }
+
+  <app-policies-table-actions [policySelection]="selectedPolicies()" />
+
+  <table
+    mat-table
+    [dataSource]="sortedFilteredPolicies()"
+    class="policies-table"
+    multiTemplateDataRows
+    matSort
+    matSortActive="priority"
+    matSortDirection="asc"
+    (matSortChange)="onSortChange($event)">
+
+    @for (column of columnKeysMap; track column.key) {
+      <ng-container [matColumnDef]="column.key">
+
+        @if (column.key === "select") {
+          <th
+            *matHeaderCellDef
+            class="table-checkbox"
+            mat-header-cell>
+            <mat-checkbox
+              (change)="masterToggle()"
+              [checked]="isAllSelected()"
+              [indeterminate]="selectedPolicies().size > 0 && !isAllSelected()"
+              aria-label="Select All Policies"
+              i18n-aria-label>
+            </mat-checkbox>
+          </th>
+        } @else {
+          <th
+            *matHeaderCellDef
+            [class]="'col-' + column.key"
+            mat-header-cell
+            [mat-sort-header]="column.key"
+            [disabled]="['actions', 'conditions'].includes(column.key)">
+            <div class="table-header-container">
+              @if (column.label) {
+                <div>{{ column.label }}</div>
+              }
+              @if (isFilterable(column.key)) {
+                <div class="flex">
+                  <button
+                    (click)="$event.stopPropagation(); onFilterClick(column.key)"
+                    class="filter-button"
+                    [matTooltip]="getFilterTooltipText(column.key)"
+                    mat-icon-button>
+                    <mat-icon class="keyword-button-icon margin-left-0">
+                      {{ getFilterIconName(column.key) }}
+                    </mat-icon>
+                  </button>
+                </div>
+              }
+            </div>
+          </th>
+        }
+
+        <td
+          [class]="'col-' + column.key"
+          mat-cell
+          *matCellDef="let policy">
+          @switch (column.key) {
+            @case ("select") {
+              <mat-checkbox
+                (click)="$event.stopPropagation()"
+                (change)="updateSelection($event, policy.name)"
+                [checked]="isSelected(policy.name)"
+                aria-label="Select Policy"
+                i18n-aria-label>
+              </mat-checkbox>
+            }
+            @case ("priority") { {{ policy.priority }} }
+            @case ("name") {
+              <div class="name-wrapper">
+                @if (authService.actionAllowed("policywrite")) {
+                  <div
+                    class="text-link-button"
+                    (click)="$event.stopPropagation(); editPolicy(policy)">
+                    {{ policy.name }}
+                  </div>
+                } @else {
+                  <mat-icon
+                    [class.inactive-icon]="!policy.active"
+                    [class.active-icon]="policy.active">
+                    check_circle
+                  </mat-icon>
+                  {{ policy.name }}
+                }
+              </div>
+            }
+            @case ("scope") { {{ policy.scope ? policy.scope.toLocaleUpperCase() : "NO SCOPE" }} }
+            @case ("description") { {{ policy.description }} }
+            @case ("actions") { <app-view-action-column [actions]="policy.action" /> }
+            @case ("conditions") { <app-view-conditions-column [policy]="policy" /> }
+            @case ("active") {
+              <mat-icon
+                class="minimal-icon-button"
+                [class.inactive-icon]="!policy.active"
+                [class.active-icon]="policy.active"
+                (click)="$event.stopPropagation(); policyService.togglePolicyActive(policy)">
+                check_circle
+              </mat-icon>
+            }
+          }
+        </td>
+      </ng-container>
+    }
+
+    <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+    <tr
+      mat-row
+      *matRowDef="let policy; columns: displayedColumns"
+      class="policy-row"></tr>
+
+    <tr *matNoDataRow aria-label="No Data Row" i18n-aria-label>
+      <td [attr.colspan]="displayedColumns.length" i18n>No policies found.</td>
+    </tr>
+  </table>
+</div>

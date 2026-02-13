@@ -16,11 +16,14 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { computed, inject, Injectable, Signal } from "@angular/core";
+import { inject, Injectable } from "@angular/core";
 import { ROUTE_PATHS } from "../../route_paths";
 import { VersioningService } from "../version/version.service";
-import { httpResource } from "@angular/common/http";
-import { PolicyService } from "../policies/policies.service";
+
+export type ActionDocumentation = {
+  info: string[];
+  notes: string[];
+};
 export interface DocumentationServiceInterface {
   openDocumentation(page: string): Promise<void>;
   getVersionUrl(pageUrl: string): string;
@@ -29,19 +32,19 @@ export interface DocumentationServiceInterface {
   checkPageUrl(pageUrl: string): Promise<string | false>;
   openDocumentationPage(page: string): Promise<boolean>;
   /**
-   * Based on the selected policy action and its scope of the PolicyActionService,
+   * Based on the selected policy action and its scope,
    * fetches the corresponding documentation HTML page and extracts
    * the relevant section for the selected policy action.
+   * @param scope The policy scope (e.g., 'user', 'admin')
+   * @param actionName The name of the action (e.g., 'set_pin')
    */
-  policyActionSectionId: Signal<string | null>;
-  policyActionDocumentation: Signal<{ actionDocu: string[]; actionNotes: string[] } | null>;
+  getPolicyActionDocumentation(scope: string, actionName: string): Promise<ActionDocumentation | null>;
 }
 @Injectable({
   providedIn: "root"
 })
 export class DocumentationService implements DocumentationServiceInterface {
   private _versioningService = inject(VersioningService);
-  private _policyActionService: PolicyService = inject(PolicyService);
   private _version = this._versioningService.version;
   private _baseUrl = "https://privacyidea.readthedocs.io/en/"; //TODO translation
   getVersionUrl(pageUrl: string): string {
@@ -173,78 +176,65 @@ export class DocumentationService implements DocumentationServiceInterface {
       });
     });
   }
-  policyActionSectionId = computed<string | null>(() => {
-    const selectedAction = this._policyActionService.selectedAction()?.name;
-    if (!selectedAction) return null;
-    return selectedAction.replaceAll("_", "-").toLowerCase();
-  });
-  policyActionDocumentationResource = httpResource.text(() => {
-    const scope = this._policyActionService.selectedPolicyScope();
-    if (!scope) return undefined;
-    const page = "policies/" + scope + ".html";
-    return {
-      url: this.getVersionUrl(page),
-      method: "GET",
-      responseType: "text"
-    };
-  });
-  policyActionDocumentationFallbackResource = httpResource.text(() => {
-    const scope = this._policyActionService.selectedPolicyScope();
-    if (!scope) return undefined;
-    const page = "policies/" + scope + ".html";
-    return {
-      url: this.getFallbackUrl(page),
-      method: "GET",
-      responseType: "text"
-    };
-  });
-  /**
-   * Based on the selected policy action and its scope of the PolicyActionService,
-   * fetches the corresponding documentation HTML page and extracts
-   * the relevant section for the selected policy action.
-   */
-  policyActionDocumentation = computed(() => {
-    let html = this.policyActionDocumentationResource.value();
-    if (!html) {
-      html = this.policyActionDocumentationFallbackResource.value();
+  private async _getValidDocUrl(pageUrl: string): Promise<string | null> {
+    const versionUrl = this.getVersionUrl(pageUrl);
+    if (await this.checkFullUrl(versionUrl)) {
+      return versionUrl;
     }
-    if (!html) {
-      console.warn("No documentation resource found");
+    const fallbackUrl = this.getFallbackUrl(pageUrl);
+    if (await this.checkFullUrl(fallbackUrl)) {
+      return fallbackUrl;
+    }
+    return null;
+  }
+  async getPolicyActionDocumentation(scope: string, actionName: string): Promise<ActionDocumentation | null> {
+    if (!scope || !actionName) {
       return null;
     }
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(html, "text/html");
-    let sectionId = this.policyActionSectionId();
-    if (!sectionId) {
-      console.warn("No sectionId found");
+    const page = `policies/${scope}.html`;
+    const docUrl = await this._getValidDocUrl(page);
+    if (!docUrl) {
+      console.warn(`Documentation page not found for scope '${scope}'`);
       return null;
     }
-    const section = doc.getElementById(sectionId);
-    const actionDocu: string[] = [];
-    const actionNotes: string[] = [];
-    if (!section) {
-      return null;
-    }
-    section.childNodes.forEach((node) => {
-      if (node.nodeType === Node.ELEMENT_NODE) {
-        const element = node as HTMLElement;
-        if (element.tagName.toLowerCase() === "p") {
-          if (!element.textContent?.startsWith("type:")) {
-            actionDocu.push(element.outerHTML);
-          }
-        } else if (
-          element.tagName.toLowerCase() === "div" &&
-          element.classList.contains("admonition") &&
-          element.classList.contains("note")
-        ) {
-          const title = element.querySelector("p.admonition-title");
-          if (title) {
-            element.removeChild(title);
-          }
-          actionNotes.push(element.outerHTML);
-        }
+    try {
+      const response = await fetch(docUrl);
+      const html = await response.text();
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(html, "text/html");
+      const sectionId = actionName.replaceAll("_", "-").toLowerCase();
+      const section = doc.getElementById(sectionId);
+      if (!section) {
+        console.warn(`Section with id '${sectionId}' not found in documentation for scope '${scope}'.`);
+        return null;
       }
-    });
-    return { actionDocu, actionNotes };
-  });
+      const info: string[] = [];
+      const notes: string[] = [];
+      section.childNodes.forEach((node) => {
+        if (node.nodeType === Node.ELEMENT_NODE) {
+          const element = node as HTMLElement;
+          if (element.tagName.toLowerCase() === "p") {
+            if (!element.textContent?.startsWith("type:")) {
+              info.push(element.outerHTML);
+            }
+          } else if (
+            element.tagName.toLowerCase() === "div" &&
+            element.classList.contains("admonition") &&
+            element.classList.contains("note")
+          ) {
+            const title = element.querySelector("p.admonition-title");
+            if (title) {
+              element.removeChild(title);
+            }
+            notes.push(element.outerHTML);
+          }
+        }
+      });
+
+      return { info, notes };
+    } catch (error) {
+      console.error("Error fetching or parsing policy action documentation:", error);
+      return null;
+    }
+  }
 }

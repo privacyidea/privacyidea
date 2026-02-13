@@ -16,8 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { signal, WritableSignal } from "@angular/core";
-import { PiResponse } from "../../app/app.component";
+import { Signal, signal, WritableSignal } from "@angular/core";
 import {
   PolicyActionDetail,
   PolicyDetail,
@@ -25,15 +24,10 @@ import {
   PolicyServiceInterface,
   ScopedPolicyActions
 } from "../../app/services/policies/policies.service";
+import { MockHttpResourceRef, MockPiResponse } from "../mock-services";
 
 export class MockPolicyService implements PolicyServiceInterface {
-  isEditMode = signal(false);
-  selectedPolicyHasActions = signal(false);
-  selectedPolicyHasUserConditions = signal(false);
-  selectedPolicyHasNodeConditions = signal(false);
-  selectedPolicyHasAdditionalConditions = signal(false);
-  selectedPolicyHasConditions = signal(false);
-  emptyPolicy: PolicyDetail = {
+  getEmptyPolicy = jest.fn().mockReturnValue({
     action: null,
     active: true,
     adminrealm: [],
@@ -52,46 +46,39 @@ export class MockPolicyService implements PolicyServiceInterface {
     user: [],
     user_agents: [],
     user_case_insensitive: false
-  };
-  isPolicyEdited = signal(false);
-  selectedPolicy = signal<PolicyDetail | null>(null);
-  selectedPolicyOriginal = signal<PolicyDetail | null>(null);
-  actionFilter = signal("");
-  policyActionGroupNames = signal<string[]>([]);
-  selectedActionGroup = signal("");
-  selectedAction = signal<{ name: string; value: any } | null>(null);
-  policyActions = signal<ScopedPolicyActions>({});
-  allPolicyActionsFlat = signal<{ [actionName: string]: PolicyActionDetail }>({});
-  allPolicyScopes = signal<string[]>([]);
-  policyActionsByGroup = signal<PolicyActionGroups>({});
-  alreadyAddedActionNames = signal<string[]>([]);
-  policyActionsByGroupFiltered = signal<PolicyActionGroups>({});
-  allPolicies = signal<PolicyDetail[]>([]);
-  selectedPolicyScope = signal("");
-  selectedActionDetail = signal<PolicyActionDetail | null>(null);
-  actionNamesOfSelectedGroup = signal<string[]>([]);
-
-  updateActionInSelectedPolicy = jest.fn();
-  updateActionValue = jest.fn();
-  selectPolicyByName = jest.fn();
-  canSaveSelectedPolicy = jest.fn().mockReturnValue(true);
-  savePolicyEdits = jest.fn().mockResolvedValue(undefined);
+  });
+  isEditMode: Signal<boolean> = signal(false);
+  policyActions: Signal<ScopedPolicyActions> = signal({});
+  allPolicyActionsFlat: Signal<{ [actionName: string]: PolicyActionDetail }> = signal({});
+  allPolicyScopes: Signal<string[]> = signal([]);
+  policyActionsByGroup: Signal<PolicyActionGroups> = signal({});
+  filteredPolicyActionGroups = jest.fn().mockReturnValue({});
+  getActionDetail = jest.fn().mockReturnValue(null);
+  getGroupOfAction = jest.fn().mockReturnValue(null);
+  getScopeOfAction = jest.fn().mockReturnValue(null);
+  allPolicies: WritableSignal<PolicyDetail[]> = signal([]);
+  canSavePolicy = jest.fn().mockReturnValue(true);
   getDetailsOfAction = jest.fn().mockReturnValue(null);
-  deselectNewPolicy = jest.fn();
-  deselectPolicy = jest.fn();
-  initializeNewPolicy = jest.fn();
-  selectPolicy = jest.fn();
-  updateSelectedPolicy = jest.fn();
-  selectActionByName = jest.fn();
-  updateSelectedActionValue = jest.fn();
-  createPolicy = jest.fn().mockResolvedValue({} as PiResponse<any>);
-  updatePolicy = jest.fn().mockResolvedValue({} as PiResponse<any>);
-  deletePolicy = jest.fn().mockResolvedValue({} as PiResponse<number>);
-  enablePolicy = jest.fn().mockResolvedValue({} as PiResponse<any>);
-  disablePolicy = jest.fn().mockResolvedValue({} as PiResponse<any>);
-  addActionToSelectedPolicy = jest.fn();
-  removeActionFromSelectedPolicy = jest.fn();
+  copyPolicy = jest.fn().mockResolvedValue(MockPiResponse.fromValue({}));
+  createPolicy = jest.fn().mockResolvedValue(MockPiResponse.fromValue({}));
+  updatePolicy = jest.fn().mockResolvedValue(MockPiResponse.fromValue({}));
+  deletePolicy = jest.fn().mockResolvedValue(MockPiResponse.fromValue(1));
+  enablePolicy = jest.fn().mockResolvedValue(MockPiResponse.fromValue({}));
+  disablePolicy = jest.fn().mockResolvedValue(MockPiResponse.fromValue({}));
   isScopeChangeable = jest.fn().mockReturnValue(true);
+  getActionNamesOf = jest.fn().mockReturnValue([]);
+  getActionsOf = jest.fn().mockReturnValue({});
   actionValueIsValid = jest.fn().mockReturnValue(true);
-  cancelEditMode = jest.fn();
+  saveNewPolicy = jest.fn().mockResolvedValue(undefined);
+  policyHasConditions = jest.fn().mockReturnValue(true);
+  policyHasAdminConditions = jest.fn().mockReturnValue(true);
+  policyHasUserConditions = jest.fn().mockReturnValue(true);
+  policyHasEnviromentConditions = jest.fn().mockReturnValue(true);
+  policyHasAdditionalConditions = jest.fn().mockReturnValue(true);
+  policyHasActions = jest.fn().mockReturnValue(true);
+  savePolicyEdits = jest.fn().mockReturnValue(undefined);
+  isPolicyEdited = jest.fn().mockReturnValue(true);
+  togglePolicyActive = jest.fn().mockReturnValue(undefined);
+  updatePolicyOptimistic = jest.fn().mockReturnValue(undefined);
+  allPoliciesRecource = new MockHttpResourceRef(undefined);
 }

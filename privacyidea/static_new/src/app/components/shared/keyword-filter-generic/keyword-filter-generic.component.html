@@ -1,0 +1,72 @@
+<!--
+ (c) NetKnights GmbH 2025,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<div class="filter-keyword-container">
+  <div class="filter-keyword-title">
+    <mat-icon [ngClass]="{ 'filter-icon': true, 'active-filter': !filterIsEmpty() }"> filter_alt </mat-icon>
+    <span i18n>Filter by:&nbsp;</span>
+  </div>
+
+  @for (option of filterOptions(); track option.key) {
+    <button
+      mat-fab
+      extended
+      [matTooltip]="option.hint || ''"
+      (click)="onKeywordClick(option)"
+      class="keyword-button">
+      <mat-icon
+        class="keyword-button-icon"
+        [ngClass]="getFilterIconClass(option)">
+        {{ getFilterIconName(option) }}
+      </mat-icon>
+      {{ option.label }}
+    </button>
+  }
+
+  @if (advancedKeywordFilters().length > 0) {
+    <button
+      (click)="onToggleAdvancedFilter()"
+      class="more-keyword-button"
+      extended
+      mat-fab>
+      <mat-icon class="keyword-button-icon">
+        {{ showAdvancedFilter() ? "expand_less" : "expand_more" }}
+      </mat-icon>
+    </button>
+  }
+
+  @if (showAdvancedFilter()) {
+    <div class="advanced-filters-row">
+      @for (option of advancedKeywordFilters(); track option.key) {
+        <button
+          mat-fab
+          extended
+          [matTooltip]="option.hint || ''"
+          (click)="onKeywordClick(option)"
+          class="keyword-button">
+          <mat-icon
+            class="keyword-button-icon"
+            [ngClass]="getFilterIconClass(option)">
+            {{ getFilterIconName(option) }}
+          </mat-icon>
+          {{ option.label }}
+        </button>
+      }
+    </div>
+  }
+</div>

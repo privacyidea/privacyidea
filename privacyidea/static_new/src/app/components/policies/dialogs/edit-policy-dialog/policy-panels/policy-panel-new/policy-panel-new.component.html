@@ -1,0 +1,83 @@
+<div class="list-item-card">
+  <mat-expansion-panel
+    #panel
+    [disabled]="isPolicyEdited()"
+    (opened)="onPanelOpened()"
+    (closed)="onPanelClosed(panel)">
+    <mat-expansion-panel-header
+      class="mat-expansion-panel-header"
+      [class.scope-is-selectable]="policyService.isScopeChangeable(newPolicy())">
+      <mat-panel-title class="policy-title-container">
+        @if (panel.expanded) {
+          <input
+            type="number"
+            class="policy-priority-input"
+            [ngModel]="newPolicy().priority"
+            (ngModelChange)="updatePolicy({ priority: $event })"
+            (click)="$event.stopPropagation()"
+            (keydown)="$event.stopPropagation()" />
+
+          <input
+            type="text"
+            class="policy-name-input"
+            placeholder="Policy Name"
+            i18n-placeholder
+            [ngModel]="newPolicy().name"
+            (ngModelChange)="updatePolicy({ name: $event })"
+            (click)="$event.stopPropagation()"
+            (keydown)="$event.stopPropagation()" />
+        } @else {
+          <p i18n>Create New Policy</p>
+        }
+      </mat-panel-title>
+
+      <mat-panel-description class="header-description">
+        @if (panel.expanded) {
+          <div class="description-label">
+            @if (!policyHasActions()) {
+              <mat-form-field
+                appearance="fill"
+                class="policy-scope-dropdown"
+                subscriptSizing="dynamic"
+                (click)="$event.stopPropagation()">
+                <mat-label i18n>Scope</mat-label>
+                <mat-select
+                  [value]="newPolicy().scope"
+                  (selectionChange)="updatePolicy({ scope: $event.value })">
+                  @for (scopeOption of policyService.allPolicyScopes(); track scopeOption) {
+                    <mat-option [value]="scopeOption">{{ scopeOption | uppercase }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+            } @else {
+              <span class="scope-badge">{{ newPolicy().scope | uppercase }}</span>
+            }
+          </div>
+
+          <div class="actions">
+            <button
+              mat-icon-button
+              color="primary"
+              [disabled]="!canSavePolicy()"
+              (click)="$event.stopPropagation(); savePolicy(panel)">
+              <mat-icon>save</mat-icon>
+            </button>
+            <button
+              mat-icon-button
+              color="warn"
+              (click)="$event.stopPropagation(); resetPolicy(panel)">
+              <mat-icon>close</mat-icon>
+            </button>
+          </div>
+        }
+      </mat-panel-description>
+    </mat-expansion-panel-header>
+
+    <div class="panel-inner-content">
+      <app-policy-panel-edit
+        class="width-100"
+        [policy]="newPolicy()"
+        (onPolicyEdit)="updatePolicy($event)" />
+    </div>
+  </mat-expansion-panel>
+</div>

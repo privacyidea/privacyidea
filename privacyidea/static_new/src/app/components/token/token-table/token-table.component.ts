@@ -37,7 +37,7 @@ import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.
 import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
 import { TokenTableActionsComponent } from "./token-table-actions/token-table-actions.component";
 import { MatIconButton } from "@angular/material/button";
-import { FilterValue } from "../../../core/models/filter_value";
+import { FilterValue } from "../../../core/models/filter_value/filter_value";
 
 const columnKeysMap = [
   { key: "select", label: "" },
@@ -87,7 +87,7 @@ export class TokenTableComponent {
   readonly apiFilterKeyMap = this.tokenService.apiFilterKeyMap;
   readonly advancedApiFilter = this.tokenService.advancedApiFilter;
 
-  @ViewChild('filterHTMLInputElement', { static: false })
+  @ViewChild("filterHTMLInputElement", { static: false })
   filterInput!: ElementRef<HTMLInputElement>;
 
   tokenSelection = this.tokenService.tokenSelection;

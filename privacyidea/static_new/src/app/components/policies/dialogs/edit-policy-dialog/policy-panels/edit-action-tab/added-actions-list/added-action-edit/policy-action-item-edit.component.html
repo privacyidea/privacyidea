@@ -1,0 +1,77 @@
+<div class="action-card-in-panel">
+  <div class="action-row">
+    <span class="action-label flex-size-1">{{ action().name }}</span>
+    @if (!isBooleanAction(action().name)) {
+      <div class="detail-input flex-size-1">
+        @if (actionDetail()?.value; as actionValues) {
+          @if (actionValues.length === 0) {
+            <p i18n>No values available for this action.</p>
+          } @else if (actionValues.length === 1) {
+            <app-selector-buttons
+              class="half-width"
+              [values]="actionValues"
+              [initialValue]="action().value"
+              (onSelect)="updateAction($event)" />
+          } @else if (actionValues.length <= 3) {
+            <app-selector-buttons
+              class="full-width"
+              [values]="actionValues"
+              (onSelect)="updateAction($event)"
+              [initialValue]="action().value" />
+          } @else {
+            <mat-form-field
+              appearance="fill"
+              class="full-width compact-dropdown"
+              subscriptSizing="dynamic">
+              <mat-select
+                (selectionChange)="updateAction($event.value)"
+                [value]="isNumber(action().value) ? +action().value : action().value">
+                @for (option of actionValues; track option) {
+                  <mat-option [value]="option">{{ option }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+          }
+        } @else {
+          @switch (actionDetail()?.type) {
+            @case ("bool") {}
+            @case ("str") {
+              <input
+                type="text"
+                placeholder="Text"
+                [ngModel]="action().value"
+                (ngModelChange)="updateAction($event)"
+                class="action-value-input" />
+            }
+            @case ("int") {
+              <input
+                type="number"
+                placeholder="Number"
+                [ngModel]="action().value"
+                (ngModelChange)="updateAction($event)"
+                class="action-value-input" />
+            }
+            @case ("text") {
+              <textarea
+                placeholder="Text"
+                [ngModel]="action().value"
+                (ngModelChange)="updateAction($event)"
+                class="action-value-textarea"></textarea>
+            }
+            @default {
+              <p i18n>Unknown action type: {{ actionDetail()?.type }}</p>
+            }
+          }
+        }
+      </div>
+    }
+
+    <div class="gap-div-8px"></div>
+    <button
+      mat-icon-button
+      class="delete-icon-button"
+      (click)="removeAction(); $event.stopPropagation()">
+      <mat-icon>delete</mat-icon>
+    </button>
+  </div>
+</div>

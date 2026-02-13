@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -41,6 +41,7 @@ import {
   TokenApiPayloadMapper,
   TokenEnrollmentData
 } from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
+import { AbstractDialogComponent } from "../../../shared/dialog/abstract-dialog/abstract-dialog.component";
 
 @Component({
   selector: "app-enroll-passkey",
@@ -136,36 +137,40 @@ export class EnrollPasskeyComponent implements OnInit {
     return resposeLastStep;
   }
 
+  currentStepOneRef?: MatDialogRef<AbstractDialogComponent, boolean>;
+
   openStepOneDialog(args: {
     enrollmentInitData: PasskeyEnrollmentData;
     enrollmentResponse: EnrollmentResponse;
-  }): MatDialogRef<TokenEnrollmentFirstStepDialogComponent, any> {
+  }): MatDialogRef<AbstractDialogComponent, boolean> {
     const { enrollmentInitData, enrollmentResponse } = args;
+
     this.reopenDialogChange.emit(async () => {
-      if (!this.dialogService.isTokenEnrollmentFirstStepDialogOpen) {
-        this.dialogService.openTokenEnrollmentFirstStepDialog({
-          data: { enrollmentResponse },
-          disableClose: true
-        });
-        const publicKeyCred = await this.readPublicKeyCred(enrollmentResponse);
-        const resposeLastStep = await this.finalizeEnrollment({
-          enrollmentInitData,
-          enrollmentResponse,
-          publicKeyCred
-        });
-        return resposeLastStep;
+      if (this.currentStepOneRef && this.dialogService.isDialogOpen(this.currentStepOneRef)) {
+        return null;
       }
-      return null;
+      this.currentStepOneRef = this.dialogService.openDialog({
+        component: TokenEnrollmentFirstStepDialogComponent,
+        data: { enrollmentResponse }
+      });
+      const publicKeyCred = await this.readPublicKeyCred(enrollmentResponse);
+      const resposeLastStep = await this.finalizeEnrollment({
+        enrollmentInitData,
+        enrollmentResponse,
+        publicKeyCred
+      });
+      return resposeLastStep;
     });
 
-    return this.dialogService.openTokenEnrollmentFirstStepDialog({
-      data: { enrollmentResponse },
-      disableClose: true
+    this.currentStepOneRef = this.dialogService.openDialog({
+      component: TokenEnrollmentFirstStepDialogComponent,
+      data: { enrollmentResponse }
     });
+    return this.currentStepOneRef;
   }
 
   closeStepOneDialog(): void {
-    this.dialogService.closeTokenEnrollmentFirstStepDialog();
+    this.currentStepOneRef?.close();
   }
 
   private async readPublicKeyCred(responseStepOne: EnrollmentResponse): Promise<any | null> {

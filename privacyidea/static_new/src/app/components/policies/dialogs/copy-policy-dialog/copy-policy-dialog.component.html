@@ -1,0 +1,30 @@
+<app-dialog-wrapper
+  [title]="'Copy Policy'"
+  (close)="close()"
+  [actions]="actions()"
+  (onAction)="onAction($event)">
+  <div class="dialog-content">
+    <p>Please enter a unique name for the copied policy.</p>
+
+    <mat-form-field
+      appearance="outline"
+      class="full-width">
+      <mat-label>New Policy Name</mat-label>
+      <input
+        matInput
+        [formControl]="nameControl"
+        cdkFocusInitial
+        placeholder="e.g. New_Policy_Name"
+        (keyup.enter)="nameControl.valid && onAction('submit')" />
+
+      @if (nameControl.hasError("required")) {
+        <mat-error>Policy name is <strong>required</strong></mat-error>
+      }
+      @if (nameControl.hasError("notChanged")) {
+        <mat-error>Policy name must be <strong>different</strong> from the original</mat-error>
+      }
+
+      <mat-hint>Must be a unique identifier</mat-hint>
+    </mat-form-field>
+  </div>
+</app-dialog-wrapper>

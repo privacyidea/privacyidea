@@ -29,7 +29,7 @@ import { NotificationService } from "../notification/notification.service";
 import { TestBed } from "@angular/core/testing";
 import { TokenService } from "../token/token.service";
 import { AuthService } from "../auth/auth.service";
-import { FilterValue } from "../../core/models/filter_value";
+import { FilterValue } from "../../core/models/filter_value/filter_value";
 import { ROUTE_PATHS } from "../../route_paths";
 import { ContentService } from "../content/content.service";
 import { MockAuthService } from "../../../testing/mock-services/mock-auth-service";
@@ -389,7 +389,7 @@ describe("ContainerService", () => {
     containerService.containerFilter.set(new FilterValue({ value: "desc: foo token_serial: 123 type: user: Bob" }));
     expect(containerService.filterParams()).toEqual({
       desc: "*foo*",
-      token_serial: "*123*",
+      token_serial: "*123*"
       // user: "Bob"
     });
   });
