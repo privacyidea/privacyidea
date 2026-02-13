@@ -107,9 +107,9 @@ describe("EditActionTabComponent", () => {
 
   it("should handle adding a new action", () => {
     const spy = jest.spyOn(component.actionsUpdate, "emit");
-    const newAction = { name: "action-new", value: "val-new" };
+    const action = { name: "action-new", value: "val-new" };
 
-    component.onActionAdd(newAction);
+    component.onActionAdd({ action });
 
     expect(spy).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -118,6 +118,24 @@ describe("EditActionTabComponent", () => {
         "action-new": "val-new"
       })
     );
+  });
+
+  it("should handle adding a new action with a new scope", () => {
+    const actionsUpdateSpy = jest.spyOn(component.actionsUpdate, "emit");
+    const scopeChangeSpy = jest.spyOn(component.policyScopeChange, "emit");
+    const action = { name: "action-new", value: "val-new" };
+    const newScope = "user";
+
+    component.onActionAdd({ action, newScope });
+
+    expect(actionsUpdateSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        "action-1": "value-1",
+        "action-2": "value-2",
+        "action-new": "val-new"
+      })
+    );
+    expect(scopeChangeSpy).toHaveBeenCalledWith(newScope);
   });
 
   it("should handle removing an action", () => {

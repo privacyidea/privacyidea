@@ -122,11 +122,12 @@ describe("ActionSelectorComponent", () => {
     expect(component.selectedActionGroup()).toBe("");
   });
 
-  it("should select a scope and update policy asynchronously", async () => {
+  it("should handle scope change", () => {
+    const spy = jest.spyOn(component.scopeChange, "emit");
     component.selectActionScope("admin");
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    TestBed.flushEffects();
     fixture.detectChanges();
 
-    expect(component.policy().scope).toBe("admin");
+    expect(spy).toHaveBeenCalledWith("admin");
   });
 });
