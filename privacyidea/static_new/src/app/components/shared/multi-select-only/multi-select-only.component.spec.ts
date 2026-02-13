@@ -33,7 +33,6 @@ describe("MultiSelectOnlyComponent", () => {
     fixture = TestBed.createComponent(MultiSelectOnlyComponent);
     component = fixture.componentInstance;
 
-    // Initialisierung mit leeren Werten, um undefined Fehler zu vermeiden
     fixture.componentRef.setInput("items", []);
     fixture.componentRef.setInput("selectedItems", []);
     fixture.detectChanges();
@@ -67,9 +66,6 @@ describe("MultiSelectOnlyComponent", () => {
       fixture.componentRef.setInput("items", ["A", "B"]);
       fixture.componentRef.setInput("selectedItems", []);
       fixture.detectChanges();
-
-      // Annahme: Wenn nichts ausgewählt ist, ist der Text leer oder Placeholder
-      // (Hier prüfen wir auf leer, da kein Placeholder Input definiert war)
       expect(component.triggerValue()).toBe("");
     });
   });
@@ -79,10 +75,7 @@ describe("MultiSelectOnlyComponent", () => {
       fixture.componentRef.setInput("items", ["A", "B"]);
       fixture.componentRef.setInput("selectedItems", ["A"]);
       fixture.detectChanges();
-
       const emitSpy = jest.spyOn(component.selectionChange, "emit");
-
-      // Wir simulieren das Togglen von 'B'
       component.toggle("B");
 
       expect(emitSpy).toHaveBeenCalledWith(["A", "B"]);
@@ -92,10 +85,7 @@ describe("MultiSelectOnlyComponent", () => {
       fixture.componentRef.setInput("items", ["A", "B"]);
       fixture.componentRef.setInput("selectedItems", ["A", "B"]);
       fixture.detectChanges();
-
       const emitSpy = jest.spyOn(component.selectionChange, "emit");
-
-      // Wir simulieren das Togglen von 'B'
       component.toggle("B");
 
       expect(emitSpy).toHaveBeenCalledWith(["A"]);
@@ -109,8 +99,6 @@ describe("MultiSelectOnlyComponent", () => {
       fixture.detectChanges();
 
       const emitSpy = jest.spyOn(component.selectionChange, "emit");
-
-      // Mock für das Event erstellen, um stopPropagation zu prüfen
       const mockEvent = { stopPropagation: jest.fn() } as unknown as MouseEvent;
 
       component.selectOnly(mockEvent, "B");
@@ -123,27 +111,24 @@ describe("MultiSelectOnlyComponent", () => {
   describe("Toggle All", () => {
     it("should select all items if not all are currently selected", () => {
       fixture.componentRef.setInput("items", ["A", "B", "C"]);
-      fixture.componentRef.setInput("selectedItems", ["A"]); // Nur einer ausgewählt
+      fixture.componentRef.setInput("selectedItems", ["A"]);
       fixture.detectChanges();
 
       const emitSpy = jest.spyOn(component.selectionChange, "emit");
 
       component.toggleAll();
-
-      // Erwartung: Alle unique Items werden emittet
       expect(emitSpy).toHaveBeenCalledWith(["A", "B", "C"]);
     });
 
     it("should deselect all items if all are currently selected", () => {
       fixture.componentRef.setInput("items", ["A", "B"]);
-      fixture.componentRef.setInput("selectedItems", ["A", "B"]); // Alle ausgewählt
+      fixture.componentRef.setInput("selectedItems", ["A", "B"]);
       fixture.detectChanges();
 
       const emitSpy = jest.spyOn(component.selectionChange, "emit");
 
       component.toggleAll();
 
-      // Erwartung: Leeres Array wird emittet
       expect(emitSpy).toHaveBeenCalledWith([]);
     });
 

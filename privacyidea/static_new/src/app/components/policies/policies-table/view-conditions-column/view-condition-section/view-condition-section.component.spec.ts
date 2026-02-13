@@ -32,8 +32,6 @@ describe("ViewConditionSectionComponent", () => {
 
     fixture = TestBed.createComponent(ViewConditionSectionComponent);
     component = fixture.componentInstance;
-
-    // Da label und values 'required' sind, setzen wir sie initial
     fixture.componentRef.setInput("label", "Initial Label");
     fixture.componentRef.setInput("values", []);
     fixture.detectChanges();
@@ -49,7 +47,6 @@ describe("ViewConditionSectionComponent", () => {
       fixture.detectChanges();
 
       const labelEl = fixture.debugElement.query(By.css(".conditions-label")).nativeElement;
-      // Wir prüfen auf den Textinhalt inklusive des Doppelzeichens aus dem Template
       expect(labelEl.textContent).toContain("Realms:");
     });
   });
@@ -60,7 +57,6 @@ describe("ViewConditionSectionComponent", () => {
       fixture.componentRef.setInput("values", testValues);
       fixture.detectChanges();
 
-      // Wir suchen alle divs im Container, die keine marker-chips sind
       const chips = fixture.debugElement.queryAll(By.css(".conditions-chips-container div:not(.marker-chip)"));
 
       expect(chips.length).toBe(3);
