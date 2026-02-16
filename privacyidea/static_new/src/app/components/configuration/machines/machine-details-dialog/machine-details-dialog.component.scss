@@ -4,20 +4,20 @@
   min-width: 600px;
 }
 
-.tokens-table {
+.machines-container {
   @include styles.base-table-structure(".tokens-table");
-  margin-bottom: 1rem;
+  margin-bottom: 16px;
 }
-
 
 .details-section {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-  margin-bottom: 2rem;
-  padding: 1rem;
+  gap: 16px;
+  margin-bottom: 16px;
+  padding: 16px;
   background: var(--mat-sys-surface-container-low);
-  border-radius: 4px;
+  border-radius: var(--border-radius);
+  border: solid 1px var(--mat-sys-surface-container-highest);
 }
 
 .detail-row {
@@ -27,20 +27,15 @@
 
 .label {
   font-weight: bold;
-  font-size: 0.8rem;
-  color: #666;
+  font-size: 1rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+  margin-block: auto;
+  justify-self: end;
+  margin-bottom: 8px;
 }
 
 .value {
   font-size: 1rem;
-}
-
-.attach-section {
-  margin-top: 2rem;
-  padding-top: 1rem;
-  border-top: 1px solid var(--mat-sys-outline-variant);
-}
-
-.gap-1 {
-  gap: 1rem;
 }

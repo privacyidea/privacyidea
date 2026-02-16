@@ -86,9 +86,11 @@ describe("MachineService (with mock classes)", () => {
     expect(opts.headers instanceof HttpHeaders).toBe(true);
   });
 
-  it("postTokenOption builds correct request body", async () => {
+  it("postTokenOption builds correct request body with merged options", async () => {
     httpStub.post.mockReturnValue(of({}));
-    await lastValueFrom(machineService.postTokenOption("host", "mid", "res", "serial", "ssh", "mtid"));
+    await lastValueFrom(
+      machineService.postTokenOption("host", "mid", "res", "serial", "ssh", "mtid", { user: "u", service_id: "svc" })
+    );
     const [url, body, opts] = (httpStub.post as jest.Mock).mock.calls[0];
     expect(url).toBe("/api/machine/tokenoption");
     expect(body).toEqual({
@@ -97,7 +99,9 @@ describe("MachineService (with mock classes)", () => {
       resolver: "res",
       serial: "serial",
       application: "ssh",
-      mtid: "mtid"
+      mtid: "mtid",
+      user: "u",
+      service_id: "svc"
     });
     expect(opts.headers instanceof HttpHeaders).toBe(true);
   });

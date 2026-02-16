@@ -27,6 +27,7 @@ export class MockContentService implements ContentServiceInterface {
   previousUrl = signal("");
   tokenSerial = signal("");
   containerSerial = signal("");
+  machineResolver = signal("");
 
   onLogin = computed(() => this.routeUrl() === "/login");
   onAudit = computed(() => this.routeUrl() === "/audit");
@@ -51,8 +52,10 @@ export class MockContentService implements ContentServiceInterface {
   onAnyUsersRoute = computed(() => this.routeUrl() === "/users" || this.routeUrl().startsWith("/users/"));
   onTokensContainersTemplates: WritableSignal<boolean> = signal(false);
   onEvents = computed(() => this.routeUrl() === "/events");
+  onConfigurationMachines = signal(false);
 
   tokenSelected = jest.fn();
   containerSelected = jest.fn();
   userSelected = jest.fn();
+  machineResolverSelected = jest.fn();
 }

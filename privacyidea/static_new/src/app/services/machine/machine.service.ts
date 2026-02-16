@@ -93,7 +93,8 @@ export interface MachineServiceInterface {
     resolver: string,
     serial: string,
     application: string,
-    mtid: string
+    mtid: string,
+    options: Record<string, any>
   ): Observable<any>;
 
   getAuthItem(challenge: string, hostname: string, application?: string): Observable<any>;
@@ -311,12 +312,12 @@ export class MachineService implements MachineServiceInterface {
     resolver: string,
     serial: string,
     application: string,
-    mtid: string
+    mtid: string,
+    options: Record<string, any>
   ): Observable<any> {
     const headers = this.authService.getHeaders();
-    return this.http
-      .post(`${this.baseUrl}tokenoption`, { hostname, machineid, resolver, serial, application, mtid }, { headers })
-      .pipe(shareReplay(1));
+    const body = { hostname, machineid, resolver, serial, application, mtid, ...options } as any;
+    return this.http.post(`${this.baseUrl}tokenoption`, body, { headers }).pipe(shareReplay(1));
   }
 
   getAuthItem(challenge: string, hostname: string, application?: string): Observable<any> {

@@ -48,12 +48,14 @@ describe("MachineDetailsDialogComponent", () => {
             serial: "S1",
             application: "ssh",
             type: "sshkey",
-            options: {}
+            hostname: "host1",
+            options: { user: "alice", service_id: "svc1" }
           }]
         }
       })),
       deleteTokenMtid: jest.fn().mockReturnValue(of({})),
-      postAssignMachineToToken: jest.fn().mockReturnValue(of({}))
+      postAssignMachineToToken: jest.fn().mockReturnValue(of({})),
+      postTokenOption: jest.fn().mockReturnValue(of({}))
     };
 
     applicationServiceMock = {
@@ -76,7 +78,8 @@ describe("MachineDetailsDialogComponent", () => {
 
     contentServiceMock = {
       routeUrl: signal(ROUTE_PATHS.CONFIGURATION_MACHINES),
-      tokenSelected: jest.fn()
+      tokenSelected: jest.fn(),
+      machineResolverSelected: jest.fn()
     };
 
     await TestBed.configureTestingModule({
@@ -126,6 +129,22 @@ describe("MachineDetailsDialogComponent", () => {
     });
   });
 
+  it("should save edited options", () => {
+    const token = component.dataSource.data[0];
+    component.startEdit(token);
+    component.editedOptions[token.id] = { user: "bob", service_id: "svc2" };
+    component.saveOptions(token);
+    expect(machineServiceMock.postTokenOption).toHaveBeenCalledWith(
+      token.hostname,
+      String(component["data"].id),
+      component["data"].resolver_name,
+      token.serial,
+      token.application,
+      String(token.id),
+      { user: "bob", service_id: "svc2" }
+    );
+  });
+
   it("should close dialog", () => {
     component.close();
     expect(matDialogRefMock.close).toHaveBeenCalled();
@@ -134,6 +153,12 @@ describe("MachineDetailsDialogComponent", () => {
   it("should navigate and close when token is clicked", () => {
     component.onTokenClick("S1");
     expect(contentServiceMock.tokenSelected).toHaveBeenCalledWith("S1");
+    expect(matDialogRefMock.close).toHaveBeenCalled();
+  });
+
+  it("should navigate and close when machine resolver is clicked", () => {
+    component.onMachineResolverClick("res1");
+    expect(contentServiceMock.machineResolverSelected).toHaveBeenCalledWith("res1");
     expect(matDialogRefMock.close).toHaveBeenCalled();
   });
 });

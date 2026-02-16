@@ -70,17 +70,18 @@ export class MachineDetailsDialogComponent implements OnInit {
   private readonly dialogService: DialogServiceInterface = inject(DialogService);
   private readonly dialogRef = inject(MatDialogRef<MachineDetailsDialogComponent>);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
-
+  protected readonly ROUTE_PATHS = ROUTE_PATHS;
   tokenApplications = signal<TokenApplications>([]);
   dataSource = new MatTableDataSource<TokenApplication>([]);
   displayedColumns: string[] = ["serial", "application", "options", "actions"];
-
   @ViewChild(MatPaginator) paginator!: MatPaginator;
-
   newTokenSerial = "";
   selectedApplication: "offline" | "ssh" = "offline";
   applicationOptions: string[] = [];
   applicationsDef = this.applicationService.applications;
+  // Track edit state and edited options per token id
+  editingIds = new Set<number>();
+  editedOptions: { [id: number]: Record<string, any> } = {};
 
   constructor() {
     if (this.dialogRef) {
@@ -120,6 +121,38 @@ export class MachineDetailsDialogComponent implements OnInit {
     });
   }
 
+  isEditing(tokenId: number): boolean {
+    return this.editingIds.has(tokenId);
+  }
+
+  startEdit(token: TokenApplication): void {
+    this.editingIds.add(token.id);
+    this.editedOptions[token.id] = { ...(token.options || {}) };
+  }
+
+  cancelEdit(token: TokenApplication): void {
+    this.editingIds.delete(token.id);
+    delete this.editedOptions[token.id];
+  }
+
+  saveOptions(token: TokenApplication): void {
+    const edited = this.editedOptions[token.id] || {};
+    this.machineService
+      .postTokenOption(
+        token.hostname,
+        String(this.data.id),
+        this.data.resolver_name,
+        token.serial,
+        token.application,
+        String(token.id),
+        edited
+      )
+      .subscribe(() => {
+        this.loadTokenApplications();
+        this.cancelEdit(token);
+      });
+  }
+
   detachToken(token: TokenApplication): void {
     this.dialogService.confirm({
       data: {
@@ -155,6 +188,11 @@ export class MachineDetailsDialogComponent implements OnInit {
 
   onTokenClick(serial: string): void {
     this.contentService.tokenSelected(serial);
+    this.dialogRef.close();
+  }
+
+  onMachineResolverClick(resolverName: string): void {
+    this.contentService.machineResolverSelected(resolverName);
     this.dialogRef.close();
   }
 
