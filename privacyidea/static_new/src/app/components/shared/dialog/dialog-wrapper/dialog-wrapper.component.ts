@@ -35,7 +35,7 @@ import { MatButton } from "@angular/material/button";
 export class DialogWrapperComponent<R = any> {
   title = input.required<string>();
   icon = input<string>();
-  showCloseButton = input<boolean>(true);
+  showCancelButton = input<boolean>(true);
   cancelButtonLabel = input<string>("Cancel");
   actions = input<DialogAction<R>[]>([]);
   onAction = output<R>();
@@ -47,7 +47,7 @@ export class DialogWrapperComponent<R = any> {
 
   ngOnInit() {
     assert(
-      this.actions().length !== 0 || this.showCloseButton(),
+      this.actions().length !== 0 || this.showCancelButton(),
       "Dialog must have at least one action or a close button."
     );
   }

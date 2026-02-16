@@ -153,12 +153,14 @@ export class NewCaConnectorComponent implements OnInit, OnDestroy {
     const microsoftFields = ["hostname", "port"];
 
     if (type === "local") {
-      localFields.forEach((f) => this.caConnectorForm.get(f)?.setValidators([Validators.required]));
-      microsoftFields.forEach((f) => this.caConnectorForm.get(f)?.clearValidators());
+      localFields.forEach((localField) => this.caConnectorForm.get(localField)?.setValidators([Validators.required]));
+      microsoftFields.forEach((microsoftField) => this.caConnectorForm.get(microsoftField)?.clearValidators());
       this.caConnectorForm.get("ca")?.clearValidators();
     } else {
-      microsoftFields.forEach((f) => this.caConnectorForm.get(f)?.setValidators([Validators.required]));
-      localFields.forEach((f) => this.caConnectorForm.get(f)?.clearValidators());
+      microsoftFields.forEach((microsoftField) =>
+        this.caConnectorForm.get(microsoftField)?.setValidators([Validators.required])
+      );
+      localFields.forEach((localField) => this.caConnectorForm.get(localField)?.clearValidators());
       if (this.availableCas().length > 0) {
         this.caConnectorForm.get("ca")?.setValidators([Validators.required]);
       } else {

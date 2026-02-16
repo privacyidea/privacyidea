@@ -58,6 +58,7 @@ import { MatTooltip } from "@angular/material/tooltip";
 import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
 import { SimpleConfirmationDialogComponent } from "../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { DialogService, DialogServiceInterface } from "../../../services/dialog/dialog.service";
+import { SaveAndExitDialogComponent } from "../../shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 
 export type eventTab = "events" | "action" | "conditions";
 
@@ -204,20 +205,19 @@ export class EventPanelComponent implements AfterViewInit, OnDestroy {
     if (this.hasChanges()) {
       this.dialogService
         .openDialog({
-          component: SimpleConfirmationDialogComponent,
+          component: SaveAndExitDialogComponent,
           data: {
             title: $localize`Discard changes`,
-            confirmAction: { label: "Save and exit", type: "confirm", value: true },
-            cancelAction: { label: "Discard", type: "destruct", value: false },
-            itemType: "resolver",
-            items: []
+            allowSaveExit: true,
+            saveExitDisabled: false,
+            message: $localize`You have unsaved changes. Do you want to discard them and exit?`
           }
         })
         .afterClosed()
         .subscribe((result) => {
-          if (result === true) {
+          if (result === "save-exit") {
             this.saveEvent();
-          } else if (result === false) {
+          } else if (result === "discard") {
             this.closeCurrent();
           }
         });

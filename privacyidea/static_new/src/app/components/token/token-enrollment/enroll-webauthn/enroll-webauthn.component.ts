@@ -112,6 +112,7 @@ export class EnrollWebauthnComponent implements OnInit {
       this.notificationService.openSnackBar(
         "Failed to initiate WebAuthn registration: Invalid server response or missing details."
       );
+      return null;
     }
     const webauthnEnrollmentResponse = enrollmentResponse as WebauthnEnrollmentResponse;
 
