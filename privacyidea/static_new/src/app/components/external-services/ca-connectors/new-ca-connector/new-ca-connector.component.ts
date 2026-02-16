@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, effect, inject, OnDestroy, OnInit, signal } from "@angular/core";
-import { MAT_DIALOG_DATA, MatDialog, MatDialogModule, MatDialogRef } from "@angular/material/dialog";
+import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from "@angular/material/dialog";
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
 import {
   CaConnector,

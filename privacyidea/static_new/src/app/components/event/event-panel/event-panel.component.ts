@@ -34,7 +34,7 @@ import {
 import { MatIcon, MatIconModule } from "@angular/material/icon";
 import { MatButton } from "@angular/material/button";
 import { AuthService } from "../../../services/auth/auth.service";
-import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from "@angular/material/dialog";
+import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { EMPTY_EVENT, EventService } from "../../../services/event/event.service";
 import { EventActionTabComponent } from "./tabs/event-action-tab/event-action-tab.component";
 import { EventConditionsTabComponent } from "./tabs/event-conditions-tab/event-conditions-tab.component";
@@ -56,7 +56,6 @@ import { ContentService } from "../../../services/content/content.service";
 import { MatSlideToggle } from "@angular/material/slide-toggle";
 import { MatTooltip } from "@angular/material/tooltip";
 import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
-import { SimpleConfirmationDialogComponent } from "../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { DialogService, DialogServiceInterface } from "../../../services/dialog/dialog.service";
 import { SaveAndExitDialogComponent } from "../../shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 
