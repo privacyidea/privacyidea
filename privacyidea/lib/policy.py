@@ -2581,9 +2581,8 @@ def get_static_policy_definitions(scope=None):
             },
             PolicyAction.ENROLL_VIA_MULTICHALLENGE_PASSKEY_OFFLINE: {
                 'type': 'bool',
-                'desc': _(
-                    'If enabled, a successful registration with the enroll_via_multichallenge action for passkeys '
-                    'will directly mark the token for offline use and send the offline data.')
+                'desc': _('If enabled, a successful registration with the enroll_via_multichallenge action for '
+                          'passkeys will directly mark the token for offline use and send the offline data.')
             },
             PolicyAction.PASSTHRU: {
                 'type': 'str',
