@@ -18,9 +18,9 @@
       <ng-content></ng-content>
     </div>
   </mat-dialog-content>
-  @if (showCloseButton() || actions().length > 0) {
+  @if (showCancelButton() || actions().length > 0) {
     <div class="pi-dialog-footer">
-      @if (showCloseButton()) {
+      @if (showCancelButton()) {
         <button
           mat-button
           mat-dialog-close

@@ -573,8 +573,6 @@ def offline_info(request, response):
                 if auth_items:
                     content["auth_items"] = auth_items
                     response.set_data(json.dumps(content))
-                    # Also update JSON in the response object
-                    response.get_jsons()
             except Exception as exx:
                 log.info(exx)
     return response
@@ -977,10 +975,10 @@ def hide_specific_error_message(request, response):
                                   user_object=request.User if hasattr(request, 'User') else None).any()
         if hide_message:
             content = response.json
-            detail = {
-                "message": _("Authentication failed."),
-                "threadid": content["detail"]["threadid"]
-            }
+            threadid = content.get("detail", {}).get("threadid")
+            detail = {"message": _("Authentication failed.")}
+            if threadid:
+                detail["threadid"] = threadid
             # Overwrite the whole detail object so that it always has the same content
             content["detail"] = detail
             response.set_data(json.dumps(content))

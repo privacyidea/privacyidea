@@ -19,10 +19,11 @@
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { DialogWrapperComponent } from "./dialog-wrapper.component";
+import { DialogAction } from "../../../../models/dialog";
 
 describe("DialogWrapperComponent", () => {
   let component: DialogWrapperComponent;
-  let fixture: ComponentFixture<DialogWrapperComponent>;
+  let fixture: ComponentFixture<DialogWrapperComponent<DialogAction[]>>;
   let nativeElement: HTMLElement;
 
   beforeEach(async () => {
@@ -30,7 +31,7 @@ describe("DialogWrapperComponent", () => {
       imports: [DialogWrapperComponent]
     }).compileComponents();
 
-    fixture = TestBed.createComponent(DialogWrapperComponent);
+    fixture = TestBed.createComponent(DialogWrapperComponent<DialogAction[]>);
     component = fixture.componentInstance;
     nativeElement = fixture.nativeElement;
     fixture.componentRef.setInput("title", "Test Title");
@@ -58,16 +59,15 @@ describe("DialogWrapperComponent", () => {
     expect(iconEl?.textContent).toBe("test_icon");
   });
 
-  it("should show the close button when showCloseButton is true", () => {
-    // const closeButton = nativeElement.querySelector(".pi-dialog-footer button");
+  it("should show the close button when showCancelButton is true", () => {
     const buttons = nativeElement.querySelectorAll(".pi-dialog-footer button");
     const closeButton = Array.from(buttons).find((btn) => btn.textContent?.trim() === "Close");
     expect(closeButton?.textContent?.trim()).toBe("Close");
     expect(closeButton).toBeTruthy();
   });
 
-  it("should not show the close button when showCloseButton is false", () => {
-    fixture.componentRef.setInput("showCloseButton", false);
+  it("should not show the close button when showCancelButton is false", () => {
+    fixture.componentRef.setInput("showCancelButton", false);
     fixture.detectChanges();
     const buttons = nativeElement.querySelectorAll(".pi-dialog-footer button");
     const closeButton = Array.from(buttons).find((btn) => btn.textContent?.trim() === "Close");
@@ -99,7 +99,7 @@ describe("DialogWrapperComponent", () => {
   it("should throw an error if no actions and no close button", () => {
     const fixtureWrapper = TestBed.createComponent(DialogWrapperComponent);
     fixtureWrapper.componentRef.setInput("actions", []);
-    fixtureWrapper.componentRef.setInput("showCloseButton", false);
+    fixtureWrapper.componentRef.setInput("showCancelButton", false);
     expect(() => fixtureWrapper.detectChanges()).toThrow("Dialog must have at least one action or a close button.");
   });
 });

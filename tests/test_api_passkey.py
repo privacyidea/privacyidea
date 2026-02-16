@@ -66,7 +66,7 @@ class PasskeyAPITestBase(MyApiTestCase, PasskeyTestBase):
         set_policy(name, **kwargs)
         self.addCleanup(self.safe_delete_policy, name)
 
-    def _token_init_step_one(self):
+    def _token_init_step_one(self, exclude_credentials_size: int = 0):
         with patch('privacyidea.lib.fido2.challenge.get_fido2_nonce') as get_nonce:
             get_nonce.return_value = self.registration_challenge
 
@@ -89,9 +89,17 @@ class PasskeyAPITestBase(MyApiTestCase, PasskeyTestBase):
                 for param in passkey_registration["pubKeyCredParams"]:
                     self.assertIn(param["type"], ["public-key"])
                     self.assertIn(param["alg"], [-7, -37, -257])
-                # ExcludeCredentials should be empty because no other passkey token is registered for the user
-                self.assertEqual(0, len(passkey_registration["excludeCredentials"]),
-                                 "excludeCredentials should be empty")
+
+                # ExcludeCredentials should be either empty because no other passkey token is registered for the user
+                # or if there are multiple passkeys enrolled for the user for testing purposes, it should have the
+                # specified size
+                if exclude_credentials_size == 0:
+                    self.assertEqual(0, len(passkey_registration["excludeCredentials"]),
+                                     "excludeCredentials should be empty")
+                else:
+                    self.assertEqual(exclude_credentials_size, len(passkey_registration["excludeCredentials"]),
+                                     "excludeCredentials should have the specified size")
+
                 return res.json
 
     def _token_init_step_two(self, transaction_id, serial):
@@ -113,11 +121,11 @@ class PasskeyAPITestBase(MyApiTestCase, PasskeyTestBase):
             self.assertEqual(200, res.status_code)
             self._assert_result_value_true(res.json)
 
-    def _enroll_static_passkey(self) -> str:
+    def _enroll_static_passkey(self, exclude_credentials_size: int = 0) -> str:
         """
         Returns the serial of the enrolled passkey token
         """
-        data = self._token_init_step_one()
+        data = self._token_init_step_one(exclude_credentials_size)
         detail = data["detail"]
         serial = detail["serial"]
         transaction_id = detail["transaction_id"]
@@ -411,12 +419,17 @@ class PasskeyAPITest(PasskeyAPITestBase):
 
     def test_07_trigger_challenge(self):
         """
-        Just test if the challenge is returned by /validate/triggerchallenge. The response would be sent to
+        Test if the challenge is returned by /validate/triggerchallenge. The response would be sent to
         /validate/check and that is already tested. Requires the passkey_trigger_with_pin policy to be set.
+        This also makes sure that the nonce is the same for each challenge. Usually allowCredentials would be used as
+        specified by WebAuthn, but privacyidea has a one challenge per one token model.
         """
         self.set_policy_with_cleanup("passkey_trigger_with_pin", scope=SCOPE.AUTH,
                                      action=f"{PasskeyAction.EnableTriggerByPIN}=true")
-        serial = self._enroll_static_passkey()
+        serial1 = self._enroll_static_passkey()
+        # Enroll a second passkey, set the expected size of excludeCredentials to 1, because the user already has one
+        serial2 = self._enroll_static_passkey(1)
+
         with patch('privacyidea.lib.fido2.challenge.get_fido2_nonce') as get_nonce:
             get_nonce.return_value = self.authentication_challenge_no_uv
             with self.app.test_request_context('/validate/triggerchallenge', method='POST',
@@ -428,34 +441,42 @@ class PasskeyAPITest(PasskeyAPITestBase):
                 self.assertIn("multi_challenge", detail)
 
                 multi_challenge = detail["multi_challenge"]
-                self.assertEqual(len(multi_challenge), 1)
+                self.assertEqual(len(multi_challenge), 2)
 
-                challenge = multi_challenge[0]
-                self.assertIn("transaction_id", challenge)
-                transaction_id = challenge["transaction_id"]
+                challenge1 = multi_challenge[0]
+                challenge2 = multi_challenge[1]
+
+                self.assertIn("transaction_id", challenge1)
+                transaction_id = challenge1["transaction_id"]
                 self.assertTrue(transaction_id)
+                self.assertEqual(transaction_id, challenge2["transaction_id"])
 
-                self.assertIn("challenge", challenge)
-                self.assertEqual(self.authentication_challenge_no_uv, challenge["challenge"])
+                self.assertIn("challenge", challenge1)
+                self.assertEqual(self.authentication_challenge_no_uv, challenge1["challenge"])
+                self.assertEqual(challenge1["challenge"], challenge2["challenge"])
 
-                self.assertIn("serial", challenge)
-                self.assertEqual(serial, challenge["serial"])
+                self.assertIn("serial", challenge1)
+                self.assertIn("serial", challenge2)
+                serials = [challenge1["serial"], challenge2["serial"]]
+                self.assertIn(serial1, serials)
+                self.assertIn(serial2, serials)
 
-                self.assertIn("type", challenge)
-                self.assertEqual("passkey", challenge["type"])
+                self.assertIn("type", challenge1)
+                self.assertEqual("passkey", challenge1["type"])
 
-                self.assertIn("userVerification", challenge)
-                self.assertTrue(challenge["userVerification"])
+                self.assertIn("userVerification", challenge1)
+                self.assertTrue(challenge1["userVerification"])
 
-                self.assertIn("rpId", challenge)
-                self.assertEqual(self.rp_id, challenge["rpId"])
+                self.assertIn("rpId", challenge1)
+                self.assertEqual(self.rp_id, challenge1["rpId"])
 
-                self.assertIn("message", challenge)
-                self.assertTrue(challenge["message"])
+                self.assertIn("message", challenge1)
+                self.assertTrue(challenge1["message"])
 
-                self.assertIn("client_mode", challenge)
-                self.assertEqual("webauthn", challenge["client_mode"])
-        remove_token(serial)
+                self.assertIn("client_mode", challenge1)
+                self.assertEqual("webauthn", challenge1["client_mode"])
+        remove_token(serial1)
+        remove_token(serial2)
 
     def test_08_offline(self):
         serial = self._enroll_static_passkey()
