@@ -765,9 +765,9 @@ class PushAPITestCase(MyApiTestCase):
         delete_policy("pol_push_require_presence")
         delete_policy("pol_push_wait")
 
-    def test_17_push_require_presence_reverse(self):
+    def test_17_push_code_to_phone(self):
         """
-        Test the push token in require_presence_reverse mode. This means a number will be pushed to (or polled by) the
+        Test the push token in code_to_phone mode. This means a number will be pushed to (or polled by) the
         smartphone. The user then has to enter the number into the input that the client displays. So it is reversed
         in the sense that not the phone is submitting the answer but the client.
         """
@@ -777,8 +777,7 @@ class PushAPITestCase(MyApiTestCase):
         set_policy("push_config", scope=SCOPE.ENROLL,
                    action=f"{PushAction.FIREBASE_CONFIG}={POLL_ONLY},"
                           f"{PushAction.REGISTRATION_URL}={REGISTRATION_URL}")
-        # Add the require_presence_reverse policy
-        set_policy("push_require_presence_reverse", scope=SCOPE.AUTH,
+        set_policy("push_mode_code_to_phone", scope=SCOPE.AUTH,
                    action=f"{PushAction.PUSH_MODE_CODE_TO_PHONE}=1")
         # Create push token for user
         # 1st step
@@ -835,7 +834,7 @@ class PushAPITestCase(MyApiTestCase):
             self.assertEqual(challenge_data.get("mode"), PushMode.CODE_TO_PHONE)
             otp = challenge_data.get("otp")
             self.assertTrue(otp)
-            self.assertEqual(len(str(otp)), 2) # Default length
+            self.assertEqual(len(str(otp)), 6) # Default length
 
         # We do poll only, so we need to poll to verify the app gets the OTP
         timestamp = datetime.datetime.now(tz=datetime.timezone.utc).isoformat()
@@ -853,7 +852,7 @@ class PushAPITestCase(MyApiTestCase):
             self.assertEqual(200, res.status_code, res)
             value = res.json.get("result").get("value")
             # Check that the OTP is in the response
-            self.assertEqual(str(otp), value[0].get("otp"))
+            self.assertEqual(str(otp), value[0].get("display_code"))
 
         # Finalize authentication with the OTP
         with self.app.test_request_context('/validate/check',
@@ -870,11 +869,11 @@ class PushAPITestCase(MyApiTestCase):
 
         remove_token(self.serial_push)
         delete_policy("push_config")
-        delete_policy("push_require_presence_reverse")
+        delete_policy("push_mode_code_to_phone")
 
-    def test_18_push_require_presence_reverse_fail(self):
+    def test_18_push_code_to_phone_fail(self):
         """
-        Test the push token in require_presence_reverse mode with a wrong OTP.
+        Test the push token in push_mode_code_to_phone mode with a wrong OTP.
         """
 
         self.setUp_user_realms()
@@ -882,8 +881,7 @@ class PushAPITestCase(MyApiTestCase):
         set_policy("push_config", scope=SCOPE.ENROLL,
                    action=f"{PushAction.FIREBASE_CONFIG}={POLL_ONLY},"
                           f"{PushAction.REGISTRATION_URL}={REGISTRATION_URL}")
-        # Add the require_presence_reverse policy
-        set_policy("push_require_presence_reverse", scope=SCOPE.AUTH,
+        set_policy("push_mode_code_to_phone", scope=SCOPE.AUTH,
                    action=f"{PushAction.PUSH_MODE_CODE_TO_PHONE}=1")
         # Create push token for user
         # 1st step
@@ -940,7 +938,7 @@ class PushAPITestCase(MyApiTestCase):
             self.assertEqual(challenge_data.get("mode"), PushMode.CODE_TO_PHONE)
             otp = challenge_data.get("otp")
             self.assertTrue(otp)
-            self.assertEqual(len(str(otp)), 2) # Default length
+            self.assertEqual(len(str(otp)), 6) # Default length
 
         # Finalize authentication with the WRONG OTP
         wrong_otp = "00" if otp != "00" else "01"
@@ -956,6 +954,10 @@ class PushAPITestCase(MyApiTestCase):
             self.assertEqual(AUTH_RESPONSE.REJECT,
                              res.json.get("result").get("authentication"), res.json)
 
+            # Check failcounter
+            token = get_tokens(serial=self.serial_push)[0]
+            self.assertEqual(token.token.failcount, 1)
+
         remove_token(self.serial_push)
         delete_policy("push_config")
-        delete_policy("push_require_presence_reverse")
+        delete_policy("push_mode_code_to_phone")
