@@ -23,7 +23,7 @@ class PushAction:
     WAIT = "push_wait"
     ALLOW_POLLING = "push_allow_polling"
     REQUIRE_PRESENCE = "push_require_presence"
-    PUSH_MODE_CODE_TO_PHONE = "push_mode_code_to_phone"
+    PUSH_CODE_TO_PHONE = "push_code_to_phone"
     PRESENCE_OPTIONS = "push_presence_options"
     PRESENCE_CUSTOM_OPTIONS = "push_presence_custom_options"
     PRESENCE_NUM_OPTIONS = "push_presence_num_options"

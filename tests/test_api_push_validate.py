@@ -778,7 +778,7 @@ class PushAPITestCase(MyApiTestCase):
                    action=f"{PushAction.FIREBASE_CONFIG}={POLL_ONLY},"
                           f"{PushAction.REGISTRATION_URL}={REGISTRATION_URL}")
         set_policy("push_mode_code_to_phone", scope=SCOPE.AUTH,
-                   action=f"{PushAction.PUSH_MODE_CODE_TO_PHONE}=1")
+                   action=f"{PushAction.PUSH_CODE_TO_PHONE}=1")
         # Create push token for user
         # 1st step
         with self.app.test_request_context('/token/init',
@@ -882,7 +882,7 @@ class PushAPITestCase(MyApiTestCase):
                    action=f"{PushAction.FIREBASE_CONFIG}={POLL_ONLY},"
                           f"{PushAction.REGISTRATION_URL}={REGISTRATION_URL}")
         set_policy("push_mode_code_to_phone", scope=SCOPE.AUTH,
-                   action=f"{PushAction.PUSH_MODE_CODE_TO_PHONE}=1")
+                   action=f"{PushAction.PUSH_CODE_TO_PHONE}=1")
         # Create push token for user
         # 1st step
         with self.app.test_request_context('/token/init',
