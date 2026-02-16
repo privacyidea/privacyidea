@@ -675,8 +675,8 @@ push_code_to_phone
 type: ``bool``
 
 Alternative mode for push token in which an OTP will get pushed to the app and the user has to enter it in the login.
-If :ref:`policy_require_presence` is active, this policy will not be in effect. It shares the :ref:`push_text_on_mobile`
-setting, so you can configure sets of push configurations using different conditions.
+If either :ref:`policy_require_presence` or :ref:`policy_push_wait` is active, this policy will not be in effect.
+It shares the :ref:`push_text_on_mobile` setting, so you can configure sets of push configurations using different conditions.
 If the wrong OTP is entered, the failcount of the push token will be increased, in contrast to the standard behavior.
 
 .. versionadded:: 3.13

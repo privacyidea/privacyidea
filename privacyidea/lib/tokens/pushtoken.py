@@ -764,7 +764,7 @@ class PushTokenClass(TokenClass):
                             else:
                                 challenge.set_otp_status(True)
                         # Check if presence_answer is missing but its required
-                        elif (challenge_data  and challenge_data.get("mode", "") == PushMode.REQUIRE_PRESENCE
+                        elif (challenge_data and challenge_data.get("mode", "") == PushMode.REQUIRE_PRESENCE
                               and not presence_answer):
                             log.warning("'push_require_presence' Policy is set but the presence answer "
                                         "is not present in the smartphone request!")
@@ -1237,10 +1237,11 @@ class PushTokenClass(TokenClass):
         g = options.get("g")
         require_presence = Match.user(g, scope=SCOPE.AUTH, action=PushAction.REQUIRE_PRESENCE,
                                       user_object=user).any()
-        require_presence_reverse = Match.user(g, scope=SCOPE.AUTH, action=PushAction.PUSH_CODE_TO_PHONE,
-                                              user_object=user).any()
+        code_to_phone = Match.user(g, scope=SCOPE.AUTH, action=PushAction.PUSH_CODE_TO_PHONE,
+                                   user_object=user).any()
 
-        is_reverse = is_true(require_presence_reverse) and not is_true(require_presence)
+        code_to_phone_enabled = (is_true(code_to_phone) and not is_true(require_presence)
+                                 and not options.get(PushAction.WAIT, False))
 
         if pin_match:
             if not options.get("valid_token_num"):
@@ -1249,7 +1250,7 @@ class PushTokenClass(TokenClass):
                 # Trigger the challenge
                 _t, message, transaction_id, _attr = self.create_challenge(options=options)
 
-                if is_reverse:
+                if code_to_phone_enabled:
                     # Do not wait, return challenge immediately
                     return True, -1, {"transaction_id": transaction_id, "message": message}
 
@@ -1263,7 +1264,7 @@ class PushTokenClass(TokenClass):
                         break
                     time.sleep(POLL_INTERVAL - (elapsed_time % POLL_INTERVAL))
 
-        elif is_reverse:
+        elif code_to_phone_enabled:
             # Check if passw matches a challenge
             transaction_id = options.get("transaction_id")
             challenges = get_challenges(serial=self.token.serial, transaction_id=transaction_id)
