@@ -16,7 +16,7 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import padding, rsa
 from privacyidea.lib.utils import to_bytes, to_unicode
 from privacyidea.lib.tokens.pushtoken import (PushAction,
-                                              strip_key,
+                                              strip_pem_headers,
                                               PUBLIC_KEY_SMARTPHONE, PRIVATE_KEY_SERVER,
                                               PUBLIC_KEY_SERVER,
                                               POLL_ONLY)
@@ -191,7 +191,7 @@ class TtypePushAPITestCase(MyApiTestCase):
         encoding=serialization.Encoding.PEM,
         format=serialization.PublicFormat.SubjectPublicKeyInfo))
     # The smartphone sends the public key in URLsafe and without the ----BEGIN header
-    smartphone_public_key_pem_urlsafe = strip_key(smartphone_public_key_pem).replace("+", "-").replace("/", "_")
+    smartphone_public_key_pem_urlsafe = strip_pem_headers(smartphone_public_key_pem).replace("+", "-").replace("/", "_")
     serial_push = "PIPU001"
 
     def _resend_and_check_unspecific_error(self, status_code: int):

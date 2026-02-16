@@ -43,7 +43,7 @@ from privacyidea.lib.tokenclass import (ClientMode, FAILCOUNTER_EXCEEDED,
                                         FAILCOUNTER_CLEAR_TIMEOUT, DATE_FORMAT,
                                         AUTH_DATE_FORMAT)
 from privacyidea.lib.tokens.passwordtoken import DEFAULT_LENGTH as DEFAULT_LENGTH_PW
-from privacyidea.lib.tokens.pushtoken import PushAction, strip_key, POLL_ONLY
+from privacyidea.lib.tokens.pushtoken import PushAction, POLL_ONLY, strip_pem_headers
 from privacyidea.lib.tokens.registrationtoken import DEFAULT_LENGTH as DEFAULT_LENGTH_REG
 from privacyidea.lib.tokens.registrationtoken import RegistrationTokenClass
 from privacyidea.lib.tokens.smstoken import SmsTokenClass
@@ -4197,7 +4197,7 @@ class MultiChallenge(MyApiTestCase):
         encoding=serialization.Encoding.PEM,
         format=serialization.PublicFormat.SubjectPublicKeyInfo))
     # The smartphone sends the public key in URLsafe and without the ----BEGIN header
-    smartphone_public_key_pem_urlsafe = strip_key(smartphone_public_key_pem).replace("+", "-").replace("/", "_")
+    smartphone_public_key_pem_urlsafe = strip_pem_headers(smartphone_public_key_pem).replace("+", "-").replace("/", "_")
     serial_push = "PIPU001"
 
     def setUp(self):
@@ -4761,7 +4761,7 @@ class PushChallengeTags(MyApiTestCase):
         encoding=serialization.Encoding.PEM,
         format=serialization.PublicFormat.SubjectPublicKeyInfo))
     # The smartphone sends the public key in URLsafe and without the ----BEGIN header
-    smartphone_public_key_pem_urlsafe = strip_key(smartphone_public_key_pem).replace("+", "-").replace("/", "_")
+    smartphone_public_key_pem_urlsafe = strip_pem_headers(smartphone_public_key_pem).replace("+", "-").replace("/", "_")
     serial_push = "PIPU001"
     user = "selfservice"
 

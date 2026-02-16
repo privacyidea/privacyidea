@@ -4,7 +4,7 @@ from enum import Enum
 class PushMode(str, Enum):
     STANDARD = "standard"
     REQUIRE_PRESENCE = "require_presence"
-    REQUIRE_PRESENCE_REVERSE = "require_presence_reverse"
+    CODE_TO_PHONE = "code_to_phone"
 
 
 class PushPresenceOptions(str, Enum):
@@ -23,7 +23,7 @@ class PushAction:
     WAIT = "push_wait"
     ALLOW_POLLING = "push_allow_polling"
     REQUIRE_PRESENCE = "push_require_presence"
-    REQUIRE_PRESENCE_REVERSE = "push_require_presence_reverse"
+    PUSH_MODE_CODE_TO_PHONE = "push_mode_code_to_phone"
     PRESENCE_OPTIONS = "push_presence_options"
     PRESENCE_CUSTOM_OPTIONS = "push_presence_custom_options"
     PRESENCE_NUM_OPTIONS = "push_presence_num_options"

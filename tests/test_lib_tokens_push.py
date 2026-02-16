@@ -34,13 +34,13 @@ from privacyidea.lib.smsprovider.FirebaseProvider import FirebaseConfig
 from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway, delete_smsgateway
 from privacyidea.lib.token import get_tokens, remove_token, init_token, import_tokens
 from privacyidea.lib.tokenclass import ChallengeSession
+from privacyidea.lib.tokens.push_types import PushMode
 from privacyidea.lib.tokens.pushtoken import (PushTokenClass, PushAction,
-                                              DEFAULT_CHALLENGE_TEXT, strip_key,
-                                              PUBLIC_KEY_SMARTPHONE, PRIVATE_KEY_SERVER,
+                                              DEFAULT_CHALLENGE_TEXT, PUBLIC_KEY_SMARTPHONE, PRIVATE_KEY_SERVER,
                                               PUBLIC_KEY_SERVER, AVAILABLE_PRESENCE_OPTIONS_ALPHABETIC,
                                               AVAILABLE_PRESENCE_OPTIONS_NUMERIC,
                                               PushAllowPolling, POLLING_ALLOWED, POLL_ONLY,
-                                              PushPresenceOptions)
+                                              PushPresenceOptions, strip_pem_headers)
 from privacyidea.lib.user import (User)
 from privacyidea.lib.utils import to_bytes, b32encode_and_unicode, to_unicode, AUTH_RESPONSE
 from privacyidea.models import Token, Challenge, db
@@ -101,7 +101,7 @@ class PushTokenTestCase(MyTestCase):
         format=serialization.PublicFormat.SubjectPublicKeyInfo)
     )
     # The smartphone sends the public key in URLsafe and without the ----BEGIN header
-    smartphone_public_key_pem_urlsafe = strip_key(smartphone_public_key_pem).replace("+", "-").replace("/", "_")
+    smartphone_public_key_pem_urlsafe = strip_pem_headers(smartphone_public_key_pem).replace("+", "-").replace("/", "_")
 
     def _create_push_token(self):
         token_param = {"type": "push", "genkey": 1}
@@ -285,9 +285,9 @@ class PushTokenTestCase(MyTestCase):
             # By default, polling is allowed for push tokens so the corresponding
             # challenge should be available in the challenge table, even though
             # the request to firebase failed.
-            challenges = get_challenges(serial=token.token.serial)
-            self.assertEqual(len(challenges), 1, challenges)
-            challenges[0].delete()
+            challenge = get_challenges(serial=token.token.serial)
+            self.assertEqual(len(challenge), 1, challenge)
+            challenge[0].delete()
 
             # Do the same with the parameter "exception", so that we receive an Error on HTTP
             with self.app.test_request_context("/validate/check",
@@ -305,9 +305,9 @@ class PushTokenTestCase(MyTestCase):
                 self.assertEqual("ERR401: Failed to submit message to Firebase service.", error.get("message"))
 
             # Remove the created challenge
-            challenges = get_challenges(serial=token.token.serial)
-            self.assertEqual(len(challenges), 1, challenges)
-            challenges[0].delete()
+            challenge = get_challenges(serial=token.token.serial)
+            self.assertEqual(len(challenge), 1, challenge)
+            challenge[0].delete()
 
             # Now disable polling and check that no challenge is created
             # disallow polling through a policy
@@ -368,8 +368,7 @@ class PushTokenTestCase(MyTestCase):
             # succeeded even though polling is disabled
             # add responses, to simulate the successful communication to firebase
             # We also add the presence_required policy.
-            set_policy("push_presence", SCOPE.AUTH,
-                       action=f"{PushAction.REQUIRE_PRESENCE}=1")
+            set_policy("push_presence", SCOPE.AUTH, action=f"{PushAction.REQUIRE_PRESENCE}=1")
             responses.replace(responses.POST,
                               "https://fcm.googleapis.com/v1/projects/test-123456/messages:send",
                               body="""{}""",
@@ -383,10 +382,18 @@ class PushTokenTestCase(MyTestCase):
                 self.assertTrue(res.status_code == 200, res)
                 self.assertTrue(res.json.get("result").get("status"))
             self.assertEqual(len(get_challenges(serial=token.token.serial)), 1)
-            challenges = get_challenges(serial=token.token.serial)[0]
-            # Check in the challenge for a require_presence value, this indicates, that the challenges was created
-            self.assertIn(challenges.data.split(',').pop(), AVAILABLE_PRESENCE_OPTIONS_ALPHABETIC)
-            challenges.delete()
+            challenge = get_challenges(serial=token.token.serial)[0]
+            # Check that the challenge data contains the information about require_presence
+            data = challenge.get_data()
+            self.assertIn("mode", data)
+            self.assertEqual(data["mode"], PushMode.REQUIRE_PRESENCE)
+            self.assertIn("correct_answer", data)
+            self.assertIn(data["correct_answer"], AVAILABLE_PRESENCE_OPTIONS_ALPHABETIC)
+            self.assertIn("options", data)
+            self.assertIn(data["correct_answer"], data["options"])
+            self.assertIn("type", data)
+            self.assertEqual(data["type"], "push")
+            challenge.delete()
 
         remove_token(serial=serial)
         delete_smsgateway(self.firebase_config_name)
@@ -857,13 +864,13 @@ class PushTokenTestCase(MyTestCase):
             self.assertEqual(res.json["detail"]["challenge_status"], "declined", res.json["detail"]["challenge_status"])
         remove_token(serial=serial)
 
-    def test_05_strip_key(self):
-        stripped_pubkey = strip_key(self.smartphone_public_key_pem)
+    def test_05_strip_pem_headers(self):
+        stripped_pubkey = strip_pem_headers(self.smartphone_public_key_pem)
         self.assertIn("-BEGIN PUBLIC KEY-", self.smartphone_public_key_pem)
         self.assertNotIn("-BEGIN PUBLIC KEY_", stripped_pubkey)
         self.assertNotIn("-", stripped_pubkey)
-        self.assertEqual(strip_key(stripped_pubkey), stripped_pubkey)
-        self.assertEqual(strip_key("\n\n" + stripped_pubkey + "\n\n"), stripped_pubkey)
+        self.assertEqual(strip_pem_headers(stripped_pubkey), stripped_pubkey)
+        self.assertEqual(strip_pem_headers("\n\n" + stripped_pubkey + "\n\n"), stripped_pubkey)
 
     @responses.activate
     def test_06a_api_auth(self):
@@ -1045,7 +1052,17 @@ class PushTokenTestCase(MyTestCase):
                 challenges = get_challenges(serial=push_token1.token.serial, transaction_id=transaction_id)
                 challenge = challenges[0]
                 # The correct answer is always appended to the available options
-                presence_answer = challenge.get_data().split(',').pop()
+                # Check that the challenge data contains the information about require_presence
+                data = challenge.get_data()
+                self.assertIn("mode", data)
+                self.assertEqual(data["mode"], PushMode.REQUIRE_PRESENCE)
+                self.assertIn("correct_answer", data)
+                self.assertIn(data["correct_answer"], AVAILABLE_PRESENCE_OPTIONS_ALPHABETIC)
+                self.assertIn("options", data)
+                self.assertIn(data["correct_answer"], data["options"])
+                presence_answer = data["correct_answer"]
+                self.assertIn("type", data)
+                self.assertEqual(data["type"], "push")
                 challenge_text = DEFAULT_CHALLENGE_TEXT + f" Please press: {presence_answer}"
                 self.assertTrue(challenge_text in challenge_messages)
 
@@ -1158,11 +1175,18 @@ class PushTokenTestCase(MyTestCase):
                 self.assertIn("transaction_id", response_json.get("detail"))
                 transaction_id = response_json.get("detail").get("transaction_id")
                 challenges = get_challenges(serial=token_object.token.serial, transaction_id=transaction_id)
-                challenge_object = challenges[0]
-                # Check that we have 4 entries in the challenge data, 3 options and the correct answer
-                self.assertEqual(4, len(challenge_object.get_data().split(",")))
-                # The correct answer is always appended to the available options
-                presence_answer = challenge_object.get_data().split(',').pop()
+                challenge = challenges[0]
+                # Check that we have 3 options (default), because the num_options value has been set over the limit
+                data = challenge.get_data()
+                self.assertIn("mode", data)
+                self.assertEqual(data["mode"], PushMode.REQUIRE_PRESENCE)
+                self.assertIn("correct_answer", data)
+                self.assertIn("options", data)
+                self.assertEqual(3, len(data["options"]))
+                self.assertIn(data["correct_answer"], data["options"])
+                presence_answer = data["correct_answer"]
+                self.assertIn("type", data)
+                self.assertEqual(data["type"], "push")
                 challenge_text = DEFAULT_CHALLENGE_TEXT + f" Please press: {presence_answer}"
                 self.assertEqual(response_json.get("detail").get("message"), challenge_text)
 
@@ -1171,7 +1195,7 @@ class PushTokenTestCase(MyTestCase):
 
         # This is the smartphone answer:
         # Create the signature
-        sign_data = f"{challenge_object.challenge}|{token_object.token.serial}|{presence_answer}"
+        sign_data = f"{challenge.challenge}|{token_object.token.serial}|{presence_answer}"
         signature = b32encode_and_unicode(
             self.smartphone_private_key.sign(sign_data.encode("utf-8"), padding.PKCS1v15(), hashes.SHA256()))
 
@@ -1190,7 +1214,7 @@ class PushTokenTestCase(MyTestCase):
         with self.app.test_request_context('/ttype/push',
                                            method='POST',
                                            data={"serial": token_object.token.serial,
-                                                 "nonce": challenge_object,
+                                                 "nonce": challenge,
                                                  "signature": signature,
                                                  "presence_answer": presence_answer}):
             res = self.app.full_dispatch_request()
@@ -1224,6 +1248,7 @@ class PushTokenTestCase(MyTestCase):
         # Only define 8 custom options to test the allowed number of options
         custom_presence_options = "0A:1B:2C:3D:4E:5F:6G:7H"
         custom_options_list = custom_presence_options.split(":")
+        num_custom_options = len(custom_options_list)
         # create FireBase Service and policies
         set_smsgateway(self.firebase_config_name,
                        'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider',
@@ -1234,8 +1259,9 @@ class PushTokenTestCase(MyTestCase):
                    action=f"{PushAction.PRESENCE_OPTIONS}={PushPresenceOptions.CUSTOM.name}")
         set_policy("push_custom_options", scope=SCOPE.AUTH,
                    action=f"{PushAction.PRESENCE_CUSTOM_OPTIONS}={custom_presence_options}")
+        # Set num_options to +1 here explicitly to test the fallback behavior!
         set_policy("push_presence_num_opts", scope=SCOPE.AUTH,
-                   action=f"{PushAction.PRESENCE_NUM_OPTIONS}=9")
+                   action=f"{PushAction.PRESENCE_NUM_OPTIONS}={num_custom_options+1}")
         # create push token
         token = self._create_push_token()
 
@@ -1280,10 +1306,18 @@ class PushTokenTestCase(MyTestCase):
                     challenges = get_challenges(serial=token.token.serial, transaction_id=transaction_id)
                     challenge = challenges[0]
                     nonce = challenge.challenge
-                    # Check the number of given options
-                    self.assertEqual(9, len(challenge.get_data().split(",")))
-                    # The correct answer is always appended to the available options
-                    presence_answer = challenge.get_data().split(',').pop()
+                    # Check the number of given options is num_custom_options, as configured
+                    data = challenge.get_data()
+                    self.assertIn("mode", data)
+                    self.assertEqual(data["mode"], PushMode.REQUIRE_PRESENCE)
+                    self.assertIn("correct_answer", data)
+                    self.assertIn("options", data)
+                    self.assertIn(data["correct_answer"], data["options"])
+                    presence_answer = data["correct_answer"]
+                    self.assertEqual(num_custom_options, len(data["options"]))
+                    self.assertIn("type", data)
+                    self.assertEqual(data["type"], "push")
+                    self.assertCountEqual(data["options"], custom_options_list)
                     challenge_text = DEFAULT_CHALLENGE_TEXT + f" Please press: {presence_answer}"
                     self.assertEqual(json_response.get("detail").get("message"), challenge_text)
                     lc.check_present(("privacyidea.lib.tokens.pushtoken", "WARNING",
@@ -1370,8 +1404,9 @@ class PushTokenTestCase(MyTestCase):
             transaction_id = res.json.get("detail").get("transaction_id")
             challenges = get_challenges(serial=token.token.serial, transaction_id=transaction_id)
             challenge = challenges[0]
-            # The correct answer is always appended to the available options
-            presence_answer = challenge.get_data().split(",").pop()
+            data = challenge.get_data()
+            self.assertIn("correct_answer", data)
+            presence_answer = data["correct_answer"]
             challenge_text = f"the answer is {presence_answer}"
             self.assertEqual(challenge_text, res.json.get("detail").get("message"))
         delete_policy("text")
@@ -1432,7 +1467,7 @@ class PushTokenTestCase(MyTestCase):
 
         request = Request(builder.get_environ())
         request.all_data = {'serial': 'SPASS01', 'timestamp': '2019-10-05T22:13:23+0100'}
-        self.assertRaisesRegex(ParameterError, 'Missing parameter: \'signature\'',
+        self.assertRaisesRegex(ParameterError, 'ERR905: Missing parameter: signature',
                                PushTokenClass.api_endpoint, request, g)
 
         # check for invalid timestamp (very old)

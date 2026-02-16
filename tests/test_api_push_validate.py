@@ -17,7 +17,7 @@ from privacyidea.lib.token import (get_tokens, init_token, remove_token,
                                    get_one_token, enable_token)
 from privacyidea.lib.tokenclass import ClientMode, RolloutState
 from privacyidea.lib.policy import SCOPE, set_policy, delete_policy
-from privacyidea.lib.tokens.pushtoken import (PushAction, strip_key, POLL_ONLY,
+from privacyidea.lib.tokens.pushtoken import (PushAction, strip_pem_headers, POLL_ONLY,
                                               DEFAULT_CHALLENGE_TEXT, PushMode)
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway
@@ -67,7 +67,7 @@ class PushAPITestCase(MyApiTestCase):
         encoding=serialization.Encoding.PEM,
         format=serialization.PublicFormat.SubjectPublicKeyInfo))
     # The smartphone sends the public key in URLsafe and without the ----BEGIN header
-    smartphone_public_key_pem_urlsafe = strip_key(smartphone_public_key_pem).replace("+", "-").replace("/", "_")
+    smartphone_public_key_pem_urlsafe = strip_pem_headers(smartphone_public_key_pem).replace("+", "-").replace("/", "_")
     serial_push = "PIPU001"
 
     def test_00_create_realms(self):
@@ -139,9 +139,9 @@ class PushAPITestCase(MyApiTestCase):
             pubkey = detail.get("public_key")
 
             # Now check, what is in the token in the database
-            toks = get_tokens(serial=serial)
-            self.assertEqual(len(toks), 1)
-            token_obj = toks[0]
+            tokens = get_tokens(serial=serial)
+            self.assertEqual(len(tokens), 1)
+            token_obj = tokens[0]
             self.assertEqual(token_obj.token.rollout_state, "enrolled")
             self.assertTrue(token_obj.token.active)
             tokeninfo = token_obj.get_tokeninfo()
@@ -157,10 +157,10 @@ class PushAPITestCase(MyApiTestCase):
                    user=User("selfservice", self.realm1))
 
         # check, if the user has two tokens, now
-        toks = get_tokens(user=User("selfservice", self.realm1))
-        self.assertEqual(2, len(toks))
-        self.assertEqual("push", toks[0].type)
-        self.assertEqual("spass", toks[1].type)
+        tokens = get_tokens(user=User("selfservice", self.realm1))
+        self.assertEqual(2, len(tokens))
+        self.assertEqual("push", tokens[0].type)
+        self.assertEqual("spass", tokens[1].type)
         # authenticate with spass
         with self.app.test_request_context('/validate/check',
                                            method='POST',
@@ -779,7 +779,7 @@ class PushAPITestCase(MyApiTestCase):
                           f"{PushAction.REGISTRATION_URL}={REGISTRATION_URL}")
         # Add the require_presence_reverse policy
         set_policy("push_require_presence_reverse", scope=SCOPE.AUTH,
-                   action=f"{PushAction.REQUIRE_PRESENCE_REVERSE}=1")
+                   action=f"{PushAction.PUSH_MODE_CODE_TO_PHONE}=1")
         # Create push token for user
         # 1st step
         with self.app.test_request_context('/token/init',
@@ -832,7 +832,7 @@ class PushAPITestCase(MyApiTestCase):
             challenge_data = challenge.get_data()
             self.assertIsInstance(challenge_data, dict)
             self.assertEqual(challenge_data.get("type"), "push")
-            self.assertEqual(challenge_data.get("mode"), PushMode.REQUIRE_PRESENCE_REVERSE)
+            self.assertEqual(challenge_data.get("mode"), PushMode.CODE_TO_PHONE)
             otp = challenge_data.get("otp")
             self.assertTrue(otp)
             self.assertEqual(len(str(otp)), 2) # Default length
@@ -884,7 +884,7 @@ class PushAPITestCase(MyApiTestCase):
                           f"{PushAction.REGISTRATION_URL}={REGISTRATION_URL}")
         # Add the require_presence_reverse policy
         set_policy("push_require_presence_reverse", scope=SCOPE.AUTH,
-                   action=f"{PushAction.REQUIRE_PRESENCE_REVERSE}=1")
+                   action=f"{PushAction.PUSH_MODE_CODE_TO_PHONE}=1")
         # Create push token for user
         # 1st step
         with self.app.test_request_context('/token/init',
@@ -937,7 +937,7 @@ class PushAPITestCase(MyApiTestCase):
             challenge_data = challenge.get_data()
             self.assertIsInstance(challenge_data, dict)
             self.assertEqual(challenge_data.get("type"), "push")
-            self.assertEqual(challenge_data.get("mode"), PushMode.REQUIRE_PRESENCE_REVERSE)
+            self.assertEqual(challenge_data.get("mode"), PushMode.CODE_TO_PHONE)
             otp = challenge_data.get("otp")
             self.assertTrue(otp)
             self.assertEqual(len(str(otp)), 2) # Default length
