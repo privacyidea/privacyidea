@@ -169,7 +169,7 @@
         </button>
       }
     </form>
-    @if (!showOtpField()) {
+    @if (!showOtpField() && passkeyLoginEnabled()) {
       <div class="passkey-form">
         <button
           (click)="passkeyLogin()"
