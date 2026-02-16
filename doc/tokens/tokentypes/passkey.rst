@@ -33,3 +33,5 @@ the scope authentication and that policy does affect passkey authentication.
 
 On the token detail page, the passkey can be tested and, if successful, will show the username that is returned by
 privacyIDEA to use for login.
+
+A non-exhaustive list of devices that are known to work can be found here :ref:`fido_device_matrix`.
