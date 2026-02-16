@@ -108,29 +108,22 @@ export class EnrollWebauthnComponent implements OnInit {
     enrollmentResponse: EnrollmentResponse,
     enrollmentData: TokenEnrollmentData
   ): Promise<EnrollmentResponse | null> {
-    if (!(enrollmentResponse as any)?.detail?.webAuthnRegisterRequest?.detail) {
+    if (!(enrollmentResponse as any)?.detail) {
       this.notificationService.openSnackBar(
         "Failed to initiate WebAuthn registration: Invalid server response or missing details."
       );
       return null;
-    }
-    const webauthnEnrollmentResponse = enrollmentResponse as WebauthnEnrollmentResponse;
-
-    if (enrollmentData.type !== "webauthn") {
-      console.warn("Received enrollment data is not of type 'webauthn'. Cannot proceed with WebAuthn enrollment.");
-      return null;
-    }
-    const webauthnEnrollmentData = enrollmentData as WebAuthnEnrollmentData;
-
-    const detail = webauthnEnrollmentResponse.detail;
-    const webAuthnRegOptions = detail?.webAuthnRegisterRequest;
-
-    if (!webAuthnRegOptions) {
+    } else if (!(enrollmentResponse as any)?.detail?.webAuthnRegisterRequest) {
       this.notificationService.openSnackBar(
         "Failed to initiate WebAuthn registration: Missing WebAuthn registration request data."
       );
       return null;
+    } else if (enrollmentData.type !== "webauthn") {
+      console.warn("Received enrollment data is not of type 'webauthn'. Cannot proceed with WebAuthn enrollment.");
+      return null;
     }
+    const webauthnEnrollmentResponse = enrollmentResponse as WebauthnEnrollmentResponse;
+    const webauthnEnrollmentData = enrollmentData as WebAuthnEnrollmentData;
 
     this.openStepOneDialog({
       webauthnEnrollmentData,
