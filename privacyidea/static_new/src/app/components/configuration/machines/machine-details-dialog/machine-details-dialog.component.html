@@ -1,0 +1,188 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<h2
+  i18n
+  mat-dialog-title>
+  Details for machine {{ data.hostname }}
+</h2>
+
+<mat-dialog-content class="machine-dialog-content">
+  <div class="details-section">
+    <div class="detail-row">
+      <span
+        class="label"
+        i18n>Hostname:</span>
+      <span class="value">{{ data.hostname }}</span>
+    </div>
+    <div class="detail-row">
+      <span
+        class="label"
+        i18n>IP Address:</span>
+      <span class="value">{{ data.ip }}</span>
+    </div>
+    <div class="detail-row">
+      <span
+        class="label"
+        i18n>Machine ID:</span>
+      <span class="value">{{ data.id }}</span>
+    </div>
+    <div class="detail-row">
+      <span
+        class="label"
+        i18n>Machine Resolver:</span>
+      <span class="value">{{ data.resolver_name }}</span>
+    </div>
+  </div>
+
+  <div class="filter-paginator-container margin-bottom-1">
+    <h3
+      class="margin-0"
+      i18n>Tokens and Applications
+    </h3>
+    <mat-paginator
+      [pageSizeOptions]="[5, 10, 20]"
+      [pageSize]="5"
+      showFirstLastButtons />
+  </div>
+
+  <table
+    [dataSource]="dataSource"
+    class="tokens-table"
+    mat-table>
+    <ng-container matColumnDef="serial">
+      <th
+        *matHeaderCellDef
+        i18n
+        mat-header-cell> Serial
+      </th>
+      <td
+        *matCellDef="let token"
+        mat-cell>
+        <div class="flex-row">
+          <a
+            (click)="onTokenClick(token.serial)"
+            class="flex ali-center clickable">
+            {{ token.serial }}
+          </a>
+          <app-copy-button [copyText]="token.serial" />
+          <span class="margin-left-1">({{ token.type }})</span>
+        </div>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="application">
+      <th
+        *matHeaderCellDef
+        i18n
+        mat-header-cell> Application
+      </th>
+      <td
+        *matCellDef="let token"
+        mat-cell> {{ token.application }}
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="options">
+      <th
+        *matHeaderCellDef
+        i18n
+        mat-header-cell> Options
+      </th>
+      <td
+        *matCellDef="let token"
+        mat-cell>
+        <div *ngFor="let option of token.options | keyvalue">
+          <b>{{ option.key }}:</b> {{ option.value }}
+        </div>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="actions">
+      <th
+        *matHeaderCellDef
+        i18n
+        mat-header-cell> Actions
+      </th>
+      <td
+        *matCellDef="let token"
+        mat-cell>
+        <button
+          (click)="detachToken(token)"
+          color="warn"
+          i18n-matTooltip
+          mat-icon-button
+          matTooltip="Detach">
+          <mat-icon>delete</mat-icon>
+        </button>
+      </td>
+    </ng-container>
+
+    <tr
+      *matHeaderRowDef="displayedColumns"
+      mat-header-row></tr>
+    <tr
+      *matRowDef="let row; columns: displayedColumns;"
+      mat-row></tr>
+  </table>
+
+  <div class="attach-section">
+    <h3 i18n>Attach a new token</h3>
+    <div class="flex-row ali-center gap-1">
+      <mat-form-field
+        appearance="fill"
+        class="flex-size-2">
+        <mat-label i18n>Token Serial</mat-label>
+        <input
+          [(ngModel)]="newTokenSerial"
+          matInput
+          placeholder="e.g. PIHOTP000001" />
+      </mat-form-field>
+
+      <mat-form-field
+        appearance="fill"
+        class="flex-size-1">
+        <mat-label i18n>Application</mat-label>
+        <mat-select [(ngModel)]="selectedApplication">
+          <mat-option
+            *ngFor="let app of applicationOptions"
+            [value]="app">
+            {{ app }}
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <button
+        (click)="attachToken()"
+        [disabled]="!newTokenSerial || !selectedApplication"
+        color="primary"
+        mat-raised-button>
+        <mat-icon>add</mat-icon>
+        <span i18n>Attach</span>
+      </button>
+    </div>
+  </div>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button
+    (click)="close()"
+    i18n
+    mat-button>Close
+  </button>
+</mat-dialog-actions>

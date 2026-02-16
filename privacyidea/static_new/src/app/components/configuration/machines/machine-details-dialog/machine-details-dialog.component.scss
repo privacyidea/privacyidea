@@ -1,0 +1,46 @@
+@use "../../../../../styles";
+
+.machine-dialog-content {
+  min-width: 600px;
+}
+
+.tokens-table {
+  @include styles.base-table-structure(".tokens-table");
+  margin-bottom: 1rem;
+}
+
+
+.details-section {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 2rem;
+  padding: 1rem;
+  background: var(--mat-sys-surface-container-low);
+  border-radius: 4px;
+}
+
+.detail-row {
+  display: flex;
+  flex-direction: column;
+}
+
+.label {
+  font-weight: bold;
+  font-size: 0.8rem;
+  color: #666;
+}
+
+.value {
+  font-size: 1rem;
+}
+
+.attach-section {
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--mat-sys-outline-variant);
+}
+
+.gap-1 {
+  gap: 1rem;
+}

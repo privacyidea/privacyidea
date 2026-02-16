@@ -1,0 +1,136 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<div class="machines-layout">
+  <div
+    appScrollToTop
+    class="machines-container">
+    <div class="header-row">
+      <div class="filter-paginator-container margin-bottom-1">
+        <div class="flex-row ali-center">
+          <mat-form-field
+            class="table-filter"
+            subscriptSizing="dynamic">
+            <mat-label i18n>Filter Machines...</mat-label>
+            <app-clearable-input
+              (onClick)="resetFilter()"
+              [showClearButton]="filterString().length > 0">
+              <input
+                #filterHTMLInputElement
+                (input)="onFilterInput(filterHTMLInputElement.value)"
+                [value]="filterString()"
+                aria-label="Filter Input"
+                i18n-aria-label
+                i18n-placeholder
+                matInput
+                placeholder="Filter by hostname, IP or resolver" />
+            </app-clearable-input>
+          </mat-form-field>
+        </div>
+        <mat-paginator
+          [length]="totalLength()"
+          [pageSizeOptions]="pageSizeOptions()"
+          [pageSize]="pageSizeOptions()[1]"
+          showFirstLastButtons />
+      </div>
+    </div>
+    <table
+      [dataSource]="machineDataSource()"
+      class="machines-table"
+      mat-table
+      matSort>
+
+      <ng-container matColumnDef="hostname">
+        <th
+          *matHeaderCellDef
+          i18n
+          mat-header-cell
+          mat-sort-header> Hostname
+        </th>
+        <td
+          *matCellDef="let machine"
+          mat-cell>
+          <div class="flex-row">
+            <a
+              (click)="openDetailsDialog(machine)"
+              class="flex ali-center clickable">
+              {{ machine.hostname }}
+            </a>
+            <app-copy-button [copyText]="machine.hostname" />
+          </div>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="ip">
+        <th
+          *matHeaderCellDef
+          i18n
+          mat-header-cell
+          mat-sort-header> IP Address
+        </th>
+        <td
+          *matCellDef="let machine"
+          mat-cell> {{ machine.ip }}
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="id">
+        <th
+          *matHeaderCellDef
+          i18n
+          mat-header-cell
+          mat-sort-header> Id
+        </th>
+        <td
+          *matCellDef="let machine"
+          mat-cell> {{ machine.id }}
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="resolver_name">
+        <th
+          *matHeaderCellDef
+          i18n
+          mat-header-cell
+          mat-sort-header> Machine Resolver
+        </th>
+        <td
+          *matCellDef="let machine"
+          mat-cell> {{ machine.resolver_name }}
+        </td>
+      </ng-container>
+
+      <tr
+        *matHeaderRowDef="displayedColumns"
+        mat-header-row></tr>
+      <tr
+        *matRowDef="let row; columns: displayedColumns;"
+        mat-row></tr>
+
+      <tr
+        *matNoDataRow
+        class="mat-row">
+        <td
+          class="mat-cell"
+          colspan="5"
+          i18n>No machines found.
+        </td>
+      </tr>
+    </table>
+  </div>
+</div>

@@ -164,6 +164,15 @@ describe("MachineService (with mock classes)", () => {
     expect(url2).toBe("/api/machine/token/S2/offline/MT");
   });
 
+  it("getMachineTokens calls /machine/token with machineid and resolver", async () => {
+    httpStub.get.mockReturnValue(of({ result: { value: [] } }));
+    await lastValueFrom(machineService.getMachineTokens({ machineid: 1, resolver: "RES" }));
+    const [url, opts] = (httpStub.get as jest.Mock).mock.calls.at(-1);
+    expect(url).toBe("/api/machine/token");
+    expect(opts.params.get("machineid")).toBe("1");
+    expect(opts.params.get("resolver")).toBe("RES");
+  });
+
   it("filterParams produces expected object for ssh", () => {
     machineService.machineFilter.set(new FilterValue({ value: "serial:abc hostname:host" }));
     expect(machineService.filterParams()).toEqual({

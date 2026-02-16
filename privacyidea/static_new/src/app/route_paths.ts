@@ -39,6 +39,7 @@ export const ROUTE_PATHS = {
   TOKENS_CONTAINERS_WIZARD: "/tokens/containers/wizard",
   MACHINE_RESOLVER: "/configuration/machine_resolver",
   USERS_REALMS: "/users/realms",
+  CONFIGURATION_MACHINES: "/configuration/machines",
   CONFIGURATION_PERIODIC_TASKS: "/configuration/periodic-tasks",
   EXTERNAL_SERVICES_SMTP: "/external-services/smtp",
   EXTERNAL_SERVICES_RADIUS: "/external-services/radius",

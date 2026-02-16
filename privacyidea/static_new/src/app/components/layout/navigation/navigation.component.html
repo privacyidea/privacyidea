@@ -536,15 +536,17 @@
             Tokentypes
           </button>
         </mat-list-item>
-        <mat-list-item>
-          <button
-            class="card-button-1"
-            disabled
-            mat-stroked-button>
-            <mat-icon>point_of_sale</mat-icon>
-            Machines
-          </button>
-        </mat-list-item>
+        @if (authService.actionAllowed("machinelist")) {
+          <mat-list-item>
+            <button
+              [ngClass]="contentService.routeUrl() === ROUTE_PATHS.CONFIGURATION_MACHINES ? 'card-button-active' : 'card-button-1'"
+              [routerLink]="[ROUTE_PATHS.CONFIGURATION_MACHINES]"
+              mat-stroked-button>
+              <mat-icon>point_of_sale</mat-icon>
+              Machines
+            </button>
+          </mat-list-item>
+        }
         @if (authService.actionAllowed("mresolverread")) {
           <mat-list-item>
             <button

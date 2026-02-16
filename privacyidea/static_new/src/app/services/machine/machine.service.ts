@@ -118,6 +118,8 @@ export interface MachineServiceInterface {
 
   deleteTokenMtid(serial: string, application: string, mtid: string): Observable<any>;
 
+  getMachineTokens(args: { machineid: number; resolver: string }): Observable<PiResponse<TokenApplications>>;
+
   onPageEvent(event: PageEvent): void;
 
   onSortEvent($event: Sort): void;
@@ -214,7 +216,8 @@ export class MachineService implements MachineServiceInterface {
     // Only load machines on the token applications or token details routes.
     const onAllowedRoute =
       this.contentService.onTokensApplications() ||
-      this.contentService.onTokenDetails();
+      this.contentService.onTokenDetails() ||
+      this.contentService.onConfigurationMachines();
 
     if (!onAllowedRoute) {
       return undefined;
@@ -373,6 +376,17 @@ export class MachineService implements MachineServiceInterface {
   deleteTokenMtid(serial: string, application: string, mtid: string): Observable<any> {
     const headers = this.authService.getHeaders();
     return this.http.delete(`${this.baseUrl}token/${serial}/${application}/${mtid}`, { headers }).pipe(shareReplay(1));
+  }
+
+  getMachineTokens(args: { machineid: number; resolver: string }): Observable<PiResponse<TokenApplications>> {
+    const headers = this.authService.getHeaders();
+    const params = new HttpParams().set("machineid", args.machineid).set("resolver", args.resolver);
+    return this.http
+      .get<PiResponse<TokenApplications>>(`${this.baseUrl}token`, {
+        headers,
+        params
+      })
+      .pipe(shareReplay(1));
   }
 
   onPageEvent(event: PageEvent): void {
