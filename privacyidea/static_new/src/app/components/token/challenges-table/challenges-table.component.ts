@@ -24,7 +24,6 @@ import {
 import { Component, ElementRef, ViewChild, WritableSignal, inject, linkedSignal } from "@angular/core";
 import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
 import { MatPaginator, MatPaginatorModule, PageEvent } from "@angular/material/paginator";
-import { Sort } from "@angular/material/sort";
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
 import { TableUtilsService, TableUtilsServiceInterface } from "../../../services/table-utils/table-utils.service";
 import { TokenService, TokenServiceInterface } from "../../../services/token/token.service";
@@ -99,7 +98,7 @@ export class ChallengesTableComponent {
     }
   });
 
-  @ViewChild('filterHTMLInputElement', { static: false })
+  @ViewChild("filterHTMLInputElement", { static: false })
   filterInput!: ElementRef<HTMLInputElement>;
 
   @ViewChild(MatPaginator) paginator!: MatPaginator;

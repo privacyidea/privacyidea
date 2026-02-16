@@ -23,7 +23,7 @@ import { MatChipListbox, MatChipsModule } from "@angular/material/chips";
 import {
   ContainerTemplateService,
   ContainerTemplateServiceInterface
-} from "../../../../services/container-template/container-template.service";
+} from "../../../../../services/container-template/container-template.service";
 import { MatIcon } from "@angular/material/icon";
 
 @Component({

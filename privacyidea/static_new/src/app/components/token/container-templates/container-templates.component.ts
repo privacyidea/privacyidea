@@ -17,17 +17,19 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, inject } from "@angular/core";
 import { CommonModule } from "@angular/common";
+import { Component, computed, inject, signal } from "@angular/core";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MatIconModule } from "@angular/material/icon";
-import { ContainerTemplateEditComponent } from "./container-template-edit/container-template-edit.component";
+import { AuthServiceInterface, AuthService } from "../../../services/auth/auth.service";
 import {
-  ContainerTemplateService,
-  ContainerTemplateServiceInterface
+  ContainerTemplateServiceInterface,
+  ContainerTemplateService
 } from "../../../services/container-template/container-template.service";
-import { ContainerTemplateNewComponent } from "./container-template-new/container-template-new.component";
-import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
+import { ContainerTemplatesTableComponent } from "./container-templates-table/container-templates-table.component";
+import { ContainerTemplatesFilterComponent } from "./container-templates-filter/container-templates-filter.component";
+import { ContainerTemplatesTableActionsComponent } from "./container-templates-table-actions/container-templates-table-actions.component";
+import { ContainerTemplate } from "../../../services/container/container.service";
 
 @Component({
   selector: "app-container-templates",
@@ -36,13 +38,23 @@ import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.s
     CommonModule,
     MatExpansionModule,
     MatIconModule,
-    ContainerTemplateEditComponent,
-    ContainerTemplateNewComponent
+    ContainerTemplatesTableComponent,
+    ContainerTemplatesFilterComponent,
+    ContainerTemplatesTableActionsComponent
   ],
   templateUrl: "./container-templates.component.html",
   styleUrl: "./container-templates.component.scss"
 })
 export class ContainerTemplatesComponent {
-  containerTemplateService: ContainerTemplateServiceInterface = inject(ContainerTemplateService);
-  authService: AuthServiceInterface = inject(AuthService);
+  readonly containerTemplateService: ContainerTemplateServiceInterface = inject(ContainerTemplateService);
+  readonly authService: AuthServiceInterface = inject(AuthService);
+  readonly currentFilter = signal<string>("");
+  readonly containerTemplates = this.containerTemplateService.templates;
+  readonly filteredContainerTemplates = computed(() => {
+    return this.containerTemplates().filter((template) => {
+      // TODO: Use GenericFilter later
+      return template.name.toLowerCase().includes(this.currentFilter().toLowerCase());
+    });
+  });
+  readonly selectedContainerTemplates = signal<ContainerTemplate[]>([]);
 }

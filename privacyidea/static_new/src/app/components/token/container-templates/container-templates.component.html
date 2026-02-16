@@ -19,19 +19,12 @@
 <div
   class="container-templates-layout"
   aria-label="Container Templates Layout">
-  <h3
-    class="margin-left-1"
-    i18n>
-    Container Templates
-  </h3>
-  <mat-accordion class="container-templates-list-layout">
-    @if (authService.actionAllowed("container_template_create")) {
-      <app-container-template-new></app-container-template-new>
-    }
-    @if (authService.actionAllowed("container_template_create")) {
-      @for (template of this.containerTemplateService.templates(); track template.name) {
-        <app-container-template-edit [templateOriginal]="template"></app-container-template-edit>
-      }
-    }
-  </mat-accordion>
+  <app-container-templates-filter> [(filter)]="currentFilter" </app-container-templates-filter>
+  <app-container-templates-table-actions [selectedContainerTemplates]="selectedContainerTemplates()">
+  </app-container-templates-table-actions>
+  <app-container-templates-table
+    [containerTemplates]="filteredContainerTemplates()"
+    [(selectedContainerTemplates)]="selectedContainerTemplates"
+    [(filter)]="currentFilter">
+  </app-container-templates-table>
 </div>

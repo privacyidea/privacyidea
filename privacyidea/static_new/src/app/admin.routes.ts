@@ -31,7 +31,6 @@ import { UserTableComponent } from "./components/user/user-table/user-table.comp
 import { AuditComponent } from "./components/audit/audit.component";
 import { PoliciesComponent } from "./components/policies/policies.component";
 import { TokenImportComponent } from "./components/token/token-import/token-import.component";
-import { ContainerTemplatesComponent } from "./components/token/container-templates/container-templates.component";
 import { RealmTableComponent } from "./components/user/realm-table/realm-table.component";
 import { ClientsComponent } from "./components/audit/clients/clients.component";
 import { MachineResolverComponent } from "./components/machine-resolver/machine-resolver.component";
@@ -45,9 +44,9 @@ import { TokengroupsComponent } from "./components/external-services/tokengroups
 import { ServiceIdsComponent } from "./components/external-services/service-ids/service-ids.component";
 import { UserResolversComponent } from "./components/user/user-sources/user-resolvers.component";
 import { pendingChangesGuard } from "./guards/pending-changes.guard";
-import { Subscription } from "rxjs";
 import { SubscriptionComponent } from "./components/configuration/subscription/subscription.component";
 import { EventComponent } from "./components/event/event.component";
+import { ContainerTemplatesComponent } from "./components/token/container-templates/container-templates.component";
 
 export const routes: Routes = [
   {

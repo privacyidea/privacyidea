@@ -1,0 +1,25 @@
+<div>
+  @if (templateOptions().options && (templateOptions().options | keyvalue).length > 0) {
+    <h3>Options:</h3>
+    <mat-list>
+      @for (option of templateOptions().options | keyvalue; track option.key) {
+        <mat-list-item>
+          <strong>{{ option.key }}:</strong> {{ option.value }}
+        </mat-list-item>
+      }
+    </mat-list>
+  }
+
+  @if (templateOptions().tokens && templateOptions().tokens.length > 0) {
+    <h3>Tokens:</h3>
+    @for (token of templateOptions().tokens; track token) {
+      <div class="token-container">
+        @for (entry of token | keyvalue; track entry.key) {
+          <span class="token-item">
+            <strong>{{ entry.key }}:</strong>&nbsp;{{ entry.value }}
+          </span>
+        }
+      </div>
+    }
+  }
+</div>

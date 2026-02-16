@@ -1,0 +1,14 @@
+.token-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--half-global-gap);
+  padding: var(--quarter-global-padding) var(--half-global-padding);
+
+  &:not(:last-child) {
+    border-bottom: 1px solid var(--mat-sys-on-surface-variant);
+  }
+}
+
+.token-item {
+  white-space: nowrap;
+}

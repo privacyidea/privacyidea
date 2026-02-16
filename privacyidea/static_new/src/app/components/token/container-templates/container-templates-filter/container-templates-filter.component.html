@@ -1,0 +1,12 @@
+<div>
+  <app-clearable-input
+    (onClick)="filter.set('')"
+    [showClearButton]="filter().length > 0">
+    >
+    <input
+      matInput
+      placeholder="Filter"
+      [(ngModel)]="filter"
+      class="filter-input" />
+  </app-clearable-input>
+</div>

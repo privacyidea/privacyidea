@@ -21,19 +21,19 @@ import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { MockContainerTemplateService } from "../../../../testing/mock-services";
-import { ContainerTemplateService } from "../../../services/container-template/container-template.service";
-import { ContainerTemplatesComponent } from "./container-templates.component";
-import { ContainerTemplateEditComponent } from "./dialogs/container-template-edit/container-template-edit.component";
+import { MockContainerTemplateService } from "../../../../../testing/mock-services";
+import { ContainerTemplateService } from "../../../../services/container-template/container-template.service";
+import { ContainerTemplateEditComponent } from "../dialogs/container-template-edit/container-template-edit.component";
+import { ContainerTemplatesTableComponent } from "./container-templates-table.component";
 
 describe("ContainerTemplatesComponent", () => {
-  let component: ContainerTemplatesComponent;
-  let fixture: ComponentFixture<ContainerTemplatesComponent>;
+  let component: ContainerTemplatesTableComponent;
+  let fixture: ComponentFixture<ContainerTemplatesTableComponent>;
   let containerTemplateServiceMock: MockContainerTemplateService;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ContainerTemplatesComponent, NoopAnimationsModule, ContainerTemplateEditComponent],
+      imports: [ContainerTemplatesTableComponent, NoopAnimationsModule, ContainerTemplateEditComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
@@ -41,7 +41,7 @@ describe("ContainerTemplatesComponent", () => {
       ]
     }).compileComponents();
 
-    fixture = TestBed.createComponent(ContainerTemplatesComponent);
+    fixture = TestBed.createComponent(ContainerTemplatesTableComponent);
     containerTemplateServiceMock = TestBed.inject(ContainerTemplateService) as unknown as MockContainerTemplateService;
     component = fixture.componentInstance;
   });

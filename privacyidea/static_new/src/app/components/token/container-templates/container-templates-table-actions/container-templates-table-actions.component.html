@@ -1,0 +1,19 @@
+<div class="button-row">
+  <button
+    mat-stroked-button
+    class="action-button-1">
+    Create
+  </button>
+  <button
+    mat-stroked-button
+    class="action-button-1"
+    [disabled]="!selectedContainerTemplates().length">
+    Copy
+  </button>
+  <button
+    mat-stroked-button
+    class="action-button-delete"
+    [disabled]="!selectedContainerTemplates().length">
+    Delete
+  </button>
+</div>

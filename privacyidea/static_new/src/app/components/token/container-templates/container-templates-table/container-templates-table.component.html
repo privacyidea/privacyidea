@@ -1,0 +1,67 @@
+<table
+  mat-table
+  [dataSource]="dataSource()"
+  class="container-templates-table">
+  <ng-container matColumnDef="select">
+    <th
+      mat-header-cell
+      *matHeaderCellDef>
+      <mat-checkbox
+        (change)="$event ? toggleAllRows() : null"
+        [checked]="selection.hasValue() && isAllSelected()"
+        [indeterminate]="selection.hasValue() && !isAllSelected()">
+      </mat-checkbox>
+    </th>
+    <td
+      mat-cell
+      *matCellDef="let row">
+      <mat-checkbox
+        (click)="$event.stopPropagation()"
+        (change)="$event ? selection.toggle(row) : null"
+        [checked]="selection.isSelected(row)">
+      </mat-checkbox>
+    </td>
+  </ng-container>
+
+  @for (column of columns | keyvalue: keepOrder; track column.key) {
+    <ng-container [matColumnDef]="column.key">
+      <th
+        mat-header-cell
+        *matHeaderCellDef>
+        <div class="header-cell-content">
+          @if (column.value.label) {
+            <div>{{ column.value.label }}</div>
+          }
+
+          @if (column.value.filterable) {
+            <button
+              mat-icon-button
+              (click)="onClickFilter(column.key)">
+              <mat-icon> filter_alt </mat-icon>
+            </button>
+          }
+        </div>
+      </th>
+
+      <td
+        mat-cell
+        *matCellDef="let element">
+        @switch (column.key) {
+          @case ("options") {
+            <app-view-template-options [templateOptions]="element.template_options"> </app-view-template-options>
+          }
+          @default {
+            <div>{{ element[column.key] }}</div>
+          }
+        }
+      </td>
+    </ng-container>
+  }
+
+  <tr
+    mat-header-row
+    *matHeaderRowDef="displayedColumns"></tr>
+  <tr
+    mat-row
+    *matRowDef="let row; columns: displayedColumns"></tr>
+</table>

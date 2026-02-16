@@ -19,12 +19,12 @@
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { ContainerTemplateEditComponent } from "./container-template-edit.component";
-import { ContainerTemplateService } from "../../../../services/container-template/container-template.service";
+import { ContainerTemplateService } from "../../../../../services/container-template/container-template.service";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { ContainerTemplate } from "../../../../services/container/container.service";
+import { ContainerTemplate } from "../../../../../services/container/container.service";
 import { MatExpansionPanel } from "@angular/material/expansion";
-import { deepCopy } from "../../../../utils/deep-copy.utils";
-import { MockContainerTemplateService } from "../../../../../testing/mock-services/mock-container-template-service";
+import { deepCopy } from "../../../../../utils/deep-copy.utils";
+import { MockContainerTemplateService } from "../../../../../../testing/mock-services/mock-container-template-service";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 

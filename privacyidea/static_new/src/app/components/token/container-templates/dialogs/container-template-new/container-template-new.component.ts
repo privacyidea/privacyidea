@@ -17,27 +17,27 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, inject, linkedSignal, signal } from "@angular/core";
 import { CommonModule } from "@angular/common";
-import { MatCardModule } from "@angular/material/card";
-import { MatIconModule } from "@angular/material/icon";
-import { MatButtonModule } from "@angular/material/button";
+import { Component, inject, signal, linkedSignal, computed } from "@angular/core";
 import { FormsModule } from "@angular/forms";
+import { MatButtonModule } from "@angular/material/button";
+import { MatCardModule } from "@angular/material/card";
+import { MatChipsModule } from "@angular/material/chips";
+import { MatOptionModule } from "@angular/material/core";
 import { MatExpansionModule, MatExpansionPanel } from "@angular/material/expansion";
 import { MatFormFieldModule } from "@angular/material/form-field";
+import { MatIconModule } from "@angular/material/icon";
 import { MatSelectModule } from "@angular/material/select";
-import { MatOptionModule } from "@angular/material/core";
 import { MatTooltipModule } from "@angular/material/tooltip";
-import { TemplateAddedTokenRowComponent } from "../template-added-token-row/template-added-token-row.component";
-import { ContainerTemplate } from "../../../../services/container/container.service";
 import {
-  ContainerTemplateService,
-  ContainerTemplateServiceInterface
-} from "../../../../services/container-template/container-template.service";
-import { deepCopy } from "../../../../utils/deep-copy.utils";
+  ContainerTemplateServiceInterface,
+  ContainerTemplateService
+} from "../../../../../services/container-template/container-template.service";
+import { ContainerTemplate } from "../../../../../services/container/container.service";
+import { deepCopy } from "../../../../../utils/deep-copy.utils";
+import { ContainerTypeOption } from "../../../container-create/container-create.component";
+import { TemplateAddedTokenRowComponent } from "../../template-added-token-row/template-added-token-row.component";
 import { ContainerTemplateAddTokenChipsComponent } from "../container-template-add-token-chips/container-template-add-token-chips.component";
-import { MatChipsModule } from "@angular/material/chips";
-import { ContainerTypeOption } from "../../container-create/container-create.component";
 
 @Component({
   selector: "app-container-template-new",
@@ -54,7 +54,6 @@ import { ContainerTypeOption } from "../../container-create/container-create.com
     MatSelectModule,
     MatOptionModule,
     TemplateAddedTokenRowComponent,
-
     ContainerTemplateAddTokenChipsComponent,
     MatChipsModule
   ],

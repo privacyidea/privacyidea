@@ -1,12 +1,9 @@
-@use "../../../../styles" as styles;
-@use "@angular/material" as mat;
+@use "../../../../../styles";
+@use "@angular/material";
 
-.container-templates-layout {
-  @include styles.table-container-styles;
-  display: flex;
-  flex-direction: column;
-  max-height: var(--max-height);
-  width: 1000px;
+.container-templates-table {
+  @include styles.base-table-structure(".token-table", ".token-table-filter", ".table-scroll-container");
+  width: 100%;
 }
 
 .container-templates-list-layout {
@@ -26,4 +23,9 @@
   color: var(--mat-sys-on-primary);
   font-weight: 600;
   cursor: pointer;
+}
+.header-cell-content {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--global-gap) / 4);
 }
