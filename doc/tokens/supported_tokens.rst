@@ -24,38 +24,39 @@ with any standard-compliant FIDO2 device. The following devices are known to be
 compatible and frequently used with the software.
 
 .. list-table:: Known Compatible FIDO2 Devices
-   :widths: 20 30 50
-   :header-rows: 1
+    :widths: 20 30 50
+    :header-rows: 1
 
-   * - Manufacturer
-     - Supported Series
-     - Specific Models (Searchable)
-   * - **Yubico**
-     - YubiKey 5 Series, Bio Series, Security Key Series, FIPS Series
-     - YubiKey 5 NFC, YubiKey 5C NFC, YubiKey 5Ci, YubiKey 5 Nano/5C Nano, YubiKey Bio, Security Key C NFC
-   * - **Google**
-     - Titan Security Keys
-     - Titan Security Key (USB-A/NFC), Titan Security Key (USB-C/NFC)
-   * - **Feitian**
-     - ePass, BioPass, iePass
-     - ePass K9, ePass K40, BioPass K26/K27, iePass K44, AllinPass FIDO2
-   * - **Nitrokey**
-     - Nitrokey 3, FIDO2
-     - Nitrokey 3A NFC, Nitrokey 3C NFC, Nitrokey FIDO2
-   * - **Swissbit**
-     - iShield Series
-   * - **SoloKeys**
-     - Solo V2, Solo Tap
-     - Solo V2, Solo Tap USB-A/USB-C, Somu
-   * - **Token2**
-     - T2F2, PIN+
-     - T2F2 NFC, T2F2 USB-C, Token2 PIN+
-   * - **Kensington**
-     - VeriMark
-     - VeriMark Guard, VeriMark IT
-   * - **Thetis**
-     - FIDO2 Series
-     - Thetis FIDO2 Security Key, Thetis Pro FIDO2
+    * - Manufacturer
+      - Supported Series
+      - Specific Models
+    * - **Yubico**
+      - YubiKey 5 Series, Bio Series, Security Key Series, FIPS Series
+      - YubiKey 5 NFC, YubiKey 5C NFC, YubiKey 5Ci, YubiKey 5 Nano/5C Nano, YubiKey Bio, Security Key C NFC
+    * - **Google**
+      - Titan Security Keys
+      - Titan Security Key (USB-A/NFC), Titan Security Key (USB-C/NFC)
+    * - **Feitian**
+      - ePass, BioPass, iePass
+      - ePass K9, ePass K40, BioPass K26/K27, iePass K44, AllinPass FIDO2
+    * - **Nitrokey**
+      - Nitrokey 3, FIDO2
+      - Nitrokey 3A NFC, Nitrokey 3C NFC, Nitrokey FIDO2
+    * - **Swissbit**
+      - iShield Series
+      - various models
+    * - **SoloKeys**
+      - Solo V2, Solo Tap
+      - Solo V2, Solo Tap USB-A/USB-C, Somu
+    * - **Token2**
+      - T2F2, PIN+
+      - T2F2 NFC, T2F2 USB-C, Token2 PIN+
+    * - **Kensington**
+      - VeriMark
+      - VeriMark Guard, VeriMark IT
+    * - **Thetis**
+      - FIDO2 Series
+      - Thetis FIDO2 Security Key, Thetis Pro FIDO2
 
 .. note::
    While privacyIDEA supports the standard CTAP2 protocol used by most FIDO2 devices,
