@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: 2019 NetKnights GmbH <https://netknights.it>
+# SPDX-FileCopyrightText: 2026 NetKnights GmbH <https://netknights.it>
 # SPDX-License-Identifier: AGPL-3.0-or-later
 #
 #  contact:  http://www.privacyidea.org
@@ -460,9 +460,9 @@ class PushTokenClass(TokenClass):
                            },
                            PushAction.PUSH_CODE_TO_PHONE: {
                                'type': 'bool',
-                               'desc': _('Require the user to confirm the login with a presence check. The user will '
-                                         'get an OTP in the smartphone app and has to enter it in the prompt while'
-                                         ' logging in. push_require_presence has precedence over this.'),
+                               'desc': _('Require the user to confirm the login with an OTP that is received in the'
+                                         ' smartphone app. push_require_presence has precedence over this. '
+                                         'Is not compatible with push_wait'),
                                'group': 'PUSH'
                            },
                            PushAction.PRESENCE_OPTIONS: {
