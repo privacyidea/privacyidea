@@ -65,11 +65,7 @@
                                 id="realm"
                                 ng-model="login.realm"
                                 ng-options="realm for realm in piRealms">
-                            <!-- We add a placeholder '-' for an empty realm -->
-                            <option ng-hide="piRealms[0]===''" value="" selected>-</option>
                         </select>
-                    </div>
-                    <div class="clear-btn-container">
                         <button class="clear-button" ng-click="clearRealmSelection()"
                                 aria-label="Clear Realm selection">
                             <span class="glyphicon glyphicon-remove-circle"></span>
