@@ -826,19 +826,18 @@ class PushTokenClass(TokenClass):
     def _get_existing_challenge_data(self, transaction_id: str, push_mode: PushMode):
         challenges = get_challenges(transaction_id=transaction_id)
         for c in challenges:
-            # TODO this is weak, serials can be set to custom values, should get type from challenge
-            if c.serial.startswith("PIPU") and c.data:
-                c_data = c.get_data()
-                if isinstance(c_data, dict) and c_data.get("mode") == push_mode:
-                    return c_data
-                elif isinstance(c_data, str) and push_mode == PushMode.REQUIRE_PRESENCE:
-                    # Legacy handling for presence
-                    split_presence_options = c_data.split(",")
-                    return {
-                        "mode": PushMode.REQUIRE_PRESENCE,
-                        "options": split_presence_options[:-1],
-                        "correct_answer": split_presence_options[-1]
-                    }
+            c_data = c.get_data()
+            if (isinstance(c_data, dict) and c_data.get("type", "") == "push"
+                    and c_data.get("mode") == push_mode):
+                return c_data
+            elif isinstance(c_data, str) and c.serial.startswith("PIPU") and push_mode == PushMode.REQUIRE_PRESENCE:
+                # Challenge data is string => legacy handling for presence
+                split_presence_options = c_data.split(",")
+                return {
+                    "mode": PushMode.REQUIRE_PRESENCE,
+                    "options": split_presence_options[:-1],
+                    "correct_answer": split_presence_options[-1]
+                }
         return None
 
     def _handle_presence_challenge(self, options, transaction_id):
@@ -875,24 +874,24 @@ class PushTokenClass(TokenClass):
         }
         return data, current_presence_options, correct_presence_option
 
-    def _handle_reverse_presence_challenge(self, options, transaction_id):
-        reverse_presence_otp = ""
+    def _handle_code_to_phone(self, options, transaction_id):
+        code_to_phone = ""
 
         if options.get("push_triggered"):
             c_data = self._get_existing_challenge_data(transaction_id, PushMode.CODE_TO_PHONE)
             if c_data:
-                reverse_presence_otp = c_data.get("otp")
+                code_to_phone = c_data.get("otp")
 
-        if not reverse_presence_otp:
+        if not code_to_phone:
             otplen = 6
-            reverse_presence_otp = "".join([str(secrets.randbelow(10)) for _ in range(otplen)])
+            code_to_phone = "".join([str(secrets.randbelow(10)) for _ in range(otplen)])
 
         data = {
             "type": "push",
             "mode": PushMode.CODE_TO_PHONE,
-            "otp": reverse_presence_otp
+            "otp": code_to_phone
         }
-        return data, reverse_presence_otp
+        return data, code_to_phone
 
     @classmethod
     def _api_endpoint_get(cls, g, request_data):
@@ -956,7 +955,7 @@ class PushTokenClass(TokenClass):
                 # check if the challenge is active and not already answered
                 _, answered = challenge.get_otp_status()
                 if not answered and challenge.is_valid():
-                    # Check if the challenge has mode set to require_presence or require_presence_reverse. This will
+                    # Check if the challenge has mode set to require_presence or code_to_phone. This will
                     # change what we need to return to the smartphone.
                     challenge_data = challenge.get_data()
                     presence_options = None
@@ -1123,15 +1122,15 @@ class PushTokenClass(TokenClass):
         g = options.get("g")
         require_presence = Match.user(g, scope=SCOPE.AUTH, action=PushAction.REQUIRE_PRESENCE,
                                       user_object=options.get("user")).any()
-        require_presence_reverse = Match.user(g, scope=SCOPE.AUTH, action=PushAction.PUSH_CODE_TO_PHONE,
-                                              user_object=options.get("user")).any()
+        code_to_phone = Match.user(g, scope=SCOPE.AUTH, action=PushAction.PUSH_CODE_TO_PHONE,
+                                   user_object=options.get("user")).any()
         data = {"type": "push", "mode": PushMode.STANDARD}
         current_presence_options = None
         reverse_presence_otp = None
         reply_dict = {}
         client_mode = self.client_mode
 
-        # Handle require_presence or require_presence_reverse if enabled
+        # Handle require_presence or code_to_phone if enabled
         if is_true(require_presence) and not options.get(PushAction.WAIT):
             data, current_presence_options, correct_presence_option = self._handle_presence_challenge(options,
                                                                                                       transactionid)
@@ -1139,8 +1138,8 @@ class PushTokenClass(TokenClass):
         elif is_true(require_presence) and options.get(PushAction.WAIT):
             log.warning("Unable to use 'require_presence' policy with 'push_wait'. "
                         "Disabling 'require_presence' policy!")
-        elif is_true(require_presence_reverse) and not options.get(PushAction.WAIT):
-            data, reverse_presence_otp = self._handle_reverse_presence_challenge(options, transactionid)
+        elif is_true(code_to_phone) and not options.get(PushAction.WAIT):
+            data, reverse_presence_otp = self._handle_code_to_phone(options, transactionid)
             message = _("Please enter the number from your smartphone.")
             options["reverse_presence_otp"] = reverse_presence_otp
             client_mode = ClientMode.INTERACTIVE
@@ -1286,7 +1285,7 @@ class PushTokenClass(TokenClass):
         is standard or require_presence. In this case, the passw parameter does not matter because the challenge
         has been answered by the smartphone, and we just check if that has happened correctly.
 
-        If the mode of the challenge is require_presence_reverse, which mean the smartphone just displayed the number
+        If the mode of the challenge is code_to_phone, which means the smartphone just displayed the number
         and the client has sent it via /validate/check, we check the passw parameter here.
         :param user: the requesting user
         :type user: User object

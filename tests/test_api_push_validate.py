@@ -1,6 +1,6 @@
 # SPDX-FileCopyrightText: 2020 NetKnights GmbH <https://netknights.it>
 # SPDX-License-Identifier: AGPL-3.0-or-later
-
+import time
 from base64 import b32encode
 from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.primitives.asymmetric import rsa, padding
@@ -27,7 +27,6 @@ from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.realm import set_realm, set_default_realm, delete_realm
 from privacyidea.lib.resolver import save_resolver, delete_resolver
 from . import ldap3mock
-
 
 PWFILE = "tests/testdata/passwords"
 HOSTSFILE = "tests/testdata/hosts"
@@ -350,7 +349,6 @@ class PushAPITestCase(MyApiTestCase):
 
         remove_token(self.serial_push)
         delete_policy("push2")
-
 
     @ldap3mock.activate
     def test_10_enroll_push(self):
@@ -830,11 +828,11 @@ class PushAPITestCase(MyApiTestCase):
             challenge = get_challenges(serial=self.serial_push, transaction_id=transaction_id)[0]
             challenge_data = challenge.get_data()
             self.assertIsInstance(challenge_data, dict)
-            self.assertEqual(challenge_data.get("type"), "push")
-            self.assertEqual(challenge_data.get("mode"), PushMode.CODE_TO_PHONE)
+            self.assertEqual("push", challenge_data.get("type"))
+            self.assertEqual(PushMode.CODE_TO_PHONE, challenge_data.get("mode"))
             otp = challenge_data.get("otp")
             self.assertTrue(otp)
-            self.assertEqual(len(str(otp)), 6) # Default length
+            self.assertEqual(6, len(str(otp)))  # Default length
 
         # We do poll only, so we need to poll to verify the app gets the OTP
         timestamp = datetime.datetime.now(tz=datetime.timezone.utc).isoformat()
@@ -938,7 +936,7 @@ class PushAPITestCase(MyApiTestCase):
             self.assertEqual(challenge_data.get("mode"), PushMode.CODE_TO_PHONE)
             otp = challenge_data.get("otp")
             self.assertTrue(otp)
-            self.assertEqual(len(str(otp)), 6) # Default length
+            self.assertEqual(6, len(str(otp)))  # Default length
 
         # Finalize authentication with the WRONG OTP
         wrong_otp = "00" if otp != "00" else "01"
@@ -961,3 +959,129 @@ class PushAPITestCase(MyApiTestCase):
         remove_token(self.serial_push)
         delete_policy("push_config")
         delete_policy("push_mode_code_to_phone")
+
+    def test_19_push_code_to_phone_with_require_presence(self):
+        """
+        Test that if both code_to_phone and require_presence are enabled, require_presence takes precedence.
+        """
+        self.setUp_user_realms()
+        # Setup PUSH policies
+        set_policy("push_config", scope=SCOPE.ENROLL,
+                   action=f"{PushAction.FIREBASE_CONFIG}={POLL_ONLY},"
+                          f"{PushAction.REGISTRATION_URL}={REGISTRATION_URL}")
+        set_policy("push_mode_code_to_phone", scope=SCOPE.AUTH, action=f"{PushAction.PUSH_CODE_TO_PHONE}=1")
+        set_policy("push_require_presence", scope=SCOPE.AUTH, action=f"{PushAction.REQUIRE_PRESENCE}=1")
+
+        # Create Token Init
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"type": "push",
+                                                 "pin": "push_pin",
+                                                 "user": "selfservice",
+                                                 "realm": self.realm1,
+                                                 "serial": self.serial_push,
+                                                 "genkey": 1},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            detail = res.json.get("detail")
+            enrollment_credential = detail.get("enrollment_credential")
+
+        # Complete Creation
+        with self.app.test_request_context('/ttype/push',
+                                           method='POST',
+                                           data={"enrollment_credential": enrollment_credential,
+                                                 "serial": self.serial_push,
+                                                 "pubkey": self.smartphone_public_key_pem_urlsafe,
+                                                 "fbtoken": "firebaseT"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+
+        # Authentication
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "selfservice",
+                                                 "pass": "push_pin"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            detail = res.json.get("detail")
+            transaction_id = detail.get("transaction_id")
+            self.assertTrue(transaction_id)
+            # Check challenge data
+            challenge = get_challenges(serial=self.serial_push, transaction_id=transaction_id)[0]
+            challenge_data = challenge.get_data()
+            self.assertIsInstance(challenge_data, dict)
+            self.assertEqual(challenge_data.get("type"), "push")
+            # REQUIRE_PRESENCE takes precedence
+            self.assertEqual(challenge_data.get("mode"), PushMode.REQUIRE_PRESENCE)
+            self.assertNotIn("otp", challenge_data)
+
+        remove_token(self.serial_push)
+        delete_policy("push_config")
+        delete_policy("push_mode_code_to_phone")
+        delete_policy("push_require_presence")
+
+    def test_20_push_code_to_phone_with_push_wait(self):
+        """
+        Test that if both code_to_phone and push_wait are enabled, push_wait takes precedence.
+        """
+        self.setUp_user_realms()
+        push_wait_time_seconds = 5
+        set_policy("push_config", scope=SCOPE.ENROLL,
+                   action=f"{PushAction.FIREBASE_CONFIG}={POLL_ONLY},"
+                          f"{PushAction.REGISTRATION_URL}={REGISTRATION_URL}")
+        set_policy("push_mode_code_to_phone", scope=SCOPE.AUTH, action=f"{PushAction.PUSH_CODE_TO_PHONE}=1")
+        set_policy("push_wait", scope=SCOPE.AUTH, action=f"{PushAction.WAIT}={push_wait_time_seconds}")
+
+        # Create Token Init
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"type": "push",
+                                                 "pin": "push_pin",
+                                                 "user": "selfservice",
+                                                 "realm": self.realm1,
+                                                 "serial": self.serial_push,
+                                                 "genkey": 1},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            detail = res.json.get("detail")
+            enrollment_credential = detail.get("enrollment_credential")
+
+        # Complete Creation
+        with self.app.test_request_context('/ttype/push',
+                                           method='POST',
+                                           data={"enrollment_credential": enrollment_credential,
+                                                 "serial": self.serial_push,
+                                                 "pubkey": self.smartphone_public_key_pem_urlsafe,
+                                                 "fbtoken": "firebaseT"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+
+        # Authentication
+        start_time = time.time()
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "selfservice",
+                                                 "pass": "push_pin"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            # Check that we actually waited (push_wait=10)
+            self.assertGreater(time.time() - start_time, push_wait_time_seconds-1)
+            result = res.json.get("result")
+            # The challenge was not answered in time, so we get reject
+            self.assertTrue(result.get("status"))
+            self.assertFalse(result.get("value"))
+            self.assertEqual(AUTH_RESPONSE.REJECT, result.get("authentication"))
+
+            # Check the challenge data as well
+            challenge = get_challenges()[0]
+            challenge_data = challenge.get_data()
+            self.assertIsInstance(challenge_data, dict)
+            self.assertEqual(challenge_data.get("type"), "push")
+            # STANDARD takes precedence because push_wait disables code_to_phone
+            self.assertEqual(challenge_data.get("mode"), PushMode.STANDARD)
+            self.assertNotIn("otp", challenge_data)
+
+        remove_token(self.serial_push)
+        delete_policy("push_config")
+        delete_policy("push_mode_code_to_phone")
+        delete_policy("push_wait")
