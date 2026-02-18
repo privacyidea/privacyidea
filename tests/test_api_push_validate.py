@@ -912,6 +912,10 @@ class PushAPITestCase(MyApiTestCase):
             self.assertIn("public_key", detail, detail)
             self.assertEqual(RolloutState.ENROLLED, detail.get("rollout_state"), detail)
 
+        # Verify failcount before, should be 0
+        token = get_tokens(serial=self.serial_push)[0]
+        self.assertEqual(0, token.token.failcount)
+
         #############################################################
         # Run authentication with push token
         with self.app.test_request_context('/validate/check',
@@ -952,9 +956,9 @@ class PushAPITestCase(MyApiTestCase):
             self.assertEqual(AUTH_RESPONSE.REJECT,
                              res.json.get("result").get("authentication"), res.json)
 
-            # Check failcounter
+            # Check failcounter after, has been increased
             token = get_tokens(serial=self.serial_push)[0]
-            self.assertEqual(token.token.failcount, 1)
+            self.assertEqual(1, token.token.failcount)
 
         remove_token(self.serial_push)
         delete_policy("push_config")

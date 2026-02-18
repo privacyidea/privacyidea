@@ -840,7 +840,7 @@ class PushTokenClass(TokenClass):
                 }
         return None
 
-    def _handle_presence_challenge(self, options, transaction_id):
+    def _handle_presence_challenge(self, options: dict, transaction_id: str) -> tuple[dict, list, str]:
         current_presence_options = []
         correct_presence_option = ""
 
@@ -874,7 +874,7 @@ class PushTokenClass(TokenClass):
         }
         return data, current_presence_options, correct_presence_option
 
-    def _handle_code_to_phone(self, options, transaction_id):
+    def _handle_code_to_phone(self, options: dict, transaction_id: str) -> tuple[dict, str]:
         code_to_phone = ""
 
         if options.get("push_triggered"):
@@ -1126,7 +1126,7 @@ class PushTokenClass(TokenClass):
                                    user_object=options.get("user")).any()
         data = {"type": "push", "mode": PushMode.STANDARD}
         current_presence_options = None
-        reverse_presence_otp = None
+        code_to_phone = None
         reply_dict = {}
         client_mode = self.client_mode
 
@@ -1139,9 +1139,8 @@ class PushTokenClass(TokenClass):
             log.warning("Unable to use 'require_presence' policy with 'push_wait'. "
                         "Disabling 'require_presence' policy!")
         elif is_true(code_to_phone) and not options.get(PushAction.WAIT):
-            data, reverse_presence_otp = self._handle_code_to_phone(options, transactionid)
+            data, code_to_phone = self._handle_code_to_phone(options, transactionid)
             message = _("Please enter the number from your smartphone.")
-            options["reverse_presence_otp"] = reverse_presence_otp
             client_mode = ClientMode.INTERACTIVE
 
         # Initially we assume there is no error from Firebase
@@ -1159,7 +1158,7 @@ class PushTokenClass(TokenClass):
                     smartphone_data = _build_smartphone_data(self,
                                                              challenge, registration_url,
                                                              private_key_pem, options, current_presence_options,
-                                                             reverse_presence_otp)
+                                                             code_to_phone)
                     log.debug(f"Sending to firebase the smartphone_data: {smartphone_data}")
                     res = fb_gateway.submit_message(self.get_tokeninfo("firebase_token"), smartphone_data)
 
