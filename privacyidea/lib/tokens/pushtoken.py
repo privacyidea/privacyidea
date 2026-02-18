@@ -1122,11 +1122,11 @@ class PushTokenClass(TokenClass):
         g = options.get("g")
         require_presence = Match.user(g, scope=SCOPE.AUTH, action=PushAction.REQUIRE_PRESENCE,
                                       user_object=options.get("user")).any()
-        code_to_phone = Match.user(g, scope=SCOPE.AUTH, action=PushAction.PUSH_CODE_TO_PHONE,
+        code_to_phone_enabled = Match.user(g, scope=SCOPE.AUTH, action=PushAction.PUSH_CODE_TO_PHONE,
                                    user_object=options.get("user")).any()
         data = {"type": "push", "mode": PushMode.STANDARD}
         current_presence_options = None
-        code_to_phone = None
+        code_to_phone_code = None
         reply_dict = {}
         client_mode = self.client_mode
 
@@ -1138,8 +1138,8 @@ class PushTokenClass(TokenClass):
         elif is_true(require_presence) and options.get(PushAction.WAIT):
             log.warning("Unable to use 'require_presence' policy with 'push_wait'. "
                         "Disabling 'require_presence' policy!")
-        elif is_true(code_to_phone) and not options.get(PushAction.WAIT):
-            data, code_to_phone = self._handle_code_to_phone(options, transactionid)
+        elif is_true(code_to_phone_enabled) and not options.get(PushAction.WAIT):
+            data, code_to_phone_code = self._handle_code_to_phone(options, transactionid)
             message = _("Please enter the number from your smartphone.")
             client_mode = ClientMode.INTERACTIVE
 
@@ -1158,7 +1158,7 @@ class PushTokenClass(TokenClass):
                     smartphone_data = _build_smartphone_data(self,
                                                              challenge, registration_url,
                                                              private_key_pem, options, current_presence_options,
-                                                             code_to_phone)
+                                                             code_to_phone_code)
                     log.debug(f"Sending to firebase the smartphone_data: {smartphone_data}")
                     res = fb_gateway.submit_message(self.get_tokeninfo("firebase_token"), smartphone_data)
 
