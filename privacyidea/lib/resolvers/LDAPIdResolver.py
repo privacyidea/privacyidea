@@ -88,7 +88,7 @@ elif os.path.isfile("/etc/ssl/certs/ca-bundle.crt"):
 else:
     DEFAULT_CA_FILE = "/etc/privacyidea/ldap-ca.crt"
 
-TLS_NEGOTIATE_PROTOCOL = ssl.PROTOCOL_TLS
+TLS_NEGOTIATE_PROTOCOL = ssl.PROTOCOL_TLS_CLIENT
 
 DEFAULT_TLS_PROTOCOL = TLS_NEGOTIATE_PROTOCOL
 
@@ -521,8 +521,7 @@ class IdResolver(UserIdResolver):
                                                          user=self.binddn,
                                                          password=self.bindpw,
                                                          receive_timeout=self.timeout,
-                                                         auto_referrals=not
-                                                         self.noreferrals,
+                                                         auto_referrals=not self.noreferrals,
                                                          start_tls=self.start_tls,
                                                          keytabfile=self.keytabfile)
                 bound = self.connection.bind()
