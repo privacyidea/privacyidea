@@ -112,20 +112,24 @@ ng\:form {
     justify-content: center;
     height: 32px;
     width: 32px;
+    position: absolute;
+    right: 25px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 2;
+    color: #555;
 }
 
 .realm-row {
-    display: flex;
-    align-items: center;
-    align-content: stretch;
-    gap: 8px;
+    position: relative;
 }
 
 .realm-selection {
-    flex: 1;
+    position: relative;
+    width: 100%;
 }
 
-.clear-btn-container {
-    flex: 0;
-    align-self: center;
+
+.realm-selection select {
+    padding-right: 45px;
 }
