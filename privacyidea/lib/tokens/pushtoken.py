@@ -462,7 +462,7 @@ class PushTokenClass(TokenClass):
                                'type': 'bool',
                                'desc': _('Require the user to confirm the login with an OTP that is received in the'
                                          ' smartphone app. push_require_presence has precedence over this. '
-                                         'Is not compatible with push_wait'),
+                                         'It is not compatible with push_wait'),
                                'group': 'PUSH'
                            },
                            PushAction.PRESENCE_OPTIONS: {
