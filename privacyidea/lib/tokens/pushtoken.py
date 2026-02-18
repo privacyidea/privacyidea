@@ -36,7 +36,7 @@ import traceback
 from base64 import b32decode
 from binascii import Error as BinasciiError
 from datetime import datetime, timedelta, timezone
-from typing import Optional, Union
+from typing import Optional, Union, Any
 from urllib.parse import quote
 
 from cryptography.exceptions import InvalidSignature
@@ -70,7 +70,7 @@ from privacyidea.lib.tokens.push_types import (PushMode, PushPresenceOptions,
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import create_img, b32encode_and_unicode
 from privacyidea.lib.utils import prepare_result, to_bytes, is_true, create_tag_dict
-from privacyidea.models import Challenge, db
+from privacyidea.models import Challenge, Token, db
 
 log = logging.getLogger(__name__)
 
@@ -96,7 +96,7 @@ ALLOWED_NUMBER_OF_OPTIONS = list(range(2, 11))
 DEFAULT_NUMBER_OF_PRESENCE_OPTIONS = 3
 
 
-def strip_pem_headers(key):
+def strip_pem_headers(key: str) -> str:
     """
     strip the headers and footers like
     -----BEGIN PUBLIC RSA KEY-----
@@ -189,8 +189,8 @@ def _get_presence_options(options) -> list:
     return available_presence_options
 
 
-def _build_smartphone_data(token, challenge, registration_url, private_key_pem, options,
-                           presence_options=None, push_code_to_phone_code=None):
+def _build_smartphone_data(token: TokenClass, challenge: str, registration_url: str, private_key_pem: str, options: dict,
+                           presence_options: list = None, push_code_to_phone_code: str = None) -> dict:
     """
     Create the dictionary to be sent to the smartphone as challenge
 
@@ -289,7 +289,7 @@ def _build_smartphone_data(token, challenge, registration_url, private_key_pem, 
     return smartphone_data
 
 
-def _load_public_key(pubkey_pem):
+def _load_public_key(pubkey_pem: str) -> Any:
     """
     Load the given stripped and urlsafe public key and return the verify object
 
@@ -340,24 +340,24 @@ class PushTokenClass(TokenClass):
     mode = [AuthenticationMode.AUTHENTICATE, AuthenticationMode.CHALLENGE, AuthenticationMode.OUTOFBAND]
     client_mode = ClientMode.POLL
 
-    def __init__(self, db_token):
+    def __init__(self, db_token: Token):
         TokenClass.__init__(self, db_token)
         self.set_type("push")
         self.hKeyRequired = False
 
     @staticmethod
-    def get_class_type():
+    def get_class_type() -> str:
         """
         return the generic token class identifier
         """
         return "push"
 
     @staticmethod
-    def get_class_prefix():
+    def get_class_prefix() -> str:
         return "PIPU"
 
     @staticmethod
-    def get_class_info(key=None, ret='all'):
+    def get_class_info(key: str = None, ret: str = 'all') -> Any:
         """
         returns all or a subtree of the token definition
 
@@ -521,12 +521,12 @@ class PushTokenClass(TokenClass):
         return ret
 
     @log_with(log)
-    def use_for_authentication(self, options):
+    def use_for_authentication(self, options: dict) -> bool:
         # A disabled PUSH token has to be removed from the list of checked tokens.
         return self.is_active()
 
     @log_with(log)
-    def update(self, param, reset_failcount=True):
+    def update(self, param: dict, reset_failcount: bool = True) -> None:
         """
         process the initialization parameters
 
@@ -584,7 +584,7 @@ class PushTokenClass(TokenClass):
         TokenClass.update(self, upd_param, reset_failcount)
 
     @log_with(log)
-    def get_init_detail(self, params=None, user=None):
+    def get_init_detail(self, params: dict = None, user: User = None) -> dict:
         """
         This returns the init details during enrollment.
 
@@ -660,7 +660,7 @@ class PushTokenClass(TokenClass):
         return response_detail
 
     @staticmethod
-    def _check_timestamp_in_range(timestamp, window):
+    def _check_timestamp_in_range(timestamp: str, window: int) -> None:
         """ Check if the timestamp is a valid timestamp and if it matches the time window.
 
         If the check fails a privacyIDEA error is thrown.
@@ -691,7 +691,7 @@ class PushTokenClass(TokenClass):
             raise privacyIDEAError(f'Timestamp {timestamp} not in valid range.')
 
     @classmethod
-    def _handle_enrollment_step2(cls, serial, request_data):
+    def _handle_enrollment_step2(cls, serial:str, request_data:dict) -> tuple[bool, dict]:
         log.debug("Do the 2nd step of the enrollment.")
         try:
             token = get_one_token(serial=serial, tokentype="push", rollout_state=RolloutState.CLIENTWAIT)
@@ -710,7 +710,7 @@ class PushTokenClass(TokenClass):
         return True, details
 
     @classmethod
-    def _handle_auth_response(cls, serial, request_data):
+    def _handle_auth_response(cls, serial: str, request_data: dict) -> tuple[bool, dict]:
         log.debug("Handling the authentication response from the smartphone.")
         signature = get_optional(request_data, "signature")
         decline = is_true(get_optional(request_data, "decline", default=False))
@@ -777,7 +777,7 @@ class PushTokenClass(TokenClass):
         return result, {}
 
     @classmethod
-    def _handle_firebase_update(cls, serial, request_data):
+    def _handle_firebase_update(cls, serial: str, request_data: dict) -> tuple[bool, dict]:
         log.debug("Updating the firebase token of the smartphone.")
         timestamp = get_required(request_data, 'timestamp')
         signature = get_required(request_data, 'signature')
@@ -803,7 +803,7 @@ class PushTokenClass(TokenClass):
             raise privacyIDEAError('Could not verify signature!')
 
     @classmethod
-    def _api_endpoint_post(cls, request_data):
+    def _api_endpoint_post(cls, request_data: dict) -> tuple[bool, dict]:
         """ Handle all POST requests to the api endpoint
 
         :param request_data: Dictionary containing the parameters of the request
@@ -823,7 +823,7 @@ class PushTokenClass(TokenClass):
         else:
             raise ParameterError("Missing parameters!")
 
-    def _get_existing_challenge_data(self, transaction_id: str, push_mode: PushMode):
+    def _get_existing_challenge_data(self, transaction_id: str, push_mode: PushMode) -> Union[dict, None]:
         challenges = get_challenges(transaction_id=transaction_id)
         for c in challenges:
             c_data = c.get_data()
@@ -894,7 +894,7 @@ class PushTokenClass(TokenClass):
         return data, code_to_phone
 
     @classmethod
-    def _api_endpoint_get(cls, g, request_data):
+    def _api_endpoint_get(cls, g: Any, request_data: dict) -> list:
         """
         Handle all GET requests to the api endpoint.
 
@@ -986,7 +986,7 @@ class PushTokenClass(TokenClass):
         return result
 
     @classmethod
-    def api_endpoint(cls, request, g):
+    def api_endpoint(cls, request: Any, g: Any) -> tuple[str, str]:
         """
         This provides a function which is called by the API endpoint
         ``/ttype/push`` which is defined in :doc:`../../api/ttype`
@@ -1074,7 +1074,7 @@ class PushTokenClass(TokenClass):
         return "json", prepare_result(result, details=details)
 
     @log_with(log, hide_args=[1])
-    def is_challenge_request(self, passw, user=None, options=None):
+    def is_challenge_request(self, passw: str, user: User = None, options: dict = None) -> bool:
         """
         check, if the request would start a challenge
 
@@ -1091,7 +1091,7 @@ class PushTokenClass(TokenClass):
             return False
         return self.check_pin(passw, user=user, options=options)
 
-    def create_challenge(self, transactionid=None, options=None):
+    def create_challenge(self, transactionid: str = None, options: dict = None) -> tuple[bool, str, str, dict]:
         """
         This method creates a challenge, which is submitted to the user.
         The submitted challenge will be preserved in the challenge
@@ -1204,7 +1204,7 @@ class PushTokenClass(TokenClass):
         return True, message, transactionid, reply_dict
 
     @check_token_locked
-    def authenticate(self, passw, user=None, options=None):
+    def authenticate(self, passw: str, user: User = None, options: dict = None) -> tuple[bool, int, Union[dict, None]]:
         """
         High level interface which covers the check_pin and check_otp
         This is the method that verifies single shot authentication.
@@ -1278,7 +1278,7 @@ class PushTokenClass(TokenClass):
         return pin_match, otp_counter, reply
 
     @check_token_locked
-    def check_challenge_response(self, user=None, passw=None, options=None):
+    def check_challenge_response(self, user: User = None, passw: str = None, options: dict = None) -> int:
         """
         This function checks if the challenge for the given transaction_id was marked as answered correctly, if the mode
         is standard or require_presence. In this case, the passw parameter does not matter because the challenge
@@ -1330,7 +1330,7 @@ class PushTokenClass(TokenClass):
         return otp_counter
 
     @classmethod
-    def enroll_via_validate(cls, g, content, user_obj, message=None):
+    def enroll_via_validate(cls, g: Any, content: dict, user_obj: User, message: str = None) -> None:
         """
         This class method is used in the policy ENROLL_VIA_MULTICHALLENGE.
         It enrolls a new token of this type and returns the necessary information
@@ -1372,7 +1372,7 @@ class PushTokenClass(TokenClass):
         detail.update(challenge_dict)
 
     @classmethod
-    def is_multichallenge_enrollable(cls):
+    def is_multichallenge_enrollable(cls) -> bool:
         return True
 
     def get_enroll_url(self, user: User, params: dict) -> str:
