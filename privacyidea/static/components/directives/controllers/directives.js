@@ -201,7 +201,7 @@ myApp.directive('assignToken', ["$http", "$rootScope", "tokenUrl", "AuthFactory"
                     const $viewValue = scope.newTokenObject.serial;
                     scope.newTokenObject.toggle = $toggle;
                     // update field value with a placeholder to trigger typeahead
-                    if (scope.newTokenObject.toggle && $viewValue.charAt($viewValue.length - 1) != "*") {
+                    if (scope.newUserObject.toggle && $viewValue && $viewValue.charAt($viewValue.length - 1) != "*") {
                         const ctrl = element.find('input').controller('ngModel');
                         ctrl.$setViewValue($viewValue + "*");
                     }
