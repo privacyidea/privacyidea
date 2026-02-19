@@ -134,16 +134,20 @@ myApp.directive('assignUser', ["$http", "$rootScope", "userUrl", "AuthFactory", 
                     scope.newUserObject.toggle = $toggle;
                     // update field value with a placeholder to trigger typeahead
                     if (scope.newUserObject.toggle && $viewValue.charAt($viewValue.length - 1) != "*") {
-                        const ctrl = element.find('input').controller('ngModel');
+                        const usernameInput = element[0].querySelector('#username');
+                        const ctrl = angular.element(usernameInput).controller('ngModel');
                         ctrl.$setViewValue($viewValue + "*");
                     }
                 }
             };
 
             scope.loadUsers = function ($viewValue) {
+                scope.loadingUsers = true;
+                scope.noResults = false;
                 if ($rootScope.search_on_enter && (!$viewValue || $viewValue == "*" || !scope.newUserObject.toggle)) {
-                    // only use existing result if any, and if search_on_enter policy is active
-                    return scope.newUserObject.loadedUsers;
+                    scope.loadingUsers = false;
+                    scope.noResults = !(scope.newUserObject.loadedUsers && scope.newUserObject.loadedUsers.length);
+                    return scope.newUserObject.loadedUsers || [];
                 }
                 const auth_token = AuthFactory.getAuthToken();
                 return $http({
@@ -151,13 +155,28 @@ myApp.directive('assignUser', ["$http", "$rootScope", "userUrl", "AuthFactory", 
                     url: userUrl + "/?username=*" + $viewValue + "*" + "&realm=" + scope.newUserObject.realm,
                     headers: {'PI-Authorization': auth_token}
                 }).then(function ($response) {
-                    scope.newUserObject.loadedUsers = $response.data.result.value.map(function (item) {
-                        scope.newUserObject.email = item.email;
-                        scope.newUserObject.mobile = item.mobile;
-                        scope.newUserObject.phone = item.phone;
-                        return "[" + item.userid + "] " + item.username + " (" + item.givenname + " " + item.surname + ")";
+                    const users = $response.data.result.value.map(function (item) {
+                        return {
+                            display: "[" + item.userid + "] " + item.username + " (" + item.givenname + " " + item.surname + ")",
+                            userid: item.userid,
+                            username: item.username,
+                            givenname: item.givenname,
+                            surname: item.surname,
+                            email: item.email,
+                            mobile: item.mobile,
+                            phone: item.phone
+                        };
                     });
-                    return scope.newUserObject.loadedUsers;
+                    scope.newUserObject.loadedUsers = users;
+                    scope.loadingUsers = false;
+                    scope.noResults = users.length === 0;
+                    if (!scope.$$phase) scope.$applyAsync();
+                    return users;
+                }, function() {
+                    scope.loadingUsers = false;
+                    scope.noResults = true;
+                    if (!scope.$$phase) scope.$applyAsync();
+                    return [];
                 });
             };
         }

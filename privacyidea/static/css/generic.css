@@ -133,3 +133,8 @@ ng\:form {
 .realm-selection select {
     padding-right: 45px;
 }
+
+[uib-typeahead-popup].dropdown-menu,
+.uib-typeahead-popup.dropdown-menu {
+  display: block;
+}
