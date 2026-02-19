@@ -17,7 +17,8 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <app-dialog-wrapper
-  [title]="data()?.rollover ? 'Container Rollover' : 'Register Container'"
+  [title]="dialogTitle"
+  [showCancelButton]="true"
   (close)="close()">
   <mat-dialog-content>
     <div class="flex-row gap-16">

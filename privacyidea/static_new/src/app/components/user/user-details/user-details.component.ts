@@ -88,15 +88,15 @@ export class UserDetailsComponent {
   private readonly auditService: AuditServiceInterface = inject(AuditService);
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
   readonly labels: Record<string, string> = {
-    username: "Username",
-    givenname: "Given name",
-    surname: "Surname",
-    email: "Email",
-    phone: "Phone",
-    mobile: "Mobile",
-    description: "Description",
-    userid: "User ID",
-    resolver: "Resolver"
+    username: $localize`Username`,
+    givenname: $localize`Given name`,
+    surname: $localize`Surname`,
+    email: $localize`Email`,
+    phone: $localize`Phone`,
+    mobile: $localize`Mobile`,
+    description: $localize`Description`,
+    userid: $localize`User ID`,
+    resolver: $localize`Resolver`
   };
   readonly excludedKeys = new Set(["editable"]);
   customAttributeKeys: Signal<Set<string>> = computed(() => {

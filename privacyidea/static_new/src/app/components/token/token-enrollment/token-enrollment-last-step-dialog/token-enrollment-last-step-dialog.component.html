@@ -19,6 +19,9 @@
 <app-dialog-wrapper
   title="Token Successfully Enrolled"
   i18n-title="@@tokenEnrolledTitle"
+  [showCancelButton]="true"
+  cancelButtonLabel="Close"
+  i18n-cancelButtonLabel="@@closeButtonLabel"
   (close)="close()">
   <div class="margin-bottom-1">
     <span i18n>
