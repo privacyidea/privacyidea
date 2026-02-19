@@ -138,4 +138,10 @@ export class ChallengesTableComponent {
       this.contentService.tokenSelected(element.serial);
     }
   }
+
+  onDeleteExpiredChallenges() {
+    this.challengesService.deleteExpiredChallenges().subscribe(() => {
+      this.challengesService.challengesResource.reload();
+    });
+  }
 }
