@@ -1,23 +1,6 @@
-<!--
- (c) NetKnights GmbH 2026,  https://netknights.it
-
- This code is free software; you can redistribute it and/or
- modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
- as published by the Free Software Foundation; either
- version 3 of the License, or any later version.
-
- This code is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- GNU AFFERO GENERAL PUBLIC LICENSE for more details.
-
- You should have received a copy of the GNU Affero General Public
- License along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
- SPDX-License-Identifier: AGPL-3.0-or-later
--->
 <app-dialog-wrapper
-  title="Token successfully enrolled"
+  title="Token Successfully Enrolled"
+  i18n-title="@@tokenEnrolledTitle"
   [actions]="actions"
   (close)="close()"
   (onAction)="onAction($event)">
@@ -28,10 +11,11 @@
         [innerHTML]="postTopHtml?.sanitized"
         class="margin-top-1"></div>
     } @else {
-      <h2>Token successfully enrolled</h2>
+      <h2 i18n>Token Successfully Enrolled</h2>
       <div class="margin-bottom-1">
-        <span
-          >The token was successfully enrolled with serial number <a (click)="tokenSelected(serial)"> {{ serial }} </a>.
+        <span i18n>
+          The token was successfully enrolled with serial number
+          <a (click)="tokenSelected(serial)"> {{ serial }} </a>.
         </span>
         @if (url && showQRCode()) {
           <app-qr-code-text
@@ -41,18 +25,21 @@
         }
       </div>
     }
+
     <div class="flex-row gap-16">
       @if (showQRCode() && qrCode) {
         <img
           alt="QR Code"
+          i18n-alt="@@qrCodeAlt"
           class="qr-code"
           height="300px"
           src="{{ qrCode }}"
           width="300px" />
       }
+
       <div class="flex-column gap-16">
         @if (data.response.detail["password"]) {
-          <p>
+          <p i18n>
             Your Password: <strong>{{ data.response.detail["password"] }}</strong
             >.
           </p>
@@ -75,32 +62,11 @@
         @if (data.response.detail["otps"]) {
           <app-otp-values [otpValues]="data.response.detail['otps']" />
         }
-        <div class="flex-column gap-1">
-          @if (data.response.detail["password"]) {
-            <p>
-              Your Password: <strong>{{ data.response.detail["password"] }}</strong
-              >.
-            </p>
-          }
-          @if (data.response.detail.otpkey?.value && !data.response.detail["otps"] && showQRCode()) {
-            <app-otp-key
-              [otpKeyHex]="data.response.detail.otpkey?.value ?? ''"
-              [otpKeyBase32]="data.response.detail.otpkey?.value_b32 ?? ''" />
-          }
-          @if (data.tokentype.key === "tiqr") {
-            <app-tiqr-enroll-url [url]="data.response.detail['tiqrenroll']?.value ?? ''" />
-          }
-          @if (data.tokentype.key === "registration") {
-            <app-registration-code [registrationCode]="data.response.detail['registrationcode']" />
-          }
-          @if (data.response.detail["otps"]) {
-            <app-otp-values [otpValues]="data.response.detail['otps']" />
-          }
-        </div>
       </div>
-      <div
-        [innerHTML]="postBottomHtml$ | async"
-        class="margin-bottom-1"></div>
     </div>
+
+    <div
+      [innerHTML]="postBottomHtml$ | async"
+      class="margin-bottom-1"></div>
   </mat-dialog-content>
 </app-dialog-wrapper>

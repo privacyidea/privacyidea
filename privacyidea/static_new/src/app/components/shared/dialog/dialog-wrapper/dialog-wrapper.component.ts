@@ -35,7 +35,7 @@ import { MatButton } from "@angular/material/button";
 export class DialogWrapperComponent<R = any> {
   title = input.required<string>();
   icon = input<string>();
-  showCancelButton = input<boolean>(true);
+  showCancelButton = input<boolean>(false);
   cancelButtonLabel = input<string>("Cancel");
   actions = input<DialogAction<R>[]>([]);
   onAction = output<R>();

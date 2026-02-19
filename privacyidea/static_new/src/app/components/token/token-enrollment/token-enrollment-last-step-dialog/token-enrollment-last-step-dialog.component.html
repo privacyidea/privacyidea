@@ -17,17 +17,18 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <app-dialog-wrapper
-  title="Token successfully enrolled"
+  title="Token Successfully Enrolled"
+  i18n-title="@@tokenEnrolledTitle"
   (close)="close()">
   <div class="margin-bottom-1">
-    <span>
+    <span i18n>
       The token was successfully enrolled with serial number
       <a (click)="tokenSelected(serial)"> {{ serial }} </a>
       .
     </span>
     @if (containerSerial) {
       <br />
-      <span>
+      <span i18n>
         It has been enrolled in the container
         <a (click)="containerSelected(containerSerial)"> {{ containerSerial }} </a>
         .
@@ -35,7 +36,7 @@
     }
     @if (data.user?.username && data.userRealm != "" && !data.onlyAddToRealm) {
       <br />
-      <span>
+      <span i18n>
         The user <span>{{ data.user!.username }}</span> in the realm <span>{{ data.userRealm }}</span> was assigned to
         the token.
       </span>
@@ -45,6 +46,7 @@
     @if (showQRCode() && qrCode) {
       <img
         alt="QR Code"
+        i18n-alt="@@qrCodeAltText"
         height="300px"
         src="{{ qrCode }}"
         width="300px" />
@@ -59,13 +61,14 @@
         <button
           (click)="regenerateQRCode()"
           class="card-button-1"
-          mat-stroked-button>
+          mat-stroked-button
+          i18n>
           <mat-icon>autorenew</mat-icon>
           Regenerate {{ regenerateButtonText() }}
         </button>
       }
       @if (data.response.detail["password"]) {
-        <p>
+        <p i18n>
           Your Password: <strong>{{ data.response.detail["password"] }}</strong
           >.
         </p>

@@ -39,6 +39,7 @@ import { PendingChangesService } from "../../../../services/pending-changes/pend
 import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
 import { SimpleConfirmationDialogComponent } from "../../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { DialogService, DialogServiceInterface } from "../../../../services/dialog/dialog.service";
+import { SaveAndExitDialogComponent } from "../../../shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 
 @Component({
   selector: "app-privacyidea-edit-dialog",
@@ -151,27 +152,24 @@ export class NewPrivacyideaServerComponent implements OnInit, OnDestroy {
     }
     this.dialogService
       .openDialog({
-        component: SimpleConfirmationDialogComponent,
+        component: SaveAndExitDialogComponent,
         data: {
-          title: $localize`Discard changes`,
-          confirmAction: { label: $localize`Save and exit`, value: true, type: "confirm", disabled: !this.canSave },
-          cancelAction: { label: $localize`Discard`, value: false, type: "destruct" },
-          items: [],
-          itemType: "privacyidea-server"
+          allowSaveExit: true,
+          saveExitDisabled: !this.canSave
         }
       })
       .afterClosed()
       .subscribe((result) => {
-        if (result) {
+        if (result === "discard") {
+          this.pendingChangesService.unregisterHasChanges();
+          this.closeCurrent();
+        } else if (result == "save-exit") {
           if (!this.canSave) return;
           Promise.resolve(this.pendingChangesService.save()).then(() => {
             this.pendingChangesService.unregisterHasChanges();
             this.closeCurrent();
           });
-          return;
         }
-        this.pendingChangesService.unregisterHasChanges();
-        this.closeCurrent();
       });
   }
 

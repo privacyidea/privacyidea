@@ -1,65 +1,53 @@
-<!--
- (c) NetKnights GmbH 2026,  https://netknights.it
-
- This code is free software; you can redistribute it and/or
- modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
- as published by the Free Software Foundation; either
- version 3 of the License, or any later version.
-
- This code is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- GNU AFFERO GENERAL PUBLIC LICENSE for more details.
-
- You should have received a copy of the GNU Affero General Public
- License along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
- SPDX-License-Identifier: AGPL-3.0-or-later
--->
 <app-dialog-wrapper
-  title="Token successfully enrolled"
+  title="Token Successfully Enrolled"
+  i18n-title="@@tokenEnrolledTitle"
   (close)="close()">
   <mat-dialog-content>
     <div class="margin-bottom-1">
-      <span
-        >The token was successfully enrolled with serial number
-        <a (click)="tokenSelected(serial)"> {{ serial }} </a>.</span
-      >
+      <span i18n>
+        The token was successfully enrolled with serial number
+        <a (click)="tokenSelected(serial)"> {{ serial }} </a>.
+      </span>
+
       @if (containerSerial) {
         <br />
-        <span
-          >It has been enrolled in the container
-          <a (click)="containerSelected(containerSerial)"> {{ containerSerial }} </a>.</span
-        >
+        <span i18n>
+          It has been enrolled in the container
+          <a (click)="containerSelected(containerSerial)"> {{ containerSerial }} </a>.
+        </span>
       }
     </div>
+
     <div class="flex-row gap-16">
       @if (showQRCode() && qrCode) {
         <img
           alt="QR Code"
+          i18n-alt="@@qrCodeAlt"
           class="qr-code"
           height="300px"
           src="{{ qrCode }}"
           width="300px" />
       }
+
       <div class="flex-column gap-16">
         @if (url && showQRCode()) {
           <app-qr-code-text
             [tokenType]="data.tokentype.key"
             [url]="url" />
         }
+
         @if (url && showRegenerateButton()) {
           <button
             (click)="regenerateQRCode()"
             class="card-button-1"
             mat-stroked-button>
             <mat-icon>autorenew</mat-icon>
-            Regenerate {{ regenerateButtonText() }}
+            <span i18n>Regenerate {{ regenerateButtonText() }}</span>
           </button>
         }
 
         @if (data.response.detail["password"]) {
-          <p>
+          <p i18n>
             Your Password: <strong>{{ data.response.detail["password"] }}</strong
             >.
           </p>
@@ -82,57 +70,6 @@
         @if (data.response.detail["otps"]) {
           <app-otp-values [otpValues]="data.response.detail['otps']" />
         }
-      </div>
-      <div class="flex-row gap-1">
-        @if (showQRCode() && qrCode) {
-          <img
-            alt="QR Code"
-            class="qr-code"
-            height="300px"
-            src="{{ qrCode }}"
-            width="300px" />
-        }
-        <div class="flex-column gap-1">
-          @if (url && showQRCode()) {
-            <app-qr-code-text
-              [tokenType]="data.tokentype.key"
-              [url]="url" />
-          }
-          @if (url && showRegenerateButton()) {
-            <button
-              (click)="regenerateQRCode()"
-              class="card-button-1"
-              mat-stroked-button>
-              <mat-icon>autorenew</mat-icon>
-              Regenerate {{ regenerateButtonText() }}
-            </button>
-          }
-
-          @if (data.response.detail["password"]) {
-            <p>
-              Your Password: <strong>{{ data.response.detail["password"] }}</strong
-              >.
-            </p>
-          }
-
-          @if (data.response.detail.otpkey?.value && !data.response.detail["otps"] && showQRCode()) {
-            <app-otp-key
-              [otpKeyHex]="data.response.detail.otpkey?.value ?? ''"
-              [otpKeyBase32]="data.response.detail.otpkey?.value_b32 ?? ''" />
-          }
-
-          @if (data.tokentype.key === "tiqr") {
-            <app-tiqr-enroll-url [url]="data.response.detail['tiqrenroll']?.value ?? ''" />
-          }
-
-          @if (data.tokentype.key === "registration") {
-            <app-registration-code [registrationCode]="data.response.detail['registrationcode']" />
-          }
-
-          @if (data.response.detail["otps"]) {
-            <app-otp-values [otpValues]="data.response.detail['otps']" />
-          }
-        </div>
       </div>
     </div>
   </mat-dialog-content>

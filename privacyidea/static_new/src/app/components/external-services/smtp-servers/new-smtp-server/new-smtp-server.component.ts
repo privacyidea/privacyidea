@@ -149,8 +149,6 @@ export class NewSmtpServerComponent implements OnInit, OnDestroy {
         .openDialog({
           component: SaveAndExitDialogComponent,
           data: {
-            title: $localize`Discard changes`,
-            message: $localize`You have unsaved changes. Do you want to save them before exiting?`,
             allowSaveExit: true,
             saveExitDisabled: !this.canSave
           }

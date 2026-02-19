@@ -4,8 +4,8 @@ import { AbstractDialogComponent } from "../abstract-dialog/abstract-dialog.comp
 import { DialogAction } from "../../../../models/dialog";
 
 export interface SaveAndExitDialogData {
-  title: string;
-  message: string;
+  title?: string;
+  message?: string;
   saveButtonText?: string;
   discardButtonText?: string;
   allowSaveExit: boolean;
@@ -35,6 +35,11 @@ export class SaveAndExitDialogComponent extends AbstractDialogComponent<
       hidden: !this.data.allowSaveExit
     }
   ]);
+
+  title = computed(() => this.data.title || $localize`Discard changes`);
+  message = computed(
+    () => this.data.message || $localize`You have unsaved changes. Do you want to save them before exiting?`
+  );
 
   onAction(result: SaveAndExitDialogResult): void {
     this.dialogRef.close(result);

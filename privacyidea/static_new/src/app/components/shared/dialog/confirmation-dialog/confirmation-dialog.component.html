@@ -20,6 +20,7 @@
   [title]="data.title"
   (close)="close()"
   [actions]="actions"
+  [showCancelButton]="true"
   (onAction)="onAction($event)">
   <p i18n>
     Are you sure you want to {{ data.confirmAction.label.toLocaleLowerCase() }}

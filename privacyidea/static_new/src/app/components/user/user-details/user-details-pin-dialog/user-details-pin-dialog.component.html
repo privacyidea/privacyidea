@@ -17,7 +17,8 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <app-dialog-wrapper
-  [title]="'Token Assignment'"
+  title="Token Assignment"
+  i18n-title="@@tokenAssignmentTitle"
   (close)="close()"
   (onAction)="onAction($event)"
   [actions]="dialogActions()">
@@ -30,16 +31,30 @@
       [type]="hidePin() ? 'password' : 'text'"
       autocomplete="new-password"
       matInput />
+
     <button
       (click)="togglePinVisibility()"
-      [attr.aria-label]="hidePin() ? 'Show PIN' : 'Hide PIN'"
-      [attr.aria-pressed]="!hidePin()"
       mat-icon-button
       matSuffix
       type="button">
-      <mat-icon>{{ hidePin() ? "visibility_off" : "visibility" }}</mat-icon>
+      @if (hidePin()) {
+        <mat-icon
+          aria-hidden="false"
+          i18n-aria-label="@@ariaShowPin"
+          aria-label="Show PIN"
+          >visibility_off</mat-icon
+        >
+      } @else {
+        <mat-icon
+          aria-hidden="false"
+          i18n-aria-label="@@ariaHidePin"
+          aria-label="Hide PIN"
+          >visibility</mat-icon
+        >
+      }
     </button>
   </mat-form-field>
+
   <mat-form-field
     appearance="fill"
     class="pin-field">
@@ -49,15 +64,29 @@
       [type]="hidePin() ? 'password' : 'text'"
       autocomplete="new-password"
       matInput />
+
     <button
       (click)="togglePinVisibility()"
-      [attr.aria-label]="hidePin() ? 'Show PIN' : 'Hide PIN'"
-      [attr.aria-pressed]="!hidePin()"
       mat-icon-button
       matSuffix
       type="button">
-      <mat-icon>{{ hidePin() ? "visibility_off" : "visibility" }}</mat-icon>
+      @if (hidePin()) {
+        <mat-icon
+          aria-hidden="false"
+          i18n-aria-label="@@ariaShowPin"
+          aria-label="Show PIN"
+          >visibility_off</mat-icon
+        >
+      } @else {
+        <mat-icon
+          aria-hidden="false"
+          i18n-aria-label="@@ariaHidePin"
+          aria-label="Hide PIN"
+          >visibility</mat-icon
+        >
+      }
     </button>
+
     @if (pinRepeat() && !pinsMatch()) {
       <mat-error i18n>PINs do not match</mat-error>
     }

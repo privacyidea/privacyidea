@@ -2,16 +2,12 @@
   <div
     class="pi-dialog-header"
     mat-dialog-title>
-    @if (title()) {
-      <h2>
-        @if (icon()) {
-          <mat-icon [style.margin-right.px]="8">{{ icon() }}</mat-icon>
-        }
-        {{ title() }}
-      </h2>
-    } @else {
-      <h2 i18n>Dialog</h2>
-    }
+    <h2>
+      @if (icon()) {
+        <mat-icon [style.margin-right.px]="8">{{ icon() }}</mat-icon>
+      }
+      {{ title() }}
+    </h2>
   </div>
   <mat-dialog-content>
     <div class="pi-dialog-body">
@@ -25,7 +21,7 @@
           mat-button
           mat-dialog-close
           i18n>
-          Close
+          Cancel
         </button>
       }
       @for (action of actions(); track $index) {
