@@ -433,15 +433,15 @@ class IdResolver(UserIdResolver):
             # if the utf-8 decoding fails, we try the UUID conversion
             if uidtype.lower() == "objectguid":
                 # Active Directory uses little endian byte order
-                log.debug(f"Found a byte-array as uid ({binascii.hexlify(uid)}), trying to convert it to a UUID "
-                          f"assuming little endian byte order. ({e})")
+                log.debug(f"Found a byte-array as uid ({binascii.hexlify(uid).decode()}), "
+                          f"trying to convert it to a UUID assuming little endian byte order. ({e})")
                 log.debug(traceback.format_exc())
                 uid = str(uuid.UUID(bytes_le=uid))
             else:
                 # ldap3 defines a standard formatter using big endian byte order for GUID (eDirectory), entryUUID
                 # (openLDAP), and UUID. Hence, we assume it as the default byte order here.
-                log.debug(f"Found a byte-array as uid ({binascii.hexlify(uid)}), trying to convert it to a UUID "
-                          f"assuming big endian byte order. ({e})")
+                log.debug(f"Found a byte-array as uid ({binascii.hexlify(uid).decode()}), "
+                          f"trying to convert it to a UUID assuming big endian byte order. ({e})")
                 log.debug(traceback.format_exc())
                 uid = str(uuid.UUID(bytes=uid))
 
@@ -1230,8 +1230,8 @@ class IdResolver(UserIdResolver):
             success = True
 
         except Exception as e:
-            message = f"{e!r}"
-            log.warning(f"LDAP Resolver Test failed for resolver {resolvername!r}: {message}")
+            message = f"{e}"
+            log.warning(f"LDAP Resolver Test failed for resolver {resolvername!r}: {e!r}")
             log.debug("{0!s}".format(traceback.format_exc()))
 
         return success, message
