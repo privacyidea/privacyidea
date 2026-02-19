@@ -200,11 +200,11 @@ def cache(func):
     """
     cache the user with his loginname, resolver and UID in a local
     dictionary cache.
-    This is a per process cache.
+    This is a per-process cache.
     """
     @functools.wraps(func)
     def cache_wrapper(self, *args, **kwds):
-        # Only run the code, in case we have a configured cache!
+        # Only run the code in case we have a configured cache!
         if self.cache_timeout > 0:
             # If it does not exist, create the node for this instance
             resolver_id = self.getResolverId()
@@ -253,6 +253,7 @@ def cache(func):
 
 
 class AUTHTYPE(object):
+    ANONYMOUS = "Anonymous"
     SIMPLE = "Simple"
     SASL_DIGEST_MD5 = "SASL Digest-MD5"
     NTLM = "NTLM"
@@ -606,10 +607,9 @@ class IdResolver(UserIdResolver):
 
         return user_info
 
-    @cache
     def _get_user_groups_recursive(self, user_info: dict) -> list[str]:
         """
-        Do a separate search to retrieve the groups of a user. This can be done recursively to all groups including
+        Do a separate search to retrieve the groups of a user. This can be done recursively to all groups, including
         nested groups.
         The search filter can contain the tags ``{base_dn}`` and all keys from the user_info dictionary such as
         ``{username}``. This function replaces the tags with the corresponding values from the user_info dictionary.
@@ -623,7 +623,7 @@ class IdResolver(UserIdResolver):
         """
         groups = []
 
-        # replace tags in search filter
+        # replace tags in the search filter
         search_filter = self.group_search_filter
         search_filter = search_filter.replace("{base_dn}", self.basedn)
         for key, value in user_info.items():
@@ -664,7 +664,7 @@ class IdResolver(UserIdResolver):
                             raise Exception("The LDAP returns an objectGUID, "
                                             "that is no string: {0!s}".format(type(ldap_v)))
                     elif isinstance(ldap_v, list) and map_k not in self.multivalueattributes:
-                        # lists that are not in self.multivalueattributes return first value
+                        # lists that are not in self.multivalueattributes return the first value
                         # as a string. Multi-value-attributes are returned as a list
                         if ldap_v:
                             user_info[map_k] = ldap_v[0]
@@ -882,7 +882,7 @@ class IdResolver(UserIdResolver):
         self.uri = config.get("LDAPURI")
         self.basedn = config.get("LDAPBASE")
         self.binddn = config.get("BINDDN")
-        # object_classes is a comma separated list like
+        # object_classes is a comma-separated list like
         # ["top", "person", "organizationalPerson", "user", "inetOrgPerson"]
         self.object_classes = [cl.strip() for cl in config.get("OBJECT_CLASSES", "").split(",")]
         self.dn_template = config.get("DN_TEMPLATE", "")
@@ -1147,6 +1147,7 @@ class IdResolver(UserIdResolver):
         :rtype: (bool, string)
         """
         success = False
+        resolvername = param.get("resolver", "")
         uidtype = param.get("UIDTYPE")
         timeout = int(param.get("TIMEOUT", 5))
         ldap_uri = param.get("LDAPURI")
@@ -1229,7 +1230,8 @@ class IdResolver(UserIdResolver):
             success = True
 
         except Exception as e:
-            message = f"{e}"
+            message = f"{e!r}"
+            log.warning(f"LDAP Resolver Test failed for resolver {resolvername!r}: {message}")
             log.debug("{0!s}".format(traceback.format_exc()))
 
         return success, message
@@ -1420,7 +1422,7 @@ class IdResolver(UserIdResolver):
                      'auto_referrals': auto_referrals,
                      'collect_usage': True}
 
-        if not user:
+        if not user or authtype == AUTHTYPE.ANONYMOUS:
             # without a user we can only use an anonymous bind
             conn_opts.update({'authentication': ldap3.ANONYMOUS})
         elif authtype == AUTHTYPE.SIMPLE:
@@ -1448,7 +1450,7 @@ class IdResolver(UserIdResolver):
                               'user': user,
                               'cred_store': cred_store})
         else:
-            raise ResolverError(f"Authtype {authtype} not supported")
+            raise ResolverError(f"Unsupported authentication type: {authtype}")
 
         connection = ldap3.Connection(server, **conn_opts)
         if start_tls:
@@ -1471,9 +1473,9 @@ class IdResolver(UserIdResolver):
     @property
     def editable(self):
         """
-        Return true, if the instance of the resolver is configured editable
+        Return true if the instance of the resolver is configured editable
         :return:
         """
-        # Depending on the database this might look different
+        # Depending on the database, this might look different
         # Usually this is "1"
         return is_true(self._editable)
