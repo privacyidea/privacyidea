@@ -170,12 +170,10 @@ myApp.directive('assignUser', ["$http", "$rootScope", "userUrl", "AuthFactory", 
                     scope.newUserObject.loadedUsers = users;
                     scope.loadingUsers = false;
                     scope.noResults = users.length === 0;
-                    if (!scope.$$phase) scope.$applyAsync();
                     return users;
                 }, function() {
                     scope.loadingUsers = false;
                     scope.noResults = true;
-                    if (!scope.$$phase) scope.$applyAsync();
                     return [];
                 });
             };
