@@ -16,8 +16,14 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Injectable } from "@angular/core";
-import { TokenApiPayloadMapper, TokenEnrollmentData, TokenEnrollmentPayload } from "./_token-api-payload.mapper";
+import { inject, Injectable } from "@angular/core";
+import {
+  BaseApiPayloadMapper,
+  TokenApiPayloadMapper,
+  TokenEnrollmentData,
+  TokenEnrollmentPayload
+} from "./_token-api-payload.mapper";
+import { TokenDetails } from "../../services/token/token.service";
 
 export interface PaperEnrollmentData extends TokenEnrollmentData {
   type: "paper";
@@ -32,37 +38,35 @@ export interface PaperEnrollmentPayload extends TokenEnrollmentPayload {
 }
 
 @Injectable({ providedIn: "root" })
-export class PaperApiPayloadMapper implements TokenApiPayloadMapper<PaperEnrollmentData> {
-  toApiPayload(data: PaperEnrollmentData): PaperEnrollmentPayload {
-    const payload: PaperEnrollmentPayload = {
-      type: data.type,
-      description: data.description,
-      container_serial: data.containerSerial,
-      validity_period_start: data.validityPeriodStart,
-      validity_period_end: data.validityPeriodEnd,
-      user: data.user,
-      realm: data.user ? data.realm : null,
-      pin: data.pin,
-      otplen: data.otpLength,
-      otpcount: data.otpCount,
-      serial: data.serial ?? null
-    };
+export class PaperApiPayloadMapper extends BaseApiPayloadMapper implements TokenApiPayloadMapper<PaperEnrollmentData> {
 
+  override toApiPayload(data: PaperEnrollmentData): PaperEnrollmentPayload {
+    const basePayload = super.toApiPayload(data);
+    const payload: PaperEnrollmentPayload = {
+      ...basePayload,
+      ...(data.otpLength !== undefined && { otplen: data.otpLength }),
+      ...(data.otpCount !== undefined && { otpcount: data.otpCount }),
+    };
     if (data.onlyAddToRealm) {
       payload.realm = data.realm;
       payload.user = null;
     }
-    if (payload.otplen === undefined) delete payload.otplen;
-    if (payload.otpcount === undefined) delete payload.otpcount;
-    if (payload.serial === null) delete payload.serial;
     return payload;
   }
 
-  fromApiPayload(payload: any): PaperEnrollmentData {
+  override fromApiPayload(payload: any): PaperEnrollmentData {
     return {
       ...payload,
       otpLength: payload.otplen,
       otpCount: payload.otpcount
     } as PaperEnrollmentData;
+  }
+
+  override fromTokenDetailsToEnrollmentData(details: TokenDetails): PaperEnrollmentData {
+    return {
+      ...super.fromTokenDetailsToEnrollmentData(details),
+      type: "paper",
+      otpLength: details.otplen !== undefined ? Number(details.otplen) : undefined
+    };
   }
 }

@@ -17,7 +17,13 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Injectable } from "@angular/core";
-import { TokenApiPayloadMapper, TokenEnrollmentData, TokenEnrollmentPayload } from "./_token-api-payload.mapper";
+import {
+  BaseApiPayloadMapper,
+  TokenApiPayloadMapper,
+  TokenEnrollmentData,
+  TokenEnrollmentPayload
+} from "./_token-api-payload.mapper";
+import { TokenDetails } from "../../services/token/token.service";
 
 // Interface for Indexed Secret-specific enrollment data
 export interface IndexedSecretEnrollmentData extends TokenEnrollmentData {
@@ -30,32 +36,30 @@ export interface IndexedSecretEnrollmentPayload extends TokenEnrollmentPayload {
 }
 
 @Injectable({ providedIn: "root" })
-export class IndexedSecretApiPayloadMapper implements TokenApiPayloadMapper<IndexedSecretEnrollmentData> {
-  toApiPayload(data: IndexedSecretEnrollmentData): IndexedSecretEnrollmentPayload {
+export class IndexedSecretApiPayloadMapper extends BaseApiPayloadMapper implements TokenApiPayloadMapper<IndexedSecretEnrollmentData> {
+
+  override toApiPayload(data: IndexedSecretEnrollmentData): IndexedSecretEnrollmentPayload {
     const payload: IndexedSecretEnrollmentPayload = {
-      type: data.type,
-      description: data.description,
-      container_serial: data.containerSerial,
-      validity_period_start: data.validityPeriodStart,
-      validity_period_end: data.validityPeriodEnd,
-      user: data.user,
-      realm: data.user ? data.realm : null,
-      pin: data.pin,
-      otpkey: data.otpKey
+      ...super.toApiPayload(data),
+      ...(data.otpKey != null && { otpkey: data.otpKey })
     };
 
     if (data.onlyAddToRealm) {
       payload.realm = data.realm;
       payload.user = null;
     }
-    if (payload.otpkey === undefined) {
-      delete payload.otpkey;
-    }
     return payload;
   }
 
-  fromApiPayload(payload: any): IndexedSecretEnrollmentData {
+  override fromApiPayload(payload: any): IndexedSecretEnrollmentData {
     // Placeholder: Implement transformation from API payload. We will replace this later.
     return payload as IndexedSecretEnrollmentData;
+  }
+
+  override fromTokenDetailsToEnrollmentData(details: TokenDetails): IndexedSecretEnrollmentData {
+    return {
+      ...super.fromTokenDetailsToEnrollmentData(details),
+      type: "indexedsecret"
+    };
   }
 }

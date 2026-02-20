@@ -17,7 +17,13 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Injectable } from "@angular/core";
-import { TokenApiPayloadMapper, TokenEnrollmentData, TokenEnrollmentPayload } from "./_token-api-payload.mapper";
+import {
+  BaseApiPayloadMapper,
+  TokenApiPayloadMapper,
+  TokenEnrollmentData,
+  TokenEnrollmentPayload
+} from "./_token-api-payload.mapper";
+import { TokenDetails } from "../../services/token/token.service";
 
 export interface MotpEnrollmentData extends TokenEnrollmentData {
   type: "motp";
@@ -34,34 +40,32 @@ export interface MotpEnrollmentPayload extends TokenEnrollmentPayload {
 }
 
 @Injectable({ providedIn: "root" })
-export class MotpApiPayloadMapper implements TokenApiPayloadMapper<MotpEnrollmentData> {
-  toApiPayload(data: MotpEnrollmentData): MotpEnrollmentPayload {
+export class MotpApiPayloadMapper extends BaseApiPayloadMapper implements TokenApiPayloadMapper<MotpEnrollmentData> {
+
+  override toApiPayload(data: MotpEnrollmentData): MotpEnrollmentPayload {
+    const basePayload = super.toApiPayload(data);
     const payload: MotpEnrollmentPayload = {
-      type: data.type,
-      description: data.description,
-      container_serial: data.containerSerial,
-      validity_period_start: data.validityPeriodStart,
-      validity_period_end: data.validityPeriodEnd,
-      user: data.user,
-      realm: data.user ? data.realm : null,
-      pin: data.pin,
+      ...basePayload,
       otpkey: data.generateOnServer ? null : (data.otpKey ?? null),
       genkey: data.generateOnServer ? 1 : 0,
-      motppin: data.motpPin,
-      serial: data.serial ?? null
+      ...(data.motpPin !== undefined && { motppin: data.motpPin })
     };
-
     if (data.onlyAddToRealm) {
       payload.realm = data.realm;
       payload.user = null;
     }
-    if (payload.motppin === undefined) delete payload.motppin;
-    if (payload.serial === null) delete payload.serial;
     return payload;
   }
 
-  fromApiPayload(payload: any): MotpEnrollmentData {
+  override fromApiPayload(payload: any): MotpEnrollmentData {
     // Placeholder: Implement transformation from API payload. We will replace this later.
     return payload as MotpEnrollmentData;
+  }
+
+  override fromTokenDetailsToEnrollmentData(details: TokenDetails): MotpEnrollmentData {
+    return {
+      ...super.fromTokenDetailsToEnrollmentData(details),
+      type: "motp"
+    };
   }
 }

@@ -17,7 +17,13 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Injectable } from "@angular/core";
-import { TokenApiPayloadMapper, TokenEnrollmentData, TokenEnrollmentPayload } from "./_token-api-payload.mapper";
+import {
+  BaseApiPayloadMapper,
+  TokenApiPayloadMapper,
+  TokenEnrollmentData,
+  TokenEnrollmentPayload
+} from "./_token-api-payload.mapper";
+import { TokenDetails } from "../../services/token/token.service";
 
 export interface YubikeyEnrollmentData extends TokenEnrollmentData {
   type: "yubikey";
@@ -31,23 +37,15 @@ export interface YubikeyEnrollmentPayload extends TokenEnrollmentPayload {
 }
 
 @Injectable({ providedIn: "root" })
-export class YubikeyApiPayloadMapper implements TokenApiPayloadMapper<YubikeyEnrollmentData> {
-  toApiPayload(data: YubikeyEnrollmentData): YubikeyEnrollmentPayload {
+export class YubikeyApiPayloadMapper extends BaseApiPayloadMapper implements TokenApiPayloadMapper<YubikeyEnrollmentData> {
+
+  override toApiPayload(data: YubikeyEnrollmentData): YubikeyEnrollmentPayload {
+    const basePayload = super.toApiPayload(data);
     const payload: YubikeyEnrollmentPayload = {
-      type: data.type,
-      description: data.description,
-      container_serial: data.containerSerial,
-      validity_period_start: data.validityPeriodStart,
-      validity_period_end: data.validityPeriodEnd,
-      user: data.user,
-      realm: data.user ? data.realm : null,
-      pin: data.pin,
-      // otpLength from component is number | null. Payload otplen is number | null.
+      ...basePayload,
       otplen: data.otpLength,
-      // otpKey from component is string | null. Payload otpkey is string | null.
       otpkey: data.otpKey
     };
-
     if (data.onlyAddToRealm) {
       payload.realm = data.realm;
       payload.user = null;
@@ -55,8 +53,16 @@ export class YubikeyApiPayloadMapper implements TokenApiPayloadMapper<YubikeyEnr
     return payload;
   }
 
-  fromApiPayload(payload: any): YubikeyEnrollmentData {
-    // Placeholder: Implement transformation from API payload. We will replace this later.
+  override fromApiPayload(payload: any): YubikeyEnrollmentData {
     return payload as YubikeyEnrollmentData;
+  }
+
+  override fromTokenDetailsToEnrollmentData(details: TokenDetails): YubikeyEnrollmentData {
+    return {
+      ...super.fromTokenDetailsToEnrollmentData(details),
+      type: "yubikey",
+      otpKey: null,
+      otpLength: details.otplen !== undefined ? Number(details.otplen) : null
+    };
   }
 }

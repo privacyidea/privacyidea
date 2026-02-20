@@ -17,7 +17,13 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Injectable } from "@angular/core";
-import { TokenApiPayloadMapper, TokenEnrollmentData, TokenEnrollmentPayload } from "./_token-api-payload.mapper";
+import {
+  BaseApiPayloadMapper,
+  TokenApiPayloadMapper,
+  TokenEnrollmentData,
+  TokenEnrollmentPayload
+} from "./_token-api-payload.mapper";
+import { TokenDetails } from "../../services/token/token.service";
 
 export interface RadiusEnrollmentData extends TokenEnrollmentData {
   type: "radius";
@@ -31,36 +37,33 @@ export interface RadiusEnrollmentPayload extends TokenEnrollmentPayload {
 }
 
 @Injectable({ providedIn: "root" })
-export class RadiusApiPayloadMapper implements TokenApiPayloadMapper<RadiusEnrollmentData> {
-  toApiPayload(data: RadiusEnrollmentData): RadiusEnrollmentPayload {
+export class RadiusApiPayloadMapper extends BaseApiPayloadMapper implements TokenApiPayloadMapper<RadiusEnrollmentData> {
+
+  override toApiPayload(data: RadiusEnrollmentData): RadiusEnrollmentPayload {
     const payload: RadiusEnrollmentPayload = {
-      type: data.type,
-      description: data.description,
-      container_serial: data.containerSerial,
-      validity_period_start: data.validityPeriodStart,
-      validity_period_end: data.validityPeriodEnd,
-      user: data.user,
-      realm: data.user ? data.realm : null,
-      pin: data.pin,
-      "radius.identifier": data.radiusServerConfiguration,
-      "radius.user": data.radiusUser
+      ...super.toApiPayload(data),
+      ...(data.radiusServerConfiguration != null && { "radius.identifier": data.radiusServerConfiguration }),
+      ...(data.radiusUser != null && { "radius.user": data.radiusUser })
     };
 
     if (data.onlyAddToRealm) {
       payload.realm = data.realm;
       payload.user = null;
     }
-    if (payload["radius.identifier"] === undefined) {
-      delete payload["radius.identifier"];
-    }
-    if (payload["radius.user"] === undefined) {
-      delete payload["radius.user"];
-    }
     return payload;
   }
 
-  fromApiPayload(payload: any): RadiusEnrollmentData {
+  override fromApiPayload(payload: any): RadiusEnrollmentData {
     // Placeholder: Implement transformation from API payload. We will replace this later.
     return payload as RadiusEnrollmentData;
+  }
+
+  override fromTokenDetailsToEnrollmentData(details: TokenDetails): RadiusEnrollmentData {
+    return {
+      ...super.fromTokenDetailsToEnrollmentData(details),
+      type: "radius",
+      radiusServerConfiguration: details.info?.["radius.identifier"] ?? "",
+      radiusUser: details.info?.["radius.user"] ?? ""
+    };
   }
 }

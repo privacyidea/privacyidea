@@ -16,8 +16,14 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { TokenApiPayloadMapper, TokenEnrollmentData, TokenEnrollmentPayload } from "./_token-api-payload.mapper";
+import {
+  BaseApiPayloadMapper,
+  TokenApiPayloadMapper,
+  TokenEnrollmentData,
+  TokenEnrollmentPayload
+} from "./_token-api-payload.mapper";
 import { Injectable } from "@angular/core";
+import { TokenDetails } from "../../services/token/token.service";
 
 // Interface for Application Specific Password enrollment data
 export interface ApplspecEnrollmentData extends TokenEnrollmentData {
@@ -34,20 +40,14 @@ export interface ApplspecEnrollmentPayload extends TokenEnrollmentPayload {
 }
 
 @Injectable({ providedIn: "root" })
-export class ApplspecApiPayloadMapper implements TokenApiPayloadMapper<ApplspecEnrollmentData> {
-  toApiPayload(data: ApplspecEnrollmentData): ApplspecEnrollmentPayload {
+export class ApplspecApiPayloadMapper extends BaseApiPayloadMapper implements TokenApiPayloadMapper<ApplspecEnrollmentData> {
+
+  override toApiPayload(data: ApplspecEnrollmentData): ApplspecEnrollmentPayload {
     const payload: ApplspecEnrollmentPayload = {
-      type: data.type,
-      description: data.description,
-      container_serial: data.containerSerial,
-      validity_period_start: data.validityPeriodStart,
-      validity_period_end: data.validityPeriodEnd,
-      user: data.user,
-      realm: data.user ? data.realm : null,
-      pin: data.pin,
+      ...super.toApiPayload(data),
       otpkey: data.generateOnServer ? null : (data.otpKey ?? null),
       genkey: data.generateOnServer ? 1 : 0,
-      service_id: data.serviceId
+      ...(data.serviceId != null && { service_id: data.serviceId })
     };
 
     if (data.onlyAddToRealm) {
@@ -55,14 +55,19 @@ export class ApplspecApiPayloadMapper implements TokenApiPayloadMapper<ApplspecE
       payload.user = null;
     }
 
-    if (payload.service_id === undefined) {
-      delete payload.service_id;
-    }
     return payload;
   }
 
-  fromApiPayload(payload: any): ApplspecEnrollmentData {
+  override fromApiPayload(payload: any): ApplspecEnrollmentData {
     // Placeholder: Implement transformation from API payload. We will replace this later.
     return payload as ApplspecEnrollmentData;
+  }
+
+  override fromTokenDetailsToEnrollmentData(details: TokenDetails): ApplspecEnrollmentData {
+    return {
+      ...super.fromTokenDetailsToEnrollmentData(details),
+      type: "applspec",
+      ...(details.info?.service_id != null && { serviceId: details.info?.service_id })
+    };
   }
 }

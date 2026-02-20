@@ -17,7 +17,13 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Injectable } from "@angular/core";
-import { TokenApiPayloadMapper, TokenEnrollmentData, TokenEnrollmentPayload } from "./_token-api-payload.mapper";
+import {
+  BaseApiPayloadMapper,
+  TokenApiPayloadMapper,
+  TokenEnrollmentData,
+  TokenEnrollmentPayload
+} from "./_token-api-payload.mapper";
+import { TokenDetails } from "../../services/token/token.service";
 
 // Interface for Certificate Token-specific enrollment data
 export interface CertificateEnrollmentData extends TokenEnrollmentData {
@@ -36,35 +42,34 @@ export interface CertificateEnrollmentPayload extends TokenEnrollmentPayload {
 }
 
 @Injectable({ providedIn: "root" })
-export class CertificateApiPayloadMapper implements TokenApiPayloadMapper<CertificateEnrollmentData> {
-  toApiPayload(data: CertificateEnrollmentData): CertificateEnrollmentPayload {
+export class CertificateApiPayloadMapper extends BaseApiPayloadMapper implements TokenApiPayloadMapper<CertificateEnrollmentData> {
+
+  override toApiPayload(data: CertificateEnrollmentData): CertificateEnrollmentPayload {
     const payload: CertificateEnrollmentPayload = {
-      type: data.type,
-      description: data.description,
-      container_serial: data.containerSerial,
-      validity_period_start: data.validityPeriodStart,
-      validity_period_end: data.validityPeriodEnd,
-      user: data.user,
-      realm: data.user ? data.realm : null,
-      pin: data.pin,
+      ...super.fromApiPayload(data),
       genkey: 1, // As per switch statement
-      ca: data.caConnector,
-      template: data.certTemplate,
-      pem: data.pem
+      ...(data.caConnector != null && { ca: data.caConnector }),
+      ...(data.certTemplate != null && { template: data.certTemplate }),
+      ...(data.pem != null && { pem: data.pem })
     };
     if (data.onlyAddToRealm) {
       payload.realm = data.realm;
       payload.user = null;
     }
-    if (payload.ca === undefined) delete payload.ca;
-    if (payload.template === undefined) delete payload.template;
-    if (payload.pem === undefined) delete payload.pem;
 
     return payload;
   }
 
-  fromApiPayload(payload: any): CertificateEnrollmentData {
+  override fromApiPayload(payload: any): CertificateEnrollmentData {
     // Placeholder: Implement transformation from API payload. We will replace this later.
     return payload as CertificateEnrollmentData;
+  }
+
+  override fromTokenDetailsToEnrollmentData(details: TokenDetails): CertificateEnrollmentData {
+    return {
+      ...super.fromTokenDetailsToEnrollmentData(details),
+      type: "certificate",
+      ...(details.info?.CA != null && { caConnector: details.info?.CA })
+    };
   }
 }

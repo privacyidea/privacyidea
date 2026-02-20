@@ -17,7 +17,13 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Injectable } from "@angular/core";
-import { TokenApiPayloadMapper, TokenEnrollmentData, TokenEnrollmentPayload } from "./_token-api-payload.mapper";
+import {
+  BaseApiPayloadMapper,
+  TokenApiPayloadMapper,
+  TokenEnrollmentData,
+  TokenEnrollmentPayload
+} from "./_token-api-payload.mapper";
+import { TokenDetails } from "../../services/token/token.service";
 
 // Interface for Question Token-specific enrollment data
 export interface QuestionEnrollmentData extends TokenEnrollmentData {
@@ -30,17 +36,11 @@ export interface QuestionEnrollmentPayload extends TokenEnrollmentPayload {
 }
 
 @Injectable({ providedIn: "root" })
-export class QuestionApiPayloadMapper implements TokenApiPayloadMapper<QuestionEnrollmentData> {
-  toApiPayload(data: QuestionEnrollmentData): QuestionEnrollmentPayload {
+export class QuestionApiPayloadMapper extends BaseApiPayloadMapper implements TokenApiPayloadMapper<QuestionEnrollmentData> {
+
+  override toApiPayload(data: QuestionEnrollmentData): QuestionEnrollmentPayload {
     const payload: QuestionEnrollmentPayload = {
-      type: data.type,
-      description: data.description,
-      container_serial: data.containerSerial,
-      validity_period_start: data.validityPeriodStart,
-      validity_period_end: data.validityPeriodEnd,
-      user: data.user,
-      realm: data.user ? data.realm : null,
-      pin: data.pin,
+      ...super.toApiPayload(data),
       questions: data.answers
     };
 
@@ -54,8 +54,15 @@ export class QuestionApiPayloadMapper implements TokenApiPayloadMapper<QuestionE
     return payload;
   }
 
-  fromApiPayload(payload: any): QuestionEnrollmentData {
+  override fromApiPayload(payload: any): QuestionEnrollmentData {
     // Placeholder: Implement transformation from API payload. We will replace this later.
     return payload as QuestionEnrollmentData;
+  }
+
+  override fromTokenDetailsToEnrollmentData(details: TokenDetails): QuestionEnrollmentData {
+    return {
+      ...super.fromTokenDetailsToEnrollmentData(details),
+      type: "question"
+    };
   }
 }

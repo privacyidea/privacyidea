@@ -17,7 +17,12 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Injectable } from "@angular/core";
-import { TokenApiPayloadMapper, TokenEnrollmentData, TokenEnrollmentPayload } from "./_token-api-payload.mapper";
+import {
+  BaseApiPayloadMapper,
+  TokenApiPayloadMapper,
+  TokenEnrollmentData,
+  TokenEnrollmentPayload
+} from "./_token-api-payload.mapper";
 
 export interface VascoEnrollmentData extends TokenEnrollmentData {
   type: "vasco";
@@ -27,44 +32,38 @@ export interface VascoEnrollmentData extends TokenEnrollmentData {
 }
 
 export interface VascoEnrollmentPayload extends TokenEnrollmentPayload {
-  serial?: string;
   otpkey?: string;
   genkey: 0;
 }
 
 @Injectable({ providedIn: "root" })
-export class VascoApiPayloadMapper implements TokenApiPayloadMapper<VascoEnrollmentData> {
-  toApiPayload(data: VascoEnrollmentData): VascoEnrollmentPayload {
-    const payload: VascoEnrollmentPayload = {
-      type: data.type,
-      description: data.description,
-      container_serial: data.containerSerial,
-      validity_period_start: data.validityPeriodStart,
-      validity_period_end: data.validityPeriodEnd,
-      user: data.user,
-      realm: data.user ? data.realm : null,
-      pin: data.pin,
-      genkey: 0,
-      otpkey: data.otpKey
-    };
+export class VascoApiPayloadMapper extends BaseApiPayloadMapper implements TokenApiPayloadMapper<VascoEnrollmentData> {
 
+  override toApiPayload(data: VascoEnrollmentData): VascoEnrollmentPayload {
+    // Get base payload and remove serial if it is null
+    const basePayload = super.toApiPayload(data);
+    const payload: VascoEnrollmentPayload = {
+      ...basePayload,
+      genkey: 0,
+      ...(data.otpKey != null && { otpkey: data.otpKey }),
+      ...(data.useVascoSerial && data.vascoSerial != null && { serial: data.vascoSerial })
+    };
     if (data.onlyAddToRealm) {
       payload.realm = data.realm;
       payload.user = null;
     }
-
-    if (data.useVascoSerial) {
-      payload.serial = data.vascoSerial;
-    }
-
-    if (payload.serial === undefined) delete payload.serial;
-    if (payload.otpkey === undefined) delete payload.otpkey;
-
     return payload;
   }
 
-  fromApiPayload(payload: any): VascoEnrollmentData {
+  override fromApiPayload(payload: any): VascoEnrollmentData {
     // Placeholder: Implement transformation from API payload. We will replace this later.
     return payload as VascoEnrollmentData;
+  }
+
+  override fromTokenDetailsToEnrollmentData(details: any): VascoEnrollmentData {
+    return {
+      ...super.fromTokenDetailsToEnrollmentData(details),
+      type: "vasco"
+    };
   }
 }

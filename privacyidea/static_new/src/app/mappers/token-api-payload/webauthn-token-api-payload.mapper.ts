@@ -17,8 +17,9 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Injectable } from "@angular/core";
-import { WebAuthnRegisterRequest } from "../../services/token/token.service";
+import { TokenDetails, WebAuthnRegisterRequest } from "../../services/token/token.service";
 import {
+  BaseApiPayloadMapper,
   EnrollmentResponse,
   EnrollmentResponseDetail,
   TokenApiPayloadMapper,
@@ -70,17 +71,12 @@ export interface WebAuthnFinalizePayload extends TokenEnrollmentPayload {
 }
 
 @Injectable({ providedIn: "root" })
-export class WebAuthnApiPayloadMapper implements TokenApiPayloadMapper<WebAuthnEnrollmentData> {
-  toApiPayload(data: WebAuthnEnrollmentData): WebAuthnEnrollmentPayload {
+export class WebAuthnApiPayloadMapper extends BaseApiPayloadMapper implements TokenApiPayloadMapper<WebAuthnEnrollmentData> {
+
+  override toApiPayload(data: WebAuthnEnrollmentData): WebAuthnEnrollmentPayload {
     const payload: WebAuthnEnrollmentPayload = {
-      type: data.type,
-      description: data.description,
-      container_serial: data.containerSerial,
-      validity_period_start: data.validityPeriodStart,
-      validity_period_end: data.validityPeriodEnd,
-      user: data.user,
-      realm: data.user ? data.realm : null,
-      pin: data.pin
+      ...super.toApiPayload(data),
+      ...(data.credential_id != null && { credential_id: data.credential_id })
     };
 
     if (data.onlyAddToRealm) {
@@ -88,19 +84,19 @@ export class WebAuthnApiPayloadMapper implements TokenApiPayloadMapper<WebAuthnE
       payload.user = null;
     }
 
-    if (data.credential_id) {
-      // Switch logic copies all of `data` if credential_id is present.
-      // Adhering to WebAuthnEnrollmentPayload which only adds credential_id.
-      payload.credential_id = data.credential_id;
-    }
-
-    if (payload.credential_id === undefined) delete payload.credential_id;
     return payload;
   }
 
-  fromApiPayload(payload: any): WebAuthnEnrollmentData {
+  override fromApiPayload(payload: any): WebAuthnEnrollmentData {
     // Placeholder: Implement transformation from API payload. We will replace this later.
     return payload as WebAuthnEnrollmentData;
+  }
+
+  override fromTokenDetailsToEnrollmentData(details: TokenDetails): WebAuthnEnrollmentData {
+    return {
+      ...super.fromTokenDetailsToEnrollmentData(details),
+      type: "webauthn"
+    };
   }
 }
 
@@ -115,7 +111,8 @@ export class WebAuthnFinalizeApiPayloadMapper implements TokenApiPayloadMapper<W
       clientdata: data.clientdata,
       transaction_id: data.transaction_id,
       rawId: data.rawId,
-      authenticatorAttachment: data.authenticatorAttachment || null
+      authenticatorAttachment: data.authenticatorAttachment || null,
+      rollover: data.rollover || false
     };
 
     if (data.credProps) payload.credProps = data.credProps;
@@ -126,5 +123,9 @@ export class WebAuthnFinalizeApiPayloadMapper implements TokenApiPayloadMapper<W
   fromApiPayload(payload: any): WebauthnFinalizeData {
     // Placeholder: Implement transformation from API payload. We will replace this later.
     return payload as WebauthnFinalizeData;
+  }
+
+  fromTokenDetailsToEnrollmentData(details: TokenDetails): WebauthnFinalizeData {
+    return {} as WebauthnFinalizeData;
   }
 }

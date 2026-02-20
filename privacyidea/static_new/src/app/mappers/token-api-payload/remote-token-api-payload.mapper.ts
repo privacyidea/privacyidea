@@ -18,7 +18,14 @@
  **/
 import { Injectable } from "@angular/core";
 import { RemoteServer } from "../../services/privavyidea-server/privacyidea-server.service";
-import { TokenApiPayloadMapper, TokenEnrollmentData, TokenEnrollmentPayload } from "./_token-api-payload.mapper";
+import {
+  BaseApiPayloadMapper,
+  TokenApiPayloadMapper,
+  TokenEnrollmentData,
+  TokenEnrollmentPayload
+} from "./_token-api-payload.mapper";
+import { TokenDetails } from "../../services/token/token.service";
+import { parseBooleanValue } from "../../utils/parse-boolean-value";
 
 export interface RemoteEnrollmentData extends TokenEnrollmentData {
   type: "remote";
@@ -40,17 +47,11 @@ export interface RemoteEnrollmentPayload extends TokenEnrollmentPayload {
 }
 
 @Injectable({ providedIn: "root" })
-export class RemoteApiPayloadMapper implements TokenApiPayloadMapper<RemoteEnrollmentData> {
-  toApiPayload(data: RemoteEnrollmentData): RemoteEnrollmentPayload {
+export class RemoteApiPayloadMapper extends BaseApiPayloadMapper implements TokenApiPayloadMapper<RemoteEnrollmentData> {
+
+  override toApiPayload(data: RemoteEnrollmentData): RemoteEnrollmentPayload {
     const payload: RemoteEnrollmentPayload = {
-      type: data.type,
-      description: data.description,
-      container_serial: data.containerSerial,
-      validity_period_start: data.validityPeriodStart,
-      validity_period_end: data.validityPeriodEnd,
-      user: data.user,
-      realm: data.user ? data.realm : null,
-      pin: data.pin,
+      ...super.toApiPayload(data),
       "remote.server_id": data.remoteServer?.id ?? null,
       "remote.serial": data.remoteSerial,
       "remote.user": data.remoteUser,
@@ -67,8 +68,23 @@ export class RemoteApiPayloadMapper implements TokenApiPayloadMapper<RemoteEnrol
     return payload;
   }
 
-  fromApiPayload(payload: any): RemoteEnrollmentData {
+  override fromApiPayload(payload: any): RemoteEnrollmentData {
     // Placeholder: Implement transformation from API payload. We will replace this later.
     return payload as RemoteEnrollmentData;
+  }
+
+  override fromTokenDetailsToEnrollmentData(details: TokenDetails): RemoteEnrollmentData {
+    const enrollData: RemoteEnrollmentData = {
+      ...super.fromTokenDetailsToEnrollmentData(details),
+      type: "remote",
+      remoteServer: details.info?.["remote.server_id"] ?? "",
+      remoteSerial: details.info?.["remote.serial"] ?? "",
+      remoteUser: details.info?.["remote.user"] ?? "",
+      remoteRealm: details.info?.["remote.realm"] ?? "",
+      remoteResolver: details.info?.["remote.resolver"] ?? "",
+      checkPinLocally: parseBooleanValue(details.info?.["remote.local_checkpin"] ?? false)
+    };
+
+    return enrollData;
   }
 }
