@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -22,7 +22,8 @@ import {
   effect,
   ElementRef,
   inject,
-  linkedSignal, Signal,
+  linkedSignal,
+  Signal,
   signal,
   ViewChild,
   WritableSignal
@@ -51,6 +52,7 @@ import { AuditService, AuditServiceInterface } from "../../../services/audit/aud
 import { MatTooltip } from "@angular/material/tooltip";
 import { RouterLink } from "@angular/router";
 import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
+import { DialogService, DialogServiceInterface } from "../../../services/dialog/dialog.service";
 
 @Component({
   selector: "app-user-details",
@@ -84,19 +86,19 @@ export class UserDetailsComponent {
   protected readonly userService: UserServiceInterface = inject(UserService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   private readonly auditService: AuditServiceInterface = inject(AuditService);
-  protected readonly dialog: MatDialog = inject(MatDialog);
+  protected readonly dialogService: DialogServiceInterface = inject(DialogService);
   readonly labels: Record<string, string> = {
-    username: 'Username',
-    givenname: 'Given name',
-    surname: 'Surname',
-    email: 'Email',
-    phone: 'Phone',
-    mobile: 'Mobile',
-    description: 'Description',
-    userid: 'User ID',
-    resolver: 'Resolver'
+    username: $localize`Username`,
+    givenname: $localize`Given name`,
+    surname: $localize`Surname`,
+    email: $localize`Email`,
+    phone: $localize`Phone`,
+    mobile: $localize`Mobile`,
+    description: $localize`Description`,
+    userid: $localize`User ID`,
+    resolver: $localize`Resolver`
   };
-  readonly excludedKeys = new Set(['editable']);
+  readonly excludedKeys = new Set(["editable"]);
   customAttributeKeys: Signal<Set<string>> = computed(() => {
     const attributeKeys = Object.entries(this.userService.userAttributesList()).map(([_, attribute]) => attribute.key);
     return new Set(attributeKeys);
@@ -156,11 +158,8 @@ export class UserDetailsComponent {
     return opts.length === 0;
   });
   canAddAttribute = computed<boolean>(() => {
-    const key =
-      this.keyMode() === "input" ? this.addKeyInput().trim() : (this.selectedKey() ?? "").trim();
-    const value = this.isValueInput()
-      ? this.addValueInput().trim()
-      : (this.selectedValue() ?? "").trim();
+    const key = this.keyMode() === "input" ? this.addKeyInput().trim() : (this.selectedKey() ?? "").trim();
+    const value = this.isValueInput() ? this.addValueInput().trim() : (this.selectedValue() ?? "").trim();
     return key.length > 0 && value.length > 0;
   });
 
@@ -182,7 +181,7 @@ export class UserDetailsComponent {
       .map(([key, value]) => ({
         key,
         label: this.labels[key] ?? key,
-        value: value ?? '-'
+        value: value ?? "-"
       }))
   );
 
@@ -190,9 +189,7 @@ export class UserDetailsComponent {
     const entries = this.detailsEntries();
     const colCount = 3;
     const perCol = Math.ceil(entries.length / colCount);
-    return Array.from({ length: colCount }, (_, i) =>
-      entries.slice(i * perCol, (i + 1) * perCol)
-    );
+    return Array.from({ length: colCount }, (_, i) => entries.slice(i * perCol, (i + 1) * perCol));
   });
 
   switchToCustomKey() {
@@ -206,11 +203,8 @@ export class UserDetailsComponent {
   }
 
   addCustomAttribute() {
-    const key =
-      this.keyMode() === "input" ? this.addKeyInput().trim() : (this.selectedKey() ?? "").trim();
-    const value = this.isValueInput()
-      ? this.addValueInput().trim()
-      : (this.selectedValue() ?? "").trim();
+    const key = this.keyMode() === "input" ? this.addKeyInput().trim() : (this.selectedKey() ?? "").trim();
+    const value = this.isValueInput() ? this.addValueInput().trim() : (this.selectedValue() ?? "").trim();
 
     if (!key || !value) return;
 
@@ -232,8 +226,8 @@ export class UserDetailsComponent {
   }
 
   assignUserToToken(option: TokenDetails) {
-    this.dialog
-      .open(UserDetailsPinDialogComponent)
+    this.dialogService
+      .openDialog({ component: UserDetailsPinDialogComponent })
       .afterClosed()
       .pipe(filter((pin): pin is string => pin != null))
       .subscribe((pin: string) => {

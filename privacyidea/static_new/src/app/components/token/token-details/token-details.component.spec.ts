@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -270,6 +270,11 @@ describe("TokenDetailsComponent", () => {
   });
 
   it("openSshMachineAssignDialog opens the dialog with expected data", () => {
+    const reloadSpy = machineSvc.tokenApplicationResource.reload as jest.Mock;
+    reloadSpy.mockClear();
+    matDialogOpen.mockReturnValue({
+      afterClosed: () => of(of({}))
+    });
     matDialogOpen.mockClear();
     component.openSshMachineAssignDialog();
     expect(matDialogOpen).toHaveBeenCalledTimes(1);

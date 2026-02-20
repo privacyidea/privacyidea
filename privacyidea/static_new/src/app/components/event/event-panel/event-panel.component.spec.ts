@@ -22,22 +22,22 @@ import { provideHttpClient } from "@angular/common/http";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MockEventService } from "../../../../testing/mock-services/mock-event-service";
 import { EMPTY_EVENT, EventService } from "../../../services/event/event.service";
-import { MockNotificationService } from "../../../../testing/mock-services";
+import { MockDialogService, MockNotificationService } from "../../../../testing/mock-services";
 import { NotificationService } from "../../../services/notification/notification.service";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
-import { of } from "rxjs";
-
+import { of, Subject } from "rxjs";
+import { MockMatDialogRef } from "../../../../testing/mock-mat-dialog-ref";
+import { DialogService } from "../../../services/dialog/dialog.service";
+import { SaveAndExitDialogResult } from "../../shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 
 global.IntersectionObserver = class IntersectionObserver {
   constructor() {}
-
   disconnect() {}
-
   observe() {}
-
   unobserve() {}
-
-  takeRecords() { return []; }
+  takeRecords() {
+    return [];
+  }
 } as any;
 
 describe("EventPanelComponent", () => {
@@ -45,6 +45,8 @@ describe("EventPanelComponent", () => {
   let fixture: ComponentFixture<EventPanelComponent>;
   let mockEventService: MockEventService;
   let mockNotificationService: MockNotificationService;
+  let dialogServiceMock: MockDialogService;
+  let confirmClosed: Subject<SaveAndExitDialogResult | boolean | undefined>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -54,6 +56,10 @@ describe("EventPanelComponent", () => {
         { provide: EventService, useClass: MockEventService },
         { provide: NotificationService, useClass: MockNotificationService },
         {
+          provide: DialogService,
+          useClass: MockDialogService
+        },
+        {
           provide: MatDialogRef,
           useValue: {
             close: jest.fn(),
@@ -61,8 +67,10 @@ describe("EventPanelComponent", () => {
             keydownEvents: jest.fn().mockReturnValue(of())
           }
         },
+
         {
-          provide: MAT_DIALOG_DATA, useValue: {
+          provide: MAT_DIALOG_DATA,
+          useValue: {
             eventHandler: {
               id: 1,
               name: "TestHandler",
@@ -83,6 +91,13 @@ describe("EventPanelComponent", () => {
     component = fixture.componentInstance;
     mockEventService = TestBed.inject(EventService) as unknown as MockEventService;
     mockNotificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;
+
+    dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
+    confirmClosed = new Subject();
+    let dialogRefMock = new MockMatDialogRef();
+    dialogRefMock.afterClosed.mockReturnValue(confirmClosed);
+    dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
+
     fixture.detectChanges();
   });
 
@@ -132,16 +147,16 @@ describe("EventPanelComponent", () => {
   });
 
   it("validConditionsDefinition should be true if all conditions have a value defined", () => {
-    component.editEvent.set({ ...component.editEvent(), conditions: {cond1: "1", cond2: false} });
+    component.editEvent.set({ ...component.editEvent(), conditions: { cond1: "1", cond2: false } });
     expect(component.validConditionsDefinition()).toBe(true);
   });
 
   it("validConditionsDefinition should be false if at least one condition has no value", () => {
-    component.editEvent.set({ ...component.editEvent(), conditions: {cond1: "1", cond2: null} });
+    component.editEvent.set({ ...component.editEvent(), conditions: { cond1: "1", cond2: null } });
     expect(component.validConditionsDefinition()).toBe(false);
-    component.editEvent.set({ ...component.editEvent(), conditions: {cond1: "1", cond2: ""} });
+    component.editEvent.set({ ...component.editEvent(), conditions: { cond1: "1", cond2: "" } });
     expect(component.validConditionsDefinition()).toBe(false);
-    component.editEvent.set({ ...component.editEvent(), conditions: {cond1: "1", cond2: undefined} });
+    component.editEvent.set({ ...component.editEvent(), conditions: { cond1: "1", cond2: undefined } });
     expect(component.validConditionsDefinition()).toBe(false);
   });
 
@@ -241,38 +256,31 @@ describe("EventPanelComponent", () => {
     // Simulate unsaved changes
     component.updateEventHandler("name", "Changed");
 
-    // Mock dialog with clicked button discard changes
-    const afterClosedMock = jest.fn().mockReturnValue(of({ confirmed: true }));
-    const openMock = jest.spyOn(component["dialog"], "open").mockReturnValue({
-      afterClosed: afterClosedMock
-    } as any);
-
     // Call cancelEdit
     component.cancelEdit();
 
+    // Mock dialog with clicked button discard changes
+    confirmClosed.next("discard");
+    confirmClosed.complete();
+
     // The editEvent should be reset to the original event (from this.event())
     expect(component.editEvent().name).toBe(component.event().name);
-    expect(openMock).toHaveBeenCalled();
-    expect(afterClosedMock).toHaveBeenCalled();
+    expect(dialogServiceMock.openDialog).toHaveBeenCalled();
   });
 
   it("should cancel discard", () => {
     // Simulate unsaved changes
     component.updateEventHandler("name", "Changed");
 
-    // Mock dialog with clicked button cancel
-    const afterClosedMock = jest.fn().mockReturnValue(of({ confirmed: false }));
-    const openMock = jest.spyOn(component["dialog"], "open").mockReturnValue({
-      afterClosed: afterClosedMock
-    } as any);
-
     // Call cancelEdit
     component.cancelEdit();
+    // Mock dialog with clicked button cancel
+    confirmClosed.next(undefined);
+    confirmClosed.complete();
 
     // Nothing should happen
     expect(component.editEvent().name).toBe("Changed");
-    expect(openMock).toHaveBeenCalled();
-    expect(afterClosedMock).toHaveBeenCalled();
+    expect(dialogServiceMock.openDialog).toHaveBeenCalled();
   });
 
   it("should save and exit", () => {
@@ -280,22 +288,18 @@ describe("EventPanelComponent", () => {
     component.updateEventHandler("name", "Changed");
     const saveEventSpy = jest.spyOn(component, "saveEvent");
 
-    // Mock dialog with clicked button cancel
-    const afterClosedMock = jest.fn().mockReturnValue(of({ confirmed: false, furtherAction: "saveAndExit" }));
-    const openMock = jest.spyOn(component["dialog"], "open").mockReturnValue({
-      afterClosed: afterClosedMock
-    } as any);
-
     // Call cancelEdit
     component.cancelEdit();
+
+    // Mock dialog with clicked button save and exit
+    confirmClosed.next("save-exit");
+    confirmClosed.complete();
 
     // Nothing should happen
     expect(component.editEvent().name).toBe("Changed");
     expect(saveEventSpy).toHaveBeenCalled();
-    expect(openMock).toHaveBeenCalled();
-    expect(afterClosedMock).toHaveBeenCalled();
+    expect(dialogServiceMock.openDialog).toHaveBeenCalled();
   });
-
 
   it("should save event and reload events", () => {
     const reloadSpy = jest.spyOn(mockEventService.allEventsResource, "reload");
@@ -323,9 +327,12 @@ describe("EventPanelComponent", () => {
     expect(snackBarSpy).toHaveBeenCalledWith("Event handler updated successfully.");
   });
 
-  it("should delete event and reload events", () => {
+  it("should delete event and reload events", async () => {
     const reloadSpy = jest.spyOn(mockEventService.allEventsResource, "reload");
-    component.deleteEvent();
+    const confirmationPromise = component.deleteEvent();
+    confirmClosed.next(true);
+    confirmClosed.complete();
+    await confirmationPromise;
     expect(mockEventService.deleteWithConfirmDialog).toHaveBeenCalled();
     expect(reloadSpy).toHaveBeenCalled();
   });
@@ -360,8 +367,10 @@ describe("CreateNewEventHandler", () => {
           }
         },
         {
-          provide: MAT_DIALOG_DATA, useValue: {
-            eventHandler: EMPTY_EVENT, isNewEvent: true
+          provide: MAT_DIALOG_DATA,
+          useValue: {
+            eventHandler: EMPTY_EVENT,
+            isNewEvent: true
           }
         }
       ]

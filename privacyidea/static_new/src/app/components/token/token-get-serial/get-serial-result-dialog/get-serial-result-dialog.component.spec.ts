@@ -55,7 +55,7 @@ describe("GetSerialResultDialogComponent", () => {
   });
 
   it("should call dialogRef.close() when you invoke close()", () => {
-    component.dialogRef.close("some value");
-    expect(mockDialogRef.close).toHaveBeenCalledWith("some value");
+    component.dialogRef.close("reset");
+    expect(mockDialogRef.close).toHaveBeenCalledWith("reset");
   });
 });

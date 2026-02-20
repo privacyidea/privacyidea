@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -20,7 +20,6 @@ import { NgClass } from "@angular/common";
 import { Component, computed, inject } from "@angular/core";
 import { FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { MatIconButton } from "@angular/material/button";
-import { MatDialog } from "@angular/material/dialog";
 import { MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
@@ -35,6 +34,7 @@ import { TableUtilsService, TableUtilsServiceInterface } from "../../../../servi
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 import { CopyButtonComponent } from "../../../shared/copy-button/copy-button.component";
 import { ContainerDetailsTokenTableComponent } from "./container-details-token-table.component";
+import { DialogService, DialogServiceInterface } from "../../../../services/dialog/dialog.service";
 
 @Component({
   selector: "app-container-details-token-table-self-service",
@@ -61,7 +61,7 @@ import { ContainerDetailsTokenTableComponent } from "./container-details-token-t
   styleUrl: "./container-details-token-table.component.scss"
 })
 export class ContainerDetailsTokenTableSelfServiceComponent extends ContainerDetailsTokenTableComponent {
-  protected override readonly dialog: MatDialog = inject(MatDialog);
+  protected override readonly dialogService: DialogServiceInterface = inject(DialogService);
   protected override readonly containerService: ContainerServiceInterface = inject(ContainerService);
   protected override readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected override readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);

@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -20,44 +20,37 @@ import { DatePipe } from "@angular/common";
 import { Component, effect, inject, WritableSignal } from "@angular/core";
 import { MatButton } from "@angular/material/button";
 import { MatCard, MatCardContent } from "@angular/material/card";
-import {
-  MAT_DIALOG_DATA,
-  MatDialogClose,
-  MatDialogContent,
-  MatDialogRef,
-  MatDialogTitle
-} from "@angular/material/dialog";
-import { MatIcon } from "@angular/material/icon";
+import { MatIcon, MatIconModule } from "@angular/material/icon";
 import {
   NotificationService,
   NotificationServiceInterface
 } from "../../../../../services/notification/notification.service";
 import { LostTokenData, TokenService, TokenServiceInterface } from "../../../../../services/token/token.service";
+import { AbstractDialogComponent } from "../../../../shared/dialog/abstract-dialog/abstract-dialog.component";
+import { DialogWrapperComponent } from "../../../../shared/dialog/dialog-wrapper/dialog-wrapper.component";
 
 @Component({
   selector: "app-lost-token",
   standalone: true,
-  imports: [MatDialogTitle, MatDialogContent, MatButton, MatDialogClose, MatIcon, MatCard, MatCardContent, DatePipe],
+  imports: [MatCard, MatCardContent, DatePipe, DialogWrapperComponent, MatIconModule, MatButton, MatIcon],
   templateUrl: "./lost-token.component.html",
   styleUrl: "./lost-token.component.scss"
 })
-export class LostTokenComponent {
-  protected readonly tokenService: TokenServiceInterface = inject(TokenService);
-  private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
-  public readonly data: {
+export class LostTokenComponent extends AbstractDialogComponent<
+  {
     isLost: WritableSignal<boolean>;
     tokenSerial: WritableSignal<string>;
-  } = inject(MAT_DIALOG_DATA);
-
+  },
+  void
+> {
+  protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+  private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   lostTokenData?: LostTokenData;
 
-  constructor(private dialogRef: MatDialogRef<LostTokenComponent>) {
+  constructor() {
+    super();
     effect(() => {
       this.dialogRef.disableClose = this.data.isLost();
-    });
-
-    this.dialogRef.afterClosed().subscribe(() => {
-      this.data.isLost.set(false);
     });
   }
 

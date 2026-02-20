@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,31 +16,31 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { AuthService, AuthServiceInterface } from "../auth/auth.service";
-import { inject, Injectable, signal, WritableSignal } from "@angular/core";
-import { ContentService, ContentServiceInterface } from "../content/content.service";
+
+import { HttpResourceRef, HttpClient, httpResource } from "@angular/common/http";
+import { WritableSignal, Injectable, inject, signal } from "@angular/core";
+import { Observable, lastValueFrom, catchError, of, throwError, forkJoin } from "rxjs";
 import { environment } from "../../../environments/environment";
-import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
 import { PiResponse } from "../../app.component";
+import { SimpleConfirmationDialogComponent } from "../../components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { ROUTE_PATHS } from "../../route_paths";
-import { forkJoin, lastValueFrom, Observable, of, throwError } from "rxjs";
-import { catchError } from "rxjs/operators";
+import { AuthServiceInterface, AuthService } from "../auth/auth.service";
+import { ContentServiceInterface, ContentService } from "../content/content.service";
+import { DialogService, DialogServiceInterface } from "../dialog/dialog.service";
 import { NotificationService } from "../notification/notification.service";
-import { ConfirmationDialogComponent } from "../../components/shared/confirmation-dialog/confirmation-dialog.component";
-import { DialogReturnData } from "../dialog/dialog.service";
 
 export type PeriodicTask = {
-  "id": string;
-  "name": string;
-  "active": boolean;
-  "interval": string;
-  "nodes": string[];
-  "taskmodule": string;
-  "retry_if_failed": boolean;
-  "last_update": string;
-  "ordering": number;
-  "options": Record<string, any>;
-  "last_runs": Record<string, any>
+  id: string;
+  name: string;
+  active: boolean;
+  interval: string;
+  nodes: string[];
+  taskmodule: string;
+  retry_if_failed: boolean;
+  last_update: string;
+  ordering: number;
+  options: Record<string, any>;
+  last_runs: Record<string, any>;
 };
 
 export const EMPTY_PERIODIC_TASK: PeriodicTask = {
@@ -97,17 +97,11 @@ export interface PeriodicTaskServiceInterface {
   periodicTasksResource: HttpResourceRef<PiResponse<PeriodicTask[]> | undefined>;
   periodicTaskModuleResource: HttpResourceRef<PiResponse<PeriodicTaskModule[]> | undefined>;
   moduleOptions: WritableSignal<Record<string, Record<string, PeriodicTaskOption>>>;
-
   enablePeriodicTask(taskId: string): Promise<any>;
-
   disablePeriodicTask(taskId: string): Promise<any>;
-
   deletePeriodicTask(taskId: string): Observable<PiResponse<number, any>>;
-
-  deleteWithConfirmDialog(task: PeriodicTask, dialog: any, afterDelete?: () => void): void;
-
+  deleteWithConfirmDialog(task: PeriodicTask): Promise<PiResponse<number, any> | undefined>;
   savePeriodicTask(task: PeriodicTask): Observable<PiResponse<number, any> | undefined>;
-
   fetchAllModuleOptions(): void;
 }
 
@@ -117,13 +111,17 @@ export interface PeriodicTaskServiceInterface {
 export class PeriodicTaskService implements PeriodicTaskServiceInterface {
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
+  private readonly dialogService: DialogServiceInterface = inject(DialogService);
   private readonly http: HttpClient = inject(HttpClient);
   private readonly notificationService = inject(NotificationService);
 
   private periodicTaskBaseUrl = environment.proxyUrl + "/periodictask/";
 
   periodicTasksResource = httpResource<PiResponse<PeriodicTask[]>>(() => {
-    if (this.contentService.routeUrl() !== ROUTE_PATHS.CONFIGURATION_PERIODIC_TASKS || !this.authService.actionAllowed("periodictask_read")) {
+    if (
+      this.contentService.routeUrl() !== ROUTE_PATHS.CONFIGURATION_PERIODIC_TASKS ||
+      !this.authService.actionAllowed("periodictask_read")
+    ) {
       return undefined;
     }
     return {
@@ -146,26 +144,20 @@ export class PeriodicTaskService implements PeriodicTaskServiceInterface {
 
   enablePeriodicTask(taskId: string) {
     const headers = this.authService.getHeaders();
-    return lastValueFrom(this.http.post(
-      this.periodicTaskBaseUrl + "enable/" + taskId,
-      {},
-      { headers: headers }
-    ).pipe(
-      catchError((error) => {
-        this.periodicTasksResource.reload();
-        this.notificationService.openSnackBar("Failed to enable periodic task!");
-        return of(undefined);
-      })
-    ));
+    return lastValueFrom(
+      this.http.post(this.periodicTaskBaseUrl + "enable/" + taskId, {}, { headers: headers }).pipe(
+        catchError((error) => {
+          this.periodicTasksResource.reload();
+          this.notificationService.openSnackBar("Failed to enable periodic task!");
+          return of(undefined);
+        })
+      )
+    );
   }
 
   disablePeriodicTask(taskId: string) {
     const headers = this.authService.getHeaders();
-    const response$ = this.http.post(
-      this.periodicTaskBaseUrl + "disable/" + taskId,
-      {},
-      { headers: headers }
-    ).pipe(
+    const response$ = this.http.post(this.periodicTaskBaseUrl + "disable/" + taskId, {}, { headers: headers }).pipe(
       catchError((error) => {
         this.periodicTasksResource.reload();
         this.notificationService.openSnackBar("Failed to disable periodic task!");
@@ -178,10 +170,7 @@ export class PeriodicTaskService implements PeriodicTaskServiceInterface {
   deletePeriodicTask(taskId: string): Observable<PiResponse<number, any>> {
     const headers = this.authService.getHeaders();
 
-    return this.http.delete<PiResponse<number, any>>(
-      this.periodicTaskBaseUrl + taskId,
-      { headers }
-    ).pipe(
+    return this.http.delete<PiResponse<number, any>>(this.periodicTaskBaseUrl + taskId, { headers }).pipe(
       catchError((error) => {
         console.error("Failed to delete periodic task.", error);
         const message = error.result?.error?.message || "";
@@ -191,35 +180,34 @@ export class PeriodicTaskService implements PeriodicTaskServiceInterface {
     );
   }
 
-  deleteWithConfirmDialog(task: PeriodicTask, dialog: any, afterDelete?: () => void) {
-    dialog
-      .open(ConfirmationDialogComponent, {
-        data: {
-          serialList: [task.name],
-          title: "Delete Periodic Task",
-          type: "periodicTask",
-          action: "delete",
-          numberOfTokens: 1
-        }
-      })
-      .afterClosed()
-      .subscribe({
-        next: (result: DialogReturnData) => {
-          if (result) {
-            this.deletePeriodicTask(task.id).subscribe({
-              next: (response: PiResponse<number, any>) => {
-                this.notificationService.openSnackBar("Successfully deleted periodic task.");
-                if (afterDelete) {
-                  afterDelete();
-                }
-              },
-              error: (err) => {
-                // error already handled
-              }
-            });
+  async deleteWithConfirmDialog(task: PeriodicTask): Promise<PiResponse<number, any> | undefined> {
+    const confirmation = await lastValueFrom(
+      this.dialogService
+        .openDialog({
+          component: SimpleConfirmationDialogComponent,
+          data: {
+            title: $localize`Delete Periodic Task`,
+            items: [task.name],
+            itemType: $localize`periodic task`,
+            confirmAction: { label: $localize`Delete`, value: true, type: "destruct" },
+            cancelAction: { label: $localize`Cancel`, value: false, type: "cancel" }
           }
-        }
-      });
+        })
+        .afterClosed()
+    );
+    if (!confirmation) {
+      return;
+    }
+    try {
+      const response = await lastValueFrom(this.deletePeriodicTask(task.id));
+      if (response?.result?.value !== undefined) {
+        this.notificationService.openSnackBar("Successfully deleted periodic task.");
+      }
+      return response;
+    } catch (error) {
+      // error already handled in deletePeriodicTask
+    }
+    return undefined;
   }
 
   convertNodesArrayToString(nodes: any): string {
@@ -245,11 +233,7 @@ export class PeriodicTaskService implements PeriodicTaskServiceInterface {
       delete params.id;
     }
     params.nodes = this.convertNodesArrayToString(params.nodes);
-    return this.http.post<PiResponse<number, any>>(
-      this.periodicTaskBaseUrl,
-      params,
-      { headers }
-    ).pipe(
+    return this.http.post<PiResponse<number, any>>(this.periodicTaskBaseUrl, params, { headers }).pipe(
       catchError((error) => {
         console.error("Failed to save periodic task.", error.error);
         const message = error.error.result?.error?.message || "";
@@ -262,11 +246,10 @@ export class PeriodicTaskService implements PeriodicTaskServiceInterface {
   moduleOptions = signal<Record<string, Record<string, PeriodicTaskOption>>>({});
 
   fetchAllModuleOptions() {
-    const requests = PERIODIC_TASK_MODULES.map(module =>
-      this.http.get<PiResponse<Record<string, PeriodicTaskOption>>>(
-        this.periodicTaskBaseUrl + "options/" + module,
-        { headers: this.authService.getHeaders() }
-      )
+    const requests = PERIODIC_TASK_MODULES.map((module) =>
+      this.http.get<PiResponse<Record<string, PeriodicTaskOption>>>(this.periodicTaskBaseUrl + "options/" + module, {
+        headers: this.authService.getHeaders()
+      })
     );
 
     forkJoin(requests).subscribe({
@@ -274,7 +257,7 @@ export class PeriodicTaskService implements PeriodicTaskServiceInterface {
         const optionsDict: Record<string, Record<string, PeriodicTaskOption>> = {};
         responses.forEach((response, idx) => {
           let options = response.result?.value ?? {};
-          Object.keys(options).forEach(key => {
+          Object.keys(options).forEach((key) => {
             options[key].name = key;
           });
           optionsDict[PERIODIC_TASK_MODULES[idx]] = options;

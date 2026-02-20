@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -18,30 +18,46 @@
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 
-import { ConfirmationDialogComponent } from "./confirmation-dialog.component";
-import { MAT_DIALOG_DATA } from "@angular/material/dialog";
+import { SimpleConfirmationDialogComponent, SimpleConfirmationDialogData } from "./confirmation-dialog.component";
+import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
+import { MockMatDialogRef } from "../../../../../testing/mock-mat-dialog-ref";
 
 describe("ConfirmationDialogComponent", () => {
-  let component: ConfirmationDialogComponent;
-  let fixture: ComponentFixture<ConfirmationDialogComponent>;
+  let component: SimpleConfirmationDialogComponent;
+  let fixture: ComponentFixture<SimpleConfirmationDialogComponent>;
 
   beforeEach(async () => {
+    const mockValue: SimpleConfirmationDialogData = {
+      title: "Confirm Deletion",
+      confirmAction: {
+        type: "destruct",
+        label: "Delete",
+        value: true
+      },
+      cancelAction: {
+        type: "cancel",
+        label: "Cancel",
+        value: false
+      },
+      items: ["Item 1", "Item 2", "Item 3"],
+      itemType: "items"
+    };
+
     await TestBed.configureTestingModule({
-      imports: [ConfirmationDialogComponent],
+      imports: [SimpleConfirmationDialogComponent],
       providers: [
         {
           provide: MAT_DIALOG_DATA,
-          useValue: {
-            serialList: ["Mock serial"],
-            title: "Mock title",
-            action: "Mock action",
-            type: "Mock type"
-          }
+          useValue: mockValue
+        },
+        {
+          provide: MatDialogRef,
+          useClass: MockMatDialogRef
         }
       ]
     }).compileComponents();
 
-    fixture = TestBed.createComponent(ConfirmationDialogComponent);
+    fixture = TestBed.createComponent(SimpleConfirmationDialogComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

@@ -32,7 +32,7 @@ import { MockNotificationService, MockTableUtilsService } from "../../../../test
 import { MockAuthService } from "../../../../testing/mock-services/mock-auth-service";
 
 class LocalMockMatDialog {
-  result$ = of({ confirmed: true });
+  result$ = of(true);
   open = jest.fn(() => ({
     afterClosed: () => this.result$
   }));
@@ -70,8 +70,7 @@ describe("UserSourcesComponent", () => {
           }
         }
       ]
-    })
-      .compileComponents();
+    }).compileComponents();
 
     fixture = TestBed.createComponent(UserResolversComponent);
     component = fixture.componentInstance;
@@ -93,7 +92,6 @@ describe("UserSourcesComponent", () => {
     expect(component.columnKeys).not.toContain("actions");
   });
 
-
   it("should filter resolvers", () => {
     const resolvers = [
       { resolvername: "admin", type: "passwdresolver", censor_keys: [], data: {} },
@@ -114,9 +112,7 @@ describe("UserSourcesComponent", () => {
   });
 
   it("filterPredicate should match name or type", () => {
-    const resolvers = [
-      { resolvername: "admin", type: "passwdresolver", censor_keys: [], data: {} }
-    ] as Resolver[];
+    const resolvers = [{ resolvername: "admin", type: "passwdresolver", censor_keys: [], data: {} }] as Resolver[];
     resolverService.setResolvers(resolvers);
     fixture.detectChanges();
 
@@ -131,29 +127,35 @@ describe("UserSourcesComponent", () => {
     const resolver = { resolvername: "res1", type: "sqlresolver", censor_keys: [], data: {} } as Resolver;
     component.onEditResolver(resolver);
 
-    expect(dialog.open).toHaveBeenCalledWith(expect.any(Function), expect.objectContaining({
-      data: { resolver },
-      height: "auto",
-      maxHeight: "100vh",
-      maxWidth: "100vw",
-      width: "auto"
-    }));
+    expect(dialog.open).toHaveBeenCalledWith(
+      expect.any(Function),
+      expect.objectContaining({
+        data: { resolver },
+        height: "auto",
+        maxHeight: "100vh",
+        maxWidth: "100vw",
+        width: "auto"
+      })
+    );
   });
 
   it("onNewResolver should open dialog", () => {
     component.onNewResolver();
 
-    expect(dialog.open).toHaveBeenCalledWith(expect.any(Function), expect.objectContaining({
-      data: { resolver: undefined },
-      height: "auto",
-      maxHeight: "100vh",
-      maxWidth: "100vw",
-      width: "auto"
-    }));
+    expect(dialog.open).toHaveBeenCalledWith(
+      expect.any(Function),
+      expect.objectContaining({
+        data: { resolver: undefined },
+        height: "auto",
+        maxHeight: "100vh",
+        maxWidth: "100vw",
+        width: "auto"
+      })
+    );
   });
 
   it("onDeleteResolver should delete after confirmation", () => {
-    dialog.result$ = of({ confirmed: true });
+    dialog.result$ = of(true);
     const resolver = { resolvername: "res1", type: "passwdresolver", censor_keys: [], data: {} } as Resolver;
 
     component.onDeleteResolver(resolver);
@@ -164,7 +166,7 @@ describe("UserSourcesComponent", () => {
   });
 
   it("onDeleteResolver should not delete if cancelled", () => {
-    dialog.result$ = of({ confirmed: false });
+    dialog.result$ = of(false);
     const resolver = { resolvername: "res1", type: "passwdresolver", censor_keys: [], data: {} } as Resolver;
 
     component.onDeleteResolver(resolver);
@@ -174,7 +176,7 @@ describe("UserSourcesComponent", () => {
   });
 
   it("onDeleteResolver should show error if delete fails", () => {
-    dialog.result$ = of({ confirmed: true });
+    dialog.result$ = of(true);
     const resolver = { resolvername: "res1", type: "passwdresolver", censor_keys: [], data: {} } as Resolver;
     resolverService.deleteResolver.mockReturnValue({
       subscribe: (obs: any) => obs.error({ message: "Delete failed" })
@@ -186,7 +188,7 @@ describe("UserSourcesComponent", () => {
   });
 
   it("onDeleteResolver should show error message from response if delete fails", () => {
-    dialog.result$ = of({ confirmed: true });
+    dialog.result$ = of(true);
     const resolver = { resolvername: "res1", type: "passwdresolver", censor_keys: [], data: {} } as Resolver;
     const errorResponse = {
       error: {

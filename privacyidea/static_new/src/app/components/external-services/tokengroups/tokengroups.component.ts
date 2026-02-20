@@ -23,7 +23,11 @@ import { MatSort, MatSortModule } from "@angular/material/sort";
 import { MatIconModule } from "@angular/material/icon";
 import { MatButtonModule } from "@angular/material/button";
 import { MatDialog, MatDialogModule } from "@angular/material/dialog";
-import { Tokengroup, TokengroupService, TokengroupServiceInterface } from "../../../services/tokengroup/tokengroup.service";
+import {
+  Tokengroup,
+  TokengroupService,
+  TokengroupServiceInterface
+} from "../../../services/tokengroup/tokengroup.service";
 import { NewTokengroupComponent } from "./new-tokengroup/new-tokengroup.component";
 import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
 import { MatTooltipModule } from "@angular/material/tooltip";
@@ -34,6 +38,7 @@ import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
 import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
 import { TableUtilsService, TableUtilsServiceInterface } from "../../../services/table-utils/table-utils.service";
 import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
+import { SimpleConfirmationDialogComponent } from "../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
 
 @Component({
   selector: "app-tokengroups",
@@ -92,18 +97,23 @@ export class TokengroupsComponent {
   }
 
   deleteTokengroup(group: Tokengroup): void {
-    this.dialogService.confirm({
-      data: {
-        title: $localize`Delete Tokengroup`,
-        serialList: [group.groupname],
-        type: "tokengroup",
-        action: "delete"
-      }
-    }).then(result => {
-      if (result) {
-        this.tokengroupService.deleteTokengroup(group.groupname);
-      }
-    });
+    this.dialogService
+      .openDialog({
+        component: SimpleConfirmationDialogComponent,
+        data: {
+          title: $localize`Delete Tokengroup`,
+          items: [group.groupname],
+          itemType: "tokengroup",
+          confirmAction: { label: $localize`Delete`, value: true, type: "destruct" },
+          cancelAction: { label: $localize`Cancel`, value: false, type: "cancel" }
+        }
+      })
+      .afterClosed()
+      .subscribe((result) => {
+        if (result) {
+          this.tokengroupService.deleteTokengroup(group.groupname);
+        }
+      });
   }
 
   onFilterInput(value: string): void {

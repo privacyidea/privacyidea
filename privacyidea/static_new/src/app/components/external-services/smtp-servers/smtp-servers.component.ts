@@ -35,6 +35,7 @@ import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
 import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
 import { TableUtilsService, TableUtilsServiceInterface } from "../../../services/table-utils/table-utils.service";
 import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
+import { SimpleConfirmationDialogComponent } from "../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
 
 @Component({
   selector: "app-smtp",
@@ -67,9 +68,7 @@ export class SmtpServersComponent {
 
   filterString = signal<string>("");
   pageSizeOptions = this.tableUtilsService.pageSizeOptions;
-  totalLength: WritableSignal<number> = computed(
-    () => this.smtpService.smtpServers().length
-  ) as WritableSignal<number>;
+  totalLength: WritableSignal<number> = computed(() => this.smtpService.smtpServers().length) as WritableSignal<number>;
 
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild(MatSort) sort!: MatSort;
@@ -93,18 +92,24 @@ export class SmtpServersComponent {
   }
 
   deleteServer(server: SmtpServer): void {
-    this.dialogService.confirm({
-      data: {
-        title: $localize`Delete SMTP Server`,
-        serialList: [server.identifier],
-        type: "smtp-server",
-        action: "delete"
-      }
-    }).then(result => {
-      if (result) {
-        this.smtpService.deleteSmtpServer(server.identifier);
-      }
-    });
+    this.dialogService
+      .openDialog({
+        component: SimpleConfirmationDialogComponent,
+        data: {
+          title: $localize`Delete SMTP Server`,
+          items: [server.identifier],
+          itemType: "smtp-server",
+          confirmAction: { label: "Delete", value: true, type: "destruct" }
+        }
+      })
+      .afterClosed()
+      .subscribe({
+        next: (result) => {
+          if (result) {
+            this.smtpService.deleteSmtpServer(server.identifier);
+          }
+        }
+      });
   }
 
   onFilterInput(value: string): void {

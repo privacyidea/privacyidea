@@ -34,7 +34,7 @@ import {
 import { MatIcon, MatIconModule } from "@angular/material/icon";
 import { MatButton } from "@angular/material/button";
 import { AuthService } from "../../../services/auth/auth.service";
-import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from "@angular/material/dialog";
+import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { EMPTY_EVENT, EventService } from "../../../services/event/event.service";
 import { EventActionTabComponent } from "./tabs/event-action-tab/event-action-tab.component";
 import { EventConditionsTabComponent } from "./tabs/event-conditions-tab/event-conditions-tab.component";
@@ -51,12 +51,13 @@ import { EventSelectionComponent } from "./event-selection/event-selection.compo
 import { MatTab, MatTabGroup } from "@angular/material/tabs";
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { PendingChangesService } from "../../../services/pending-changes/pending-changes.service";
-import { ConfirmationDialogComponent } from "../../shared/confirmation-dialog/confirmation-dialog.component";
 import { ROUTE_PATHS } from "../../../route_paths";
 import { ContentService } from "../../../services/content/content.service";
 import { MatSlideToggle } from "@angular/material/slide-toggle";
 import { MatTooltip } from "@angular/material/tooltip";
 import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
+import { DialogService, DialogServiceInterface } from "../../../services/dialog/dialog.service";
+import { SaveAndExitDialogComponent } from "../../shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 
 export type eventTab = "events" | "action" | "conditions";
 
@@ -101,7 +102,7 @@ export class EventPanelComponent implements AfterViewInit, OnDestroy {
   protected readonly authService = inject(AuthService);
   protected readonly notificationService = inject(NotificationService);
   private readonly pendingChangesService = inject(PendingChangesService);
-  private readonly dialog: MatDialog = inject(MatDialog);
+  private readonly dialogService: DialogServiceInterface = inject(DialogService);
   public readonly data = inject(MAT_DIALOG_DATA, { optional: false });
   protected readonly renderer: Renderer2 = inject(Renderer2);
   private readonly contentService = inject(ContentService);
@@ -135,7 +136,7 @@ export class EventPanelComponent implements AfterViewInit, OnDestroy {
       this.dialogRef.backdropClick().subscribe(() => {
         this.cancelEdit();
       });
-      this.dialogRef.keydownEvents().subscribe(event => {
+      this.dialogRef.keydownEvents().subscribe((event) => {
         if (event.key === "Escape") {
           this.cancelEdit();
         }
@@ -201,25 +202,30 @@ export class EventPanelComponent implements AfterViewInit, OnDestroy {
 
   cancelEdit(): void {
     if (this.hasChanges()) {
-      this.dialog.open(ConfirmationDialogComponent, {
-        data: {
-          title: $localize`Discard changes`,
-          action: "discard",
-          type: "resolver"
-        }
-      }).afterClosed().subscribe(result => {
-        if (result?.confirmed) {
-          this.closeActual();
-        } else if (result?.furtherAction === 'saveAndExit') {
-          this.saveEvent();
-        }
-      });
+      this.dialogService
+        .openDialog({
+          component: SaveAndExitDialogComponent,
+          data: {
+            title: $localize`Discard changes`,
+            allowSaveExit: true,
+            saveExitDisabled: false,
+            message: $localize`You have unsaved changes. Do you want to discard them and exit?`
+          }
+        })
+        .afterClosed()
+        .subscribe((result) => {
+          if (result === "save-exit") {
+            this.saveEvent();
+          } else if (result === "discard") {
+            this.closeCurrent();
+          }
+        });
     } else {
-      this.closeActual();
+      this.closeCurrent();
     }
   }
 
-  private closeActual(): void {
+  private closeCurrent(): void {
     this.editEvent.set(this.event());
     this.eventService.selectedHandlerModule.set(this.eventService.eventHandlerModules()[0] || "");
     if (this.dialogRef) {
@@ -246,7 +252,8 @@ export class EventPanelComponent implements AfterViewInit, OnDestroy {
     validity["events"] = this.editEvent().event.length > 0;
     validity["action"] = !!this.editEvent().action && this.validOptions();
     validity["name"] = this.editEvent().name !== "";
-    validity["handlerModule"] = this.eventService.selectedHandlerModule() !== null && this.eventService.selectedHandlerModule() !== "";
+    validity["handlerModule"] =
+      this.eventService.selectedHandlerModule() !== null && this.eventService.selectedHandlerModule() !== "";
     validity["position"] = this.editEvent().position !== null && this.editEvent().position !== "";
     validity["conditions"] = this.validConditionsDefinition();
     return validity;
@@ -316,8 +323,9 @@ export class EventPanelComponent implements AfterViewInit, OnDestroy {
     });
   }
 
-  deleteEvent(): void {
-    this.eventService.deleteWithConfirmDialog(this.event(), this.dialog, () => this.eventService.allEventsResource.reload());
+  async deleteEvent(): Promise<void> {
+    await this.eventService.deleteWithConfirmDialog(this.event());
+    this.eventService.allEventsResource.reload();
   }
 
   toggleActive(activate: boolean): void {

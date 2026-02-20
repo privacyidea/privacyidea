@@ -19,16 +19,13 @@
 import { inject } from "@angular/core";
 import { CanDeactivateFn, Router } from "@angular/router";
 import { PendingChangesService } from "../services/pending-changes/pending-changes.service";
-import { MatDialog } from "@angular/material/dialog";
-import {
-  ConfirmationDialogComponent,
-  ConfirmationDialogResult
-} from "../components/shared/confirmation-dialog/confirmation-dialog.component";
+import { SaveAndExitDialogComponent } from "../components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { from, map, of, switchMap } from "rxjs";
+import { DialogService, DialogServiceInterface } from "../services/dialog/dialog.service";
 
 export const pendingChangesGuard: CanDeactivateFn<any> = () => {
   const pendingChangesService = inject(PendingChangesService);
-  const dialog = inject(MatDialog);
+  const dialogService: DialogServiceInterface = inject(DialogService);
 
   if (!pendingChangesService.hasChanges) return of(true);
 
@@ -42,18 +39,17 @@ export const pendingChangesGuard: CanDeactivateFn<any> = () => {
   else if (url.includes("radius")) type = "radius-server";
   else if (url.includes("privacyidea")) type = "privacyidea-server";
 
-  return dialog
-    .open(ConfirmationDialogComponent, {
+  return dialogService
+    .openDialog({
+      component: SaveAndExitDialogComponent,
       data: {
-        title: $localize`Discard changes`,
-        action: "discard",
-        type,
+        saveExitDisabled: false,
         allowSaveExit: true
       }
     })
     .afterClosed()
     .pipe(
-      switchMap((result: ConfirmationDialogResult | undefined) => {
+      switchMap((result) => {
         if (result === "discard") {
           pendingChangesService.unregisterHasChanges();
           return of(true);

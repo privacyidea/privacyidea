@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -17,36 +17,31 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, inject, Signal } from "@angular/core";
-import {
-  MAT_DIALOG_DATA,
-  MatDialogActions, MatDialogClose,
-  MatDialogContent,
-  MatDialogTitle
-} from "@angular/material/dialog";
-import { MatButton } from "@angular/material/button";
+import { MatDialogContent } from "@angular/material/dialog";
+import { MatButtonModule } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 import { ContainerService, ContainerServiceInterface } from "../../../../services/container/container.service";
 import { ContainerRegisterFinalizeData } from "../../container-details/container-details-actions/container-details-actions.component";
+import { AbstractDialogComponent } from "../../../shared/dialog/abstract-dialog/abstract-dialog.component";
+import { DialogWrapperComponent } from "../../../shared/dialog/dialog-wrapper/dialog-wrapper.component";
 
 @Component({
   selector: "app-container-registration-finalize-dialog",
   templateUrl: "./container-registration-finalize-dialog.component.html",
   styleUrls: ["./container-registration-finalize-dialog.component.scss"],
-  imports: [
-    MatDialogTitle,
-    MatDialogContent,
-    MatButton,
-    MatIcon,
-    MatDialogActions,
-    MatDialogClose
-  ]
+  imports: [MatDialogContent, MatIcon, DialogWrapperComponent, MatButtonModule]
 })
-export class ContainerRegistrationFinalizeDialogComponent {
-  public readonly data: Signal<ContainerRegisterFinalizeData> = inject(MAT_DIALOG_DATA);
+export class ContainerRegistrationFinalizeDialogComponent extends AbstractDialogComponent<
+  Signal<ContainerRegisterFinalizeData | undefined>,
+  void
+> {
+  get dialogTitle(): string {
+    return this.data()?.rollover ? $localize`Container Rollover` : $localize`Register Container`;
+  }
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
 
   regenerateQRCode() {
     // other parameters are set by the container tab component to use the previously set values
-    this.data().registerContainer(undefined, undefined, undefined, this.data().rollover, true);
+    this.data()?.registerContainer(undefined, undefined, undefined, this.data()?.rollover, true);
   }
 }

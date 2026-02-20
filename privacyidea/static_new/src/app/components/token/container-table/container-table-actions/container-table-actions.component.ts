@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -20,7 +20,7 @@ import { Component, inject } from "@angular/core";
 import { DOCUMENT } from "@angular/common";
 import { MatIcon } from "@angular/material/icon";
 import { MatButtonModule } from "@angular/material/button";
-import { ConfirmationDialogComponent } from "../../../shared/confirmation-dialog/confirmation-dialog.component";
+import { SimpleConfirmationDialogComponent } from "../../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { forkJoin } from "rxjs";
 import { MatDialog } from "@angular/material/dialog";
 import { ContainerService, ContainerServiceInterface } from "../../../../services/container/container.service";
@@ -31,6 +31,7 @@ import { ROUTE_PATHS } from "../../../../route_paths";
 import { RouterLink } from "@angular/router";
 import { DocumentationService } from "../../../../services/documentation/documentation.service";
 import { NotificationService } from "../../../../services/notification/notification.service";
+import { DialogService, DialogServiceInterface } from "../../../../services/dialog/dialog.service";
 import { MatMenuModule } from "@angular/material/menu";
 import { TableUtilsService, TableUtilsServiceInterface } from "../../../../services/table-utils/table-utils.service";
 
@@ -41,7 +42,7 @@ import { TableUtilsService, TableUtilsServiceInterface } from "../../../../servi
   styleUrl: "./container-table-actions.component.scss"
 })
 export class ContainerTableActionsComponent {
-  private readonly dialog: MatDialog = inject(MatDialog);
+  private readonly dialogService: DialogServiceInterface = inject(DialogService);
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   private readonly document: Document = inject(DOCUMENT);
@@ -58,14 +59,14 @@ export class ContainerTableActionsComponent {
 
   deleteSelectedContainer(): void {
     const selectedContainers = this.containerSelection();
-    this.dialog
-      .open(ConfirmationDialogComponent, {
+    this.dialogService
+      .openDialog({
+        component: SimpleConfirmationDialogComponent,
         data: {
-          serialList: selectedContainers.map((container) => container.serial),
           title: "Delete All Containers",
-          type: "container",
-          action: "delete",
-          numberOfContainers: selectedContainers.length
+          items: selectedContainers.map((container) => container.serial),
+          itemType: "container",
+          confirmAction: { label: "Delete", value: true, type: "destruct" }
         }
       })
       .afterClosed()
