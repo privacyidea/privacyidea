@@ -4,7 +4,7 @@ This depends on lib.tokenclass
 """
 from privacyidea.lib.error import TokenAdminError
 from privacyidea.lib.token import init_token, import_tokens, get_tokens
-from privacyidea.lib.tokenclass import ROLLOUTSTATE
+from privacyidea.lib.tokenclass import RolloutState
 from privacyidea.lib.tokens.sshkeytoken import SSHkeyTokenClass
 from privacyidea.models import Token
 from .base import MyTestCase
@@ -53,19 +53,19 @@ class SSHTokenTestCase(MyTestCase):
 
         # An invalid key, raises an exception
         self.assertRaises(TokenAdminError, token.update, {"sshkey": "InvalidKey"})
-        self.assertEqual(token.rollout_state, ROLLOUTSTATE.BROKEN)
+        self.assertEqual(token.rollout_state, RolloutState.BROKEN)
 
         # An invalid key, raises an exception
         self.assertRaises(TokenAdminError, token.update, {"sshkey": self.INVALID_SSH})
-        self.assertEqual(token.rollout_state, ROLLOUTSTATE.BROKEN)
+        self.assertEqual(token.rollout_state, RolloutState.BROKEN)
 
         # An invalid key, raises an exception
         self.assertRaises(TokenAdminError, token.update, {"sshkey": self.wrong_sshkey})
-        self.assertEqual(token.rollout_state, ROLLOUTSTATE.BROKEN)
+        self.assertEqual(token.rollout_state, RolloutState.BROKEN)
 
         # An unsupported keytype
         self.assertRaises(TokenAdminError, token.update, {"sshkey": self.unsupported_keytype})
-        self.assertEqual(token.rollout_state, ROLLOUTSTATE.BROKEN)
+        self.assertEqual(token.rollout_state, RolloutState.BROKEN)
 
         # Set valid key
         token.update({"sshkey": self.sshkey})

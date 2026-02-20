@@ -97,12 +97,12 @@ from privacyidea.lib.policy import SCOPE, REMOTE_USER
 from privacyidea.lib.token import get_one_token
 from privacyidea.lib.token import (get_tokens, get_realms_of_token, get_token_type,
                                    get_token_owner)
-from privacyidea.lib.tokenclass import ROLLOUTSTATE
+from privacyidea.lib.tokenclass import RolloutState
 from privacyidea.lib.tokens.certificatetoken import ACTION as CERTIFICATE_ACTION
 from privacyidea.lib.tokens.indexedsecrettoken import PIIXACTION
 from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
-from privacyidea.lib.tokens.pushtoken import PUSH_ACTION
-from privacyidea.lib.tokens.u2ftoken import (U2FACTION, parse_registration_data)
+from privacyidea.lib.tokens.push_types import PushAction
+from privacyidea.lib.tokens.u2ftoken import (U2FAction, parse_registration_data)
 # Token specific imports!
 from privacyidea.lib.tokens.webauthn import (WebAuthnRegistrationResponse,
                                              AUTHENTICATOR_ATTACHMENT_TYPES,
@@ -402,8 +402,8 @@ def sms_identifiers(request=None, action=None):
     """
     sms_identifier = request.all_data.get("sms.identifier")
     if sms_identifier:
-        from privacyidea.lib.tokens.smstoken import SMSACTION
-        pols = Match.admin_or_user(g, action=SMSACTION.GATEWAYS, user_obj=request.User).action_values(unique=False)
+        from privacyidea.lib.tokens.smstoken import SMSAction
+        pols = Match.admin_or_user(g, action=SMSAction.GATEWAYS, user_obj=request.User).action_values(unique=False)
         gateway_identifiers = []
 
         for p in pols:
@@ -449,8 +449,8 @@ def tantoken_count(request=None, action=None):
     :param action:
     :return:
     """
-    from privacyidea.lib.tokens.tantoken import TANACTION
-    pols = Match.user(g, scope=SCOPE.ENROLL, action=TANACTION.TANTOKEN_COUNT,
+    from privacyidea.lib.tokens.tantoken import TANAction
+    pols = Match.user(g, scope=SCOPE.ENROLL, action=TANAction.TANTOKEN_COUNT,
                       user_object=request.User).action_values(unique=True)
     if pols:
         tantoken_count = list(pols)[0]
@@ -698,7 +698,7 @@ def twostep_enrollment_activation(request=None, action=None):
         elif enabled_setting == "force":
             # We force 2stepinit to be 1 if the token does not exist yet or
             # if a token rollover is triggered and the token is not in 'clientwait' state
-            if not token or (token.rollout_state != ROLLOUTSTATE.CLIENTWAIT and rollover):
+            if not token or (token.rollout_state != RolloutState.CLIENTWAIT and rollover):
                 request.all_data["2stepinit"] = 1
         else:
             raise PolicyError("Unknown 2step policy setting: {}".format(enabled_setting))
@@ -768,14 +768,14 @@ def verify_enrollment(request=None, action=None):
         tokenobj_list = get_tokens(serial=serial)
         if len(tokenobj_list) == 1:
             tokenobj = tokenobj_list[0]
-            if tokenobj.rollout_state == ROLLOUTSTATE.VERIFYPENDING:
+            if tokenobj.rollout_state == RolloutState.VERIFY_PENDING:
                 log.debug("Verifying the token enrollment for token {0!s}.".format(serial))
                 r = tokenobj.verify_enrollment(verify)
                 log.info("Result of enrollment verification for token {0!s}: {1!s}".format(serial, r))
                 if r:
                     # TODO: we need to add the tokentype here or the second init_token() call fails
                     request.all_data.update(type=tokenobj.get_tokentype())
-                    tokenobj.token.rollout_state = ROLLOUTSTATE.ENROLLED
+                    tokenobj.token.rollout_state = RolloutState.ENROLLED
                     tokenobj.token.save() # todo evaluate
                 else:
                     from privacyidea.lib.error import ParameterError
@@ -1843,7 +1843,7 @@ def pushtoken_disable_wait(request, action):
     :param action:
     :return:
     """
-    request.all_data[PUSH_ACTION.WAIT] = False
+    request.all_data[PushAction.WAIT] = False
 
 
 def pushtoken_validate(request, action):
@@ -1857,13 +1857,13 @@ def pushtoken_validate(request, action):
     :return:
     """
     user_object = request.User
-    waiting = Match.user(g, scope=SCOPE.AUTH, action=PUSH_ACTION.WAIT,
+    waiting = Match.user(g, scope=SCOPE.AUTH, action=PushAction.WAIT,
                          user_object=user_object if user_object else None) \
         .action_values(unique=True, allow_white_space_in_action=True)
     if len(waiting) >= 1:
-        request.all_data[PUSH_ACTION.WAIT] = int(list(waiting)[0])
+        request.all_data[PushAction.WAIT] = int(list(waiting)[0])
     else:
-        request.all_data[PUSH_ACTION.WAIT] = False
+        request.all_data[PushAction.WAIT] = False
 
 
 def pushtoken_add_config(request, action):
@@ -1901,7 +1901,7 @@ def u2ftoken_verify_cert(request, action):
         # Add the default to verify the cert.
         request.all_data["u2f.verify_cert"] = True
         user_object = request.User
-        do_not_verify_the_cert = Match.user(g, scope=SCOPE.ENROLL, action=U2FACTION.NO_VERIFY_CERT,
+        do_not_verify_the_cert = Match.user(g, scope=SCOPE.ENROLL, action=U2FAction.NO_VERIFY_CERT,
                                             user_object=user_object if user_object else None).policies()
         if do_not_verify_the_cert:
             request.all_data["u2f.verify_cert"] = False
@@ -1942,7 +1942,7 @@ def u2ftoken_allowed(request, action):
             signature, description = parse_registration_data(reg_data,
                                                              verify_cert=False)
 
-        allowed_certs_pols = Match.user(g, scope=SCOPE.ENROLL, action=U2FACTION.REQ,
+        allowed_certs_pols = Match.user(g, scope=SCOPE.ENROLL, action=U2FAction.REQ,
                                         user_object=request.User if request.User else None) \
             .action_values(unique=False)
 
@@ -2597,8 +2597,8 @@ def require_description(request=None, action=None):
         token = None
         serial = get_optional(params, "serial")
         if serial:
-            token = (get_one_token(serial=serial, rollout_state=ROLLOUTSTATE.VERIFYPENDING, silent_fail=True)
-                     or get_one_token(serial=serial, rollout_state=ROLLOUTSTATE.CLIENTWAIT, silent_fail=True))
+            token = (get_one_token(serial=serial, rollout_state=RolloutState.VERIFY_PENDING, silent_fail=True)
+                     or get_one_token(serial=serial, rollout_state=RolloutState.CLIENTWAIT, silent_fail=True))
         # only if no token exists, yet, we need to check the description
         if not token and not request.all_data.get("description"):
             log.error(f"Missing description for {type_value} token.")

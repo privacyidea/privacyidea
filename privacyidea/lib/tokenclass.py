@@ -85,7 +85,7 @@ from datetime import datetime, timedelta, timezone
 from dateutil.parser import parse as parse_date_string, ParserError
 from dateutil.tz import tzlocal, tzutc
 from flask_babel import lazy_gettext
-from sqlalchemy import select, update, delete
+from sqlalchemy import select, delete
 
 from privacyidea.lib import _
 from privacyidea.lib.crypto import (decryptPassword,
@@ -104,7 +104,7 @@ from .policydecorators import libpolicy, auth_otppin, challenge_response_allowed
 from .user import (User)
 from ..api.lib.utils import getParam
 from ..models import (TokenOwner, TokenTokengroup, Challenge, cleanup_challenges, TokenInfo, db, TokenRealm, Realm,
-                      Tokengroup, MachineToken, TokenCredentialIdHash, Token)
+                      Tokengroup, TokenCredentialIdHash, Token)
 
 DATE_FORMAT = '%Y-%m-%dT%H:%M%z'
 AUTH_DATE_FORMAT = "%Y-%m-%d %H:%M:%S.%f%z"
@@ -119,28 +119,27 @@ TWOSTEP_DEFAULT_DIFFICULTY = 10000
 log = logging.getLogger(__name__)
 
 
-class CHALLENGE_SESSION(object):
+class ChallengeSession:
     ENROLLMENT = "enrollment"
     DECLINED = "challenge_declined"
 
 
-class TOKENKIND(object):
+class Tokenkind:
     SOFTWARE = "software"
     HARDWARE = "hardware"
     VIRTUAL = "virtual"
 
 
-class AUTHENTICATIONMODE(object):
+class AuthenticationMode:
     AUTHENTICATE = 'authenticate'
     CHALLENGE = 'challenge'
     # If the challenge is answered out of band
     OUTOFBAND = 'outofband'
 
 
-class CLIENTMODE(object):
+class ClientMode:
     """
-    This informs privacyIDEA clients how to
-    handle challenge-responses
+    This informs privacyIDEA clients how to handle challenge-responses
     """
     INTERACTIVE = 'interactive'
     POLL = 'poll'
@@ -148,24 +147,24 @@ class CLIENTMODE(object):
     WEBAUTHN = 'webauthn'
 
 
-class ROLLOUTSTATE(object):
+class RolloutState:
     CLIENTWAIT = 'clientwait'
     # The rollout is pending in the backend, like CSRs that need to be approved
     PENDING = 'pending'
     # This means the user needs to authenticate to verify that the token was successfully enrolled.
-    VERIFYPENDING = 'verify'
+    VERIFY_PENDING = 'verify'
     ENROLLED = 'enrolled'
     BROKEN = 'broken'
     FAILED = 'failed'
     DENIED = 'denied'
 
 
-class TokenClass(object):
+class TokenClass:
     # Class properties
     using_pin = True
     hKeyRequired = False
-    mode = [AUTHENTICATIONMODE.AUTHENTICATE, AUTHENTICATIONMODE.CHALLENGE]
-    client_mode = CLIENTMODE.INTERACTIVE
+    mode = [AuthenticationMode.AUTHENTICATE, AuthenticationMode.CHALLENGE]
+    client_mode = ClientMode.INTERACTIVE
     # If the token provides means that the user has to prove/verify that the token was successfully enrolled.
     can_verify_enrollment = False
 
@@ -205,7 +204,7 @@ class TokenClass(object):
 
     @classmethod
     def is_outofband(cls):
-        return AUTHENTICATIONMODE.OUTOFBAND in cls.mode
+        return AuthenticationMode.OUTOFBAND in cls.mode
 
     @staticmethod
     def get_class_type():
@@ -651,7 +650,7 @@ class TokenClass(object):
             if is_true(rollover):
                 # We reset the rollout state
                 self.token.rollout_state = None
-            if self.token.rollout_state == ROLLOUTSTATE.CLIENTWAIT:
+            if self.token.rollout_state == RolloutState.CLIENTWAIT:
                 # We do not do 2stepinit in the second step
                 raise ParameterError("2stepinit is only to be used in the "
                                      "first initialization step.")
@@ -676,7 +675,7 @@ class TokenClass(object):
             otpKey = getParam(param, "otpkey", required)
 
         if otpKey is not None:
-            if self.token.rollout_state == ROLLOUTSTATE.CLIENTWAIT:
+            if self.token.rollout_state == RolloutState.CLIENTWAIT:
                 # If we have otpkey and the token is in the enrollment-state
                 # generate the new key
                 server_component = to_unicode(self.token.get_otpkey().getKey())
@@ -691,7 +690,7 @@ class TokenClass(object):
 
         if twostep_init:
             # After the key is generated, we set "waiting for the client".
-            self.token.rollout_state = ROLLOUTSTATE.CLIENTWAIT
+            self.token.rollout_state = RolloutState.CLIENTWAIT
 
         pin = getParam(param, "pin", optional)
         if pin is not None:
@@ -711,7 +710,7 @@ class TokenClass(object):
                 self.add_tokeninfo(p, getParam(param, p))
 
         # The base class will be a software tokenkind
-        self.add_tokeninfo("tokenkind", TOKENKIND.SOFTWARE)
+        self.add_tokeninfo("tokenkind", Tokenkind.SOFTWARE)
 
         return
 
@@ -1463,7 +1462,7 @@ class TokenClass(object):
             message_list.append("Failcounter exceeded")
         elif not self.check_validity_period():
             message_list.append("Outside validity period")
-        elif self.rollout_state in [ROLLOUTSTATE.CLIENTWAIT, ROLLOUTSTATE.VERIFYPENDING]:
+        elif self.rollout_state in [RolloutState.CLIENTWAIT, RolloutState.VERIFY_PENDING]:
             message_list.append("Token is not yet enrolled")
         else:
             r = True
@@ -1768,7 +1767,7 @@ class TokenClass(object):
                     # Add the challenge to the options for check_otp
                     options["challenge"] = challenge.challenge
                     options["data"] = challenge.data
-                    if challenge.session == CHALLENGE_SESSION.ENROLLMENT:
+                    if challenge.session == ChallengeSession.ENROLLMENT:
                         self.enroll_via_validate_2nd_step(passw, options=options)
                         challenge.delete()
                         # Basically we have a successfully answered challenge

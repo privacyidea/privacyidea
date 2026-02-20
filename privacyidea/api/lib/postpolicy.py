@@ -72,7 +72,7 @@ from privacyidea.lib.subscriptions import (subscription_status,
                                            SubscriptionError,
                                            EXPIRE_MESSAGE)
 from privacyidea.lib.token import get_tokens, assign_token, get_one_token, init_token
-from privacyidea.lib.tokenclass import ROLLOUTSTATE, CHALLENGE_SESSION
+from privacyidea.lib.tokenclass import RolloutState, ChallengeSession
 from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
 from privacyidea.lib.utils import (create_img, get_version, AUTH_RESPONSE,
                                    get_plugin_info_from_useragent)
@@ -82,9 +82,7 @@ from ...lib.container import (get_all_containers, init_container, init_registrat
                               create_container_tokens_from_template)
 from ...lib.containers.container_info import SERVER_URL, CHALLENGE_TTL, REGISTRATION_TTL, SSL_VERIFY, RegistrationState
 from ...lib.policies.actions import PolicyAction
-from ...lib.user import User
 from ...lib.users.custom_user_attributes import InternalCustomUserAttributes
-from ...models import Challenge
 
 log = logging.getLogger(__name__)
 
@@ -941,7 +939,7 @@ def container_create_via_multichallenge(request: Request, content: dict, contain
         res = init_registration(container, False, server_url, registration_ttl, ssl_verify, challenge_ttl,
                                 request.all_data)
         challenge = get_challenges(container.serial, transaction_id=res["transaction_id"])[0]
-        challenge.session = CHALLENGE_SESSION.ENROLLMENT
+        challenge.session = ChallengeSession.ENROLLMENT
         challenge.save()
 
         # Write registration info to the response
@@ -1253,8 +1251,8 @@ def check_verify_enrollment(request, response):
                 content = response.json
                 options = {"g": g, "user": request.User, "exception": request.all_data.get("exception", 0)}
                 content["detail"]["verify"] = token.prepare_verify_enrollment(options=options)
-                content["detail"]["rollout_state"] = ROLLOUTSTATE.VERIFYPENDING
-                token.token.rollout_state = ROLLOUTSTATE.VERIFYPENDING
+                content["detail"]["rollout_state"] = RolloutState.VERIFY_PENDING
+                token.token.rollout_state = RolloutState.VERIFY_PENDING
                 token.token.save()
                 response.set_data(json.dumps(content))
     else:

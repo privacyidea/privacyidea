@@ -42,7 +42,7 @@ from privacyidea.lib.log import log_with
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import SCOPE, GROUP
 from privacyidea.lib.token import get_tokens
-from privacyidea.lib.tokenclass import TokenClass, CLIENTMODE, ROLLOUTSTATE
+from privacyidea.lib.tokenclass import TokenClass, ClientMode, RolloutState
 from privacyidea.lib.tokens.u2ftoken import IMAGES
 from privacyidea.lib.tokens.webauthn import (CoseAlgorithm, webauthn_b64_encode, WebAuthnRegistrationResponse,
                                              ATTESTATION_REQUIREMENT_LEVEL, webauthn_b64_decode,
@@ -507,7 +507,7 @@ class WebAuthnTokenClass(TokenClass):
     The WebAuthn Token implementation.
     """
 
-    client_mode = CLIENTMODE.WEBAUTHN
+    client_mode = ClientMode.WEBAUTHN
 
     @staticmethod
     def _get_challenge_validity_time():
@@ -810,12 +810,12 @@ class WebAuthnTokenClass(TokenClass):
         client_data = get_optional(param, "clientdata")
 
         if not (reg_data and client_data):
-            self.token.rollout_state = ROLLOUTSTATE.CLIENTWAIT
+            self.token.rollout_state = RolloutState.CLIENTWAIT
             self.token.active = False
             # Set the description in the first enrollment step
             if "description" in param:
                 self.set_description(get_optional(param, "description", default=""))
-        elif reg_data and client_data and self.token.rollout_state == ROLLOUTSTATE.CLIENTWAIT:
+        elif reg_data and client_data and self.token.rollout_state == RolloutState.CLIENTWAIT:
             attestation_level = get_required(param, FIDO2PolicyAction.AUTHENTICATOR_ATTESTATION_LEVEL)
             rp_id = get_required(param, FIDO2PolicyAction.RELYING_PARTY_ID)
             http_origin = get_required(param, "HTTP_ORIGIN")
@@ -902,7 +902,7 @@ class WebAuthnTokenClass(TokenClass):
                 challenge.delete()
             self.challenge_janitor()
             # Reset clientwait rollout_state
-            self.token.rollout_state = ROLLOUTSTATE.ENROLLED
+            self.token.rollout_state = RolloutState.ENROLLED
             self.token.active = True
         else:
             raise ParameterError("regdata and or clientdata provided but token not in clientwait rollout_state.")
@@ -926,7 +926,7 @@ class WebAuthnTokenClass(TokenClass):
         :rtype: dict
         """
         # get_init_details runs after "update" method. So in the first step clientwait has already been set
-        if self.token.rollout_state == ROLLOUTSTATE.CLIENTWAIT:
+        if self.token.rollout_state == RolloutState.CLIENTWAIT:
             if not params:
                 raise ValueError("Creating a WebAuthn token requires params to be provided")
             if not user:
@@ -958,7 +958,7 @@ class WebAuthnTokenClass(TokenClass):
                 # Get the other webauthn tokens of the user and add their credential_ids to the exclude list
                 webauthn_tokens = get_tokens(tokentype=self.type, user=self.user)
                 for token in webauthn_tokens:
-                    if token.token.rollout_state != ROLLOUTSTATE.CLIENTWAIT:
+                    if token.token.rollout_state != RolloutState.CLIENTWAIT:
                         credential_id = token.decrypt_otpkey()
                         exclude_credential_ids.append(credential_id)
 
@@ -1009,7 +1009,7 @@ class WebAuthnTokenClass(TokenClass):
                 FIDO2TokenInfo.RELYING_PARTY_NAME: credential_options["rp"]["name"],
             })
 
-        elif self.token.rollout_state in [ROLLOUTSTATE.ENROLLED, ""]:
+        elif self.token.rollout_state in [RolloutState.ENROLLED, ""]:
             # This is the second step of the init request. The registration
             # ceremony has been successfully performed.
             response_detail = {
@@ -1121,7 +1121,7 @@ class WebAuthnTokenClass(TokenClass):
 
         reply_dict = {}
         sign_request = {"webAuthnSignRequest": public_key_credential_request_options,
-                        "hideResponseInput": self.client_mode != CLIENTMODE.INTERACTIVE}
+                        "hideResponseInput": self.client_mode != ClientMode.INTERACTIVE}
         if data_image:
             sign_request["img"] = data_image
             reply_dict["image"] = data_image

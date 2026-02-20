@@ -38,7 +38,7 @@ import logging
 from privacyidea.api.lib.utils import getParam
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.log import log_with
-from privacyidea.lib.tokenclass import TokenClass, TOKENKIND
+from privacyidea.lib.tokenclass import TokenClass, Tokenkind
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.token import check_realm_pass
 from privacyidea.lib.decorators import check_token_locked
@@ -247,7 +247,7 @@ class FourEyesTokenClass(TokenClass):
         self.convert_realms(realms)
         self.add_tokeninfo("separator", separator)
         self.add_tokeninfo("4eyes", realms)
-        self.add_tokeninfo("tokenkind", TOKENKIND.VIRTUAL)
+        self.add_tokeninfo("tokenkind", Tokenkind.VIRTUAL)
 
     def _authenticate_in_realm(self, realm, password):
         """

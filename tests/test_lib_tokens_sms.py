@@ -13,7 +13,7 @@ from privacyidea.lib.policy import set_policy, SCOPE, PolicyClass
 from privacyidea.lib.realm import set_realm
 from privacyidea.lib.resolver import save_resolver
 from privacyidea.lib.token import init_token, remove_token, import_tokens, get_tokens
-from privacyidea.lib.tokens.smstoken import SmsTokenClass, SMSACTION
+from privacyidea.lib.tokens.smstoken import SmsTokenClass, SMSAction
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import is_true
 from privacyidea.models import Token, Config
@@ -421,7 +421,7 @@ class SMSTokenTestCase(MyTestCase):
         for pol_text, result_text in smstext_tests.items():
             # create a SMSTEXT policy:
             p = set_policy(name="smstext",
-                           action="{0!s}={1!s}".format(SMSACTION.SMSTEXT, pol_text),
+                           action="{0!s}={1!s}".format(SMSAction.SMSTEXT, pol_text),
                            scope=SCOPE.AUTH)
             self.assertTrue(p > 0)
 
@@ -451,7 +451,7 @@ class SMSTokenTestCase(MyTestCase):
 
         # Test AUTOSMS
         p = set_policy(name="autosms",
-                       action=SMSACTION.SMSAUTO,
+                       action=SMSAction.SMSAUTO,
                        scope=SCOPE.AUTH)
         self.assertTrue(p > 0)
 

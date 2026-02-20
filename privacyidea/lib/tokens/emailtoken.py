@@ -68,7 +68,7 @@ import logging
 import traceback
 import datetime
 from privacyidea.lib.tokens.smstoken import HotpTokenClass
-from privacyidea.lib.tokenclass import CHALLENGE_SESSION, AUTHENTICATIONMODE
+from privacyidea.lib.tokenclass import ChallengeSession, AuthenticationMode
 from privacyidea.lib.config import get_from_config, get_email_validators
 from privacyidea.api.lib.utils import getParam
 from privacyidea.lib.utils import is_true, create_tag_dict
@@ -104,7 +104,7 @@ class EmailTokenClass(HotpTokenClass):
     EMAIL_ADDRESS_KEY = "email"
     # The HOTP token provides means to verify the enrollment
     can_verify_enrollment = True
-    mode = [AUTHENTICATIONMODE.CHALLENGE]
+    mode = [AuthenticationMode.CHALLENGE]
 
     def __init__(self, aToken):
         HotpTokenClass.__init__(self, aToken)
@@ -296,7 +296,7 @@ class EmailTokenClass(HotpTokenClass):
             # would cancel the checking of the other tokens
             try:
                 data = None
-                if options.get("session") != CHALLENGE_SESSION.ENROLLMENT:
+                if options.get("session") != ChallengeSession.ENROLLMENT:
                     # Only if this is NOT a multichallenge enrollment, we try to send the email
                     self.inc_otp_counter(counter, reset=False)
                     message_template, mimetype = self._get_email_text_or_subject(options)
@@ -542,7 +542,7 @@ class EmailTokenClass(HotpTokenClass):
         :return: None, the content is modified
         """
         from privacyidea.lib.token import init_token
-        from privacyidea.lib.tokenclass import CLIENTMODE
+        from privacyidea.lib.tokenclass import ClientMode
         token_obj = init_token({"type": cls.get_class_type(),
                                 "dynamic_email": 1}, user=user_obj)
         content.get("result")["value"] = False
@@ -550,13 +550,13 @@ class EmailTokenClass(HotpTokenClass):
 
         detail = content.setdefault("detail", {})
         # Create a challenge!
-        options = {"session": CHALLENGE_SESSION.ENROLLMENT, "g": g, "user": user_obj}
+        options = {"session": ChallengeSession.ENROLLMENT, "g": g, "user": user_obj}
         c = token_obj.create_challenge(options=options)
         # get details of token
         detail["transaction_ids"] = [c[2]]
         chal = {"transaction_id": c[2],
                 "image": None,
-                "client_mode": CLIENTMODE.INTERACTIVE,
+                "client_mode": ClientMode.INTERACTIVE,
                 "serial": token_obj.token.serial,
                 "type": token_obj.type,
                 "message": message or _("Please enter your new email address!")}
