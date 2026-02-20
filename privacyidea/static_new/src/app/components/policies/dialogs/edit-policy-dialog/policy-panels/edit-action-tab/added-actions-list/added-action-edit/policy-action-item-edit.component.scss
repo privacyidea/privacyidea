@@ -1,0 +1,58 @@
+.gap-div-8px {
+  width: 8px;
+  height: 8px;
+}
+
+.delete-icon-button {
+  flex-shrink: 0;
+  margin: auto -4px;
+  color: var(--mat-sys-on-error-container);
+  &:hover {
+    background-color: var(--mat-sys-error-container);
+  }
+}
+
+.action-card-in-panel {
+  border-radius: var(--border-radius);
+  box-shadow: var(--mat-sys-level1);
+  font-weight: 500;
+  padding: 0 var(--global-padding);
+  background-color: var(--mat-sys-primary-container);
+}
+
+.action-row {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.action-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.flex-size-1 {
+  flex: 1;
+}
+
+.detail-input {
+  flex: 1 0 0%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: right;
+
+  .full-width {
+    width: 100%;
+  }
+  .half-width {
+    width: 50%;
+  }
+}
+
+.action-value-input,
+.action-value-textarea {
+  width: 100%;
+  box-sizing: border-box;
+}

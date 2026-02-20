@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -17,38 +17,47 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, inject } from "@angular/core";
-import { MatButton } from "@angular/material/button";
-import {
-  MAT_DIALOG_DATA,
-  MatDialogActions,
-  MatDialogClose,
-  MatDialogContent,
-  MatDialogRef,
-  MatDialogTitle
-} from "@angular/material/dialog";
+import { AbstractDialogComponent } from "../../../shared/dialog/abstract-dialog/abstract-dialog.component";
+import { DialogWrapperComponent } from "../../../shared/dialog/dialog-wrapper/dialog-wrapper.component";
+import { DialogAction } from "../../../../models/dialog";
+import { Router } from "@angular/router";
+import { ROUTE_PATHS } from "../../../../route_paths";
+import { DialogServiceInterface, DialogService } from "../../../../services/dialog/dialog.service";
 
 export type GetSerialResultDialogData = {
   foundSerial: string;
   otpValue: string;
-  onClickSerial: () => void;
-  reset: () => void;
 };
+
+export type GetSerialResultDialogReturn = "reset";
 
 @Component({
   selector: "app-get-serial-result-dialog",
-  imports: [
-    MatDialogContent,
-    MatDialogTitle,
-    MatDialogActions,
-    MatButton,
-    MatDialogClose
-  ],
+  imports: [DialogWrapperComponent],
   templateUrl: "./get-serial-result-dialog.component.html",
   styleUrl: "./get-serial-result-dialog.component.scss",
   standalone: true
 })
-export class GetSerialResultDialogComponent {
-  public readonly dialogRef: MatDialogRef<GetSerialResultDialogComponent> =
-    inject(MatDialogRef);
-  public readonly data: GetSerialResultDialogData = inject(MAT_DIALOG_DATA);
+export class GetSerialResultDialogComponent extends AbstractDialogComponent<
+  GetSerialResultDialogData,
+  GetSerialResultDialogReturn
+> {
+  readonly router = inject(Router);
+  readonly dialogService: DialogServiceInterface = inject(DialogService);
+
+  action: DialogAction<GetSerialResultDialogReturn> = {
+    type: "confirm",
+    label: $localize`OK`,
+    value: "reset"
+  };
+
+  onClickSerial() {
+    const serial = this.data.foundSerial;
+    this.router.navigateByUrl(ROUTE_PATHS.TOKENS_DETAILS + serial);
+    this.dialogService.closeAllDialogs();
+  }
+
+  onAction(value: GetSerialResultDialogReturn) {
+    this.close(value);
+  }
 }

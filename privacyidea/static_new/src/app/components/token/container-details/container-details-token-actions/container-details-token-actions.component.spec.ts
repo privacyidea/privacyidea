@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -28,7 +28,7 @@ import { AuthService } from "../../../../services/auth/auth.service";
 import { ContainerDetailToken, ContainerService } from "../../../../services/container/container.service";
 import { TokenService } from "../../../../services/token/token.service";
 import { MatDialog } from "@angular/material/dialog";
-import { ConfirmationDialogComponent } from "../../../shared/confirmation-dialog/confirmation-dialog.component";
+import { SimpleConfirmationDialogComponent } from "../../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { MatTableDataSource } from "@angular/material/table";
 import { signal, WritableSignal } from "@angular/core";
 import { of } from "rxjs";
@@ -189,15 +189,16 @@ describe("ContainerDetailsTokenActionsComponent", () => {
     jest.spyOn(mockTokenService, "unassignUserFromAll");
 
     component.unassignFromAllToken();
-    expect(mockDialog.open).toHaveBeenCalledWith(
-      ConfirmationDialogComponent,
-      expect.objectContaining({
-        data: expect.objectContaining({
-          action: "unassign",
-          serialList: ["S1"]
-        })
-      })
-    );
+    expect(mockDialog.open).toHaveBeenCalledWith(SimpleConfirmationDialogComponent, {
+      data: {
+        confirmAction: { label: "Unassign", type: "destruct", value: true },
+        itemType: "token",
+        items: ["S1"],
+        title: "Unassign User from All Tokens"
+      },
+      disableClose: false,
+      hasBackdrop: true
+    });
     expect(mockTokenService.unassignUserFromAll as any).toHaveBeenCalledWith(["S1"]);
     expect(mockContainerService.containerDetailResource.reload).toHaveBeenCalled();
   });
@@ -262,12 +263,16 @@ describe("ContainerDetailsTokenActionsComponent", () => {
 
   it("removeAll opens confirm and removes when confirm=true", () => {
     component.removeAll();
-    expect(mockDialog.open).toHaveBeenCalledWith(
-      ConfirmationDialogComponent,
-      expect.objectContaining({
-        data: expect.objectContaining({ action: "remove" })
-      })
-    );
+    expect(mockDialog.open).toHaveBeenCalledWith(SimpleConfirmationDialogComponent, {
+      data: {
+        confirmAction: { label: "Remove", type: "destruct", value: true },
+        itemType: "token",
+        items: ["T1", "T2"],
+        title: "Remove Token"
+      },
+      disableClose: false,
+      hasBackdrop: true
+    });
     expect(mockContainerService.removeAll).toHaveBeenCalledWith("CONT-1");
     expect(mockContainerService.containerDetailResource.reload).toHaveBeenCalled();
   });
@@ -302,11 +307,7 @@ describe("ContainerDetailsTokenActionsComponent", () => {
     component.tokenData.set(data);
     component.deleteAllTokens();
 
-    expect(mockTokenService.bulkDeleteWithConfirmDialog).toHaveBeenCalledWith(
-      ["T1", "T2"],
-      mockDialog,
-      expect.any(Function)
-    );
+    expect(mockTokenService.bulkDeleteWithConfirmDialog).toHaveBeenCalledWith(["T1", "T2"], expect.any(Function));
   });
 
   it("deleteAllTokens does NOT delete when confirm=false", () => {

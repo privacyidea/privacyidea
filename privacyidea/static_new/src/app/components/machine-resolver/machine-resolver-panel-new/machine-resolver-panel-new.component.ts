@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -32,14 +32,11 @@ import {
 import { CommonModule } from "@angular/common";
 import { FormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
-import {
-  DialogService,
-  DialogServiceInterface,
-  MatDialogConfigRequired
-} from "../../../services/dialog/dialog.service";
-import { ConfirmationDialogData } from "../../shared/confirmation-dialog/confirmation-dialog.component";
+import { DialogService, DialogServiceInterface } from "../../../services/dialog/dialog.service";
 import { MachineResolverHostsTabComponent } from "../machine-resolver-hosts-tab/machine-resolver-hosts-tab.component";
 import { MachineResolverLdapTabComponent } from "../machine-resolver-ldap-tab/machine-resolver-ldap-tab.component";
+import { SimpleConfirmationDialogComponent } from "../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { lastValueFrom } from "rxjs";
 
 @Component({
   selector: "app-machine-resolver-panel-new",
@@ -133,14 +130,20 @@ export class MachineResolverPanelNewComponent {
     } catch (error) {
       const errorMessage = (error as Error).message;
       if (errorMessage === "post-failed") {
-        const dialogData: MatDialogConfigRequired<ConfirmationDialogData> = {
-          data: {
-            type: "machineResolver",
-            title: "Save machineResolver despite test failure?",
-            action: "proceed-despite-error"
-          }
-        };
-        const result = await this.dialogService.confirm(dialogData);
+        const result = await lastValueFrom(
+          this.dialogService
+            .openDialog({
+              component: SimpleConfirmationDialogComponent,
+              data: {
+                title: "Save machine resolver despite test failure?",
+                confirmAction: { label: "Proceed", value: true, type: "destruct" },
+                cancelAction: { label: "Cancel", value: false, type: "cancel" },
+                items: [current.resolvername || "New Machine Resolver"],
+                itemType: "machine resolver"
+              }
+            })
+            .afterClosed()
+        );
         if (!result) return;
       } else {
         return;
@@ -160,25 +163,30 @@ export class MachineResolverPanelNewComponent {
       this.newMachineResolver.set(this.machineResolverDefault);
       return;
     }
-    const dialogData: MatDialogConfigRequired<ConfirmationDialogData> = {
-      data: {
-        type: "machineResolver",
-        title: "Discard changes",
-        action: "discard"
-      }
-    };
     this.dialogService
-      .confirm(dialogData)
-      .then((result) => {
-        if (result) {
-          this.resetMachineResolver();
-          $panel.close();
-        } else {
-          $panel.open();
+      .openDialog({
+        component: SimpleConfirmationDialogComponent,
+        data: {
+          title: "Discard changes",
+          confirmAction: { label: "Discard", value: true, type: "destruct" },
+          cancelAction: { label: "Cancel", value: false, type: "cancel" },
+          items: [this.newMachineResolver().resolvername || "New Machine Resolver"],
+          itemType: "machine resolver"
         }
       })
-      .catch((err) => {
-        console.error("Error handling unsaved changes dialog:", err);
+      .afterClosed()
+      .subscribe({
+        next: (result) => {
+          if (result) {
+            this.resetMachineResolver();
+            $panel.close();
+          } else {
+            $panel.open();
+          }
+        },
+        error: (err) => {
+          console.error("Error handling unsaved changes dialog:", err);
+        }
       });
     return;
   }

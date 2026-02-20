@@ -18,7 +18,8 @@
  **/
 import { computed, Signal, signal, WritableSignal } from "@angular/core";
 import { of, Subject } from "rxjs";
-import { FilterValue } from "../../app/core/models/filter_value";
+
+import { FilterValue } from "src/app/core/models/filter_value/filter_value";
 import {
   ContainerDetailData,
   ContainerDetails,
@@ -64,9 +65,8 @@ export class MockContainerService implements ContainerServiceInterface {
     return options.filter((option) => option.includes(filter.value) || option.includes(filter.hiddenValue));
   });
   containerSelection: WritableSignal<ContainerDetailData[]> = signal([]);
-  containerTypesResource: MockHttpResourceRef<PiResponse<ContainerTypes, unknown> | undefined> = new MockHttpResourceRef(
-    MockPiResponse.fromValue<ContainerTypes>(new Map())
-  );
+  containerTypesResource: MockHttpResourceRef<PiResponse<ContainerTypes, unknown> | undefined> =
+    new MockHttpResourceRef(MockPiResponse.fromValue<ContainerTypes>(new Map()));
   containerTypeOptions: Signal<ContainerType[]> = computed(() => {
     return [
       { containerType: "generic", description: "", token_types: [] } as ContainerType,
@@ -110,7 +110,7 @@ export class MockContainerService implements ContainerServiceInterface {
   deleteContainer = jest.fn().mockReturnValue(of({}));
   deleteAllTokens = jest.fn().mockReturnValue(of(null));
 
-  registerContainer(_params: { container_serial: string; passphrase_prompt: string; passphrase_response: string; }) {
+  registerContainer(_params: { container_serial: string; passphrase_prompt: string; passphrase_response: string }) {
     throw new Error("Method not implemented.");
   }
 
@@ -122,30 +122,33 @@ export class MockContainerService implements ContainerServiceInterface {
   createContainer = jest.fn();
   startPolling = jest.fn();
   templatesResource: MockHttpResourceRef<PiResponse<{ templates: ContainerTemplate[] }, unknown> | undefined> =
-    new MockHttpResourceRef(
-      MockPiResponse.fromValue<{ templates: ContainerTemplate[] }>({ templates: [] })
-    );
+    new MockHttpResourceRef(MockPiResponse.fromValue<{ templates: ContainerTemplate[] }>({ templates: [] }));
   templates: WritableSignal<ContainerTemplate[]> = signal([]);
   assignContainer = jest.fn().mockReturnValue(of(null));
   unassignContainer = jest.fn().mockReturnValue(of(null));
   pollContainerRolloutState = jest.fn();
-  getContainerData = jest.fn().mockReturnValue(of({
-    result: {
-      value: {
-        containers: [{
-          serial: "CONT-1",
-          users: [],
-          tokens: [],
-          realms: [],
-          states: [],
-          type: "",
-          select: "",
-          description: ""
-        }, { serial: "CONT-2", users: [], tokens: [], realms: [], states: [], type: "", select: "", description: "" }],
-        count: 2
+  getContainerData = jest.fn().mockReturnValue(
+    of({
+      result: {
+        value: {
+          containers: [
+            {
+              serial: "CONT-1",
+              users: [],
+              tokens: [],
+              realms: [],
+              states: [],
+              type: "",
+              select: "",
+              description: ""
+            },
+            { serial: "CONT-2", users: [], tokens: [], realms: [], states: [], type: "", select: "", description: "" }
+          ],
+          count: 2
+        }
       }
-    }
-  }));
+    })
+  );
 
   getContainerDetails(_containerSerial: string) {
     throw new Error("Method not implemented.");

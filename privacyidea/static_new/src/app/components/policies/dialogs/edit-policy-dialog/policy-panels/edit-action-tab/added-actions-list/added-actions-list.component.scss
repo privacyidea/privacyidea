@@ -1,0 +1,57 @@
+.added-actions-list-container {
+  .gap-div-8px {
+    width: 8px;
+    height: 8px;
+  }
+
+  .action-button {
+    flex-shrink: 0;
+    margin: auto -6px;
+    --mat-icon-button-state-layer-color: var(--mat-sys-surface-container);
+  }
+
+  .action-button-in-panel {
+    flex-shrink: 0;
+    margin: auto -4px;
+    --mat-icon-button-state-layer-color: var(--mat-sys-surface-container-high);
+  }
+
+  .mat-mdc-button-ripple {
+    top: 1px;
+    left: 1px;
+    width: 36px;
+    height: 36px;
+  }
+
+  .action-card {
+    padding: 0px var(--global-padding);
+  }
+
+  ::ng-deep mat-expansion-panel.mat-expansion-panel {
+    background-color: var(--mat-sys-surface-container) !important;
+  }
+  ::ng-deep mat-expansion-panel.mat-expansion-panel-header {
+    padding: var(--half-global-padding) var(--three-quarters-global-padding) !important;
+    height: 1rem;
+  }
+
+  .action-card-in-panel {
+    border-radius: var(--border-radius);
+    box-shadow: var(--mat-sys-level1);
+    font-weight: 500;
+    padding: 0 var(--global-padding);
+    background-color: var(--mat-sys-primary-container);
+  }
+
+  .action-card-in-panel-selected {
+    background-color: var(--mat-sys-primary-base);
+    color: var(--mat-sys-on-primary);
+    font-weight: 600;
+  }
+
+  .policy-action-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--half-global-gap);
+  }
+}

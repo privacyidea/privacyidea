@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -28,7 +28,7 @@ import { MatInputModule } from "@angular/material/input";
 import { MatPaginatorModule } from "@angular/material/paginator";
 import { MatTableModule } from "@angular/material/table";
 import { ContainerService, ContainerServiceInterface } from "../../../services/container/container.service";
-import { ConfirmationDialogComponent } from "../../shared/confirmation-dialog/confirmation-dialog.component";
+import { SimpleConfirmationDialogComponent } from "../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
 import { TokenTableComponent } from "./token-table.component";
 import { MatTooltip } from "@angular/material/tooltip";
@@ -76,14 +76,14 @@ export class TokenTableSelfServiceComponent extends TokenTableComponent {
   );
 
   revokeToken(serial: string): void {
-    this.dialog
-      .open(ConfirmationDialogComponent, {
+    this.dialogService
+      .openDialog({
+        component: SimpleConfirmationDialogComponent,
         data: {
-          serialList: [serial],
           title: "Revoke Token",
-          type: "token",
-          action: "revoke",
-          numberOfTokens: 1
+          items: [serial],
+          itemType: "token",
+          confirmAction: { label: "Revoke", value: true, type: "destruct" }
         }
       })
       .afterClosed()
@@ -91,7 +91,7 @@ export class TokenTableSelfServiceComponent extends TokenTableComponent {
         next: (result) => {
           this.tokenService.revokeToken(serial).subscribe({
             next: () => {
-              if (result?.confirmed) {
+              if (result) {
                 this.tokenService.tokenResource.reload();
               }
             }
@@ -101,14 +101,14 @@ export class TokenTableSelfServiceComponent extends TokenTableComponent {
   }
 
   deleteToken(serial: string): void {
-    this.dialog
-      .open(ConfirmationDialogComponent, {
+    this.dialogService
+      .openDialog({
+        component: SimpleConfirmationDialogComponent,
         data: {
-          serialList: [serial],
           title: "Delete Token",
-          type: "token",
-          action: "delete",
-          numberOfTokens: 1
+          items: [serial],
+          itemType: "token",
+          confirmAction: { label: "Delete", value: true, type: "destruct" }
         }
       })
       .afterClosed()
@@ -116,7 +116,7 @@ export class TokenTableSelfServiceComponent extends TokenTableComponent {
         next: (result) => {
           this.tokenService.deleteToken(serial).subscribe({
             next: () => {
-              if (result?.confirmed) {
+              if (result) {
                 this.tokenService.tokenResource.reload();
               }
             }

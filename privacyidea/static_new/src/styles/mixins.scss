@@ -1,0 +1,7 @@
+@mixin compact-badge-base {
+  border-radius: 4px;
+  flex-shrink: 0;
+  font-size: 13px;
+  line-height: 1.4;
+  padding: 2px 8px;
+}

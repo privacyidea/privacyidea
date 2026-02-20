@@ -85,15 +85,15 @@ export class EventComponent {
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
 
   columnKeysMap: Record<string, string> = {
-    "ordering": "Ordering",
-    "name": "Name",
-    "handlermodule": "Handler Module",
-    "position": "Position",
-    "event": "Events",
-    "action": "Action",
-    "conditions": "Conditions",
-    "active": "Active",
-    "delete": "Delete"
+    ordering: "Ordering",
+    name: "Name",
+    handlermodule: "Handler Module",
+    position: "Position",
+    event: "Events",
+    action: "Action",
+    conditions: "Conditions",
+    active: "Active",
+    delete: "Delete"
   };
   columnKeys = computed(() => {
     let keys = Object.keys(this.columnKeysMap);
@@ -227,8 +227,9 @@ export class EventComponent {
     this.openEventHandlerDialog(EMPTY_EVENT, true);
   }
 
-  onDeleteEventHandler(eventHandler: EventHandler) {
-    this.eventService.deleteWithConfirmDialog(eventHandler, this.dialog, () => this.eventService.allEventsResource.reload());
+  async onDeleteEventHandler(eventHandler: EventHandler) {
+    await this.eventService.deleteWithConfirmDialog(eventHandler);
+    this.eventService.allEventsResource.reload();
   }
 
   getEventArray(event: unknown): string[] {

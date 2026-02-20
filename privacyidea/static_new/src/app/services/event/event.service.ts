@@ -26,7 +26,8 @@ import { PiResponse } from "../../app.component";
 import { lastValueFrom, Observable, of, throwError } from "rxjs";
 import { catchError } from "rxjs/operators";
 import { NotificationService } from "../notification/notification.service";
-import { ConfirmationDialogComponent } from "../../components/shared/confirmation-dialog/confirmation-dialog.component";
+import { SimpleConfirmationDialogComponent } from "../../components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { DialogServiceInterface, DialogService } from "../dialog/dialog.service";
 
 export type EventHandler = {
   id: string;
@@ -39,7 +40,7 @@ export type EventHandler = {
   action: string;
   options: Record<string, any> | null;
   conditions: Record<string, any>;
-}
+};
 
 export const EMPTY_EVENT: EventHandler = {
   id: "",
@@ -59,7 +60,7 @@ export type EventCondition = {
   type: string;
   group?: string;
   value?: any[];
-}
+};
 
 export type ActionOptionDetails = {
   type?: string;
@@ -69,7 +70,7 @@ export type ActionOptionDetails = {
   value?: any[];
   visibleIf?: string;
   visibleValue?: any;
-}
+};
 
 export type ActionOptions = Record<string, ActionOptionDetails>;
 
@@ -108,6 +109,7 @@ export interface EventServiceInterface {
 })
 export class EventService implements EventServiceInterface {
   private readonly contentService: ContentServiceInterface = inject(ContentService);
+  private readonly dialogService: DialogServiceInterface = inject(DialogService);
   private readonly http: HttpClient = inject(HttpClient);
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly notificationService = inject(NotificationService);
@@ -153,11 +155,7 @@ export class EventService implements EventServiceInterface {
     if (!params.id) {
       delete params.id;
     }
-    return this.http.post<PiResponse<number, any>>(
-      this.eventBaseUrl,
-      params,
-      { headers }
-    ).pipe(
+    return this.http.post<PiResponse<number, any>>(this.eventBaseUrl, params, { headers }).pipe(
       catchError((error) => {
         console.error("Failed to save event handler.", error.error);
         const message = error.error.result?.error?.message || "";
@@ -169,43 +167,36 @@ export class EventService implements EventServiceInterface {
 
   enableEvent(eventId: string) {
     const headers = this.authService.getHeaders();
-    return lastValueFrom(this.http.post(
-      this.eventBaseUrl + "/enable/" + eventId,
-      {},
-      { headers: headers }
-    ).pipe(
-      catchError((error) => {
-        console.log("Failed to enable event handler:", error);
-        this.allEventsResource.reload();
-        this.notificationService.openSnackBar("Failed to enable event handler!");
-        return of(undefined);
-      })
-    ));
+    return lastValueFrom(
+      this.http.post(this.eventBaseUrl + "/enable/" + eventId, {}, { headers: headers }).pipe(
+        catchError((error) => {
+          console.log("Failed to enable event handler:", error);
+          this.allEventsResource.reload();
+          this.notificationService.openSnackBar("Failed to enable event handler!");
+          return of(undefined);
+        })
+      )
+    );
   }
 
   disableEvent(eventId: string) {
     const headers = this.authService.getHeaders();
-    return lastValueFrom(this.http.post(
-      this.eventBaseUrl + "/disable/" + eventId,
-      {},
-      { headers: headers }
-    ).pipe(
-      catchError((error) => {
-        console.log("Failed to disable event handler:", error);
-        this.allEventsResource.reload();
-        this.notificationService.openSnackBar("Failed to disable event handler!");
-        return of(undefined);
-      })
-    ));
+    return lastValueFrom(
+      this.http.post(this.eventBaseUrl + "/disable/" + eventId, {}, { headers: headers }).pipe(
+        catchError((error) => {
+          console.log("Failed to disable event handler:", error);
+          this.allEventsResource.reload();
+          this.notificationService.openSnackBar("Failed to disable event handler!");
+          return of(undefined);
+        })
+      )
+    );
   }
 
   deleteEvent(eventId: string): Observable<PiResponse<number, any>> {
     const headers = this.authService.getHeaders();
 
-    return this.http.delete<PiResponse<number, any>>(
-      this.eventBaseUrl + "/" + eventId,
-      { headers }
-    ).pipe(
+    return this.http.delete<PiResponse<number, any>>(this.eventBaseUrl + "/" + eventId, { headers }).pipe(
       catchError((error) => {
         console.error("Failed to delete event handler.", error);
         const message = error.result?.error?.message || "";
@@ -215,35 +206,33 @@ export class EventService implements EventServiceInterface {
     );
   }
 
-  deleteWithConfirmDialog(event: EventHandler, dialog: any, afterDelete?: () => void) {
-    dialog
-      .open(ConfirmationDialogComponent, {
-        data: {
-          serialList: [event.name],
-          title: "Delete Event Handler",
-          type: "eventHandler",
-          action: "delete",
-          numberOfTokens: 1
-        }
-      })
-      .afterClosed()
-      .subscribe({
-        next: (result: any) => {
-          if (result?.confirmed) {
-            this.deleteEvent(event.id).subscribe({
-              next: (response: PiResponse<number, any>) => {
-                this.notificationService.openSnackBar("Successfully deleted event handler.");
-                if (afterDelete) {
-                  afterDelete();
-                }
-              },
-              error: (err) => {
-                // error already handled
-              }
-            });
+  async deleteWithConfirmDialog(event: EventHandler): Promise<PiResponse<number, any> | undefined> {
+    const confirmation = await lastValueFrom(
+      this.dialogService
+        .openDialog({
+          component: SimpleConfirmationDialogComponent,
+          data: {
+            title: $localize`Delete Event Handler`,
+            items: [event.name],
+            itemType: $localize`event handler`,
+            confirmAction: { label: $localize`Delete`, value: true, type: "destruct" },
+            cancelAction: { label: $localize`Cancel`, value: false, type: "cancel" }
           }
-        }
-      });
+        })
+        .afterClosed()
+    );
+    if (!confirmation) {
+      return;
+    }
+    try {
+      const result = await lastValueFrom(this.deleteEvent(event.id));
+
+      this.notificationService.openSnackBar("Successfully deleted event handler.");
+      return result;
+    } catch (error) {
+      // error already handled in deleteEvent
+      return;
+    }
   }
 
   // -------------------------------------

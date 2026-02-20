@@ -31,15 +31,14 @@ import { MatButtonModule } from "@angular/material/button";
 import { CommonModule } from "@angular/common";
 import { MatIconModule } from "@angular/material/icon";
 import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
-import {
-  ConfirmationDialogComponent,
-  ConfirmationDialogResult
-} from "../../../shared/confirmation-dialog/confirmation-dialog.component";
+
 import { ROUTE_PATHS } from "../../../../route_paths";
 import { Router } from "@angular/router";
 import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
 import { PendingChangesService } from "../../../../services/pending-changes/pending-changes.service";
 import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
+import { SimpleConfirmationDialogComponent } from "../../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { DialogService, DialogServiceInterface } from "../../../../services/dialog/dialog.service";
 
 @Component({
   selector: "app-privacyidea-edit-dialog",
@@ -63,7 +62,7 @@ export class NewPrivacyideaServerComponent implements OnInit, OnDestroy {
   private readonly dialogRef = inject(MatDialogRef<NewPrivacyideaServerComponent>);
   protected readonly data = inject<PrivacyideaServer | null>(MAT_DIALOG_DATA);
   protected readonly privacyideaServerService: PrivacyideaServerServiceInterface = inject(PrivacyideaServerService);
-  private readonly dialog = inject(MatDialog);
+  private readonly dialogService: DialogServiceInterface = inject(DialogService);
   private readonly router = inject(Router);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly pendingChangesService = inject(PendingChangesService);
@@ -79,7 +78,7 @@ export class NewPrivacyideaServerComponent implements OnInit, OnDestroy {
       this.dialogRef.backdropClick().subscribe(() => {
         this.onCancel();
       });
-      this.dialogRef.keydownEvents().subscribe(event => {
+      this.dialogRef.keydownEvents().subscribe((event) => {
         if (event.key === "Escape") {
           this.onCancel();
         }
@@ -146,36 +145,37 @@ export class NewPrivacyideaServerComponent implements OnInit, OnDestroy {
   }
 
   onCancel(): void {
-    if (this.hasChanges) {
-      this.dialog
-        .open(ConfirmationDialogComponent, {
-          data: {
-            title: $localize`Discard changes`,
-            action: "discard",
-            type: "privacyidea-server",
-            allowSaveExit: true,
-            saveExitDisabled: !this.canSave
-          }
-        })
-        .afterClosed()
-        .subscribe((result: ConfirmationDialogResult | undefined) => {
-          if (result === "discard") {
-            this.pendingChangesService.unregisterHasChanges();
-            this.closeActual();
-          } else if (result === "save-exit") {
-            if (!this.canSave) return;
-            Promise.resolve(this.pendingChangesService.save()).then(() => {
-              this.pendingChangesService.unregisterHasChanges();
-              this.closeActual();
-            });
-          }
-        });
-    } else {
-      this.closeActual();
+    if (!this.hasChanges) {
+      this.closeCurrent();
+      return;
     }
+    this.dialogService
+      .openDialog({
+        component: SimpleConfirmationDialogComponent,
+        data: {
+          title: $localize`Discard changes`,
+          confirmAction: { label: $localize`Save and exit`, value: true, type: "confirm", disabled: !this.canSave },
+          cancelAction: { label: $localize`Discard`, value: false, type: "destruct" },
+          items: [],
+          itemType: "privacyidea-server"
+        }
+      })
+      .afterClosed()
+      .subscribe((result) => {
+        if (result) {
+          if (!this.canSave) return;
+          Promise.resolve(this.pendingChangesService.save()).then(() => {
+            this.pendingChangesService.unregisterHasChanges();
+            this.closeCurrent();
+          });
+          return;
+        }
+        this.pendingChangesService.unregisterHasChanges();
+        this.closeCurrent();
+      });
   }
 
-  private closeActual(): void {
+  private closeCurrent(): void {
     if (this.dialogRef) {
       this.dialogRef.close();
     } else {

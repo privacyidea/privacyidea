@@ -65,7 +65,11 @@
               mat-header-cell>
               <div class="flex ali-center">
                 {{ column.label }}
-                @if (!['number', 'log_level', 'clearance_level', 'sig_check', 'missing_line', 'thread_id'].includes(column.key)) {
+                @if (
+                  !["number", "log_level", "clearance_level", "sig_check", "missing_line", "thread_id"].includes(
+                    column.key
+                  )
+                ) {
                   <div class="margin-left-1">
                     <button
                       (click)="onKeywordClick(apiFilterKeyMap[column.key])"
@@ -82,24 +86,24 @@
             <td
               *matCellDef="let element; let row"
               [ngClass]="{
-                    'width-18rem': column.key === 'description',
-                    'table-checkbox': column.key === 'select'
-                  }"
+                'width-18rem': column.key === 'description',
+                'table-checkbox': column.key === 'select'
+              }"
               attr.aria-label="{{ column.label }} Cell"
               mat-cell>
               <div>
                 @switch (column.key) {
                   @case ("success") {
                     <div class="flex just-center">
-                          <span
-                            [ngClass]="
-                              tableUtilsService.getSpanClassForKey({
-                                key: column.key,
-                                value: element[column.key]
-                              })
-                            ">
-                            {{ element[column.key] }}
-                          </span>
+                      <span
+                        [ngClass]="
+                          tableUtilsService.getSpanClassForKey({
+                            key: column.key,
+                            value: element[column.key]
+                          })
+                        ">
+                        {{ element[column.key] }}
+                      </span>
                     </div>
                   }
                   @case ("serial") {
@@ -117,8 +121,8 @@
                   }
                   @case (column.key === "sig_check" || column.key === "missing_line" ? column.key : "") {
                     <span [ngClass]="[element[column.key] === 'OK' ? 'highlight-true' : 'highlight-false']">
-                          {{ element[column.key] }}
-                        </span>
+                      {{ element[column.key] }}
+                    </span>
                   }
                   @case ("container_serial") {
                     <div class="flex-row ali-center">
@@ -135,25 +139,25 @@
                   }
                   @case ("startdate") {
                     <span>
-                          {{ element[column.key].split(".")[0].replace("T", " ") }}
-                        </span>
+                      {{ element[column.key].split(".")[0].replace("T", " ") }}
+                    </span>
                   }
                   @case ("date") {
                     <span>
-                          {{ element[column.key].split(".")[0].replace("T", " ") }}
-                        </span>
+                      {{ element[column.key].split(".")[0].replace("T", " ") }}
+                    </span>
                   }
                   @case ("policies") {
                     @for (policy of element[column.key]?.split(","); track policy) {
                       <span>
-                            {{ policy }}
-                          </span>
+                        {{ policy }}
+                      </span>
                     }
                   }
                   @default {
                     <span>
-                          {{ element[column.key] }}
-                        </span>
+                      {{ element[column.key] }}
+                    </span>
                   }
                 }
               </div>

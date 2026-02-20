@@ -48,7 +48,7 @@ import { RouterLink } from "@angular/router";
 import { ScrollToTopDirective } from "../shared/directives/app-scroll-to-top.directive";
 import { MatIconButton } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
-import { FilterValue } from "../../core/models/filter_value";
+import { FilterValue } from "../../core/models/filter_value/filter_value";
 
 const columnKeysMap = [
   { key: "number", label: "Number" },
@@ -182,7 +182,7 @@ export class AuditComponent {
       }
       return value === "true" ? "screen_rotation_alt" : value === "false" ? "filter_alt_off" : "filter_alt";
     } else {
-      const isSelected = this.auditService.auditFilter().hasKey(keyword)
+      const isSelected = this.auditService.auditFilter().hasKey(keyword);
       return isSelected ? "filter_alt_off" : "filter_alt";
     }
   }

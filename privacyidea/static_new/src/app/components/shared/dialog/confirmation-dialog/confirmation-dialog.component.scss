@@ -1,0 +1,14 @@
+@use "styles";
+@use "table";
+
+ul {
+  column-count: 4;
+  column-gap: 22px;
+}
+
+app-dialog-wrapper li {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  word-break: break-all;
+  max-width: 100%;
+}

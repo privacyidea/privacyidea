@@ -2,9 +2,9 @@
 
 html {
   &.system {
-    --mint-bg:  light-dark(#E9F5E0, #243328);
-    --rose-bg:  light-dark(#FAEBEF, #282426);
-    --sky-bg:   light-dark(#EDF3F5, #283034);
+    --mint-bg: light-dark(#e9f5e0, #243328);
+    --rose-bg: light-dark(#faebef, #282426);
+    --sky-bg: light-dark(#edf3f5, #283034);
 
     --mat-sys-light: light-dark(#ffffff, #242424);
 
@@ -16,38 +16,43 @@ html {
     --mat-sys-primary-light-active: light-dark(hsl(198, 66%, 37.5%), hsl(198, 66%, 47.5%));
     --mat-sys-primary-light-hover: light-dark(hsl(198, 66%, 45%), hsl(198, 66%, 45%));
 
-    --green-dark: light-dark(hsl(120, 39%, 39%), hsl(120, 39%, 69%));
-    --green-base: light-dark(hsl(120, 39%, 44%), hsl(120, 39%, 64%));
-    --green-light: light-dark(hsl(120, 39%, 49%), hsl(120, 39%, 59%));
-    --green-light-active: light-dark(hsl(120, 39%, 54%), hsl(120, 39%, 54%));
+    --green-dark: light-dark(hsl(120, 39%, 39%), hsl(120, 39%, 35%));
+    --green-base: light-dark(hsl(120, 39%, 44%), hsl(120, 39%, 40%));
+    --green-light: light-dark(hsl(120, 39%, 49%), hsl(120, 39%, 45%));
+    --green-light-active: light-dark(hsl(120, 39%, 54%), hsl(120, 39%, 50%));
+    --green-base-hover: light-dark(hsl(120, 39%, 40%), hsl(120, 39%, 30%));
 
-    --red-dark: light-dark(hsl(342, 100%, 32%), hsl(342, 100%, 62%));
-    --red-base: light-dark(hsl(342, 100%, 37%), hsl(342, 100%, 57%));
-    --red-light: light-dark(hsl(342, 100%, 42%), hsl(342, 100%, 52%));
-    --red-light-active: light-dark(hsl(342, 100%, 57%), hsl(342, 100%, 47%));
+    --red-dark: light-dark(hsl(342, 100%, 32%), hsl(342, 100%, 44%));
+    --red-base: light-dark(hsl(342, 100%, 37%), hsl(342, 100%, 50%));
+    --red-light: light-dark(hsl(342, 100%, 42%), hsl(342, 100%, 54%));
+    --red-light-active: light-dark(hsl(342, 100%, 57%), hsl(342, 100%, 58%));
+    --red-base-hover: light-dark(hsl(342, 100%, 60%), hsl(342, 100%, 30%));
 
     --yellow-dark: light-dark(hsl(28, 85%, 45%), hsl(28, 85%, 35%));
     --yellow-base: light-dark(hsl(28, 85%, 50%), hsl(28, 85%, 40%));
     --yellow-light: light-dark(hsl(28, 85%, 55%), hsl(28, 85%, 45%));
     --yellow-light-active: light-dark(hsl(28, 85%, 60%), hsl(28, 85%, 50%));
+    --yellow-base-hover: light-dark(hsl(28, 85%, 45%), hsl(28, 85%, 32%));
 
     --grey-dark: light-dark(hsl(0, 0%, 42%), hsl(0, 0%, 50%));
     --grey-base: light-dark(hsl(0, 0%, 50%), hsl(0, 0%, 55%));
     --grey-light: light-dark(hsl(0, 0%, 55%), hsl(0, 0%, 62%));
     --grey-light-active: light-dark(hsl(0, 0%, 60%), hsl(0, 0%, 58%));
+    --grey-base-hover: light-dark(hsl(0, 0%, 45%), hsl(0, 0%, 35%));
 
     --mat-sys-shadow-color-high: light-dark(#ababab, #050505);
 
     --mat-sys-primary: var(--mat-sys-primary-base);
     --mat-sys-on-primary: light-dark(hsl(198, 66%, 95%), hsl(198, 66%, 10%));
     --mat-sys-primary-container: light-dark(hsl(0, 0%, 100%), hsl(198, 66%, 40%));
-    --mat-sys-surface-container-lowest: light-dark(hsl(0, 0%, 97.5%), hsl(0, 0%, 10%));
-    --mat-sys-surface-container-low: light-dark(hsl(0, 0%, 90%), hsl(0, 0%, 15%));
-    --mat-sys-surface-container: light-dark(hsl(0, 0%, 85%), hsl(0, 0%, 20%));
-    --mat-sys-surface-container-high: light-dark(hsl(0, 0%, 80%), hsl(0, 0%, 25%));
-    --mat-sys-surface-container-highest: light-dark(hsl(0, 0%, 75%), hsl(0, 0%, 30%));
-    --mat-sys-surface-variant: light-dark(hsl(0, 0%, 95%), hsl(0, 0%, 22.5%));
+    --mat-sys-surface-container-lowest: light-dark(hsl(0, 0%, 98%), hsl(0, 0%, 10%));
+    --mat-sys-surface-container-low: light-dark(hsl(0, 0%, 93%), hsl(0, 0%, 15%));
+    --mat-sys-surface-container: light-dark(hsl(0, 0%, 90%), hsl(0, 0%, 20%));
+    --mat-sys-surface-container-high: light-dark(hsl(0, 0%, 85%), hsl(0, 0%, 25%));
+    --mat-sys-surface-container-highest: light-dark(hsl(0, 0%, 80%), hsl(0, 0%, 30%));
+    --mat-sys-surface-variant: light-dark(hsl(0, 0%, 91%), hsl(0, 0%, 22.5%));
     --mat-sys-background: light-dark(hsl(0, 0%, 90%), hsl(0, 0%, 20%));
+    --mat-sys-surface: var(--mat-sys-background);
     --mat-sys-on-surface: light-dark(hsl(0, 0%, 10%), hsl(0, 0%, 90%));
     --mat-sys-on-surface-variant: light-dark(hsl(0, 0%, 30%), hsl(0, 0%, 80%));
     --mat-sys-on-primary-container: light-dark(hsl(198, 66%, 10%), hsl(198, 66%, 80%));
@@ -57,13 +62,15 @@ html {
 
     --inline-hint-bg: light-dark(hsl(200, 65%, 91%), hsl(200, 65%, 20%));
     --inline-warning-bg: light-dark(hsl(0, 83%, 95%), hsl(0, 83%, 18%));
+    --mdc-plain-tooltip-container-color: var(--mat-sys-surface-container-highest);
+    --mdc-plain-tooltip-supporting-text-color: var(--mat-sys-on-surface);
   }
 
   &.light {
     color-scheme: light;
-    --mint-bg: #E9F5E0;
-    --rose-bg: #FAEBEF;
-    --sky-bg:  #EDF3F5;
+    --mint-bg: #e9f5e0;
+    --rose-bg: #faebef;
+    --sky-bg: #edf3f5;
 
     --mat-sys-light: #ffffff;
 
@@ -79,52 +86,56 @@ html {
     --green-base: hsl(120, 39%, 44%);
     --green-light: hsl(120, 39%, 49%);
     --green-light-active: hsl(120, 39%, 54%);
+    --green-base-hover: hsl(120, 39%, 40%);
 
     --red-dark: hsl(342, 100%, 32%);
     --red-base: hsl(342, 100%, 37%);
     --red-light: hsl(342, 100%, 42%);
     --red-light-active: hsl(342, 100%, 57%);
+    --red-base-hover: hsl(342, 100%, 60%);
 
     --yellow-dark: hsl(28, 85%, 45%);
     --yellow-base: hsl(28, 85%, 50%);
     --yellow-light: hsl(28, 85%, 55%);
     --yellow-light-active: hsl(28, 85%, 60%);
+    --yellow-base-hover: hsl(28, 85%, 45%);
 
     --grey-dark: hsl(0, 0%, 42%);
     --grey-base: hsl(0, 0%, 50%);
     --grey-light: hsl(0, 0%, 55%);
     --grey-light-active: hsl(0, 0%, 60%);
+    --grey-base-hover: hsl(0, 0%, 45%);
 
     --mat-sys-shadow-color-high: #ababab;
 
     --mat-sys-primary: var(--mat-sys-primary-base);
     --mat-sys-on-primary: hsl(198, 66%, 95%);
-    --mat-sys-secondary: #EDF3F5;
     --mat-sys-primary-container: hsl(0, 0%, 100%);
-    --mat-sys-surface-container-lowest: hsl(0, 0%, 97.5%);
-    --mat-sys-surface-container-low: hsl(0, 0%, 92%);
-    --mat-sys-surface-container: hsl(0, 0%, 88%);
-    --mat-sys-surface-container-high: hsl(0, 0%, 84%);
+    --mat-sys-surface-container-lowest: hsl(0, 0%, 98%);
+    --mat-sys-surface-container-low: hsl(0, 0%, 93%);
+    --mat-sys-surface-container: hsl(0, 0%, 90%);
+    --mat-sys-surface-container-high: hsl(0, 0%, 85%);
     --mat-sys-surface-container-highest: hsl(0, 0%, 80%);
-    --mat-sys-surface: hsl(0, 0%, 95%);
-    --mat-sys-surface-variant: hsl(0, 0%, 86%);
+    --mat-sys-surface-variant: hsl(0, 0%, 91%);
     --mat-sys-background: hsl(0, 0%, 90%);
+    --mat-sys-surface: var(--mat-sys-background);
     --mat-sys-on-surface: hsl(0, 0%, 10%);
     --mat-sys-on-surface-variant: hsl(0, 0%, 30%);
     --mat-sys-on-primary-container: hsl(198, 66%, 10%);
     --mat-sys-shadow: #cccccc;
-
     --mat-sys-outline: hsl(246, 4%, 48%);
 
     --inline-hint-bg: hsl(200, 65%, 91%);
     --inline-warning-bg: hsl(0, 83%, 95%);
+    --mdc-plain-tooltip-container-color: var(--mat-sys-surface-container-highest);
+    --mdc-plain-tooltip-supporting-text-color: var(--mat-sys-on-surface);
   }
 
   &.dark {
     color-scheme: dark;
     --mint-bg: #243328;
     --rose-bg: #282426;
-    --sky-bg:  #283034;
+    --sky-bg: #283034;
 
     --mat-sys-light: #242424;
 
@@ -136,27 +147,32 @@ html {
     --mat-sys-primary-light-active: hsl(198, 66%, 47.5%);
     --mat-sys-primary-light-hover: hsl(198, 66%, 45%);
 
-    --green-dark: hsl(120, 39%, 69%);
-    --green-base: hsl(120, 39%, 64%);
-    --green-light: hsl(120, 39%, 59%);
-    --green-light-active: hsl(120, 39%, 54%);
+    --green-dark: hsl(120, 39%, 35%);
+    --green-base: hsl(120, 39%, 40%);
+    --green-light: hsl(120, 39%, 45%);
+    --green-light-active: hsl(120, 39%, 50%);
+    --green-base-hover: hsl(120, 39%, 30%);
 
-    --red-dark: hsl(342, 100%, 62%);
-    --red-base: hsl(342, 100%, 57%);
-    --red-light: hsl(342, 100%, 52%);
-    --red-light-active: hsl(342, 100%, 47%);
+    --red-dark: hsl(342, 100%, 44%);
+    --red-base: hsl(342, 100%, 50%);
+    --red-light: hsl(342, 100%, 54%);
+    --red-light-active: hsl(342, 100%, 58%);
+    --red-base-hover: hsl(342, 100%, 30%);
 
     --yellow-dark: hsl(28, 85%, 35%);
     --yellow-base: hsl(28, 85%, 40%);
     --yellow-light: hsl(28, 85%, 45%);
     --yellow-light-active: hsl(28, 85%, 50%);
+    --yellow-base-hover: hsl(28, 85%, 32%);
 
     --grey-dark: hsl(0, 0%, 50%);
     --grey-base: hsl(0, 0%, 55%);
     --grey-light: hsl(0, 0%, 62%);
     --grey-light-active: hsl(0, 0%, 58%);
+    --grey-base-hover: hsl(0, 0%, 35%);
 
     --mat-sys-shadow-color-high: #050505;
+
     --mat-sys-primary: var(--mat-sys-primary-base);
     --mat-sys-on-primary: hsl(198, 66%, 10%);
     --mat-sys-primary-container: hsl(198, 66%, 40%);
@@ -165,18 +181,19 @@ html {
     --mat-sys-surface-container: hsl(0, 0%, 20%);
     --mat-sys-surface-container-high: hsl(0, 0%, 25%);
     --mat-sys-surface-container-highest: hsl(0, 0%, 30%);
-    --mat-sys-surface: hsl(0, 0%, 12.5%);
     --mat-sys-surface-variant: hsl(0, 0%, 22.5%);
     --mat-sys-background: hsl(0, 0%, 20%);
+    --mat-sys-surface: var(--mat-sys-background);
     --mat-sys-on-surface: hsl(0, 0%, 90%);
     --mat-sys-on-surface-variant: hsl(0, 0%, 80%);
     --mat-sys-on-primary-container: hsl(198, 66%, 80%);
     --mat-sys-shadow: #000000;
-
     --mat-sys-outline: hsl(0, 0%, 40%);
 
     --inline-hint-bg: hsl(200, 65%, 20%);
     --inline-warning-bg: hsl(0, 83%, 18%);
+    --mdc-plain-tooltip-container-color: var(--mat-sys-surface-container-highest);
+    --mdc-plain-tooltip-supporting-text-color: var(--mat-sys-on-surface);
   }
 
   @include mat.theme(

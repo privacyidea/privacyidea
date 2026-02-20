@@ -1,10 +1,11 @@
-@use "../../../../../styles";
+@use "styles";
+@use "table";
 
 .user-details-container-table-layout {
-  @include styles.base-table-structure(
-                  ".user-details-container-table",
-                  ".user-details-container-table-filter",
-                  ".table-scroll-container"
+  @include table.base-table-structure(
+    ".user-details-container-table",
+    ".user-details-container-table-filter",
+    ".table-scroll-container"
   );
 
   .user-details-action-row {
@@ -22,7 +23,7 @@
     align-items: center;
   }
 
-  .filter-paginator-container{
+  .filter-paginator-container {
     margin-bottom: 16px;
     justify-content: space-between;
   }

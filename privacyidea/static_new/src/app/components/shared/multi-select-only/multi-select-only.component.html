@@ -1,0 +1,64 @@
+<!--
+ (c) NetKnights GmbH 2025,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+
+<mat-form-field
+  appearance="fill"
+  class="full-width"
+  [matTooltip]="tooltipText()"
+  [matTooltipDisabled]="!isDisabled()">
+  <mat-label>{{ label() }}</mat-label>
+
+  <mat-select
+    [value]="selectedItems()"
+    [multiple]="true"
+    [disabled]="isDisabled()"
+    (selectionChange)="onSelectionChange($event)">
+    <mat-select-trigger>
+      {{ triggerValue() }}
+    </mat-select-trigger>
+
+    <div class="select-header-actions">
+      <button
+        mat-button
+        class="toggle-all-button"
+        (click)="$event.stopPropagation(); toggleAll()">
+        <span class="button-content">
+          <mat-icon class="action-icon">
+            {{ isAllSelected() ? "deselect" : "select_all" }}
+          </mat-icon>
+          {{ isAllSelected() ? toggleLabels.deselect : toggleLabels.select }}
+        </span>
+      </button>
+    </div>
+
+    @for (item of uniqueItems(); track item) {
+      <mat-option [value]="item">
+        <div class="option-row-layout">
+          <span class="item-text">{{ item }}</span>
+          <button
+            mat-button
+            class="only-button"
+            (click)="selectOnly($event, item)">
+            <span i18n>Only</span>
+          </button>
+        </div>
+      </mat-option>
+    }
+  </mat-select>
+</mat-form-field>

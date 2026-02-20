@@ -1,0 +1,49 @@
+<div class="pi-dialog">
+  <div
+    class="pi-dialog-header"
+    mat-dialog-title>
+    @if (title()) {
+      <h2>
+        @if (icon()) {
+          <mat-icon [style.margin-right.px]="8">{{ icon() }}</mat-icon>
+        }
+        {{ title() }}
+      </h2>
+    } @else {
+      <h2 i18n>Dialog</h2>
+    }
+  </div>
+  <mat-dialog-content>
+    <div class="pi-dialog-body">
+      <ng-content></ng-content>
+    </div>
+  </mat-dialog-content>
+  @if (showCancelButton() || actions().length > 0) {
+    <div class="pi-dialog-footer">
+      @if (showCancelButton()) {
+        <button
+          mat-button
+          mat-dialog-close
+          i18n>
+          Close
+        </button>
+      }
+      @for (action of actions(); track $index) {
+        @if (action.hidden) {
+          continue;
+        }
+        <button
+          [class.action-button-1]="action.type === 'confirm' || action.type === 'auxiliary' || !action.type"
+          [class.action-button-delete]="action.type === 'destruct'"
+          [class.action-button-cancel]="action.type === 'cancel'"
+          (click)="onActionClick(action)"
+          [disabled]="action.disabled">
+          @if (action.icon) {
+            <mat-icon>{{ action.icon }}</mat-icon>
+          }
+          {{ action.label }}
+        </button>
+      }
+    </div>
+  }
+</div>

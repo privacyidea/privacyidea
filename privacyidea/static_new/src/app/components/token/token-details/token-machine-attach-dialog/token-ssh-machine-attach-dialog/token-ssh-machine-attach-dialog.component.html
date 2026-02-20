@@ -1,5 +1,5 @@
 <!--
- (c) NetKnights GmbH 2025,  https://netknights.it
+ (c) NetKnights GmbH 2026,  https://netknights.it
 
  This code is free software; you can redistribute it and/or
  modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,12 +16,12 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<h2
-  i18n
-  mat-dialog-title>
-  Assign SSH Machine
-</h2>
-<mat-dialog-content class="full-width">
+
+<app-dialog-wrapper
+  title="Assign SSH Machine"
+  (close)="close()"
+  (onAction)="onAction($event)"
+  [actions]="[assignAction]">
   <form [formGroup]="formGroup">
     <mat-form-field
       appearance="fill"
@@ -80,24 +80,4 @@
       }
     </mat-form-field>
   </form>
-</mat-dialog-content>
-
-<mat-dialog-actions>
-  <div class="form-actions">
-    <button
-      (click)="onAssign()"
-      [disabled]="formGroup.invalid"
-      i18n
-      mat-button
-      type="button">
-      Assign
-    </button>
-    <button
-      (click)="onCancel()"
-      i18n
-      mat-button
-      type="button">
-      Cancel
-    </button>
-  </div>
-</mat-dialog-actions>
+</app-dialog-wrapper>

@@ -57,17 +57,14 @@
 
   <div class="flex-column">
     <div class="details-header">
-      <h3 i18n>
-        Custom Attributes:
-      </h3>
+      <h3 i18n>Custom Attributes:</h3>
     </div>
     <div class="add-attr-row">
       <mat-form-field class="width-238">
         <mat-label i18n>Attribute Key</mat-label>
         <div class="flex-row">
-          @if (keyMode() === 'select') {
-            <mat-select
-              [(ngModel)]="selectedKey">
+          @if (keyMode() === "select") {
+            <mat-select [(ngModel)]="selectedKey">
               @for (k of keyOptions(); track k) {
                 <mat-option [value]="k">{{ k }}</mat-option>
               }
@@ -132,9 +129,7 @@
     @if (userService.userAttributesList().length > 0) {
       <div class="custom-user-details mt-12 custom-details">
         @for (attr of userService.userAttributesList(); track attr.key) {
-          <div class="label">
-            {{ attr.key }}:
-          </div>
+          <div class="label">{{ attr.key }}:</div>
           <div class="value">{{ attr.value || "-" }}</div>
           @if (deletableAttributes().includes(attr.key) || deletableAttributes().includes("*")) {
             <button
@@ -178,17 +173,17 @@
             class="token-option">
             <span class="token-option-span"> {{ option["serial"] }} </span>
             <span class="token-option-span">
-                    {{ option["tokentype"] }}
-                  </span>
+              {{ option["tokentype"] }}
+            </span>
             <span
               [ngClass]="option['active'] ? 'highlight-true' : 'highlight-false'"
               class="token-option-span"
               i18n>
-                    {{ option["active"] ? "active" : "deactivated" }}
-                  </span>
+              {{ option["active"] ? "active" : "deactivated" }}
+            </span>
             <span class="token-option-span">
-                    {{ option["username"] }}
-                  </span>
+              {{ option["username"] }}
+            </span>
             <mat-icon>add</mat-icon>
           </mat-option>
         }
@@ -203,5 +198,4 @@
   </div>
 
   <app-user-details-container-table />
-
 </div>

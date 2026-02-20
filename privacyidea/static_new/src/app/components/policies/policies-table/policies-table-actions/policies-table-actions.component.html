@@ -1,0 +1,53 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+ -->
+@if (authService.oneActionAllowed(["policydelete", "policywrite"])) {
+  <div class="flex-row margin-bottom-1 margin-top-1 gap-8">
+    @if (authService.actionAllowed("policywrite")) {
+      <button
+        (click)="createNewPolicy()"
+        class="action-button-1"
+        mat-stroked-button>
+        <mat-icon>add_moderator</mat-icon>
+        <span i18n>Create Policy</span>
+      </button>
+    }
+
+    @if (authService.actionAllowed("policydelete")) {
+      <button
+        (click)="deleteSelectedPolicies()"
+        [disabled]="policySelection().size < 1"
+        class="action-button-delete"
+        mat-stroked-button>
+        <mat-icon>delete_sweep</mat-icon>
+        <span i18n>Delete Selected</span>
+      </button>
+    }
+
+    @if (authService.actionAllowed("policywrite")) {
+      <button
+        (click)="copySelectedPolicies()"
+        [disabled]="policySelection().size < 1"
+        class="action-button-1"
+        mat-stroked-button>
+        <mat-icon>content_copy</mat-icon>
+        <span i18n>Copy Selected</span>
+      </button>
+    }
+  </div>
+}

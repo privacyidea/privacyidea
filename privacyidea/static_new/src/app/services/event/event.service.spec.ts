@@ -21,13 +21,15 @@ import { TestBed } from "@angular/core/testing";
 import { EventService } from "./event.service";
 import { provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
-import { MockContentService, MockNotificationService } from "../../../testing/mock-services";
+import { MockContentService, MockDialogService, MockNotificationService } from "../../../testing/mock-services";
 import { MockAuthService } from "../../../testing/mock-services/mock-auth-service";
 import { NotificationService } from "../notification/notification.service";
-import { of } from "rxjs";
+import { of, Subject } from "rxjs";
 import { ROUTE_PATHS } from "../../route_paths";
 import { ContentService } from "../content/content.service";
 import { AuthService } from "../auth/auth.service";
+import { DialogService } from "../dialog/dialog.service";
+import { MockMatDialogRef } from "../../../testing/mock-mat-dialog-ref";
 
 describe("EventService", () => {
   let service: EventService;
@@ -35,6 +37,8 @@ describe("EventService", () => {
   let authServiceMock: MockAuthService;
   let contentServiceMock: MockContentService;
   let notificationMock: MockNotificationService;
+  let dialogServiceMock: MockDialogService;
+  let confirmClosed: Subject<boolean>;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
@@ -43,15 +47,23 @@ describe("EventService", () => {
         provideHttpClientTesting(),
         { provide: ContentService, useClass: MockContentService },
         { provide: AuthService, useClass: MockAuthService },
-        { provide: NotificationService, useClass: MockNotificationService }
+        { provide: NotificationService, useClass: MockNotificationService },
+        { provide: DialogService, useClass: MockDialogService }
       ]
     });
     service = TestBed.inject(EventService);
     httpMock = TestBed.inject(HttpTestingController);
     notificationMock = TestBed.inject(NotificationService) as unknown as MockNotificationService;
     contentServiceMock = TestBed.inject(ContentService) as unknown as MockContentService;
+    contentServiceMock.routeUrl.set(ROUTE_PATHS.EVENTS);
     authServiceMock = TestBed.inject(AuthService) as unknown as MockAuthService;
     authServiceMock.actionAllowed.mockReturnValue(true);
+    dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
+    confirmClosed = new Subject();
+    const dialogRefMock = new MockMatDialogRef();
+    dialogRefMock.afterClosed.mockReturnValue(confirmClosed);
+
+    dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
   });
 
   it("should be created", () => {
@@ -157,42 +169,37 @@ describe("EventService", () => {
   });
 
   describe("deleteWithConfirmDialog", () => {
-    let afterDeleteCallback: jest.Mock;
     let event: any;
 
     beforeEach(() => {
-      afterDeleteCallback = jest.fn();
       event = { id: "1", name: "Test Event" } as any;
     });
 
-    it("should open confirmation dialog and call delete on success", () => {
+    it("should open confirmation dialog and call delete on success", async () => {
       const response = { result: { value: event.id } };
       const deleteSpy = jest.spyOn(service, "deleteEvent").mockReturnValue(of(response as any));
-      let dialog = {
-        open: jest.fn().mockReturnValue({
-          afterClosed: () => of({ confirmed: true })
-        })
-      };
+      const deletePromise = service.deleteWithConfirmDialog(event);
 
-      service.deleteWithConfirmDialog(event, dialog, afterDeleteCallback);
-      expect(dialog.open).toHaveBeenCalled();
+      expect(dialogServiceMock.openDialog).toHaveBeenCalled();
+      confirmClosed.next(true);
+      confirmClosed.complete();
+      await expect(deletePromise).resolves.toEqual(response);
+
       expect(deleteSpy).toHaveBeenCalledWith(event.id);
       expect(notificationMock.openSnackBar).toHaveBeenCalledWith("Successfully deleted event handler.");
-      expect(afterDeleteCallback).toHaveBeenCalled();
     });
 
-    it("should open confirmation dialog and do nothing on cancel", () => {
+    it("should open confirmation dialog and do nothing on cancel", async () => {
       const deleteSpy = jest.spyOn(service, "deleteEvent");
-      let dialog = {
-        open: jest.fn().mockReturnValue({
-          afterClosed: () => of({ confirmed: false })
-        })
-      };
-      service.deleteWithConfirmDialog(event, dialog, afterDeleteCallback);
-      expect(dialog.open).toHaveBeenCalled();
+
+      const deletePromise = service.deleteWithConfirmDialog(event);
+      confirmClosed.next(false);
+      confirmClosed.complete();
+      await expect(deletePromise).resolves.toBeUndefined();
+
+      expect(dialogServiceMock.openDialog).toHaveBeenCalled();
       expect(deleteSpy).not.toHaveBeenCalled();
       expect(notificationMock.openSnackBar).not.toHaveBeenCalled();
-      expect(afterDeleteCallback).not.toHaveBeenCalled();
     });
   });
 
@@ -208,18 +215,20 @@ describe("EventService", () => {
 
       // Execute
       const req = httpMock.expectOne(`${service.eventBaseUrl}/`);
-      const eventHandlers = [{
-        id: "1",
-        name: "test",
-        active: true,
-        handlermodule: "testModule",
-        ordering: 0,
-        position: "post",
-        event: ["auth"],
-        action: "disable_all_tokens",
-        options: {},
-        conditions: {}
-      }];
+      const eventHandlers = [
+        {
+          id: "1",
+          name: "test",
+          active: true,
+          handlermodule: "testModule",
+          ordering: 0,
+          position: "post",
+          event: ["auth"],
+          action: "disable_all_tokens",
+          options: {},
+          conditions: {}
+        }
+      ];
       req.flush({ result: { value: eventHandlers } });
       TestBed.flushEffects();
       await Promise.resolve();
@@ -348,7 +357,7 @@ describe("EventService", () => {
 
       // Execute
       const req = httpMock.expectOne(`${service.eventBaseUrl}/actions/testModule`);
-      const actions = [{ "action1": { "option1": {}, "option2": {} } }, { "action2": {} }];
+      const actions = [{ action1: { option1: {}, option2: {} } }, { action2: {} }];
       req.flush({ result: { value: actions } });
       TestBed.flushEffects();
       await Promise.resolve();
@@ -378,7 +387,7 @@ describe("EventService", () => {
 
       // Execute
       const req = httpMock.expectOne(`${service.eventBaseUrl}/conditions/testModule`);
-      const conditions = { "condition1": { "desc": "", "type": "str" }, "condition2": { "desc": "", "type": "int" } };
+      const conditions = { condition1: { desc: "", type: "str" }, condition2: { desc: "", type: "int" } };
       req.flush({ result: { value: conditions } });
       TestBed.flushEffects();
       await Promise.resolve();

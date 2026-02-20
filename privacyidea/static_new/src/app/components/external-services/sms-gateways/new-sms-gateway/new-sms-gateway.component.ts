@@ -38,10 +38,8 @@ import {
 } from "../../../../services/sms-gateway/sms-gateway.service";
 import { PendingChangesService } from "../../../../services/pending-changes/pending-changes.service";
 import { ROUTE_PATHS } from "../../../../route_paths";
-import {
-  ConfirmationDialogComponent,
-  ConfirmationDialogResult
-} from "../../../shared/confirmation-dialog/confirmation-dialog.component";
+import { SaveAndExitDialogComponent } from "../../../shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
+import { DialogService, DialogServiceInterface } from "../../../../services/dialog/dialog.service";
 
 type KeyValueRow = { key: string; value: string };
 
@@ -69,7 +67,7 @@ export class NewSmsGatewayComponent implements OnInit, OnDestroy {
   private readonly dialogRef = inject(MatDialogRef<NewSmsGatewayComponent>);
   protected readonly data = inject<SmsGateway | null>(MAT_DIALOG_DATA);
   protected readonly smsGatewayService: SmsGatewayServiceInterface = inject(SmsGatewayService);
-  private readonly dialog = inject(MatDialog);
+  private readonly dialogService: DialogServiceInterface = inject(DialogService);
   private readonly router = inject(Router);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly pendingChangesService = inject(PendingChangesService);
@@ -115,7 +113,7 @@ export class NewSmsGatewayComponent implements OnInit, OnDestroy {
         this.onCancel();
       });
 
-      this.dialogRef.keydownEvents().subscribe(event => {
+      this.dialogRef.keydownEvents().subscribe((event) => {
         if (event.key === "Escape") {
           this.onCancel();
         }
@@ -263,30 +261,30 @@ export class NewSmsGatewayComponent implements OnInit, OnDestroy {
 
   onCancel(): void {
     if (this.hasChanges) {
-      this.dialog
-        .open(ConfirmationDialogComponent, {
+      this.dialogService
+        .openDialog({
+          component: SaveAndExitDialogComponent,
           data: {
             title: $localize`Discard changes`,
-            action: "discard",
-            type: "sms-gateway",
+            message: $localize`You have unsaved changes. Do you want to save them before exiting?`,
             allowSaveExit: true,
             saveExitDisabled: !this.canSave
           }
         })
         .afterClosed()
-        .subscribe((result: ConfirmationDialogResult | undefined) => {
+        .subscribe((result) => {
           if (result === "discard") {
             this.pendingChangesService.unregisterHasChanges();
-            this.closeActual();
+            this.closeCurrent();
           } else if (result === "save-exit") {
             Promise.resolve(this.pendingChangesService.save()).then(() => {
               this.pendingChangesService.unregisterHasChanges();
-              this.closeActual();
+              this.closeCurrent();
             });
           }
         });
     } else {
-      this.closeActual();
+      this.closeCurrent();
     }
   }
 
@@ -324,7 +322,7 @@ export class NewSmsGatewayComponent implements OnInit, OnDestroy {
     this.customHeaders = rest;
   }
 
-  private closeActual(): void {
+  private closeCurrent(): void {
     if (this.dialogRef) {
       this.dialogRef.close();
     } else {

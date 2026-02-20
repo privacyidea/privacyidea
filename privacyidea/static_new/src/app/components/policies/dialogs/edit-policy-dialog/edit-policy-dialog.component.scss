@@ -1,0 +1,39 @@
+@use "buttons";
+@use "@angular/material" as mat;
+
+.dialog-content {
+  width: 80vw;
+  ::ng-deep .mat-mdc-dialog-content {
+    max-height: 75vh !important;
+    min-height: 75vh !important;
+    padding-bottom: 0 !important;
+  }
+}
+
+.tab-buttons {
+  align-items: center;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  gap: var(--half-global-gap);
+  justify-content: center;
+  padding: var(--half-global-padding) 0;
+}
+
+.action-button-1 {
+  padding: var(--global-padding);
+}
+.priority-description {
+  align-items: stretch;
+  display: flex;
+  flex-direction: row;
+  gap: var(--global-gap);
+  app-policy-priority {
+    flex: 1 1 0;
+    height: 100%;
+  }
+  app-policy-description {
+    flex: 5 1 0;
+    height: 100%;
+  }
+}

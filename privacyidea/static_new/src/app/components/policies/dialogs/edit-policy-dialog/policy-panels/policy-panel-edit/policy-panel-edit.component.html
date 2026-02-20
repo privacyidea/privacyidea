@@ -1,0 +1,65 @@
+<!--
+  (c) NetKnights GmbH 2026,  https://netknights.it
+
+  This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+ -->
+<div class="policy-panel-edit-container">
+  <div class="name-priority-row">
+    <app-policy-name-edit
+      [policyName]="editedPolicy().name"
+      (policyNameChange)="addPolicyEdit({ name: $event })" />
+    <div class="spacer"></div>
+    <app-policy-priority-edit
+      [priority]="editedPolicy().priority"
+      (priorityChange)="addPolicyEdit({ priority: $event })" />
+  </div>
+
+  <app-policy-description-edit
+    [description]="editedPolicy().description ?? ''"
+    (descriptionChange)="addPolicyEdit({ description: $event })" />
+
+  <div class="tab-buttons">
+    <button
+      mat-stroked-button
+      class="action-button-1"
+      [class.action-button-active]="activeTab() === 'actions'"
+      (click)="setActiveTab('actions')"
+      i18n>
+      ACTIONS
+    </button>
+    <button
+      mat-stroked-button
+      class="action-button-1"
+      [class.action-button-active]="activeTab() === 'conditions'"
+      (click)="setActiveTab('conditions')"
+      i18n>
+      CONDITIONS
+    </button>
+  </div>
+
+  @if (activeTab() === "actions") {
+    <app-edit-action-tab
+      [policy]="editedPolicy()"
+      (actionsUpdate)="updateActions($event)"
+      (policyScopeChange)="onPolicyScopeChange($event)" />
+  }
+
+  @if (activeTab() === "conditions") {
+    <app-edit-conditions-tab
+      [policy]="editedPolicy()"
+      (policyEdit)="addPolicyEdit($event)" />
+  }
+</div>

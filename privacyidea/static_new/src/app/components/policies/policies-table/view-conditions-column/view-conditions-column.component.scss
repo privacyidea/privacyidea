@@ -1,0 +1,86 @@
+@use "@angular/material" as mat;
+
+.view-conditions-container {
+  display: flex;
+  flex-direction: column;
+
+  * {
+    font-size: 12px;
+    padding: 0 var(--half-global-padding) !important;
+
+    &:not(:last-child) {
+      border-bottom: 1px solid var(--mat-sys-outline-variant);
+    }
+  }
+}
+
+.additional-conditions-grid {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.additional-condition-item {
+  background-color: var(--mat-sys-surface-container-low);
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: 8px;
+  display: flex;
+  flex: 1 1 350px;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 100%;
+  min-width: 350px;
+  padding: 10px 12px;
+}
+
+.status-row {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+
+  .active-status mat-icon {
+    font-size: 18px;
+    height: 18px;
+    width: 18px;
+    &.active {
+      color: var(--mat-sys-primary);
+    }
+    &:not(.active) {
+      color: var(--mat-sys-error);
+    }
+  }
+
+  .additional-condition-badge {
+    background: var(--mat-sys-secondary-container);
+    border-radius: 4px;
+    color: var(--mat-sys-on-secondary-container);
+    font-size: 10px;
+    padding: 1px 6px;
+    text-transform: uppercase;
+  }
+}
+
+.data-row {
+  align-items: start;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(4, 1fr);
+  width: 100%;
+}
+
+.force-wrap {
+  color: var(--mat-sys-on-surface);
+  display: block;
+  font-size: 13px;
+  min-width: 0;
+  overflow-wrap: break-word;
+  white-space: normal;
+  word-break: break-word;
+}
+
+.missing-data-info {
+  color: var(--mat-sys-on-surface-variant);
+  font-size: 13px;
+  font-style: italic;
+}

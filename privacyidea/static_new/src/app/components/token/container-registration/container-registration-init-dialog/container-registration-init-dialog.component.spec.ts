@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -18,9 +18,10 @@
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { ContainerRegistrationInitDialogComponent } from "./container-registration-init-dialog.component";
-import { MAT_DIALOG_DATA } from "@angular/material/dialog";
+import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { By } from "@angular/platform-browser";
 import { NO_ERRORS_SCHEMA, signal } from "@angular/core";
+import { MockMatDialogRef } from "../../../../../testing/mock-mat-dialog-ref";
 
 describe("ContainerRegistrationInitDialogComponent", () => {
   let component: ContainerRegistrationInitDialogComponent;
@@ -37,7 +38,10 @@ describe("ContainerRegistrationInitDialogComponent", () => {
     beforeEach(async () => {
       await TestBed.configureTestingModule({
         imports: [ContainerRegistrationInitDialogComponent],
-        providers: [{ provide: MAT_DIALOG_DATA, useValue: mockData }],
+        providers: [
+          { provide: MAT_DIALOG_DATA, useValue: mockData },
+          { provide: MatDialogRef, useClass: MockMatDialogRef }
+        ],
         schemas: [NO_ERRORS_SCHEMA]
       }).compileComponents();
 
@@ -52,8 +56,10 @@ describe("ContainerRegistrationInitDialogComponent", () => {
     });
 
     it("should render Register button", () => {
-      const button = fixture.debugElement.query(By.css("button[mat-button]:not([mat-dialog-close])"));
-      expect(button.nativeElement.textContent).toContain("Register");
+      const button = fixture.debugElement.query(By.css(".pi-dialog-footer .action-button-1"))
+        ?.nativeElement as HTMLButtonElement;
+      expect(button).toBeDefined();
+      expect(button.textContent).toContain("Register");
     });
 
     it("should call registerContainer with correct arguments when onRegister is called", () => {
@@ -72,8 +78,10 @@ describe("ContainerRegistrationInitDialogComponent", () => {
       // Simulate invalid input by mocking the getter
       Object.defineProperty(component, "validInput", { get: () => false });
       fixture.detectChanges();
-      const button = fixture.debugElement.query(By.css("button[mat-button]:not([mat-dialog-close])"));
-      expect(button.nativeElement.disabled).toBe(true);
+      const button = fixture.debugElement.query(By.css(".pi-dialog-footer .action-button-1"))
+        ?.nativeElement as HTMLButtonElement;
+      expect(button).toBeDefined();
+      expect(button.disabled).toBe(true);
     });
   });
 
@@ -87,7 +95,10 @@ describe("ContainerRegistrationInitDialogComponent", () => {
     beforeEach(async () => {
       await TestBed.configureTestingModule({
         imports: [ContainerRegistrationInitDialogComponent],
-        providers: [{ provide: MAT_DIALOG_DATA, useValue: mockData }],
+        providers: [
+          { provide: MAT_DIALOG_DATA, useValue: mockData },
+          { provide: MatDialogRef, useClass: MockMatDialogRef }
+        ],
         schemas: [NO_ERRORS_SCHEMA]
       }).compileComponents();
 
@@ -107,8 +118,10 @@ describe("ContainerRegistrationInitDialogComponent", () => {
     });
 
     it("should render Rollover button", async () => {
-      const button = fixture.debugElement.query(By.css("button[mat-button]:not([mat-dialog-close])"));
-      expect(button.nativeElement.textContent).toContain("Rollover");
+      const button = fixture.debugElement.query(By.css(".pi-dialog-footer .action-button-1"))
+        ?.nativeElement as HTMLButtonElement;
+      expect(button).toBeDefined();
+      expect(button.textContent).toContain("Rollover");
     });
 
     it("should call registerContainer with correct arguments when onRegister is called", () => {
@@ -127,8 +140,10 @@ describe("ContainerRegistrationInitDialogComponent", () => {
       // Simulate invalid input by mocking the getter
       Object.defineProperty(component, "validInput", { get: () => false });
       fixture.detectChanges();
-      const button = fixture.debugElement.query(By.css("button[mat-button]:not([mat-dialog-close])"));
-      expect(button.nativeElement.disabled).toBe(true);
+      const button = fixture.debugElement.query(By.css(".pi-dialog-footer .action-button-1"))
+        ?.nativeElement as HTMLButtonElement;
+      expect(button).toBeDefined();
+      expect(button.disabled).toBe(true);
     });
   });
 });

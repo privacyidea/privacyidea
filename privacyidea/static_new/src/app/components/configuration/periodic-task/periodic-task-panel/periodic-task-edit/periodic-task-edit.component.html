@@ -27,8 +27,7 @@
         required />
       <mat-hint i18n>Unique name of the periodic task.</mat-hint>
     </mat-form-field>
-    <mat-form-field
-      subscriptSizing="dynamic">
+    <mat-form-field subscriptSizing="dynamic">
       <mat-label i18n>Task Module</mat-label>
       <mat-select
         [ngModel]="editTask().taskmodule"
@@ -45,8 +44,7 @@
 
   <div class="flex-row">
     <div class="flex-size-1">
-      <mat-form-field
-        subscriptSizing="dynamic">
+      <mat-form-field subscriptSizing="dynamic">
         <mat-label i18n>Interval</mat-label>
         <input
           matInput
@@ -75,8 +73,7 @@
       </mat-expansion-panel>
     </div>
   </div>
-  <mat-form-field
-    subscriptSizing="dynamic">
+  <mat-form-field subscriptSizing="dynamic">
     <mat-label i18n>Nodes</mat-label>
     <mat-select
       (selectionChange)="onNodeSelectionChange($event.value)"
@@ -91,8 +88,7 @@
     </mat-select>
     <mat-hint i18n>Select the nodes on which the periodic task should be executed.</mat-hint>
   </mat-form-field>
-  <mat-form-field
-    subscriptSizing="dynamic">
+  <mat-form-field subscriptSizing="dynamic">
     <mat-label i18n>Ordering</mat-label>
     <input
       matInput
@@ -116,9 +112,11 @@
     @if (Object.keys(editTask().options).length === 0) {
       <span
         class="italic"
-        i18n>No options have been set for this periodic task yet.</span>
+        i18n
+        >No options have been set for this periodic task yet.</span
+      >
     }
-    <div class="selected-actions-container">
+    <div class="added-actions-container">
       @for (option of Object.keys(editTask().options); track option) {
         <div
           class="action-card"
@@ -154,7 +152,7 @@
     @if (Object.keys(notUsedOptions()).length > 0) {
       <h4 i18n>Add Option</h4>
     }
-    <div class="selected-actions-container">
+    <div class="added-actions-container">
       @for (option of Object.keys(notUsedOptions()); track option) {
         <div
           class="action-card"
@@ -162,7 +160,7 @@
           (click)="onOptionSelection(option, notUsedOptions()[option])">
           <div class="action-card-row">
             <span class="action-label">{{ option }}</span>
-            @if (editOption() === option && notUsedOptions()[option].type === 'str') {
+            @if (editOption() === option && notUsedOptions()[option].type === "str") {
               <div class="action-value">
                 <mat-form-field>
                   <input
@@ -176,7 +174,6 @@
         </div>
       }
     </div>
-
   </div>
   <div class="flex-size-1">
     @if (selectedOption().name) {

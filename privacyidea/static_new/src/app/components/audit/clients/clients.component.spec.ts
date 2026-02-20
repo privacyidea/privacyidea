@@ -20,13 +20,9 @@
 import { ClientsComponent } from "./clients.component";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { provideHttpClient } from "@angular/common/http";
-import {
-  MockAuditService,
-  MockContentService,
-  MockPiResponse
-} from "../../../../testing/mock-services";
+import { MockAuditService, MockContentService, MockPiResponse } from "../../../../testing/mock-services";
 import { ClientsDict } from "../../../services/clients/clients.service";
-import { FilterValue } from "../../../core/models/filter_value";
+import { FilterValue } from "../../../core/models/filter_value/filter_value";
 import { MockAuthService } from "../../../../testing/mock-services/mock-auth-service";
 
 describe("ClientsComponent", () => {
@@ -65,9 +61,7 @@ describe("ClientsComponent", () => {
         { hostname: "host1", ip: "1.2.3.4", lastseen: "2024-06-01T12:00:00Z", application: "app1/1.0 comment" },
         { hostname: "host2", ip: "2.3.4.5", lastseen: "2024-06-02T12:00:00Z", application: "app1/1.0 comment" }
       ],
-      "app2/2.0": [
-        { hostname: "host3", ip: "3.4.5.6", lastseen: "2024-06-03T12:00:00Z", application: "app2/2.0" }
-      ]
+      "app2/2.0": [{ hostname: "host3", ip: "3.4.5.6", lastseen: "2024-06-03T12:00:00Z", application: "app2/2.0" }]
     };
     const rows = component.flattenedClientRowsFromDict(dict);
     expect(rows.length).toBe(3);
@@ -119,10 +113,11 @@ describe("ClientsComponent", () => {
   it("should call auditService.auditFilter.set with correct user agent filter", () => {
     const spy = jest.spyOn(component.auditService.auditFilter, "set");
     (component as any).showInAuditLog("application", "privacyIDEA-Keycloak/1.5.1 Keycloak/25.0.1");
-    expect(spy).toHaveBeenCalledWith(new FilterValue({
-      value: "user_agent: privacyIDEA-Keycloak user_agent_version:" +
-        " 1.5.1"
-    }));
+    expect(spy).toHaveBeenCalledWith(
+      new FilterValue({
+        value: "user_agent: privacyIDEA-Keycloak user_agent_version:" + " 1.5.1"
+      })
+    );
   });
 
   it("should not set auditFilter for not covered columns", () => {
@@ -133,9 +128,7 @@ describe("ClientsComponent", () => {
 
   it("should create MatTableDataSource with correct sorting accessor for lastseen", () => {
     const dict: ClientsDict = {
-      "app": [
-        { hostname: "host", ip: "1.2.3.4", lastseen: "2024-06-01T12:00:00Z", application: "app" }
-      ]
+      app: [{ hostname: "host", ip: "1.2.3.4", lastseen: "2024-06-01T12:00:00Z", application: "app" }]
     };
     // Set the resource value directly
     component.clientService.clientsResource.value.set(MockPiResponse.fromValue(dict));

@@ -1,4 +1,5 @@
-@use "../../../../styles" as styles;
+@use "styles";
+@use "table";
 @use "@angular/material" as mat;
 
 // --- Main Layout ---
@@ -10,7 +11,7 @@
 // --- Tab Buttons ---
 .tab-buttons {
   display: flex;
-  gap: calc(var(--global-gap) / 2);
+  gap: var(--half-global-gap);
   align-items: center;
   flex-direction: row;
   flex-wrap: nowrap;
@@ -34,7 +35,7 @@
 .actions-list {
   display: flex;
   flex-direction: column;
-  gap: calc(var(--global-gap) / 2);
+  gap: var(--half-global-gap);
 }
 
 .action-card {
@@ -70,7 +71,7 @@
 .add-action-details {
   display: flex;
   flex-direction: column;
-  gap: calc(var(--global-gap) / 2);
+  gap: var(--half-global-gap);
   max-height: 200px;
   overflow-y: auto;
   padding-right: var(
@@ -92,11 +93,6 @@
 .search-input:focus {
   outline: none;
   border-bottom-color: var(--mat-sys-primary);
-}
-
-.add-action-button {
-  align-self: flex-end;
-  color: var(--mat-sys-primary);
 }
 
 // --- Detail Rows ---
@@ -133,7 +129,6 @@
 
 .machine-resolver-card {
   border-radius: var(--border-radius);
-
 
   mat-expansion-panel-header {
     padding: 0 var(--global-padding);

@@ -60,14 +60,15 @@
           mat-header-cell>
           <div class="flex ali-center">
             {{ column.label }}
-            @if (!['number', 'log_level', 'clearance_level', 'sig_check', 'missing_line', 'thread_id'].includes(column.key)) {
+            @if (
+              !["number", "log_level", "clearance_level", "sig_check", "missing_line", "thread_id"].includes(column.key)
+            ) {
               <div class="margin-left-1">
                 <button
                   (click)="onKeywordClick(apiFilterKeyMap[column.key])"
                   class="filter-button"
                   mat-icon-button>
-                  <mat-icon
-                    class="keyword-button-icon margin-left-0">
+                  <mat-icon class="keyword-button-icon margin-left-0">
                     {{ getFilterIconName(column.key) }}
                   </mat-icon>
                 </button>

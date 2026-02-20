@@ -1,0 +1,6 @@
+@use "styles";
+@use "@angular/material";
+
+::ng-deep .mat-mdc-menu-content {
+  background: var(--mat-sys-surface-container-low);
+}

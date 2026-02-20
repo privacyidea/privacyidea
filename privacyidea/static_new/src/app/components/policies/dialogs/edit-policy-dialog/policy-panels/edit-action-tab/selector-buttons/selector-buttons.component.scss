@@ -1,0 +1,74 @@
+@use "@angular/material" as mat;
+
+.button-row {
+  display: flex;
+  overflow: auto;
+  scrollbar-width: thin;
+  width: 100%;
+}
+
+.button-item {
+  align-items: center;
+  border: 1px solid var(--mat-sys-outline);
+  border-radius: 0;
+  color: var(--mat-sys-on-surface);
+  cursor: pointer;
+  display: flex;
+  flex: 1;
+  justify-content: center;
+  margin: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  padding: var(--half-global-padding) var(--global-padding);
+  text-align: center;
+  white-space: normal;
+  word-break: break-word;
+
+  &:first-child {
+    border-bottom-left-radius: var(--border-radius);
+    border-top-left-radius: var(--border-radius);
+  }
+
+  &:last-child {
+    border-bottom-right-radius: var(--border-radius);
+    border-top-right-radius: var(--border-radius);
+  }
+
+  &:hover:not([disabled]) {
+    background-color: var(--mat-sys-primary-light);
+    color: var(--mat-sys-on-primary);
+  }
+
+  &:focus {
+    outline: 2px solid var(--mat-sys-primary-base);
+    outline-offset: -2px;
+    position: relative;
+    z-index: 1;
+  }
+
+  &[disabled] {
+    background-color: var(--mat-sys-surface-variant);
+    border-color: var(--mat-sys-outline-variant);
+    color: var(--mat-sys-on-surface-variant);
+    cursor: not-allowed;
+  }
+}
+
+.button-item + .button-item {
+  border-left: none;
+}
+
+.selected-button {
+  background-color: var(--mat-sys-primary-base);
+  color: var(--mat-sys-on-primary);
+  font-weight: 600;
+  z-index: 1;
+
+  &[disabled] {
+    background-color: var(--mat-sys-primary-base);
+    color: var(--mat-sys-on-primary);
+    opacity: 0.7;
+    border-color: var(--mat-sys-outline-variant);
+    filter: grayscale(0.3);
+  }
+}

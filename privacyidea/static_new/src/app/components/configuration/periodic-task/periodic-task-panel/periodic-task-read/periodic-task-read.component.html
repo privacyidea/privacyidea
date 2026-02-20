@@ -19,13 +19,15 @@
 <div class="task-details">
   <div
     class="label"
-    i18n>Interval
+    i18n>
+    Interval
   </div>
   <div class="value">{{ task().interval }}</div>
 
   <div
     class="label"
-    i18n>Nodes
+    i18n>
+    Nodes
   </div>
   @if (Array.isArray(task().nodes)) {
     <ul class="no-indention margin-0">
@@ -39,13 +41,15 @@
 
   <div
     class="label"
-    i18n>Ordering
+    i18n>
+    Ordering
   </div>
   <div class="value">{{ task().ordering }}</div>
 
   <div
     class="label"
-    i18n>Retry If Failed
+    i18n>
+    Retry If Failed
   </div>
   @if (task().retry_if_failed) {
     <mat-icon>check_circle</mat-icon>
@@ -55,13 +59,15 @@
 
   <div
     class="label"
-    i18n>Last Update
+    i18n>
+    Last Update
   </div>
-  <div class="value">{{ task().last_update | date:'yyyy-MM-dd HH:mm:ss z' }}</div>
+  <div class="value">{{ task().last_update | date: "yyyy-MM-dd HH:mm:ss z" }}</div>
 
   <div
     class="label"
-    i18n>Last Run
+    i18n>
+    Last Run
   </div>
   @if (Object.keys(task().last_runs).length > 0) {
     <ul class="no-indention margin-0">
@@ -69,7 +75,7 @@
         <li>
           {{ node }}:
           @if (this.isDateValue(task().last_runs[node])) {
-            {{ task().last_runs[node] | date:'yyyy-MM-dd HH:mm:ss z' }}
+            {{ task().last_runs[node] | date: "yyyy-MM-dd HH:mm:ss z" }}
           } @else {
             {{ task().last_runs[node] }}
           }
@@ -81,11 +87,10 @@
   }
 </div>
 
-<div class="selected-actions-container">
+<div class="added-actions-container">
   <h3>Options</h3>
   @for (option of Object.keys(task().options); track option) {
-    <div
-      class="action-card">
+    <div class="action-card">
       <div class="action-card-row">
         <span class="action-label">{{ option }}</span>
         @if (!isBooleanAction(task().options[option])) {

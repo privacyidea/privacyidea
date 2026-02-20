@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -39,6 +39,9 @@ import {
   TokenEnrollmentData
 } from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
 import { firstValueFrom } from "rxjs";
+import { TokenEnrollmentFirstStepDialogComponent } from "../token-enrollment-firtst-step-dialog/token-enrollment-first-step-dialog.component";
+import { MatDialogRef } from "@angular/material/dialog";
+import { AbstractDialogComponent } from "../../../shared/dialog/abstract-dialog/abstract-dialog.component";
 
 @Component({
   selector: "app-enroll-webauthn",
@@ -105,27 +108,19 @@ export class EnrollWebauthnComponent implements OnInit {
     enrollmentResponse: EnrollmentResponse,
     enrollmentData: TokenEnrollmentData
   ): Promise<EnrollmentResponse | null> {
-    let webauthnEnrollmentResponse: WebauthnEnrollmentResponse;
-    if (enrollmentResponse.type !== "webauthn") {
-      console.warn("Received enrollment response is not of type 'webauthn'. Cannot proceed with WebAuthn enrollment.");
-      return null;
-    } else {
-      webauthnEnrollmentResponse = enrollmentResponse as WebauthnEnrollmentResponse;
-    }
-    let webauthnEnrollmentData: WebAuthnEnrollmentData;
-    if (enrollmentData.type !== "webauthn") {
-      console.warn("Received enrollment data is not of type 'webauthn'. Cannot proceed with WebAuthn enrollment.");
-      return null;
-    } else {
-      webauthnEnrollmentData = enrollmentData as WebAuthnEnrollmentData;
-    }
-
-    if (!webauthnEnrollmentResponse || !webauthnEnrollmentResponse.detail) {
+    if (!(enrollmentResponse as any)?.detail?.webAuthnRegisterRequest?.detail) {
       this.notificationService.openSnackBar(
         "Failed to initiate WebAuthn registration: Invalid server response or missing details."
       );
       return null;
     }
+    const webauthnEnrollmentResponse = enrollmentResponse as WebauthnEnrollmentResponse;
+
+    if (enrollmentData.type !== "webauthn") {
+      console.warn("Received enrollment data is not of type 'webauthn'. Cannot proceed with WebAuthn enrollment.");
+      return null;
+    }
+    const webauthnEnrollmentData = enrollmentData as WebAuthnEnrollmentData;
 
     const detail = webauthnEnrollmentResponse.detail;
     const webAuthnRegOptions = detail?.webAuthnRegisterRequest;
@@ -204,6 +199,8 @@ export class EnrollWebauthnComponent implements OnInit {
     return publicKeyCred;
   };
 
+  stepOneDialogRef: MatDialogRef<AbstractDialogComponent, boolean> | null = null;
+
   openStepOneDialog(args: {
     webauthnEnrollmentData: WebAuthnEnrollmentData;
     webauthnEnrollmentResponse: WebauthnEnrollmentResponse;
@@ -211,24 +208,27 @@ export class EnrollWebauthnComponent implements OnInit {
     const { webauthnEnrollmentResponse } = args;
 
     this.reopenDialogChange.emit(async () => {
-      if (!this.dialogService.isTokenEnrollmentFirstStepDialogOpen) {
-        this.dialogService.openTokenEnrollmentFirstStepDialog({
-          data: { enrollmentResponse: webauthnEnrollmentResponse },
-          disableClose: true
-        });
-        return webauthnEnrollmentResponse;
+      if (this.stepOneDialogRef && this.dialogService.isDialogOpen(this.stepOneDialogRef)) {
+        return null;
       }
+      this.stepOneDialogRef = this.dialogService.openDialog({
+        component: TokenEnrollmentFirstStepDialogComponent,
+        data: { enrollmentResponse: webauthnEnrollmentResponse }
+      });
+
       return null;
     });
-
-    this.dialogService.openTokenEnrollmentFirstStepDialog({
-      data: { enrollmentResponse: webauthnEnrollmentResponse },
-      disableClose: true
+    this.stepOneDialogRef = this.dialogService.openDialog({
+      component: TokenEnrollmentFirstStepDialogComponent,
+      data: { enrollmentResponse: webauthnEnrollmentResponse }
     });
   }
 
   closeStepOneDialog(): void {
-    this.dialogService.closeTokenEnrollmentFirstStepDialog();
+    if (this.stepOneDialogRef) {
+      this.stepOneDialogRef.close(true);
+      this.stepOneDialogRef = null;
+    }
   }
 
   private async finalizeEnrollment(args: {
@@ -281,7 +281,7 @@ export class EnrollWebauthnComponent implements OnInit {
         })
       );
       response.detail.serial = detail.serial;
-      return response;
+      return { ...response };
     } catch (error: any) {
       const errMsg = `WebAuthn finalization failed: ${error.message || error}`;
       this.notificationService.openSnackBar(errMsg);

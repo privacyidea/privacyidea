@@ -68,7 +68,7 @@ import { NotificationService } from "../../../services/notification/notification
 import { ContainerDetailsActionsComponent } from "./container-details-actions/container-details-actions.component";
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { ContainerDetailsTokenActionsComponent } from "./container-details-token-actions/container-details-token-actions.component";
-import { FilterValue } from "../../../core/models/filter_value";
+import { FilterValue } from "../../../core/models/filter_value/filter_value";
 
 export const containerDetailsKeyMap = [
   { key: "type", label: "Type" },

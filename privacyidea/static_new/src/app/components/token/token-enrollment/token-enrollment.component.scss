@@ -1,8 +1,9 @@
-@use "../../../../styles";
+@use "styles";
+@use "table";
 @use "@angular/material" as mat;
 
 .token-enrollment-container {
-  @include styles.table-container-styles;
+  @include table.table-container-styles;
   width: 56rem;
   max-height: var(--max-height);
   overflow: auto;
