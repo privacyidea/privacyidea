@@ -19,12 +19,22 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 import binascii
+import io
 import json
 import logging
+import os
 
+import cbor2
 from cryptography import x509
 from sqlalchemy import select
-from webauthn.helpers import bytes_to_base64url
+from webauthn import verify_registration_response, generate_registration_options, options_to_json
+from webauthn.helpers import bytes_to_base64url, parse_attestation_object, base64url_to_bytes
+from webauthn.helpers.exceptions import InvalidRegistrationResponse, InvalidJSONStructure
+from webauthn.helpers.structs import (AttestationFormat, AttestationConveyancePreference,
+                                      AuthenticatorAttachment, AuthenticatorSelectionCriteria,
+                                      PublicKeyCredentialDescriptor, UserVerificationRequirement,
+                                      AuthenticatorTransport, PublicKeyCredentialCreationOptions)
+from webauthn.registration.verify_registration_response import VerifiedRegistration
 
 from privacyidea.api.lib.utils import (attestation_certificate_allowed, get_required_one_of,
                                        get_optional_one_of, get_optional, get_required)
@@ -44,11 +54,10 @@ from privacyidea.lib.policy import SCOPE, GROUP
 from privacyidea.lib.token import get_tokens
 from privacyidea.lib.tokenclass import TokenClass, CLIENTMODE, ROLLOUTSTATE
 from privacyidea.lib.tokens.u2ftoken import IMAGES
-from privacyidea.lib.tokens.webauthn import (CoseAlgorithm, webauthn_b64_encode, WebAuthnRegistrationResponse,
-                                             ATTESTATION_REQUIREMENT_LEVEL, webauthn_b64_decode,
-                                             WebAuthnMakeCredentialOptions, WebAuthnAssertionOptions, WebAuthnUser,
+from privacyidea.lib.tokens.webauthn import (CoseAlgorithm, webauthn_b64_encode, webauthn_b64_decode, TRANSPORTS,
+                                             WebAuthnAssertionOptions, WebAuthnUser,
                                              WebAuthnAssertionResponse, AuthenticationRejectedException,
-                                             UserVerificationLevel)
+                                             UserVerificationLevel, AttestationLevel)
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import hexlify_and_unicode, is_true, convert_imagefile_to_dataimage
 
@@ -494,6 +503,55 @@ WEBAUTHN_TOKEN_SPECIFIC_SETTINGS = {
 }
 
 
+def _normalize_ec2_public_key_curve_in_attestation_object(attestation_object_bytes):
+    """
+    Older U2F attestations can carry an EC2 COSE key without the mandatory
+    curve parameter (-1). The webauthn library requires this field and rejects
+    otherwise valid registrations.
+    """
+
+    try:
+        attestation_object = cbor2.loads(attestation_object_bytes)
+        auth_data = attestation_object.get("authData")
+        if not isinstance(auth_data, (bytes, bytearray)) or len(auth_data) < 55:
+            return attestation_object_bytes
+
+        # Attested credential data must be present for a registration response.
+        if not auth_data[32] & 0x40:
+            return attestation_object_bytes
+
+        credential_id_length = int.from_bytes(auth_data[53:55], "big")
+        credential_id_end = 55 + credential_id_length
+        if credential_id_end > len(auth_data):
+            return attestation_object_bytes
+
+        credential_public_key_and_extensions = bytes(auth_data[credential_id_end:])
+        decoder = cbor2.CBORDecoder(io.BytesIO(credential_public_key_and_extensions))
+        credential_public_key = decoder.decode()
+        credential_public_key_length = decoder.fp.tell()
+
+        if not isinstance(credential_public_key, dict):
+            return attestation_object_bytes
+        # 1=KTY (EC2=2), -1=CRV, -2=x, -3=y according to COSE key format.
+        if credential_public_key.get(1) != 2 or -1 in credential_public_key:
+            return attestation_object_bytes
+        if -2 not in credential_public_key or -3 not in credential_public_key:
+            return attestation_object_bytes
+
+        credential_public_key[-1] = 1  # P-256
+        patched_public_key = cbor2.dumps(credential_public_key)
+        patched_auth_data = (
+                bytes(auth_data[:credential_id_end])
+                + patched_public_key
+                + credential_public_key_and_extensions[credential_public_key_length:]
+        )
+        attestation_object["authData"] = patched_auth_data
+        return cbor2.dumps(attestation_object)
+    except Exception as ex:
+        log.debug(f"Could not normalize attestation object credential public key: {ex}")
+        return attestation_object_bytes
+
+
 class WebAuthnGroup(object):
     """
     Categories used to group WebAuthn token actions.
@@ -821,7 +879,6 @@ class WebAuthnTokenClass(TokenClass):
             http_origin = get_required(param, "HTTP_ORIGIN")
 
             serial = self.token.serial
-            registration_client_extensions = get_optional(param, "registrationclientextensions")
             uv_req = get_optional(param, FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT)
 
             challenges = [
@@ -841,54 +898,122 @@ class WebAuthnTokenClass(TokenClass):
             # All data is parsed and verified. If any errors occur an exception
             # will be raised.
             try:
-                webauthn_credential = WebAuthnRegistrationResponse(
-                    rp_id=rp_id,
-                    origin=http_origin,
-                    registration_response={
-                        'clientData': client_data,
-                        'attObj': reg_data,
-                        'registrationClientExtensions':
-                            webauthn_b64_decode(registration_client_extensions)
-                            if registration_client_extensions
-                            else None
+                # The webauthn library expects base64url strings in credential JSON.
+                reg_data_b64 = reg_data.decode("utf-8") if isinstance(reg_data, bytes) else reg_data
+                client_data_b64 = client_data.decode("utf-8") if isinstance(client_data, bytes) else client_data
+                if not isinstance(reg_data_b64, str) or not isinstance(client_data_b64, str):
+                    raise ValueError("Registration data must be base64url encoded strings.")
+
+                raw_attestation_object = webauthn_b64_decode(reg_data_b64)
+                parsed_attestation = parse_attestation_object(raw_attestation_object)
+                if not parsed_attestation.auth_data.attested_credential_data:
+                    raise ValueError("Attestation object does not contain attested credential data.")
+                credential_id_bytes = parsed_attestation.auth_data.attested_credential_data.credential_id
+                if not credential_id_bytes:
+                    raise ValueError("Attestation object does not contain credential ID.")
+                credential_public_key_bytes = (
+                    parsed_attestation.auth_data.attested_credential_data.credential_public_key
+                )
+                credential_id_b64 = bytes_to_base64url(credential_id_bytes)
+                raw_attestation_object = _normalize_ec2_public_key_curve_in_attestation_object(raw_attestation_object)
+                reg_data_b64 = bytes_to_base64url(raw_attestation_object)
+
+                existing_credential_ids = [
+                    token.decrypt_otpkey()
+                    for token in get_tokens(tokentype=self.type)
+                    if token.get_serial() != self.get_serial()
+                ]
+                if credential_id_b64 in existing_credential_ids:
+                    raise ValueError("Credential already exists.")
+
+                trust_anchor_dir = get_from_config(FIDO2ConfigOptions.TRUST_ANCHOR_DIR)
+                pem_root_certs_bytes = []
+                if trust_anchor_dir and os.path.isdir(trust_anchor_dir):
+                    for trust_anchor_name in os.listdir(trust_anchor_dir):
+                        trust_anchor_path = os.path.join(trust_anchor_dir, trust_anchor_name)
+                        if os.path.isfile(trust_anchor_path):
+                            try:
+                                with open(trust_anchor_path, "rb") as trust_anchor_file:
+                                    cert_data = trust_anchor_file.read()
+                                    # Keep old behavior: silently skip invalid certificates.
+                                    x509.load_pem_x509_certificate(cert_data.strip())
+                                    pem_root_certs_bytes.append(cert_data)
+                            except Exception as ex:
+                                log.info(f"Could not load certificate {trust_anchor_path}: {ex}")
+                elif trust_anchor_dir:
+                    log.debug(f"Trust anchor directory ({trust_anchor_dir}) not available.")
+
+                pem_root_certs_bytes_by_fmt = None
+                if attestation_level == AttestationLevel.TRUSTED:
+                    if not pem_root_certs_bytes:
+                        raise ValueError("No trust anchors available to verify attestation certificate.")
+                    pem_root_certs_bytes_by_fmt = {
+                        fmt: pem_root_certs_bytes for fmt in AttestationFormat if fmt != AttestationFormat.NONE
+                    }
+
+                registration_verification: VerifiedRegistration = verify_registration_response(
+                    credential={
+                        "id": credential_id_b64,
+                        "rawId": credential_id_b64,
+                        "response": {
+                            "attestationObject": reg_data_b64,
+                            "clientDataJSON": client_data_b64,
+                        },
+                        "type": "public-key",
                     },
-                    challenge=webauthn_b64_encode(challenge_nonce),
-                    attestation_requirement_level=ATTESTATION_REQUIREMENT_LEVEL[attestation_level],
-                    trust_anchor_dir=get_from_config(FIDO2ConfigOptions.TRUST_ANCHOR_DIR),
-                    uv_required=uv_req == UserVerificationLevel.REQUIRED
-                ).verify([
-                    # TODO: this might get slow when a lot of webauthn tokens are registered
-                    token.decrypt_otpkey() for token in get_tokens(tokentype=self.type) if
-                    token.get_serial() != self.get_serial()
-                ])
-            except Exception as e:
-                log.warning(f"Enrollment of {self.get_class_type()} token failed: {e}!")
+                    expected_challenge=challenge_nonce,
+                    expected_rp_id=rp_id,
+                    expected_origin=http_origin,
+                    require_user_verification=uv_req == UserVerificationLevel.REQUIRED,
+                    pem_root_certs_bytes_by_fmt=pem_root_certs_bytes_by_fmt,
+                )
+
+                attestation_object = parse_attestation_object(registration_verification.attestation_object)
+                has_attestation_cert = bool(attestation_object.att_stmt and attestation_object.att_stmt.x5c)
+                if attestation_level == AttestationLevel.TRUSTED:
+                    if registration_verification.fmt == AttestationFormat.NONE or not has_attestation_cert:
+                        raise ValueError("Untrusted attestation certificate.")
+                    verified_attestation_level = AttestationLevel.TRUSTED
+                elif attestation_level == AttestationLevel.UNTRUSTED:
+                    if registration_verification.fmt == AttestationFormat.NONE:
+                        raise ValueError("No (or unsupported) attestation certificate.")
+                    verified_attestation_level = AttestationLevel.UNTRUSTED
+                else:
+                    verified_attestation_level = (
+                        AttestationLevel.NONE
+                        if registration_verification.fmt == AttestationFormat.NONE
+                        else AttestationLevel.UNTRUSTED
+                    )
+            except (InvalidRegistrationResponse, InvalidJSONStructure, UnicodeDecodeError, ValueError) as ex:
+                log.warning(f"Enrollment of {self.get_class_type()} token failed: {ex}!")
                 raise EnrollmentError(f"Could not enroll {self.get_class_type()} token!")
 
-            self.set_otpkey(hexlify_and_unicode(webauthn_b64_decode(webauthn_credential.credential_id)))
-            self.set_otp_count(webauthn_credential.sign_count)
+            self.set_otpkey(hexlify_and_unicode(registration_verification.credential_id))
+            self.set_otp_count(registration_verification.sign_count)
 
             # Save the credential_id hash to an extra table to be able to find the token faster
-            credential_id_hash = hash_credential_id(webauthn_b64_decode(webauthn_credential.credential_id))
+            credential_id_hash = hash_credential_id(registration_verification.credential_id)
             save_credential_id_hash(credential_id_hash, self.token.id)
 
             token_info_dict = {
-                FIDO2TokenInfo.PUB_KEY: hexlify_and_unicode(webauthn_b64_decode(webauthn_credential.public_key)),
-                FIDO2TokenInfo.ORIGIN: webauthn_credential.origin,
-                FIDO2TokenInfo.ATTESTATION_LEVEL: webauthn_credential.attestation_level,
-                FIDO2TokenInfo.AAGUID: hexlify_and_unicode(webauthn_credential.aaguid),
+                FIDO2TokenInfo.PUB_KEY: hexlify_and_unicode(credential_public_key_bytes),
+                FIDO2TokenInfo.ORIGIN: http_origin,
+                FIDO2TokenInfo.ATTESTATION_LEVEL: verified_attestation_level,
+                FIDO2TokenInfo.AAGUID: registration_verification.aaguid.replace("-", ""),
                 FIDO2TokenInfo.CREDENTIAL_ID_HASH: credential_id_hash
             }
             automatic_description = DEFAULT_DESCRIPTION
             # Add attestation info optionally
-            if webauthn_credential.attestation_cert:
-                cert = webauthn_credential.attestation_cert
+            if has_attestation_cert:
+                cert = x509.load_der_x509_certificate(attestation_object.att_stmt.x5c[0])
                 token_info_dict.update({
                     FIDO2TokenInfo.ATTESTATION_ISSUER: cert.issuer.rfc4514_string(),
                     FIDO2TokenInfo.ATTESTATION_SUBJECT: cert.subject.rfc4514_string(),
                     FIDO2TokenInfo.ATTESTATION_SERIAL: cert.serial_number
                 })
-                automatic_description = cert.subject.get_attributes_for_oid(x509.NameOID.COMMON_NAME)[0].value
+                cert_common_name = cert.subject.get_attributes_for_oid(x509.NameOID.COMMON_NAME)
+                if cert_common_name:
+                    automatic_description = cert_common_name[0].value
             self.add_tokeninfo_dict(token_info_dict)
 
             # If no description has already been set, set the automatic description or the
@@ -962,42 +1087,59 @@ class WebAuthnTokenClass(TokenClass):
                         credential_id = token.decrypt_otpkey()
                         exclude_credential_ids.append(credential_id)
 
-            credential_options = WebAuthnMakeCredentialOptions(
-                challenge=webauthn_b64_encode(nonce),
-                rp_name=rp_name,
+            attestation_preference = AttestationConveyancePreference(attestation)
+            authenticator_attachment = get_optional(params, FIDO2PolicyAction.AUTHENTICATOR_ATTACHMENT)
+            authenticator_selection = AuthenticatorSelectionCriteria(
+                authenticator_attachment=AuthenticatorAttachment(authenticator_attachment)
+                if authenticator_attachment else None,
+                user_verification=UserVerificationRequirement(user_verification),
+            )
+            exclude_credentials = [
+                PublicKeyCredentialDescriptor(
+                    id=base64url_to_bytes(cred_id),
+                    transports=[AuthenticatorTransport(transport) for transport in TRANSPORTS],
+                )
+                for cred_id in exclude_credential_ids
+            ]
+
+            registration_options: PublicKeyCredentialCreationOptions = generate_registration_options(
                 rp_id=rp_id,
-                user_id=self.token.serial,
+                rp_name=rp_name,
                 user_name=user.login,
                 user_display_name=str(user),
+                user_id=self.token.serial.encode("utf-8"),
+                challenge=nonce,
                 timeout=timeout,
-                attestation=attestation,
-                user_verification=user_verification,
-                public_key_credential_algorithms=get_required(params,
-                                                              FIDO2PolicyAction.PUBLIC_KEY_CREDENTIAL_ALGORITHMS),
-                authenticator_attachment=get_optional(params, FIDO2PolicyAction.AUTHENTICATOR_ATTACHMENT),
-                authenticator_selection_list=get_optional(params, FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST),
-                credential_ids=exclude_credential_ids
-            ).registration_dict
+                attestation=attestation_preference,
+                authenticator_selection=authenticator_selection,
+                exclude_credentials=exclude_credentials or None,
+                supported_pub_key_algs=get_required(params, FIDO2PolicyAction.PUBLIC_KEY_CREDENTIAL_ALGORITHMS),
+            )
+            credential_options = json.loads(options_to_json(registration_options))
+            authenticator_selection_list = get_optional(params, FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST)
 
             register_request = {
                 "transaction_id": challenge.transaction_id,
                 "message": self._get_message(params),
                 "nonce": credential_options["challenge"],
                 "relyingParty": credential_options["rp"],
-                "serialNumber": credential_options["user"]["id"],
+                "serialNumber": self.token.serial,
                 "pubKeyCredAlgorithms": credential_options["pubKeyCredParams"],
-                "name": credential_options["user"]["name"],
-                "displayName": credential_options["user"]["displayName"]
+                "name": user.login,
+                "displayName": str(user)
             }
 
-            if credential_options.get("authenticatorSelection"):
-                register_request["authenticatorSelection"] = credential_options["authenticatorSelection"]
+            auth_selection = {"userVerification": user_verification}
+            if authenticator_attachment:
+                auth_selection["authenticatorAttachment"] = authenticator_attachment
+            if auth_selection:
+                register_request["authenticatorSelection"] = auth_selection
             if credential_options.get("timeout"):
                 register_request["timeout"] = credential_options["timeout"]
             if credential_options.get("attestation"):
                 register_request["attestation"] = credential_options["attestation"]
-            if (credential_options.get("extensions") or {}).get("authnSel"):
-                register_request["authenticatorSelectionList"] = credential_options["extensions"]["authnSel"]
+            if authenticator_selection_list:
+                register_request["authenticatorSelectionList"] = authenticator_selection_list
             if credential_options.get("excludeCredentials"):
                 register_request["excludeCredentials"] = credential_options.get("excludeCredentials")
 
