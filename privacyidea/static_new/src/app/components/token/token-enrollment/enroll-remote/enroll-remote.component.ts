@@ -67,7 +67,7 @@ export class EnrollRemoteComponent implements OnInit {
   protected readonly enrollmentMapper: RemoteApiPayloadMapper = inject(RemoteApiPayloadMapper);
   protected readonly privacyideaServerService: PrivacyideaServerServiceInterface = inject(PrivacyideaServerService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
-
+  enrollmentData = input<RemoteEnrollmentData>();
   @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
@@ -105,6 +105,7 @@ export class EnrollRemoteComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this._setInitialFormValues();
     this.additionalFormFieldsChange.emit({
       checkPinLocally: this.checkPinLocallyControl,
       remoteServer: this.remoteServerControl,
@@ -114,6 +115,17 @@ export class EnrollRemoteComponent implements OnInit {
       remoteResolver: this.remoteResolverControl
     });
     this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
+  }
+
+  private _setInitialFormValues() {
+    if (!!this.enrollmentData()) {
+      this.checkPinLocallyControl.setValue(this.enrollmentData()?.checkPinLocally ?? false, { emitEvent: false });
+      this.remoteServerControl.setValue(this.enrollmentData()?.remoteServer ?? null, { emitEvent: false });
+      this.remoteSerialControl.setValue(this.enrollmentData()?.remoteSerial ?? "", { emitEvent: false });
+      this.remoteUserControl.setValue(this.enrollmentData()?.remoteUser ?? "", { emitEvent: false });
+      this.remoteRealmControl.setValue(this.enrollmentData()?.remoteRealm ?? "", { emitEvent: false });
+      this.remoteResolverControl.setValue(this.enrollmentData()?.remoteResolver ?? "", { emitEvent: false });
+    }
   }
 
   enrollmentArgsGetter = (

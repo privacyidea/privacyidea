@@ -18,6 +18,8 @@
  **/
 import { TokenType } from "../services/token/token.service";
 
+export const nonRolloverTokenTypes: string[] = ["4eyes", "certificate", "passkey", "radius", "remote", "yubico", "yubikey"];
+
 export const tokenTypes: TokenType[] = [
   {
     key: "hotp",

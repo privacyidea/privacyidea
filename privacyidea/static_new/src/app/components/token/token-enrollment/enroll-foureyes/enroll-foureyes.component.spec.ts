@@ -41,4 +41,30 @@ describe("EnrollFoureyesComponent", () => {
   it("should create", () => {
     expect(component).toBeTruthy();
   });
+
+  describe("ngOnInit with enrollmentData input", () => {
+    it("should set initial values from enrollmentData", () => {
+      fixture.componentRef.setInput("enrollmentData", {
+        type: "foureyes",
+        separator: ":",
+        requiredTokenOfRealms: [{ realm: "realm1", tokens: 1 }, { realm: "realm2", tokens: 2 }]
+      });
+      component.ngOnInit();
+      expect(component.separatorControl.value).toBe(":");
+      expect(component.requiredTokensOfRealmsControl.value).toEqual(["realm1", "realm2"]);
+      expect(component.tokensByRealm).toEqual(new Map([["realm1", 1], ["realm2", 2]]));
+    });
+
+    it("should ignore values from enrollmentData if they are undefined", () => {
+      fixture.componentRef.setInput("enrollmentData", {
+        type: "foureyes",
+        separator: undefined,
+        requiredTokenOfRealms: undefined
+      });
+      component.ngOnInit();
+      expect(component.separatorControl.value).toBe("|");
+      expect(component.requiredTokensOfRealmsControl.value).toEqual([]);
+      expect(component.tokensByRealm).toEqual(new Map());
+    });
+  });
 });

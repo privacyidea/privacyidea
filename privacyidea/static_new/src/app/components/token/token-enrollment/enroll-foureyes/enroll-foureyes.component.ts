@@ -59,6 +59,7 @@ export class EnrollFoureyesComponent implements OnInit {
   protected readonly realmService: RealmServiceInterface = inject(RealmService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
 
+  enrollmentData = input<FourEyesEnrollmentData>();
   @Output() additionalFormFieldsChange = new EventEmitter<{ [key: string]: FormControl<any> }>();
   @Output() enrollmentArgsGetterChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => {
@@ -87,11 +88,25 @@ export class EnrollFoureyesComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this._setInitialFormValues();
     this.additionalFormFieldsChange.emit({
       separator: this.separatorControl,
       requiredTokensOfRealms: this.requiredTokensOfRealmsControl
     });
     this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
+  }
+
+  private _setInitialFormValues() {
+    if (!!this.enrollmentData()) {
+      this.separatorControl.setValue(this.enrollmentData()?.separator ?? "|");
+      if (!!this.enrollmentData()?.requiredTokenOfRealms) {
+        const realms = this.enrollmentData()?.requiredTokenOfRealms.map((r) => r.realm);
+        if (realms) this.requiredTokensOfRealmsControl.setValue(realms);
+        for (const realmData of this.enrollmentData()?.requiredTokenOfRealms ?? []) {
+          this.tokensByRealm.set(realmData.realm, realmData.tokens);
+        }
+      }
+    }
   }
 
   getTokenCount(realm: string): number {
