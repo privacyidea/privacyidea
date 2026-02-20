@@ -16,18 +16,20 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<h2 mat-dialog-title>Token successfully enrolled</h2>
+<h2 mat-dialog-title>{{ title() }}</h2>
 <mat-dialog-content>
-  <div class="margin-bottom-1">
+  @if (!rollover) {
+    <div class="margin-bottom-1">
   <span>The token was successfully enrolled with serial number
     <a (click)="tokenSelected(serial)"> {{ serial }} </a>.</span>
-    @if (containerSerial) {
-      <br />
-      <span>It has been enrolled in the container
+      @if (containerSerial) {
+        <br />
+        <span>It has been enrolled in the container
       <a (click)="containerSelected(containerSerial)">
         {{ containerSerial }} </a>.</span>
-    }
-  </div>
+      }
+    </div>
+  }
   <div class="flex-row gap-16">
     @if (showQRCode() && qrCode) {
       <img

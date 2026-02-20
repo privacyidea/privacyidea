@@ -560,8 +560,8 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     }
   }
 
-  protected openLastStepDialog(args: { response: EnrollmentResponse | null; user: UserData | null }): void {
-    const { response, user } = args;
+  protected openLastStepDialog(args: { response: EnrollmentResponse | null; user: UserData | null; rollover?: boolean | null }): void {
+    const { response, user, rollover } = args;
     if (!response) {
       this.notificationService.openSnackBar("No enrollment response available.");
       return;
@@ -574,7 +574,8 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
       enrollToken: this.enrollToken.bind(this),
       user: user,
       userRealm: this.userService.selectedUserRealm(),
-      onlyAddToRealm: this.userAssignmentComponent?.onlyAddToRealm() ?? false
+      onlyAddToRealm: this.userAssignmentComponent?.onlyAddToRealm() ?? false,
+      rollover: rollover ?? false
     };
     this._lastTokenEnrollmentLastStepDialogData.set(dialogData);
     this.dialogService.openTokenEnrollmentLastStepDialog({
@@ -582,8 +583,8 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     });
   }
 
-  private _handleEnrollmentResponse(args: { response: EnrollmentResponse; user: UserData | null }): void {
-    const { response, user } = args;
+  protected _handleEnrollmentResponse(args: { response: EnrollmentResponse; user: UserData | null; rollover?: boolean }): void {
+    const { response, user, rollover } = args;
     const detail = response.detail || {};
     const rolloutState = detail.rollout_state;
 
@@ -591,11 +592,11 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
       return;
     }
 
-    if (this.isUserRequired && !user) {
+    if (this.isUserRequired && !user && !rollover) {
       this.notificationService.openSnackBar("User is required for this token type, but no user was provided.");
       return;
     }
 
-    this.openLastStepDialog({ response, user });
+    this.openLastStepDialog({ response, user, rollover });
   }
 }

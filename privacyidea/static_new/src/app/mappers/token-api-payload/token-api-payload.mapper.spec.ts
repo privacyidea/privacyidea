@@ -934,10 +934,10 @@ describe("SmsApiPayloadMapper", () => {
     expect(p.dynamic_phone).toBe(false);
   });
 
-  it("dynamic phone nulls phone and sets flag", () => {
+  it("dynamic phone clears phone and sets flag", () => {
     const d = { ...base(), readNumberDynamically: true };
     const p = mapper.toApiPayload(d);
-    expect(p.phone).toBeNull();
+    expect(p.phone).toBe("");
     expect(p.dynamic_phone).toBe(true);
   });
 
@@ -945,7 +945,6 @@ describe("SmsApiPayloadMapper", () => {
     const d = { ...base(), smsGateway: undefined, readNumberDynamically: undefined };
     const p = mapper.toApiPayload(d);
     expect("sms.identifier" in p).toBe(false);
-    expect("dynamic_phone" in p).toBe(false);
   });
 
   it("fromTokenDetailsToEnrollmentData maps TokenDetails to SmsEnrollmentData", () => {
@@ -980,7 +979,7 @@ describe("SmsApiPayloadMapper", () => {
     expect(result.type).toBe("sms");
     expect(result.serial).toBe("S1");
     expect(result.smsGateway).toBe("1234");
-    expect(result.phoneNumber).toBeUndefined();
+    expect(result.phoneNumber).toBe("");
     expect(result.readNumberDynamically).toBe(true);
 
     details.info.dynamic_phone = "False";

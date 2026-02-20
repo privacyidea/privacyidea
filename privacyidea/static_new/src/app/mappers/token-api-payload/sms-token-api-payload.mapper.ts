@@ -46,8 +46,8 @@ export class SmsApiPayloadMapper extends BaseApiPayloadMapper implements TokenAp
     const payload: SmsEnrollmentPayload = {
       ...super.toApiPayload(data),
       ...(data.smsGateway != null && { "sms.identifier": data.smsGateway }),
-      phone: data.readNumberDynamically ? null : (data.phoneNumber ?? null),
-      ...(data.readNumberDynamically != null && { dynamic_phone: data.readNumberDynamically })
+      phone: data.readNumberDynamically ? "" : (data.phoneNumber ?? ""),
+      dynamic_phone: data.readNumberDynamically ?? false
     };
 
     if (data.onlyAddToRealm) {
@@ -67,7 +67,7 @@ export class SmsApiPayloadMapper extends BaseApiPayloadMapper implements TokenAp
       ...super.fromTokenDetailsToEnrollmentData(details),
       type: "sms",
       smsGateway: details.info?.["sms.identifier"] ?? undefined,
-      phoneNumber: details.info?.phone ?? undefined,
+      phoneNumber: details.info?.phone ?? "",
       readNumberDynamically: parseBooleanValue(details.info?.dynamic_phone ?? false)
     };
   }

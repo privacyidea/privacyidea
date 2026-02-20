@@ -125,6 +125,16 @@
       Revoke
     </button>
   }
+  @if (authService.tokenRollover().indexOf(tokenType()) >= 0 && nonRolloverTokenTypes.indexOf(tokenType()) < 0) {
+    <button
+      (click)="rolloverToken()"
+      class="action-button-delete"
+      i18n
+      mat-stroked-button>
+      <mat-icon>autorenew</mat-icon>
+      Rollover
+    </button>
+  }
   @if (authService.actionAllowed("losttoken")) {
     <button
       (click)="openLostTokenDialog()"

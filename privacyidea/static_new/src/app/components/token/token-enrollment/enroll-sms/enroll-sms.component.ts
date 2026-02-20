@@ -115,10 +115,14 @@ export class EnrollSmsComponent implements OnInit {
         this.smsGatewayControl.setValue(id);
       }
     });
+    effect(() => {
+      if (this.enrollmentData()) {
+        this._setInitialFormValues();
+      }
+    });
   }
 
   ngOnInit(): void {
-    this._setInitialFormValues();
     this.additionalFormFieldsChange.emit({
       smsGateway: this.smsGatewayControl,
       phoneNumber: this.phoneNumberControl,
@@ -134,6 +138,12 @@ export class EnrollSmsComponent implements OnInit {
       this.smsGatewayControl.setValue(this.enrollmentData()?.smsGateway ?? "", { emitEvent: false });
       this.readNumberDynamicallyControl.setValue(this.enrollmentData()?.readNumberDynamically ?? false, { emitEvent: false });
       this.phoneNumberControl.setValue(this.enrollmentData()?.phoneNumber ?? "", { emitEvent: false });
+
+      if (this.enrollmentData()?.readNumberDynamically) {
+        this.phoneNumberControl.disable({ emitEvent: false });
+        this.phoneNumberControl.clearValidators();
+        this.phoneNumberControl.updateValueAndValidity({ emitEvent: false });
+      }
     }
   }
 
