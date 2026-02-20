@@ -1,3 +1,8 @@
+Version 3.13
+
+  Fixes:
+  * TLS configuration for LDAP Machine-Resolver (#4964)
+
 Version 3.12.2
 
   Enhancements:

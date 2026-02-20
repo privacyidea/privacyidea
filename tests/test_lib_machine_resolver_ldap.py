@@ -3,12 +3,12 @@ This test file tests the LDAP machine resolver in
 lib/machines/ldap.py
 """
 
-HOSTSFILE = "tests/testdata/hosts"
 from .base import MyTestCase
 from privacyidea.lib.machines.ldap import LdapMachineResolver
 from privacyidea.lib.machines.base import MachineResolverError
 from . import ldap3mock
-import netaddr
+
+HOSTSFILE = "tests/testdata/hosts"
 
 LDAPDirectory = [{"dn": "cn=admin,ou=example,o=test",
                   "attributes": {"cn": "admin",
@@ -149,7 +149,7 @@ class LdapMachineTestCase(MyTestCase):
         self.assertEqual(len(machines), 3)
         # We check two things:
         # 1) start_tls has actually been called!
-        self.assertTrue(start_tls_resolver.l.start_tls_called)
+        self.assertTrue(start_tls_resolver.connection.start_tls_called)
         # 2) All Server objects were constructed with a non-None TLS context, but use_ssl=False
         for _, kwargs in ldap3mock.get_server_mock().call_args_list:
             self.assertIsNotNone(kwargs['tls'])

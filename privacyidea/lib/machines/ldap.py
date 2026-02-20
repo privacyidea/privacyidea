@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2015 NetKnights GmbH <https://netknights.it>
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
 #  2016-08-12 Sebastian Plattner
 #             Allow hostname and machine ID being the same
 #             LDAP attribute.
@@ -38,12 +41,11 @@ import traceback
 import logging
 
 import ldap3
-from ldap3 import Tls
-import ssl
 
 from .base import Machine
 from .base import BaseMachineResolver
 from .base import MachineResolverError
+from privacyidea.lib.error import ResolverError
 from privacyidea.lib.utils import is_true
 from privacyidea.lib.resolvers.LDAPIdResolver import AUTHTYPE, DEFAULT_CA_FILE, IdResolver
 from privacyidea.lib import _
@@ -57,57 +59,66 @@ class LdapMachineResolver(BaseMachineResolver):
 
     def __init__(self, name, config=None):
         self.i_am_bound = False
-        self.name = name
-        if config:
-            self.load_config(config)
+        super(LdapMachineResolver, self).__init__(name, config)
 
     def _bind(self):
         if not self.i_am_bound:
-            server_pool = IdResolver.create_serverpool(self.uri, self.timeout,
-                                                       tls_context=self.tls_context)
-            self.l = IdResolver.create_connection(authtype=self.authtype,
-                                                  server=server_pool,
-                                                  user=self.binddn,
-                                                  password=self.bindpw,
-                                                  auto_referrals=not self.noreferrals,
-                                                  start_tls=self.start_tls)
-            if not self.l.bind():
-                raise Exception("Wrong credentials")
+            try:
+                server_pool = IdResolver.create_serverpool(self.uri,
+                                                           float(self.timeout),
+                                                           tls_context=self.tls_context)
+                self.connection = IdResolver.create_connection(authtype=self.authtype,
+                                                               server=server_pool,
+                                                               user=self.binddn,
+                                                               password=self.bindpw,
+                                                               receive_timeout=self.timeout,
+                                                               auto_referrals=not self.noreferrals,
+                                                               start_tls=self.start_tls)
+                bound = self.connection.bind()
+            except Exception as ex:
+                msg = f"Error performing bind operation for machine resolver {self.name}: {ex}!"
+                log.error(msg)
+                raise ResolverError(msg)
+            if not bound:
+                result = self.connection.result
+                log.error(f"LDAP Bind unsuccessful for machine resolver {self.name}: "
+                          f"{result.get('description')} ({result.get('result')})!")
+                raise ResolverError(f"Unable to perform bind operation for machine resolver {self.name}: "
+                                    f"{result.get('description')} ({result.get('result')})")
             self.i_am_bound = True
 
     @staticmethod
     def _get_entry(entry_attribute, entries):
-        if type(entries.get(entry_attribute)) == list:
+        if isinstance(entries.get(entry_attribute), list):
             entry = entries.get(entry_attribute)[0]
         else:
             entry = entries.get(entry_attribute)
         return entry
-
 
     @staticmethod
     def _create_ldap_filter(search_filter,
                             id_attribute, machine_id,
                             hostname_attribute, hostname,
                             ip_attribute, ip, substring=False, any=False):
-        filter = "(&" + search_filter
+        ldap_filter = "(&" + search_filter
 
         if not any:
             if id_attribute.lower() != "dn" and machine_id:
                 if substring:
-                    filter += "({0!s}=*{1!s}*)".format(id_attribute, machine_id)
+                    ldap_filter += "({0!s}=*{1!s}*)".format(id_attribute, machine_id)
                 else:
-                    filter += "({0!s}={1!s})".format(id_attribute, machine_id)
+                    ldap_filter += "({0!s}={1!s})".format(id_attribute, machine_id)
             if hostname:
                 if substring:
-                    filter += "({0!s}=*{1!s}*)".format(hostname_attribute, hostname)
+                    ldap_filter += "({0!s}=*{1!s}*)".format(hostname_attribute, hostname)
                 else:
-                    filter += "({0!s}={1!s})".format(hostname_attribute, hostname)
+                    ldap_filter += "({0!s}={1!s})".format(hostname_attribute, hostname)
             if ip:
                 if substring:
-                    filter += "({0!s}=*{1!s}*)".format(ip_attribute, ip)
+                    ldap_filter += "({0!s}=*{1!s}*)".format(ip_attribute, ip)
                 else:
-                    filter += "({0!s}={1!s})".format(ip_attribute, ip)
-        filter += ")"
+                    ldap_filter += "({0!s}={1!s})".format(ip_attribute, ip)
+        ldap_filter += ")"
         if any:
             # Now we need to extend the search filter
             # like this  (& (&(....)) (|(ip=...)(host=...)) )
@@ -120,9 +131,9 @@ class LdapMachineResolver(BaseMachineResolver):
                 any_filter += "({0!s}=*{1!s}*)".format(ip_attribute, any)
             any_filter += ")"
 
-            filter = "(&{0!s}{1!s})".format(filter, any_filter)
+            ldap_filter = "(&{0!s}{1!s})".format(ldap_filter, any_filter)
 
-        return filter
+        return ldap_filter
 
     def get_machines(self, machine_id=None, hostname=None, ip=None, any=None,
                      substring=False):
@@ -131,7 +142,7 @@ class LdapMachineResolver(BaseMachineResolver):
 
         :param machine_id: can be matched as substring
         :param hostname: can be matched as substring
-        :param ip: can not be matched as substring
+        :param ip: cannot be matched as substring
         :param substring: Whether the filtering should be a substring matching
         :type substring: bool
         :param any: a substring that matches EITHER hostname, machineid or ip
@@ -149,27 +160,27 @@ class LdapMachineResolver(BaseMachineResolver):
             attributes.append(self.hostname_attribute)
 
         # do the filter depending on the searchDict
-        filter = self._create_ldap_filter(self.search_filter,
-                                          self.id_attribute, machine_id,
-                                          self.hostname_attribute, hostname,
-                                          self.ip_attribute, ip,
-                                          substring, any)
+        ldap_filter = self._create_ldap_filter(self.search_filter,
+                                               self.id_attribute, machine_id,
+                                               self.hostname_attribute, hostname,
+                                               self.ip_attribute, ip,
+                                               substring, any)
 
         if self.id_attribute.lower() == "dn" and machine_id:
-            self.l.search(search_base=machine_id,
-                          search_scope=ldap3.BASE,
-                          search_filter=filter,
-                          attributes=attributes,
-                          paged_size=self.sizelimit)
+            self.connection.search(search_base=machine_id,
+                                   search_scope=ldap3.BASE,
+                                   search_filter=ldap_filter,
+                                   attributes=attributes,
+                                   paged_size=self.sizelimit)
         else:
-            self.l.search(search_base=self.basedn,
-                          search_scope=ldap3.SUBTREE,
-                          search_filter=filter,
-                          attributes=attributes,
-                          paged_size=self.sizelimit)
+            self.connection.search(search_base=self.basedn,
+                                   search_scope=ldap3.SUBTREE,
+                                   search_filter=ldap_filter,
+                                   attributes=attributes,
+                                   paged_size=self.sizelimit)
 
         # returns a list of dictionaries
-        for entry in self.l.response:
+        for entry in self.connection.response:
             dn = entry.get("dn")
             attributes = entry.get("attributes")
 
@@ -247,8 +258,8 @@ class LdapMachineResolver(BaseMachineResolver):
             raise MachineResolverError("LDAPBASE is missing!")
         self.binddn = config.get("BINDDN")
         self.bindpw = config.get("BINDPW")
-        self.timeout = float(config.get("TIMEOUT", 5))
-        self.sizelimit = config.get("SIZELIMIT", 500)
+        self.timeout = int(config.get("TIMEOUT", 5))
+        self.sizelimit = int(config.get("SIZELIMIT", 500))
         self.hostname_attribute = config.get("HOSTNAMEATTRIBUTE")
         self.id_attribute = config.get("IDATTRIBUTE", "DN")
         self.ip_attribute = config.get("IPATTRIBUTE")
@@ -257,16 +268,15 @@ class LdapMachineResolver(BaseMachineResolver):
 
         self.noreferrals = is_true(config.get("NOREFERRALS", False))
         self.authtype = config.get("AUTHTYPE", AUTHTYPE.SIMPLE)
-        self.start_tls = is_true(config.get("START_TLS", False))
+        self.start_tls = is_true(config.get("START_TLS", False)) and not self.uri.lower().startswith("ldaps")
         self.tls_verify = is_true(config.get("TLS_VERIFY", False))
         self.tls_ca_file = config.get("TLS_CA_FILE") or DEFAULT_CA_FILE
-        if self.tls_verify and (self.uri.lower().startswith("ldaps") or
-                                    self.start_tls):
-            self.tls_context = Tls(validate=ssl.CERT_REQUIRED,
-                                   version=ssl.PROTOCOL_TLSv1,
-                                   ca_certs_file=self.tls_ca_file)
-        else:
-            self.tls_context = None
+        self.tls_version = config.get("TLS_VERSION")
+        self.tls_context = IdResolver.get_tls_context(ldap_uri=self.uri,
+                                                      start_tls=self.start_tls,
+                                                      tls_version=self.tls_version,
+                                                      tls_verify=self.tls_verify,
+                                                      tls_ca_file=self.tls_ca_file)
 
     @classmethod
     def get_config_description(cls):
@@ -282,13 +292,13 @@ class LdapMachineResolver(BaseMachineResolver):
                                              "SEARCHFILTER": "string",
                                              "NOREFERRALS": "bool",
                                              "AUTHTYPE": "string",
+                                             "TLS_VERSION": "int",
                                              "TLS_VERIFY": "bool",
                                              "TLS_CA_FILE": "string",
                                              "START_TLS": "bool"
                                              }}}
 
         return description
-
 
     @staticmethod
     def testconnection(params):
@@ -300,47 +310,46 @@ class LdapMachineResolver(BaseMachineResolver):
         """
         success = False
         ldap_uri = params.get("LDAPURI")
-        if is_true(params.get("TLS_VERIFY")) \
-                and (ldap_uri.lower().startswith("ldaps") or
-                                    params.get("START_TLS")):
-            tls_ca_file = params.get("TLS_CA_FILE") or DEFAULT_CA_FILE
-            tls_context = Tls(validate=ssl.CERT_REQUIRED,
-                              version=ssl.PROTOCOL_TLSv1,
-                              ca_certs_file=tls_ca_file)
-        else:
-            tls_context = None
+        timeout = int(params.get("TIMEOUT", 5))
+        start_tls = is_true(params.get("START_TLS", False)) and not ldap_uri.lower().startswith("ldaps")
+        tls_context = IdResolver.get_tls_context(ldap_uri=ldap_uri,
+                                                 start_tls=start_tls,
+                                                 tls_version=params.get("TLS_VERSION"),
+                                                 tls_verify=is_true(params.get("TLS_VERIFY")),
+                                                 tls_ca_file=params.get("TLS_CA_FILE"))
         try:
             server_pool = IdResolver.create_serverpool(ldap_uri,
-                                                       float(params.get(
-                                                        "TIMEOUT", 5)),
+                                                       float(timeout),
                                                        tls_context=tls_context)
-            l = IdResolver.create_connection(authtype=\
-                                                 params.get("AUTHTYPE",
-                                                            AUTHTYPE.SIMPLE),
-                                             server=server_pool,
-                                             user=params.get("BINDDN"),
-                                             password=params.get("BINDPW"),
-                                             auto_referrals=not params.get(
-                                                 "NOREFERRALS"),
-                                             start_tls=params.get("START_TLS", False))
-            if not l.bind():
-                raise Exception("Wrong credentials")
+            conn = IdResolver.create_connection(authtype=params.get("AUTHTYPE", AUTHTYPE.SIMPLE),
+                                                server=server_pool,
+                                                user=params.get("BINDDN"),
+                                                password=params.get("BINDPW"),
+                                                receive_timeout=timeout,
+                                                auto_referrals=not params.get("NOREFERRALS"),
+                                                start_tls=start_tls)
+            if not conn.bind():
+                log.error(f"LDAP Bind unsuccessful: "
+                          f"{conn.result.get('description')} ({conn.result.get('result')})!")
+                raise ResolverError(f"Unable to perform bind operation: "
+                                    f"{conn.result.get('description')} ({conn.result.get('result')})!")
             # search for users...
-            l.search(search_base=params["LDAPBASE"],
-                     search_scope=ldap3.SUBTREE,
-                     search_filter="(&" + params["SEARCHFILTER"] + ")",
-                     attributes=[ params["HOSTNAMEATTRIBUTE"] ])
-
-            count = len([x for x in l.response if x.get("type") ==
+            conn.search(search_base=params["LDAPBASE"],
+                        search_scope=ldap3.SUBTREE,
+                        search_filter="(&" + params["SEARCHFILTER"] + ")",
+                        attributes=[params["HOSTNAMEATTRIBUTE"]],
+                        size_limit=int(params.get("SIZELIMIT", 500)))
+            elapsed_time = conn.usage.elapsed_time.total_seconds()
+            count = len([x for x in conn.response if x.get("type") ==
                          "searchResEntry"])
-            desc = _("Your LDAP config seems to be OK, %i machine objects "
-                     "found.")\
-                % count
-
-            l.unbind()
+            message = _("Your LDAP machine resolver configuration seems to be OK, "
+                        "{0!s} machine objects found in {1:.4f}s.").format(count, elapsed_time)
+            conn.unbind()
             success = True
 
         except Exception as e:
-            desc = "{0!r}".format(e)
+            message = f"{e}"
+            log.warning(f"LDAP Machine Resolver Test failed: {e!r}")
+            log.debug("{0!s}".format(traceback.format_exc()))
 
-        return success, desc
+        return success, message

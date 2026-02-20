@@ -46,35 +46,54 @@
                    ng-model="params.START_TLS"
                    type="checkbox"/>
             <p class="help-block" translate>
-                Use STARTTLS on a plain LDAP connection usually on port 389.
+                Use STARTTLS on a plain LDAP connection, usually on port 389.
             </p>
         </div>
     </div>
-    <div class="form-group"
-        ng-show="params.LDAPURI.toLowerCase().substring(0,5) === 'ldaps' ||
+    <div ng-show="params.LDAPURI.toLowerCase().substring(0,5) === 'ldaps' ||
                  params.START_TLS">
-        <label for="tls"
-            class="col-sm-3 control-label" translate>
-            Verify TLS
-        </label>
-        <div class="col-sm-9">
-            <input name="tls" id="tls"
-                   ng-model="params.TLS_VERIFY"
-                   type="checkbox"/>
-            <p class="help-block" translate>
-                Verify the TLS cerificate of the server.
-            </p>
-            <div class="well" ng-show="params.TLS_VERIFY">
-                <label for="tls_ca_file" class="control-label" translate>
-                    The file containing the CA certificate which signed the
-                    LDAP TLS certificate.
-                </label>
-                <input name="tls_ca_file" id="tls_ca_file"
-                       ng-model="params.TLS_CA_FILE"
-                       type="text"
-                       class="form-control"
-                       ng-show="params.TLS_VERIFY"
-                       placeholder="/etc/privacyidea/ldap-ca.crt"/>
+        <div class="form-group">
+            <label for="tls_version"
+                class="col-sm-3 control-label" translate>
+                TLS Version
+            </label>
+            <div class="col-sm-4">
+                <select class="form-control"
+                        name="tls_version" id="tls_version"
+                        ng-model="params.TLS_VERSION">
+                        <!--ng-init="selection ='Server Default'"-->
+                        <option ng-repeat="o in tls_version_options"
+                                ng-selected="{{o.name==params.TLS_VERSION}}"
+                                value={{o.value}}>
+                            {{o.name}}
+                        </option>
+                </select>
+            </div>
+        </div>
+        <div class="form-group">
+            <label for="tls"
+                   class="col-sm-3 control-label" translate>
+                Verify TLS
+            </label>
+            <div class="col-sm-9">
+                <input name="tls" id="tls"
+                       ng-model="params.TLS_VERIFY"
+                       type="checkbox"/>
+                <p class="help-block" translate>
+                    Verify the TLS certificate of the server.
+                </p>
+                <div class="well" ng-show="params.TLS_VERIFY">
+                    <label for="tls_ca_file" class="control-label" translate>
+                        The file containing the CA certificate which signed the
+                        LDAP TLS certificate.
+                    </label>
+                    <input name="tls_ca_file" id="tls_ca_file"
+                           ng-model="params.TLS_CA_FILE"
+                           type="text"
+                           class="form-control"
+                           ng-show="params.TLS_VERIFY"
+                           placeholder="/etc/privacyidea/ldap-ca.crt"/>
+                </div>
             </div>
         </div>
     </div>

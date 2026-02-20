@@ -1,4 +1,7 @@
 /**
+ * SPDX-FileCopyrightText: 2015 NetKnights GmbH <https://netknights.it>
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ *
  * http://www.privacyidea.org
  * (c) cornelius kölbel, cornelius@privacyidea.org
  *
@@ -25,16 +28,24 @@ myApp.controller("ldapMachineResolverController", ["$scope", "ConfigFactory",
                                                    function ($scope, ConfigFactory,
                                                              inform, $state,
                                                              $stateParams) {
+    $scope.authtypes = ["Simple", "SASL Digest-MD5"];
     $scope.params = {
+        SIZELIMIT: 500,
+        TIMEOUT: 5,
         type: 'ldap',
         AUTHTYPE: "Simple",
         TLS_VERIFY: true,
-        START_TLS: true
+        TLS_VERSION: 2,
+        START_TLS: false
     };
-    $scope.authtypes = ["Simple", "SASL Digest-MD5"];
     $scope.resolvername = $stateParams.resolvername;
+    $scope.tls_version_options = [{value: 3, name: "TLS v1.0"},
+        {value: 4, name: "TLS v1.1"},
+        {value: 5, name: "TLS v1.2"},
+        {value: 2, name: "TLS v1.3"}];
+
     if ($scope.resolvername) {
-        /* If we have a resolvername, we do an Edit
+        /* If we have a resolvername, we do an Edit,
          and we need to fill all the $scope.params */
         ConfigFactory.getMachineResolver($scope.resolvername, function (data) {
             var resolver = data.result.value[$scope.resolvername];
@@ -76,4 +87,3 @@ myApp.controller("ldapMachineResolverController", ["$scope", "ConfigFactory",
     };
 
 }]);
-
