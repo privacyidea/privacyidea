@@ -249,6 +249,10 @@ body {
   width: 238px;
 }
 
+.min-width-238 {
+  min-width: 238px;
+}
+
 .width-288px {
   width: 288px;
 }
@@ -290,6 +294,10 @@ body {
   margin-left: 16px;
 }
 
+.margin-right-32 {
+  margin-right: 32px;
+}
+
 .margin-right-1 {
   margin-right: 16px;
 }
@@ -300,6 +308,10 @@ body {
 
 .margin-top-1 {
   margin-top: 16px;
+}
+
+.margin-top-4 {
+  margin-top: 4px;
 }
 
 .margin-top-8 {
@@ -344,6 +356,14 @@ body {
 
 .margin-left--8 {
   margin-left: -8px;
+}
+
+.margin-right-auto {
+  margin-right: auto;
+}
+
+.margin-left-auto {
+  margin-left: auto;
 }
 
 .width-32 {

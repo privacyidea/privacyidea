@@ -83,6 +83,7 @@ export class MockPiResponse<Value, Detail = unknown> {
     authentication?: "CHALLENGE" | "POLL" | "PUSH";
     status: boolean;
     value?: Value;
+    init?: any;
     error?: { code: number; message: string };
   };
   signature: string;
@@ -92,7 +93,7 @@ export class MockPiResponse<Value, Detail = unknown> {
 
   constructor(args: {
     detail?: Detail;
-    result?: { authentication?: "CHALLENGE" | "POLL" | "PUSH"; status: boolean; value?: Value; error?: { code: number; message: string } };
+    result?: { authentication?: "CHALLENGE" | "POLL" | "PUSH"; status: boolean; value?: Value; init?: any; error?: { code: number; message: string } };
     error?: { code: number; message: string };
     id?: number;
     jsonrpc?: string;
@@ -112,7 +113,7 @@ export class MockPiResponse<Value, Detail = unknown> {
     this.versionnumber = args.versionnumber ?? "1.0";
   }
 
-  static fromValue<Value, Detail = unknown>(value: Value, detail: Detail = {} as Detail): MockPiResponse<Value, Detail> {
-    return new MockPiResponse<Value, Detail>({ detail, result: { status: true, value } });
+  static fromValue<Value, Detail = unknown>(value: Value, detail: Detail = {} as Detail, init: any = {}): MockPiResponse<Value, Detail> {
+    return new MockPiResponse<Value, Detail>({ detail, result: { status: true, value, init } });
   }
 }

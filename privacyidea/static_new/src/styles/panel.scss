@@ -9,10 +9,33 @@
 
   .mat-expansion-panel {
     background: var(--mat-sys-surface-container-low) !important;
+    border-radius: var(--border-radius);
   }
 
   .mat-accordion .mat-expansion-panel {
-    border-radius: var(--border-radius);
+    border-radius: 0 !important;
+    overflow: hidden;
+  }
+
+  .mat-accordion > *:first-child .mat-expansion-panel,
+  .mat-accordion > .mat-expansion-panel:first-child {
+    border-top-left-radius: var(--border-radius) !important;
+    border-top-right-radius: var(--border-radius) !important;
+  }
+
+  .mat-accordion > *:last-child .mat-expansion-panel,
+  .mat-accordion > .mat-expansion-panel:last-child {
+    border-bottom-left-radius: var(--border-radius) !important;
+    border-bottom-right-radius: var(--border-radius) !important;
+  }
+
+  .mat-accordion .mat-expansion-panel .mat-expansion-panel-header {
+    border-radius: inherit !important;
+  }
+
+  mat-panel-title.mat-expansion-panel-header-title .mat-icon {
+    color: var(--mat-expansion-header-description-color, var(--mat-sys-on-surface-variant));
+    margin-right: 16px;
   }
 
   .type-option .mat-pseudo-checkbox.mat-pseudo-checkbox-checked::after {
