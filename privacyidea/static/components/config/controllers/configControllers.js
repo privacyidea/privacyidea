@@ -40,8 +40,8 @@ myApp.controller("policyListController", ["$scope", "$stateParams", "$location",
                 // converts action object to string and creates new list "action_desc"
                 $scope.policies.forEach(function (value, i) {
                     $scope.policies[i]['action_desc'] = [];
-                    for (const [key, value] of Object.entries($scope.policies[i]['action'])) {
-                        $scope.policies[i]['action_desc'].push((`${key}: ${value}`));
+                    for (const [actionKey, actionVal] of Object.entries($scope.policies[i]['action'])) {
+                        $scope.policies[i]['action_desc'].push((`${actionKey}: ${actionVal}`));
                     }
                 });
             });
@@ -175,8 +175,9 @@ myApp.controller("policyDetailsController", ["$scope", "$stateParams",
 
         $scope.getTemplate = function (templateName) {
             PolicyTemplateFactory.getTemplate(templateName, function (data) {
-                //debug: console.log("Get template ". templateName);
-                //debug: console.log(data);
+                // Auto-hide the templates list
+                $scope.viewPolicyTemplates = false;
+
                 // Set template data.
                 $scope.policyname = data.name;
                 $scope.presetEditValues2({
@@ -188,7 +189,11 @@ myApp.controller("policyDetailsController", ["$scope", "$stateParams",
                     adminrealm: data.adminrealm || [],
                     conditions: data.conditions || [],
                     pinode: [],
-                    user_agents: data.user_agents || []
+                    user_agents: data.user_agents || [],
+                    // Preserve the existing priority (or default to 1)
+                    priority: $scope.params.priority || 1,
+                    // Force the template to be active
+                    active: true
                 });
             });
         };
@@ -549,6 +554,21 @@ myApp.controller("policyDetailsController", ["$scope", "$stateParams",
                     !$scope.onlySelectedVisible) &&
                 (re.test(action.name) || re.test(action.desc));
         };
+
+        $scope.checkGroupVisible = function (group) {
+            if (!$scope.actions) {
+                return false;
+            }
+            for (let i = 0; i < $scope.actions.length; i++) {
+                let action = $scope.actions[i];
+                if (action.group === group) {
+                    if ($scope.checkOpenGroup(action, $scope.action_filter)) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        };
     }]);
 
 myApp.controller("tokenConfigController", ["$scope", "$location", "$rootScope",
@@ -671,19 +691,6 @@ myApp.controller("configController", ["$scope", "$location", "$rootScope",
         }
 
         $scope.items = ["item1", "item2", "item3"];
-        $scope.dragControlListeners = {
-            accept: function (sourceItemHandleScope, destSortableScope) {
-                return boolean;
-            },
-            //override to determine drag is allowed or not. default is true.
-            itemMoved: function (event) {
-                //Do what you want},
-            },
-            orderChanged: function (event) {
-                //Do what you want},
-            },
-            containment: '#board'//optional param.
-        };
 
         // TODO: This information needs to be fetched from the server
         $scope.availableResolverTypes = ['passwdresolver', 'ldapresolver', 'sqlresolver', 'scimresolver',
