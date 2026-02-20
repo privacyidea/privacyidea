@@ -546,6 +546,21 @@ myApp.controller("policyDetailsController", ["$scope", "$stateParams",
                     !$scope.onlySelectedVisible) &&
                 (re.test(action.name) || re.test(action.desc));
         };
+
+        $scope.checkGroupVisible = function (group) {
+            if (!$scope.actions) {
+                return false;
+            }
+            for (let i = 0; i < $scope.actions.length; i++) {
+                let action = $scope.actions[i];
+                if (action.group === group) {
+                    if ($scope.checkOpenGroup(action, $scope.action_filter)) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        };
     }]);
 
 myApp.controller("tokenConfigController", ["$scope", "$location", "$rootScope",

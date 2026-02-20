@@ -401,7 +401,8 @@
                             <div uib-accordion-group
                                  class="panel-default"
                                  ng-repeat="actionGroup in actionGroups"
-                                 is-open="groupIsOpen[actionGroup]">
+                                 is-open="groupIsOpen[actionGroup]"
+                                 ng-show="checkGroupVisible(actionGroup)">
                                 <uib-accordion-heading ng-click="groupIsOpen[actionGroup]=!groupIsOpen[actionGroup]">
                                     <div>{{ ( actionGroup || 'miscellaneous') }}
                                         <span class="pull-right glyphicon" aria-hidden="true"
