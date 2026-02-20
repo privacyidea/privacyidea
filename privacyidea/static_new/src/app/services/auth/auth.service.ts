@@ -151,7 +151,7 @@ export interface AuthServiceInterface {
   readonly dialogNoToken: Signal<boolean>;
   readonly searchOnEnter: Signal<boolean>;
   readonly timeoutAction: Signal<string>;
-  readonly tokenRollover: Signal<any>;
+  readonly tokenRollover: Signal<string[]>;
   readonly hideWelcome: Signal<boolean>;
   readonly hideButtons: Signal<boolean>;
   readonly deletionConfirmation: Signal<boolean>;

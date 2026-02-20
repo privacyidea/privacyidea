@@ -50,6 +50,7 @@ describe("EnrollSmsComponent", () => {
         readNumberDynamically: true,
         phoneNumber: "+1234567890"
       });
+      fixture.detectChanges();
       component.ngOnInit();
       expect(component.smsGatewayControl.value).toBe("TestGateway");
       expect(component.readNumberDynamicallyControl.value).toBe(true);

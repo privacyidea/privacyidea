@@ -414,5 +414,9 @@ describe("AuthService", () => {
   it("should extract token types from rollover policy", () => {
     authService.authData.set({token_rollover: {hotp: [], totp: []}} as unknown as AuthData);
     expect(authService.tokenRollover()).toEqual(["hotp", "totp"]);
+
+    // token_rollover data not set
+    authService.authData.set({} as unknown as AuthData);
+    expect(authService.tokenRollover()).toEqual([]);
   });
 });
