@@ -22,7 +22,8 @@ This is the directive for assigning users.
            ng-keypress="toggleLoadUsers($event.which==13)"
            typeahead-wait-ms="100"
            typeahead-focus-first="true"
-           uib-typeahead="newuser for newuser in loadUsers($viewValue)"
+           uib-typeahead="user.username as user.display for user in loadUsers($viewValue)"
+           uib-typeahead-template-url="'static/components/directives/views/typeahead-user-item.html'"
            typeahead-no-results="noResults"
            typeahead-loading="loadingUsers" class="form-control"
            ng-disabled="newUserObject.realmOnly">
