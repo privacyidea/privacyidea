@@ -18,9 +18,10 @@
  **/
 import { AuthService, AuthServiceInterface } from "../../auth/auth.service";
 import { ContentService, ContentServiceInterface } from "../../content/content.service";
-import { httpResource, HttpResourceRef } from "@angular/common/http";
+import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
 import { computed, inject, Injectable, linkedSignal, signal, WritableSignal } from "@angular/core";
 import { TokenService, TokenServiceInterface } from "../token.service";
+import { Observable } from "rxjs";
 
 import { FilterValue } from "../../../core/models/filter_value";
 import { PiResponse } from "../../../app.component";
@@ -63,12 +64,15 @@ export interface ChallengesServiceInterface {
   clearFilter(): void;
 
   handleFilterInput($event: Event): void;
+
+  deleteExpiredChallenges(): Observable<any>;
 }
 
 @Injectable({
   providedIn: "root"
 })
 export class ChallengesService implements ChallengesServiceInterface {
+  private readonly http = inject(HttpClient);
   private readonly tokenService: TokenServiceInterface = inject(TokenService);
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
@@ -146,5 +150,11 @@ export class ChallengesService implements ChallengesServiceInterface {
     const input = $event.target as HTMLInputElement;
     const newFilter = this.challengesFilter().copyWith({ value: input.value });
     this.challengesFilter.set(newFilter);
+  }
+
+  deleteExpiredChallenges(): Observable<any> {
+    return this.http.delete(`${this.tokenBaseUrl}challenges/expired`, {
+      headers: this.authService.getHeaders()
+    });
   }
 }

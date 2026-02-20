@@ -42,6 +42,13 @@
           placeholder="Example query: 'transaction_id: 00000000000000000001'" />
       </app-clearable-input>
     </mat-form-field>
+    <button
+      (click)="onDeleteExpiredChallenges()"
+      class="action-button-delete"
+      i18n
+      mat-stroked-button>
+      Delete Expired
+    </button>
     <mat-paginator
       (page)="onPageEvent($event)"
       [length]="length()"
@@ -65,7 +72,7 @@
           <div class="flex ali-center">
             {{ column.label }}
             <div class="margin-left-1 flex">
-            @if (apiFilter.includes(column.key)) {
+              @if (apiFilter.includes(column.key)) {
                 <button
                   (click)="onKeywordClick(column.key)"
                   class="filter-button"
@@ -75,14 +82,14 @@
                     {{ getFilterIconName(column.key) }}
                   </mat-icon>
                 </button>
-            }
-            <button
-              (click)="tableUtilsService.onSortButtonClick(column.key, sort)"
-              class="sort-button"
-              mat-icon-button
-              type="button">
-              <mat-icon>{{ tableUtilsService.getSortIcon(column.key, sort()) }}</mat-icon>
-            </button>
+              }
+              <button
+                (click)="tableUtilsService.onSortButtonClick(column.key, sort)"
+                class="sort-button"
+                mat-icon-button
+                type="button">
+                <mat-icon>{{ tableUtilsService.getSortIcon(column.key, sort()) }}</mat-icon>
+              </button>
             </div>
           </div>
         </th>
