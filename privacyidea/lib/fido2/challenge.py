@@ -1,7 +1,8 @@
 import logging
+import json
 from datetime import datetime, timezone
 from typing import Union
-
+from dataclasses import dataclass
 from sqlalchemy import select
 from webauthn.helpers import bytes_to_base64url
 
@@ -27,14 +28,17 @@ def get_fido2_nonce() -> str:
 
 
 def create_fido2_challenge(rp_id: str, user_verification: str = "preferred", transaction_id: Union[str, None] = None,
-                           serial: Union[str, None] = None) -> dict:
+                           serial: Union[str, None] = None, nonce: Union[str, None] = None) -> dict:
     """
-    Returns a fido2 challenge. If a serial is provided, the challenge is bound to the token with the serial. By default,
-    the challenge is not bound to a token, which is the general use-case of FIDO2.
-    The challenge validity time is set to either WebauthnChallengeValidityTime, DefaultChallengeValidityTime or 120s
-    in that order of evaluation.
+    Returns a fido2 challenge. The challenge validity time is set to either WebauthnChallengeValidityTime,
+    DefaultChallengeValidityTime or 120s in that order of evaluation.
     The user_verification parameter can be one of "required", "preferred" or "discouraged". If the value is not one of
     these, "preferred" is used. user_verification is saved in the challenge data field.
+    If a serial is provided, the challenge is bound to the token with the serial.
+    This is the case when using the passkey_trigger_by_pin policy, where the passkey acts as a challenge-response token
+    that is triggered via the user and PIN. The challenge should then only be usable with the corresponding token.
+    By default, the challenge is not bound to a token, which is the general use-case of FIDO2, to allow usernameless
+    logins.
     The returned dict has the format:
         ::
 
@@ -46,7 +50,8 @@ def create_fido2_challenge(rp_id: str, user_verification: str = "preferred", tra
                 "userVerification": "preferred"
             }
     """
-    challenge = fido2.challenge.get_fido2_nonce()
+    if not nonce:
+        nonce = fido2.challenge.get_fido2_nonce()
     message = PasskeyTokenClass.get_default_challenge_text_auth()
     validity = int(get_from_config(FIDO2ConfigOptions.CHALLENGE_VALIDITY_TIME,
                                    get_from_config('DefaultChallengeValidityTime', 120)))
@@ -55,20 +60,28 @@ def create_fido2_challenge(rp_id: str, user_verification: str = "preferred", tra
         log.warning(f"Invalid user_verification value {user_verification}. Using 'preferred' instead.")
         user_verification = "preferred"
 
-    db_challenge = Challenge(serial or "", transaction_id=transaction_id, challenge=challenge,
-                             data=f"user_verification={user_verification}", validitytime=validity)
+    data = {"user_verification": user_verification}
+
+    db_challenge = Challenge(serial or "", transaction_id=transaction_id, challenge=nonce,
+                             data=json.dumps(data), validitytime=validity)
     db_challenge.save()
     transaction_id = db_challenge.transaction_id
     return {
         "transaction_id": transaction_id,
-        "challenge": challenge,
+        "challenge": nonce,
         "message": message,
         "rpId": rp_id,
         "user_verification": user_verification
     }
 
 
-def verify_fido2_challenge(transaction_id: str, token: TokenClass, params: dict) -> int:
+@dataclass
+class FIDOVerificationResult:
+    success: int
+    challenge: Challenge
+
+
+def verify_fido2_challenge(transaction_id: str, token: TokenClass, params: dict) -> FIDOVerificationResult:
     """
     Verify the response for a fido2 challenge with the given token.
     Params is required to have the keys:
@@ -100,12 +113,11 @@ def verify_fido2_challenge(transaction_id: str, token: TokenClass, params: dict)
         raise AuthError(f"The challenge {transaction_id} has timed out.")
 
     # Get the user_verification requirement from the challenge data
-    uv_string = challenge.get_data()
-    parts = uv_string.split("=")
-    if len(parts) != 2 or parts[0] != "user_verification":
+    data = challenge.get_data()
+    if not isinstance(data, dict) or "user_verification" not in data:
         log.error(f"Invalid user_verification data in challenge with transaction_id {transaction_id}.")
         raise AuthError(f"Invalid user_verification data in challenge {transaction_id}.")
-    user_verification = parts[1]
+    user_verification = data["user_verification"]
     if user_verification not in ["required", "preferred", "discouraged"]:
         log.error(
             f"Invalid user_verification value {user_verification} in challenge with transaction_id {transaction_id}."
@@ -126,10 +138,11 @@ def verify_fido2_challenge(transaction_id: str, token: TokenClass, params: dict)
         options.update({"credential_id": get_required_one_of(params, ["credential_id", "credentialid"])})
     options.update({"user": token.user})
     ret = token.check_otp(None, options=options)
+    result = FIDOVerificationResult(ret, challenge)
     # On success, remove all challenges with the transaction_id
-    if ret > 0:
+    if result.success > 0:
         for db_challenge in db_challenges:
             db_challenge.delete()
         # Update the last_auth token info
         token.add_tokeninfo(PolicyAction.LASTAUTH, datetime.now(timezone.utc).isoformat(timespec="seconds"))
-    return ret
+    return result

@@ -16,37 +16,98 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { httpResource, HttpResourceRef } from "@angular/common/http";
-import { Injectable } from "@angular/core";
+import { computed, inject, Injectable, Signal } from "@angular/core";
+import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
 import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
-import { AuthService } from "../auth/auth.service";
+import { AuthService, AuthServiceInterface } from "../auth/auth.service";
+import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
+import { lastValueFrom } from "rxjs";
 
-type SmsGateways = SmsGateway[];
+export interface SmsProviderParameter {
+  values?: string[];
+  required?: boolean;
+  type?: string;
+  description: string;
+}
+
+export interface SmsProvider {
+  parameters: Record<string, SmsProviderParameter>;
+  options_allowed?: boolean;
+  headers_allowed?: boolean;
+}
+
+export type SmsProviders = Record<string, SmsProvider>;
 
 export interface SmsGateway {
-  id: number;
+  id?: number;
   name: string;
   description?: string;
   providermodule: string;
   options: Record<string, string>;
-  headers: any;
+  headers: Record<string, string>;
 }
 
 export interface SmsGatewayServiceInterface {
-  smsGatewayResource: HttpResourceRef<PiResponse<SmsGateways> | undefined>;
+  smsGatewayResource: HttpResourceRef<PiResponse<SmsGateway[]> | undefined>;
+  smsProvidersResource: HttpResourceRef<PiResponse<SmsProviders> | undefined>;
+  readonly smsGateways: Signal<SmsGateway[]>;
+  postSmsGateway(gateway: any): Promise<void>;
+  deleteSmsGateway(name: string): Promise<void>;
 }
 
 @Injectable({
   providedIn: "root"
 })
-export class SmsGatewayService {
-  smsGatewayResource = httpResource<PiResponse<SmsGateways>>(() => ({
-    url: environment.proxyUrl + "/smsgateway/",
+export class SmsGatewayService implements SmsGatewayServiceInterface {
+  private readonly baseUrl = environment.proxyUrl + "/smsgateway/";
+  private readonly authService: AuthServiceInterface = inject(AuthService);
+  private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
+  private readonly http: HttpClient = inject(HttpClient);
+
+  readonly smsGatewayResource = httpResource<PiResponse<SmsGateway[]>>(() => ({
+    url: this.baseUrl,
     method: "GET",
     headers: this.authService.getHeaders()
   }));
 
-  constructor(private authService: AuthService) {
+  readonly smsProvidersResource = httpResource<PiResponse<SmsProviders>>(() => ({
+    url: this.baseUrl + "providers",
+    method: "GET",
+    headers: this.authService.getHeaders()
+  }));
+
+  readonly smsGateways = computed<SmsGateway[]>(() => {
+    return this.smsGatewayResource.value()?.result?.value ?? [];
+  });
+
+  async postSmsGateway(gateway: any): Promise<void> {
+    const request = this.http.post<PiResponse<any>>(this.baseUrl, gateway, { headers: this.authService.getHeaders() });
+    return lastValueFrom(request)
+      .then(() => {
+        this.notificationService.openSnackBar($localize`Successfully saved SMS gateway.`);
+        this.smsGatewayResource.reload();
+      })
+      .catch((error) => {
+        const message = error.error?.result?.error?.message || "";
+        this.notificationService.openSnackBar($localize`Failed to save SMS gateway. ` + message);
+        throw new Error("post-failed");
+      });
+  }
+
+  async deleteSmsGateway(name: string): Promise<void> {
+    const request = this.http.delete<PiResponse<any>>(`${this.baseUrl}${name}`, {
+      headers: this.authService.getHeaders()
+    });
+    return lastValueFrom(request)
+      .then(() => {
+        this.notificationService.openSnackBar($localize`Successfully deleted SMS gateway: ${name}.`);
+        this.smsGatewayResource.reload();
+      })
+      .catch((error) => {
+        const message = error.error?.result?.error?.message || "";
+        this.notificationService.openSnackBar($localize`Failed to delete SMS gateway. ` + message);
+        throw new Error("delete-failed");
+      });
   }
 }

@@ -92,7 +92,7 @@ export class EnrollApplspecComponent implements OnInit {
     generateOnServer: this.generateOnServerControl,
     otpKey: this.otpKeyFormControl
   });
-  serviceIdOptions = computed(() => this.serviceIdService.serviceIds().map((s) => s.name) || []);
+  serviceIdOptions = computed(() => this.serviceIdService.serviceIds().map((s) => s.servicename) || []);
   applspecErrorStateMatcher = new ApplspecErrorStateMatcher();
 
   constructor() {

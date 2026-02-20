@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Injectable } from "@angular/core";
-import { RemoteServer } from "../../services/privavyidea-server/privacyidea-server.service";
+import { RemoteServer } from "../../services/privacyidea-server/privacyidea-server.service";
 import {
   BaseApiPayloadMapper,
   TokenApiPayloadMapper,

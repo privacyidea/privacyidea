@@ -1,12 +1,10 @@
-from typing import Union
-
 from mock.mock import patch
 from webauthn.helpers import bytes_to_base64url
 
 from privacyidea.lib.fido2.util import hash_credential_id
 from privacyidea.lib.machine import attach_token, detach_token
-from privacyidea.lib.policy import SCOPE, set_policy, delete_policy, delete_policies
 from privacyidea.lib.policies.actions import PolicyAction
+from privacyidea.lib.policy import SCOPE, set_policy, delete_policy, delete_policies
 from privacyidea.lib.token import (get_tokens, init_token, remove_token,
                                    get_one_token)
 from privacyidea.lib.tokenclass import ROLLOUTSTATE

@@ -1,0 +1,36 @@
+@use "../../../../styles";
+@use "@angular/material" as mat;
+
+.smtp-servers-container {
+  @include styles.table-container-styles;
+  @include styles.base-table-structure(".smtp-servers-table", ".token-table-filter", ".table-scroll-container");
+  max-height: var(--max-height);
+  max-width: calc(100vw - var(--global-padding) * 5 - 48px);
+  display: grid;
+  overflow: auto;
+
+  .table-filter {
+    width: 29rem;
+  }
+}
+
+.smtp-servers-layout {
+  padding: 24px;
+}
+
+.header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.clickable {
+  cursor: pointer;
+  color: var(--mat-sys-primary);
+  text-decoration: underline;
+}
+
+::ng-deep app-smtp-edit-dialog.mat-mdc-dialog-component-host mat-dialog-content.mat-mdc-dialog-content.mdc-dialog__content.smtp-dialog-content {
+  max-height: 82vh;
+}

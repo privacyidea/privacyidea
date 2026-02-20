@@ -140,6 +140,7 @@ class PolicyAction:
     ENROLL_VIA_MULTICHALLENGE_TEXT = "enroll_via_multichallenge_text"
     ENROLL_VIA_MULTICHALLENGE_TEMPLATE = "enroll_via_multichallenge_template"
     ENROLL_VIA_MULTICHALLENGE_OPTIONAL = "enroll_via_multichallenge_optional"
+    ENROLL_VIA_MULTICHALLENGE_PASSKEY_OFFLINE = "enroll_via_multichallenge_passkey_offline"
     CLIENTTYPE = "clienttype"
     REGISTERBODY = "registration_body"
     RESETALLTOKENS = "reset_all_user_tokens"
@@ -219,3 +220,10 @@ class PolicyAction:
     HIDE_SPECIFIC_ERROR_MESSAGE_FOR_OFFLINE_REFILL = "hide_specific_error_message_for_offline_refill"
     HIDE_SPECIFIC_ERROR_MESSAGE_FOR_TTYPE = "hide_specific_error_message_for_ttype"
     REQUIRE_AUTH_FOR_RESOLVER_DETAILS = "require_auth_for_resolver_details"
+    PASSKEY_LOGIN = "passkey_login"
+
+
+class PasskeyLoginButtonOptions:
+    __doc__ = """This is the list of options for passkey login."""
+    SHOW = "show"
+    HIDE = "hide"

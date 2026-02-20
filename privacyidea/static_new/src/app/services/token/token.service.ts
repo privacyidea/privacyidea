@@ -599,7 +599,7 @@ export class TokenService implements TokenServiceInterface {
       .afterClosed()
       .subscribe({
         next: (result: DialogReturnData) => {
-          if (result?.confirmed) {
+          if (result) {
             this.bulkDeleteTokens(serialList).subscribe({
               next: (response: PiResponse<BulkResult, any>) => {
                 const failedTokens = response.result?.value?.failed || [];

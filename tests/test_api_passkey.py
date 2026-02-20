@@ -21,7 +21,6 @@ from unittest.mock import patch
 
 from webauthn.helpers.structs import AttestationConveyancePreference
 
-import privacyidea.lib.token
 from privacyidea.config import TestingConfig
 from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction, PasskeyAction
 from privacyidea.lib.framework import get_app_config_value
@@ -31,6 +30,7 @@ from privacyidea.lib.token import remove_token, init_token, get_tokens, get_one_
 from privacyidea.lib.tokens.webauthn import CoseAlgorithm
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import AUTH_RESPONSE
+from privacyidea.lib.error import ResourceNotFoundError
 from privacyidea.models import db
 from tests.base import MyApiTestCase, OverrideConfigTestCase
 from tests.passkey_base import PasskeyTestBase
@@ -45,22 +45,28 @@ class PasskeyAPITestBase(MyApiTestCase, PasskeyTestBase):
         self.setUp_user_realms()
         self.user = User(login="hans", realm=self.realm1,
                          resolver=self.resolvername1)
-        PasskeyTestBase.__init__(self)
 
-        set_policy("passkey_rp_id", scope=SCOPE.ENROLL, action=f"{FIDO2PolicyAction.RELYING_PARTY_ID}={self.rp_id}")
-        set_policy("passkey_rp_name", scope=SCOPE.ENROLL,
-                   action=f"{FIDO2PolicyAction.RELYING_PARTY_NAME}={self.rp_id}")
+        self.set_policy_with_cleanup("passkey_rp_id", scope=SCOPE.ENROLL,
+                                     action=f"{FIDO2PolicyAction.RELYING_PARTY_ID}={self.rp_id}")
+        self.set_policy_with_cleanup("passkey_rp_name", scope=SCOPE.ENROLL,
+                                     action=f"{FIDO2PolicyAction.RELYING_PARTY_NAME}={self.rp_id}")
         self.pk_headers = {'ORIGIN': self.expected_origin, 'Authorization': self.at}
         # Delete all token
         tokens = get_tokens(user=self.user)
         for t in tokens:
             remove_token(t.get_serial())
 
-    def tearDown(self):
-        delete_policy("passkey_rp_id")
-        delete_policy("passkey_rp_name")
+    def safe_delete_policy(self, name):
+        try:
+            delete_policy(name)
+        except ResourceNotFoundError:
+            pass
 
-    def _token_init_step_one(self):
+    def set_policy_with_cleanup(self, name, **kwargs):
+        set_policy(name, **kwargs)
+        self.addCleanup(self.safe_delete_policy, name)
+
+    def _token_init_step_one(self, exclude_credentials_size: int = 0):
         with patch('privacyidea.lib.fido2.challenge.get_fido2_nonce') as get_nonce:
             get_nonce.return_value = self.registration_challenge
 
@@ -83,9 +89,17 @@ class PasskeyAPITestBase(MyApiTestCase, PasskeyTestBase):
                 for param in passkey_registration["pubKeyCredParams"]:
                     self.assertIn(param["type"], ["public-key"])
                     self.assertIn(param["alg"], [-7, -37, -257])
-                # ExcludeCredentials should be empty because no other passkey token is registered for the user
-                self.assertEqual(0, len(passkey_registration["excludeCredentials"]),
-                                 "excludeCredentials should be empty")
+
+                # ExcludeCredentials should be either empty because no other passkey token is registered for the user
+                # or if there are multiple passkeys enrolled for the user for testing purposes, it should have the
+                # specified size
+                if exclude_credentials_size == 0:
+                    self.assertEqual(0, len(passkey_registration["excludeCredentials"]),
+                                     "excludeCredentials should be empty")
+                else:
+                    self.assertEqual(exclude_credentials_size, len(passkey_registration["excludeCredentials"]),
+                                     "excludeCredentials should have the specified size")
+
                 return res.json
 
     def _token_init_step_two(self, transaction_id, serial):
@@ -107,11 +121,11 @@ class PasskeyAPITestBase(MyApiTestCase, PasskeyTestBase):
             self.assertEqual(200, res.status_code)
             self._assert_result_value_true(res.json)
 
-    def _enroll_static_passkey(self) -> str:
+    def _enroll_static_passkey(self, exclude_credentials_size: int = 0) -> str:
         """
         Returns the serial of the enrolled passkey token
         """
-        data = self._token_init_step_one()
+        data = self._token_init_step_one(exclude_credentials_size)
         detail = data["detail"]
         serial = detail["serial"]
         transaction_id = detail["transaction_id"]
@@ -164,17 +178,18 @@ class PasskeyAPITest(PasskeyAPITestBase):
     Passkeys can be used with cross-device sign-in, similar to how push token work
     """
 
-    def test01_token_init_with_policies(self):
+    def test_01_token_init_with_policies(self):
         # Test if setting the policies alters the registration data correctly
         # Create a passkey token so excludeCredentials is not empty
         serial = self._enroll_static_passkey()
 
-        set_policy("key_algorithm", scope=SCOPE.ENROLL,
-                   action=f"{FIDO2PolicyAction.PUBLIC_KEY_CREDENTIAL_ALGORITHMS}=ecdsa")
-        set_policy("attestation", scope=SCOPE.ENROLL, action=f"{PasskeyAction.AttestationConveyancePreference}="
-                                                             f"{AttestationConveyancePreference.ENTERPRISE.value}")
-        set_policy("user_verification", scope=SCOPE.ENROLL,
-                   action=f"{FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT}=required")
+        self.set_policy_with_cleanup("key_algorithm", scope=SCOPE.ENROLL,
+                                     action=f"{FIDO2PolicyAction.PUBLIC_KEY_CREDENTIAL_ALGORITHMS}=ecdsa")
+        self.set_policy_with_cleanup("attestation", scope=SCOPE.ENROLL,
+                                     action=f"{PasskeyAction.AttestationConveyancePreference}="
+                                            f"{AttestationConveyancePreference.ENTERPRISE.value}")
+        self.set_policy_with_cleanup("user_verification", scope=SCOPE.ENROLL,
+                                     action=f"{FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT}=required")
 
         with patch('privacyidea.lib.fido2.challenge.get_fido2_nonce') as get_nonce:
             get_nonce.return_value = self.registration_challenge
@@ -201,9 +216,6 @@ class PasskeyAPITest(PasskeyAPITestBase):
                 self.assertEqual(len(passkey_registration["excludeCredentials"]), 1)
                 self.assertEqual(passkey_registration["excludeCredentials"][0]["id"], self.credential_id)
 
-        delete_policy("key_algorithm")
-        delete_policy("attestation")
-        delete_policy("user_verification")
         remove_token(serial)
         remove_token(serial_2)
 
@@ -232,8 +244,8 @@ class PasskeyAPITest(PasskeyAPITestBase):
         Wrong UV meaning user verification is required but the authenticator data does not contain the UV flag
         """
         serial = self._enroll_static_passkey()
-        set_policy("user_verification", scope=SCOPE.AUTH,
-                   action=f"{FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT}=required")
+        self.set_policy_with_cleanup("user_verification", scope=SCOPE.AUTH,
+                                     action=f"{FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT}=required")
         passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_no_uv)
         self.assertIn("user_verification", passkey_challenge)
         self.assertEqual("required", passkey_challenge["user_verification"])
@@ -256,12 +268,11 @@ class PasskeyAPITest(PasskeyAPITestBase):
             self.assertEqual("REJECT", res.json["result"]["authentication"])
 
         remove_token(serial)
-        delete_policy("user_verification")
 
     def test_04_authenticate_with_uv(self):
         serial = self._enroll_static_passkey()
-        set_policy("user_verification", scope=SCOPE.AUTH,
-                   action=f"{FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT}=required")
+        self.set_policy_with_cleanup("user_verification", scope=SCOPE.AUTH,
+                                     action=f"{FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT}=required")
         passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_uv)
         self.assertIn("user_verification", passkey_challenge)
         self.assertEqual("required", passkey_challenge["user_verification"])
@@ -280,7 +291,6 @@ class PasskeyAPITest(PasskeyAPITestBase):
             self.assertNotIn(PolicyAction.ENROLL_VIA_MULTICHALLENGE_OPTIONAL, detail)
 
         remove_token(serial)
-        delete_policy("user_verification")
 
     def test_05_trigger_with_pin(self):
         """
@@ -298,14 +308,15 @@ class PasskeyAPITest(PasskeyAPITestBase):
             self.assertFalse(res.json["result"]["value"])
 
         # Set the policy to trigger the passkey with the PIN, UV=discouraged and a challenge text
-        set_policy("passkey_trigger_with_pin", scope=SCOPE.AUTH, action=f"{PasskeyAction.EnableTriggerByPIN}=true")
-        set_policy("user_verification", scope=SCOPE.AUTH,
-                   action=f"{FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT}=discouraged")
-        set_policy("challenge_text", scope=SCOPE.AUTH, action=f"passkey_challenge_text=test text")
+        self.set_policy_with_cleanup("passkey_trigger_with_pin", scope=SCOPE.AUTH,
+                                     action=f"{PasskeyAction.EnableTriggerByPIN}=true")
+        self.set_policy_with_cleanup("user_verification", scope=SCOPE.AUTH,
+                                     action=f"{FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT}=discouraged")
+        self.set_policy_with_cleanup("challenge_text", scope=SCOPE.AUTH, action=f"passkey_challenge_text=test text")
 
         # Test with authz policy add_user_in_response
-        set_policy("user_in_response", scope=SCOPE.AUTHZ,
-                   action=f"{PolicyAction.ADDUSERINRESPONSE}, {PolicyAction.ADDRESOLVERINRESPONSE}")
+        self.set_policy_with_cleanup("user_in_response", scope=SCOPE.AUTHZ,
+                                     action=f"{PolicyAction.ADDUSERINRESPONSE}, {PolicyAction.ADDRESOLVERINRESPONSE}")
 
         with patch('privacyidea.lib.fido2.challenge.get_fido2_nonce') as get_nonce:
             get_nonce.return_value = self.authentication_challenge_no_uv
@@ -369,16 +380,14 @@ class PasskeyAPITest(PasskeyAPITestBase):
             self.assertNotIn("auth_items", res.json)
 
         remove_token(serial)
-        delete_policy("passkey_trigger_with_pin")
-        delete_policy("user_verification")
-        delete_policy("challenge_text")
 
     def test_06_validate_check_wrong_serial(self):
         """
         Challenges triggered via /validate/check should be bound to a specific serial.
         Trying to answer the challenge with a token with a different serial should fail.
         """
-        set_policy("passkey_trigger_with_pin", scope=SCOPE.AUTH, action=f"{PasskeyAction.EnableTriggerByPIN}=true")
+        self.set_policy_with_cleanup("passkey_trigger_with_pin", scope=SCOPE.AUTH,
+                                     action=f"{PasskeyAction.EnableTriggerByPIN}=true")
         serial = self._enroll_static_passkey()
         with patch('privacyidea.lib.fido2.challenge.get_fido2_nonce') as get_nonce:
             get_nonce.return_value = self.authentication_challenge_no_uv
@@ -389,7 +398,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
                 detail = res.json["detail"]
                 transaction_id = detail["multi_challenge"][0]["transaction_id"]
         # Change the token serial
-        token = privacyidea.lib.token.get_tokens(serial=serial)[0]
+        token = get_tokens(serial=serial)[0]
         token.token.serial = "123456"
         token.token.save()
         # Try to answer the challenge, will fail
@@ -407,15 +416,20 @@ class PasskeyAPITest(PasskeyAPITestBase):
             self.assertEqual(403, error["code"])
             self.assertFalse(result["status"])
         remove_token(token.token.serial)
-        delete_policy("passkey_trigger_with_pin")
 
     def test_07_trigger_challenge(self):
         """
-        Just test if the challenge is returned by /validate/triggerchallenge. The response would be sent to
+        Test if the challenge is returned by /validate/triggerchallenge. The response would be sent to
         /validate/check and that is already tested. Requires the passkey_trigger_with_pin policy to be set.
+        This also makes sure that the nonce is the same for each challenge. Usually allowCredentials would be used as
+        specified by WebAuthn, but privacyidea has a one challenge per one token model.
         """
-        set_policy("passkey_trigger_with_pin", scope=SCOPE.AUTH, action=f"{PasskeyAction.EnableTriggerByPIN}=true")
-        serial = self._enroll_static_passkey()
+        self.set_policy_with_cleanup("passkey_trigger_with_pin", scope=SCOPE.AUTH,
+                                     action=f"{PasskeyAction.EnableTriggerByPIN}=true")
+        serial1 = self._enroll_static_passkey()
+        # Enroll a second passkey, set the expected size of excludeCredentials to 1, because the user already has one
+        serial2 = self._enroll_static_passkey(1)
+
         with patch('privacyidea.lib.fido2.challenge.get_fido2_nonce') as get_nonce:
             get_nonce.return_value = self.authentication_challenge_no_uv
             with self.app.test_request_context('/validate/triggerchallenge', method='POST',
@@ -427,34 +441,42 @@ class PasskeyAPITest(PasskeyAPITestBase):
                 self.assertIn("multi_challenge", detail)
 
                 multi_challenge = detail["multi_challenge"]
-                self.assertEqual(len(multi_challenge), 1)
+                self.assertEqual(len(multi_challenge), 2)
 
-                challenge = multi_challenge[0]
-                self.assertIn("transaction_id", challenge)
-                transaction_id = challenge["transaction_id"]
+                challenge1 = multi_challenge[0]
+                challenge2 = multi_challenge[1]
+
+                self.assertIn("transaction_id", challenge1)
+                transaction_id = challenge1["transaction_id"]
                 self.assertTrue(transaction_id)
+                self.assertEqual(transaction_id, challenge2["transaction_id"])
 
-                self.assertIn("challenge", challenge)
-                self.assertEqual(self.authentication_challenge_no_uv, challenge["challenge"])
+                self.assertIn("challenge", challenge1)
+                self.assertEqual(self.authentication_challenge_no_uv, challenge1["challenge"])
+                self.assertEqual(challenge1["challenge"], challenge2["challenge"])
 
-                self.assertIn("serial", challenge)
-                self.assertEqual(serial, challenge["serial"])
+                self.assertIn("serial", challenge1)
+                self.assertIn("serial", challenge2)
+                serials = [challenge1["serial"], challenge2["serial"]]
+                self.assertIn(serial1, serials)
+                self.assertIn(serial2, serials)
 
-                self.assertIn("type", challenge)
-                self.assertEqual("passkey", challenge["type"])
+                self.assertIn("type", challenge1)
+                self.assertEqual("passkey", challenge1["type"])
 
-                self.assertIn("userVerification", challenge)
-                self.assertTrue(challenge["userVerification"])
+                self.assertIn("userVerification", challenge1)
+                self.assertTrue(challenge1["userVerification"])
 
-                self.assertIn("rpId", challenge)
-                self.assertEqual(self.rp_id, challenge["rpId"])
+                self.assertIn("rpId", challenge1)
+                self.assertEqual(self.rp_id, challenge1["rpId"])
 
-                self.assertIn("message", challenge)
-                self.assertTrue(challenge["message"])
+                self.assertIn("message", challenge1)
+                self.assertTrue(challenge1["message"])
 
-                self.assertIn("client_mode", challenge)
-                self.assertEqual("webauthn", challenge["client_mode"])
-        remove_token(serial)
+                self.assertIn("client_mode", challenge1)
+                self.assertEqual("webauthn", challenge1["client_mode"])
+        remove_token(serial1)
+        remove_token(serial2)
 
     def test_08_offline(self):
         serial = self._enroll_static_passkey()
@@ -507,7 +529,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
             self.assertIn("pubKey", response)
             self.assertIn("credentialId", response)
             # Verify that the returned values are correct
-            token = privacyidea.lib.token.get_tokens(serial=serial)[0]
+            token = get_tokens(serial=serial)[0]
             public_key = token.get_tokeninfo("public_key")
             self.assertEqual(public_key, response["pubKey"])
             credential_id = token.token.get_otpkey().getKey().decode("utf-8")
@@ -582,8 +604,10 @@ class PasskeyAPITest(PasskeyAPITestBase):
     def test_09_enroll_passkey_via_multichallenge(self):
         spass_token = init_token({"type": "spass", "pin": "1"}, self.user)
         action = "enroll_via_multichallenge=PASSKEY, enroll_via_multichallenge_text=enrollVia multichallenge test text"
-        set_policy("enroll_passkey", scope=SCOPE.AUTH, action=action)
-
+        self.set_policy_with_cleanup("enroll_passkey", scope=SCOPE.AUTH, action=action)
+        self.set_policy_with_cleanup("enroll_passkey_offline", scope=SCOPE.AUTH,
+                                     action=f"{PolicyAction.ENROLL_VIA_MULTICHALLENGE_PASSKEY_OFFLINE}=true")
+        self.pk_headers.update({"User-Agent": "privacyidea-cp/1.1.1 Windows/Laptop-1231312"})
         # Using the spass token should result in a challenge to enroll a passkey
         with patch('privacyidea.lib.fido2.challenge.get_fido2_nonce') as get_nonce:
             get_nonce.return_value = self.registration_challenge
@@ -686,10 +710,38 @@ class PasskeyAPITest(PasskeyAPITestBase):
             self.assertIn("serial", detail)
             self.assertEqual(passkey_serial, detail["serial"])
             self.assertEqual("ACCEPT", res.json["result"]["authentication"])
+            # Since we set enroll_via_multichallenge with passkey offline, this response should also contain the
+            # offline data directly
+            self.assertIn("auth_items", res.json)
+            auth_items = res.json["auth_items"]
+            self.assertIn("offline", auth_items)
+            # Offline items for 1 token should be returned
+            offline = auth_items["offline"]
+            self.assertEqual(1, len(offline))
+            offline = offline[0]
+            # At least for this test user=username
+            self.assertIn("user", offline)
+            self.assertEqual(self.user.login, offline["user"])
+            self.assertIn("refilltoken", offline)
+            self.assertTrue(offline["refilltoken"])
+            refill_token = offline["refilltoken"]
+            self.assertIn("username", offline)
+            self.assertEqual(self.user.login, offline["username"])
+            self.assertIn("response", offline)
+            response = offline["response"]
+            self.assertIn("rpId", response)
+            self.assertEqual(self.rp_id, response["rpId"])
+            self.assertIn("pubKey", response)
+            self.assertIn("credentialId", response)
+            # Verify that the returned values are correct
+            token = get_tokens(serial=passkey_serial)[0]
+            public_key = token.get_tokeninfo("public_key")
+            self.assertEqual(public_key, response["pubKey"])
+            credential_id = token.token.get_otpkey().getKey().decode("utf-8")
+            self.assertEqual(credential_id, response["credentialId"])
 
         remove_token(spass_token.get_serial())
         remove_token(passkey_serial)
-        delete_policy("enroll_passkey")
 
     def test_10_auth_success(self):
         """
@@ -729,8 +781,8 @@ class PasskeyAPITest(PasskeyAPITestBase):
         """
         Test an authentication with a wrong response and without user verification.
         """
-        set_policy("user_verification", scope=SCOPE.AUTH,
-                   action=f"{FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT}=required")
+        self.set_policy_with_cleanup("user_verification", scope=SCOPE.AUTH,
+                                     action=f"{FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT}=required")
         serial = self._enroll_static_passkey()
         passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_no_uv)
         data = self.authentication_response_no_uv
@@ -741,7 +793,6 @@ class PasskeyAPITest(PasskeyAPITestBase):
                                            headers={"Origin": self.expected_origin}):
             res = self.app.full_dispatch_request()
             self._verify_auth_fail_with_error(res, 4031)
-        delete_policy("user_verification")
         remove_token(serial)
 
     def test_12_auth_fail_signature(self):
@@ -773,21 +824,20 @@ class PasskeyAPITest(PasskeyAPITestBase):
         data = self.authentication_response_uv
         transaction_id = passkey_challenge["transaction_id"]
         data["transaction_id"] = transaction_id
-        set_policy("user_verification", scope=SCOPE.AUTH,
-                   action=f"{FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT}=required")
+        self.set_policy_with_cleanup("user_verification", scope=SCOPE.AUTH,
+                                     action=f"{FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT}=required")
         with self.app.test_request_context('/auth', method='POST',
                                            data=data,
                                            headers={"Origin": self.expected_origin}):
             res = self.app.full_dispatch_request()
             self._assert_result_value_true(res.json)
         remove_token(serial)
-        delete_policy("user_verification")
 
     def test_14_enroll_via_multichallenge_after_passkey(self):
         """
         Verify that enroll_via_multichallenge works after a passkey authentication.
         """
-        set_policy("evm", scope=SCOPE.AUTH, action=f"{PolicyAction.ENROLL_VIA_MULTICHALLENGE}=hotp")
+        self.set_policy_with_cleanup("evm", scope=SCOPE.AUTH, action=f"{PolicyAction.ENROLL_VIA_MULTICHALLENGE}=hotp")
         serial = self._enroll_static_passkey()
         passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_no_uv)
         self.assertIn("user_verification", passkey_challenge)
@@ -822,16 +872,16 @@ class PasskeyAPITest(PasskeyAPITestBase):
             self.assertIn("link", mc[0])
         remove_token(serial)
         remove_token(evm_serial)
-        delete_policy("evm")
 
     def test_15_cancel_enroll_via_multichallenge_hotp(self):
         """
         Verify that enroll_via_multichallenge_optional=true allows cancellation of the enrollment and is followed by
         a successful authentication.
         """
-        set_policy("evm", scope=SCOPE.AUTH, action=f"{PolicyAction.ENROLL_VIA_MULTICHALLENGE}=hotp")
-        set_policy("evm_optional", scope=SCOPE.AUTH, action=f"{PolicyAction.ENROLL_VIA_MULTICHALLENGE_OPTIONAL}=true")
-        set_policy("user_in_response", scope=SCOPE.AUTHZ, action=PolicyAction.ADDUSERINRESPONSE)
+        self.set_policy_with_cleanup("evm", scope=SCOPE.AUTH, action=f"{PolicyAction.ENROLL_VIA_MULTICHALLENGE}=hotp")
+        self.set_policy_with_cleanup("evm_optional", scope=SCOPE.AUTH,
+                                     action=f"{PolicyAction.ENROLL_VIA_MULTICHALLENGE_OPTIONAL}=true")
+        self.set_policy_with_cleanup("user_in_response", scope=SCOPE.AUTHZ, action=PolicyAction.ADDUSERINRESPONSE)
         serial = self._enroll_static_passkey()
         passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_no_uv)
         transaction_id = passkey_challenge["transaction_id"]
@@ -872,20 +922,19 @@ class PasskeyAPITest(PasskeyAPITestBase):
             self._assert_result_value_true(j)
             self.assertIn("Cancelled enrollment via multichallenge", j.get("detail", {}).get("message"), "")
         remove_token(serial)
-        delete_policy("evm")
-        delete_policy("evm_optional")
-        delete_policy("user_in_response")
 
     def test_16_cancel_enroll_via_multichallenge_smartphone(self):
         """
         Verify that enroll_via_multichallenge_optional=true allows cancellation of the enrollment and is followed by
         a successful authentication.
         """
-        set_policy("evm", scope=SCOPE.AUTH, action=f"{PolicyAction.ENROLL_VIA_MULTICHALLENGE}=smartphone")
-        set_policy("container_enroll", scope=SCOPE.CONTAINER,
-                   action=f"{PolicyAction.CONTAINER_SERVER_URL}=https://doesntmatter.com")
-        set_policy("evm_optional", scope=SCOPE.AUTH, action=f"{PolicyAction.ENROLL_VIA_MULTICHALLENGE_OPTIONAL}=true")
-        set_policy("user_in_response", scope=SCOPE.AUTHZ, action=PolicyAction.ADDUSERINRESPONSE)
+        self.set_policy_with_cleanup("evm", scope=SCOPE.AUTH,
+                                     action=f"{PolicyAction.ENROLL_VIA_MULTICHALLENGE}=smartphone")
+        self.set_policy_with_cleanup("container_enroll", scope=SCOPE.CONTAINER,
+                                     action=f"{PolicyAction.CONTAINER_SERVER_URL}=https://doesntmatter.com")
+        self.set_policy_with_cleanup("evm_optional", scope=SCOPE.AUTH,
+                                     action=f"{PolicyAction.ENROLL_VIA_MULTICHALLENGE_OPTIONAL}=true")
+        self.set_policy_with_cleanup("user_in_response", scope=SCOPE.AUTHZ, action=PolicyAction.ADDUSERINRESPONSE)
         serial = self._enroll_static_passkey()
         passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_no_uv)
         transaction_id = passkey_challenge["transaction_id"]
@@ -927,17 +976,13 @@ class PasskeyAPITest(PasskeyAPITestBase):
             self.assertIn("Cancelled enrollment via multichallenge", j.get("detail", {}).get("message"), "")
 
         remove_token(serial)
-        delete_policy("evm")
-        delete_policy("evm_optional")
-        delete_policy("container_enroll")
-        delete_policy("user_in_response")
 
     def test_17_cancel_enroll_via_multichallenge_not_allowed(self):
         """
         Trying to cancel an enrollment via multichallenge that is not cancellable will result in a REJECT just like
         an authentication with a wrong OTP.
         """
-        set_policy("evm", scope=SCOPE.AUTH, action=f"{PolicyAction.ENROLL_VIA_MULTICHALLENGE}=hotp")
+        self.set_policy_with_cleanup("evm", scope=SCOPE.AUTH, action=f"{PolicyAction.ENROLL_VIA_MULTICHALLENGE}=hotp")
         serial = self._enroll_static_passkey()
         passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_no_uv)
         transaction_id = passkey_challenge["transaction_id"]
@@ -981,11 +1026,10 @@ class PasskeyAPITest(PasskeyAPITestBase):
             self.assertIn("Failed to cancel enrollment", j["detail"]["message"])
         remove_token(serial)
         remove_token(evm_serial)  # the token still exists because the enrollment was not cancelled
-        delete_policy("evm")
 
     def test_18_last_auth_policy(self):
         serial = self._enroll_static_passkey()
-        set_policy("last_auth", scope=SCOPE.AUTHZ, action=f"{PolicyAction.LASTAUTH}=1d")
+        self.set_policy_with_cleanup("last_auth", scope=SCOPE.AUTHZ, action=f"{PolicyAction.LASTAUTH}=1d")
         passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_no_uv)
         self.assertIn("user_verification", passkey_challenge)
         # By default, user_verification is preferred
@@ -1081,7 +1125,6 @@ class PasskeyAPITest(PasskeyAPITestBase):
             self.assertIn("status", res.json["result"])
             self.assertTrue(res.json["result"]["status"])
 
-        delete_policy("last_auth")
         remove_token(serial)
 
     def test_19_disabled_passkey(self):
@@ -1170,7 +1213,8 @@ class PasskeyAPITest(PasskeyAPITestBase):
         """
         The 'disable_token_type' policy will disable passkey, both for initialize and check.
         """
-        set_policy("disable_passkey", scope=SCOPE.AUTH, action=f"{PolicyAction.DISABLED_TOKEN_TYPES}=passkey")
+        self.set_policy_with_cleanup("disable_passkey", scope=SCOPE.AUTH,
+                                     action=f"{PolicyAction.DISABLED_TOKEN_TYPES}=passkey")
         serial = self._enroll_static_passkey()
 
         # /validate/initialize will not allow passkey
@@ -1185,9 +1229,10 @@ class PasskeyAPITest(PasskeyAPITestBase):
             self.assertEqual("The authentication method is not available.", result["error"]["message"])
 
         # /validate/check will not allow passkey even if a challenge exists
-        delete_policy("disable_passkey")
+        delete_policy("disable_passkey")  # Temporarily enable to trigger challenge
         passkey_challenge = self._trigger_passkey_challenge(self.authentication_challenge_no_uv)
-        set_policy("disable_passkey", scope=SCOPE.AUTH, action=f"{PolicyAction.DISABLED_TOKEN_TYPES}=passkey")
+        self.set_policy_with_cleanup("disable_passkey", scope=SCOPE.AUTH,
+                                     action=f"{PolicyAction.DISABLED_TOKEN_TYPES}=passkey")  # Re-enable policy
         transaction_id = passkey_challenge["transaction_id"]
         data = self.authentication_response_no_uv
         data["transaction_id"] = transaction_id
@@ -1204,7 +1249,7 @@ class PasskeyAPITest(PasskeyAPITestBase):
             self.assertEqual("The authentication method is not available.", result["error"]["message"])
 
         remove_token(serial)
-        delete_policy("disable_passkey")
+
 
 class PasskeyAuthAPITest(PasskeyAPITestBase, OverrideConfigTestCase):
     """

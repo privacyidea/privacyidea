@@ -205,7 +205,7 @@ export class PeriodicTaskService implements PeriodicTaskServiceInterface {
       .afterClosed()
       .subscribe({
         next: (result: DialogReturnData) => {
-          if (result?.confirmed) {
+          if (result) {
             this.deletePeriodicTask(task.id).subscribe({
               next: (response: PiResponse<number, any>) => {
                 this.notificationService.openSnackBar("Successfully deleted periodic task.");

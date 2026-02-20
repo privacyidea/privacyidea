@@ -114,6 +114,11 @@ export class LoginComponent implements OnDestroy {
     }
   });
 
+  passkeyLoginEnabled = computed(() => {
+    const loginMode = this.configService.config()?.passkey_login;
+    return loginMode !== "hide";
+  });
+
   loginText = computed(() => this.configService.config()?.login_text || "");
 
   constructor() {

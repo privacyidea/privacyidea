@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { HttpClient, HttpHeaders } from "@angular/common/http";
-import { computed, inject, Injectable, Signal, signal, WritableSignal } from "@angular/core";
+import { computed, effect, inject, Injectable, Signal, signal, WritableSignal } from "@angular/core";
 import { Observable, throwError } from "rxjs";
 import { catchError, tap } from "rxjs/operators";
 import { environment } from "../../../environments/environment";
@@ -278,7 +278,6 @@ export class AuthService implements AuthServiceInterface {
   );
   readonly isSelfServiceUser = computed(() => this.role() === "user");
 
-  // Public methods
   getHeaders(): HttpHeaders {
     return new HttpHeaders({
       "PI-Authorization": this.localService.getData(BEARER_TOKEN_STORAGE_KEY) || ""

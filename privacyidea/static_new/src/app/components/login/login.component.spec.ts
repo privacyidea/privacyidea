@@ -475,3 +475,45 @@ describe("LoginComponent Realm Selection", () => {
     expect(realmSelect).toBeFalsy();
   });
 });
+
+describe("passkeyLoginEnabled signal", () => {
+  let fixture: ComponentFixture<LoginComponent>;
+  let component: LoginComponent;
+  let configService: ConfigService;
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [LoginComponent],
+      providers: [provideHttpClient(), ConfigService]
+    }).compileComponents();
+
+    fixture = TestBed.createComponent(LoginComponent);
+    component = fixture.componentInstance;
+    configService = TestBed.inject(ConfigService);
+  });
+
+  it("should be true if passkey_login is not 'hide'", () => {
+    configService.config.set({
+      ...configService.config(),
+      passkey_login: "show"
+    });
+    fixture.detectChanges();
+    expect(component.passkeyLoginEnabled()).toBe(true);
+
+    configService.config.set({
+      ...configService.config(),
+      passkey_login: "somethingelse"
+    });
+    fixture.detectChanges();
+    expect(component.passkeyLoginEnabled()).toBe(true);
+  });
+
+  it("should be false if passkey_login is 'hide'", () => {
+    configService.config.set({
+      ...configService.config(),
+      passkey_login: "hide"
+    });
+    fixture.detectChanges();
+    expect(component.passkeyLoginEnabled()).toBe(false);
+  });
+});

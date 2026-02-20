@@ -1,4 +1,7 @@
 /**
+ * SPDX-FileCopyrightText:  NetKnights GmbH <https://netknights.it>
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ *
  * http://www.privacyidea.org
  * (c) cornelius kölbel, cornelius@privacyidea.org
  *
@@ -1107,6 +1110,11 @@ myApp.controller("LdapResolverController", ["$scope", "ConfigFactory", "$state",
                 $scope.params.group_search_filter = "";
                 $scope.params.group_attribute_mapping_key = "";
             }
+            // Remove username and password from params in case of anonymous bind
+            if ($scope.params.AUTHTYPE === "Anonymous") {
+                $scope.params.BINDDN = "";
+                $scope.params.BINDPW = "";
+            }
             ConfigFactory.setResolver($scope.resolvername, $scope.params, function (data) {
                 $scope.set_result = data.result.value;
                 $scope.getResolvers();
@@ -1115,13 +1123,19 @@ myApp.controller("LdapResolverController", ["$scope", "ConfigFactory", "$state",
         };
 
         $scope.testResolver = function (size_limit) {
-            var params = $.extend({}, $scope.params);
+            let params = $.extend({}, $scope.params);
             params["SIZELIMIT"] = size_limit;
             params["resolver"] = $scope.resolvername;
-            if (params['AUTHTYPE'] === $scope.authtypes['Anonymous']) {
-                params['AUTHTYPE'] = $scope.authtypes['Simple'];
-                params['BINDPW'] = '';
-                params['BINDDN'] = '';
+            if (!$scope.params.recursive_group_search) {
+                params["group_base_dn"] = "";
+                params["group_name_attribute"] = "";
+                params["group_search_filter"] = "";
+                params["group_attribute_mapping_key"] = "";
+            }
+            // Remove username and password from params in case of anonymous bind
+            if ($scope.params.AUTHTYPE === "Anonymous") {
+                params["BINDDN"] = "";
+                params["BINDPW"] = "";
             }
             ConfigFactory.testResolver(params, function (data) {
                 if (data.result.value === true) {

@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2015 NetKnights GmbH <https://netknights.it>
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 """
 This test file tests the lib.resolver and all
 the resolvers under it:
@@ -1173,7 +1176,7 @@ class LDAPResolverTestCase(MyTestCase):
                                 })
 
         self.assertFalse(res[0], res)
-        self.assertTrue("Authtype unknown not supported" in res[1], res)
+        self.assertEqual("ERR907: Unsupported authentication type: unknown", res[1], res)
 
     def test_06_split_uri(self):
         uri = "ldap://server"
