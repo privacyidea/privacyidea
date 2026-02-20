@@ -1,0 +1,236 @@
+<h2
+  i18n
+  mat-dialog-title>
+  Details for machine {{ data.hostname }}
+</h2>
+
+<mat-dialog-content class="machine-dialog-content">
+  <div class="details-section">
+    <div class="detail-row">
+      <span
+        class="label"
+        i18n>Hostname:</span>
+      <span class="value">{{ data.hostname }}</span>
+    </div>
+    <div class="detail-row">
+      <span
+        class="label"
+        i18n>IP Address:</span>
+      <span class="value">{{ data.ip }}</span>
+    </div>
+    <div class="detail-row">
+      <span
+        class="label"
+        i18n>Machine ID:</span>
+      <span class="value">{{ data.id }}</span>
+    </div>
+    <div class="detail-row">
+      <span
+        class="label"
+        i18n>Machine Resolver:</span>
+      <div class="flex-row ali-center">
+        <a
+          (click)="onMachineResolverClick(data.resolver_name)"
+          class="value">{{ data.resolver_name }}
+        </a>
+        <app-copy-button [copyText]="data.resolver_name" />
+      </div>
+    </div>
+  </div>
+
+  <div class="filter-paginator-container margin-bottom-1">
+    <h3
+      class="margin-0"
+      i18n>Tokens and Applications
+    </h3>
+    <mat-paginator
+      [pageSizeOptions]="[5, 10, 20]"
+      [pageSize]="5"
+      showFirstLastButtons />
+  </div>
+
+  <div class="machines-container">
+    <table
+      [dataSource]="dataSource"
+      class="tokens-table"
+      mat-table>
+      <ng-container matColumnDef="serial">
+        <th
+          *matHeaderCellDef
+          i18n
+          mat-header-cell> Serial
+        </th>
+        <td
+          *matCellDef="let token"
+          mat-cell>
+          <div class="flex-row ali-center">
+            <a
+              (click)="onTokenClick(token.serial)"
+              class="flex ali-center clickable">
+              {{ token.serial }}
+            </a>
+            <app-copy-button [copyText]="token.serial" />
+            <span class="margin-left-1">({{ token.type }})</span>
+          </div>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="application">
+        <th
+          *matHeaderCellDef
+          i18n
+          mat-header-cell> Application
+        </th>
+        <td
+          *matCellDef="let token"
+          mat-cell> {{ token.application }}
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="options">
+        <th
+          *matHeaderCellDef
+          i18n
+          mat-header-cell> Options
+        </th>
+        <td
+          *matCellDef="let token"
+          mat-cell>
+          @if (!isEditing(token.id)) {
+            @for (option of token.options | keyvalue; track option.key) {
+              <div>
+                <b>{{ option.key }}:</b> {{ option.value }}
+              </div>
+            }
+          } @else {
+            @if (token.application === 'ssh') {
+              <div class="flex-column margin-top-1 gap-8">
+                <mat-form-field
+                  appearance="fill"
+                  subscriptSizing="dynamic">
+                  <mat-label i18n>Service ID</mat-label>
+                  <mat-select [(ngModel)]="editedOptions[token.id]['service_id']">
+                    @for (v of applicationsDef().ssh.options.sshkey.service_id.value; track v) {
+                      <mat-option [value]="v">
+                        {{ v }}
+                      </mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
+                <mat-form-field
+                  appearance="fill"
+                  subscriptSizing="dynamic">
+                  <mat-label i18n>User</mat-label>
+                  <input
+                    [(ngModel)]="editedOptions[token.id]['user']"
+                    matInput />
+                </mat-form-field>
+              </div>
+            } @else {
+              <div i18n>No editable options for this application.</div>
+            }
+          }
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="actions">
+        <th
+          *matHeaderCellDef
+          i18n
+          mat-header-cell> Actions
+        </th>
+        <td
+          *matCellDef="let token"
+          mat-cell>
+          <div class="flex just-center">
+            @if (!isEditing(token.id)) {
+              <button
+                (click)="startEdit(token)"
+                i18n-matTooltip
+                mat-icon-button
+                matTooltip="Edit Options">
+                <mat-icon>edit</mat-icon>
+              </button>
+              <button
+                (click)="detachToken(token)"
+                color="warn"
+                i18n-matTooltip
+                mat-icon-button
+                matTooltip="Detach">
+                <mat-icon>delete</mat-icon>
+              </button>
+            } @else {
+              <button
+                (click)="saveOptions(token)"
+                i18n-matTooltip
+                mat-icon-button
+                matTooltip="Save Options">
+                <mat-icon>save</mat-icon>
+              </button>
+              <button
+                (click)="cancelEdit(token)"
+                color="warn"
+                i18n-matTooltip
+                mat-icon-button
+                matTooltip="Cancel">
+                <mat-icon>cancel</mat-icon>
+              </button>
+            }
+          </div>
+        </td>
+      </ng-container>
+
+      <tr
+        *matHeaderRowDef="displayedColumns"
+        mat-header-row></tr>
+      <tr
+        *matRowDef="let row; columns: displayedColumns;"
+        mat-row></tr>
+    </table>
+  </div>
+
+  <div>
+    <h3 i18n>Attach a new token</h3>
+    <div class="flex-row ali-center gap-16">
+      <mat-form-field
+        appearance="fill"
+        class="flex-size-2">
+        <mat-label i18n>Token Serial</mat-label>
+        <input
+          [(ngModel)]="newTokenSerial"
+          matInput
+          placeholder="e.g. PIHOTP000001" />
+      </mat-form-field>
+
+      <mat-form-field
+        appearance="fill"
+        class="flex-size-1">
+        <mat-label i18n>Application</mat-label>
+        <mat-select [(ngModel)]="selectedApplication">
+          @for (app of applicationOptions; track app) {
+            <mat-option [value]="app">
+              {{ app }}
+            </mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <button
+        (click)="attachToken()"
+        [disabled]="!newTokenSerial || !selectedApplication"
+        class="action-button-1 width-238"
+        mat-stroked-button>
+        <mat-icon>add</mat-icon>
+        <span i18n>Attach</span>
+      </button>
+    </div>
+  </div>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button
+    (click)="close()"
+    i18n
+    mat-button>Close
+  </button>
+</mat-dialog-actions>

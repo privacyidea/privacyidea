@@ -29,6 +29,7 @@ export interface ContentServiceInterface {
   previousUrl: Signal<string>;
   tokenSerial: WritableSignal<string>;
   containerSerial: WritableSignal<string>;
+  machineResolver: WritableSignal<string>;
 
   onLogin: Signal<boolean>;
   onAudit: Signal<boolean>;
@@ -53,10 +54,12 @@ export interface ContentServiceInterface {
   onAnyUsersRoute: Signal<boolean>;
   onTokensContainersTemplates: Signal<boolean>;
   onEvents: Signal<boolean>;
+  onConfigurationMachines: Signal<boolean>;
 
   tokenSelected: (serial: string) => void;
   containerSelected: (containerSerial: string) => void;
   userSelected: (username: string, realm: string) => void;
+  machineResolverSelected: (resolverName: string) => void;
 }
 
 @Injectable({ providedIn: "root" })
@@ -76,6 +79,7 @@ export class ContentService implements ContentServiceInterface {
   readonly previousUrl = computed(() => this._urlPair()[0]);
   tokenSerial = signal("");
   containerSerial = signal("");
+  machineResolver = signal("");
   onLogin = computed(() => this.routeUrl() === ROUTE_PATHS.LOGIN);
   onAudit = computed(() => this.routeUrl() === ROUTE_PATHS.AUDIT);
   onTokens = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS);
@@ -103,6 +107,7 @@ export class ContentService implements ContentServiceInterface {
   );
   onTokensContainersTemplates = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS_CONTAINERS_TEMPLATES);
   onEvents = computed(() => this.routeUrl() === ROUTE_PATHS.EVENTS);
+  onConfigurationMachines = computed(() => this.routeUrl() === ROUTE_PATHS.CONFIGURATION_MACHINES);
 
   tokenSelected(serial: string): void {
     this.router.navigateByUrl(ROUTE_PATHS.TOKENS_DETAILS + serial);
@@ -117,5 +122,10 @@ export class ContentService implements ContentServiceInterface {
   userSelected(username: string, realm: string): void {
     this.router.navigateByUrl(ROUTE_PATHS.USERS_DETAILS + "/" + username + `?realm=${encodeURIComponent(realm ?? "")}`);
     this.detailsUsername.set(username);
+  }
+
+  machineResolverSelected(resolverName: string): void {
+    this.router.navigateByUrl(ROUTE_PATHS.MACHINE_RESOLVER);
+    this.machineResolver.set(resolverName);
   }
 }

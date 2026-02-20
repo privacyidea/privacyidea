@@ -60,6 +60,7 @@ export type ConfirmationDialogData = {
     | "search"
     | "unassign"
     | "discard"
+    | "detach"
     | "proceed-despite-error";
   allowSaveExit?: boolean;
   saveExitDisabled?: boolean;

@@ -36,6 +36,7 @@ import { RealmTableComponent } from "./components/user/realm-table/realm-table.c
 import { ClientsComponent } from "./components/audit/clients/clients.component";
 import { MachineResolverComponent } from "./components/machine-resolver/machine-resolver.component";
 import { PeriodicTaskComponent } from "./components/configuration/periodic-task/periodic-task.component";
+import { MachinesComponent } from "./components/configuration/machines/machines.component";
 import { SmtpServersComponent } from "./components/external-services/smtp-servers/smtp-servers.component";
 import { RadiusServersComponent } from "./components/external-services/radius-servers/radius-servers.component";
 import { SmsGatewaysComponent } from "./components/external-services/sms-gateways/sms-gateways.component";
@@ -93,6 +94,7 @@ export const routes: Routes = [
     children: [
       // { path: "", component: SystemComponent },
       { path: "machine_resolver", component: MachineResolverComponent },
+      { path: "machines", component: MachinesComponent },
       { path: "periodic-tasks", component: PeriodicTaskComponent },
       { path: "subscription", component: SubscriptionComponent }
     ]

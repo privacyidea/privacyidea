@@ -1,0 +1,41 @@
+@use "../../../../../styles";
+
+.machine-dialog-content {
+  min-width: 600px;
+}
+
+.machines-container {
+  @include styles.base-table-structure(".tokens-table");
+  margin-bottom: 16px;
+}
+
+.details-section {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+  padding: 16px;
+  background: var(--mat-sys-surface-container-low);
+  border-radius: var(--border-radius);
+  border: solid 1px var(--mat-sys-surface-container-highest);
+}
+
+.detail-row {
+  display: flex;
+  flex-direction: column;
+}
+
+.label {
+  font-weight: bold;
+  font-size: 1rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+  margin-block: auto;
+  justify-self: end;
+  margin-bottom: 8px;
+}
+
+.value {
+  font-size: 1rem;
+}
