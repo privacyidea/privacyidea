@@ -258,6 +258,8 @@ export class TokenDetailsActionsComponent {
   }
 
   rolloverToken() {
+    if (!this.token()) return;
+
     this.matDialog.open(TokenRolloverComponent, {
       data: {
         token: this.token()

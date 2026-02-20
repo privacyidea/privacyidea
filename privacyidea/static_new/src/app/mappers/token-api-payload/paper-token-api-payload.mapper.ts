@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { inject, Injectable } from "@angular/core";
+import { Injectable } from "@angular/core";
 import {
   BaseApiPayloadMapper,
   TokenApiPayloadMapper,
@@ -45,7 +45,7 @@ export class PaperApiPayloadMapper extends BaseApiPayloadMapper implements Token
     const payload: PaperEnrollmentPayload = {
       ...basePayload,
       ...(data.otpLength !== undefined && { otplen: data.otpLength }),
-      ...(data.otpCount !== undefined && { otpcount: data.otpCount }),
+      ...(data.otpCount !== undefined && { otpcount: data.otpCount })
     };
     if (data.onlyAddToRealm) {
       payload.realm = data.realm;

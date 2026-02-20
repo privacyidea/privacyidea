@@ -46,7 +46,7 @@ export class CertificateApiPayloadMapper extends BaseApiPayloadMapper implements
 
   override toApiPayload(data: CertificateEnrollmentData): CertificateEnrollmentPayload {
     const payload: CertificateEnrollmentPayload = {
-      ...super.fromApiPayload(data),
+      ...super.toApiPayload(data),
       genkey: 1, // As per switch statement
       ...(data.caConnector != null && { ca: data.caConnector }),
       ...(data.certTemplate != null && { template: data.certTemplate }),

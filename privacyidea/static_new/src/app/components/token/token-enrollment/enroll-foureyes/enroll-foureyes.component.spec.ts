@@ -45,7 +45,7 @@ describe("EnrollFoureyesComponent", () => {
   describe("ngOnInit with enrollmentData input", () => {
     it("should set initial values from enrollmentData", () => {
       fixture.componentRef.setInput("enrollmentData", {
-        type: "foureyes",
+        type: "4eyes",
         separator: ":",
         requiredTokenOfRealms: [{ realm: "realm1", tokens: 1 }, { realm: "realm2", tokens: 2 }]
       });
@@ -57,7 +57,7 @@ describe("EnrollFoureyesComponent", () => {
 
     it("should ignore values from enrollmentData if they are undefined", () => {
       fixture.componentRef.setInput("enrollmentData", {
-        type: "foureyes",
+        type: "4eyes",
         separator: undefined,
         requiredTokenOfRealms: undefined
       });

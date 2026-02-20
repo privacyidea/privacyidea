@@ -23,7 +23,7 @@
 </h2>
 
 <mat-dialog-content>
-  @switch (token().type) {
+  @switch (token()?.type) {
     @case ("hotp") {
       <app-enroll-hotp
         [enrollmentData]="token()"

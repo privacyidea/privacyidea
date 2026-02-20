@@ -77,7 +77,7 @@ export class RemoteApiPayloadMapper extends BaseApiPayloadMapper implements Toke
     const enrollData: RemoteEnrollmentData = {
       ...super.fromTokenDetailsToEnrollmentData(details),
       type: "remote",
-      remoteServer: details.info?.["remote.server_id"] ?? "",
+      remoteServer: details.info?.["remote.server_id"] ? {id: details.info?.["remote.server_id"]}  as RemoteServer : null,
       remoteSerial: details.info?.["remote.serial"] ?? "",
       remoteUser: details.info?.["remote.user"] ?? "",
       remoteRealm: details.info?.["remote.realm"] ?? "",
