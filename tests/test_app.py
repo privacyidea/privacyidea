@@ -75,7 +75,8 @@ class AppTestCase(unittest.TestCase):
         ], logger.handlers)
 
     def test_02_create_production_app(self):
-        app = create_app(config_name='production')
+        test_config_file = os.path.join(dirname, 'tests', 'testdata', 'test_pi.cfg')
+        app = create_app(config_name='production', config_file=test_config_file)
         dc = config['production']()
         members = inspect.getmembers(dc, lambda a: not (inspect.isroutine(a)))
         conf = [m for m in members if not (m[0].startswith('__') and m[0].endswith('__'))]
