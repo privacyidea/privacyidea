@@ -88,7 +88,9 @@ elif os.path.isfile("/etc/ssl/certs/ca-bundle.crt"):
 else:
     DEFAULT_CA_FILE = "/etc/privacyidea/ldap-ca.crt"
 
-TLS_NEGOTIATE_PROTOCOL = ssl.PROTOCOL_TLS_CLIENT
+# TODO: Switch to PROTOCOL_TLS_CLIENT since PROTOCOL_TLS is deprecated:
+#  https://docs.python.org/3.12/library/ssl.html#ssl.PROTOCOL_TLS
+TLS_NEGOTIATE_PROTOCOL = ssl.PROTOCOL_TLS
 
 DEFAULT_TLS_PROTOCOL = TLS_NEGOTIATE_PROTOCOL
 
@@ -122,17 +124,17 @@ class LockingServerPool(ldap3.ServerPool):
             return ldap3.ServerPool.get_current_server(self, connection)
 
 
-def get_ad_timestamp_now():
+def get_ad_timestamp_now() -> int:
     """
     returns the current UTC time as it is used in Active Directory in the
     attribute accountExpires.
     This is 100-nano-secs since 1.1.1601
 
-    :return: time
+    :return: Current time in 100 nanoseconds since 1.1.1601
     :rtype: int
     """
-    utc_now = datetime.datetime.utcnow()
-    elapsed_time = utc_now - MS_AD_START
+    utc_now = datetime.datetime.now(tz=datetime.timezone.utc)
+    elapsed_time = utc_now - MS_AD_START.replace(tzinfo=datetime.timezone.utc)
     total_seconds = elapsed_time.total_seconds()
     # convert this to (100 nanoseconds)
     return int(MS_AD_MULTIPLYER * total_seconds)
@@ -548,8 +550,8 @@ class IdResolver(UserIdResolver):
         return result
 
     @staticmethod
-    def _get_tls_context(ldap_uri=None, start_tls=False, tls_version=None, tls_verify=None,
-                         tls_ca_file=None, tls_options=None):
+    def get_tls_context(ldap_uri=None, start_tls=False, tls_version=None, tls_verify=None,
+                        tls_ca_file=None, tls_options=None):
         """
         This method creates the Tls object to be used with ldap3.
         """
@@ -910,10 +912,10 @@ class IdResolver(UserIdResolver):
         # Fallback to DEFAULT_TLS_PROTOCOL (TLSv1: 3, TLSv1.1: 4, v1.2: 5, TLS negotiation: 2)
         self.tls_version = int(config.get("TLS_VERSION") or DEFAULT_TLS_PROTOCOL)
         self.tls_ca_file = config.get("TLS_CA_FILE")
-        self.tls_context = self._get_tls_context(ldap_uri=self.uri, start_tls=self.start_tls,
-                                                 tls_version=self.tls_version,
-                                                 tls_verify=self.tls_verify,
-                                                 tls_ca_file=self.tls_ca_file)
+        self.tls_context = self.get_tls_context(ldap_uri=self.uri, start_tls=self.start_tls,
+                                                tls_version=self.tls_version,
+                                                tls_verify=self.tls_verify,
+                                                tls_ca_file=self.tls_ca_file)
         self.serverpool_persistent = is_true(config.get("SERVERPOOL_PERSISTENT", False))
         self.serverpool_rounds = int(config.get("SERVERPOOL_ROUNDS") or SERVERPOOL_ROUNDS)
         self.serverpool_skip = int(config.get("SERVERPOOL_SKIP") or SERVERPOOL_SKIP)
@@ -1157,12 +1159,12 @@ class IdResolver(UserIdResolver):
         serverpool_strategy = LDAP_STRATEGY.get(pool_strat, SERVERPOOL_STRATEGY)
         start_tls = is_true(param.get("START_TLS", False)) and not ldap_uri.lower().startswith("ldaps")
         tls_verify = is_true(param.get("TLS_VERIFY"))
-        tls_context = cls._get_tls_context(ldap_uri=ldap_uri,
-                                           start_tls=start_tls,
-                                           tls_version=param.get("TLS_VERSION"),
-                                           tls_verify=tls_verify,
-                                           tls_ca_file=param.get("TLS_CA_FILE"),
-                                           tls_options=None)
+        tls_context = cls.get_tls_context(ldap_uri=ldap_uri,
+                                          start_tls=start_tls,
+                                          tls_version=param.get("TLS_VERSION"),
+                                          tls_verify=tls_verify,
+                                          tls_ca_file=param.get("TLS_CA_FILE"),
+                                          tls_options=None)
         get_info = get_info_configuration(is_true(param.get("NOSCHEMAS")))
         try:
             server_pool = cls.create_serverpool(ldap_uri, timeout,

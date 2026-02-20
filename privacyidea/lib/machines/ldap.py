@@ -64,7 +64,8 @@ class LdapMachineResolver(BaseMachineResolver):
     def _bind(self):
         if not self.i_am_bound:
             try:
-                server_pool = IdResolver.create_serverpool(self.uri, self.timeout,
+                server_pool = IdResolver.create_serverpool(self.uri,
+                                                           float(self.timeout),
                                                            tls_context=self.tls_context)
                 self.connection = IdResolver.create_connection(authtype=self.authtype,
                                                                server=server_pool,
@@ -257,8 +258,8 @@ class LdapMachineResolver(BaseMachineResolver):
             raise MachineResolverError("LDAPBASE is missing!")
         self.binddn = config.get("BINDDN")
         self.bindpw = config.get("BINDPW")
-        self.timeout = float(config.get("TIMEOUT", 5))
-        self.sizelimit = config.get("SIZELIMIT", 500)
+        self.timeout = int(config.get("TIMEOUT", 5))
+        self.sizelimit = int(config.get("SIZELIMIT", 500))
         self.hostname_attribute = config.get("HOSTNAMEATTRIBUTE")
         self.id_attribute = config.get("IDATTRIBUTE", "DN")
         self.ip_attribute = config.get("IPATTRIBUTE")
@@ -267,15 +268,15 @@ class LdapMachineResolver(BaseMachineResolver):
 
         self.noreferrals = is_true(config.get("NOREFERRALS", False))
         self.authtype = config.get("AUTHTYPE", AUTHTYPE.SIMPLE)
-        self.start_tls = is_true(config.get("START_TLS", False))
+        self.start_tls = is_true(config.get("START_TLS", False)) and not self.uri.lower().startswith("ldaps")
         self.tls_verify = is_true(config.get("TLS_VERIFY", False))
         self.tls_ca_file = config.get("TLS_CA_FILE") or DEFAULT_CA_FILE
         self.tls_version = config.get("TLS_VERSION")
-        self.tls_context = IdResolver._get_tls_context(ldap_uri=self.uri,
-                                                       start_tls=self.start_tls,
-                                                       tls_version=self.tls_version,
-                                                       tls_verify=self.tls_verify,
-                                                       tls_ca_file=self.tls_ca_file)
+        self.tls_context = IdResolver.get_tls_context(ldap_uri=self.uri,
+                                                      start_tls=self.start_tls,
+                                                      tls_version=self.tls_version,
+                                                      tls_verify=self.tls_verify,
+                                                      tls_ca_file=self.tls_ca_file)
 
     @classmethod
     def get_config_description(cls):
@@ -311,11 +312,11 @@ class LdapMachineResolver(BaseMachineResolver):
         ldap_uri = params.get("LDAPURI")
         timeout = int(params.get("TIMEOUT", 5))
         start_tls = is_true(params.get("START_TLS", False)) and not ldap_uri.lower().startswith("ldaps")
-        tls_context = IdResolver._get_tls_context(ldap_uri=ldap_uri,
-                                                  start_tls=start_tls,
-                                                  tls_version=params.get("TLS_VERSION"),
-                                                  tls_verify=is_true(params.get("TLS_VERIFY")),
-                                                  tls_ca_file=params.get("TLS_CA_FILE"))
+        tls_context = IdResolver.get_tls_context(ldap_uri=ldap_uri,
+                                                 start_tls=start_tls,
+                                                 tls_version=params.get("TLS_VERSION"),
+                                                 tls_verify=is_true(params.get("TLS_VERIFY")),
+                                                 tls_ca_file=params.get("TLS_CA_FILE"))
         try:
             server_pool = IdResolver.create_serverpool(ldap_uri,
                                                        float(timeout),
@@ -337,14 +338,12 @@ class LdapMachineResolver(BaseMachineResolver):
                         search_scope=ldap3.SUBTREE,
                         search_filter="(&" + params["SEARCHFILTER"] + ")",
                         attributes=[params["HOSTNAMEATTRIBUTE"]],
-                        size_limit=params.get("SIZELIMIT", 500))
+                        size_limit=int(params.get("SIZELIMIT", 500)))
             elapsed_time = conn.usage.elapsed_time.total_seconds()
             count = len([x for x in conn.response if x.get("type") ==
                          "searchResEntry"])
-            message = _(f"Your LDAP machine resolver configuration seems OK, "
-                        f"{count} machine objects found in {elapsed_time:.4f} "
-                        f"seconds.").format({"count": count, "elapsed_time": elapsed_time})
-
+            message = _("Your LDAP machine resolver configuration seems to be OK, "
+                        "{0!s} machine objects found in {1:.4f}s.").format(count, elapsed_time)
             conn.unbind()
             success = True
 

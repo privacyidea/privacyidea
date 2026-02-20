@@ -35,17 +35,17 @@ myApp.controller("ldapMachineResolverController", ["$scope", "ConfigFactory",
         type: 'ldap',
         AUTHTYPE: "Simple",
         TLS_VERIFY: true,
-        TLS_VERSION: "2",
+        TLS_VERSION: 2,
         START_TLS: false
     };
     $scope.resolvername = $stateParams.resolvername;
-    $scope.tls_version_options = [{value: "3", name: "TLS v1.0"},
-        {value: "4", name: "TLS v1.1"},
-        {value: "5", name: "TLS v1.2"},
-        {value: "2", name: "TLS v1.3"}];
+    $scope.tls_version_options = [{value: 3, name: "TLS v1.0"},
+        {value: 4, name: "TLS v1.1"},
+        {value: 5, name: "TLS v1.2"},
+        {value: 2, name: "TLS v1.3"}];
 
     if ($scope.resolvername) {
-        /* If we have a resolvername, we do an Edit
+        /* If we have a resolvername, we do an Edit,
          and we need to fill all the $scope.params */
         ConfigFactory.getMachineResolver($scope.resolvername, function (data) {
             var resolver = data.result.value[$scope.resolvername];
