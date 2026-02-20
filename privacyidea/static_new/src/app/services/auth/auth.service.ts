@@ -151,7 +151,7 @@ export interface AuthServiceInterface {
   readonly dialogNoToken: Signal<boolean>;
   readonly searchOnEnter: Signal<boolean>;
   readonly timeoutAction: Signal<string>;
-  readonly tokenRollover: Signal<any>;
+  readonly tokenRollover: Signal<string[]>;
   readonly hideWelcome: Signal<boolean>;
   readonly hideButtons: Signal<boolean>;
   readonly deletionConfirmation: Signal<boolean>;
@@ -253,7 +253,7 @@ export class AuthService implements AuthServiceInterface {
   readonly dialogNoToken = computed(() => this.authData()?.dialog_no_token || false);
   readonly searchOnEnter = computed(() => this.authData()?.search_on_enter || false);
   readonly timeoutAction = computed(() => this.authData()?.timeout_action || "logout");
-  readonly tokenRollover = computed(() => this.authData()?.token_rollover || {});
+  readonly tokenRollover = computed(() => Object.keys(this.authData()?.token_rollover || {}));
   readonly hideWelcome = computed(() => this.authData()?.hide_welcome || false);
   readonly hideButtons = computed(() => this.authData()?.hide_buttons || false);
   readonly deletionConfirmation = computed(() => this.authData()?.deletion_confirmation || false);

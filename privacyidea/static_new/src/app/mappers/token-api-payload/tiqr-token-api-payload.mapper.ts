@@ -17,7 +17,13 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Injectable } from "@angular/core";
-import { TokenApiPayloadMapper, TokenEnrollmentData, TokenEnrollmentPayload } from "./_token-api-payload.mapper";
+import {
+  BaseApiPayloadMapper,
+  TokenApiPayloadMapper,
+  TokenEnrollmentData,
+  TokenEnrollmentPayload
+} from "./_token-api-payload.mapper";
+import { TokenDetails } from "../../services/token/token.service";
 
 export interface TiqrEnrollmentData extends TokenEnrollmentData {
   type: "tiqr";
@@ -26,18 +32,10 @@ export interface TiqrEnrollmentData extends TokenEnrollmentData {
 export interface TiqrEnrollmentPayload extends TokenEnrollmentPayload {}
 
 @Injectable({ providedIn: "root" })
-export class TiqrApiPayloadMapper implements TokenApiPayloadMapper<TiqrEnrollmentData> {
-  toApiPayload(data: TiqrEnrollmentData): TiqrEnrollmentPayload {
-    const payload: TiqrEnrollmentPayload = {
-      type: data.type,
-      description: data.description,
-      container_serial: data.containerSerial,
-      validity_period_start: data.validityPeriodStart,
-      validity_period_end: data.validityPeriodEnd,
-      user: data.user,
-      realm: data.user ? data.realm : null,
-      pin: data.pin
-    };
+export class TiqrApiPayloadMapper extends BaseApiPayloadMapper implements TokenApiPayloadMapper<TiqrEnrollmentData> {
+
+  override toApiPayload(data: TiqrEnrollmentData): TiqrEnrollmentPayload {
+    const payload: TiqrEnrollmentPayload = super.toApiPayload(data);
 
     if (data.onlyAddToRealm) {
       payload.realm = data.realm;
@@ -46,8 +44,15 @@ export class TiqrApiPayloadMapper implements TokenApiPayloadMapper<TiqrEnrollmen
     return payload;
   }
 
-  fromApiPayload(payload: any): TiqrEnrollmentData {
+  override fromApiPayload(payload: any): TiqrEnrollmentData {
     // Placeholder: Implement transformation from API payload.
     return payload as TiqrEnrollmentData;
+  }
+
+  override fromTokenDetailsToEnrollmentData(details: TokenDetails): TiqrEnrollmentData {
+    return {
+      ...super.fromTokenDetailsToEnrollmentData(details),
+      type: "tiqr"
+    };
   }
 }

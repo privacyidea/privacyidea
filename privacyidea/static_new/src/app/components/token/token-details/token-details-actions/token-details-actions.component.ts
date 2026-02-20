@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { NgClass } from "@angular/common";
-import { Component, computed, inject, Input, signal, WritableSignal } from "@angular/core";
+import { Component, computed, inject, input, Input, signal, WritableSignal } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { MatButton } from "@angular/material/button";
 import { MatDialog } from "@angular/material/dialog";
@@ -28,7 +28,7 @@ import {
   NotificationServiceInterface
 } from "../../../../services/notification/notification.service";
 import { OverflowService, OverflowServiceInterface } from "../../../../services/overflow/overflow.service";
-import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
+import { TokenDetails, TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 import { ValidateService, ValidateServiceInterface } from "../../../../services/validate/validate.service";
 import {
   SshMachineAssignDialogData,
@@ -48,6 +48,8 @@ import { LostTokenComponent } from "./lost-token/lost-token.component";
 import { ConfirmationDialogComponent } from "../../../shared/confirmation-dialog/confirmation-dialog.component";
 import { ROUTE_PATHS } from "../../../../route_paths";
 import { Router } from "@angular/router";
+import { TokenRolloverComponent } from "./token-rollover/token-rollover.component";
+import { nonRolloverTokenTypes } from "../../../../utils/token.utils";
 
 @Component({
   selector: "app-token-details-actions",
@@ -78,6 +80,7 @@ export class TokenDetailsActionsComponent {
   @Input() setPinValue!: WritableSignal<string>;
   @Input() repeatPinValue!: WritableSignal<string>;
   @Input() tokenType!: WritableSignal<string>;
+  token = input<TokenDetails>();
   tokenSerial = this.tokenService.tokenSerial;
   tokenIsActive = this.tokenService.tokenIsActive;
   tokenIsRevoked = this.tokenService.tokenIsRevoked;
@@ -253,4 +256,16 @@ export class TokenDetailsActionsComponent {
       }
     });
   }
+
+  rolloverToken() {
+    if (!this.token()) return;
+
+    this.matDialog.open(TokenRolloverComponent, {
+      data: {
+        token: this.token()
+      }
+    });
+  }
+
+  protected readonly nonRolloverTokenTypes = nonRolloverTokenTypes;
 }

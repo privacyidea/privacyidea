@@ -102,8 +102,7 @@
                           @if (option === userRealm) {
                             <mat-option
                               value="{{ option }}"
-                              disabled
-                              >{{ option }}
+                              disabled>{{ option }}
                             </mat-option>
                           } @else {
                             <mat-option value="{{ option }}">{{ option }}</mat-option>
@@ -135,8 +134,7 @@
                           @if (option === userRealm) {
                             <mat-option
                               value="{{ option }}"
-                              disabled
-                              >{{ option }}
+                              disabled>{{ option }}
                             </mat-option>
                           } @else {
                             <mat-option value="{{ option }}">{{ option }}</mat-option>
@@ -222,9 +220,7 @@
               class="edit-column-cell"
               mat-cell>
               <div class="ali-center">
-                @if (
-                  element.keyMap.key === "failcount" && !isAnyEditingOrRevoked() && authService.actionAllowed("reset")
-                ) {
+                @if (element.keyMap.key === "failcount" && !isAnyEditingOrRevoked() && authService.actionAllowed("reset")) {
                   <div class="edit-button-container">
                     <button
                       mat-icon-button
@@ -233,12 +229,10 @@
                       <mat-icon> lock_reset</mat-icon>
                     </button>
                   </div>
-                } @else if (
-                  element.keyMap.key === "container_serial" &&
-                  !isAnyEditingOrRevoked() &&
-                  element.value &&
-                  authService.actionAllowed("container_remove_token")
-                ) {
+                } @else if (element.keyMap.key === "container_serial" &&
+                !isAnyEditingOrRevoked() &&
+                element.value &&
+                authService.actionAllowed("container_remove_token")) {
                   <div class="edit-button-container">
                     <button
                       mat-icon-button
@@ -289,7 +283,8 @@
         <app-token-details-actions
           [repeatPinValue]="repeatPinValue"
           [setPinValue]="setPinValue"
-          [tokenType]="tokenType"></app-token-details-actions>
+          [tokenType]="tokenType"
+          [token]="tokenDetails()"></app-token-details-actions>
       </div>
     </div>
   </div>

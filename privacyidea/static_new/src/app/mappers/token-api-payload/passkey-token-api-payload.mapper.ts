@@ -17,7 +17,13 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Injectable } from "@angular/core";
-import { TokenApiPayloadMapper, TokenEnrollmentData, TokenEnrollmentPayload } from "./_token-api-payload.mapper";
+import {
+  BaseApiPayloadMapper,
+  TokenApiPayloadMapper,
+  TokenEnrollmentData,
+  TokenEnrollmentPayload
+} from "./_token-api-payload.mapper";
+import { TokenDetails } from "../../services/token/token.service";
 
 // Interface for Passkey-specific enrollment data
 export interface PasskeyEnrollmentData extends TokenEnrollmentData {
@@ -47,18 +53,10 @@ export interface PasskeyFinalizationPayload extends TokenEnrollmentPayload {
 }
 
 @Injectable({ providedIn: "root" })
-export class PasskeyApiPayloadMapper implements TokenApiPayloadMapper<PasskeyEnrollmentData> {
-  toApiPayload(data: PasskeyEnrollmentData): TokenEnrollmentPayload {
-    const payload: TokenEnrollmentPayload = {
-      type: data.type,
-      description: data.description,
-      container_serial: data.containerSerial,
-      validity_period_start: data.validityPeriodStart,
-      validity_period_end: data.validityPeriodEnd,
-      user: data.user,
-      realm: data.user ? data.realm : null,
-      pin: data.pin
-    };
+export class PasskeyApiPayloadMapper extends BaseApiPayloadMapper implements TokenApiPayloadMapper<PasskeyEnrollmentData> {
+
+  override toApiPayload(data: PasskeyEnrollmentData): TokenEnrollmentPayload {
+    const payload: TokenEnrollmentPayload = super.toApiPayload(data);
 
     if (data.onlyAddToRealm) {
       payload.realm = data.realm;
@@ -67,14 +65,22 @@ export class PasskeyApiPayloadMapper implements TokenApiPayloadMapper<PasskeyEnr
     return payload;
   }
 
-  fromApiPayload(payload: any): PasskeyEnrollmentData {
+  override fromApiPayload(payload: any): PasskeyEnrollmentData {
     // Placeholder: Implement transformation from API payload. We will replace this later.
     return payload as PasskeyEnrollmentData;
+  }
+
+  override fromTokenDetailsToEnrollmentData(details: TokenDetails): PasskeyEnrollmentData {
+    return {
+      ...super.fromTokenDetailsToEnrollmentData(details),
+      type: "passkey"
+    };
   }
 }
 
 @Injectable({ providedIn: "root" })
 export class PasskeyFinalizeApiPayloadMapper implements TokenApiPayloadMapper<PasskeyFinalizeData> {
+
   toApiPayload(data: PasskeyFinalizeData): PasskeyFinalizationPayload {
     const payload: PasskeyFinalizationPayload = {
       type: data.type,
@@ -95,5 +101,9 @@ export class PasskeyFinalizeApiPayloadMapper implements TokenApiPayloadMapper<Pa
   fromApiPayload(payload: any): PasskeyFinalizeData {
     // Placeholder: Implement transformation from API payload. We will replace this later.
     return payload as PasskeyFinalizeData;
+  }
+
+  fromTokenDetailsToEnrollmentData(details: TokenDetails): PasskeyFinalizeData {
+    return {} as PasskeyFinalizeData;
   }
 }

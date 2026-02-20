@@ -59,7 +59,7 @@ export class MockAuthService implements AuthServiceInterface {
   readonly dialogNoToken = computed(() => this.authData()?.dialog_no_token ?? false);
   readonly searchOnEnter = computed(() => this.authData()?.search_on_enter ?? false);
   readonly timeoutAction = computed(() => this.authData()?.timeout_action ?? "");
-  readonly tokenRollover = computed(() => this.authData()?.token_rollover ?? null);
+  readonly tokenRollover = computed(() => Object.keys(this.authData()?.token_rollover || {}));
   readonly hideWelcome = computed(() => this.authData()?.hide_welcome ?? false);
   readonly hideButtons = computed(() => this.authData()?.hide_buttons ?? false);
   readonly deletionConfirmation = computed(() => this.authData()?.deletion_confirmation ?? false);
@@ -121,7 +121,7 @@ export class MockAuthService implements AuthServiceInterface {
     dialog_no_token: false,
     search_on_enter: false,
     timeout_action: "",
-    token_rollover: null,
+    token_rollover: {"totp": [""]},
     hide_welcome: false,
     hide_buttons: false,
     deletion_confirmation: false,

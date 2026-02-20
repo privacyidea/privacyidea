@@ -17,7 +17,13 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Injectable } from "@angular/core";
-import { TokenApiPayloadMapper, TokenEnrollmentData, TokenEnrollmentPayload } from "./_token-api-payload.mapper";
+import {
+  BaseApiPayloadMapper,
+  TokenApiPayloadMapper,
+  TokenEnrollmentData,
+  TokenEnrollmentPayload
+} from "./_token-api-payload.mapper";
+import { TokenDetails } from "../../services/token/token.service";
 
 export interface FourEyesEnrollmentData extends TokenEnrollmentData {
   type: "4eyes";
@@ -34,17 +40,12 @@ export interface FourEyesEnrollmentPayload extends TokenEnrollmentPayload {
 }
 
 @Injectable({ providedIn: "root" })
-export class FourEyesApiPayloadMapper implements TokenApiPayloadMapper<FourEyesEnrollmentData> {
-  toApiPayload(data: FourEyesEnrollmentData): FourEyesEnrollmentPayload {
+export class FourEyesApiPayloadMapper extends BaseApiPayloadMapper implements TokenApiPayloadMapper<FourEyesEnrollmentData> {
+
+  override toApiPayload(data: FourEyesEnrollmentData): FourEyesEnrollmentPayload {
+    const basePayload = super.toApiPayload(data);
     const payload: FourEyesEnrollmentPayload = {
-      type: data.type,
-      description: data.description,
-      container_serial: data.containerSerial,
-      validity_period_start: data.validityPeriodStart,
-      validity_period_end: data.validityPeriodEnd,
-      pin: data.pin,
-      user: data.user,
-      realm: data.user ? data.realm : null,
+      ...basePayload,
       separator: data.separator,
       "4eyes": (data.requiredTokenOfRealms ?? []).reduce(
         (acc: { [key: string]: { count: number; selected: boolean } }, curr) => {
@@ -62,8 +63,28 @@ export class FourEyesApiPayloadMapper implements TokenApiPayloadMapper<FourEyesE
     return payload;
   }
 
-  fromApiPayload(payload: any): FourEyesEnrollmentData {
+  override fromApiPayload(payload: any): FourEyesEnrollmentData {
     // Placeholder: Implement transformation from API payload. We will replace this later.
     return payload as FourEyesEnrollmentData;
+  }
+
+  override fromTokenDetailsToEnrollmentData(details: TokenDetails): FourEyesEnrollmentData {
+    let requiredTokenOfRealms: { realm: string; tokens: number }[] = [];
+    const fourEyesString = details.info?.["4eyes"];
+    if (typeof fourEyesString === "string" && fourEyesString.trim() !== "") {
+      requiredTokenOfRealms = fourEyesString.split(",").map((entry) => {
+        const [realm, tokens] = entry.split(":");
+        return {
+          realm: realm?.trim() ?? "",
+          tokens: Number(tokens)
+        };
+      }).filter(item => item.realm && !isNaN(item.tokens));
+    }
+    return {
+      ...super.fromTokenDetailsToEnrollmentData(details),
+      type: "4eyes",
+      separator: details.info?.separator ?? "",
+      requiredTokenOfRealms
+    };
   }
 }

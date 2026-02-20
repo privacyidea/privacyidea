@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, inject, WritableSignal } from "@angular/core";
+import { Component, computed, inject, Signal, WritableSignal } from "@angular/core";
 import { MatButton } from "@angular/material/button";
 import {
   MAT_DIALOG_DATA,
@@ -50,6 +50,7 @@ export type TokenEnrollmentLastStepDialogData = {
   user: UserData | null;
   userRealm: string;
   onlyAddToRealm: boolean;
+  rollover?: boolean | null;
 };
 
 @Component({
@@ -89,6 +90,10 @@ export class TokenEnrollmentLastStepDialogComponent {
     this.data.response.detail?.motpurl?.value ??
     this.data.response.detail?.otpkey?.value ??
     this.data.response.detail?.tiqrenroll?.value ?? "";
+  protected readonly rollover = this.data.rollover ?? false;
+
+  title: Signal<string> = computed(() => this.rollover ? "Token Successfully Rolled Over" : "Token Successfully" +
+    " Enrolled");
 
   showQRCode(): boolean {
     return !NO_QR_CODE_TOKEN_TYPES.includes(this.data.tokentype?.key);

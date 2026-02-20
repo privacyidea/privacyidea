@@ -18,7 +18,7 @@
  **/
 import { TestBed } from "@angular/core/testing";
 
-import { AuthResponse, AuthService, JwtData } from "./auth.service";
+import { AuthData, AuthResponse, AuthService, JwtData } from "./auth.service";
 import { AppComponent } from "../../app.component";
 import { provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
@@ -409,5 +409,14 @@ describe("AuthService", () => {
       rights: []
     } as JwtData);
     expect(authService.isSelfServiceUser()).toBe(true);
+  });
+
+  it("should extract token types from rollover policy", () => {
+    authService.authData.set({token_rollover: {hotp: [], totp: []}} as unknown as AuthData);
+    expect(authService.tokenRollover()).toEqual(["hotp", "totp"]);
+
+    // token_rollover data not set
+    authService.authData.set({} as unknown as AuthData);
+    expect(authService.tokenRollover()).toEqual([]);
   });
 });

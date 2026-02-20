@@ -87,52 +87,62 @@
         Use Offline
       </button>
     }
-    <mat-divider class="margin-top-1 margin-bottom-1" />
-    @if ((tokenIsActive() && authService.actionAllowed("disable")) ||
-    (!tokenIsActive() && authService.actionAllowed("enable"))) {
-      <button
-        (click)="toggleActive()"
-        [disabled]="tokenIsRevoked()"
-        [ngClass]="[tokenIsActive()
+  }
+  <mat-divider class="margin-top-1 margin-bottom-1" />
+  @if ((tokenIsActive() && authService.actionAllowed("disable")) ||
+  (!tokenIsActive() && authService.actionAllowed("enable"))) {
+    <button
+      (click)="toggleActive()"
+      [disabled]="tokenIsRevoked()"
+      [ngClass]="[tokenIsActive()
                       ? 'action-button-delete width-238'
                       : 'action-button-1 width-238'
                 ]"
-        i18n
-        mat-stroked-button>
-        <mat-icon>{{ tokenIsActive() ? "lock" : "play_circle" }}</mat-icon>
-        {{ tokenIsActive() ? "Deactivate" : "Activate" }}
-      </button>
-    }
-    @if (authService.actionAllowed("delete")) {
-      <button
-        (click)="deleteToken()"
-        class="action-button-delete"
-        i18n
-        mat-stroked-button>
-        <mat-icon> delete</mat-icon>
-        Delete
-      </button>
-    }
-    @if (authService.actionAllowed("revoke")) {
-      <button
-        (click)="revokeToken()"
-        [disabled]="tokenIsRevoked()"
-        class="action-button-delete"
-        i18n
-        mat-stroked-button>
-        <mat-icon>undo</mat-icon>
-        Revoke
-      </button>
-    }
-    @if (authService.actionAllowed("losttoken")) {
-      <button
-        (click)="openLostTokenDialog()"
-        class="action-button-1 width-238"
-        i18n
-        mat-stroked-button>
-        <mat-icon>remove_red_eye</mat-icon>
-        Lost Token
-      </button>
-    }
+      i18n
+      mat-stroked-button>
+      <mat-icon>{{ tokenIsActive() ? "lock" : "play_circle" }}</mat-icon>
+      {{ tokenIsActive() ? "Deactivate" : "Activate" }}
+    </button>
+  }
+  @if (authService.actionAllowed("delete")) {
+    <button
+      (click)="deleteToken()"
+      class="action-button-delete"
+      i18n
+      mat-stroked-button>
+      <mat-icon> delete</mat-icon>
+      Delete
+    </button>
+  }
+  @if (authService.actionAllowed("revoke")) {
+    <button
+      (click)="revokeToken()"
+      [disabled]="tokenIsRevoked()"
+      class="action-button-delete"
+      i18n
+      mat-stroked-button>
+      <mat-icon>undo</mat-icon>
+      Revoke
+    </button>
+  }
+  @if (authService.tokenRollover().indexOf(tokenType()) >= 0 && nonRolloverTokenTypes.indexOf(tokenType()) < 0) {
+    <button
+      (click)="rolloverToken()"
+      class="action-button-delete"
+      i18n
+      mat-stroked-button>
+      <mat-icon>autorenew</mat-icon>
+      Rollover
+    </button>
+  }
+  @if (authService.actionAllowed("losttoken")) {
+    <button
+      (click)="openLostTokenDialog()"
+      class="action-button-1 width-238"
+      i18n
+      mat-stroked-button>
+      <mat-icon>remove_red_eye</mat-icon>
+      Lost Token
+    </button>
   }
 </div>

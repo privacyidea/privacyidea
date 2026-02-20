@@ -54,7 +54,8 @@ export class SystemService implements SystemServiceInterface {
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
   private onAllowedRoutes = computed(() => {
-    return this.contentService.onTokensEnrollment() || this.contentService.onTokensWizard();
+    // Token details is required for rollover
+    return this.contentService.onTokensEnrollment() || this.contentService.onTokensWizard() || this.contentService.onTokenDetails();
   });
 
   systemConfigResource = httpResource<any>(() => {

@@ -17,7 +17,13 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Injectable } from "@angular/core";
-import { TokenApiPayloadMapper, TokenEnrollmentData, TokenEnrollmentPayload } from "./_token-api-payload.mapper";
+import {
+  BaseApiPayloadMapper,
+  TokenApiPayloadMapper,
+  TokenEnrollmentData,
+  TokenEnrollmentPayload
+} from "./_token-api-payload.mapper";
+import { TokenDetails } from "../../services/token/token.service";
 
 export interface SpassEnrollmentData extends TokenEnrollmentData {
   type: "spass";
@@ -26,18 +32,10 @@ export interface SpassEnrollmentData extends TokenEnrollmentData {
 export interface SpassEnrollmentPayload extends TokenEnrollmentPayload {}
 
 @Injectable({ providedIn: "root" })
-export class SpassApiPayloadMapper implements TokenApiPayloadMapper<SpassEnrollmentData> {
-  toApiPayload(data: SpassEnrollmentData): SpassEnrollmentPayload {
-    const payload: SpassEnrollmentPayload = {
-      type: data.type,
-      description: data.description,
-      container_serial: data.containerSerial,
-      validity_period_start: data.validityPeriodStart,
-      validity_period_end: data.validityPeriodEnd,
-      user: data.user,
-      realm: data.user ? data.realm : null,
-      pin: data.pin
-    };
+export class SpassApiPayloadMapper extends BaseApiPayloadMapper implements TokenApiPayloadMapper<SpassEnrollmentData> {
+
+  override toApiPayload(data: SpassEnrollmentData): SpassEnrollmentPayload {
+    const payload: SpassEnrollmentPayload = super.toApiPayload(data);
 
     if (data.onlyAddToRealm) {
       payload.realm = data.realm;
@@ -47,8 +45,15 @@ export class SpassApiPayloadMapper implements TokenApiPayloadMapper<SpassEnrollm
     return payload;
   }
 
-  fromApiPayload(payload: any): SpassEnrollmentData {
+  override fromApiPayload(payload: any): SpassEnrollmentData {
     // Placeholder: Implement transformation from API payload.
     return payload as SpassEnrollmentData;
+  }
+
+  override fromTokenDetailsToEnrollmentData(details: TokenDetails): SpassEnrollmentData {
+    return {
+      ...super.fromTokenDetailsToEnrollmentData(details),
+      type: "spass"
+    };
   }
 }

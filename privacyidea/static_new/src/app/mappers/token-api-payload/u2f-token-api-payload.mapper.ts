@@ -17,7 +17,13 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Injectable } from "@angular/core";
-import { TokenApiPayloadMapper, TokenEnrollmentData, TokenEnrollmentPayload } from "./_token-api-payload.mapper";
+import {
+  BaseApiPayloadMapper,
+  TokenApiPayloadMapper,
+  TokenEnrollmentData,
+  TokenEnrollmentPayload
+} from "./_token-api-payload.mapper";
+import { TokenDetails } from "../../services/token/token.service";
 
 export interface U2fEnrollmentData extends TokenEnrollmentData {
   type: "u2f";
@@ -26,29 +32,27 @@ export interface U2fEnrollmentData extends TokenEnrollmentData {
 export interface U2fEnrollmentPayload extends TokenEnrollmentPayload {}
 
 @Injectable({ providedIn: "root" })
-export class U2fApiPayloadMapper implements TokenApiPayloadMapper<U2fEnrollmentData> {
-  toApiPayload(data: U2fEnrollmentData): U2fEnrollmentPayload {
-    const payload: U2fEnrollmentPayload = {
-      type: data.type,
-      description: data.description,
-      container_serial: data.containerSerial,
-      validity_period_start: data.validityPeriodStart,
-      validity_period_end: data.validityPeriodEnd,
-      user: data.user,
-      realm: data.user ? data.realm : null,
-      pin: data.pin
-    };
+export class U2fApiPayloadMapper extends BaseApiPayloadMapper implements TokenApiPayloadMapper<U2fEnrollmentData> {
+
+  override toApiPayload(data: U2fEnrollmentData): U2fEnrollmentPayload {
+    const payload: U2fEnrollmentPayload = super.toApiPayload(data);
 
     if (data.onlyAddToRealm) {
       payload.realm = data.realm;
       payload.user = null;
     }
-
     return payload;
   }
 
-  fromApiPayload(payload: any): U2fEnrollmentData {
+  override fromApiPayload(payload: any): U2fEnrollmentData {
     // Placeholder: Implement transformation from API payload.
     return payload as U2fEnrollmentData;
+  }
+
+  override fromTokenDetailsToEnrollmentData(details: TokenDetails): U2fEnrollmentData {
+    return {
+      ...super.fromTokenDetailsToEnrollmentData(details),
+      type: "u2f"
+    };
   }
 }

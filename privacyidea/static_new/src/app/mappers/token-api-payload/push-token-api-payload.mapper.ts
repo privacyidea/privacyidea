@@ -17,7 +17,13 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Injectable } from "@angular/core";
-import { TokenApiPayloadMapper, TokenEnrollmentData, TokenEnrollmentPayload } from "./_token-api-payload.mapper";
+import {
+  BaseApiPayloadMapper,
+  TokenApiPayloadMapper,
+  TokenEnrollmentData,
+  TokenEnrollmentPayload
+} from "./_token-api-payload.mapper";
+import { TokenDetails } from "../../services/token/token.service";
 
 export interface PushEnrollmentData extends TokenEnrollmentData {
   type: "push";
@@ -28,20 +34,14 @@ export interface PushEnrollmentPayload extends TokenEnrollmentPayload {
 }
 
 @Injectable({ providedIn: "root" })
-export class PushApiPayloadMapper implements TokenApiPayloadMapper<PushEnrollmentData> {
-  toApiPayload(data: PushEnrollmentData): PushEnrollmentPayload {
+export class PushApiPayloadMapper extends BaseApiPayloadMapper implements TokenApiPayloadMapper<PushEnrollmentData> {
+
+  override toApiPayload(data: PushEnrollmentData): PushEnrollmentPayload {
+    const basePayload = super.toApiPayload(data);
     const payload: PushEnrollmentPayload = {
-      type: data.type,
-      description: data.description,
-      container_serial: data.containerSerial,
-      validity_period_start: data.validityPeriodStart,
-      validity_period_end: data.validityPeriodEnd,
-      user: data.user,
-      realm: data.user ? data.realm : null,
-      pin: data.pin,
+      ...basePayload,
       genkey: 1
     };
-
     if (data.onlyAddToRealm) {
       payload.realm = data.realm;
       payload.user = null;
@@ -49,8 +49,15 @@ export class PushApiPayloadMapper implements TokenApiPayloadMapper<PushEnrollmen
     return payload;
   }
 
-  fromApiPayload(payload: any): PushEnrollmentData {
+  override fromApiPayload(payload: any): PushEnrollmentData {
     // Placeholder: Implement transformation from API payload. We will replace this later.
     return payload as PushEnrollmentData;
+  }
+
+  override fromTokenDetailsToEnrollmentData(details: TokenDetails): PushEnrollmentData {
+    return {
+      ...super.fromTokenDetailsToEnrollmentData(details),
+      type: "push"
+    };
   }
 }
