@@ -922,14 +922,15 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
                    action="enrollHOTP")
         g.policy_object = PolicyClass()
 
-        # request, that matches the policy
+        # Trying to enroll a token with a pin but without enrollpin right will result in a policy error.
+        # checked by enroll_pin
         req.all_data = {"pin": "test",
                         "user": "cornelius",
                         "realm": self.realm1}
-        enroll_pin(req)
 
-        # Check, if the PIN was removed
-        self.assertTrue("pin" not in req.all_data)
+        with self.assertRaises(PolicyError):
+            enroll_pin(req)
+
         # finally delete policy
         delete_policy("pol1")
 
