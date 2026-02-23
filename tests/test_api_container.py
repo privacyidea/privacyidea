@@ -6074,7 +6074,7 @@ class APIContainerTemplate(APIContainerTest):
         tokens = container.get_tokens()
         self.assertEqual(0, len(tokens))
 
-        # Not allowed to set the pin. this will cause the token to not be enrolled at all
+        # Not allowed to set the PIN. This will cause the token to not be enrolled at all
         delete_policy("otp_pin")
         delete_policy("enrollPIN")
         template_params = {"name": "test",
