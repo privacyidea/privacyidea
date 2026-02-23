@@ -457,7 +457,6 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
           data: {
             title: $localize`Discard changes`,
             confirmAction: { label: "Save and exit", type: "confirm", value: true },
-            cancelAction: { label: "Discard", type: "destruct", value: false },
             items: [this.resolverName || "New Resolver"],
             itemType: "resolver"
           }

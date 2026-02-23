@@ -106,4 +106,31 @@ describe("DialogWrapperComponent", () => {
     fixtureWrapper.componentRef.setInput("showCancelButton", false);
     expect(() => fixtureWrapper.detectChanges()).toThrow("Dialog must have at least one action or a close button.");
   });
+
+  it("should display the custom cancel button label", () => {
+    fixture.componentRef.setInput("showCancelButton", true);
+    fixture.componentRef.setInput("cancelButtonLabel", "Discard Changes");
+    fixture.detectChanges();
+
+    const buttons = nativeElement.querySelectorAll(".pi-dialog-footer button");
+    const cancelButton = Array.from(buttons).find((btn) => btn.hasAttribute("mat-dialog-close"));
+
+    expect(cancelButton?.textContent?.trim()).toBe("Discard Changes");
+  });
+
+  it("should respect hidden and disabled states of actions", () => {
+    fixture.componentRef.setInput("actions", [
+      { value: "visible", label: "Visible", disabled: true },
+      { value: "hidden", label: "Hidden", hidden: true }
+    ]);
+    fixture.detectChanges();
+
+    const buttons = nativeElement.querySelectorAll(".pi-dialog-footer button");
+    expect(buttons.length).toBe(2); // "Visible" and "Cancel" buttons should be rendered, "Hidden" should not
+
+    const actionBtn = Array.from(buttons).find((b) => b.textContent?.trim() === "Visible") as HTMLButtonElement;
+    expect(actionBtn.disabled).toBe(true);
+    const hiddenBtn = Array.from(buttons).find((b) => b.textContent?.trim() === "Hidden");
+    expect(hiddenBtn).toBeUndefined();
+  });
 });

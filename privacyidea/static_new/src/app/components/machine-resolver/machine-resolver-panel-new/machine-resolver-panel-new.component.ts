@@ -137,7 +137,6 @@ export class MachineResolverPanelNewComponent {
               data: {
                 title: "Save machine resolver despite test failure?",
                 confirmAction: { label: "Proceed", value: true, type: "destruct" },
-                cancelAction: { label: "Cancel", value: false, type: "cancel" },
                 items: [current.resolvername || "New Machine Resolver"],
                 itemType: "machine resolver"
               }
@@ -169,7 +168,6 @@ export class MachineResolverPanelNewComponent {
         data: {
           title: "Discard changes",
           confirmAction: { label: "Discard", value: true, type: "destruct" },
-          cancelAction: { label: "Cancel", value: false, type: "cancel" },
           items: [this.newMachineResolver().resolvername || "New Machine Resolver"],
           itemType: "machine resolver"
         }
