@@ -35,6 +35,7 @@ import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
 import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
 import { TableUtilsService, TableUtilsServiceInterface } from "../../../services/table-utils/table-utils.service";
 import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
+import { SimpleConfirmationDialogComponent } from "../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
 
 @Component({
   selector: "app-radius-servers",
@@ -93,18 +94,22 @@ export class RadiusServersComponent {
   }
 
   deleteServer(server: RadiusServer): void {
-    this.dialogService.confirm({
-      data: {
-        title: $localize`Delete RADIUS Server`,
-        serialList: [server.identifier],
-        type: "radius-server",
-        action: "delete"
-      }
-    }).then(result => {
-      if (result) {
-        this.radiusService.deleteRadiusServer(server.identifier);
-      }
-    });
+    this.dialogService
+      .openDialog({
+        component: SimpleConfirmationDialogComponent,
+        data: {
+          title: $localize`Delete RADIUS Server`,
+          items: [server.identifier],
+          itemType: "radius-server",
+          confirmAction: { label: $localize`Delete`, value: true, type: "destruct" }
+        }
+      })
+      .afterClosed()
+      .subscribe({
+        next: (result) => {
+          if (result) this.radiusService.deleteRadiusServer(server.identifier);
+        }
+      });
   }
 
   onFilterInput(value: string): void {

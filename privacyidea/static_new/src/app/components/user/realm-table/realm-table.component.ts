@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -61,11 +61,13 @@ import {
 } from "../../../services/realm/realm.service";
 import { NodeInfo, SystemService, SystemServiceInterface } from "../../../services/system/system.service";
 import { NotificationService, NotificationServiceInterface } from "../../../services/notification/notification.service";
-import { ConfirmationDialogComponent } from "../../shared/confirmation-dialog/confirmation-dialog.component";
-import { UserNewResolverComponent } from "../user-new-resolver/user-new-resolver.component";
+
 import { MatTooltip } from "@angular/material/tooltip";
 import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
 import { ResolverService, ResolverServiceInterface } from "../../../services/resolver/resolver.service";
+import { DialogService, DialogServiceInterface } from "../../../services/dialog/dialog.service";
+import { SimpleConfirmationDialogComponent } from "../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { UserNewResolverComponent } from "../user-new-resolver/user-new-resolver.component";
 
 type ResolverWithPriority = { name: string; priority: number | null };
 type NodeResolversMap = { [nodeId: string]: ResolverWithPriority[] };
@@ -124,7 +126,8 @@ export class RealmTableComponent {
   protected readonly realmService: RealmServiceInterface = inject(RealmService);
   protected readonly systemService: SystemServiceInterface = inject(SystemService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
-  protected readonly dialog: MatDialog = inject(MatDialog);
+  protected readonly dialog = inject(MatDialog);
+  protected readonly dialogService: DialogServiceInterface = inject(DialogService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly resolverService: ResolverServiceInterface = inject(ResolverService);
 
@@ -227,11 +230,7 @@ export class RealmTableComponent {
       const resolverGroups = Array.from(groupsMap.values());
 
       const resolversText = resolverGroups
-        .flatMap((g) =>
-          g.resolvers.map(
-            (rr) => `${rr.name} ${rr.type} ${g.nodeLabel} ${rr.priority ?? ""}`
-          )
-        )
+        .flatMap((g) => g.resolvers.map((rr) => `${rr.name} ${rr.type} ${g.nodeLabel} ${rr.priority ?? ""}`))
         .join(" ");
 
       return [
@@ -245,9 +244,7 @@ export class RealmTableComponent {
     });
   });
 
-  totalLength: WritableSignal<number> = computed(
-    () => this.realmRows().length
-  ) as WritableSignal<number>;
+  totalLength: WritableSignal<number> = computed(() => this.realmRows().length) as WritableSignal<number>;
 
   realmsDataSource: WritableSignal<MatTableDataSource<RealmRow>> = linkedSignal({
     source: () => ({
@@ -370,8 +367,7 @@ export class RealmTableComponent {
     const globalResolvers = (nodeResolvers[NO_NODE_ID] ?? []) as ResolverWithPriority[];
 
     const nodeEntries = Object.entries(nodeResolvers).filter(
-      ([nodeId, resolvers]) =>
-        nodeId !== NO_NODE_ID && resolvers && resolvers.length > 0
+      ([nodeId, resolvers]) => nodeId !== NO_NODE_ID && resolvers && resolvers.length > 0
     );
 
     const requests = [];
@@ -413,9 +409,7 @@ export class RealmTableComponent {
         },
         error: (err: HttpErrorResponse) => {
           const message = err.error?.result?.error?.message || err.message;
-          this.notificationService.openSnackBar(
-            $localize`Failed to create realm. ${message}`
-          );
+          this.notificationService.openSnackBar($localize`Failed to create realm. ${message}`);
         }
       })
       .add(() => this.isCreatingRealm.set(false));
@@ -521,9 +515,7 @@ export class RealmTableComponent {
 
     const hasGlobalGroup = Object.prototype.hasOwnProperty.call(current, NO_NODE_ID);
     const globalResolvers = (current[NO_NODE_ID] ?? []) as ResolverWithPriority[];
-    const nodeEntries = Object.entries(current).filter(
-      ([nodeId]) => nodeId !== NO_NODE_ID
-    );
+    const nodeEntries = Object.entries(current).filter(([nodeId]) => nodeId !== NO_NODE_ID);
 
     if (!hasGlobalGroup && nodeEntries.length === 0) {
       this.notificationService.openSnackBar($localize`No resolvers configured.`);
@@ -561,18 +553,14 @@ export class RealmTableComponent {
       .pipe(last())
       .subscribe({
         next: () => {
-          this.notificationService.openSnackBar(
-            $localize`Realm "${realmName}" updated.`
-          );
+          this.notificationService.openSnackBar($localize`Realm "${realmName}" updated.`);
           this.cancelEditRealm();
           this.realmService.realmResource.reload?.();
         },
         error: (err: HttpErrorResponse) => {
           console.error("Failed to update realm.", err);
           const message = err.error?.result?.error?.message || err.message;
-          this.notificationService.openSnackBar(
-            $localize`Failed to update realm. ${message}`
-          );
+          this.notificationService.openSnackBar($localize`Failed to update realm. ${message}`);
         }
       })
       .add(() => this.isSavingEditedRealm.set(false));
@@ -583,34 +571,30 @@ export class RealmTableComponent {
       return;
     }
 
-    this.dialog
-      .open(ConfirmationDialogComponent, {
+    this.dialogService
+      .openDialog({
+        component: SimpleConfirmationDialogComponent,
         data: {
-          serialList: [row.name],
           title: $localize`Delete Realm`,
-          type: "realm",
-          action: "delete"
+          items: [row.name],
+          itemType: "realm",
+          confirmAction: { label: $localize`Delete`, value: true, type: "destruct" }
         }
       })
       .afterClosed()
       .subscribe({
         next: (result) => {
-          if (!result?.confirmed) {
+          if (!result) {
             return;
           }
-
           this.realmService.deleteRealm(row.name).subscribe({
             next: () => {
-              this.notificationService.openSnackBar(
-                $localize`Realm "${row.name}" deleted.`
-              );
+              this.notificationService.openSnackBar($localize`Realm "${row.name}" deleted.`);
               this.realmService.realmResource.reload?.();
             },
             error: (err: HttpErrorResponse) => {
               const message = err.error?.result?.error?.message || err.message;
-              this.notificationService.openSnackBar(
-                $localize`Failed to delete realm. ${message}`
-              );
+              this.notificationService.openSnackBar($localize`Failed to delete realm. ${message}`);
             }
           });
         }
@@ -629,24 +613,20 @@ export class RealmTableComponent {
       .pipe(take(1))
       .subscribe({
         next: () => {
-          this.notificationService.openSnackBar(
-            $localize`Realm "${realmName}" set as default.`
-          );
+          this.notificationService.openSnackBar($localize`Realm "${realmName}" set as default.`);
           this.realmService.realmResource.reload?.();
           this.realmService.defaultRealmResource.reload?.();
         },
         error: (err: HttpErrorResponse) => {
           console.error("Failed to set default realm.", err);
           const message = err.error?.result?.error?.message || err.message;
-          this.notificationService.openSnackBar(
-            $localize`Failed to set default realm. ${message}`
-          );
+          this.notificationService.openSnackBar($localize`Failed to set default realm. ${message}`);
         }
       });
   }
 
   onClickResolver(resolverName: unknown): void {
-    const resolver = this.resolverService.resolvers().find(r => r.resolvername === resolverName);
+    const resolver = this.resolverService.resolvers().find((r) => r.resolvername === resolverName);
     if (resolver) {
       this.dialog.open(UserNewResolverComponent, {
         data: { resolver },

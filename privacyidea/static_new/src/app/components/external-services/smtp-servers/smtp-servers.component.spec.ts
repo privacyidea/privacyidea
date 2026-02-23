@@ -25,24 +25,24 @@ import { MatDialog, MatDialogModule } from "@angular/material/dialog";
 import { SmtpService } from "../../../services/smtp/smtp.service";
 import { DialogService } from "../../../services/dialog/dialog.service";
 import { signal } from "@angular/core";
+import { Subject } from "rxjs";
+import { MockMatDialogRef } from "../../../../testing/mock-mat-dialog-ref";
+import { MockDialogService } from "../../../../testing/mock-services";
 
 describe("SmtpServersComponent", () => {
   let component: SmtpServersComponent;
   let fixture: ComponentFixture<SmtpServersComponent>;
   let smtpServiceMock: any;
-  let dialogServiceMock: any;
+  let dialogServiceMock: MockDialogService;
+  let confirmClosed: Subject<boolean>;
 
   beforeEach(async () => {
     smtpServiceMock = {
       smtpServers: signal([
         { identifier: "server1", server: "smtp1.com", sender: "s1@test.com", tls: true, enqueue_job: false },
-        { identifier: "server2", server: "smtp2.com", sender: "s2@test.com", tls: false, enqueue_job: true },
+        { identifier: "server2", server: "smtp2.com", sender: "s2@test.com", tls: false, enqueue_job: true }
       ]),
-      deleteSmtpServer: jest.fn(),
-    };
-
-    dialogServiceMock = {
-      confirm: jest.fn().mockResolvedValue(true),
+      deleteSmtpServer: jest.fn()
     };
 
     await TestBed.configureTestingModule({
@@ -51,17 +51,24 @@ describe("SmtpServersComponent", () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: SmtpService, useValue: smtpServiceMock },
-        { provide: DialogService, useValue: dialogServiceMock },
+        { provide: DialogService, useClass: MockDialogService }
       ]
-    }).overrideComponent(SmtpServersComponent, {
-      add: {
-        providers: [
-          { provide: MatDialog, useValue: { open: jest.fn() } }
-        ]
-      }
-    }).compileComponents();
+    })
+      .overrideComponent(SmtpServersComponent, {
+        add: {
+          providers: [{ provide: MatDialog, useValue: { open: jest.fn() } }]
+        }
+      })
+      .compileComponents();
 
     fixture = TestBed.createComponent(SmtpServersComponent);
+
+    dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
+    confirmClosed = new Subject();
+    let dialogRefMock = new MockMatDialogRef();
+    dialogRefMock.afterClosed.mockReturnValue(confirmClosed);
+    dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
+
     component = fixture.componentInstance;
     fixture.detectChanges();
   });
@@ -90,8 +97,10 @@ describe("SmtpServersComponent", () => {
   it("should delete server after confirmation", async () => {
     const server = smtpServiceMock.smtpServers()[0];
     component.deleteServer(server);
-    expect(dialogServiceMock.confirm).toHaveBeenCalled();
-    await Promise.resolve();
+    expect(dialogServiceMock.openDialog).toHaveBeenCalled();
+    confirmClosed.next(true);
+    confirmClosed.complete();
+
     expect(smtpServiceMock.deleteSmtpServer).toHaveBeenCalledWith("server1");
   });
 });
