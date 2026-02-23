@@ -36,6 +36,7 @@ import {
   TokenApplication,
   TokenApplications
 } from "../../../../services/machine/machine.service";
+import { TokenDetails } from "../../../../services/token/token.service";
 import { ApplicationService, ApplicationServiceInterface } from "../../../../services/application/application.service";
 import { DialogService, DialogServiceInterface } from "../../../../services/dialog/dialog.service";
 import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
@@ -79,7 +80,6 @@ export class MachineDetailsDialogComponent implements OnInit {
   selectedApplication: "offline" | "ssh" = "offline";
   applicationOptions: string[] = [];
   applicationsDef = this.applicationService.applications;
-  // Track edit state and edited options per token id
   editingIds = new Set<number>();
   editedOptions: { [id: number]: Record<string, any> } = {};
 
@@ -163,7 +163,7 @@ export class MachineDetailsDialogComponent implements OnInit {
       }
     }).then(confirmed => {
       if (confirmed) {
-        this.machineService.deleteTokenMtid(token.serial, token.application, token.id.toString())
+        this.machineService.deleteTokenById(token.serial, token.application, token.id.toString())
           .subscribe(() => this.loadTokenApplications());
       }
     });

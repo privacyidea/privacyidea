@@ -18,12 +18,21 @@
  **/
 import { Signal, signal, WritableSignal } from "@angular/core";
 import { Sort } from "@angular/material/sort";
-import { of } from "rxjs";
+import { Observable, of } from "rxjs";
 import { FilterValue } from "../../app/core/models/filter_value";
-import { MachineServiceInterface, Machines, TokenApplication } from "../../app/services/machine/machine.service";
+import {
+  MachineServiceInterface,
+  Machines,
+  TokenApplication,
+  TokenApplications
+} from "../../app/services/machine/machine.service";
 import { MockHttpResourceRef, MockPiResponse } from "./mock-utils";
+import { PiResponse } from "../../app/app.component";
 
 export class MockMachineService implements MachineServiceInterface {
+  getMachineTokens(args: { machineid: number; resolver: string; }): Observable<PiResponse<TokenApplications>> {
+      throw new Error("Method not implemented.");
+  }
   baseUrl: string = "environment.mockProxyUrl + '/machine/'";
   filterValue: WritableSignal<Record<string, string>> = signal({});
   sshApiFilter: string[] = [];
@@ -56,7 +65,7 @@ export class MockMachineService implements MachineServiceInterface {
     of({ result: { value: { machines: [ { hostname: "localhost", machineid: "machine1", resolver: "resolver1", serial: "serial1", type: "ssh", applications: [] } ], count: 1 } } })
   );
   deleteToken = jest.fn().mockReturnValue(of({} as any));
-  deleteTokenMtid = jest.fn().mockReturnValue(of({} as any));
+  deleteTokenById = jest.fn().mockReturnValue(of({} as any));
   onPageEvent = jest.fn();
   onSortEvent = jest.fn();
 }

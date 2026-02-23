@@ -117,7 +117,7 @@ export interface MachineServiceInterface {
 
   deleteToken(serial: string, machineid: string, resolver: string, application: string): Observable<any>;
 
-  deleteTokenMtid(serial: string, application: string, mtid: string): Observable<any>;
+  deleteTokenById(serial: string, application: string, mtid: string): Observable<any>;
 
   getMachineTokens(args: { machineid: number; resolver: string }): Observable<PiResponse<TokenApplications>>;
 
@@ -374,9 +374,9 @@ export class MachineService implements MachineServiceInterface {
       .pipe(shareReplay(1));
   }
 
-  deleteTokenMtid(serial: string, application: string, mtid: string): Observable<any> {
+  deleteTokenById(serial: string, application: string, id: string): Observable<any> {
     const headers = this.authService.getHeaders();
-    return this.http.delete(`${this.baseUrl}token/${serial}/${application}/${mtid}`, { headers }).pipe(shareReplay(1));
+    return this.http.delete(`${this.baseUrl}token/${serial}/${application}/${id}`, { headers }).pipe(shareReplay(1));
   }
 
   getMachineTokens(args: { machineid: number; resolver: string }): Observable<PiResponse<TokenApplications>> {

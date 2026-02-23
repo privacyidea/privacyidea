@@ -163,7 +163,7 @@ describe("MachineService (with mock classes)", () => {
     await lastValueFrom(machineService.deleteToken("S", "M", "R", "ssh"));
     const [url] = (httpStub.delete as jest.Mock).mock.calls[0];
     expect(url).toBe("/api/machine/token/S/M/R/ssh");
-    await lastValueFrom(machineService.deleteTokenMtid("S2", "offline", "MT"));
+    await lastValueFrom(machineService.deleteTokenById("S2", "offline", "MT"));
     const [url2] = (httpStub.delete as jest.Mock).mock.calls[1];
     expect(url2).toBe("/api/machine/token/S2/offline/MT");
   });

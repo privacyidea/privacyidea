@@ -1,8 +1,12 @@
-<h2
-  i18n
-  mat-dialog-title>
-  Details for machine {{ data.hostname }}
-</h2>
+<div class="flex ali-center gap-8 margin-left-1 margin-top-1">
+  <h3
+    class="margin-left-1"
+    i18n>
+    Details for Machine:
+  </h3>
+  <h3 class="h3-color">{{ data.hostname }}</h3>
+  <app-copy-button [copyText]="data.hostname[0]" />
+</div>
 
 <mat-dialog-content class="machine-dialog-content">
   <div class="details-section">
@@ -190,11 +194,12 @@
   </div>
 
   <div>
-    <h3 i18n>Attach a new token</h3>
+    <h3 i18n>Attach a New Token</h3>
     <div class="flex-row ali-center gap-16">
       <mat-form-field
         appearance="fill"
-        class="flex-size-2">
+        class="flex-size-2"
+        subscriptSizing="dynamic">
         <mat-label i18n>Token Serial</mat-label>
         <input
           [(ngModel)]="newTokenSerial"
@@ -204,7 +209,8 @@
 
       <mat-form-field
         appearance="fill"
-        class="flex-size-1">
+        class="flex-size-1"
+        subscriptSizing="dynamic">
         <mat-label i18n>Application</mat-label>
         <mat-select [(ngModel)]="selectedApplication">
           @for (app of applicationOptions; track app) {

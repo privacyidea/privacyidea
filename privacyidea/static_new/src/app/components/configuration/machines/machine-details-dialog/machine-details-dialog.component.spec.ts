@@ -53,7 +53,7 @@ describe("MachineDetailsDialogComponent", () => {
           }]
         }
       })),
-      deleteTokenMtid: jest.fn().mockReturnValue(of({})),
+      deleteTokenById: jest.fn().mockReturnValue(of({})),
       postAssignMachineToToken: jest.fn().mockReturnValue(of({})),
       postTokenOption: jest.fn().mockReturnValue(of({}))
     };
@@ -114,7 +114,7 @@ describe("MachineDetailsDialogComponent", () => {
     component.detachToken(token);
     expect(dialogServiceMock.confirm).toHaveBeenCalled();
     await Promise.resolve();
-    expect(machineServiceMock.deleteTokenMtid).toHaveBeenCalledWith("S1", "ssh", "10");
+    expect(machineServiceMock.deleteTokenById).toHaveBeenCalledWith("S1", "ssh", "10");
   });
 
   it("should attach token", () => {
