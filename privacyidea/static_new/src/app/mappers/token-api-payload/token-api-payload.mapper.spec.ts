@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -52,7 +52,6 @@ import {
 import { FourEyesApiPayloadMapper, FourEyesEnrollmentData } from "./4eyes-token-api-payload.mapper";
 import { YubikeyApiPayloadMapper, YubikeyEnrollmentData } from "./yubikey-token-api-payload.mapper";
 import { YubicoApiPayloadMapper, YubicoEnrollmentData } from "./yubico-token-api-payload.mapper";
-import { RemoteServer } from "../../services/privacyidea-server/privacyidea-server.service";
 
 const common = {
   description: "desc",
@@ -884,7 +883,7 @@ describe("RemoteApiPayloadMapper", () => {
     const result = mapper.fromTokenDetailsToEnrollmentData(details as any);
     expect(result.type).toBe("remote");
     expect(result.serial).toBe("S1");
-    expect(result.remoteServer).toEqual({id: "1234"});
+    expect(result.remoteServer).toEqual({ id: "1234" });
     expect(result.remoteSerial).toBe("s1");
     expect(result.remoteUser).toBe("Alice");
     expect(result.remoteRealm).toBe("another-realm");
