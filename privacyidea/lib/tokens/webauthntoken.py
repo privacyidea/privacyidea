@@ -27,9 +27,12 @@ import os
 import cbor2
 from cryptography import x509
 from sqlalchemy import select
-from webauthn import verify_registration_response, generate_registration_options, options_to_json
+from webauthn import (verify_registration_response, verify_authentication_response, generate_registration_options,
+                      generate_authentication_options, options_to_json)
+from webauthn.authentication.verify_authentication_response import VerifiedAuthentication
 from webauthn.helpers import bytes_to_base64url, parse_attestation_object, base64url_to_bytes
-from webauthn.helpers.exceptions import InvalidRegistrationResponse, InvalidJSONStructure
+from webauthn.helpers.exceptions import (InvalidRegistrationResponse, InvalidAuthenticationResponse,
+                                         InvalidJSONStructure)
 from webauthn.helpers.structs import (AttestationFormat, AttestationConveyancePreference,
                                       AuthenticatorAttachment, AuthenticatorSelectionCriteria,
                                       PublicKeyCredentialDescriptor, UserVerificationRequirement,
@@ -55,8 +58,7 @@ from privacyidea.lib.token import get_tokens
 from privacyidea.lib.tokenclass import TokenClass, CLIENTMODE, ROLLOUTSTATE
 from privacyidea.lib.tokens.u2ftoken import IMAGES
 from privacyidea.lib.tokens.webauthn import (CoseAlgorithm, webauthn_b64_encode, webauthn_b64_decode, TRANSPORTS,
-                                             WebAuthnAssertionOptions, WebAuthnUser,
-                                             WebAuthnAssertionResponse, AuthenticationRejectedException,
+                                             WebAuthnUser, AuthenticationRejectedException,
                                              UserVerificationLevel, AttestationLevel)
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import hexlify_and_unicode, is_true, convert_imagefile_to_dataimage
@@ -503,6 +505,27 @@ WEBAUTHN_TOKEN_SPECIFIC_SETTINGS = {
 }
 
 
+def _normalize_ec2_public_key_curve_in_cose_key(credential_public_key_bytes):
+    """
+    Older U2F credentials may store an EC2 COSE key without the mandatory
+    curve parameter (-1). The webauthn library requires this field.
+    """
+    try:
+        credential_public_key = cbor2.loads(credential_public_key_bytes)
+        if not isinstance(credential_public_key, dict):
+            return credential_public_key_bytes
+        if credential_public_key.get(1) != 2 or -1 in credential_public_key:
+            return credential_public_key_bytes
+        if -2 not in credential_public_key or -3 not in credential_public_key:
+            return credential_public_key_bytes
+
+        credential_public_key[-1] = 1  # P-256
+        return cbor2.dumps(credential_public_key)
+    except Exception as ex:
+        log.debug(f"Could not normalize credential public key: {ex}")
+        return credential_public_key_bytes
+
+
 def _normalize_ec2_public_key_curve_in_attestation_object(attestation_object_bytes):
     """
     Older U2F attestations can carry an EC2 COSE key without the mandatory
@@ -532,14 +555,10 @@ def _normalize_ec2_public_key_curve_in_attestation_object(attestation_object_byt
 
         if not isinstance(credential_public_key, dict):
             return attestation_object_bytes
-        # 1=KTY (EC2=2), -1=CRV, -2=x, -3=y according to COSE key format.
-        if credential_public_key.get(1) != 2 or -1 in credential_public_key:
-            return attestation_object_bytes
-        if -2 not in credential_public_key or -3 not in credential_public_key:
-            return attestation_object_bytes
 
-        credential_public_key[-1] = 1  # P-256
-        patched_public_key = cbor2.dumps(credential_public_key)
+        patched_public_key = _normalize_ec2_public_key_curve_in_cose_key(cbor2.dumps(credential_public_key))
+        if patched_public_key == cbor2.dumps(credential_public_key):
+            return attestation_object_bytes
         patched_auth_data = (
                 bytes(auth_data[:credential_id_end])
                 + patched_public_key
@@ -1251,13 +1270,37 @@ class WebAuthnTokenClass(TokenClass):
                                  validitytime=self._get_challenge_validity_time())
         db_challenge.save()
 
-        public_key_credential_request_options = WebAuthnAssertionOptions(
-            challenge=webauthn_b64_encode(nonce),
-            webauthn_user=user,
-            transports=get_required(options, FIDO2PolicyAction.ALLOWED_TRANSPORTS),
-            user_verification_requirement=user_verification,
-            timeout=get_required(options, FIDO2PolicyAction.TIMEOUT)
-        ).assertion_dict
+        allowed_transports = get_required(options, FIDO2PolicyAction.ALLOWED_TRANSPORTS)
+        if isinstance(allowed_transports, str):
+            transport_values = [transport for transport in allowed_transports.split() if transport]
+        else:
+            transport_values = []
+
+        valid_transports = []
+        for transport in transport_values:
+            try:
+                valid_transports.append(AuthenticatorTransport(transport))
+            except ValueError:
+                log.warning(f"Ignoring invalid WebAuthn transport value: {transport}")
+
+        authentication_options = generate_authentication_options(
+            rp_id=user.rp_id,
+            challenge=nonce,
+            timeout=get_required(options, FIDO2PolicyAction.TIMEOUT),
+            user_verification=UserVerificationRequirement(user_verification),
+            allow_credentials=[
+                PublicKeyCredentialDescriptor(
+                    id=base64url_to_bytes(user.credential_id),
+                    transports=valid_transports or None,
+                )
+            ],
+        )
+        public_key_credential_request_options = json.loads(options_to_json(authentication_options))
+
+        # Keep backwards compatibility with existing clients expecting transports in original format.
+        if public_key_credential_request_options.get("allowCredentials"):
+            for allow_credential in public_key_credential_request_options["allowCredentials"]:
+                allow_credential["transports"] = allowed_transports
 
         data_image = convert_imagefile_to_dataimage(user.icon_url) if user.icon_url else ""
 
@@ -1298,7 +1341,6 @@ class WebAuthnTokenClass(TokenClass):
             client_data = get_required_one_of(options, ["clientDataJSON", "clientdata"])
             signature_data = get_required_one_of(options, ["signature", "signaturedata"])
             user_handle = get_optional_one_of(options, ["userHandle", "userhandle"])
-            assertion_client_extensions = get_optional(options, "assertionClientExtensions")
 
             # Check if a whitelist for AAGUIDs exists, and if this device is whitelisted. If not raise a
             # policy exception.
@@ -1331,18 +1373,32 @@ class WebAuthnTokenClass(TokenClass):
                 raise ValueError("When performing WebAuthn authorization, options must contain user")
 
             uv_req = get_optional(options, FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT)
-            # Check if challenge is base64 encoded to be able to use login via passkey with webauthn
-            challenge = get_required(options, "challenge").rstrip("=")
-            challenge_decoded = None
+            credential_id_b64 = credential_id.decode("utf-8") if isinstance(credential_id, bytes) else credential_id
+            authenticator_data_b64 = (
+                authenticator_data.decode("utf-8") if isinstance(authenticator_data, bytes) else authenticator_data
+            )
+            client_data_b64 = client_data.decode("utf-8") if isinstance(client_data, bytes) else client_data
+            signature_data_b64 = signature_data.decode("utf-8") if isinstance(signature_data, bytes) else signature_data
+            user_handle_b64 = user_handle.decode("utf-8") if isinstance(user_handle, bytes) else user_handle
+
+            challenge = get_required(options, "challenge")
+            challenge = challenge.rstrip("=")
+
+            expected_challenge = None
             if len(challenge) % 2 == 0:
                 try:
-                    challenge_decoded = webauthn_b64_encode(binascii.unhexlify(challenge))
+                    expected_challenge = binascii.unhexlify(challenge)
                 except Exception as ex:
-                    log.warning(f"Challenge {get_required(options, 'challenge')} is not hex encoded. {ex}. "
-                                f"Attempting to decode it as base64url.")
-            if not challenge_decoded:
+                    log.warning(
+                        f"Challenge {get_required(options, 'challenge')} is not hex encoded. {ex}. "
+                        "Attempting to decode it as base64url."
+                    )
+            else:
                 try:
-                    challenge_decoded = bytes_to_base64url(challenge.encode("utf-8"))
+                    # Compatibility with passkey-style challenges used for WebAuthn tokens:
+                    # the challenge itself is stored as a base64url string and then treated
+                    # as UTF-8 bytes by the browser-side flow.
+                    expected_challenge = challenge.encode("utf-8")
                 except Exception as ex:
                     log.warning(f"Challenge {get_required(options, 'challenge')} is not base64url encoded. {ex}.")
                     raise AuthenticationRejectedException('Challenge is neither hex nor base64url encoded.')
@@ -1352,29 +1408,29 @@ class WebAuthnTokenClass(TokenClass):
                 raise AuthenticationRejectedException('HTTP Origin header missing.')
 
             try:
-                # This does the heavy lifting.
-                #
-                # All data is parsed and verified. If any errors occur, an exception
-                # will be raised.
-                self.set_otp_count(WebAuthnAssertionResponse(
-                    webauthn_user=user,
-                    assertion_response={
-                        'id': credential_id,
-                        'userHandle': user_handle,
-                        'clientData': client_data,
-                        'authData': authenticator_data,
-                        'signature': signature_data,
-                        'assertionClientExtensions':
-                            webauthn_b64_decode(assertion_client_extensions)
-                            if assertion_client_extensions
-                            else None
+                verified_authentication: VerifiedAuthentication = verify_authentication_response(
+                    credential={
+                        "id": credential_id_b64,
+                        "rawId": credential_id_b64,
+                        "response": {
+                            "authenticatorData": authenticator_data_b64,
+                            "clientDataJSON": client_data_b64,
+                            "signature": signature_data_b64,
+                            "userHandle": user_handle_b64,
+                        },
+                        "type": "public-key",
                     },
-                    challenge=challenge_decoded,
-                    origin=http_origin,
-                    allow_credentials=[user.credential_id],
-                    uv_required=uv_req
-                ).verify())
-            except Exception as ex:
+                    expected_challenge=expected_challenge,
+                    expected_rp_id=user.rp_id,
+                    expected_origin=http_origin,
+                    credential_public_key=_normalize_ec2_public_key_curve_in_cose_key(
+                        base64url_to_bytes(user.public_key)
+                    ),
+                    credential_current_sign_count=int(user.sign_count),
+                    require_user_verification=uv_req == UserVerificationLevel.REQUIRED,
+                )
+                self.set_otp_count(verified_authentication.new_sign_count)
+            except (InvalidAuthenticationResponse, InvalidJSONStructure, UnicodeDecodeError, ValueError) as ex:
                 log.warning(f"Checking response for token {self.token.serial} failed. {ex}")
                 return -1
 
