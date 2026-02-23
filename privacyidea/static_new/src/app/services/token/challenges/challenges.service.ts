@@ -152,8 +152,8 @@ export class ChallengesService implements ChallengesServiceInterface {
     this.challengesFilter.set(newFilter);
   }
 
-  deleteExpiredChallenges(): Observable<any> {
-    return this.http.delete(`${this.tokenBaseUrl}challenges/expired`, {
+  deleteExpiredChallenges(): Observable<PiResponse<unknown>> {
+    return this.http.delete<PiResponse<unknown>>(`${this.tokenBaseUrl}challenges/expired`, {
       headers: this.authService.getHeaders()
     });
   }

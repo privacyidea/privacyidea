@@ -38,6 +38,7 @@ import { NgClass } from "@angular/common";
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { MatButtonModule } from "@angular/material/button";
 import { FilterValue } from "../../../core/models/filter_value";
+import { NotificationService, NotificationServiceInterface } from "../../../services/notification/notification.service";
 
 const columnKeysMap = [
   { key: "timestamp", label: "Timestamp" },
@@ -70,6 +71,7 @@ export class ChallengesTableComponent {
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   protected readonly challengesService: ChallengesServiceInterface = inject(ChallengesService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
+  protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
 
   columnsKeyMap = columnKeysMap;
   displayedColumns = columnKeysMap.map((c) => c.key);
@@ -139,9 +141,15 @@ export class ChallengesTableComponent {
     }
   }
 
-  onDeleteExpiredChallenges() {
-    this.challengesService.deleteExpiredChallenges().subscribe(() => {
-      this.challengesService.challengesResource.reload();
+  onDeleteExpiredChallenges(): void {
+    this.challengesService.deleteExpiredChallenges().subscribe({
+      next: () => {
+        this.challengesService.challengesResource.reload();
+      },
+      error: (err) => {
+        const message = err?.error?.result?.error?.message ?? "Failed to delete expired challenges.";
+        this.notificationService.openSnackBar(message);
+      }
     });
   }
 }
