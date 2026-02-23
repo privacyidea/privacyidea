@@ -487,7 +487,8 @@ def enroll_pin(request=None, action=None):
     """
     This policy function is used as decorator for init token.
     It checks, if the user or the admin is allowed to set a token PIN during
-    enrollment. If not, it deletes the PIN from the request.
+    enrollment. If not, and a PIN is provided, it raises a PolicyError to
+    block the enrollment.
     """
     resolver = request.User.resolver if request.User else None
     (role, username, userrealm, adminuser, adminrealm) = determine_logged_in_userparams(g.logged_in_user,
