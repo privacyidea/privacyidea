@@ -52,7 +52,7 @@ describe("HttpGroupsAttributeComponent", () => {
   });
 
   it("should enable controls when active is true", () => {
-    // Check previous state due to inital values
+    // Check previous state due to initial values
     expect(userGroupsControl.get("user_groups_attribute")!.enabled).toBe(false);
     expect(userGroupsControl.get("method")!.enabled).toBe(false);
     expect(userGroupsControl.get("endpoint")!.enabled).toBe(false);

@@ -840,24 +840,24 @@ def get_user_list(param: dict = None, user: User = None, include_custom_attribut
             if not y:
                 continue
             log.debug("With this search dictionary: %r", search_dict)
-            ulist = y.getUserList(search_dict, requested_attributes)
+            user_list = y.getUserList(search_dict, requested_attributes)
             # Add resolvername to the list
             realm_id = get_realm_id(param_realm or user_realm)
-            for ue in ulist:
+            for user_info in user_list:
                 if not requested_attributes or "resolver" in requested_attributes:
-                    ue["resolver"] = resolver_name
+                    user_info["resolver"] = resolver_name
                 if not requested_attributes or "editable" in requested_attributes:
-                    ue["editable"] = y.editable
+                    user_info["editable"] = y.editable
                 if include_custom_attributes and realm_id is not None:
                     # Add the custom attributes, by class method from User
                     # with uid, resolvername and realm_id, which we need to determine by the realm name
-                    custom_attributes = get_attributes(ue.get("userid"), resolver_name, realm_id, requested_attributes)
-                    ue.update(custom_attributes)
+                    custom_attributes = get_attributes(user_info.get("userid"), resolver_name, realm_id, requested_attributes)
+                    user_info.update(custom_attributes)
                 if remove_user_id:
                     # Remove the userid if it is not requested, as it is only needed for the custom attributes
-                    ue.pop("userid", None)
-            log.debug("Found this userlist: {0!r}".format(ulist))
-            users.extend(ulist)
+                    user_info.pop("userid", None)
+            log.debug("Found this userlist: {0!r}".format(user_list))
+            users.extend(user_list)
 
         except (ResolverError, ParameterError) as ex:
             # In case of wrong search parameters or broken resolver we continue
