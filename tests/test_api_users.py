@@ -1,14 +1,15 @@
 """ API testcases for the "/user/" endpoint """
 
-from .base import MyApiTestCase
-from privacyidea.lib.policy import set_policy, SCOPE, delete_policy
+from urllib.parse import urlencode, quote
+
 from privacyidea.lib.policies.actions import PolicyAction
-from privacyidea.lib.resolver import save_resolver, get_resolver_object
+from privacyidea.lib.policy import set_policy, SCOPE, delete_policy
 from privacyidea.lib.realm import set_realm
+from privacyidea.lib.resolver import save_resolver, get_resolver_object
+from privacyidea.lib.token import init_token, remove_token
 from privacyidea.lib.user import User
 from privacyidea.lib.users.custom_user_attributes import InternalCustomUserAttributes, INTERNAL_USAGE
-from privacyidea.lib.token import init_token, remove_token
-from urllib.parse import urlencode, quote
+from .base import MyApiTestCase
 
 PWFILE = "tests/testdata/passwd"
 
@@ -664,3 +665,98 @@ class APIUsersTestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
             self.assertTrue(result.get("status"), res.data)
+
+        delete_policy("custom_attribute")
+
+    def test_12_get_users(self):
+        self.setUp_user_realms()
+
+        # add some custom attributes
+        user = User("cornelius", self.realm1)
+        user.set_attribute("custom1", "value1")
+        user.set_attribute("custom2", "value2")
+        user.set_attribute("custom3", "value3")
+
+        # Request without realm does not return custom attributes
+        with self.app.test_request_context('/user/',
+                                           method='GET',
+                                           query_string=urlencode({"username": "cornelius"}),
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"))
+            user = result.get("value")[0]
+            # should contain all attributes ( resolver and editable are added on lib layer not by the resolver itself)
+            expected_user = {"userid": "1000", "username": "cornelius", "surname": "", "givenname": "Cornelius",
+                             "email": "user@localhost.localdomain", "phone": "+491234566", "mobile": "+491111111",
+                             "description": "Cornelius,field2,+491111111,+491234566,user@localhost.localdomain",
+                             "resolver": self.resolvername1, "editable": False}
+            self.assertDictEqual(expected_user, user)
+
+        # With realm as request parameter we also get the custom attributes of the users
+        with self.app.test_request_context('/user/',
+                                           method='GET',
+                                           query_string=urlencode({"username": "cornelius", "realm": self.realm1}),
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"))
+            user = result.get("value")[0]
+            # should contain all attributes ( resolver and editable are added on lib layer not by the resolver itself)
+            expected_user = {"userid": "1000", "username": "cornelius", "surname": "", "givenname": "Cornelius",
+                             "email": "user@localhost.localdomain", "phone": "+491234566", "mobile": "+491111111",
+                             "description": "Cornelius,field2,+491111111,+491234566,user@localhost.localdomain",
+                             "resolver": self.resolvername1, "editable": False, "custom1": "value1",
+                             "custom2": "value2", "custom3": "value3"}
+            self.assertDictEqual(expected_user, user)
+
+        # Request specific attributes (without custom attributes)
+        with self.app.test_request_context('/user/',
+                                           method='GET',
+                                           query_string=urlencode(
+                                               {"username": "cornelius", "realm": self.realm1, "attributes": "username,email"}),
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"))
+            user = result.get("value")[0]
+            # should contain all attributes ( resolver and editable are added on lib layer not by the resolver itself)
+            self.assertDictEqual({"username": "cornelius", "email": "user@localhost.localdomain"}, user)
+
+        # Request specific attributes with editable which is not set in the resolver itself
+        with self.app.test_request_context('/user/',
+                                           method='GET',
+                                           query_string=urlencode(
+                                               {"username": "cornelius", "attributes": "username,email,editable"}),
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"))
+            user = result.get("value")[0]
+            # should contain all attributes ( resolver and editable are added on lib layer not by the resolver itself)
+            self.assertDictEqual({"username": "cornelius", "email": "user@localhost.localdomain", "editable": False},
+                                 user)
+
+        # Request specific attributes with custom attributes
+        with self.app.test_request_context('/user/',
+                                           method='GET',
+                                           query_string=urlencode(
+                                               {"username": "cornelius", "realm": self.realm1,
+                                                "attributes": "username,email,custom2,custom1"}),
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertTrue(res.status_code == 200, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"))
+            user = result.get("value")[0]
+            # should contain all attributes ( resolver and editable are added on lib layer not by the resolver itself)
+            expected_user = {"username": "cornelius", "email": "user@localhost.localdomain", "custom1": "value1",
+                 "custom2": "value2"}
+            self.assertDictEqual(expected_user, user)
+
+        # Clean up
+        User("cornelius", self.realm1).delete_attribute()

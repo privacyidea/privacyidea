@@ -352,7 +352,7 @@ class UserNotificationEventHandler(BaseEventHandler):
             # Send emails to all the users in the specified admin realm
             admin_realm = handler_options.get("To " + NOTIFY_TYPE.ADMIN_REALM)
             attr = is_attribute_at_all()
-            ulist = get_user_list({"realm": admin_realm}, custom_attributes=attr)
+            ulist = get_user_list({"realm": admin_realm}, include_custom_attributes=attr)
             # create a list of all user-emails, if the user has an email
             emails = [u.get("email") for u in ulist if u.get("email")]
             recipient = {
@@ -478,7 +478,7 @@ class UserNotificationEventHandler(BaseEventHandler):
                         # Adds all email addresses from a specific admin realm to the reply-to-header
                         admin_realm = handler_options.get("reply_to " + NOTIFY_TYPE.ADMIN_REALM)
                         attr = is_attribute_at_all()
-                        ulist = get_user_list({"realm": admin_realm}, custom_attributes=attr)
+                        ulist = get_user_list({"realm": admin_realm}, include_custom_attributes=attr)
                         # create a list of all user-emails, if the user has an email
                         emails = [u.get("email") for u in ulist if u.get("email")]
                         reply_to = ",".join(emails)

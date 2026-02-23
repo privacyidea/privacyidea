@@ -761,18 +761,16 @@ def get_user_from_param(param, optionalOrRequired=optional):
 
 
 @log_with(log)
-def get_user_list(param=None, user=None, custom_attributes=False, requested_attributes: list[str] = None):
+def get_user_list(param: dict = None, user: User = None, include_custom_attributes: bool = False,
+                  requested_attributes: list[str] = None) -> list[dict]:
     """
     This function returns a list of user dictionaries.
 
     :param param: search parameters
-    :type param: dict
     :param user:  a specific user object to return
-    :type user: User object
-    :param custom_attributes:  Set to True, if you want to receive custom attributes
-        of external users.
-    :type custom_attributes: bool
-    :return: list of dictionaries
+    :param include_custom_attributes:  Set to True, if you want to receive custom attributes of external users.
+    :param requested_attributes: A list of attributes to return for each user. If None, all attributes are returned.
+    :return: list of user info as dictionaries
     """
     users = []
     resolvers = []
@@ -829,6 +827,11 @@ def get_user_list(param=None, user=None, custom_attributes=False, requested_attr
                 if not resolver_entry.get("node") or resolver_entry["node"] == local_node_uuid:
                     resolvers.append(resolver_entry.get("name"))
 
+    remove_user_id = False
+    if include_custom_attributes and requested_attributes and "userid" not in requested_attributes:
+        # user id is required to later get the custom attributes for the user
+        requested_attributes.append("userid")
+        remove_user_id = True
     for resolver_name in set(resolvers):
         try:
             log.debug("Check for resolver class: {0!r}".format(resolver_name))
@@ -841,13 +844,18 @@ def get_user_list(param=None, user=None, custom_attributes=False, requested_attr
             # Add resolvername to the list
             realm_id = get_realm_id(param_realm or user_realm)
             for ue in ulist:
-                ue["resolver"] = resolver_name
-                ue["editable"] = y.editable
-            if custom_attributes and realm_id is not None:
-                for ue in ulist:
+                if not requested_attributes or "resolver" in requested_attributes:
+                    ue["resolver"] = resolver_name
+                if not requested_attributes or "editable" in requested_attributes:
+                    ue["editable"] = y.editable
+                if include_custom_attributes and realm_id is not None:
                     # Add the custom attributes, by class method from User
                     # with uid, resolvername and realm_id, which we need to determine by the realm name
-                    ue.update(get_attributes(ue.get("userid"), ue.get("resolver"), realm_id))
+                    custom_attributes = get_attributes(ue.get("userid"), resolver_name, realm_id, requested_attributes)
+                    ue.update(custom_attributes)
+                if remove_user_id:
+                    # Remove the userid if it is not requested, as it is only needed for the custom attributes
+                    ue.pop("userid", None)
             log.debug("Found this userlist: {0!r}".format(ulist))
             users.extend(ulist)
 
@@ -895,21 +903,22 @@ def log_used_user(user: User, other_text: str = "") -> str:
     return "logged in as {0}. {1}".format(user.used_login, other_text) if user.used_login != user.login else other_text
 
 
-def get_attributes(uid, resolver, realm_id):
+def get_attributes(uid, resolver, realm_id, requested_attributes: list[str] = None):
     """
     Returns the attributes for the given user.
 
     :param uid: The UID of the user
     :param resolver: The name of the resolver
     :param realm_id: The realm_id
+    :param requested_attributes: A list of attributes to return. If None, all attributes are returned.
     :return: A dictionary of key/values
     """
-    r = {}
     stmt = select(CustomUserAttribute).filter_by(user_id=uid, resolver=resolver, realm_id=realm_id)
+    if requested_attributes:
+        stmt = stmt.filter(CustomUserAttribute.Key.in_(requested_attributes))
     attributes = db.session.scalars(stmt).all()
-    for attr in attributes:
-        r[attr.Key] = attr.Value
-    return r
+    custom_attributes = {attribute.Key: attribute.Value for attribute in attributes}
+    return custom_attributes
 
 
 def is_attribute_at_all():

@@ -103,13 +103,12 @@ def get_users():
     """
     realm = getParam(request.all_data, "realm")
     search_parameters = request.all_data
-    # TODO: How to handle custom attributes in case only specific attributes are requested?
     custom_attributes = is_attribute_at_all()
     requested_attributes = request.all_data.get("attributes")
     if requested_attributes:
         requested_attributes = [attr.strip() for attr in requested_attributes.split(",")]
         del search_parameters['attributes']
-    users = get_user_list(search_parameters, custom_attributes=custom_attributes,
+    users = get_user_list(search_parameters, include_custom_attributes=custom_attributes,
                           requested_attributes=requested_attributes)
 
     g.audit_object.log({'success': True,

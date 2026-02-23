@@ -11,7 +11,7 @@ from testfixtures import log_capture, LogCapture
 from privacyidea.config import TestingConfig
 from privacyidea.lib.config import set_privacyidea_config
 from privacyidea.lib.framework import get_app_config
-from privacyidea.lib.realm import (set_realm, delete_realm)
+from privacyidea.lib.realm import (set_realm, delete_realm, get_realm_id)
 from privacyidea.lib.resolver import (save_resolver, delete_resolver)
 from privacyidea.lib.resolvers.EntraIDResolver import (CLIENT_ID, CLIENT_CREDENTIAL_TYPE, ClientCredentialType,
                                                        CLIENT_SECRET, TENANT)
@@ -20,7 +20,7 @@ from privacyidea.lib.user import (User, create_user,
                                   get_user_list,
                                   split_user,
                                   get_user_from_param,
-                                  UserError)
+                                  UserError, get_attributes)
 from privacyidea.lib.user import log as user_log
 from privacyidea.models import NodeName, db
 from . import ldap3mock
@@ -751,6 +751,38 @@ class UserTestCase(MyTestCase):
         # Cleanup
         delete_realm(self.realm1)
         delete_resolver(self.resolvername1)
+
+    def test_22_get_attributes(self):
+        self.setUp_user_realms()
+        user = User(login="hans", realm=self.realm1)
+        realm_id = get_realm_id(self.realm1)
+
+        # user has no attributes yet
+        attributes = get_attributes(user.uid, user.resolver, user.realm)
+        self.assertDictEqual({}, attributes)
+
+        # add some attributes
+        user.set_attribute("color", "green")
+        user.set_attribute("department", "dev")
+        user.set_attribute("working_hours", "40")
+
+        # Get all attributes
+        attributes = get_attributes(user.uid, user.resolver, realm_id)
+        self.assertDictEqual({"color": "green", "department": "dev", "working_hours": "40"}, attributes)
+
+        # Get only specific attributes
+        attributes = get_attributes(user.uid, user.resolver, realm_id, requested_attributes=["department", "working_hours"])
+        self.assertDictEqual({"department": "dev", "working_hours": "40"}, attributes)
+
+        # pass empty list for attributes to get all attributes
+        attributes = get_attributes(user.uid, user.resolver, realm_id, requested_attributes=[])
+        self.assertDictEqual({"color": "green", "department": "dev", "working_hours": "40"}, attributes)
+
+        # Clean up
+        user.delete_attribute()
+        delete_realm(self.realm1)
+        delete_resolver(self.resolvername1)
+
 
     def test_50_user_attributes(self):
         save_resolver({"resolver": self.resolvername1, "type": "passwdresolver",
