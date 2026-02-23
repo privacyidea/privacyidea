@@ -36,7 +36,7 @@ myApp.controller("ldapMachineResolverController", ["$scope", "ConfigFactory",
         AUTHTYPE: "Simple",
         TLS_VERIFY: true,
         TLS_VERSION: 2,
-        START_TLS: false
+        START_TLS: true
     };
     $scope.resolvername = $stateParams.resolvername;
     $scope.tls_version_options = [{value: 3, name: "TLS v1.0"},
