@@ -34,7 +34,7 @@ from privacyidea.lib.resolver import (save_resolver,
                                       get_resolver_config,
                                       get_resolver_list,
                                       get_resolver_object, pretestresolver,
-                                      CENSORED)
+                                      CENSORED, _replace_censored_values)
 from privacyidea.lib.resolvers.EntraIDResolver import (CLIENT_ID, TENANT, CLIENT_CREDENTIAL_TYPE, ClientCredentialType,
                                                        CLIENT_CERTIFICATE, PRIVATE_KEY_FILE, PRIVATE_KEY_PASSWORD,
                                                        CERTIFICATE_FINGERPRINT)
@@ -610,8 +610,9 @@ class SQLResolverTestCase(MyTestCase):
         y = SQLResolver()
         y.loadConfig(self.parameters)
         keys = y.get_available_info_keys()
-        self.assertSetEqual({"id", "username", "userid", "email", "surname", "givenname", "password", "phone", "mobile"},
-                            set(keys))
+        self.assertSetEqual(
+            {"id", "username", "userid", "email", "surname", "givenname", "password", "phone", "mobile"},
+            set(keys))
 
     def test_10_get_user_info(self):
         y = SQLResolver()
@@ -631,8 +632,9 @@ class SQLResolverTestCase(MyTestCase):
 
         # gte user with all attributes defined
         user_info = y.get_user_info(1)
-        self.assertSetEqual({"id", "username", "userid", "email", "surname", "givenname", "mobile", "phone", "password"},
-                            set(user_info.keys()))
+        self.assertSetEqual(
+            {"id", "username", "userid", "email", "surname", "givenname", "mobile", "phone", "password"},
+            set(user_info.keys()))
 
         # request specific attributes only
         user_info = y.get_user_info(2, ["username", "email", "unknown"])
@@ -3232,3 +3234,36 @@ class ResolverTestCase(MyTestCase):
         self.assertRaises(Exception, delete_resolver, self.resolvername1)
         delete_realm("myrealm")
         delete_resolver(self.resolvername1)
+
+    def test_replace_censored_values(self):
+        old_config = {"data": {"key1": "secret1", "layer1": {"layer2": {"layer3": "secret2"}}},
+                      "censor_keys": ["key1", "layer1.layer2.layer3"]}
+        new_config = {"key1": CENSORED, "layer1": {"layer2": {"layer3": CENSORED}}}
+
+        _replace_censored_values(new_config, old_config)
+        self.assertEqual("secret1", new_config.get("key1"))
+        censored_value_nested = new_config.get("layer1").get("layer2").get("layer3")
+        self.assertEqual("secret2", censored_value_nested)
+
+        # censored key layer does not exist
+        old_config["censor_keys"] = ["key1.key2.key3"]
+        new_config = {"key1": "new_value", "layer1": {"layer2": {"layer3": CENSORED}}}
+        _replace_censored_values(new_config, old_config)
+
+        # do not replace if the value is not censored
+        old_config = {"data": {"key1": "secret1", "layer1": {"layer2": {"layer3": "secret2"}}},
+                      "censor_keys": ["key1", "layer1.layer2.layer3"]}
+        new_config = {"key1": "new_secret1", "layer1": {"layer2": {"layer3": "new_secret2"}}}
+
+        _replace_censored_values(new_config, old_config)
+        self.assertEqual("new_secret1", new_config.get("key1"))
+        censored_value_nested = new_config.get("layer1").get("layer2").get("layer3")
+        self.assertEqual("new_secret2", censored_value_nested)
+
+        # uncensored value does not exist in old config
+        old_config = {"data": {"key1": "secret1", "layer1": {"layer2": "wrong_value"}},
+                      "censor_keys": ["key1", "layer1.layer2.layer3"]}
+        new_config = {"key1": CENSORED, "layer1": {"layer2": {"layer3": CENSORED}}}
+
+        _replace_censored_values(new_config, old_config)
+        self.assertEqual("secret1", new_config.get("key1"))
