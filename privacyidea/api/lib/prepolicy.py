@@ -782,7 +782,7 @@ def verify_enrollment(request=None, action=None):
                     raise ParameterError("Verification of the new token failed.")
 
 
-def check_max_token_user(request=None, action=None):
+def check_max_token_user(request=None, action=None, token_type=None):
     """
     Pre Policy
     This checks the maximum token per user policy.
@@ -795,6 +795,7 @@ def check_max_token_user(request=None, action=None):
 
     :param request:
     :param action:
+    :param token_type:
     :return: True otherwise raises an Exception
     """
     error_msg = "The number of tokens for this user is limited!"
@@ -811,7 +812,8 @@ def check_max_token_user(request=None, action=None):
             # in case of token init the token does not yet exist in the db
             pass
     if user_object.login:
-        tokentype = getParam(params, "type")
+        # prefer the explicit token_type
+        tokentype = token_type or getParam(params, "type")
         if not tokentype:
             if serial:
                 # If we have a serial but no tokentype, we can get the tokentype from

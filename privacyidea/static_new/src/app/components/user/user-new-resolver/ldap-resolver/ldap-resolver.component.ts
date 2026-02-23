@@ -27,6 +27,7 @@ import { MatButtonModule } from "@angular/material/button";
 import { LDAPResolverData, ResolverService } from "../../../../services/resolver/resolver.service";
 import { ClearableInputComponent } from "../../../shared/clearable-input/clearable-input.component";
 import { parseBooleanValue } from "../../../../utils/parse-boolean-value";
+import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
 
 @Component({
   selector: "app-ldap-resolver",
@@ -50,11 +51,6 @@ import { parseBooleanValue } from "../../../../utils/parse-boolean-value";
 })
 export class LdapResolverComponent {
   private readonly resolverService = inject(ResolverService);
-
-  data = input<Partial<LDAPResolverData>>({});
-
-  isEditMode = computed(() => !!this.resolverService.selectedResolverName());
-
   readonly ldapPresets = [
     {
       name: "OpenLDAP",
@@ -71,12 +67,14 @@ export class LdapResolverComponent {
       uidType: "objectGUID"
     }
   ];
-
+  data = input<Partial<LDAPResolverData>>({});
+  isEditMode = computed(() => !!this.resolverService.selectedResolverName());
   ldapUriControl = new FormControl<string>("", { nonNullable: true, validators: [Validators.required] });
   ldapBaseControl = new FormControl<string>("", { nonNullable: true, validators: [Validators.required] });
   loginNameAttributeControl = new FormControl<string>("", { nonNullable: true, validators: [Validators.required] });
   ldapSearchFilterControl = new FormControl<string>("", { nonNullable: true, validators: [Validators.required] });
   userInfoControl = new FormControl<string>("", { nonNullable: true, validators: [Validators.required] });
+  startTlsControl = new FormControl<boolean>(true, { nonNullable: true });
 
   tlsVersionControl = new FormControl<string>("TLSv1_3", { nonNullable: true });
   tlsVerifyControl = new FormControl<boolean>(true, { nonNullable: true });
@@ -105,6 +103,7 @@ export class LdapResolverComponent {
 
   controls = computed<Record<string, AbstractControl>>(() => ({
     LDAPURI: this.ldapUriControl,
+    STARTTLS: this.startTlsControl,
     LDAPBASE: this.ldapBaseControl,
     LOGINNAMEATTRIBUTE: this.loginNameAttributeControl,
     LDAPSEARCHFILTER: this.ldapSearchFilterControl,
@@ -135,14 +134,6 @@ export class LdapResolverComponent {
     NOSCHEMAS: this.noSchemasControl
   }));
 
-  applyLdapPreset(preset: any): void {
-    this.loginNameAttributeControl.setValue(preset.loginName);
-    this.ldapSearchFilterControl.setValue(preset.searchFilter);
-    this.userInfoControl.setValue(preset.userInfo);
-    this.uidTypeControl.setValue(preset.uidType);
-    this.multivalueAttributesControl.setValue("");
-  }
-
   constructor() {
     effect(() => {
       const initial = this.data();
@@ -151,6 +142,7 @@ export class LdapResolverComponent {
       if (initial.LOGINNAMEATTRIBUTE !== undefined) this.loginNameAttributeControl.setValue(initial.LOGINNAMEATTRIBUTE, { emitEvent: false });
       if (initial.LDAPSEARCHFILTER !== undefined) this.ldapSearchFilterControl.setValue(initial.LDAPSEARCHFILTER, { emitEvent: false });
       if (initial.USERINFO !== undefined) this.userInfoControl.setValue(initial.USERINFO, { emitEvent: false });
+      if (initial.START_TLS !== undefined) this.startTlsControl.setValue(parseBooleanValue(initial.START_TLS), { emitEvent: false });
 
       if (initial.TLS_VERSION !== undefined) this.tlsVersionControl.setValue(initial.TLS_VERSION, { emitEvent: false });
       if (initial.TLS_VERIFY !== undefined) this.tlsVerifyControl.setValue(parseBooleanValue(initial.TLS_VERIFY), { emitEvent: false });
@@ -177,5 +169,13 @@ export class LdapResolverComponent {
       if (initial.NOREFERRALS !== undefined) this.noReferralsControl.setValue(parseBooleanValue(initial.NOREFERRALS), { emitEvent: false });
       if (initial.NOSCHEMAS !== undefined) this.noSchemasControl.setValue(parseBooleanValue(initial.NOSCHEMAS), { emitEvent: false });
     });
+  }
+
+  applyLdapPreset(preset: any): void {
+    this.loginNameAttributeControl.setValue(preset.loginName);
+    this.ldapSearchFilterControl.setValue(preset.searchFilter);
+    this.userInfoControl.setValue(preset.userInfo);
+    this.uidTypeControl.setValue(preset.uidType);
+    this.multivalueAttributesControl.setValue("");
   }
 }

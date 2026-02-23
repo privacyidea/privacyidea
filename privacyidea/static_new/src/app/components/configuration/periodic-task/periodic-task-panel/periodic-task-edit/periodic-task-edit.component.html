@@ -124,7 +124,7 @@
           class="action-card"
           [class.action-card-selected]="selectedOption().name === option"
           (click)="onOptionSelection(option, taskModuleOptions()[option], editTask().options[option])">
-          <div class="action-row">
+          <div class="action-card-row">
             <span class="action-label">
               {{ option }}
               @if (taskModuleOptions()[option].required) {
@@ -160,7 +160,7 @@
           class="action-card"
           [class.action-card-selected]="selectedOption().name === option"
           (click)="onOptionSelection(option, notUsedOptions()[option])">
-          <div class="action-row">
+          <div class="action-card-row">
             <span class="action-label">{{ option }}</span>
             @if (editOption() === option && notUsedOptions()[option].type === 'str') {
               <div class="action-value">

@@ -1,0 +1,74 @@
+@use "../../../../styles" as styles;
+
+.edit-event-handler-layout {
+  display: flex;
+  justify-content: center;
+}
+
+.edit-event-handler-container {
+  @include styles.table-container-styles;
+  max-height: 90vh;
+  max-width: calc(100vw - var(--global-padding) * 5 - 48px);
+  display: grid;
+  overflow: auto;
+  position: relative;
+}
+
+.header-row {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.action-buttons {
+  display: grid;
+  grid-template-columns: auto 1fr 1fr;
+  align-items: center;
+  gap: 16px;
+}
+
+.event-name {
+  white-space: nowrap;
+  overflow: inherit;
+  text-overflow: ellipsis;
+}
+
+.event-name-color {
+  color: var(--mat-sys-primary);
+}
+
+.event-details {
+  display: grid;
+  grid-template-columns: auto;
+  gap: 16px;
+  padding: 0;
+  border: 0;
+  margin-bottom: auto;
+  justify-content: center;
+}
+
+.label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+  margin-block: auto;
+  font-weight: bold;
+  justify-self: end;
+}
+
+.value {
+  grid-column: 2;
+  overflow: scroll;
+  display: block;
+  margin-block: auto;
+}
+
+.align-right {
+  text-align: right;
+  justify-content: flex-end;
+}
+
+.tab-container {
+  margin: 16px 8px 32px 8px;
+}

@@ -1,0 +1,64 @@
+@use "../../../styles";
+@use "@angular/material" as mat;
+
+.events-layout{
+  display: flex;
+  justify-content: center;
+}
+
+.events-table-container {
+  @include styles.table-container-styles;
+  @include styles.base-table-structure(".event-handler-table", ".event-handler-table-filter", ".table-scroll-container");
+  max-height: var(--max-height);
+  max-width: calc(100vw - var(--global-padding) * 5 - 240px);
+  overflow: auto;
+  display: grid;
+}
+
+.event-handler-table {
+  td.mat-mdc-cell,
+  td.mat-mdc-footer-cell {
+    padding-top: 8px;
+    padding-bottom: 8px;
+  }
+
+  td.mat-mdc-cell.compact-cell {
+    white-space: nowrap;
+    max-height: 48px;
+    text-overflow: ellipsis;
+  }
+
+  td.mat-mdc-cell.detailed-cell,
+  td.mat-mdc-footer-cell.detailed-cell{
+  }
+}
+
+.detailed-cell-container {
+    max-height: 160px;
+    overflow-y: scroll;
+    white-space: normal;
+}
+
+.break-words {
+  white-space: break-spaces;
+  word-break: normal;
+}
+
+.text-overflow-ellipsis {
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.actions-container {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 16px;
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+.no-indention {
+  padding-left: 16px;
+}

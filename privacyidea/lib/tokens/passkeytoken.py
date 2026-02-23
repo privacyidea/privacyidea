@@ -266,6 +266,7 @@ class PasskeyTokenClass(TokenClass):
 
             if not len(challenges):
                 raise EnrollmentError(f"The enrollment challenge does not exist or has timed out for {serial}")
+            challenge: Challenge = challenges[0]
             try:
                 registration_verification: VerifiedRegistration = verify_registration_response(
                     credential={
@@ -278,7 +279,7 @@ class PasskeyTokenClass(TokenClass):
                         "type": "public-key",
                         "authenticatorAttachment": authenticator_attachment,
                     },
-                    expected_challenge=challenges[0].challenge.encode("utf-8"),
+                    expected_challenge=challenge.challenge.encode("utf-8"),
                     expected_origin=expected_origin,
                     expected_rp_id=expected_rp_id,
                 )
@@ -288,6 +289,13 @@ class PasskeyTokenClass(TokenClass):
             except InvalidJSONStructure as ex:
                 log.error(f"Invalid JSON structure: {ex}")
                 raise EnrollmentError(f"Invalid JSON structure: {ex}")
+
+            # Return info if this enroll_via_multichallenge or not
+            evm_value = False
+            data = challenge.get_data()
+            if data and isinstance(data, dict) and PolicyAction.ENROLL_VIA_MULTICHALLENGE in data:
+                evm_value = data[PolicyAction.ENROLL_VIA_MULTICHALLENGE]
+            response_detail.update({PolicyAction.ENROLL_VIA_MULTICHALLENGE: evm_value})
 
             # Verification successful, set the token to enrolled and save information returned by the authenticator
             self.token.rollout_state = ROLLOUTSTATE.ENROLLED
@@ -412,7 +420,9 @@ class PasskeyTokenClass(TokenClass):
         if options and PasskeyAction.EnableTriggerByPIN in options and options[PasskeyAction.EnableTriggerByPIN]:
             rp_id = get_required(options, FIDO2PolicyAction.RELYING_PARTY_ID)
             user_verification = get_optional(options, FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT, "preferred")
-            challenge = fido2.challenge.create_fido2_challenge(rp_id, user_verification=user_verification,
+            # check if options contains a nonce that was generated from a previous passkey challenge and reuse it
+            nonce = options.get("passkey_nonce", None)
+            challenge = fido2.challenge.create_fido2_challenge(rp_id, user_verification=user_verification, nonce=nonce,
                                                                transaction_id=transactionid, serial=self.token.serial)
             message = options.get("passkey_challenge_text", challenge["message"])
             transaction_id = challenge["transaction_id"]

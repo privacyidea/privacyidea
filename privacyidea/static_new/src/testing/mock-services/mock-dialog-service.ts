@@ -19,6 +19,7 @@
 
 import { DialogServiceInterface } from "../../app/services/dialog/dialog.service";
 import { signal } from "@angular/core";
+import { of, Subject } from "rxjs";
 
 export class MockDialogService implements DialogServiceInterface {
   isSelfServing = signal<boolean>(false);
@@ -26,10 +27,34 @@ export class MockDialogService implements DialogServiceInterface {
   isTokenEnrollmentFirstStepDialogOpen = false;
   tokenEnrollmentLastStepRef = null;
   isTokenEnrollmentLastStepDialogOpen = false;
-  openTokenEnrollmentFirstStepDialog = jest.fn().mockReturnValue(undefined);
-  closeTokenEnrollmentFirstStepDialog = jest.fn().mockReturnValue(undefined);
-  openTokenEnrollmentLastStepDialog = jest.fn().mockReturnValue(undefined);
-  closeTokenEnrollmentLastStepDialog = jest.fn().mockReturnValue(undefined);
+
+  private _firstStepAfterClosed$?: Subject<any>;
+
+  openTokenEnrollmentFirstStepDialog = jest.fn().mockImplementation((config?: any) => {
+    this.isTokenEnrollmentFirstStepDialogOpen = true;
+    this._firstStepAfterClosed$ = new Subject<any>();
+    return {
+      afterClosed: () => this._firstStepAfterClosed$!.asObservable()
+    } as any;
+  });
+
+  closeTokenEnrollmentFirstStepDialog = jest.fn().mockImplementation(() => {
+    this.isTokenEnrollmentFirstStepDialogOpen = false;
+    this._firstStepAfterClosed$?.next(true);
+    this._firstStepAfterClosed$?.complete();
+  });
+
+  openTokenEnrollmentLastStepDialog = jest.fn().mockImplementation((config?: any) => {
+    this.isTokenEnrollmentLastStepDialogOpen = true;
+    return {
+      afterClosed: () => of(true)
+    } as any;
+  });
+
+  closeTokenEnrollmentLastStepDialog = jest.fn().mockImplementation(() => {
+    this.isTokenEnrollmentLastStepDialogOpen = false;
+  });
+
   confirm = jest.fn().mockResolvedValue(true);
   isAnyDialogOpen = jest.fn().mockReturnValue(false);
 }

@@ -19,7 +19,8 @@
 
 import { computed, signal } from "@angular/core";
 import { AuthData, AuthDetail, AuthRole, AuthServiceInterface, JwtData } from "../../app/services/auth/auth.service";
-import { MockAuthData, MockAuthDetail, MockPiResponse } from "../mock-services";
+import { MockAuthData, MockAuthDetail } from "./mock-validate-service";
+import { MockPiResponse } from "./mock-utils";
 import { of } from "rxjs";
 import { HttpHeaders } from "@angular/common/http";
 

@@ -42,7 +42,7 @@ import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { MockAuthService } from "../../../../testing/mock-services/mock-auth-service";
 
 class MatDialogMock {
-  result = true;
+  result = { confirmed: true };
   open = jest.fn(() => ({
     afterClosed: () => of(this.result)
   }));
@@ -315,7 +315,7 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
   it("revokeToken: always calls service; reloads only when dialog returns true", () => {
     const serial = "R-1";
 
-    matDialog.result = true;
+    matDialog.result.confirmed = true;
     self.revokeToken(serial);
     expect(matDialog.open).toHaveBeenCalledTimes(1);
     expect((tokenService as any).revokeToken).toHaveBeenCalledWith(serial);
@@ -323,7 +323,7 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
 
     jest.clearAllMocks();
 
-    matDialog.result = false;
+    matDialog.result.confirmed = false;
     self.revokeToken(serial);
     expect(matDialog.open).toHaveBeenCalledTimes(1);
     expect((tokenService as any).revokeToken).toHaveBeenCalledWith(serial);
@@ -333,7 +333,7 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
   it("deleteToken: always calls service; reloads only when dialog returns true", () => {
     const serial = "D-1";
 
-    matDialog.result = true;
+    matDialog.result.confirmed = true;
     self.deleteToken(serial);
     expect(matDialog.open).toHaveBeenCalledTimes(1);
     expect((tokenService as any).deleteToken).toHaveBeenCalledWith(serial);
@@ -341,7 +341,7 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
 
     jest.clearAllMocks();
 
-    matDialog.result = false;
+    matDialog.result.confirmed = false;
     self.deleteToken(serial);
     expect(matDialog.open).toHaveBeenCalledTimes(1);
     expect((tokenService as any).deleteToken).toHaveBeenCalledWith(serial);

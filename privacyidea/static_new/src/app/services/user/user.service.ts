@@ -185,7 +185,7 @@ export class UserService implements UserServiceInterface {
   apiUserFilter = signal(new FilterValue());
 
   pageSize = linkedSignal({
-    source: () => this.authService.userPageSize(),
+    source: () => 10,
     computation: (pageSize) => (pageSize > 0 ? pageSize : 10)
   });
 

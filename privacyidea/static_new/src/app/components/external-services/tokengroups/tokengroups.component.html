@@ -1,0 +1,154 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<div class="tokengroups-layout">
+  <div
+    appScrollToTop
+    class="tokengroups-container">
+    <div class="header-row">
+      <div class="filter-paginator-container margin-bottom-1">
+        <div class="flex-row ali-center">
+          <mat-form-field
+            class="table-filter"
+            subscriptSizing="dynamic">
+            <mat-label i18n>Filter Tokengroups...</mat-label>
+            <app-clearable-input
+              (onClick)="resetFilter()"
+              [showClearButton]="filterString().length > 0">
+              <input
+                #filterHTMLInputElement
+                (input)="onFilterInput(filterHTMLInputElement.value)"
+                [value]="filterString()"
+                aria-label="Filter Input"
+                i18n-aria-label
+                i18n-placeholder
+                matInput
+                placeholder="Filter by name or description" />
+            </app-clearable-input>
+          </mat-form-field>
+          <button
+            (click)="openEditDialog()"
+            class="action-button-1 margin-left-1"
+            i18n
+            mat-stroked-button>
+            <mat-icon>add</mat-icon>
+            Create Token Group
+          </button>
+        </div>
+        <mat-paginator
+          [length]="totalLength()"
+          [pageSizeOptions]="pageSizeOptions()"
+          [pageSize]="pageSizeOptions()[1]"
+          showFirstLastButtons />
+      </div>
+    </div>
+    <table
+      [dataSource]="tokengroupDataSource()"
+      class="tokengroups-table"
+      mat-table
+      matSort>
+
+      <ng-container matColumnDef="id">
+        <th
+          *matHeaderCellDef
+          i18n
+          mat-header-cell
+          mat-sort-header> Id
+        </th>
+        <td
+          *matCellDef="let group"
+          mat-cell>
+          {{ group.id }}
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="groupname">
+        <th
+          *matHeaderCellDef
+          i18n
+          mat-header-cell
+          mat-sort-header> Name
+        </th>
+        <td
+          *matCellDef="let group"
+          mat-cell>
+          <div class="flex-row">
+            <a
+              (click)="openEditDialog(group)"
+              class="flex ali-center">
+              {{ group.groupname }}
+            </a>
+            <app-copy-button [copyText]="group.groupname" />
+          </div>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="description">
+        <th
+          *matHeaderCellDef
+          i18n
+          mat-header-cell
+          mat-sort-header> Description
+        </th>
+        <td
+          *matCellDef="let group"
+          mat-cell> {{ group.description }}
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="actions">
+        <th
+          *matHeaderCellDef
+          i18n
+          mat-header-cell> Actions
+        </th>
+        <td
+          *matCellDef="let group"
+          mat-cell>
+          <div class="flex just-center">
+            <button
+              (click)="deleteTokengroup(group)"
+              color="warn"
+              i18n-matTooltip
+              mat-icon-button
+              matTooltip="Delete">
+              <mat-icon>delete</mat-icon>
+            </button>
+          </div>
+        </td>
+      </ng-container>
+
+      <tr
+        *matHeaderRowDef="displayedColumns"
+        mat-header-row></tr>
+      <tr
+        *matRowDef="let row; columns: displayedColumns;"
+        mat-row></tr>
+
+      <tr
+        *matNoDataRow
+        class="mat-row">
+        <td
+          class="mat-cell"
+          colspan="4"
+          i18n>No tokengroups found.
+        </td>
+      </tr>
+    </table>
+  </div>
+</div>

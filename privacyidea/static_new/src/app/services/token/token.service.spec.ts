@@ -555,7 +555,7 @@ describe("TokenService", () => {
       afterDeleteCallback = jest.fn();
       dialog = {
         open: jest.fn().mockReturnValue({
-          afterClosed: () => of(true)
+          afterClosed: () => of({ confirmed: true })
         })
       };
     });

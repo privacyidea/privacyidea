@@ -16,12 +16,10 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import logging
-import traceback
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import Sequence, Unicode, Integer, DateTime, UniqueConstraint, select, update, and_
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy import Sequence, Unicode, Integer, DateTime, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from privacyidea.models import db

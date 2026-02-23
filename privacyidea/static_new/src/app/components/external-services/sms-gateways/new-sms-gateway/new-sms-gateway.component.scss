@@ -1,0 +1,80 @@
+@use "../../../../../styles";
+@use "@angular/material" as mat;
+
+.sms-form {
+  padding-top: 10px;
+}
+
+.parameters-form {
+  margin-top: 16px;
+}
+
+.custom-list {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.custom-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 8px;
+  background-color: var(--mat-sys-surface-container);
+  border-radius: 4px;
+
+  .key {
+    flex: 1;
+  }
+
+  .value {
+    flex: 2;
+  }
+}
+
+.add-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 8px;
+
+  mat-form-field {
+    flex: 1;
+  }
+}
+
+h3 {
+  margin-top: 24px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+  padding-bottom: 8px;
+}
+
+.table-wrapper {
+  margin-top: 8px;
+  overflow: auto;
+  border: 1px solid var(--mat-sys-outline-variant);
+  background-color: var(--mat-sys-surface-container);
+
+  ::ng-deep .mat-mdc-form-field-subscript-wrapper {
+    height: 8px;
+  }
+}
+
+.actions-cell {
+  width: 1%;
+  white-space: nowrap;
+  text-align: right;
+}
+
+.add-footer-row td {
+  padding-top: 8px;
+}
+
+.add-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: -8px;
+}

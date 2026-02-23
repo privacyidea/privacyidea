@@ -19,6 +19,7 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 import binascii
+import json
 import logging
 
 from cryptography import x509
@@ -762,7 +763,7 @@ class WebAuthnTokenClass(TokenClass):
         challengetext = get_optional(options, f"{self.get_class_type()}_{PolicyAction.CHALLENGETEXT!s}")
         return challengetext.format(self.token.description) if challengetext else ""
 
-    def _get_webauthn_user(self, user):
+    def _get_webauthn_user(self, user: User):
         return WebAuthnUser(
             user_id=self.token.serial,
             user_name=user.login,
@@ -942,11 +943,12 @@ class WebAuthnTokenClass(TokenClass):
             response_detail['rollout_state'] = self.token.rollout_state
             # To aid with unit testing a fixed nonce may be passed in.
             nonce = self._get_nonce()
+            data = {"user_verification": user_verification}
             # Create the challenge in the database
             challenge = Challenge(serial=self.token.serial,
                                   transaction_id=get_optional(params, "transaction_id"),
                                   challenge=hexlify_and_unicode(nonce),
-                                  data=f"user_verification={user_verification}",
+                                  data=json.dumps(data),
                                   session=get_optional(params, "session"),
                                   validitytime=self._get_challenge_validity_time())
             challenge.save()
@@ -1097,12 +1099,12 @@ class WebAuthnTokenClass(TokenClass):
             nonce = binascii.unhexlify(challenge)
 
         user_verification = get_required(options, FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT)
-
+        data = {"user_verification": user_verification}
         # Create the challenge in the database
         db_challenge = Challenge(serial=self.token.serial,
                                  transaction_id=transactionid,
                                  challenge=challenge,
-                                 data=f"user_verification={user_verification}",
+                                 data=json.dumps(data),
                                  session=get_optional(options, "session"),
                                  validitytime=self._get_challenge_validity_time())
         db_challenge.save()

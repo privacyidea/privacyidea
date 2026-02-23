@@ -68,7 +68,9 @@ angular.module("privacyideaApp")
             $scope.piExternalLinks = obj.val();
             obj = angular.element(document.querySelector('#REALMS'));
             $scope.piRealms = obj.val().mysplit(",").sort();
-            //debug: console.log($scope.piRealms);
+            if ($scope.piRealms.length > 0) {
+                $scope.piRealms.push("-");
+            }
             obj = angular.element(document.querySelector('#LOGO'));
             $scope.piLogo = obj.val();
             obj = angular.element(document.querySelector('#HAS_JOB_QUEUE'));
@@ -88,6 +90,8 @@ angular.module("privacyideaApp")
             obj = angular.element(document.querySelector('#PRIVACYIDEA_VERSION_NUMBER'));
             $scope.privacyideaVersionNumber = obj.val();
             $rootScope.privacyideaVersionNumber = obj.val();
+            obj = angular.element(document.querySelector("#PASSKEY_LOGIN"));
+            $scope.passkeyLoginEnabled = obj.val() !== "hide";
 
             // Check if registration is allowed
             $scope.registrationAllowed = false;
@@ -272,6 +276,10 @@ angular.module("privacyideaApp")
                 $scope.polling = false;
                 $scope.image = false;
                 //debug: console.log($scope.login);
+                // Replace the placeholder for no realm with no realm
+                if ($scope.login.realm === "-") {
+                    $scope.login.realm = "";
+                }
                 $http.post(authUrl, {
                     username: $scope.login.username,
                     password: $scope.login.password,
@@ -532,7 +540,7 @@ angular.module("privacyideaApp")
                     indexedsecret:
                         {
                             preset_attribute: data.result.value.indexedsecret_preset_attribute,
-                            force_attibute: data.result.value.indexedsecret_force_attribute
+                            force_attribute: data.result.value.indexedsecret_force_attribute
                         }
                 };
                 const timeout = data.result.value.logout_time;
@@ -699,6 +707,10 @@ angular.module("privacyideaApp")
                 // emit a signal to the scope, that just listens
                 $scope.$broadcast("piReload");
             };
+
+            $scope.clearRealmSelection = function () {
+                $scope.login.realm = "-";
+            };
         }]);
 
 angular.module("privacyideaApp")
@@ -733,5 +745,4 @@ angular.module("privacyideaApp")
                 $scope.pin_change_serial = null;
                 $scope.logout();
             }
-
         }]);

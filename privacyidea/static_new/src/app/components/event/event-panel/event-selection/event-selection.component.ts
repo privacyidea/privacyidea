@@ -1,0 +1,138 @@
+/**
+ * (c) NetKnights GmbH 2026,  https://netknights.it
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ **/
+
+import {
+  Component,
+  effect,
+  inject,
+  input,
+  linkedSignal,
+  model,
+  output,
+  ViewChild,
+  ViewEncapsulation
+} from "@angular/core";
+import { EventService } from "../../../../services/event/event.service";
+import { ENTER } from "@angular/cdk/keycodes";
+import {
+  MatAutocomplete,
+  MatAutocompleteSelectedEvent,
+  MatAutocompleteTrigger,
+  MatOption
+} from "@angular/material/autocomplete";
+import { FormControl, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
+import { MatChipsModule } from "@angular/material/chips";
+import { MatFormFieldModule, MatHint, MatLabel } from "@angular/material/form-field";
+import { MatIcon } from "@angular/material/icon";
+import { MatInput } from "@angular/material/input";
+import { ClearButtonComponent } from "../../../shared/clear-button/clear-button.component";
+import { toSignal } from "@angular/core/rxjs-interop";
+
+@Component({
+  selector: "app-event-selection",
+  imports: [
+    FormsModule,
+    MatAutocomplete,
+    MatAutocompleteTrigger,
+    MatChipsModule,
+    MatFormFieldModule,
+    MatHint,
+    MatIcon,
+    MatLabel,
+    MatOption,
+    ReactiveFormsModule,
+    MatInput,
+    ClearButtonComponent
+  ],
+  templateUrl: "./event-selection.component.html",
+  styleUrl: "./event-selection.component.scss",
+  encapsulation: ViewEncapsulation.None
+})
+export class EventSelectionComponent {
+  protected readonly eventService = inject(EventService);
+  events = input.required<string[]>();
+  newEvents = output<string[]>();
+
+  toolTipClearSearch = $localize`Clear Search Term`;
+
+  selectedEvents = new FormControl<string[]>([], { nonNullable: true, validators: [Validators.required] });
+  selectedEventsSignal = toSignal(this.selectedEvents.valueChanges, { initialValue: this.selectedEvents.value });
+
+  constructor() {
+    effect(() => {
+      this.selectedEvents.setValue(this.events());
+    });
+  }
+
+  searchTerm = model("");
+  lastSearchTerm = "";
+  readonly separatorKeysCodes: number[] = [ENTER];
+
+  removeEvent(event: string): void {
+    const current = this.selectedEvents.value;
+    const index = current.indexOf(event);
+    if (index > -1) {
+      const updated = [...current.slice(0, index), ...current.slice(index + 1)];
+      this.selectedEvents.setValue(updated);
+      this.newEvents.emit(updated);
+    }
+  }
+
+  addEvent(event: string): void {
+    const current = this.selectedEvents.value;
+    if (event && current.indexOf(event) === -1) {
+      const updated = [...current, event];
+      this.selectedEvents.setValue(updated);
+      this.newEvents.emit(updated);
+    }
+  }
+
+  @ViewChild("autocompleteTrigger") autocompleteTrigger!: MatAutocompleteTrigger;
+
+  selected(event: MatAutocompleteSelectedEvent): void {
+    this.addEvent(event.option.viewValue);
+    this.searchTerm.set(this.lastSearchTerm);
+    setTimeout(() => {
+      this.autocompleteTrigger.openPanel();
+    });
+  }
+
+  onSearchInputChanges(event: any): void {
+    this.lastSearchTerm = event.target.value;
+    this.searchTerm.set(event.target.value);
+  }
+
+  remainingEvents = linkedSignal({
+    source: () => ({
+      available: this.eventService.availableEvents(),
+      selected: this.selectedEventsSignal(),
+      search: this.searchTerm()
+    }),
+    computation: ({ available, selected, search }) =>
+      available.filter(event =>
+        !selected.includes(event) &&
+        (!search || event.toLowerCase().includes(search.toLowerCase()))
+      )
+  });
+
+  clearSearchTerm(): void {
+    this.searchTerm.set("");
+    this.lastSearchTerm = "";
+  }
+}

@@ -1,0 +1,140 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<div class="ca-connectors-layout">
+  <div
+    appScrollToTop
+    class="ca-connectors-container">
+    <div class="header-row">
+      <div class="filter-paginator-container margin-bottom-1">
+        <div class="flex-row ali-center">
+          <mat-form-field
+            class="table-filter"
+            subscriptSizing="dynamic">
+            <mat-label i18n>Filter CA Connectors...</mat-label>
+            <app-clearable-input
+              (onClick)="resetFilter()"
+              [showClearButton]="filterString().length > 0">
+              <input
+                #filterHTMLInputElement
+                (input)="onFilterInput(filterHTMLInputElement.value)"
+                [value]="filterString()"
+                aria-label="Filter Input"
+                i18n-aria-label
+                i18n-placeholder
+                matInput
+                placeholder="Filter by name or type" />
+            </app-clearable-input>
+          </mat-form-field>
+          <button
+            (click)="openEditDialog()"
+            class="action-button-1 margin-left-1"
+            i18n
+            mat-stroked-button>
+            <mat-icon>add</mat-icon>
+            Create CA Connector
+          </button>
+        </div>
+        <mat-paginator
+          [length]="totalLength()"
+          [pageSizeOptions]="pageSizeOptions()"
+          [pageSize]="pageSizeOptions()[1]"
+          showFirstLastButtons />
+      </div>
+    </div>
+    <table
+      [dataSource]="caConnectorDataSource()"
+      class="ca-connectors-table"
+      mat-table
+      matSort>
+
+      <ng-container matColumnDef="connectorname">
+        <th
+          *matHeaderCellDef
+          i18n
+          mat-header-cell
+          mat-sort-header> CA Connector Name
+        </th>
+        <td
+          *matCellDef="let connector"
+          mat-cell>
+          <div class="flex-row">
+            <a
+              (click)="openEditDialog(connector)"
+              class="flex ali-center">
+              {{ connector.connectorname }}
+            </a>
+            <app-copy-button [copyText]="connector.connectorname" />
+          </div>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="type">
+        <th
+          *matHeaderCellDef
+          i18n
+          mat-header-cell
+          mat-sort-header> Type
+        </th>
+        <td
+          *matCellDef="let connector"
+          mat-cell> {{ connector.type }}
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="actions">
+        <th
+          *matHeaderCellDef
+          i18n
+          mat-header-cell> Actions
+        </th>
+        <td
+          *matCellDef="let connector"
+          mat-cell>
+          <div class="flex just-center">
+            <button
+              (click)="deleteConnector(connector)"
+              color="warn"
+              i18n-matTooltip
+              mat-icon-button
+              matTooltip="Delete">
+              <mat-icon>delete</mat-icon>
+            </button>
+          </div>
+        </td>
+      </ng-container>
+
+      <tr
+        *matHeaderRowDef="displayedColumns"
+        mat-header-row></tr>
+      <tr
+        *matRowDef="let row; columns: displayedColumns;"
+        mat-row></tr>
+
+      <tr
+        *matNoDataRow
+        class="mat-row">
+        <td
+          class="mat-cell"
+          colspan="3"
+          i18n>No CA connectors found.
+        </td>
+      </tr>
+    </table>
+  </div>
+</div>

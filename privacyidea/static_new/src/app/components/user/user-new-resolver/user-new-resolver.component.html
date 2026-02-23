@@ -39,7 +39,7 @@
     <div
       #leftColumn
       class="flex-row margin-bottom-0">
-      <mat-form-field class="min-width-40">
+      <mat-form-field subscriptSizing="dynamic" class="min-width-40">
         <mat-label i18n>Resolver Name</mat-label>
         <mat-hint>
           @if (isEditMode) {
@@ -64,7 +64,7 @@
         }
       </mat-form-field>
 
-      <mat-form-field class="width-238">
+      <mat-form-field class="width-238 margin-left-1 type-selecting-height">
         <mat-label i18n>Type</mat-label>
         <mat-select
           (ngModelChange)="onTypeChange($event)"
@@ -142,8 +142,8 @@
           [disabled]="!resolverName || !resolverType || !isAdditionalFieldsValid"
           class="action-button-1 width-238"
           mat-stroked-button>
-          <mat-icon>add</mat-icon>
-          Save
+          <mat-icon>save</mat-icon>
+          <span i18n>Save</span>
         </button>
 
         <button

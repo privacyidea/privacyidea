@@ -45,6 +45,7 @@ import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
 import { StringUtils } from "../../utils/string.utils";
 import { ConfirmationDialogComponent } from "../../components/shared/confirmation-dialog/confirmation-dialog.component";
+import { DialogReturnData } from "../dialog/dialog.service";
 
 export type TokenTypeKey =
   | "hotp"
@@ -597,7 +598,7 @@ export class TokenService implements TokenServiceInterface {
       })
       .afterClosed()
       .subscribe({
-        next: (result: any) => {
+        next: (result: DialogReturnData) => {
           if (result) {
             this.bulkDeleteTokens(serialList).subscribe({
               next: (response: PiResponse<BulkResult, any>) => {
