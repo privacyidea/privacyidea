@@ -20,13 +20,14 @@
 <mat-dialog-content>
   @if (!rollover) {
     <div class="margin-bottom-1">
-  <span>The token was successfully enrolled with serial number
-    <a (click)="tokenSelected(serial)"> {{ serial }} </a>.</span>
+      <span i18n>The token was successfully enrolled with serial number
+      <a (click)="tokenSelected(serial)"> {{ serial }} </a>.</span>
       @if (containerSerial) {
-        <br />
-        <span>It has been enrolled in the container
-      <a (click)="containerSelected(containerSerial)">
-        {{ containerSerial }} </a>.</span>
+        <div i18n>It has been enrolled in the container
+          <a (click)="containerSelected(containerSerial)">
+            {{ containerSerial }}
+          </a>.
+        </div>
       }
     </div>
   }
