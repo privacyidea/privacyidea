@@ -37,10 +37,7 @@ import { AbstractDialogComponent } from "../abstract-dialog/abstract-dialog.comp
  * * @see SimpleConfirmationDialogData for required input structure.
  */
 export class SimpleConfirmationDialogComponent extends AbstractDialogComponent<SimpleConfirmationDialogData, boolean> {
-  actions: DialogAction<boolean>[] = [
-    ...(this.data.cancelAction ? [this.data.cancelAction] : []),
-    this.data.confirmAction
-  ];
+  actions: DialogAction<boolean>[] = [this.data.confirmAction];
   onAction(value: boolean): void {
     this.close(value);
   }
@@ -49,7 +46,6 @@ export class SimpleConfirmationDialogComponent extends AbstractDialogComponent<S
 export type SimpleConfirmationDialogData = {
   title: string;
   confirmAction: DialogAction<true>;
-  cancelAction?: DialogAction<false>;
   items: string[];
   itemType: string;
 };

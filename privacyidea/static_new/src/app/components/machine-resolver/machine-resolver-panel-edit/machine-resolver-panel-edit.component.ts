@@ -140,8 +140,7 @@ export class MachineResolverPanelEditComponent {
                 title: "Save machineResolver despite test failure?",
                 items: [],
                 itemType: "machineResolver",
-                confirmAction: { label: "Save", value: true, type: "confirm" },
-                cancelAction: { label: "Cancel", value: false, type: "cancel" }
+                confirmAction: { label: "Save", value: true, type: "confirm" }
               }
             })
             .afterClosed()
@@ -201,8 +200,7 @@ export class MachineResolverPanelEditComponent {
           title: "Discard changes",
           items: [this.currentMachineResolver().resolvername || "Unnamed Machine Resolver"],
           itemType: "machine resolver",
-          confirmAction: { label: "Discard", value: true, type: "destruct" },
-          cancelAction: { label: "Cancel", value: false, type: "cancel" }
+          confirmAction: { label: "Discard", value: true, type: "destruct" }
         }
       })
       .afterClosed()
@@ -231,8 +229,7 @@ export class MachineResolverPanelEditComponent {
           title: "Discard changes",
           items: [this.currentMachineResolver().resolvername || "Unnamed Machine Resolver"],
           itemType: "machine resolver",
-          confirmAction: { label: "Discard", value: true, type: "destruct" },
-          cancelAction: { label: "Cancel", value: false, type: "cancel" }
+          confirmAction: { label: "Discard", value: true, type: "destruct" }
         }
       })
       .afterClosed()

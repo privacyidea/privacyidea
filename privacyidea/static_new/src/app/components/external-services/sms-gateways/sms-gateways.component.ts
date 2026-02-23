@@ -105,8 +105,7 @@ export class SmsGatewaysComponent {
           title: $localize`Delete SMS Gateway`,
           items: [gateway.name],
           itemType: "sms-gateway",
-          confirmAction: { label: $localize`Delete`, value: true, type: "destruct" },
-          cancelAction: { label: $localize`Cancel`, value: false, type: "cancel" }
+          confirmAction: { label: $localize`Delete`, value: true, type: "destruct" }
         }
       })
       .afterClosed()

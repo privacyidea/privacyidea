@@ -189,8 +189,7 @@ export class PeriodicTaskService implements PeriodicTaskServiceInterface {
             title: $localize`Delete Periodic Task`,
             items: [task.name],
             itemType: $localize`periodic task`,
-            confirmAction: { label: $localize`Delete`, value: true, type: "destruct" },
-            cancelAction: { label: $localize`Cancel`, value: false, type: "cancel" }
+            confirmAction: { label: $localize`Delete`, value: true, type: "destruct" }
           }
         })
         .afterClosed()

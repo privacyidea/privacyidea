@@ -43,8 +43,6 @@ export const pendingChangesGuard: CanDeactivateFn<any> = () => {
     .openDialog({
       component: SaveAndExitDialogComponent,
       data: {
-        title: $localize`Discard changes`,
-        message: $localize`You have unsaved changes. Do you want to save them before exiting?`,
         saveExitDisabled: false,
         allowSaveExit: true
       }

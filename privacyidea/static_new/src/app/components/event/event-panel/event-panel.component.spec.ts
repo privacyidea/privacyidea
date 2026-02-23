@@ -28,6 +28,7 @@ import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { of, Subject } from "rxjs";
 import { MockMatDialogRef } from "../../../../testing/mock-mat-dialog-ref";
 import { DialogService } from "../../../services/dialog/dialog.service";
+import { SaveAndExitDialogResult } from "../../shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 
 global.IntersectionObserver = class IntersectionObserver {
   constructor() {}
@@ -45,7 +46,7 @@ describe("EventPanelComponent", () => {
   let mockEventService: MockEventService;
   let mockNotificationService: MockNotificationService;
   let dialogServiceMock: MockDialogService;
-  let confirmClosed: Subject<boolean | undefined>;
+  let confirmClosed: Subject<SaveAndExitDialogResult | boolean | undefined>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -259,7 +260,7 @@ describe("EventPanelComponent", () => {
     component.cancelEdit();
 
     // Mock dialog with clicked button discard changes
-    confirmClosed.next(false);
+    confirmClosed.next("discard");
     confirmClosed.complete();
 
     // The editEvent should be reset to the original event (from this.event())
@@ -291,7 +292,7 @@ describe("EventPanelComponent", () => {
     component.cancelEdit();
 
     // Mock dialog with clicked button save and exit
-    confirmClosed.next(true);
+    confirmClosed.next("save-exit");
     confirmClosed.complete();
 
     // Nothing should happen

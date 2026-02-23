@@ -215,8 +215,7 @@ export class EventService implements EventServiceInterface {
             title: $localize`Delete Event Handler`,
             items: [event.name],
             itemType: $localize`event handler`,
-            confirmAction: { label: $localize`Delete`, value: true, type: "destruct" },
-            cancelAction: { label: $localize`Cancel`, value: false, type: "cancel" }
+            confirmAction: { label: $localize`Delete`, value: true, type: "destruct" }
           }
         })
         .afterClosed()

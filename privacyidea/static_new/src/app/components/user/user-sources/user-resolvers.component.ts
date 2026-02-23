@@ -148,8 +148,7 @@ export class UserResolversComponent {
           title: $localize`Delete Resolver`,
           items: [resolver.resolvername],
           itemType: "resolver",
-          confirmAction: { label: $localize`Delete`, value: true, type: "destruct" },
-          cancelAction: { label: $localize`Cancel`, value: false, type: "cancel" }
+          confirmAction: { label: $localize`Delete`, value: true, type: "destruct" }
         }
       })
       .afterClosed()

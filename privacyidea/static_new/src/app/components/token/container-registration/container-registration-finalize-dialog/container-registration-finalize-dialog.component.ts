@@ -35,6 +35,9 @@ export class ContainerRegistrationFinalizeDialogComponent extends AbstractDialog
   Signal<ContainerRegisterFinalizeData | undefined>,
   void
 > {
+  get dialogTitle(): string {
+    return this.data()?.rollover ? $localize`Container Rollover` : $localize`Register Container`;
+  }
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
 
   regenerateQRCode() {

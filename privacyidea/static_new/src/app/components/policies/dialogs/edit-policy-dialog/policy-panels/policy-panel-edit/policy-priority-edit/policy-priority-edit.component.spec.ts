@@ -32,6 +32,7 @@ describe("PolicyPriorityEditComponent", () => {
     }).compileComponents();
 
     fixture = TestBed.createComponent(PolicyPriorityEditComponent);
+
     component = fixture.componentInstance;
     fixture.componentRef.setInput("priority", 10);
     fixture.detectChanges();

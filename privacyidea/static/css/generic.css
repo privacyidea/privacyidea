@@ -81,14 +81,70 @@ td.width-25 {
 
 /* AngularJS CSP Support - Required when using no-inline-style */
 [ng\:cloak], [ng-cloak], [data-ng-cloak], [x-ng-cloak], .ng-cloak, .x-ng-cloak, .ng-hide:not(.ng-hide-animate) {
-  display: none !important;
+    display: none !important;
 }
+
 ng\:form {
+    display: block;
+}
+
+.ng-animate-shim {
+    visibility: hidden;
+}
+
+.ng-anchor {
+    position: absolute;
+}
+
+.clear-button {
+    vertical-align: middle;
+    text-align: center;
+    padding: 0;
+    background: none;
+    border: none;
+    box-shadow: none;
+    outline: none;
+    cursor: pointer;
+    font-size: 1.5em;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 32px;
+    width: 32px;
+    position: absolute;
+    right: 25px;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 2;
+    color: #555;
+}
+
+.realm-row {
+    position: relative;
+}
+
+.realm-selection {
+    position: relative;
+    width: 100%;
+}
+
+
+.realm-selection select {
+    padding-right: 45px;
+}
+
+[uib-typeahead-popup].dropdown-menu,
+.uib-typeahead-popup.dropdown-menu {
   display: block;
 }
-.ng-animate-shim {
-  visibility: hidden;
+
+.assign-user-search-dropdown {
+    display: block;
+    position: static;
+    width: 100%;
+    margin-top: 2px;
+    max-height: 250px;
+    overflow-y: auto;
 }
-.ng-anchor {
-  position: absolute;
-}
+

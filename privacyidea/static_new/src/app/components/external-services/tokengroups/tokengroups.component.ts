@@ -104,8 +104,7 @@ export class TokengroupsComponent {
           title: $localize`Delete Tokengroup`,
           items: [group.groupname],
           itemType: "tokengroup",
-          confirmAction: { label: $localize`Delete`, value: true, type: "destruct" },
-          cancelAction: { label: $localize`Cancel`, value: false, type: "cancel" }
+          confirmAction: { label: $localize`Delete`, value: true, type: "destruct" }
         }
       })
       .afterClosed()

@@ -1,7 +1,7 @@
 <app-dialog-wrapper
-  [title]="data.title"
+  [title]="title()"
   [showCancelButton]="true"
   [actions]="actions()"
   (onAction)="onAction($event)">
-  <p>{{ data.message }}</p>
+  <p>{{ message() }}</p>
 </app-dialog-wrapper>
