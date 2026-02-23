@@ -65,7 +65,7 @@ export interface ChallengesServiceInterface {
 
   handleFilterInput($event: Event): void;
 
-  deleteExpiredChallenges(): Observable<any>;
+  deleteExpiredChallenges(): Observable<PiResponse<unknown>>;
 }
 
 @Injectable({
