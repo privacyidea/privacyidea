@@ -680,7 +680,7 @@ class APIUsersTestCase(MyApiTestCase):
         # Request without realm does not return custom attributes
         with self.app.test_request_context('/user/',
                                            method='GET',
-                                           query_string=urlencode({"username": "cornelius"}),
+                                           query_string=urlencode({"username": "cornelius", "resolver": self.resolvername1}),
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
@@ -688,11 +688,19 @@ class APIUsersTestCase(MyApiTestCase):
             self.assertTrue(result.get("status"))
             user = result.get("value")[0]
             # should contain all attributes ( resolver and editable are added on lib layer not by the resolver itself)
-            expected_user = {"userid": "1000", "username": "cornelius", "surname": "", "givenname": "Cornelius",
-                             "email": "user@localhost.localdomain", "phone": "+491234566", "mobile": "+491111111",
-                             "description": "Cornelius,field2,+491111111,+491234566,user@localhost.localdomain",
-                             "resolver": self.resolvername1, "editable": False}
-            self.assertDictEqual(expected_user, user)
+            expected_attributes = {"userid", "username", "surname", "givenname", "email", "phone", "mobile",
+                                   "description", "resolver", "editable"}
+            self.assertSetEqual(expected_attributes, set(user.keys()))
+            self.assertEqual("1000", user.get("userid"))
+            self.assertEqual("cornelius", user.get("username"))
+            self.assertEqual("", user.get("surname"))
+            self.assertEqual("Cornelius", user.get("givenname"))
+            self.assertEqual("user@localhost.localdomain", user.get("email"))
+            self.assertEqual("+491234566", user.get("phone"))
+            self.assertEqual("+491111111", user.get("mobile"))
+            self.assertEqual("Cornelius,field2,+491111111,+491234566,user@localhost.localdomain", user.get("description"))
+            self.assertEqual(self.resolvername1, user.get("resolver"))
+            self.assertEqual(False, user.get("editable"))
 
         # With realm as request parameter we also get the custom attributes of the users
         with self.app.test_request_context('/user/',
@@ -705,12 +713,23 @@ class APIUsersTestCase(MyApiTestCase):
             self.assertTrue(result.get("status"))
             user = result.get("value")[0]
             # should contain all attributes ( resolver and editable are added on lib layer not by the resolver itself)
-            expected_user = {"userid": "1000", "username": "cornelius", "surname": "", "givenname": "Cornelius",
-                             "email": "user@localhost.localdomain", "phone": "+491234566", "mobile": "+491111111",
-                             "description": "Cornelius,field2,+491111111,+491234566,user@localhost.localdomain",
-                             "resolver": self.resolvername1, "editable": False, "custom1": "value1",
-                             "custom2": "value2", "custom3": "value3"}
-            self.assertDictEqual(expected_user, user)
+            expected_attributes = {"userid", "username", "surname", "givenname", "email", "phone", "mobile",
+                                   "description", "resolver", "editable", "custom1", "custom2", "custom3"}
+            self.assertSetEqual(expected_attributes, set(user.keys()))
+            self.assertEqual("1000", user.get("userid"))
+            self.assertEqual("cornelius", user.get("username"))
+            self.assertEqual("", user.get("surname"))
+            self.assertEqual("Cornelius", user.get("givenname"))
+            self.assertEqual("user@localhost.localdomain", user.get("email"))
+            self.assertEqual("+491234566", user.get("phone"))
+            self.assertEqual("+491111111", user.get("mobile"))
+            self.assertEqual("Cornelius,field2,+491111111,+491234566,user@localhost.localdomain",
+                             user.get("description"))
+            self.assertEqual(self.resolvername1, user.get("resolver"))
+            self.assertEqual(False, user.get("editable"))
+            self.assertEqual("value1", user.get("custom1"))
+            self.assertEqual("value2", user.get("custom2"))
+            self.assertEqual("value3", user.get("custom3"))
 
         # Request specific attributes (without custom attributes)
         with self.app.test_request_context('/user/',
