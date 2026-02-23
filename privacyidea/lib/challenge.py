@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2015 NetKnights GmbH <https://netknights.it>
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
 #  privacyIDEA is a fork of LinOTP
 #
 #  2014-12-07 Cornelius Kölbel <cornelius@privacyidea.org>
@@ -27,6 +30,7 @@ The method is tested in test_lib_challenges
 import datetime
 import logging
 
+import sqlalchemy
 from sqlalchemy import select, delete
 from sqlalchemy.sql import Select
 
@@ -35,6 +39,7 @@ from .policies.actions import PolicyAction
 from .sqlutils import delete_matching_rows
 from ..models import Challenge, db
 from ..models.utils import utc_now
+from privacyidea.models.utils import clob_to_varchar
 
 log = logging.getLogger(__name__)
 
@@ -55,7 +60,7 @@ def get_challenges(serial: str = None, transaction_id: str = None, challenge=Non
     if transaction_id is not None:
         stmt = stmt.where(Challenge.transaction_id == transaction_id)
     if challenge is not None:
-        stmt = stmt.where(Challenge.challenge == challenge)
+        stmt = stmt.where(clob_to_varchar(Challenge.challenge) == challenge)
 
     challenges = db.session.execute(stmt).scalars().all()
     return challenges
@@ -165,7 +170,7 @@ def delete_challenges(serial: str = None, transaction_id: str = None) -> int:
     return result.rowcount
 
 
-def _build_challenge_criterion(age: int = None) -> 'sqlalchemy.sql.expression.BinaryExpression':
+def _build_challenge_criterion(age: int = None) -> 'sqlalchemy.sql.expression.ColumnElement':
     """
     Return an SQLAlchemy binary expression selecting expired challenges or expired challenges older than a given age.
 
@@ -217,14 +222,14 @@ def cancel_enrollment_via_multichallenge(transaction_id: str) -> bool:
         log.warning("No data found in challenge %s for transaction_id %s", challenge.id, transaction_id)
         return False
 
-    if not PolicyAction.ENROLL_VIA_MULTICHALLENGE in data:
+    if PolicyAction.ENROLL_VIA_MULTICHALLENGE not in data:
         log.warning(
             "Challenge for transaction_id %s contains no information about ENROLL_VIA_MULTICHALLENGE",
             transaction_id
         )
         return False
 
-    if not PolicyAction.ENROLL_VIA_MULTICHALLENGE_OPTIONAL in data:
+    if PolicyAction.ENROLL_VIA_MULTICHALLENGE_OPTIONAL not in data:
         log.warning(
             "Challenge for transaction_id %s contains no information about ENROLL_VIA_MULTICHALLENGE_OPTIONAL",
             transaction_id
