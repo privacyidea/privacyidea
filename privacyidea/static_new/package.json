@@ -28,6 +28,9 @@
     "tslib": "^2.3.0",
     "uuid": "^11.1.0"
   },
+  "overrides": {
+    "tar": "^7.5.8"
+  },
   "devDependencies": {
     "@angular-builders/jest": "^19.0.1",
     "@angular-devkit/build-angular": "^19.2.6",
