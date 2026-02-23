@@ -749,7 +749,7 @@ class APIUsersTestCase(MyApiTestCase):
         with self.app.test_request_context('/user/',
                                            method='GET',
                                            query_string=urlencode(
-                                               {"username": "cornelius", "attributes": "username,email,editable"}),
+                                               {"username": "cornelius", "realm": self.realm1, "attributes": "username,email,editable"}),
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
