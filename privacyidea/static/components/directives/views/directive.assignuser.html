@@ -42,7 +42,7 @@
             </span>
         </div>
 
-        <ul class="dropdown-menu" ng-show="newUserObject.loadedUsers.length > 0" style="display: block; position: static; width: 100%; margin-top: 2px; max-height: 250px; overflow-y: auto;">
+        <ul class="dropdown-menu assign-user-search-dropdown" ng-show="newUserObject.loadedUsers.length > 0">
              <li ng-repeat="user in newUserObject.loadedUsers">
                  <a href="" ng-click="selectUser(user)">
                      <span ng-bind-html="user.display"></span>

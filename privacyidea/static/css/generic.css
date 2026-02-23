@@ -138,3 +138,13 @@ ng\:form {
 .uib-typeahead-popup.dropdown-menu {
   display: block;
 }
+
+.assign-user-search-dropdown {
+    display: block;
+    position: static;
+    width: 100%;
+    margin-top: 2px;
+    max-height: 250px;
+    overflow-y: auto;
+}
+
