@@ -409,9 +409,7 @@ def _get_token_list(assigned: Union[bool, None], active: Union[bool, None], rang
             if orphaned is not None:
                 if is_true(orphaned):
                     try:
-                        if token_obj.user is None or token_obj.user.exist():
-                            # Either the token has no user assigned or the
-                            # assigned user exists in the resolver
+                        if token_obj.is_orphaned(orphaned_on_error) is False:
                             add = False
                     except ResolverError:
                         # Could not resolve user due to errors in the resolver.
@@ -419,7 +417,7 @@ def _get_token_list(assigned: Union[bool, None], active: Union[bool, None], rang
                         add = orphaned_on_error
                 else:
                     try:
-                        if token_obj.user is not None and not token_obj.user.exist():
+                        if token_obj.is_orphaned(orphaned_on_error) is False:
                             add = False
                     except ResolverError:
                         add = not orphaned_on_error
