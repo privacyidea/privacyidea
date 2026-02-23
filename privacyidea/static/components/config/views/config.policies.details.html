@@ -25,16 +25,14 @@
                 with the new name!
             </p>
             <button type="button"
-                    class="btn btn-primary"
-                    style="margin-top: 10px;"
+                    class="btn btn-primary btn-margin-top"
                     ng-hide="existingPolicyname || viewPolicyTemplates"
                     ng-click="viewPolicyTemplates=true">
                 <span class="glyphicon glyphicon-leaf"></span>
                 <span translate>Show Policy templates</span>
             </button>
             <button type="button"
-                    class="btn btn-warning"
-                    style="margin-top: 10px;"
+                    class="btn btn-warning btn-margin-top"
                     ng-hide="existingPolicyname || !viewPolicyTemplates"
                     ng-click="viewPolicyTemplates=false">
                 <span class="glyphicon glyphicon-leaf"></span>
@@ -537,3 +535,9 @@
             </button>
         </div>
 </form>
+
+<style>
+.btn-margin-top {
+    margin-top: 10px;
+}
+</style>
