@@ -678,7 +678,7 @@ class IdResolver(UserIdResolver):
         user_info = {}
         for ldap_k, ldap_v in ldap_user.items():
             for map_k, map_v in self.userinfo.items():
-                if ldap_k == map_v:
+                if ldap_k == map_v and (not attributes_to_include or map_k in attributes_to_include):
                     if ldap_k == "objectGUID":
                         # An objectGUID should be no list, since it is unique
                         if isinstance(ldap_v, str):
@@ -695,7 +695,8 @@ class IdResolver(UserIdResolver):
                             user_info[map_k] = ""
                     else:
                         user_info[map_k] = ldap_v
-        if self.recursive_group_search:
+        if self.recursive_group_search and (
+                not attributes_to_include or self.group_attribute_mapping_key in attributes_to_include):
             # get all groups with recursive search
             groups = self._get_user_groups_recursive(user_info)
             user_info[self.group_attribute_mapping_key] = groups
