@@ -34,15 +34,15 @@ log = logging.getLogger(__name__)
 TIMEOUT = 10
 
 
-class CONTENT_TYPE(object):
+class ContentType:
     """
     Allowed type off content
     """
-    JSON = "json"
+    JSON = "application/json"
     URLENCODED = "urlencoded"
 
 
-class ACTION_TYPE(object):
+class ActionType:
     """
     Allowed actions
     """
@@ -75,7 +75,7 @@ class WebHookHandler(BaseEventHandler):
         :return: dict with actions
         """
         # The event handler has just one action. Maybe we can  hide action select for the clarity of the UI
-        actions = {ACTION_TYPE.POST_WEBHOOK: {
+        actions = {ActionType.POST_WEBHOOK: {
             "URL": {
                 "type": "str",
                 "required": True,
@@ -86,8 +86,8 @@ class WebHookHandler(BaseEventHandler):
                 "required": True,
                 "description": _("The encoding that is sent to the WebHook, for example json"),
                 "value": [
-                    CONTENT_TYPE.JSON,
-                    CONTENT_TYPE.URLENCODED]
+                    ContentType.JSON,
+                    ContentType.URLENCODED]
             },
             "replace": {
                 "type": "bool",
@@ -152,7 +152,7 @@ class WebHookHandler(BaseEventHandler):
                     "user_realm": user_realm,
                     "token_serial": token_serial
                 }
-                if content_type == CONTENT_TYPE.JSON:
+                if content_type == ContentType.JSON:
                     def replace_recursive(val):
                         for k, v in val.items():
                             k = k.format(**attributes)
@@ -172,8 +172,8 @@ class WebHookHandler(BaseEventHandler):
                 log.warning(f"Unable to parse JSON string '{webhook_text}': {err}")
 
         # Send the request
-        if action.lower() == ACTION_TYPE.POST_WEBHOOK:
-            if content_type in [CONTENT_TYPE.JSON, CONTENT_TYPE.URLENCODED]:
+        if action.lower() == ActionType.POST_WEBHOOK:
+            if content_type in [ContentType.JSON, ContentType.URLENCODED]:
                 try:
                     log.info(f"A webhook is called at '{webhook_url}' with data: '{webhook_text}'")
                     response = requests.post(webhook_url, data=webhook_text,

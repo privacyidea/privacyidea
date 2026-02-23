@@ -43,9 +43,9 @@ from privacyidea.lib.eventhandler.scripthandler import ScriptEventHandler, SCRIP
 from privacyidea.lib.eventhandler.tokenhandler import (TokenEventHandler,
                                                        ACTION_TYPE, VALIDITY)
 from privacyidea.lib.eventhandler.usernotification import UserNotificationEventHandler
-from privacyidea.lib.eventhandler.webhookeventhandler import (ACTION_TYPE as WHEH_ACTION_TYPE,
+from privacyidea.lib.eventhandler.webhookeventhandler import (ActionType as WHEH_ACTION_TYPE,
                                                               WebHookHandler,
-                                                              CONTENT_TYPE)
+                                                              ContentType)
 from privacyidea.lib.machine import list_token_machines
 from .base import MyTestCase, FakeFlaskG, FakeAudit
 from privacyidea.lib.config import get_config_object
@@ -124,7 +124,6 @@ class EventHandlerLibTestCase(MyTestCase):
                 self.assertEqual("themis", opt.Value)
             if opt.Key == "always":
                 self.assertEqual("immer", opt.Value)
-
 
         # check that the config timestamp has been updated
         self.assertGreater(get_config_object().timestamp, current_timestamp)
@@ -4163,7 +4162,7 @@ class WebhookTestCase(MyTestCase):
             options = {"g": g,
                        "handler_def": {
                            "options": {"URL": 'https://test.com',
-                                       "content_type": CONTENT_TYPE.URLENCODED,
+                                       "content_type": ContentType.URLENCODED,
                                        "data": 'This is a test'
                                        }
                        }
@@ -4179,7 +4178,7 @@ class WebhookTestCase(MyTestCase):
             options = {"g": g,
                        "handler_def": {
                            "options": {"URL": 'https://test.com',
-                                       "content_type": CONTENT_TYPE.JSON,
+                                       "content_type": ContentType.JSON,
                                        "data": 'This is a test'
                                        }
                        }
@@ -4204,8 +4203,8 @@ class WebhookTestCase(MyTestCase):
                 "required": True,
                 "description": "The encoding that is sent to the WebHook, for example json",
                 "value": [
-                    CONTENT_TYPE.JSON,
-                    CONTENT_TYPE.URLENCODED]
+                    ContentType.JSON,
+                    ContentType.URLENCODED]
             },
             "replace": {
                 "type": "bool",
@@ -4231,7 +4230,7 @@ class WebhookTestCase(MyTestCase):
             options = {"g": g,
                        "handler_def": {
                            "options": {"URL": 'https://test.com',
-                                       "content_type": CONTENT_TYPE.URLENCODED,
+                                       "content_type": ContentType.URLENCODED,
                                        "data": 'This is a test'
                                        }
                        }
@@ -4273,7 +4272,7 @@ class WebhookTestCase(MyTestCase):
         options = {"g": g,
                    "handler_def": {
                        "options": {"URL": 'https://xyz.blablba',
-                                   "content_type": CONTENT_TYPE.JSON,
+                                   "content_type": ContentType.JSON,
                                    "data": 'This is a test'
                                    }
                    }
@@ -4298,7 +4297,7 @@ class WebhookTestCase(MyTestCase):
                            "options": {"URL":
                                            'http://test.com',
                                        "content_type":
-                                           CONTENT_TYPE.JSON,
+                                           ContentType.JSON,
                                        "replace":
                                            True,
                                        "data": data
@@ -4326,7 +4325,7 @@ class WebhookTestCase(MyTestCase):
             options = {"g": g,
                        "handler_def": {
                            "options": {"URL": 'https://test.com',
-                                       "content_type": CONTENT_TYPE.URLENCODED,
+                                       "content_type": ContentType.URLENCODED,
                                        "replace": True,
                                        "data": 'This is {logged_in_user} from realm {realm}'
                                        }
@@ -4355,7 +4354,7 @@ class WebhookTestCase(MyTestCase):
                                "options": {"URL":
                                                'http://test.com',
                                            "content_type":
-                                               CONTENT_TYPE.JSON,
+                                               ContentType.JSON,
                                            "replace":
                                                True,
                                            "data":
@@ -4400,7 +4399,7 @@ class WebhookTestCase(MyTestCase):
                                "options": {"URL":
                                                'http://test.com',
                                            "content_type":
-                                               CONTENT_TYPE.JSON,
+                                               ContentType.JSON,
                                            "replace":
                                                True,
                                            "data":
@@ -4416,3 +4415,31 @@ class WebhookTestCase(MyTestCase):
                     'http://test.com', '{"text": "The token serial is {token_seril}"}')
                 mock_info.assert_any_call(text)
                 mock_info.assert_called_with(200)
+
+    @patch('requests.post')
+    def test_10_content_type_header_is_set_correctly(self, mock_post):
+        mock_post.return_value.status_code = 200
+
+        g = FakeFlaskG()
+        g.logged_in_user = {'username': 'hans', 'realm': self.realm1}
+        t_handler = WebHookHandler()
+
+        # JSON content type is forwarded as Content-Type header
+        options = {"g": g,
+                   "handler_def": {
+                       "options": {"URL": 'https://test.com',
+                                   "content_type": ContentType.JSON,
+                                   "data": '{"key": "value"}'
+                                   }
+                   }
+                   }
+        t_handler.do(WHEH_ACTION_TYPE.POST_WEBHOOK, options=options)
+        _, kwargs = mock_post.call_args
+        self.assertEqual(kwargs["headers"]["Content-Type"], ContentType.JSON)
+
+        # URLENCODED content type is forwarded as Content-Type header
+        options["handler_def"]["options"]["content_type"] = ContentType.URLENCODED
+        options["handler_def"]["options"]["data"] = "key=value"
+        t_handler.do(WHEH_ACTION_TYPE.POST_WEBHOOK, options=options)
+        _, kwargs = mock_post.call_args
+        self.assertEqual(kwargs["headers"]["Content-Type"], ContentType.URLENCODED)
