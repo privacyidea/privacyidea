@@ -45,7 +45,8 @@ from privacyidea.lib.eventhandler.tokenhandler import (TokenEventHandler,
 from privacyidea.lib.eventhandler.usernotification import UserNotificationEventHandler
 from privacyidea.lib.eventhandler.webhookeventhandler import (ActionType as WHEH_ACTION_TYPE,
                                                               WebHookHandler,
-                                                              ContentType)
+                                                              ContentType,
+                                                              DB_CONTENT_TYPE_MAP)
 from privacyidea.lib.machine import list_token_machines
 from .base import MyTestCase, FakeFlaskG, FakeAudit
 from privacyidea.lib.config import get_config_object
@@ -4443,3 +4444,41 @@ class WebhookTestCase(MyTestCase):
         t_handler.do(WHEH_ACTION_TYPE.POST_WEBHOOK, options=options)
         _, kwargs = mock_post.call_args
         self.assertEqual(kwargs["headers"]["Content-Type"], ContentType.URLENCODED)
+
+    def test_11_db_content_type_map_covers_old_and_new_values(self):
+        self.assertEqual(DB_CONTENT_TYPE_MAP["json"], ContentType.JSON)
+        self.assertEqual(DB_CONTENT_TYPE_MAP["urlencoded"], ContentType.URLENCODED)
+        self.assertEqual(DB_CONTENT_TYPE_MAP[ContentType.JSON], ContentType.JSON)
+        self.assertEqual(DB_CONTENT_TYPE_MAP[ContentType.URLENCODED], ContentType.URLENCODED)
+        self.assertIsNone(DB_CONTENT_TYPE_MAP.get("unknown_type"))
+
+    @patch('requests.post')
+    def test_12_legacy_db_values_are_accepted_and_mapped_to_correct_header(self, mock_post):
+        mock_post.return_value.status_code = 200
+
+        g = FakeFlaskG()
+        g.logged_in_user = {'username': 'hans', 'realm': self.realm1}
+        t_handler = WebHookHandler()
+
+        # Legacy "json" value stored in DB maps to application/json header
+        options = {"g": g,
+                   "handler_def": {
+                       "options": {"URL": 'https://test.com',
+                                   "content_type": "json",
+                                   "data": '{"key": "value"}'
+                                   }
+                   }
+                   }
+        res = t_handler.do(WHEH_ACTION_TYPE.POST_WEBHOOK, options=options)
+        self.assertTrue(res)
+        _, kwargs = mock_post.call_args
+        self.assertEqual(kwargs["headers"]["Content-Type"], ContentType.JSON)
+
+        # Legacy "urlencoded" value stored in DB maps to application/x-www-form-urlencoded header
+        options["handler_def"]["options"]["content_type"] = "urlencoded"
+        options["handler_def"]["options"]["data"] = "key=value"
+        res = t_handler.do(WHEH_ACTION_TYPE.POST_WEBHOOK, options=options)
+        self.assertTrue(res)
+        _, kwargs = mock_post.call_args
+        self.assertEqual(kwargs["headers"]["Content-Type"], ContentType.URLENCODED)
+
