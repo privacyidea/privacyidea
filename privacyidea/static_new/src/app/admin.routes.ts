@@ -48,8 +48,8 @@ import { pendingChangesGuard } from "./guards/pending-changes.guard";
 import { Subscription } from "rxjs";
 import { SubscriptionComponent } from "./components/configuration/subscription/subscription.component";
 import { EventComponent } from "./components/event/event.component";
-import { SystemConfigComponent } from "./components/config/system/system-config.component";
-import { TokenTypeConfigComponent } from "./components/config/token-type-config/token-type-config.component";
+import { SystemConfigComponent } from "./components/configuration/system/system-config.component";
+import { TokenTypeConfigComponent } from "./components/configuration/token-type-config/token-type-config.component";
 
 export const routes: Routes = [
   {

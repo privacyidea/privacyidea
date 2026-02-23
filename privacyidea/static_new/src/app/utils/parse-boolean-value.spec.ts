@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { parseBooleanValue } from "./parse-boolean-value";
+import { isChecked, parseBooleanValue } from "./parse-boolean-value";
 import { assert } from "./assert";
 
 jest.mock("./assert", () => ({
@@ -112,5 +112,23 @@ describe("parseBooleanValue", () => {
     const errMsg = `Initial value for parseBooleanValue must be boolean, 0, 1, "true", "false", "1" or "0", but was ${obj}`;
     expect(() => parseBooleanValue(obj as any)).toThrow(errMsg);
     expect(assert).toHaveBeenCalledWith(false, errMsg);
+  });
+
+  it("should evaluate isChecked correctly for various inputs", () => {
+    // truthy
+    expect(isChecked(true)).toBe(true);
+    expect(isChecked("True")).toBe(true);
+    // Note: component treats only capital "True" as true
+    expect(isChecked("true")).toBe(false);
+    expect(isChecked("1")).toBe(true);
+    expect(isChecked(1)).toBe(true);
+
+    // falsy
+    expect(isChecked(false)).toBe(false);
+    expect(isChecked("False")).toBe(false);
+    expect(isChecked("0")).toBe(false);
+    expect(isChecked(0)).toBe(false);
+    expect(isChecked(undefined)).toBe(false);
+    expect(isChecked(null as unknown as any)).toBe(false);
   });
 });
