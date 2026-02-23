@@ -200,7 +200,7 @@ from privacyidea.lib.utils import (check_time_in_range, check_pin_contents,
 from privacyidea.lib.utils.compare import COMPARATOR_DESCRIPTIONS
 from privacyidea.lib.utils.export import (register_import, register_export)
 from .log import log_with
-from .policies.actions import PolicyAction
+from .policies.actions import PolicyAction, PasskeyLoginButtonOptions
 from .policies.conditions import PolicyConditionClass, ConditionCheck, ConditionSection
 from .policies.evaluators import EVALUATOR_FUNCTIONS
 from ..api.lib.utils import check_policy_name
@@ -2581,8 +2581,8 @@ def get_static_policy_definitions(scope=None):
             },
             PolicyAction.ENROLL_VIA_MULTICHALLENGE_PASSKEY_OFFLINE: {
                 'type': 'bool',
-                'desc': _('If enabled, a successful registration with the enroll_via_multichallenge action for passkeys '
-                          'will directly mark the token for offline use and send the offline data.')
+                'desc': _('If enabled, a successful registration with the enroll_via_multichallenge action for '
+                          'passkeys will directly mark the token for offline use and send the offline data.')
             },
             PolicyAction.PASSTHRU: {
                 'type': 'str',
@@ -2972,7 +2972,11 @@ def get_static_policy_definitions(scope=None):
                                                              'In the container wizard, a QR code will be generated '
                                                              'to register the new container on the smartphone. '
                                                              '(Only applicable for smartphone containers)'),
-                                                         'group': GROUP.WIZARD}
+                                                         'group': GROUP.WIZARD},
+            PolicyAction.PASSKEY_LOGIN: {'type': 'str',
+                                         'value': [PasskeyLoginButtonOptions.SHOW, PasskeyLoginButtonOptions.HIDE],
+                                         'desc': _('Show or hide the passkey login button on the login screen.')
+                                         }
         },
         SCOPE.CONTAINER: {
             PolicyAction.CONTAINER_SERVER_URL: {

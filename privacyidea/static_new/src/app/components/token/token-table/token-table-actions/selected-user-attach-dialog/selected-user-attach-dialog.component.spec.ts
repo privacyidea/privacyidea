@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -21,7 +21,8 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { SelectedUserAssignDialogComponent } from "./selected-user-attach-dialog.component";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { MatDialogRef } from "@angular/material/dialog";
+import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
+import { UserData } from "../../../../../services/user/user.service";
 
 describe("SelectedUserAssignDialogComponent", () => {
   let component: SelectedUserAssignDialogComponent;
@@ -33,7 +34,8 @@ describe("SelectedUserAssignDialogComponent", () => {
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
-        { provide: MatDialogRef, useValue: { close: jest.fn() } }
+        { provide: MatDialogRef, useValue: { close: jest.fn() } },
+        { provide: MAT_DIALOG_DATA, useValue: {} }
       ]
     }).compileComponents();
 
@@ -44,5 +46,99 @@ describe("SelectedUserAssignDialogComponent", () => {
 
   it("should create", () => {
     expect(component).toBeTruthy();
+  });
+
+  it("should close the dialog with null on cancel", () => {
+    component.onCancel();
+    expect((component as any).dialogRef.close).toHaveBeenCalledWith(null);
+  });
+
+  it("should toggle pin visibility", () => {
+    expect(component.hidePin()).toBe(true);
+    component.togglePinVisibility();
+    expect(component.hidePin()).toBe(false);
+    component.togglePinVisibility();
+    expect(component.hidePin()).toBe(true);
+  });
+
+  it("should check if pins match", () => {
+    component.pin.set("123");
+    component.pinRepeat.set("123");
+    expect(component.pinsMatch()).toBe(true);
+    component.pinRepeat.set("456");
+    expect(component.pinsMatch()).toBe(false);
+  });
+
+  it("should close the dialog with the correct data on confirm", () => {
+    const testUser: UserData = {
+      username: "testuser",
+      realm: "testrealm",
+      user_id: "123",
+      description: "",
+      editable: false,
+      email: "",
+      givenname: "",
+      mobile: "",
+      phone: "",
+      resolver: "",
+      surname: "",
+      userid: ""
+    };
+    const testRealm = "testrealm";
+    const testPin = "123456";
+
+    component.userFilterControl.setValue(testUser);
+    component.selectedUserRealmControl.setValue(testRealm);
+    component.pin.set(testPin);
+    component.pinRepeat.set(testPin);
+
+    component.onConfirm();
+
+    expect((component as any).dialogRef.close).toHaveBeenCalledWith({
+      username: testUser.username,
+      realm: testRealm,
+      pin: testPin
+    });
+  });
+
+  it("should not close the dialog on confirm if form is invalid", () => {
+    const testUser: UserData = {
+      username: "testuser",
+      realm: "testrealm",
+      user_id: "123",
+      description: "",
+      editable: false,
+      email: "",
+      givenname: "",
+      mobile: "",
+      phone: "",
+      resolver: "",
+      surname: "",
+      userid: ""
+    };
+    const testRealm = "testrealm";
+    const testPin = "123456";
+
+    // No user selected
+    component.userFilterControl.setValue(null);
+    component.selectedUserRealmControl.setValue(testRealm);
+    component.pin.set(testPin);
+    component.pinRepeat.set(testPin);
+    component.onConfirm();
+    expect((component as any).dialogRef.close).not.toHaveBeenCalled();
+
+    // No realm selected
+    component.userFilterControl.setValue(testUser);
+    component.selectedUserRealmControl.setValue("");
+    component.onConfirm();
+    expect((component as any).dialogRef.close).not.toHaveBeenCalled();
+
+    // Pins do not match
+    component.userFilterControl.setValue(testUser);
+    component.selectedUserRealmControl.setValue(testRealm);
+    component.pin.set(testPin);
+    component.pinRepeat.set("654321");
+    component.onConfirm();
+    expect((component as any).dialogRef.close).not.toHaveBeenCalled();
   });
 });
