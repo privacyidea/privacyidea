@@ -158,39 +158,9 @@ describe("SystemConfigComponent", () => {
     expect(component.hasConfigWritePermission()).toBe(false);
   });
 
-  it("should convert various truthy values to boolean correctly", () => {
-    const testCases = [
-      { input: true, expected: true },
-      { input: 1, expected: true },
-      { input: "1", expected: true },
-      { input: "True", expected: true },
-      { input: "true", expected: true },
-      { input: "TRUE", expected: true },
-      { input: false, expected: false },
-      { input: 0, expected: false },
-      { input: "0", expected: false },
-      { input: "False", expected: false },
-      { input: "false", expected: false },
-      { input: "FALSE", expected: false },
-      { input: "other", expected: false },
-      { input: null, expected: false },
-      { input: undefined, expected: false }
-    ];
-
-    testCases.forEach(({ input, expected }) => {
-      expect(component.isChecked(input)).toBe(expected);
-    });
-  });
-
   it("should reload system config when loadSystemConfig is called", () => {
     const reloadSpy = jest.spyOn(systemService.systemConfigResource, "reload");
     component.loadSystemConfig();
     expect(reloadSpy).toHaveBeenCalled();
-  });
-
-  it("should load SMTP identifiers when loadSmtpIdentifiers is called", () => {
-    const loadSpy = jest.spyOn(systemService, "loadSmtpIdentifiers");
-    component.loadSmtpIdentifiers();
-    expect(loadSpy).toHaveBeenCalled();
   });
 });

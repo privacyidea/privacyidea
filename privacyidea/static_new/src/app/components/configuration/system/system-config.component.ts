@@ -107,17 +107,6 @@ export class SystemConfigComponent implements OnInit {
     this.systemService.systemConfigResource.reload();
   }
 
-  loadSmtpIdentifiers(): void {
-    // Deprecated: use SmtpService instead. This function is kept for backward compatibility if called elsewhere.
-    try {
-      const servers = this.smtpService.smtpServers();
-      this.smtpIdentifiers = servers.map(s => s.identifier);
-    } catch (error) {
-      console.error("Error loading SMTP configurations via SmtpService:", error);
-      this.smtpIdentifiers = [];
-    }
-  }
-
   saveSystemConfig(): void {
     const body = { ...this.params };
 
