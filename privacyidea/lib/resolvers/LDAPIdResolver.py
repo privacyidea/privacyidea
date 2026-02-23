@@ -242,15 +242,19 @@ def cache(func):
             entry = r_cache.get(args[0])
             if entry and now < entry.get("timestamp") + tdelta:
                 valid_cache_entry = True
-                if args[0] == "get_user_info":
+                result = entry.get("value")
+                if func.__name__ == "get_user_info":
                     # Check if requested attributes are available in the cache
-                    requested_attributes = set(kwds.get("attributes", []))
+                    requested_attributes = set(kwds.get("attributes", self.get_available_info_keys()))
                     cached_attributes = set(entry.get("value").keys())
                     if not requested_attributes.issubset(cached_attributes):
                         valid_cache_entry = False
+                    if set(cached_attributes) > set(requested_attributes):
+                        # extract only requested attributes from the cache
+                        result = {k: v for k, v in entry.get("value").items() if k in requested_attributes}
                 if valid_cache_entry:
                     log.debug("Reading {0!r} from cache for {1!r}".format(args[0], func.__name__))
-                    return entry.get("value")
+                    return result
 
         f_result = func(self, *args, **kwds)
 
@@ -626,7 +630,10 @@ class IdResolver(UserIdResolver):
 
         :return: list of possible keys for searching users
         """
-        return list(self.userinfo.keys())
+        info_keys = list(self.userinfo.keys())
+        if self.recursive_group_search and self.group_attribute_mapping_key:
+            info_keys.append(self.group_attribute_mapping_key)
+        return info_keys
 
     def _get_user_groups_recursive(self, user_info: dict) -> list[str]:
         """
@@ -812,6 +819,7 @@ class IdResolver(UserIdResolver):
         if self.uidtype.lower() != "dn":
             ldap_attributes.append(str(self.uidtype))
 
+        search_dict = search_dict or {}
         unknown_search_keys = [x for x in search_dict.keys() if x not in self.userinfo.keys()]
         if unknown_search_keys:
             log.error(f"Could not find search key ({unknown_search_keys}) in "
@@ -846,7 +854,8 @@ class IdResolver(UserIdResolver):
                 try:
                     ldap_user = entry.get("attributes")
                     user = self._ldap_attributes_to_user_object(ldap_user, attributes)
-                    user['userid'] = self._get_uid(entry, self.uidtype)
+                    if not attributes or "userid" in attributes:
+                        user['userid'] = self._get_uid(entry, self.uidtype)
                     user_list.append(user)
                 except Exception as ex:  # pragma: no cover
                     log.error(f"Error during fetching LDAP objects: {ex}")

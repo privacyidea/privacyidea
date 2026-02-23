@@ -8,23 +8,23 @@ import logging
 import mock
 from testfixtures import log_capture, LogCapture
 
+from privacyidea.config import TestingConfig
+from privacyidea.lib.config import set_privacyidea_config
+from privacyidea.lib.framework import get_app_config
+from privacyidea.lib.realm import (set_realm, delete_realm)
+from privacyidea.lib.resolver import (save_resolver, delete_resolver)
 from privacyidea.lib.resolvers.EntraIDResolver import (CLIENT_ID, CLIENT_CREDENTIAL_TYPE, ClientCredentialType,
                                                        CLIENT_SECRET, TENANT)
-from .base import MyTestCase, OverrideConfigTestCase
-from privacyidea.lib.resolver import (save_resolver, delete_resolver)
-from privacyidea.lib.config import set_privacyidea_config
-from privacyidea.lib.realm import (set_realm, delete_realm)
 from privacyidea.lib.user import (User, create_user,
                                   get_username,
                                   get_user_list,
                                   split_user,
                                   get_user_from_param,
                                   UserError)
-from privacyidea.lib.framework import get_app_config
 from privacyidea.lib.user import log as user_log
 from privacyidea.models import NodeName, db
-from privacyidea.config import TestingConfig
 from . import ldap3mock
+from .base import MyTestCase, OverrideConfigTestCase
 from .test_lib_resolver import LDAPDirectory_small
 from .test_lib_resolver_httpresolver import ConfidentialClientApplicationMock
 
@@ -268,7 +268,7 @@ class UserTestCase(MyTestCase):
         # reset splitAtSign setting
         set_privacyidea_config("splitAtSign", True)
 
-#    @log_capture(level=logging.DEBUG)
+    #    @log_capture(level=logging.DEBUG)
     def test_10_check_user_password(self):
         (added, failed) = set_realm("passwordrealm",
                                     [{'name': self.resolvername3}])
@@ -692,6 +692,65 @@ class UserTestCase(MyTestCase):
                              uid="039b36ef-e7c0-42f3-9bf9-ca6a6c0d4d54") == User("salesman", "ldap"))
         delete_realm("ldap")
         delete_resolver("ldapresolver")
+
+    def test_20_available_info_keys(self):
+        save_resolver({"resolver": self.resolvername1, "type": "passwdresolver",
+                       "fileName": PWFILE})
+        set_realm(self.realm1, [{'name': self.resolvername1}])
+        user = User("root", self.realm1)
+
+        info_keys = user.available_info_keys
+        self.assertSetEqual(
+            {"username", "userid", "givenname", "surname", "phone", "mobile", "email", "description", "cryptpass"},
+            set(info_keys))
+
+        # Cleanup
+        delete_realm(self.realm1)
+        delete_resolver(self.resolvername1)
+
+    def test_21_get_specific_info(self):
+        save_resolver({"resolver": self.resolvername1, "type": "passwdresolver",
+                       "fileName": PWFILE})
+        set_realm(self.realm1, [{'name': self.resolvername1}])
+        user = User("root", self.realm1)
+
+        # get specific info keys
+        info = user.get_specific_info(["username", "givenname"])
+        self.assertEqual(info.get("username"), "root")
+        self.assertEqual(info.get("givenname"), "root")
+
+        # get non existing info key
+        info = user.get_specific_info(["nonexisting"])
+        self.assertListEqual([], list(info.keys()))
+
+        # not passing a list of keys returns all info
+        info = user.get_specific_info()
+        self.assertSetEqual(
+            {"username", "userid", "givenname", "surname", "phone", "mobile", "email", "description", "cryptpass"},
+            set(info.keys()))
+        self.assertEqual("root", info.get("username"))
+        self.assertEqual("0", info.get("userid"))
+        self.assertEqual("root", info.get("givenname"))
+        self.assertEqual("", info.get("surname"))
+        self.assertEqual("", info.get("phone"))
+        self.assertEqual("", info.get("mobile"))
+        self.assertEqual("", info.get("email"))
+        self.assertEqual("root", info.get("description"))
+        self.assertEqual("x", info.get("cryptpass"))
+
+        # empty user returns empty dict
+        empty_user = User()
+        info = empty_user.get_specific_info()
+        self.assertEqual({}, info)
+
+        # non-existing user returns empty dict
+        non_existing_user = User("nonexisting", self.realm1)
+        info = non_existing_user.get_specific_info()
+        self.assertEqual({}, info)
+
+        # Cleanup
+        delete_realm(self.realm1)
+        delete_resolver(self.resolvername1)
 
     def test_50_user_attributes(self):
         save_resolver({"resolver": self.resolvername1, "type": "passwdresolver",

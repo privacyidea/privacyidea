@@ -229,17 +229,22 @@ class IdResolver (UserIdResolver):
             fields = self.description_dict.get(user_id, [])
 
             for key in self.search_field_indices:
-                if no_passwd and key == "cryptpass":
+                if (no_passwd and key == "cryptpass") or (attributes is not None and key not in attributes):
                     continue
                 index = self.search_field_indices[key]
                 if index < len(fields):
                     ret[key] = fields[index]
 
-            ret['givenname'] = self.given_name_dict.get(user_id)
-            ret['surname'] = self.surname_dict.get(user_id)
-            ret['phone'] = self.home_phone_dict.get(user_id)
-            ret['mobile'] = self.office_phone_dict.get(user_id)
-            ret['email'] = self.email_dict.get(user_id)
+            if attributes is None or "givenname" in attributes:
+                ret['givenname'] = self.given_name_dict.get(user_id)
+            if attributes is None or "surname" in attributes:
+                ret['surname'] = self.surname_dict.get(user_id)
+            if attributes is None or "phone" in attributes:
+                ret['phone'] = self.home_phone_dict.get(user_id)
+            if attributes is None or "mobile" in attributes:
+                ret['mobile'] = self.office_phone_dict.get(user_id)
+            if attributes is None or "email" in attributes:
+                ret['email'] = self.email_dict.get(user_id)
         else:
             log.debug("User with user ID %s could not be found.", user_id)
 
@@ -316,6 +321,7 @@ class IdResolver (UserIdResolver):
         :param attributes: list of attributes to be returned for each user
         """
         ret = []
+        search_dict = search_dict or {}
 
         #  first check if the searches are in the searchDict
         for _id, line in self.description_dict.items():
@@ -344,7 +350,7 @@ class IdResolver (UserIdResolver):
                 uid = ""
                 if uid_index < len(line):
                     uid = line[self.search_field_indices["userid"]]
-                info = self.get_user_info(uid, no_passwd=True)
+                info = self.get_user_info(uid, attributes=attributes, no_passwd=True)
                 ret.append(info)
 
         return ret

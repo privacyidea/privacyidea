@@ -63,7 +63,7 @@ class KeycloakResolver(HTTPResolver):
                                                    "userid": "id",
                                                    "givenname": "firstName",
                                                    "surname": "lastName",
-                                                   "email": "email", }
+                                                   "email": "email"}
         self.attribute_mapping_user_store_to_pi = {rh_sso_key: pi_key for pi_key, rh_sso_key in
                                                    self.attribute_mapping_pi_to_user_store.items()}
         self.base_url = "http://localhost:8080"

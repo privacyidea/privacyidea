@@ -385,6 +385,7 @@ class HTTPResolverTestCase(MyTestCase):
         self.assertEqual(users[0]['givenname'], 'Test')
         self.assertEqual(users[0]['surname'], 'User')
         self.assertEqual(users[0]['userid'], '1234')
+        self.assertSetEqual({"username", "userid", "givenname", "surname"}, set(users[0].keys()))
         self.assertEqual(4, len(users[0]))
 
         # success with filter
@@ -393,6 +394,16 @@ class HTTPResolverTestCase(MyTestCase):
         users = instance.getUserList({"givenname": "Test", "favorite_color": "blue"})
         self.assertEqual(len(users), 1)
         self.assertEqual(users[0]['username'], 'testuser')
+
+        # success with defined attributes
+        responses.add(responses.GET, "https://example.com/users", status=200,
+                      body="""[{"login": "testuser", "first_name": "Test", "last_name": "User", "id": "1234", "businessPhone": "+1234567890"},
+                                        {"login": "corny", "first_name": "Corny", "last_name": "Meier", "id": "5678"}]""")
+        users = instance.getUserList(attributes=["username", "givenname", "unknown"])
+        self.assertEqual(len(users), 2)
+        self.assertEqual(users[0]['username'], 'testuser')
+        self.assertEqual(users[0]['givenname'], 'Test')
+        self.assertSetEqual({"username", "givenname"}, set(users[0].keys()))
 
         # fails
         responses.add(responses.GET, "https://example.com/users", status=400,
@@ -777,22 +788,54 @@ class HTTPResolverTestCase(MyTestCase):
 
     @responses.activate
     def test_14_get_user_info(self):
-        responses.add(self.METHOD, self.ENDPOINT, status=200, adding_headers=json.loads(self.HEADERS),
-                      body=self.BODY_RESPONSE_OK)
-        responses.add(self.METHOD, self.ENDPOINT, status=200, adding_headers=json.loads(self.HEADERS),
-                      body=self.BODY_RESPONSE_NOK)
-
         # Test with valid response
         instance = HTTPResolver()
         instance.loadConfig(self.basic_config)
+        responses.add(self.METHOD, self.ENDPOINT, status=200, adding_headers=json.loads(self.HEADERS),
+                      body=self.BODY_RESPONSE_OK)
+
         response = instance.get_user_info('PepePerez')
         self.assertEqual(response.get('username'), 'PepePerez')
         self.assertEqual(response.get('email'), 'pepe@perez.com')
         self.assertEqual(response.get('mobile'), '+1123568974')
         self.assertEqual(response.get('a_static_key'), 'a static value')
+        self.assertSetEqual({"username", "email", "mobile", "a_static_key"}, set(response.keys()))
+
+        # define attributes
+        responses.add(self.METHOD, self.ENDPOINT, status=200, adding_headers=json.loads(self.HEADERS),
+                      body=self.BODY_RESPONSE_OK)
+        response = instance.get_user_info('PepePerez', ["username", "email", "unknown"])
+        self.assertEqual('PepePerez', response.get('username'))
+        self.assertEqual('pepe@perez.com', response.get('email'))
+        self.assertSetEqual({"username", "email"}, set(response.keys()))
 
         # Test with invalid response
+        responses.add(self.METHOD, self.ENDPOINT, status=200, adding_headers=json.loads(self.HEADERS),
+                      body=self.BODY_RESPONSE_NOK)
         self.assertDictEqual({}, instance.get_user_info('PepePerez'))
+
+    @responses.activate
+    def test_14_get_user_info_advanced(self):
+        # Test with valid response
+        instance = HTTPResolver()
+        instance.loadConfig(self.advanced_config)
+        responses.add(responses.GET, "https://example.com/users/1234", status=200,
+                      body="""{"login": "testuser", "first_name": "Test", "last_name": "User", "id": "1234", "businessPhone": "+1234567890"}""")
+
+        response = instance.get_user_info('1234')
+        self.assertEqual(response.get('username'), 'testuser')
+        self.assertEqual(response.get('userid'), '1234')
+        self.assertEqual(response.get('givenname'), 'Test')
+        self.assertEqual(response.get('surname'), 'User')
+        self.assertSetEqual({"username", "userid", "givenname", "surname"}, set(response.keys()))
+
+        # define attributes
+        responses.add(responses.GET, "https://example.com/users/1234", status=200,
+                      body="""{"login": "testuser", "first_name": "Test", "last_name": "User", "id": "1234", "businessPhone": "+1234567890"}""")
+        response = instance.get_user_info('1234', ["username", "givenname", "unknown"])
+        self.assertEqual("testuser", response.get('username'))
+        self.assertEqual("Test", response.get('givenname'))
+        self.assertSetEqual({"username", "givenname"}, set(response.keys()))
 
     def test_15_get_config(self):
         resolver = HTTPResolver()
@@ -1018,6 +1061,16 @@ class HTTPResolverTestCase(MyTestCase):
                       body="""[{"id": "group1"}, {"id": "group2"}]""")
         groups = instance.get_user_groups(user)
         self.assertListEqual(["", ""], groups)
+
+    def test_26_get_available_info_keys(self):
+        resolver = HTTPResolver()
+        resolver.loadConfig(self.basic_config)
+        keys = resolver.get_available_info_keys()
+        self.assertSetEqual({"username", "mobile", "email", "a_static_key"}, set(keys))
+
+        resolver.loadConfig(self.advanced_config)
+        keys = resolver.get_available_info_keys()
+        self.assertSetEqual({"username", "userid", "givenname", "surname"}, set(keys))
 
 
 class ConfidentialClientApplicationMock:
@@ -1307,6 +1360,85 @@ class EntraIDResolverTestCase(MyTestCase):
                 self.assertListEqual([], user["groups"])
 
     @responses.activate
+    def test_06_getUserList_attributes(self):
+        resolver = self.set_up_resolver()
+        resolver.config_get_user_groups = {ACTIVE: True, USER_GROUPS_ATTRIBUTE: "displayName"}
+
+        # without groups
+        responses.add(responses.GET, "https://graph.microsoft.com/v1.0/users", status=200,
+                      body="""{"@odata.context": "https://graph.microsoft.com/v1.0/$metadata#users",
+                                 "value": [{"businessPhones": [],
+                                            "displayName": "Conf Room Adams",
+                                            "givenName": null,
+                                            "jobTitle": null,
+                                            "mail": "Adams@contoso.com",
+                                            "mobilePhone": null,
+                                            "officeLocation": null,
+                                            "preferredLanguage": null,
+                                            "surname": null,
+                                            "userPrincipalName": "Adams@contoso.com",
+                                            "id": "6ea91a8d-e32e-41a1-b7bd-d2d185eed0e0"},
+                                           {"businessPhones": ["425-555-0100"],
+                                            "displayName": "MOD Administrator",
+                                            "givenName": "MOD",
+                                            "jobTitle": null,
+                                            "mail": null,
+                                            "mobilePhone": "425-555-0101",
+                                            "officeLocation": null,
+                                            "preferredLanguage": "en-US",
+                                            "surname": "Administrator",
+                                            "userPrincipalName": "admin@contoso.com",
+                                            "id": "4562bcc8-c436-4f95-b7c0-4f8ce89dca5e"}]}""")
+
+        # with groups
+        responses.add(responses.GET, "https://graph.microsoft.com/v1.0/users?%24expand=memberOf", status=200,
+                      body="""{"@odata.context": "https://graph.microsoft.com/v1.0/$metadata#users",
+                                 "value": [{"businessPhones": [],
+                                            "displayName": "Conf Room Adams",
+                                            "givenName": null,
+                                            "jobTitle": null,
+                                            "mail": "Adams@contoso.com",
+                                            "mobilePhone": null,
+                                            "officeLocation": null,
+                                            "preferredLanguage": null,
+                                            "surname": null,
+                                            "userPrincipalName": "Adams@contoso.com",
+                                            "id": "6ea91a8d-e32e-41a1-b7bd-d2d185eed0e0",
+                                            "memberOf": [{"id": "1234", "displayName": "Group1"}, {"id": "5678", "displayName": "Group2"}]},
+                                           {"businessPhones": ["425-555-0100"],
+                                            "displayName": "MOD Administrator",
+                                            "givenName": "MOD",
+                                            "jobTitle": null,
+                                            "mail": null,
+                                            "mobilePhone": "425-555-0101",
+                                            "officeLocation": null,
+                                            "preferredLanguage": "en-US",
+                                            "surname": "Administrator",
+                                            "userPrincipalName": "admin@contoso.com",
+                                            "id": "4562bcc8-c436-4f95-b7c0-4f8ce89dca5e",
+                                            "memberOf": []}]}""")
+
+        # request specific attributes without groups
+        user_list = resolver.getUserList(attributes=["username", "email", "unknown"])
+        for user in user_list:
+            self.assertSetEqual({"username", "email"}, set(user.keys()))
+
+        # request specific attributes with groups
+        user_list = resolver.getUserList(attributes=["username", "groups"])
+        for user in user_list:
+            self.assertSetEqual({"username", "groups"}, set(user.keys()))
+            if user["username"] == "Adams@contoso.com":
+                self.assertSetEqual({"Group1", "Group2"}, set(user["groups"]))
+            else:
+                self.assertListEqual([], user["groups"])
+
+        # request without attributes defined should return all attributes
+        user_list = resolver.getUserList()
+        for user in user_list:
+            self.assertSetEqual({"username", "userid", "givenname", "surname", "email", "mobile", "phone", "groups"},
+                                set(user.keys()))
+
+    @responses.activate
     def test_07_getUserList_fails(self):
         resolver = self.set_up_resolver()
 
@@ -1330,21 +1462,39 @@ class EntraIDResolverTestCase(MyTestCase):
         resolver = self.set_up_resolver()
 
         user_id = "87d349ed-44d7-43e1-9a83-5f2406dee5bd"
-        responses.add(responses.GET, f"https://graph.microsoft.com/v1.0/users/{user_id}", status=200,
-                      body="""{"businessPhones": ["+1 425 555 0109"],
-                               "displayName": "Adele Vance",
-                               "givenName": "Adele",
-                               "jobTitle": "Retail Manager",
-                               "mail": "AdeleV@contoso.com",
-                               "mobilePhone": "+1 425 555 0109",
-                               "officeLocation": "18/2111",
-                               "preferredLanguage": "en-US",
-                               "surname": "Vance",
-                               "userPrincipalName": "AdeleV@contoso.com",
-                               "id": "87d349ed-44d7-43e1-9a83-5f2406dee5bd"
-                            }""")
+        for _ in range(2):
+            responses.add(responses.GET, f"https://graph.microsoft.com/v1.0/users/{user_id}", status=200,
+                          body="""{"businessPhones": ["+1 425 555 0109"],
+                                   "displayName": "Adele Vance",
+                                   "givenName": "Adele",
+                                   "jobTitle": "Retail Manager",
+                                   "mail": "AdeleV@contoso.com",
+                                   "mobilePhone": "+1 425 555 0109",
+                                   "officeLocation": "18/2111",
+                                   "preferredLanguage": "en-US",
+                                   "surname": "Vance",
+                                   "userPrincipalName": "AdeleV@contoso.com",
+                                   "id": "87d349ed-44d7-43e1-9a83-5f2406dee5bd"
+                                }""")
+            responses.add(responses.GET, f"https://graph.microsoft.com/v1.0/users/{user_id}?%24expand=memberOf",
+                          status=200,
+                          body="""{"businessPhones": ["+1 425 555 0109"],
+                                           "displayName": "Adele Vance",
+                                           "givenName": "Adele",
+                                           "jobTitle": "Retail Manager",
+                                           "mail": "AdeleV@contoso.com",
+                                           "mobilePhone": "+1 425 555 0109",
+                                           "officeLocation": "18/2111",
+                                           "preferredLanguage": "en-US",
+                                           "surname": "Vance",
+                                           "userPrincipalName": "AdeleV@contoso.com",
+                                           "id": "87d349ed-44d7-43e1-9a83-5f2406dee5bd",
+                                           "memberOf": [{"id": "1234", "displayName": "Group1"}, {"id": "5678", "displayName": "Group2"}]
+                                        }""")
 
         user_info = resolver.get_user_info(user_id)
+        self.assertSetEqual({"username", "userid", "givenname", "surname", "email", "mobile", "phone"},
+                            set(user_info.keys()))
         self.assertEqual(user_id, user_info["userid"])
         self.assertEqual("AdeleV@contoso.com", user_info["username"])
         self.assertEqual("Adele", user_info["givenname"])
@@ -1352,7 +1502,32 @@ class EntraIDResolverTestCase(MyTestCase):
         self.assertEqual("AdeleV@contoso.com", user_info["email"])
         self.assertEqual("+1 425 555 0109", user_info["mobile"])
         self.assertListEqual(["+1 425 555 0109"], user_info["phone"])
-        self.assertEqual(7, len(user_info))
+
+        # with groups
+        resolver.config_get_user_groups = {ACTIVE: True, USER_GROUPS_ATTRIBUTE: "displayName"}
+        user_info = resolver.get_user_info(user_id)
+        self.assertSetEqual({"username", "userid", "givenname", "surname", "email", "mobile", "phone", "groups"},
+                            set(user_info.keys()))
+        self.assertEqual(user_id, user_info["userid"])
+        self.assertEqual("AdeleV@contoso.com", user_info["username"])
+        self.assertEqual("Adele", user_info["givenname"])
+        self.assertEqual("Vance", user_info["surname"])
+        self.assertEqual("AdeleV@contoso.com", user_info["email"])
+        self.assertEqual("+1 425 555 0109", user_info["mobile"])
+        self.assertListEqual(["+1 425 555 0109"], user_info["phone"])
+        self.assertSetEqual({"Group1", "Group2"}, set(user_info["groups"]))
+
+        # specific attributes
+        user_info = resolver.get_user_info(user_id, attributes=["username", "email", "unknown"])
+        self.assertSetEqual({"username", "email"}, set(user_info.keys()))
+        self.assertEqual("AdeleV@contoso.com", user_info["username"])
+        self.assertEqual("AdeleV@contoso.com", user_info["email"])
+
+        # specific attributes with groups
+        user_info = resolver.get_user_info(user_id, attributes=["username", "groups"])
+        self.assertSetEqual({"username", "groups"}, set(user_info.keys()))
+        self.assertEqual("AdeleV@contoso.com", user_info["username"])
+        self.assertSetEqual({"Group1", "Group2"}, set(user_info["groups"]))
 
     @responses.activate
     def test_09_get_UserInfo_fails(self):
@@ -1983,6 +2158,13 @@ class EntraIDResolverTestCase(MyTestCase):
         groups = resolver.get_user_groups(entra_user)
         self.assertListEqual([], groups)
 
+    def test_26_get_available_user_info_keys(self):
+        resolver = EntraIDResolver()
+
+        # default attributes
+        attributes = resolver.get_available_info_keys()
+        self.assertSetEqual({"username", "userid", "givenname", "surname", "email", "mobile", "phone"}, set(attributes))
+
 
 class KeycloakResolverTestCase(MyTestCase):
 
@@ -2073,6 +2255,22 @@ class KeycloakResolverTestCase(MyTestCase):
 
         user_list = resolver.getUserList()
         self.assertEqual(2, len(user_list))
+        user = user_list[0]
+        self.assertSetEqual({"username", "userid", "givenname", "surname", "email", "groups"}, set(user.keys()))
+        self.assertEqual("elizabeth", user["username"])
+        self.assertEqual("Elizabeth", user["givenname"])
+        self.assertEqual("Zott", user["surname"])
+        self.assertEqual("6ea91a8d-e32e-41a1-b7bd-d2d185eed0e0", user["userid"])
+        self.assertEqual("", user["email"])
+        self.assertEqual([], user["groups"])
+
+        # request specific attributes
+        user_list = resolver.getUserList(attributes=["username", "givenname", "unknown"])
+        self.assertEqual(2, len(user_list))
+        user = user_list[0]
+        self.assertSetEqual({"username", "givenname"}, set(user.keys()))
+        self.assertEqual("elizabeth", user["username"])
+        self.assertEqual("Elizabeth", user["givenname"])
 
     @responses.activate
     def test_03_getUserList_with_groups(self):
@@ -2096,7 +2294,7 @@ class KeycloakResolverTestCase(MyTestCase):
         user_list = resolver.getUserList()
         self.assertEqual(1, len(user_list))
         user = user_list[0]
-        self.assertIn("groups", user)
+        self.assertSetEqual({"username", "userid", "givenname", "surname", "email", "groups"}, set(user.keys()))
         self.assertEqual(2, len(user["groups"]))
         self.assertSetEqual({"child-group", "second-group"}, set(user["groups"]))
 
@@ -2109,9 +2307,10 @@ class KeycloakResolverTestCase(MyTestCase):
         resolver.loadConfig(config)
 
         # Mock users API
-        responses.add(responses.GET, "http://localhost:8080/admin/realms/master/users", status=200,
-                      body="""[{"username": "elizabeth", "firstName": "Elizabeth", "lastName": "Zott", 
-                                        "id": "6ea91a8d-e32e-41a1-b7bd-d2d185eed0e0"}]""")
+        for _ in range(2):
+            responses.add(responses.GET, "http://localhost:8080/admin/realms/master/users", status=200,
+                          body="""[{"username": "elizabeth", "firstName": "Elizabeth", "lastName": "Zott", 
+                                            "id": "6ea91a8d-e32e-41a1-b7bd-d2d185eed0e0"}]""")
         # Mock groups API
         responses.add(responses.GET,
                       "http://localhost:8080/admin/realms/master/users/6ea91a8d-e32e-41a1-b7bd-d2d185eed0e0/groups",
@@ -2122,7 +2321,14 @@ class KeycloakResolverTestCase(MyTestCase):
         user_list = resolver.getUserList()
         self.assertEqual(1, len(user_list))
         user = user_list[0]
+        self.assertSetEqual({"username", "userid", "givenname", "surname", "email"}, set(user.keys()))
         self.assertNotIn("groups", user)
+
+        # even if we explicitly request the groups they are not returned
+        user_list = resolver.getUserList(attributes=["username", "groups"])
+        self.assertEqual(1, len(user_list))
+        user = user_list[0]
+        self.assertSetEqual({"username"}, set(user.keys()))
 
     @responses.activate
     def test_04_getUserList_fails(self):
@@ -2159,11 +2365,33 @@ class KeycloakResolverTestCase(MyTestCase):
                       body="""{"username": "elizabeth", "firstName": "Elizabeth", "lastName": "Zott",
                                 "id": "6ea91a8d-e32e-41a1-b7bd-d2d185eed0e0"}""")
 
+        # Mock groups API
+        responses.add(responses.GET,
+                      "http://localhost:8080/admin/realms/master/users/6ea91a8d-e32e-41a1-b7bd-d2d185eed0e0/groups",
+                      status=200,
+                      body="""[{"id":"ea2b739d-053b-4dbe-931f-78e365f56b0b","name":"child-group","path":"/test-group/child-group","parentId":"032b2010-215...14","subGroups":[]},
+                                  {"id":"ae4482c9-af0b-47bb-b22d-54a2d9b46205","name":"second-group","path":"/second-group","subGroups":[]}]""")
+
         user_info = resolver.get_user_info(user_id)
+        self.assertSetEqual({"username", "userid", "givenname", "surname", "email", "groups"}, set(user_info.keys()))
         self.assertEqual(user_id, user_info["userid"])
         self.assertEqual("elizabeth", user_info["username"])
         self.assertEqual("Elizabeth", user_info["givenname"])
         self.assertEqual("Zott", user_info["surname"])
+        self.assertEqual("", user_info["email"])
+        self.assertSetEqual({"child-group", "second-group"}, set(user_info["groups"]))
+
+        # request specific attributes
+        user_info = resolver.get_user_info(user_id, attributes=["username", "givenname", "unknown"])
+        self.assertSetEqual({"username", "givenname"}, set(user_info.keys()))
+        self.assertEqual("elizabeth", user_info["username"])
+        self.assertEqual("Elizabeth", user_info["givenname"])
+
+        # request group attribute
+        user_info = resolver.get_user_info(user_id, attributes=["username", "groups"])
+        self.assertSetEqual({"username", "groups"}, set(user_info.keys()))
+        self.assertEqual("elizabeth", user_info["username"])
+        self.assertSetEqual({"child-group", "second-group"}, set(user_info["groups"]))
 
     @responses.activate
     def test_06_getUserInfo_fails(self):

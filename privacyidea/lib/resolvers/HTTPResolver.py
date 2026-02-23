@@ -408,7 +408,14 @@ class HTTPResolver(UserIdResolver):
 
         :return: list of possible keys for searching users
         """
-        attributes = list(self.attribute_mapping_pi_to_user_store.keys())
+        if self.attribute_mapping_pi_to_user_store:
+            # advanced resolver
+            attributes = list(self.attribute_mapping_pi_to_user_store.keys())
+        else:
+            # basic resolver, we need to extract the keys from the response mapping
+            response_mapping_str = self.config_get_user_by_id.get(RESPONSE_MAPPING, "{}")
+            response_mapping = json.loads(response_mapping_str)
+            attributes = list(response_mapping.keys())
         if self.config_get_user_groups.get(ACTIVE):
             attributes.append("groups")
         return attributes
@@ -843,8 +850,11 @@ class HTTPResolver(UserIdResolver):
         """
         pi_user = {}
 
-        if (not attributes or "groups" in attributes) and self.config_get_user_groups.get(ACTIVE, False):
-            pi_user["groups"] = self.get_user_groups(user)
+        if not attributes or "groups" in attributes:
+            if self.config_get_user_groups.get(ACTIVE, False):
+                pi_user["groups"] = self.get_user_groups(user)
+            elif attributes and "groups" in attributes:
+                log.debug("Groups are requested in the attributes but not active in the configuration. Returning empty list for groups.")
 
         if not attributes:
             attributes = self.attribute_mapping_pi_to_user_store.keys()
@@ -854,8 +864,7 @@ class HTTPResolver(UserIdResolver):
             if user_store_attribute:
                 pi_user[pi_attribute] = user.get(user_store_attribute, "")
             else:
-                # We do not know the related user store attribute for the requested one
-                pi_user[pi_attribute] = ""
+                log.debug(f"No mapping for privacyidea attribute '{pi_attribute}' found.")
 
         return pi_user
 
@@ -1016,6 +1025,9 @@ class HTTPResolver(UserIdResolver):
             if self.attribute_mapping_user_store_to_pi:
                 # Apply general attribute mapping
                 user_info = self._user_store_user_to_pi_user(user_info, attributes)
+            elif attributes:
+                # only return requested attributes
+                user_info = {attribute: user_info.get(attribute) for attribute in attributes if attribute in user_info}
 
         return user_info
 

@@ -78,7 +78,7 @@ class IdResolver (UserIdResolver):
                              self.access_token,
                              user_id)
         user = res
-        ret = self._fill_user_schema_1_0(user)
+        ret = self._fill_user_schema_1_0(user, attributes)
 
         return ret
 
@@ -91,8 +91,7 @@ class IdResolver (UserIdResolver):
         """
         return ["username", "givenname", "surname", "phone", "email", "mobile"]
 
-    @staticmethod
-    def _fill_user_schema_1_0(user):
+    def _fill_user_schema_1_0(self, user: dict, attributes: list[str] = None) -> dict:
         # We assume the schema:
         # "schemas": ["urn:scim:schemas:core:1.0"]
 
@@ -102,17 +101,25 @@ class IdResolver (UserIdResolver):
         #ret['phone'] = user.get(self.mapping.get("phone"), "")
         #ret['mobile'] = user.get(self.mapping.get("mobile"), "")
         #ret['email'] = user.get(self.mapping.get("email"), "")
+        attributes = attributes or self.get_available_info_keys()
 
-        ret = {"phone": "",
-               "email": "",
-               "mobile": ""}
-        ret['username'] = user.get("userName", {})
-        ret['givenname'] = user.get("name", {}).get("givenName", "")
-        ret['surname'] = user.get("name", {}).get("familyName", "")
-        if user.get("phoneNumbers", {}):
-            ret['phone'] = user.get("phoneNumbers")[0].get("value")
-        if user.get("emails", {}):
-            ret['email'] = user.get("emails")[0].get("value")
+        ret = {}
+        if "username" in attributes:
+            ret['username'] = user.get("userName", {})
+        if "givenname" in attributes:
+            ret['givenname'] = user.get("name", {}).get("givenName", "")
+        if "surname" in attributes:
+            ret['surname'] = user.get("name", {}).get("familyName", "")
+        if "phone" in attributes:
+            ret["phone"] = ""
+            if user.get("phoneNumbers", {}):
+                ret['phone'] = user.get("phoneNumbers")[0].get("value")
+        if "email" in attributes:
+            ret["email"] = ""
+            if user.get("emails", {}):
+                ret['email'] = user.get("emails")[0].get("value")
+        if "mobile" in attributes:
+            ret["mobile"] = ""
         return ret
 
     def getUsername(self, userid):
@@ -156,7 +163,7 @@ class IdResolver (UserIdResolver):
                                      self.access_token)
 
         for user in res.get("Resources"):
-            ret_user = self._fill_user_schema_1_0(user)
+            ret_user = self._fill_user_schema_1_0(user, attributes)
 
             ret.append(ret_user)
 

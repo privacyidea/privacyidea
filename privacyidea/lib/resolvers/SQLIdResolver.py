@@ -38,7 +38,7 @@ import re
 from privacyidea.lib.resolvers.UserIdResolver import UserIdResolver
 
 from sqlalchemy import (Integer, cast, String, MetaData, Table, and_,
-                        create_engine, select, insert, delete, update)
+                        create_engine, select, insert, delete, update, RowMapping)
 from sqlalchemy.orm import sessionmaker, scoped_session
 
 import traceback
@@ -280,7 +280,7 @@ class IdResolver (UserIdResolver):
             for r in result.mappings():
                 if userinfo:  # pragma: no cover
                     raise Exception("More than one user with userid {0!s} found!".format(user_id))
-                userinfo = self._get_user_from_mapped_object(r)
+                userinfo = self._get_user_from_mapped_object(r, attributes)
         except Exception as exx:  # pragma: no cover
             log.error("Could not get the user information: {0!r}".format(exx))
 
@@ -293,7 +293,9 @@ class IdResolver (UserIdResolver):
 
         :return: list of possible keys for searching users
         """
-        return list(self.map.keys())
+        info_keys = list(self.map.keys())
+        info_keys.append("id")  # id is always added
+        return info_keys
 
     def _get_userid_filter(self, userId):
         column = self.TABLE.columns[self.map.get("userid")]
@@ -349,24 +351,27 @@ class IdResolver (UserIdResolver):
 
         return userid
 
-    def _get_user_from_mapped_object(self, ro):
+    def _get_user_from_mapped_object(self, row: RowMapping, attributes: list[str] = None) -> dict:
         """
-        :param ro: row
-        :type ro: Mapped Object
-        :return: User
-        :rtype: dict
+        :param row: row
+        :param attributes: list of attribute names to be returned for the user. If None, all attributes are returned.
+        :return: user info as dictionary
         """
         user = {}
         try:
-            if self.map.get("userid") in ro:
-                user["id"] = ro[self.map.get("userid")]
+            if self.map.get("userid") in row:
+                user["id"] = row[self.map.get("userid")]
         except UnicodeEncodeError:  # pragma: no cover
-            log.error("Failed to convert user: {0!r}".format(ro))
+            log.error("Failed to convert user: {0!r}".format(row))
             log.debug("{0!s}".format(traceback.format_exc()))
 
+
         for key in self.map.keys():
+            if attributes and key not in attributes:
+                # only include the requested attributes
+                continue
             try:
-                raw_value = ro.get(self.map.get(key))
+                raw_value = row.get(self.map.get(key))
                 if raw_value:
                     if key == 'userid':
                         val = convert_column_to_unicode(raw_value)
@@ -378,7 +383,7 @@ class IdResolver (UserIdResolver):
 
             except UnicodeDecodeError:  # pragma: no cover
                 user[key] = "decoding_error"
-                log.error("Failed to convert user: {0!r}".format(ro))
+                log.error("Failed to convert user: {0!r}".format(row))
                 log.debug("{0!s}".format(traceback.format_exc()))
 
         return user
@@ -387,7 +392,8 @@ class IdResolver (UserIdResolver):
         """
         :param search_dict: A dictionary with search parameters
         :type search_dict: dict
-        :param attributes: list of attributes to be returned for each user
+        :param attributes: list of attributes to be returned for each user (id and userid are always returned).
+            If None, all attributes are returned.
         :return: list of users, where each user is a dictionary
         :raises ParameterError: when the search key does not exist in the
           mapping or database
@@ -425,8 +431,10 @@ class IdResolver (UserIdResolver):
                                       filter(filter_condition).
                                       limit(self.limit))
 
+        if attributes and "userid" not in attributes:
+            attributes.append("userid")
         for r in result.mappings():
-            user = self._get_user_from_mapped_object(r)
+            user = self._get_user_from_mapped_object(r, attributes)
             if "userid" in user:
                 # Remove the "password" attribute
                 user.pop("password", None)

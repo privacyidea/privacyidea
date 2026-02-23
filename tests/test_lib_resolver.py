@@ -603,6 +603,70 @@ class SQLResolverTestCase(MyTestCase):
         user_info = y.get_user_info(user)
         self.assertEqual(user_info.get("userid"), "cornelius")
 
+    def test_09_get_available_info_keys(self):
+        y = SQLResolver()
+        y.loadConfig(self.parameters)
+        keys = y.get_available_info_keys()
+        self.assertSetEqual({"id", "username", "userid", "email", "surname", "givenname", "password", "phone", "mobile"},
+                            set(keys))
+
+    def test_10_get_user_info(self):
+        y = SQLResolver()
+        y.loadConfig(self.parameters)
+
+        user_info = y.get_user_info(2)
+        # only includes keys for a valid value (which is not true for phone and mobile)
+        self.assertSetEqual({"id", "username", "userid", "email", "surname", "givenname", "password"},
+                            set(user_info.keys()))
+        self.assertEqual("fred", user_info.get("username"))
+        self.assertEqual(2, user_info.get("id"))
+        self.assertEqual("2", user_info.get("userid"))
+        self.assertEqual("fred@artists.com", user_info.get("email"))
+        self.assertEqual("stair", user_info.get("surname"))
+        self.assertEqual("fred", user_info.get("givenname"))
+        self.assertEqual("{sha}Lg8DuLoXOwvPkMABDprnaTp0JOA=", user_info.get("password"))
+
+        # gte user with all attributes defined
+        user_info = y.get_user_info(1)
+        self.assertSetEqual({"id", "username", "userid", "email", "surname", "givenname", "mobile", "phone", "password"},
+                            set(user_info.keys()))
+
+        # request specific attributes only
+        user_info = y.get_user_info(2, ["username", "email", "unknown"])
+        # id is always included, unknown attributes are ignored
+        self.assertSetEqual({"username", "email", "id"}, set(user_info.keys()))
+        self.assertEqual("fred", user_info.get("username"))
+        self.assertEqual("fred@artists.com", user_info.get("email"))
+        self.assertEqual(2, user_info.get("id"))
+
+    def test_11_getUserList(self):
+        y = SQLResolver()
+        y.loadConfig(self.parameters)
+
+        users = y.getUserList()
+        user_info = users[0]
+        # only includes keys for a valid value (which is not true for phone and mobile) + not include password
+        self.assertSetEqual({"id", "username", "userid", "email", "surname", "givenname", "mobile", "phone"},
+                            set(user_info.keys()))
+        self.assertEqual("user1", user_info.get("username"))
+        self.assertEqual(1, user_info.get("id"))
+        self.assertEqual("1", user_info.get("userid"))
+        self.assertEqual("user1@testdomain.com", user_info.get("email"))
+        self.assertEqual("dampf", user_info.get("surname"))
+        self.assertEqual("hans", user_info.get("givenname"))
+        self.assertEqual("+49 151 123454656", user_info.get("mobile"))
+        self.assertEqual("030 123454566", user_info.get("phone"))
+
+        # request specific attributes only
+        users = y.getUserList(attributes=["username", "email", "unknown"])
+        user_info = users[0]
+        # id and userid are always included, unknown attributes are ignored
+        self.assertSetEqual({"username", "email", "id", "userid"}, set(user_info.keys()))
+        self.assertEqual("user1", user_info.get("username"))
+        self.assertEqual("user1@testdomain.com", user_info.get("email"))
+        self.assertEqual(1, user_info.get("id"))
+        self.assertEqual("1", user_info.get("userid"))
+
     def test_99_testconnection_fail(self):
         y = SQLResolver()
         self.parameters['Database'] = "does_not_exist"
@@ -750,11 +814,18 @@ class SCIMResolverTestCase(MyTestCase):
                       'Secret': self.SECRET, 'Mapping': "{username: 'userName'}"})
 
         r = y.get_user_info("bjensen")
+        self.assertSetEqual(set(y.get_available_info_keys()), set(r.keys()))
         self.assertEqual(r.get("username"), "bjensen")
         self.assertEqual(r.get("phone"), "555-555-8377")
         self.assertEqual(r.get("givenname"), "Barbara")
         self.assertEqual(r.get("surname"), "Jensen")
         self.assertEqual(r.get("email"), "bjensen@example.com")
+
+        # request specific attributes only
+        r = y.get_user_info("bjensen", ["username", "email", "unknown"])
+        self.assertSetEqual({"username", "email"}, set(r.keys()))
+        self.assertEqual("bjensen", r.get("username"))
+        self.assertEqual("bjensen@example.com", r.get("email"))
 
         r = y.getUsername("bjensen")
         self.assertEqual(r, "bjensen")
@@ -775,10 +846,18 @@ class SCIMResolverTestCase(MyTestCase):
         y.loadConfig({'Authserver': self.AUTHSERVER, 'Resourceserver': self.RESOURCESERVER, 'Client': self.CLIENT,
                       'Secret': self.SECRET, 'Mapping': "{}"})
 
-        r = y.getUserList()
-        self.assertEqual(len(r), 2)
-        self.assertEqual(r[0].get("username"), "bjensen")
-        self.assertEqual(r[1].get("username"), "jsmith")
+        users = y.getUserList()
+        self.assertEqual(len(users), 2)
+        self.assertSetEqual(set(y.get_available_info_keys()), set(users[0].keys()))
+        self.assertEqual(users[0].get("username"), "bjensen")
+        self.assertEqual(users[1].get("username"), "jsmith")
+
+        # request specific attributes
+        users = y.getUserList(attributes=["username", "unknown"])
+        self.assertEqual(len(users), 2)
+        self.assertSetEqual({"username"}, set(users[0].keys()))
+        self.assertEqual(users[0].get("username"), "bjensen")
+        self.assertEqual(users[1].get("username"), "jsmith")
 
     @responses.activate
     def test_06_failed_get_user(self):
@@ -809,6 +888,11 @@ class SCIMResolverTestCase(MyTestCase):
         self.assertRaises(Exception, SCIMResolver._search_users,
                           resource_server=self.RESOURCESERVER,
                           access_token="")
+
+    def test_08_get_available_info_keys(self):
+        y = SCIMResolver()
+        keys = y.get_available_info_keys()
+        self.assertSetEqual({"username", "phone", "mobile", "email", "surname", "givenname"}, set(keys))
 
 
 class LDAPResolverTestCase(MyTestCase):
@@ -2405,20 +2489,20 @@ class LDAPResolverTestCase(MyTestCase):
     def test_39_create_search_filter(self):
         resolver = LDAPResolver()
         resolver.loadConfig({'LDAPURI': 'ldap://localhost',
-                      'LDAPBASE': 'o=test',
-                      'BINDDN': 'cn=manager,ou=example,o=test',
-                      'BINDPW': 'ldaptest',
-                      'LOGINNAMEATTRIBUTE': 'cn',
-                      'LDAPSEARCHFILTER': '(cn=*)',
-                      'USERINFO': '{ "username": "cn",'
-                                  '"phone" : "telephoneNumber", '
-                                  '"mobile" : "mobile"'
-                                  ', "email" : "mail", '
-                                  '"surname" : "sn", '
-                                  '"givenname" : "givenName",'
-                                  '"accountExpired": "accountExpired" }',
-                      'UIDTYPE': 'DN',
-                      })
+                             'LDAPBASE': 'o=test',
+                             'BINDDN': 'cn=manager,ou=example,o=test',
+                             'BINDPW': 'ldaptest',
+                             'LOGINNAMEATTRIBUTE': 'cn',
+                             'LDAPSEARCHFILTER': '(cn=*)',
+                             'USERINFO': '{ "username": "cn",'
+                                         '"phone" : "telephoneNumber", '
+                                         '"mobile" : "mobile"'
+                                         ', "email" : "mail", '
+                                         '"surname" : "sn", '
+                                         '"givenname" : "givenName",'
+                                         '"accountExpired": "accountExpired" }',
+                             'UIDTYPE': 'DN'
+                             })
 
         search_filter = resolver._create_search_filter({"surname": "***"})
         self.assertEqual("(&(cn=*))", search_filter)
@@ -2431,6 +2515,321 @@ class LDAPResolverTestCase(MyTestCase):
 
         search_filter = resolver._create_search_filter({"accountExpired": 1})
         self.assertEqual("(&(cn=*)(accountExpired=1))", search_filter)
+
+    def test_40_get_available_info_keys(self):
+        y = LDAPResolver()
+
+        # config without groups
+        y.loadConfig({'LDAPURI': 'ldap://localhost',
+                      'LDAPBASE': 'o=test',
+                      'BINDDN': 'cn=manager,ou=example,o=test',
+                      'BINDPW': 'ldaptest',
+                      'LOGINNAMEATTRIBUTE': 'cn',
+                      'LDAPSEARCHFILTER': '(cn=*)',
+                      'USERINFO': '{ "username": "cn",'
+                                  '"phone" : "telephoneNumber", '
+                                  '"mobile" : "mobile"'
+                                  ', "email" : "mail", '
+                                  '"surname" : "sn", '
+                                  '"givenname" : "givenName" }',
+                      'UIDTYPE': 'objectGUID'
+                      })
+        available_keys = y.get_available_info_keys()
+        self.assertSetEqual({"username", "phone", "mobile", "email", "surname", "givenname"}, set(available_keys))
+
+        # config with groups
+        y.loadConfig({'LDAPURI': 'ldap://localhost',
+                      'LDAPBASE': 'o=test',
+                      'BINDDN': 'cn=manager,ou=example,o=test',
+                      'BINDPW': 'ldaptest',
+                      'LOGINNAMEATTRIBUTE': 'cn',
+                      'LDAPSEARCHFILTER': '(cn=*)',
+                      'USERINFO': '{ "username": "cn",'
+                                  '"phone" : "telephoneNumber", '
+                                  '"mobile" : "mobile"'
+                                  ', "email" : "mail", '
+                                  '"surname" : "sn", '
+                                  '"givenname" : "givenName" }',
+                      'UIDTYPE': 'objectGUID',
+                      'recursive_group_search': True,
+                      'group_search_filter': '(&(sAMAccountName=*)(objectCategory=group)(member:1.2.840.113556.1.4.1941:=cn={username},{base_dn}))',
+                      'group_name_attribute': 'distinguishedName',
+                      'group_attribute_mapping_key': 'groups'
+                      })
+        available_keys = y.get_available_info_keys()
+        self.assertSetEqual({"username", "phone", "mobile", "email", "surname", "givenname", "groups"},
+                            set(available_keys))
+
+        # invalid recursive group search config
+        y.loadConfig({'LDAPURI': 'ldap://localhost',
+                      'LDAPBASE': 'o=test',
+                      'BINDDN': 'cn=manager,ou=example,o=test',
+                      'BINDPW': 'ldaptest',
+                      'LOGINNAMEATTRIBUTE': 'cn',
+                      'LDAPSEARCHFILTER': '(cn=*)',
+                      'USERINFO': '{ "username": "cn",'
+                                  '"phone" : "telephoneNumber", '
+                                  '"mobile" : "mobile"'
+                                  ', "email" : "mail", '
+                                  '"surname" : "sn", '
+                                  '"givenname" : "givenName" }',
+                      'UIDTYPE': 'DN',
+                      'recursive_group_search': True
+                      })
+        available_keys = y.get_available_info_keys()
+        self.assertSetEqual({"username", "phone", "mobile", "email", "surname", "givenname"},
+                            set(available_keys))
+
+    @ldap3mock.activate
+    def test_41_get_user_info_without_cache(self):
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
+        y = LDAPResolver()
+        y.loadConfig({'LDAPURI': 'ldap://localhost',
+                      'LDAPBASE': 'o=test',
+                      'BINDDN': 'cn=manager,ou=example,o=test',
+                      'BINDPW': 'ldaptest',
+                      'LOGINNAMEATTRIBUTE': 'cn',
+                      'LDAPSEARCHFILTER': '(cn=*)',
+                      'USERINFO': '{"username": "cn",'
+                                  '"phone" : "telephoneNumber",'
+                                  '"mobile" : "mobile",'
+                                  '"email" : "email",'
+                                  '"surname" : "sn",'
+                                  '"givenname" : "givenName" }',
+                      'UIDTYPE': 'objectGUID',
+                      'CACHE_TIMEOUT': 0
+                      })
+
+        # Get all attributes for Alice except the ones which are not available in the ldap user (phone)
+        user_info = y.get_user_info(objectGUIDs[0])
+        self.assertSetEqual({"username", "mobile", "email", "surname", "givenname"}, set(user_info.keys()),
+                            user_info)
+        self.assertEqual("alice", user_info["username"])
+        self.assertEqual(["1234", "45678"], user_info["mobile"])
+        self.assertEqual("alice@test.com", user_info["email"])
+        self.assertEqual("Cooper", user_info["surname"])
+        self.assertEqual("Alice", user_info["givenname"])
+
+        # specify attributes to receive, unknown attributes are ignored
+        user_info = y.get_user_info(objectGUIDs[0], attributes=["username", "givenname", "phone", "groups", "unknown"])
+        self.assertSetEqual({"username", "givenname"}, set(user_info.keys()),
+                            user_info)
+        self.assertEqual("alice", user_info["username"])
+        self.assertEqual("Alice", user_info["givenname"])
+
+    @ldap3mock.activate
+    def test_42_get_user_info_with_cache(self):
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
+        y = LDAPResolver()
+        y.loadConfig({'LDAPURI': 'ldap://localhost',
+                      'LDAPBASE': 'o=test',
+                      'BINDDN': 'cn=manager,ou=example,o=test',
+                      'BINDPW': 'ldaptest',
+                      'LOGINNAMEATTRIBUTE': 'cn',
+                      'LDAPSEARCHFILTER': '(cn=*)',
+                      'USERINFO': '{"username": "cn",'
+                                  '"phone" : "telephoneNumber",'
+                                  '"mobile" : "mobile",'
+                                  '"email" : "email",'
+                                  '"surname" : "sn",'
+                                  '"givenname" : "givenName" }',
+                      'UIDTYPE': 'objectGUID',
+                      'CACHE_TIMEOUT': 120
+                      })
+
+        # specify attributes to receive
+        user_info = y.get_user_info(objectGUIDs[0], attributes=["username", "givenname"])
+        self.assertSetEqual({"username", "givenname"}, set(user_info.keys()),
+                            user_info)
+        self.assertEqual("alice", user_info["username"])
+        self.assertEqual("Alice", user_info["givenname"])
+
+        # Get all attributes for Alice except the ones which are not available in the ldap user (phone)
+        user_info = y.get_user_info(objectGUIDs[0])
+        self.assertSetEqual({"username", "mobile", "email", "surname", "givenname"}, set(user_info.keys()),
+                            user_info)
+        self.assertEqual("alice", user_info["username"])
+        self.assertEqual(["1234", "45678"], user_info["mobile"])
+        self.assertEqual("alice@test.com", user_info["email"])
+        self.assertEqual("Cooper", user_info["surname"])
+        self.assertEqual("Alice", user_info["givenname"])
+
+        # specify attributes to receive
+        user_info = y.get_user_info(objectGUIDs[0], attributes=["username", "surname"])
+        self.assertSetEqual({"username", "surname"}, set(user_info.keys()),
+                            user_info)
+        self.assertEqual("alice", user_info["username"])
+        self.assertEqual("Cooper", user_info["surname"])
+
+    @ldap3mock.activate
+    def test_43_get_user_info_with_groups_without_cache(self):
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
+        y = LDAPResolver()
+        y.loadConfig({'LDAPURI': 'ldap://localhost',
+                      'LDAPBASE': 'ou=example,o=test',
+                      'BINDDN': 'cn=manager,ou=example,o=test',
+                      'BINDPW': 'ldaptest',
+                      'LOGINNAMEATTRIBUTE': 'cn',
+                      'LDAPSEARCHFILTER': '(cn=*)',
+                      'USERINFO': '{"username": "cn",'
+                                  '"phone" : "telephoneNumber",'
+                                  '"mobile" : "mobile",'
+                                  '"email" : "email",'
+                                  '"surname" : "sn",'
+                                  '"givenname" : "givenName" }',
+                      'UIDTYPE': 'objectGUID',
+                      'CACHE_TIMEOUT': 0,
+                      'recursive_group_search': True,
+                      'group_search_filter': '(&(sAMAccountName=*)(objectCategory=group)(member:1.2.840.113556.1.4.1941:=cn={username},{base_dn}))',
+                      'group_name_attribute': 'distinguishedName',
+                      'group_attribute_mapping_key': 'groups'
+                      })
+
+        # Get all attributes for Alice except the ones which are not available in the ldap user (phone)
+        with mock.patch("privacyidea.lib.resolvers.LDAPIdResolver.IdResolver._get_user_groups_recursive",
+                        return_value=["testgroup"]):
+            user_info = y.get_user_info(objectGUIDs[0])
+            self.assertSetEqual({"username", "mobile", "email", "surname", "givenname", "groups"},
+                                set(user_info.keys()),
+                                user_info)
+            self.assertEqual("alice", user_info["username"])
+            self.assertEqual(["1234", "45678"], user_info["mobile"])
+            self.assertEqual("alice@test.com", user_info["email"])
+            self.assertEqual("Cooper", user_info["surname"])
+            self.assertEqual("Alice", user_info["givenname"])
+            self.assertEqual(["testgroup"], user_info["groups"])
+
+            # specify attributes without groups
+            user_info = y.get_user_info(objectGUIDs[0], attributes=["username", "givenname"])
+            self.assertSetEqual({"username", "givenname"}, set(user_info.keys()),
+                                user_info)
+            self.assertEqual("alice", user_info["username"])
+            self.assertEqual("Alice", user_info["givenname"])
+
+            # specify attributes to receive with groups
+            user_info = y.get_user_info(objectGUIDs[0], attributes=["username", "givenname", "groups"])
+            self.assertSetEqual({"username", "givenname", "groups"}, set(user_info.keys()),
+                                user_info)
+            self.assertEqual("alice", user_info["username"])
+            self.assertEqual("Alice", user_info["givenname"])
+            self.assertEqual(["testgroup"], user_info["groups"])
+
+    @ldap3mock.activate
+    def test_44_get_user_info_with_groups_with_cache(self):
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
+        y = LDAPResolver()
+        y.loadConfig({'LDAPURI': 'ldap://localhost',
+                      'LDAPBASE': 'ou=example,o=test',
+                      'BINDDN': 'cn=manager,ou=example,o=test',
+                      'BINDPW': 'ldaptest',
+                      'LOGINNAMEATTRIBUTE': 'cn',
+                      'LDAPSEARCHFILTER': '(cn=*)',
+                      'USERINFO': '{"username": "cn",'
+                                  '"phone" : "telephoneNumber",'
+                                  '"mobile" : "mobile",'
+                                  '"email" : "email",'
+                                  '"surname" : "sn",'
+                                  '"givenname" : "givenName" }',
+                      'UIDTYPE': 'objectGUID',
+                      'CACHE_TIMEOUT': 120,
+                      'recursive_group_search': True,
+                      'group_search_filter': '(&(sAMAccountName=*)(objectCategory=group)(member:1.2.840.113556.1.4.1941:=cn={username},{base_dn}))',
+                      'group_name_attribute': 'distinguishedName',
+                      'group_attribute_mapping_key': 'groups'
+                      })
+
+        # Get all attributes for Alice except the ones which are not available in the ldap user (phone)
+        with mock.patch("privacyidea.lib.resolvers.LDAPIdResolver.IdResolver._get_user_groups_recursive",
+                        return_value=["testgroup"]) as mock_recursive_groups:
+            # specify attributes without groups
+            user_info = y.get_user_info(objectGUIDs[0], attributes=["username", "givenname"])
+            self.assertSetEqual({"username", "givenname"}, set(user_info.keys()),
+                                user_info)
+            self.assertEqual("alice", user_info["username"])
+            self.assertEqual("Alice", user_info["givenname"])
+            # no groups requested
+            assert not mock_recursive_groups.called
+
+            # specify attributes to receive with groups
+            user_info = y.get_user_info(objectGUIDs[0], attributes=["username", "givenname", "groups"])
+            self.assertSetEqual({"username", "givenname", "groups"}, set(user_info.keys()),
+                                user_info)
+            self.assertEqual("alice", user_info["username"])
+            self.assertEqual("Alice", user_info["givenname"])
+            self.assertEqual(["testgroup"], user_info["groups"])
+            # groups requested for the first time, hence they are not in the cache
+            assert mock_recursive_groups.called
+
+        with mock.patch("privacyidea.lib.resolvers.LDAPIdResolver.IdResolver._get_user_groups_recursive",
+                        return_value=["testgroup"]) as mock_recursive_groups:
+            # get all attributes
+            user_info = y.get_user_info(objectGUIDs[0])
+            self.assertSetEqual({"username", "mobile", "email", "surname", "givenname", "groups"},
+                                set(user_info.keys()),
+                                user_info)
+            self.assertEqual("alice", user_info["username"])
+            self.assertEqual(["1234", "45678"], user_info["mobile"])
+            self.assertEqual("alice@test.com", user_info["email"])
+            self.assertEqual("Cooper", user_info["surname"])
+            self.assertEqual("Alice", user_info["givenname"])
+            self.assertEqual(["testgroup"], user_info["groups"])
+            # groups are in the cache, but other attributes are not, so everything is fetched again
+            assert mock_recursive_groups.called
+
+    @ldap3mock.activate
+    def test_45_getUserList(self):
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
+        y = LDAPResolver()
+        y.loadConfig({'LDAPURI': 'ldap://localhost',
+                      'LDAPBASE': 'ou=example,o=test',
+                      'BINDDN': 'cn=manager,ou=example,o=test',
+                      'BINDPW': 'ldaptest',
+                      'LOGINNAMEATTRIBUTE': 'cn',
+                      'LDAPSEARCHFILTER': '(cn=*)',
+                      'USERINFO': '{"username": "cn",'
+                                  '"phone" : "telephoneNumber",'
+                                  '"mobile" : "mobile",'
+                                  '"email" : "email",'
+                                  '"surname" : "sn",'
+                                  '"givenname" : "givenName" }',
+                      'UIDTYPE': 'objectGUID',
+                      'CACHE_TIMEOUT': 0,
+                      'recursive_group_search': True,
+                      'group_search_filter': '(&(sAMAccountName=*)(objectCategory=group)(member:1.2.840.113556.1.4.1941:=cn={username},{base_dn}))',
+                      'group_name_attribute': 'distinguishedName',
+                      'group_attribute_mapping_key': 'groups'
+                      })
+
+        # Get user list with all attributes
+        with mock.patch("privacyidea.lib.resolvers.LDAPIdResolver.IdResolver._get_user_groups_recursive",
+                        return_value=["testgroup"]) as mock_recursive_groups:
+            users = y.getUserList()
+            assert mock_recursive_groups.called
+            self.assertEqual(4, len(users), users)
+            # all users should contain all attributes
+            for user in users:
+                # all attributes defined in user info + groups + userid, but without the ones that does not exist in
+                # the ldap user (phone)
+                self.assertSetEqual({"username", "mobile", "email", "surname", "givenname", "groups", "userid"},
+                                    set(user.keys()), user)
+                self.assertListEqual(["testgroup"], user["groups"])
+
+        # Specify attributes
+        with mock.patch("privacyidea.lib.resolvers.LDAPIdResolver.IdResolver._get_user_groups_recursive",
+                        return_value=["testgroup"]) as mock_recursive_groups:
+            users = y.getUserList(attributes=["username", "givenname"])
+            assert not mock_recursive_groups.called
+            for user in users:
+                self.assertSetEqual({"username", "givenname"},
+                                    set(user.keys()), user)
+
+            # attributes containing groups
+            users = y.getUserList(attributes=["username", "givenname", "groups"])
+            assert mock_recursive_groups.called
+            for user in users:
+                self.assertSetEqual({"username", "givenname", "groups"},
+                                    set(user.keys()), user)
+                self.assertListEqual(["testgroup"], user["groups"])
 
 
 class BaseResolverTestCase(MyTestCase):
