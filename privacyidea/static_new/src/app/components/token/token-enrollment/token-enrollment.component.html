@@ -233,7 +233,7 @@
       }
     </div>
 
-    @if (tokenService.selectedTokenType().key !== "passkey") {
+    @if (tokenService.selectedTokenType().key !== "passkey" && authService.actionAllowed("enrollpin")) {
       <div class="user-pin-container">
         <h4 class="enroll-h4">Set PIN</h4>
         <input
