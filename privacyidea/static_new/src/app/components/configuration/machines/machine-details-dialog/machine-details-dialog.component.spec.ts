@@ -23,6 +23,7 @@ import { MachineService } from "../../../../services/machine/machine.service";
 import { ApplicationService } from "../../../../services/application/application.service";
 import { DialogService } from "../../../../services/dialog/dialog.service";
 import { of } from "rxjs";
+import { SimpleConfirmationDialogComponent } from "../../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { signal } from "@angular/core";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { ContentService } from "../../../../services/content/content.service";
@@ -70,7 +71,9 @@ describe("MachineDetailsDialogComponent", () => {
     };
 
     dialogServiceMock = {
-      confirm: jest.fn().mockResolvedValue(true)
+      openDialog: jest.fn().mockReturnValue({
+        afterClosed: jest.fn().mockReturnValue(of(true))
+      })
     };
 
     matDialogRefMock = {
@@ -123,7 +126,9 @@ describe("MachineDetailsDialogComponent", () => {
   it("should detach token after confirmation", async () => {
     const token = component.dataSource.data[0];
     component.detachToken(token);
-    expect(dialogServiceMock.confirm).toHaveBeenCalled();
+    expect(dialogServiceMock.openDialog).toHaveBeenCalledWith(expect.objectContaining({
+      component: SimpleConfirmationDialogComponent
+    }));
     await Promise.resolve();
     expect(machineServiceMock.deleteTokenById).toHaveBeenCalledWith("S1", "ssh", "10");
   });

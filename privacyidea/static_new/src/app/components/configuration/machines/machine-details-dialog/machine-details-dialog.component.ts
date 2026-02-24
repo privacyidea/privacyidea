@@ -17,6 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, effect, inject, OnInit, signal, ViewChild } from "@angular/core";
+import { lastValueFrom } from "rxjs";
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from "@angular/material/dialog";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
@@ -39,6 +40,7 @@ import {
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 import { ApplicationService, ApplicationServiceInterface } from "../../../../services/application/application.service";
 import { DialogService, DialogServiceInterface } from "../../../../services/dialog/dialog.service";
+import { SimpleConfirmationDialogComponent } from "../../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
 import { ROUTE_PATHS } from "../../../../route_paths";
 import { CopyButtonComponent } from "../../../shared/copy-button/copy-button.component";
@@ -159,14 +161,15 @@ export class MachineDetailsDialogComponent implements OnInit {
   }
 
   detachToken(token: TokenApplication): void {
-    this.dialogService.confirm({
+    lastValueFrom(this.dialogService.openDialog({
+      component: SimpleConfirmationDialogComponent,
       data: {
         title: $localize`Detach Token`,
-        serialList: [token.serial],
-        type: "token",
-        action: "detach"
+        items: [token.serial],
+        itemType: "token",
+        confirmAction: { label: $localize`Detach`, value: true, type: "destruct" }
       }
-    }).then(confirmed => {
+    }).afterClosed()).then(confirmed => {
       if (confirmed) {
         this.machineService.deleteTokenById(token.serial, token.application, token.id.toString())
           .subscribe(() => this.loadTokenApplications());
