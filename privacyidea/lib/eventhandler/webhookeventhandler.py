@@ -95,7 +95,8 @@ class WebHookHandler(BaseEventHandler):
             "content_type": {
                 "type": "str",
                 "required": True,
-                "description": _("The encoding that is sent to the WebHook, for example json"),
+                "description": _("The MIME type (Content-Type) used for the WebHook payload, for example "
+                                 "application/json or application/x-www-form-urlencoded"),
                 "value": [
                     ContentType.JSON,
                     ContentType.URLENCODED]
