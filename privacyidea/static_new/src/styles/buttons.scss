@@ -431,14 +431,13 @@ $button-low-contrast-variant: linear-gradient(
   --mdc-ripple-color: var(--rose-bg);
 }
 
-.mat-mdc-outlined-button[class*="action-button-1"] {
+.mat-mdc-outlined-button[class*="action-button-secondary"] {
   --mdc-ripple-color: var(--sky-bg);
 }
 
 %action-button-base {
-  background-color: var(--mat-sys-surface-container-lowest);
   border-radius: var(--border-radius);
-  justify-content: start;
+  justify-content: center;
 
   mat-icon.mat-icon.notranslate.material-icons {
     font-size: 20px;
@@ -453,8 +452,18 @@ $button-low-contrast-variant: linear-gradient(
   }
 }
 
-.action-button-1 {
+.action-button-primary {
   @extend %action-button-base;
+  background-color: var(--mat-sys-primary);
+
+  &:not([disabled]) {
+    @include action-button-variant(var(--mat-sys-surface-container-lowest), var(--mat-sys-primary-base-active));
+  }
+}
+
+.action-button-secondary {
+  @extend %action-button-base;
+  background-color: var(--mat-sys-surface-container-lowest);
 
   &:not([disabled]) {
     @include action-button-variant(var(--mat-sys-primary), var(--sky-blue));
@@ -463,6 +472,7 @@ $button-low-contrast-variant: linear-gradient(
 
 .action-button-delete {
   @extend %action-button-base;
+  background-color: var(--mat-sys-surface-container-lowest);
 
   &:not([disabled]) {
     @include action-button-variant(var(--red-base), var(--rose-bg));
@@ -471,6 +481,7 @@ $button-low-contrast-variant: linear-gradient(
 
 .action-button-cancel {
   @extend %action-button-base;
+  background-color: var(--mat-sys-surface-container-lowest);
 
   &:not([disabled]) {
     @include action-button-variant(var(--grey-base), var(--grey-light));
@@ -513,57 +524,6 @@ $button-low-contrast-variant: linear-gradient(
   }
 }
 
-.input-attached-button-active {
-  background-color: var(--mat-sys-primary-base-active);
-  color: var(--mat-sys-on-primary);
-}
-
-.input-attached-button-hover:hover:not(:disabled):not(.input-attached-button-active) {
-  background-color: var(--mat-sys-primary-base-hover);
-  color: var(--mat-sys-on-primary);
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.input-attached-button {
-  height: 58px;
-  width: 35px;
-  margin-bottom: 18px;
-  padding: 0;
-  border: none;
-  background-color: var(--mat-sys-surface-container-high);
-  border-radius: 0 var(--three-quarters-global-padding) var(--three-quarters-global-padding) 0 !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  transition: background-color 0.2s ease-in-out;
-  flex-shrink: 0;
-
-  .small-icon-button {
-    width: 36px !important;
-    height: 36px !important;
-    padding: 0px !important;
-    display: inline-flex !important;
-    align-items: center;
-    justify-content: center;
-
-    & > *[role="img"] {
-      width: 18px;
-      height: 18px;
-    }
-  }
-
-  svg {
-    width: 18px;
-    height: 18px;
-  }
-
-  .mat-mdc-button-touch-target {
-    width: 36px !important;
-    height: 36px !important;
-  }
-}
-
 .scroll-to-top-fab {
   display: flex;
   justify-content: center;
@@ -588,4 +548,16 @@ $button-low-contrast-variant: linear-gradient(
 ::ng-deep mat-icon {
   display: flex !important;
   align-items: center !important;
+}
+
+.width-s {
+  width: 120px
+}
+
+.width-m {
+  width: 180px;
+}
+
+.width-l {
+  width: 240px;
 }

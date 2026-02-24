@@ -1,13 +1,11 @@
 <div class="pi-dialog">
-  <div
-    class="pi-dialog-header"
-    mat-dialog-title>
-    <h2>
+  <div class="pi-dialog-header">
+    <h3>
       @if (icon()) {
         <mat-icon [style.margin-right.px]="8">{{ icon() }}</mat-icon>
       }
       {{ title() }}
-    </h2>
+    </h3>
   </div>
   <mat-dialog-content>
     <div class="pi-dialog-body">
@@ -18,7 +16,8 @@
     <div class="pi-dialog-footer">
       @if (showCancelButton()) {
         <button
-          mat-button
+          class="action-button-secondary width-s"
+          mat-stroked-button
           mat-dialog-close>
           @if (cancelButtonLabel()) {
             {{ cancelButtonLabel() }}
@@ -30,10 +29,12 @@
       @for (action of actions(); track $index) {
         @if (!action.hidden) {
           <button
-            [class.action-button-1]="action.type === 'confirm' || action.type === 'auxiliary' || !action.type"
-            [class.action-button-delete]="action.type === 'destruct'"
-            [class.action-button-cancel]="action.type === 'cancel'"
+            class="width-s"
+            mat-stroked-button
             (click)="onActionClick(action)"
+            [class.action-button-primary]="action.type === 'confirm' || action.type === 'auxiliary' || !action.type"
+            [class.action-button-cancel]="action.type === 'cancel'"
+            [class.action-button-delete]="action.type === 'destruct'"
             [disabled]="action.disabled">
             @if (action.icon) {
               <mat-icon>{{ action.icon }}</mat-icon>

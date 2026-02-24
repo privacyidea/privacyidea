@@ -64,7 +64,7 @@
         }
       </mat-form-field>
 
-      <mat-form-field class="width-238 margin-left-1 type-selecting-height">
+      <mat-form-field class="width-l margin-left-1 type-selecting-height">
         <mat-label i18n>Type</mat-label>
         <mat-select
           (ngModelChange)="onTypeChange($event)"
@@ -120,7 +120,7 @@
             <button
               (click)="onQuickTest()"
               [disabled]="isSaving || isTesting || !resolverType || !isAdditionalFieldsValid"
-              class="action-button-1 width-238"
+              class="action-button-secondary width-l"
               mat-stroked-button>
               <mat-icon>wifi</mat-icon>
               <span i18n>Quick Resolver Test</span>
@@ -130,7 +130,7 @@
           <button
             (click)="onTest()"
             [disabled]="isSaving || isTesting || !resolverType || !isAdditionalFieldsValid"
-            class="action-button-1 width-238"
+            class="action-button-secondary width-l"
             mat-stroked-button>
             <mat-icon>wifi</mat-icon>
             <span i18n>Test Connection</span>
@@ -140,7 +140,7 @@
         <button
           (click)="onSave()"
           [disabled]="!resolverName || !resolverType || !isAdditionalFieldsValid"
-          class="action-button-1 width-238"
+          class="action-button-secondary width-l"
           mat-stroked-button>
           <mat-icon>save</mat-icon>
           <span i18n>Save</span>
