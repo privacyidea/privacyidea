@@ -108,6 +108,7 @@ export class EnrollQuestionComponent implements OnInit {
       this.guardControl.updateValueAndValidity({ emitEvent: false });
       this.valueSubscription = form.valueChanges.subscribe(() => {
         this.guardControl.updateValueAndValidity({ emitEvent: false });
+        this.additionalFormFieldsChange.emit({ __questionsGuard: this.guardControl });
       });
       this.additionalFormFieldsChange.emit({ __questionsGuard: this.guardControl });
       return form;
@@ -124,6 +125,7 @@ export class EnrollQuestionComponent implements OnInit {
 
   ngOnInit(): void {
     this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
+    // this.additionalFormFieldsChange.emit({ __questionsGuard: this.guardControl });
   }
 
   enrollmentArgsGetter = (
