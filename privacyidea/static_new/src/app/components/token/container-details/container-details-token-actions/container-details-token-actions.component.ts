@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -26,26 +26,22 @@ import {
 import { MatIcon } from "@angular/material/icon";
 import { MatButton } from "@angular/material/button";
 import { MatDivider } from "@angular/material/divider";
-import { ConfirmationDialogComponent } from "../../../shared/confirmation-dialog/confirmation-dialog.component";
-import { MatDialog } from "@angular/material/dialog";
+import { SimpleConfirmationDialogComponent } from "../../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 import { MatTableDataSource } from "@angular/material/table";
+import { DialogService, DialogServiceInterface } from "../../../../services/dialog/dialog.service";
 
 @Component({
   selector: "app-container-details-token-actions",
   templateUrl: "./container-details-token-actions.component.html",
-  imports: [
-    MatIcon,
-    MatButton,
-    MatDivider
-  ],
+  imports: [MatIcon, MatButton, MatDivider],
   styleUrl: "./container-details-token-actions.component.scss"
 })
 export class ContainerDetailsTokenActionsComponent {
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
-  protected readonly dialog: MatDialog = inject(MatDialog);
+  protected readonly dialogService: DialogServiceInterface = inject(DialogService);
 
   @Input() containerSerial!: string;
   @Input() user!: WritableSignal<{
@@ -85,14 +81,14 @@ export class ContainerDetailsTokenActionsComponent {
       return;
     }
     const tokenSerials = tokenToUnassign.map((token) => token.serial);
-    this.dialog
-      .open(ConfirmationDialogComponent, {
+    this.dialogService
+      .openDialog({
+        component: SimpleConfirmationDialogComponent,
         data: {
-          type: "token",
-          serialList: tokenSerials,
           title: "Unassign User from All Tokens",
-          action: "unassign",
-          numberOfTokens: tokenSerials.length
+          items: tokenSerials,
+          itemType: "token",
+          confirmAction: { label: "Unassign", value: true, type: "destruct" }
         }
       })
       .afterClosed()
@@ -152,14 +148,14 @@ export class ContainerDetailsTokenActionsComponent {
     const serialList = this.tokenData()
       .data.map((token) => token.serial)
       .join(",");
-    this.dialog
-      .open(ConfirmationDialogComponent, {
+    this.dialogService
+      .openDialog({
+        component: SimpleConfirmationDialogComponent,
         data: {
-          serialList: serialList.split(","),
+          items: serialList.split(","),
           title: "Remove Token",
-          type: "token",
-          action: "remove",
-          numberOfTokens: serialList.split(",").length
+          itemType: "token",
+          confirmAction: { label: "Remove", value: true, type: "destruct" }
         }
       })
       .afterClosed()
@@ -178,7 +174,8 @@ export class ContainerDetailsTokenActionsComponent {
 
   deleteAllTokens() {
     const serialList = this.tokenData().data.map((token) => token.serial);
-    this.tokenService.bulkDeleteWithConfirmDialog(serialList, this.dialog, () => this.containerService.containerDetailResource.reload());
+    this.tokenService.bulkDeleteWithConfirmDialog(serialList, () =>
+      this.containerService.containerDetailResource.reload()
+    );
   }
-
 }

@@ -63,13 +63,6 @@ from ..lifecycle import register_finalizer
 
 log = logging.getLogger(__name__)
 
-try:
-    import gssapi
-    have_gssapi = True
-except ImportError:
-    log.info('Could not import gssapi package. Kerberos authentication not available')
-    have_gssapi = False
-
 CACHE = {}
 
 ENCODING = "utf-8"
@@ -207,11 +200,11 @@ def cache(func):
     """
     cache the user with his loginname, resolver and UID in a local
     dictionary cache.
-    This is a per process cache.
+    This is a per-process cache.
     """
     @functools.wraps(func)
     def cache_wrapper(self, *args, **kwds):
-        # Only run the code, in case we have a configured cache!
+        # Only run the code in case we have a configured cache!
         if self.cache_timeout > 0:
             # If it does not exist, create the node for this instance
             resolver_id = self.getResolverId()
@@ -260,6 +253,7 @@ def cache(func):
 
 
 class AUTHTYPE(object):
+    ANONYMOUS = "Anonymous"
     SIMPLE = "Simple"
     SASL_DIGEST_MD5 = "SASL Digest-MD5"
     NTLM = "NTLM"
@@ -303,7 +297,7 @@ class IdResolver(UserIdResolver):
         self.group_name_attribute = ""
         self.group_search_filter = ""
         self.group_attribute_mapping_key = ""
-        # The number of seconds that ldap3 waits if no server is left in the pool, before
+        # The number of seconds that ldap3 waits if no server is left in the pool before
         # starting the next round
         pooling_loop_timeout = get_app_config_value("PI_LDAP_POOLING_LOOP_TIMEOUT", 10)
         log.debug("Setting system-wide POOLING_LOOP_TIMEOUT to {0!s}.".format(pooling_loop_timeout))
@@ -313,16 +307,17 @@ class IdResolver(UserIdResolver):
     def checkPass(self, uid, password):
         """
         This function checks the password for a given uid.
-        - returns true in case of success
-        -         false if password does not match
+        - returns true in case of success or false if the password does not match
 
         """
         if self.authtype == AUTHTYPE.SASL_KERBEROS:
-            if not have_gssapi:
-                log.warning('gssapi module not available. Kerberos authentication not possible')
+            try:
+                import gssapi
+            except ImportError:
+                log.error('Could not import gssapi package. Kerberos authentication is not possible!')
                 return False
             # We need to check credentials with kerberos differently since we
-            # can not use bind for every user
+            # cannot use bind for every user
             upn = self.getUserInfo(uid).get('upn')
             if upn is not None and upn != "None" and upn != "":
                 name = gssapi.Name(upn.upper())
@@ -438,15 +433,15 @@ class IdResolver(UserIdResolver):
             # if the utf-8 decoding fails, we try the UUID conversion
             if uidtype.lower() == "objectguid":
                 # Active Directory uses little endian byte order
-                log.debug(f"Found a byte-array as uid ({binascii.hexlify(uid)}), trying to convert it to a UUID "
-                          f"assuming little endian byte order. ({e})")
+                log.debug(f"Found a byte-array as uid ({binascii.hexlify(uid).decode()}), "
+                          f"trying to convert it to a UUID assuming little endian byte order. ({e})")
                 log.debug(traceback.format_exc())
                 uid = str(uuid.UUID(bytes_le=uid))
             else:
                 # ldap3 defines a standard formatter using big endian byte order for GUID (eDirectory), entryUUID
                 # (openLDAP), and UUID. Hence, we assume it as the default byte order here.
-                log.debug(f"Found a byte-array as uid ({binascii.hexlify(uid)}), trying to convert it to a UUID "
-                          f"assuming big endian byte order. ({e})")
+                log.debug(f"Found a byte-array as uid ({binascii.hexlify(uid).decode()}), "
+                          f"trying to convert it to a UUID assuming big endian byte order. ({e})")
                 log.debug(traceback.format_exc())
                 uid = str(uuid.UUID(bytes=uid))
 
@@ -614,7 +609,7 @@ class IdResolver(UserIdResolver):
 
     def _get_user_groups_recursive(self, user_info: dict) -> list[str]:
         """
-        Do a separate search to retrieve the groups of a user. This can be done recursively to all groups including
+        Do a separate search to retrieve the groups of a user. This can be done recursively to all groups, including
         nested groups.
         The search filter can contain the tags ``{base_dn}`` and all keys from the user_info dictionary such as
         ``{username}``. This function replaces the tags with the corresponding values from the user_info dictionary.
@@ -628,7 +623,7 @@ class IdResolver(UserIdResolver):
         """
         groups = []
 
-        # replace tags in search filter
+        # replace tags in the search filter
         search_filter = self.group_search_filter
         search_filter = search_filter.replace("{base_dn}", self.basedn)
         for key, value in user_info.items():
@@ -669,7 +664,7 @@ class IdResolver(UserIdResolver):
                             raise Exception("The LDAP returns an objectGUID, "
                                             "that is no string: {0!s}".format(type(ldap_v)))
                     elif isinstance(ldap_v, list) and map_k not in self.multivalueattributes:
-                        # lists that are not in self.multivalueattributes return first value
+                        # lists that are not in self.multivalueattributes return the first value
                         # as a string. Multi-value-attributes are returned as a list
                         if ldap_v:
                             user_info[map_k] = ldap_v[0]
@@ -887,7 +882,7 @@ class IdResolver(UserIdResolver):
         self.uri = config.get("LDAPURI")
         self.basedn = config.get("LDAPBASE")
         self.binddn = config.get("BINDDN")
-        # object_classes is a comma separated list like
+        # object_classes is a comma-separated list like
         # ["top", "person", "organizationalPerson", "user", "inetOrgPerson"]
         self.object_classes = [cl.strip() for cl in config.get("OBJECT_CLASSES", "").split(",")]
         self.dn_template = config.get("DN_TEMPLATE", "")
@@ -1128,6 +1123,7 @@ class IdResolver(UserIdResolver):
                                 'DN_TEMPLATE': 'string',
                                 'MULTIVALUEATTRIBUTES': 'string',
                                 'group_name_attribute': 'string',
+                                'group_base_dn': 'string',
                                 'group_search_filter': 'string',
                                 'group_attribute_mapping_key': 'string',
                                 'recursive_group_search': 'bool'}
@@ -1151,6 +1147,7 @@ class IdResolver(UserIdResolver):
         :rtype: (bool, string)
         """
         success = False
+        resolvername = param.get("resolver", "")
         uidtype = param.get("UIDTYPE")
         timeout = int(param.get("TIMEOUT", 5))
         ldap_uri = param.get("LDAPURI")
@@ -1234,6 +1231,7 @@ class IdResolver(UserIdResolver):
 
         except Exception as e:
             message = f"{e}"
+            log.warning(f"LDAP Resolver Test failed for resolver {resolvername!r}: {e!r}")
             log.debug("{0!s}".format(traceback.format_exc()))
 
         return success, message
@@ -1424,11 +1422,11 @@ class IdResolver(UserIdResolver):
                      'auto_referrals': auto_referrals,
                      'collect_usage': True}
 
-        if not user:
-            # without a user we can only use an anonymous binds
+        if not user or authtype == AUTHTYPE.ANONYMOUS:
+            # without a user we can only use an anonymous bind
             conn_opts.update({'authentication': ldap3.ANONYMOUS})
         elif authtype == AUTHTYPE.SIMPLE:
-            # SIMPLE works with passwords as UTF8 and unicode
+            # SIMPLE works with passwords as Unicode
             password = to_unicode(password)
             conn_opts.update({'user': user,
                               'password': password,
@@ -1452,7 +1450,7 @@ class IdResolver(UserIdResolver):
                               'user': user,
                               'cred_store': cred_store})
         else:
-            raise ResolverError(f"Authtype {authtype} not supported")
+            raise ResolverError(f"Unsupported authentication type: {authtype}")
 
         connection = ldap3.Connection(server, **conn_opts)
         if start_tls:
@@ -1475,9 +1473,9 @@ class IdResolver(UserIdResolver):
     @property
     def editable(self):
         """
-        Return true, if the instance of the resolver is configured editable
+        Return true if the instance of the resolver is configured editable
         :return:
         """
-        # Depending on the database this might look different
+        # Depending on the database, this might look different
         # Usually this is "1"
         return is_true(self._editable)

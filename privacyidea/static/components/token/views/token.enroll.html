@@ -48,7 +48,7 @@
             <h4 translate>Assign token to user</h4>
 
             <div assign-user new-user-object="newUser" realms="realms" enable-set-pin="form.type != 'passkey'"
-                 enable-realm-only=true></div>
+                 enable-realm-only=true search-on-enter="$root.search_on_enter"></div>
 
             <div class="msg-block"
                  ng-show="formEnrollToken.otppin2.$error.passwordVerify">

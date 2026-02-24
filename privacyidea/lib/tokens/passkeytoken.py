@@ -420,7 +420,9 @@ class PasskeyTokenClass(TokenClass):
         if options and PasskeyAction.EnableTriggerByPIN in options and options[PasskeyAction.EnableTriggerByPIN]:
             rp_id = get_required(options, FIDO2PolicyAction.RELYING_PARTY_ID)
             user_verification = get_optional(options, FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT, "preferred")
-            challenge = fido2.challenge.create_fido2_challenge(rp_id, user_verification=user_verification,
+            # check if options contains a nonce that was generated from a previous passkey challenge and reuse it
+            nonce = options.get("passkey_nonce", None)
+            challenge = fido2.challenge.create_fido2_challenge(rp_id, user_verification=user_verification, nonce=nonce,
                                                                transaction_id=transactionid, serial=self.token.serial)
             message = options.get("passkey_challenge_text", challenge["message"])
             transaction_id = challenge["transaction_id"]

@@ -2406,6 +2406,7 @@ def create_challenges_from_tokens(token_list, reply_dict, options=None):
     """
     options = options or {}
     options["push_triggered"] = False
+    options["passkey_nonce"] = None
     reply_dict["multi_challenge"] = []
     transaction_id = None
     message_list = []
@@ -2435,7 +2436,8 @@ def create_challenges_from_tokens(token_list, reply_dict, options=None):
                 challenge_info = challenge_info or {}
                 challenge_info["transaction_id"] = transaction_id
                 challenge_info["serial"] = token.token.serial
-                challenge_info["type"] = token.get_tokentype()
+                token_type = token.get_tokentype()
+                challenge_info["type"] = token_type
                 challenge_info["client_mode"] = token.client_mode
                 challenge_info["message"] = message
                 # If they exist, add next pin and next password change
@@ -2448,9 +2450,16 @@ def create_challenges_from_tokens(token_list, reply_dict, options=None):
                 if next_passw:
                     challenge_info["next_password_change"] = next_passw
                     challenge_info["password_change"] = token.is_pin_change(password=True)
-                # FIXME: This is deprecated and should be remove one day
-                reply_dict.update(challenge_info)
+
+                # If a passkey challenge has been triggered, reuse the nonce for all other passkey challenges
+                # Normally, you would use allowCredentials, but we do one challenge per one token
+                if token_type == "passkey":
+                    passkey_nonce = challenge_info["challenge"]
+                    options["passkey_nonce"] = passkey_nonce
+
                 reply_dict["multi_challenge"].append(challenge_info)
+                reply_dict.update(challenge_info)  # FIXME: This is deprecated and should be removed one day
+
     if message_list:
         unique_messages = set(message_list)
         reply_dict["message"] = ", ".join(unique_messages)

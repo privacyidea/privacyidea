@@ -602,6 +602,8 @@ def _handle_fido2_auth(context: dict, credential_id: str):
             "serial": token.get_serial()
         })
         context["serial_list"].append(token.get_serial())
+    else:
+        context["details"]["message"] = gettext("Authentication failed.")
 
 
 def _handle_serial_auth(context: dict, serial: str):
