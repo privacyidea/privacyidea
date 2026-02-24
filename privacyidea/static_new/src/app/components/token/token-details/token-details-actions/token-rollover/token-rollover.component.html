@@ -120,6 +120,7 @@
 
 <mat-dialog-actions>
   <button
+    [disabled]="formGroupSignal().invalid"
     (click)="rolloverToken()"
     mat-stroked-button
     i18n>

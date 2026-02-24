@@ -789,7 +789,7 @@ describe("RadiusApiPayloadMapper", () => {
     expect(result.radiusUser).toBe("test-user");
   });
 
-  it("fromTokenDetailsToEnrollmentData maps TokenDetails to RadiusEnrollmentData", () => {
+  it("fromTokenDetailsToEnrollmentData maps TokenDetails to RadiusEnrollmentData defaults", () => {
     const details = {
       tokentype: "radius",
       description: "desc",

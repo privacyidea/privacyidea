@@ -82,6 +82,7 @@ import { getTokenApiPayloadMapper } from "../../../../../mappers/token-api-paylo
     EnrollU2fComponent,
     EnrollVascoComponent
   ],
+  standalone: true,
   templateUrl: "./token-rollover.component.html",
   styleUrl: "./token-rollover.component.scss"
 })
@@ -89,7 +90,6 @@ export class TokenRolloverComponent extends TokenEnrollmentComponent {
   public readonly data = inject(MAT_DIALOG_DATA, { optional: false });
   private dialogRef = inject(MatDialogRef<TokenRolloverComponent>);
   token: WritableSignal<any> = signal(null);
-  formControls = signal<{ [key: string]: FormControl<any> }>({});
 
   constructor() {
     super();
@@ -99,17 +99,6 @@ export class TokenRolloverComponent extends TokenEnrollmentComponent {
     }
     this.token.set(mapperObject.fromTokenDetailsToEnrollmentData(this.data.token));
     this.tokenService.selectedTokenType.set({key: this.token().type, name: "", text: "", info: ""});
-  }
-
-  override updateAdditionalFormFields($event: { [key: string]: FormControl<any> }) {
-    this.formControls.set($event);
-    for (const controlKey of Object.keys($event)) {
-      const control = $event[controlKey];
-      const patch: { [key: string]: any } = {};
-      if (control) {
-        patch[controlKey] = control.value;
-      }
-    }
   }
 
   async rolloverToken() {
