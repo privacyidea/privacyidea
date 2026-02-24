@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -18,43 +18,14 @@
  **/
 
 import { DialogServiceInterface } from "../../app/services/dialog/dialog.service";
-import { signal } from "@angular/core";
-import { of, Subject } from "rxjs";
+import { MockMatDialogRef } from "../mock-mat-dialog-ref";
 
 export class MockDialogService implements DialogServiceInterface {
-  isSelfServing = signal<boolean>(false);
-  tokenEnrollmentFirstStepRef = null;
-  isTokenEnrollmentFirstStepDialogOpen = false;
-  tokenEnrollmentLastStepRef = null;
-  isTokenEnrollmentLastStepDialogOpen = false;
-
-  private _firstStepAfterClosed$?: Subject<any>;
-
-  openTokenEnrollmentFirstStepDialog = jest.fn().mockImplementation((config?: any) => {
-    this.isTokenEnrollmentFirstStepDialogOpen = true;
-    this._firstStepAfterClosed$ = new Subject<any>();
-    return {
-      afterClosed: () => this._firstStepAfterClosed$!.asObservable()
-    } as any;
-  });
-
-  closeTokenEnrollmentFirstStepDialog = jest.fn().mockImplementation(() => {
-    this.isTokenEnrollmentFirstStepDialogOpen = false;
-    this._firstStepAfterClosed$?.next(true);
-    this._firstStepAfterClosed$?.complete();
-  });
-
-  openTokenEnrollmentLastStepDialog = jest.fn().mockImplementation((config?: any) => {
-    this.isTokenEnrollmentLastStepDialogOpen = true;
-    return {
-      afterClosed: () => of(true)
-    } as any;
-  });
-
-  closeTokenEnrollmentLastStepDialog = jest.fn().mockImplementation(() => {
-    this.isTokenEnrollmentLastStepDialogOpen = false;
-  });
-
-  confirm = jest.fn().mockResolvedValue(true);
+  closeDialog = jest.fn().mockReturnValue(true);
+  openDialog = jest.fn().mockReturnValue(new MockMatDialogRef());
+  closeLatestDialog = jest.fn();
+  closeAllDialogs = jest.fn();
+  isDialogOpen = jest.fn().mockReturnValue(false);
   isAnyDialogOpen = jest.fn().mockReturnValue(false);
+  confirm = jest.fn().mockResolvedValue(true);
 }

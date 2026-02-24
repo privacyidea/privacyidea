@@ -587,7 +587,8 @@
     <form ng-hide="token.user_id || token.locked"
           name="formAssignToken"
           role="form" validate>
-        <div assign-user new-user-object="newUser" realms="realms" enable-set-pin=true></div>
+        <div assign-user new-user-object="newUser" realms="realms" enable-set-pin=true
+             search-on-enter="$root.search_on_enter"></div>
 
         <div class="text-center">
             <button type="button" ng-click="assignUser()"

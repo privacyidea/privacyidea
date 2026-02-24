@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -19,7 +19,6 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { signal } from "@angular/core";
 import { of } from "rxjs";
-
 import { TokenDetailsActionsComponent } from "./token-details-actions.component";
 import { TokenService } from "../../../../services/token/token.service";
 import { ValidateService } from "../../../../services/validate/validate.service";
@@ -79,7 +78,6 @@ describe("TokenDetailsActionsComponent", () => {
     machineSvc = TestBed.inject(MachineService) as unknown as MockMachineService;
     notifSvc = TestBed.inject(NotificationService) as unknown as MockNotificationService;
     dialog = TestBed.inject(MatDialog) as unknown as jest.Mocked<MatDialog>;
-
     fixture = TestBed.createComponent(TokenDetailsActionsComponent);
     component = fixture.componentInstance;
 
@@ -190,12 +188,21 @@ describe("TokenDetailsActionsComponent", () => {
 
   describe("openLostTokenDialog()", () => {
     it("passes the isLost & tokenSerial signals to the dialog", () => {
+      const reloadSpy = machineSvc.tokenApplicationResource.reload as jest.Mock;
+      reloadSpy.mockClear();
+
+      matDialogOpen.mockReturnValue({
+        afterClosed: () => of(of({}))
+      });
+
       component.openLostTokenDialog();
       expect(dialog.open).toHaveBeenCalledWith(expect.any(Function), {
         data: {
           isLost: component.isLost,
           tokenSerial: component.tokenSerial
-        }
+        },
+        disableClose: false,
+        hasBackdrop: true
       });
     });
   });

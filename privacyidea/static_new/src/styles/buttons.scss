@@ -469,6 +469,14 @@ $button-low-contrast-variant: linear-gradient(
   }
 }
 
+.action-button-cancel {
+  @extend %action-button-base;
+
+  &:not([disabled]) {
+    @include action-button-variant(var(--grey-base), var(--grey-light));
+  }
+}
+
 .action-button-active {
   @extend %action-button-base;
   background-color: var(--mat-sys-primary-base-active);
@@ -542,18 +550,17 @@ $button-low-contrast-variant: linear-gradient(
     & > *[role="img"] {
       width: 18px;
       height: 18px;
-      font-size: 18px;
-
-      svg {
-        width: 18px;
-        height: 18px;
-      }
     }
+  }
 
-    .mat-mdc-button-touch-target {
-      width: 36px !important;
-      height: 36px !important;
-    }
+  svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .mat-mdc-button-touch-target {
+    width: 36px !important;
+    height: 36px !important;
   }
 }
 
