@@ -101,63 +101,117 @@ myApp.directive("piSortBy", function () {
     };
 });
 
-myApp.directive('assignUser', ["$http", "$rootScope", "userUrl", "AuthFactory", "instanceUrl", "versioningSuffixProvider", function ($http, $rootScope, userUrl, AuthFactory, instanceUrl, versioningSuffixProvider) {
+myApp.directive('assignUser', ["$http", "$rootScope", "userUrl", "AuthFactory", "instanceUrl", "versioningSuffixProvider",
+    function ($http, $rootScope, userUrl, AuthFactory, instanceUrl, versioningSuffixProvider) {
     /*
     This directive is used to select a user from a realm
-
-    newUserObject consists of .user and .realm
-     */
+    */
     return {
         scope: {
             newUserObject: '=',
             realms: '=',
             enableSetPin: '=',
-            enableRealmOnly: '='
+            enableRealmOnly: '=',
+            searchOnEnter: '='
         },
         templateUrl: instanceUrl + "/static/components/directives/views/directive.assignuser.html" + versioningSuffixProvider.$get(),
         link: function (scope, element, attr) {
-            //console.log("Entering assignUser directive");
-            //console.log(scope.realms);
-            // If the user is not set, set the default realm selection to the first realm in the list
             scope.$watch('realms', function (newVal, oldVal) {
                 if (newVal && !scope.newUserObject.user && !scope.newUserObject.realm) {
                     scope.newUserObject.realm = Object.keys(newVal)[0];
                 }
             }, true);
 
-            //console.log(scope.newUserObject);
-            // toggle enable/disable loadUsers calls
-            scope.toggleLoadUsers = function ($toggle) {
-                // only trigger if the search_on_enter policy is active
-                if ($rootScope.search_on_enter) {
-                    const $viewValue = scope.newUserObject.user;
-                    scope.newUserObject.toggle = $toggle;
-                    // update field value with a placeholder to trigger typeahead
-                    if (scope.newUserObject.toggle && $viewValue.charAt($viewValue.length - 1) != "*") {
-                        const ctrl = element.find('input').controller('ngModel');
-                        ctrl.$setViewValue($viewValue + "*");
-                    }
-                }
+            // Search on Enter
+            scope.selectUser = function(user) {
+                scope.newUserObject.user = user.username;
+                scope.newUserObject.loadedUsers = []; // hide dropdown
             };
 
-            scope.loadUsers = function ($viewValue) {
-                if ($rootScope.search_on_enter && (!$viewValue || $viewValue == "*" || !scope.newUserObject.toggle)) {
-                    // only use existing result if any, and if search_on_enter policy is active
-                    return scope.newUserObject.loadedUsers;
+            scope.triggerEnterSearch = function() {
+                const query = scope.newUserObject.user || "";
+                if (!query) {
+                    scope.newUserObject.loadedUsers = [];
+                    scope.noResults = false;
+                    return;
                 }
+
+                scope.loadingUsers = true;
+                scope.noResults = false;
+                scope.newUserObject.loadedUsers = [];
+
+                const auth_token = AuthFactory.getAuthToken();
+                $http({
+                    method: 'GET',
+                    url: userUrl + "/?username=*" + query + "*" + "&realm=" + scope.newUserObject.realm,
+                    headers: {'PI-Authorization': auth_token}
+                }).then(function ($response) {
+                    const users = $response.data.result.value.map(function (item) {
+                        return {
+                            display: "[" + item.userid + "] " + item.username + " (" + item.givenname + " " + item.surname + ")",
+                            userid: item.userid,
+                            username: item.username,
+                            givenname: item.givenname,
+                            surname: item.surname,
+                            email: item.email,
+                            mobile: item.mobile,
+                            phone: item.phone
+                        };
+                    });
+                    scope.newUserObject.loadedUsers = users;
+                    scope.loadingUsers = false;
+                    scope.noResults = users.length === 0;
+                }, function() {
+                    scope.loadingUsers = false;
+                    scope.noResults = true;
+                });
+            };
+
+            // Clear the custom dropdown if the user starts typing again
+            scope.$watch('newUserObject.user', function(newVal, oldVal) {
+                if (scope.searchOnEnter && newVal !== oldVal) {
+                    scope.newUserObject.loadedUsers = [];
+                    scope.noResults = false;
+                }
+            });
+
+            // ==========================================
+            // LOGIC FOR INPUT A: Default Typeahead
+            // ==========================================
+            scope.loadUsers = function ($viewValue) {
+                scope.loadingUsers = true;
+                const query = $viewValue || "";
+
+                if (!query) {
+                    scope.loadingUsers = false;
+                    return [];
+                }
+
                 const auth_token = AuthFactory.getAuthToken();
                 return $http({
                     method: 'GET',
-                    url: userUrl + "/?username=*" + $viewValue + "*" + "&realm=" + scope.newUserObject.realm,
+                    url: userUrl + "/?username=*" + query + "*" + "&realm=" + scope.newUserObject.realm,
                     headers: {'PI-Authorization': auth_token}
                 }).then(function ($response) {
-                    scope.newUserObject.loadedUsers = $response.data.result.value.map(function (item) {
-                        scope.newUserObject.email = item.email;
-                        scope.newUserObject.mobile = item.mobile;
-                        scope.newUserObject.phone = item.phone;
-                        return "[" + item.userid + "] " + item.username + " (" + item.givenname + " " + item.surname + ")";
+                    const users = $response.data.result.value.map(function (item) {
+                        return {
+                            display: "[" + item.userid + "] " + item.username + " (" + item.givenname + " " + item.surname + ")",
+                            userid: item.userid,
+                            username: item.username,
+                            givenname: item.givenname,
+                            surname: item.surname,
+                            email: item.email,
+                            mobile: item.mobile,
+                            phone: item.phone
+                        };
                     });
-                    return scope.newUserObject.loadedUsers;
+                    scope.loadingUsers = false;
+                    scope.noResults = users.length === 0;
+                    return users;
+                }, function() {
+                    scope.loadingUsers = false;
+                    scope.noResults = true;
+                    return [];
                 });
             };
         }
@@ -184,7 +238,7 @@ myApp.directive('assignToken', ["$http", "$rootScope", "tokenUrl", "AuthFactory"
                     const $viewValue = scope.newTokenObject.serial;
                     scope.newTokenObject.toggle = $toggle;
                     // update field value with a placeholder to trigger typeahead
-                    if (scope.newTokenObject.toggle && $viewValue.charAt($viewValue.length - 1) != "*") {
+                    if (scope.newUserObject.toggle && $viewValue && $viewValue.charAt($viewValue.length - 1) != "*") {
                         const ctrl = element.find('input').controller('ngModel');
                         ctrl.$setViewValue($viewValue + "*");
                     }

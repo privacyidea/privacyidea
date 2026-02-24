@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -40,6 +40,7 @@ import { MatDialog } from "@angular/material/dialog";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { MockAuthService } from "../../../../testing/mock-services/mock-auth-service";
+import { MockDialogService } from "../../../../testing/mock-services/mock-dialog-service";
 
 class MatDialogMock {
   result = { confirmed: true };
@@ -53,11 +54,12 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
   let table: TokenTableComponent;
 
   let selfFixture: ComponentFixture<TokenTableSelfServiceComponent>;
-  let self: TokenTableSelfServiceComponent;
+  let component: TokenTableSelfServiceComponent;
 
   let tokenService: MockTokenService;
-  let auth: MockAuthService;
-  let matDialog: MatDialogMock;
+  let authServiceMock: MockAuthService;
+  let dialogServiceMock: MockDialogService;
+  let dialogMock: MatDialogMock;
 
   beforeAll(() => {
     Object.defineProperty(window, "matchMedia", {
@@ -106,12 +108,7 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
         { provide: TokenService, useClass: MockTokenService },
         { provide: TableUtilsService, useClass: MockTableUtilsService },
         { provide: ContentService, useClass: MockContentService },
-        {
-          provide: DialogService,
-          useValue: {
-            /* not used here */
-          }
-        },
+        { provide: DialogService, useClass: MockDialogService },
         { provide: AuthService, useClass: MockAuthService },
         { provide: ContainerService, useClass: MockContainerService },
         { provide: MatDialog, useClass: MatDialogMock },
@@ -124,17 +121,20 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
     table = tableFixture.componentInstance;
 
     selfFixture = TestBed.createComponent(TokenTableSelfServiceComponent);
-    self = selfFixture.componentInstance;
+    component = selfFixture.componentInstance;
 
     tokenService = TestBed.inject(TokenService) as unknown as MockTokenService;
-    auth = TestBed.inject(AuthService) as unknown as MockAuthService;
-    matDialog = TestBed.inject(MatDialog) as unknown as MatDialogMock;
+    authServiceMock = TestBed.inject(AuthService) as unknown as MockAuthService;
+    dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
+    dialogMock = TestBed.inject(MatDialog) as unknown as MatDialogMock;
 
     tokenService.toggleActive.mockReturnValue(of({}));
     tokenService.resetFailCount.mockReturnValue(of(null));
     (tokenService as any).revokeToken = jest.fn().mockReturnValue(of({}));
     (tokenService as any).deleteToken = jest.fn().mockReturnValue(of({}));
-    auth.actionAllowed.mockImplementation((action: string) => auth.jwtData()?.rights?.includes(action));
+    authServiceMock.actionAllowed.mockImplementation((action: string) =>
+      authServiceMock.jwtData()?.rights?.includes(action)
+    );
 
     tableFixture.detectChanges();
     selfFixture.detectChanges();
@@ -149,7 +149,7 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
   });
 
   it("TokenTableSelfServiceComponent should create", () => {
-    expect(self).toBeTruthy();
+    expect(component).toBeTruthy();
   });
 
   it("isAllSelected/toggleAllRows/toggleRow work as expected", () => {
@@ -182,8 +182,8 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
 
   it("toggleActive calls service and reloads when allowed & not revoked/locked", () => {
     const t = { serial: "A", active: true, revoked: false, locked: false } as any;
-    auth.jwtData.set({
-      ...auth.jwtData(),
+    authServiceMock.jwtData.set({
+      ...authServiceMock.jwtData(),
       rights: ["disable", "enable"]
     } as JwtData);
 
@@ -195,8 +195,8 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
 
   it("toggleActive does nothing if action not allowed", () => {
     const t = { serial: "A", active: true, revoked: false, locked: false } as any;
-    auth.jwtData.set({
-      ...auth.jwtData(),
+    authServiceMock.jwtData.set({
+      ...authServiceMock.jwtData(),
       rights: []
     } as JwtData);
 
@@ -207,8 +207,8 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
   });
 
   it("toggleActive does nothing if revoked or locked", () => {
-    auth.jwtData.set({
-      ...auth.jwtData(),
+    authServiceMock.jwtData.set({
+      ...authServiceMock.jwtData(),
       rights: ["disable", "enable"]
     } as JwtData);
 
@@ -220,8 +220,8 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
 
   it("resetFailCount calls service and reloads when allowed & not revoked/locked", () => {
     const t = { serial: "B", revoked: false, locked: false } as any;
-    auth.jwtData.set({
-      ...auth.jwtData(),
+    authServiceMock.jwtData.set({
+      ...authServiceMock.jwtData(),
       rights: ["reset"]
     } as JwtData);
 
@@ -232,15 +232,15 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
   });
 
   it("resetFailCount does nothing when action not allowed / revoked / locked", () => {
-    auth.jwtData.set({
-      ...auth.jwtData(),
+    authServiceMock.jwtData.set({
+      ...authServiceMock.jwtData(),
       rights: []
     } as JwtData);
     table.resetFailCount({ serial: "B", revoked: false, locked: false } as any);
     expect(tokenService.resetFailCount).not.toHaveBeenCalled();
 
-    auth.jwtData.set({
-      ...auth.jwtData(),
+    authServiceMock.jwtData.set({
+      ...authServiceMock.jwtData(),
       rights: ["reset"]
     } as JwtData);
     table.resetFailCount({ serial: "B", revoked: true, locked: false } as any);
@@ -277,8 +277,8 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
   });
 
   it("self-service column keys include revoke/delete depending on permissions", () => {
-    auth.jwtData.set({
-      ...auth.jwtData(),
+    authServiceMock.jwtData.set({
+      ...authServiceMock.jwtData(),
       rights: ["revoke", "delete"]
     } as JwtData);
 
@@ -298,8 +298,8 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
       ])
     );
 
-    auth.jwtData.set({
-      ...auth.jwtData(),
+    authServiceMock.jwtData.set({
+      ...authServiceMock.jwtData(),
       rights: []
     } as JwtData);
 
@@ -310,41 +310,5 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
       expect.arrayContaining(["serial", "tokentype", "description", "container_serial", "active", "failcount"])
     );
     expect(c2.columnKeysSelfService).not.toEqual(expect.arrayContaining(["revoke", "delete"]));
-  });
-
-  it("revokeToken: always calls service; reloads only when dialog returns true", () => {
-    const serial = "R-1";
-
-    matDialog.result.confirmed = true;
-    self.revokeToken(serial);
-    expect(matDialog.open).toHaveBeenCalledTimes(1);
-    expect((tokenService as any).revokeToken).toHaveBeenCalledWith(serial);
-    expect(tokenService.tokenResource.reload).toHaveBeenCalledTimes(1);
-
-    jest.clearAllMocks();
-
-    matDialog.result.confirmed = false;
-    self.revokeToken(serial);
-    expect(matDialog.open).toHaveBeenCalledTimes(1);
-    expect((tokenService as any).revokeToken).toHaveBeenCalledWith(serial);
-    expect(tokenService.tokenResource.reload).not.toHaveBeenCalled();
-  });
-
-  it("deleteToken: always calls service; reloads only when dialog returns true", () => {
-    const serial = "D-1";
-
-    matDialog.result.confirmed = true;
-    self.deleteToken(serial);
-    expect(matDialog.open).toHaveBeenCalledTimes(1);
-    expect((tokenService as any).deleteToken).toHaveBeenCalledWith(serial);
-    expect(tokenService.tokenResource.reload).toHaveBeenCalledTimes(1);
-
-    jest.clearAllMocks();
-
-    matDialog.result.confirmed = false;
-    self.deleteToken(serial);
-    expect(matDialog.open).toHaveBeenCalledTimes(1);
-    expect((tokenService as any).deleteToken).toHaveBeenCalledWith(serial);
-    expect(tokenService.tokenResource.reload).not.toHaveBeenCalled();
   });
 });

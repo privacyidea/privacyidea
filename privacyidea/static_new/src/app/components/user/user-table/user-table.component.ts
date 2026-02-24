@@ -102,8 +102,8 @@ export class UserTableComponent {
   protected readonly resolverService = inject(ResolverService);
   protected readonly dialog = inject(MatDialog);
   @ViewChild(MatPaginator) paginator!: MatPaginator;
-  @ViewChild('filterHTMLInputElement', { static: false }) filterInput!: ElementRef<HTMLInputElement>;
-  sort = signal({ active: '', direction: '' } as Sort);
+  @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: ElementRef<HTMLInputElement>;
+  sort = signal({ active: "", direction: "" } as Sort);
   readonly apiFilter = this.userService.apiFilterOptions;
   pageSizeOptions = this.tableUtilsService.pageSizeOptions;
 
@@ -139,11 +139,11 @@ export class UserTableComponent {
 
   private clientsideSortUserData(data: UserData[], s: Sort): UserData[] {
     if (!s.direction) return data;
-    const dir = s.direction === 'asc' ? 1 : -1;
+    const dir = s.direction === "asc" ? 1 : -1;
     const key = s.active as keyof UserData;
     return data.sort((a: any, b: any) => {
-      const va = (a?.[key] ?? '').toString().toLowerCase();
-      const vb = (b?.[key] ?? '').toString().toLowerCase();
+      const va = (a?.[key] ?? "").toString().toLowerCase();
+      const vb = (b?.[key] ?? "").toString().toLowerCase();
       if (va < vb) return -1 * dir;
       if (va > vb) return 1 * dir;
       return 0;
@@ -163,7 +163,7 @@ export class UserTableComponent {
   }
 
   getFilterIconName(keyword: string): string {
-    return this.isFilterSelected(keyword) ? 'filter_alt_off' : 'filter_alt';
+    return this.isFilterSelected(keyword) ? "filter_alt_off" : "filter_alt";
   }
 
   onFilterClick(filterKeyword: string): void {
@@ -176,7 +176,7 @@ export class UserTableComponent {
   }
 
   onClickResolver(resolverName: unknown): void {
-    const resolver = this.resolverService.resolvers().find(r => r.resolvername === resolverName);
+    const resolver = this.resolverService.resolvers().find((r) => r.resolvername === resolverName);
     if (resolver) {
       this.dialog.open(UserNewResolverComponent, {
         data: { resolver },

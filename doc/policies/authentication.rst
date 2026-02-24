@@ -514,6 +514,18 @@ The policy :ref:`policy_enroll_via_multichallenge` has to be set to `smartphone`
 
 .. versionadded:: 3.12
 
+.. _policy_enroll_via_multichallenge_passkey_offline:
+
+enroll_via_multichallenge_passkey_offline
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+type: ``bool``
+
+If enabled, passkeys that are enrolled with the :ref:`policy_enroll_via_multichallenge` policy are automatically set to be
+allowed for offline use and the required offline data is returned with completion of the enrollment.
+
+.. versionadded:: 3.13
+
 .. _policy_u2f_facets:
 
 u2f_facets

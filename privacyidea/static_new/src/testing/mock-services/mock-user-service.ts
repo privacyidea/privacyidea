@@ -37,7 +37,7 @@ export class MockUserService implements UserServiceInterface {
   attributeSetMap = signal<Record<string, string[]>>({});
   hasWildcardKey: Signal<boolean> = signal(false);
   keyOptions: Signal<string[]> = signal([]);
-  selectedUser: Signal<UserData | null> = signal(null);
+  selectedUser: WritableSignal<UserData | null> = signal(null);
   usersOfRealmResource: HttpResourceRef<PiResponse<UserData[], undefined> | undefined> = new MockHttpResourceRef(
     MockPiResponse.fromValue([])
   );

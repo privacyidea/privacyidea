@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -33,6 +33,8 @@ import { MockDialogService } from "../../../../testing/mock-services/mock-dialog
 import { MachineResolverPanelEditComponent } from "./machine-resolver-panel-edit.component";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
+import { MockMatDialogRef } from "../../../../testing/mock-mat-dialog-ref";
+import { of } from "rxjs";
 import { ContentService } from "../../../services/content/content.service";
 import { MockContentService } from "../../../../testing/mock-services";
 
@@ -146,11 +148,13 @@ describe("MachineResolverPanelEditComponent", () => {
   it("should save machineResolver despite test failure if confirmed", async () => {
     machineResolverServiceMock.postTestMachineResolver.mockReturnValue(Promise.reject(Error("post-failed")));
     machineResolverServiceMock.postMachineResolver.mockReturnValue(Promise.resolve(null));
-    dialogServiceMock.confirm.mockReturnValue(Promise.resolve(true));
+    const dialogRefMock = new MockMatDialogRef();
+    dialogRefMock.afterClosed.mockReturnValue(of(true));
+    dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
     component.isEditMode.set(true);
     await component.saveMachineResolver();
     expect(machineResolverServiceMock.postTestMachineResolver).toHaveBeenCalled();
-    expect(dialogServiceMock.confirm).toHaveBeenCalled();
+    expect(dialogServiceMock.openDialog).toHaveBeenCalled();
     expect(machineResolverServiceMock.postMachineResolver).toHaveBeenCalled();
     expect(component.isEditMode()).toBeFalsy();
   });
@@ -158,11 +162,13 @@ describe("MachineResolverPanelEditComponent", () => {
   it("should not save machineResolver if test fails and not confirmed", async () => {
     machineResolverServiceMock.postTestMachineResolver.mockReturnValue(Promise.reject(Error("post-failed")));
     machineResolverServiceMock.postMachineResolver.mockReturnValue(Promise.resolve(null));
-    dialogServiceMock.confirm.mockReturnValue(Promise.resolve(false));
+    const dialogRefMock = new MockMatDialogRef();
+    dialogRefMock.afterClosed.mockReturnValue(of(false));
+    dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
     component.isEditMode.set(true);
     await component.saveMachineResolver();
     expect(machineResolverServiceMock.postTestMachineResolver).toHaveBeenCalled();
-    expect(dialogServiceMock.confirm).toHaveBeenCalled();
+    expect(dialogServiceMock.openDialog).toHaveBeenCalled();
     expect(machineResolverServiceMock.postMachineResolver).not.toHaveBeenCalled();
     expect(component.isEditMode()).toBeTruthy(); // Should remain in edit mode
   });
@@ -178,18 +184,22 @@ describe("MachineResolverPanelEditComponent", () => {
   });
 
   it("should delete machineResolver if confirmed", async () => {
-    dialogServiceMock.confirm.mockReturnValue(Promise.resolve(true));
+    const dialogRefMock = new MockMatDialogRef();
+    dialogRefMock.afterClosed.mockReturnValue(of(true));
+    dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
     machineResolverServiceMock.deleteMachineResolver.mockReturnValue(Promise.resolve(null));
     await component.deleteMachineResolver();
-    expect(dialogServiceMock.confirm).toHaveBeenCalled();
+    expect(dialogServiceMock.openDialog).toHaveBeenCalled();
     expect(machineResolverServiceMock.deleteMachineResolver).toHaveBeenCalledWith("test");
   });
 
   it("should not delete machineResolver if cancelled", async () => {
-    dialogServiceMock.confirm.mockReturnValue(Promise.resolve(false));
+    const dialogRefMock = new MockMatDialogRef();
+    dialogRefMock.afterClosed.mockReturnValue(of(false));
+    dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
     machineResolverServiceMock.deleteMachineResolver.mockReturnValue(Promise.resolve(null));
     await component.deleteMachineResolver();
-    expect(dialogServiceMock.confirm).toHaveBeenCalled();
+    expect(dialogServiceMock.openDialog).toHaveBeenCalled();
     expect(machineResolverServiceMock.deleteMachineResolver).not.toHaveBeenCalled();
   });
 
@@ -198,7 +208,7 @@ describe("MachineResolverPanelEditComponent", () => {
     TestBed.flushEffects();
     component.cancelEditMode();
     expect(component.isEditMode()).toBeFalsy();
-    expect(dialogServiceMock.confirm).not.toHaveBeenCalled();
+    expect(dialogServiceMock.openDialog).not.toHaveBeenCalled();
   });
 
   it("should cancel edit mode if edited and dialog confirmed", async () => {
@@ -206,10 +216,12 @@ describe("MachineResolverPanelEditComponent", () => {
     component.editedMachineResolver.set({ ...machineResolver, type: "ldap" });
     TestBed.flushEffects();
     expect(component.isEdited()).toBeTruthy();
-    dialogServiceMock.confirm.mockReturnValue(Promise.resolve(true));
+    const dialogRefMock = new MockMatDialogRef();
+    dialogRefMock.afterClosed.mockReturnValue(of(true));
+    dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
     component.cancelEditMode();
     await Promise.resolve();
-    expect(dialogServiceMock.confirm).toHaveBeenCalled();
+    expect(dialogServiceMock.openDialog).toHaveBeenCalled();
     expect(component.isEditMode()).toBeFalsy();
     expect(component.editedMachineResolver().type).toBe("hosts");
   });
@@ -219,9 +231,11 @@ describe("MachineResolverPanelEditComponent", () => {
     component.editedMachineResolver.set({ ...machineResolver, type: "ldap" });
     TestBed.flushEffects();
     expect(component.isEdited()).toBeTruthy();
-    dialogServiceMock.confirm.mockReturnValue(Promise.resolve(false));
+    const dialogRefMock = new MockMatDialogRef();
+    dialogRefMock.afterClosed.mockReturnValue(of(false));
+    dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
     component.cancelEditMode();
-    expect(dialogServiceMock.confirm).toHaveBeenCalled();
+    expect(dialogServiceMock.openDialog).toHaveBeenCalled();
     expect(component.isEditMode()).toBeTruthy();
     expect(component.editedMachineResolver().type).toBe("ldap");
   });

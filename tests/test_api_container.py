@@ -1,5 +1,8 @@
+# SPDX-FileCopyrightText: 2024 NetKnights GmbH <https://netknights.it>
+# SPDX-License-Identifier: AGPL-3.0-or-later
 import base64
 import json
+import mock
 from dataclasses import dataclass
 from datetime import datetime, timezone, timedelta
 
@@ -5152,8 +5155,10 @@ class APIContainerSynchronization(APIContainerTest):
 
         # Initial Sync
         sync_time = datetime.now(timezone.utc)
-        result = self.request_assert_success("container/synchronize",
-                                             params, None, 'POST')
+        with mock.patch("privacyidea.lib.containerclass.datetime") as mock_dt:
+            mock_dt.now.return_value = sync_time
+            result = self.request_assert_success("container/synchronize",
+                                                 params, None, 'POST')
         result_entries = result["result"]["value"].keys()
         self.assertEqual("AES", result["result"]["value"]["encryption_algorithm"])
         self.assertIn("encryption_params", result_entries)
@@ -5166,8 +5171,7 @@ class APIContainerSynchronization(APIContainerTest):
         # check last synchronization timestamp
         smartphone = find_container_by_serial(smartphone_serial)
         last_sync = smartphone.last_synchronization
-        time_diff = abs((sync_time - last_sync).total_seconds())
-        self.assertLessEqual(time_diff, 1)
+        self.assertEqual(last_sync, sync_time)
 
         # check tokens of container
         smartphone_tokens = smartphone.get_tokens()

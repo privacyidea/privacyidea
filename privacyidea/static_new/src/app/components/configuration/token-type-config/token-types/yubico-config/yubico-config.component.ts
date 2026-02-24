@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,34 +16,26 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, inject } from "@angular/core";
-import {
-  MAT_DIALOG_DATA,
-  MatDialogActions,
-  MatDialogClose,
-  MatDialogContent,
-  MatDialogTitle
-} from "@angular/material/dialog";
-import { MatButton } from "@angular/material/button";
-
-export type SimpleDialogData = {
-  header: string | null;
-  text: string;
-  data: string;
-};
+import { Component, input } from "@angular/core";
+import { CommonModule } from "@angular/common";
+import { FormsModule } from "@angular/forms";
+import { MatExpansionModule } from "@angular/material/expansion";
+import { MatFormFieldModule } from "@angular/material/form-field";
+import { MatInputModule } from "@angular/material/input";
 
 @Component({
-  selector: "app-simple-dialog",
+  selector: "app-yubico-config",
+  standalone: true,
   imports: [
-    MatDialogContent,
-    MatButton,
-    MatDialogActions,
-    MatDialogClose,
-    MatDialogTitle
+    CommonModule,
+    FormsModule,
+    MatExpansionModule,
+    MatFormFieldModule,
+    MatInputModule
   ],
-  templateUrl: "./simple-dialog.component.html",
-  styleUrl: "./simple-dialog.component.scss"
+  templateUrl: "./yubico-config.component.html",
+  styleUrl: "./yubico-config.component.scss"
 })
-export class SimpleDialogComponent {
-  public readonly data = inject(MAT_DIALOG_DATA);
+export class YubicoConfigComponent {
+  formData = input.required<Record<string, any>>();
 }

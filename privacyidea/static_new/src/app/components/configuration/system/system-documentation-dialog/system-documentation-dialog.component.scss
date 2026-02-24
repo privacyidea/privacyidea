@@ -1,0 +1,10 @@
+@use "../../../../../styles";
+
+::ng-deep {
+  .system-documentation-dialog-container app-copy-button {
+    .copy-icon {
+      font-size: 26px !important;
+      color: var(--mat-sys-surface-container-highest) !important;
+    }
+  }
+}

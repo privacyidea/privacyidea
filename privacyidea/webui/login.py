@@ -30,18 +30,19 @@ __author__ = "Cornelius Kölbel <cornelius@privacyidea.org>"
 
 from flask import (Blueprint, render_template, request,
                    current_app, g)
-from privacyidea.api.lib.utils import send_html, send_result
+
 from privacyidea.api.lib.prepolicy import is_remote_user_allowed
+from privacyidea.api.lib.utils import send_html, send_result
+from privacyidea.lib.config import get_from_config, SYSCONF, get_privacyidea_node
+from privacyidea.lib.error import HSMException
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.passwordreset import is_password_reset
-from privacyidea.lib.error import HSMException
-from privacyidea.lib.realm import get_realms
+from privacyidea.lib.policies.actions import PolicyAction, PasskeyLoginButtonOptions
 from privacyidea.lib.policy import PolicyClass, SCOPE, Match, REMOTE_USER
-from privacyidea.lib.policies.actions import PolicyAction
+from privacyidea.lib.queue import has_job_queue
+from privacyidea.lib.realm import get_realms
 from privacyidea.lib.subscriptions import subscription_status
 from privacyidea.lib.utils import get_client_ip, get_version_number
-from privacyidea.lib.config import get_from_config, SYSCONF, get_privacyidea_node
-from privacyidea.lib.queue import has_job_queue
 
 DEFAULT_THEME = "/static/contrib/css/bootstrap-theme.css"
 # note: the empty comment in the following line allows to include it in the docs
@@ -116,8 +117,8 @@ def get_render_context():
         request.all_data = {}
     # Depending on displaying the realm dropdown, we fill realms or not.
     realms = ""
-    realm_dropdown = Match.action_only(g, scope=SCOPE.WEBUI, action=PolicyAction.REALMDROPDOWN) \
-        .policies(write_to_audit_log=False)
+    realm_dropdown = Match.action_only(g, scope=SCOPE.WEBUI, action=PolicyAction.REALMDROPDOWN).policies(
+        write_to_audit_log=False)
     show_node = get_privacyidea_node() \
         if Match.generic(g, scope=SCOPE.WEBUI, action=PolicyAction.SHOW_NODE).any(write_to_audit_log=False) else ""
     if realm_dropdown:
@@ -178,6 +179,11 @@ def get_render_context():
     otp_pin_set_random_user = Match.action_only(g, scope=SCOPE.USER, action=PolicyAction.OTPPINSETRANDOM).policies(
         write_to_audit_log=False)
 
+    passkey_login_policy = Match.action_only(g, scope=SCOPE.WEBUI, action=PolicyAction.PASSKEY_LOGIN).action_values(
+        unique=True, write_to_audit_log=False)
+    passkey_login = list(passkey_login_policy)[0] if len(
+        passkey_login_policy) else PasskeyLoginButtonOptions.SHOW
+
     render_context: dict = {
         'instance': instance,
         'backendUrl': backend_url,
@@ -201,9 +207,11 @@ def get_render_context():
         'logo': logo,
         'page_title': page_title,
         'otp_pin_set_random_user': otp_pin_set_random_user,
-        'privacyideaVersionNumber': get_version_number()
+        'privacyideaVersionNumber': get_version_number(),
+        'passkey_login': passkey_login,
     }
     return render_context
+
 
 @login_blueprint.route('/', methods=['GET'])
 def single_page_application():
@@ -213,6 +221,7 @@ def single_page_application():
         return send_html(render_template("deactivated.html"))
     index_page = current_app.config.get("PI_INDEX_HTML") or "index.html"
     return send_html(render_template(index_page, **render_context))
+
 
 @login_blueprint.route('/config', methods=['GET'])
 def get_ui_config():
