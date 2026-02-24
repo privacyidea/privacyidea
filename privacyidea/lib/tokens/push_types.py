@@ -9,6 +9,11 @@ class PushMode(str, Enum):
     REQUIRE_PRESENCE = "require_presence"
     CODE_TO_PHONE = "code_to_phone"
 
+# Length of the short display code for code_to_phone mode.
+# The security does not lie in this code; it's only used so the client
+# knows the smartphone has completed its confirmation.
+CODE_TO_PHONE_DISPLAY_CODE_LENGTH = 2
+
 
 class PushPresenceOptions(str, Enum):
     ALPHABETIC = "ALPHABETIC"

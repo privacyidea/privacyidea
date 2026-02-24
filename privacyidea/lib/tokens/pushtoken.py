@@ -66,7 +66,8 @@ from privacyidea.lib.token import get_one_token, init_token
 from privacyidea.lib.tokenclass import (TokenClass, AuthenticationMode, ClientMode,
                                         RolloutState, ChallengeSession)
 from privacyidea.lib.tokens.push_types import (PushMode, PushPresenceOptions,
-                                               PushAction, PushAllowPolling)
+                                               PushAction, PushAllowPolling,
+                                               CODE_TO_PHONE_DISPLAY_CODE_LENGTH)
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import create_img, b32encode_and_unicode
 from privacyidea.lib.utils import prepare_result, to_bytes, is_true, create_tag_dict
@@ -720,6 +721,7 @@ class PushTokenClass(TokenClass):
         public_key = _load_public_key(token.get_tokeninfo(PUBLIC_KEY_SMARTPHONE))
         challenges = get_challenges(serial=serial)
         result = False
+        details = {}
 
         if challenges:
             # There are valid challenges, so we check this signature
@@ -769,12 +771,23 @@ class PushTokenClass(TokenClass):
                             log.warning("'push_require_presence' Policy is set but the presence answer "
                                         "is not present in the smartphone request!")
                             result = False
+                        elif (isinstance(challenge_data, dict) and
+                              challenge_data.get("mode") == PushMode.CODE_TO_PHONE):
+                            # code_to_phone 2-step: smartphone confirmed.
+                            # Generate a short display code and store it in the challenge data.
+                            display_code = "".join([str(secrets.randbelow(10))
+                                                 for _ in range(CODE_TO_PHONE_DISPLAY_CODE_LENGTH)])
+                            challenge_data["smartphone_confirmed"] = True
+                            challenge_data["display_code"] = display_code
+                            challenge.set_data(challenge_data)
+                            # Do NOT mark otp_valid yet; the client still needs to send the display_code.
+                            details["display_code"] = display_code
                         else:
                             challenge.set_otp_status(True)
                     challenge.save()
                 except InvalidSignature as _e:
                     pass
-        return result, {}
+        return result, details
 
     @classmethod
     def _handle_firebase_update(cls, serial: str, request_data: dict) -> tuple[bool, dict]:
@@ -875,23 +888,37 @@ class PushTokenClass(TokenClass):
         return data, current_presence_options, correct_presence_option
 
     def _handle_code_to_phone(self, options: dict, transaction_id: str) -> tuple[dict, str]:
-        code_to_phone = ""
+        """
+        Handle the code_to_phone mode for push challenges.
 
+        This is a 2-step process:
+        1. A challenge is created and sent to the smartphone (like standard mode).
+           The smartphone confirms by signing the challenge and sending it back.
+        2. After smartphone confirmation, a short display code is generated and returned
+           to the smartphone for display. The client must then enter this display code.
+
+        The display code is only used for synchronization (so the client knows the
+        smartphone has completed its job). The security lies in the smartphone
+        confirmation, not in the code itself.
+
+        :param options: the request context parameters / data
+        :param transaction_id: the transaction id of the challenge
+        :return: tuple of (challenge data dict, code_to_phone_code)
+                 code_to_phone_code is empty string initially since it is
+                 generated after smartphone confirmation.
+        """
         if options.get("push_triggered"):
             c_data = self._get_existing_challenge_data(transaction_id, PushMode.CODE_TO_PHONE)
             if c_data:
-                code_to_phone = c_data.get("otp")
-
-        if not code_to_phone:
-            otplen = 6
-            code_to_phone = "".join([str(secrets.randbelow(10)) for _ in range(otplen)])
+                return c_data, ""
 
         data = {
             "type": "push",
             "mode": PushMode.CODE_TO_PHONE,
-            "otp": code_to_phone
+            "smartphone_confirmed": False,
+            "display_code": ""
         }
-        return data, code_to_phone
+        return data, ""
 
     @classmethod
     def _api_endpoint_get(cls, g: Any, request_data: dict) -> list:
@@ -964,7 +991,12 @@ class PushTokenClass(TokenClass):
                         if challenge_data.get("mode") == PushMode.REQUIRE_PRESENCE:
                             presence_options = challenge_data.get("options")
                         elif challenge_data.get("mode") == PushMode.CODE_TO_PHONE:
-                            code_to_phone = challenge_data.get("otp")
+                            if challenge_data.get("smartphone_confirmed"):
+                                # Smartphone already confirmed this challenge, skip it
+                                continue
+                            # code_to_phone step 1: present as standard challenge for the smartphone
+                            # to confirm. No display_code is sent.
+                            code_to_phone = None
                     elif isinstance(challenge_data, str) and challenge_data:
                         # Legacy handling, when require_presence was a string of options with the correct one at the end
                         presence_options = challenge_data.split(",")[:-1]
@@ -1140,7 +1172,7 @@ class PushTokenClass(TokenClass):
                         "Disabling 'require_presence' policy!")
         elif is_true(code_to_phone_enabled) and not options.get(PushAction.WAIT):
             data, code_to_phone_code = self._handle_code_to_phone(options, transactionid)
-            message = _("Please enter the number from your smartphone.")
+            message = _("Please enter the code displayed on your smartphone.")
             client_mode = ClientMode.INTERACTIVE
 
         # Initially we assume there is no error from Firebase
@@ -1200,7 +1232,8 @@ class PushTokenClass(TokenClass):
             if is_true(options.get("exception")):
                 raise ValidateError("The token has no tokeninfo. Can not send via Firebase service.")
 
-        reply_dict.update({"attributes": {"hideResponseInput": client_mode != ClientMode.INTERACTIVE}})
+        reply_dict.update({"attributes": {"hideResponseInput": client_mode != ClientMode.INTERACTIVE},
+                           "client_mode": client_mode})
         return True, message, transactionid, reply_dict
 
     @check_token_locked
@@ -1249,10 +1282,12 @@ class PushTokenClass(TokenClass):
                 _t, message, transaction_id, _attr = self.create_challenge(options=options)
 
                 if code_to_phone_enabled:
-                    # Do not wait, return challenge immediately
+                    # code_to_phone: return challenge immediately, no waiting.
+                    # The client_mode is INTERACTIVE so the client shows an input field.
+                    # The user will enter the display_code after the smartphone confirms.
                     return True, -1, {"transaction_id": transaction_id, "message": message}
 
-                # Now we need to check and wait for the response to be answered in the challenge table
+                # Standard / require_presence: wait for the challenge to be answered
                 start_time = time.time()
                 while True:
                     db.session.commit()
@@ -1263,15 +1298,16 @@ class PushTokenClass(TokenClass):
                     time.sleep(POLL_INTERVAL - (elapsed_time % POLL_INTERVAL))
 
         elif code_to_phone_enabled:
-            # Check if passw matches a challenge
+            # Check if passw matches the display_code from a code_to_phone challenge
             transaction_id = options.get("transaction_id")
             challenges = get_challenges(serial=self.token.serial, transaction_id=transaction_id)
             for challenge in challenges:
                 if challenge.is_valid():
                     c_data = challenge.get_data()
                     if (isinstance(c_data, dict) and c_data.get("mode") == PushMode.CODE_TO_PHONE
-                            and c_data.get("otp") == passw):
-                        # Success!
+                            and c_data.get("smartphone_confirmed")
+                            and c_data.get("display_code") == passw):
+                        # Success! Smartphone confirmed and display_code matches.
                         challenge.delete()
                         return True, 1, {}
 
@@ -1284,8 +1320,12 @@ class PushTokenClass(TokenClass):
         is standard or require_presence. In this case, the passw parameter does not matter because the challenge
         has been answered by the smartphone, and we just check if that has happened correctly.
 
-        If the mode of the challenge is code_to_phone, which means the smartphone just displayed the number
-        and the client has sent it via /validate/check, we check the passw parameter here.
+        If the mode of the challenge is code_to_phone, this is a 2-step process:
+        1. Wait for the smartphone to confirm (smartphone_confirmed becomes True in the challenge data).
+        2. After confirmation, a display_code is stored in the challenge data. The client must send this
+           display_code via /validate/check. The display_code is only used for synchronization, the security
+           lies in the smartphone confirmation.
+
         :param user: the requesting user
         :type user: User object
         :param passw: the password (pin+otp)
@@ -1311,13 +1351,21 @@ class PushTokenClass(TokenClass):
                 if challenge.is_valid():
                     data = challenge.get_data()
 
-                    if isinstance(data, dict) and "mode" in data and data["mode"] == PushMode.CODE_TO_PHONE:
-                        otp = data.get("otp", "")
-                        if otp == passw:
+                    if isinstance(data, dict) and data.get("mode") == PushMode.CODE_TO_PHONE:
+                        if not data.get("smartphone_confirmed"):
+                            # Step 1 not completed yet; smartphone has not confirmed.
+                            log.debug("code_to_phone: waiting for smartphone confirmation.")
+                            return -1
+                        # Step 2: smartphone has confirmed, check the display_code
+                        display_code = data.get("display_code", "")
+                        if display_code and display_code == passw:
                             return 1
-                        else:
-                            log.debug("Received the wrong OTP for push code_to_phone!")
+                        elif passw is not None:
+                            log.debug("Received the wrong display code for push code_to_phone!")
                             self.inc_failcount()
+                            return -1
+                        else:
+                            # No passw provided yet (e.g. during polling)
                             return -1
                     else:
                         _, status = challenge.get_otp_status()

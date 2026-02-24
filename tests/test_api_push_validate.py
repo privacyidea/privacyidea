@@ -765,9 +765,13 @@ class PushAPITestCase(MyApiTestCase):
 
     def test_17_push_code_to_phone(self):
         """
-        Test the push token in code_to_phone mode. This means a number will be pushed to (or polled by) the
-        smartphone. The user then has to enter the number into the input that the client displays. So it is reversed
-        in the sense that not the phone is submitting the answer but the client.
+        Test the push token in code_to_phone mode.
+        This is a 2-step process:
+        1. A challenge is created and pushed to the smartphone. The smartphone confirms by signing
+           the challenge. After confirmation, a short display_code is generated and returned to the
+           smartphone for display.
+        2. The user enters the display_code from the smartphone into the client, which sends it via
+           /validate/check to complete the authentication.
         """
 
         self.setUp_user_realms()
@@ -809,7 +813,7 @@ class PushAPITestCase(MyApiTestCase):
             self.assertEqual(RolloutState.ENROLLED, detail.get("rollout_state"), detail)
 
         #############################################################
-        # Run authentication with push token
+        # Run authentication with push token - Step 1: create challenge
         with self.app.test_request_context('/validate/check',
                                            method='POST',
                                            data={"user": "selfservice",
@@ -823,24 +827,28 @@ class PushAPITestCase(MyApiTestCase):
             # The result should be a challenge
             self.assertEqual(AUTH_RESPONSE.CHALLENGE,
                              res.json.get("result").get("authentication"), res.json)
+            # The client_mode should be INTERACTIVE so the client shows an input field
+            multi_challenge = detail.get("multi_challenge", [{}])
+            self.assertEqual(ClientMode.INTERACTIVE, multi_challenge[0].get("client_mode"))
 
-            # Check that the challenge data contains the OTP
+            # Check that the challenge data has the correct structure for 2-step code_to_phone
             challenge = get_challenges(serial=self.serial_push, transaction_id=transaction_id)[0]
             challenge_data = challenge.get_data()
             self.assertIsInstance(challenge_data, dict)
             self.assertEqual("push", challenge_data.get("type"))
             self.assertEqual(PushMode.CODE_TO_PHONE, challenge_data.get("mode"))
-            otp = challenge_data.get("otp")
-            self.assertTrue(otp)
-            self.assertEqual(6, len(str(otp)))  # Default length
+            self.assertFalse(challenge_data.get("smartphone_confirmed"))
+            self.assertEqual("", challenge_data.get("display_code"))
+            # No OTP stored in initial challenge data
+            self.assertNotIn("otp", challenge_data)
 
-        # We do poll only, so we need to poll to verify the app gets the OTP
+        # Step 1b: Smartphone polls for the challenge
         timestamp = datetime.datetime.now(tz=datetime.timezone.utc).isoformat()
         sign_string = f"{self.serial_push}|{timestamp}"
         sig = self.smartphone_private_key.sign(sign_string.encode('utf8'),
                                                padding.PKCS1v15(),
                                                hashes.SHA256())
-        # now check that we receive the challenge when polling
+        # Poll to get the challenge (should show as standard challenge, no display_code)
         with self.app.test_request_context('/ttype/push',
                                            method='GET',
                                            query_string={"serial": self.serial_push,
@@ -849,13 +857,40 @@ class PushAPITestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertEqual(200, res.status_code, res)
             value = res.json.get("result").get("value")
-            # Check that the OTP is in the response
-            self.assertEqual(str(otp), value[0].get("display_code"))
+            self.assertTrue(len(value) > 0)
+            # No display_code should be present (smartphone just confirms)
+            self.assertNotIn("display_code", value[0])
+            # Get the nonce for signing
+            challenge_nonce = value[0].get("nonce")
 
-        # Finalize authentication with the OTP
+        # Step 1c: Smartphone confirms by signing the challenge
+        sign_data = f"{challenge_nonce}|{self.serial_push}"
+        sig = self.smartphone_private_key.sign(sign_data.encode('utf8'),
+                                               padding.PKCS1v15(),
+                                               hashes.SHA256())
+        with self.app.test_request_context('/ttype/push',
+                                           method='POST',
+                                           data={"serial": self.serial_push,
+                                                 "signature": b32encode(sig)}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            self.assertTrue(res.json.get("result").get("value"), res.json)
+            # The response should contain the display_code for the smartphone to display
+            detail = res.json.get("detail")
+            display_code = detail.get("display_code")
+            self.assertTrue(display_code)
+            self.assertEqual(2, len(display_code))
+
+        # Verify challenge data was updated
+        challenge = get_challenges(serial=self.serial_push, transaction_id=transaction_id)[0]
+        challenge_data = challenge.get_data()
+        self.assertTrue(challenge_data.get("smartphone_confirmed"))
+        self.assertEqual(display_code, challenge_data.get("display_code"))
+
+        # Step 2: Finalize authentication with the display_code
         with self.app.test_request_context('/validate/check',
                                            method='POST',
-                                           data={"user": "selfservice", "pass": otp,
+                                           data={"user": "selfservice", "pass": display_code,
                                                  "transaction_id": transaction_id},
                                            headers={"user_agent": "privacyidea-cp/2.0"}):
             res = self.app.full_dispatch_request()
@@ -871,7 +906,7 @@ class PushAPITestCase(MyApiTestCase):
 
     def test_18_push_code_to_phone_fail(self):
         """
-        Test the push token in push_mode_code_to_phone mode with a wrong OTP.
+        Test the push token in code_to_phone mode with a wrong display_code.
         """
 
         self.setUp_user_realms()
@@ -917,7 +952,7 @@ class PushAPITestCase(MyApiTestCase):
         self.assertEqual(0, token.token.failcount)
 
         #############################################################
-        # Run authentication with push token
+        # Run authentication with push token - Step 1: create challenge
         with self.app.test_request_context('/validate/check',
                                            method='POST',
                                            data={"user": "selfservice",
@@ -932,21 +967,51 @@ class PushAPITestCase(MyApiTestCase):
             self.assertEqual(AUTH_RESPONSE.CHALLENGE,
                              res.json.get("result").get("authentication"), res.json)
 
-            # Check that the challenge data contains the OTP
+            # Check that the challenge data has the correct structure
             challenge = get_challenges(serial=self.serial_push, transaction_id=transaction_id)[0]
             challenge_data = challenge.get_data()
             self.assertIsInstance(challenge_data, dict)
             self.assertEqual(challenge_data.get("type"), "push")
             self.assertEqual(challenge_data.get("mode"), PushMode.CODE_TO_PHONE)
-            otp = challenge_data.get("otp")
-            self.assertTrue(otp)
-            self.assertEqual(6, len(str(otp)))  # Default length
+            self.assertFalse(challenge_data.get("smartphone_confirmed"))
 
-        # Finalize authentication with the WRONG OTP
-        wrong_otp = "00" if otp != "00" else "01"
+        # Step 1b: Smartphone polls for the challenge
+        timestamp = datetime.datetime.now(tz=datetime.timezone.utc).isoformat()
+        sign_string = f"{self.serial_push}|{timestamp}"
+        sig = self.smartphone_private_key.sign(sign_string.encode('utf8'),
+                                               padding.PKCS1v15(),
+                                               hashes.SHA256())
+        with self.app.test_request_context('/ttype/push',
+                                           method='GET',
+                                           query_string={"serial": self.serial_push,
+                                                         "timestamp": timestamp,
+                                                         "signature": b32encode(sig)}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            value = res.json.get("result").get("value")
+            challenge_nonce = value[0].get("nonce")
+
+        # Step 1c: Smartphone confirms
+        sign_data = f"{challenge_nonce}|{self.serial_push}"
+        sig = self.smartphone_private_key.sign(sign_data.encode('utf8'),
+                                               padding.PKCS1v15(),
+                                               hashes.SHA256())
+        with self.app.test_request_context('/ttype/push',
+                                           method='POST',
+                                           data={"serial": self.serial_push,
+                                                 "signature": b32encode(sig)}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            self.assertTrue(res.json.get("result").get("value"), res.json)
+            detail = res.json.get("detail")
+            display_code = detail.get("display_code")
+            self.assertTrue(display_code)
+
+        # Finalize authentication with the WRONG display_code
+        wrong_code = "00" if display_code != "00" else "01"
         with self.app.test_request_context('/validate/check',
                                            method='POST',
-                                           data={"user": "selfservice", "pass": wrong_otp,
+                                           data={"user": "selfservice", "pass": wrong_code,
                                                  "transaction_id": transaction_id},
                                            headers={"user_agent": "privacyidea-cp/2.0"}):
             res = self.app.full_dispatch_request()
@@ -959,6 +1024,173 @@ class PushAPITestCase(MyApiTestCase):
             # Check failcounter after, has been increased
             token = get_tokens(serial=self.serial_push)[0]
             self.assertEqual(1, token.token.failcount)
+
+        remove_token(self.serial_push)
+        delete_policy("push_config")
+        delete_policy("push_mode_code_to_phone")
+
+    def test_18a_push_code_to_phone_before_smartphone_confirms(self):
+        """
+        Test that entering a display_code before the smartphone has confirmed the challenge
+        results in a REJECT.
+        """
+        self.setUp_user_realms()
+        set_policy("push_config", scope=SCOPE.ENROLL,
+                   action=f"{PushAction.FIREBASE_CONFIG}={POLL_ONLY},"
+                          f"{PushAction.REGISTRATION_URL}={REGISTRATION_URL}")
+        set_policy("push_mode_code_to_phone", scope=SCOPE.AUTH,
+                   action=f"{PushAction.PUSH_CODE_TO_PHONE}=1")
+
+        # Create and enroll push token
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"type": "push",
+                                                 "pin": "push_pin",
+                                                 "user": "selfservice",
+                                                 "realm": self.realm1,
+                                                 "serial": self.serial_push,
+                                                 "genkey": 1},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            enrollment_credential = res.json.get("detail").get("enrollment_credential")
+
+        with self.app.test_request_context('/ttype/push',
+                                           method='POST',
+                                           data={"enrollment_credential": enrollment_credential,
+                                                 "serial": self.serial_push,
+                                                 "pubkey": self.smartphone_public_key_pem_urlsafe,
+                                                 "fbtoken": "firebaseT"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+
+        # Create challenge
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "selfservice",
+                                                 "pass": "push_pin"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            detail = res.json.get("detail")
+            transaction_id = detail.get("transaction_id")
+            self.assertTrue(transaction_id)
+            self.assertEqual(AUTH_RESPONSE.CHALLENGE,
+                             res.json.get("result").get("authentication"), res.json)
+
+        # Verify smartphone has NOT confirmed yet
+        challenge = get_challenges(serial=self.serial_push, transaction_id=transaction_id)[0]
+        challenge_data = challenge.get_data()
+        self.assertFalse(challenge_data.get("smartphone_confirmed"))
+
+        # Try to finalize authentication with a code BEFORE the smartphone confirms
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "selfservice", "pass": "42",
+                                                 "transaction_id": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            self.assertTrue(res.json.get("result").get("status"), res.json)
+            self.assertFalse(res.json.get("result").get("value"), res.json)
+            self.assertEqual(AUTH_RESPONSE.REJECT,
+                             res.json.get("result").get("authentication"), res.json)
+
+        remove_token(self.serial_push)
+        delete_policy("push_config")
+        delete_policy("push_mode_code_to_phone")
+
+    def test_18b_push_code_to_phone_smartphone_declines(self):
+        """
+        Test that if the smartphone declines the challenge in code_to_phone mode,
+        the authentication is rejected.
+        """
+        self.setUp_user_realms()
+        set_policy("push_config", scope=SCOPE.ENROLL,
+                   action=f"{PushAction.FIREBASE_CONFIG}={POLL_ONLY},"
+                          f"{PushAction.REGISTRATION_URL}={REGISTRATION_URL}")
+        set_policy("push_mode_code_to_phone", scope=SCOPE.AUTH,
+                   action=f"{PushAction.PUSH_CODE_TO_PHONE}=1")
+
+        # Create and enroll push token
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"type": "push",
+                                                 "pin": "push_pin",
+                                                 "user": "selfservice",
+                                                 "realm": self.realm1,
+                                                 "serial": self.serial_push,
+                                                 "genkey": 1},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            enrollment_credential = res.json.get("detail").get("enrollment_credential")
+
+        with self.app.test_request_context('/ttype/push',
+                                           method='POST',
+                                           data={"enrollment_credential": enrollment_credential,
+                                                 "serial": self.serial_push,
+                                                 "pubkey": self.smartphone_public_key_pem_urlsafe,
+                                                 "fbtoken": "firebaseT"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+
+        # Create challenge
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "selfservice",
+                                                 "pass": "push_pin"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            detail = res.json.get("detail")
+            transaction_id = detail.get("transaction_id")
+            self.assertTrue(transaction_id)
+
+        # Smartphone polls for the challenge
+        timestamp = datetime.datetime.now(tz=datetime.timezone.utc).isoformat()
+        sign_string = f"{self.serial_push}|{timestamp}"
+        sig = self.smartphone_private_key.sign(sign_string.encode('utf8'),
+                                               padding.PKCS1v15(),
+                                               hashes.SHA256())
+        with self.app.test_request_context('/ttype/push',
+                                           method='GET',
+                                           query_string={"serial": self.serial_push,
+                                                         "timestamp": timestamp,
+                                                         "signature": b32encode(sig)}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            value = res.json.get("result").get("value")
+            challenge_nonce = value[0].get("nonce")
+
+        # Smartphone DECLINES the challenge
+        sign_data = f"{challenge_nonce}|{self.serial_push}|decline"
+        sig = self.smartphone_private_key.sign(sign_data.encode('utf8'),
+                                               padding.PKCS1v15(),
+                                               hashes.SHA256())
+        with self.app.test_request_context('/ttype/push',
+                                           method='POST',
+                                           data={"serial": self.serial_push,
+                                                 "signature": b32encode(sig),
+                                                 "decline": "1"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            # Decline is accepted
+            self.assertTrue(res.json.get("result").get("value"), res.json)
+            # No display_code should be returned for a declined challenge
+            detail = res.json.get("detail") or {}
+            self.assertNotIn("display_code", detail)
+
+        # Verify challenge was not confirmed
+        challenge = get_challenges(serial=self.serial_push, transaction_id=transaction_id)[0]
+        challenge_data = challenge.get_data()
+        self.assertFalse(challenge_data.get("smartphone_confirmed"))
+
+        # Trying to authenticate with any code should fail
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "selfservice", "pass": "42",
+                                                 "transaction_id": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            self.assertFalse(res.json.get("result").get("value"), res.json)
+            self.assertEqual(AUTH_RESPONSE.REJECT,
+                             res.json.get("result").get("authentication"), res.json)
 
         remove_token(self.serial_push)
         delete_policy("push_config")
@@ -1017,7 +1249,7 @@ class PushAPITestCase(MyApiTestCase):
             self.assertEqual(challenge_data.get("type"), "push")
             # REQUIRE_PRESENCE takes precedence
             self.assertEqual(challenge_data.get("mode"), PushMode.REQUIRE_PRESENCE)
-            self.assertNotIn("otp", challenge_data)
+            self.assertNotIn("display_code", challenge_data)
 
         remove_token(self.serial_push)
         delete_policy("push_config")
@@ -1083,7 +1315,7 @@ class PushAPITestCase(MyApiTestCase):
             self.assertEqual(challenge_data.get("type"), "push")
             # STANDARD takes precedence because push_wait disables code_to_phone
             self.assertEqual(challenge_data.get("mode"), PushMode.STANDARD)
-            self.assertNotIn("otp", challenge_data)
+            self.assertNotIn("display_code", challenge_data)
 
         remove_token(self.serial_push)
         delete_policy("push_config")

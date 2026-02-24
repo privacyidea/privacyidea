@@ -2436,7 +2436,7 @@ def create_challenges_from_tokens(token_list, reply_dict, options=None):
                 challenge_info["transaction_id"] = transaction_id
                 challenge_info["serial"] = token.token.serial
                 challenge_info["type"] = token.get_tokentype()
-                challenge_info["client_mode"] = token.client_mode
+                challenge_info["client_mode"] = challenge_info.get("client_mode", token.client_mode)
                 challenge_info["message"] = message
                 # If they exist, add next pin and next password change
                 next_pin = token.get_tokeninfo("next_pin_change")
