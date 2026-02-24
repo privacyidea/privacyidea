@@ -16,7 +16,6 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-
 import { Component, effect, inject, OnInit, signal, ViewChild } from "@angular/core";
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from "@angular/material/dialog";
 import { MatFormFieldModule } from "@angular/material/form-field";
@@ -29,6 +28,7 @@ import { MatTableDataSource, MatTableModule } from "@angular/material/table";
 import { MatPaginator, MatPaginatorModule } from "@angular/material/paginator";
 import { FormsModule } from "@angular/forms";
 import { MatSelectModule } from "@angular/material/select";
+import { MatAutocompleteModule } from "@angular/material/autocomplete";
 import {
   Machine,
   MachineService,
@@ -36,12 +36,11 @@ import {
   TokenApplication,
   TokenApplications
 } from "../../../../services/machine/machine.service";
-import { TokenDetails } from "../../../../services/token/token.service";
+import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 import { ApplicationService, ApplicationServiceInterface } from "../../../../services/application/application.service";
 import { DialogService, DialogServiceInterface } from "../../../../services/dialog/dialog.service";
 import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
 import { ROUTE_PATHS } from "../../../../route_paths";
-
 import { CopyButtonComponent } from "../../../shared/copy-button/copy-button.component";
 
 @Component({
@@ -59,6 +58,7 @@ import { CopyButtonComponent } from "../../../shared/copy-button/copy-button.com
     MatPaginatorModule,
     FormsModule,
     MatSelectModule,
+    MatAutocompleteModule,
     CopyButtonComponent
   ],
   templateUrl: "./machine-details-dialog.component.html",
@@ -71,6 +71,7 @@ export class MachineDetailsDialogComponent implements OnInit {
   private readonly dialogService: DialogServiceInterface = inject(DialogService);
   private readonly dialogRef = inject(MatDialogRef<MachineDetailsDialogComponent>);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
+  protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
   tokenApplications = signal<TokenApplications>([]);
   dataSource = new MatTableDataSource<TokenApplication>([]);
@@ -106,6 +107,10 @@ export class MachineDetailsDialogComponent implements OnInit {
   ngOnInit(): void {
     this.loadTokenApplications();
     this.applicationOptions = Object.keys(this.applicationsDef()).filter(k => k !== "offline");
+  }
+
+  onTokenSerialInput(value: string): void {
+    this.tokenService.selectedToken.set(value);
   }
 
   loadTokenApplications(): void {

@@ -220,6 +220,9 @@ export interface TokenServiceInterface {
   pageIndex: WritableSignal<number>;
   tokenResource: HttpResourceRef<PiResponse<Tokens> | undefined>;
   tokenSelection: WritableSignal<TokenDetails[]>;
+  selectedToken: WritableSignal<string | null>;
+  tokenOptions: Signal<string[]>;
+  filteredTokenOptions: Signal<string[]>;
 
   clearFilter(): void;
 
@@ -337,6 +340,19 @@ export class TokenService implements TokenServiceInterface {
       .filter(([key, v]) => key === "container_serial" ? true : StringUtils.validFilterValue(v))
       .map(([key, v]) => [key, plainKeys.has(key) ? v : `*${v}*`] as const);
     return Object.fromEntries(entries) as Record<string, string>;
+  });
+
+  tokenSerialResource = httpResource<PiResponse<Tokens>>(() => {
+    const filter = this.selectedToken();
+    if (!filter || filter.length < 1) {
+      return undefined;
+    }
+    return {
+      url: this.tokenBaseUrl,
+      method: "GET",
+      headers: this.authService.getHeaders(),
+      params: { serial: `*${filter}*` }
+    };
   });
 
   constructor() {
@@ -549,6 +565,20 @@ export class TokenService implements TokenServiceInterface {
       tokenResource: this.tokenResource.value()
     }),
     computation: () => []
+  });
+
+  selectedToken: WritableSignal<string | null> = signal(null);
+
+  tokenOptions = linkedSignal({
+    source: this.tokenSerialResource.value,
+    computation: (tokenSerialResource) => {
+      return tokenSerialResource?.result?.value?.tokens?.map((token) => token.serial) ?? [];
+    }
+  });
+
+  filteredTokenOptions = computed(() => {
+    const filter = (this.selectedToken() || "").toLowerCase();
+    return this.tokenOptions().filter((option) => option.toLowerCase().includes(filter));
   });
 
   bulkUnassignTokens(tokenDetails: TokenDetails[]): Observable<PiResponse<BulkResult, any>> {

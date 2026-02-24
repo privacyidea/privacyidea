@@ -27,6 +27,8 @@ import { signal } from "@angular/core";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { ContentService } from "../../../../services/content/content.service";
 import { ROUTE_PATHS } from "../../../../route_paths";
+import { TokenService } from "../../../../services/token/token.service";
+import { computed } from "@angular/core";
 
 describe("MachineDetailsDialogComponent", () => {
   let component: MachineDetailsDialogComponent;
@@ -36,6 +38,7 @@ describe("MachineDetailsDialogComponent", () => {
   let dialogServiceMock: any;
   let matDialogRefMock: any;
   let contentServiceMock: any;
+  let tokenServiceMock: any;
 
   const mockMachine = { id: 1, hostname: ["host1"], ip: "1.1.1.1", resolver_name: "res1" };
 
@@ -76,6 +79,13 @@ describe("MachineDetailsDialogComponent", () => {
       keydownEvents: jest.fn().mockReturnValue(of({}))
     };
 
+    tokenServiceMock = {
+      selectedToken: signal(null),
+      tokenOptions: signal([]),
+      filteredTokenOptions: computed(() => []),
+      getTokenDetails: jest.fn().mockReturnValue(of({ result: { value: { tokens: [] } } }))
+    };
+
     contentServiceMock = {
       routeUrl: signal(ROUTE_PATHS.CONFIGURATION_MACHINES),
       tokenSelected: jest.fn(),
@@ -90,7 +100,8 @@ describe("MachineDetailsDialogComponent", () => {
         { provide: MachineService, useValue: machineServiceMock },
         { provide: ApplicationService, useValue: applicationServiceMock },
         { provide: DialogService, useValue: dialogServiceMock },
-        { provide: ContentService, useValue: contentServiceMock }
+        { provide: ContentService, useValue: contentServiceMock },
+        { provide: TokenService, useValue: tokenServiceMock }
       ]
     }).compileComponents();
 

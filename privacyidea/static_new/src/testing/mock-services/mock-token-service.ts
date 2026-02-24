@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { HttpParams } from "@angular/common/http";
-import { Signal, signal, WritableSignal } from "@angular/core";
+import { computed, Signal, signal, WritableSignal } from "@angular/core";
 import { Sort } from "@angular/material/sort";
 import { of, Subject } from "rxjs";
 import { FilterValue } from "../../app/core/models/filter_value";
@@ -101,6 +101,12 @@ export class MockTokenService implements TokenServiceInterface {
   readonly pageIndex = signal(0);
   readonly tokenResource = new MockHttpResourceRef<PiResponse<Tokens> | undefined>(undefined as any);
   readonly tokenSelection: WritableSignal<TokenDetails[]> = signal<TokenDetails[]>([]);
+  selectedToken: WritableSignal<string | null> = signal(null);
+  tokenOptions: WritableSignal<string[]> = signal<string[]>([]);
+  filteredTokenOptions: Signal<string[]> = computed(() => {
+    const filter = (this.selectedToken() || "").toLowerCase();
+    return this.tokenOptions().filter((option) => option.toLowerCase().includes(filter));
+  });
   clearFilter = jest.fn();
   handleFilterInput = jest.fn();
   readonly toggleActive = jest.fn().mockReturnValue(of({}));

@@ -203,8 +203,15 @@
         <mat-label i18n>Token Serial</mat-label>
         <input
           [(ngModel)]="newTokenSerial"
+          (ngModelChange)="onTokenSerialInput($event)"
+          [matAutocomplete]="tokenSerialAuto"
           matInput
           placeholder="e.g. PIHOTP000001" />
+        <mat-autocomplete #tokenSerialAuto="matAutocomplete">
+          @for (serial of tokenService.filteredTokenOptions(); track serial) {
+            <mat-option [value]="serial">{{ serial }}</mat-option>
+          }
+        </mat-autocomplete>
       </mat-form-field>
 
       <mat-form-field
