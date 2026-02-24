@@ -677,6 +677,22 @@ Sensible numbers might be 10 or 20 seconds.
    to become unresponsive if the number of open PUSH challenges exceeds
    the number of available worker threads!
 
+.. _policy_push_code_to_phone:
+
+push_code_to_phone
+~~~~~~~~~~~~~~~~~~
+
+.. index:: push token
+
+type: ``bool``
+
+Alternative mode for push token in which an OTP will get pushed to the app and the user has to enter it in the login.
+If either :ref:`policy_push_require_presence` or :ref:`policy_push_wait` is active, this policy will not be in effect.
+It shares the :ref:`push_text_on_mobile` setting, so you can configure sets of push configurations using different conditions.
+If the wrong OTP is entered, the failcount of the push token will be increased, in contrast to the standard behavior.
+
+.. versionadded:: 3.13
+
 .. _policy_push_require_presence:
 
 push_require_presence

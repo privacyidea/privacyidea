@@ -65,7 +65,7 @@ import base64
 import hmac
 from hashlib import sha1
 from privacyidea.lib.config import get_from_config
-from privacyidea.lib.tokenclass import TOKENKIND
+from privacyidea.lib.tokenclass import Tokenkind
 from privacyidea.lib import _
 from privacyidea.lib.policy import SCOPE, GROUP
 from privacyidea.lib.policies.actions import PolicyAction
@@ -488,4 +488,4 @@ h={h}
         if not len(update_params["otpkey"]) == 32:
             raise EnrollmentError("The otpkey must be 32 characters long for yubikey token in AES mode")
         TokenClass.update(self, update_params, reset_failcount)
-        self.add_tokeninfo("tokenkind", TOKENKIND.HARDWARE)
+        self.add_tokeninfo("tokenkind", Tokenkind.HARDWARE)

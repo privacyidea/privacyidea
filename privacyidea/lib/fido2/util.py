@@ -5,7 +5,7 @@ from sqlalchemy import select
 from webauthn import base64url_to_bytes
 
 from privacyidea.lib.token import create_tokenclass_object, log, get_tokens
-from privacyidea.lib.tokenclass import ROLLOUTSTATE, TokenClass
+from privacyidea.lib.tokenclass import RolloutState, TokenClass
 from privacyidea.lib.user import User
 from privacyidea.models import TokenInfo, Token, Challenge, TokenCredentialIdHash, db
 
@@ -84,7 +84,7 @@ def get_credential_ids_for_user(user: User) -> list:
     """
     credential_ids = []
     for token in get_tokens(user=user, token_type_list=["passkey"]):
-        if token.token.rollout_state != ROLLOUTSTATE.CLIENTWAIT:
+        if token.token.rollout_state != RolloutState.CLIENTWAIT:
             cred_id = token.token.get_otpkey().getKey().decode("utf-8")
             credential_ids.append(cred_id)
     return credential_ids

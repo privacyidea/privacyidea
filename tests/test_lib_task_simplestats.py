@@ -3,7 +3,7 @@ This tests the files
   lib/task/simplestats.py
 """
 from privacyidea.lib.user import User
-from privacyidea.lib.tokenclass import TOKENKIND
+from privacyidea.lib.tokenclass import Tokenkind
 from privacyidea.lib.token import init_token
 from privacyidea.models import db
 from .base import MyTestCase
@@ -47,7 +47,7 @@ class TaskSimpleStatsTestCase(MyTestCase):
 
         # add a hardware token
         init_token({"type": "totp", "otpkey": self.otpkey, "serial": self.serials[1]},
-                   tokenkind=TOKENKIND.HARDWARE)
+                   tokenkind=Tokenkind.HARDWARE)
 
         sst.do(params)
         db.session.commit()
@@ -57,11 +57,11 @@ class TaskSimpleStatsTestCase(MyTestCase):
 
         # add a hardware token and assign it to a user
         token = init_token({"type": "totp", "otpkey": self.otpkey, "serial": self.serials[2]},
-                           tokenkind=TOKENKIND.HARDWARE,
+                           tokenkind=Tokenkind.HARDWARE,
                            user=User(login="cornelius", realm=self.realm1))
         self.assertEqual("cornelius", token.user.login)
         self.assertTrue(token.is_active())
-        self.assertEqual(TOKENKIND.HARDWARE, token.get_tokeninfo('tokenkind'))
+        self.assertEqual(Tokenkind.HARDWARE, token.get_tokeninfo('tokenkind'))
 
         sst.do(params)
         db.session.commit()
@@ -74,7 +74,7 @@ class TaskSimpleStatsTestCase(MyTestCase):
                            user=User(login="selfservice", realm=self.realm1))
         self.assertEqual("selfservice", token.user.login)
         self.assertTrue(token.is_active())
-        self.assertEqual(TOKENKIND.SOFTWARE, token.get_tokeninfo('tokenkind'))
+        self.assertEqual(Tokenkind.SOFTWARE, token.get_tokeninfo('tokenkind'))
 
         # check if getting only certain stats works
         params['assigned_tokens'] = False

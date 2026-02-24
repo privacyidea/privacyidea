@@ -109,7 +109,7 @@ from privacyidea.lib.policydecorators import (libpolicy,
                                               reset_all_user_tokens, force_challenge_response)
 from privacyidea.lib.realm import realm_is_defined, get_realms
 from privacyidea.lib.resolver import get_resolver_object
-from privacyidea.lib.tokenclass import DATE_FORMAT, TOKENKIND, TokenClass
+from privacyidea.lib.tokenclass import DATE_FORMAT, Tokenkind, TokenClass
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import (is_true, BASE58, hexlify_and_unicode, check_serial_valid, create_tag_dict,
                                    redacted_phone_number, redacted_email)
@@ -1279,7 +1279,7 @@ def import_token(serial, token_dict, tokenrealms=None):
     # Imported tokens are usually hardware tokens
     token = init_token(init_param, user=user_obj,
                        tokenrealms=tokenrealms,
-                       tokenkind=TOKENKIND.HARDWARE)
+                       tokenkind=Tokenkind.HARDWARE)
     if token_dict.get("counter"):
         token.set_otp_count(token_dict.get("counter"))
     if token_dict.get("timeShift"):

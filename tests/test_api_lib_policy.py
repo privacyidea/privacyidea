@@ -82,10 +82,10 @@ from privacyidea.lib.tokenclass import DATE_FORMAT
 from privacyidea.lib.tokens.certificatetoken import ACTION as CERTIFICATE_ACTION
 from privacyidea.lib.tokens.indexedsecrettoken import PIIXACTION
 from privacyidea.lib.tokens.papertoken import PAPERACTION
-from privacyidea.lib.tokens.pushtoken import PUSH_ACTION
+from privacyidea.lib.tokens.pushtoken import PushAction
 from privacyidea.lib.tokens.registrationtoken import DEFAULT_LENGTH, DEFAULT_CONTENTS
-from privacyidea.lib.tokens.smstoken import SMSACTION
-from privacyidea.lib.tokens.tantoken import TANACTION
+from privacyidea.lib.tokens.smstoken import SMSAction
+from privacyidea.lib.tokens.tantoken import TANAction
 from privacyidea.lib.tokens.webauthn import (webauthn_b64_decode, AuthenticatorAttachmentType,
                                              AttestationLevel, AttestationForm,
                                              UserVerificationLevel)
@@ -1740,7 +1740,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         req = Request(env)
         set_policy(name="tanpol",
                    scope=SCOPE.ENROLL,
-                   action="{0!s}=10".format(TANACTION.TANTOKEN_COUNT))
+                   action="{0!s}=10".format(TANAction.TANTOKEN_COUNT))
         g.policy_object = PolicyClass()
 
         # request, that matches the policy
@@ -1756,7 +1756,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
     def test_21_u2f_verify_cert(self):
         # Usually the attestation certificate gets verified during enrollment unless
         # we set the policy scope=enrollment, action=no_verify
-        from privacyidea.lib.tokens.u2ftoken import U2FACTION
+        from privacyidea.lib.tokens.u2ftoken import U2FAction
         g.logged_in_user = {"username": "user1",
                             "realm": "",
                             "role": "user"}
@@ -1778,7 +1778,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # Set a policy that defines to NOT verify the certificate
         set_policy(name="polu2f1",
                    scope=SCOPE.ENROLL,
-                   action=U2FACTION.NO_VERIFY_CERT)
+                   action=U2FAction.NO_VERIFY_CERT)
         g.policy_object = PolicyClass()
         req.all_data = {
             "type": "u2f"}
@@ -1790,8 +1790,8 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
     def test_01_sms_identifier(self):
         # every admin is allowed to enroll sms token with gw1 or gw2
-        set_policy("sms1", scope=SCOPE.ADMIN, action="{0!s}=gw1 gw2".format(SMSACTION.GATEWAYS))
-        set_policy("sms2", scope=SCOPE.ADMIN, action="{0!s}=gw3".format(SMSACTION.GATEWAYS))
+        set_policy("sms1", scope=SCOPE.ADMIN, action="{0!s}=gw1 gw2".format(SMSAction.GATEWAYS))
+        set_policy("sms2", scope=SCOPE.ADMIN, action="{0!s}=gw3".format(SMSAction.GATEWAYS))
 
         g.logged_in_user = {"username": "admin1",
                             "realm": "",
@@ -1814,7 +1814,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         self.assertRaises(PolicyError, sms_identifiers, req)
 
         # Users are allowed to choose gw4
-        set_policy("sms1", scope=SCOPE.USER, action="{0!s}=gw4".format(SMSACTION.GATEWAYS))
+        set_policy("sms1", scope=SCOPE.USER, action="{0!s}=gw4".format(SMSAction.GATEWAYS))
 
         g.logged_in_user = {"username": "root",
                             "realm": "",
@@ -1837,7 +1837,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         delete_policy("sms1")
 
     def test_22_push_firebase_config(self):
-        from privacyidea.lib.tokens.pushtoken import PUSH_ACTION
+        from privacyidea.lib.tokens.pushtoken import PushAction
         g.logged_in_user = {"username": "user1",
                             "realm": "",
                             "role": "user"}
@@ -1858,7 +1858,7 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # if we have a non existing firebase config, we will raise an exception
         req.all_data = {
             "type": "push",
-            PUSH_ACTION.FIREBASE_CONFIG: "non-existing"}
+            PushAction.FIREBASE_CONFIG: "non-existing"}
         self.assertRaises(PolicyError, pushtoken_add_config, req, "init")
 
         # Set a policy for the firebase config to use.
@@ -1866,19 +1866,19 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
                    scope=SCOPE.ENROLL,
                    action="{0!s}=some-fb-config,"
                           "{1!s}=https://privacyidea.com/enroll,"
-                          "{2!s}=10".format(PUSH_ACTION.FIREBASE_CONFIG,
-                                            PUSH_ACTION.REGISTRATION_URL,
-                                            PUSH_ACTION.TTL))
+                          "{2!s}=10".format(PushAction.FIREBASE_CONFIG,
+                                            PushAction.REGISTRATION_URL,
+                                            PushAction.TTL))
         g.policy_object = PolicyClass()
         g.policies = {}
         req.all_data = {"type": "push"}
         pushtoken_add_config(req, "init")
         policies = g.policies
-        self.assertEqual("some-fb-config", policies.get(PUSH_ACTION.FIREBASE_CONFIG))
-        self.assertEqual("https://privacyidea.com/enroll", policies.get(PUSH_ACTION.REGISTRATION_URL))
-        self.assertEqual("10", policies.get(PUSH_ACTION.TTL))
-        self.assertEqual("1", policies.get(PUSH_ACTION.SSL_VERIFY))
-        self.assertFalse(policies.get(PUSH_ACTION.USE_PIA_SCHEME))
+        self.assertEqual("some-fb-config", policies.get(PushAction.FIREBASE_CONFIG))
+        self.assertEqual("https://privacyidea.com/enroll", policies.get(PushAction.REGISTRATION_URL))
+        self.assertEqual("10", policies.get(PushAction.TTL))
+        self.assertEqual("1", policies.get(PushAction.SSL_VERIFY))
+        self.assertFalse(policies.get(PushAction.USE_PIA_SCHEME))
 
         # the request tries to inject a rogue value, but we assure sslverify=1
         g.policy_object = PolicyClass()
@@ -1887,25 +1887,25 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
             "type": "push",
             "sslverify": "rogue"}
         pushtoken_add_config(req, "init")
-        self.assertEqual("1", g.policies.get(PUSH_ACTION.SSL_VERIFY))
+        self.assertEqual("1", g.policies.get(PushAction.SSL_VERIFY))
 
         # set sslverify="0"
         set_policy(name="push_pol2",
                    scope=SCOPE.ENROLL,
-                   action="{0!s}=0".format(PUSH_ACTION.SSL_VERIFY))
+                   action="{0!s}=0".format(PushAction.SSL_VERIFY))
         g.policy_object = PolicyClass()
         g.policies = {}
         req.all_data = {"type": "push"}
         pushtoken_add_config(req, "init")
-        self.assertEqual("some-fb-config", g.policies.get(PUSH_ACTION.FIREBASE_CONFIG))
-        self.assertEqual("0", g.policies.get(PUSH_ACTION.SSL_VERIFY))
+        self.assertEqual("some-fb-config", g.policies.get(PushAction.FIREBASE_CONFIG))
+        self.assertEqual("0", g.policies.get(PushAction.SSL_VERIFY))
 
         # Set policy to use pia scheme
-        set_policy("pia_scheme", scope=SCOPE.ENROLL, action=PUSH_ACTION.USE_PIA_SCHEME)
+        set_policy("pia_scheme", scope=SCOPE.ENROLL, action=PushAction.USE_PIA_SCHEME)
         req.all_data = {"type": "push"}
         g.policies = {}
         pushtoken_add_config(req, "init")
-        self.assertTrue(g.policies.get(PUSH_ACTION.USE_PIA_SCHEME))
+        self.assertTrue(g.policies.get(PushAction.USE_PIA_SCHEME))
 
         # finally delete policy
         delete_policy("push_pol")
@@ -2003,14 +2003,14 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         req.all_data = {"push_wait": "120"}
         g.policy_object = PolicyClass()
         pushtoken_validate(req, None)
-        self.assertEqual(req.all_data.get(PUSH_ACTION.WAIT), False)
+        self.assertEqual(req.all_data.get(PushAction.WAIT), False)
 
         # Now we use the policy, to set the push_wait seconds
-        set_policy(name="push1", scope=SCOPE.AUTH, action="{0!s}=10".format(PUSH_ACTION.WAIT))
+        set_policy(name="push1", scope=SCOPE.AUTH, action="{0!s}=10".format(PushAction.WAIT))
         req.all_data = {}
         g.policy_object = PolicyClass()
         pushtoken_validate(req, None)
-        self.assertEqual(req.all_data.get(PUSH_ACTION.WAIT), 10)
+        self.assertEqual(req.all_data.get(PushAction.WAIT), 10)
 
         delete_policy("push1")
 
@@ -2022,14 +2022,14 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         req = RequestMock()
         req.all_data = {"push_wait": "120"}
         pushtoken_disable_wait(req, None)
-        self.assertEqual(req.all_data.get(PUSH_ACTION.WAIT), False)
+        self.assertEqual(req.all_data.get(PushAction.WAIT), False)
 
         # But even with a policy, the function still sets PUSH_ACTION.WAIT to False
-        set_policy(name="push1", scope=SCOPE.AUTH, action="{0!s}=10".format(PUSH_ACTION.WAIT))
+        set_policy(name="push1", scope=SCOPE.AUTH, action="{0!s}=10".format(PushAction.WAIT))
         req = RequestMock()
         req.all_data = {"push_wait": "120"}
         pushtoken_disable_wait(req, None)
-        self.assertEqual(req.all_data.get(PUSH_ACTION.WAIT), False)
+        self.assertEqual(req.all_data.get(PushAction.WAIT), False)
 
         delete_policy("push1")
 
@@ -6194,7 +6194,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         req.User = User("autoassignuser", self.realm1)
         # The response contains the token type HOTP, enrollment
         from privacyidea.lib.tokens.hotptoken import VERIFY_ENROLLMENT_MESSAGE
-        from privacyidea.lib.tokenclass import ROLLOUTSTATE
+        from privacyidea.lib.tokenclass import RolloutState
         res = {"jsonrpc": "2.0",
                "result": {"status": True,
                           "value": True},
@@ -6215,9 +6215,9 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         new_resp = check_verify_enrollment(req, resp)
         detail = new_resp.json.get("detail")
         self.assertEqual(detail.get("verify").get("message"), VERIFY_ENROLLMENT_MESSAGE)
-        self.assertEqual(detail.get("rollout_state"), ROLLOUTSTATE.VERIFYPENDING)
+        self.assertEqual(detail.get("rollout_state"), RolloutState.VERIFY_PENDING)
         # Also check the token object.
-        self.assertEqual(tok.token.rollout_state, ROLLOUTSTATE.VERIFYPENDING)
+        self.assertEqual(tok.token.rollout_state, RolloutState.VERIFY_PENDING)
         delete_policy("verify_toks")
 
     def test_21_preferred_client_mode_for_user_allowed(self):

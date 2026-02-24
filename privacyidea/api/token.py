@@ -59,7 +59,7 @@ from flask import (Blueprint, request, g, current_app)
 from ..lib.container import find_container_by_serial, add_token_to_container, add_not_authorized_tokens_result
 from ..lib.log import log_with
 from .lib.utils import optional, send_result, send_csv_result, required, getParam, get_optional, get_required
-from ..lib.tokenclass import ROLLOUTSTATE
+from ..lib.tokenclass import RolloutState
 from ..lib.tokens.passkeytoken import PasskeyTokenClass
 from ..lib.tokens.webauthntoken import WebAuthnTokenClass
 from ..lib.user import get_user_from_param
@@ -311,7 +311,7 @@ def init():
         # If the token is a fido2 token, find all enrolled fido2 token for the user
         # to avoid registering the same authenticator multiple times
         if (token.get_type().lower() in [PasskeyTokenClass.get_class_type(), WebAuthnTokenClass.get_class_type()]
-                and token.rollout_state == ROLLOUTSTATE.CLIENTWAIT):
+                and token.rollout_state == RolloutState.CLIENTWAIT):
             param["registered_credential_ids"] = get_credential_ids_for_user(user)
 
         # The token was created successfully, so we add token specific init details like the Google URL to the response
