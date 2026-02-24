@@ -19,6 +19,7 @@
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
+import { FormControl, Validators } from "@angular/forms";
 
 import { TokenRolloverComponent } from "./token-rollover.component";
 import { MockDialogService, MockNotificationService, MockTokenService } from "../../../../../../testing/mock-services";
@@ -63,7 +64,7 @@ describe("TokenRolloverComponent", () => {
   });
 
   it("should create", () => {
-    expect(component).toBeTruthy();
+    expect(component).toBeDefined();
   });
 
   it("should call enrollToken and close dialog on successful rollover", async () => {
@@ -93,4 +94,45 @@ describe("TokenRolloverComponent", () => {
     await component.rolloverToken();
     expect(notificationService.openSnackBar).toHaveBeenCalledWith("Rollover action is not available for the selected token type.");
   });
+
+  it('should update dialogActions disabled state based on additional form validity', async () => {
+    // Simulate child enroll form controls
+    const enrollControl1 = new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.email] });
+    expect(enrollControl1.valid).toBe(false);
+    const enrollControl2 = new FormControl(2, { nonNullable: true, validators: [Validators.max(3)] });
+    expect(enrollControl2.valid).toBe(true);
+    component.updateAdditionalFormFields({ control1: enrollControl1, control2: enrollControl2 });
+
+    fixture.detectChanges();
+
+    // Initially invalid, dialogActions should be disabled
+    expect(component.formGroupInvalid()).toBe(true);
+    expect(component.formGroup.invalid).toBe(true);
+    expect(component.dialogActions()).toEqual([
+      expect.objectContaining({ disabled: true })
+    ]);
+
+    // Make the form valid
+    enrollControl1.setValue('test@example.com');
+    fixture.detectChanges();
+
+    // Should now be valid, dialogActions should be enabled
+    expect(component.formGroupInvalid()).toBe(false);
+    expect(component.formGroup.invalid).toBe(false);
+    expect(component.dialogActions()).toEqual([
+      expect.objectContaining({ disabled: false })
+    ]);
+
+    // Invalidate other control
+    enrollControl2.setValue(4);
+    fixture.detectChanges();
+
+    // Should be invalid again, dialogActions should be disabled
+    expect(component.formGroupInvalid()).toBe(true);
+    expect(component.formGroup.invalid).toBe(true);
+    expect(component.dialogActions()).toEqual([
+      expect.objectContaining({ disabled: true })
+    ]);
+  });
 });
+

@@ -16,120 +16,105 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<h2
-  i18n
-  mat-dialog-title>
-  Rollover Token {{ token()?.serial }}
-</h2>
-
-<mat-dialog-content>
-  @switch (token()?.type) {
-    @case ("hotp") {
-      <app-enroll-hotp
-        [enrollmentData]="token()"
-        (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-        (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
+<app-dialog-wrapper
+  (close)="close()"
+  (onAction)="rolloverToken()"
+  [showCancelButton]="true"
+  [title]="title()"
+  [actions]="dialogActions()">
+  <div>
+    @switch (token()?.type) {
+      @case ("hotp") {
+        <app-enroll-hotp
+          [enrollmentData]="token()"
+          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
+      }
+      @case ("totp") {
+        <app-enroll-totp
+          [enrollmentData]="token()"
+          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
+      }
+      @case ("spass") {
+        <app-enroll-spass
+          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
+      }
+      @case ("motp") {
+        <app-enroll-motp
+          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
+      }
+      @case ("sshkey") {
+        <app-enroll-sshkey
+          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
+      }
+      @case ("sms") {
+        <app-enroll-sms
+          [enrollmentData]="token()"
+          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
+      }
+      @case ("applspec") {
+        <app-enroll-applspec
+          [enrollmentData]="token()"
+          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
+      }
+      @case ("daypassword") {
+        <app-enroll-daypassword
+          [enrollmentData]="token()"
+          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
+      }
+      @case ("email") {
+        <app-enroll-email
+          [enrollmentData]="token()"
+          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
+      }
+      @case ("indexedsecret") {
+        <app-enroll-indexedsecret
+          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
+      }
+      @case ("paper") {
+        <app-enroll-paper
+          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
+      }
+      @case ("question") {
+        <app-enroll-question
+          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
+      }
+      @case ("registration") {
+        <app-enroll-registration
+          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
+      }
+      @case ("tan") {
+        <app-enroll-tan
+          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
+      }
+      @case ("tiqr") {
+        <app-enroll-tiqr
+          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
+      }
+      @case ("u2f") {
+        <app-enroll-u2f
+          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
+      }
+      @case ("vasco") {
+        <app-enroll-vasco
+          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
+          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
+      }
     }
-    @case ("totp") {
-      <app-enroll-totp
-        [enrollmentData]="token()"
-        (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-        (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-    }
-    @case ("spass") {
-      <app-enroll-spass
-        (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-        (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-    }
-    @case ("motp") {
-      <app-enroll-motp
-        (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-        (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-    }
-    @case ("sshkey") {
-      <app-enroll-sshkey
-        (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-        (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-    }
-    @case ("sms") {
-      <app-enroll-sms
-        [enrollmentData]="token()"
-        (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-        (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-    }
-    @case ("applspec") {
-      <app-enroll-applspec
-        [enrollmentData]="token()"
-        (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-        (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-    }
-    @case ("daypassword") {
-      <app-enroll-daypassword
-        [enrollmentData]="token()"
-        (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-        (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-    }
-    @case ("email") {
-      <app-enroll-email
-        [enrollmentData]="token()"
-        (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-        (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-    }
-    @case ("indexedsecret") {
-      <app-enroll-indexedsecret
-        (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-        (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-    }
-    @case ("paper") {
-      <app-enroll-paper
-        (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-        (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-    }
-    @case ("question") {
-      <app-enroll-question
-        (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-        (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-    }
-    @case ("registration") {
-      <app-enroll-registration
-        (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-        (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-    }
-    @case ("tan") {
-      <app-enroll-tan
-        (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-        (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-    }
-    @case ("tiqr") {
-      <app-enroll-tiqr
-        (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-        (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-    }
-    @case ("u2f") {
-      <app-enroll-u2f
-        (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-        (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-    }
-    @case ("vasco") {
-      <app-enroll-vasco
-        (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-        (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-    }
-  }
-</mat-dialog-content>
-
-<mat-dialog-actions>
-  <button
-    [disabled]="formGroupSignal().invalid"
-    (click)="rolloverToken()"
-    mat-stroked-button
-    i18n>
-    Rollover
-  </button>
-  <button
-    mat-button
-    mat-dialog-close
-    i18n>
-    Close
-  </button>
-</mat-dialog-actions>
+  </div>
+</app-dialog-wrapper>

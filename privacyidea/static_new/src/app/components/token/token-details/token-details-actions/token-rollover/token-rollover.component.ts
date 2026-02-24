@@ -17,23 +17,14 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, inject, signal, WritableSignal } from "@angular/core";
-import { FormControl, ReactiveFormsModule } from "@angular/forms";
-import {
-  MAT_DIALOG_DATA,
-  MatDialogActions,
-  MatDialogClose,
-  MatDialogContent,
-  MatDialogRef,
-  MatDialogTitle
-} from "@angular/material/dialog";
-import { MatButton } from "@angular/material/button";
+import { Component, computed, inject, linkedSignal, signal, WritableSignal } from "@angular/core";
+import { FormGroup, ReactiveFormsModule } from "@angular/forms";
 import {
   EnrollmentResponse,
   TokenEnrollmentData
 } from "../../../../../mappers/token-api-payload/_token-api-payload.mapper";
 import { lastValueFrom } from "rxjs";
-import { TokenEnrollmentComponent } from "../../../token-enrollment/token-enrollment.component";
+import { enrollmentArgsGetterFn } from "../../../token-enrollment/token-enrollment.component";
 import { EnrollApplspecComponent } from "../../../token-enrollment/enroll-asp/enroll-applspec.component";
 import { EnrollDaypasswordComponent } from "../../../token-enrollment/enroll-daypassword/enroll-daypassword.component";
 import { EnrollEmailComponent } from "../../../token-enrollment/enroll-email/enroll-email.component";
@@ -51,19 +42,25 @@ import { EnrollTiqrComponent } from "../../../token-enrollment/enroll-tiqr/enrol
 import { EnrollTotpComponent } from "../../../token-enrollment/enroll-totp/enroll-totp.component";
 import { EnrollU2fComponent } from "../../../token-enrollment/enroll-u2f/enroll-u2f.component";
 import { EnrollVascoComponent } from "../../../token-enrollment/enroll-vasco/enroll-vasco.component";
-import { UserData } from "../../../../../services/user/user.service";
-import { TokenEnrollmentLastStepDialogData } from "../../../token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
+import { UserData, UserService, UserServiceInterface } from "../../../../../services/user/user.service";
 import { getTokenApiPayloadMapper } from "../../../../../mappers/token-api-payload/token-api-payload-mapper-registry";
+import { TokenEnrollmentLastStepDialogData } from "../../../token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.self-service.component";
+import { TokenEnrollmentLastStepDialogComponent } from "../../../token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
+import { DialogWrapperComponent } from "../../../../shared/dialog/dialog-wrapper/dialog-wrapper.component";
+import { DialogAction } from "../../../../../models/dialog";
+import { AbstractDialogComponent } from "../../../../shared/dialog/abstract-dialog/abstract-dialog.component";
+import { TokenDetails, TokenService, TokenServiceInterface } from "../../../../../services/token/token.service";
+import {
+  NotificationService,
+  NotificationServiceInterface
+} from "../../../../../services/notification/notification.service";
+import { DialogService, DialogServiceInterface } from "../../../../../services/dialog/dialog.service";
+import { $localize } from "@angular/localize/init";
 
 @Component({
   selector: "app-token-rollover",
   imports: [
     ReactiveFormsModule,
-    MatDialogTitle,
-    MatDialogContent,
-    MatDialogActions,
-    MatButton,
-    MatDialogClose,
     EnrollApplspecComponent,
     EnrollDaypasswordComponent,
     EnrollEmailComponent,
@@ -80,16 +77,46 @@ import { getTokenApiPayloadMapper } from "../../../../../mappers/token-api-paylo
     EnrollTiqrComponent,
     EnrollTotpComponent,
     EnrollU2fComponent,
-    EnrollVascoComponent
+    EnrollVascoComponent,
+    DialogWrapperComponent
   ],
   standalone: true,
   templateUrl: "./token-rollover.component.html",
   styleUrl: "./token-rollover.component.scss"
 })
-export class TokenRolloverComponent extends TokenEnrollmentComponent {
-  public readonly data = inject(MAT_DIALOG_DATA, { optional: false });
-  private dialogRef = inject(MatDialogRef<TokenRolloverComponent>);
+export class TokenRolloverComponent extends AbstractDialogComponent<{
+  token: TokenDetails
+}, boolean> {
+  protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+  protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
+  protected readonly dialogService: DialogServiceInterface = inject(DialogService);
+  protected readonly userService: UserServiceInterface = inject(UserService);
+
   token: WritableSignal<any> = signal(null);
+  title = computed(() => $localize`Rollover Token` + " " + (this.token()?.serial || ""));
+
+  formGroup = new FormGroup({});
+
+  formGroupInvalid = signal(true);
+
+  dialogActions = linkedSignal({
+    source: this.formGroupInvalid,
+    computation: (invalid) => {
+      return [{
+        type: "confirm",
+        label: $localize`Rollover`,
+        value: true,
+        disabled: invalid
+      }] as DialogAction<boolean>[];
+    }
+  });
+
+  // Only required if we later add the reopen rollover dialog function
+  enrollResponse: WritableSignal<EnrollmentResponse | null> = signal(null);
+  _lastTokenEnrollmentLastStepDialogData: WritableSignal<TokenEnrollmentLastStepDialogData | null> = linkedSignal({
+    source: this.tokenService.selectedTokenType,
+    computation: () => null
+  });
 
   constructor() {
     super();
@@ -98,7 +125,17 @@ export class TokenRolloverComponent extends TokenEnrollmentComponent {
       return;
     }
     this.token.set(mapperObject.fromTokenDetailsToEnrollmentData(this.data.token));
-    this.tokenService.selectedTokenType.set({key: this.token().type, name: "", text: "", info: ""});
+    this.tokenService.selectedTokenType.set({ key: this.token().type, name: "", text: "", info: "" });
+    this.formGroupInvalid.set(this.formGroup.invalid);
+    this.formGroup.statusChanges.subscribe(() => {
+      this.formGroupInvalid.set(this.formGroup.invalid);
+    });
+  }
+
+  enrollmentArgsGetter?: enrollmentArgsGetterFn;
+
+  updateEnrollmentArgsGetter(event: enrollmentArgsGetterFn): void {
+    this.enrollmentArgsGetter = event;
   }
 
   async rolloverToken() {
@@ -134,10 +171,7 @@ export class TokenRolloverComponent extends TokenEnrollmentComponent {
       this.notificationService.openSnackBar(`Failed to rollover token: ${message || error.message || error}`);
     });
     let enrollmentResponse = await enrollPromise;
-    const onEnrollmentResponseFn = this.onEnrollmentResponse();
-    if (onEnrollmentResponseFn && enrollmentResponse) {
-      enrollmentResponse = await onEnrollmentResponseFn(enrollmentResponse, enrollmentArgs.data);
-    }
+
     this.enrollResponse.set(enrollmentResponse);
     if (enrollmentResponse) {
       this._handleEnrollmentResponse({
@@ -150,7 +184,7 @@ export class TokenRolloverComponent extends TokenEnrollmentComponent {
     }
   }
 
-  protected override openLastStepDialog(args: {
+  protected openLastStepDialog(args: {
     response: EnrollmentResponse | null;
     user: UserData | null;
     rollover?: boolean | null
@@ -164,16 +198,52 @@ export class TokenRolloverComponent extends TokenEnrollmentComponent {
     const dialogData: TokenEnrollmentLastStepDialogData = {
       tokentype: { key: this.token().type, name: "", info: "", text: "" },
       response: response,
-      serial: this.serial,
+      serial: this.token().serial,
       enrollToken: this.rolloverToken.bind(this),
       user: user,
       userRealm: this.userService.selectedUserRealm(),
-      onlyAddToRealm: this.userAssignmentComponent?.onlyAddToRealm() ?? false,
+      onlyAddToRealm: false,
       rollover: rollover ?? true
     };
     this._lastTokenEnrollmentLastStepDialogData.set(dialogData);
-    this.dialogService.openTokenEnrollmentLastStepDialog({
+
+    this.dialogService.openDialog({
+      component: TokenEnrollmentLastStepDialogComponent,
       data: dialogData
     });
   }
+
+  protected _handleEnrollmentResponse(args: {
+    response: EnrollmentResponse;
+    user: UserData | null;
+    rollover?: boolean
+  }): void {
+    const { response, user, rollover } = args;
+    const detail = response.detail || {};
+    const rolloutState = detail.rollout_state;
+
+    if (rolloutState === "clientwait") {
+      return;
+    }
+
+    this.openLastStepDialog({ response, user, rollover });
+  }
+
+  updateAdditionalFormFields(event: { [key: string]: any }): void {
+    // Remove all existing controls from the formGroup
+    Object.keys(this.formGroup.controls).forEach(key => {
+      this.formGroup.removeControl(key);
+    });
+    // Add new controls from the event
+    for (const key in event) {
+      if (event.hasOwnProperty(key) && event[key] && typeof event[key].setValue === "function") {
+        this.formGroup.addControl(key, event[key]);
+      } else {
+        console.warn(`Ignoring invalid form control for key "${key}" emitted by child component.`);
+      }
+    }
+    this.formGroupInvalid.set(this.formGroup.invalid);
+  }
+
 }
+
