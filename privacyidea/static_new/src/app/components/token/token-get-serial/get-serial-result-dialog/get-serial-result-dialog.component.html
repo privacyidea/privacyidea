@@ -29,10 +29,8 @@
         <a
           class="link"
           attr.aria-label="{{ data.foundSerial }} Link"
-          (click)="onClickSerial()">
-          {{ data.foundSerial }}</a
-        >
-        .
+          (click)="data.onClickSerial()">
+          {{ data.foundSerial }}.</a>
       </span>
     </div>
   } @else {
