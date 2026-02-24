@@ -74,7 +74,7 @@
                           [matAutocomplete]="containerAuto" />
                       </app-clearable-input>
                       <mat-autocomplete #containerAuto="matAutocomplete">
-                        @for (option of containerService.filteredContainerOptions(); track option) {
+                        @for (option of containerService.containersForTokenType(); track option) {
                           <mat-option [value]="option">{{ option }}</mat-option>
                         }
                       </mat-autocomplete>

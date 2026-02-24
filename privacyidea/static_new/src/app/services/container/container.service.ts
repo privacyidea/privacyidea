@@ -162,6 +162,7 @@ export interface ContainerServiceInterface {
   containerResource: HttpResourceRef<PiResponse<ContainerDetails> | undefined>;
   containerOptions: Signal<string[]>;
   filteredContainerOptions: Signal<string[]>;
+  containersForTokenType: Signal<string[]>;
   containerSelection: WritableSignal<ContainerDetailData[]>;
   containerTypesResource: HttpResourceRef<PiResponse<ContainerTypes> | undefined>;
   containerTypeOptions: Signal<ContainerType[]>;
@@ -304,6 +305,14 @@ export class ContainerService implements ContainerServiceInterface {
     return compatible.length === 1 ? String(compatible[0].containerType) : null;
   });
 
+  private readonly compatibleTypes = computed<string[]>(() => {
+    const tt = this.compatibleWithSelectedTokenType();
+    if (!tt) return [];
+    const types = this.containerTypeOptions();
+    const compatible = types.filter((t) => (t.token_types ?? []).includes(tt)).map((t) => String(t.containerType));
+    return compatible;
+  });
+
   private readonly tokenInContainer = computed<boolean>(() => {
     const tokenDetailsRes = this.tokenService.tokenDetailResource.value();
     const assigned = tokenDetailsRes?.result?.value?.tokens?.[0]?.container_serial ?? "";
@@ -351,8 +360,8 @@ export class ContainerService implements ContainerServiceInterface {
       }),
       ...(this.loadAllContainers() && {
         no_token: 1,
-        ...(this.userService.selectedUser()?.username && {user: this.userService.selectedUser()?.username}),
-        ...(this.userService.selectedUser()?.username  && this.userService.selectedUserRealm() && {realm: this.userService.selectedUserRealm()})
+        ...(this.userService.selectedUser()?.username && { user: this.userService.selectedUser()?.username }),
+        ...(this.userService.selectedUser()?.username && this.userService.selectedUserRealm() && { realm: this.userService.selectedUserRealm() })
       }),
       sortby: this.sort().active,
       sortdir: this.sort().direction,
@@ -381,6 +390,17 @@ export class ContainerService implements ContainerServiceInterface {
   filteredContainerOptions = computed(() => {
     const filter = (this.selectedContainer() || "").toLowerCase();
     return this.containerOptions().filter((option) => option.toLowerCase().includes(filter));
+  });
+
+  containersForTokenType = linkedSignal({
+    source: this.containerResource.value,
+    computation: (containerResource) => {
+      return (
+        containerResource?.result?.value?.containers
+          .filter((container) => this.compatibleTypes().includes(container.type))
+          .map((container) => container.serial) ?? []
+      );
+    }
   });
 
   containerSelection: WritableSignal<ContainerDetailData[]> = linkedSignal({
