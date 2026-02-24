@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -65,10 +65,11 @@ import { EnrollYubicoComponent } from "./enroll-yubico/enroll-yubico.component";
 import { EnrollYubikeyComponent } from "./enroll-yubikey/enroll-yubikey.component";
 import { TokenEnrollmentComponent } from "./token-enrollment.component";
 import { AuthService } from "../../../services/auth/auth.service";
-import { TokenEnrollmentLastStepDialogData } from "./token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
 import { tokenTypes } from "../../../utils/token.utils";
 import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
 import { environment } from "../../../../environments/environment";
+import { TokenEnrollmentLastStepDialogData } from "./token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.self-service.component";
+import { TokenEnrollmentLastStepDialogWizardComponent } from "./token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.wizard.component";
 
 @Component({
   selector: "app-token-enrollment-wizard",
@@ -132,32 +133,11 @@ export class TokenEnrollmentWizardComponent extends TokenEnrollmentComponent {
   protected override wizard = true;
   protected readonly tokenType = computed(() => {
     const defaultType = this.authService.defaultTokentype() || "hotp";
-    return tokenTypes.find((type) => type.key === defaultType) ||
-      { key: defaultType, name: defaultType, info: "", text: "" } as TokenType;
+    return (
+      tokenTypes.find((type) => type.key === defaultType) ||
+      ({ key: defaultType, name: defaultType, info: "", text: "" } as TokenType)
+    );
   });
-
-
-  protected override openLastStepDialog(args: { response: EnrollmentResponse | null; user: UserData | null }): void {
-    const { response, user } = args;
-    if (!response) {
-      this.notificationService.openSnackBar("No enrollment response available.");
-      return;
-    }
-
-    const dialogData: TokenEnrollmentLastStepDialogData = {
-      tokentype: this.tokenType(),
-      response: response,
-      serial: this.serial,
-      enrollToken: this.enrollToken.bind(this),
-      user: user,
-      userRealm: this.userService.selectedUserRealm(),
-      onlyAddToRealm: false
-    };
-    this._lastTokenEnrollmentLastStepDialogData.set(dialogData);
-    this.dialogService.openTokenEnrollmentLastStepDialog({
-      data: dialogData
-    });
-  }
 
   // TODO: Get custom path from pi.cfg
   customizationPath = "/static/public/customize/";
@@ -180,5 +160,29 @@ export class TokenEnrollmentWizardComponent extends TokenEnrollmentComponent {
 
   constructor() {
     super();
+  }
+
+  override openLastStepDialog(args: { response: EnrollmentResponse | null; user: UserData | null }): void {
+    const { response, user } = args;
+    if (!response) {
+      this.notificationService.openSnackBar("No enrollment response available.");
+      return;
+    }
+
+    const dialogData: TokenEnrollmentLastStepDialogData = {
+      tokentype: this.tokenService.selectedTokenType(),
+      response: response,
+      serial: this.serial,
+      enrollToken: this.enrollToken.bind(this),
+      user: user,
+      userRealm: this.userService.selectedUserRealm(),
+      onlyAddToRealm: this.userAssignmentComponent?.onlyAddToRealm() ?? false
+    };
+    this._lastTokenEnrollmentLastStepDialogData.set(dialogData);
+
+    this.dialogService.openDialog({
+      component: TokenEnrollmentLastStepDialogWizardComponent,
+      data: dialogData
+    });
   }
 }

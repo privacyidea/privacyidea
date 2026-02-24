@@ -25,24 +25,25 @@ import { MatDialog, MatDialogModule } from "@angular/material/dialog";
 import { SmsGatewayService } from "../../../services/sms-gateway/sms-gateway.service";
 import { DialogService } from "../../../services/dialog/dialog.service";
 import { signal } from "@angular/core";
+import { MockDialogService } from "../../../../testing/mock-services";
+import { Subject } from "rxjs";
+import { MockMatDialogRef } from "../../../../testing/mock-mat-dialog-ref";
+import { SaveAndExitDialogResult } from "../../shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 
 describe("SmsGatewaysComponent", () => {
   let component: SmsGatewaysComponent;
   let fixture: ComponentFixture<SmsGatewaysComponent>;
   let smsGatewayServiceMock: any;
-  let dialogServiceMock: any;
+  let dialogServiceMock: MockDialogService;
+  let confirmClosed: Subject<SaveAndExitDialogResult>;
 
   beforeEach(async () => {
     smsGatewayServiceMock = {
       smsGateways: signal([
         { name: "gw1", providermodule: "mod1" },
-        { name: "gw2", providermodule: "mod2" },
+        { name: "gw2", providermodule: "mod2" }
       ]),
-      deleteSmsGateway: jest.fn(),
-    };
-
-    dialogServiceMock = {
-      confirm: jest.fn().mockResolvedValue(true),
+      deleteSmsGateway: jest.fn()
     };
 
     await TestBed.configureTestingModule({
@@ -51,17 +52,23 @@ describe("SmsGatewaysComponent", () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: SmsGatewayService, useValue: smsGatewayServiceMock },
-        { provide: DialogService, useValue: dialogServiceMock },
+        { provide: DialogService, useClass: MockDialogService }
       ]
-    }).overrideComponent(SmsGatewaysComponent, {
-      add: {
-        providers: [
-          { provide: MatDialog, useValue: { open: jest.fn() } }
-        ]
-      }
-    }).compileComponents();
+    })
+      .overrideComponent(SmsGatewaysComponent, {
+        add: {
+          providers: [{ provide: MatDialog, useValue: { open: jest.fn() } }]
+        }
+      })
+      .compileComponents();
 
     fixture = TestBed.createComponent(SmsGatewaysComponent);
+    dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
+    confirmClosed = new Subject();
+    let dialogRefMock = new MockMatDialogRef();
+    dialogRefMock.afterClosed.mockReturnValue(confirmClosed);
+    dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
+
     component = fixture.componentInstance;
     fixture.detectChanges();
   });
@@ -87,11 +94,12 @@ describe("SmsGatewaysComponent", () => {
     expect(dialog.open).toHaveBeenCalled();
   });
 
-  it("should delete gateway after confirmation", async () => {
+  it("should delete gateway after confirmation", () => {
     const gateway = smsGatewayServiceMock.smsGateways()[0];
     component.deleteGateway(gateway);
-    expect(dialogServiceMock.confirm).toHaveBeenCalled();
-    await Promise.resolve();
+    expect(dialogServiceMock.openDialog).toHaveBeenCalled();
+    confirmClosed.next("discard");
+    confirmClosed.complete();
     expect(smsGatewayServiceMock.deleteSmsGateway).toHaveBeenCalledWith("gw1");
   });
 });

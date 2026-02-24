@@ -17,13 +17,14 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
-import { httpResource, HttpResourceRef } from "@angular/common/http";
+import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
 import { computed, inject, Injectable, linkedSignal, Signal, WritableSignal } from "@angular/core";
 
 import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
 import { CaConnectors } from "../ca-connector/ca-connector.service";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
+import { Observable } from "rxjs";
 
 export type PiNode = {
   name: string;
@@ -42,7 +43,18 @@ export interface SystemServiceInterface {
   caConnectors?: WritableSignal<CaConnectors>;
   nodesResource: HttpResourceRef<any>;
   systemConfig: Signal<any>;
+  systemConfigInit: Signal<any>;
   nodes: Signal<PiNode[]>;
+
+  saveSystemConfig(config: any): Observable<PiResponse<any>>;
+
+  deleteSystemConfig(key: string): Observable<PiResponse<any>>;
+
+  deleteUserCache(): Observable<PiResponse<any>>;
+
+  loadSmtpIdentifiers(): Observable<PiResponse<any>>;
+
+  getDocumentation(): Observable<string>;
 }
 
 @Injectable({
@@ -53,8 +65,9 @@ export class SystemService implements SystemServiceInterface {
 
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
+  private readonly http: HttpClient = inject(HttpClient);
   private onAllowedRoutes = computed(() => {
-    return this.contentService.onTokensEnrollment() || this.contentService.onTokensWizard();
+    return this.contentService.onTokensEnrollment() || this.contentService.onTokensWizard() || this.contentService.onConfigurationSystem() || this.contentService.onConfigurationTokenTypes();
   });
 
   systemConfigResource = httpResource<any>(() => {
@@ -80,7 +93,7 @@ export class SystemService implements SystemServiceInterface {
     }
 
     return {
-      url: this.systemBaseUrl + "/names/radius",
+      url: this.systemBaseUrl + "names/radius",
       method: "GET",
       headers: this.authService.getHeaders()
     };
@@ -114,7 +127,37 @@ export class SystemService implements SystemServiceInterface {
   systemConfig = computed<any>(() => {
     return this.systemConfigResource.value()?.result?.value ?? {};
   });
+  systemConfigInit = computed<any>(() => {
+    return this.systemConfigResource.value()?.result?.init ?? {};
+  });
   nodes = computed<PiNode[]>(() => {
     return this.nodesResource.value()?.result?.value ?? [];
   });
+
+  saveSystemConfig(config: any): Observable<PiResponse<any>> {
+    return this.http.post<PiResponse<any>>(this.systemBaseUrl + "setConfig", config,
+      { headers: this.authService.getHeaders() });
+  }
+
+  deleteSystemConfig(key: string): Observable<PiResponse<any>> {
+    return this.http.delete<PiResponse<any>>(`${this.systemBaseUrl}${key}`,
+      { headers: this.authService.getHeaders() });
+  }
+
+  deleteUserCache(): Observable<PiResponse<any>> {
+    return this.http.delete<PiResponse<any>>(`${this.systemBaseUrl}user-cache`,
+      { headers: this.authService.getHeaders() });
+  }
+
+  loadSmtpIdentifiers(): Observable<PiResponse<any>> {
+    return this.http.get<PiResponse<any>>(`${this.systemBaseUrl}names/smtp`,
+      { headers: this.authService.getHeaders() });
+  }
+
+  getDocumentation(): Observable<string> {
+    return this.http.get(`${this.systemBaseUrl}documentation`, {
+      headers: this.authService.getHeaders(),
+      responseType: "text"
+    });
+  }
 }

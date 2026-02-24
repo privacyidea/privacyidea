@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -37,8 +37,9 @@ import { MatIcon } from "@angular/material/icon";
 import { ROUTE_PATHS } from "../../../../route_paths";
 import { Router } from "@angular/router";
 import { MatDivider } from "@angular/material/divider";
-import { ConfirmationDialogComponent } from "../../../shared/confirmation-dialog/confirmation-dialog.component";
 import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
+import { DialogService, DialogServiceInterface } from "../../../../services/dialog/dialog.service";
+import { SimpleConfirmationDialogComponent } from "../../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
 
 export type ContainerRegisterFinalizeData = {
   response: PiResponse<ContainerRegisterData>;
@@ -63,7 +64,8 @@ export class ContainerDetailsActionsComponent {
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
-  private readonly dialog: MatDialog = inject(MatDialog);
+  protected readonly dialogService: DialogServiceInterface = inject(DialogService);
+
   private router = inject(Router);
 
   @Input() containerSerial!: string;
@@ -72,7 +74,7 @@ export class ContainerDetailsActionsComponent {
   passphrasePrompt: string = "";
   passphraseResponse: string = "";
   userStorePW: boolean = false;
-  dialogData: WritableSignal<ContainerRegisterFinalizeData | null> = signal(null);
+  dialogData = signal<ContainerRegisterFinalizeData | undefined>(undefined);
   registrationState = computed(() => {
     return this.containerService.containerDetail()?.containers[0]?.info?.registration_state ?? "";
   });
@@ -108,7 +110,7 @@ export class ContainerDetailsActionsComponent {
     // Effect to close dialog when polling stops
     effect(() => {
       if (!this.containerService.isPollingActive()) {
-        this.dialog.closeAll();
+        this.dialogService.closeAllDialogs();
       }
     });
   }
@@ -119,14 +121,18 @@ export class ContainerDetailsActionsComponent {
   }
 
   deleteContainer() {
-    this.dialog
-      .open(ConfirmationDialogComponent, {
+    this.dialogService
+      .openDialog({
+        component: SimpleConfirmationDialogComponent,
         data: {
-          serialList: [this.containerSerial],
-          title: "Delete Container",
-          type: "container",
-          action: "delete",
-          numberOfTokens: 1
+          title: $localize`Delete Container`,
+          confirmAction: {
+            label: $localize`Delete`,
+            value: true,
+            type: "destruct"
+          },
+          itemType: "container",
+          items: [this.containerSerial]
         }
       })
       .afterClosed()
@@ -146,7 +152,8 @@ export class ContainerDetailsActionsComponent {
 
   openRegisterInitDialog(rollover: boolean) {
     const container = this.containerService.containerDetailResource.value()?.result?.value?.containers?.[0];
-    this.dialog.open(ContainerRegistrationInitDialogComponent, {
+    this.dialogService.openDialog({
+      component: ContainerRegistrationInitDialogComponent,
       data: {
         registerContainer: this.registerContainer.bind(this),
         rollover: rollover,
@@ -166,7 +173,7 @@ export class ContainerDetailsActionsComponent {
     this.passphrasePrompt = passphrasePrompt ?? this.passphrasePrompt;
     this.passphraseResponse = passphraseResponse ?? this.passphraseResponse;
     if (!regenerate) {
-      this.dialog.closeAll();
+      this.dialogService.closeAllDialogs();
     }
     this.containerService
       .registerContainer({
@@ -205,7 +212,8 @@ export class ContainerDetailsActionsComponent {
       registerContainer: this.registerContainer.bind(this),
       rollover: rollover || false
     });
-    const dialogRef = this.dialog.open(ContainerRegistrationFinalizeDialogComponent, {
+    const dialogRef = this.dialogService.openDialog({
+      component: ContainerRegistrationFinalizeDialogComponent,
       data: this.dialogData
     });
     dialogRef.afterClosed().subscribe(() => {

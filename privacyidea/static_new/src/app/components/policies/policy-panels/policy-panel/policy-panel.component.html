@@ -19,7 +19,6 @@
 <div class="list-item-card">
   <mat-expansion-panel
     #panel
-    class="margin-4"
     [disabled]="isEditMode() || policyService.isPolicyEdited()"
     (opened)="handleExpansion(panel, policy()?.name)"
     (closed)="handleCollapse(panel, policy()?.name)">

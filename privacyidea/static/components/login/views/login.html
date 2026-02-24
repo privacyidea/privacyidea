@@ -49,7 +49,8 @@
                 <h2 ng-hide="piLoginText" class="form-signin-heading" translate>Please sign in</h2>
                 <h2 ng-show="piLoginText" class="form-signin-heading">{{ piLoginText }}</h2>
             </div>
-            <form name="formSignin" class="form-signin" role="form" novalidate>
+            <form name="formSignin" class="form-signin" role="form"
+                  ng-submit="authenticate_first();" novalidate>
                 <label for="username" class="sr-only" translate>Username</label>
                 <input name="username" id="username"
                        class="form-control round-top"
@@ -67,7 +68,7 @@
                                 ng-options="realm for realm in piRealms">
                         </select>
                         <button class="clear-button" ng-click="clearRealmSelection()"
-                                aria-label="Clear Realm selection">
+                                aria-label="Clear Realm selection" type="button">
                             <span class="glyphicon glyphicon-remove-circle"></span>
                         </button>
                     </div>
@@ -79,8 +80,7 @@
                        placeholder="{{ 'Password'|translate }}"/>
 
                 <div class="text-center">
-                    <button ng-click="authenticate_first();"
-                            ng-disabled="formSignin.$invalid"
+                    <button ng-disabled="formSignin.$invalid"
                             class="btn btn-primary btn-block" translate>Log In
                     </button>
                     <button ng-if="passkeyLoginEnabled"
