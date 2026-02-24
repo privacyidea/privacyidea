@@ -223,6 +223,18 @@
             </button>
           </mat-list-item>
         }
+        <mat-list-item>
+          <button
+            [ngClass]="
+                contentService.routeUrl() === ROUTE_PATHS.TOKENS_GET_SERIAL ? 'card-button-active' : 'card-button-1'
+              "
+            [routerLink]="[ROUTE_PATHS.TOKENS_GET_SERIAL]"
+            i18n
+            mat-stroked-button>
+            <mat-icon>policy</mat-icon>
+            Get Serial
+          </button>
+        </mat-list-item>
       </mat-list>
     </mat-expansion-panel>
 
