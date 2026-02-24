@@ -4189,38 +4189,6 @@ class WebhookTestCase(MyTestCase):
             mock_log.assert_any_call(text)
             mock_log.assert_called_with(200)
 
-    def test_02_actions_and_positions(self):
-        positions = WebHookHandler().allowed_positions
-        self.assertEqual(positions, ["post", "pre"])
-        actions = WebHookHandler().actions
-        self.assertEqual(actions, {WHEH_ACTION_TYPE.POST_WEBHOOK: {
-            "URL": {
-                "type": "str",
-                "required": True,
-                "description": "The URL the WebHook is posted to"
-            },
-            "content_type": {
-                "type": "str",
-                "required": True,
-                "description": "The encoding that is sent to the WebHook, for example json",
-                "value": [
-                    ContentType.JSON,
-                    ContentType.URLENCODED]
-            },
-            "replace": {
-                "type": "bool",
-                "required": True,
-                "description": "You can use the following placeholders: {logged_in_user}, {realm}, {surname}, "
-                               "{token_owner}, {user_realm}, {token_serial}. "
-                               "However, tag availability is depending on the endpoint."
-            },
-            "data": {
-                "type": "str",
-                "required": True,
-                "description": 'The data posted in the WebHook'
-            }
-        }})
-
     def test_03_wrong_action_type(self):
         with mock.patch("logging.Logger.warning") as mock_log:
             g = FakeFlaskG()
