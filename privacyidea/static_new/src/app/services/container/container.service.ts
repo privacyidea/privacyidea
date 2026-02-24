@@ -351,8 +351,8 @@ export class ContainerService implements ContainerServiceInterface {
       }),
       ...(this.loadAllContainers() && {
         no_token: 1,
-        user: this.userService.selectedUser()?.username ?? "",
-        realm: this.userService.selectedUserRealm() ?? ""
+        ...(this.userService.selectedUser()?.username && {user: this.userService.selectedUser()?.username}),
+        ...(this.userService.selectedUser()?.username  && this.userService.selectedUserRealm() && {realm: this.userService.selectedUserRealm()})
       }),
       sortby: this.sort().active,
       sortdir: this.sort().direction,
@@ -363,7 +363,6 @@ export class ContainerService implements ContainerServiceInterface {
     if (compatibleType && !("type" in baseParams) && !("type_list" in baseParams)) {
       baseParams["type"] = compatibleType;
     }
-
     return {
       url: this.containerBaseUrl,
       method: "GET",
