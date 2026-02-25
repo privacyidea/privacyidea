@@ -24,6 +24,8 @@ import { MatInput, MatLabel } from "@angular/material/input";
 import { MatSlideToggle } from "@angular/material/slide-toggle";
 import { MatOption, MatSelect } from "@angular/material/select";
 import { MatFormField, MatHint } from "@angular/material/form-field";
+import { computed, signal } from '@angular/core';
+import { MatTooltip } from "@angular/material/tooltip";
 
 @Component({
   selector: "app-http-groups-attribute",
@@ -36,7 +38,8 @@ import { MatFormField, MatHint } from "@angular/material/form-field";
     MatOption,
     MatSelect,
     MatSlideToggle,
-    ReactiveFormsModule
+    ReactiveFormsModule,
+    MatTooltip
   ],
   templateUrl: "./http-groups-attribute.component.html",
   styleUrl: "./http-groups-attribute.component.scss"
@@ -45,15 +48,28 @@ export class HttpGroupsAttributeComponent implements OnInit, OnDestroy {
   @Input({ required: true }) userGroupsControl!: FormGroup;
   @Input({ required: true }) resolverType!: string;
 
-  private activeSub?: Subscription;
+  private activeSubscription?: Subscription;
+
+  // Signal for the 'active' value
+  readonly activeSignal = signal<boolean>(false);
+
+  // Computed signal for the tooltip
+  readonly slideToggleTooltipSignal = computed(() =>
+    this.activeSignal()
+      ? $localize`Disable user groups retrieval`
+      : $localize`Enable user groups retrieval`
+  );
 
   ngOnInit() {
     if (this.userGroupsControl) {
-      this.activeSub?.unsubscribe();
+      this.activeSubscription?.unsubscribe();
       const activeControl = this.userGroupsControl.get("active");
       if (activeControl) {
+        // Initialize signal
+        this.activeSignal.set(!!activeControl.value);
         // Subscribe to changes in the "active" control to enable/disable other controls
-        this.activeSub = activeControl.valueChanges.subscribe((active: boolean) => {
+        this.activeSubscription = activeControl.valueChanges.subscribe((active: boolean) => {
+          this.activeSignal.set(active);
           const controls = ["user_groups_attribute", "method", "endpoint"];
           controls.forEach(ctrl => {
             const control = this.userGroupsControl.get(ctrl);
@@ -88,6 +104,6 @@ export class HttpGroupsAttributeComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
-    this.activeSub?.unsubscribe();
+    this.activeSubscription?.unsubscribe();
   }
 }
