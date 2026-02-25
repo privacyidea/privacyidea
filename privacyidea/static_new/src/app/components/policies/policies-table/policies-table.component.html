@@ -89,59 +89,63 @@
           [class]="'col-' + column.key"
           mat-cell
           *matCellDef="let policy">
-          @switch (column.key) {
-            @case ("select") {
-              <mat-checkbox
-                (click)="$event.stopPropagation()"
-                (change)="updateSelection($event, policy.name)"
-                [checked]="isSelected(policy.name)"
-                aria-label="Select Policy"
-                i18n-aria-label>
-              </mat-checkbox>
-            }
-            @case ("priority") {
-              {{ policy.priority }}
-            }
-            @case ("name") {
-              <div class="name-wrapper">
-                @if (authService.actionAllowed("policywrite")) {
-                  <div
-                    class="text-link-button"
-                    (click)="$event.stopPropagation(); editPolicy(policy)">
+          <div class="column-max-height">
+            @switch (column.key) {
+              @case ("select") {
+                <mat-checkbox
+                  (click)="$event.stopPropagation()"
+                  (change)="updateSelection($event, policy.name)"
+                  [checked]="isSelected(policy.name)"
+                  aria-label="Select Policy"
+                  i18n-aria-label>
+                </mat-checkbox>
+              }
+              @case ("priority") {
+                {{ policy.priority }}
+              }
+              @case ("name") {
+                <div class="name-wrapper">
+                  @if (authService.actionAllowed("policywrite")) {
+                    <div
+                      class="text-link-button"
+                      (click)="$event.stopPropagation(); editPolicy(policy)">
+                      {{ policy.name }}
+                    </div>
+                  } @else {
+                    <mat-icon
+                      [class.inactive-icon]="!policy.active"
+                      [class.active-icon]="policy.active">
+                      check_circle
+                    </mat-icon>
                     {{ policy.name }}
-                  </div>
-                } @else {
-                  <mat-icon
-                    [class.inactive-icon]="!policy.active"
-                    [class.active-icon]="policy.active">
-                    check_circle
-                  </mat-icon>
-                  {{ policy.name }}
-                }
-              </div>
+                  }
+                </div>
+              }
+              @case ("scope") {
+                {{ policy.scope ? policy.scope.toLocaleUpperCase() : "No Scope" }}
+              }
+              @case ("description") {
+                {{ policy.description }}
+              }
+              @case ("actions") {
+                <app-view-action-column [actions]="policy.action" />
+              }
+              @case ("conditions") {
+                <app-view-conditions-column [policy]="policy" />
+              }
+              @case ("active") {
+                <mat-icon
+                  class="minimal-icon-button"
+                  [class.inactive-icon]="!policy.active"
+                  [class.active-icon]="policy.active"
+                  [matTooltip]="policy.active ? 'Deactivate policy' : 'Activate policy'"
+                  i18n-matTooltip
+                  (click)="$event.stopPropagation(); policyService.togglePolicyActive(policy)">
+                  check_circle
+                </mat-icon>
+              }
             }
-            @case ("scope") {
-              {{ policy.scope ? policy.scope.toLocaleUpperCase() : "No Scope" }}
-            }
-            @case ("description") {
-              {{ policy.description }}
-            }
-            @case ("actions") {
-              <app-view-action-column [actions]="policy.action" />
-            }
-            @case ("conditions") {
-              <app-view-conditions-column [policy]="policy" />
-            }
-            @case ("active") {
-              <mat-icon
-                class="minimal-icon-button"
-                [class.inactive-icon]="!policy.active"
-                [class.active-icon]="policy.active"
-                (click)="$event.stopPropagation(); policyService.togglePolicyActive(policy)">
-                check_circle
-              </mat-icon>
-            }
-          }
+          </div>
         </td>
       </ng-container>
     }

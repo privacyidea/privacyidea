@@ -34,15 +34,14 @@ import { ViewActionColumnComponent } from "./view-action-column/view-action-colu
 
 const columnKeysMap = [
   { key: "select", label: "" },
-  { key: "priority", label: "Priority" },
-  { key: "name", label: "Name" },
-  { key: "scope", label: "Scope" },
-  { key: "description", label: "Description" },
-  { key: "actions", label: "Actions" },
-  { key: "conditions", label: "Conditions" },
-  { key: "active", label: "" }
+  { key: "priority", label: $localize`Priority` },
+  { key: "name", label: $localize`Name` },
+  { key: "scope", label: $localize`Scope` },
+  { key: "description", label: $localize`Description` },
+  { key: "actions", label: $localize`Actions` },
+  { key: "conditions", label: $localize`Conditions` },
+  { key: "active", label: $localize`Active` }
 ];
-
 @Component({
   selector: "app-policies-table",
   standalone: true,

@@ -39,6 +39,11 @@
       text-align: left;
     }
 
+    .column-max-height {
+      max-height: 200px;
+      overflow-y: auto;
+    }
+
     .mat-mdc-row {
       height: 0;
     }
@@ -67,7 +72,6 @@
     td.col-actions {
       max-width: 100% !important;
       text-align: center;
-      width: 1%;
       white-space: nowrap;
     }
 
