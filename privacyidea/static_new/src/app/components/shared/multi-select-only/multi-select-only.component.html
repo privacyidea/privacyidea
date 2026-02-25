@@ -21,7 +21,8 @@
   appearance="fill"
   class="full-width"
   [matTooltip]="tooltipText()"
-  [matTooltipDisabled]="!isDisabled()">
+  [matTooltipDisabled]="!isDisabled()"
+  [subscriptSizing]="subscriptSizing()">
   <mat-label>{{ label() }}</mat-label>
 
   <mat-select

@@ -44,7 +44,7 @@ export class EditActionTabComponent {
   readonly dialogService: DialogServiceInterface = inject(DialogService);
 
   readonly policy = input.required<PolicyDetail>();
-  readonly policyScopeChange = output<string>();
+  readonly policyScopeChange = output<string | undefined>();
   readonly actionsUpdate = output<{
     [actionName: string]: any;
   }>();
@@ -91,7 +91,7 @@ export class EditActionTabComponent {
     }
   }
 
-  onPolicyScopeChange($event: string) {
+  onPolicyScopeChange($event: string | undefined) {
     this.policyScopeChange.emit($event);
   }
 }

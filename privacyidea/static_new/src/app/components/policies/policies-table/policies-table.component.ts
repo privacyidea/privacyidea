@@ -153,10 +153,19 @@ export class PoliciesTableComponent {
   }
 
   public getFilterIconName(columnKey: string): string {
-    const option = policyFilterOptions.find((o) => o.key === columnKey);
-    if (!option) return "filter_alt";
-    // Hier rufen wir die Property des Klassen-Instanz auf (getIconName)
-    return option.getIconName ? option.getIconName(this.filter()) : this.filter().getFilterIconNameOf(option);
+    const actionType = policyFilterOptions.find((o) => o.key === columnKey)?.getActionType?.(this.filter()) ?? "none";
+    switch (actionType) {
+      case "add":
+        return "filter_alt";
+      case "remove":
+        return "filter_alt_off";
+      case "change":
+        return "screen_rotation_alt";
+      case "none":
+        return "";
+      default:
+        return "filter_alt";
+    }
   }
 
   public getFilterTooltipText(columnKey: string): string {
@@ -196,7 +205,6 @@ export class PoliciesTableComponent {
     const confirmed = await this._confirm({
       title: "Confirm Deletion",
       confirmAction: { type: "destruct", label: "Delete", value: true },
-      cancelAction: { type: "cancel", label: "Cancel", value: false },
       items: [policyName],
       itemType: "policy"
     });
@@ -204,6 +212,7 @@ export class PoliciesTableComponent {
   }
 
   async editPolicy(policy: PolicyDetail): Promise<void> {
+    const originalPolicyName = policy.name;
     const result = await lastValueFrom(
       this.dialogService
         .openDialog({
@@ -212,7 +221,9 @@ export class PoliciesTableComponent {
         })
         .afterClosed()
     );
-    if (result) this.policyService.updatePolicyOptimistic(result);
+    if (result) {
+      this.policyService.savePolicyEdits({ ...policy, ...result }, originalPolicyName);
+    }
   }
 
   private async _confirm(data: SimpleConfirmationDialogData): Promise<boolean> {
@@ -260,10 +271,9 @@ const policyFilterOptions = [
       if (v === "false") return filter.removeKey("active");
       return filter.setValueOfKey("active", "true");
     },
-    // Korrigiert: iconName statt getIconName
-    iconName: (filter) => {
+    getActionType: (filter) => {
       const v = filter.getValueOfKey("active")?.toLowerCase();
-      return v === "true" ? "screen_rotation_alt" : v === "false" ? "filter_alt_off" : "filter_alt";
+      return v === "true" ? "change" : v === "false" ? "remove" : "add";
     },
     matches: (item, filter) => {
       const v = filter.getValueOfKey("active")?.toLowerCase();

@@ -28,6 +28,8 @@
     }
     <app-action-selector
       [policy]="policy()"
-      (actionAdd)="onActionAdd($event)" />
+      (actionAdd)="onActionAdd($event)"
+      (scopeChange)="onPolicyScopeChange($event)" />
+    />
   </div>
 </div>

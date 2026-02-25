@@ -32,15 +32,17 @@ import { MatIconModule } from "@angular/material/icon";
   templateUrl: "./multi-select-only.component.html",
   styleUrls: ["./multi-select-only.component.scss"]
 })
-export class MultiSelectOnlyComponent {
+export class MultiSelectOnlyComponent<T = string | number> {
   // Inputs
   readonly label = input<string>("");
-  readonly items = input<string[] | Set<string>>([]);
-  readonly selectedItems = input<string[]>([]);
+  readonly items = input<T[] | Set<T> | Array<T> | undefined>([]);
+  readonly selectedItems = input<T[]>([]);
   readonly tooltipText = input<string>("");
 
+  readonly subscriptSizing = input<"dynamic" | "fixed">("fixed");
+
   // Outputs
-  readonly selectionChange = output<string[]>();
+  readonly selectionChange = output<T[]>();
 
   /**
    * Localized labels for the toggle action.
@@ -87,7 +89,7 @@ export class MultiSelectOnlyComponent {
   /**
    * Deselects everything and selects ONLY the targeted item.
    */
-  public selectOnly(event: MouseEvent, item: string): void {
+  public selectOnly(event: MouseEvent, item: T): void {
     event.stopPropagation();
     this.selectionChange.emit([item]);
   }
@@ -95,7 +97,7 @@ export class MultiSelectOnlyComponent {
   /**
    * Toggles a single item.
    */
-  public toggle(item: string): void {
+  public toggle(item: T): void {
     const currentSelection = this.selectedItems();
     const isSelected = currentSelection.includes(item);
     const newSelection = isSelected
@@ -112,3 +114,4 @@ export class MultiSelectOnlyComponent {
     this.selectionChange.emit(this.isAllSelected() ? [] : this.uniqueItems());
   }
 }
+const typasd = MultiSelectOnlyComponent<string | number>;

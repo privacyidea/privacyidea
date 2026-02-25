@@ -103,7 +103,7 @@ export class PolicyPanelEditComponent {
   /**
    * Handles scope changes with a safety confirmation if actions are present.
    */
-  public async onPolicyScopeChange(newScope: string): Promise<void> {
+  public async onPolicyScopeChange(newScope?: string): Promise<void> {
     const currentActions = this.editedPolicy().action;
 
     if (currentActions && Object.keys(currentActions).length > 0) {

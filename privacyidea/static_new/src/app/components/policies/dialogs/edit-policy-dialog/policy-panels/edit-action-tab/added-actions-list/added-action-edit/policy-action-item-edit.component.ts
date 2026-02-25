@@ -34,6 +34,7 @@ import {
   PolicyService
 } from "../../../../../../../../services/policies/policies.service";
 import { SelectorButtonsComponent } from "../../selector-buttons/selector-buttons.component";
+import { MultiSelectOnlyComponent } from "@components/shared/multi-select-only/multi-select-only.component";
 
 @Component({
   selector: "app-policy-action-item-edit",
@@ -49,16 +50,17 @@ import { SelectorButtonsComponent } from "../../selector-buttons/selector-button
     MatSelectModule,
     MatFormFieldModule,
     MatAutocompleteModule,
-    FormsModule
+    FormsModule,
+    MultiSelectOnlyComponent
   ],
   templateUrl: "./policy-action-item-edit.component.html",
   styleUrl: "./policy-action-item-edit.component.scss"
 })
-export class PolicyActionItemEditComponent {
-  readonly action = input.required<{ name: string; value: any }>();
-  readonly actionDetail = input.required<PolicyActionDetail | null>();
+export class PolicyActionItemEditComponent<T extends string | number = string | number> {
+  readonly action = input.required<{ name: string; value: T }>();
+  readonly actionDetail = input.required<PolicyActionDetail<T> | null>();
   readonly onRemoveAction = output<void>();
-  readonly onUpdateAction = output<string | number>();
+  readonly onUpdateAction = output<T | undefined>();
 
   readonly policyService: PolicyServiceInterface = inject(PolicyService);
 
@@ -69,6 +71,21 @@ export class PolicyActionItemEditComponent {
     return this.policyService.actionValueIsValid(actionDetail, actionValue);
   });
 
+  selectedItems = computed<T[]>(() => {
+    const value = this.action()?.value;
+    const valueList = typeof value === "string" ? value.split(" ") : [value];
+    return valueList as T[];
+  });
+
+  updateSelectedActionValue(value: T[]) {
+    if (Array.isArray(value)) {
+      const stringValue = value.map((v) => v.toString()).join(" ");
+      this.onUpdateAction.emit(stringValue as T);
+    } else {
+      this.onUpdateAction.emit(value);
+    }
+  }
+
   isBooleanAction(actionName: string): boolean {
     return this.policyService.getDetailsOfAction(actionName)?.type === "bool";
   }
@@ -77,11 +94,11 @@ export class PolicyActionItemEditComponent {
     this.onRemoveAction.emit();
   }
 
-  updateAction(newValue: string | number): void {
+  updateAction(newValue?: T): void {
     this.onUpdateAction.emit(newValue);
   }
 
-  isNumber(value: any): boolean {
+  isNumber(value: T): boolean {
     return value !== null && value !== "" && !isNaN(Number(value));
   }
 }

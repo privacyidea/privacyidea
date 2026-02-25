@@ -24,7 +24,7 @@ import { MatButtonModule } from "@angular/material/button";
 import { lastValueFrom } from "rxjs";
 import { DialogService } from "../../../../services/dialog/dialog.service";
 import { AuthService } from "../../../../services/auth/auth.service";
-import { PolicyService } from "../../../../services/policies/policies.service";
+import { PolicyDetail, PolicyService } from "../../../../services/policies/policies.service";
 import { EditPolicyDialogComponent } from "../../dialogs/edit-policy-dialog/edit-policy-dialog.component";
 import { SimpleConfirmationDialogComponent } from "../../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { CopyPolicyDialogComponent } from "@components/policies/dialogs/copy-policy-dialog/copy-policy-dialog.component";
@@ -44,10 +44,21 @@ export class PoliciesTableActionsComponent {
   readonly policyService = inject(PolicyService);
 
   createNewPolicy(): void {
-    this.dialogService.openDialog({
-      component: EditPolicyDialogComponent,
-      data: { mode: "create", policyDetail: this.policyService.getEmptyPolicy() }
-    });
+    this.dialogService
+      .openDialog({
+        component: EditPolicyDialogComponent,
+        data: { mode: "create", policyDetail: this.policyService.getEmptyPolicy() }
+      })
+      .afterClosed()
+      .subscribe((result) => {
+        if (result) {
+          const policy: PolicyDetail = {
+            ...this.policyService.getEmptyPolicy(),
+            ...result
+          };
+          this.policyService.saveNewPolicy(policy);
+        }
+      });
   }
 
   async deleteSelectedPolicies(): Promise<void> {
@@ -60,8 +71,7 @@ export class PoliciesTableActionsComponent {
             title: $localize`Delete Policies`,
             items: selection,
             itemType: $localize`Policies`,
-            confirmAction: { label: $localize`Delete`, value: true, type: "destruct" },
-            cancelAction: { label: $localize`Cancel`, value: false, type: "cancel" }
+            confirmAction: { label: $localize`Delete`, value: true, type: "destruct" }
           }
         })
         .afterClosed()

@@ -1,5 +1,5 @@
 <!--
- (c) NetKnights GmbH 2025,  https://netknights.it
+ (c) NetKnights GmbH 2026,  https://netknights.it
 
  This code is free software; you can redistribute it and/or
  modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -112,9 +112,9 @@
     @if (Object.keys(editTask().options).length === 0) {
       <span
         class="italic"
-        i18n
-        >No options have been set for this periodic task yet.</span
-      >
+        i18n>
+        No options have been set for this periodic task yet.
+      </span>
     }
     <div class="added-actions-container">
       @for (option of Object.keys(editTask().options); track option) {

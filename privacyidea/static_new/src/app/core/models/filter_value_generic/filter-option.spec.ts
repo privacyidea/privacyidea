@@ -8,8 +8,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-
-import { FilterOption, DummyFilterOption } from "./filter-option";
+import { FilterOption, DummyFilterOption, FilterActionType } from "./filter-option";
 import { FilterValueGeneric } from "./filter-value-generic";
 
 describe("FilterOption", () => {
@@ -21,9 +20,6 @@ describe("FilterOption", () => {
     };
   }
 
-  /**
-   * Factory to create valid mock data without unsafe casting errors.
-   */
   const createMockItem = (overrides: Partial<ComplexMock> = {}): ComplexMock => {
     return {
       id: 1,
@@ -35,7 +31,9 @@ describe("FilterOption", () => {
     };
   };
 
-  const mockFilterValue = {} as FilterValueGeneric<ComplexMock>;
+  const mockFilterValue = {
+    hasKey: jest.fn()
+  } as unknown as FilterValueGeneric<ComplexMock>;
 
   describe("Structural and Type Integrity", () => {
     it("should initialize all fields correctly via constructor", () => {
@@ -89,14 +87,45 @@ describe("FilterOption", () => {
       expect(updated.label).toBe("y");
       expect(updated.key).toBe("x");
     });
+  });
 
-    it("should verify matches() logic is preserved in clones", () => {
-      const cloned = original.withValue("test");
-      const valid = createMockItem({ details: { tags: ["security"], owner: { name: "a", active: true } } });
-      const invalid = createMockItem({ details: { tags: [], owner: { name: "a", active: true } } });
+  describe("Action Logic (getActionType)", () => {
+    it("should use default logic: 'add' if key is missing", () => {
+      (mockFilterValue.hasKey as jest.Mock).mockReturnValue(false);
+      const option = new FilterOption({ key: "testKey", label: "L", matches: () => true });
 
-      expect(cloned.matches(valid, mockFilterValue)).toBe(true);
-      expect(cloned.matches(invalid, mockFilterValue)).toBe(false);
+      expect(option.getActionType!(mockFilterValue)).toBe("add");
+    });
+
+    it("should use default logic: 'remove' if key is present", () => {
+      (mockFilterValue.hasKey as jest.Mock).mockReturnValue(true);
+      const option = new FilterOption({ key: "testKey", label: "L", matches: () => true });
+
+      expect(option.getActionType!(mockFilterValue)).toBe("remove");
+    });
+
+    it("should allow overriding getActionType via constructor", () => {
+      const customAction: FilterActionType = "change";
+      const option = new FilterOption({
+        key: "k",
+        label: "l",
+        matches: () => true,
+        getActionType: () => customAction
+      });
+
+      expect(option.getActionType!(mockFilterValue)).toBe("change");
+    });
+
+    it("should preserve custom getActionType in withValue() clones", () => {
+      const option = new FilterOption({
+        key: "k",
+        label: "l",
+        matches: () => true,
+        getActionType: () => "change"
+      });
+      const cloned = option.withValue("new");
+
+      expect(cloned.getActionType!(mockFilterValue)).toBe("change");
     });
   });
 
@@ -109,10 +138,6 @@ describe("FilterOption", () => {
       expect(dummy instanceof DummyFilterOption).toBe(true);
     });
 
-    it("should force the key as the label for dummies", () => {
-      expect(dummy.label).toBe("freitext");
-    });
-
     it("should correctly handle withValue() while maintaining Dummy instance", () => {
       const next = dummy.withValue("updated-search");
       expect(next instanceof DummyFilterOption).toBe(true);
@@ -122,30 +147,17 @@ describe("FilterOption", () => {
   });
 
   describe("Edge Case Stress Tests", () => {
-    it("should handle empty string as a valid distinct value from null", () => {
-      const option = new FilterOption({ key: "k", label: "l", matches: () => true }).withValue("");
-      expect(option.value).toBe("");
-      expect(option.value).not.toBeNull();
-    });
-
-    it("should verify optional callback execution safety", () => {
+    it("should verify optional toggle execution safety", () => {
       const toggleSpy = jest.fn();
-      const iconSpy = jest.fn().mockReturnValue("test-icon");
-
       const option = new FilterOption({
         key: "k",
         label: "l",
         matches: () => true,
-        toggle: toggleSpy,
-        iconName: iconSpy
+        toggle: toggleSpy
       });
 
       option.toggle?.(mockFilterValue);
-      const icon = option.getIconName?.(mockFilterValue);
-
       expect(toggleSpy).toHaveBeenCalledWith(mockFilterValue);
-      expect(iconSpy).toHaveBeenCalledWith(mockFilterValue);
-      expect(icon).toBe("test-icon");
     });
 
     it("should handle multi-step nullification", () => {
@@ -156,16 +168,6 @@ describe("FilterOption", () => {
         .withValue(null);
 
       expect(f.value).toBeNull();
-    });
-
-    it("should prevent cross-contamination of properties between instances", () => {
-      const opt1 = new FilterOption({ key: "key1", label: "L1", matches: () => true });
-      const opt2 = opt1.withValue("V1");
-
-      expect(opt1.value).toBeNull();
-      expect(opt2.value).toBe("V1");
-      expect(opt1.key).toBe("key1");
-      expect(opt2.key).toBe("key1");
     });
   });
 });

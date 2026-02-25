@@ -26,13 +26,21 @@
 
   @if (additionalConditions().length > 0) {
     <div class="additional-condition-header">
-      <div class="center">Active</div>
-      <div>Section</div>
-      <div>Key</div>
-      <div>Comparator</div>
-      <div>Value</div>
-      <div>Missing Data</div>
-      <div class="center">Actions</div>
+      <div
+        class="center"
+        i18n>
+        Active
+      </div>
+      <div i18n>Section</div>
+      <div i18n>Key</div>
+      <div i18n>Comparator</div>
+      <div i18n>Value</div>
+      <div i18n>Missing Data</div>
+      <div
+        class="center"
+        i18n>
+        Actions
+      </div>
     </div>
   }
 
@@ -125,7 +133,7 @@
         </mat-form-field>
 
         <mat-form-field appearance="outline">
-          <mat-label>Value</mat-label>
+          <mat-label i18n>Value</mat-label>
           <input
             matInput
             [(ngModel)]="conditionValue" />

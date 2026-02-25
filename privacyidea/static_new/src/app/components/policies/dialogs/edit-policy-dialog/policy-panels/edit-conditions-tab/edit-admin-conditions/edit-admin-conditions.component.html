@@ -25,7 +25,7 @@
   </h2>
 
   <app-multi-select-only
-    label="Select Admin Realms"
+    label="Admin Realms"
     [items]="realmService.adminRealmOptions()"
     [selectedItems]="selectedAdminrealm()"
     (selectionChange)="selectAdminRealm($event)">
@@ -51,7 +51,7 @@
     <mat-form-field
       class="add-admin-input"
       appearance="outline">
-      <mat-label i18n>Add Admin</mat-label>
+      <mat-label i18n>Admin Name</mat-label>
       <input
         matInput
         [formControl]="adminFormControl"

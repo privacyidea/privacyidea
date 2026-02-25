@@ -29,17 +29,17 @@ import { MatButtonModule } from "@angular/material/button";
 })
 export class SelectorButtonsComponent<T> {
   // Inputs
-  readonly initialValue = input.required<T | null>();
+  readonly initialValue = input.required<T | undefined>();
   readonly values = input.required<T[]>();
   readonly labels = input<T[] | undefined>(undefined);
   readonly allowDeselect = input<boolean>(false);
   readonly disabled = input<boolean>(false);
 
   // Outputs
-  readonly onSelect = output<T | null>();
+  readonly onSelect = output<T | undefined>();
 
   // Component State
-  selectedValue: WritableSignal<T | null> = linkedSignal({
+  selectedValue: WritableSignal<T | undefined> = linkedSignal({
     source: () => this.initialValue(),
     computation: (source) => source
   });
@@ -54,8 +54,8 @@ export class SelectorButtonsComponent<T> {
 
     if (this.selectedValue() === value) {
       if (this.allowDeselect()) {
-        this.selectedValue.set(null);
-        this.onSelect.emit(null);
+        this.selectedValue.set(undefined);
+        this.onSelect.emit(undefined);
       }
       return;
     }

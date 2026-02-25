@@ -16,7 +16,6 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-
 <div class="conditions-container">
   <h2
     class="conditions-title"
@@ -57,13 +56,13 @@
 
     @if (selectedUsers().length > 0) {
       <div class="user-buttons-container">
-        <button
-          mat-stroked-button
-          class="action-button-1"
-          [class.action-button-active]="userCaseInsensitive()"
-          (click)="toggleUserCaseInsensitive()">
+        <mat-checkbox
+          [checked]="userCaseInsensitive()"
+          (change)="toggleUserCaseInsensitive()"
+          color="primary">
           <span i18n>Case insensitive</span>
-        </button>
+        </mat-checkbox>
+
         <button
           mat-stroked-button
           class="action-button-1"

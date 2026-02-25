@@ -42,6 +42,7 @@ import {
 import { SelectorButtonsComponent } from "../selector-buttons/selector-buttons.component";
 import { PolicyActionItemComponent } from "./policy-action-item/policy-action-item-new.component";
 import { ClearableInputComponent } from "../../../../../../shared/clearable-input/clearable-input.component";
+import { MatButtonToggleGroup, MatButtonToggle, MatButtonToggleModule } from "@angular/material/button-toggle";
 
 @Component({
   selector: "app-action-selector",
@@ -53,7 +54,8 @@ import { ClearableInputComponent } from "../../../../../../shared/clearable-inpu
     SelectorButtonsComponent,
     MatTooltipModule,
     PolicyActionItemComponent,
-    ClearableInputComponent
+    ClearableInputComponent,
+    MatButtonToggleModule
   ],
   templateUrl: "./action-selector.component.html",
   styleUrls: ["./action-selector.component.scss"]
@@ -63,7 +65,7 @@ export class ActionSelectorComponent {
 
   readonly policy = input.required<PolicyDetail>();
   readonly actionAdd = output<{ action: { name: string; value: any }; newScope?: string | null }>();
-  readonly scopeChange = output<string | null>();
+  readonly scopeChange = output<string | undefined>();
 
   readonly allPolicyScopes = this.policyService.allPolicyScopes();
 
@@ -118,7 +120,7 @@ export class ActionSelectorComponent {
 
   actionItems = viewChildren(PolicyActionItemComponent);
 
-  selectActionGroup(group: string | null): void {
+  selectActionGroup(group?: string): void {
     this.selectedActionGroup.set(group ?? "");
   }
 
@@ -143,7 +145,7 @@ export class ActionSelectorComponent {
     });
   }
 
-  selectActionScope(scope: string | null) {
+  selectActionScope(scope?: string) {
     this.scopeChange.emit(scope);
   }
 }

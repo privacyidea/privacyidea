@@ -168,13 +168,6 @@ export class FilterValueGeneric<T> {
     return this.hasKey(key) ? this.removeKey(key) : this.addKey(key);
   }
 
-  public getFilterIconNameOf(filterKeyword: FilterOption<T>): string {
-    if (filterKeyword.getIconName) {
-      return filterKeyword.getIconName(this);
-    }
-    return this.hasKey(filterKeyword.key) ? "remove_circle" : "add_circle";
-  }
-
   public setByString(rawValue: string): FilterValueGeneric<T> {
     const newMap = parseToMap(rawValue.trim().toLocaleLowerCase());
     let instance: FilterValueGeneric<T> = this._copyWith({ filterMap: new Map() });

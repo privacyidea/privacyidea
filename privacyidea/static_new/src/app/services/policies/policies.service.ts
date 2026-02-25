@@ -19,19 +19,20 @@
 
 import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
 import { computed, inject, Injectable, linkedSignal, Signal, signal, WritableSignal } from "@angular/core";
-import { lastValueFrom, Observable, of, switchMap } from "rxjs";
+import { catchError, lastValueFrom, Observable, of, switchMap, tap, throwError } from "rxjs";
 import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
 
 export type ActionType = "bool" | "int" | "str" | "text";
-export type PolicyActionDetail = {
+export type PolicyActionDetail<T extends string | number = string | number> = {
   desc: string;
   type: ActionType;
+  multiple?: boolean;
   group?: string;
   mainmenu?: string[];
-  value?: string[] | number[];
+  value?: T[];
 };
 
 export type ScopedPolicyActions = {
@@ -178,7 +179,6 @@ export interface PolicyServiceInterface {
   getDetailsOfAction(actionName: string): PolicyActionDetail | null;
   copyPolicy(oldName: string, newName: string): Promise<PiResponse<any>>;
   createPolicy(policyData: PolicyDetail): Promise<PiResponse<any>>;
-  updatePolicy(oldPolicyName: String, policyData: PolicyDetail): Promise<PiResponse<any>>;
   deletePolicy(name: string): Promise<PiResponse<number>>;
   enablePolicy(name: string): Promise<PiResponse<any>>;
   disablePolicy(name: string): Promise<PiResponse<any>>;
@@ -193,10 +193,9 @@ export interface PolicyServiceInterface {
   policyHasEnviromentConditions(policy: PolicyDetail): boolean;
   policyHasAdditionalConditions(policy: PolicyDetail): boolean;
   policyHasActions(policy: PolicyDetail): boolean;
-  savePolicyEdits(policyName: string, edits: Partial<PolicyDetail>): void;
   isPolicyEdited(editedPolicy: PolicyDetail, originalPolicy: PolicyDetail): boolean;
   togglePolicyActive(policy: PolicyDetail): void;
-  updatePolicyOptimistic(updatedPolicy: Partial<PolicyDetail>): void;
+  savePolicyEdits(updatedPolicy: PolicyDetail, policyName: string): void;
   allPoliciesRecource: HttpResourceRef<PiResponse<PolicyDetail[], unknown> | undefined>;
 }
 
@@ -228,37 +227,6 @@ export class PolicyService implements PolicyServiceInterface {
     source: () => this.contentService.routeUrl(),
     computation: (_) => false
   });
-  savePolicyEdits(policyName: string, edits: Partial<PolicyDetail>) {
-    // Optimistic update
-    const allPolicies = this.allPolicies();
-    const backupPolicies = [...allPolicies];
-    const index = allPolicies.findIndex((p) => p.name === policyName);
-    const originalPolicy = allPolicies[index];
-    if (!originalPolicy) {
-      console.error("Original policy not found for update");
-      return;
-    }
-    const updatedPolicy = { ...originalPolicy, ...edits };
-    allPolicies[index] = updatedPolicy;
-    this.allPolicies.set(allPolicies);
-
-    // Do request
-    this.http
-      .post<PiResponse<any>>(`${this.policyBaseUrl}${policyName}`, updatedPolicy, {
-        headers: this.authService.getHeaders()
-      })
-      .subscribe({
-        next: () => {
-          // Do request that may revert the optimistic update
-          this.allPoliciesRecource.reload();
-        },
-        error: (err) => {
-          // Rollback optimistic update
-          this.allPolicies.set(backupPolicies);
-          console.error("Error updating policy: ", err);
-        }
-      });
-  }
 
   private readonly contentService: ContentServiceInterface = inject(ContentService);
 
@@ -574,29 +542,6 @@ export class PolicyService implements PolicyServiceInterface {
     );
   }
 
-  updatePolicy(oldPolicyName: string, policyData: PolicyDetail): Promise<PiResponse<any>> {
-    const headers = this.authService.getHeaders();
-    const patch$: Observable<PiResponse<any>> = this.http.patch<PiResponse<any>>(
-      `${this.policyBaseUrl}${oldPolicyName}`,
-      { name: policyData.name },
-      { headers }
-    );
-    let request$: Observable<PiResponse<any>>;
-    if (oldPolicyName !== policyData.name) {
-      request$ = patch$.pipe(
-        switchMap((patchResponse) => {
-          if (patchResponse && patchResponse.result?.error) {
-            return of(patchResponse);
-          }
-          return this.http.post<PiResponse<any>>(`${this.policyBaseUrl}${policyData.name}`, policyData, { headers });
-        })
-      );
-    } else {
-      request$ = this.http.post<PiResponse<any>>(`${this.policyBaseUrl}${policyData.name}`, policyData, { headers });
-    }
-    return lastValueFrom(request$);
-  }
-
   async deletePolicy(name: string): Promise<PiResponse<number>> {
     const allPolicies = this.allPolicies();
     if (!allPolicies) return Promise.reject("No policies found");
@@ -670,15 +615,30 @@ export class PolicyService implements PolicyServiceInterface {
     }
     return false;
   }
+  async savePolicyEdits(updatedPolicy: PolicyDetail, originalPolicyName: string): Promise<void> {
+    console.log("Saving policy edits for", originalPolicyName, "with updates", updatedPolicy);
+    let lastStableState = [...this.allPolicies()];
+    const headers = this.authService.getHeaders();
+    const hasNameChange = updatedPolicy.name && updatedPolicy.name !== originalPolicyName;
 
-  updatePolicyOptimistic(updatedPolicy: PolicyDetail) {
-    const currentPolicies = this.allPolicies();
-    this.allPolicies.set(currentPolicies.map((p) => (p.name === updatedPolicy.name ? updatedPolicy : p)));
-    this.http.post("/api/policy", updatedPolicy).subscribe({
-      error: (err) => {
-        this.allPolicies.set(currentPolicies);
-        console.error("Update failed, rolling back", err);
+    this.allPolicies.set(lastStableState.map((p) => (p.name === originalPolicyName ? { ...p, ...updatedPolicy } : p)));
+
+    try {
+      await lastValueFrom(this.http.post(`${this.policyBaseUrl}${originalPolicyName}`, updatedPolicy, { headers }));
+
+      lastStableState = lastStableState.map((p) =>
+        p.name === originalPolicyName ? { ...p, ...updatedPolicy, name: originalPolicyName } : p
+      );
+
+      if (hasNameChange) {
+        await lastValueFrom(
+          this.http.patch(`${this.policyBaseUrl}${originalPolicyName}`, { name: updatedPolicy.name }, { headers })
+        );
       }
-    });
+
+      this.allPoliciesRecource.reload();
+    } catch (err) {
+      this.allPolicies.set(lastStableState);
+    }
   }
 }

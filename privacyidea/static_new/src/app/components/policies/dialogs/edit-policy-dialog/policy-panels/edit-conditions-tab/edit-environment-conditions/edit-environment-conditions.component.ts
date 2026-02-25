@@ -34,6 +34,7 @@ import {
 import { SystemServiceInterface, SystemService } from "../../../../../../../services/system/system.service";
 import { MultiSelectOnlyComponent } from "../../../../../../shared/multi-select-only/multi-select-only.component";
 import { ClearButtonComponent } from "../../../../../../shared/clear-button/clear-button.component";
+import { MatAutocompleteModule } from "@angular/material/autocomplete";
 
 @Component({
   selector: "app-edit-environment-conditions",
@@ -49,7 +50,8 @@ import { ClearButtonComponent } from "../../../../../../shared/clear-button/clea
     MatExpansionModule,
     ReactiveFormsModule,
     MultiSelectOnlyComponent,
-    ClearButtonComponent
+    ClearButtonComponent,
+    MatAutocompleteModule
   ],
   templateUrl: "./edit-environment-conditions.component.html",
   styleUrl: "./edit-environment-conditions.component.scss"

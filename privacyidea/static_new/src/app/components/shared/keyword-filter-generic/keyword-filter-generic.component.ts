@@ -56,7 +56,19 @@ export class KeywordFilterGenericComponent<T> {
   }
 
   public getFilterIconName(filterOption: FilterOption<T>): string {
-    return this.filter().getFilterIconNameOf(filterOption);
+    const actionType = filterOption.getActionType?.(this.filter());
+    switch (actionType) {
+      case "add":
+        return "add_circle";
+      case "remove":
+        return "remove_circle";
+      case "change":
+        return "change_circle";
+      case "none":
+        return "";
+      default:
+        return "filter_alt";
+    }
   }
 
   public getFilterIconClass(option: FilterOption<T>): Record<string, boolean> {

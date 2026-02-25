@@ -65,13 +65,6 @@ export class EditPolicyDialogComponent extends AbstractDialogComponent<
 
   onAction(value: "submit" | null): void {
     if (value !== "submit") return;
-
-    const finalPolicy = this.editedPolicy();
-    if (this.data.mode === "create") {
-      this.policyService.saveNewPolicy(finalPolicy);
-    } else {
-      this.policyService.savePolicyEdits(this.policy().name, this.policyEdits());
-    }
     this.dialogRef.close(this.policyEdits());
   }
 

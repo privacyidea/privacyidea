@@ -23,29 +23,48 @@
 
   <div class="detail-input">
     @if (actionDetail()?.value; as actionValues) {
-      @if (actionValues.length === 0) {
-        <p i18n>No values available for this action.</p>
-      } @else if (actionValues.length <= 3) {
-        <app-selector-buttons
-          #selectorComponent
-          [initialValue]="currentAction().value"
-          [class]="actionValues.length === 1 ? 'half-width' : 'full-width'"
-          [values]="actionValues"
-          (onSelect)="addAction($event)" />
+      @if (actionDetail()?.multiple) {
+        <app-multi-select-only
+          class="half-width"
+          subscriptSizing="dynamic"
+          placeholder="Select options..."
+          [items]="actionValues"
+          [selectedItems]="selectedItems()"
+          (selectionChange)="updateSelectedActionValue($event)">
+        </app-multi-select-only>
+
+        <button
+          #buttonElement
+          class="add-action-button half-width"
+          [disabled]="!inputIsValid()"
+          (click)="$event.stopPropagation(); addAction()">
+          <mat-icon>add</mat-icon>
+        </button>
       } @else {
-        <mat-form-field
-          appearance="fill"
-          class="full-width"
-          subscriptSizing="dynamic">
-          <mat-select
-            #selectElement
-            [value]="currentAction().value"
-            (selectionChange)="addAction($event.value)">
-            @for (option of actionValues; track option) {
-              <mat-option [value]="option">{{ option }}</mat-option>
-            }
-          </mat-select>
-        </mat-form-field>
+        @if (actionValues.length === 0) {
+          <p i18n>No values available for this action.</p>
+        } @else if (actionValues.length <= 3) {
+          <app-selector-buttons
+            #selectorComponent
+            [initialValue]="currentAction().value"
+            [class]="actionValues.length === 1 ? 'half-width' : 'full-width'"
+            [values]="actionValues"
+            (onSelect)="addAction($event)" />
+        } @else {
+          <mat-form-field
+            appearance="fill"
+            class="full-width"
+            subscriptSizing="dynamic">
+            <mat-select
+              #selectElement
+              [value]="currentAction().value"
+              (selectionChange)="addAction($event.value)">
+              @for (option of actionValues; track option) {
+                <mat-option [value]="option">{{ option }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        }
       }
     } @else {
       @switch (actionDetail()?.type) {

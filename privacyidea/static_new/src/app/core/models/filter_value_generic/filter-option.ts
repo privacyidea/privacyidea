@@ -14,6 +14,8 @@ import { FilterValueGeneric } from "./filter-value-generic";
 /**
  * Defines a filterable property for a generic data type.
  */
+
+export type FilterActionType = "add" | "remove" | "change" | "none";
 export class FilterOption<T = any> {
   readonly key: string;
   readonly value: string | null;
@@ -21,7 +23,7 @@ export class FilterOption<T = any> {
   readonly hint?: string;
   readonly matches: (item: T, filterValue: FilterValueGeneric<T>) => boolean;
   readonly isSelected?: (filterValue: FilterValueGeneric<T>) => boolean;
-  readonly getIconName?: (filterValue: FilterValueGeneric<T>) => string;
+  readonly getActionType?: (filterValue: FilterValueGeneric<T>) => FilterActionType;
   readonly toggle?: (filterValue: FilterValueGeneric<T>) => FilterValueGeneric<T>;
 
   constructor(args: {
@@ -31,7 +33,7 @@ export class FilterOption<T = any> {
     hint?: string;
     matches: (item: T, filterValue: FilterValueGeneric<T>) => boolean;
     isSelected?: (filterValue: FilterValueGeneric<T>) => boolean;
-    iconName?: (filterValue: FilterValueGeneric<T>) => string;
+    getActionType?: (filterValue: FilterValueGeneric<T>) => FilterActionType;
     toggle?: (filterValue: FilterValueGeneric<T>) => FilterValueGeneric<T>;
   }) {
     this.key = args.key;
@@ -40,7 +42,7 @@ export class FilterOption<T = any> {
     this.hint = args.hint;
     this.matches = args.matches;
     this.isSelected = args.isSelected;
-    this.getIconName = args.iconName;
+    this.getActionType = args.getActionType ?? ((filterValue) => (filterValue.hasKey(this.key) ? "remove" : "add"));
     this.toggle = args.toggle;
   }
 
@@ -55,7 +57,7 @@ export class FilterOption<T = any> {
       hint: this.hint,
       matches: this.matches,
       isSelected: this.isSelected,
-      iconName: this.getIconName,
+      getActionType: this.getActionType,
       toggle: this.toggle
     });
   }

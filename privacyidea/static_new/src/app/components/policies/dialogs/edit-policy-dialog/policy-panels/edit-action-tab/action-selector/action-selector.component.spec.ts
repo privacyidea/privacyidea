@@ -117,8 +117,8 @@ describe("ActionSelectorComponent", () => {
     expect(component).toBeTruthy();
   });
 
-  it("should handle null group selection by falling back to empty string", () => {
-    component.selectActionGroup(null);
+  it("should handle undefined group selection by falling back to empty string", () => {
+    component.selectActionGroup();
     expect(component.selectedActionGroup()).toBe("");
   });
 

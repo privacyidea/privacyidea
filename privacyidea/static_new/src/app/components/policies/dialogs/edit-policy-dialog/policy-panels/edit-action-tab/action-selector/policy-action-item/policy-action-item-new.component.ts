@@ -31,6 +31,7 @@ import {
   PolicyActionDetail
 } from "../../../../../../../../services/policies/policies.service";
 import { SelectorButtonsComponent } from "../../selector-buttons/selector-buttons.component";
+import { MultiSelectOnlyComponent } from "@components/shared/multi-select-only/multi-select-only.component";
 
 @Component({
   selector: "app-policy-action-item-new",
@@ -43,17 +44,18 @@ import { SelectorButtonsComponent } from "../../selector-buttons/selector-button
     SelectorButtonsComponent,
     MatInputModule,
     MatSelectModule,
-    MatAutocompleteModule
+    MatAutocompleteModule,
+    MultiSelectOnlyComponent
   ],
   templateUrl: "./policy-action-item-new.component.html",
   styleUrls: ["./policy-action-item-new.component.scss"]
 })
-export class PolicyActionItemComponent {
+export class PolicyActionItemComponent<T extends string | number = string | number> {
   readonly policyService: PolicyServiceInterface = inject(PolicyService);
 
   readonly actionName = input.required<string>();
-  readonly actionValue = input.required<any>();
-  readonly actionDetail = input.required<PolicyActionDetail | null>();
+  readonly actionValue = input<T>();
+  readonly actionDetail = input.required<PolicyActionDetail<T> | null>();
   readonly isBooleanAction = computed(() => this.actionDetail()?.type === "bool");
   readonly inputIsValid = computed<boolean>(() => {
     const actionDetail = this.actionDetail();
@@ -62,27 +64,38 @@ export class PolicyActionItemComponent {
     return this.policyService.actionValueIsValid(actionDetail, actionValue);
   });
   readonly selectActionByName = output<string>();
-  readonly actionAdd = output<{ name: string; value: any }>();
+  readonly actionAdd = output<{ name: string; value: T | undefined }>();
 
   currentAction = linkedSignal({
     source: () => this.actionDetail(),
     computation: (actionDetail) => {
       const actionName = this.actionName();
       if (!actionDetail) return { name: actionName, value: undefined };
-      const defaultValue = actionDetail.type === "bool" ? "true" : this.actionValue();
+      const defaultValue = actionDetail.type === "bool" ? ("true" as T) : this.actionValue();
       return { name: actionName, value: defaultValue };
     }
   });
 
-  addAction(value?: any) {
+  selectedItems = computed<T[]>(() => {
+    const value = this.currentAction()?.value;
+    const valueList = typeof value === "string" ? value.split(" ") : [value];
+    return valueList as T[];
+  });
+
+  addAction(value?: T) {
     const name = this.actionName();
     const finalValue = value !== undefined ? value : this.currentAction().value;
     this.actionAdd.emit({ name, value: finalValue });
   }
 
-  updateSelectedActionValue(value: any) {
+  updateSelectedActionValue(value: T | T[]) {
     const actionName = this.actionName();
-    this.currentAction.set({ name: actionName, value: value });
+    if (Array.isArray(value)) {
+      const stringValue = value.map((v) => v.toString()).join(" ");
+      this.currentAction.set({ name: actionName, value: stringValue as T });
+    } else {
+      this.currentAction.set({ name: actionName, value: value });
+    }
   }
 
   onEnter(): void {
@@ -92,16 +105,16 @@ export class PolicyActionItemComponent {
     this.addAction();
   }
 
-  inputEl = viewChild<ElementRef>("inputElement");
-  selectEl = viewChild<MatSelect>("selectElement");
-  buttonEl = viewChild<ElementRef>("buttonElement");
+  inputElementRef = viewChild<ElementRef>("inputElement");
+  selectElementRef = viewChild<MatSelect>("selectElement");
+  buttonElementRef = viewChild<ElementRef>("buttonElement");
   selectorComponent = viewChild<SelectorButtonsComponent<any>>("selectorComponent");
 
   focusFirstInput() {
     setTimeout(() => {
-      const input = this.inputEl()?.nativeElement;
-      const select = this.selectEl();
-      const button = this.buttonEl()?.nativeElement;
+      const input = this.inputElementRef()?.nativeElement;
+      const select = this.selectElementRef();
+      const button = this.buttonElementRef()?.nativeElement;
       const selector = this.selectorComponent();
       if (input) {
         input.focus();

@@ -30,6 +30,7 @@ import { PolicyService, PolicyDetail } from "../../../../../../../services/polic
 import { RealmServiceInterface, RealmService } from "../../../../../../../services/realm/realm.service";
 import { ResolverService, ResolverServiceInterface } from "../../../../../../../services/resolver/resolver.service";
 import { MultiSelectOnlyComponent } from "../../../../../../shared/multi-select-only/multi-select-only.component";
+import { MatCheckboxModule } from "@angular/material/checkbox";
 
 @Component({
   selector: "app-edit-user-conditions",
@@ -44,7 +45,8 @@ import { MultiSelectOnlyComponent } from "../../../../../../shared/multi-select-
     MatButtonModule,
     MatExpansionModule,
     ReactiveFormsModule,
-    MultiSelectOnlyComponent
+    MultiSelectOnlyComponent,
+    MatCheckboxModule
   ],
   templateUrl: "./edit-user-conditions.component.html",
   styleUrl: "./edit-user-conditions.component.scss"

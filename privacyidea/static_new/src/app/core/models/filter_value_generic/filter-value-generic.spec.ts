@@ -244,16 +244,6 @@ describe("FilterValueGeneric", () => {
   });
 
   describe("9. UI Helpers", () => {
-    it("should return correct icon names and handle custom icons without spread bug", () => {
-      const customOpt = new FilterOption<PolicyMock>({
-        key: "c",
-        label: "L",
-        matches: () => true,
-        iconName: () => "verified"
-      });
-      expect(filter.getFilterIconNameOf(customOpt)).toBe("verified");
-    });
-
     it("should generate correct rawValue for UI search bar", () => {
       const f = filter.setValueOfKey("name", "test").addKey("standalone");
       expect(f.rawValue).toBe("name: test standalone");
