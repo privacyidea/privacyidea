@@ -87,7 +87,7 @@ class EntraIDResolver(HTTPResolver):
                                                REQUEST_MAPPING: "client_id={client_id}&scope=https://graph.microsoft.com"
                                                                 "/.default&username={username}&password={password}&"
                                                                 "grant_type=password&client_secret={client_credential}"}})
-        self.config_get_user_groups = {"active": False, USER_GROUPS_ATTRIBUTE: "displayName"}
+        self.config_get_user_groups = {"active": True, USER_GROUPS_ATTRIBUTE: "displayName"}
         self.wildcard = ""  # No wildcards supported
 
         # Custom attributes
