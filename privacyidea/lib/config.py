@@ -106,7 +106,6 @@ class SharedConfigClass(object):
         the internal timestamp, then read the complete data
         :return:
         """
-        from .resolvers.HTTPResolver import ADVANCED, HEADERS
         from .resolver import get_resolver_class
         check_reload_config = get_app_config_value("PI_CHECK_RELOAD_CONFIG", 0)
         if not self.timestamp or self.timestamp + datetime.timedelta(
@@ -162,10 +161,6 @@ class SharedConfigClass(object):
                         else:
                             value = rconf.Value
                         data[rconf.Key] = value
-                    if data.get(ADVANCED, False) and HEADERS in data:
-                        # For advanced HTTP resolvers, the headers config is loaded as dict
-                        if data.get(HEADERS):
-                            data[HEADERS] = json.loads(data.get(HEADERS, "{}"))
                     resolverdef["data"] = data
                     resolverconfig[resolver.name] = resolverdef
                 # Load realm configuration
