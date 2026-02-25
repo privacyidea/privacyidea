@@ -32,12 +32,13 @@
           <button
             (click)="onActionClick(action)"
             [attr.cdkFocusInitial]="action.primary || null"
-            [class.action-button-delete-secondary]="action.type === 'destruct' && !action.primary"
             [class.action-button-delete-primary]="action.type === 'destruct' && action.primary"
-            [class.action-button-primary]="(action.primary ||
+            [class.action-button-delete-secondary]="action.type === 'destruct' && !action.primary"
+            [class.action-button-primary]="(action.primary
+            && action.type !== 'destruct' && (
             action.type === 'confirm' ||
             action.type === 'auxiliary' ||
-            !action.type) && action.type !== 'destruct'"
+            !action.type))"
             [class.action-button-secondary]="action.type === 'cancel' && !action.primary"
             [disabled]="action.disabled"
             class="width-s"

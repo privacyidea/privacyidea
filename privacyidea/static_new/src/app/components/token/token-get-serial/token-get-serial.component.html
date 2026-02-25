@@ -33,8 +33,10 @@
     parameters, to narrow down the search for the token. So you can only search within certain token types or in
     assigned or unassigned tokens.
   </p>
-  <div class="flex-row gap-16">
-    <mat-form-field class="width-66">
+  <div class="flex-row gap-16 ali-center margin-bottom-16">
+    <mat-form-field
+      class="width-66"
+      subscriptSizing="dynamic">
       <mat-label i18n>OTP Value</mat-label>
       <input
         #otpValueInput
@@ -51,9 +53,9 @@
     <button
       (click)="onClickRunSearch()"
       [disabled]="otpValue() === ''"
-      class="card-button-1"
-      mat-stroked-button
-      i18n>
+      class="action-button-primary width-m"
+      i18n
+      mat-stroked-button>
       <mat-icon>{{ currentStep() !== "searching" ? "play_arrow" : "stop" }}</mat-icon>
       {{ currentStep() !== "searching" ? "Run" : "Stop" }}
       <span>Search</span>

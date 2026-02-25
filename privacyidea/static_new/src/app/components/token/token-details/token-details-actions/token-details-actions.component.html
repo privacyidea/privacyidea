@@ -96,8 +96,8 @@
           (click)="toggleActive()"
           [disabled]="tokenIsRevoked()"
           [ngClass]="[tokenIsActive()
-                      ? 'action-button-delete-primary width-s'
-                      : 'action-button-primary width-s'
+                      ? 'action-button-delete-primary width-m'
+                      : 'action-button-primary width-m'
                 ]"
           i18n
           mat-stroked-button>
@@ -108,7 +108,7 @@
       @if (authService.actionAllowed("delete")) {
         <button
           (click)="deleteToken()"
-          class="action-button-delete-secondary width-s"
+          class="action-button-delete-secondary width-m"
           i18n
           mat-stroked-button>
           <mat-icon> delete</mat-icon>
@@ -119,7 +119,7 @@
         <button
           (click)="revokeToken()"
           [disabled]="tokenIsRevoked()"
-          class="action-button-delete-secondary width-s"
+          class="action-button-delete-secondary width-m"
           i18n
           mat-stroked-button>
           <mat-icon>undo</mat-icon>
