@@ -66,6 +66,7 @@ import { TokengroupService, TokengroupServiceInterface } from "../../../services
 import { CaConnectorService, CaConnectorServiceInterface } from "../../../services/ca-connector/ca-connector.service";
 import { ServiceIdService, ServiceIdServiceInterface } from "../../../services/service-id/service-id.service";
 import { EventService, EventServiceInterface } from "../../../services/event/event.service";
+import { SystemService, SystemServiceInterface } from "../../../services/system/system.service";
 
 @Component({
   selector: "app-navigation",
@@ -121,6 +122,7 @@ export class NavigationComponent {
   private readonly serviceIdService: ServiceIdServiceInterface = inject(ServiceIdService);
   protected readonly periodicTaskService = inject(PeriodicTaskService);
   protected readonly eventService: EventServiceInterface = inject(EventService);
+  protected readonly systemService: SystemServiceInterface = inject(SystemService);
   protected readonly router: Router = inject(Router);
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
 
@@ -183,6 +185,9 @@ export class NavigationComponent {
       case ROUTE_PATHS.CONFIGURATION_PERIODIC_TASKS:
         this.periodicTaskService.periodicTasksResource.reload();
         break;
+      case ROUTE_PATHS.CONFIGURATION_SYSTEM:
+        this.systemService.systemConfigResource.reload();
+        break;
       case ROUTE_PATHS.USERS_RESOLVERS:
         this.resolverService.resolversResource.reload();
         break;
@@ -209,6 +214,9 @@ export class NavigationComponent {
         break;
       case ROUTE_PATHS.EVENTS:
         this.eventService.allEventsResource.reload();
+        break;
+      case ROUTE_PATHS.CONFIGURATION_TOKENTYPES:
+        this.systemService.systemConfigResource.reload();
         break;
     }
   }

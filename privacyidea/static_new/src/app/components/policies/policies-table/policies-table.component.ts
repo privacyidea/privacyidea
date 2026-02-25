@@ -222,7 +222,7 @@ export class PoliciesTableComponent {
         .afterClosed()
     );
     if (result) {
-      this.policyService.savePolicyEdits({ ...policy, ...result }, originalPolicyName);
+      this.policyService.savePolicyEdits(originalPolicyName, { ...policy, ...result });
     }
   }
 

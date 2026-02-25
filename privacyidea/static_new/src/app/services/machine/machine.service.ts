@@ -93,7 +93,8 @@ export interface MachineServiceInterface {
     resolver: string,
     serial: string,
     application: string,
-    mtid: string
+    mtid: string,
+    options: Record<string, any>
   ): Observable<any>;
 
   getAuthItem(challenge: string, hostname: string, application?: string): Observable<any>;
@@ -116,7 +117,9 @@ export interface MachineServiceInterface {
 
   deleteToken(serial: string, machineid: string, resolver: string, application: string): Observable<any>;
 
-  deleteTokenMtid(serial: string, application: string, mtid: string): Observable<any>;
+  deleteTokenById(serial: string, application: string, mtid: string): Observable<any>;
+
+  getMachineTokens(args: { machineid: number; resolver: string }): Observable<PiResponse<TokenApplications>>;
 
   onPageEvent(event: PageEvent): void;
 
@@ -212,7 +215,10 @@ export class MachineService implements MachineServiceInterface {
       return undefined;
     }
     // Only load machines on the token applications or token details routes.
-    const onAllowedRoute = this.contentService.onTokensApplications() || this.contentService.onTokenDetails();
+    const onAllowedRoute =
+      this.contentService.onTokensApplications() ||
+      this.contentService.onTokenDetails() ||
+      this.contentService.onConfigurationMachines();
 
     if (!onAllowedRoute) {
       return undefined;
@@ -304,12 +310,12 @@ export class MachineService implements MachineServiceInterface {
     resolver: string,
     serial: string,
     application: string,
-    mtid: string
+    mtid: string,
+    options: Record<string, any>
   ): Observable<any> {
     const headers = this.authService.getHeaders();
-    return this.http
-      .post(`${this.baseUrl}tokenoption`, { hostname, machineid, resolver, serial, application, mtid }, { headers })
-      .pipe(shareReplay(1));
+    const body = { hostname, machineid, resolver, serial, application, mtid, ...options } as any;
+    return this.http.post(`${this.baseUrl}tokenoption`, body, { headers }).pipe(shareReplay(1));
   }
 
   getAuthItem(challenge: string, hostname: string, application?: string): Observable<any> {
@@ -366,9 +372,20 @@ export class MachineService implements MachineServiceInterface {
       .pipe(shareReplay(1));
   }
 
-  deleteTokenMtid(serial: string, application: string, mtid: string): Observable<any> {
+  deleteTokenById(serial: string, application: string, id: string): Observable<any> {
     const headers = this.authService.getHeaders();
-    return this.http.delete(`${this.baseUrl}token/${serial}/${application}/${mtid}`, { headers }).pipe(shareReplay(1));
+    return this.http.delete(`${this.baseUrl}token/${serial}/${application}/${id}`, { headers }).pipe(shareReplay(1));
+  }
+
+  getMachineTokens(args: { machineid: number; resolver: string }): Observable<PiResponse<TokenApplications>> {
+    const headers = this.authService.getHeaders();
+    const params = new HttpParams().set("machineid", args.machineid).set("resolver", args.resolver);
+    return this.http
+      .get<PiResponse<TokenApplications>>(`${this.baseUrl}token`, {
+        headers,
+        params
+      })
+      .pipe(shareReplay(1));
   }
 
   onPageEvent(event: PageEvent): void {

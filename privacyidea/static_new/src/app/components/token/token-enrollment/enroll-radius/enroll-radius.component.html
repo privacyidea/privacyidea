@@ -20,9 +20,8 @@
   <h4 class="enroll-h4">Token Configuration</h4>
   @if (!defaultRadiusServerIsSet() && authService.role() === "admin") {
     <span
-      i18n
       class="inline-hint"
-      >To ease the enrolling of RADIUS tokens you can set default values in the <a href="#">RADIUS Token Config</a>.
+      i18n>To ease the enrolling of RADIUS tokens you can set default values in the <a href="#">RADIUS Token Config</a>.
     </span>
   }
   <mat-checkbox
@@ -36,8 +35,8 @@
         <mat-label i18n>RADIUS server configuration</mat-label>
         <mat-hint i18n>
           Select a predefined
-          <a href="#">RADIUS server configuration</a>
-          . The RADIUS request will be forwarded to this RADIUS server.
+          <a href="#"><strong>RADIUS server configuration.</strong></a>
+          The RADIUS request will be forwarded to this RADIUS server.
         </mat-hint>
         <mat-select
           [formControl]="radiusServerConfigurationControl"

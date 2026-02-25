@@ -42,6 +42,14 @@
           placeholder="Example query: 'transaction_id: 00000000000000000001'" />
       </app-clearable-input>
     </mat-form-field>
+    <button
+      (click)="onDeleteExpiredChallenges()"
+      class="action-button-delete"
+      i18n
+      mat-stroked-button>
+      <mat-icon>delete_sweep</mat-icon>
+      Delete Expired
+    </button>
     <mat-paginator
       (page)="onPageEvent($event)"
       [length]="length()"

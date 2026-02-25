@@ -32,10 +32,11 @@ import { MatAutocompleteModule } from "@angular/material/autocomplete";
 import { MatButtonModule } from "@angular/material/button";
 import { MatInputModule } from "@angular/material/input";
 import { MatSelectModule } from "@angular/material/select";
-import { DialogServiceInterface, DialogService } from "../../../services/dialog/dialog.service";
+import { DialogService, DialogServiceInterface } from "../../../services/dialog/dialog.service";
 import { MachineResolverLdapTabComponent } from "../machine-resolver-ldap-tab/machine-resolver-ldap-tab.component";
 import { NotificationService, NotificationServiceInterface } from "../../../services/notification/notification.service";
 import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
+import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
 import { MachineResolverHostsTabComponent } from "../machine-resolver-hosts-tab/machine-resolver-hosts-tab.component";
 import { deepCopy } from "../../../utils/deep-copy.utils";
 import { SimpleConfirmationDialogComponent } from "../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
@@ -64,15 +65,12 @@ export class MachineResolverPanelEditComponent {
   readonly dialogService: DialogServiceInterface = inject(DialogService);
   readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   readonly authService: AuthServiceInterface = inject(AuthService);
+  readonly contentService: ContentServiceInterface = inject(ContentService);
 
   readonly machineResolverTypes = this.machineResolverService.allMachineResolverTypes;
   readonly machineResolvers = this.machineResolverService.machineResolvers();
-  readonly isEdited = computed(
-    () => JSON.stringify(this.currentMachineResolver()) !== JSON.stringify(this.originalMachineResolver())
-  );
   readonly dataValidatorSignal = signal<(data: MachineResolverData) => boolean>(() => true);
   readonly isEditMode = signal<boolean>(false);
-
   readonly originalMachineResolver = input.required<MachineResolver>();
   readonly editedMachineResolver: WritableSignal<MachineResolver> = linkedSignal({
     source: () => ({ originalMachineResolver: this.originalMachineResolver(), isEditMode: this.isEditMode() }),
@@ -81,13 +79,10 @@ export class MachineResolverPanelEditComponent {
   readonly currentMachineResolver = linkedSignal<MachineResolver>(() =>
     this.isEditMode() ? this.editedMachineResolver() : this.originalMachineResolver()
   );
-
-  onNewData(newData: MachineResolverData) {
-    this.editedMachineResolver.set({ ...this.currentMachineResolver(), data: newData });
-  }
-  onNewValidator(newValidator: (data: MachineResolverData) => boolean) {
-    this.dataValidatorSignal.set(newValidator);
-  }
+  readonly isEdited = computed(
+    () => JSON.stringify(this.currentMachineResolver()) !== JSON.stringify(this.originalMachineResolver())
+  );
+  readonly expanded = computed(() => this.contentService.machineResolver() === this.originalMachineResolver().resolvername);
   readonly canSaveMachineResolver = computed(() => {
     const current = this.currentMachineResolver();
     if (!current.resolvername.trim()) return false;
@@ -95,12 +90,20 @@ export class MachineResolverPanelEditComponent {
     return dataValidator(current.data);
   });
 
+  onNewData(newData: MachineResolverData) {
+    this.editedMachineResolver.set({ ...this.currentMachineResolver(), data: newData });
+  }
+
+  onNewValidator(newValidator: (data: MachineResolverData) => boolean) {
+    this.dataValidatorSignal.set(newValidator);
+  }
+
   onMachineResolverTypeChange(newType: string) {
     const current = this.currentMachineResolver();
     this.editedMachineResolver.set({
       ...current,
       type: newType,
-      data: { resolver: current.resolvername, type: newType } // Reset data to only have resolver field
+      data: { resolver: current.resolvername, type: newType }
     });
   }
 
@@ -109,7 +112,7 @@ export class MachineResolverPanelEditComponent {
     this.editedMachineResolver.set({
       ...current,
       resolvername: newName,
-      data: { ...current.data, resolver: newName } // Keep data.resolver in sync with name
+      data: { ...current.data, resolver: newName }
     });
   }
 
@@ -218,6 +221,9 @@ export class MachineResolverPanelEditComponent {
   }
 
   handleCollapse($panel: MatExpansionPanel) {
+    if (this.contentService.machineResolver() === this.originalMachineResolver().resolvername) {
+      this.contentService.machineResolver.set("");
+    }
     if (!this.isEdited()) {
       this.isEditMode.set(false);
       return;

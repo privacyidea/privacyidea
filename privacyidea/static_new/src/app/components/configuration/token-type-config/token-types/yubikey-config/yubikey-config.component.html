@@ -1,0 +1,102 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<mat-expansion-panel>
+  <mat-expansion-panel-header>
+    <mat-panel-title i18n>Yubikey Token Settings</mat-panel-title>
+  </mat-expansion-panel-header>
+  <div class="panel-content">
+    <p i18n>This is a Yubikey in the Yubico Mode authenticated against privacyIDEA. The Yubikey emits a 44 character on
+            time password.
+    </p>
+    <p i18n>The authentication request can be handled by the default privacyIDEA
+      <a
+        href="https://privacyidea.readthedocs.io/en/latest/modules/api/validate.html"
+        target="_blank">validate API
+      </a>
+            but can also be handled by the
+      <a
+        href="https://privacyidea.readthedocs.io/en/latest/modules/lib/tokentypes/yubikey.html#privacyidea.lib.tokens.yubikeytoken.YubikeyTokenClass.api_endpoint"
+        target="_blank">Yubico Validation Protocol.
+      </a>
+    </p>
+
+    <table class="table">
+      <thead>
+      <tr>
+        <th i18n>Client ID</th>
+        <th i18n>API Key</th>
+        <th></th>
+      </tr>
+      </thead>
+      <tbody>
+        @for (key of yubikeyApiIds(); track key) {
+          <tr>
+            <td>
+              {{ key }}
+              <mat-divider class="margin-top-4" />
+            </td>
+            <td>
+              {{ formData()[key] }}
+              <mat-divider class="margin-top-4" />
+            </td>
+            <td>
+              <button
+                (click)="deleteEntry(key)"
+                color="warn"
+                mat-icon-button>
+                <mat-icon>delete</mat-icon>
+              </button>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+  <div class="new-api-key-row">
+    <mat-form-field
+      appearance="fill"
+      class="width-33">
+      <mat-label i18n>Client ID</mat-label>
+      <input
+        (ngModelChange)="newYubikeyApiId.set($event)"
+        [ngModel]="newYubikeyApiId()"
+        matInput
+        placeholder="Client ID"
+        required>
+    </mat-form-field>
+    <mat-form-field
+      appearance="fill"
+      class="width-33">
+      <mat-label i18n>API Key</mat-label>
+      <input
+        (ngModelChange)="newYubikeyApiKey.set($event)"
+        [ngModel]="newYubikeyApiKey()"
+        matInput
+        placeholder="API Key"
+        required>
+    </mat-form-field>
+    <button
+      (click)="createNewKey()"
+      class="action-button-1 width-238 margin-bottom-1"
+      mat-stroked-button>
+      <mat-icon>add</mat-icon>
+      <span i18n>Create new API key</span>
+    </button>
+  </div>
+</mat-expansion-panel>

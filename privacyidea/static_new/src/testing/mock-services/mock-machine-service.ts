@@ -16,15 +16,24 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Signal, signal, WritableSignal } from "@angular/core";
-import { Sort } from "@angular/material/sort";
-import { of } from "rxjs";
 
+import { WritableSignal, signal } from "@angular/core";
+import { Sort } from "@angular/material/sort";
+import { Observable, of } from "rxjs";
+import { PiResponse } from "src/app/app.component";
 import { FilterValue } from "src/app/core/models/filter_value/filter_value";
-import { MachineServiceInterface, Machines, TokenApplication } from "../../app/services/machine/machine.service";
+import {
+  MachineServiceInterface,
+  TokenApplications,
+  Machines,
+  TokenApplication
+} from "src/app/services/machine/machine.service";
 import { MockHttpResourceRef, MockPiResponse } from "./mock-utils";
 
 export class MockMachineService implements MachineServiceInterface {
+  getMachineTokens(args: { machineid: number; resolver: string }): Observable<PiResponse<TokenApplications>> {
+    throw new Error("Method not implemented.");
+  }
   baseUrl: string = "environment.mockProxyUrl + '/machine/'";
   filterValue: WritableSignal<Record<string, string>> = signal({});
   sshApiFilter: string[] = [];
@@ -68,29 +77,27 @@ export class MockMachineService implements MachineServiceInterface {
   postTokenOption = jest.fn().mockReturnValue(of({} as any));
   getAuthItem = jest.fn().mockReturnValue(of({ result: { value: { serial: "", machineid: "", resolver: "" } } }));
   postToken = jest.fn().mockReturnValue(of({} as any));
-  getMachine = jest
-    .fn()
-    .mockReturnValue(
-      of({
-        result: {
-          value: {
-            machines: [
-              {
-                hostname: "localhost",
-                machineid: "machine1",
-                resolver: "resolver1",
-                serial: "serial1",
-                type: "ssh",
-                applications: []
-              }
-            ],
-            count: 1
-          }
+  getMachine = jest.fn().mockReturnValue(
+    of({
+      result: {
+        value: {
+          machines: [
+            {
+              hostname: "localhost",
+              machineid: "machine1",
+              resolver: "resolver1",
+              serial: "serial1",
+              type: "ssh",
+              applications: []
+            }
+          ],
+          count: 1
         }
-      })
-    );
+      }
+    })
+  );
   deleteToken = jest.fn().mockReturnValue(of({} as any));
-  deleteTokenMtid = jest.fn().mockReturnValue(of({} as any));
+  deleteTokenById = jest.fn().mockReturnValue(of({} as any));
   onPageEvent = jest.fn();
   onSortEvent = jest.fn();
 }

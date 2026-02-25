@@ -34,15 +34,26 @@ log = logging.getLogger(__name__)
 TIMEOUT = 10
 
 
-class CONTENT_TYPE(object):
+class ContentType:
     """
-    Allowed type off content
+    Allowed content types sent as the HTTP Content-Type header.
     """
-    JSON = "json"
-    URLENCODED = "urlencoded"
+    JSON = "application/json"
+    URLENCODED = "application/x-www-form-urlencoded"
 
 
-class ACTION_TYPE(object):
+# Maps legacy values stored in the database to the proper HTTP Content-Type header values.
+# Older entries may have stored "json" or "urlencoded" as shortcuts before the correct
+# MIME types were introduced. Both old and new values are accepted.
+DB_CONTENT_TYPE_MAP = {
+    "json": ContentType.JSON,
+    "urlencoded": ContentType.URLENCODED,
+    ContentType.JSON: ContentType.JSON,
+    ContentType.URLENCODED: ContentType.URLENCODED,
+}
+
+
+class ActionType:
     """
     Allowed actions
     """
@@ -75,7 +86,7 @@ class WebHookHandler(BaseEventHandler):
         :return: dict with actions
         """
         # The event handler has just one action. Maybe we can  hide action select for the clarity of the UI
-        actions = {ACTION_TYPE.POST_WEBHOOK: {
+        actions = {ActionType.POST_WEBHOOK: {
             "URL": {
                 "type": "str",
                 "required": True,
@@ -84,10 +95,11 @@ class WebHookHandler(BaseEventHandler):
             "content_type": {
                 "type": "str",
                 "required": True,
-                "description": _("The encoding that is sent to the WebHook, for example json"),
+                "description": _("The MIME type (Content-Type) used for the WebHook payload, for example "
+                                 "application/json or application/x-www-form-urlencoded"),
                 "value": [
-                    CONTENT_TYPE.JSON,
-                    CONTENT_TYPE.URLENCODED]
+                    ContentType.JSON,
+                    ContentType.URLENCODED]
             },
             "replace": {
                 "type": "bool",
@@ -121,7 +133,8 @@ class WebHookHandler(BaseEventHandler):
         handler_options = handler_def.get("options")
         webhook_url = handler_options.get("URL")
         webhook_text = handler_options.get("data")
-        content_type = handler_options.get("content_type")
+        # Map the database entries, which might contain the older values, to the actual content type value
+        content_type = DB_CONTENT_TYPE_MAP.get(handler_options.get("content_type"))
         replace = handler_options.get("replace")
 
         user = request.User if hasattr(request, 'User') else None
@@ -152,7 +165,7 @@ class WebHookHandler(BaseEventHandler):
                     "user_realm": user_realm,
                     "token_serial": token_serial
                 }
-                if content_type == CONTENT_TYPE.JSON:
+                if content_type == ContentType.JSON:
                     def replace_recursive(val):
                         for k, v in val.items():
                             k = k.format(**attributes)
@@ -172,8 +185,8 @@ class WebHookHandler(BaseEventHandler):
                 log.warning(f"Unable to parse JSON string '{webhook_text}': {err}")
 
         # Send the request
-        if action.lower() == ACTION_TYPE.POST_WEBHOOK:
-            if content_type in [CONTENT_TYPE.JSON, CONTENT_TYPE.URLENCODED]:
+        if action.lower() == ActionType.POST_WEBHOOK:
+            if content_type in (ContentType.JSON, ContentType.URLENCODED):
                 try:
                     log.info(f"A webhook is called at '{webhook_url}' with data: '{webhook_text}'")
                     response = requests.post(webhook_url, data=webhook_text,
@@ -185,7 +198,7 @@ class WebHookHandler(BaseEventHandler):
                     log.warning(err)
                     ret = False
             else:
-                log.warning(f'Unknown content type value: {content_type}')
+                log.warning(f'Unknown content type value: {handler_options.get("content_type")}')
                 ret = False
         else:
             log.warning(f'Unknown action value: {action}')
