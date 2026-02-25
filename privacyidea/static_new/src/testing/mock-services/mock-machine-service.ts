@@ -20,15 +20,15 @@
 import { WritableSignal, signal } from "@angular/core";
 import { Sort } from "@angular/material/sort";
 import { Observable, of } from "rxjs";
-import { PiResponse } from "src/app/app.component";
-import { FilterValue } from "src/app/core/models/filter_value/filter_value";
 import {
   MachineServiceInterface,
-  TokenApplications,
   Machines,
-  TokenApplication
-} from "src/app/services/machine/machine.service";
+  TokenApplication,
+  TokenApplications
+} from "../../app/services/machine/machine.service";
 import { MockHttpResourceRef, MockPiResponse } from "./mock-utils";
+import { PiResponse } from "../../app/app.component";
+import { FilterValue } from "src/app/core/models/filter_value/filter_value";
 
 export class MockMachineService implements MachineServiceInterface {
   getMachineTokens(args: { machineid: number; resolver: string }): Observable<PiResponse<TokenApplications>> {
