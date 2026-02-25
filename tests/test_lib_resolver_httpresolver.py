@@ -1845,7 +1845,7 @@ class EntraIDResolverTestCase(MyTestCase):
         with mock.patch("logging.Logger.debug") as mock_log:
             search_params = resolver._get_search_params(search_dict)
             self.assertIn("$filter", search_params)
-            correct_query = "(startswith(userPrincipalName, 'test') or endswith(userPrincipalName, 'test')) and id eq '1234' and (startswith(mail, 'test') or endswith(mail, 'test'))"
+            correct_query = "(startswith(userPrincipalName, 'test') or endswith(userPrincipalName, 'test')) and (id eq '1234') and (startswith(mail, 'test') or endswith(mail, 'test'))"
             self.assertEqual(correct_query, search_params["$filter"])
             mock_log.assert_called_with("Search parameter 'favorite_color' not found in attribute mapping. Search "
                                         "without this parameter.")
@@ -1854,14 +1854,22 @@ class EntraIDResolverTestCase(MyTestCase):
         resolver.config[CONFIG_GET_USER_LIST][HEADERS] = ""
         search_params = resolver._get_search_params(search_dict)
         self.assertIn("$filter", search_params)
-        correct_query = "startswith(userPrincipalName, 'test') and id eq '1234' and startswith(mail, 'test')"
+        correct_query = "startswith(userPrincipalName, 'test') and (id eq '1234') and startswith(mail, 'test')"
         self.assertEqual(correct_query, search_params["$filter"])
 
         # Invalid Header also results in simple queries
         resolver.config[CONFIG_GET_USER_LIST][HEADERS] = "{'ConsistencyLevel': 'eventual'}"
         search_params = resolver._get_search_params(search_dict)
         self.assertIn("$filter", search_params)
-        correct_query = "startswith(userPrincipalName, 'test') and id eq '1234' and startswith(mail, 'test')"
+        correct_query = "startswith(userPrincipalName, 'test') and (id eq '1234') and startswith(mail, 'test')"
+        self.assertEqual(correct_query, search_params["$filter"])
+
+        # single quotes are escaped
+        resolver.config[CONFIG_GET_USER_LIST][HEADERS] = ""
+        search_dict = {"username": "D' test"}
+        search_params = resolver._get_search_params(search_dict)
+        self.assertIn("$filter", search_params)
+        correct_query = "(userPrincipalName eq 'D'' test')"
         self.assertEqual(correct_query, search_params["$filter"])
 
     def test_15_get_config(self):

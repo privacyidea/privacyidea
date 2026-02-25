@@ -250,6 +250,14 @@ class EntraIDResolver(HTTPResolver):
         header = {"Authorization": f"Bearer {access_token}"}
         return header
 
+    @staticmethod
+    def _escape_filter_values(filter_value: str) -> str:
+        """
+        Escape single quotes according to the OData specification.
+        """
+        escaped_filter = filter_value.replace("'", "''")
+        return escaped_filter
+
     def _get_search_params(self, search_dict: dict, allow_endswith: bool = True) -> dict:
         """
         Returns a dictionary containing the search parameters in the format expected by the user store API.
@@ -273,10 +281,11 @@ class EntraIDResolver(HTTPResolver):
                 log.debug(f"Search parameter '{key}' not found in attribute mapping. Search without this parameter.")
                 continue
 
-            if value == "*":
+            escaped_value = self._escape_filter_values(value)
+            if escaped_value == "*":
                 # If the value is "*", we do not filter by this attribute
                 continue
-            elif "*" in value:
+            elif "*" in escaped_value:
                 # Advanced query capabilities (endswith) can only be used if the Consistency Header is set
                 # If it is not configured we use basic queries (only startswith)
                 user_list_config = self.config.get(CONFIG_GET_USER_LIST, {})
@@ -289,14 +298,14 @@ class EntraIDResolver(HTTPResolver):
 
                 # EntraID does not support advanced wildcard searches. We can only filter for attributes
                 # that start (or end) with the given value.
-                value = value.replace("*", self.wildcard)
+                escaped_value = value.replace("*", self.wildcard)
                 if advanced_query:
                     filter_values.append(
-                        f"(startswith({entra_key}, '{value}') or endswith({entra_key}, '{value}'))")
+                        f"(startswith({entra_key}, '{escaped_value}') or endswith({entra_key}, '{escaped_value}'))")
                 else:
-                    filter_values.append(f"startswith({entra_key}, '{value}')")
+                    filter_values.append(f"startswith({entra_key}, '{escaped_value}')")
             else:
-                filter_values.append(f"{entra_key} eq '{value.replace('*', self.wildcard)}'")
+                filter_values.append(f"({entra_key} eq '{escaped_value}')")
 
         if filter_values:
             request_parameters["$filter"] = " and ".join(filter_values)

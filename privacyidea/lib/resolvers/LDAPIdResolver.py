@@ -426,6 +426,33 @@ class IdResolver(UserIdResolver):
             "(", "\\28").replace(")", "\\29").replace("/", "\\2f")
 
     @staticmethod
+    def _escape_filter_value(filter_value: str or bytes, allow_wildcards=False):
+        """
+        Escape characters for a string to be added in a search filter to avoid injections.
+        According to RFC4515 \, *, (, ) and NUL (0x00) are escaped with a backslash.
+
+        :param filter_value: The value to be escaped
+        :param allow_wildcards: If set to True, the asterisk character is not escaped, so that it can be used as a
+            wildcard in the filter.
+        :return: The escaped filter value
+        """
+        if isinstance(filter_value, str):
+            escaped_filter = (filter_value.replace("\\", "\\5c")
+                              .replace("(", "\\28")
+                              .replace(")", "\\29")
+                              .replace('\x00', '\\00'))
+            if not allow_wildcards:
+                escaped_filter = escaped_filter.replace("*", "\\2a")
+        elif isinstance(filter_value, bytes):
+            escaped_filter = to_unicode(escape_bytes(filter_value))
+        else:
+            log.debug(
+                "Filter value can not be escaped due to unexpected type %s. Returning the filter value unescaped.",
+                type(filter_value))
+            escaped_filter = filter_value
+        return escaped_filter
+
+    @staticmethod
     def _get_uid(entry, uidtype):
         if uidtype.lower() == "dn":
             uid = entry.get("dn")
@@ -784,7 +811,8 @@ class IdResolver(UserIdResolver):
             if isinstance(search_dict[search_key], str) and not search_dict[search_key].strip("*"):
                 # skip empty and wildcard only search values
                 continue
-            search_dict[search_key] = to_unicode(search_dict[search_key])
+            search_dict[search_key] = self._escape_filter_value(to_unicode(search_dict[search_key]),
+                                                                allow_wildcards=True)
             if search_key == "accountExpires":
                 comparator = ">="
                 if search_dict[search_key] in ["1", 1]:
