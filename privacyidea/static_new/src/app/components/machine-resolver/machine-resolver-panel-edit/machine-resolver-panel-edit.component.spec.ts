@@ -35,6 +35,8 @@ import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { MockMatDialogRef } from "../../../../testing/mock-mat-dialog-ref";
 import { of } from "rxjs";
+import { ContentService } from "../../../services/content/content.service";
+import { MockContentService } from "../../../../testing/mock-services";
 
 @Component({
   standalone: true,
@@ -56,6 +58,7 @@ describe("MachineResolverPanelEditComponent", () => {
   let machineResolverServiceMock: MockMachineResolverService;
   let dialogServiceMock: MockDialogService;
   let notificationServiceMock: MockNotificationService;
+  let contentServiceMock: MockContentService;
 
   const machineResolver: HostsMachineResolver = {
     resolvername: "test",
@@ -75,7 +78,8 @@ describe("MachineResolverPanelEditComponent", () => {
         provideHttpClientTesting(),
         { provide: MachineResolverService, useClass: MockMachineResolverService },
         { provide: DialogService, useClass: MockDialogService },
-        { provide: NotificationService, useClass: MockNotificationService }
+        { provide: NotificationService, useClass: MockNotificationService },
+        { provide: ContentService, useClass: MockContentService }
       ]
     })
       .overrideComponent(MachineResolverPanelEditComponent, {
@@ -90,6 +94,7 @@ describe("MachineResolverPanelEditComponent", () => {
     machineResolverServiceMock = TestBed.inject(MachineResolverService) as unknown as MockMachineResolverService;
     dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
     notificationServiceMock = TestBed.inject(NotificationService) as unknown as MockNotificationService;
+    contentServiceMock = TestBed.inject(ContentService) as unknown as MockContentService;
 
     fixture.componentRef.setInput("originalMachineResolver", machineResolver);
     fixture.detectChanges();
@@ -258,10 +263,29 @@ describe("MachineResolverPanelEditComponent", () => {
     });
 
     it("when both data and resolvername are invalid", () => {
-      component.isEditMode.set(true);
       component.dataValidatorSignal.set(() => false);
       component.editedMachineResolver.set({ ...machineResolver, resolvername: " " }); // Should not be empty (trimmed)
       expect(component.canSaveMachineResolver()).toBeFalsy();
+    });
+  });
+
+  describe("expansion logic", () => {
+    it("should be expanded if contentService matches resolvername", () => {
+      contentServiceMock.machineResolver.set("test");
+      TestBed.flushEffects();
+      expect(component.expanded()).toBeTruthy();
+    });
+
+    it("should not be expanded if contentService does not match resolvername", () => {
+      contentServiceMock.machineResolver.set("other");
+      TestBed.flushEffects();
+      expect(component.expanded()).toBeFalsy();
+    });
+
+    it("should clear signal when collapsed", () => {
+      contentServiceMock.machineResolver.set("test");
+      component.handleCollapse({} as any);
+      expect(contentServiceMock.machineResolver()).toBe("");
     });
   });
 });

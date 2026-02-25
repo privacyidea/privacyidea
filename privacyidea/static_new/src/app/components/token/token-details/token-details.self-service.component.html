@@ -53,7 +53,7 @@
               @switch (element.keyMap.key) {
                 @case ("container_serial") {
                   @if (element.isEditing()) {
-                    <mat-form-field class="width-288px container-form-field">
+                    <mat-form-field class="width-288px">
                       <mat-label i18n>Enter Container</mat-label>
                       <app-clearable-input
                         (onClick)="containerService.selectedContainer.set(null)"

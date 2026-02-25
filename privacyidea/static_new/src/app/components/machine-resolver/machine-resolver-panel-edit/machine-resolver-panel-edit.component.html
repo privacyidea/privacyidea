@@ -21,6 +21,8 @@
     #panel
     class="margin-4"
     [disabled]="isEdited()"
+    [expanded]="expanded()"
+    (opened)="contentService.machineResolver.set(currentMachineResolver().resolvername)"
     (closed)="handleCollapse(panel)">
     <mat-expansion-panel-header class="mat-expansion-panel-header">
       <mat-panel-title>
