@@ -490,7 +490,10 @@ $button-low-contrast-variant: linear-gradient(
   @include action-button(
                   var(--red-base),
                   var(--mat-sys-surface-container-lowest),
-                  var(--red-light-active),
+                  var(--red-light),
+                  $ripple: var(--red-light-active),
+                  $ripple-mdc: var(--rose-bg),
+                  $layer: var(--rose-bg),
                   $border: false
   );
 }

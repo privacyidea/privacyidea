@@ -33,6 +33,7 @@
             mat-stroked-button
             (click)="onActionClick(action)"
             [class.action-button-primary]="action.type === 'confirm' || action.type === 'auxiliary' || !action.type"
+            [class.action-button-secondary]="action.type === 'cancel'"
             [class.action-button-delete-primary]="action.type === 'destruct'"
             [disabled]="action.disabled">
             @if (action.icon) {
