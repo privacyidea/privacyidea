@@ -150,6 +150,7 @@ def get_info_configuration(noschemas):
     """
     Given the value of the NOSCHEMAS config option, return the value that should
     be passed as ldap3's `get_info` argument.
+
     :param noschemas: a boolean
     :return: one of ldap3.SCHEMA or ldap3.NONE
     """

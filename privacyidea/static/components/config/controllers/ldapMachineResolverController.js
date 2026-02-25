@@ -35,14 +35,14 @@ myApp.controller("ldapMachineResolverController", ["$scope", "ConfigFactory",
         type: 'ldap',
         AUTHTYPE: "Simple",
         TLS_VERIFY: true,
-        TLS_VERSION: 2,
+        TLS_VERSION: "2",
         START_TLS: true
     };
     $scope.resolvername = $stateParams.resolvername;
-    $scope.tls_version_options = [{value: 3, name: "TLS v1.0"},
-        {value: 4, name: "TLS v1.1"},
-        {value: 5, name: "TLS v1.2"},
-        {value: 2, name: "TLS v1.3"}];
+    $scope.tls_version_options = [{value: "3", name: "TLS v1.0"},
+        {value: "4", name: "TLS v1.1"},
+        {value: "5", name: "TLS v1.2"},
+        {value: "2", name: "TLS v1.3"}];
 
     if ($scope.resolvername) {
         /* If we have a resolvername, we do an Edit,
@@ -60,7 +60,7 @@ myApp.controller("ldapMachineResolverController", ["$scope", "ConfigFactory",
     $scope.presetAD = function () {
         $scope.params.SEARCHFILTER = "(objectClass=computer)";
         //$scope.params.IDATTRIBUTE = "objectSid";
-        $scope.params.IDATTRIBUTE = "DN";
+        $scope.params.IDATTRIBUTE = "distinguishedName";
         $scope.params.IPATTRIBUTE = "";
         $scope.params.HOSTNAMEATTRIBUTE = "dNSHostName";
         $scope.params.NOREFERRALS = true;

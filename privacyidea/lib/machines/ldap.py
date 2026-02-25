@@ -21,7 +21,7 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 #
-__doc__ = """This contains the LdapMachineResolver which resolves
+"""This contains the LdapMachineResolver which resolves
 the machines in an Active Directory.
 
 The computer objects are identified by
@@ -41,7 +41,9 @@ import traceback
 import logging
 
 import ldap3
+from ldap3.utils.conv import escape_filter_chars
 
+from privacyidea.api.lib.utils import get_required
 from .base import Machine
 from .base import BaseMachineResolver
 from .base import MachineResolverError
@@ -100,6 +102,14 @@ class LdapMachineResolver(BaseMachineResolver):
                             id_attribute, machine_id,
                             hostname_attribute, hostname,
                             ip_attribute, ip, substring=False, any=False):
+        # Escape all special characters of user-defined input in the filter
+        if machine_id:
+            machine_id = escape_filter_chars(machine_id)
+        if hostname:
+            hostname = escape_filter_chars(hostname)
+        if ip:
+            ip = escape_filter_chars(ip)
+
         ldap_filter = "(&" + search_filter
 
         if not any:
@@ -114,10 +124,12 @@ class LdapMachineResolver(BaseMachineResolver):
                 else:
                     ldap_filter += "({0!s}={1!s})".format(hostname_attribute, hostname)
             if ip:
-                if substring:
-                    ldap_filter += "({0!s}=*{1!s}*)".format(ip_attribute, ip)
-                else:
-                    ldap_filter += "({0!s}={1!s})".format(ip_attribute, ip)
+                # Only add filter if we have an ip attribute set in the resolver
+                if ip_attribute:
+                    if substring:
+                        ldap_filter += "({0!s}=*{1!s}*)".format(ip_attribute, ip)
+                    else:
+                        ldap_filter += "({0!s}={1!s})".format(ip_attribute, ip)
         ldap_filter += ")"
         if any:
             # Now we need to extend the search filter
@@ -136,7 +148,7 @@ class LdapMachineResolver(BaseMachineResolver):
         return ldap_filter
 
     def get_machines(self, machine_id=None, hostname=None, ip=None, any=None,
-                     substring=False):
+                     substring=False) -> list[Machine]:
         """
         Return matching machines.
 
@@ -156,6 +168,12 @@ class LdapMachineResolver(BaseMachineResolver):
             attributes.append(self.id_attribute)
         if self.ip_attribute:
             attributes.append(self.ip_attribute)
+        else:
+            # No IP attribute configured, the search returns an empty list
+            if ip:
+                log.warning("IP attribute is not set in LDAP resolver {0!s}! "
+                            "Can not perform search for an IP!".format(self.name))
+                return []
         if self.hostname_attribute:
             attributes.append(self.hostname_attribute)
 
@@ -166,25 +184,25 @@ class LdapMachineResolver(BaseMachineResolver):
                                                self.ip_attribute, ip,
                                                substring, any)
 
-        if self.id_attribute.lower() == "dn" and machine_id:
-            self.connection.search(search_base=machine_id,
-                                   search_scope=ldap3.BASE,
-                                   search_filter=ldap_filter,
-                                   attributes=attributes,
-                                   paged_size=self.sizelimit)
-        else:
-            self.connection.search(search_base=self.basedn,
-                                   search_scope=ldap3.SUBTREE,
-                                   search_filter=ldap_filter,
-                                   attributes=attributes,
-                                   paged_size=self.sizelimit)
+        try:
+            if self.id_attribute.lower() == "dn" and machine_id:
+                self.connection.search(search_base=escape_filter_chars(machine_id),
+                                       search_scope=ldap3.BASE,
+                                       search_filter=ldap_filter,
+                                       attributes=attributes,
+                                       paged_size=self.sizelimit)
+            else:
+                self.connection.search(search_base=self.basedn,
+                                       search_scope=ldap3.SUBTREE,
+                                       search_filter=ldap_filter,
+                                       attributes=attributes,
+                                       paged_size=self.sizelimit)
 
-        # returns a list of dictionaries
-        for entry in self.connection.response:
-            dn = entry.get("dn")
-            attributes = entry.get("attributes")
+            # returns a list of Machine objects
+            for entry in self.connection.response:
+                dn = entry.get("dn")
+                attributes = entry.get("attributes")
 
-            try:
                 if entry.get("type") == "searchResEntry":
                     machine = {}
 
@@ -203,9 +221,9 @@ class LdapMachineResolver(BaseMachineResolver):
                                             machine['machineid'],
                                             hostname=machine['hostname'],
                                             ip=machine['ip']))
-            except Exception as exx:  # pragma: no cover
-                log.error("Error during fetching LDAP objects: {0!r}".format(exx))
-                log.debug("{0!s}".format(traceback.format_exc()))
+        except Exception as exx:  # pragma: no cover
+            log.error("Error during fetching LDAP objects: {0!r}".format(exx))
+            log.debug("{0!s}".format(traceback.format_exc()))
 
         return machines
 
@@ -310,6 +328,8 @@ class LdapMachineResolver(BaseMachineResolver):
         """
         success = False
         ldap_uri = params.get("LDAPURI")
+        uidtype = get_required(params, "IDATTRIBUTE")
+        hostname_attribute = get_required(params, "HOSTNAMEATTRIBUTE")
         timeout = int(params.get("TIMEOUT", 5))
         start_tls = is_true(params.get("START_TLS", False)) and not ldap_uri.lower().startswith("ldaps")
         tls_context = IdResolver.get_tls_context(ldap_uri=ldap_uri,
@@ -333,15 +353,20 @@ class LdapMachineResolver(BaseMachineResolver):
                           f"{conn.result.get('description')} ({conn.result.get('result')})!")
                 raise ResolverError(f"Unable to perform bind operation: "
                                     f"{conn.result.get('description')} ({conn.result.get('result')})!")
-            # search for users...
+            # search for machines...
+            attributes = [hostname_attribute]
+            if "IPATTRIBUTE" in params and params["IPATTRIBUTE"]:
+                attributes.append(params["IPATTRIBUTE"])
+            if uidtype.lower() != "dn":
+                attributes.append(str(uidtype))
             conn.search(search_base=params["LDAPBASE"],
                         search_scope=ldap3.SUBTREE,
                         search_filter="(&" + params["SEARCHFILTER"] + ")",
-                        attributes=[params["HOSTNAMEATTRIBUTE"]],
+                        attributes=attributes,
                         size_limit=int(params.get("SIZELIMIT", 500)))
             elapsed_time = conn.usage.elapsed_time.total_seconds()
-            count = len([x for x in conn.response if x.get("type") ==
-                         "searchResEntry"])
+            count = len([x for x in conn.response if (x.get("type") == "searchResEntry" and
+                                                      uidtype in x['attributes'])])
             message = _("Your LDAP machine resolver configuration seems to be OK, "
                         "{0!s} machine objects found in {1:.4f}s.").format(count, elapsed_time)
             conn.unbind()

@@ -54,8 +54,8 @@ def list_machines_api():
     :param resolver: filter for substring matching resolvers
     :param any: filter for a substring either matching in "hostname", "ip"
         or "id"
-    
-    :return: json result with "result": true and the machine list in "value".
+
+    :return: json result with "status": true and the machine list in "value".
 
     **Example request**:
 
