@@ -267,7 +267,7 @@ export class TokenDetailsActionsComponent {
     });
   }
 
-  protected readonly rolloverTokenTypes = computed(() =>
+  readonly rolloverTokenTypes = computed(() =>
     tokenTypes.filter(t => t.rollover === true).map(t => t.key)
   );
 }
