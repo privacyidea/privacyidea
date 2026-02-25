@@ -159,17 +159,16 @@
       </div>
       @if (isNew() || isEditingPolicy(policy()!.name) || policyService.selectedPolicyHasConditions()) {
         <div class="tab-buttons">
+          <!-- TODO use button toggle here -->
           <button
             mat-stroked-button
             class="button-hover"
-            [class.action-button-active]="activeTab() === 'actions'"
             (click)="setActiveTab('actions')">
             ACTIONS
           </button>
           <button
             mat-stroked-button
             class="button-hover"
-            [class.action-button-active]="activeTab() === 'conditions'"
             (click)="setActiveTab('conditions')">
             CONDITIONS
           </button>

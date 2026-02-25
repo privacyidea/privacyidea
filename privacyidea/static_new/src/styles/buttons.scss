@@ -425,9 +425,9 @@ $button-low-contrast-variant: linear-gradient(
   width: 24px;
 }
 
-.mat-mdc-outlined-button[class*="action-button-delete"] {
+.mat-mdc-outlined-button[class*="action-button-delete-secondary"] {
   --mat-outlined-button-state-layer-color: var(--rose-bg);
-  --mat-outlined-button-ripple-color: var(--rose-bg);
+  --mat-outlined-button-ripple-color: var(--rose-ripple);
   --mdc-ripple-color: var(--rose-bg);
 }
 
@@ -470,31 +470,21 @@ $button-low-contrast-variant: linear-gradient(
   }
 }
 
-.action-button-delete {
+.action-button-delete-primary {
+  @extend %action-button-base;
+  background-color: var(--red-base);
+
+  &:not([disabled]) {
+    @include action-button-variant(var(--mat-sys-surface-container-lowest), var(--red-light-active));
+  }
+}
+
+.action-button-delete-secondary {
   @extend %action-button-base;
   background-color: var(--mat-sys-surface-container-lowest);
 
   &:not([disabled]) {
     @include action-button-variant(var(--red-base), var(--rose-bg));
-  }
-}
-
-.action-button-cancel {
-  @extend %action-button-base;
-  background-color: var(--mat-sys-surface-container-lowest);
-
-  &:not([disabled]) {
-    @include action-button-variant(var(--grey-base), var(--grey-light));
-  }
-}
-
-.action-button-active {
-  @extend %action-button-base;
-  background-color: var(--mat-sys-primary-base-active);
-  color: var(--mat-sys-on-primary);
-
-  &:not([disabled]) {
-    @include action-button-variant(var(--mat-sys-on-primary), var(--mat-sys-primary));
   }
 }
 
