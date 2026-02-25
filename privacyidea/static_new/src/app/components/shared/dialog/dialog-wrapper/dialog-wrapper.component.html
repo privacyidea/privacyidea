@@ -16,9 +16,10 @@
     <div class="pi-dialog-footer">
       @if (showCancelButton()) {
         <button
+          [attr.cdkFocusInitial]="cancelButtonPrimary() || null"
           class="action-button-secondary width-s"
-          mat-stroked-button
-          mat-dialog-close>
+          mat-dialog-close
+          mat-stroked-button>
           @if (cancelButtonLabel()) {
             {{ cancelButtonLabel() }}
           } @else {
@@ -29,13 +30,18 @@
       @for (action of actions(); track $index) {
         @if (!action.hidden) {
           <button
-            class="width-s"
-            mat-stroked-button
             (click)="onActionClick(action)"
-            [class.action-button-primary]="action.type === 'confirm' || action.type === 'auxiliary' || !action.type"
-            [class.action-button-secondary]="action.type === 'cancel'"
-            [class.action-button-delete-primary]="action.type === 'destruct'"
-            [disabled]="action.disabled">
+            [attr.cdkFocusInitial]="action.primary || null"
+            [class.action-button-delete-secondary]="action.type === 'destruct' && !action.primary"
+            [class.action-button-delete-primary]="action.type === 'destruct' && action.primary"
+            [class.action-button-primary]="(action.primary ||
+            action.type === 'confirm' ||
+            action.type === 'auxiliary' ||
+            !action.type) && action.type !== 'destruct'"
+            [class.action-button-secondary]="action.type === 'cancel' && !action.primary"
+            [disabled]="action.disabled"
+            class="width-s"
+            mat-stroked-button>
             @if (action.icon) {
               <mat-icon>{{ action.icon }}</mat-icon>
             }

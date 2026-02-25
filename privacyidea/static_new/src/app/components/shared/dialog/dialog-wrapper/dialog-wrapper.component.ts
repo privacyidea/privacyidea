@@ -24,12 +24,13 @@ import { CommonModule } from "@angular/common";
 import { MatDialogClose, MatDialogModule } from "@angular/material/dialog";
 import { MatIcon, MatIconModule } from "@angular/material/icon";
 import { MatButton } from "@angular/material/button";
+import { A11yModule } from "@angular/cdk/a11y";
 
 @Component({
   selector: "app-dialog-wrapper",
   templateUrl: "./dialog-wrapper.component.html",
   standalone: true,
-  imports: [CommonModule, MatDialogModule, MatIconModule, MatButton, MatDialogClose, MatIcon],
+  imports: [CommonModule, MatDialogModule, MatIconModule, MatButton, MatDialogClose, MatIcon, A11yModule],
   styleUrls: ["./dialog-wrapper.component.scss"]
 })
 export class DialogWrapperComponent<R = any> {
@@ -37,6 +38,7 @@ export class DialogWrapperComponent<R = any> {
   icon = input<string>();
   showCancelButton = input<boolean>(false);
   cancelButtonLabel = input<string>("Cancel");
+  cancelButtonPrimary = input<boolean>(false);
   actions = input<DialogAction<R>[]>([]);
   onAction = output<R>();
   close = output<void>();
