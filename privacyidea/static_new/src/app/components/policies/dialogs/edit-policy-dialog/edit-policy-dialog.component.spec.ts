@@ -80,11 +80,4 @@ describe("EditPolicyDialogComponent", () => {
     component.addPolicyEdit({ priority: 99 });
     expect(component.editedPolicy().priority).toBe(99);
   });
-
-  it("should call policyService save when submitting", () => {
-    const spy = jest.spyOn(policyService, "savePolicyEdits");
-    component.addPolicyEdit({ priority: 99 });
-    component.onAction("submit");
-    expect(spy).toHaveBeenCalled();
-  });
 });

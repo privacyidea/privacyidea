@@ -195,7 +195,7 @@ export interface PolicyServiceInterface {
   policyHasActions(policy: PolicyDetail): boolean;
   isPolicyEdited(editedPolicy: PolicyDetail, originalPolicy: PolicyDetail): boolean;
   togglePolicyActive(policy: PolicyDetail): void;
-  savePolicyEdits(updatedPolicy: PolicyDetail, policyName: string): void;
+  savePolicyEdits(originalPolicyName: string, updatedPolicy: PolicyDetail): void;
   allPoliciesRecource: HttpResourceRef<PiResponse<PolicyDetail[], unknown> | undefined>;
 }
 
@@ -615,7 +615,7 @@ export class PolicyService implements PolicyServiceInterface {
     }
     return false;
   }
-  async savePolicyEdits(updatedPolicy: PolicyDetail, originalPolicyName: string): Promise<void> {
+  async savePolicyEdits(originalPolicyName: string, updatedPolicy: PolicyDetail): Promise<void> {
     console.log("Saving policy edits for", originalPolicyName, "with updates", updatedPolicy);
     let lastStableState = [...this.allPolicies()];
     const headers = this.authService.getHeaders();

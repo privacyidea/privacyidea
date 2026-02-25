@@ -89,13 +89,20 @@ describe("PolicyService", () => {
   });
   describe("HTTP Actions & Signals", () => {
     it("should send a POST request when saving policy edits (optimistic update)", () => {
+      const policyName = "test-policy";
       const policy = service.getEmptyPolicy();
-      policy.name = "test-policy";
+      policy.name = policyName;
+
       service.allPolicies.set([policy]);
-      service.savePolicyEdits("test-policy", { description: "updated" });
-      const req = httpTestingController.expectOne(`${service.policyBaseUrl}test-policy`);
+
+      const changes = { description: "updated description" };
+      service.savePolicyEdits(policyName, { ...policy, ...changes });
+
+      const req = httpTestingController.expectOne(`${service.policyBaseUrl}${policyName}`);
+
       expect(req.request.method).toBe("POST");
-      expect(req.request.body.description).toBe("updated");
+      expect(req.request.body).toMatchObject(changes);
+
       req.flush(MockPiResponse.fromValue({}));
     });
     it("should toggle policy active state optimistically", () => {
