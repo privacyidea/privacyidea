@@ -94,8 +94,8 @@
         (click)="toggleActive()"
         [disabled]="tokenIsRevoked()"
         [ngClass]="[tokenIsActive()
-                      ? 'action-button-delete width-l'
-                      : 'action-button-1 width-l'
+                      ? 'action-button-delete-primary width-l'
+                      : 'action-button-primary width-l'
                 ]"
         i18n
         mat-stroked-button>

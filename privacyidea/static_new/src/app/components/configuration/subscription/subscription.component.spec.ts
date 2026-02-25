@@ -167,7 +167,7 @@ describe("SubscriptionComponent", () => {
     subscriptionService.subscriptionsResource.set(MockPiResponse.fromValue(mockSubscriptions));
     fixture.detectChanges();
 
-    const deleteBtn = fixture.debugElement.query(By.css(".action-button-delete"));
+    const deleteBtn = fixture.debugElement.query(By.css(".action-button-delete-secondary"));
     expect(deleteBtn).toBeFalsy();
   });
 
@@ -176,7 +176,7 @@ describe("SubscriptionComponent", () => {
     subscriptionService.subscriptionsResource.set(MockPiResponse.fromValue(mockSubscriptions));
     fixture.detectChanges();
 
-    const deleteBtn = fixture.debugElement.query(By.css(".action-button-delete"));
+    const deleteBtn = fixture.debugElement.query(By.css(".action-button-delete-secondary"));
     expect(deleteBtn).toBeTruthy();
   });
 });

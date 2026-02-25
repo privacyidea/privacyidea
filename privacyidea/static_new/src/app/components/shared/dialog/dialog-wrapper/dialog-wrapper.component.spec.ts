@@ -50,7 +50,7 @@ describe("DialogWrapperComponent", () => {
   });
 
   it("should display the title", () => {
-    const titleEl = nativeElement.querySelector("h2");
+    const titleEl = nativeElement.querySelector("h3");
     expect(titleEl?.textContent).toContain("Test Title");
   });
 
@@ -88,10 +88,10 @@ describe("DialogWrapperComponent", () => {
   });
   it("should apply correct classes to action buttons", () => {
     const actionButtons = nativeElement.querySelectorAll(".pi-dialog-footer button");
-    expect(actionButtons[1].classList).toContain("action-button-1");
-    expect(actionButtons[2].classList).toContain("action-button-delete");
-    expect(actionButtons[3].classList).toContain("action-button-cancel");
-    expect(actionButtons[4].classList).toContain("action-button-1");
+    expect(actionButtons[1].classList).toContain("action-button-primary");
+    expect(actionButtons[2].classList).toContain("action-button-delete-primary");
+    expect(actionButtons[3].classList).toContain("action-button-secondary");
+    expect(actionButtons[4].classList).toContain("action-button-primary");
   });
   it("should emit onAction event with correct value when an action button is clicked", () => {
     jest.spyOn(component, "onActionClick");

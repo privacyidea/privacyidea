@@ -57,7 +57,7 @@ describe("MessageDialogComponent", () => {
   });
 
   it("should display the title and texts", () => {
-    const titleElement: HTMLElement = fixture.nativeElement.querySelector("h2");
+    const titleElement: HTMLElement = fixture.nativeElement.querySelector("h3");
     expect(titleElement.textContent).toContain("Test Title");
 
     const textElements: NodeListOf<HTMLDivElement> = fixture.nativeElement.querySelectorAll(".text-center div");
@@ -106,7 +106,7 @@ describe("MessageDialogComponent", () => {
     const localFixture = TestBed.createComponent(MessageDialogComponent);
     localFixture.detectChanges();
 
-    const titleElement: HTMLElement = localFixture.nativeElement.querySelector("h2");
+    const titleElement: HTMLElement = localFixture.nativeElement.querySelector("h3");
     expect(titleElement.textContent).toContain("Information");
   });
 
