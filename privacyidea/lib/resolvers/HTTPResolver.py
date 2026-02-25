@@ -854,7 +854,8 @@ class HTTPResolver(UserIdResolver):
             if self.config_get_user_groups.get(ACTIVE, False):
                 pi_user["groups"] = self.get_user_groups(user)
             elif attributes and "groups" in attributes:
-                log.debug("Groups are requested in the attributes but not active in the configuration. Returning empty list for groups.")
+                log.debug("Groups are requested in the attributes but not active in the configuration. "
+                          "Not including groups attribute.")
 
         if not attributes:
             attributes = self.attribute_mapping_pi_to_user_store.keys()

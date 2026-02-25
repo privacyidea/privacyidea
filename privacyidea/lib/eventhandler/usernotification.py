@@ -498,7 +498,7 @@ class UserNotificationEventHandler(BaseEventHandler):
                             user = User(logged_in_user.get("username"),
                                             logged_in_user.get("realm"))
                             if user:
-                                reply_to = user.get_specific_info(email).get(email) if user else ""
+                                reply_to = user.get_specific_info([email]).get(email) if user else ""
 
                     elif reply_to_type == NOTIFY_TYPE.EMAIL:
                         email = handler_options.get("reply_to " + NOTIFY_TYPE.EMAIL, "").split(",")
