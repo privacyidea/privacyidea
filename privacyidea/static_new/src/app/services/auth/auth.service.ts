@@ -54,7 +54,7 @@ export interface AuthData {
   dialog_no_token: boolean;
   search_on_enter: boolean;
   timeout_action: string;
-  token_rollover: Record<string, string[]>;
+  token_rollover?: Record<string, string[]>;
   hide_welcome: boolean;
   hide_buttons: boolean;
   deletion_confirmation: boolean;
