@@ -22,7 +22,6 @@ import { CopyPolicyDialogComponent } from "./copy-policy-dialog.component";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { Component, input, output } from "@angular/core";
-import { By } from "@angular/platform-browser";
 import { ReactiveFormsModule } from "@angular/forms";
 
 class MockMatDialogRef {
@@ -68,42 +67,62 @@ describe("CopyPolicyDialogComponent", () => {
     fixture.detectChanges();
   });
 
-  it("should create", () => {
-    expect(component).toBeTruthy();
+  describe("1. Validator Logic", () => {
+    it("should reject unchanged names with 'notChanged' error", () => {
+      component.nameControl.setValue(initialPolicyName);
+      expect(component.nameControl.hasError("notChanged")).toBe(true);
+      expect(component.nameControl.valid).toBe(false);
+    });
+
+    it("should be valid when the name is changed", () => {
+      component.nameControl.setValue("Modified_Policy_Name");
+      expect(component.nameControl.hasError("notChanged")).toBe(false);
+      expect(component.nameControl.valid).toBe(true);
+    });
+
+    it("should reject empty names (required)", () => {
+      component.nameControl.setValue("");
+      expect(component.nameControl.hasError("required")).toBe(true);
+    });
   });
 
-  it("should initialize with the provided policy name", () => {
-    expect(component.nameControl.value).toBe(initialPolicyName);
+  describe("2. UI Actions State", () => {
+    it("should disable confirm/submit action when the form is invalid", () => {
+      component.nameControl.setValue(initialPolicyName);
+      fixture.detectChanges();
+
+      const submitAction = component.actions().find((a) => a.value === "submit");
+      expect(submitAction?.disabled).toBe(true);
+    });
+
+    it("should enable confirm/submit action when the form is valid", () => {
+      component.nameControl.setValue("New_Unique_Name");
+      fixture.detectChanges();
+
+      const submitAction = component.actions().find((a) => a.value === "submit");
+      expect(submitAction?.disabled).toBe(false);
+    });
   });
 
-  it("should be invalid if the name is the same as the original", () => {
-    component.nameControl.setValue(initialPolicyName);
-    expect(component.nameControl.hasError("notChanged")).toBeTruthy();
-    expect(component.isInvalid()).toBe(true);
-  });
+  describe("3. onAction Flow", () => {
+    it("should return the new name only when valid on submit", () => {
+      const newName = "Valid_New_Name";
+      component.nameControl.setValue(newName);
 
-  it("should close the dialog with the new name on submit", async () => {
-    const newName = "Brand_New_Policy";
-    component.nameControl.setValue(newName);
-    component.onAction("submit");
+      component.onAction("submit");
+      expect(dialogRef.close).toHaveBeenCalledWith(newName);
+    });
 
-    await new Promise((resolve) => setTimeout(resolve, 0));
-    expect(dialogRef.close).toHaveBeenCalledWith(newName);
-  });
+    it("should return null on submit if the form is invalid", () => {
+      component.nameControl.setValue(initialPolicyName);
 
-  it("should close the dialog with null on cancel", async () => {
-    component.onAction(null);
+      component.onAction("submit");
+      expect(dialogRef.close).toHaveBeenCalledWith(null);
+    });
 
-    await new Promise((resolve) => setTimeout(resolve, 0));
-    expect(dialogRef.close).toHaveBeenCalledWith(null);
-  });
-
-  it("should disable the submit action if form is invalid", () => {
-    component.nameControl.setValue(initialPolicyName);
-    fixture.detectChanges();
-
-    const submitAction = component.actions().find((a) => a.value === "submit");
-
-    expect(submitAction?.disabled).toBe(true);
+    it("should return null when action value is null (cancel/close)", () => {
+      component.onAction(null);
+      expect(dialogRef.close).toHaveBeenCalledWith(null);
+    });
   });
 });
