@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, inject, Signal, WritableSignal } from "@angular/core";
-import { MatButton } from "@angular/material/button";
+import { MatButtonModule } from "@angular/material/button";
 import { MAT_DIALOG_DATA, MatDialogContent, MatDialogRef, MatDialogTitle } from "@angular/material/dialog";
 import { MatIcon } from "@angular/material/icon";
 import { PiResponse } from "../../../../app.component";
@@ -34,10 +34,9 @@ export type ContainerCreationDialogData = {
   registerContainer: (containerSerial: string, regenerate: boolean) => void;
 };
 
-
 @Component({
   selector: "app-container-created-dialog",
-  imports: [MatDialogContent, MatDialogTitle, MatButton, MatIcon],
+  imports: [MatDialogContent, MatDialogTitle, MatButtonModule, MatIcon],
   templateUrl: "./container-created-dialog.component.html",
   styleUrl: "./container-created-dialog.component.scss"
 })

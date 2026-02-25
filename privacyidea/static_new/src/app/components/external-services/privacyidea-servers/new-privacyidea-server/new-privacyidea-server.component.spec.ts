@@ -22,49 +22,43 @@ import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from "@angular/material/dialog";
-import { of } from "rxjs";
+import { Subject } from "rxjs";
 import { PrivacyideaServerService } from "../../../../services/privacyidea-server/privacyidea-server.service";
 import { MockPrivacyideaServerService } from "../../../../../testing/mock-services/mock-privacyidea-server-service";
+import { MockDialogService } from "../../../../../testing/mock-services";
+import { DialogService } from "../../../../services/dialog/dialog.service";
+import { SaveAndExitDialogResult } from "../../../shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
+import { MockMatDialogRef } from "../../../../../testing/mock-mat-dialog-ref";
 
 describe("NewPrivacyideaServerComponent", () => {
   let component: NewPrivacyideaServerComponent;
   let fixture: ComponentFixture<NewPrivacyideaServerComponent>;
   let privacyideaServerServiceMock: any;
-  let dialogRefMock: any;
-  let dialogMock: any;
+  let dialogRefMock: MockMatDialogRef<any, any>;
+  let confirmClosed: Subject<SaveAndExitDialogResult>;
+  let dialogServiceMock: MockDialogService;
 
   beforeEach(async () => {
-    dialogRefMock = {
-      disableClose: false,
-      backdropClick: jest.fn().mockReturnValue(of()),
-      keydownEvents: jest.fn().mockReturnValue(of()),
-      close: jest.fn()
-    };
-
-    dialogMock = {
-      open: jest.fn().mockReturnValue({ afterClosed: () => of(true) }),
-    };
-
     await TestBed.configureTestingModule({
       imports: [NewPrivacyideaServerComponent, NoopAnimationsModule],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: MAT_DIALOG_DATA, useValue: null },
-        { provide: MatDialogRef, useValue: dialogRefMock },
+        { provide: MatDialogRef, useClass: MockMatDialogRef },
         { provide: PrivacyideaServerService, useClass: MockPrivacyideaServerService },
+        { provide: DialogService, useClass: MockDialogService }
       ]
-    }).overrideComponent(NewPrivacyideaServerComponent, {
-      add: {
-        providers: [
-          { provide: MatDialog, useValue: dialogMock }
-        ]
-      }
     }).compileComponents();
 
     privacyideaServerServiceMock = TestBed.inject(PrivacyideaServerService);
 
     fixture = TestBed.createComponent(NewPrivacyideaServerComponent);
+    dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
+    confirmClosed = new Subject();
+    dialogRefMock = TestBed.inject(MatDialogRef) as unknown as MockMatDialogRef<any, any>;
+    dialogRefMock.afterClosed.mockReturnValue(confirmClosed);
+    dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });
@@ -86,16 +80,16 @@ describe("NewPrivacyideaServerComponent", () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: MAT_DIALOG_DATA, useValue: { identifier: "test", url: "http://test", tls: true } },
-        { provide: MatDialogRef, useValue: dialogRefMock },
-        { provide: PrivacyideaServerService, useClass: MockPrivacyideaServerService },
+        { provide: MatDialogRef, useClass: MockMatDialogRef },
+        { provide: PrivacyideaServerService, useClass: MockPrivacyideaServerService }
       ]
-    }).overrideComponent(NewPrivacyideaServerComponent, {
-      add: {
-        providers: [
-          { provide: MatDialog, useValue: dialogMock }
-        ]
-      }
-    }).compileComponents();
+    })
+      .overrideComponent(NewPrivacyideaServerComponent, {
+        add: {
+          providers: [{ provide: DialogService, useClass: MockDialogService }]
+        }
+      })
+      .compileComponents();
 
     privacyideaServerServiceMock = TestBed.inject(PrivacyideaServerService);
 
@@ -117,6 +111,8 @@ describe("NewPrivacyideaServerComponent", () => {
     component.privacyideaForm.patchValue({ identifier: "test", url: "http://test" });
     component.save();
     expect(privacyideaServerServiceMock.postPrivacyideaServer).toHaveBeenCalled();
+    confirmClosed.next("save-exit");
+    confirmClosed.complete();
     expect(dialogRefMock.close).toHaveBeenCalledWith(true);
   });
 
@@ -128,12 +124,14 @@ describe("NewPrivacyideaServerComponent", () => {
 
   it("should close dialog on cancel without changes", () => {
     component.onCancel();
+    confirmClosed.next("discard");
+    confirmClosed.complete();
     expect(dialogRefMock.close).toHaveBeenCalled();
   });
 
   it("should show confirmation dialog on cancel with changes", () => {
     component.privacyideaForm.get("description")?.markAsDirty();
     component.onCancel();
-    expect(dialogMock.open).toHaveBeenCalled();
+    expect(dialogServiceMock.openDialog).toHaveBeenCalled();
   });
 });
