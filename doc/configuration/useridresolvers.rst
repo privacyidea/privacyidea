@@ -1,7 +1,7 @@
 .. _useridresolvers:
 
-UserIdResolvers
----------------
+User ID Resolvers
+-----------------
 
 .. index:: useridresolvers, LDAP, Active Directory
 
@@ -49,7 +49,7 @@ the users in the user store. Read more about this at :ref:`manage_users`.
 
 .. _flatfile_resolver:
 
-Flatfile resolver
+Flatfile Resolver
 .................
 
 .. index:: flatfile resolver
@@ -69,7 +69,7 @@ Create a flat file like this::
 
 .. _ldap_resolver:
 
-LDAP resolver
+LDAP Resolver
 .............
 
 .. index:: LDAP resolver, OpenLDAP, Active Directory, FreeIPA, Penrose,
@@ -83,7 +83,7 @@ OpenLDAP, Active Directory, FreeIPA, Penrose, Novell eDirectory.
 
    *LDAP resolver configuration*
 
-Server settings
+Server Settings
 ~~~~~~~~~~~~~~~
 The ``Server URI`` can contain a comma separated list of servers.
 The servers are used to create a server pool and are used with a round robin
@@ -107,7 +107,7 @@ When using TLS, you may specify the TLS version to use. Starting from version 3.
 TLS v1.3 by default.
 
 
-TLS certificates
+TLS Certificates
 """"""""""""""""
 
 When using TLS with LDAP, you can tell privacyIDEA to verify the certificate. The according
@@ -164,7 +164,7 @@ has not passed yet. If the *Per-process server pool* is enabled, knowledge about
 servers is persisted within each process. This setting may improve performance in situations in
 which a LDAP server from the pool is down for extended periods of time.
 
-Modifying users
+Modifying Users
 """""""""""""""
 
 Starting with privacyIDEA 2.12, you can define the LDAP resolver as editable.
@@ -188,7 +188,7 @@ The usual object classes for Active Directory are::
 
    top, person, organizationalPerson, user, inetOrgPerson
 
-Resolver settings
+Resolver Settings
 ~~~~~~~~~~~~~~~~~
 
 Loginname Attribute
@@ -340,7 +340,7 @@ This functionality is used with the script *privacyidea-expired-users*.
 
 .. _sql_resolver:
 
-SQL resolver
+SQL Resolver
 ............
 
 .. index:: SQL resolver, MySQL, PostgreSQL, Oracle, DB2, sqlite
@@ -419,7 +419,7 @@ waits to get a connection from the pool.
 
 .. _scim_resolver:
 
-SCIM resolver
+SCIM Resolver
 .............
 
 .. index:: SCIM resolver
@@ -451,7 +451,7 @@ The available attributes for the ``Attribute mapping`` are:
 
 .. _http_resolver:
 
-HTTP resolver
+HTTP Resolver
 .............
 
 .. index:: HTTP resolver, resolver, api, http
@@ -468,7 +468,7 @@ of web service API. There are four types of HTTP resolvers:
 
 .. _basic_http_resolver:
 
-Basic HTTP resolver
+Basic HTTP Resolver
 ~~~~~~~~~~~~~~~~~~~
 .. index:: Basic HTTP resolver
 
@@ -523,7 +523,7 @@ because privacyIDEA will match ``{ "success": false }``.
 
 .. _advanced_http_resolver:
 
-Advanced HTTP resolver
+Advanced HTTP Resolver
 ~~~~~~~~~~~~~~~~~~~~~~
 .. index:: Advanced HTTP resolver
 .. versionadded:: 3.12
@@ -560,8 +560,8 @@ are configured. Below that, you can set up the user store API endpoint for each 
               concatenated with the base URL except if a full URL starting with ``http`` is specified. Possible tags:
               ``{userid}``
 
-    * **Headers**: Default request header to use if no specific one is defined. It has to be in JSON format, e.g.
-      ``{"Content-Type": "application/json"}``.
+    * **Headers** *(optional)*: Default request header to use if no specific one is defined. It has to be in JSON
+      format, e.g. ``{"Content-Type": "application/json"}``.
     * **Edit user store**: If checked, the resolver is editable and allows creating, editing, and deleting users in the
       user store. Note that these rights must also be granted in the user store.
     * **Verify TLS**: If checked, the TLS certificate of the user store API is verified. This should always be checked
@@ -577,17 +577,17 @@ The configuration is similar for each endpoint:
     * **Endpoint**: The endpoint of the user store API to which the request is sent. It will be concatenated with the
       base URL. If you enter a full URL starting with ``http``, it will not be concatenated with the base URL. You can
       use tags to dynamically construct the endpoint, e.g. ``/users/{userid}``. Possible tags depend on the endpoint.
-    * **Headers**: Request headers to use for this endpoint. It has to be in JSON format, e.g.
+    * **Headers** *(optional)*: Request headers to use for this endpoint. It has to be in JSON format, e.g.
       ``{"Content-Type": "application/json"}``. For requests sending JSON data, the ``Content-Type`` header is
       set automatically to ``application/json``.
-    * **Request Mapping**: The request parameters to send to the user store API. It has to be in JSON format, e.g.
+    * **Request Mapping** *(optional)*: The request parameters to send to the user store API. It has to be in JSON format, e.g.
       ``{"username": "{username}", "email": "{email}"}``. You can use tags to map the user attributes to the request
       parameters. Possible tags depend on the endpoint. Note that tags can only be used in strings, hence they must
       always be surrounded by double quotation marks.
 
       If the ``Content-Type`` header is set to ``application/x-www-form-urlencoded``, the request mapping can be
       defined as query parameters in the format ``key1=value1&key2=value2``.
-    * **Response Mapping**: Reformatting of the response from the user store API to the expected format for
+    * **Response Mapping** *(optional)*: Reformatting of the response from the user store API to the expected format for
       privacyIDEA. It has to be in JSON format. You can use the keys of the original response as tags, e.g.
       ``{"username": "{Username}", "email": "{Email}"}``. You can also use nested attributes using
       `pydash deep path <https://pydash.readthedocs.io/en/latest/deeppath.html>`_, e.g.:
@@ -596,7 +596,12 @@ The configuration is similar for each endpoint:
 
         { "username": "{Username}", "phone": "{Phone_Numbers.Phone}" }
 
-    * **Special error handling**: If checked, the resolver will treat the request as unsuccessful if the response
+      .. note::
+          If both response and attribute mappings are defined, the response mapping is applied first, followed by the
+          attribute mapping on the reformatted response. It is recommended to only use one of these mappings. However,
+          at least one mapping must be used.
+
+    * **Special error handling** *(optional)*: If checked, the resolver will treat the request as unsuccessful if the response
       contains certain content. This is useful for APIs that return ``200 OK`` for a negative response.
       The content to match can be defined in the ``Response contains``.
 
@@ -664,7 +669,7 @@ Possible tag: ``{userid}``
 
 .. _entra_id_resolver:
 
-Entra ID resolver
+Entra ID Resolver
 ~~~~~~~~~~~~~~~~~
 .. index:: Entra ID resolver
 .. versionadded:: 3.12
@@ -685,8 +690,9 @@ settings are described.
       detailed configurations. By default, this is ``https://graph.microsoft.com/v1.0``.
     * **Attribute Mapping**: The mapping between privacyIDEA user attributes and the ones used by Entra ID are already
       all prefilled. If you do not need all of them, you can remove them.
-    * **Groups**: Receive the group memberships when getting the user information and store it und the key ``groups``.
-      You can define a group attribute which should be stored in the user info. By default, this is ``displayName``.
+    * **Groups**: Receive the group memberships when getting the user information and store it under the key ``groups``.
+      Optionally, you can define a group attribute which should be stored in the user info. By default, this is
+      ``displayName``.
     * **Edit user store**: By default, editing the users in Entra ID is not enabled. If you want to enable this option,
       you need to ensure that the required write permissions are granted to the privacyIDEA server in Entra ID.
     * **Verify TLS**: By default, the TLS certificate of the Entra ID server is verified. Usually, there is no need to
@@ -828,7 +834,7 @@ the following required parameters are set in the request mapping:
 
 .. _keycloak_resolver:
 
-Keycloak resolver
+Keycloak Resolver
 ~~~~~~~~~~~~~~~~~
 .. index:: Keycloak resolver
 .. versionadded:: 3.12
