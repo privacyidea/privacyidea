@@ -3053,10 +3053,10 @@ class ResolverTestCase(MyTestCase):
         save_resolver(config)
         reso_list = get_resolver_list(filter_resolver_name="EntraID")
         reso_data = reso_list["EntraID"]["data"]
-        # Dicts are already loaded (for advanced HTTPResolvers also the headers)
+        # Dicts are already loaded (except for the headers to be consistent with the basic HTTP resolver)
         self.assertTrue(isinstance(reso_data[CLIENT_CERTIFICATE], dict))
         self.assertTrue(isinstance(reso_data[CONFIG_GET_USER_BY_NAME], dict))
-        self.assertDictEqual({"Content-Type": "application/json"}, reso_data[HEADERS])
+        self.assertEqual('{"Content-Type": "application/json"}', reso_data[HEADERS])
         # Data should not be censored
         self.assertEqual("Test1234", reso_data[CLIENT_CERTIFICATE][PRIVATE_KEY_PASSWORD])
 
