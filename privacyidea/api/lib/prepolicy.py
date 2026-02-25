@@ -506,7 +506,7 @@ def enroll_pin(request=None, action=None):
     if not allowed_action:
         # Not allowed to set a PIN during enrollment!
         if "pin" in request.all_data:
-            raise PolicyError("Setting a PIN is not allowed due to missing 'enrollpin' right.")
+            raise PolicyError(f"Setting a PIN is not allowed due to missing '{PolicyAction.ENROLLPIN}' right.")
     return True
 
 
