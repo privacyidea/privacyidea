@@ -20,47 +20,52 @@
   title="Token Successfully Enrolled"
   i18n-title="@@tokenEnrolledTitle"
   (close)="close()">
-<mat-dialog-content>
-  <div class="margin-bottom-1">
-  <span>The token was successfully enrolled with serial number
-    <a (click)="tokenSelected(serial)"> {{ serial }} </a>.</span>
-    @if (containerSerial) {
-      <br />
-      <span>It has been enrolled in the container
-      <a (click)="containerSelected(containerSerial)">
-        {{ containerSerial }} </a>.</span>
-    }
-  </div>
-  <div class="flex-row gap-16">
-    @if (showQRCode() && qrCode) {
-      <img
-        alt="QR Code"
-        i18n-alt="@@qrCodeAlt"
-        class="qr-code"
-        height="300px"
-        src="{{ qrCode }}"
-        width="300px" />
-    }
-    <div class="flex-column gap-16">
-      @if (url && showQRCode()) {
-        <app-qr-code-text
-          [tokenType]="data.tokentype.key"
-          [url]="url" />
+  <mat-dialog-content>
+    <div class="margin-bottom-1">
+      <div i18n>
+        The token was successfully enrolled with serial number
+        <a (click)="tokenSelected(serial)"> {{ serial }}</a>
+        .
+      </div>
+      @if (containerSerial) {
+        <div i18n>
+          It has been enrolled in the container
+          <a (click)="containerSelected(containerSerial)">
+            {{ containerSerial }}
+          </a>
+          .
+        </div>
       }
-      @if (url && showRegenerateButton()) {
-        <button
-          (click)="regenerateQRCode()"
-          class="card-button-1"
-          mat-stroked-button>
-          <mat-icon>autorenew</mat-icon>
-          <span i18n>Regenerate {{ regenerateButtonText() }}</span>
-        </button>
+    </div>
+    <div class="flex-row gap-16">
+      @if (showQRCode() && qrCode) {
+        <img
+          alt="QR Code"
+          i18n-alt="@@qrCodeAlt"
+          class="qr-code"
+          height="300px"
+          src="{{ qrCode }}"
+          width="300px" />
       }
+      <div class="flex-column gap-16">
+        @if (url && showQRCode()) {
+          <app-qr-code-text
+            [tokenType]="data.tokentype.key"
+            [url]="url" />
+        }
+        @if (url && showRegenerateButton()) {
+          <button
+            (click)="regenerateQRCode()"
+            class="card-button-1"
+            mat-stroked-button>
+            <mat-icon>autorenew</mat-icon>
+            <span i18n>Regenerate {{ regenerateButtonText() }}</span>
+          </button>
+        }
 
         @if (data.response.detail["password"]) {
           <p i18n>
-            Your Password: <strong>{{ data.response.detail["password"] }}</strong
-            >.
+            Your Password: <strong>{{ data.response.detail["password"] }}</strong>.
           </p>
         }
 

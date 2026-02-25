@@ -125,7 +125,8 @@
       Revoke
     </button>
   }
-  @if (authService.tokenRollover().indexOf(tokenType()) >= 0 && nonRolloverTokenTypes.indexOf(tokenType()) < 0) {
+  @if (authService.tokenRollover().indexOf(tokenType()) >= 0 &&
+  rolloverTokenTypes().indexOf(tokenTypeKey()) >= 0) {
     <button
       (click)="rolloverToken()"
       class="action-button-1 width-238"
