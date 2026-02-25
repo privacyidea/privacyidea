@@ -116,9 +116,10 @@ def get_challenges_paginate(serial=None, transaction_id=None,
 
 def _create_challenge_query(serial: str = None, transaction_id: str = None) -> Select:
     """
-    This function create the sql query for fetching transaction_ids. It is
+    This function creates the SQL query for fetching transaction_ids. It is
     used by get_challenge_paginate.
-    :return: An SQLAlchemy sql query
+
+    :return: An SQLAlchemy SQL query
     """
     stmt = select(Challenge)
     if serial is not None and serial.strip("*"):
@@ -139,6 +140,7 @@ def extract_answered_challenges(challenges):
     Given a list of challenge objects, extract and return a list of *answered* challenge.
     A challenge is answered if it is not expired yet *and* if its ``otp_valid`` attribute
     is set to True.
+
     :param challenges: a list of challenge objects
     :return: a list of answered challenge objects
     """
@@ -187,10 +189,10 @@ def _build_challenge_criterion(age: int = None) -> 'sqlalchemy.sql.expression.Co
 
 def cleanup_expired_challenges(chunk_size: int = None, age: int = None) -> int:
     """
-    Delete only expired challenges from the challenge table, or delete expired challenges older than the given age.
+    Delete only expired challenges from the challenge table or delete expired challenges older than the given age.
 
     :param chunk_size: Delete entries in chunks of the given size to avoid deadlocks
-    :param age: Instead of deleting expired challenges, delete challenge entries older than these number of minutes.
+    :param age: Instead of deleting expired challenges, delete challenge entries older than these numbers of minutes.
     :return: number of deleted entries
     """
     criterion = _build_challenge_criterion(age)
@@ -243,8 +245,8 @@ def cancel_enrollment_via_multichallenge(transaction_id: str) -> bool:
         )
         return False
 
-    # If we reach this point, we can cancel the enrollment, depending on the type
-    # The challenges will be cleaned up by either functions
+    # If we reach this point, we can cancel the enrollment, depending on the type.
+    # The challenges will be cleaned up by either function
     if "type" in data and data["type"] == "container":
         from .container import delete_container_by_serial
         delete_container_by_serial(challenge.serial)

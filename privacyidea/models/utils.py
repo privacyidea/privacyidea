@@ -30,9 +30,7 @@ def utc_now() -> datetime:
 
 
 # Define a function to convert Oracle CLOBs to VARCHAR before using them in a
-# compare operation.
-# By using <https://docs.sqlalchemy.org/en/13/core/compiler.html> we can
-# differentiate between different dialects.
+# compare operation. (See https://docs.sqlalchemy.org/en/20/core/compiler.html)
 class clob_to_varchar(FunctionElement):
     name = 'clob_to_varchar'
     inherit_cache = True
