@@ -51,7 +51,7 @@
       <button
         (click)="unassignSelectedTokens()"
         [disabled]="tokenSelection().length === 0"
-        class="action-button-secondary width-l"
+        class="action-button-secondary width-m"
         mat-stroked-button>
         <mat-icon> person_remove</mat-icon>
         Unassign Selected
@@ -60,7 +60,8 @@
     <button
       [matMenuTriggerFor]="advancedFilterMenu"
       class="action-button-primary width-m"
-      mat-flat-button>
+      mat-flat-button
+      type="submit">
       <mat-icon> filter_list</mat-icon>
       More Filter
     </button>

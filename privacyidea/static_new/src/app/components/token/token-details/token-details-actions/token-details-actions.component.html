@@ -28,111 +28,114 @@
       <app-set-pin-action
         [repeatPinValue]="repeatPinValue"
         [setPinValue]="setPinValue" />
-      <mat-divider class="margin-top-1 margin-bottom-1" />
+      <mat-divider class="margin-top-4 margin-bottom-4" />
     </div>
   }
   @if (tokenType() !== "passkey" && authService.actionAllowed("resync")) {
     <app-resync-token-action />
-    <mat-divider class="margin-top-1 margin-bottom-1" />
+    <mat-divider class="margin-top-4 margin-bottom-4" />
   }
   @if (tokenType() !== "passkey") {
     <app-test-otp-pin-action />
-  } @else {
-    <button
-      (click)="testPasskey()"
-      class="action-button-secondary width-l"
-      i18n
-      mat-stroked-button>
-      <mat-icon>key</mat-icon>
-      Test Passkey
-    </button>
+    <mat-divider class="margin-top-4 margin-bottom-4" />
   }
-  @if (authService.actionsAllowed(["manage_machine_tokens", "machinelist"])) {
-    @if (tokenType() === "sshkey") {
+  <div class="flex-column ali-center gap-8">
+    @if (tokenType() === "passkey") {
       <button
-        (click)="attachSshToMachineDialog()"
-        class="action-button-secondary width-l"
+        (click)="testPasskey()"
+        class="action-button-secondary width-m"
         i18n
         mat-stroked-button>
-        <mat-icon>computer</mat-icon>
-        Attach to Machine
+        <mat-icon>key</mat-icon>
+        Test Passkey
       </button>
-    } @else if (tokenType() === "passkey") {
-      @if (isAttachedToMachine()) {
+    }
+    @if (authService.actionsAllowed(["manage_machine_tokens", "machinelist"])) {
+      @if (tokenType() === "sshkey") {
         <button
-          (click)="removePasskeyFromMachine()"
-          class="action-button-secondary width-l"
+          (click)="attachSshToMachineDialog()"
+          class="action-button-secondary width-m"
           i18n
           mat-stroked-button>
           <mat-icon>computer</mat-icon>
-          Disable Offline
+          Attach to Machine
         </button>
-      } @else {
+      } @else if (tokenType() === "passkey") {
+        @if (isAttachedToMachine()) {
+          <button
+            (click)="removePasskeyFromMachine()"
+            class="action-button-secondary width-m"
+            i18n
+            mat-stroked-button>
+            <mat-icon>computer</mat-icon>
+            Disable Offline
+          </button>
+        } @else {
+          <button
+            (click)="attachPasskeyToMachine()"
+            class="action-button-secondary width-mm"
+            i18n
+            mat-stroked-button>
+            <mat-icon>computer</mat-icon>
+            Use Offline
+          </button>
+        }
+      } @else if (tokenType() === "hotp" && !isAttachedToMachine()) {
         <button
-          (click)="attachPasskeyToMachine()"
-          class="action-button-secondary width-l"
+          (click)="attachHotpToMachineDialog()"
+          class="action-button-secondary width-m"
           i18n
           mat-stroked-button>
           <mat-icon>computer</mat-icon>
           Use Offline
         </button>
       }
-    } @else if (tokenType() === "hotp" && !isAttachedToMachine()) {
-      <button
-        (click)="attachHotpToMachineDialog()"
-        class="action-button-secondary width-l"
-        i18n
-        mat-stroked-button>
-        <mat-icon>computer</mat-icon>
-        Use Offline
-      </button>
-    }
-    <mat-divider class="margin-top-1 margin-bottom-1" />
-    @if ((tokenIsActive() && authService.actionAllowed("disable")) ||
-    (!tokenIsActive() && authService.actionAllowed("enable"))) {
-      <button
-        (click)="toggleActive()"
-        [disabled]="tokenIsRevoked()"
-        [ngClass]="[tokenIsActive()
-                      ? 'action-button-delete-primary width-l'
-                      : 'action-button-primary width-l'
+      @if ((tokenIsActive() && authService.actionAllowed("disable")) ||
+      (!tokenIsActive() && authService.actionAllowed("enable"))) {
+        <button
+          (click)="toggleActive()"
+          [disabled]="tokenIsRevoked()"
+          [ngClass]="[tokenIsActive()
+                      ? 'action-button-delete-primary width-s'
+                      : 'action-button-primary width-s'
                 ]"
-        i18n
-        mat-stroked-button>
-        <mat-icon>{{ tokenIsActive() ? "lock" : "play_circle" }}</mat-icon>
-        {{ tokenIsActive() ? "Deactivate" : "Activate" }}
-      </button>
+          i18n
+          mat-stroked-button>
+          <mat-icon>{{ tokenIsActive() ? "lock" : "play_circle" }}</mat-icon>
+          {{ tokenIsActive() ? "Deactivate" : "Activate" }}
+        </button>
+      }
+      @if (authService.actionAllowed("delete")) {
+        <button
+          (click)="deleteToken()"
+          class="action-button-delete-secondary width-s"
+          i18n
+          mat-stroked-button>
+          <mat-icon> delete</mat-icon>
+          Delete
+        </button>
+      }
+      @if (authService.actionAllowed("revoke")) {
+        <button
+          (click)="revokeToken()"
+          [disabled]="tokenIsRevoked()"
+          class="action-button-delete-secondary width-s"
+          i18n
+          mat-stroked-button>
+          <mat-icon>undo</mat-icon>
+          Revoke
+        </button>
+      }
+      @if (authService.actionAllowed("losttoken")) {
+        <button
+          (click)="openLostTokenDialog()"
+          class="action-button-secondary width-m"
+          i18n
+          mat-stroked-button>
+          <mat-icon>remove_red_eye</mat-icon>
+          Lost Token
+        </button>
+      }
     }
-    @if (authService.actionAllowed("delete")) {
-      <button
-        (click)="deleteToken()"
-        class="action-button-delete-secondary"
-        i18n
-        mat-stroked-button>
-        <mat-icon> delete</mat-icon>
-        Delete
-      </button>
-    }
-    @if (authService.actionAllowed("revoke")) {
-      <button
-        (click)="revokeToken()"
-        [disabled]="tokenIsRevoked()"
-        class="action-button-delete-secondary"
-        i18n
-        mat-stroked-button>
-        <mat-icon>undo</mat-icon>
-        Revoke
-      </button>
-    }
-    @if (authService.actionAllowed("losttoken")) {
-      <button
-        (click)="openLostTokenDialog()"
-        class="action-button-secondary width-l"
-        i18n
-        mat-stroked-button>
-        <mat-icon>remove_red_eye</mat-icon>
-        Lost Token
-      </button>
-    }
-  }
+  </div>
 </div>

@@ -436,7 +436,7 @@ $button-low-contrast-variant: linear-gradient(
   }
 }
 
-@mixin action-button($bg, $color, $hover-bg, $ripple: null, $ripple-mdc: null, $layer: null, $border: true) {
+@mixin action-button($bg, $color, $hover-bg, $ripple: null, $ripple-mdc: null, $layer: null, $border: true, $primary: false) {
   @extend %action-button-base;
   background-color: $bg;
 
@@ -466,6 +466,16 @@ $button-low-contrast-variant: linear-gradient(
       background-color: $hover-bg;
     }
   }
+
+  @if $primary {
+    &[disabled] {
+      background-color: var(--mat-sys-surface-container-high) !important;
+      color: var(--mat-sys-on-surface-variant) !important;
+      @if $border {
+        border-color: var(--mat-sys-surface-container-highest) !important;
+      }
+    }
+  }
 }
 
 .action-button-primary {
@@ -473,7 +483,8 @@ $button-low-contrast-variant: linear-gradient(
                   var(--mat-sys-primary),
                   var(--mat-sys-surface-container-lowest),
                   var(--mat-sys-primary-base-active),
-                  $border: false
+                  $border: false,
+                  $primary: true
   );
 }
 
@@ -494,7 +505,8 @@ $button-low-contrast-variant: linear-gradient(
                   $ripple: var(--red-light-active),
                   $ripple-mdc: var(--rose-bg),
                   $layer: var(--rose-bg),
-                  $border: false
+                  $border: false,
+                  $primary: true
   );
 }
 
