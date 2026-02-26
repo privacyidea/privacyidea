@@ -305,7 +305,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
   selectedEndDateControl = new FormControl<Date | null>(null, {
     nonNullable: false
   });
-  selectedEndTimeControl = new FormControl<string>("00:00", {
+  selectedEndTimeControl = new FormControl<string>("23:59", {
     nonNullable: false
   });
   _lastTokenEnrollmentLastStepDialogData: WritableSignal<TokenEnrollmentLastStepDialogData | null> = linkedSignal({
