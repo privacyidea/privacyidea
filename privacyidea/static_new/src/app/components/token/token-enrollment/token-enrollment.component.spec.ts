@@ -40,7 +40,7 @@ import { VersioningService } from "../../../services/version/version.service";
 import { ContentService } from "../../../services/content/content.service";
 import { DialogService } from "../../../services/dialog/dialog.service";
 import { FormControl, FormGroup } from "@angular/forms";
-import { lastValueFrom, of, throwError } from "rxjs";
+import { lastValueFrom, of } from "rxjs";
 import { signal } from "@angular/core";
 import { provideHttpClient } from "@angular/common/http";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
@@ -151,6 +151,11 @@ describe("TokenEnrollmentComponent", () => {
     const d = new Date("2025-09-10T00:00:00Z");
     const result = component.formatDateTimeOffset(d, "08:05", "+02:00");
     expect(result).toBe("2025-09-10T08:05+0200");
+  });
+
+  it("no default values for validity period", () => {
+    expect(component.selectedStartDateControl.value).toBeNull();
+    expect(component.selectedEndDateControl.value).toBeNull();
   });
 
   it("pinMismatchValidator: returns error when PINs differ; null when equal", () => {
@@ -340,6 +345,50 @@ describe("TokenEnrollmentComponent", () => {
       expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith(
         "User is required for this token type, but no user was provided."
       );
+    });
+
+    it("Default values for enrollment", () => {
+      const enrollmentArgsGetterSpy = jest.fn().mockReturnValue({ data: {}, mapper: {} });
+      component.enrollmentArgsGetter = enrollmentArgsGetterSpy;
+
+      component.enrollToken();
+
+      const expected_parameters = {
+        type: "hotp",
+        description: "",
+        containerSerial: "",
+        validityPeriodStart: "",
+        validityPeriodEnd: "",
+        user: "",
+        realm: "",
+        onlyAddToRealm: false,
+        pin: "",
+        serial: null
+      };
+      expect(enrollmentArgsGetterSpy).toHaveBeenCalledWith(expected_parameters);
+    });
+
+    it("Setting validity dates works", () => {
+      const enrollmentArgsGetterSpy = jest.fn().mockReturnValue({ data: {}, mapper: {} });
+      component.enrollmentArgsGetter = enrollmentArgsGetterSpy;
+      component.selectedStartDateControl.setValue(new Date("2026-01-01"));
+      component.selectedEndDateControl.setValue(new Date("2026-12-31"));
+
+      component.enrollToken();
+
+      const expected_parameters = {
+        type: "hotp",
+        description: "",
+        containerSerial: "",
+        validityPeriodStart: "2026-01-01T00:00+0000",
+        validityPeriodEnd: "2026-12-31T00:00+0000",
+        user: "",
+        realm: "",
+        onlyAddToRealm: false,
+        pin: "",
+        serial: null
+      };
+      expect(enrollmentArgsGetterSpy).toHaveBeenCalledWith(expected_parameters);
     });
   });
 
