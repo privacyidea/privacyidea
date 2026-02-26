@@ -381,7 +381,7 @@ describe("TokenEnrollmentComponent", () => {
         description: "",
         containerSerial: "",
         validityPeriodStart: "2026-01-01T00:00+0000",
-        validityPeriodEnd: "2026-12-31T00:00+0000",
+        validityPeriodEnd: "2026-12-31T23:59+0000",
         user: "",
         realm: "",
         onlyAddToRealm: false,
