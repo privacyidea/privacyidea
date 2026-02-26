@@ -621,6 +621,7 @@ the endpoint and request mapping, e.g. ``{"username": "{username}", "password": 
 
 Configure the endpoint to authenticate the user with their username/userid and password. You can use the tags
 ``{username}``, ``{userid}``, and ``{password}`` in the endpoint definition and request mapping.
+This request does not use the authorization header defined in the previous section.
 
 **User List**
 

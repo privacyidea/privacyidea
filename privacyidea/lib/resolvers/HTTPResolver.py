@@ -413,8 +413,8 @@ class HTTPResolver(UserIdResolver):
             attributes = list(self.attribute_mapping_pi_to_user_store.keys())
         else:
             # basic resolver, we need to extract the keys from the response mapping
-            response_mapping_str = self.config_get_user_by_id.get(RESPONSE_MAPPING, "{}")
-            response_mapping = json.loads(response_mapping_str)
+            config = RequestConfig(self.config_get_user_by_id, {})
+            response_mapping = config.response_mapping
             attributes = list(response_mapping.keys())
         if self.config_get_user_groups.get(ACTIVE):
             attributes.append("groups")
@@ -555,11 +555,10 @@ class HTTPResolver(UserIdResolver):
         # Prepare Request
         config = RequestConfig(self.config_user_auth, self.headers,
                                {"userid": uid, "username": username, "password": password}, self.wildcard)
-        config.headers.update(self._get_auth_header())
         request_params = config.request_mapping if config.request_mapping else {}
 
         # Request
-        response = self._do_request(config, request_params)
+        response = self._do_request(config, request_params, censor_log=True)
 
         # Handle Response
         success = self._user_auth_error_handling(response, config, uid)
@@ -906,7 +905,7 @@ class HTTPResolver(UserIdResolver):
         config = RequestConfig(self.authorization_config, {"Content-Type": "application/x-www-form-urlencode"},
                                {"username": self.username, "password": self.password}, "")
 
-        response = self._do_request(config, config.request_mapping)
+        response = self._do_request(config, config.request_mapping, censor_log=True)
 
         success = self._auth_header_error_handling(response, config)
         if success:
@@ -943,7 +942,7 @@ class HTTPResolver(UserIdResolver):
             mapped_response[key] = value
         return mapped_response
 
-    def _do_request(self, config: RequestConfig, params: Union[dict, str]) -> Response:
+    def _do_request(self, config: RequestConfig, params: Union[dict, str], censor_log: bool = False) -> Response:
         """
         Performs the HTTP request based on the provided configuration and parameters.
 
@@ -992,10 +991,15 @@ class HTTPResolver(UserIdResolver):
             raise ResolverError("Failed to perform HTTP request!")
         end_time = time.time()
 
-        request_url = response.request.url or config.endpoint
+        if censor_log:
+            request_url = config.endpoint
+            response_data = "HIDDEN"
+        else:
+            request_url = response.request.url or config.endpoint
+            response_data = response.text
         log.debug(f"Perform {config.method.value.upper()} request to user store: {request_url}")
         log.debug(f"Request took {end_time - start_time:.2f} seconds")
-        log.debug(f"Response: {response.status_code} - {response.text}")
+        log.debug(f"Response: {response.status_code} - {response_data}")
 
         return response
 
