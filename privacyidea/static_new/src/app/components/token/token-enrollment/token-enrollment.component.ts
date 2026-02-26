@@ -296,17 +296,17 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
   selectedTimezoneOffsetControl = new FormControl<string>("+00:00", {
     nonNullable: true
   });
-  selectedStartDateControl = new FormControl<Date | null>(new Date(), {
-    nonNullable: true
+  selectedStartDateControl = new FormControl<Date | null>(null, {
+    nonNullable: false
   });
   selectedStartTimeControl = new FormControl<string>("00:00", {
-    nonNullable: true
+    nonNullable: false
   });
-  selectedEndDateControl = new FormControl<Date | null>(new Date(), {
-    nonNullable: true
+  selectedEndDateControl = new FormControl<Date | null>(null, {
+    nonNullable: false
   });
   selectedEndTimeControl = new FormControl<string>("23:59", {
-    nonNullable: true
+    nonNullable: false
   });
   _lastTokenEnrollmentLastStepDialogData: WritableSignal<TokenEnrollmentLastStepDialogData | null> = linkedSignal({
     source: this.tokenService.selectedTokenType,
@@ -512,7 +512,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     }
 
     let validityPeriodStart = "";
-    if (this.selectedStartDateControl.value) {
+    if (this.selectedStartDateControl.value && this.selectedStartTimeControl.value) {
       validityPeriodStart = this.formatDateTimeOffset(
         this.selectedStartDateControl.value,
         this.selectedStartTimeControl.value ?? "00:00",
@@ -520,7 +520,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
       );
     }
     let validityPeriodEnd = "";
-    if (this.selectedEndDateControl.value) {
+    if (this.selectedEndDateControl.value && this.selectedEndTimeControl.value) {
       validityPeriodEnd = this.formatDateTimeOffset(
         this.selectedEndDateControl.value,
         this.selectedEndTimeControl.value ?? "23:59",
