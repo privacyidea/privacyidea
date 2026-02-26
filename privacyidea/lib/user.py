@@ -69,7 +69,7 @@ from ..api.lib.utils import (getParam,
 log = logging.getLogger(__name__)
 
 
-class User(object):
+class User:
     """
     The user has the attributes ``login``, ``realm`` and ``resolver``.
 
@@ -125,21 +125,21 @@ class User(object):
 
         # Get Identifiers
         if self.resolver:
-            y = get_resolver_object(self.resolver)
-            if y is None:
+            resolver = get_resolver_object(self.resolver)
+            if resolver is None:
                 raise UserError("The resolver '{0!s}' does not exist!".format(
                     self.resolver))
             if self.uid is None:
                 # Determine the uid
-                self.uid = y.getUserId(self.login)
+                self.uid = resolver.getUserId(self.login)
             if not self.login:
                 # Determine the login if it does not exist or
-                self.used_login = self.login = y.getUsername(self.uid)
-            if y.has_multiple_loginnames:
+                self.used_login = self.login = resolver.getUsername(self.uid)
+            if resolver.has_multiple_loginnames:
                 # if the resolver has multiple logins the primary login might be another value!
-                self.login = y.getUsername(self.uid)
+                self.login = resolver.getUsername(self.uid)
 
-    def is_empty(self):
+    def is_empty(self) -> bool:
         # ignore if only resolver is set! as it makes no sense
         if len(self.login or "") + len(self.realm or "") == 0:
             return True
@@ -202,7 +202,7 @@ class User(object):
     __nonzero__ = __bool__
 
     @log_with(log)
-    def get_ordered_resolvers(self):
+    def get_ordered_resolvers(self) -> list[str]:
         """
         returns a list of resolver names ordered by priority.
         The resolver with the lowest priority is the first.
@@ -229,7 +229,7 @@ class User(object):
         seen = set()
         return [x for x in resolvers if not (x in seen or seen.add(x))]
 
-    def _get_resolvers(self, all_resolvers=False):
+    def _get_resolvers(self, all_resolvers=False) -> list[str]:
         """
         This returns the list of the resolvernames of the user.
         If no resolver attribute exists at the moment, the user is searched
@@ -243,21 +243,20 @@ class User(object):
         :param all_resolvers: return all resolvers (of a realm), in which
             the user is contained
         :return: list of resolvers for self.login
-        :rtype: list of strings
         """
         if self.resolver:
             return [self.resolver]
 
         resolvers = []
-        for resolvername in self.get_ordered_resolvers():
+        for resolver_name in self.get_ordered_resolvers():
             # test, if the user is contained in this resolver
-            if self._locate_user_in_resolver(resolvername):
+            if self._locate_user_in_resolver(resolver_name):
                 break
         if self.resolver:
             resolvers = [self.resolver]
         return resolvers
 
-    def _locate_user_in_resolver(self, resolvername):
+    def _locate_user_in_resolver(self, resolvername: str) -> bool:
         """
         Try to locate the user (by self.login) in the resolver with the given name.
         In case of success, this sets `self.resolver` as well as `self.uid`
@@ -266,12 +265,12 @@ class User(object):
         :param resolvername: string denoting the resolver name
         :return: boolean
         """
-        y = get_resolver_object(resolvername)
-        if y is None:  # pragma: no cover
+        resolver = get_resolver_object(resolvername)
+        if resolver is None:  # pragma: no cover
             log.info("Resolver {0!r} not found!".format(resolvername))
             return False
         else:
-            uid = y.getUserId(self.login)
+            uid = resolver.getUserId(self.login)
             if uid not in ["", None]:
                 log.info("user {0!r} found in resolver {1!r}".format(self.login,
                                                                      resolvername))
@@ -285,7 +284,7 @@ class User(object):
                           " in resolver {1!r}".format(self.login, resolvername))
                 return False
 
-    def get_user_identifiers(self):
+    def get_user_identifiers(self) -> tuple[str or int, str, str]:
         """
         This returns the UserId  information from the resolver object and
         the resolvertype and the resolvername
@@ -301,7 +300,7 @@ class User(object):
                             "this realm!")
         return self.uid, self.rtype, self.resolver
 
-    def exist(self):
+    def exist(self) -> bool:
         """
         Check if the user object exists in the user store
         :return: True or False
@@ -311,7 +310,7 @@ class User(object):
         return exist
 
     @property
-    def info(self):
+    def info(self) -> dict:
         """
         return the detailed information for the user
 
@@ -332,14 +331,14 @@ class User(object):
         (uid, _rtype, _resolver) = self.get_user_identifiers()
         if uid is None:
             return {}
-        y = get_resolver_object(self.resolver)
+        resolver = get_resolver_object(self.resolver)
 
-        available_attributes = y.get_available_info_keys()
+        available_attributes = resolver.get_available_info_keys()
         # For now, only exclude groups if not requested as this one might be expensive to retrieve, but request all
         # others to not completely break the LDAP cache
         if attributes is not None and "groups" not in attributes and "groups" in available_attributes:
             available_attributes.remove("groups")
-        full_user_info = y.get_user_info(uid, available_attributes)
+        full_user_info = resolver.get_user_info(uid, available_attributes)
         # only return requested attributes
         user_info = {key: value for key, value in full_user_info.items() if attributes is None or key in attributes}
         # Now add the custom attributes, this is used e.g. in ADDUSERINRESPONSE
@@ -347,7 +346,7 @@ class User(object):
         return user_info
 
     @property
-    def available_info_keys(self):
+    def available_info_keys(self) -> list[str]:
         """
         returns the possible keys for user information for this user
 
@@ -357,33 +356,33 @@ class User(object):
         if self.is_empty() or not self.exist():
             # An empty user has no info
             return []
-        y = get_resolver_object(self.resolver)
-        return y.get_available_info_keys()
+        resolver = get_resolver_object(self.resolver)
+        return resolver.get_available_info_keys()
 
     @log_with(log)
-    def set_attribute(self, attrkey, attrvalue, attrtype=None):
+    def set_attribute(self, attribute_key: str, attribute_value: str, attribute_type: str = None) -> int:
         """
         Set a custom attribute for a user
 
-        :param attrkey: The key of the attribute
-        :param attrvalue: The value of the attribute
+        :param attribute_key: The key of the attribute
+        :param attribute_value: The value of the attribute
         :return: The id of the attribute setting
         """
         stmt = select(CustomUserAttribute).filter_by(
             user_id=self.uid,
             resolver=self.resolver,
             realm_id=self.realm_id,
-            Key=attrkey
+            Key=attribute_key
         )
         existing_attribute = db.session.execute(stmt).scalar_one_or_none()
 
         if existing_attribute:
-            existing_attribute.Value = attrvalue
-            existing_attribute.Type = attrtype
+            existing_attribute.Value = attribute_value
+            existing_attribute.Type = attribute_type
             attribute_id = existing_attribute.id
         else:
             new_attribute = CustomUserAttribute(user_id=self.uid, resolver=self.resolver, realm_id=self.realm_id,
-                                                Key=attrkey, Value=attrvalue, Type=attrtype)
+                                                Key=attribute_key, Value=attribute_value, Type=attribute_type)
             db.session.add(new_attribute)
             db.session.flush()
             attribute_id = new_attribute.id
@@ -391,7 +390,7 @@ class User(object):
         return attribute_id
 
     @property
-    def attributes(self):
+    def attributes(self) -> dict:
         """
         returns the custom attributes of a user
         :return: a dictionary of attributes with keys and values
@@ -399,24 +398,24 @@ class User(object):
         return get_attributes(self.uid, self.resolver, self.realm_id)
 
     @log_with(log)
-    def delete_attribute(self, attrkey=None):
+    def delete_attribute(self, attribute_key: str = None) -> int:
         """
         Delete the given key as custom user attribute.
         If no key is given, then all attributes are deleted
 
-        :param attrkey: The key to delete
+        :param attribute_key: The key to delete
         :return: The number of deleted rows
         """
         stmt = delete(CustomUserAttribute).filter_by(user_id=self.uid, resolver=self.resolver,
                                                      realm_id=self.realm_id)
-        if attrkey:
-            stmt = stmt.filter_by(Key=attrkey)
+        if attribute_key:
+            stmt = stmt.filter_by(Key=attribute_key)
         result = db.session.execute(stmt)
         db.session.commit()
         return result.rowcount
 
     @log_with(log)
-    def get_user_phone(self, phone_type='phone', index=None):
+    def get_user_phone(self, phone_type: str = 'phone', index: int = None) -> str or list[str]:
         """
         Returns the phone number or a list of phone numbers of a user.
 
@@ -447,7 +446,7 @@ class User(object):
             return ""
 
     @log_with(log)
-    def get_user_realms(self):
+    def get_user_realms(self) -> list[str]:
         """
         Returns a list of the realms, a user belongs to.
         Usually this will only be one realm.
@@ -458,37 +457,36 @@ class User(object):
         :return: realms of the user
         :rtype: list
         """
-        allRealms = get_realms()
-        Realms = []
+        all_realms = get_realms()
+        user_realms = []
         if self.realm == "" and self.resolver == "":
-            defRealm = get_default_realm().lower()
-            Realms.append(defRealm)
-            self.realm = defRealm
+            default_realm = get_default_realm().lower()
+            user_realms.append(default_realm)
+            self.realm = default_realm
         elif self.realm != "":
-            Realms.append(self.realm.lower())
+            user_realms.append(self.realm.lower())
         else:
             # User has no realm!
             # we have got a resolver and will get all realms
             # the resolver belongs to.
-            for key, val in allRealms.items():
+            for key, val in all_realms.items():
                 log.debug("evaluating realm {0!r}: {1!r} ".format(key, val))
                 for reso in val.get('resolver', []):
                     resoname = reso.get("name")
                     if resoname == self.resolver:
-                        Realms.append(key.lower())
+                        user_realms.append(key.lower())
                         log.debug("added realm %r to Realms due to "
                                   "resolver %r" % (key, self.resolver))
-        return Realms
+        return user_realms
 
     @log_with(log, log_entry=False)
-    def check_password(self, password):
+    def check_password(self, password: str) -> str or None:
         """
         The password of the user is checked against the user source
 
         :param password: The clear text password
         :return: the username of the authenticated user.
                  If unsuccessful, returns None
-        :rtype: string/None
         """
         success = None
 
@@ -511,12 +509,12 @@ class User(object):
             # Now we know, the resolvers of this user, and we can verify the password
             if len(res) == 1:
                 from .resolvers.HTTPResolver import HTTPResolver
-                y = get_resolver_object(self.resolver)
+                resolver = get_resolver_object(self.resolver)
                 uid, _rtype, _rname = self.get_user_identifiers()
-                if isinstance(y, HTTPResolver):
-                    valid_credentials = y.checkPass(uid, password, self.login)
+                if isinstance(resolver, HTTPResolver):
+                    valid_credentials = resolver.checkPass(uid, password, self.login)
                 else:
-                    valid_credentials = y.checkPass(uid, password)
+                    valid_credentials = resolver.checkPass(uid, password)
                 if valid_credentials:
                     success = f"{self.login}@{self.realm}"
                     log.debug(f"Successfully authenticated user {self}.")
@@ -536,7 +534,7 @@ class User(object):
         return success
 
     @log_with(log)
-    def get_search_fields(self):
+    def get_search_fields(self) -> dict:
         """
         Return the valid search fields of a user.
         The search fields are defined in the UserIdResolver class.
@@ -544,30 +542,29 @@ class User(object):
         :return: searchFields with name (key) and type (value)
         :rtype: dict
         """
-        searchFields = {}
+        search_fields = {}
 
         for reso in self._get_resolvers():
             # try to load the UserIdResolver Class
             try:
                 y = get_resolver_object(reso)
                 sf = y.get_search_fields()
-                searchFields[reso] = sf
+                search_fields[reso] = sf
 
             except Exception as e:  # pragma: no cover
                 log.warning("module {0!r}: {1!r}".format(reso, e))
 
-        return searchFields
+        return search_fields
 
     # If passwords should not be logged, we hide it from the log entry
     @log_with(log, hide_kwargs=["password"])
-    def update_user_info(self, attributes, password=None):
+    def update_user_info(self, attributes : dict, password: str = None) -> bool:
         """
         This updates the given attributes of a user.
         The attributes can be "username", "surname", "givenname", "email",
         "mobile", "phone", "password"
 
         :param attributes: A dictionary of the attributes to be updated
-        :type attributes: dict
         :param password: The password of the user
         :return: True in case of success
         """
@@ -581,12 +578,12 @@ class User(object):
             # Now we know, the resolvers of this user and we can update the
             # user
             if len(res) == 1:
-                y = get_resolver_object(self.resolver)
-                if not y.updateable:  # pragma: no cover
-                    log.warning("The resolver {0!r} is not updateable.".format(y))
+                resolver = get_resolver_object(self.resolver)
+                if not resolver.updateable:  # pragma: no cover
+                    log.warning("The resolver {0!r} is not updateable.".format(resolver))
                 else:
                     uid, _rtype, _rname = self.get_user_identifiers()
-                    if y.update_user(uid, attributes):
+                    if resolver.update_user(uid, attributes):
                         success = True
                         # Delete entries corresponding to the old username from the user cache
                         delete_user_cache(username=self.login, resolver=self.resolver)
@@ -605,7 +602,7 @@ class User(object):
         return success
 
     @log_with(log)
-    def delete(self):
+    def delete(self) -> bool:
         """
         This deletes the user in the user store. I.e. the user in the SQL
         database or the LDAP gets deleted.
@@ -618,12 +615,12 @@ class User(object):
             res = self._get_resolvers()
             # Now we know, the resolvers of this user and we can delete it
             if len(res) == 1:
-                y = get_resolver_object(self.resolver)
-                if not y.updateable:  # pragma: no cover
-                    log.warning("The resolver {0!r} is not updateable.".format(y))
+                resolver = get_resolver_object(self.resolver)
+                if not resolver.updateable:  # pragma: no cover
+                    log.warning("The resolver {0!r} is not updateable.".format(resolver))
                 else:
                     uid, _rtype, _rname = self.get_user_identifiers()
-                    if y.delete_user(uid):
+                    if resolver.delete_user(uid):
                         success = True
                         log.info("Successfully deleted user {0!r}.".format(self))
                         # Delete corresponding entry from the user cache
@@ -658,7 +655,7 @@ class User(object):
 
 
 @log_with(log, hide_kwargs=["password"])
-def create_user(resolvername, attributes, password=None):
+def create_user(resolvername: str, attributes: dict, password: str = None) -> int or str:
     """
     This creates a new user in the given resolver. The resolver must be
     editable to do so.
@@ -680,13 +677,13 @@ def create_user(resolvername, attributes, password=None):
     """
     if password is not None:
         attributes["password"] = password
-    y = get_resolver_object(resolvername)
-    uid = y.add_user(attributes)
+    resolver = get_resolver_object(resolvername)
+    uid = resolver.add_user(attributes)
     return uid
 
 
 @log_with(log)
-def split_user(username):
+def split_user(username: str) -> tuple[str, str]:
     """
     Split the username of the form user@realm into the username and the realm
     splitting myemail@emailprovider.com@realm is also possible and will
@@ -724,7 +721,7 @@ def split_user(username):
 
 
 @log_with(log, hide_args_keywords={0: ["pass", "password"]})
-def get_user_from_param(param, optionalOrRequired=optional):
+def get_user_from_param(param: dict, optional_or_required: bool = optional) -> User:
     """
     Find the parameter user, realm and resolver and
     create a user object from these parameters.
@@ -733,14 +730,11 @@ def get_user_from_param(param, optionalOrRequired=optional):
     than one resolver.
 
     :param param: The dictionary of request parameters
-    :type param: dict
-    :param optionalOrRequired: whether the user is required
-    :type optionalOrRequired: bool
+    :param optional_or_required: whether the user is required
     :return: User as found in the parameters
-    :rtype: User object
     """
     realm = ""
-    username = getParam(param, "user", optionalOrRequired)
+    username = getParam(param, "user", optional_or_required)
 
     if username is None:
         username = ""
@@ -835,19 +829,19 @@ def get_user_list(param: dict = None, user: User = None, include_custom_attribut
     for resolver_name in set(resolvers):
         try:
             log.debug("Check for resolver class: {0!r}".format(resolver_name))
-            y = get_resolver_object(resolver_name)
+            resolver = get_resolver_object(resolver_name)
             # Continue if we couldn't find a resolver with the given name
-            if not y:
+            if not resolver:
                 continue
             log.debug("With this search dictionary: %r", search_dict)
-            user_list = y.getUserList(search_dict, requested_attributes)
+            user_list = resolver.getUserList(search_dict, requested_attributes)
             # Add resolvername to the list
             realm_id = get_realm_id(param_realm or user_realm)
             for user_info in user_list:
                 if not requested_attributes or "resolver" in requested_attributes:
                     user_info["resolver"] = resolver_name
                 if not requested_attributes or "editable" in requested_attributes:
-                    user_info["editable"] = y.editable
+                    user_info["editable"] = resolver.editable
                 if include_custom_attributes and realm_id is not None:
                     # Add the custom attributes, by class method from User
                     # with uid, resolvername and realm_id, which we need to determine by the realm name
@@ -872,21 +866,21 @@ def get_user_list(param: dict = None, user: User = None, include_custom_attribut
 
 @log_with(log)
 @user_cache(cache_username)
-def get_username(userid, resolvername):
+def get_username(user_id: str, resolvername: str) -> str:
     """
     Determine the username for a given id and a resolvername.
 
-    :param userid: The id of the user in a resolver
-    :type userid: string
+    :param user_id: The id of the user in a resolver
+    :type user_id: string
     :param resolvername: The name of the resolver
     :return: the username or "" if it does not exist
     :rtype: string
     """
     username = ""
-    if userid:
-        y = get_resolver_object(resolvername)
-        if y:
-            username = y.getUsername(userid)
+    if user_id:
+        resolver = get_resolver_object(resolvername)
+        if resolver:
+            username = resolver.getUsername(user_id)
     return username
 
 
@@ -903,7 +897,7 @@ def log_used_user(user: User, other_text: str = "") -> str:
     return "logged in as {0}. {1}".format(user.used_login, other_text) if user.used_login != user.login else other_text
 
 
-def get_attributes(uid, resolver, realm_id, requested_attributes: list[str] = None):
+def get_attributes(uid: str, resolver: str, realm_id: str, requested_attributes: list[str] = None) -> dict:
     """
     Returns the attributes for the given user.
 
@@ -921,9 +915,8 @@ def get_attributes(uid, resolver, realm_id, requested_attributes: list[str] = No
     return custom_attributes
 
 
-def is_attribute_at_all():
+def is_attribute_at_all() -> bool:
     """
     Check if there are custom user attributes at all
-    :return: bool
     """
     return bool(CustomUserAttribute.query.count())

@@ -507,7 +507,7 @@ class CertificateTokenClass(TokenClass):
             * and the certificate
             We need the user for whom the certificate should be created
             """
-            user = get_user_from_param(param, optionalOrRequired=required)
+            user = get_user_from_param(param, optional_or_required=required)
             keysize = get_optional(param, "keysize", 2048)
             # The key size should be at least 2048
             if keysize < 2048:

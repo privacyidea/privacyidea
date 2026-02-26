@@ -150,7 +150,7 @@ class IdResolver (UserIdResolver):
         # It seems that the userName is the userId
         return convert_column_to_unicode(loginName)
 
-    def getUserList(self, search_dict=None, attributes: list[str] = None):
+    def getUserList(self, search_dict=None, attributes: list[str] = None) -> list[dict]:
         """
         Return the list of users
         """

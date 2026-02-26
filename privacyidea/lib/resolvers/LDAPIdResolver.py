@@ -426,7 +426,7 @@ class IdResolver(UserIdResolver):
             "(", "\\28").replace(")", "\\29").replace("/", "\\2f")
 
     @staticmethod
-    def _escape_filter_value(filter_value: str or bytes, allow_wildcards=False):
+    def _escape_filter_value(filter_value: str or bytes, allow_wildcards: bool = False) -> str:
         """
         Escape characters for a string to be added in a search filter to avoid injections.
         According to RFC4515 \, *, (, ) and NUL (0x00) are escaped with a backslash.
@@ -694,7 +694,7 @@ class IdResolver(UserIdResolver):
 
         return groups
 
-    def _ldap_attributes_to_user_object(self, ldap_user: dict, attributes_to_include: list[str] = None):
+    def _ldap_attributes_to_user_object(self, ldap_user: dict, attributes_to_include: list[str] = None) -> dict:
         """
         This helper function converts the LDAP attributes to a dictionary for
         the privacyIDEA user. The LDAP Userinfo mapping is used to do so.
@@ -1296,7 +1296,7 @@ class IdResolver(UserIdResolver):
 
         return success, message
 
-    def add_user(self, attributes: dict = None):
+    def add_user(self, attributes: dict = None) -> str:
         """
         Add a new user to the LDAP directory.
         The user can only be created in the LDAP using a DN.
