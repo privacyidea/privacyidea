@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, EventEmitter, inject, OnInit, Output } from "@angular/core";
-import { FormControl, FormGroup, FormsModule, ReactiveFormsModule } from "@angular/forms";
+import { FormControl, FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 
 import {
@@ -53,8 +53,6 @@ export class EnrollRegistrationComponent implements OnInit {
       mapper: TokenApiPayloadMapper<RegistrationEnrollmentData>;
     } | null
   >();
-
-  registrationForm = new FormGroup({});
 
   ngOnInit(): void {
     this.additionalFormFieldsChange.emit({});

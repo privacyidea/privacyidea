@@ -137,6 +137,7 @@ export interface TokenType {
   name: string;
   info: string;
   text: string;
+  rollover?: boolean;
 }
 
 export interface WebAuthnRegisterRequest {
@@ -193,7 +194,7 @@ export interface TokenServiceInterface {
   tokenBaseUrl: string;
   eventPageSize: number;
   tokenSerial: WritableSignal<string>;
-  selectedTokenType: Signal<TokenType>;
+  selectedTokenType: WritableSignal<TokenType>;
   showOnlyTokenNotInContainer: WritableSignal<boolean>;
   tokenFilter: WritableSignal<FilterValue>;
   tokenDetailResource: HttpResourceRef<PiResponse<Tokens> | undefined>;

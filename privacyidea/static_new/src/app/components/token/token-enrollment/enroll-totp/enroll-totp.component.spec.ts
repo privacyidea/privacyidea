@@ -41,4 +41,34 @@ describe("EnrollTotpComponent", () => {
   it("should create", () => {
     expect(component).toBeTruthy();
   });
+
+  describe("ngOnInit with enrollmentData input", () => {
+    it("should set initial values from enrollmentData", () => {
+      fixture.componentRef.setInput("enrollmentData", {
+        type: "totp",
+        generateOnServer: false,
+        otpLength: 8,
+        hashAlgorithm: "sha512",
+        timeStep: 45
+      });
+      component.ngOnInit();
+      expect(component.generateOnServerFormControl.value).toBe(false);
+      expect(component.otpLengthFormControl.value).toBe(8);
+      expect(component.hashAlgorithmControl.value).toBe("sha512");
+    });
+
+    it("should ignore values from enrollmentData if they are undefined", () => {
+      fixture.componentRef.setInput("enrollmentData", {
+        type: "totp",
+        generateOnServer: undefined,
+        otpLength: undefined,
+        hashAlgorithm: undefined,
+        timeStep: undefined
+      });
+      component.ngOnInit();
+      expect(component.generateOnServerFormControl.value).toBe(true);
+      expect(component.otpLengthFormControl.value).toBe(6);
+      expect(component.hashAlgorithmControl.value).toBe("sha1");
+    });
+  });
 });

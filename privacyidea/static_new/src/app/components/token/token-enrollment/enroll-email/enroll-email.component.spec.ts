@@ -41,4 +41,28 @@ describe("EnrollEmailComponent", () => {
   it("should create", () => {
     expect(component).toBeTruthy();
   });
+
+  describe("ngOnInit with enrollmentData input", () => {
+    it("should set initial values from enrollmentData", () => {
+      fixture.componentRef.setInput("enrollmentData", {
+        type: "email",
+        emailAddress: "test@example.com",
+        readEmailDynamically: true
+      });
+      component.ngOnInit();
+      expect(component.emailAddressControl.value).toBe("test@example.com");
+      expect(component.readEmailDynamicallyControl.value).toBe(true);
+    });
+
+    it("should ignore values from enrollmentData if they are undefined", () => {
+      fixture.componentRef.setInput("enrollmentData", {
+        type: "email",
+        emailAddress: undefined,
+        readEmailDynamically: undefined
+      });
+      component.ngOnInit();
+      expect(component.emailAddressControl.value).toBe("");
+      expect(component.readEmailDynamicallyControl.value).toBe(false);
+    });
+  });
 });
