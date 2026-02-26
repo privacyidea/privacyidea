@@ -45,7 +45,7 @@ import { ContentService, ContentServiceInterface } from "../content/content.serv
 import { StringUtils } from "../../utils/string.utils";
 import { DialogService, DialogServiceInterface } from "../dialog/dialog.service";
 import { SimpleConfirmationDialogComponent } from "../../components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
-import { FilterValue } from "../../core/models/filter_value";
+import { FilterValue } from "src/app/core/models/filter_value/filter_value";
 
 export type TokenTypeKey =
   | "hotp"

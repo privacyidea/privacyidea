@@ -20,9 +20,9 @@ import { HttpResourceRef } from "@angular/common/http";
 import { computed, linkedSignal, Signal, signal, WritableSignal } from "@angular/core";
 import { Observable, of } from "rxjs";
 import { PiResponse } from "../../app/app.component";
-import { FilterValue } from "../../app/core/models/filter_value";
 import { UserAttributePolicy, UserData, UserServiceInterface } from "../../app/services/user/user.service";
 import { MockHttpResourceRef, MockPiResponse } from "./mock-utils";
+import { FilterValue } from "src/app/core/models/filter_value/filter_value";
 
 export class MockUserService implements UserServiceInterface {
   userAttributes: Signal<Record<string, string>> = signal({});

@@ -18,7 +18,6 @@
  **/
 import { computed, Signal, signal, WritableSignal } from "@angular/core";
 import { Sort } from "@angular/material/sort";
-import { FilterValue } from "../../app/core/models/filter_value";
 import {
   BulkResult,
   LostTokenResponse,
@@ -31,6 +30,7 @@ import {
 import { MockHttpResourceRef, MockPiResponse } from "./mock-utils";
 import { PiResponse } from "../../app/app.component";
 import { of, Subject } from "rxjs";
+import { FilterValue } from "src/app/core/models/filter_value/filter_value";
 
 function makeTokenDetailResponse(tokentype: string): PiResponse<Tokens> {
   return {
