@@ -72,6 +72,7 @@ export class EnrollCertificateComponent implements OnInit {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly systemService: SystemServiceInterface = inject(SystemService);
 
+  enrollmentData = input<CertificateEnrollmentData>();
   @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
@@ -127,6 +128,7 @@ export class EnrollCertificateComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this._setInitialFormValues();
     this.additionalFormFieldsChange.emit({
       caConnector: this.caConnectorControl,
       certTemplate: this.certTemplateControl,
@@ -149,6 +151,13 @@ export class EnrollCertificateComponent implements OnInit {
       this.caConnectorControl.updateValueAndValidity();
       this.certTemplateControl.updateValueAndValidity();
     });
+  }
+
+  private _setInitialFormValues() {
+    if (!!this.enrollmentData()) {
+      this.caConnectorControl.setValue(this.enrollmentData()?.caConnector ?? "", { emitEvent: false });
+      this.certTemplateControl.setValue(this.enrollmentData()?.certTemplate ?? "", { emitEvent: false });
+    }
   }
 
   enrollmentArgsGetter = (

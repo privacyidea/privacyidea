@@ -33,6 +33,7 @@ import { FilterValue } from "../../core/models/filter_value";
 import { ROUTE_PATHS } from "../../route_paths";
 import { ContentService } from "../content/content.service";
 import { MockAuthService } from "../../../testing/mock-services/mock-auth-service";
+import { signal, WritableSignal } from "@angular/core";
 
 describe("ContainerService", () => {
   let containerService: ContainerService;
@@ -389,8 +390,7 @@ describe("ContainerService", () => {
     containerService.containerFilter.set(new FilterValue({ value: "desc: foo token_serial: 123 type: user: Bob" }));
     expect(containerService.filterParams()).toEqual({
       desc: "*foo*",
-      token_serial: "*123*",
-      // user: "Bob"
+      token_serial: "*123*"
     });
   });
 
@@ -645,5 +645,46 @@ describe("ContainerService", () => {
     expect(params).toHaveProperty("type", "*generic*");
     expect(params).not.toHaveProperty("user");
     expect(params).not.toHaveProperty("token_serial");
+  });
+
+  describe("compatibleTypes and containersForTokenType", () => {
+    let containerTypeOptionsSignal: WritableSignal<any>;
+    let compatibleWithSelectedTokenTypeSignal: WritableSignal<any>;
+
+    beforeEach(() => {
+      // Use Angular signals for mocking
+      containerTypeOptionsSignal = signal([
+        { containerType: "typeA", description: "Type A", token_types: ["tt1", "tt2"] },
+        { containerType: "typeB", description: "Type B", token_types: ["tt2", "tt3"] },
+        { containerType: "typeC", description: "Type C", token_types: ["tt3"] }
+      ]);
+      compatibleWithSelectedTokenTypeSignal = signal("tt2");
+      (containerService as any).containerTypeOptions = containerTypeOptionsSignal;
+      (containerService as any).compatibleWithSelectedTokenType = compatibleWithSelectedTokenTypeSignal;
+    });
+
+    it("should compute compatibleTypes correctly", () => {
+      const compatibleTypes = containerService["compatibleTypes"]();
+      expect(compatibleTypes).toEqual(["typeA", "typeB"]);
+    });
+
+    it("should filter containersForTokenType by compatibleTypes and return serials", () => {
+      // Set compatibleTypes signal value
+      (containerService as any)["compatibleTypes"] = signal(["typeA", "typeB"]);
+      // Mock containerResource
+      const mockContainers = [
+        { serial: "c1", type: "typeA", realms: [], states: [], tokens: [], users: [] },
+        { serial: "c2", type: "typeB", realms: [], states: [], tokens: [], users: [] },
+        { serial: "c3", type: "typeC", realms: [], states: [], tokens: [], users: [] }
+      ];
+      (containerService as any).containerResource.set({
+        result: {
+          value: {
+            containers: mockContainers
+          }
+        }
+      });
+      expect(containerService.containersForTokenType()).toEqual(["c1", "c2"]);
+    });
   });
 });

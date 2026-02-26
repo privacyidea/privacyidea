@@ -68,6 +68,7 @@ export class EnrollHotpComponent implements OnInit {
     { value: "sha256", viewValue: "SHA256" },
     { value: "sha512", viewValue: "SHA512" }
   ];
+  enrollmentData = input<HotpEnrollmentData>();
   @Input() wizard: boolean = false;
   @Output() enrollmentArgsGetterChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => {
@@ -89,6 +90,7 @@ export class EnrollHotpComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this._setInitialFormValues();
     this.additionalFormFieldsChange.emit({
       generateOnServer: this.generateOnServerFormControl,
       otpLength: this.otpLengthFormControl,
@@ -97,6 +99,14 @@ export class EnrollHotpComponent implements OnInit {
     });
     this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
     this._applyPolicies();
+  }
+
+  private _setInitialFormValues() {
+    if (!!this.enrollmentData()) {
+      this.generateOnServerFormControl.setValue(this.enrollmentData()?.generateOnServer ?? true, { emitEvent: false });
+      this.otpLengthFormControl.setValue(this.enrollmentData()?.otpLength ?? 6, { emitEvent: false });
+      this.hashAlgorithmFormControl.setValue(this.enrollmentData()?.hashAlgorithm ?? "sha1", { emitEvent: false });
+    }
   }
 
   private _applyPolicies() {

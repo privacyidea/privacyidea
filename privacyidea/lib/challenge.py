@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2015 NetKnights GmbH <https://netknights.it>
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
 #  privacyIDEA is a fork of LinOTP
 #
 #  2014-12-07 Cornelius Kölbel <cornelius@privacyidea.org>
@@ -27,6 +30,7 @@ The method is tested in test_lib_challenges
 import datetime
 import logging
 
+import sqlalchemy
 from sqlalchemy import select, delete
 from sqlalchemy.sql import Select
 
@@ -35,6 +39,7 @@ from .policies.actions import PolicyAction
 from .sqlutils import delete_matching_rows
 from ..models import Challenge, db
 from ..models.utils import utc_now
+from privacyidea.models.utils import clob_to_varchar
 
 log = logging.getLogger(__name__)
 
@@ -55,7 +60,7 @@ def get_challenges(serial: str = None, transaction_id: str = None, challenge=Non
     if transaction_id is not None:
         stmt = stmt.where(Challenge.transaction_id == transaction_id)
     if challenge is not None:
-        stmt = stmt.where(Challenge.challenge == challenge)
+        stmt = stmt.where(clob_to_varchar(Challenge.challenge) == challenge)
 
     challenges = db.session.execute(stmt).scalars().all()
     return challenges
@@ -111,9 +116,10 @@ def get_challenges_paginate(serial=None, transaction_id=None,
 
 def _create_challenge_query(serial: str = None, transaction_id: str = None) -> Select:
     """
-    This function create the sql query for fetching transaction_ids. It is
+    This function creates the SQL query for fetching transaction_ids. It is
     used by get_challenge_paginate.
-    :return: An SQLAlchemy sql query
+
+    :return: An SQLAlchemy SQL query
     """
     stmt = select(Challenge)
     if serial is not None and serial.strip("*"):
@@ -134,6 +140,7 @@ def extract_answered_challenges(challenges):
     Given a list of challenge objects, extract and return a list of *answered* challenge.
     A challenge is answered if it is not expired yet *and* if its ``otp_valid`` attribute
     is set to True.
+
     :param challenges: a list of challenge objects
     :return: a list of answered challenge objects
     """
@@ -165,7 +172,7 @@ def delete_challenges(serial: str = None, transaction_id: str = None) -> int:
     return result.rowcount
 
 
-def _build_challenge_criterion(age: int = None) -> 'sqlalchemy.sql.expression.BinaryExpression':
+def _build_challenge_criterion(age: int = None) -> 'sqlalchemy.sql.expression.ColumnElement':
     """
     Return an SQLAlchemy binary expression selecting expired challenges or expired challenges older than a given age.
 
@@ -182,10 +189,10 @@ def _build_challenge_criterion(age: int = None) -> 'sqlalchemy.sql.expression.Bi
 
 def cleanup_expired_challenges(chunk_size: int = None, age: int = None) -> int:
     """
-    Delete only expired challenges from the challenge table, or delete expired challenges older than the given age.
+    Delete only expired challenges from the challenge table or delete expired challenges older than the given age.
 
     :param chunk_size: Delete entries in chunks of the given size to avoid deadlocks
-    :param age: Instead of deleting expired challenges, delete challenge entries older than these number of minutes.
+    :param age: Instead of deleting expired challenges, delete challenge entries older than these numbers of minutes.
     :return: number of deleted entries
     """
     criterion = _build_challenge_criterion(age)
@@ -217,14 +224,14 @@ def cancel_enrollment_via_multichallenge(transaction_id: str) -> bool:
         log.warning("No data found in challenge %s for transaction_id %s", challenge.id, transaction_id)
         return False
 
-    if not PolicyAction.ENROLL_VIA_MULTICHALLENGE in data:
+    if PolicyAction.ENROLL_VIA_MULTICHALLENGE not in data:
         log.warning(
             "Challenge for transaction_id %s contains no information about ENROLL_VIA_MULTICHALLENGE",
             transaction_id
         )
         return False
 
-    if not PolicyAction.ENROLL_VIA_MULTICHALLENGE_OPTIONAL in data:
+    if PolicyAction.ENROLL_VIA_MULTICHALLENGE_OPTIONAL not in data:
         log.warning(
             "Challenge for transaction_id %s contains no information about ENROLL_VIA_MULTICHALLENGE_OPTIONAL",
             transaction_id
@@ -238,8 +245,8 @@ def cancel_enrollment_via_multichallenge(transaction_id: str) -> bool:
         )
         return False
 
-    # If we reach this point, we can cancel the enrollment, depending on the type
-    # The challenges will be cleaned up by either functions
+    # If we reach this point, we can cancel the enrollment, depending on the type.
+    # The challenges will be cleaned up by either function
     if "type" in data and data["type"] == "container":
         from .container import delete_container_by_serial
         delete_container_by_serial(challenge.serial)

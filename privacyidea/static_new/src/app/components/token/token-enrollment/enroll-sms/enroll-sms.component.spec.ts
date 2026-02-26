@@ -41,4 +41,33 @@ describe("EnrollSmsComponent", () => {
   it("should create", () => {
     expect(component).toBeTruthy();
   });
+
+  describe("ngOnInit with enrollmentData input", () => {
+    it("should set initial values from enrollmentData", () => {
+      fixture.componentRef.setInput("enrollmentData", {
+        type: "sms",
+        smsGateway: "TestGateway",
+        readNumberDynamically: true,
+        phoneNumber: "+1234567890"
+      });
+      fixture.detectChanges();
+      component.ngOnInit();
+      expect(component.smsGatewayControl.value).toBe("TestGateway");
+      expect(component.readNumberDynamicallyControl.value).toBe(true);
+      expect(component.phoneNumberControl.value).toBe("+1234567890");
+    });
+
+    it("should ignore values from enrollmentData if they are undefined", () => {
+      fixture.componentRef.setInput("enrollmentData", {
+        type: "sms",
+        smsGateway: undefined,
+        readNumberDynamically: undefined,
+        phoneNumber: undefined
+      });
+      component.ngOnInit();
+      expect(component.smsGatewayControl.value).toBe("");
+      expect(component.readNumberDynamicallyControl.value).toBe(false);
+      expect(component.phoneNumberControl.value).toBe("");
+    });
+  });
 });

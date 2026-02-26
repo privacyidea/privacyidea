@@ -39,6 +39,7 @@ export type TokenEnrollmentLastStepDialogData = {
   user: UserData | null;
   userRealm: string;
   onlyAddToRealm: boolean;
+  rollover?: boolean;
 };
 
 @Component({
