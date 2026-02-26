@@ -43,7 +43,7 @@ $edit-grid-layout: 60px 1.2fr 2fr 1.2fr 2fr 1.2fr 60px;
     background-color: var(--mat-sys-surface-container-highest);
   }
   &.selected {
-    background-color: var(--mat-sys-primary-container);
+    background-color: var(--mat-sys-surface-container-low);
     border: 1px solid var(--mat-sys-primary);
   }
 }

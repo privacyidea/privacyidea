@@ -20,7 +20,7 @@
     padding: var(--global-padding);
 
     &.action-button-active {
-      background-color: var(--mat-sys-primary-container);
+      background-color: var(--mat-sys-surface-container-low);
       color: var(--mat-sys-on-primary-container);
       border-color: var(--mat-sys-primary);
     }

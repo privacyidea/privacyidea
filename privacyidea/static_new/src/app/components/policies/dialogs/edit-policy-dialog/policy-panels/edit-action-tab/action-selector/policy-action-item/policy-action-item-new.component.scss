@@ -11,7 +11,7 @@
   margin: 4px 0;
   border-radius: var(--border-radius);
   box-shadow: var(--mat-sys-level1);
-  background-color: var(--mat-sys-primary-container);
+  background-color: var(--mat-sys-surface-container-low);
   font-weight: 500;
   box-sizing: border-box;
 }
@@ -26,14 +26,7 @@
 
 .detail-description {
   flex: 1 1 auto;
-  font-size: 0.85em;
-  opacity: 0.7;
   padding: 8px 0;
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  overflow: hidden;
 }
 
 .detail-input {
