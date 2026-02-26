@@ -574,13 +574,16 @@ $button-low-contrast-variant: linear-gradient(
 }
 
 .width-s {
-  width: 120px
+  width: 120px;
+  min-width: 120px;
 }
 
 .width-m {
   width: 180px;
+  min-width: 180px;
 }
 
 .width-l {
   width: 240px;
+  min-width: 240px;
 }

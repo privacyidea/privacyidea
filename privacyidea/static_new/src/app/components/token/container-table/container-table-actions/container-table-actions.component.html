@@ -19,7 +19,7 @@
 <div class="flex-row margin-bottom-1 margin-top-1 gap-8">
   <button
     [routerLink]="[ROUTE_PATHS.TOKENS_CONTAINERS_CREATE]"
-    class="action-button-secondary"
+    class="action-button-secondary width-m"
     mat-stroked-button>
     <mat-icon> create_new_folder</mat-icon>
     Create Container
@@ -28,7 +28,7 @@
     <button
       (click)="deleteSelectedContainer()"
       [disabled]="containerSelection().length === 0"
-      class="action-button-delete-secondary"
+      class="action-button-delete-secondary width-m"
       i18n
       mat-stroked-button>
       <mat-icon> delete_sweep</mat-icon>
@@ -37,12 +37,12 @@
   }
   <button
     [matMenuTriggerFor]="advancedFilterMenu"
-    class="action-button-secondary"
+    class="action-button-primary width-m"
     mat-stroked-button>
     <mat-icon> filter_list</mat-icon>
     More Filter
   </button>
-  <mat-menu #advancedFilterMenu="matMenu">
+  <mat-menu #advancedFilterMenu="matMenu" class="width-m">
     @for (keyword of containerService.advancedApiFilter; track keyword) {
       <button
         (click)="onAdvancedFilterClick(keyword)"

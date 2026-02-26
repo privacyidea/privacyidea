@@ -16,7 +16,9 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<h2 mat-dialog-title i18n>
+<h2
+  i18n
+  mat-dialog-title>
   @if (isEditMode) {
     Edit Tokengroup {{ data?.groupname }}
   } @else {
@@ -25,7 +27,9 @@
 </h2>
 
 <mat-dialog-content>
-  <form [formGroup]="tokengroupForm" class="tokengroup-column">
+  <form
+    [formGroup]="tokengroupForm"
+    class="tokengroup-column">
     <mat-form-field>
       <mat-label i18n>Identifier</mat-label>
       <input
@@ -50,13 +54,20 @@
 </mat-dialog-content>
 
 <mat-dialog-actions align="end">
-  <button (click)="onCancel()" mat-button i18n>Cancel</button>
+  <button
+    (click)="onCancel()"
+    class="action-button-secondary width-s"
+    i18n
+    mat-button
+    mat-stroked-button>
+    Cancel
+  </button>
   <button
     (click)="save()"
     [disabled]="tokengroupForm.invalid"
-    class="action-button-secondary width-l"
-    mat-stroked-button
-    i18n>
+    class="action-button-primary width-s"
+    i18n
+    mat-stroked-button>
     <mat-icon>save</mat-icon>
     Save
   </button>

@@ -54,7 +54,7 @@
           }
         </mat-slide-toggle>
       <button
-        class="action-button-secondary"
+        class="action-button-primary width-s"
         mat-stroked-button
         [disabled]="!canSave()"
         (click)="$event.stopPropagation(); saveEvent();">
@@ -62,10 +62,9 @@
         <span i18n>Save</span>
       </button>
       <button
-        class="action-button-secondary"
+        class="action-button-secondary width-s"
         mat-stroked-button
         (click)="$event.stopPropagation(); cancelEdit()">
-        <mat-icon>cancel</mat-icon>
         <span i18n>Cancel</span>
       </button>
     </div>

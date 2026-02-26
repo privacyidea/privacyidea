@@ -156,13 +156,15 @@
 <mat-dialog-actions align="end">
   <button
     (click)="onCancel()"
+    class="action-button-secondary width-s"
     i18n
-    mat-button>Cancel
+    mat-stroked-button>
+    Cancel
   </button>
   <button
     (click)="save()"
     [disabled]="radiusForm.invalid"
-    class="action-button-secondary width-l"
+    class="action-button-primary width-s"
     i18n
     mat-stroked-button>
     <mat-icon>save</mat-icon>

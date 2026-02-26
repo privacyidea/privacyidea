@@ -28,7 +28,7 @@
         [length]="totalLength()"
         [pageSizeOptions]="pageSizeOptions()"
         [pageSize]="pageSizeOptions()[0]"
-        showFirstLastButtons/>
+        showFirstLastButtons />
     </div>
 
     <div class="flex-row margin-bottom-1">
@@ -323,7 +323,7 @@
                       <button
                         (click)="onCreateRealm()"
                         [disabled]="!canSubmitNewRealm()"
-                        class="action-button-secondary width-l"
+                        class="action-button-primary width-s"
                         mat-stroked-button
                         type="button">
                         <mat-icon>add</mat-icon>
@@ -332,7 +332,8 @@
                       <button
                         (click)="resetCreateForm()"
                         [disabled]="isCreatingRealm()"
-                        mat-button
+                        class="action-button-secondary width-s"
+                        mat-stroked-button
                         matTooltip="Reset form"
                         type="button">
                         <span i18n>Reset</span>

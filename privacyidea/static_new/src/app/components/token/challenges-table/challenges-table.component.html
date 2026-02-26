@@ -19,12 +19,7 @@
 <div
   appScrollToTop
   class="challenges-table-container">
-  <h3
-    class="margin-left-1"
-    i18n>
-    Challenges
-  </h3>
-  <div class="filter-paginator-container">
+  <div class="filter-paginator-container margin-bottom-16">
     <mat-form-field
       appearance="fill"
       class="challenges-table-filter"
@@ -103,8 +98,8 @@
               @case ("serial") {
                 <div class="flex-row">
                   <a
-                    class="flex ali-center"
-                    (click)="serialClicked(element)">
+                    (click)="serialClicked(element)"
+                    class="flex ali-center">
                     {{ element.serial }}
                   </a>
                   @if (element.serial) {

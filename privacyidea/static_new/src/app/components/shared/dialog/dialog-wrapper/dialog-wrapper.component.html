@@ -39,7 +39,7 @@
             action.type === 'confirm' ||
             action.type === 'auxiliary' ||
             !action.type))"
-            [class.action-button-secondary]="action.type === 'cancel' && !action.primary"
+            [class.action-button-secondary]="!action.primary"
             [disabled]="action.disabled"
             class="width-s"
             mat-stroked-button>

@@ -96,7 +96,7 @@
       <button
         (click)="test()"
         [disabled]="privacyideaForm.invalid || isTesting()"
-        class="action-button-secondary margin-bottom-1"
+        class="action-button-secondary width-m margin-bottom-1"
         mat-stroked-button
         type="button">
         <mat-icon>send</mat-icon>
@@ -110,13 +110,15 @@
 <mat-dialog-actions align="center">
   <button
     (click)="onCancel()"
+    class="action-button-secondary width-s"
     i18n
-    mat-button>Cancel
+    mat-stroked-button>
+    Cancel
   </button>
   <button
     (click)="save()"
     [disabled]="privacyideaForm.invalid || privacyideaForm.pristine"
-    class="action-button-secondary width-l"
+    class="action-button-primary width-s"
     i18n
     mat-stroked-button>
     <mat-icon>save</mat-icon>
