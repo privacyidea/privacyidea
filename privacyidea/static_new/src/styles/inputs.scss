@@ -28,6 +28,7 @@ $focus-outline: 3px solid var(--mat-sys-primary-light);
 .user-pin-input {
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: 8px;
 }
 
@@ -50,4 +51,19 @@ $focus-outline: 3px solid var(--mat-sys-primary-light);
   padding-top: 4px;
   line-height: var(--mat-form-field-subscript-text-line-height, var(--mat-sys-body-small-line-height));
   letter-spacing: var(--mat-form-field-subscript-text-tracking, var(--mat-sys-body-small-tracking));
+}
+
+.input-width-s {
+  width: 180px;
+  min-width: 180px;
+}
+
+.input-width-m {
+  width: 240px;
+  min-width: 240px;
+}
+
+.input-width-l {
+  width: 300px;
+  min-width: 300px;
 }

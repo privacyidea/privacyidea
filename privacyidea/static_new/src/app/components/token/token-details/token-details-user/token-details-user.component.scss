@@ -3,7 +3,6 @@
 $border-color: var(--mat-sys-outline-variant);
 $gap-small: 8px;
 $padding-horizontal: 16px;
-$min-width-editable: 20rem;
 
 .user-container {
   display: flex;
@@ -30,7 +29,8 @@ $min-width-editable: 20rem;
   }
 
   .user-editable-row {
-    min-width: $min-width-editable;
+    width: 241px;
+    min-width: 241px;
   }
 
   .user-pin-container-padding {

@@ -58,20 +58,21 @@
           <ng-container matColumnDef="value">
             <td
               *matCellDef="let element"
-              [ngClass]="tableUtilsService.getTdClassForKey(element.keyMap.key)"
+              [ngClass]="tableUtilsService.getTdClassForKey(element.keyMap.key)
+              .concat(element.isEditing() ? ['padding-0'] : [])"
               mat-cell>
               @switch (element.keyMap.key) {
                 @case ("container_serial") {
                   @if (element.isEditing()) {
-                    <mat-form-field class="width-18rem">
+                    <mat-form-field class="input-width-m height-50">
                       <mat-label i18n>Enter Container</mat-label>
                       <app-clearable-input
                         (onClick)="containerService.selectedContainer.set(null)"
                         [showClearButton]="containerService.selectedContainer() !== ''">
                         <input
-                          matInput
                           [(ngModel)]="containerService.selectedContainer"
-                          [matAutocomplete]="containerAuto" />
+                          [matAutocomplete]="containerAuto"
+                          matInput />
                       </app-clearable-input>
                       <mat-autocomplete #containerAuto="matAutocomplete">
                         @for (option of containerService.filteredContainerOptions(); track option) {
@@ -81,8 +82,8 @@
                     </mat-form-field>
                   } @else {
                     <a
-                      attr.aria-label="{{ element.keyMap.label }} Link"
-                      (click)="contentService.containerSelected(element.value)">
+                      (click)="contentService.containerSelected(element.value)"
+                      attr.aria-label="{{ element.keyMap.label }} Link">
                       {{ element.value }}
                     </a>
                     @if (element.value !== "") {
@@ -92,7 +93,7 @@
                 }
                 @case ("realms") {
                   @if (element.isEditing()) {
-                    <mat-form-field class="width-18rem">
+                    <mat-form-field class="input-width-m height-77">
                       <mat-label i18n>Select Realms</mat-label>
                       <mat-select
                         [(ngModel)]="realmService.selectedRealms"
@@ -101,9 +102,8 @@
                         @for (option of realmService.realmOptions(); track option) {
                           @if (option === userRealm) {
                             <mat-option
-                              value="{{ option }}"
                               disabled
-                              >{{ option }}
+                              value="{{ option }}">{{ option }}
                             </mat-option>
                           } @else {
                             <mat-option value="{{ option }}">{{ option }}</mat-option>
@@ -113,8 +113,8 @@
                     </mat-form-field>
                   } @else {
                     <div
-                      class="details-scrollable-container"
-                      [ngClass]="{ 'details-list': element.value.length > 2 }">
+                      [ngClass]="{ 'details-list': element.value.length > 2 }"
+                      class="details-scrollable-container">
                       @for (realm of element.value; track realm) {
                         <mat-list-item class="height-auto pad-0">
                           <span class="font-14">• {{ realm }}</span>
@@ -125,7 +125,7 @@
                 }
                 @case ("tokengroup") {
                   @if (element.isEditing()) {
-                    <mat-form-field class="width-18rem">
+                    <mat-form-field class="input-width-m height-77">
                       <mat-label i18n>Select Token Group</mat-label>
                       <mat-select
                         [(ngModel)]="selectedTokengroup"
@@ -134,9 +134,8 @@
                         @for (option of tokengroupOptions(); track option) {
                           @if (option === userRealm) {
                             <mat-option
-                              value="{{ option }}"
                               disabled
-                              >{{ option }}
+                              value="{{ option }}">{{ option }}
                             </mat-option>
                           } @else {
                             <mat-option value="{{ option }}">{{ option }}</mat-option>
@@ -160,14 +159,14 @@
                 }
                 @case ("description") {
                   @if (element.isEditing()) {
-                    <mat-form-field class="width-18rem description">
+                    <mat-form-field class="input-width-m description height-126">
                       <textarea
-                        matInput
-                        rows="4"
-                        [maxlength]="80"
                         [(ngModel)]="element.value"
+                        [maxlength]="80"
                         i18n-placeholder
-                        placeholder="Enter description"></textarea>
+                        matInput
+                        placeholder="Enter description"
+                        rows="4"></textarea>
                     </mat-form-field>
                   } @else {
                     <div class="details-description-div">
@@ -179,18 +178,18 @@
                 }
                 @default {
                   @if (element.isEditing() && isNumberElement(element.keyMap.key)) {
-                    <mat-form-field class="width-18rem">
+                    <mat-form-field class="input-width-m">
                       <input
-                        type="number"
+                        [(ngModel)]="element.value"
                         matInput
-                        [(ngModel)]="element.value" />
+                        type="number" />
                     </mat-form-field>
                   } @else if (element.isEditing()) {
-                    <mat-form-field class="width-18rem">
+                    <mat-form-field class="input-width-m">
                       <textarea
+                        [(ngModel)]="element.value"
                         matInput
-                        rows="1"
-                        [(ngModel)]="element.value"></textarea>
+                        rows="1"></textarea>
                     </mat-form-field>
                   } @else {
                     <div [ngClass]="[tableUtilsService.getDivClassForKey(element.keyMap.key)]">
@@ -222,41 +221,37 @@
               class="edit-column-cell"
               mat-cell>
               <div class="ali-center">
-                @if (
-                  element.keyMap.key === "failcount" && !isAnyEditingOrRevoked() && authService.actionAllowed("reset")
-                ) {
+                @if (element.keyMap.key === "failcount" && !isAnyEditingOrRevoked() && authService.actionAllowed("reset")) {
                   <div class="edit-button-container">
                     <button
-                      mat-icon-button
                       (click)="resetFailCount()"
-                      i18n-aria-label="Reset Fail Count">
+                      i18n-aria-label="Reset Fail Count"
+                      mat-icon-button>
                       <mat-icon> lock_reset</mat-icon>
                     </button>
                   </div>
-                } @else if (
-                  element.keyMap.key === "container_serial" &&
-                  !isAnyEditingOrRevoked() &&
-                  element.value &&
-                  authService.actionAllowed("container_remove_token")
-                ) {
+                } @else if (element.keyMap.key === "container_serial" &&
+                !isAnyEditingOrRevoked() &&
+                element.value &&
+                authService.actionAllowed("container_remove_token")) {
                   <div class="edit-button-container">
                     <button
-                      mat-icon-button
-                      class="red"
                       (click)="removeFromContainer()"
-                      i18n-aria-label="Delete Container">
+                      class="red"
+                      i18n-aria-label="Delete Container"
+                      mat-icon-button>
                       <mat-icon>folder_delete</mat-icon>
                     </button>
                   </div>
                 } @else if (isEditableElement(element.keyMap.key)) {
                   <app-edit-buttons
-                    [toggleEdit]="toggleTokenEdit.bind(this)"
-                    [saveEdit]="saveTokenEdit.bind(this)"
                     [cancelEdit]="cancelTokenEdit.bind(this)"
-                    [shouldHideEdit]="isAnyEditingOrRevoked"
-                    [isEditingUser]="isEditingUser"
+                    [element]="element"
                     [isEditingInfo]="isEditingInfo"
-                    [element]="element"></app-edit-buttons>
+                    [isEditingUser]="isEditingUser"
+                    [saveEdit]="saveTokenEdit.bind(this)"
+                    [shouldHideEdit]="isAnyEditingOrRevoked"
+                    [toggleEdit]="toggleTokenEdit.bind(this)"></app-edit-buttons>
                 }
               </div>
             </td>

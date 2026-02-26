@@ -325,11 +325,13 @@ export class TableUtilsService implements TableUtilsServiceInterface {
   }
 
   getTdClassForKey(key: string) {
-    const classes = ["fix-width-20-padr-0"];
+    const classes = ["width-241"];
     if (key === "description") {
-      classes.push("height-104");
+      classes.push("height-127");
     } else if (["realms", "tokengroup"].includes(key)) {
       classes.push("height-78");
+    } else if (key === "container_serial") {
+      classes.push("height-53")
     } else {
       classes.push("height-52");
     }

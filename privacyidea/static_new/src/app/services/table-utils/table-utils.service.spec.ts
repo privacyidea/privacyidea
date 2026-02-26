@@ -265,7 +265,7 @@ describe("TableUtilsService", () => {
   });
 
   it.each([
-    ["description", "height-104"],
+    ["description", "height-126"],
     ["realms", "height-78"],
     ["tokengroup", "height-78"],
     ["id", "height-52"]
