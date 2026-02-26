@@ -1271,18 +1271,20 @@ class EntraIDResolverTestCase(MyTestCase):
                       "preferredLanguage": "en-US",
                       "surname": "Vance",
                       "userPrincipalName": "AdeleV@contoso.com",
-                      "id": "87d349ed-44d7-43e1-9a83-5f2406dee5bd"
+                      "id": "87d349ed-44d7-43e1-9a83-5f2406dee5bd",
+                      "memberOf": [{"id": "1234", "displayName": "Group1"}, {"id": "5678", "displayName": "Group2"}]
                       }
 
         pi_user = resolver._user_store_user_to_pi_user(entra_user)
-        self.assertEqual(pi_user["uid"], entra_user["id"])
-        self.assertEqual(pi_user["username"], entra_user["userPrincipalName"])
-        self.assertEqual(pi_user["givenname"], entra_user["givenName"])
-        self.assertEqual(pi_user["surname"], entra_user["surname"])
-        self.assertEqual(pi_user["email"], entra_user["mail"])
-        self.assertEqual(pi_user["mobile"], entra_user["mobilePhone"])
-        self.assertEqual(pi_user["phone"], entra_user["businessPhones"])
-        self.assertEqual(7, len(pi_user))
+        self.assertSetEqual({"uid", "username", "givenname", "surname", "email", "mobile", "phone", "groups"}, set(pi_user.keys()))
+        self.assertEqual(entra_user["id"], pi_user["uid"])
+        self.assertEqual(entra_user["userPrincipalName"], pi_user["username"])
+        self.assertEqual(entra_user["givenName"], pi_user["givenname"])
+        self.assertEqual(entra_user["surname"], pi_user["surname"])
+        self.assertEqual(entra_user["mail"], pi_user["email"])
+        self.assertEqual(entra_user["mobilePhone"], pi_user["mobile"])
+        self.assertEqual(entra_user["businessPhones"], pi_user["phone"])
+        self.assertSetEqual({"Group1", "Group2"}, set(pi_user["groups"]))
 
     @responses.activate
     def test_06_getUserList_success(self):
@@ -1341,15 +1343,7 @@ class EntraIDResolverTestCase(MyTestCase):
                                         "userPrincipalName": "admin@contoso.com",
                                         "id": "4562bcc8-c436-4f95-b7c0-4f8ce89dca5e"}]}""")
 
-        # without groups
-        user_list = resolver.getUserList()
-        self.assertEqual(2, len(user_list))
-        self.assertSetEqual({"Adams@contoso.com", "admin@contoso.com"}, set(user["username"] for user in user_list))
-        for user in user_list:
-            self.assertNotIn("groups", user)
-
-        # with groups
-        resolver.config_get_user_groups = {ACTIVE: True, USER_GROUPS_ATTRIBUTE: "displayName"}
+        # with groups (enabled by default)
         user_list = resolver.getUserList()
         self.assertEqual(2, len(user_list))
         self.assertSetEqual({"Adams@contoso.com", "admin@contoso.com"}, set(user["username"] for user in user_list))
@@ -1358,6 +1352,15 @@ class EntraIDResolverTestCase(MyTestCase):
                 self.assertSetEqual({"Group1", "Group2"}, set(user["groups"]))
             else:
                 self.assertListEqual([], user["groups"])
+
+        # without groups
+        resolver.config_get_user_groups = {ACTIVE: False, USER_GROUPS_ATTRIBUTE: "displayName"}
+        user_list = resolver.getUserList()
+        self.assertEqual(2, len(user_list))
+        self.assertSetEqual({"Adams@contoso.com", "admin@contoso.com"},
+                            set(user["username"] for user in user_list))
+        for user in user_list:
+            self.assertNotIn("groups", user)
 
     @responses.activate
     def test_06_getUserList_attributes(self):
@@ -1492,6 +1495,8 @@ class EntraIDResolverTestCase(MyTestCase):
                                            "memberOf": [{"id": "1234", "displayName": "Group1"}, {"id": "5678", "displayName": "Group2"}]
                                         }""")
 
+        # without groups
+        resolver.config_get_user_groups = {ACTIVE: False}
         user_info = resolver.get_user_info(user_id)
         self.assertSetEqual({"username", "userid", "givenname", "surname", "email", "mobile", "phone"},
                             set(user_info.keys()))
@@ -1694,7 +1699,7 @@ class EntraIDResolverTestCase(MyTestCase):
     def test_13_testconnection_fails(self):
         params = {CLIENT_ID: "1234", CLIENT_CREDENTIAL_TYPE: ClientCredentialType.SECRET.value, CLIENT_SECRET: "secret",
                   TENANT: "organization", EDITABLE: True, "test_username": "AdeleV@contoso.com",
-                  "test_userid": "87d349ed-44d7-43e1-9a83-5f2406dee5bd"}
+                  "test_userid": "87d349ed-44d7-43e1-9a83-5f2406dee5bd", CONFIG_GET_USER_GROUPS: {ACTIVE: False}}
 
         # --- responses for success ----
         # user list response
@@ -2171,7 +2176,7 @@ class EntraIDResolverTestCase(MyTestCase):
 
         # default attributes
         attributes = resolver.get_available_info_keys()
-        self.assertSetEqual({"username", "userid", "givenname", "surname", "email", "mobile", "phone"}, set(attributes))
+        self.assertSetEqual({"username", "userid", "givenname", "surname", "email", "mobile", "phone", "groups"}, set(attributes))
 
 
 class KeycloakResolverTestCase(MyTestCase):
