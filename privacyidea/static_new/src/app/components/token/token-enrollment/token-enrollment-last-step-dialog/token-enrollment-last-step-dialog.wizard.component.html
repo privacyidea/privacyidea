@@ -55,38 +55,29 @@
       }
       <div class="flex-column gap-16">
         @if (data.response.detail["password"]) {
-          <p>
+          <p i18n>
             Your Password: <strong>{{ data.response.detail["password"] }}</strong
             >.
           </p>
         }
 
-        <div class="flex-column gap-16">
-          @if (data.response.detail["password"]) {
-            <p i18n>
-              Your Password: <strong>{{ data.response.detail["password"] }}</strong
-              >.
-            </p>
-          }
+        @if (data.response.detail.otpkey?.value && !data.response.detail["otps"] && showQRCode()) {
+          <app-otp-key
+            [otpKeyHex]="data.response.detail.otpkey?.value ?? ''"
+            [otpKeyBase32]="data.response.detail.otpkey?.value_b32 ?? ''" />
+        }
 
-          @if (data.response.detail.otpkey?.value && !data.response.detail["otps"] && showQRCode()) {
-            <app-otp-key
-              [otpKeyHex]="data.response.detail.otpkey?.value ?? ''"
-              [otpKeyBase32]="data.response.detail.otpkey?.value_b32 ?? ''" />
-          }
+        @if (data.tokentype.key === "tiqr") {
+          <app-tiqr-enroll-url [url]="data.response.detail['tiqrenroll']?.value ?? ''" />
+        }
 
-          @if (data.tokentype.key === "tiqr") {
-            <app-tiqr-enroll-url [url]="data.response.detail['tiqrenroll']?.value ?? ''" />
-          }
+        @if (data.tokentype.key === "registration") {
+          <app-registration-code [registrationCode]="data.response.detail['registrationcode']" />
+        }
 
-          @if (data.tokentype.key === "registration") {
-            <app-registration-code [registrationCode]="data.response.detail['registrationcode']" />
-          }
-
-          @if (data.response.detail["otps"]) {
-            <app-otp-values [otpValues]="data.response.detail['otps']" />
-          }
-        </div>
+        @if (data.response.detail["otps"]) {
+          <app-otp-values [otpValues]="data.response.detail['otps']" />
+        }
       </div>
 
       <div
