@@ -22,12 +22,12 @@
   class="token-get-serial"
   i18n-aria-label>
   <h3
-    class="margin-left-1"
+    class="margin-left-16"
     i18n>
     Get Serial Number
   </h3>
   <p
-    class="margin-left-1"
+    class="margin-left-16"
     i18n>
     By entering an OTP value you can get the serial number of the token. You can also enter additional optional
     parameters, to narrow down the search for the token. So you can only search within certain token types or in
@@ -53,7 +53,7 @@
     <button
       (click)="onClickRunSearch()"
       [disabled]="otpValue() === ''"
-      class="action-button-primary width-m"
+      class="action-button-primary button-width-m"
       i18n
       mat-stroked-button>
       <mat-icon>{{ currentStep() !== "searching" ? "play_arrow" : "stop" }}</mat-icon>

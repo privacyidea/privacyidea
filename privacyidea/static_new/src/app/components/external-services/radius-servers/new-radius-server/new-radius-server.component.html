@@ -10,7 +10,7 @@
     class="radius-form">
     <mat-form-field
       appearance="fill"
-      class="width-100 margin-bottom-1">
+      class="width-100 margin-bottom-16">
       <mat-label i18n>Identifier</mat-label>
       <input
         formControlName="identifier"
@@ -156,7 +156,7 @@
 <mat-dialog-actions align="end">
   <button
     (click)="onCancel()"
-    class="action-button-secondary width-s"
+    class="action-button-secondary button-width-s"
     i18n
     mat-stroked-button>
     Cancel
@@ -164,7 +164,7 @@
   <button
     (click)="save()"
     [disabled]="radiusForm.invalid"
-    class="action-button-primary width-s"
+    class="action-button-primary button-width-s"
     i18n
     mat-stroked-button>
     <mat-icon>save</mat-icon>

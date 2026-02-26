@@ -1,6 +1,6 @@
-<div class="flex ali-center gap-8 margin-left-1 margin-top-1">
+<div class="flex ali-center gap-8 margin-left-16 margin-top-16">
   <h3
-    class="margin-left-1"
+    class="margin-left-16"
     i18n>
     Details for Machine:
   </h3>
@@ -42,7 +42,7 @@
     </div>
   </div>
 
-  <div class="filter-paginator-container margin-bottom-1">
+  <div class="filter-paginator-container margin-bottom-16">
     <h3
       class="margin-0"
       i18n>Tokens and Applications
@@ -74,7 +74,7 @@
               {{ token.serial }}
             </a>
             <app-copy-button [copyText]="token.serial" />
-            <span class="margin-left-1">({{ token.type }})</span>
+            <span class="margin-left-16">({{ token.type }})</span>
           </div>
         </td>
       </ng-container>
@@ -108,7 +108,7 @@
             }
           } @else {
             @if (token.application === 'ssh') {
-              <div class="flex-column margin-top-1 gap-8">
+              <div class="flex-column margin-top-16 gap-8">
                 <mat-form-field
                   appearance="fill"
                   subscriptSizing="dynamic">
@@ -233,7 +233,7 @@
 
       <button
         [disabled]="!newTokenSerial || !selectedApplication"
-        class="action-button-primary width-s"
+        class="action-button-primary button-width-s"
         mat-stroked-button
         type="submit">
         <mat-icon>add</mat-icon>

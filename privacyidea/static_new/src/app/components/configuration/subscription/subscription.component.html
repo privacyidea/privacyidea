@@ -26,7 +26,7 @@
 
     <button
       (click)="fileInput.click()"
-      class="action-button-primary width-l"
+      class="action-button-primary button-width-l"
       i18n
       mat-stroked-button
       type="submit">
@@ -44,14 +44,14 @@
     @for (subscription of subscriptions(); track subscription.application) {
       <div class="subscription-details">
 
-        <div class="margin-left-1 flex-row ali-center gap-16">
+        <div class="margin-left-16 flex-row ali-center gap-16">
           <h4>Application:</h4>
           <h4 class="application-color">{{ subscription.application }}</h4>
 
           @if (authService.actionAllowed('delete')) {
             <button
               (click)="deleteSubscription(subscription.application)"
-              class="action-button-delete-secondary width-s"
+              class="action-button-delete-secondary button-width-s"
               i18n-matTooltip
               mat-stroked-button
               matTooltip="Delete Subscription">

@@ -40,12 +40,12 @@
       </mat-button-toggle>
     </mat-button-toggle-group>
 
-    <mat-divider class="margin-top-1 margin-bottom-1" />
+    <mat-divider class="margin-top-16 margin-bottom-16" />
   }
 
   @if (!isAdvanced && basicSettings()) {
     <div class="auth-grid">
-      <mat-form-field class="width-l">
+      <mat-form-field class="button-width-l">
         <mat-label i18n>Method</mat-label>
         <mat-select
           [formControl]="methodControl"
@@ -297,7 +297,7 @@
       the user store.
     </mat-hint>
 
-    <div class="form-grid margin-top-1">
+    <div class="form-grid margin-top-16">
       <mat-form-field class="field-lg">
         <mat-label i18n>Headers (JSON Format)</mat-label>
         <textarea
@@ -352,7 +352,7 @@
         <mat-hint i18n>Time in seconds privacyIDEA tries to reach the user store server.</mat-hint>
       </mat-form-field>
     </div>
-    <div class="margin-top-1">
+    <div class="margin-top-16">
       <mat-accordion>
         <mat-expansion-panel [expanded]="isAuthorizationExpanded">
           <mat-expansion-panel-header>
@@ -383,7 +383,7 @@
                   </app-clearable-input>
                 </mat-form-field>
 
-                <mat-form-field class="width-l">
+                <mat-form-field class="button-width-l">
                   <mat-label i18n>Tenant ID</mat-label>
                   <app-clearable-input
                     (onClick)="tenantControl.setValue('')"
@@ -415,7 +415,7 @@
                   }
                 </mat-form-field>
 
-                <mat-form-field class="width-l">
+                <mat-form-field class="button-width-l">
                   <mat-label i18n>Client Credential Type</mat-label>
                   <mat-select
                     [formControl]="clientCredentialTypeControl">

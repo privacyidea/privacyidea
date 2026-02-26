@@ -31,9 +31,9 @@
         showFirstLastButtons />
     </div>
 
-    <div class="flex-row margin-bottom-1">
+    <div class="flex-row margin-bottom-16">
       <mat-form-field
-        class="width-l"
+        class="button-width-l"
         subscriptSizing="dynamic">
         <mat-label i18n>Node</mat-label>
 
@@ -66,7 +66,7 @@
                 [ngClass]="{'just-center': column.key === 'actions'}"
                 class="flex ali-center">
                 {{ column.label }}
-                <div class="margin-left-1 flex">
+                <div class="margin-left-16 flex">
                   @if (!['actions', 'resolvers'].includes(column.key)) {
                     <button
                       (click)="tableUtilsService.onSortButtonClick(column.key, sort)"
@@ -323,7 +323,7 @@
                       <button
                         (click)="onCreateRealm()"
                         [disabled]="!canSubmitNewRealm()"
-                        class="action-button-primary width-s"
+                        class="action-button-primary button-width-s"
                         mat-stroked-button
                         type="button">
                         <mat-icon>add</mat-icon>
@@ -332,7 +332,7 @@
                       <button
                         (click)="resetCreateForm()"
                         [disabled]="isCreatingRealm()"
-                        class="action-button-secondary width-s"
+                        class="action-button-secondary button-width-s"
                         mat-stroked-button
                         matTooltip="Reset form"
                         type="button">

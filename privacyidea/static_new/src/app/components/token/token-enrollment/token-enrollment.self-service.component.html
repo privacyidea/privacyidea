@@ -21,7 +21,7 @@
   appScrollToTop
   aria-label="Token Enrollment"
   class="token-enrollment-container">
-  <h3 class="margin-left-1">Enroll a New Token</h3>
+  <h3 class="margin-left-16">Enroll a New Token</h3>
   <form
     (ngSubmit)="enrollToken()"
     [formGroup]="formGroupSignal()">
@@ -53,7 +53,7 @@
         <div class="enroll-button-container">
           <button
             [disabled]="!tokenService.selectedTokenType()"
-            class="action-button-secondary width-l"
+            class="action-button-secondary button-width-l"
             mat-stroked-button
             type="submit">
             <mat-icon>add</mat-icon>
@@ -218,7 +218,7 @@
     </mat-form-field>
 
     @if (tokenService.selectedTokenType().key !== "passkey") {
-      <div class="flex-column user-pin-container margin-bottom-1">
+      <div class="flex-column user-pin-container margin-bottom-16">
         <h4 class="enroll-h4">Set PIN</h4>
         <input
           class="hidden-input"

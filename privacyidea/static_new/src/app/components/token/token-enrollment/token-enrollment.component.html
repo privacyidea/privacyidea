@@ -21,7 +21,7 @@
   appScrollToTop
   aria-label="Token Enrollment"
   class="token-enrollment-container">
-  <h3 class="margin-left-1">Enroll a New Token</h3>
+  <h3 class="margin-left-16">Enroll a New Token</h3>
   <form
     (ngSubmit)="enrollToken()"
     [formGroup]="formGroupSignal()">
@@ -53,7 +53,7 @@
         <div class="enroll-button-container">
           <button
             [disabled]="formGroupSignal().invalid || !tokenService.selectedTokenType()"
-            class="action-button-primary width-s margin-left-auto"
+            class="action-button-primary button-width-s margin-left-auto"
             mat-stroked-button
             type="submit">
             <mat-icon>add_moderator</mat-icon>
@@ -242,7 +242,7 @@
         <input
           style="display: none"
           type="password" />
-        <div class="user-pin-input margin-bottom-1">
+        <div class="user-pin-input margin-bottom-16">
           <mat-form-field>
             <mat-label>PIN</mat-label>
             <input

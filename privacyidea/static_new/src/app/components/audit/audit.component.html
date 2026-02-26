@@ -61,7 +61,7 @@
           <div class="flex ali-center">
             {{ column.label }}
             @if (!['number', 'log_level', 'clearance_level', 'sig_check', 'missing_line', 'thread_id'].includes(column.key)) {
-              <div class="margin-left-1">
+              <div class="margin-left-16">
                 <button
                   (click)="onKeywordClick(apiFilterKeyMap[column.key])"
                   class="filter-button"

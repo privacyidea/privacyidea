@@ -39,7 +39,7 @@
     </mat-form-field>
     <button
       (click)="onDeleteExpiredChallenges()"
-      class="action-button-delete-primary width-m"
+      class="action-button-delete-primary button-width-m"
       i18n
       mat-stroked-button>
       <mat-icon>delete_sweep</mat-icon>
@@ -67,7 +67,7 @@
           mat-header-cell>
           <div class="flex ali-center">
             {{ column.label }}
-            <div class="margin-left-1 flex">
+            <div class="margin-left-16 flex">
               @if (apiFilter.includes(column.key)) {
                 <button
                   (click)="onKeywordClick(column.key)"

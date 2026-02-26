@@ -46,7 +46,7 @@
     </mat-form-field>
 
     <mat-form-field
-      class="margin-top-1">
+      class="margin-top-16">
       <mat-label i18n>URL of the privacyIDEA Server</mat-label>
       <input
         formControlName="url"
@@ -56,7 +56,7 @@
       <mat-hint i18n>Please provide the base URL of the privacyIDEA server.</mat-hint>
     </mat-form-field>
 
-    <div class="margin-top-1">
+    <div class="margin-top-16">
       <mat-checkbox formControlName="tls">
         <span i18n>Verify the Certificate</span>
       </mat-checkbox>
@@ -69,14 +69,14 @@
     </div>
 
     <mat-form-field
-      class="margin-top-1">
+      class="margin-top-16">
       <mat-label i18n>Description</mat-label>
       <input
         formControlName="description"
         matInput />
     </mat-form-field>
 
-    <div class="flex-row gap-16 margin-top-1 ali-center">
+    <div class="flex-row gap-16 margin-top-16 ali-center">
       <mat-form-field class="flex-grow-1">
         <mat-label i18n>User</mat-label>
         <input
@@ -96,7 +96,7 @@
       <button
         (click)="test()"
         [disabled]="privacyideaForm.invalid || isTesting()"
-        class="action-button-secondary width-m margin-bottom-1"
+        class="action-button-secondary button-width-m margin-bottom-16"
         mat-stroked-button
         type="button">
         <mat-icon>send</mat-icon>
@@ -110,7 +110,7 @@
 <mat-dialog-actions align="center">
   <button
     (click)="onCancel()"
-    class="action-button-secondary width-s"
+    class="action-button-secondary button-width-s"
     i18n
     mat-stroked-button>
     Cancel
@@ -118,7 +118,7 @@
   <button
     (click)="save()"
     [disabled]="privacyideaForm.invalid || privacyideaForm.pristine"
-    class="action-button-primary width-s"
+    class="action-button-primary button-width-s"
     i18n
     mat-stroked-button>
     <mat-icon>save</mat-icon>

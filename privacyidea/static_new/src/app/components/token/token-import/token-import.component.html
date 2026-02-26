@@ -22,7 +22,7 @@
   aria-label="Import Tokens"
   class="token-import-container"
   i18n-aria-label>
-  <div class="margin-left-1">
+  <div class="margin-left-16">
     <h3 i18n>
       Import Tokens
     </h3>
@@ -54,7 +54,7 @@
       <button
         (click)="importTokens()"
         [disabled]="!inputForm.valid"
-        class="action-button-primary width-s"
+        class="action-button-primary button-width-s"
         mat-stroked-button>
         <mat-icon>input</mat-icon>
         Import
@@ -62,13 +62,13 @@
     </div>
   </div>
 
-  <div class="margin-top-1 margin-bottom-32">
+  <div class="margin-top-16 margin-bottom-32">
     @switch (fileType()) {
       @case ("aladdin-xml") {
         Here you can upload an XML file from Aladdin or SafeNet as it was used with Aladdin TMS or SafeNet SAM.
       }
       @case ("OATH CSV") {
-        <div class="margin-bottom-1">
+        <div class="margin-bottom-16">
           The file is supposed to contain one token per line. At least the serial number and the seed are required.
           Other parameters are optional. If not defined, the following default values are used:
           <ul>
@@ -79,7 +79,7 @@
         </div>
 
         <div>HOTP and TOTP tokens:</div>
-        <div class="italic margin-bottom-1">serial number, seed, type, otp length, time step</div>
+        <div class="italic margin-bottom-16">serial number, seed, type, otp length, time step</div>
 
         <div>OCRA tokens:</div>
         <div class="italic">serial number, seed, type, ocrasuite</div>
@@ -97,7 +97,7 @@
           format or the password.
         </div>
         <div>
-          <mat-form-field class="width-100 margin-bottom-1">
+          <mat-form-field class="width-100 margin-bottom-16">
             <mat-label>Pre Shared Key</mat-label>
             <input
               [formControl]="preSharedKey"
@@ -139,9 +139,9 @@
     }
   </div>
 
-  <div class="margin-bottom-1">
+  <div class="margin-bottom-16">
     <h4 class="sub-headings">Realm</h4>
-    <mat-form-field class="width-50 input-height margin-bottom-1">
+    <mat-form-field class="width-50 input-height margin-bottom-16">
       <mat-label>Select Realm for Tokens</mat-label>
       <mat-select
         [(ngModel)]="selectedRealms"
@@ -175,8 +175,8 @@
       }
     </div>
 
-    <div class="drag-and-drop-zone margin-bottom-1">
-      <div class="margin-top-1 margin-bottom-1">
+    <div class="drag-and-drop-zone margin-bottom-16">
+      <div class="margin-top-16 margin-bottom-16">
         <div class="flex just-center margin-bottom-8">
           <mat-icon>upload_file</mat-icon>
         </div>
@@ -192,7 +192,7 @@
       <div>
         <button
           (click)="fileUpload.click()"
-          class="action-button-secondary text-center just-center width-m"
+          class="action-button-secondary text-center just-center button-width-m"
           mat-stroked-button>
           <mat-icon>folder_open</mat-icon>
           Browse Files

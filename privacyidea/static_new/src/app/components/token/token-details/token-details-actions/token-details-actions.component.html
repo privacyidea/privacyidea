@@ -43,7 +43,7 @@
     @if (tokenType() === "passkey") {
       <button
         (click)="testPasskey()"
-        class="action-button-secondary width-m"
+        class="action-button-secondary button-width-m"
         i18n
         mat-stroked-button>
         <mat-icon>key</mat-icon>
@@ -54,7 +54,7 @@
       @if (tokenType() === "sshkey") {
         <button
           (click)="attachSshToMachineDialog()"
-          class="action-button-secondary width-m"
+          class="action-button-secondary button-width-m"
           i18n
           mat-stroked-button>
           <mat-icon>computer</mat-icon>
@@ -64,7 +64,7 @@
         @if (isAttachedToMachine()) {
           <button
             (click)="removePasskeyFromMachine()"
-            class="action-button-secondary width-m"
+            class="action-button-secondary button-width-m"
             i18n
             mat-stroked-button>
             <mat-icon>computer</mat-icon>
@@ -83,7 +83,7 @@
       } @else if (tokenType() === "hotp" && !isAttachedToMachine()) {
         <button
           (click)="attachHotpToMachineDialog()"
-          class="action-button-secondary width-m"
+          class="action-button-secondary button-width-m"
           i18n
           mat-stroked-button>
           <mat-icon>computer</mat-icon>
@@ -108,7 +108,7 @@
       @if (authService.actionAllowed("delete")) {
         <button
           (click)="deleteToken()"
-          class="action-button-delete-secondary width-m"
+          class="action-button-delete-secondary button-width-m"
           i18n
           mat-stroked-button>
           <mat-icon> delete</mat-icon>
@@ -119,7 +119,7 @@
         <button
           (click)="revokeToken()"
           [disabled]="tokenIsRevoked()"
-          class="action-button-delete-secondary width-m"
+          class="action-button-delete-secondary button-width-m"
           i18n
           mat-stroked-button>
           <mat-icon>undo</mat-icon>
@@ -129,7 +129,7 @@
       @if (authService.actionAllowed("losttoken")) {
         <button
           (click)="openLostTokenDialog()"
-          class="action-button-secondary width-m"
+          class="action-button-secondary button-width-m"
           i18n
           mat-stroked-button>
           <mat-icon>remove_red_eye</mat-icon>

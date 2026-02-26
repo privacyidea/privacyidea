@@ -28,7 +28,7 @@
     class="sms-form">
     <mat-form-field
       appearance="fill"
-      class="width-100 margin-bottom-1">
+      class="width-100 margin-bottom-16">
       <mat-label i18n>Name</mat-label>
       <input
         formControlName="name"
@@ -41,7 +41,7 @@
 
     <mat-form-field
       appearance="fill"
-      class="width-100 margin-bottom-1">
+      class="width-100 margin-bottom-16">
       <mat-label i18n>Provider Module</mat-label>
       <mat-select formControlName="providermodule">
         @for (provider of providerEntries(); track provider.key) {
@@ -57,7 +57,7 @@
 
     <mat-form-field
       appearance="fill"
-      class="width-100 margin-bottom-1">
+      class="width-100 margin-bottom-16">
       <mat-label i18n>Description</mat-label>
       <input
         formControlName="description"
@@ -75,7 +75,7 @@
         <div>
           <mat-form-field
             appearance="fill"
-            class="width-100 margin-bottom-1">
+            class="width-100 margin-bottom-16">
             <mat-label>{{ param.key }}</mat-label>
 
             @if (param.value.values) {
@@ -350,7 +350,7 @@
 <mat-dialog-actions align="end">
   <button
     (click)="onCancel()"
-    class="action-button-secondary width-s"
+    class="action-button-secondary button-width-s"
     i18n
     mat-stroked-button>
     Cancel
@@ -358,7 +358,7 @@
   <button
     (click)="save()"
     [disabled]="smsForm.invalid || parametersForm.invalid"
-    class="action-button-primary width-s"
+    class="action-button-primary button-width-s"
     i18n
     mat-stroked-button>
     <mat-icon>save</mat-icon>

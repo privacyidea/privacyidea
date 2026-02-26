@@ -53,7 +53,7 @@
     @if (authService.actionAllowed("eventhandling_write")) {
       <button
         (click)="onCreateNewEventHandler()"
-        class="action-button-primary width-l"
+        class="action-button-primary button-width-l"
         i18n
         mat-stroked-button>
         <mat-icon>add</mat-icon>
@@ -79,7 +79,7 @@
             <div class="flex ali-center">
               {{ columnKeysMap[column] }}
               @if (column !== 'delete') {
-                <div class="margin-left-1 flex">
+                <div class="margin-left-16 flex">
                   <button
                     (click)="tableUtilsService.onSortButtonClick(column, sort)"
                     class="sort-button"

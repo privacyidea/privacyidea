@@ -57,7 +57,7 @@
       </mat-form-field>
       <button
         [matMenuTriggerFor]="advancedFilterMenu"
-        class="action-button-primary width-m"
+        class="action-button-primary button-width-m"
         mat-stroked-button>
         <mat-icon> filter_list</mat-icon>
         More Filter
@@ -67,7 +67,7 @@
           <button
             (click)="onAdvancedFilterClick(keyword)"
             mat-menu-item>
-            <mat-icon class="margin-right-1">{{ getFilterIconName(keyword) }}</mat-icon>
+            <mat-icon class="margin-right-16">{{ getFilterIconName(keyword) }}</mat-icon>
             {{ keyword }}
           </button>
         }
@@ -95,7 +95,7 @@
             mat-header-cell>
             <div class="flex ali-center">
               {{ column.label }}
-              <div class="margin-left-1 flex">
+              <div class="margin-left-16 flex">
                 @if (machineService.sshApiFilter.includes(column.key)) {
                   <button
                     (click)="onKeywordClick(column.key)"

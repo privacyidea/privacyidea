@@ -26,7 +26,7 @@
         <img
           i18n-alt
           alt="QR Code"
-          class="qr-code margin-top-1"
+          class="qr-code margin-top-16"
           height="300px"
           src="{{ data()?.response?.result?.value?.container_url?.img }}"
           width="300px" />
@@ -49,7 +49,7 @@
         }
         <button
           (click)="regenerateQRCode()"
-          class="action-button-secondary width-l"
+          class="action-button-secondary button-width-l"
           mat-stroked-button>
           <mat-icon>autorenew</mat-icon>
           Regenerate QR Code

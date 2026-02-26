@@ -26,12 +26,12 @@
     class="user-new-resolver-container">
     @if (isEditMode) {
       <h3
-        class="margin-left-1"
+        class="margin-left-16"
         i18n>Edit User Source
       </h3>
     } @else {
       <h3
-        class="margin-left-1"
+        class="margin-left-16"
         i18n>Create User Source
       </h3>
     }
@@ -66,7 +66,7 @@
         }
       </mat-form-field>
 
-      <mat-form-field class="width-l margin-left-1 type-selecting-height">
+      <mat-form-field class="button-width-l margin-left-16 type-selecting-height">
         <mat-label i18n>Type</mat-label>
         <mat-select
           (ngModelChange)="onTypeChange($event)"
@@ -122,7 +122,7 @@
             <button
               (click)="onQuickTest()"
               [disabled]="isSaving || isTesting || !resolverType || !isAdditionalFieldsValid"
-              class="action-button-secondary width-l"
+              class="action-button-secondary button-width-l"
               mat-stroked-button>
               <mat-icon>wifi</mat-icon>
               <span i18n>Quick Resolver Test</span>
@@ -132,7 +132,7 @@
           <button
             (click)="onTest()"
             [disabled]="isSaving || isTesting || !resolverType || !isAdditionalFieldsValid"
-            class="action-button-secondary width-m"
+            class="action-button-secondary button-width-m"
             mat-stroked-button>
             <mat-icon>wifi</mat-icon>
             <span i18n>Test Connection</span>
@@ -140,7 +140,7 @@
         }
         <button
           (click)="onCancel()"
-          class="action-button-secondary width-s"
+          class="action-button-secondary button-width-s"
           mat-button
           mat-stroked-button>
           <span i18n>Cancel</span>
@@ -149,7 +149,7 @@
         <button
           (click)="onSave()"
           [disabled]="!resolverName || !resolverType || !isAdditionalFieldsValid"
-          class="action-button-primary width-s"
+          class="action-button-primary button-width-s"
           mat-stroked-button>
           <mat-icon>save</mat-icon>
           <span i18n>Save</span>

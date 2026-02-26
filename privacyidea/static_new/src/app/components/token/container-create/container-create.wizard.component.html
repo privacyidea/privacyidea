@@ -25,10 +25,10 @@
   @if (preTopHtml?.hasContent) {
     <div
       [innerHTML]="preTopHtml?.sanitized"
-      class="margin-top-1"></div>
+      class="margin-top-16"></div>
   } @else {
     <h3
-      class="margin-left-1"
+      class="margin-left-16"
       i18n>
       Create {{ this.containerService.selectedContainerType()?.containerType | titlecase }} Container
     </h3>
@@ -37,7 +37,7 @@
   <div class="enroll-button-container">
     <button
       (click)="createContainer()"
-      class="action-button-secondary width-l"
+      class="action-button-secondary button-width-l"
       mat-stroked-button>
       <mat-icon>add</mat-icon>
       Create
@@ -54,5 +54,5 @@
 
   <div
     [innerHTML]="preBottomHtml$ | async"
-    class="margin-bottom-1"></div>
+    class="margin-bottom-16"></div>
 </div>

@@ -215,7 +215,7 @@
         </mat-form-field>
       }
 
-      <div class="margin-top-1 margin-bottom-1">
+      <div class="margin-top-16 margin-bottom-16">
         <button
           (click)="loadAvailableCas()"
           [disabled]="!caConnectorForm.get('hostname')?.value || !caConnectorForm.get('port')?.value || isLoadingCas()"
@@ -245,7 +245,7 @@
 <mat-dialog-actions align="end">
   <button
     (click)="onCancel()"
-    class="action-button-secondary width-s"
+    class="action-button-secondary button-width-s"
     i18n
     mat-stroked-button>
     Cancel
@@ -253,7 +253,7 @@
   <button
     (click)="save()"
     [disabled]="caConnectorForm.invalid"
-    class="action-button-primary width-s"
+    class="action-button-primary button-width-s"
     i18n
     mat-stroked-button>
     <mat-icon>save</mat-icon>

@@ -28,7 +28,7 @@
     class="smtp-form">
     <mat-form-field
       appearance="fill"
-      class="width-100 margin-bottom-1">
+      class="width-100 margin-bottom-16">
       <mat-label i18n>Identifier</mat-label>
       <input
         formControlName="identifier"
@@ -105,7 +105,7 @@
 
     <mat-form-field
       appearance="fill"
-      class="width-100 margin-bottom-1">
+      class="width-100 margin-bottom-16">
       <mat-label i18n>Username</mat-label>
       <input
         formControlName="username"
@@ -157,7 +157,7 @@
         <button
           (click)="test()"
           [disabled]="isTesting()"
-          class="margin-right-1"
+          class="margin-right-16"
           i18n-matTooltip
           mat-icon-button
           matSuffix
@@ -172,7 +172,7 @@
 <mat-dialog-actions align="end">
   <button
     (click)="onCancel()"
-    class="action-button-secondary width-s"
+    class="action-button-secondary button-width-s"
     i18n
     mat-button
     mat-stroked-button>
@@ -181,7 +181,7 @@
   <button
     (click)="save()"
     [disabled]="smtpForm.invalid"
-    class="action-button-primary width-s"
+    class="action-button-primary button-width-s"
     i18n
     mat-stroked-button>
     <mat-icon>save</mat-icon>

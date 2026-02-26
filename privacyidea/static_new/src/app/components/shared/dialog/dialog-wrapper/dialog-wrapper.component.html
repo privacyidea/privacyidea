@@ -17,7 +17,7 @@
       @if (showCancelButton()) {
         <button
           [attr.cdkFocusInitial]="cancelButtonPrimary() || null"
-          class="action-button-secondary width-s"
+          class="action-button-secondary button-width-s"
           mat-dialog-close
           mat-stroked-button>
           @if (cancelButtonLabel()) {
@@ -41,7 +41,7 @@
             !action.type))"
             [class.action-button-secondary]="!action.primary"
             [disabled]="action.disabled"
-            class="width-s"
+            class="button-width-s"
             mat-stroked-button>
             @if (action.icon) {
               <mat-icon>{{ action.icon }}</mat-icon>
