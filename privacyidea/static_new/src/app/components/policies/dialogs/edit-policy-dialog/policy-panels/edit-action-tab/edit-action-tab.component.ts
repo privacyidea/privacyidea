@@ -83,14 +83,6 @@ export class EditActionTabComponent {
     }
   }
 
-  onActionRemove(actionName: string) {
-    const newActions = this.actions().filter((action) => action.name !== actionName);
-    this.onActionsChange(newActions);
-    if (this.selectedAction()?.name === actionName) {
-      this.selectedAction.set(null);
-    }
-  }
-
   onPolicyScopeChange($event: string | undefined) {
     this.policyScopeChange.emit($event);
   }

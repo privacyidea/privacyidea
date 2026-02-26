@@ -1,58 +1,97 @@
-.gap-div-8px {
-  width: 8px;
-  height: 8px;
-}
+@use "styles";
+@use "@angular/material";
 
-.delete-icon-button {
-  flex-shrink: 0;
-  margin: auto -4px;
-  color: var(--mat-sys-on-error-container);
-  &:hover {
-    background-color: var(--mat-sys-error-container);
-  }
-}
-
-.action-card-in-panel {
-  border-radius: var(--border-radius);
-  box-shadow: var(--mat-sys-level1);
-  font-weight: 500;
-  padding: 0 var(--global-padding);
-  background-color: var(--mat-sys-primary-container);
-}
-
-.action-row {
+.policy-action-item {
   display: flex;
   align-items: center;
-  width: 100%;
+  gap: 16px;
+  min-height: 52px;
+  padding: 0 16px;
+  margin: 4px 0;
+  border-radius: var(--border-radius);
+  box-shadow: var(--mat-sys-level1);
+  background-color: var(--mat-sys-primary-container);
+  font-weight: 500;
+  box-sizing: border-box;
 }
 
-.action-label {
+.detail-label {
+  flex: 0 0 25%;
+  max-width: 25%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.flex-size-1 {
-  flex: 1;
+.detail-description {
+  flex: 1 1 auto;
+  font-size: 0.85em;
+  opacity: 0.7;
+  padding: 8px 0;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
 }
 
 .detail-input {
-  flex: 1 0 0%;
+  flex: 0 0 20%;
+  max-width: 20%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+
+  .flex-1 {
+    flex: 1;
+    min-width: 0;
+  }
+  .flex-2 {
+    flex: 2;
+    min-width: 0;
+  }
+}
+
+.delete-icon-button {
+  appearance: none;
+  background: transparent;
+  border: none;
+  width: 44px;
+  height: 40px;
+  flex: 0 0 44px;
   display: flex;
   align-items: center;
   justify-content: center;
-  text-align: right;
+  border-radius: var(--border-radius);
+  color: var(--mat-sys-on-error-container);
+  cursor: pointer;
+  padding: 0;
+  margin: 0;
 
-  .full-width {
-    width: 100%;
+  mat-icon {
+    font-size: 24px;
+    width: 24px;
+    height: 24px;
   }
-  .half-width {
-    width: 50%;
+
+  &:hover {
+    background-color: var(--mat-sys-error-container);
   }
 }
 
 .action-value-input,
 .action-value-textarea {
-  width: 100%;
+  background-color: var(--mat-sys-surface);
+  border: 1px solid var(--mat-sys-outline);
+  border-radius: var(--border-radius);
+  padding: 8px;
   box-sizing: border-box;
+  color: var(--mat-sys-on-surface);
+  font-family: inherit;
+  width: 100%;
+}
+
+.action-value-textarea {
+  min-height: 40px;
+  resize: vertical;
 }

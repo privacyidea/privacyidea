@@ -138,16 +138,6 @@ describe("EditActionTabComponent", () => {
     expect(scopeChangeSpy).toHaveBeenCalledWith(newScope);
   });
 
-  it("should handle removing an action", () => {
-    const spy = jest.spyOn(component.actionsUpdate, "emit");
-
-    component.onActionRemove("action-1");
-
-    expect(spy).toHaveBeenCalledWith({
-      "action-2": "value-2"
-    });
-  });
-
   it("should reset selectedAction when the policy scope changes (linkedSignal)", () => {
     component.selectedAction.set({ name: "some", value: "val" });
 

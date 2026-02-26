@@ -186,4 +186,9 @@
     color: var(--mat-sys-primary-base);
     opacity: 1;
   }
+
+  mat-checkbox {
+    margin: 0;
+    overflow: clip;
+  }
 }

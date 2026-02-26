@@ -44,7 +44,6 @@ import { PolicyActionItemEditComponent } from "./added-action-edit/policy-action
 export class AddedActionsListComponent {
   readonly actions = input.required<{ name: string; value: any }[]>();
   readonly actionsChange = output<{ name: string; value: any }[]>();
-  readonly actionRemove = output<string>();
   readonly isEditMode = input.required<boolean>();
 
   private policyService = inject(PolicyService);

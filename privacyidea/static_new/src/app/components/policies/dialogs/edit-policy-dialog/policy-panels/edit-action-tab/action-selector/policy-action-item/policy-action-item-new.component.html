@@ -25,35 +25,27 @@
     @if (actionDetail()?.value; as actionValues) {
       @if (actionDetail()?.multiple) {
         <app-multi-select-only
-          class="half-width"
+          class="flex-2"
           subscriptSizing="dynamic"
           placeholder="Select options..."
           [items]="actionValues"
           [selectedItems]="selectedItems()"
           (selectionChange)="updateSelectedActionValue($event)">
         </app-multi-select-only>
-
-        <button
-          #buttonElement
-          class="add-action-button half-width"
-          [disabled]="!inputIsValid()"
-          (click)="$event.stopPropagation(); addAction()">
-          <mat-icon>add</mat-icon>
-        </button>
       } @else {
         @if (actionValues.length === 0) {
-          <p i18n>No values available for this action.</p>
+          <p i18n>No values available.</p>
         } @else if (actionValues.length <= 3) {
           <app-selector-buttons
             #selectorComponent
+            class="flex-1"
             [initialValue]="currentAction().value"
-            [class]="actionValues.length === 1 ? 'half-width' : 'full-width'"
             [values]="actionValues"
             (onSelect)="addAction($event)" />
         } @else {
           <mat-form-field
             appearance="fill"
-            class="full-width"
+            class="flex-1"
             subscriptSizing="dynamic">
             <mat-select
               #selectElement
@@ -72,7 +64,7 @@
           <input
             #inputElement
             type="text"
-            class="action-value-input"
+            class="action-value-input flex-2"
             [ngModel]="currentAction().value"
             (ngModelChange)="updateSelectedActionValue($event)"
             (keydown.enter)="onEnter()" />
@@ -81,7 +73,7 @@
           <input
             #inputElement
             type="number"
-            class="action-value-input"
+            class="action-value-input flex-2"
             [ngModel]="currentAction().value"
             (ngModelChange)="updateSelectedActionValue($event)"
             (keydown.enter)="onEnter()" />
@@ -89,14 +81,17 @@
         @case ("text") {
           <textarea
             #inputElement
-            class="action-value-textarea"
+            class="action-value-textarea flex-2"
             [ngModel]="currentAction().value"
             (ngModelChange)="updateSelectedActionValue($event)"></textarea>
         }
       }
+    }
+
+    @if (actionDetail()?.multiple || !actionDetail()?.value) {
       <button
         #buttonElement
-        class="add-action-button half-width"
+        class="add-action-button flex-1"
         [disabled]="!inputIsValid()"
         (click)="$event.stopPropagation(); addAction()">
         <mat-icon>add</mat-icon>

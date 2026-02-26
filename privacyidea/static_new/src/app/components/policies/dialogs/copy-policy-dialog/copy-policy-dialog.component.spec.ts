@@ -89,6 +89,8 @@ describe("CopyPolicyDialogComponent", () => {
   describe("2. UI Actions State", () => {
     it("should disable confirm/submit action when the form is invalid", () => {
       component.nameControl.setValue(initialPolicyName);
+      // Trigger statusChanges for the signal
+      component.nameControl.updateValueAndValidity();
       fixture.detectChanges();
 
       const submitAction = component.actions().find((a) => a.value === "submit");
@@ -97,6 +99,7 @@ describe("CopyPolicyDialogComponent", () => {
 
     it("should enable confirm/submit action when the form is valid", () => {
       component.nameControl.setValue("New_Unique_Name");
+      component.nameControl.updateValueAndValidity();
       fixture.detectChanges();
 
       const submitAction = component.actions().find((a) => a.value === "submit");

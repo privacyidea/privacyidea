@@ -77,15 +77,6 @@ export class PolicyActionItemEditComponent<T extends string | number = string | 
     return valueList as T[];
   });
 
-  updateSelectedActionValue(value: T[]) {
-    if (Array.isArray(value)) {
-      const stringValue = value.map((v) => v.toString()).join(" ");
-      this.onUpdateAction.emit(stringValue as T);
-    } else {
-      this.onUpdateAction.emit(value);
-    }
-  }
-
   isBooleanAction(actionName: string): boolean {
     return this.policyService.getDetailsOfAction(actionName)?.type === "bool";
   }
@@ -94,10 +85,14 @@ export class PolicyActionItemEditComponent<T extends string | number = string | 
     this.onRemoveAction.emit();
   }
 
-  updateAction(newValue?: T): void {
-    this.onUpdateAction.emit(newValue);
+  updateAction(value?: T | T[]): void {
+    if (Array.isArray(value)) {
+      const stringValue = value.map((v) => v.toString()).join(" ");
+      this.onUpdateAction.emit(stringValue as T);
+    } else {
+      this.onUpdateAction.emit(value as T);
+    }
   }
-
   isNumber(value: T): boolean {
     return value !== null && value !== "" && !isNaN(Number(value));
   }
