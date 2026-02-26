@@ -186,7 +186,7 @@ class LdapMachineResolver(BaseMachineResolver):
 
         try:
             if self.id_attribute.lower() == "dn" and machine_id:
-                self.connection.search(search_base=escape_filter_chars(machine_id),
+                self.connection.search(search_base=machine_id,
                                        search_scope=ldap3.BASE,
                                        search_filter=ldap_filter,
                                        attributes=attributes,
@@ -365,8 +365,9 @@ class LdapMachineResolver(BaseMachineResolver):
                         attributes=attributes,
                         size_limit=int(params.get("SIZELIMIT", 500)))
             elapsed_time = conn.usage.elapsed_time.total_seconds()
+            # Only count entries with the given uidtype
             count = len([x for x in conn.response if (x.get("type") == "searchResEntry" and
-                                                      uidtype in x['attributes'])])
+                                                      IdResolver._get_uid(x, uidtype))])
             message = _("Your LDAP machine resolver configuration seems to be OK, "
                         "{0!s} machine objects found in {1:.4f}s.").format(count, elapsed_time)
             conn.unbind()

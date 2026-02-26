@@ -60,7 +60,7 @@ myApp.controller("ldapMachineResolverController", ["$scope", "ConfigFactory",
     $scope.presetAD = function () {
         $scope.params.SEARCHFILTER = "(objectClass=computer)";
         //$scope.params.IDATTRIBUTE = "objectSid";
-        $scope.params.IDATTRIBUTE = "distinguishedName";
+        $scope.params.IDATTRIBUTE = "DN";
         $scope.params.IPATTRIBUTE = "";
         $scope.params.HOSTNAMEATTRIBUTE = "dNSHostName";
         $scope.params.NOREFERRALS = true;
