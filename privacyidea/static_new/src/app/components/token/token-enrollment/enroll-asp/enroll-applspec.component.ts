@@ -25,8 +25,6 @@ import { MatInput } from "@angular/material/input";
 import { MatError, MatSelect } from "@angular/material/select";
 import { ServiceIdService, ServiceIdServiceInterface } from "../../../../services/service-id/service-id.service";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
-
-import { Observable, of } from "rxjs";
 import {
   ApplspecApiPayloadMapper,
   ApplspecEnrollmentData
@@ -71,6 +69,7 @@ export class EnrollApplspecComponent implements OnInit {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
 
+  enrollmentData = input<ApplspecEnrollmentData>();
   @Input() wizard: boolean = false;
   @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
@@ -101,6 +100,7 @@ export class EnrollApplspecComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this._setInitialFormValues();
     this.additionalFormFieldsChange.emit({
       serviceId: this.serviceIdControl,
       generateOnServer: this.generateOnServerControl,
@@ -108,6 +108,16 @@ export class EnrollApplspecComponent implements OnInit {
     });
     this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
     this._applyPolicies();
+  }
+
+  private _setInitialFormValues() {
+    if (!!this.enrollmentData()) {
+      this.serviceIdControl.setValue(this.enrollmentData()!.serviceId ?? "");
+      this.generateOnServerControl.setValue(this.enrollmentData()!.generateOnServer ?? true);
+      if (!this.enrollmentData()!.generateOnServer) {
+        this.otpKeyFormControl.setValue(this.enrollmentData()!.otpKey ?? "");
+      }
+    }
   }
 
   private _applyPolicies() {
