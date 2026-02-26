@@ -407,20 +407,9 @@ def _get_token_list(assigned: Union[bool, None], active: Union[bool, None], rang
                     else:
                         add = False
             if orphaned is not None:
-                if is_true(orphaned):
-                    try:
-                        if token_obj.is_orphaned(orphaned_on_error) is False:
-                            add = False
-                    except ResolverError:
-                        # Could not resolve user due to errors in the resolver.
-                        # Don't mark the token as orphaned.
-                        add = orphaned_on_error
-                else:
-                    try:
-                        if token_obj.is_orphaned(orphaned_on_error) is False:
-                            add = False
-                    except ResolverError:
-                        add = not orphaned_on_error
+                if token_obj.is_orphaned(orphaned_on_error) != is_true(orphaned):
+                    add = False
+
 
             if add:
                 # if everything matched, we append the token object
