@@ -1,4 +1,5 @@
-@use "../../../../styles";
+@use "styles";
+@use "table";
 
 .user-new-resolver-layout {
   display: flex;
@@ -6,8 +7,8 @@
 }
 
 .user-new-resolver-container {
-  @include styles.table-container-styles;
-  @include styles.base-table-structure(".token-table", ".token-table-filter", ".table-scroll-container");
+  @include table.table-container-styles;
+  @include table.base-table-structure(".token-table", ".token-table-filter", ".table-scroll-container");
   max-height: 90vh;
   max-width: calc(100vw - var(--global-padding) * 5 - 48px);
   display: grid;
@@ -36,7 +37,10 @@
   width: unset;
 }
 
-:host ::ng-deep .user-new-resolver-container mat-form-field.min-width-40
-.mat-mdc-form-field-subscript-wrapper.mat-mdc-form-field-bottom-align {
+:host
+  ::ng-deep
+  .user-new-resolver-container
+  mat-form-field.min-width-40
+  .mat-mdc-form-field-subscript-wrapper.mat-mdc-form-field-bottom-align {
   height: 2rem;
 }

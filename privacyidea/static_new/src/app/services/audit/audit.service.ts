@@ -23,7 +23,7 @@ import { PiResponse } from "../../app.component";
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
 
-import { FilterValue } from "../../core/models/filter_value";
+import { FilterValue } from "../../core/models/filter_value/filter_value";
 import { StringUtils } from "../../utils/string.utils";
 import { Sort } from "@angular/material/sort";
 

@@ -40,7 +40,6 @@
         <mat-select
           (selectionChange)="onNodeSelectionChange($event.value)"
           [value]="selectedNode()">
-
           @for (node of nodeOptions(); track node.value) {
             <mat-option [value]="node.value">
               {{ node.label }}
@@ -63,11 +62,11 @@
               attr.aria-label="{{ column.label }} Header"
               mat-header-cell>
               <div
-                [ngClass]="{'just-center': column.key === 'actions'}"
+                [ngClass]="{ 'just-center': column.key === 'actions' }"
                 class="flex ali-center">
                 {{ column.label }}
                 <div class="margin-left-1 flex">
-                  @if (!['actions', 'resolvers'].includes(column.key)) {
+                  @if (!["actions", "resolvers"].includes(column.key)) {
                     <button
                       (click)="tableUtilsService.onSortButtonClick(column.key, sort)"
                       class="sort-button"
@@ -84,7 +83,7 @@
               *matCellDef="let element"
               [ngClass]="{
                 'width-100': column.key === 'resolvers',
-                'actions-cell': column.key === 'actions',
+                'actions-cell': column.key === 'actions'
               }"
               attr.aria-label="{{ column.label }} Cell"
               mat-cell>
@@ -103,7 +102,7 @@
                       type="button">
                       <mat-icon
                         [ngClass]="{
-                          'icon-true': element.isDefault,
+                          'icon-true': element.isDefault
                         }">
                         {{ element.isDefault ? "radio_button_checked" : "radio_button_unchecked" }}
                       </mat-icon>
@@ -133,9 +132,7 @@
                               [value]="getEditNodeResolverNames(group.id)"
                               multiple>
                               @for (res of resolverOptions(); track res.name) {
-                                <mat-option [value]="res.name">
-                                  {{ res.name }} ({{ res.type }})
-                                </mat-option>
+                                <mat-option [value]="res.name"> {{ res.name }} ({{ res.type }}) </mat-option>
                               }
                             </mat-select>
                             <div class="resolver-priority-list">
@@ -293,9 +290,7 @@
                               [value]="getCreateNodeResolverNames(group.id)"
                               multiple>
                               @for (res of resolverOptions(); track res.name) {
-                                <mat-option [value]="res.name">
-                                  {{ res.name }} ({{ res.type }})
-                                </mat-option>
+                                <mat-option [value]="res.name"> {{ res.name }} ({{ res.type }}) </mat-option>
                               }
                             </mat-select>
                           </mat-form-field>

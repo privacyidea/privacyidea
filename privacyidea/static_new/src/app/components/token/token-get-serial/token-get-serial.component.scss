@@ -1,7 +1,8 @@
-@use "../../../../styles";
+@use "styles";
+@use "table";
 
 .token-get-serial {
-  @include styles.table-container-styles;
+  @include table.table-container-styles;
 
   max-height: var(--max-height);
   width: 56rem;
