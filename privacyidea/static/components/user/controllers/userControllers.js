@@ -519,7 +519,7 @@ angular.module("privacyideaApp")
                         case "httpresolver":
                             userinfo = resolver.data.attribute_mapping || {};
                             delete userinfo["userid"];
-                            if (resolver.data.config_get_user_groups.active) {
+                            if (resolver.data.config_get_user_groups && resolver.data.config_get_user_groups.active) {
                                 userinfo["groups"] = [];
                             }
                             break;
@@ -527,14 +527,14 @@ angular.module("privacyideaApp")
                             userinfo = resolver.data.attribute_mapping || {};
                             delete userinfo["userid"];
                             userinfo["password"] = "";
-                            if (resolver.data.config_get_user_groups.active) {
+                            if (resolver.data.config_get_user_groups && resolver.data.config_get_user_groups.active) {
                                 userinfo["groups"] = [];
                             }
                             break;
                         case "keycloakresolver":
                             userinfo = resolver.data.attribute_mapping || {};
                             delete userinfo["userid"];
-                            if (resolver.data.config_get_user_groups.active) {
+                            if (resolver.data.config_get_user_groups && resolver.data.config_get_user_groups.active) {
                                 userinfo["groups"] = [];
                             }
                             break;

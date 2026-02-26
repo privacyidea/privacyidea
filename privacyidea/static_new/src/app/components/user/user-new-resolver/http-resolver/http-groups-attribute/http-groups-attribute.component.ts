@@ -49,6 +49,7 @@ export class HttpGroupsAttributeComponent implements OnInit, OnDestroy {
   @Input({ required: true }) resolverType!: string;
 
   private activeSubscription?: Subscription;
+  private methodSubscription?: Subscription;
 
   // Signal for the 'active' value
   readonly activeSignal = signal<boolean>(false);
@@ -93,7 +94,8 @@ export class HttpGroupsAttributeComponent implements OnInit, OnDestroy {
         // convert method to be lowercase
         const methodControl = this.userGroupsControl.get("method");
         if (methodControl) {
-          methodControl.valueChanges.subscribe(value => {
+          this.methodSubscription?.unsubscribe();
+          this.methodSubscription = methodControl.valueChanges.subscribe(value => {
             if (value) {
               methodControl.setValue(value.toLowerCase(), { emitEvent: false });
             }
@@ -105,5 +107,6 @@ export class HttpGroupsAttributeComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     this.activeSubscription?.unsubscribe();
+    this.methodSubscription?.unsubscribe();
   }
 }

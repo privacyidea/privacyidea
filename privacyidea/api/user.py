@@ -102,7 +102,7 @@ def get_users():
         }
     """
     realm = getParam(request.all_data, "realm")
-    search_parameters = request.all_data
+    search_parameters = dict(request.all_data)
     custom_attributes = is_attribute_at_all()
     requested_attributes = request.all_data.get("attributes")
     if requested_attributes:

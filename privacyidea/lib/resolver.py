@@ -45,6 +45,7 @@ webservice!
 import copy
 import json
 import logging
+from typing import Any
 
 from sqlalchemy import func, delete, select
 
@@ -394,7 +395,7 @@ def get_resolver_object(resolvername):
         return resolver_objects[resolvername]
 
 
-def _replace_censored_values(params: dict[str, any], old_config: dict[str, any]):
+def _replace_censored_values(params: dict[str, Any], old_config: dict[str, Any]):
     """
     Helper to replace censored values in params with the values from old_config.
     """

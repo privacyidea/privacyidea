@@ -1310,7 +1310,7 @@ myApp.controller("HTTPResolverController", ["$scope", "ConfigFactory", "$state",
 
         $scope.addCustomKey = function () {
             $scope.advancedParams.attribute_mapping[$scope.customAttribute.value] = "";
-            $scope.customAttribute = "";
+            $scope.customAttribute.value = "";
         }
 
         $scope.setTags = function () {
