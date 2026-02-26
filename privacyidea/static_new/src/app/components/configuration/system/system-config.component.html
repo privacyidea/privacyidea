@@ -36,17 +36,17 @@
         <div class="save-buttons">
           @if (hasConfigWritePermission()) {
             <button
-              (click)="saveSystemConfig()"
               [disabled]="!systemConfigForm.form.valid || !authService.actionAllowed('configwrite')"
-              class="action-button-1 width-238"
-              mat-stroked-button>
+              class="action-button-primary width-l"
+              mat-stroked-button
+              type="submit">
               <mat-icon>save</mat-icon>
               <span i18n>Save System Config</span>
             </button>
           }
           <button
             (click)="openDocumentationDialog()"
-            class="action-button-1 width-238"
+            class="action-button-secondary width-l"
             mat-stroked-button>
             <mat-icon>document_scanner</mat-icon>
             <span i18n>Get Documentation</span>
@@ -152,7 +152,7 @@
         </mat-form-field>
         <button
           (click)="deleteUserCache()"
-          class="action-button-delete min-width-238 margin-bottom-1 margin-left-auto"
+          class="action-button-delete-secondary width-m margin-bottom-1 margin-left-auto"
           i18n
           mat-stroked-button>
           <mat-icon>delete</mat-icon>

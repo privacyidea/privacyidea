@@ -26,8 +26,10 @@ import { AuthService } from "../../../services/auth/auth.service";
 import { of } from "rxjs";
 import { By } from "@angular/platform-browser";
 import { MockSubscriptionService } from "../../../../testing/mock-services/mock-subscription-serivce";
-import { MockNotificationService, MockPiResponse } from "../../../../testing/mock-services";
+import { MockDialogService, MockNotificationService, MockPiResponse } from "../../../../testing/mock-services";
 import { MockAuthService } from "../../../../testing/mock-services/mock-auth-service";
+import { DialogService } from "../../../services/dialog/dialog.service";
+import { SimpleConfirmationDialogComponent } from "../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
 
 describe("SubscriptionComponent", () => {
   let component: SubscriptionComponent;
@@ -35,6 +37,7 @@ describe("SubscriptionComponent", () => {
   let subscriptionService: MockSubscriptionService;
   let notificationService: MockNotificationService;
   let authService: MockAuthService;
+  let dialogService: MockDialogService;
 
   const mockSubscriptions = {
     "app1": {
@@ -66,6 +69,7 @@ describe("SubscriptionComponent", () => {
     subscriptionService = new MockSubscriptionService();
     notificationService = new MockNotificationService();
     authService = new MockAuthService();
+    dialogService = new MockDialogService();
 
     await TestBed.configureTestingModule({
       imports: [
@@ -76,7 +80,8 @@ describe("SubscriptionComponent", () => {
       providers: [
         { provide: SubscriptionService, useValue: subscriptionService },
         { provide: NotificationService, useValue: notificationService },
-        { provide: AuthService, useValue: authService }
+        { provide: AuthService, useValue: authService },
+        { provide: DialogService, useValue: dialogService }
       ]
     })
       .compileComponents();
@@ -151,15 +156,41 @@ describe("SubscriptionComponent", () => {
     expect(subscriptionService.reload).toHaveBeenCalled();
   });
 
-  it("should call deleteSubscription and show success snackbar", () => {
+  it("should call deleteSubscription and show success snackbar when confirmed", () => {
     fixture.detectChanges();
     subscriptionService.deleteSubscription.mockReturnValue(of(MockPiResponse.fromValue(true)));
+    dialogService.openDialog.mockReturnValue({
+      afterClosed: () => of(true)
+    } as any);
 
     component.deleteSubscription("app1");
 
+    expect(dialogService.openDialog).toHaveBeenCalledWith({
+      component: SimpleConfirmationDialogComponent,
+      data: {
+        title: "Delete Subscription",
+        items: ["app1"],
+        itemType: "subscription",
+        confirmAction: { label: "Delete", value: true, type: "destruct" }
+      }
+    });
     expect(subscriptionService.deleteSubscription).toHaveBeenCalledWith("app1");
     expect(notificationService.openSnackBar).toHaveBeenCalledWith("Subscription deleted successfully.");
     expect(subscriptionService.reload).toHaveBeenCalled();
+  });
+
+  it("should not call deleteSubscription when cancelled", () => {
+    fixture.detectChanges();
+    dialogService.openDialog.mockReturnValue({
+      afterClosed: () => of(false)
+    } as any);
+
+    component.deleteSubscription("app1");
+
+    expect(dialogService.openDialog).toHaveBeenCalled();
+    expect(subscriptionService.deleteSubscription).not.toHaveBeenCalled();
+    expect(notificationService.openSnackBar).not.toHaveBeenCalled();
+    expect(subscriptionService.reload).not.toHaveBeenCalled();
   });
 
   it("should hide delete button if action not allowed", () => {
@@ -167,7 +198,7 @@ describe("SubscriptionComponent", () => {
     subscriptionService.subscriptionsResource.set(MockPiResponse.fromValue(mockSubscriptions));
     fixture.detectChanges();
 
-    const deleteBtn = fixture.debugElement.query(By.css(".action-button-delete"));
+    const deleteBtn = fixture.debugElement.query(By.css(".action-button-delete-secondary"));
     expect(deleteBtn).toBeFalsy();
   });
 
@@ -176,7 +207,7 @@ describe("SubscriptionComponent", () => {
     subscriptionService.subscriptionsResource.set(MockPiResponse.fromValue(mockSubscriptions));
     fixture.detectChanges();
 
-    const deleteBtn = fixture.debugElement.query(By.css(".action-button-delete"));
+    const deleteBtn = fixture.debugElement.query(By.css(".action-button-delete-secondary"));
     expect(deleteBtn).toBeTruthy();
   });
 });

@@ -41,9 +41,9 @@
               [value]="tokenService.selectedTokenType()">
               @for (type of tokenService.tokenTypeOptions(); track type) {
                 <mat-option
-                  class="select-option"
+                  [matTooltip]="type.info.split(':')[1]"
                   [value]="type"
-                  [matTooltip]="type.info.split(':')[1]">
+                  class="select-option">
                   {{ type.info.split(":")[0] }}
                 </mat-option>
               }
@@ -53,10 +53,10 @@
         <div class="enroll-button-container">
           <button
             [disabled]="formGroupSignal().invalid || !tokenService.selectedTokenType()"
-            class="action-button-1 width-238"
+            class="action-button-primary width-s margin-left-auto"
             mat-stroked-button
             type="submit">
-            <mat-icon>add</mat-icon>
+            <mat-icon>add_moderator</mat-icon>
             Enroll
           </button>
           <button
@@ -163,8 +163,8 @@
         <app-enroll-push
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
           (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)"
-          (reopenDialogChange)="updateReopenDialog($event)"
-          (onEnrollmentResponseChange)="updateOnEnrollmentResponse($event)" />
+          (onEnrollmentResponseChange)="updateOnEnrollmentResponse($event)"
+          (reopenDialogChange)="updateReopenDialog($event)" />
       }
       @case ("question") {
         <app-enroll-question
@@ -206,8 +206,8 @@
         <app-enroll-passkey
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
           (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)"
-          (reopenDialogChange)="updateReopenDialog($event)"
-          (onEnrollmentResponseChange)="updateOnEnrollmentResponse($event)" />
+          (onEnrollmentResponseChange)="updateOnEnrollmentResponse($event)"
+          (reopenDialogChange)="updateReopenDialog($event)" />
       }
     }
     <mat-form-field class="description-form">
@@ -225,10 +225,10 @@
           <h4 class="enroll-h4">Assign Token to User</h4>
           <app-user-assignment
             [selectedUserRealmControl]="selectedUserRealmControl"
-            [userFilterControl]="userFilterControl"
             [showOnlyAddToRealm]="
               !['passkey', 'webauthn', 'tiqr', 'push'].includes(tokenService.selectedTokenType().key)
-            "></app-user-assignment>
+            "
+            [userFilterControl]="userFilterControl"></app-user-assignment>
         </div>
       }
     </div>
@@ -243,21 +243,23 @@
           style="display: none"
           type="password" />
         <div class="user-pin-input margin-bottom-1">
-          <input
-            [formControl]="setPinControl"
-            [type]="'password'"
-            class="input"
-            placeholder="PIN" />
-          <input
-            [formControl]="repeatPinControl"
-            [type]="'password'"
-            class="input"
-            placeholder="Repeat PIN" />
+          <mat-form-field>
+            <mat-label>PIN</mat-label>
+            <input
+              [formControl]="setPinControl"
+              [type]="'password'"
+              matInput />
+          </mat-form-field>
+          <mat-form-field>
+            <mat-label>Repeat PIN</mat-label>
+            <input
+              [formControl]="repeatPinControl"
+              [type]="'password'"
+              matInput />
+          </mat-form-field>
         </div>
-        @if (
-          formGroupSignal().hasError("pinMismatch") &&
-          (formGroupSignal().get("setPin")?.touched || formGroupSignal().get("repeatPin")?.touched)
-        ) {
+        @if (formGroupSignal().hasError("pinMismatch") &&
+        (formGroupSignal().get("setPin")?.touched || formGroupSignal().get("repeatPin")?.touched)) {
           <mat-error class="pin-error">PINs do not match.</mat-error>
         }
       </div>

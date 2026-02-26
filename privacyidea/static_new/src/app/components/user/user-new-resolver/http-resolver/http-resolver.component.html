@@ -45,7 +45,7 @@
 
   @if (!isAdvanced && basicSettings()) {
     <div class="auth-grid">
-      <mat-form-field class="width-238">
+      <mat-form-field class="width-l">
         <mat-label i18n>Method</mat-label>
         <mat-select
           [formControl]="methodControl"
@@ -383,7 +383,7 @@
                   </app-clearable-input>
                 </mat-form-field>
 
-                <mat-form-field class="width-238">
+                <mat-form-field class="width-l">
                   <mat-label i18n>Tenant ID</mat-label>
                   <app-clearable-input
                     (onClick)="tenantControl.setValue('')"
@@ -415,7 +415,7 @@
                   }
                 </mat-form-field>
 
-                <mat-form-field class="width-238">
+                <mat-form-field class="width-l">
                   <mat-label i18n>Client Credential Type</mat-label>
                   <mat-select
                     [formControl]="clientCredentialTypeControl">

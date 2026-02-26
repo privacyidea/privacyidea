@@ -19,7 +19,7 @@
 <div class="flex-row margin-bottom-1 margin-top-1 gap-8">
   <button
     [routerLink]="[ROUTE_PATHS.TOKENS_ENROLLMENT]"
-    class="action-button-1"
+    class="action-button-secondary width-m"
     mat-stroked-button>
     <mat-icon> add_moderator</mat-icon>
     Enroll Token
@@ -29,7 +29,7 @@
       <button
         (click)="deleteSelectedTokens()"
         [disabled]="tokenSelection().length === 0"
-        class="action-button-delete"
+        class="action-button-delete-secondary width-m"
         i18n
         mat-stroked-button>
         <mat-icon> delete_sweep</mat-icon>
@@ -40,7 +40,7 @@
       <button
         (click)="assignSelectedTokens()"
         [disabled]="tokenSelection().length === 0"
-        class="action-button-1"
+        class="action-button-secondary width-m"
         i18n
         mat-stroked-button>
         <mat-icon> person_add</mat-icon>
@@ -51,7 +51,7 @@
       <button
         (click)="unassignSelectedTokens()"
         [disabled]="tokenSelection().length === 0"
-        class="action-button-1"
+        class="action-button-secondary width-m"
         mat-stroked-button>
         <mat-icon> person_remove</mat-icon>
         Unassign Selected
@@ -59,8 +59,9 @@
     }
     <button
       [matMenuTriggerFor]="advancedFilterMenu"
-      class="action-button-1"
-      mat-stroked-button>
+      class="action-button-primary width-m"
+      mat-flat-button
+      type="submit">
       <mat-icon> filter_list</mat-icon>
       More Filter
     </button>

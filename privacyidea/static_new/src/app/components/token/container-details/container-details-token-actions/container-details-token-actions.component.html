@@ -23,7 +23,7 @@
       <button
         (click)="assignToAllToken()"
         [disabled]="!isAssignableToAllToken()"
-        class="action-button-1 width-238"
+        class="action-button-secondary width-l"
         mat-stroked-button
         i18n>
         <mat-icon>playlist_add</mat-icon>
@@ -34,7 +34,7 @@
       <button
         (click)="unassignFromAllToken()"
         [disabled]="!isUnassignableFromAllToken()"
-        class="action-button-delete width-238"
+        class="action-button-delete-secondary width-l"
         mat-stroked-button
         i18n>
         <mat-icon>playlist_remove</mat-icon>
@@ -48,7 +48,7 @@
       <button
         (click)="toggleAll('activate')"
         [disabled]="!anyDisabledTokens()"
-        class="action-button-1 width-238"
+        class="action-button-secondary width-l"
         mat-stroked-button
         i18n>
         <mat-icon>playlist_play</mat-icon>
@@ -59,7 +59,7 @@
       <button
         (click)="toggleAll('deactivate')"
         [disabled]="!anyActiveTokens()"
-        class="action-button-delete width-238"
+        class="action-button-delete-secondary width-l"
         mat-stroked-button
         i18n>
         <mat-icon class="mdi--list-lock" />
@@ -74,7 +74,7 @@
       <button
         (click)="removeAll()"
         [disabled]="tokenData().data.length === 0"
-        class="action-button-delete width-238"
+        class="action-button-delete-secondary width-l"
         mat-stroked-button
         i18n>
         <mat-icon> playlist_remove</mat-icon>
@@ -85,7 +85,7 @@
       <button
         (click)="deleteAllTokens()"
         [disabled]="tokenData().data.length === 0"
-        class="action-button-delete width-238"
+        class="action-button-delete-secondary width-l"
         mat-stroked-button
         i18n>
         <mat-icon> delete_sweep</mat-icon>

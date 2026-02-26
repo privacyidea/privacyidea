@@ -38,7 +38,7 @@
     }
     @if (showAddButton()) {
       <button
-        class="action-button-1 width-238"
+        class="action-button-secondary width-l"
         mat-stroked-button
         (click)="addOption()">
         <mat-icon>add</mat-icon>
@@ -46,7 +46,7 @@
       </button>
     } @else if (option().type === "str") {
       <button
-        class="action-button-1 width-238"
+        class="action-button-secondary width-l"
         mat-stroked-button
         (click)="addOption()">
         <mat-icon>save</mat-icon>

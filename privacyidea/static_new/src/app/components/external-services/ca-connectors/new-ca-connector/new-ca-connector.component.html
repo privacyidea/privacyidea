@@ -219,7 +219,7 @@
         <button
           (click)="loadAvailableCas()"
           [disabled]="!caConnectorForm.get('hostname')?.value || !caConnectorForm.get('port')?.value || isLoadingCas()"
-          class="action-button-1"
+          class="action-button-secondary"
           mat-stroked-button>
           <mat-icon>assured_workload</mat-icon>
           <span i18n>Get Available CAs</span>
@@ -251,7 +251,7 @@
   <button
     (click)="save()"
     [disabled]="caConnectorForm.invalid"
-    class="action-button-1 width-238"
+    class="action-button-secondary width-l"
     i18n
     mat-stroked-button>
     <mat-icon>save</mat-icon>

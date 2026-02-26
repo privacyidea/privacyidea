@@ -2,10 +2,12 @@
 
 .actions-pin-input {
   display: flex;
+  flex-direction: column;
   gap: 8px;
 }
 
 .actions-pin-input-button {
   margin-top: 8px;
   display: flex;
+  justify-content: center;
 }

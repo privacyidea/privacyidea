@@ -425,66 +425,100 @@ $button-low-contrast-variant: linear-gradient(
   width: 24px;
 }
 
-.mat-mdc-outlined-button[class*="action-button-delete"] {
-  --mat-outlined-button-state-layer-color: var(--rose-bg);
-  --mat-outlined-button-ripple-color: var(--rose-bg);
-  --mdc-ripple-color: var(--rose-bg);
-}
-
-.mat-mdc-outlined-button[class*="action-button-1"] {
-  --mdc-ripple-color: var(--sky-bg);
-}
 
 %action-button-base {
-  background-color: var(--mat-sys-surface-container-lowest);
   border-radius: var(--border-radius);
-  justify-content: start;
+  justify-content: center;
+  overflow: hidden;
 
   mat-icon.mat-icon.notranslate.material-icons {
     font-size: 20px;
   }
 }
 
-@mixin action-button-variant($color, $background-color) {
-  color: $color;
-  border-color: $color;
-  &:hover {
-    background-color: $background-color;
+@mixin action-button($bg, $color, $hover-bg, $ripple: null, $ripple-mdc: null, $layer: null, $border: true, $primary: false) {
+  @extend %action-button-base;
+  background-color: $bg;
+
+  @if $layer {
+    --mat-outlined-button-state-layer-color: #{$layer};
+    --mat-stroked-button-state-layer-color: #{$layer};
+  }
+  @if $ripple {
+    --mat-outlined-button-ripple-color: #{$ripple};
+    --mat-stroked-button-ripple-color: #{$ripple};
+  }
+  @if $ripple-mdc {
+    --mdc-ripple-color: #{$ripple-mdc};
+  }
+
+  @if not $border {
+    border: none !important;
+  }
+
+  &:not([disabled]) {
+    color: $color;
+    @if $border {
+      border-color: $color;
+    }
+
+    &:hover {
+      background-color: $hover-bg;
+    }
+  }
+
+  @if $primary {
+    &[disabled] {
+      background-color: var(--mat-sys-surface-container-high) !important;
+      color: var(--mat-sys-on-surface-variant) !important;
+      @if $border {
+        border-color: var(--mat-sys-surface-container-highest) !important;
+      }
+    }
   }
 }
 
-.action-button-1 {
-  @extend %action-button-base;
-
-  &:not([disabled]) {
-    @include action-button-variant(var(--mat-sys-primary), var(--sky-blue));
-  }
+.action-button-primary {
+  @include action-button(
+                  var(--mat-sys-primary),
+                  var(--mat-sys-surface-container-lowest),
+                  var(--mat-sys-primary-base-active),
+                  $border: false,
+                  $primary: true
+  );
 }
 
-.action-button-delete {
-  @extend %action-button-base;
-
-  &:not([disabled]) {
-    @include action-button-variant(var(--red-base), var(--rose-bg));
-  }
+.action-button-secondary {
+  @include action-button(
+                  var(--mat-sys-surface-container-lowest),
+                  var(--mat-sys-primary),
+                  var(--sky-blue),
+                  $ripple-mdc: var(--sky-bg)
+  );
 }
 
-.action-button-cancel {
-  @extend %action-button-base;
-
-  &:not([disabled]) {
-    @include action-button-variant(var(--grey-base), var(--grey-light));
-  }
+.action-button-delete-primary {
+  @include action-button(
+                  var(--red-base),
+                  var(--mat-sys-surface-container-lowest),
+                  var(--red-light),
+                  $ripple: var(--red-light-active),
+                  $ripple-mdc: var(--rose-bg),
+                  $layer: var(--rose-bg),
+                  $border: false,
+                  $primary: true
+  );
 }
 
-.action-button-active {
-  @extend %action-button-base;
-  background-color: var(--mat-sys-primary-base-active);
-  color: var(--mat-sys-on-primary);
-
-  &:not([disabled]) {
-    @include action-button-variant(var(--mat-sys-on-primary), var(--mat-sys-primary));
-  }
+.action-button-delete-secondary {
+  @include action-button(
+                  var(--mat-sys-surface-container-lowest),
+                  var(--red-base),
+                  var(--rose-bg),
+                  $ripple: var(--rose-ripple),
+                  $ripple-mdc: var(--rose-bg),
+                  $layer: var(--rose-bg)
+  );
 }
 
 .filter-button {
@@ -513,57 +547,6 @@ $button-low-contrast-variant: linear-gradient(
   }
 }
 
-.input-attached-button-active {
-  background-color: var(--mat-sys-primary-base-active);
-  color: var(--mat-sys-on-primary);
-}
-
-.input-attached-button-hover:hover:not(:disabled):not(.input-attached-button-active) {
-  background-color: var(--mat-sys-primary-base-hover);
-  color: var(--mat-sys-on-primary);
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.input-attached-button {
-  height: 58px;
-  width: 35px;
-  margin-bottom: 18px;
-  padding: 0;
-  border: none;
-  background-color: var(--mat-sys-surface-container-high);
-  border-radius: 0 var(--three-quarters-global-padding) var(--three-quarters-global-padding) 0 !important;
-  display: flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  transition: background-color 0.2s ease-in-out;
-  flex-shrink: 0;
-
-  .small-icon-button {
-    width: 36px !important;
-    height: 36px !important;
-    padding: 0px !important;
-    display: inline-flex !important;
-    align-items: center;
-    justify-content: center;
-
-    & > *[role="img"] {
-      width: 18px;
-      height: 18px;
-    }
-  }
-
-  svg {
-    width: 18px;
-    height: 18px;
-  }
-
-  .mat-mdc-button-touch-target {
-    width: 36px !important;
-    height: 36px !important;
-  }
-}
-
 .scroll-to-top-fab {
   display: flex;
   justify-content: center;
@@ -588,4 +571,16 @@ $button-low-contrast-variant: linear-gradient(
 ::ng-deep mat-icon {
   display: flex !important;
   align-items: center !important;
+}
+
+.width-s {
+  width: 120px
+}
+
+.width-m {
+  width: 180px;
+}
+
+.width-l {
+  width: 240px;
 }

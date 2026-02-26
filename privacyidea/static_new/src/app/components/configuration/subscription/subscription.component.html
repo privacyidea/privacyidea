@@ -26,9 +26,10 @@
 
     <button
       (click)="fileInput.click()"
-      class="action-button-1"
+      class="action-button-primary width-l"
       i18n
-      mat-stroked-button>
+      mat-stroked-button
+      type="submit">
       <mat-icon>add</mat-icon>
       Select and Upload File
     </button>
@@ -50,7 +51,7 @@
           @if (authService.actionAllowed('delete')) {
             <button
               (click)="deleteSubscription(subscription.application)"
-              class="action-button-delete"
+              class="action-button-delete-secondary width-s"
               i18n-matTooltip
               mat-stroked-button
               matTooltip="Delete Subscription">

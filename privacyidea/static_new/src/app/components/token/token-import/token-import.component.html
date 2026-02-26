@@ -51,16 +51,14 @@
           </mat-select>
         </mat-form-field>
       </div>
-      <div>
-        <button
-          (click)="importTokens()"
-          [disabled]="!inputForm.valid"
-          class="action-button-1 width-238"
-          mat-stroked-button>
-          <mat-icon>input</mat-icon>
-          Import
-        </button>
-      </div>
+      <button
+        (click)="importTokens()"
+        [disabled]="!inputForm.valid"
+        class="action-button-primary width-s"
+        mat-stroked-button>
+        <mat-icon>input</mat-icon>
+        Import
+      </button>
     </div>
   </div>
 
@@ -179,7 +177,7 @@
 
     <div class="drag-and-drop-zone margin-bottom-1">
       <div class="margin-top-1 margin-bottom-1">
-        <div>
+        <div class="flex just-center margin-bottom-8">
           <mat-icon>upload_file</mat-icon>
         </div>
         Drag and Drop file here or
@@ -194,7 +192,7 @@
       <div>
         <button
           (click)="fileUpload.click()"
-          class="action-button-1 text-center just-center"
+          class="action-button-secondary text-center just-center width-m"
           mat-stroked-button>
           <mat-icon>folder_open</mat-icon>
           Browse Files

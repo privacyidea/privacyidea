@@ -52,13 +52,13 @@ import { EntraidResolverComponent } from "./entraid-resolver/entraid-resolver.co
 import { KeycloakResolverComponent } from "./keycloak-resolver/keycloak-resolver.component";
 import { ActivatedRoute, Router } from "@angular/router";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
-import { MAT_DIALOG_DATA, MatDialog, MatDialogModule, MatDialogRef } from "@angular/material/dialog";
+import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from "@angular/material/dialog";
 import { ROUTE_PATHS } from "../../../route_paths";
 import { ContentService } from "../../../services/content/content.service";
 import { PendingChangesService } from "../../../services/pending-changes/pending-changes.service";
 import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
 import { DialogService, DialogServiceInterface } from "../../../services/dialog/dialog.service";
-import { SimpleConfirmationDialogComponent } from "../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { SaveAndExitDialogComponent } from "../../shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 
 @Component({
   selector: "app-user-new-resolver",
@@ -323,19 +323,19 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
           config_get_user_list: {
             method: "GET",
             endpoint: "/users",
-            headers: '{"ConsistencyLevel": "eventual"}'
+            headers: "{\"ConsistencyLevel\": \"eventual\"}"
           },
           config_create_user: {
             method: "POST",
             endpoint: "/users",
             requestMapping:
-              '{"accountEnabled": true, "displayName": "{givenname} {surname}", "mailNickname": "{givenname}", "passwordProfile": {"password": "{password}"}}'
+              "{\"accountEnabled\": true, \"displayName\": \"{givenname} {surname}\", \"mailNickname\": \"{givenname}\", \"passwordProfile\": {\"password\": \"{password}\"}}"
           },
           config_edit_user: { method: "PATCH", endpoint: "/users/{userid}" },
           config_delete_user: { method: "DELETE", endpoint: "/users/{userid}" },
           config_user_auth: {
             method: "POST",
-            headers: '{"Content-Type": "application/x-www-form-urlencoded"}',
+            headers: "{\"Content-Type\": \"application/x-www-form-urlencoded\"}",
             endpoint: "https://login.microsoftonline.com/{tenant}/oauth2/v2.0/token",
             requestMapping:
               "client_id={client_id}&scope=https://graph.microsoft.com/.default&username={username}&password={password}&grant_type=password&client_secret={client_credential}"
@@ -346,14 +346,14 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
           config_authorization: {
             method: "POST",
             endpoint: "/realms/{realm}/protocol/openid-connect/token",
-            headers: '{"Content-Type": "application/x-www-form-urlencoded"}',
+            headers: "{\"Content-Type\": \"application/x-www-form-urlencoded\"}",
             requestMapping: "grant_type=password&client_id=admin-cli&username={username}&password={password}",
-            responseMapping: '{"Authorization": "Bearer {access_token}"}'
+            responseMapping: "{\"Authorization\": \"Bearer {access_token}\"}"
           },
           config_user_auth: {
             method: "POST",
             endpoint: "/realms/{realm}/protocol/openid-connect/token",
-            headers: '{"Content-Type": "application/x-www-form-urlencoded"}',
+            headers: "{\"Content-Type\": \"application/x-www-form-urlencoded\"}",
             requestMapping: "grant_type=password&client_id=admin-cli&username={username}&password={password}"
           },
           config_get_user_list: {
@@ -367,7 +367,7 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
           config_get_user_by_name: {
             method: "GET",
             endpoint: "/admin/realms/{realm}/users",
-            requestMapping: '{"username": "{username}", "exact": true}'
+            requestMapping: "{\"username\": \"{username}\", \"exact\": true}"
           }
         };
       } else if (type === "scimresolver") {
@@ -453,23 +453,22 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
     if (this.hasChanges) {
       this.dialogService
         .openDialog({
-          component: SimpleConfirmationDialogComponent,
+          component: SaveAndExitDialogComponent,
           data: {
             title: $localize`Discard changes`,
-            confirmAction: { label: "Save and exit", type: "confirm", value: true },
-            items: [this.resolverName || "New Resolver"],
-            itemType: "resolver"
+            allowSaveExit: this.canSave,
+            saveExitDisabled: !this.canSave
           }
         })
         .afterClosed()
         .subscribe((result) => {
-          if (result === true) {
+          if (result === "save-exit") {
             if (!this.canSave) return;
             Promise.resolve(this.pendingChangesService.save()).then(() => {
               this.pendingChangesService.unregisterHasChanges();
               this.closeCurrent();
             });
-          } else if (result === false) {
+          } else if (result === "discard") {
             this.pendingChangesService.unregisterHasChanges();
             this.closeCurrent();
           }
@@ -478,6 +477,7 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
       this.closeCurrent();
     }
   }
+
   private closeCurrent(): void {
     if (this.dialogRef) {
       this.dialogRef.close();

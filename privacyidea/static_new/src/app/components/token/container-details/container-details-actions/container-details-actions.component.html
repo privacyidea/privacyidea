@@ -22,7 +22,7 @@
     @if (authService.actionAllowed("container_delete")) {
       <button
         (click)="deleteContainer()"
-        class="action-button-delete width-238"
+        class="action-button-delete-secondary width-l"
         i18n
         mat-stroked-button>
         <mat-icon>delete</mat-icon>
@@ -31,7 +31,7 @@
     }
     <button
       (click)="enrollTokenInContainer()"
-      class="action-button-1 width-238"
+      class="action-button-secondary width-l"
       i18n
       mat-stroked-button>
       <mat-icon>add_moderator</mat-icon>
@@ -44,7 +44,7 @@
       @if (registrationAllowed()) {
         <button
           (click)="openRegisterInitDialog(false)"
-          class="action-button-1 width-238"
+          class="action-button-secondary width-l"
           i18n
           mat-stroked-button>
           <mat-icon>phonelink</mat-icon>
@@ -53,7 +53,7 @@
       } @else if (rolloverAllowed()) {
         <button
           (click)="openRegisterInitDialog(true)"
-          class="action-button-1 width-238"
+          class="action-button-secondary width-l"
           i18n
           mat-stroked-button>
           <mat-icon>sync</mat-icon>
@@ -63,7 +63,7 @@
       @if (unregisterAllowed()) {
         <button
           (click)="unregisterContainer()"
-          class="action-button-1 width-238"
+          class="action-button-secondary width-l"
           i18n
           mat-stroked-button>
           <mat-icon>phonelink_off</mat-icon>
