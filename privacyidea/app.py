@@ -108,21 +108,21 @@ CSP = {
     'style-src': [
         '\'self\'',
         "'unsafe-hashes'",
-        "'sha256-1PxuDsPyGK6n+LZsMv0gG4lMX3i3XigG6h0CzPIjwrE='",
-        "'sha256-PDYg/vkWbGnl+ya8uasRQlyo8wGc+3ANz5x3d3aNWUI='",
-        "'sha256-UtUbbZ5pLwzvjGTHwLTsbIxr5p5bX60ndOEI8wF3bo4='",
-        "'sha256-QG3Eg3DGi8tPwqt0K2eUwBqB1GNl19PjW/3Ex5i5mPk='",
-        "'sha256-pSJ3mKkpKCRMub/4VC+QXgZS+y+3+5w9EMRavXs3s38='",
-        "'sha256-j3gGPuXMDPpU+BxRYg+qUVF0TSGtFEKcp1muBBATanE='",
-        "'sha256-3RgHoWfZTUIYaaqXpyMi4osn0e3W0oyKtFnPAFo1uvI='",
-        "'sha256-n9t4cSjdGHb1Hj8yhaCQy3nxaXjPnaDbPkrwYo97sdI='",
         "'sha256-biLFinpqYMtWHmXfkA1BPeCY0/fNt46SAZ+BBk5YUog='",
         "'sha256-7Pu3hinXdj8VFYmteOTmNXWMU+7rB6e//vfADReF/io='",
+        "'sha256-YwVkay1kjkGiuRM9oW8JUzwK2yXE5Dz412KzI4K7I9w='",
+        "'sha256-pV4RJPLWGu90gKQ1iZ+Ocf8wsPJFysB4EeJ6ulMffC8='",
+        "'sha256-sGXdRWRfaXoi2w7oxblURTZe2bZUow+NA6vowwlqX90='",
+        "'sha256-YurW9RNmdGYOW4E845uslV8U8DB3kRoDIp23Yfx2Aag='",
+        "'sha256-YYETf3tpBMRzy6KyGXJts2MStBC0P8LURMg9MhNXEJ0='",
+        "'sha256-PpZyeb/uN2vEHgWDQLqD6Fz17C0qk8EdQCN3u3ngch0='",
+        "'sha256-oTBIxtioa8VM5xoYrlusFzgFpFG1NzQ+kLPiOX3bKW4='",
+        "'sha256-AkGc/9SiOd74zk72UnCdLs+k10sM4iy2uKmgoXkaHe0='",
+        "'sha256-O2+tCymNJNXAt1PNeGpUdjx9tYTHtsUHA3yHgvt0o98='",
+        "'sha256-GAz6lAgGT4GObhjzk+HFLtlANWYun7Clm7Df+db5ka8='",
         "'sha256-KpSV7LuPYEu58+3u9LJr9v5Drm0uIKEv0h3u/+NVNm8='",
         "'sha256-N90MKmRow2DpYEVeqcc3uc8pOUsS4Rg4sNmkau1k0xQ='",
         "'sha256-Vois/bpqZahvBcyohHpVvTSyXN1GBToEOBP1fnFv8OQ='",
-        "'sha256-YwVkay1kjkGiuRM9oW8JUzwK2yXE5Dz412KzI4K7I9w='",
-        "'sha256-QdXSwG0lFVqEzH3nNnFcjWceQ68gfeuFj6C0DdxGekE='"
     ]
 }
 
