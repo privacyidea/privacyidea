@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, inject } from "@angular/core";
+import { Component, computed, inject, Signal } from "@angular/core";
 import { DialogWrapperComponent } from "../../../shared/dialog/dialog-wrapper/dialog-wrapper.component";
 
 import { OtpValuesComponent } from "./otp-values/otp-values.component";
@@ -71,8 +71,12 @@ export class TokenEnrollmentLastStepDialogComponent extends AbstractDialogCompon
     this.data.response.detail?.googleurl?.value ??
     this.data.response.detail?.motpurl?.value ??
     this.data.response.detail?.otpkey?.value ??
-    this.data.response.detail?.tiqrenroll?.value ??
-    "";
+    this.data.response.detail?.tiqrenroll?.value ?? "";
+  protected readonly rollover = this.data.rollover ?? false;
+
+  title: Signal<string> = computed(() => this.rollover ? $localize`Token Successfully Rolled Over` :
+    $localize`Token Successfully Enrolled`);
+
   showQRCode(): boolean {
     return !NO_QR_CODE_TOKEN_TYPES.includes(this.data.tokentype?.key);
   }
@@ -82,7 +86,7 @@ export class TokenEnrollmentLastStepDialogComponent extends AbstractDialogCompon
   }
 
   regenerateButtonText(): string {
-    return REGENERATE_AS_VALUES_TOKEN_TYPES.includes(this.data.tokentype?.key) ? "Values" : "QR Code";
+    return REGENERATE_AS_VALUES_TOKEN_TYPES.includes(this.data.tokentype?.key) ? $localize`Values` : $localize`QR Code`;
   }
 
   constructor() {

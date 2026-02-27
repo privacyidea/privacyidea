@@ -16,7 +16,6 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { NgClass } from "@angular/common";
 import { Component, effect, EventEmitter, inject, input, Input, OnInit, Output } from "@angular/core";
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatCheckbox } from "@angular/material/checkbox";
@@ -73,6 +72,7 @@ export class EnrollTotpComponent implements OnInit {
     { value: "sha512", viewValue: "SHA512" }
   ];
   readonly timeStepOptions = [30, 60];
+  enrollmentData = input<TotpEnrollmentData>();
   @Input() wizard: boolean = false;
   @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
@@ -103,6 +103,7 @@ export class EnrollTotpComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this._setInitialFormValues();
     this.additionalFormFieldsChange.emit({
       generateOnServer: this.generateOnServerFormControl,
       otpLength: this.otpLengthFormControl,
@@ -112,6 +113,15 @@ export class EnrollTotpComponent implements OnInit {
     });
     this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
     this._applyPolicies();
+  }
+
+  private _setInitialFormValues() {
+    if (!!this.enrollmentData()) {
+      this.generateOnServerFormControl.setValue(this.enrollmentData()?.generateOnServer ?? true, { emitEvent: false });
+      this.otpLengthFormControl.setValue(this.enrollmentData()?.otpLength ?? 6, { emitEvent: false });
+      this.hashAlgorithmControl.setValue(this.enrollmentData()?.hashAlgorithm ?? "sha1", { emitEvent: false });
+      this.timeStepControl.setValue(this.enrollmentData()?.timeStep ?? 30, { emitEvent: false });
+    }
   }
 
   private _applyPolicies() {
@@ -162,6 +172,7 @@ export class EnrollTotpComponent implements OnInit {
       mapper: this.enrollmentMapper
     };
   };
+
   private _enableFormControls(): void {
     this.totpForm.enable({ emitEvent: false });
     this._applyPolicies();

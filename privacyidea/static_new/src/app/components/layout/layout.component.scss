@@ -1,14 +1,16 @@
-@use "../../../styles";
+@use "styles";
+@use "table";
 @use "@angular/material" as mat;
 
 .layout {
   --max-height: calc(100vh - 64px - var(--global-padding) * 2);
+  --drawer-width: 298px;
 }
 
 .progress-bar {
   position: fixed;
   top: calc(
-          100% - max(var(--mdc-linear-progress-track-height, 4px), var(--mdc-linear-progress-active-indicator-height, 4px))
+    100% - max(var(--mdc-linear-progress-track-height, 4px), var(--mdc-linear-progress-active-indicator-height, 4px))
   );
   left: 0;
   width: 100%;
@@ -44,6 +46,8 @@
 .drawer-content {
   justify-content: center;
   display: flex;
+  height: calc(100% - 32px * 2);
+  align-items: baseline;
 }
 
 .drawer-button-div {

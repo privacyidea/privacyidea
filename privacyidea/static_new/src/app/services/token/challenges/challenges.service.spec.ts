@@ -20,7 +20,7 @@ import { TestBed } from "@angular/core/testing";
 
 import { ChallengesService } from "./challenges.service";
 import { provideHttpClient } from "@angular/common/http";
-import { FilterValue } from "../../../core/models/filter_value";
+import { FilterValue } from "../../../core/models/filter_value/filter_value";
 
 describe("ChallengesService", () => {
   let challengesService: ChallengesService;

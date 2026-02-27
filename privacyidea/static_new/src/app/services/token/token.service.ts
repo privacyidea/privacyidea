@@ -45,7 +45,7 @@ import { ContentService, ContentServiceInterface } from "../content/content.serv
 import { StringUtils } from "../../utils/string.utils";
 import { DialogService, DialogServiceInterface } from "../dialog/dialog.service";
 import { SimpleConfirmationDialogComponent } from "../../components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
-import { FilterValue } from "../../core/models/filter_value";
+import { FilterValue } from "src/app/core/models/filter_value/filter_value";
 
 export type TokenTypeKey =
   | "hotp"
@@ -137,6 +137,7 @@ export interface TokenType {
   name: string;
   info: string;
   text: string;
+  rollover?: boolean;
 }
 
 export interface WebAuthnRegisterRequest {
@@ -193,7 +194,7 @@ export interface TokenServiceInterface {
   tokenBaseUrl: string;
   eventPageSize: number;
   tokenSerial: WritableSignal<string>;
-  selectedTokenType: Signal<TokenType>;
+  selectedTokenType: WritableSignal<TokenType>;
   showOnlyTokenNotInContainer: WritableSignal<boolean>;
   tokenFilter: WritableSignal<FilterValue>;
   tokenDetailResource: HttpResourceRef<PiResponse<Tokens> | undefined>;

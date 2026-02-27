@@ -1,0 +1,27 @@
+.added-actions-container {
+  display: flex;
+  flex-direction: column;
+
+  .action-row {
+    display: flex;
+    justify-content: space-between;
+
+    font-size: 12px;
+    padding: 0 var(--half-global-padding) !important;
+
+    &:not(:last-child) {
+      border-bottom: 1px solid var(--mat-sys-outline-variant);
+    }
+  }
+
+  .action-label {
+    font-weight: 500;
+    margin-right: 8px;
+  }
+
+  .action-value {
+    color: var(--mat-sys-on-surface-variant);
+    white-space: normal;
+    flex: 1;
+  }
+}

@@ -1,14 +1,15 @@
+# SPDX-FileCopyrightText: 2015 NetKnights GmbH <https://netknights.it>
+# SPDX-License-Identifier: AGPL-3.0-or-later
 """
 This test file tests the LDAP machine resolver in
 lib/machines/ldap.py
 """
-
-HOSTSFILE = "tests/testdata/hosts"
 from .base import MyTestCase
 from privacyidea.lib.machines.ldap import LdapMachineResolver
 from privacyidea.lib.machines.base import MachineResolverError
 from . import ldap3mock
-import netaddr
+
+HOSTSFILE = "tests/testdata/hosts"
 
 LDAPDirectory = [{"dn": "cn=admin,ou=example,o=test",
                   "attributes": {"cn": "admin",
@@ -19,18 +20,18 @@ LDAPDirectory = [{"dn": "cn=admin,ou=example,o=test",
                                  "objectClass": "computer",
                                  "dNSHostName": "machine1.example.test",
                                  "iPAddress": "1.2.3.4"}
-                 },
+                  },
                  {"dn": 'cn=machine2,ou=example,o=test',
                   "attributes": {'cn': 'machine2',
                                  "objectClass": "computer",
                                  "dNSHostName": "machine2.example.test"}
-                 },
+                  },
                  {"dn": 'cn=machine3,ou=example,o=test',
                   "attributes": {'cn': 'machine3',
                                  "objectClass": "computer",
                                  "dNSHostName": "machine3.example.test",
-                                }
-                 }]
+                                 }
+                  }]
 
 MYCONFIG = {"HOSTNAMEATTRIBUTE": "dNSHostName",
             "LDAPURI": "ldap://1.2.3.4",
@@ -57,7 +58,6 @@ class LdapMachineTestCase(MyTestCase):
                                            "administrator@privacyidea.test",
                                        "BINDPW": "Test1234!",
                                        "HOSTNAMEATTRIBUTE": "dNSHostName"})
-
 
     def test_01_get_config_description(self):
         # Missing LDAPURI
@@ -93,26 +93,24 @@ class LdapMachineTestCase(MyTestCase):
         machines = self.mreso.get_machines(hostname="machine1.example.test")
         self.assertEqual(len(machines), 1)
 
-        # THere is one machine, that contains "e2"
+        # THere is one machine that contains "e2"
         machines = self.mreso.get_machines(hostname="e2",
                                            substring=True)
         self.assertEqual(len(machines), 1)
 
     def test_04_get_machines_any(self):
-        # The MockLdap module can not handle complicates ldap searches like
+        # The MockLdap module cannot handle complicates ldap searches like
         # (&(&( )( )( ))(|( )( )( )) )
         # so we only test the creation of the ldapsearch string
-        filter = LdapMachineResolver.\
+        ldap_filter = LdapMachineResolver.\
             _create_ldap_filter("(""objectClass=computer)",
                                 "objectSid", "",
                                 "dNSHostName", "",
                                 "", "",
                                 substring=True, any="substr")
-        self.assertEqual(filter, "(&(&(objectClass=computer))"
-                                 "(|(objectSid=*substr*)("
-                                 "dNSHostName=*substr*)))")
-
-
+        self.assertEqual(ldap_filter, "(&(&(objectClass=computer))"
+                                      "(|(objectSid=*substr*)("
+                                      "dNSHostName=*substr*)))")
 
     def test_05_get_single_machine(self):
 
@@ -123,19 +121,19 @@ class LdapMachineTestCase(MyTestCase):
         self.assertTrue(machine.has_hostname("machine1.example.test"))
 
     def test_06_get_machine_id(self):
-        id = self.mreso.get_machine_id(hostname="not existing")
-        self.assertTrue(id is None)
+        machine_blueprintid = self.mreso.get_machine_id(hostname="not existing")
+        self.assertTrue(machine_blueprintid is None)
 
-        id = self.mreso.get_machine_id(hostname="machine1.example.test")
-        self.assertEqual(id, "cn=machine1,ou=example,o=test")
+        machine_blueprintid = self.mreso.get_machine_id(hostname="machine1.example.test")
+        self.assertEqual(machine_blueprintid, "cn=machine1,ou=example,o=test")
 
     @ldap3mock.activate
     def test_07_testconnection(self):
         ldap3mock.setLDAPDirectory(LDAPDirectory)
         (success, desc) = LdapMachineResolver.testconnection(MYCONFIG)
         self.assertTrue(success)
-        self.assertTrue("3" in desc)
-        # "Your LDAP config seems to be OK, 3 machine objects found."
+        self.assertTrue(desc.startswith("Your LDAP machine resolver configuration seems to be OK, "
+                                        "3 machine objects found"), desc)
 
     @ldap3mock.activate
     def test_08_start_tls(self):
@@ -149,12 +147,11 @@ class LdapMachineTestCase(MyTestCase):
         self.assertEqual(len(machines), 3)
         # We check two things:
         # 1) start_tls has actually been called!
-        self.assertTrue(start_tls_resolver.l.start_tls_called)
+        self.assertTrue(start_tls_resolver.connection.start_tls_called)
         # 2) All Server objects were constructed with a non-None TLS context, but use_ssl=False
         for _, kwargs in ldap3mock.get_server_mock().call_args_list:
             self.assertIsNotNone(kwargs['tls'])
             self.assertFalse(kwargs['use_ssl'])
-
 
     @ldap3mock.activate
     def test_09_ldaps(self):

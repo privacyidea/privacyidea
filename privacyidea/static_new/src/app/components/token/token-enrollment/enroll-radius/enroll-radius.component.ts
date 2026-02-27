@@ -67,6 +67,7 @@ export class EnrollRadiusComponent implements OnInit {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
 
+  enrollmentData = input<RadiusEnrollmentData>();
   @Input() wizard: boolean = false;
   @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
@@ -109,12 +110,20 @@ export class EnrollRadiusComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this._setInitialFormValues();
     this.additionalFormFieldsChange.emit({
       radiusUser: this.radiusUserControl,
       radiusServerConfiguration: this.radiusServerConfigurationControl,
       checkPinLocally: this.checkPinLocallyControl
     });
     this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
+  }
+
+  private _setInitialFormValues() {
+    if (!!this.enrollmentData()) {
+      this.radiusUserControl.setValue(this.enrollmentData()?.radiusUser ?? "", { emitEvent: false });
+      this.radiusServerConfigurationControl.setValue(this.enrollmentData()?.radiusServerConfiguration ?? "", { emitEvent: false });
+    }
   }
 
   enrollmentArgsGetter = (

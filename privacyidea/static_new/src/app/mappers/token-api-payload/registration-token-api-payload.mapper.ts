@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -17,7 +17,13 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Injectable } from "@angular/core";
-import { TokenApiPayloadMapper, TokenEnrollmentData, TokenEnrollmentPayload } from "./_token-api-payload.mapper";
+import {
+  BaseApiPayloadMapper,
+  TokenApiPayloadMapper,
+  TokenEnrollmentData,
+  TokenEnrollmentPayload
+} from "./_token-api-payload.mapper";
+import { TokenDetails } from "../../services/token/token.service";
 
 // Interface for Registration Token-specific enrollment data
 export interface RegistrationEnrollmentData extends TokenEnrollmentData {
@@ -29,32 +35,29 @@ export interface RegistrationEnrollmentPayload extends TokenEnrollmentPayload {
 }
 
 @Injectable({ providedIn: "root" })
-export class RegistrationApiPayloadMapper implements TokenApiPayloadMapper<RegistrationEnrollmentData> {
-  toApiPayload(data: RegistrationEnrollmentData): RegistrationEnrollmentPayload {
+export class RegistrationApiPayloadMapper extends BaseApiPayloadMapper implements TokenApiPayloadMapper<RegistrationEnrollmentData> {
+
+  override toApiPayload(data: RegistrationEnrollmentData): RegistrationEnrollmentPayload {
     // No type-specific fields in switch statement for 'registration'
-    const payload: RegistrationEnrollmentPayload = {
-      type: data.type,
-      description: data.description,
-      container_serial: data.containerSerial,
-      validity_period_start: data.validityPeriodStart,
-      validity_period_end: data.validityPeriodEnd,
-      user: data.user,
-      realm: data.user ? data.realm : null,
-      pin: data.pin,
-      serial: data.serial ?? null
-    };
+    const payload: RegistrationEnrollmentPayload = super.toApiPayload(data);
 
     if (data.onlyAddToRealm) {
       payload.realm = data.realm;
       payload.user = null;
     }
-    if (payload.serial === null) delete payload.serial;
 
     return payload;
   }
 
-  fromApiPayload(payload: any): RegistrationEnrollmentData {
+  override fromApiPayload(payload: any): RegistrationEnrollmentData {
     // Placeholder: Implement transformation from API payload.
     return payload as RegistrationEnrollmentData;
+  }
+
+  override fromTokenDetailsToEnrollmentData(details: TokenDetails): RegistrationEnrollmentData {
+    return {
+      ...super.fromTokenDetailsToEnrollmentData(details),
+      type: "registration"
+    };
   }
 }

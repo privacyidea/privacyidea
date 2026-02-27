@@ -98,7 +98,6 @@ describe("ContainerCreatedDialogWizardComponent", () => {
   let fixture: ComponentFixture<ContainerCreatedDialogWizardComponent>;
   let component: ContainerCreatedDialogWizardComponent;
   let httpMock: HttpTestingController;
-  let authService: MockAuthService;
 
   const stopPolling = jest.fn();
   const containerServiceMock = { stopPolling };

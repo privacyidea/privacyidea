@@ -47,7 +47,7 @@ import { MatDialog } from "@angular/material/dialog";
 import { filter } from "rxjs";
 import { FormsModule } from "@angular/forms";
 import { MatSelectModule } from "@angular/material/select";
-import { FilterValue } from "../../../core/models/filter_value";
+import { FilterValue } from "../../../core/models/filter_value/filter_value";
 import { AuditService, AuditServiceInterface } from "../../../services/audit/audit.service";
 import { MatTooltip } from "@angular/material/tooltip";
 import { RouterLink } from "@angular/router";

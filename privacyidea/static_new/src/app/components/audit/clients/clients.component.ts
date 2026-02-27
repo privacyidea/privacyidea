@@ -44,7 +44,7 @@ import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
 import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
 import { AuthService } from "../../../services/auth/auth.service";
 import { AuditService } from "../../../services/audit/audit.service";
-import { FilterValue } from "../../../core/models/filter_value";
+import { FilterValue } from "../../../core/models/filter_value/filter_value";
 import { ROUTE_PATHS } from "../../../route_paths";
 import { RouterLink } from "@angular/router";
 import { MatIconButton } from "@angular/material/button";
