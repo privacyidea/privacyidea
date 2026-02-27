@@ -505,6 +505,30 @@ WEBAUTHN_TOKEN_SPECIFIC_SETTINGS = {
 }
 
 
+def _attestation_certificate_allowed(attestation_cert, allowed_certs_pols):
+    """
+    Check a certificate against a set of policies.
+
+    This will check an attestation certificate of a WebAuthn token against a
+    list of policies. It is used to verify whether a token with the given
+    attestation may be enrolled.
+
+    :param attestation_cert: The attestation certificate.
+    :type attestation_cert: cryptography.x509.Certificate or None
+    :param allowed_certs_pols: The policies restricting enrollment.
+    :type allowed_certs_pols: dict or None
+    :return: Whether the token should be allowed to complete enrollment based on its attestation.
+    :rtype: bool
+    """
+    cert_info = {
+        "attestation_issuer": attestation_cert.issuer.rfc4514_string(),
+        "attestation_serial": f"{attestation_cert.serial_number}",
+        "attestation_subject": attestation_cert.subject.rfc4514_string()
+    } if attestation_cert else None
+
+    return attestation_certificate_allowed(cert_info, allowed_certs_pols)
+
+
 def _normalize_ec2_public_key_curve_in_cose_key(credential_public_key_bytes):
     """
     Older U2F credentials may store an EC2 COSE key without the mandatory
@@ -868,13 +892,81 @@ class WebAuthnTokenClass(TokenClass):
 
         return webauthn_b64_encode(binascii.unhexlify(self.token.get_otpkey().getKey()))
 
+    @staticmethod
+    def _load_trust_anchors(trust_anchor_dir):
+        """
+        Load and validate PEM trust anchors from the configured directory.
+
+        Invalid files are skipped to preserve backwards-compatible behavior.
+        """
+        pem_root_certs_bytes = []
+        if trust_anchor_dir and os.path.isdir(trust_anchor_dir):
+            for trust_anchor_name in os.listdir(trust_anchor_dir):
+                trust_anchor_path = os.path.join(trust_anchor_dir, trust_anchor_name)
+                if os.path.isfile(trust_anchor_path):
+                    try:
+                        with open(trust_anchor_path, "rb") as trust_anchor_file:
+                            cert_data = trust_anchor_file.read()
+                            x509.load_pem_x509_certificate(cert_data.strip())
+                            pem_root_certs_bytes.append(cert_data)
+                    except Exception as ex:
+                        log.info(f"Could not load certificate {trust_anchor_path}: {ex}")
+        elif trust_anchor_dir:
+            log.debug(f"Trust anchor directory ({trust_anchor_dir}) not available.")
+        return pem_root_certs_bytes
+
+    def _credential_id_is_already_registered(self, credential_id_b64, credential_id_hash):
+        """
+        Check whether a credential is already in use by another WebAuthn token.
+
+        Fast-path: indexed hash lookup in TokenCredentialIdHash.
+        Fallback: legacy full token scan for installations where hash entries
+        may not exist for older tokens.
+        """
+        stmt = select(TokenCredentialIdHash.token_id).where(
+            TokenCredentialIdHash.credential_id_hash == credential_id_hash
+        )
+        existing_token_id = db.session.scalar(stmt)
+        if existing_token_id and existing_token_id != self.token.id:
+            return True
+        if existing_token_id == self.token.id:
+            return False
+
+        for token in get_tokens(tokentype=self.type):
+            if token.get_serial() == self.get_serial():
+                continue
+            if token.decrypt_otpkey() == credential_id_b64:
+                return True
+        return False
+
     def update(self, param, reset_failcount=True):
         """
-        This method is called during the initialization process.
+        Update token state during WebAuthn enrollment.
+
+        The method handles both enrollment phases:
+        1. Bootstrap phase (no registration data): move token to
+           ``ROLLOUTSTATE.CLIENTWAIT`` and keep it inactive.
+        2. Finalization phase (with ``regdata`` and ``clientdata`` while in
+           ``CLIENTWAIT``): verify registration response against the stored
+           challenge, persist credential metadata, and activate the token.
+
+        Required parameters for finalization include:
+        - ``transaction_id``
+        - ``regdata`` (attestationObject, base64url)
+        - ``clientdata`` (clientDataJSON, base64url)
+        - ``HTTP_ORIGIN``
+        - ``FIDO2PolicyAction.RELYING_PARTY_ID``
+        - ``FIDO2PolicyAction.AUTHENTICATOR_ATTESTATION_LEVEL``
+
+        Side effects in finalization:
+        - writes otp key/sign counter
+        - stores credential hash and tokeninfo metadata
+        - deletes enrollment challenges
+        - sets rollout state to ``ENROLLED`` and activates the token
 
         :param param: Parameters from the token init.
         :type param: dict
-        :param reset_failcount: Whether to reset the fail count.
+        :param reset_failcount: Passed through to base update handling.
         :type reset_failcount: bool
         :return: Nothing
         :rtype: None
@@ -920,50 +1012,27 @@ class WebAuthnTokenClass(TokenClass):
                 # The webauthn library expects base64url strings in credential JSON.
                 reg_data_b64 = reg_data.decode("utf-8") if isinstance(reg_data, bytes) else reg_data
                 client_data_b64 = client_data.decode("utf-8") if isinstance(client_data, bytes) else client_data
-                if not isinstance(reg_data_b64, str) or not isinstance(client_data_b64, str):
-                    raise ValueError("Registration data must be base64url encoded strings.")
 
+                # Extract credential_id from the attestation object and normalize ec2 public key.
                 raw_attestation_object = webauthn_b64_decode(reg_data_b64)
                 parsed_attestation = parse_attestation_object(raw_attestation_object)
-                if not parsed_attestation.auth_data.attested_credential_data:
-                    raise ValueError("Attestation object does not contain attested credential data.")
                 credential_id_bytes = parsed_attestation.auth_data.attested_credential_data.credential_id
-                if not credential_id_bytes:
-                    raise ValueError("Attestation object does not contain credential ID.")
                 credential_public_key_bytes = (
                     parsed_attestation.auth_data.attested_credential_data.credential_public_key
                 )
                 credential_id_b64 = bytes_to_base64url(credential_id_bytes)
+                credential_id_hash = hash_credential_id(credential_id_bytes)
                 raw_attestation_object = _normalize_ec2_public_key_curve_in_attestation_object(raw_attestation_object)
                 reg_data_b64 = bytes_to_base64url(raw_attestation_object)
 
-                existing_credential_ids = [
-                    token.decrypt_otpkey()
-                    for token in get_tokens(tokentype=self.type)
-                    if token.get_serial() != self.get_serial()
-                ]
-                if credential_id_b64 in existing_credential_ids:
+                # Checking that the credential is not already registered.
+                if self._credential_id_is_already_registered(credential_id_b64, credential_id_hash):
                     raise ValueError("Credential already exists.")
-
-                trust_anchor_dir = get_from_config(FIDO2ConfigOptions.TRUST_ANCHOR_DIR)
-                pem_root_certs_bytes = []
-                if trust_anchor_dir and os.path.isdir(trust_anchor_dir):
-                    for trust_anchor_name in os.listdir(trust_anchor_dir):
-                        trust_anchor_path = os.path.join(trust_anchor_dir, trust_anchor_name)
-                        if os.path.isfile(trust_anchor_path):
-                            try:
-                                with open(trust_anchor_path, "rb") as trust_anchor_file:
-                                    cert_data = trust_anchor_file.read()
-                                    # Keep old behavior: silently skip invalid certificates.
-                                    x509.load_pem_x509_certificate(cert_data.strip())
-                                    pem_root_certs_bytes.append(cert_data)
-                            except Exception as ex:
-                                log.info(f"Could not load certificate {trust_anchor_path}: {ex}")
-                elif trust_anchor_dir:
-                    log.debug(f"Trust anchor directory ({trust_anchor_dir}) not available.")
 
                 pem_root_certs_bytes_by_fmt = None
                 if attestation_level == AttestationLevel.TRUSTED:
+                    trust_anchor_dir = get_from_config(FIDO2ConfigOptions.TRUST_ANCHOR_DIR)
+                    pem_root_certs_bytes = self._load_trust_anchors(trust_anchor_dir)
                     if not pem_root_certs_bytes:
                         raise ValueError("No trust anchors available to verify attestation certificate.")
                     pem_root_certs_bytes_by_fmt = {
@@ -986,6 +1055,34 @@ class WebAuthnTokenClass(TokenClass):
                     require_user_verification=uv_req == UserVerificationLevel.REQUIRED,
                     pem_root_certs_bytes_by_fmt=pem_root_certs_bytes_by_fmt,
                 )
+
+                # Checking policy scope=SCOPE.ENROLL, action=FIDO2PolicyAction.REQ
+                allowed_certs_pols = get_optional(param, FIDO2PolicyAction.REQ)
+                if allowed_certs_pols:
+                    attestation_object_parsed = parse_attestation_object(
+                        registration_verification.attestation_object
+                    )
+                    attestation_cert = (
+                        x509.load_der_x509_certificate(attestation_object_parsed.att_stmt.x5c[0])
+                        if attestation_object_parsed.att_stmt and attestation_object_parsed.att_stmt.x5c
+                        else None
+                    )
+                    if not _attestation_certificate_allowed(attestation_cert, allowed_certs_pols):
+                        log.warning(
+                            "The WebAuthn token {0!s} is not allowed to be registered due to policy restriction {1!s}"
+                            .format(serial, FIDO2PolicyAction.REQ))
+                        raise PolicyError(
+                            "The WebAuthn token is not allowed to be registered due to a policy restriction.")
+
+                # Checking policy scope=SCOPE.ENROLL, action=FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST
+                allowed_aaguids_pols = get_optional(param, FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST)
+                if allowed_aaguids_pols:
+                    if registration_verification.aaguid not in allowed_aaguids_pols:
+                        log.warning(
+                            "The WebAuthn token {0!s} is not allowed to be registered due to policy restriction {1!s}"
+                            .format(serial, FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST))
+                        raise PolicyError(
+                            "The WebAuthn token is not allowed to be registered due to a policy restriction.")
 
                 attestation_object = parse_attestation_object(registration_verification.attestation_object)
                 has_attestation_cert = bool(attestation_object.att_stmt and attestation_object.att_stmt.x5c)
@@ -1011,7 +1108,6 @@ class WebAuthnTokenClass(TokenClass):
             self.set_otp_count(registration_verification.sign_count)
 
             # Save the credential_id hash to an extra table to be able to find the token faster
-            credential_id_hash = hash_credential_id(registration_verification.credential_id)
             save_credential_id_hash(credential_id_hash, self.token.id)
 
             token_info_dict = {
