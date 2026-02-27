@@ -31,6 +31,10 @@ import {
   HotpEnrollmentData
 } from "../../../../mappers/token-api-payload/hotp-token-api-payload.mapper";
 import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
+import {
+  NotificationService,
+  NotificationServiceInterface
+} from "../../../../services/notification/notification.service";
 
 export interface HotpEnrollmentOptions extends TokenEnrollmentData {
   type: "hotp";
@@ -62,6 +66,7 @@ export class EnrollHotpComponent implements OnInit {
   protected readonly enrollmentMapper: HotpApiPayloadMapper = inject(HotpApiPayloadMapper);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
+  protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   readonly otpLengthOptions = [6, 8];
   readonly hashAlgorithmOptions = [
     { value: "sha1", viewValue: "SHA1" },
@@ -126,9 +131,7 @@ export class EnrollHotpComponent implements OnInit {
     }
   }
 
-  enrollmentArgsGetter = (
-    basicOptions: TokenEnrollmentData
-  ): {
+  enrollmentArgsGetter = (basicOptions: TokenEnrollmentData): {
     data: HotpEnrollmentData;
     mapper: TokenApiPayloadMapper<HotpEnrollmentData>;
   } | null => {
@@ -144,6 +147,7 @@ export class EnrollHotpComponent implements OnInit {
       if (!this.generateOnServerFormControl.value) {
         this.otpKeyFormControl.markAsTouched();
       }
+      this.notificationService.openSnackBar($localize`Invalid enrollment data.`);
       return null;
     }
 

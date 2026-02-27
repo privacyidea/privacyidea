@@ -33,6 +33,10 @@ import {
 } from "../../../../mappers/token-api-payload/totp-token-api-payload.mapper";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
+import {
+  NotificationService,
+  NotificationServiceInterface
+} from "../../../../services/notification/notification.service";
 
 export interface TotpEnrollmentOptions extends TokenEnrollmentData {
   type: "totp";
@@ -65,6 +69,7 @@ export class EnrollTotpComponent implements OnInit {
   protected readonly enrollmentMapper: TotpApiPayloadMapper = inject(TotpApiPayloadMapper);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
+  protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   readonly otpLengthOptions = [6, 8];
   readonly hashAlgorithmOptions = [
     { value: "sha1", viewValue: "SHA1" },
@@ -141,16 +146,16 @@ export class EnrollTotpComponent implements OnInit {
     }
   }
 
-  enrollmentArgsGetter = (
-    basicOptions: TokenEnrollmentData
-  ): {
+  enrollmentArgsGetter = (basicOptions: TokenEnrollmentData): {
     data: TotpEnrollmentData;
     mapper: TokenApiPayloadMapper<TotpEnrollmentData>;
   } | null => {
     if (this.totpForm.invalid) {
+      this.notificationService.openSnackBar($localize`Invalid enrollment data.`);
       this.totpForm.markAllAsTouched();
       return null;
     }
+
     const timeStepValue =
       typeof this.timeStepControl.value === "string"
         ? parseInt(this.timeStepControl.value, 10)

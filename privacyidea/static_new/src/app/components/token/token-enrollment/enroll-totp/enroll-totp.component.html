@@ -31,8 +31,7 @@
           <input
             matInput
             [formControl]="otpKeyFormControl"
-            placeholder="Enter OTP key"
-            required />
+            placeholder="Enter OTP key" />
           @if (otpKeyFormControl.hasError("required")) {
             <mat-error>OTP key is <strong>required</strong></mat-error>
           }
