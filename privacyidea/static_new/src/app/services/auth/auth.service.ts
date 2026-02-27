@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { HttpClient, HttpHeaders } from "@angular/common/http";
-import { computed, effect, inject, Injectable, Signal, signal, WritableSignal } from "@angular/core";
+import { computed, inject, Injectable, Signal, signal, WritableSignal } from "@angular/core";
 import { Observable, throwError } from "rxjs";
 import { catchError, tap } from "rxjs/operators";
 import { environment } from "../../../environments/environment";
@@ -116,6 +116,8 @@ export interface AuthDetail {
   type?: string;
 }
 
+export type TwoStepValue = "disabled" | "allow" | "force";
+
 export interface AuthServiceInterface {
   // Properties
   readonly authUrl: string;
@@ -134,6 +136,7 @@ export interface AuthServiceInterface {
   readonly menus: Signal<string[]>;
   readonly realm: Signal<string>;
   readonly rights: Signal<string[]>;
+  readonly rightsWithValues: Signal<Record<string, string | null>>;
   readonly role: Signal<AuthRole>;
   readonly token: Signal<string>;
   readonly username: Signal<string>;
@@ -195,6 +198,8 @@ export interface AuthServiceInterface {
   anyTokenActionAllowed(): boolean;
 
   checkForceServerGenerateOTPKey(tokenType: string): boolean;
+
+  check2Step(tokenType: string): TwoStepValue;
 }
 
 @Injectable({
@@ -225,6 +230,20 @@ export class AuthService implements AuthServiceInterface {
   readonly menus = computed(() => this.authData()?.menus || []);
   readonly realm = computed(() => this.jwtData()?.realm || this.authData()?.realm || "");
   readonly rights = computed(() => this.jwtData()?.rights || this.authData()?.rights || []);
+  readonly rightsWithValues = computed(() => {
+    const rightsList = this.rights();
+    const result: Record<string, string | null> = {};
+    rightsList.forEach(entry => {
+      const eqIdx = entry.indexOf("=");
+      if (eqIdx === -1) {
+        result[entry] = null;
+      } else {
+        const key = entry.substring(0, eqIdx);
+        result[key] = entry.substring(eqIdx + 1);
+      }
+    });
+    return result;
+  });
   readonly role = computed(() => this.jwtData()?.role || this.authData()?.role || "");
   readonly token = computed(() => this.authData()?.token || "");
   readonly username = computed(() => this.jwtData()?.username || this.authData()?.username || "");
@@ -354,6 +373,18 @@ export class AuthService implements AuthServiceInterface {
 
   checkForceServerGenerateOTPKey(tokenType: string): boolean {
     return this.actionAllowed((tokenType + "_force_server_generate") as PolicyAction);
+  }
+
+  check2Step(tokenType: string): TwoStepValue {
+    const key = tokenType + "_2step";
+    const value = this.rightsWithValues()[key];
+    if (value === "allow") {
+      return "allow";
+    } else if (value === null) {
+      return "force";
+    } else {
+      return "disabled";
+    }
   }
 
   decodeJwtPayload(token: string): JwtData | null {
