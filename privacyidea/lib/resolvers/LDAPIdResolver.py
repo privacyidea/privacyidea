@@ -25,40 +25,35 @@ OpenLDAP and Active Directory.
 The file is tested in tests/test_lib_resolver.py
 """
 
+import binascii
+import datetime
+import functools
+import hashlib
 import logging
+import os.path
+import ssl
+import threading
+import traceback
+import uuid
+from operator import itemgetter
 from typing import Optional
 
-import yaml
-import threading
-import functools
-
-from .UserIdResolver import UserIdResolver
-
 import ldap3
+import yaml
 from ldap3 import MODIFY_REPLACE, MODIFY_ADD, MODIFY_DELETE
 from ldap3 import Tls
 from ldap3.core.exceptions import LDAPOperationResult
 from ldap3.core.results import RESULT_SIZE_LIMIT_EXCEEDED
-import ssl
-
-import os.path
-
-import traceback
+from ldap3.utils.conv import escape_bytes
 from passlib.hash import ldap_salted_sha1
-import hashlib
-import binascii
-from privacyidea.lib.framework import get_app_local_store, get_app_config_value
-import datetime
 
 from privacyidea.lib import _
+from privacyidea.lib.error import privacyIDEAError, ResolverError, ParameterError
+from privacyidea.lib.framework import get_app_local_store, get_app_config_value
 from privacyidea.lib.log import log_with
 from privacyidea.lib.utils import (is_true, to_bytes, to_unicode,
                                    convert_column_to_unicode)
-from privacyidea.lib.error import privacyIDEAError, ResolverError, ParameterError
-import uuid
-from ldap3.utils.conv import escape_bytes
-from operator import itemgetter
-
+from .UserIdResolver import UserIdResolver
 from ..lifecycle import register_finalizer
 
 log = logging.getLogger(__name__)
@@ -107,6 +102,7 @@ class LockingServerPool(ldap3.ServerPool):
 
     We use a ``RLock`` instead of a simple ``Lock`` to avoid locking ourselves.
     """
+
     def __init__(self, *args, **kwargs):
         ldap3.ServerPool.__init__(self, *args, **kwargs)
         self._lock = threading.RLock()
@@ -205,6 +201,7 @@ def cache(func):
     dictionary cache.
     This is a per-process cache.
     """
+
     @functools.wraps(func)
     def cache_wrapper(self, *args, **kwds):
         # Only run the code in case we have a configured cache!
@@ -215,7 +212,7 @@ def cache(func):
             tdelta = datetime.timedelta(seconds=self.cache_timeout)
             if resolver_id not in CACHE:
                 CACHE[resolver_id] = {"getUserId": {},
-                                      "getUserInfo": {},
+                                      "get_user_info": {},
                                       "_getDN": {}}
             else:
                 # Clean up the cache in the current resolver and the current function
@@ -239,8 +236,20 @@ def cache(func):
             r_cache = CACHE.get(resolver_id).get(func.__name__)
             entry = r_cache.get(args[0])
             if entry and now < entry.get("timestamp") + tdelta:
-                log.debug("Reading {0!r} from cache for {1!r}".format(args[0], func.__name__))
-                return entry.get("value")
+                valid_cache_entry = True
+                result = entry.get("value")
+                if func.__name__ == "get_user_info":
+                    # Check if requested attributes are available in the cache
+                    requested_attributes = set(kwds.get("attributes", self.get_available_info_keys()))
+                    cached_attributes = set(entry.get("value").keys())
+                    if not requested_attributes.issubset(cached_attributes):
+                        valid_cache_entry = False
+                    if set(cached_attributes) > set(requested_attributes):
+                        # extract only requested attributes from the cache
+                        result = {k: v for k, v in entry.get("value").items() if k in requested_attributes}
+                if valid_cache_entry:
+                    log.debug("Reading {0!r} from cache for {1!r}".format(args[0], func.__name__))
+                    return result
 
         f_result = func(self, *args, **kwds)
 
@@ -320,12 +329,13 @@ class IdResolver(UserIdResolver):
                 log.error('Could not import gssapi package. Kerberos authentication is not possible!')
                 return False
             # We need to check credentials with kerberos differently since we
-            # cannot use bind for every user
-            upn = self.getUserInfo(uid).get('upn')
+            # can not use bind for every user
+            user_info = self.get_user_info(uid)
+            upn = user_info.get('upn')
             if upn is not None and upn != "None" and upn != "":
                 name = gssapi.Name(upn.upper())
             else:
-                name = gssapi.Name(self.getUserInfo(uid).get('username'))
+                name = gssapi.Name(user_info.get('username'))
             try:
                 gssapi.raw.ext_password.acquire_cred_with_password(name, to_bytes(password))
             except gssapi.exceptions.GSSError as e:
@@ -338,7 +348,7 @@ class IdResolver(UserIdResolver):
             # which would be of the format DOMAIN\username and compose the
             # bind_user to DOMAIN\sAMAccountName
             domain_name = self.binddn.split('\\')[0]
-            uinfo = self.getUserInfo(uid)
+            uinfo = self.get_user_info(uid, ["username"])
             # In fact, we need the sAMAccountName. If the username mapping is
             # another attribute than the sAMAccountName the authentication
             # will fail!
@@ -417,6 +427,33 @@ class IdResolver(UserIdResolver):
         """
         return loginname.replace("\\", "\\5c").replace("*", "\\2a").replace(
             "(", "\\28").replace(")", "\\29").replace("/", "\\2f")
+
+    @staticmethod
+    def _escape_filter_value(filter_value: str or bytes, allow_wildcards: bool = False) -> str:
+        """
+        Escape characters for a string to be added in a search filter to avoid injections.
+        According to RFC4515 \, *, (, ) and NUL (0x00) are escaped with a backslash.
+
+        :param filter_value: The value to be escaped
+        :param allow_wildcards: If set to True, the asterisk character is not escaped, so that it can be used as a
+            wildcard in the filter.
+        :return: The escaped filter value
+        """
+        if isinstance(filter_value, str):
+            escaped_filter = (filter_value.replace("\\", "\\5c")
+                              .replace("(", "\\28")
+                              .replace(")", "\\29")
+                              .replace('\x00', '\\00'))
+            if not allow_wildcards:
+                escaped_filter = escaped_filter.replace("*", "\\2a")
+        elif isinstance(filter_value, bytes):
+            escaped_filter = to_unicode(escape_bytes(filter_value))
+        else:
+            log.debug(
+                "Filter value can not be escaped due to unexpected type %s. Returning the filter value unescaped.",
+                type(filter_value))
+            escaped_filter = filter_value
+        return escaped_filter
 
     @staticmethod
     def _get_uid(entry, uidtype):
@@ -577,12 +614,12 @@ class IdResolver(UserIdResolver):
         return tls_context
 
     @cache
-    def getUserInfo(self, user_id):
+    def get_user_info(self, user_id: int or str, attributes: list[str] = None) -> dict:
         """
         This function returns all user info for a given userid/object.
 
         :param user_id: The userid of the object
-        :type user_id: string
+        :param attributes: list of attribute names to be returned for the user. If None, all attributes are returned.
         :return: A dictionary with the keys defined in self.userinfo
         :rtype: dict
         """
@@ -604,10 +641,22 @@ class IdResolver(UserIdResolver):
             raise ResolverError(f"Found more than one object for uid {user_id!r}")
 
         for entry in result:
-            attributes = entry.get("attributes")
-            user_info = self._ldap_attributes_to_user_object(attributes)
+            ldap_user = entry.get("attributes")
+            user_info = self._ldap_attributes_to_user_object(ldap_user, attributes)
 
         return user_info
+
+    def get_available_info_keys(self) -> list[str]:
+        """
+        This function returns a list of known privacyIDEA user attributes which can be used, e.g. for getUserList or
+        get_user_info
+
+        :return: list of possible keys for searching users
+        """
+        info_keys = list(self.userinfo.keys())
+        if self.recursive_group_search and self.group_attribute_mapping_key:
+            info_keys.append(self.group_attribute_mapping_key)
+        return info_keys
 
     def _get_user_groups_recursive(self, user_info: dict) -> list[str]:
         """
@@ -641,23 +690,25 @@ class IdResolver(UserIdResolver):
             log.debug(f"Failed to get the groups of the user: {error}")
 
         for entry in search_result:
-            groups.append(entry.get("attributes").get(self.group_name_attribute))
+            group = entry.get("attributes", {}).get(self.group_name_attribute)
+            if group:
+                groups.append(group)
 
         return groups
 
-    def _ldap_attributes_to_user_object(self, attributes):
+    def _ldap_attributes_to_user_object(self, ldap_user: dict, attributes_to_include: list[str] = None) -> dict:
         """
         This helper function converts the LDAP attributes to a dictionary for
         the privacyIDEA user. The LDAP Userinfo mapping is used to do so.
 
-        :param attributes:
+        :param ldap_user:
         :return: dict with privacyIDEA user info.
         :rtype: dict
         """
         user_info = {}
-        for ldap_k, ldap_v in attributes.items():
+        for ldap_k, ldap_v in ldap_user.items():
             for map_k, map_v in self.userinfo.items():
-                if ldap_k == map_v:
+                if ldap_k == map_v and (not attributes_to_include or map_k in attributes_to_include):
                     if ldap_k == "objectGUID":
                         # An objectGUID should be no list, since it is unique
                         if isinstance(ldap_v, str):
@@ -666,7 +717,7 @@ class IdResolver(UserIdResolver):
                             raise Exception("The LDAP returns an objectGUID, "
                                             "that is no string: {0!s}".format(type(ldap_v)))
                     elif isinstance(ldap_v, list) and map_k not in self.multivalueattributes:
-                        # lists that are not in self.multivalueattributes return the first value
+                        # lists that are not in self.multivalueattributes return first value
                         # as a string. Multi-value-attributes are returned as a list
                         if ldap_v:
                             user_info[map_k] = ldap_v[0]
@@ -674,7 +725,8 @@ class IdResolver(UserIdResolver):
                             user_info[map_k] = ""
                     else:
                         user_info[map_k] = ldap_v
-        if self.recursive_group_search:
+        if self.recursive_group_search and (
+                not attributes_to_include or self.group_attribute_mapping_key in attributes_to_include):
             # get all groups with recursive search
             groups = self._get_user_groups_recursive(user_info)
             user_info[self.group_attribute_mapping_key] = groups
@@ -690,7 +742,7 @@ class IdResolver(UserIdResolver):
         :return: username
         :rtype: string
         """
-        info = self.getUserInfo(user_id)
+        info = self.get_user_info(user_id, attributes=["username"])
         return info.get('username', "")
 
     @cache
@@ -761,7 +813,8 @@ class IdResolver(UserIdResolver):
             if isinstance(search_dict[search_key], str) and not search_dict[search_key].strip("*"):
                 # skip empty and wildcard only search values
                 continue
-            search_dict[search_key] = to_unicode(search_dict[search_key])
+            search_dict[search_key] = self._escape_filter_value(to_unicode(search_dict[search_key]),
+                                                                allow_wildcards=True)
             if search_key == "accountExpires":
                 comparator = ">="
                 if search_dict[search_key] in ["1", 1]:
@@ -775,17 +828,22 @@ class IdResolver(UserIdResolver):
         search_filter += ")"
         return search_filter
 
-    def getUserList(self, search_dict=None):
+    def getUserList(self, search_dict: dict = None, attributes: list[str] = None) -> list[dict]:
         """
         :param search_dict: A dictionary with search parameters
-        :type search_dict: dict
+        :param attributes: list of attributes to be returned for each user
         :return: list of users, where each user is a dictionary
         """
         user_list = []
-        attributes = list(self.userinfo.values())
+        if attributes:
+            configured_fields = list(self.userinfo.keys())
+            ldap_attributes = [self.userinfo[attribute] for attribute in attributes if attribute in configured_fields]
+        else:
+            ldap_attributes = list(self.userinfo.values())
         if self.uidtype.lower() != "dn":
-            attributes.append(str(self.uidtype))
+            ldap_attributes.append(str(self.uidtype))
 
+        search_dict = search_dict or {}
         unknown_search_keys = [x for x in search_dict.keys() if x not in self.userinfo.keys()]
         if unknown_search_keys:
             log.error(f"Could not find search key ({unknown_search_keys}) in "
@@ -800,7 +858,7 @@ class IdResolver(UserIdResolver):
             search_generator = self.connection.extend.standard.paged_search(search_base=self.basedn,
                                                                             search_filter=search_filter,
                                                                             search_scope=self.scope,
-                                                                            attributes=attributes,
+                                                                            attributes=ldap_attributes,
                                                                             paged_size=100,
                                                                             size_limit=self.sizelimit,
                                                                             generator=True)
@@ -818,9 +876,10 @@ class IdResolver(UserIdResolver):
                 if entry.get('type') == 'searchResRef':
                     continue
                 try:
-                    attributes = entry.get("attributes")
-                    user = self._ldap_attributes_to_user_object(attributes)
-                    user['userid'] = self._get_uid(entry, self.uidtype)
+                    ldap_user = entry.get("attributes")
+                    user = self._ldap_attributes_to_user_object(ldap_user, attributes)
+                    if not attributes or "userid" in attributes:
+                        user['userid'] = self._get_uid(entry, self.uidtype)
                     user_list.append(user)
                 except Exception as ex:  # pragma: no cover
                     log.error(f"Error during fetching LDAP objects: {ex}")
@@ -842,7 +901,8 @@ class IdResolver(UserIdResolver):
         """
         id_string = (f"{self.uri}{self.basedn}{self.searchfilter}"
                      f"{sorted(self.userinfo.items(), key=itemgetter(0))}")
-        result = binascii.hexlify(hashlib.sha1(id_string.encode("utf-8")).digest())  # nosec B324 # hash used as unique identifier
+        result = binascii.hexlify(
+            hashlib.sha1(id_string.encode("utf-8")).digest())  # nosec B324 # hash used as unique identifier
         return result.decode('utf8')
 
     @staticmethod
@@ -1238,7 +1298,7 @@ class IdResolver(UserIdResolver):
 
         return success, message
 
-    def add_user(self, attributes: dict=None):
+    def add_user(self, attributes: dict = None) -> str:
         """
         Add a new user to the LDAP directory.
         The user can only be created in the LDAP using a DN.
@@ -1339,7 +1399,7 @@ class IdResolver(UserIdResolver):
         :return: dict with attribute name as keys and values
         """
         modify_changes = {}
-        uinfo = self.getUserInfo(uid)
+        uinfo = self.get_user_info(uid, list(attributes.keys()))
 
         for fieldname, value in attributes.items():
             if value:

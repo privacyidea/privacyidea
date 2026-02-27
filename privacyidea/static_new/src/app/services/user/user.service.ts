@@ -319,6 +319,7 @@ export class UserService implements UserServiceInterface {
       headers: this.authService.getHeaders(),
       params: {
         realm: selectedUserRealm,
+        attributes: "username,userid,givenname,surname,email,phone,mobile,description,resolver,editable",
         ...this.filterParams()
       }
     };

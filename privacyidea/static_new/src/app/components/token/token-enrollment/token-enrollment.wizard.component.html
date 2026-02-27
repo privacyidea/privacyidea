@@ -25,14 +25,14 @@
   @if (preTopHtml?.hasContent) {
     <div
       [innerHTML]="preTopHtml?.sanitized"
-      class="margin-top-1"></div>
+      class="margin-top-16"></div>
   } @else {
     <h2>Enroll {{ tokenType().name }} Token</h2>
   }
   <form
     (ngSubmit)="enrollToken()"
     [formGroup]="formGroupSignal()">
-    <div class="enroll-button-container margin-bottom-1">
+    <div class="enroll-button-container margin-bottom-16">
       <button
         [disabled]="formGroupSignal().invalid"
         class="action-button-1 width-238"
@@ -212,5 +212,5 @@
   </form>
   <div
     [innerHTML]="preBottomHtml$ | async"
-    class="margin-bottom-1"></div>
+    class="margin-bottom-16"></div>
 </div>

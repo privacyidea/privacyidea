@@ -264,14 +264,14 @@
             [isEditingUser]="isEditingUser" />
         </div>
         @if (overflowService.isWidthOverflowing("body", 1310)) {
-          <mat-divider class="margin-top-1 margin-bottom-1" />
+          <mat-divider class="margin-top-16 margin-bottom-16" />
         }
       </div>
       <div
         [ngClass]="[overflowService.isWidthOverflowing('body', 1310) ? '' : 'margin-left-1']"
         class="flex-column">
         <app-container-details-token-table [containerTokenData]="containerTokenData" />
-        <div class="flex-row gap-32 margin-top-1">
+        <div class="flex-row gap-32 margin-top-16">
           @if (authService.actionAllowed("container_add_token")) {
             <div class="flex-column">
               <h4 class="margin-left-1 margin-bottom-0">Add Token</h4>

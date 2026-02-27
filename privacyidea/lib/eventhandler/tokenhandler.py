@@ -655,7 +655,7 @@ class TokenEventHandler(BaseEventHandler):
                         if is_true(handler_options.get("dynamic_email")):
                             init_param["dynamic_email"] = 1
                         else:
-                            init_param['email'] = user.info.get("email", "")
+                            init_param['email'] = user.get_specific_info(["email"]).get("email", "")
                             if not init_param['email']:
                                 log.warning("Enrolling EMail token. But the user {0!s}"
                                             "has no email address!".format(user))
@@ -670,8 +670,6 @@ class TokenEventHandler(BaseEventHandler):
                 if is_true(handler_options.get("container")):
                     container_serial = self._get_container_serial(request, content)
                     if container_serial:
-                        user = request.User
-                        user_role = g.logged_in_user.get("role")
                         add_token_to_container(container_serial, t.get_serial())
                     else:
                         log.info(f"No container serial is found to add the token {t.get_serial()} to the container.")
