@@ -23,8 +23,8 @@ import { OtpValuesComponent } from "./otp-values/otp-values.component";
 import { RegistrationCodeComponent } from "./registration-code/registration-code.component";
 import { TiqrEnrollUrlComponent } from "./tiqr-enroll-url/tiqr-enroll-url.component";
 import { OtpKeyComponent } from "./otp-key/otp-key.component";
-import { ContentServiceInterface, ContentService } from "../../../../services/content/content.service";
-import { TokenServiceInterface, TokenService } from "../../../../services/token/token.service";
+import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
+import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 import {
   NO_QR_CODE_TOKEN_TYPES,
   NO_REGENERATE_TOKEN_TYPES,
@@ -35,6 +35,8 @@ import { QrCodeTextComponent } from "./qr-code-text/qr-code-text.component";
 import { TokenEnrollmentLastStepDialogData } from "./token-enrollment-last-step-dialog.self-service.component";
 import { AbstractDialogComponent } from "../../../shared/dialog/abstract-dialog/abstract-dialog.component";
 import { MatButtonModule } from "@angular/material/button";
+import { FormControl, ReactiveFormsModule, Validators } from "@angular/forms";
+import { TokenEnrollmentData } from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
 
 @Component({
   selector: "app-token-enrollment-last-step-dialog",
@@ -49,7 +51,8 @@ import { MatButtonModule } from "@angular/material/button";
     OtpKeyComponent,
     MatIconModule,
     QrCodeTextComponent,
-    MatButtonModule
+    MatButtonModule,
+    ReactiveFormsModule
   ]
 })
 export class TokenEnrollmentLastStepDialogComponent extends AbstractDialogComponent<TokenEnrollmentLastStepDialogData> {
@@ -73,28 +76,34 @@ export class TokenEnrollmentLastStepDialogComponent extends AbstractDialogCompon
   showQRCode(): boolean {
     return !NO_QR_CODE_TOKEN_TYPES.includes(this.data.tokentype?.key);
   }
+
   showRegenerateButton(): boolean {
     return !NO_REGENERATE_TOKEN_TYPES.includes(this.data.tokentype?.key);
   }
+
   regenerateButtonText(): string {
     return REGENERATE_AS_VALUES_TOKEN_TYPES.includes(this.data.tokentype?.key) ? "Values" : "QR Code";
   }
+
   constructor() {
     super();
     this.dialogRef.afterClosed().subscribe(() => {
       this.tokenService.stopPolling();
     });
   }
+
   tokenSelected(tokenSerial: string) {
     this.dialogRef.close();
     this.contentService.tokenSelected(tokenSerial);
   }
+
   regenerateQRCode() {
     this.data.serial.set(this.data.response.detail?.serial ?? null);
     this.data.enrollToken();
     this.data.serial.set(null);
     this.dialogRef.close();
   }
+
   containerSelected(containerSerial: string) {
     this.dialogRef.close();
     this.contentService.containerSelected(containerSerial);

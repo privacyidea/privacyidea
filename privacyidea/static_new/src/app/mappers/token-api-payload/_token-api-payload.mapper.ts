@@ -35,6 +35,7 @@ export interface EnrollmentResponseDetail {
   otpkey?: EnrollmentUrl;
   motpurl?: EnrollmentUrl;
   tiqrenroll?: EnrollmentUrl;
+  verify?: {message: string};
 
   [key: string]: any;
 }
@@ -48,15 +49,16 @@ export interface EnrollmentUrl {
 
 export type TokenEnrollmentData = {
   type: string;
-  description: string;
-  containerSerial: string;
-  validityPeriodStart: string;
-  validityPeriodEnd: string;
-  user: string;
-  realm: string;
+  description?: string;
+  containerSerial?: string;
+  validityPeriodStart?: string;
+  validityPeriodEnd?: string;
+  user?: string;
+  realm?: string;
   onlyAddToRealm?: boolean;
-  pin: string;
-  serial: string | null;
+  pin?: string;
+  serial?: string | null;
+  verify?: string;
   [key: string]: any; // TODO: remove this when all types are defined
 };
 

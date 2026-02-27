@@ -72,8 +72,7 @@
       }
       @if (data.response.detail["password"]) {
         <p i18n>
-          Your Password: <strong>{{ data.response.detail["password"] }}</strong
-          >.
+          Your Password: <strong>{{ data.response.detail["password"] }}</strong>.
         </p>
       }
       @if (data.response.detail.otpkey?.value && !data.response.detail["otps"] && showQRCode()) {

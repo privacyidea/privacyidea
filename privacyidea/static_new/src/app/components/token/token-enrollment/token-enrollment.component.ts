@@ -109,6 +109,7 @@ import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.s
 import { UserAssignmentComponent } from "../user-assignment/user-assignment.component";
 import { TokenEnrollmentLastStepDialogComponent } from "./token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
 import { TokenEnrollmentLastStepDialogData } from "./token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.self-service.component";
+import { TokenVerifyEnrollmentComponent } from "./token-verify-enrollment/token-verify-enrollment.component";
 
 export type enrollmentArgsGetterFn<T extends TokenEnrollmentData = TokenEnrollmentData> = (
   enrollmentOptions: TokenEnrollmentData
@@ -552,17 +553,54 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
       this.notificationService.openSnackBar(`Failed to enroll token: ${message || error.message || error}`);
     });
     let enrollmentResponse: EnrollmentResponse | null = await enrollPromise;
+
+    // Complete enrollment
     const onEnrollmentResponseFn = this.onEnrollmentResponse();
     if (onEnrollmentResponseFn && enrollmentResponse) {
       enrollmentResponse = await onEnrollmentResponseFn(enrollmentResponse, enrollmentArgs.data);
     }
-    this.enrollResponse.set(enrollmentResponse);
-    if (enrollmentResponse) {
-      this._handleEnrollmentResponse({
+
+    // Verify Enrollment
+    this.handleVerifyEnrollment(enrollmentResponse);
+
+    // Successfully Enrolled
+    // this.enrollResponse.set(enrollmentResponse);
+    // if (enrollmentResponse) {
+    //   this._handleEnrollmentResponse({
+    //     response: enrollmentResponse,
+    //     user: user
+    //   });
+    // }
+  }
+
+  handleVerifyEnrollment(enrollmentResponse: EnrollmentResponse | null) {
+    if (!enrollmentResponse) return
+    if (!enrollmentResponse.detail?.verify) {
+      // No verify required, directly open last step dialog
+      console.log("No verify step required, directly opening last step dialog.");
+      this.enrollResponse.set(enrollmentResponse);
+      return this._handleEnrollmentResponse({
         response: enrollmentResponse,
-        user: user
-      });
+        user: this.userService.selectedUser()
+      })
     }
+
+    // Open verify dialog
+    console.log("Opening verify enrollment dialog.");
+    console.log(enrollmentResponse);
+    const dialogRef = this.dialogService.openDialog({
+      component: TokenVerifyEnrollmentComponent,
+      data: enrollmentResponse
+    })
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.enrollResponse.set(result);
+        this._handleEnrollmentResponse({
+          response: result,
+          user: this.userService.selectedUser()
+        });
+      }
+    });
   }
 
   private _toPromise<T>(observable: Observable<T> | Promise<T>): Promise<T> {
