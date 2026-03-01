@@ -87,8 +87,9 @@
           <context context-type="linenumber">11,12</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="4021416118056639248" datatype="html">
+      <trans-unit id="4021416118056639248" datatype="html" xml:space="preserve">
         <source>Example query: 'type: hotp userid: 1000'</source>
+        <target state="translated">Príklad dotazu: 'type: hotp userid: 1000'</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/audit/audit.component.html</context>
           <context context-type="linenumber">14,15</context>
@@ -102,15 +103,17 @@
           <context context-type="linenumber">14,15</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="2201237987005516275" datatype="html">
+      <trans-unit id="2201237987005516275" datatype="html" xml:space="preserve">
         <source>Audit Data Table</source>
+        <target state="translated">Tabuľka auditných záznamov</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/audit/audit.component.html</context>
           <context context-type="linenumber">33</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="4194127101054948199" datatype="html">
+      <trans-unit id="4194127101054948199" datatype="html" xml:space="preserve">
         <source>Header Row</source>
+        <target state="translated">Hlavička riadku</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/audit/audit.component.html</context>
           <context context-type="linenumber">124</context>
@@ -265,8 +268,9 @@
           <context context-type="linenumber">74,75</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="60339518069223848" datatype="html">
+      <trans-unit id="60339518069223848" datatype="html" xml:space="preserve">
         <source>No data matching the filter.</source>
+        <target state="translated">Žiadne dáta pre zadaný filter.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/audit/audit.component.html</context>
           <context context-type="linenumber">128,129</context>
@@ -308,8 +312,9 @@
           <context context-type="linenumber">75</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="9084885127601930456" datatype="html">
+      <trans-unit id="9084885127601930456" datatype="html" xml:space="preserve">
         <source>logo</source>
+        <target state="translated">logo</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/layout/header/header.component.html</context>
           <context context-type="linenumber">6</context>
@@ -323,8 +328,9 @@
           <context context-type="linenumber">9</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="4550958265168690830" datatype="html">
+      <trans-unit id="4550958265168690830" datatype="html" xml:space="preserve">
         <source>Logo</source>
+        <target state="translated">Logo</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/layout/header/header.component.html</context>
           <context context-type="linenumber">8</context>
@@ -338,8 +344,9 @@
           <context context-type="linenumber">11</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="4548722462586549001" datatype="html">
+      <trans-unit id="4548722462586549001" datatype="html" xml:space="preserve">
         <source>Tokens</source>
+        <target state="translated">Tokeny</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/layout/header/header.component.html</context>
           <context context-type="linenumber">24,25</context>
@@ -356,36 +363,41 @@
           <context context-type="linenumber">40,41</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="3008420115644088420" datatype="html">
+      <trans-unit id="3008420115644088420" datatype="html" xml:space="preserve">
         <source>Configuration</source>
+        <target state="translated">Konfigurácia</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/layout/header/header.component.html</context>
           <context context-type="linenumber">48,49</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="3309973566259313398" datatype="html">
+      <trans-unit id="3309973566259313398" datatype="html" xml:space="preserve">
         <source>Audit</source>
+        <target state="translated">Audit</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/layout/header/header.component.html</context>
           <context context-type="linenumber">56,57</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="1831139682192909712" datatype="html">
+      <trans-unit id="1831139682192909712" datatype="html" xml:space="preserve">
         <source>Components</source>
+        <target state="translated">Komponenty</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/layout/header/header.component.html</context>
           <context context-type="linenumber">64,65</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="5740206434555920246" datatype="html">
+      <trans-unit id="5740206434555920246" datatype="html" xml:space="preserve">
         <source>Preview</source>
+        <target state="translated">Náhľad</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/layout/header/header.component.html</context>
           <context context-type="linenumber">77,78</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="2288513108450439427" datatype="html">
+      <trans-unit id="2288513108450439427" datatype="html" xml:space="preserve">
         <source>Support</source>
+        <target state="translated">Podpora</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/layout/header/header.component.html</context>
           <context context-type="linenumber">102</context>
@@ -403,8 +415,9 @@
           <context context-type="linenumber">55,56</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="3797778920049399855" datatype="html">
+      <trans-unit id="3797778920049399855" datatype="html" xml:space="preserve">
         <source>Logout</source>
+        <target state="translated">Odhlásiť</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/layout/header/header.component.html</context>
           <context context-type="linenumber">123</context>
@@ -414,8 +427,9 @@
           <context context-type="linenumber">74</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="3482067797996829475" datatype="html">
+      <trans-unit id="3482067797996829475" datatype="html" xml:space="preserve">
         <source>Preview</source>
+        <target state="translated">Náhľad</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/layout/header/header.self-service.component.html</context>
           <context context-type="linenumber">44,45</context>
@@ -428,8 +442,9 @@
           <context context-type="linenumber">5</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="3597932961286677186" datatype="html">
+      <trans-unit id="3597932961286677186" datatype="html" xml:space="preserve">
         <source>Header</source>
+        <target state="translated">Hlavička</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/layout/layout.component.html</context>
           <context context-type="linenumber">6</context>
@@ -449,29 +464,33 @@
           <context context-type="linenumber">3,4</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="6920697388428342571" datatype="html">
+      <trans-unit id="6920697388428342571" datatype="html" xml:space="preserve">
         <source>logo-text</source>
+        <target state="translated">logo-text</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/login/login.component.html</context>
           <context context-type="linenumber">20,21</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="3862954316850984559" datatype="html">
+      <trans-unit id="3862954316850984559" datatype="html" xml:space="preserve">
         <source>Logo Text</source>
+        <target state="translated">Logo text</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/login/login.component.html</context>
           <context context-type="linenumber">22,23</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="9216296136044355574" datatype="html">
+      <trans-unit id="9216296136044355574" datatype="html" xml:space="preserve">
         <source>Login Form</source>
+        <target state="translated">Prihlasovací formulár</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/login/login.component.html</context>
           <context context-type="linenumber">33,34</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="5248717555542428023" datatype="html">
+      <trans-unit id="5248717555542428023" datatype="html" xml:space="preserve">
         <source>Username</source>
+        <target state="translated">Meno</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/login/login.component.html</context>
           <context context-type="linenumber">50,52</context>
@@ -482,76 +501,86 @@
         </context-group>
         <note priority="1" from="description">Login username label</note>
       </trans-unit>
-      <trans-unit id="1431416938026210429" datatype="html">
+      <trans-unit id="1431416938026210429" datatype="html" xml:space="preserve">
         <source>Password</source>
+        <target state="translated">Heslo</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/login/login.component.html</context>
           <context context-type="linenumber">63,65</context>
         </context-group>
         <note priority="1" from="description">Login password label</note>
       </trans-unit>
-      <trans-unit id="348324077381402312" datatype="html">
+      <trans-unit id="348324077381402312" datatype="html" xml:space="preserve">
         <source>One-Time-Password</source>
+        <target state="translated">Jednorázové heslo</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/login/login.component.html</context>
           <context context-type="linenumber">76,77</context>
         </context-group>
         <note priority="1" from="description">Login OTP label</note>
       </trans-unit>
-      <trans-unit id="6441574972166776812" datatype="html">
+      <trans-unit id="6441574972166776812" datatype="html" xml:space="preserve">
         <source>Login Button</source>
+        <target state="translated">Prihlasovacie tlačidlo</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/login/login.component.html</context>
           <context context-type="linenumber">93,94</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="8520023152129279437" datatype="html">
+      <trans-unit id="8520023152129279437" datatype="html" xml:space="preserve">
         <source>Log In</source>
+        <target state="translated">Prihlásiť sa</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/login/login.component.html</context>
           <context context-type="linenumber">98,99</context>
         </context-group>
         <note priority="1" from="description">Login button text</note>
       </trans-unit>
-      <trans-unit id="2740831890339580810" datatype="html">
+      <trans-unit id="2740831890339580810" datatype="html" xml:space="preserve">
         <source>Start Over</source>
+        <target state="translated">Začať znova</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/login/login.component.html</context>
           <context context-type="linenumber">106,107</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="7808756054397155068" datatype="html">
+      <trans-unit id="7808756054397155068" datatype="html" xml:space="preserve">
         <source>Reset</source>
+        <target state="translated">Reset</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/login/login.component.html</context>
           <context context-type="linenumber">111,112</context>
         </context-group>
         <note priority="1" from="description">Reset button text</note>
       </trans-unit>
-      <trans-unit id="6127422089109094880" datatype="html">
+      <trans-unit id="6127422089109094880" datatype="html" xml:space="preserve">
         <source>WebAuthn Button</source>
+        <target state="translated">WebAuthn tlačidlo</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/login/login.component.html</context>
           <context context-type="linenumber">121,122</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="5790685103598081049" datatype="html">
+      <trans-unit id="5790685103598081049" datatype="html" xml:space="preserve">
         <source>WebAuthn</source>
+        <target state="translated">WebAuthn</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/login/login.component.html</context>
           <context context-type="linenumber">126,127</context>
         </context-group>
         <note priority="1" from="description">WebAuthn button text</note>
       </trans-unit>
-      <trans-unit id="5977040414046639252" datatype="html">
+      <trans-unit id="5977040414046639252" datatype="html" xml:space="preserve">
         <source>Passkey Button</source>
+        <target state="translated">Passkey tlačidlo</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/login/login.component.html</context>
           <context context-type="linenumber">136,137</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="7763910745363666950" datatype="html">
+      <trans-unit id="7763910745363666950" datatype="html" xml:space="preserve">
         <source>Log In With Passkey</source>
+        <target state="translated">Prihlásiť sa cez Passkey</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/login/login.component.html</context>
           <context context-type="linenumber">141,142</context>
@@ -572,8 +601,9 @@
           <context context-type="linenumber">20,22</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="2159130950882492111" datatype="html">
+      <trans-unit id="2159130950882492111" datatype="html" xml:space="preserve">
         <source>Cancel</source>
+        <target state="translated">Zrušiť</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/shared/confirmation-dialog/confirmation-dialog.component.html</context>
           <context context-type="linenumber">27,28</context>
