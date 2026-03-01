@@ -2,36 +2,43 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
-"Last-Translator: Automatically generated\n"
-"Language-Team: none\n"
+"Report-Msgid-Bugs-To: translations@privacyidea.org\n"
+"PO-Revision-Date: 2026-03-02 01:09+0000\n"
+"Last-Translator: Tomasss <tomasss1024+weblate.org-privacyidea@gmail.com>\n"
+"Language-Team: Slovak <https://hosted.weblate.org/projects/privacyidea/"
+"privacyidea-webui/sk/>\n"
 "Language: sk\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=3; plural=(n==1) ? 0 : (n>=2 && n<=4) ? 1 : 2;\n"
+"Plural-Forms: nplurals=3; plural=((n==1) ? 0 : (n>=2 && n<=4) ? 1 : 2);\n"
+"X-Generator: Weblate 5.16.1-dev\n"
 
 #. level of subscription
 #: privacyidea/static/components/components/views/component.subscriptions.html:27
 msgctxt "subscription"
 msgid "Level"
-msgstr ""
+msgstr "Stupeň"
 
 #: privacyidea/static/components/config/views/config.periodictasks.details.html:116
 msgid "(none)"
-msgstr ""
+msgstr "(neznámy)"
 
 #: privacyidea/static/components/directives/views/directive.csvdownload.html:8
 msgid "45% Complete"
-msgstr ""
+msgstr "45% hotové"
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:114
 msgid ""
 "<a target=\"netknights\" href=\"https://netknights.it/en/unternehmen/kontakt/\">\n"
 "                        Ask for the privacyIDEA Enterprise Edition, now!</a>"
 msgstr ""
+"<a target=\"netknights\" href=\"https://netknights.it/en/unternehmen/kontakt/"
+"\">\n"
+"                        Otázka pre privacyIDEA Enterprise Edition, teraz!</a>"
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:84
 msgid "<b>THIS SOFTWARE COMES WITHOUT ANY WARRANTY!</b>"
-msgstr ""
+msgstr "<b>TENTO SOFTWARE JE BEZ GARANCIE!</b>"
 
 #: privacyidea/static/components/config/views/config.periodictasks.details.html:65
 msgid ""
@@ -39,6 +46,11 @@ msgid ""
 "                        <li><b>\"*/10 * * * *\"</b> runs the task every ten minutes.</li>\n"
 "                        <li><b>\"1 23 * * 7\"</b> runs the task at 11:01pm on Sundays.</li>"
 msgstr ""
+"<li><b>\"5 10 * * *\"</b> úloha bude bežať každý deň o 10:05.</li>\n"
+"                        <li><b>\"*/10 * * * *\"</b> úloha bude bežať každých "
+"10 minút.</li>\n"
+"                        <li><b>\"1 23 * * 7\"</b> úloha bude bežať o 23:01 "
+"každú Nedeľu.</li>"
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:91
 msgid ""
@@ -131,47 +143,53 @@ msgid ""
 "<p>The privacyIDEA API seems to be offline!</p>\n"
 "    <p>Please try to reload and otherwise contact your system administrator!</p>"
 msgstr ""
+"<p>Zdá sa, že API privacyIDEA API je nedostupné!</p>\n"
+"    <p>Prosím skúste znova načítať stránku, prípade kontaktujte Vášho "
+"administrátora!</p>"
 
 #: privacyidea/static/components/config/views/config.policies.details.html:104
 msgid "A description for this policy"
-msgstr ""
+msgstr "Popis tejto politiky"
 
 #: privacyidea/static/components/token/views/token.containertemplates.create.html:29
 msgid "A template with this name already exists. Please choose a different name."
-msgstr ""
+msgstr "Šablóna s týmto názvom už existuje. Prosím použite iný názov."
 
 #: privacyidea/static/components/token/views/token.enroll.sms.html:36
 msgid "A token specific SMS gateway"
-msgstr ""
+msgstr "SMS brána pre token"
 
 #: privacyidea/static/components/token/views/token.containertemplates.create.html:24
 msgid "A unique name for this template"
-msgstr ""
+msgstr "Jedinečný názov pre šablónu"
 
 #: privacyidea/static/components/config/views/config.token.yubico.html:25
 #: privacyidea/static/components/config/views/config.token.yubico.html:29
 #: privacyidea/static/components/config/views/config.token.yubikey.html:21
 #: privacyidea/static/components/config/views/config.token.yubikey.html:44
 msgid "API Key"
-msgstr ""
+msgstr "API kľúč"
 
 #: privacyidea/static/components/config/views/config.token.yubico.html:16
 msgid "API client ID"
-msgstr ""
+msgstr "API klient ID"
 
 #: privacyidea/static/components/token/controllers/tokenControllers.js:818
 msgid "Abort operation on unverifiable token"
-msgstr ""
+msgstr "Prerušiť operáciu s neoveriteľným tokenom"
 
 #: privacyidea/static/components/dialogs/views/dialog.about.html:11
 msgid "About privacyIDEA Web Client"
-msgstr ""
+msgstr "O webovom kliente privacyIDEA"
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:81
 msgid ""
 "According to the\n"
 "                    <a target=\"license\" href=\"https://github.com/privacyidea/privacyidea/blob/master/LICENSE\">AGPLv3</a>"
 msgstr ""
+"Podľa licencie\n"
+"                    <a target=\"license\" href=\"https://github.com/"
+"privacyidea/privacyidea/blob/master/LICENSE\">AGPLv3</a>"
 
 #: privacyidea/static/components/config/views/config.events.details.html:114
 #: privacyidea/static/components/config/views/config.events.details.html:249
@@ -182,7 +200,7 @@ msgstr ""
 #: privacyidea/static/components/config/views/config.policies.list.html:20
 #: privacyidea/static/components/dashboard/views/dashboard.html:91
 msgid "Action"
-msgstr ""
+msgstr "Akcia"
 
 #: privacyidea/static/components/config/views/config.events.list.html:9
 #: privacyidea/static/components/config/views/config.periodictasks.list.html:6
@@ -193,58 +211,58 @@ msgstr ""
 #: privacyidea/static/components/user/views/user.details.html:149
 #: privacyidea/static/components/user/views/user.details.html:236
 msgid "Active"
-msgstr ""
+msgstr "Aktívne"
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:160
 msgid "Active Events"
-msgstr ""
+msgstr "Aktívne udalosti"
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:123
 msgid "Active Policies"
-msgstr ""
+msgstr "Aktívne politiky"
 
 #: privacyidea/static/components/config/views/config.policies.details.html:325
 #: privacyidea/static/components/token/views/token.containerdetails.html:759
 msgid "Add"
-msgstr ""
+msgstr "Pridať"
 
 #: privacyidea/static/components/directives/views/directive.containertemplate.details.html:61
 #: privacyidea/static/components/directives/views/directive.containertemplate.details.html:88
 msgid "Add Token"
-msgstr ""
+msgstr "Pridať token"
 
 #: privacyidea/static/components/user/views/user.details.html:289
 msgid "Add Tokens"
-msgstr ""
+msgstr "Pridať tokeny"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:581
 #: privacyidea/static/components/user/views/user.details.html:281
 msgid "Add Tokens to Container"
-msgstr ""
+msgstr "Pridať tokeny do kontajnera"
 
 #: privacyidea/static/components/directives/views/directive.policyconditions.html:89
 msgid "Add a condition"
-msgstr ""
+msgstr "Pridať podmienku"
 
 #: privacyidea/static/components/user/views/user.add.html:3
 msgid "Add a new user"
-msgstr ""
+msgstr "Pridať nového používateľa"
 
 #: privacyidea/static/components/user/views/user.details.html:88
 msgid "Add custom attribute"
-msgstr ""
+msgstr "Pridaj vlastný atribút"
 
 #: privacyidea/static/components/config/views/config.token.question.html:56
 msgid "Add new question"
-msgstr ""
+msgstr "Pridať otázku"
 
 #: privacyidea/static/components/token/views/token.details.html:630
 msgid "Add to Container"
-msgstr ""
+msgstr "Pridať do kontajnera"
 
 #: privacyidea/static/components/user/views/user.html:40
 msgid "Add user"
-msgstr ""
+msgstr "Pridať používateľa"
 
 #: privacyidea/static/components/directives/views/directive.containerTemplateDiff.html:38
 msgid "Additional"
@@ -252,31 +270,31 @@ msgstr ""
 
 #: privacyidea/static/components/config/views/config.policies.details.html:336
 msgid "Additional conditions"
-msgstr ""
+msgstr "Ďalšie podmienky"
 
 #: privacyidea/static/components/config/views/config.policies.details.html:180
 msgid "Admin"
-msgstr ""
+msgstr "Admin"
 
 #: privacyidea/static/components/config/views/config.policies.details.html:163
 msgid "Admin-Realm"
-msgstr ""
+msgstr "Administrátorská doména"
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:84
 msgid "Administration"
-msgstr ""
+msgstr "Administrácia"
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:90
 msgid "Administrator"
-msgstr ""
+msgstr "Administrátor"
 
 #: privacyidea/static/components/config/views/config.resolvers.http.html:10
 msgid "Advanced Settings"
-msgstr ""
+msgstr "Rozšírené nastavenia"
 
 #: privacyidea/static/components/config/views/config.system.html:202
 msgid "All CA Connectors"
-msgstr ""
+msgstr "Všetky CA konektory"
 
 #: privacyidea/static/components/config/views/config.events.html:8
 msgid "All Event Handlers"
@@ -292,35 +310,35 @@ msgstr ""
 
 #: privacyidea/static/components/config/controllers/realmController.js:11
 msgid "All Nodes"
-msgstr ""
+msgstr "Všetky servery"
 
 #: privacyidea/static/components/config/views/config.periodictasks.html:8
 msgid "All Periodic Tasks"
-msgstr ""
+msgstr "Všetky opakujúce úlohy"
 
 #: privacyidea/static/components/config/views/config.policies.html:8
 msgid "All Policies"
-msgstr ""
+msgstr "Všetky politiky"
 
 #: privacyidea/static/components/config/views/config.realms.html:7
 msgid "All Realms"
-msgstr ""
+msgstr "Všetky domény"
 
 #: privacyidea/static/components/config/views/config.resolvers.html:7
 msgid "All Resolvers"
-msgstr ""
+msgstr "Všetky resolvery"
 
 #: privacyidea/static/components/config/views/config.system.html:114
 msgid "All SMS Gateways"
-msgstr ""
+msgstr "Všetky SMS brány"
 
 #: privacyidea/static/components/token/views/token.html:53
 msgid "All tokens"
-msgstr ""
+msgstr "Všetky tokeny"
 
 #: privacyidea/static/components/user/views/user.html:19
 msgid "All users"
-msgstr ""
+msgstr "Všetci používatelia"
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:163
 msgid "An Attribute or the DN to identify the machine"
@@ -328,11 +346,11 @@ msgstr ""
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:197
 msgid "An Attribute that contains the IP address."
-msgstr ""
+msgstr "Atribút obsahujúci IP adresu."
 
 #: privacyidea/static/components/recovery/controllers/recoveryControllers.js:21
 msgid "An Email to reset the password has been sent to you."
-msgstr ""
+msgstr "Bol Vám odoslaný email pre obnovenie hesla."
 
 #: privacyidea/static/components/machine/views/machine.details.html:127
 #: privacyidea/static/components/machine/views/machine.details.html:51
@@ -340,15 +358,15 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.details.html:669
 #: privacyidea/static/components/token/views/token.details.html:748
 msgid "Application"
-msgstr ""
+msgstr "Aplikácie"
 
 #: privacyidea/static/components/components/views/component.clienttype.html:7
 msgid "Application Type"
-msgstr ""
+msgstr "Typ aplikácie"
 
 #: privacyidea/static/components/token/views/token.enroll.applspec.html:22
 msgid "Application specific password"
-msgstr ""
+msgstr "Špecifické heslo aplikácie"
 
 #: privacyidea/static/components/token/views/token.import.html:66
 msgid ""
@@ -358,36 +376,36 @@ msgstr ""
 
 #: privacyidea/static/components/token/views/token.details.html:605
 msgid "Assign Container"
-msgstr ""
+msgstr "Priradiť kontajner"
 
 #: privacyidea/static/components/token/views/token.assign.html:12
 #: privacyidea/static/components/token/views/token.html:85
 #: privacyidea/static/components/user/views/user.details.html:308
 msgid "Assign Token"
-msgstr ""
+msgstr "Priradiť token"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:393
 #: privacyidea/static/components/token/views/token.containerdetails.html:411
 #: privacyidea/static/components/token/views/token.details.html:585
 #: privacyidea/static/components/token/views/token.details.html:598
 msgid "Assign User"
-msgstr ""
+msgstr "Priradiť používateľa"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:368
 msgid "Assign User To All Tokens"
-msgstr ""
+msgstr "Priradiť používateľa ku všetkým tokenom"
 
 #: privacyidea/static/components/user/views/user.details.html:303
 msgid "Assign a new token {{ newToken.serial }}"
-msgstr ""
+msgstr "Priradiť nový token {{ newToken.serial }}"
 
 #: privacyidea/static/components/token/views/token.assign.html:1
 msgid "Assign a new token {{ newTokenObject.serial }}"
-msgstr ""
+msgstr "Priradiť nový token {{ newTokenObject.serial }}"
 
 #: privacyidea/static/components/token/views/token.containercreate.html:54
 msgid "Assign the Container to a User"
-msgstr ""
+msgstr "Priradiť kontajner používateľovi"
 
 #: privacyidea/static/components/directives/views/directive.registerContainer.html:39
 msgid "Assign the container to a user to enable this option."
@@ -398,27 +416,29 @@ msgid ""
 "Assign the new container to {{ userName }} in\n"
 "                realm {{ userRealm }}"
 msgstr ""
+"Priradiť nový kontajner používateľovi {{ userName }} z\n"
+"                domény {{ userRealm }}"
 
 #: privacyidea/static/components/token/views/token.enroll.html:78
 msgid "Assign the token to a container"
-msgstr ""
+msgstr "Priradiť token do kontajnera"
 
 #: privacyidea/static/components/directives/views/directive.containertemplate.details.html:73
 msgid "Assign the token to the container owner and/or realm."
-msgstr ""
+msgstr "Priradiť token do kontajnera vlastníka a/alebo domény."
 
 #: privacyidea/static/components/token/views/token.enroll.html:48
 msgid "Assign token to user"
-msgstr ""
+msgstr "Priradiť token používateľovi"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:336
 #: privacyidea/static/components/token/views/token.details.html:534
 msgid "Assigned User"
-msgstr ""
+msgstr "Priradený používateľ"
 
 #: privacyidea/static/components/token/views/token.getserial.html:33
 msgid "Assignment State"
-msgstr ""
+msgstr "Stav priradenia"
 
 #: privacyidea/static/components/token/views/token.details.html:784
 msgid "Attach Machine"
@@ -426,7 +446,7 @@ msgstr ""
 
 #: privacyidea/static/components/machine/views/machine.details.html:159
 msgid "Attach Token"
-msgstr ""
+msgstr "Pripojiť token"
 
 #: privacyidea/static/components/token/views/token.details.html:742
 msgid "Attach to a new Machine"
@@ -434,35 +454,35 @@ msgstr ""
 
 #: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:44
 msgid "Attribute Mapping"
-msgstr ""
+msgstr "Mapovanie atribútov"
 
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:309
 msgid "Attribute mapping"
-msgstr ""
+msgstr "Mapovanie atribútov"
 
 #: privacyidea/static/templates/menu.html:85
 msgid "Audit"
-msgstr ""
+msgstr "Audit"
 
 #: privacyidea/static/components/config/views/config.resolvers.scim.html:26
 msgid "Authentication Server URI"
-msgstr ""
+msgstr "URI autentifikačného servera"
 
 #: privacyidea/static/components/login/controllers/loginControllers.js:398
 msgid "Authentication failed."
-msgstr ""
+msgstr "Autentifikácia zlyhala."
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:46
 msgid "Authentications"
-msgstr ""
+msgstr "Autentifikácie"
 
 #: privacyidea/static/components/dashboard/views/dashboard.html:48
 msgid "Authentications in the last 24 hours"
-msgstr ""
+msgstr "Autentifikácie za posledných 24 hodín"
 
 #: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:166
 msgid "Authority"
-msgstr ""
+msgstr "Autorita"
 
 #: privacyidea/static/components/config/views/config.system.edit.html:80
 msgid "Auto resync timeout"
@@ -470,11 +490,11 @@ msgstr ""
 
 #: privacyidea/static/components/config/views/config.system.edit.html:76
 msgid "Automatic resync during authentication"
-msgstr ""
+msgstr "Automaticky synchronizovať pri autentifikácii"
 
 #: privacyidea/static/components/login/factories/u2f.js:27
 msgid "Bad U2F Request"
-msgstr ""
+msgstr "Chybná požiadavka U2F"
 
 #: privacyidea/static/components/config/views/config.caconnectors.local.html:28
 #: privacyidea/static/components/config/views/config.caconnectors.microsoft.html:28
@@ -484,7 +504,7 @@ msgstr ""
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:82
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:116
 msgid "Base DN"
-msgstr ""
+msgstr "Base DN"
 
 #: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:20
 msgid "Base URL"
@@ -519,23 +539,23 @@ msgstr ""
 
 #: privacyidea/static/components/config/views/config.caconnectors.local.html:31
 msgid "CA Certificate"
-msgstr ""
+msgstr "CA certifikát"
 
 #: privacyidea/static/components/token/views/token.enroll.certificate.html:28
 msgid "CA Connector"
-msgstr ""
+msgstr "CA konektor"
 
 #: privacyidea/static/components/config/views/config.caconnectors.list.html:5
 msgid "CA Connector name"
-msgstr ""
+msgstr "Názov CA konektoru"
 
 #: privacyidea/static/components/config/views/config.caconnectors.local.html:44
 msgid "CA Key"
-msgstr ""
+msgstr "Kľúč CA"
 
 #: privacyidea/static/components/config/views/config.caconnectors.microsoft.html:82
 msgid "CA certificate (filename)"
-msgstr ""
+msgstr "Certifikát CA (názov súboru)"
 
 #: privacyidea/static/components/config/views/config.caconnectors.microsoft.html:137
 msgid "CA specific options"
@@ -547,7 +567,7 @@ msgstr ""
 
 #: privacyidea/static/components/config/views/config.caconnectors.local.html:121
 msgid "CRL Configuration"
-msgstr ""
+msgstr "Konfigurácia CRL"
 
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:194
 msgid "Cache Timeout (seconds)"
@@ -570,19 +590,19 @@ msgstr ""
 #: privacyidea/static/components/user/views/user.details.html:295
 #: privacyidea/static/components/user/views/user.details.html:56
 msgid "Cancel"
-msgstr ""
+msgstr "Zrušiť"
 
 #: privacyidea/static/components/token/views/token.enroll.certificate.html:45
 msgid "Certificate (PEM)"
-msgstr ""
+msgstr "Certifikát (PEM)"
 
 #: privacyidea/static/components/config/views/config.caconnectors.local.html:107
 msgid "Certificate Directory"
-msgstr ""
+msgstr "Adresár s certifikátmi"
 
 #: privacyidea/static/components/config/views/config.caconnectors.local.html:123
 msgid "Certificate Revocation List"
-msgstr ""
+msgstr "Certifikátov revokačný list (CRL)"
 
 #: privacyidea/static/components/config/views/config.caconnectors.local.html:94
 msgid ""
@@ -604,20 +624,20 @@ msgstr ""
 
 #: privacyidea/static/components/login/controllers/loginControllers.js:297
 msgid "Challenge Response Authentication."
-msgstr ""
+msgstr "Autentifikácia výzva-odpoveď (challenge-response)."
 
 #: privacyidea/static/components/login/controllers/loginControllers.js:376
 msgid "Challenge Response Authentication. Your response was not valid!"
-msgstr ""
+msgstr "Autentifikácia výzva-odpoveď (challenge-response). Odpoveď bola chybná!"
 
 #: privacyidea/static/components/login/views/pinchange.html:23
 #: privacyidea/static/components/login/views/pinchange.html:4
 msgid "Change PIN"
-msgstr ""
+msgstr "Zmeniť PIN"
 
 #: privacyidea/static/components/token/views/token.details.html:511
 msgid "Check OTP only."
-msgstr ""
+msgstr "Skontrolovať iba jednorázový token."
 
 #: privacyidea/static/components/config/views/config.policies.details.html:228
 msgid ""
@@ -628,7 +648,7 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.enroll.radius.html:18
 #: privacyidea/static/components/token/views/token.enroll.remote.html:12
 msgid "Check the PIN locally"
-msgstr ""
+msgstr "Kontrolovať PIN lokálne"
 
 #: privacyidea/static/components/token/views/token.details.html:504
 msgid "Check with OTP PIN."
@@ -636,7 +656,7 @@ msgstr ""
 
 #: privacyidea/static/components/login/views/login.html:68
 msgid "Choose a realm..."
-msgstr ""
+msgstr "Zvoľte doménu..."
 
 #: privacyidea/static/components/config/views/config.realms.list.html:147
 msgid "Clear Default Realm"
@@ -656,6 +676,11 @@ msgid ""
 "            the QR Code, if you\n"
 "            want to add the Token to your smartphone authenticator app."
 msgstr ""
+"<a href=\"{{ enrolledToken.googleurl.value }}\">Kliknite tu</a> alebo "
+"naskenujte\n"
+"            QR kód, pre\n"
+"            pridanie tokenu do mobilnej aplikácie autentifikátor (napr. "
+"privacyIDEA alebo google authenticator)."
 
 #: privacyidea/static/components/token/views/token.enrolled.motp.html:21
 msgid ""
@@ -663,6 +688,10 @@ msgid ""
 "            the QR Code, if you\n"
 "            want to add the Token to your mOTP App like Token2."
 msgstr ""
+"<a href=\"{{ enrolledToken.motpurl.value }}\">Kliknite tu</a> alebo "
+"naskenujte\n"
+"            QR kód, pre\n"
+"            pridanie tokenu do mobilnej aplikácie mOTP, známej ako Token2 ."
 
 #: privacyidea/static/components/token/views/token.enrolled.tiqr.html:20
 msgid ""
@@ -671,66 +700,70 @@ msgid ""
 "            the QR Code, if you\n"
 "            want to add the Token to your TiQR App."
 msgstr ""
+"<a href=\"{{ enrolledToken.tiqrenroll.value }}\">Kliknite tu</a> alebo "
+"naskenujte\n"
+"            QR kód, pre\n"
+"            pridanie tokenu do mobilnej aplikácie TiQR."
 
 #: privacyidea/static/components/components/views/component.clienttype.html:8
 #: privacyidea/static/components/config/views/config.policies.details.html:290
 #: privacyidea/static/components/config/views/config.policies.list.html:26
 #: privacyidea/static/components/config/views/config.resolvers.scim.html:51
 msgid "Client"
-msgstr ""
+msgstr "Klient"
 
 #: privacyidea/static/components/components/views/component.html:20
 msgid "Client Application Type"
-msgstr ""
+msgstr "Typ klientskej aplikácie"
 
 #: privacyidea/static/components/login/factories/u2f.js:28
 msgid "Client Configuration is not supported."
-msgstr ""
+msgstr "Konfigurácia klienta nie je podporovaná."
 
 #: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:189
 msgid "Client Credential"
-msgstr ""
+msgstr "Prihlasovacie údaje klienta"
 
 #: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:181
 #: privacyidea/static/components/config/views/config.token.yubikey.html:20
 #: privacyidea/static/components/config/views/config.token.yubikey.html:39
 msgid "Client ID"
-msgstr ""
+msgstr "Client ID"
 
 #: privacyidea/static/components/token/views/token.enrolled.daypassword.html:51
 #: privacyidea/static/components/token/views/token.enrolled.hotp.html:51
 #: privacyidea/static/components/token/views/token.enrolled.totp.html:51
 msgid "Client Part"
-msgstr ""
+msgstr "Klientská časť"
 
 #: privacyidea/static/components/config/views/config.caconnectors.microsoft.html:95
 msgid "Client certificate (filename)"
-msgstr ""
+msgstr "Klientský certifikát (názov súboru)"
 
 #: privacyidea/static/components/config/views/config.caconnectors.microsoft.html:108
 msgid "Client private key (filename)"
-msgstr ""
+msgstr "Klientský privátny kľúč (názov súboru)"
 
 #: privacyidea/static/components/components/views/component.subscriptions.html:36
 msgid "Clients"
-msgstr ""
+msgstr "Klienti"
 
 #: privacyidea/static/components/dialogs/views/dialog.about.html:47
 msgid "Close"
-msgstr ""
+msgstr "Zavrieť"
 
 #: privacyidea/static/components/token/views/token.containerlist.html:42
 msgid "Close all containers"
-msgstr ""
+msgstr "Zavrieť všetky kontajnery"
 
 #: privacyidea/static/components/config/views/config.events.details.html:146
 #: privacyidea/static/components/config/views/config.policies.details.html:377
 msgid "Close all groups"
-msgstr ""
+msgstr "Zavrieť všetky skupiny"
 
 #: privacyidea/static/templates/menu.html:149
 msgid "Community"
-msgstr ""
+msgstr "Komunita"
 
 #: privacyidea/static/components/directives/views/directive.policyconditions.html:8
 msgid "Comparator"
@@ -739,26 +772,26 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.containerdetails.html:162
 #: privacyidea/static/components/token/views/token.containertemplates.edit.html:57
 msgid "Compare"
-msgstr ""
+msgstr "Porovnať"
 
 #: privacyidea/static/templates/menu.html:93
 msgid "Components"
-msgstr ""
+msgstr "Komponenty"
 
 #: privacyidea/static/components/config/views/config.events.details.html:110
 #: privacyidea/static/components/config/views/config.events.details.html:122
 #: privacyidea/static/components/config/views/config.policies.details.html:149
 #: privacyidea/static/components/config/views/config.policies.details.html:161
 msgid "Condition"
-msgstr ""
+msgstr "Podmienka"
 
 #: privacyidea/static/components/config/views/config.events.list.html:25
 msgid "Conditions"
-msgstr ""
+msgstr "Podmienky"
 
 #: privacyidea/static/templates/menu.html:77
 msgid "Config"
-msgstr ""
+msgstr "Konfigurácia"
 
 #: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:300
 msgid "Configure the endpoint to authenticate the user with its username/userid and password."
@@ -803,12 +836,12 @@ msgstr ""
 
 #: privacyidea/static/components/config/views/config.resolvers.sql.html:196
 msgid "Connection Parameters"
-msgstr ""
+msgstr "Parametre pripojenia"
 
 #: privacyidea/static/components/config/views/config.caconnectors.local.html:14
 #: privacyidea/static/components/config/views/config.caconnectors.microsoft.html:14
 msgid "Connector name"
-msgstr ""
+msgstr "Názov konektora"
 
 #: privacyidea/static/components/token/views/token.containerlist.html:148
 msgid "Contained Tokens:"
@@ -816,11 +849,11 @@ msgstr ""
 
 #: privacyidea/static/components/token/views/token.containercreate.html:160
 msgid "Container Created"
-msgstr ""
+msgstr "Kontajner bol vytvorený"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:20
 msgid "Container Details for {{ containerSerial }}"
-msgstr ""
+msgstr "Podrobnosti kontajnera {{ containerSerial }}"
 
 #: privacyidea/static/components/token/views/token.containertemplates.edit.html:96
 msgid "Container Realms"
