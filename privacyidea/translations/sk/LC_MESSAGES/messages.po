@@ -9,32 +9,34 @@ msgstr ""
 "Project-Id-Version: privacyIDEA VERSION\n"
 "Report-Msgid-Bugs-To: translations@privacyidea.org\n"
 "POT-Creation-Date: 2025-09-05 15:12+0200\n"
-"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-"Last-Translator: Automatically generated\n"
-"Language-Team: none\n"
+"PO-Revision-Date: 2026-03-02 00:09+0000\n"
+"Last-Translator: Tomasss <tomasss1024+weblate.org-privacyidea@gmail.com>\n"
+"Language-Team: Slovak <https://hosted.weblate.org/projects/privacyidea/"
+"privacyidea-server/sk/>\n"
 "Language: sk\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=3; plural=(n==1) ? 0 : (n>=2 && n<=4) ? 1 : 2;\n"
+"Plural-Forms: nplurals=3; plural=((n==1) ? 0 : (n>=2 && n<=4) ? 1 : 2);\n"
+"X-Generator: Weblate 5.16.1-dev\n"
 "Generated-By: Babel 2.17.0\n"
 
 #: api/auth.py:256
 msgid "Authentication with passkey disabled."
-msgstr ""
+msgstr "Autentifikácia cez passkey je vypnutá."
 
 #: api/auth.py:261
 msgid "Authentication failure. The passkey is not registered."
-msgstr ""
+msgstr "Autentifikácia zlyhala. Passkey nie je registrované."
 
 #: api/auth.py:273
 msgid "Authentication failure. Token has no user."
-msgstr ""
+msgstr "Autentifikácia zlyhala. Tokenu nie je priradený používateľ."
 
 #: api/auth.py:277
 #, python-brace-format
 msgid "Authentication failure. The token type {token_type} is disabled."
-msgstr ""
+msgstr "Autentifikácia zlyhala. Token typu {token_type} je vypnutý."
 
 #: api/auth.py:282
 #, python-brace-format
@@ -42,55 +44,59 @@ msgid ""
 "Authentication failure. Last authentication policy check failed for token"
 " {serial}"
 msgstr ""
+"Autentifikácia zlyhala. Posledná kontrola pravidiel overovania zlyhala pre "
+"token {serial}"
 
 #: api/auth.py:294
 msgid "Authentication failure using passkey."
-msgstr ""
+msgstr "Autentifikácia passkey zlyhala."
 
 #: api/auth.py:299
 msgid "Authentication failure. Unknown realm:"
-msgstr ""
+msgstr "Autentifikácia zlyhala. Neznáma doména:"
 
 #: api/auth.py:303
 msgid "Authentication failure. Missing Username"
-msgstr ""
+msgstr "Autentifikácia zlyhala. Chýbajúce meno"
 
 #: api/auth.py:437
 msgid "Authentication failure. Wrong credentials"
-msgstr ""
+msgstr "Autentifikácia zlyhala. Zlé prihlasovacie údaje"
 
 #: api/realm.py:530
 msgid "The given node does not exist!"
-msgstr ""
+msgstr "Daný sever neexistuje!"
 
 #: api/realm.py:536 api/realm.py:546
 msgid "Could not verify data in request!"
-msgstr ""
+msgstr "Nie je možné overiť údaje z požiadavky!"
 
 #: api/validate.py:443
 msgid "Cancelled enrollment via multichallenge"
-msgstr ""
+msgstr "Zrušená registrácia prostredníctvom multichallenge"
 
 #: api/validate.py:445
 msgid "Cancelled enrollment via multichallenge for transaction_id "
-msgstr ""
+msgstr "Zrušená registrácia prostredníctvom multichallenge pre transaction_id "
 
 #: api/validate.py:448
 msgid "Failed to cancel enrollment via multichallenge"
-msgstr ""
+msgstr "Zrušenie registrácie prostredníctvom multichallenge výzvy zlyhalo"
 
 #: api/validate.py:450
 msgid "Failed to cancel enrollment via multichallenge for transaction_id "
 msgstr ""
+"Zrušenie registrácie prostredníctvom multichallenge pre transaction_id "
+"zlyhalo "
 
 #: api/validate.py:500
 #, python-brace-format
 msgid "Last authentication policy check failed for token {serial}"
-msgstr ""
+msgstr "Posledná kontrola pravidiel overovania zlyhala pre token {serial}"
 
 #: api/validate.py:519 lib/token.py:2636
 msgid "Found matching challenge"
-msgstr ""
+msgstr "Nájdená zopovedajúca výzva"
 
 #: api/lib/postpolicy.py:100
 #, python-brace-format
@@ -107,25 +113,25 @@ msgstr ""
 
 #: api/lib/postpolicy.py:911
 msgid "Please scan the QR code to register the container."
-msgstr ""
+msgstr "Prosím naskenuj QR kód pre registráciu kontajnera."
 
 #: api/lib/prepolicy.py:2884
 msgid ""
 "Authentication failure. The account has exceeded the authentication time "
 "limit!"
-msgstr ""
+msgstr "Autentifikácia zlyhala. Účtu vypršal časový limit pre autentifikáciu!"
 
 #: api/lib/utils.py:401
 msgid "Authentication failure. Missing Authorization header."
-msgstr ""
+msgstr "Autentifikácia zlyhala. Chýbajúca autorizačná hlavička."
 
 #: api/lib/utils.py:406 api/lib/utils.py:437
 msgid "Authentication failure. Error decoding the Authorization token:"
-msgstr ""
+msgstr "Autentifikácia zlyhala. Zlyhalo dekódovanie autorizačného tokenu:"
 
 #: api/lib/utils.py:430 api/lib/utils.py:440
 msgid "Authentication failure. Your token has expired:"
-msgstr ""
+msgstr "Autentifikácia zlyhala. Vášmu tokenu vypršala platnosť:"
 
 #: api/lib/utils.py:443
 #, python-brace-format
@@ -133,6 +139,8 @@ msgid ""
 "Authentication failure. The username {wrong_username} is not allowed to "
 "impersonate via JWT."
 msgstr ""
+"Autentifikácia zlyhala. . Používateľské meno {wrong_username} nie je možné "
+"stotožniť pomocou JWT."
 
 #: api/lib/utils.py:448
 #, python-brace-format
@@ -140,50 +148,54 @@ msgid ""
 "Authentication failure. You do not have the necessary role "
 "({required_role}) to access this resource!"
 msgstr ""
+"Autentifikácia zlyhala. Nemáte potrebnú rolu ({required_role}) pre prístup k "
+"zdrojom!"
 
 #: api/lib/utils.py:465
 msgid "Invalid policy name:"
-msgstr ""
+msgstr "Neplatný názov politiky:"
 
 #: api/lib/utils.py:468
 msgid "The name of the policy may only contain the characters a-zA-Z0-9_. -"
-msgstr ""
+msgstr "Názov politiky môže byť iba zo znakov a-zA-Z0-9_. -"
 
 #: lib/challengeresponsedecorators.py:150
 msgid "Please enter the new PIN again"
-msgstr ""
+msgstr "Prosím znovu zadajte nový PIN"
 
 #: lib/challengeresponsedecorators.py:164
 msgid "Please enter a new PIN"
-msgstr ""
+msgstr "Prosím vložte nový PIN"
 
 #: lib/challengeresponsedecorators.py:202
 msgid "To resync your token, please enter the next OTP value"
-msgstr ""
+msgstr "Pre synchronizáciu tokenu zadajte další jednorázový kód"
 
 #: lib/containerclass.py:868
 msgid "General purpose container that can hold any type and any number of token."
 msgstr ""
+"Univerzálny kontajner, ktorý môže obsahovať akýkoľvek typ a ľubovoľný počet "
+"tokenov."
 
 #: lib/decorators.py:44 lib/token.py:2490
 msgid "This action is not possible, since the token is locked"
-msgstr ""
+msgstr "Akcia nie je dostupná, pretože token je uzamknutý"
 
 #: lib/decorators.py:88
 msgid "You either need to provide user or serial"
-msgstr ""
+msgstr "Musíte vložiť používateľa alebo sériové číslo"
 
 #: lib/decorators.py:117
 msgid "You need to specify a serial, user or credential_id."
-msgstr ""
+msgstr "Musíte špecifikovať sériové číslo, použivateľa alebo credentail_id."
 
 #: lib/decorators.py:119
 msgid "Invalid serial number."
-msgstr ""
+msgstr "Chybné sériove číslo."
 
 #: lib/decorators.py:121
 msgid "Invalid user."
-msgstr ""
+msgstr "Chybný používateľ."
 
 #: lib/policy.py:218
 msgid ""
@@ -193,23 +205,23 @@ msgstr ""
 
 #: lib/policy.py:1209
 msgid "Policy does not exist:"
-msgstr ""
+msgstr "Politika neexistuje:"
 
 #: lib/policy.py:1211
 msgid "Policy already exists:"
-msgstr ""
+msgstr "Politika už existuje:"
 
 #: lib/policy.py:1374
 msgid "Invalid client definition!"
-msgstr ""
+msgstr "Chybná definícia klienta!"
 
 #: lib/policy.py:1611
 msgid "Define in which resolver the user should be registered."
-msgstr ""
+msgstr "Definuje v ktorom resolveri má byť používateľ zaregistrovaný."
 
 #: lib/policy.py:1615
 msgid "Define in which realm the user should be registered."
-msgstr ""
+msgstr "Definuje v ktorej doméne má byť používateľ zaregistrovaný."
 
 #: lib/policy.py:1619
 msgid ""
