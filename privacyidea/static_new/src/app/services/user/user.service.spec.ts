@@ -318,7 +318,7 @@ describe("UserService", () => {
       expect(userService.selectedUser()).toEqual(users[1]);
     });
 
-    it('when role is "user": returns the authenticated username', () => {
+    it("when role is \"user\": returns the authenticated username", () => {
       authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, role: "user", username: "Charlie" });
 
       userService.selectionFilter.set("");
@@ -363,6 +363,44 @@ describe("UserService", () => {
 
       expect(userService.userResource.value()).toBeDefined();
       expect(userService.usersResource.value()).toBeUndefined();
+    });
+  });
+
+  describe("users signal (list)", () => {
+    beforeEach(() => {
+      jest.spyOn(authServiceMock, "actionAllowed").mockImplementation((action: string) => action === "userlist");
+    });
+
+    it("should clear users when changing realm even if request fails", async () => {
+      contentServiceMock.routeUrl.set(ROUTE_PATHS.USERS);
+      userService.selectedUserRealm.set("other");
+      TestBed.flushEffects();
+      httpMock.match(() => true).forEach(r => r.flush({ result: { value: [] } }));
+
+      userService.selectedUserRealm.set("realm1");
+      userService.users();
+      TestBed.flushEffects();
+
+      const req1 = httpMock.expectOne((req) => req.url.includes("/user") && req.params.get("realm") === "realm1");
+      req1.flush(MockPiResponse.fromValue([buildUser("user1")]));
+      await Promise.resolve();
+      TestBed.flushEffects();
+
+      expect(userService.users()).toHaveLength(1);
+      expect(userService.users()[0].username).toBe("user1");
+
+      userService.selectedUserRealm.set("realm2");
+      userService.users();
+      TestBed.flushEffects();
+
+      expect(userService.users()).toHaveLength(0);
+
+      const req2 = httpMock.expectOne((req) => req.url.includes("/user") && req.params.get("realm") === "realm2");
+      req2.flush("Error", { status: 500, statusText: "Server Error" });
+      await Promise.resolve();
+      TestBed.flushEffects();
+
+      expect(userService.users()).toHaveLength(0);
     });
   });
 });

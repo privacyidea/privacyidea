@@ -66,9 +66,8 @@ export class HttpGroupsAttributeComponent implements OnInit, OnDestroy {
       this.activeSubscription?.unsubscribe();
       const activeControl = this.userGroupsControl.get("active");
       if (activeControl) {
-        // Initialize signal
         this.activeSignal.set(!!activeControl.value);
-        // Subscribe to changes in the "active" control to enable/disable other controls
+
         this.activeSubscription = activeControl.valueChanges.subscribe((active: boolean) => {
           this.activeSignal.set(active);
           const controls = ["user_groups_attribute", "method", "endpoint"];
@@ -81,7 +80,7 @@ export class HttpGroupsAttributeComponent implements OnInit, OnDestroy {
             }
           });
         });
-        // Initial state
+
         const controls = ["user_groups_attribute", "method", "endpoint"];
         controls.forEach(ctrl => {
           const control = this.userGroupsControl.get(ctrl);
@@ -91,13 +90,13 @@ export class HttpGroupsAttributeComponent implements OnInit, OnDestroy {
             control?.disable({ emitEvent: false });
           }
         });
-        // convert method to be lowercase
+
         const methodControl = this.userGroupsControl.get("method");
         if (methodControl) {
           this.methodSubscription?.unsubscribe();
           this.methodSubscription = methodControl.valueChanges.subscribe(value => {
             if (value) {
-              methodControl.setValue(value.toLowerCase(), { emitEvent: false });
+              methodControl.setValue(value.toUpperCase(), { emitEvent: false });
             }
           });
         }

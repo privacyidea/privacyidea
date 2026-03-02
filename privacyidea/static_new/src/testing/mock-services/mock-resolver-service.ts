@@ -44,6 +44,8 @@ export class MockResolverService implements ResolverServiceInterface {
 
   deleteResolver = jest.fn((resolverName: string) => of({} as PiResponse<any, any>));
 
+  getDefaultResolverConfig = jest.fn((resolverType: string) => of({} as PiResponse<any, any>));
+
   setResolvers(data: Resolver[]): void {
     this._resolversValue.set(data);
   }

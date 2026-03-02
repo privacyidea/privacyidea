@@ -20,6 +20,8 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { KeycloakResolverComponent } from "./keycloak-resolver.component";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { ComponentRef } from "@angular/core";
+import { provideHttpClientTesting } from "@angular/common/http/testing";
+import { provideHttpClient } from "@angular/common/http";
 
 describe("KeycloakResolverComponent", () => {
   let component: KeycloakResolverComponent;
@@ -28,6 +30,9 @@ describe("KeycloakResolverComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting()],
       imports: [KeycloakResolverComponent, NoopAnimationsModule]
     })
       .compileComponents();

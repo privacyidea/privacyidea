@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, effect, input, linkedSignal, signal } from "@angular/core";
+import { Component, computed, effect, inject, input, linkedSignal, signal } from "@angular/core";
 import { AbstractControl, FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { toSignal } from "@angular/core/rxjs-interop";
 
@@ -40,6 +40,7 @@ import { HttpConfigComponent } from "./http-config/http-config.component";
 import { ClearableInputComponent } from "../../../shared/clearable-input/clearable-input.component";
 import { parseBooleanValue } from "../../../../utils/parse-boolean-value";
 import { HttpGroupsAttributeComponent } from "./http-groups-attribute/http-groups-attribute.component";
+import { ResolverService } from "../../../../services/resolver/resolver.service";
 
 export type AttributeMappingRow = {
   privacyideaAttr: string | null;
@@ -90,8 +91,17 @@ export class HttpResolverComponent {
   ];
   protected readonly displayedColumns: string[] = ["privacyideaAttr", "userStoreAttr", "actions"];
   protected readonly CUSTOM_ATTR_VALUE = "__custom__";
+  private resolverService = inject(ResolverService);
   data = input<any>({});
   type = input<string>("httpresolver");
+  serverDefaults = signal<any>({});
+  mergedData = computed(() => {
+    const data = this.data();
+    if (data && Object.keys(data).length > 0) {
+      return data;
+    }
+    return this.serverDefaults();
+  });
   isAdvanced: boolean = false;
   isAuthorizationExpanded: boolean = false;
   endpointControl = new FormControl<string>("", { nonNullable: true, validators: [Validators.required] });
@@ -151,11 +161,11 @@ export class HttpResolverComponent {
     if (this.isAdvanced) {
       return false;
     }
-    return this.data().base_url === undefined;
+    return this.mergedData().base_url === undefined;
   });
   controls = computed<Record<string, AbstractControl>>(() => {
     const controls: Record<string, AbstractControl> = {};
-    const data = this.data();
+    const data = this.mergedData();
 
     if (!this.isAdvanced && this.basicSettings()) {
       controls["endpoint"] = this.endpointControl;
@@ -209,7 +219,7 @@ export class HttpResolverComponent {
     { privacyideaAttr: "givenname", userStoreAttr: "givenname" }
   ]);
   protected mappingRows = linkedSignal<AttributeMappingRow[]>(() => {
-    const existing = this.data()?.attribute_mapping;
+    const existing = this.mergedData()?.attribute_mapping;
     let rows: AttributeMappingRow[] = [];
     if (existing && Object.keys(existing).length > 0) {
       rows = Object.entries(existing).map(([privacyideaAttr, userStoreAttr]) => ({
@@ -240,8 +250,18 @@ export class HttpResolverComponent {
     });
 
     effect(() => {
+      if (Object.keys(this.data()).length === 0) {
+        this.resolverService.getDefaultResolverConfig(this.type()).subscribe(resp => {
+          if (resp.result?.status && resp.result?.value) {
+            this.serverDefaults.set(resp.result.value);
+          }
+        });
+      }
+    }, { allowSignalWrites: true });
+
+    effect(() => {
       const basic = this.basicSettings();
-      const data = this.data();
+      const data = this.mergedData();
       if (!basic && !this.responseMappingControl.value) {
         if (data.responseMapping === undefined) {
           this.responseMappingControl.setValue("{\"username\":\"{username}\", \"userid\":\"{userid}\"}");
@@ -319,11 +339,11 @@ export class HttpResolverComponent {
   }
 
   protected syncControls(): void {
-    const data = this.data();
+    const data = this.mergedData();
     if (!data) return;
 
     if (data.endpoint !== undefined) this.endpointControl.setValue(data.endpoint, { emitEvent: false });
-    if (data.method !== undefined) this.methodControl.setValue(data.method, { emitEvent: false });
+    if (data.method !== undefined) this.methodControl.setValue(data.method.toUpperCase(), { emitEvent: false });
     if (data.requestMapping !== undefined) this.requestMappingControl.setValue(data.requestMapping, { emitEvent: false });
     if (data.headers !== undefined) this.headersControl.setValue(data.headers, { emitEvent: false });
     if (data.responseMapping !== undefined) this.responseMappingControl.setValue(data.responseMapping, { emitEvent: false });
@@ -367,6 +387,9 @@ export class HttpResolverComponent {
 
   protected syncGroup(group: FormGroup, config: any) {
     if (config) {
+      if (config.method) {
+        config.method = config.method.toUpperCase();
+      }
       group.patchValue(config, { emitEvent: false });
     }
   }

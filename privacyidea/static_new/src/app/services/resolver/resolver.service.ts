@@ -124,6 +124,8 @@ export interface ResolverServiceInterface {
   postResolver(resolverName: string, data: any): Observable<PiResponse<any, any>>;
 
   deleteResolver(resolverName: string): Observable<PiResponse<any, any>>;
+
+  getDefaultResolverConfig(resolverType: string): Observable<PiResponse<any, any>>;
 }
 
 @Injectable({
@@ -139,6 +141,17 @@ export class ResolverService implements ResolverServiceInterface {
     headers: this.authService.getHeaders()
   });
   selectedResolverName = signal<string>("");
+  selectedResolverResource = httpResource<PiResponse<any>>(() => {
+    const resolverName = this.selectedResolverName();
+    if (resolverName === "") {
+      return undefined;
+    }
+    return {
+      url: this.resolverBaseUrl + resolverName,
+      method: "GET",
+      headers: this.authService.getHeaders()
+    };
+  });
   resolvers = computed<Resolver[]>(() => {
     const resolvers = this.resolversResource.value()?.result?.value;
     return resolvers ? Object.entries(resolvers).map(([name, data]) => ({
@@ -178,15 +191,12 @@ export class ResolverService implements ResolverServiceInterface {
     );
   }
 
-  selectedResolverResource = httpResource<PiResponse<any>>(() => {
-    const resolverName = this.selectedResolverName();
-    if (resolverName === "") {
-      return undefined;
-    }
-    return {
-      url: this.resolverBaseUrl + resolverName,
-      method: "GET",
-      headers: this.authService.getHeaders()
-    };
-  });
+  getDefaultResolverConfig(resolverType: string): Observable<PiResponse<any, any>> {
+    return this.http.get<PiResponse<any, any>>(this.resolverBaseUrl + resolverType + "/default", { headers: this.authService.getHeaders() }).pipe(
+      catchError((error) => {
+        console.error(`Error during getting default resolver config for ${resolverType}:`, error);
+        return throwError(() => error);
+      })
+    );
+  }
 }
