@@ -475,5 +475,12 @@ describe("AuthService", () => {
       } as unknown as AuthData);
       expect(authService.check2Step("totp")).toBe("disabled");
     });
+
+    it("should keep value if right is present without value", () => {
+      authService.authData.set({
+        rights: ["totp_2step=allow", "totp_2step"]
+      } as unknown as AuthData);
+      expect(authService.check2Step("totp")).toBe("allow");
+    });
   });
 });

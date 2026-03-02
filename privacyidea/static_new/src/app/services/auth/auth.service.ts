@@ -234,12 +234,15 @@ export class AuthService implements AuthServiceInterface {
     const rightsList = this.rights();
     const result: Record<string, string | null> = {};
     rightsList.forEach(entry => {
-      const eqIdx = entry.indexOf("=");
-      if (eqIdx === -1) {
-        result[entry] = null;
+      const equation_index = entry.indexOf("=");
+      if (equation_index === -1) {
+        if (!(entry in result)) {
+          // avoid overwriting existing keys with null if they have a value in another entry
+          result[entry] = null;
+        }
       } else {
-        const key = entry.substring(0, eqIdx);
-        result[key] = entry.substring(eqIdx + 1);
+        const key = entry.substring(0, equation_index);
+        result[key] = entry.substring(equation_index + 1);
       }
     });
     return result;
@@ -380,7 +383,7 @@ export class AuthService implements AuthServiceInterface {
     const value = this.rightsWithValues()[key];
     if (value === "allow") {
       return "allow";
-    } else if (value === null) {
+    } else if (value === null && key in this.rightsWithValues()) {
       return "force";
     } else {
       return "disabled";
