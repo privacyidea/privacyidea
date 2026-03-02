@@ -322,6 +322,7 @@ describe("UserNewResolverComponent", () => {
   it("should show error on save when subscription fails", async () => {
     component.resolverName = "err-res";
     component.resolverType = "passwdresolver";
+    fixture.detectChanges();
     const errorResponse = { message: "Network error", error: { result: { error: { message: "Detailed error" } } } };
     resolverService.postResolver.mockReturnValue({
       subscribe: (obs: any) => {
@@ -376,6 +377,7 @@ describe("UserNewResolverComponent", () => {
 
   it("should execute test successfully", async () => {
     component.resolverType = "passwdresolver";
+    fixture.detectChanges();
     const successResponse = new MockPiResponse<number, any>({
       result: { status: true, value: 1 }
     });
@@ -397,6 +399,7 @@ describe("UserNewResolverComponent", () => {
 
   it("should show error on test when subscription fails", async () => {
     component.resolverType = "passwdresolver";
+    fixture.detectChanges();
     const errorResponse = { message: "Network error" };
     resolverService.postResolverTest.mockReturnValue({
       subscribe: (obs: any) => {

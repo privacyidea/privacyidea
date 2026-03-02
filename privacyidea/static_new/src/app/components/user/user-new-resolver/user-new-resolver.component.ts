@@ -26,6 +26,7 @@ import {
   OnDestroy,
   Renderer2,
   ResourceStatus,
+  signal,
   ViewChild,
   viewChild
 } from "@angular/core";
@@ -134,8 +135,8 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
   formData: Record<string, any> = {
     fileName: "/etc/passwd"
   };
-  isSaving = false;
-  isTesting = false;
+  isSaving = signal(false);
+  isTesting = signal(false);
   testUsername = "";
   testUserId = "";
 
@@ -229,13 +230,17 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
   }
 
   get isAdditionalFieldsValid(): boolean {
-    return Object.values(this.additionalFormFields()).every((control) => control.valid);
+    const fields = Object.values(this.additionalFormFields());
+    if (fields.length === 0) {
+      return false;
+    }
+    return fields.every((control) => control.valid);
   }
 
   get canSave(): boolean {
     const nameOk = this.resolverName.trim().length > 0;
     const typeOk = !!this.resolverType;
-    return nameOk && typeOk && this.isAdditionalFieldsValid && !this.isSaving;
+    return nameOk && typeOk && this.isAdditionalFieldsValid && !this.isSaving();
   }
 
   get hasChanges(): boolean {
@@ -403,7 +408,7 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
       payload[key] = control.value;
     }
 
-    this.isSaving = true;
+    this.isSaving.set(true);
 
     return new Promise<void>((resolve) => {
       this.resolverService
@@ -435,7 +440,7 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
           }
         })
         .add(() => {
-          this.isSaving = false;
+          setTimeout(() => this.isSaving.set(false));
           resolve();
         });
     });
@@ -497,7 +502,7 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
       return;
     }
 
-    this.isTesting = true;
+    this.isTesting.set(true);
 
     const payload: any = {
       type: this.resolverType,
@@ -535,6 +540,6 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
           this.notificationService.openSnackBar($localize`Failed to test resolver. ${message}`);
         }
       })
-      .add(() => (this.isTesting = false));
+      .add(() => setTimeout(() => this.isTesting.set(false)));
   }
 }

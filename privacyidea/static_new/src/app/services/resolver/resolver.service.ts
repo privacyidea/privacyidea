@@ -74,6 +74,7 @@ export interface LDAPResolverData extends ResolverData {
   DN_TEMPLATE?: string;
   MULTIVALUEATTRIBUTES?: string;
   recursive_group_search?: boolean;
+  group_base_dn?: string;
   group_search_filter?: string;
   group_name_attribute?: string;
   group_attribute_mapping_key?: string;
