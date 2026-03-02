@@ -1,0 +1,93 @@
+# SPDX-FileCopyrightText: (C) 2026 NetKnights GmbH <https://netknights.it>
+#
+# SPDX-License-Identifier: CC0-1.0
+#
+# Runs database migration tests against a MariaDB container.
+# These tests are intentionally separate from the standard unit tests
+# so they can be triggered and reviewed independently.
+#
+# Triggers:
+#   - Push/PR when migration scripts, models or the test file itself changes
+#   - Nightly schedule
+#   - Manual dispatch from the GitHub Actions UI
+
+name: Migration Tests (MariaDB)
+
+on:
+  push:
+    branches:
+      - 'master'
+      - 'branch-*'
+      - 'improve-workflows'
+    paths:
+      - 'privacyidea/migrations/**'
+      - 'privacyidea/models/**'
+      - 'tests/test_migrations.py'
+      - 'pyproject.toml'
+      - 'requirements.txt'
+      - '.github/workflows/migration-tests.yml'
+  pull_request:
+    branches:
+      - 'master'
+      - 'branch-*'
+      - 'improve-workflows'
+  schedule:
+    # Nightly run at 02:17 UTC
+    - cron: '17 2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  migration-tests:
+    name: Migration tests (Python ${{ matrix.python-version }})
+    permissions:
+      checks: write
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.12', '3.13']
+
+    services:
+      mariadb:
+        image: mariadb:11
+        env:
+          MARIADB_ROOT_PASSWORD: root
+          MARIADB_DATABASE: privacyidea_migration_test
+          MARIADB_USER: privacyidea
+          MARIADB_PASSWORD: privacyidea
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: 'pip'
+          cache-dependency-path: |
+            requirements.txt
+            tests/requirements.txt
+
+      - name: Install dependencies
+        run: |
+          pip install -r tests/requirements.txt
+          pip install PyMySQL
+
+      - name: Run migration tests
+        env:
+          TEST_DATABASE_URL: "mysql+pymysql://privacyidea:privacyidea@127.0.0.1:3306/privacyidea_migration_test"
+          PYTHONWARNINGS: "once::DeprecationWarning"
+        run: |
+          python -b -m pytest -v --tb=short -m migration tests/test_migrations.py
