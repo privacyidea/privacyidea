@@ -1,15 +1,13 @@
-# SPDX-FileCopyrightText: (C) 2014 NetKnights GmbH <https://netknights.it>
+# SPDX-FileCopyrightText: (C) 2026 NetKnights GmbH <https://netknights.it>
 # SPDX-License-Identifier: CC0-1.0
 #
-# Runs the full unit test suite against MariaDB for all supported Python
+# Runs the full unit test suite against PostgreSQL for all supported Python
 # versions. Migration tests are excluded — they have their own dedicated
 # workflow (migration-tests.yml).
 
-name: Unit Tests
+name: Unit Tests (PostgreSQL)
 
 on:
-  # run on each push to every branch of the repository but only on
-  # pull requests to the 'master' and 'branch-*' branches
   push:
     paths:
       - 'privacyidea/**.py'
@@ -17,7 +15,7 @@ on:
       - 'pyproject.toml'
       - 'requirements.txt'
       - 'tools/**'
-      - 'unit-tests-mariadb.yml'
+      - '.github/workflows/unit-tests-postgres.yml'
   pull_request:
     branches:
       - 'master'
@@ -28,35 +26,33 @@ on:
       - 'pyproject.toml'
       - 'requirements.txt'
       - 'tools/**'
-      - 'unit-tests-mariadb.yml'
+      - '.github/workflows/unit-tests-postgres.yml'
 
 permissions:
   contents: read
 
 jobs:
   test:
-    name: 'Python ${{ matrix.python-version }} / MariaDB'
+    name: 'Python ${{ matrix.python-version }} / PostgreSQL'
     permissions:
-      checks: write # allow the python tests to mark an action run as failed
+      checks: write
     runs-on: ubuntu-latest
     strategy:
-      # Do not cancel running matrix tests when one test fails
       fail-fast: false
       matrix:
         python-version: ['3.10', '3.11', '3.12', '3.13', '3.14']
 
     services:
-      mariadb:
-        image: mariadb:11
+      postgres:
+        image: postgres:17
         env:
-          MARIADB_ROOT_PASSWORD: root
-          MARIADB_DATABASE: privacyidea_test
-          MARIADB_USER: privacyidea
-          MARIADB_PASSWORD: privacyidea
+          POSTGRES_DB: privacyidea_test
+          POSTGRES_USER: privacyidea
+          POSTGRES_PASSWORD: privacyidea
         ports:
-          - 3306:3306
+          - 5432:5432
         options: >-
-          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-cmd="pg_isready -U privacyidea"
           --health-interval=10s
           --health-timeout=5s
           --health-retries=10
@@ -78,12 +74,12 @@ jobs:
     - name: Install dependencies
       run: |
         pip install -r tests/requirements.txt
-        pip install PyMySQL
+        pip install psycopg2-binary
 
     - name: Test with pytest
       id: pytest_run
       env:
-        TEST_DATABASE_URL: "mysql+pymysql://privacyidea:privacyidea@127.0.0.1:3306/privacyidea_test"
+        TEST_DATABASE_URL: "postgresql+psycopg2://privacyidea:privacyidea@127.0.0.1:5432/privacyidea_test"
         PYTHONWARNINGS: "once::DeprecationWarning"
       run: |
         pip freeze
@@ -95,3 +91,4 @@ jobs:
       with:
         files: ./coverage.xml
         token: ${{ secrets.CODECOV_TOKEN }}
+
