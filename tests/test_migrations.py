@@ -7,6 +7,31 @@ from alembic.runtime.migration import MigrationContext
 from alembic.script import ScriptDirectory
 from sqlalchemy import create_engine, text, inspect as sa_inspect
 
+"""
+Alembic Database Migration Test Suite
+
+This module validates the structural integrity, idempotency, and operational safety 
+of all database migrations from a pinned starting revision (START_REVISION) to head.
+It relies exclusively on dynamic database inspection and SQLAlchemy Core/ORM reflection 
+rather than hardcoded schema dictionaries.
+
+Key Validations:
+* Structural Integrity: Ensures the migration graph has a single head, valid parent 
+  links, and descriptive messages.
+* Schema Equivalence: Upgrades the database to head and uses Alembic's `compare_metadata` 
+  to guarantee the resulting database schema strictly matches the SQLAlchemy ORM models.
+* Granular Idempotency (Round-Trip): Marches linearly through the migration history, 
+  testing the exact `upgrade -> downgrade -> upgrade` lifecycle for every single 
+  revision. It compares deep schema snapshots to ensure no columns are orphaned or 
+  dropped incorrectly during downgrades.
+* Downgrade Safety: Verifies that walking the migration graph backward does not crash 
+  and does not unintentionally destroy data in tables that survive the downgrade.
+
+Note: Data transformation tests for specific migrations (e.g., testing that data correctly 
+moves from column A to column B) do not belong in this file. They must be placed in 
+isolated `test_migration_<rev_id>.py` files using SQLAlchemy Core for historical data seeding.
+"""
+
 # Skip these tests if no database URL is provided (e.g. during standard fast unit tests)
 pytestmark = [
     pytest.mark.migration,

@@ -38,7 +38,7 @@ jobs:
     outputs:
       # Pass the image digest to downstream jobs so they can reference the
       # exact immutable image that was built, not just a mutable tag.
-      image-digest: ${{ steps.build-push.outputs.digest }}
+      image-digest: ${{ steps.build-push-digest.outputs.digest }}
       image-tag: ${{ steps.meta.outputs.tags }}
 
     steps:
@@ -97,17 +97,23 @@ jobs:
 
       - name: Build and push image
         id: build-push
-        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
+        uses: nick-fields/retry@ce71cc2ab81d19d4ab4ba8c8cfcde3ccb8d67dbc # v3.0.2
         with:
-          context: .
-          file: deploy/docker/Dockerfile
-          # Push only on direct pushes to a branch, not on PRs
-          push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          build-args: |
-            GIT_VERSION=${{ steps.git-version.outputs.version }}
-          # Use GitHub Actions cache to speed up subsequent builds
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          timeout_minutes: 30
+          max_attempts: 3
+          command: |
+            docker buildx build \
+              --file deploy/docker/Dockerfile \
+              --push=${{ github.event_name != 'pull_request' }} \
+              --tag ${{ steps.meta.outputs.tags }} \
+              --label "${{ steps.meta.outputs.labels }}" \
+              --build-arg GIT_VERSION=${{ steps.git-version.outputs.version }} \
+              --cache-from type=gha \
+              --cache-to type=gha,mode=max \
+              --iidfile /tmp/image-iidfile \
+              .
+
+      - name: Read image digest
+        id: build-push-digest
+        run: echo "digest=$(cat /tmp/image-iidfile)" >> "$GITHUB_OUTPUT"
 
