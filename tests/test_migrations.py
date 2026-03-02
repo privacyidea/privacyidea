@@ -21,18 +21,8 @@ DB_URL = os.environ.get("TEST_DATABASE_URL", "")
 # The revision from which we test migrations forward to head.
 # Pinned at v3.9 (2022) — every migration added after this point is covered.
 # Update this pin when it becomes too old or causes issues.
-# To find available revisions run:
-#   python -c "
-#   from alembic.config import Config; from alembic.script import ScriptDirectory
-#   cfg = Config(); cfg.set_main_option('script_location', 'privacyidea/migrations')
-#   cfg.set_main_option('sqlalchemy.url', 'sqlite://')
-#   [print(r.revision, r.doc) for r in ScriptDirectory.from_config(cfg).walk_revisions()]"
 START_REVISION = "5cb310101a1f"  # v3.9: Create sequences needed for SQLAlchemy 1.4
 
-
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
 
 def _get_script_dir() -> str:
     return str(pathlib.Path(__file__).parent.parent / "privacyidea" / "migrations")
@@ -57,6 +47,20 @@ def _get_expected_tables() -> set[str]:
 
 def _get_tables(engine) -> set[str]:
     return set(sa_inspect(engine).get_table_names())
+
+
+def _get_schema_snapshot(engine) -> dict[str, set[str]]:
+    """
+    Return a mapping of {table_name: {col_name, ...}} for every table in the DB.
+    This gives a richer comparison than just table names — it catches leftover
+    columns that a downgrade() forgot to drop, or columns that an upgrade() forgot
+    to add.
+    """
+    inspector = sa_inspect(engine)
+    return {
+        table: {col["name"] for col in inspector.get_columns(table)}
+        for table in inspector.get_table_names()
+    }
 
 
 def _get_current_revision(engine) -> str | None:
@@ -95,10 +99,6 @@ def _setup_db_at_start_revision(flask_app, start_revision: str):
     command.downgrade(_get_alembic_cfg(), start_revision)
 
 
-# ---------------------------------------------------------------------------
-# Fixtures
-# ---------------------------------------------------------------------------
-
 @pytest.fixture(autouse=True)
 def clean_database():
     """Wipe the database before and after every test."""
@@ -126,16 +126,19 @@ def flask_app():
     ctx.pop()
 
 
-# ---------------------------------------------------------------------------
-# Tests
-# ---------------------------------------------------------------------------
+def test_migration_history_has_single_head():
+    """
+    The migration chain must converge to exactly one head.
+    Multiple heads would make `alembic upgrade head` ambiguous.
 
-def test_migration_history_is_linear():
-    """The migration chain must have exactly one head (no branches)."""
+    Note: the history may contain merge revisions (a revision with two
+    down_revision parents) — these are intentional and valid. What matters
+    is that all branches are eventually merged into a single head.
+    """
     heads = ScriptDirectory.from_config(_get_alembic_cfg()).get_heads()
     assert len(heads) == 1, (
         f"Migration history has multiple heads: {heads}. "
-        f"Ensure there are no branching migrations."
+        f"Either add a merge migration or fix the branching revision."
     )
 
 
@@ -326,4 +329,183 @@ def test_schema_matches_models_after_upgrade_to_head(flask_app):
         + "\n\nThis means either a migration is missing or incomplete. "
         f"Run `flask db migrate` to generate the missing migration."
     )
+
+
+def test_all_down_revisions_point_to_existing_revisions():
+    """
+    Every migration's down_revision must reference a revision that actually
+    exists in the migration scripts. Catches copy-paste errors where a new
+    migration file has the wrong down_revision set.
+
+    Note: merge revisions have a tuple of down_revisions (multiple parents),
+    which is valid Alembic syntax — all parents are checked individually.
+    """
+    script = ScriptDirectory.from_config(_get_alembic_cfg())
+    all_revisions = {rev.revision for rev in script.walk_revisions()}
+
+    def _iter_down_revisions(rev):
+        """Yield individual revision IDs from down_revision (str, tuple, or None)."""
+        if rev.down_revision is None:
+            return  # base revision, no parent needed
+        if isinstance(rev.down_revision, tuple):
+            yield from rev.down_revision  # merge revision with multiple parents
+        else:
+            yield rev.down_revision
+
+    bad = [
+        (rev.revision, down)
+        for rev in script.walk_revisions()
+        for down in _iter_down_revisions(rev)
+        if down not in all_revisions
+    ]
+    assert not bad, (
+        f"The following migrations have a down_revision that does not exist:\n"
+        + "\n".join(f"  {r} -> {d}" for r, d in bad)
+    )
+
+
+def test_each_migration_survives_round_trip(flask_app):
+    """
+    True idempotency test: for every migration in the window, verify that the
+    upgrade → downgrade → upgrade round-trip succeeds without crashing and
+    produces the same schema both times.
+
+    Performance: the DB is set up once at START_REVISION and we march forward
+    linearly — no full wipe/rebuild for every iteration.
+
+    Schema validation: we compare full schema snapshots (table names + column
+    names per table), not just table names. This catches migrations whose
+    downgrade() forgets to drop a column it added, or whose upgrade() forgets
+    to add a column it should.
+
+    Strategy per revision:
+      1. (Once, before the loop) Set up DB at START_REVISION.
+      2. Upgrade to rev — snapshot schema after first upgrade.
+      3. Downgrade to rev.down_revision.
+      4. Upgrade to rev again — snapshot schema after second upgrade.
+      5. Assert both snapshots are identical.
+      6. Leave the DB at rev so the next iteration starts correctly.
+    """
+    from alembic import command
+
+    script = ScriptDirectory.from_config(_get_alembic_cfg())
+    # Chronological order: oldest (just after START_REVISION) first.
+    revisions_in_window = list(reversed(list(script.iterate_revisions("head", START_REVISION))))
+
+    # Set up the DB once — all iterations share this starting point.
+    _setup_db_at_start_revision(flask_app, START_REVISION)
+
+    for rev in revisions_in_window:
+        # Merge revisions have a tuple of parents — use the first one.
+        if rev.down_revision is None:
+            continue
+        if isinstance(rev.down_revision, tuple):
+            parent_revision = rev.down_revision[0]
+        else:
+            parent_revision = rev.down_revision
+
+        # 1. Upgrade to the revision under test.
+        try:
+            command.upgrade(_get_alembic_cfg(), rev.revision)
+        except Exception as e:
+            pytest.fail(
+                f"First upgrade() to revision {rev.revision!r} ('{rev.doc}') failed: {e}"
+            )
+
+        engine = create_engine(DB_URL)
+        schema_after_first_upgrade = _get_schema_snapshot(engine)
+        engine.dispose()
+
+        # 2. Downgrade one step back.
+        try:
+            command.downgrade(_get_alembic_cfg(), parent_revision)
+        except Exception as e:
+            pytest.fail(
+                f"downgrade() of revision {rev.revision!r} ('{rev.doc}') "
+                f"back to {parent_revision!r} failed: {e}"
+            )
+
+        # 3. Upgrade to the revision again.
+        try:
+            command.upgrade(_get_alembic_cfg(), rev.revision)
+        except Exception as e:
+            pytest.fail(
+                f"Second upgrade() to revision {rev.revision!r} ('{rev.doc}') "
+                f"failed after a downgrade. This means the migration is not "
+                f"re-runnable after its own downgrade: {e}"
+            )
+
+        engine = create_engine(DB_URL)
+        schema_after_second_upgrade = _get_schema_snapshot(engine)
+        current_rev = _get_current_revision(engine)
+        engine.dispose()
+
+        # Compare tables
+        tables_first = set(schema_after_first_upgrade)
+        tables_second = set(schema_after_second_upgrade)
+        assert tables_first == tables_second, (
+            f"Migration {rev.revision!r} ('{rev.doc}'): table set differs between "
+            f"first and second upgrade after round-trip.\n"
+            f"  Only after first upgrade:  {tables_first - tables_second}\n"
+            f"  Only after second upgrade: {tables_second - tables_first}"
+        )
+
+        # Compare columns per table
+        for table in tables_first:
+            cols_first = schema_after_first_upgrade[table]
+            cols_second = schema_after_second_upgrade.get(table, set())
+            assert cols_first == cols_second, (
+                f"Migration {rev.revision!r} ('{rev.doc}'): column set for table "
+                f"'{table}' differs between first and second upgrade after round-trip.\n"
+                f"  Only after first upgrade:  {cols_first - cols_second}\n"
+                f"  Only after second upgrade: {cols_second - cols_first}\n"
+                f"  This likely means downgrade() forgot to drop a column, or "
+                f"upgrade() forgot to add one."
+            )
+
+        assert current_rev == rev.revision, (
+            f"After round-trip for {rev.revision!r}, current revision is "
+            f"{current_rev!r} instead of {rev.revision!r}."
+        )
+        # Leave the DB at rev.revision — the next iteration will upgrade from here.
+
+
+def test_downgrade_does_not_destroy_data_in_surviving_tables(flask_app):
+    """
+    Downgrading must not delete data from tables that survive the downgrade.
+
+    Strategy: upgrade to head, insert data into a stable table (realm),
+    downgrade to START_REVISION, verify the data still exists.
+    The realm table is created long before START_REVISION so it survives
+    every downgrade in the window.
+    """
+    from alembic import command
+    from flask_migrate import upgrade as flask_upgrade
+
+    _setup_db_at_start_revision(flask_app, START_REVISION)
+    flask_upgrade()
+
+    engine = create_engine(DB_URL)
+    with engine.connect() as conn:
+        conn.execute(text(
+            "INSERT INTO realm (id, name, `default`) VALUES (42, 'persistent_realm', 0)"
+        ))
+        conn.commit()
+    engine.dispose()
+
+    # Downgrade all the way back to START_REVISION
+    command.downgrade(_get_alembic_cfg(), START_REVISION)
+
+    engine = create_engine(DB_URL)
+    with engine.connect() as conn:
+        result = conn.execute(
+            text("SELECT name FROM realm WHERE id = 42")
+        ).scalar()
+    engine.dispose()
+
+    assert result == "persistent_realm", (
+        f"Data in the 'realm' table was lost during downgrade. "
+        f"Expected 'persistent_realm', got {result!r}."
+    )
+
 

@@ -31,8 +31,9 @@ def downgrade():
         op.drop_column('policy', 'user_agents')
     except (OperationalError, ProgrammingError) as exx:
         msg = str(exx.orig).lower()
-        if "no such column" in msg or "does not exist" in msg:
+        if "no such column" in msg or "does not exist" in msg or "check that it exists" in msg:
             print("Column 'user_agents' already removed.")
         else:
             print("Could not remove column 'user_agents' from table 'policy'.")
             print(exx)
+            raise
