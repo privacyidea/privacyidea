@@ -330,10 +330,8 @@ export class TableUtilsService implements TableUtilsServiceInterface {
       classes.push("height-127");
     } else if (["realms", "tokengroup"].includes(key)) {
       classes.push("height-78");
-    } else if (key === "container_serial") {
-      classes.push("height-53")
     } else {
-      classes.push("height-52");
+      classes.push("height-53");
     }
     return classes;
   }

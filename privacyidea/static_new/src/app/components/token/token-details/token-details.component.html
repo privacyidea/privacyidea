@@ -64,7 +64,7 @@
               @switch (element.keyMap.key) {
                 @case ("container_serial") {
                   @if (element.isEditing()) {
-                    <mat-form-field class="input-width-m height-50">
+                    <mat-form-field class="input-width-m height-52">
                       <mat-label i18n>Enter Container</mat-label>
                       <app-clearable-input
                         (onClick)="containerService.selectedContainer.set(null)"
@@ -178,7 +178,7 @@
                 }
                 @default {
                   @if (element.isEditing() && isNumberElement(element.keyMap.key)) {
-                    <mat-form-field class="input-width-m">
+                    <mat-form-field class="input-width-m height-52">
                       <input
                         [(ngModel)]="element.value"
                         matInput
