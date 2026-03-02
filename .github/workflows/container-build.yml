@@ -83,7 +83,24 @@ jobs:
       - name: Determine git version for setuptools-scm
         id: git-version
         run: |
-          echo "version=$(git describe --tags --always --dirty)" >> "$GITHUB_OUTPUT"
+          # git describe produces e.g. "v3.13dev0-17-g686b78382" or "v3.13.0-0-gabcdef"
+          # We need a PEP 440 compliant version for setuptools-scm, e.g. "3.13.dev17+g686b78382"
+          # Steps:
+          #   1. Strip the leading "v"
+          #   2. Strip any trailing pre-release tag on the base (e.g. "dev0")
+          #   3. Convert "-<distance>-g<hash>" to ".dev<distance>+g<hash>"
+          #   4. If distance is 0 (exact tag), just use the base version
+          raw=$(git describe --tags --always --long)
+          base=$(echo "$raw" | sed 's/^v//' | sed 's/-[0-9]*-g[0-9a-f]*$//' | sed 's/dev[0-9]*//')
+          distance=$(echo "$raw" | sed 's/.*-\([0-9]*\)-g[0-9a-f]*$/\1/')
+          hash=$(echo "$raw" | sed 's/.*-g\([0-9a-f]*\)$/\1/')
+          if [ "$distance" = "0" ]; then
+            version="${base}"
+          else
+            version="${base}.dev${distance}+g${hash}"
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "Computed version: $version"
 
       - name: Build and push image
         id: build-push
