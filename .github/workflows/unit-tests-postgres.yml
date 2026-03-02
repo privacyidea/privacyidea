@@ -5,7 +5,7 @@
 # versions. Migration tests are excluded — they have their own dedicated
 # workflow (migration-tests.yml).
 
-name: Unit Tests (PostgreSQL)
+name: Unit Tests PostgreSQL
 
 on:
   push:
@@ -33,7 +33,7 @@ permissions:
 
 jobs:
   test:
-    name: 'Python ${{ matrix.python-version }} / PostgreSQL'
+    name: 'Python ${{ matrix.python-version }}'
     permissions:
       checks: write
     runs-on: ubuntu-latest

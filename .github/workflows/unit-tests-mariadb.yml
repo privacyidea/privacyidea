@@ -5,7 +5,7 @@
 # versions. Migration tests are excluded — they have their own dedicated
 # workflow (migration-tests.yml).
 
-name: Unit Tests
+name: Unit Tests MariaDB
 
 on:
   # run on each push to every branch of the repository but only on
@@ -35,7 +35,7 @@ permissions:
 
 jobs:
   test:
-    name: 'Python ${{ matrix.python-version }} / MariaDB'
+    name: 'Python ${{ matrix.python-version }}'
     permissions:
       checks: write # allow the python tests to mark an action run as failed
     runs-on: ubuntu-latest
