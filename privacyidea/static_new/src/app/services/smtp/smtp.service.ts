@@ -35,6 +35,11 @@ export interface SmtpServer {
   description?: string;
   tls: boolean;
   enqueue_job: boolean;
+  certificate?: string;
+  private_key?: string;
+  private_key_password?: string;
+  smime: boolean;
+  dont_send_on_error: boolean;
 }
 
 export type SmtpServers = {

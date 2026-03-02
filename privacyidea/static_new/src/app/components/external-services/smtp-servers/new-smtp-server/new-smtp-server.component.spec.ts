@@ -79,6 +79,25 @@ describe("NewSmtpServerComponent", () => {
     expect(component.smtpForm.get("identifier")?.value).toBe("");
   });
 
+  it("should initialize form with S/MIME fields", () => {
+    expect(component.smtpForm.contains("certificate")).toBe(true);
+    expect(component.smtpForm.contains("private_key")).toBe(true);
+    expect(component.smtpForm.contains("private_key_password")).toBe(true);
+    expect(component.smtpForm.contains("smime")).toBe(true);
+    expect(component.smtpForm.contains("dont_send_on_error")).toBe(true);
+
+    expect(component.smtpForm.get("smime")?.value).toBe(false);
+    expect(component.smtpForm.get("dont_send_on_error")?.value).toBe(false);
+  });
+
+  it("should show TLS when server does not start with smtps:", () => {
+    component.smtpForm.patchValue({ server: "smtp.example.com" });
+    expect(component.showTLS).toBe(true);
+
+    component.smtpForm.patchValue({ server: "smtps://smtp.example.com" });
+    expect(component.showTLS).toBe(false);
+  });
+
   it("should call save when form is valid", async () => {
     component.smtpForm.patchValue({
       identifier: "test",

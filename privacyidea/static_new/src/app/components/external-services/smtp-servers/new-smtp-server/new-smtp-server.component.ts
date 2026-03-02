@@ -97,6 +97,10 @@ export class NewSmtpServerComponent implements OnInit, OnDestroy {
     return this.smtpForm.valid;
   }
 
+  get showTLS(): boolean {
+    return !this.smtpForm.get("server")?.value?.toLowerCase().startsWith("smtps:");
+  }
+
   ngOnInit(): void {
     this.isEditMode = !!this.data;
     this.smtpForm = this.formBuilder.group({
@@ -110,6 +114,11 @@ export class NewSmtpServerComponent implements OnInit, OnDestroy {
       description: [this.data?.description || ""],
       tls: [this.data?.tls ?? true],
       enqueue_job: [this.data?.enqueue_job ?? false],
+      certificate: [this.data?.certificate || ""],
+      private_key: [this.data?.private_key || ""],
+      private_key_password: [this.data?.private_key_password || ""],
+      smime: [this.data?.smime ?? false],
+      dont_send_on_error: [this.data?.dont_send_on_error ?? false],
       recipient: [""]
     });
 
