@@ -2,16 +2,21 @@
 #
 # SPDX-License-Identifier: CC0-1.0
 #
-# Runs database migration tests against a MariaDB container.
-# These tests are intentionally separate from the standard unit tests
-# so they can be triggered and reviewed independently.
+# Runs the full unit test suite against a MariaDB database instead of the
+# default SQLite. Migration tests are excluded here — they have their own
+# dedicated workflow (migration-tests.yml).
+#
+# The tests run directly on the GitHub Actions runner (not inside a container)
+# using the source code from the repository. MariaDB runs as a service sidecar.
+# This matches the production database engine without the overhead of building
+# a full application container for every test run.
 #
 # Triggers:
-#   - Push/PR when migration scripts, models or the test file itself changes
+#   - Push to master / branch-* when Python files change
+#   - Pull requests targeting master / branch-*
 #   - Nightly schedule
-#   - Manual dispatch from the GitHub Actions UI
 
-name: Migration Tests (MariaDB)
+name: Unit Tests (MariaDB)
 
 on:
   push:
@@ -19,28 +24,27 @@ on:
       - 'master'
       - 'branch-*'
     paths:
-      - 'privacyidea/migrations/**'
-      - 'privacyidea/models/**'
-      - 'tests/test_migrations.py'
+      - 'privacyidea/**.py'
+      - 'tests/**'
       - 'pyproject.toml'
       - 'requirements.txt'
-      - '.github/workflows/migration-tests.yml'
+      - '.github/workflows/unit-tests-mariadb.yml'
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
     branches:
       - 'master'
       - 'branch-*'
   schedule:
-    # Nightly run at 02:17 UTC
-    - cron: '17 2 * * *'
+    # Nightly run at 03:21 UTC (offset from other nightly jobs)
+    - cron: '21 3 * * *'
   workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  migration-tests:
-    name: Migration tests (Python ${{ matrix.python-version }})
+  test:
+    name: Unit tests against MariaDB (Python ${{ matrix.python-version }})
     permissions:
       checks: write
     runs-on: ubuntu-latest
@@ -54,7 +58,7 @@ jobs:
         image: mariadb:11
         env:
           MARIADB_ROOT_PASSWORD: root
-          MARIADB_DATABASE: privacyidea_migration_test
+          MARIADB_DATABASE: privacyidea_test
           MARIADB_USER: privacyidea
           MARIADB_PASSWORD: privacyidea
         ports:
@@ -84,9 +88,10 @@ jobs:
           pip install -r tests/requirements.txt
           pip install PyMySQL
 
-      - name: Run migration tests
+      - name: Run unit tests against MariaDB
         env:
-          TEST_DATABASE_URL: "mysql+pymysql://privacyidea:privacyidea@127.0.0.1:3306/privacyidea_migration_test"
+          TEST_DATABASE_URL: "mysql+pymysql://privacyidea:privacyidea@127.0.0.1:3306/privacyidea_test"
           PYTHONWARNINGS: "once::DeprecationWarning"
         run: |
-          python -b -m pytest -v --tb=short -m migration tests/test_migrations.py
+          python -b -m pytest -v --tb=short -m "not migration" tests/
+

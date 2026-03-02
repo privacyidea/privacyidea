@@ -1,0 +1,106 @@
+# SPDX-FileCopyrightText: (C) 2026 NetKnights GmbH <https://netknights.it>
+#
+# SPDX-License-Identifier: CC0-1.0
+#
+# Builds the privacyIDEA Docker image and pushes it to the GitHub Container
+# Registry (GHCR). The image is tagged with the branch name and the commit SHA.
+#
+# On pull requests, the image is built but NOT pushed (to avoid polluting the
+# registry with every PR commit). The build itself still serves as a smoke test
+# that the Dockerfile is valid and the build succeeds.
+#
+# Triggers:
+#   - Push to master / branch-* / improve-workflows when relevant files change
+#   - Pull requests targeting master / branch-* / improve-workflows
+#   - Manual dispatch
+
+name: Container Build
+
+on:
+  push:
+    branches:
+      - 'master'
+      - 'branch-*'
+    paths:
+      - 'Dockerfile'
+      - 'deploy/docker/**'
+      - 'privacyidea/**'
+      - 'requirements.txt'
+      - 'pyproject.toml'
+      - '.github/workflows/container-build.yml'
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    branches:
+      - 'master'
+      - 'branch-*'
+  workflow_dispatch:
+
+# Needed to push images to GHCR
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    name: Build container image
+    runs-on: ubuntu-latest
+
+    outputs:
+      # Pass the image digest to downstream jobs so they can reference the
+      # exact immutable image that was built, not just a mutable tag.
+      image-digest: ${{ steps.build-push.outputs.digest }}
+      image-tag: ${{ steps.meta.outputs.tags }}
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          # Fetch full history so setuptools-scm can determine the version
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@b5730b7a3c4d5f1f8e4a1348a96e687a9c4e9a47 # v3.10.0
+
+      - name: Log in to GitHub Container Registry
+        # Only log in when we actually intend to push (not on PRs)
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3.4.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Docker metadata (tags and labels)
+        id: meta
+        uses: docker/metadata-action@902fa8ec7d6ecbea8bfca62b4fdcf7753a83bbdf # v5.7.0
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            # Tag with the branch name on push (e.g. ghcr.io/org/repo:master)
+            type=ref,event=branch
+            # Tag with the short commit SHA (e.g. ghcr.io/org/repo:sha-abc1234)
+            type=sha,format=short
+            # Tag as 'latest' only on pushes to master
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/master' }}
+
+      - name: Determine git version for setuptools-scm
+        id: git-version
+        run: |
+          echo "version=$(git describe --tags --always --dirty)" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push image
+        id: build-push
+        uses: docker/build-push-action@471d1dc4e07e5cdedd4c2171150001c434f0b7a4 # v6.15.0
+        with:
+          context: .
+          file: deploy/docker/Dockerfile
+          # Push only on direct pushes to a branch, not on PRs
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            GIT_VERSION=${{ steps.git-version.outputs.version }}
+          # Use GitHub Actions cache to speed up subsequent builds
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
