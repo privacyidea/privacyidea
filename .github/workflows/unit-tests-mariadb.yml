@@ -20,12 +20,6 @@ name: Unit Tests (MariaDB)
 
 on:
   push:
-    paths:
-      - 'privacyidea/**.py'
-      - 'tests/**'
-      - 'pyproject.toml'
-      - 'requirements.txt'
-      - '.github/workflows/unit-tests-mariadb.yml'
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
     branches:

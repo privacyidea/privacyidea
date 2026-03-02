@@ -14,14 +14,16 @@
 name: Migration Tests (MariaDB)
 
 on:
+  # TODO: restore paths filter after development is complete:
+  # push:
+  #   paths:
+  #     - 'privacyidea/migrations/**'
+  #     - 'privacyidea/models/**'
+  #     - 'tests/test_migrations.py'
+  #     - 'pyproject.toml'
+  #     - 'requirements.txt'
+  #     - '.github/workflows/migration-tests.yml'
   push:
-    paths:
-      - 'privacyidea/migrations/**'
-      - 'privacyidea/models/**'
-      - 'tests/test_migrations.py'
-      - 'pyproject.toml'
-      - 'requirements.txt'
-      - '.github/workflows/migration-tests.yml'
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
     branches:
