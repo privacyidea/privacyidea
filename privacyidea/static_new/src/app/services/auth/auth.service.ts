@@ -383,7 +383,7 @@ export class AuthService implements AuthServiceInterface {
     const value = this.rightsWithValues()[key];
     if (value === "allow") {
       return "allow";
-    } else if (value === null && key in this.rightsWithValues()) {
+    } else if (value === "force") {
       return "force";
     } else {
       return "disabled";

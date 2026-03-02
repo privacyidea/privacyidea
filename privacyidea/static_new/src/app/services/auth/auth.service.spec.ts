@@ -455,14 +455,14 @@ describe("AuthService", () => {
       expect(authService.check2Step("totp")).toBe("allow");
     });
 
-    it("should return 'force' if value is null (right exists without value)", () => {
+    it("should return 'force' if value is 'force'", () => {
       authService.authData.set({
-        rights: ["totp_2step"]
+        rights: ["totp_2step=force"]
       } as unknown as AuthData);
       expect(authService.check2Step("totp")).toBe("force");
     });
 
-    it("should return 'disabled' if value is not 'allow' or null", () => {
+    it("should return 'disabled' if value is not 'allow' or 'force'", () => {
       authService.authData.set({
         rights: ["totp_2step=deny"]
       } as unknown as AuthData);
