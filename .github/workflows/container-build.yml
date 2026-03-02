@@ -18,9 +18,6 @@ name: Container Build
 
 on:
   push:
-    branches:
-      - 'master'
-      - 'branch-*'
     paths:
       - 'Dockerfile'
       - 'deploy/docker/**'

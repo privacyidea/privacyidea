@@ -15,9 +15,6 @@ name: Migration Tests (MariaDB)
 
 on:
   push:
-    branches:
-      - 'master'
-      - 'branch-*'
     paths:
       - 'privacyidea/migrations/**'
       - 'privacyidea/models/**'

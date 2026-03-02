@@ -12,7 +12,7 @@
 # a full application container for every test run.
 #
 # Triggers:
-#   - Push to master / branch-* when Python files change
+#   - Push to any branch when Python files change
 #   - Pull requests targeting master / branch-*
 #   - Nightly schedule
 
@@ -20,9 +20,6 @@ name: Unit Tests (MariaDB)
 
 on:
   push:
-    branches:
-      - 'master'
-      - 'branch-*'
     paths:
       - 'privacyidea/**.py'
       - 'tests/**'
