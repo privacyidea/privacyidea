@@ -177,3 +177,12 @@ version_scheme = "only-version"
 [tool.pip-tools]
 generate_hashes = true
 allow_unsafe = true
+
+[tool.pytest.ini_options]
+markers = [
+    "migration: marks tests as database migration tests (run separately with -m migration)",
+]
+filterwarnings = [
+    "once::DeprecationWarning",
+]
+

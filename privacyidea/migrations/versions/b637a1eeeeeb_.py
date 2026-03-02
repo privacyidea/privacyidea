@@ -1,4 +1,4 @@
-"""empty message
+"""v3.14: Add S/MIME columns to smtpserver table
 
 Revision ID: b637a1eeeeeb
 Revises: 056b6642ff5d

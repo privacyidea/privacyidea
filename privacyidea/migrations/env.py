@@ -99,6 +99,9 @@ def run_migrations_online():
 
     connectable = get_engine()
 
+    def on_version_apply(ctx, step, heads, run_args):
+        print(f"Applying {step.up_revision}...")
+
     with connectable.connect() as connection:
         # Add AUTOCOMMIT isolation level to commit to db after every migration
         # step (needed for PostgreSQL)
@@ -107,6 +110,7 @@ def run_migrations_online():
         context.configure(
             connection=connection,
             target_metadata=get_metadata(),
+            on_version_apply=on_version_apply,
             **conf_args
         )
 
