@@ -18,17 +18,37 @@ name: Container Build
 
 on:
   push:
+    paths:
+      - 'privacyidea/**'
+      - 'deploy/docker/**'
+      - 'deploy/uwsgi/**'
+      - 'requirements.txt'
+      - 'pyproject.toml'
+      - '.github/workflows/container-build.yml'
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
     branches:
       - 'master'
       - 'branch-*'
+    paths:
+      - 'privacyidea/**'
+      - 'deploy/docker/**'
+      - 'deploy/uwsgi/**'
+      - 'requirements.txt'
+      - 'pyproject.toml'
+      - '.github/workflows/container-build.yml'
   workflow_dispatch:
 
 # Needed to push images to GHCR
 permissions:
   contents: read
   packages: write
+
+# Cancel any in-progress run for the same branch/PR so that a push to a
+# branch with an open PR does not trigger the job twice.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:

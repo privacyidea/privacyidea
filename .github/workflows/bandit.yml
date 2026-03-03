@@ -8,15 +8,25 @@
 name: Bandit
 on:
   push:
+    paths:
+      - 'privacyidea/**.py'
+      - '.github/workflows/bandit.yml'
   pull_request:
     branches:
       - "master"
       - 'branch-*'
+    paths:
+      - 'privacyidea/**.py'
+      - '.github/workflows/bandit.yml'
   schedule:
     # Do a nightly run at 23:33 UTC
     - cron: '33 23 * * *'
 
 permissions: {}
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name != 'schedule' }}
 
 jobs:
   bandit:

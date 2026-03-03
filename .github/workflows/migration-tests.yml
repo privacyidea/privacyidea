@@ -27,6 +27,13 @@ on:
     branches:
       - 'master'
       - 'branch-*'
+    paths:
+      - 'privacyidea/migrations/**'
+      - 'privacyidea/models/**'
+      - 'tests/test_migrations.py'
+      - 'pyproject.toml'
+      - 'requirements.txt'
+      - '.github/workflows/migration-tests.yml'
   schedule:
     # Nightly run at 02:17 UTC
     - cron: '17 2 * * *'
