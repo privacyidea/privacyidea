@@ -22,7 +22,7 @@ import { provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
 import { AuthService } from "../auth/auth.service";
 import { NotificationService } from "../notification/notification.service";
-import { environment } from "../../../environments/environment";
+import { environment } from "@env/environment";
 
 describe("SmsGatewayService", () => {
   let service: SmsGatewayService;

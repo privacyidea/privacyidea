@@ -344,17 +344,17 @@ export class HttpResolverComponent {
 
     if (data.endpoint !== undefined) this.endpointControl.setValue(data.endpoint, { emitEvent: false });
     if (data.method !== undefined) this.methodControl.setValue(data.method.toUpperCase(), { emitEvent: false });
-    if (data.requestMapping !== undefined) this.requestMappingControl.setValue(data.requestMapping, { emitEvent: false });
-    if (data.headers !== undefined) this.headersControl.setValue(data.headers, { emitEvent: false });
-    if (data.responseMapping !== undefined) this.responseMappingControl.setValue(data.responseMapping, { emitEvent: false });
-    if (data.errorResponse !== undefined) this.errorResponseControl.setValue(data.errorResponse, { emitEvent: false });
+    if (data.requestMapping !== undefined) this.requestMappingControl.setValue(this.formatConfigValue(data.requestMapping), { emitEvent: false });
+    if (data.headers !== undefined) this.headersControl.setValue(this.formatConfigValue(data.headers), { emitEvent: false });
+    if (data.responseMapping !== undefined) this.responseMappingControl.setValue(this.formatConfigValue(data.responseMapping), { emitEvent: false });
+    if (data.errorResponse !== undefined) this.errorResponseControl.setValue(this.formatConfigValue(data.errorResponse), { emitEvent: false });
     if (data.base_url !== undefined) this.baseUrlControl.setValue(data.base_url, { emitEvent: false });
     if (data.tenant !== undefined) this.tenantControl.setValue(data.tenant, { emitEvent: false });
     if (data.client_id !== undefined) this.clientIdControl.setValue(data.client_id, { emitEvent: false });
     if (data.client_secret !== undefined) this.clientSecretControl.setValue(data.client_secret, { emitEvent: false });
 
     if (data.realm !== undefined) this.realmControl.setValue(data.realm, { emitEvent: false });
-    if (data.headers !== undefined) this.globalHeadersControl.setValue(data.headers, { emitEvent: false });
+    if (data.headers !== undefined) this.globalHeadersControl.setValue(this.formatConfigValue(data.headers), { emitEvent: false });
     if (data.Editable !== undefined) this.editableControl.setValue(parseBooleanValue(data.Editable), { emitEvent: false });
     if (data.verify_tls !== undefined) this.verifyTlsControl.setValue(parseBooleanValue(data.verify_tls), { emitEvent: false });
     if (data.tls_ca_path !== undefined) this.tlsCaPathControl.setValue(data.tls_ca_path, { emitEvent: false });
@@ -387,11 +387,27 @@ export class HttpResolverComponent {
 
   protected syncGroup(group: FormGroup, config: any) {
     if (config) {
-      if (config.method) {
-        config.method = config.method.toUpperCase();
+      const sanitizedConfig = { ...config };
+      if (sanitizedConfig.method) {
+        sanitizedConfig.method = sanitizedConfig.method.toUpperCase();
       }
-      group.patchValue(config, { emitEvent: false });
+      ['headers', 'requestMapping', 'responseMapping', 'errorResponse'].forEach(field => {
+        if (sanitizedConfig[field] !== undefined) {
+          sanitizedConfig[field] = this.formatConfigValue(sanitizedConfig[field]);
+        }
+      });
+      group.patchValue(sanitizedConfig, { emitEvent: false });
     }
+  }
+
+  private formatConfigValue(value: any): string {
+    if (typeof value === 'object' && value !== null) {
+      if (Object.keys(value).length === 0) {
+        return "";
+      }
+      return JSON.stringify(value);
+    }
+    return value ?? "";
   }
 
   protected onMappingChanged(): void {

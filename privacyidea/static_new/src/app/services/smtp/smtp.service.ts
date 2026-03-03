@@ -20,6 +20,7 @@ import { computed, inject, Injectable, Signal } from "@angular/core";
 import { environment } from "../../../environments/environment";
 import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
+import { ContentService, ContentServiceInterface } from "../content/content.service";
 import { PiResponse } from "../../app.component";
 import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
 import { lastValueFrom } from "rxjs";
@@ -61,10 +62,14 @@ export class SmtpService implements SmtpServiceInterface {
   readonly smtpServerBaseUrl = environment.proxyUrl + "/smtpserver/";
 
   readonly authService: AuthServiceInterface = inject(AuthService);
+  readonly contentService: ContentServiceInterface = inject(ContentService);
   readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   readonly http: HttpClient = inject(HttpClient);
 
   readonly smtpServerResource = httpResource<PiResponse<SmtpServers>>(() => {
+    if (!this.contentService.onExternalSmtp()) {
+      return undefined;
+    }
     return {
       url: `${this.smtpServerBaseUrl}`,
       method: "GET",

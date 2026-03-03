@@ -19,6 +19,7 @@
 import { inject, Injectable, signal } from "@angular/core";
 import { HttpClient, httpResource } from "@angular/common/http";
 import { AuthService } from "../auth/auth.service";
+import { ContentService } from "../content/content.service";
 import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
 import { catchError, Observable, throwError } from "rxjs";
@@ -54,6 +55,7 @@ export interface Subscription {
 export class SubscriptionService {
   private http = inject(HttpClient);
   private authService = inject(AuthService);
+  private contentService = inject(ContentService);
   private notificationService = inject(NotificationService);
 
   private baseUrl = environment.proxyUrl + "/subscriptions";
@@ -62,6 +64,9 @@ export class SubscriptionService {
 
   subscriptionsResource = httpResource<PiResponse<Record<string, Subscription>>>(() => {
     this.reloadTrigger();
+    if (!this.contentService.onConfigurationSubscription()) {
+      return undefined;
+    }
     return {
       url: `${this.baseUrl}/`,
       method: "GET",

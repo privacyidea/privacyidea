@@ -19,8 +19,9 @@
 import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
 import { computed, inject, Injectable, Signal } from "@angular/core";
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
+import { ContentService, ContentServiceInterface } from "../content/content.service";
 
-import { environment } from "../../../environments/environment";
+import { environment } from "@env/environment";
 import { PiResponse } from "../../app.component";
 import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
 import { lastValueFrom } from "rxjs";
@@ -60,16 +61,22 @@ export interface PrivacyideaServerServiceInterface {
 })
 export class PrivacyideaServerService implements PrivacyideaServerServiceInterface {
   private readonly authService: AuthServiceInterface = inject(AuthService);
+  private readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly http: HttpClient = inject(HttpClient);
 
   readonly privacyideaServerBaseUrl = environment.proxyUrl + "/privacyideaserver/";
 
-  privacyideaServerResource = httpResource<PiResponse<PrivacyideaServers>>(() => ({
-    url: this.privacyideaServerBaseUrl,
-    method: "GET",
-    headers: this.authService.getHeaders()
-  }));
+  privacyideaServerResource = httpResource<PiResponse<PrivacyideaServers>>(() => {
+    if (!this.contentService.onExternalPrivacyIdea()) {
+      return undefined;
+    }
+    return {
+      url: this.privacyideaServerBaseUrl,
+      method: "GET",
+      headers: this.authService.getHeaders()
+    };
+  });
   privacyideaServers = computed<PrivacyideaServer[]>(() => {
     const res = this.privacyideaServerResource.value();
     const values = res?.result?.value;

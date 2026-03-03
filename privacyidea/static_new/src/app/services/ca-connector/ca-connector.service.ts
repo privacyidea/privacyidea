@@ -17,10 +17,11 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
-import { inject, Injectable, linkedSignal, Signal, WritableSignal } from "@angular/core";
-import { environment } from "../../../environments/environment";
+import { inject, Injectable, linkedSignal, WritableSignal } from "@angular/core";
+import { environment } from "@env/environment";
 import { PiResponse } from "../../app.component";
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
+import { ContentService, ContentServiceInterface } from "../content/content.service";
 import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
 import { lastValueFrom } from "rxjs";
 
@@ -38,7 +39,9 @@ export interface CaConnectorServiceInterface {
   caConnectors: WritableSignal<CaConnectors>;
 
   postCaConnector(connector: CaConnector): Promise<void>;
+
   deleteCaConnector(connectorname: string): Promise<void>;
+
   getCaSpecificOptions(catype: string, params: any): Promise<any>;
 }
 
@@ -47,16 +50,22 @@ export interface CaConnectorServiceInterface {
 })
 export class CaConnectorService implements CaConnectorServiceInterface {
   private readonly authService: AuthServiceInterface = inject(AuthService);
+  private readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly http: HttpClient = inject(HttpClient);
 
   readonly caConnectorBaseUrl = environment.proxyUrl + "/caconnector/";
 
-  caConnectorResource = httpResource<PiResponse<CaConnectors>>(() => ({
-    url: this.caConnectorBaseUrl,
-    method: "GET",
-    headers: this.authService.getHeaders()
-  }));
+  caConnectorResource = httpResource<PiResponse<CaConnectors>>(() => {
+    if (!this.contentService.onExternalCaConnectors()) {
+      return undefined;
+    }
+    return {
+      url: this.caConnectorBaseUrl,
+      method: "GET",
+      headers: this.authService.getHeaders()
+    };
+  });
 
   caConnectors: WritableSignal<CaConnectors> = linkedSignal({
     source: this.caConnectorResource.value,

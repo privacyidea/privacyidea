@@ -18,9 +18,9 @@
  **/
 
 import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
-import { computed, inject, Injectable, linkedSignal, Signal, signal, WritableSignal } from "@angular/core";
-import { catchError, lastValueFrom, Observable, of, switchMap, tap, throwError } from "rxjs";
-import { environment } from "../../../environments/environment";
+import { computed, inject, Injectable, linkedSignal, Signal } from "@angular/core";
+import { lastValueFrom } from "rxjs";
+import { environment } from "@env/environment";
 import { PiResponse } from "../../app.component";
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
@@ -164,145 +164,96 @@ export const HANDLE_MISSING_DATA_OPTIONS: HandleMissingDataOption[] = [
 ];
 
 export interface PolicyServiceInterface {
-  getEmptyPolicy(): PolicyDetail;
   readonly isEditMode: Signal<boolean>;
   readonly policyActions: Signal<ScopedPolicyActions>;
   readonly allPolicyActionsFlat: Signal<{ [actionName: string]: PolicyActionDetail }>;
   readonly allPolicyScopes: Signal<string[]>;
   readonly policyActionsByGroup: Signal<PolicyActionGroups>;
-  filteredPolicyActionGroups(alreadyAddedActionNames: string[], filterValue: string): PolicyActionGroups;
-  getActionDetail(actionName: string, scope: string): PolicyActionDetail | null;
-  getGroupOfAction(actionName: string, scope: string): string | null;
-  getScopeOfAction(name: string): string | null;
   readonly allPolicies: Signal<PolicyDetail[]>;
-  canSavePolicy(policy: PolicyDetail): boolean;
-  getDetailsOfAction(actionName: string): PolicyActionDetail | null;
-  copyPolicy(oldName: string, newName: string): Promise<PiResponse<any>>;
-  createPolicy(policyData: PolicyDetail): Promise<PiResponse<any>>;
-  deletePolicy(name: string): Promise<PiResponse<number>>;
-  enablePolicy(name: string): Promise<PiResponse<any>>;
-  disablePolicy(name: string): Promise<PiResponse<any>>;
-  isScopeChangeable(policy: PolicyDetail): boolean;
-  getActionNamesOf(scope?: string, group?: string): string[];
-  getActionsOf(scope?: string, group?: string): Record<string, PolicyActionDetail>;
-  actionValueIsValid(action: PolicyActionDetail, value: string | number): boolean;
-  saveNewPolicy(newPolicy: PolicyDetail): Promise<void>;
-  policyHasConditions(policy: PolicyDetail): boolean;
-  policyHasAdminConditions(policy: PolicyDetail): boolean;
-  policyHasUserConditions(policy: PolicyDetail): boolean;
-  policyHasEnviromentConditions(policy: PolicyDetail): boolean;
-  policyHasAdditionalConditions(policy: PolicyDetail): boolean;
-  policyHasActions(policy: PolicyDetail): boolean;
-  isPolicyEdited(editedPolicy: PolicyDetail, originalPolicy: PolicyDetail): boolean;
-  togglePolicyActive(policy: PolicyDetail): void;
-  savePolicyEdits(originalPolicyName: string, updatedPolicy: PolicyDetail): void;
   allPoliciesRecource: HttpResourceRef<PiResponse<PolicyDetail[], unknown> | undefined>;
+
+  getEmptyPolicy(): PolicyDetail;
+
+  filteredPolicyActionGroups(alreadyAddedActionNames: string[], filterValue: string): PolicyActionGroups;
+
+  getActionDetail(actionName: string, scope: string): PolicyActionDetail | null;
+
+  getGroupOfAction(actionName: string, scope: string): string | null;
+
+  getScopeOfAction(name: string): string | null;
+
+  canSavePolicy(policy: PolicyDetail): boolean;
+
+  getDetailsOfAction(actionName: string): PolicyActionDetail | null;
+
+  copyPolicy(oldName: string, newName: string): Promise<PiResponse<any>>;
+
+  createPolicy(policyData: PolicyDetail): Promise<PiResponse<any>>;
+
+  deletePolicy(name: string): Promise<PiResponse<number>>;
+
+  enablePolicy(name: string): Promise<PiResponse<any>>;
+
+  disablePolicy(name: string): Promise<PiResponse<any>>;
+
+  isScopeChangeable(policy: PolicyDetail): boolean;
+
+  getActionNamesOf(scope?: string, group?: string): string[];
+
+  getActionsOf(scope?: string, group?: string): Record<string, PolicyActionDetail>;
+
+  actionValueIsValid(action: PolicyActionDetail, value: string | number): boolean;
+
+  saveNewPolicy(newPolicy: PolicyDetail): Promise<void>;
+
+  policyHasConditions(policy: PolicyDetail): boolean;
+
+  policyHasAdminConditions(policy: PolicyDetail): boolean;
+
+  policyHasUserConditions(policy: PolicyDetail): boolean;
+
+  policyHasEnviromentConditions(policy: PolicyDetail): boolean;
+
+  policyHasAdditionalConditions(policy: PolicyDetail): boolean;
+
+  policyHasActions(policy: PolicyDetail): boolean;
+
+  isPolicyEdited(editedPolicy: PolicyDetail, originalPolicy: PolicyDetail): boolean;
+
+  togglePolicyActive(policy: PolicyDetail): void;
+
+  savePolicyEdits(originalPolicyName: string, updatedPolicy: PolicyDetail): void;
 }
 
 @Injectable({
   providedIn: "root"
 })
 export class PolicyService implements PolicyServiceInterface {
-  getScopeOfAction(name: string): string | null {
-    const policyActions = this.policyActions();
-    for (const scope in policyActions) {
-      const actions = policyActions[scope];
-      if (actions && actions[name]) {
-        return scope;
-      }
-    }
-    return null;
-  }
-  getGroupOfAction(actionName: string, scope: string): string | null {
-    const policyActions = this.policyActions();
-    if (policyActions && policyActions[scope]) {
-      const actions = policyActions[scope];
-      if (actions && actions[actionName]) {
-        return actions[actionName].group || null;
-      }
-    }
-    return null;
-  }
-  readonly isEditMode = linkedSignal({
-    source: () => this.contentService.routeUrl(),
-    computation: (_) => false
-  });
-
   private readonly contentService: ContentServiceInterface = inject(ContentService);
-
-  canSavePolicy(policy: PolicyDetail): boolean {
-    if (!policy) return false;
-    if (!policy.name || policy.name.trim() === "") return false;
-    if (!policy.scope || policy.scope.trim() === "") return false;
-    if (!this.policyHasActions(policy)) return false;
-    return true;
-  }
-
-  policyHasActions(policy: PolicyDetail): boolean {
-    if (policy?.action && Object.keys(policy.action).length > 0) {
-      return true;
+  readonly policyBaseUrl = environment.proxyUrl + "/policy/";
+  private readonly http: HttpClient = inject(HttpClient);
+  private readonly authService: AuthServiceInterface = inject(AuthService);
+  readonly policyActionResource = httpResource<PiResponse<ScopedPolicyActions>>(() => {
+    // Only load policy definitions on the policies route.
+    if (!this.contentService.onPolicies()) {
+      return undefined;
     }
-    return false;
-  }
 
-  policyHasAdminConditions(policy: PolicyDetail): boolean {
-    if (policy?.adminrealm && policy.adminrealm.length > 0) return true;
-    if (policy?.adminuser && policy.adminuser.length > 0) return true;
-    return false;
-  }
+    return {
+      url: `${this.policyBaseUrl}defs`,
+      method: "GET",
+      headers: this.authService.getHeaders()
+    };
+  });
+  /**
+   * Filter policy actions by the actionFilter signal and already added actions.
+   * @returns {PolicyActionGroups} The filtered policy actions grouped by scope and group.
+   */
+    // currentActionGroupsFiltered = computed<PolicyActionGroups>(() => {
+    //   return this.filteredPolicyActionGroups(this.alreadyAddedActionNames(), this.actionFilter());
+    // });
 
-  policyHasUserConditions(policy: PolicyDetail): boolean {
-    if (policy?.realm && policy.realm.length > 0) return true;
-    if (policy?.resolver && policy.resolver.length > 0) return true;
-    if (policy?.user && policy.user.length > 0) return true;
-    return false;
-  }
-
-  policyHasEnviromentConditions(policy: PolicyDetail): boolean {
-    if (policy?.pinode && policy.pinode.length > 0) return true;
-    if (policy?.time && policy.time.length > 0) return true;
-    if (policy?.client && policy.client.length > 0) return true;
-    if (policy?.user_agents && policy.user_agents.length > 0) return true;
-    return false;
-  }
-
-  policyHasAdditionalConditions(policy: PolicyDetail): boolean {
-    if (policy?.conditions && policy.conditions.length > 0) return true;
-    return false;
-  }
-
-  policyHasConditions(policy: PolicyDetail): boolean {
-    if (this.policyHasAdminConditions(policy)) return true;
-    if (this.policyHasUserConditions(policy)) return true;
-    if (this.policyHasEnviromentConditions(policy)) return true;
-    if (this.policyHasAdditionalConditions(policy)) return true;
-    return false;
-  }
-
-  saveNewPolicy(newPolicy: PolicyDetail): Promise<void> {
-    const allPoliciesCopy = this.allPolicies();
-    allPoliciesCopy.push({ ...newPolicy });
-    this.allPolicies.set(allPoliciesCopy);
-
-    const promise = this.createPolicy(newPolicy)
-      .then((_) => {
-        this.allPoliciesRecource.reload();
-      })
-      .catch((error) => {
-        console.error("Error creating policy: ", error);
-        return Promise.reject();
-      });
-
-    return promise;
-  }
-
-  getDetailsOfAction(actionName: string): PolicyActionDetail | null {
-    const actions = this.allPolicyActionsFlat();
-    if (actionName && actions) {
-      return actions[actionName] ?? null;
-    }
-    return null;
-  }
+  _allPolicies = computed(() => this.allPoliciesRecource.value()?.result?.value ?? []);
 
   getEmptyPolicy(): PolicyDetail {
     return {
@@ -327,52 +278,13 @@ export class PolicyService implements PolicyServiceInterface {
     };
   }
 
-  isPolicyEdited(editedPolicy: PolicyDetail, originalPolicy: PolicyDetail): boolean {
-    if (JSON.stringify(originalPolicy) === JSON.stringify(this.getEmptyPolicy())) {
-      // remove scope temporarily and then compare to ignore scope changes
-      const { scope: _, ...selectedWithoutScope } = editedPolicy;
-      const { scope: __, ...originalWithoutScope } = originalPolicy;
-      return JSON.stringify(selectedWithoutScope) !== JSON.stringify(originalWithoutScope);
-    } else {
-      return JSON.stringify(editedPolicy) !== JSON.stringify(originalPolicy);
-    }
-  }
-
-  readonly policyBaseUrl = environment.proxyUrl + "/policy/";
-
-  private readonly http: HttpClient = inject(HttpClient);
-  private readonly authService: AuthServiceInterface = inject(AuthService);
-
-  readonly policyActionResource = httpResource<PiResponse<ScopedPolicyActions>>(() => ({
-    url: `${this.policyBaseUrl}defs`,
-    method: "GET",
-    headers: this.authService.getHeaders()
-  }));
-
-  readonly allPoliciesRecource = httpResource<PiResponse<PolicyDetail[]>>(() => {
-    // Only load policies if the action is allowed.
-    if (!this.authService.actionAllowed("policyread")) {
-      return undefined;
-    }
-    // Only load policies on policies route.
-    if (!this.contentService.onPolicies()) {
-      return undefined;
-    }
-    return {
-      url: `${this.policyBaseUrl}`,
-      method: "GET",
-      headers: this.authService.getHeaders()
-    };
+  readonly isEditMode = linkedSignal({
+    source: () => this.contentService.routeUrl(),
+    computation: (_) => false
   });
-
-  // -----------------------------------
-  // 2.3 Computed Signals (Derived State)
-  // -----------------------------------
-
   policyActions = computed(() => {
     return this.policyActionResource.value()?.result?.value ?? {};
   });
-
   allPolicyActionsFlat = computed(() => {
     const policyActions = this.policyActionResource.value()?.result?.value;
     if (!policyActions) return {};
@@ -385,13 +297,11 @@ export class PolicyService implements PolicyServiceInterface {
     }
     return flat;
   });
-
   allPolicyScopes = computed(() => {
     const policyActions = this.policyActionResource.value()?.result?.value;
     if (!policyActions) return [];
     return Object.keys(policyActions);
   });
-
   policyActionsByGroup = computed<PolicyActionGroups>(() => {
     const policyActions = this.policyActionResource.value()?.result?.value;
     if (!policyActions) return {};
@@ -441,29 +351,6 @@ export class PolicyService implements PolicyServiceInterface {
     return grouped;
   }
 
-  /**
-   * Filter policy actions by the actionFilter signal and already added actions.
-   * @returns {PolicyActionGroups} The filtered policy actions grouped by scope and group.
-   */
-  // currentActionGroupsFiltered = computed<PolicyActionGroups>(() => {
-  //   return this.filteredPolicyActionGroups(this.alreadyAddedActionNames(), this.actionFilter());
-  // });
-
-  _allPolicies = computed(() => this.allPoliciesRecource.value()?.result?.value ?? []);
-
-  allPolicies = linkedSignal({
-    source: () => this._allPolicies(),
-    computation: (source) => {
-      return source.sort((a, b) => a.priority - b.priority);
-    }
-  });
-
-  filteredGroupNamesOf(selectedScope: string, alreadyAddedActionNames: string[], filter: string): string[] {
-    const policyActionGroupFiltered = this.filteredPolicyActionGroups(alreadyAddedActionNames, filter)[selectedScope];
-    if (!policyActionGroupFiltered) return [];
-    return Object.keys(policyActionGroupFiltered);
-  }
-
   getActionDetail = (actionName: string, scope: string): PolicyActionDetail | null => {
     const actions = this.policyActions();
 
@@ -472,6 +359,113 @@ export class PolicyService implements PolicyServiceInterface {
     }
     return null;
   };
+
+  getGroupOfAction(actionName: string, scope: string): string | null {
+    const policyActions = this.policyActions();
+    if (policyActions && policyActions[scope]) {
+      const actions = policyActions[scope];
+      if (actions && actions[actionName]) {
+        return actions[actionName].group || null;
+      }
+    }
+    return null;
+  }
+
+  getScopeOfAction(name: string): string | null {
+    const policyActions = this.policyActions();
+    for (const scope in policyActions) {
+      const actions = policyActions[scope];
+      if (actions && actions[name]) {
+        return scope;
+      }
+    }
+    return null;
+  }
+
+  allPolicies = linkedSignal({
+    source: () => this._allPolicies(),
+    computation: (source) => {
+      return source.sort((a, b) => a.priority - b.priority);
+    }
+  });
+
+  canSavePolicy(policy: PolicyDetail): boolean {
+    if (!policy) return false;
+    if (!policy.name || policy.name.trim() === "") return false;
+    if (!policy.scope || policy.scope.trim() === "") return false;
+    if (!this.policyHasActions(policy)) return false;
+    return true;
+  }
+
+  getDetailsOfAction(actionName: string): PolicyActionDetail | null {
+    const actions = this.allPolicyActionsFlat();
+    if (actionName && actions) {
+      return actions[actionName] ?? null;
+    }
+    return null;
+  }
+
+  copyPolicy(oldName: string, newName: string): Promise<PiResponse<any>> {
+    const policyData = this.allPolicies().find((p) => p.name === oldName);
+    if (!policyData) return Promise.reject("Policy not found");
+    const copiedPolicy: PolicyDetail = { ...policyData, name: String(newName) };
+    return this.createPolicy(copiedPolicy);
+  }
+
+  // -----------------------------------
+  // 2.3 Computed Signals (Derived State)
+  // -----------------------------------
+
+  createPolicy(policyData: PolicyDetail): Promise<PiResponse<any>> {
+    const allPoliciesCopy = [...this.allPolicies()];
+    allPoliciesCopy.push({ ...policyData });
+    this.allPolicies.set(allPoliciesCopy);
+
+    const headers = this.authService.getHeaders();
+    return lastValueFrom(
+      this.http.post<PiResponse<any>>(`${this.policyBaseUrl}${policyData.name}`, policyData, { headers })
+    );
+  }
+
+  async deletePolicy(name: string): Promise<PiResponse<number>> {
+    const allPolicies = this.allPolicies();
+    if (!allPolicies) return Promise.reject("No policies found");
+    const policy = allPolicies.find((p) => p.name === name);
+    if (!policy) return Promise.reject(`Policy with name ${name} not found`);
+
+    // Optimistic update
+    const updatedPolicies = allPolicies.filter((p) => p.name !== name);
+    this.allPolicies.set(updatedPolicies);
+
+    // Do request
+    const headers = this.authService.getHeaders();
+    const result = await lastValueFrom(
+      this.http.delete<PiResponse<number>>(`${this.policyBaseUrl}${name}`, { headers })
+    );
+    // Reload policies to ensure state is correct
+    if (result && !result.result?.error) {
+      this.allPoliciesRecource.reload();
+    } else {
+      // Rollback optimistic update
+      this.allPolicies.set(allPolicies);
+    }
+    return result;
+  }
+
+  enablePolicy(name: string): Promise<PiResponse<any>> {
+    const headers = this.authService.getHeaders();
+    return lastValueFrom(this.http.post<PiResponse<any>>(`${this.policyBaseUrl}enable/${name}`, {}, { headers }));
+  }
+
+  disablePolicy(name: string): Promise<PiResponse<any>> {
+    const headers = this.authService.getHeaders();
+    return lastValueFrom(this.http.post<PiResponse<any>>(`${this.policyBaseUrl}disable/${name}`, {}, { headers }));
+  }
+
+  isScopeChangeable(policy: PolicyDetail): boolean {
+    if (!policy.action) return true;
+    return Object.keys(policy.action).length === 0;
+  }
 
   getActionNamesOf(scope?: string, group?: string): string[] {
     const actions = this.policyActions();
@@ -524,79 +518,6 @@ export class PolicyService implements PolicyServiceInterface {
     return result;
   }
 
-  copyPolicy(oldName: string, newName: string): Promise<PiResponse<any>> {
-    const policyData = this.allPolicies().find((p) => p.name === oldName);
-    if (!policyData) return Promise.reject("Policy not found");
-    const copiedPolicy: PolicyDetail = { ...policyData, name: String(newName) };
-    return this.createPolicy(copiedPolicy);
-  }
-
-  createPolicy(policyData: PolicyDetail): Promise<PiResponse<any>> {
-    const allPoliciesCopy = [...this.allPolicies()];
-    allPoliciesCopy.push({ ...policyData });
-    this.allPolicies.set(allPoliciesCopy);
-
-    const headers = this.authService.getHeaders();
-    return lastValueFrom(
-      this.http.post<PiResponse<any>>(`${this.policyBaseUrl}${policyData.name}`, policyData, { headers })
-    );
-  }
-
-  async deletePolicy(name: string): Promise<PiResponse<number>> {
-    const allPolicies = this.allPolicies();
-    if (!allPolicies) return Promise.reject("No policies found");
-    const policy = allPolicies.find((p) => p.name === name);
-    if (!policy) return Promise.reject(`Policy with name ${name} not found`);
-
-    // Optimistic update
-    const updatedPolicies = allPolicies.filter((p) => p.name !== name);
-    this.allPolicies.set(updatedPolicies);
-
-    // Do request
-    const headers = this.authService.getHeaders();
-    const result = await lastValueFrom(
-      this.http.delete<PiResponse<number>>(`${this.policyBaseUrl}${name}`, { headers })
-    );
-    // Reload policies to ensure state is correct
-    if (result && !result.result?.error) {
-      this.allPoliciesRecource.reload();
-    } else {
-      // Rollback optimistic update
-      this.allPolicies.set(allPolicies);
-    }
-    return result;
-  }
-  togglePolicyActive(policy: PolicyDetail): void {
-    const action = policy.active ? this.disablePolicy(policy.name) : this.enablePolicy(policy.name);
-    // Optimistic update
-    const currentPolicies = this.allPolicies();
-    this.allPolicies.set(currentPolicies.map((p) => (p.name === policy.name ? { ...p, active: !policy.active } : p)));
-    // Do request
-    action.catch((error) => {
-      // Rollback optimistic update
-      this.allPolicies.set(currentPolicies);
-      console.error("Error toggling policy active state: ", error);
-    });
-    // Reload policies to ensure state is correct (in case other properties changed)
-    action.then(() => {
-      this.allPoliciesRecource.reload();
-    });
-  }
-  enablePolicy(name: string): Promise<PiResponse<any>> {
-    const headers = this.authService.getHeaders();
-    return lastValueFrom(this.http.post<PiResponse<any>>(`${this.policyBaseUrl}enable/${name}`, {}, { headers }));
-  }
-
-  disablePolicy(name: string): Promise<PiResponse<any>> {
-    const headers = this.authService.getHeaders();
-    return lastValueFrom(this.http.post<PiResponse<any>>(`${this.policyBaseUrl}disable/${name}`, {}, { headers }));
-  }
-
-  isScopeChangeable(policy: PolicyDetail): boolean {
-    if (!policy.action) return true;
-    return Object.keys(policy.action).length === 0;
-  }
-
   actionValueIsValid(action: PolicyActionDetail, value: string | number): boolean {
     if (!action) return false;
     const actionType = action.type;
@@ -615,6 +536,93 @@ export class PolicyService implements PolicyServiceInterface {
     }
     return false;
   }
+
+  saveNewPolicy(newPolicy: PolicyDetail): Promise<void> {
+    const allPoliciesCopy = this.allPolicies();
+    allPoliciesCopy.push({ ...newPolicy });
+    this.allPolicies.set(allPoliciesCopy);
+
+    const promise = this.createPolicy(newPolicy)
+      .then((_) => {
+        this.allPoliciesRecource.reload();
+      })
+      .catch((error) => {
+        console.error("Error creating policy: ", error);
+        return Promise.reject();
+      });
+
+    return promise;
+  }
+
+  policyHasConditions(policy: PolicyDetail): boolean {
+    if (this.policyHasAdminConditions(policy)) return true;
+    if (this.policyHasUserConditions(policy)) return true;
+    if (this.policyHasEnviromentConditions(policy)) return true;
+    if (this.policyHasAdditionalConditions(policy)) return true;
+    return false;
+  }
+
+  policyHasAdminConditions(policy: PolicyDetail): boolean {
+    if (policy?.adminrealm && policy.adminrealm.length > 0) return true;
+    if (policy?.adminuser && policy.adminuser.length > 0) return true;
+    return false;
+  }
+
+  policyHasUserConditions(policy: PolicyDetail): boolean {
+    if (policy?.realm && policy.realm.length > 0) return true;
+    if (policy?.resolver && policy.resolver.length > 0) return true;
+    if (policy?.user && policy.user.length > 0) return true;
+    return false;
+  }
+
+  policyHasEnviromentConditions(policy: PolicyDetail): boolean {
+    if (policy?.pinode && policy.pinode.length > 0) return true;
+    if (policy?.time && policy.time.length > 0) return true;
+    if (policy?.client && policy.client.length > 0) return true;
+    if (policy?.user_agents && policy.user_agents.length > 0) return true;
+    return false;
+  }
+
+  policyHasAdditionalConditions(policy: PolicyDetail): boolean {
+    if (policy?.conditions && policy.conditions.length > 0) return true;
+    return false;
+  }
+
+  policyHasActions(policy: PolicyDetail): boolean {
+    if (policy?.action && Object.keys(policy.action).length > 0) {
+      return true;
+    }
+    return false;
+  }
+
+  isPolicyEdited(editedPolicy: PolicyDetail, originalPolicy: PolicyDetail): boolean {
+    if (JSON.stringify(originalPolicy) === JSON.stringify(this.getEmptyPolicy())) {
+      // remove scope temporarily and then compare to ignore scope changes
+      const { scope: _, ...selectedWithoutScope } = editedPolicy;
+      const { scope: __, ...originalWithoutScope } = originalPolicy;
+      return JSON.stringify(selectedWithoutScope) !== JSON.stringify(originalWithoutScope);
+    } else {
+      return JSON.stringify(editedPolicy) !== JSON.stringify(originalPolicy);
+    }
+  }
+
+  togglePolicyActive(policy: PolicyDetail): void {
+    const action = policy.active ? this.disablePolicy(policy.name) : this.enablePolicy(policy.name);
+    // Optimistic update
+    const currentPolicies = this.allPolicies();
+    this.allPolicies.set(currentPolicies.map((p) => (p.name === policy.name ? { ...p, active: !policy.active } : p)));
+    // Do request
+    action.catch((error) => {
+      // Rollback optimistic update
+      this.allPolicies.set(currentPolicies);
+      console.error("Error toggling policy active state: ", error);
+    });
+    // Reload policies to ensure state is correct (in case other properties changed)
+    action.then(() => {
+      this.allPoliciesRecource.reload();
+    });
+  }
+
   async savePolicyEdits(originalPolicyName: string, updatedPolicy: PolicyDetail): Promise<void> {
     console.log("Saving policy edits for", originalPolicyName, "with updates", updatedPolicy);
     let lastStableState = [...this.allPolicies()];
@@ -640,5 +648,27 @@ export class PolicyService implements PolicyServiceInterface {
     } catch (err) {
       this.allPolicies.set(lastStableState);
     }
+  }
+
+  readonly allPoliciesRecource = httpResource<PiResponse<PolicyDetail[]>>(() => {
+    // Only load policies if the action is allowed.
+    if (!this.authService.actionAllowed("policyread")) {
+      return undefined;
+    }
+    // Only load policies on policies route.
+    if (!this.contentService.onPolicies()) {
+      return undefined;
+    }
+    return {
+      url: `${this.policyBaseUrl}`,
+      method: "GET",
+      headers: this.authService.getHeaders()
+    };
+  });
+
+  filteredGroupNamesOf(selectedScope: string, alreadyAddedActionNames: string[], filter: string): string[] {
+    const policyActionGroupFiltered = this.filteredPolicyActionGroups(alreadyAddedActionNames, filter)[selectedScope];
+    if (!policyActionGroupFiltered) return [];
+    return Object.keys(policyActionGroupFiltered);
   }
 }

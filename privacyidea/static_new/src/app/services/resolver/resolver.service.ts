@@ -18,9 +18,10 @@
  **/
 
 import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
-import { environment } from "../../../environments/environment";
+import { environment } from "@env/environment";
 import { PiResponse } from "../../app.component";
 import { AuthService } from "../auth/auth.service";
+import { ContentService, ContentServiceInterface } from "../content/content.service";
 import { computed, inject, Injectable, Signal, signal, WritableSignal } from "@angular/core";
 import { catchError, Observable, throwError } from "rxjs";
 
@@ -134,11 +135,17 @@ export interface ResolverServiceInterface {
 export class ResolverService implements ResolverServiceInterface {
   readonly resolverBaseUrl = environment.proxyUrl + "/resolver/";
   private readonly authService = inject(AuthService);
+  private readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly http: HttpClient = inject(HttpClient);
-  resolversResource = httpResource<PiResponse<Resolvers>>({
-    url: this.resolverBaseUrl,
-    method: "GET",
-    headers: this.authService.getHeaders()
+  resolversResource = httpResource<PiResponse<Resolvers>>(() => {
+    if (!this.contentService.onAnyUsersRoute()) {
+      return undefined;
+    }
+    return {
+      url: this.resolverBaseUrl,
+      method: "GET",
+      headers: this.authService.getHeaders()
+    };
   });
   selectedResolverName = signal<string>("");
   selectedResolverResource = httpResource<PiResponse<any>>(() => {

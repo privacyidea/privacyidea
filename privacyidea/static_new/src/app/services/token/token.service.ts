@@ -31,7 +31,7 @@ import {
   throwError,
   timer
 } from "rxjs";
-import { environment } from "../../../environments/environment";
+import { environment } from "@env/environment";
 import { PiResponse } from "../../app.component";
 import {
   EnrollmentResponse,

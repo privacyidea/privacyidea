@@ -18,9 +18,10 @@
  **/
 import { computed, inject, Injectable, Signal } from "@angular/core";
 import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
-import { environment } from "../../../environments/environment";
+import { environment } from "@env/environment";
 import { PiResponse } from "../../app.component";
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
+import { ContentService, ContentServiceInterface } from "../content/content.service";
 import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
 import { lastValueFrom } from "rxjs";
 
@@ -52,7 +53,9 @@ export interface SmsGatewayServiceInterface {
   smsGatewayResource: HttpResourceRef<PiResponse<SmsGateway[]> | undefined>;
   smsProvidersResource: HttpResourceRef<PiResponse<SmsProviders> | undefined>;
   readonly smsGateways: Signal<SmsGateway[]>;
+
   postSmsGateway(gateway: any): Promise<void>;
+
   deleteSmsGateway(name: string): Promise<void>;
 }
 
@@ -62,20 +65,31 @@ export interface SmsGatewayServiceInterface {
 export class SmsGatewayService implements SmsGatewayServiceInterface {
   private readonly baseUrl = environment.proxyUrl + "/smsgateway/";
   private readonly authService: AuthServiceInterface = inject(AuthService);
+  private readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly http: HttpClient = inject(HttpClient);
 
-  readonly smsGatewayResource = httpResource<PiResponse<SmsGateway[]>>(() => ({
-    url: this.baseUrl,
-    method: "GET",
-    headers: this.authService.getHeaders()
-  }));
+  readonly smsGatewayResource = httpResource<PiResponse<SmsGateway[]>>(() => {
+    if (!this.contentService.onExternalSms()) {
+      return undefined;
+    }
+    return {
+      url: this.baseUrl,
+      method: "GET",
+      headers: this.authService.getHeaders()
+    };
+  });
 
-  readonly smsProvidersResource = httpResource<PiResponse<SmsProviders>>(() => ({
-    url: this.baseUrl + "providers",
-    method: "GET",
-    headers: this.authService.getHeaders()
-  }));
+  readonly smsProvidersResource = httpResource<PiResponse<SmsProviders>>(() => {
+    if (!this.contentService.onExternalSms()) {
+      return undefined;
+    }
+    return {
+      url: this.baseUrl + "providers",
+      method: "GET",
+      headers: this.authService.getHeaders()
+    };
+  });
 
   readonly smsGateways = computed<SmsGateway[]>(() => {
     return this.smsGatewayResource.value()?.result?.value ?? [];
