@@ -155,8 +155,7 @@ class TestingConfig(Config):
     # This is used to encrypt the auth token
     SUPERUSER_REALM = ['adminrealm']
     SECRET_KEY = 'secret'  # nosec B105 # used for testing
-    SQLALCHEMY_DATABASE_URI = os.environ.get(ConfigKey.TEST_DATABASE_URL) or \
-                              'sqlite:///' + os.path.join(basedir, 'data-test.sqlite')
+    SQLALCHEMY_DATABASE_URI = "postgresql+psycopg2://privacyidea:privacyidea@127.0.0.1:5432/privacyidea_test"
     # This is used to encrypt the admin passwords
     PI_PEPPER = ""
     # This is only for testing encrypted files
@@ -240,8 +239,7 @@ def _get_secrets_from_environment(name: str) -> str | None:
             with open(file_name) as f:
                 return f.read().strip()
         except IOError as e:
-            sys.stderr.write(f"Could not read secret from file '{file_name}' "
-                             f"defined in variable '{name}_FILE': {e}\n")
+            sys.stderr.write(f"Could not read configured secret file: {e}\n")
     return os.getenv(name)
 
 
