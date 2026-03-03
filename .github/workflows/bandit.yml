@@ -1,0 +1,37 @@
+# Bandit is a security linter designed to find common security issues in Python code.
+# This action will run Bandit on your codebase.
+# The results of the scan will be found under the Security tab of your repository.
+
+# https://github.com/PyCQA/bandit-action
+# https://pypi.org/project/bandit/ is Apache v2.0 licensed, by PyCQA
+
+name: Bandit
+on:
+  push:
+  pull_request:
+    branches:
+      - "master"
+      - 'branch-*'
+  schedule:
+    # Do a nightly run at 23:33 UTC
+    - cron: '33 23 * * *'
+
+permissions: {}
+
+jobs:
+  bandit:
+    name: Run Bandit scan
+    permissions:
+      contents: read # for actions/checkout to fetch code
+      security-events: write # for PyCQA/bandit-action to upload SARIF results
+
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - name: Bandit Scan
+        uses: PyCQA/bandit-action@67a458d90fa11fb1463e91e7f4c8f068b5863c7f # v1.0.1
+        with: # optional arguments
+          targets: privacyidea
+          exclude: ./docs,./tests,./migrations

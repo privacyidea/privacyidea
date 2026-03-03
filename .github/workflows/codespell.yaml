@@ -1,0 +1,28 @@
+name: codespell
+on: [pull_request]
+
+permissions: {}
+
+jobs:
+  reviewdog-codespell:
+    permissions:
+      checks: write # to allow codespell to mark the action as failed
+      contents: read
+      pull-requests: write # to allow codespell to comment on the PR
+    name: reviewdog / codespell
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - name: Install codespell
+        run: |
+          python -m pip install -U codespell
+      - name: Setup reviewdog
+        uses: reviewdog/action-setup@d8a7baabd7f3e8544ee4dbde3ee41d0011c3a93f # v1.5.0
+      - name: Run reviewdog
+        env:
+          REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          codespell -q 3 -S $(paste -s -d, .codespell_skip) $(test -e .codespell_ignore && echo "-I .codespell_ignore") . \
+          | reviewdog -efm="%f:%l: %m" -name="rd-codespell" -reporter=github-pr-review -level=info
