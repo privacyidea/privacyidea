@@ -56,7 +56,7 @@ export class HotpApiPayloadMapper extends BaseApiPayloadMapper implements TokenA
       genkey: data.generateOnServer ? 1 : 0,
       ...(data.otpLength !== undefined && { otplen: Number(data.otpLength) }),
       ...(data.hashAlgorithm !== undefined && { hashlib: data.hashAlgorithm }),
-      ...(data.twoStepInit !== null && { "2stepinit": data.twoStepInit }),
+      ...(data.twoStepInit !== undefined && { "2stepinit": data.twoStepInit }),
       ...(data.otpKey && data.otpKeyFormat && { otpkeyformat: data.otpKeyFormat })
     };
 

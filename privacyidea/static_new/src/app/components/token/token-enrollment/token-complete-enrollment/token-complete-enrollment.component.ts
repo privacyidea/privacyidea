@@ -43,7 +43,6 @@ import {toSignal} from "@angular/core/rxjs-interop";
     MatInput,
     MatLabel,
     TokenEnrollmentDataComponent,
-    MatFormField,
     ReactiveFormsModule
   ],
   templateUrl: "./token-complete-enrollment.component.html",

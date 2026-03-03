@@ -94,8 +94,7 @@ export class TokenEnrollmentDataComponent {
       return;
     }
     const newEnrollmentData: TokenEnrollmentData = {
-      ...(this.enrollmentParameters()?.data ?? {} as TokenEnrollmentData),
-      ...(this.enrollmentParameters()?.data?.serial && { serial: this.enrollmentParameters()?.data?.serial })
+      ...(this.enrollmentParameters()?.data ?? {} as TokenEnrollmentData)
     };
     const mapper = this.enrollmentParameters()?.mapper ?? new BaseApiPayloadMapper();
 

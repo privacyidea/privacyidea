@@ -144,7 +144,7 @@ export class EnrollTotpComponent implements OnInit {
         if (twoStepEnabled) {
           this.generateOnServerFormControl.disable({ emitEvent: false });
           this.generateOnServerFormControl.setValue(true);
-        } else if (!this.authService.checkForceServerGenerateOTPKey("hotp")) {
+        } else if (!this.authService.checkForceServerGenerateOTPKey("totp")) {
           this.generateOnServerFormControl.enable({ emitEvent: false });
         }
       });

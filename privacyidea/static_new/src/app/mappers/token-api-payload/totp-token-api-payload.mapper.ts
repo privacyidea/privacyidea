@@ -59,7 +59,7 @@ export class TotpApiPayloadMapper extends BaseApiPayloadMapper implements TokenA
       ...(data.otpLength !== undefined && { otplen: Number(data.otpLength) }),
       ...(data.hashAlgorithm !== undefined && { hashlib: data.hashAlgorithm }),
       ...(data.timeStep !== undefined && { timeStep: Number(data.timeStep) }),
-      ...(data.twoStepInit !== null && { "2stepinit": data.twoStepInit }),
+      ...(data.twoStepInit !== undefined && { "2stepinit": data.twoStepInit }),
       ...(data.otpKey && data.otpKeyFormat && { otpkeyformat: data.otpKeyFormat })
     };
     if (data.onlyAddToRealm) {
