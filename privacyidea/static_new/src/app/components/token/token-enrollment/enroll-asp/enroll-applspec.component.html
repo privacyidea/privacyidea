@@ -21,6 +21,7 @@
   @if (!wizard) {
     <mat-checkbox
       [formControl]="generateOnServerControl"
+      [disabled]="isGenerateOnServerDisabled()"
       class="server-checkbox"
       i18n>
       Generate the static password on the Server
@@ -34,6 +35,7 @@
         <input
           matInput
           [formControl]="otpKeyFormControl"
+          [disabled]="isOtpKeyDisabled()"
           i18n-placeholder
           placeholder="Enter static password" />
       </mat-form-field>
@@ -45,6 +47,7 @@
         [errorStateMatcher]="applspecErrorStateMatcher"
         [formControl]="serviceIdControl"
         [value]="serviceIdControl.value"
+        [disabled]="disabled()"
         required>
         @for (option of serviceIdOptions(); track option) {
           <mat-option [value]="option">{{ option }}</mat-option>
