@@ -21,6 +21,7 @@ import json
 import logging
 
 from flask import Blueprint, request, g
+from flask_babel import gettext
 
 from privacyidea.api.auth import admin_required
 from privacyidea.api.lib.prepolicy import (check_base_action, prepolicy, check_user_params, check_token_action,
@@ -200,7 +201,7 @@ def unassign(container_serial):
     # Check if required parameter is present
     _ = get_required_one_of(request.all_data, ["user", "user_id"])
     if user.login and not user.realm and not user.resolver and not user.uid:
-        raise ParameterError(_("Missing parameter 'realm', 'resolver', and/or 'user_id'"))
+        raise ParameterError(gettext("Missing parameter 'realm', 'resolver', and/or 'user_id'"))
 
     res = unassign_user(container_serial, user)
 

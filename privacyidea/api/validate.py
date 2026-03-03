@@ -71,7 +71,7 @@ import logging
 import threading
 
 from flask import (Blueprint, request, g, current_app, Response)
-from flask_babel import gettext as _
+from flask_babel import gettext as _, gettext
 
 from privacyidea.api.auth import admin_required
 from privacyidea.api.lib.decorators import add_serial_from_response_to_g
@@ -533,7 +533,7 @@ def _handle_fido2_auth(context: dict, credential_id: str):
     # Policy Checks
     if (PolicyAction.DISABLED_TOKEN_TYPES in request.all_data and
             token.get_type() in request.all_data[PolicyAction.DISABLED_TOKEN_TYPES]):
-        raise PolicyError(_("The authentication method is not available."))
+        raise PolicyError(gettext("The authentication method is not available."))
 
     if not token.user:
         context["details"]["message"] = "No user found for the token with the given credential ID!"
