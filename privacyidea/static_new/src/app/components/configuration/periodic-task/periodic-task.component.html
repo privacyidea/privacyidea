@@ -27,7 +27,7 @@
       <app-periodic-task-panel-new
         [task]="newTask"
         (taskSaved)="resetNewTask()"></app-periodic-task-panel-new>
-      <mat-divider class="margin-top-1 margin-bottom-1"></mat-divider>
+      <mat-divider class="margin-top-16 margin-bottom-16"></mat-divider>
     }
     @for (task of periodicTasks(); track task.name) {
       <app-periodic-task-panel

@@ -27,7 +27,7 @@
     @if (postTopHtml?.hasContent) {
       <div
         [innerHTML]="postTopHtml?.sanitized"
-        class="margin-top-1"></div>
+        class="margin-top-16"></div>
     } @else {
       <h2 i18n>Token Successfully Enrolled</h2>
 
@@ -78,7 +78,7 @@
 
       <div
         [innerHTML]="postBottomHtml$ | async"
-        class="margin-bottom-1"></div>
+        class="margin-bottom-16"></div>
     </div>
   </mat-dialog-content>
 </app-dialog-wrapper>

@@ -180,7 +180,7 @@ class MachineApplication(MachineApplicationBase):
             token = get_one_token(serial=serial)
             user = token.user
             if user:
-                user_info = user.info
+                user_info = user.get_specific_info(["username", FIDO2TokenInfo.USER_ID])
                 if "username" in user_info:
                     ret["user"] = ret["username"] = user_info.get("username")
                 if token_type in ["webauthn", "passkey"] and FIDO2TokenInfo.USER_ID in user_info:
