@@ -91,8 +91,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 COPY --chown=nonroot:nonroot --from=python-builder /opt/privacyidea/ /opt/privacyidea/
 COPY --chown=nonroot:nonroot --chmod=755 deploy/docker/entrypoint.sh /opt/privacyidea/
 
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
+    CMD python3 -c "import urllib.request, os; urllib.request.urlopen('http://localhost:' + os.environ.get('PI_PORT', '8080') + '/healthz/livez')" || exit 1
+
 ENTRYPOINT ["./entrypoint.sh"]
 
-# Disable health check for now since the container start-up and configuration is not handled yet
-#HEALTHCHECK --interval=60s --timeout=5s --retries=3 \
-#  CMD /opt/privacyidea/bin/python -c "import requests; res = requests.get('http://localhost:80', timeout=3); exit(0 if res.ok else 1);"

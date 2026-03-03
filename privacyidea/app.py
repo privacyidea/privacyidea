@@ -467,6 +467,15 @@ def create_docker_app():
     # Set up Plug-Ins
     db.init_app(app)
 
+    # Initialize Flask-Migrate so that `flask db upgrade` works in the entrypoint
+    migration_dir = "privacyidea/migrations"
+    try:
+        migration_path = [f for f in metadata.files("privacyidea") if f.match("migrations/env.py")][0]
+        migration_dir = str(migration_path.locate().parent.resolve())
+    except (PackageNotFoundError, IndexError):
+        pass
+    migrate.init_app(app, db, directory=migration_dir)
+
     Versioned(app, format='%(path)s?v=%(version)s')
 
     babel.init_app(app, locale_selector=get_accepted_language)
