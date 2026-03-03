@@ -21,6 +21,7 @@ import {
   AfterViewInit,
   Component,
   computed,
+  effect,
   ElementRef,
   inject,
   Injectable,
@@ -297,6 +298,19 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
   descriptionControl = new FormControl<string>("", {
     nonNullable: true,
     validators: [Validators.maxLength(80)]
+  });
+  descriptionRequired = computed(() => {
+    const selectedTokenType = this.tokenService.selectedTokenType();
+    return this.authService.requireDescription().includes(selectedTokenType.key)
+  });
+  private descriptionRequiredEffect = effect(() => {
+    const isRequired = this.descriptionRequired();
+    const currentValidators = [Validators.maxLength(80)];
+    if (isRequired) {
+      currentValidators.push(Validators.required);
+    }
+    this.descriptionControl.setValidators(currentValidators);
+    this.descriptionControl.updateValueAndValidity();
   });
   setPinControl = new FormControl<string>("", { nonNullable: true });
   repeatPinControl = new FormControl<string>("", { nonNullable: true });
