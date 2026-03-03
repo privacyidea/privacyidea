@@ -18,7 +18,7 @@
 -->
 
 @if (!rollover()) {
-    <div class="margin-bottom-1">
+    <div class="margin-bottom-16">
       <span i18n>
         The token was successfully enrolled with serial number
         <a (click)="tokenSelected()"> {{ serial() }} </a>.
@@ -46,7 +46,7 @@
       }
     </div>
   } @else {
-    <div class="margin-bottom-1">
+    <div class="margin-bottom-16">
       <span i18n>
         The token with serial number
         <a (click)="tokenSelected()"> {{ serial() }} </a>
