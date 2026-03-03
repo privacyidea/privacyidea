@@ -93,14 +93,14 @@ export class BaseApiPayloadMapper implements TokenApiPayloadMapper<TokenEnrollme
     // only include defined and non-null properties in the payload for optional fields
     return {
       type: data.type,
-      ...(data.description != null && { description: data.description }),
-      ...(data.containerSerial != null && { container_serial: data.containerSerial }),
-      ...(data.validityPeriodStart != null && { validity_period_start: data.validityPeriodStart }),
-      ...(data.validityPeriodEnd != null && { validity_period_end: data.validityPeriodEnd }),
+      ...(data.description && { description: data.description }),
+      ...(data.containerSerial && { container_serial: data.containerSerial }),
+      ...(data.validityPeriodStart && { validity_period_start: data.validityPeriodStart }),
+      ...(data.validityPeriodEnd && { validity_period_end: data.validityPeriodEnd }),
       ...(data.user && { user: data.user }),
       ...(data.realm && data.user && { realm: data.realm }),
       ...(data.pin && { pin: data.pin }),
-      ...(data.serial != null && { serial: data.serial }),
+      ...(data.serial && { serial: data.serial }),
       ...(data.rollover != null && { rollover: data.rollover })
     };
   }

@@ -52,6 +52,7 @@ import {
 import { FourEyesApiPayloadMapper, FourEyesEnrollmentData } from "./4eyes-token-api-payload.mapper";
 import { YubikeyApiPayloadMapper, YubikeyEnrollmentData } from "./yubikey-token-api-payload.mapper";
 import { YubicoApiPayloadMapper, YubicoEnrollmentData } from "./yubico-token-api-payload.mapper";
+import { BaseApiPayloadMapper, TokenEnrollmentData } from "./_token-api-payload.mapper";
 
 const common = {
   description: "desc",
@@ -64,6 +65,61 @@ const common = {
   pin: "1234",
   serial: null as string | null
 };
+
+describe("BaseApiPayloadMapper", () => {
+  const mapper = new BaseApiPayloadMapper();
+
+  it("maps full payload", () => {
+    const baseData: TokenEnrollmentData = { ...common, serial: "SER1234", type: "hotp", rollover: false };
+    const payload = mapper.toApiPayload(baseData);
+    expect(payload).toEqual({
+      type: "hotp",
+      serial: "SER1234",
+      description: "desc",
+      container_serial: "CONT-1",
+      validity_period_start: "2025-01-01",
+      validity_period_end: "2025-12-31",
+      user: "alice",
+      realm: "realm1",
+      pin: "1234",
+      rollover: false
+    });
+  });
+
+  it("nulls realm if user empty", () => {
+    const baseData: TokenEnrollmentData = { ...common, serial: "SER1234", type: "hotp" };
+    baseData.user = "";
+    const payload = mapper.toApiPayload(baseData);
+    expect(payload.realm).toBeUndefined();
+  });
+
+  it("does not include optional undefined values", () => {
+    const baseData: TokenEnrollmentData = { type: "hotp" };
+    const payload = mapper.toApiPayload(baseData);
+    expect(payload).toEqual({
+      type: "hotp"
+    });
+  });
+
+  it("does not include empty values", () => {
+    const baseData: TokenEnrollmentData = {
+      type: "hotp",
+      serial: "",
+      description: "",
+      containerSerial: "",
+      validityPeriodStart: "",
+      validityPeriodEnd: "",
+      user: "",
+      realm: "",
+      pin: "",
+      rollover: null
+    };
+    const payload = mapper.toApiPayload(baseData);
+    expect(payload).toEqual({
+      type: "hotp"
+    });
+  });
+});
 
 describe("FourEyesApiPayloadMapper", () => {
   const mapper = new FourEyesApiPayloadMapper();
@@ -421,16 +477,18 @@ describe("HotpApiPayloadMapper", () => {
     otpKey: "K",
     otpLength: "8" as any,
     hashAlgorithm: "sha256",
-    serial: null
+    serial: "SER123",
+    twoStepInit: true
   });
 
   it("maps with client key", () => {
-    const p = mapper.toApiPayload(base());
-    expect(p.otpkey).toBe("K");
-    expect(p.genkey).toBe(0);
-    expect(p.otplen).toBe(8);
-    expect(p.hashlib).toBe("sha256");
-    expect("serial" in p).toBe(false);
+    const payload = mapper.toApiPayload(base());
+    expect(payload.otpkey).toBe("K");
+    expect(payload.genkey).toBe(0);
+    expect(payload.otplen).toBe(8);
+    expect(payload.hashlib).toBe("sha256");
+    expect(payload.serial).toBe("SER123");
+    expect(payload["2stepinit"]).toBe(true);
   });
 
   it("maps generateOnServer", () => {
@@ -438,6 +496,21 @@ describe("HotpApiPayloadMapper", () => {
     const p = mapper.toApiPayload(d);
     expect(p.otpkey).toBeNull();
     expect(p.genkey).toBe(1);
+  });
+
+  it("does not map optional undefined values", () => {
+    const enrollData: HotpEnrollmentData = {
+      ...common,
+      type: "hotp",
+      generateOnServer: true
+    };
+    const payload = mapper.toApiPayload(enrollData);
+    expect(payload.otpkey).toBeNull();
+    expect(payload.genkey).toBe(1);
+    expect("otplen" in payload).toBe(false);
+    expect("hashlib" in payload).toBe(false);
+    expect("serial" in payload).toBe(false);
+    expect("2stepinit" in payload).toBe(false);
   });
 
   it("fromTokenDetailsToEnrollmentData maps TokenDetails to HotpEnrollmentData", () => {
@@ -1126,7 +1199,8 @@ describe("TotpApiPayloadMapper", () => {
     otpLength: "6" as any,
     hashAlgorithm: "sha1",
     timeStep: "30" as any,
-    serial: "S1"
+    serial: "S1",
+    twoStepInit: false
   });
 
   it("maps client key and coerces numbers", () => {
@@ -1137,6 +1211,7 @@ describe("TotpApiPayloadMapper", () => {
     expect(p.hashlib).toBe("sha1");
     expect(p.timeStep).toBe(30);
     expect(p.serial).toBe("S1");
+    expect(p["2stepinit"]).toBe(false);
   });
 
   it("generateOnServer nulls otpkey and sets genkey", () => {
@@ -1146,13 +1221,21 @@ describe("TotpApiPayloadMapper", () => {
     expect(p.genkey).toBe(1);
   });
 
-  it("drops undefined and null serial", () => {
-    const d = { ...base(), otpLength: undefined, hashAlgorithm: undefined, timeStep: undefined, serial: null };
+  it("drops undefined and null values", () => {
+    const d = {
+      ...base(),
+      otpLength: undefined,
+      hashAlgorithm: undefined,
+      timeStep: undefined,
+      serial: null,
+      twoStepInit: undefined
+    };
     const p = mapper.toApiPayload(d);
     expect("otplen" in p).toBe(false);
     expect("hashlib" in p).toBe(false);
     expect("timeStep" in p).toBe(false);
     expect("serial" in p).toBe(false);
+    expect("2stepinit" in p).toBe(false);
   });
 
   it("fromTokenDetailsToEnrollmentData maps TokenDetails to TotpEnrollmentData", () => {
