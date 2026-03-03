@@ -52,6 +52,7 @@ from flask import (Blueprint,
 from flask import (g, current_app, render_template)
 
 from privacyidea.lib.auth import get_all_db_admins
+from privacyidea.lib.framework import _
 from privacyidea.lib.crypto import geturandom, set_hsm_password, get_hsm
 from privacyidea.lib.importotp import GPGImport
 from privacyidea.lib.policy import PolicyClass
@@ -321,7 +322,7 @@ def set_default():
         log.warning("Failed saving config. Could not find any "
                     "known parameter. %s"
                     % description)
-        raise ParameterError("Usage: {0!s}".format(description), id=77)
+        raise ParameterError(_("Usage: {0!s}").format(description), id=77)
 
     return send_result(result)
 
@@ -339,7 +340,7 @@ def delete_config(key=None):
 
     """
     if not key:
-        raise ParameterError("You need to provide the config key to delete.")
+        raise ParameterError(_("You need to provide the config key to delete."))
     res = delete_privacyidea_config(key)
     g.audit_object.log({'success': res,
                         'info': key})
