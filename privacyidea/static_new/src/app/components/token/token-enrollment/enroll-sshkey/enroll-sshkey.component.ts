@@ -40,7 +40,8 @@ export interface SshkeyEnrollmentOptions extends TokenEnrollmentData {
 @Component({
   selector: "app-enroll-sshkey",
   imports: [FormsModule, MatFormField, MatInput, MatLabel, MatError, ReactiveFormsModule],
-  templateUrl: "./enroll-sshkey.component.html"
+  templateUrl: "./enroll-sshkey.component.html",
+  styleUrl: "./enroll-sshkey.component.scss"
 })
 export class EnrollSshkeyComponent {
   disabled = input<boolean>(false);

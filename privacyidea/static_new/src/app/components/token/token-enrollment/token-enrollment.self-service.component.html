@@ -219,7 +219,7 @@
 
     @if (tokenService.selectedTokenType().key !== "passkey") {
       <div class="flex-column margin-bottom-16">
-        <h4 class="enroll-h4">Set PIN</h4>
+        <h4 i18n>Set PIN</h4>
         <input
           class="hidden-input"
           type="text" />
@@ -251,8 +251,8 @@
     <div class="flex-row gap-16">
       @if (authService.actionAllowed("container_list")) {
         <div class="flex-column width-100">
-          <h4 class="enroll-h4">Add Token to a Container</h4>
-          <mat-form-field class="input-width-l input-height">
+          <h4>Add Token to a Container</h4>
+          <mat-form-field class="input-width-l" subscriptSizing="dynamic">
             <mat-label>Enter Container</mat-label>
             <app-clearable-input
               (onClick)="selectedContainerControl.setValue(null)"

@@ -31,7 +31,9 @@
     serial number printed on the token. Please enter this serial number and make up a token pin.
   </p>
   <div class="flex-row gap-16">
-    <mat-form-field class="input-height width-50">
+    <mat-form-field
+      class="width-50"
+      subscriptSizing="dynamic">
       <mat-label i18n>Enter Serial</mat-label>
       <input
         [(ngModel)]="selectedToken"
@@ -42,8 +44,8 @@
     <button
       (click)="assignUserToToken()"
       class="card-button-1"
-      mat-stroked-button
-      i18n>
+      i18n
+      mat-stroked-button>
       <mat-icon>person_add</mat-icon>
       Assign Token
     </button>
@@ -56,9 +58,7 @@
     class="hidden-input"
     type="password" />
   <div class="flex-column gap-8">
-    <h4
-      class="enroll-h4"
-      i18n>
+    <h4 i18n>
       Set PIN
     </h4>
     <div class="flex-column gap-8">

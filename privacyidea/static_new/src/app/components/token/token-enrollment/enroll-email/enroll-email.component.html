@@ -17,14 +17,12 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div class="flex-column">
-  <h4 class="enroll-h4">Token Configuration</h4>
   @if (!defaultSmtpIsSet()) {
     <span
-      i18n
-      class="inline-warning">
+      class="inline-warning"
+      i18n>
       For Email tokens to work properly you need to set the <a href="#">Email Token Config</a>!
-    </span>
-    <!-- TODO: Link -->
+    </span><!-- TODO: Link -->
   }
   <mat-checkbox
     [formControl]="readEmailDynamicallyControl"
@@ -33,7 +31,9 @@
   </mat-checkbox>
   <div class="flex-row gap-16">
     @if (!readEmailDynamicallyControl.value) {
-      <mat-form-field class="input-height input-width-l">
+      <mat-form-field
+        class="input-width-l"
+        subscriptSizing="dynamic">
         <mat-label i18n>Email Address</mat-label>
         <input
           [formControl]="emailAddressControl"

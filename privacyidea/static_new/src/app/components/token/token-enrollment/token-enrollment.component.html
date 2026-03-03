@@ -71,9 +71,10 @@
       </div>
     </div>
     <div class="margin-left-16">
-      <div class="width-980">
+      <div class="width-980 margin-bottom-0">
         <p>{{ tokenTypeDescription() }}</p>
       </div>
+      <h4 i18n>Token Configuration</h4>
       @switch (tokenService.selectedTokenType().key) {
         @case ("hotp") {
           <app-enroll-hotp
@@ -211,7 +212,9 @@
             (reopenDialogChange)="updateReopenDialog($event)" />
         }
       }
-      <mat-form-field class="width-100 margin-top-16">
+      <mat-form-field
+        class="width-100 margin-top-16"
+        subscriptSizing="dynamic">
         <mat-label>Description</mat-label>
         <textarea
           [formControl]="descriptionControl"
@@ -223,7 +226,7 @@
       <div class="gap-16">
         @if (authService.actionAllowed("userlist")) {
           <div class="width-100">
-            <h4 class="enroll-h4">Assign Token to User</h4>
+            <h4>Assign Token to User</h4>
             <app-user-assignment
               [selectedUserRealmControl]="selectedUserRealmControl"
               [showOnlyAddToRealm]="
@@ -237,7 +240,7 @@
       <div class="flex-row gap-16">
         @if (tokenService.selectedTokenType().key !== "passkey" && authService.actionAllowed("enrollpin")) {
           <div class="flex-column">
-            <h4 class="enroll-h4">Set PIN</h4>
+            <h4>Set PIN</h4>
             <input
               style="display: none"
               type="text" />
@@ -269,7 +272,7 @@
 
         @if (authService.actionAllowed("container_list")) {
           <div class="flex-column">
-            <h4 class="flex-column enroll-h4">Add Token to a Container</h4>
+            <h4>Add Token to a Container</h4>
             <mat-form-field class="input-width-l input-height">
               <app-clearable-input
                 (onClick)="selectedContainerControl.setValue('')"

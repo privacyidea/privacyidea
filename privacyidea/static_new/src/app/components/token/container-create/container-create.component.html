@@ -43,8 +43,8 @@
             [value]="containerService.selectedContainerType()">
             @for (type of containerService.containerTypeOptions(); track type) {
               <mat-option
-                class="select-option"
-                [value]="type">
+                [value]="type"
+                class="select-option">
                 {{ type.description }}
               </mat-option>
             }
@@ -54,10 +54,10 @@
       <div class="enroll-button-container">
         <button
           (click)="createContainer()"
+          [disabled]="!validInput"
           class="action-button-primary button-width-s margin-left-auto"
-          mat-stroked-button
           i18n
-          [disabled]="!validInput">
+          mat-stroked-button>
           <mat-icon>create_new_folder</mat-icon>
           Create
         </button>
@@ -77,9 +77,7 @@
     class="container-type-hint"
     i18n>
     Supported Token Types:
-    @if (
-      (containerService.selectedContainerType()?.token_types?.length ?? 0) >= tokenService.tokenTypeOptions().length
-    ) {
+    @if ((containerService.selectedContainerType()?.token_types?.length ?? 0) >= tokenService.tokenTypeOptions().length) {
       All
     } @else if ((containerService.selectedContainerType()?.token_types?.length ?? 0) > 1) {
       {{ containerService.selectedContainerType()?.token_types?.join(", ") }}
@@ -103,12 +101,12 @@
   <div class="flex-column width-100 gap-16">
     @if (authService.actionAllowed("container_template_list")) {
       <div class="flex-column width-66">
-        <h4
-          class="enroll-h4"
-          i18n>
+        <h4 i18n>
           Use a Template
         </h4>
-        <mat-form-field class="width-100 input-height">
+        <mat-form-field
+          class="width-100"
+          subscriptSizing="dynamic">
           <mat-label i18n>Template</mat-label>
           <mat-select
             [(ngModel)]="selectedTemplate"
@@ -119,15 +117,13 @@
           </mat-select>
           @if (selectedTemplate() !== "") {
             <app-clear-button
-              matSuffix
-              (onClick)="clearTemplateSelection()"></app-clear-button>
+              (onClick)="clearTemplateSelection()"
+              matSuffix></app-clear-button>
           }
         </mat-form-field>
       </div>
     }
-    <h4
-      class="enroll-h4"
-      i18n>
+    <h4 i18n>
       Assign the Container to a User
     </h4>
     <div class="flex-row gap-16">
@@ -136,9 +132,7 @@
   </div>
 
   @if (containerService.selectedContainerType()?.containerType === "smartphone") {
-    <h4
-      i18n
-      class="enroll-h4">
+    <h4 i18n>
       Registration
     </h4>
     <mat-checkbox
@@ -155,11 +149,11 @@
           <mat-panel-title i18n> Optional Settings</mat-panel-title>
         </mat-expansion-panel-header>
         <app-container-registration-config
+          (validInputChange)="onValidInputChange($event)"
           [containerHasOwner]="userSelected()"
-          [userStorePassphrase]="userStorePassphrase"
           [passphrasePrompt]="passphrasePrompt"
           [passphraseResponse]="passphraseResponse"
-          (validInputChange)="onValidInputChange($event)"></app-container-registration-config>
+          [userStorePassphrase]="userStorePassphrase"></app-container-registration-config>
       </mat-expansion-panel>
     </mat-accordion>
   }

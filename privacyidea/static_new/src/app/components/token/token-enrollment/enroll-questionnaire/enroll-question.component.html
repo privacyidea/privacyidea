@@ -17,7 +17,6 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div class="flex-column">
-  <h4 class="enroll-h4">Token Configuration</h4>
   @if (configMinNumberOfAnswers() > 0) {
     <span> Please answer at least {{ configMinNumberOfAnswers() }} of the following questions. </span>
   }
@@ -25,12 +24,14 @@
     [formGroup]="questionForm()"
     class="margin-top-16 form-group">
     @for (question of configQuestions(); track question; let i = $index) {
-      <mat-form-field class="question-input-width input-height">
+      <mat-form-field
+        class="question-input-width"
+        subscriptSizing="dynamic">
         <mat-label>{{ question.question }}</mat-label>
         <input
-          type="text"
           [formControlName]="questionControlNames()[i]"
-          matInput />
+          matInput
+          type="text" />
       </mat-form-field>
     }
   </div>

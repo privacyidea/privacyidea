@@ -17,7 +17,6 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div class="flex-column">
-  <h4 class="enroll-h4">Token Configuration</h4>
   <mat-checkbox [formControl]="checkPinLocallyControl"> Check the PIN locally</mat-checkbox>
   <div class="flex-row gap-16">
     <mat-form-field class="input-width-l">
@@ -28,8 +27,7 @@
         [value]="remoteServerControl.value"
         required>
         @for (option of remoteServerOptions(); track option) {
-          <mat-option [value]="option">{{ option.name }} </mat-option>
-          <!-- Assuming option is the RemoteServer object -->
+          <mat-option [value]="option">{{ option.name }}</mat-option><!-- Assuming option is the RemoteServer object -->
         }
       </mat-select>
       <mat-error
@@ -38,7 +36,9 @@
         Remote Server is <strong>required</strong>
       </mat-error>
     </mat-form-field>
-    <mat-form-field class="input-height input-width-l">
+    <mat-form-field
+      class="input-width-l"
+      subscriptSizing="dynamic">
       <mat-label i18n>Remote Serial</mat-label>
       <input
         [formControl]="remoteSerialControl"
@@ -47,7 +47,9 @@
     </mat-form-field>
   </div>
   <div class="otp-inputs-container">
-    <mat-form-field class="input-height input-width-l">
+    <mat-form-field
+      class="input-width-l"
+      subscriptSizing="dynamic">
       <mat-label i18n>Remote User</mat-label>
       <input
         [formControl]="remoteUserControl"
@@ -55,13 +57,17 @@
       <!-- Assuming optional based on TS -->
       <mat-error i18n>Remote User is <strong>required</strong></mat-error>
     </mat-form-field>
-    <mat-form-field class="input-height input-width-l">
+    <mat-form-field
+      class="input-width-l"
+      subscriptSizing="dynamic">
       <mat-label i18n>Remote Realm</mat-label>
       <input
         [formControl]="remoteRealmControl"
         matInput />
     </mat-form-field>
-    <mat-form-field class="input-height input-width-l">
+    <mat-form-field
+      class="input-width-l"
+      subscriptSizing="dynamic">
       <mat-label i18n>Remote Resolver</mat-label>
       <input
         [formControl]="remoteResolverControl"

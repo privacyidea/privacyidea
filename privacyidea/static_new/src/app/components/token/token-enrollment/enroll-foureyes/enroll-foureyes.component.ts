@@ -51,7 +51,8 @@ export class RequiredRealmsErrorStateMatcher implements ErrorStateMatcher {
   selector: "app-enroll-foureyes",
   standalone: true,
   imports: [MatFormField, MatInput, MatLabel, ReactiveFormsModule, FormsModule, MatOption, MatSelect, MatError],
-  templateUrl: "./enroll-foureyes.component.html"
+  templateUrl: "./enroll-foureyes.component.html",
+  styleUrl: "./enroll-foureyes.component.scss"
 })
 export class EnrollFoureyesComponent implements OnInit {
   protected readonly enrollmentMapper: FourEyesApiPayloadMapper = inject(FourEyesApiPayloadMapper);

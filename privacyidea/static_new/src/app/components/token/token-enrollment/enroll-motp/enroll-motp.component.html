@@ -17,7 +17,6 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div class="flex-column">
-  <h4 class="enroll-h4">Token Configuration</h4>
   @if (!wizard) {
     <mat-checkbox
       [formControl]="generateOnServerControl"
@@ -27,7 +26,9 @@
     </mat-checkbox>
     <div class="otp-inputs-container">
       @if (!this.authService.checkForceServerGenerateOTPKey("motp")) {
-        <mat-form-field class="input-width-l input-height">
+        <mat-form-field
+          class="input-width-l"
+          subscriptSizing="dynamic">
           <mat-label i18n>OTP Key</mat-label>
           <input
             [formControl]="otpKeyFormControl"
@@ -48,9 +49,7 @@
   <input
     class="hidden-input"
     type="password" />
-  <h4
-    class="enroll-h4"
-    i18n>
+  <h4 i18n>
     mOTP PIN
   </h4>
   <span i18n>The mOTP PIN is the PIN that needs to be entered on the mobile device.</span>

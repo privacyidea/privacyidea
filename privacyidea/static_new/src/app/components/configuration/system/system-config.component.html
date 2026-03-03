@@ -73,7 +73,9 @@
           </mat-checkbox>
         </div>
 
-        <mat-form-field class="margin-left-auto input-height width-33">
+        <mat-form-field
+          class="margin-left-auto width-33"
+          subscriptSizing="dynamic">
           <mat-label i18n>Clear Failcounter After (Minutes)</mat-label>
           <input
             [(ngModel)]="params.failcounter_clear_timeout"
@@ -130,7 +132,9 @@
           </mat-checkbox>
         </div>
 
-        <mat-form-field class="input-height margin-left-auto width-33">
+        <mat-form-field
+          class="margin-left-auto width-33"
+          subscriptSizing="dynamic">
           <mat-label i18n>Auto Resync Timeout</mat-label>
           <input
             [(ngModel)]="params.AutoResyncTimeout"
@@ -142,7 +146,9 @@
       </div>
 
       <div class="full-width-grid-column flex-center gap-16">
-        <mat-form-field class="input-height width-33">
+        <mat-form-field
+          class="width-33"
+          subscriptSizing="dynamic">
           <mat-label i18n>User Cache Expiration (Seconds)</mat-label>
           <input
             [(ngModel)]="params.UserCacheExpiration"
@@ -160,7 +166,9 @@
         </button>
       </div>
 
-      <mat-form-field class="width-100 input-height">
+      <mat-form-field
+        class="width-100"
+        subscriptSizing="dynamic">
         <mat-label i18n>Override Authorization Clients</mat-label>
         <input
           [(ngModel)]="params.OverrideAuthorizationClient"
@@ -172,7 +180,9 @@
         </mat-hint>
       </mat-form-field>
 
-      <mat-form-field class="width-100 input-height">
+      <mat-form-field
+        class="width-100"
+        subscriptSizing="dynamic">
         <mat-label i18n>SMTP Server for Password Recovery</mat-label>
         <mat-select
           [(ngModel)]="params['recovery.identifier']"

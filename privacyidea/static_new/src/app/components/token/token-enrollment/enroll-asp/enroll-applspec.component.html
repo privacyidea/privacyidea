@@ -17,11 +17,11 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div class="flex-column">
-  <h4 class="enroll-h4">Token Configuration</h4>
+  <h4>Token Configuration</h4>
   @if (!wizard) {
     <mat-checkbox
-      [formControl]="generateOnServerControl"
       [disabled]="isGenerateOnServerDisabled()"
+      [formControl]="generateOnServerControl"
       class="server-checkbox"
       i18n>
       Generate the static password on the Server
@@ -30,24 +30,28 @@
 
   <div class="flex-row gap-16">
     @if (!authService.checkForceServerGenerateOTPKey("applspec")) {
-      <mat-form-field class="input-width-l input-height">
+      <mat-form-field
+        class="input-width-l"
+        subscriptSizing="dynamic">
         <mat-label i18n>Application Specific Password</mat-label>
         <input
-          matInput
-          [formControl]="otpKeyFormControl"
           [disabled]="isOtpKeyDisabled()"
+          [formControl]="otpKeyFormControl"
           i18n-placeholder
+          matInput
           placeholder="Enter static password" />
       </mat-form-field>
     }
 
-    <mat-form-field class="input-width-l input-height">
+    <mat-form-field
+      class="input-width-l"
+      subscriptSizing="dynamic">
       <mat-label i18n>Service ID</mat-label>
       <mat-select
+        [disabled]="disabled()"
         [errorStateMatcher]="applspecErrorStateMatcher"
         [formControl]="serviceIdControl"
         [value]="serviceIdControl.value"
-        [disabled]="disabled()"
         required>
         @for (option of serviceIdOptions(); track option) {
           <mat-option [value]="option">{{ option }}</mat-option>

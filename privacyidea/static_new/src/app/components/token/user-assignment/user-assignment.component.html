@@ -17,18 +17,22 @@
   SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div class="assign-user-container">
-  <mat-form-field class="input-width-l input-height">
+  <mat-form-field
+    class="input-width-l"
+    subscriptSizing="dynamic">
     <mat-label>Select Realm of User</mat-label>
     <mat-select
+      (selectionChange)="onSelectedRealmChange($event.value)"
       [formControl]="selectedUserRealmCtrl"
-      [value]="userService.selectedUserRealm()"
-      (selectionChange)="onSelectedRealmChange($event.value)">
+      [value]="userService.selectedUserRealm()">
       @for (option of realmService.realmOptions(); track option) {
         <mat-option [value]="option">{{ option }}</mat-option>
       }
     </mat-select>
   </mat-form-field>
-  <mat-form-field class="input-width-l input-height">
+  <mat-form-field
+    class="input-width-l"
+    subscriptSizing="dynamic">
     <mat-label>Enter User</mat-label>
     <app-clearable-input
       (onClick)="userFilterCtrl.setValue('')"
@@ -62,13 +66,11 @@
     }
   </mat-form-field>
   @if (showOnlyAddToRealm()) {
-    <div class="margin-bottom-16">
-      <mat-checkbox
-        [checked]="onlyAddToRealm()"
-        [disabled]="!!userFilterCtrl.value"
-        (change)="onOnlyAddToRealmChange($event)">
-        Only add to the realm (no user assignment)
-      </mat-checkbox>
-    </div>
+    <mat-checkbox
+      (change)="onOnlyAddToRealmChange($event)"
+      [checked]="onlyAddToRealm()"
+      [disabled]="!!userFilterCtrl.value">
+      Only add to the realm (no user assignment)
+    </mat-checkbox>
   }
 </div>
