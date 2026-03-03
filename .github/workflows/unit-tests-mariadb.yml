@@ -17,7 +17,7 @@ on:
       - 'pyproject.toml'
       - 'requirements.txt'
       - 'tools/**'
-      - 'unit-tests-mariadb.yml'
+      - '.github/workflows/unit-tests-mariadb.yml'
   pull_request:
     branches:
       - 'master'
@@ -28,7 +28,7 @@ on:
       - 'pyproject.toml'
       - 'requirements.txt'
       - 'tools/**'
-      - 'unit-tests-mariadb.yml'
+      - '.github/workflows/unit-tests-mariadb.yml'
 
 permissions:
   contents: read
