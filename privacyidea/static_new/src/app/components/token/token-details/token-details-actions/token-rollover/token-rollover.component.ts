@@ -50,7 +50,7 @@ import { DialogWrapperComponent } from "../../../../shared/dialog/dialog-wrapper
 import { DialogAction } from "../../../../../models/dialog";
 import { AbstractDialogComponent } from "../../../../shared/dialog/abstract-dialog/abstract-dialog.component";
 import {
-  TokenDetails,
+  TokenDetails, TokenEnrollmentDialogData,
   TokenService,
   TokenServiceInterface,
   TokenType
@@ -62,6 +62,8 @@ import {
 import { DialogService, DialogServiceInterface } from "../../../../../services/dialog/dialog.service";
 import { EnrollPushComponent } from "../../../token-enrollment/enroll-push/enroll-push.component";
 import { EnrollWebauthnComponent } from "../../../token-enrollment/enroll-webauthn/enroll-webauthn.component";
+import { TokenVerifyEnrollmentComponent } from "@components/token/token-enrollment/token-verify-enrollment/token-verify-enrollment.component";
+import { TokenCompleteEnrollmentComponent } from "@components/token/token-enrollment/token-complete-enrollment/token-complete-enrollment.component";
 
 @Component({
   selector: "app-token-rollover",
@@ -103,6 +105,7 @@ export class TokenRolloverComponent extends AbstractDialogComponent<{
   token: WritableSignal<any> = signal(null);
   title = computed(() => $localize`Rollover Token` + " " + (this.token()?.serial || ""));
   serial = signal(null);
+  enrolledDialogData: WritableSignal<TokenEnrollmentDialogData | null> = signal(null);
 
   formGroup = new FormGroup({});
 
@@ -189,58 +192,106 @@ export class TokenRolloverComponent extends AbstractDialogComponent<{
       this.notificationService.openSnackBar(`Failed to enroll token: ${message || error.message || error}`);
     });
     let enrollmentResponse: EnrollmentResponse | null = await enrollPromise;
+
+    this.enrolledDialogData.set({
+      response: enrollmentResponse,
+      enrollParameters: enrollmentArgs,
+      tokenType: this.tokenService.selectedTokenType().key,
+      rollover: true
+    });
+
+    // Complete rollover
+    // Push, passkey, webauthn (TODO: maybe we can integrate this into the complete enrollment dialog component)
     const onEnrollmentResponseFn = this.onEnrollmentResponse();
     if (onEnrollmentResponseFn && enrollmentResponse) {
       enrollmentResponse = await onEnrollmentResponseFn(enrollmentResponse, enrollmentArgs.data);
     }
 
-    this.enrollResponse.set(enrollmentResponse);
-    if (enrollmentResponse) {
-      this._handleEnrollmentResponse({
-        response: enrollmentResponse,
-        user: null,
-        rollover: true
-      });
-      this.tokenService.tokenDetailResource.reload();
-      this.dialogRef.close();
-    }
+    // two step enrollment + handles further enrollment steps (verify + success dialog)
+    this.dialogRef.close();
+    this.handleCompleteEnrollment(enrollmentResponse);
   }
 
-  protected openLastStepDialog(args: {
-    response: EnrollmentResponse | null;
-    user: UserData | null;
-    rollover?: boolean | null
-  }): void {
-    const { response, user, rollover } = args;
+  handleCompleteEnrollment(enrollmentResponse: EnrollmentResponse | null): void {
+    if (!this.enrolledDialogData() || !enrollmentResponse) return;
+
+    this.enrollResponse.set(enrollmentResponse);
+    this.enrolledDialogData.set({
+      ...this.enrolledDialogData()!,
+      response: enrollmentResponse
+    });
+
+    if (enrollmentResponse?.detail.rollout_state !== "clientwait") {
+      return this.handleVerifyEnrollment(enrollmentResponse);
+    }
+
+    const dialogRef = this.dialogService.openDialog({
+      component: TokenCompleteEnrollmentComponent,
+      data: this.enrolledDialogData()
+    });
+    dialogRef.afterClosed().subscribe(result => {
+      this.tokenService.tokenDetailResource.reload();
+      if (result) {
+        this.enrollResponse.set(result);
+        this.enrolledDialogData.set({
+          ...this.enrolledDialogData()!,
+          showEnrollData: false,
+        });
+        this.handleVerifyEnrollment(result);
+      }
+    });
+  }
+
+  handleVerifyEnrollment(enrollmentResponse: EnrollmentResponse | null): void {
+    if (!this.enrolledDialogData() || !enrollmentResponse) return;
+
+    this.enrollResponse.set(enrollmentResponse);
+    this.enrolledDialogData.set({
+      ...this.enrolledDialogData()!,
+      response: enrollmentResponse
+    })
+
+    if (!enrollmentResponse?.detail?.verify) {
+      // No verify required, directly open last step dialog
+      return this._handleEnrollmentResponse(enrollmentResponse);
+    }
+
+    // Open verify dialog
+    const dialogRef = this.dialogService.openDialog({
+      component: TokenVerifyEnrollmentComponent,
+      data: this.enrolledDialogData()
+    });
+    dialogRef.afterClosed().subscribe(result => {
+      this.tokenService.tokenDetailResource.reload();
+      if (result) {
+        this.enrollResponse.set(result);
+        this._handleEnrollmentResponse(result);
+      }
+    });
+  }
+
+  protected openLastStepDialog(response: EnrollmentResponse | null): void {
     if (!response) {
       this.notificationService.openSnackBar("No rollover response available.");
       return;
     }
 
-    const dialogData: TokenEnrollmentLastStepDialogData = {
-      tokentype: { key: this.token().type, name: "", info: "", text: "" },
-      response: response,
-      serial: this.serial,
-      enrollToken: this.rolloverToken.bind(this),
-      user: user,
-      userRealm: this.userService.selectedUserRealm(),
-      onlyAddToRealm: false,
-      rollover: rollover ?? true
-    };
-    this._lastTokenEnrollmentLastStepDialogData.set(dialogData);
+    this.enrolledDialogData.set({
+      ...this.enrolledDialogData()!,
+      response: response
+    })
 
-    this.dialogService.openDialog({
+    const dialogRef = this.dialogService.openDialog({
       component: TokenEnrollmentLastStepDialogComponent,
-      data: dialogData
+      data: this.enrolledDialogData()
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      this.tokenService.tokenDetailResource.reload();
     });
   }
 
-  protected _handleEnrollmentResponse(args: {
-    response: EnrollmentResponse;
-    user: UserData | null;
-    rollover?: boolean
-  }): void {
-    const { response, user, rollover } = args;
+  protected _handleEnrollmentResponse(response: EnrollmentResponse): void {
     const detail = response.detail || {};
     const rolloutState = detail.rollout_state;
 
@@ -248,7 +299,7 @@ export class TokenRolloverComponent extends AbstractDialogComponent<{
       return;
     }
 
-    this.openLastStepDialog({ response, user, rollover });
+    this.openLastStepDialog(response);
   }
 
   updateAdditionalFormFields(event: { [key: string]: any }): void {

@@ -17,20 +17,23 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, inject } from "@angular/core";
+import { Component, computed, inject } from "@angular/core";
+import { toSignal } from '@angular/core/rxjs-interop';
 import { AbstractDialogComponent } from "../../../shared/dialog/abstract-dialog/abstract-dialog.component";
-import {
-  EnrollmentResponse,
-  EnrollmentResponseDetail, TokenEnrollmentData
-} from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
+import { TokenEnrollmentData } from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
 import { DialogWrapperComponent } from "../../../shared/dialog/dialog-wrapper/dialog-wrapper.component";
-import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
+import {
+  TokenEnrollmentDialogData,
+  TokenService,
+  TokenServiceInterface
+} from "../../../../services/token/token.service";
 import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
 import { FormControl, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { TokenEnrollmentDataComponent } from "../token-enrollment-data/token-enrollment-data.component";
 import { MatInput, MatLabel } from "@angular/material/input";
-import { MatButton } from "@angular/material/button";
 import { MatFormField, MatHint } from "@angular/material/form-field";
+import { DialogAction } from "../../../../models/dialog";
+import { TokenEnrolledTextComponent } from "@components/token/token-enrollment/token-enrolled-text/token-enrolled-text.component";
 
 @Component({
   selector: "app-token-verify-enrollment",
@@ -38,33 +41,52 @@ import { MatFormField, MatHint } from "@angular/material/form-field";
     DialogWrapperComponent,
     TokenEnrollmentDataComponent,
     FormsModule,
-    MatButton,
     MatFormField,
     MatHint,
     MatInput,
     MatLabel,
-    ReactiveFormsModule
+    ReactiveFormsModule,
+    TokenEnrolledTextComponent
   ],
   templateUrl: "./token-verify-enrollment.component.html",
   styleUrl: "./token-verify-enrollment.component.scss"
 })
-export class TokenVerifyEnrollmentComponent extends AbstractDialogComponent<EnrollmentResponse> {
+export class TokenVerifyEnrollmentComponent extends AbstractDialogComponent<TokenEnrollmentDialogData> {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
-  protected readonly enrollDetails = this.data.detail ?? {};
-  protected readonly tokenType = this.data.type ?? "hotp";
-  protected readonly verifyMessage = this.enrollDetails.verify?.message ?? "";
 
-  verifyOTPControl = new FormControl("", { nonNullable: true });
+  protected readonly responseDetails = this.data.response?.detail;
+  protected readonly tokenType = this.data.response?.type ?? "hotp";
+  protected readonly verifyMessage = this.responseDetails?.verify?.message ?? "";
+  protected readonly enrollParameters = this.data.enrollParameters ?? {};
+  protected readonly enrollData: TokenEnrollmentData | null = this.enrollParameters?.data;
 
-  constructor() {
-    super();
-    console.log("Enrollment details:", this.enrollDetails);
+  verifyOTPControl = new FormControl("", { nonNullable: true, validators: Validators.required });
+
+  private readonly statusSignal = toSignal(this.verifyOTPControl.statusChanges, { initialValue: this.verifyOTPControl.status });
+  invalidInputSignal = computed(() => {
+    this.statusSignal();
+    return this.verifyOTPControl.invalid;
+  });
+
+  readonly dialogActions = computed<DialogAction<string>[]>(() => [
+    {
+      label: $localize`Verify`,
+      type: "confirm",
+      value: "verify",
+      disabled: this.invalidInputSignal()
+    }
+  ]);
+
+  onDialogAction(value: string): void {
+    if (value === "verify") {
+      this.verifyOTP();
+    }
   }
 
   verifyOTP() {
     const verifyData: TokenEnrollmentData = {
-      serial: this.enrollDetails.serial,
+      serial: this.responseDetails?.serial,
       type: this.tokenService.selectedTokenType().key,
       verify: this.verifyOTPControl.value
     };
@@ -75,5 +97,9 @@ export class TokenVerifyEnrollmentComponent extends AbstractDialogComponent<Enro
         }
       }
     });
+  }
+
+  onSwitchRoute() {
+    this.dialogRef.close();
   }
 }

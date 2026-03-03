@@ -18,34 +18,32 @@
  **/
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-
-import { TokenVerifyEnrollmentComponent } from "./token-verify-enrollment.component";
+import { TokenService } from "../../../../services/token/token.service";
+import { ContentService } from "../../../../services/content/content.service";
 import { MockTokenService } from "src/testing/mock-services/mock-token-service";
 import { MockContentService } from "src/testing/mock-services/mock-content-service";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { NO_ERRORS_SCHEMA } from "@angular/core";
-import { provideHttpClient } from "@angular/common/http";
-import { TokenService } from "../../../../services/token/token.service";
-import { of } from "rxjs";
-import { ContentService } from "../../../../services/content/content.service";
 
-describe("TokenVerifyEnrollmentComponent", () => {
-  let component: TokenVerifyEnrollmentComponent;
-  let fixture: ComponentFixture<TokenVerifyEnrollmentComponent>;
+import { TokenCompleteEnrollmentComponent } from "./token-complete-enrollment.component";
+import { of } from "rxjs";
+
+describe("TokenCompleteEnrollmentComponent", () => {
+  let component: TokenCompleteEnrollmentComponent;
+  let fixture: ComponentFixture<TokenCompleteEnrollmentComponent>;
   let dialogRefSpy: { close: jest.Mock };
   let mockTokenService: MockTokenService;
 
   const dialogData = {
-    response: { detail: { serial: "123", verify: { message: "Enter OTP" } }, type: "hotp" },
-    enrollParameters: { data: {} }
+    response: { detail: { serial: "123" }, type: "hotp" },
+    enrollParameters: { data: { type: "hotp", twoStepInit: true } }
   };
 
   beforeEach(async () => {
     dialogRefSpy = { close: jest.fn() };
     await TestBed.configureTestingModule({
-      imports: [TokenVerifyEnrollmentComponent],
+      imports: [TokenCompleteEnrollmentComponent],
       providers: [
-        provideHttpClient(),
         { provide: TokenService, useClass: MockTokenService },
         { provide: ContentService, useClass: MockContentService },
         { provide: MatDialogRef, useValue: dialogRefSpy },
@@ -53,7 +51,7 @@ describe("TokenVerifyEnrollmentComponent", () => {
       ],
       schemas: [NO_ERRORS_SCHEMA]
     }).compileComponents();
-    fixture = TestBed.createComponent(TokenVerifyEnrollmentComponent);
+    fixture = TestBed.createComponent(TokenCompleteEnrollmentComponent);
     component = fixture.componentInstance;
     mockTokenService = TestBed.inject(TokenService) as unknown as MockTokenService;
     fixture.detectChanges();
@@ -63,41 +61,50 @@ describe("TokenVerifyEnrollmentComponent", () => {
     expect(component).toBeTruthy();
   });
 
-  it("should disable verify action if input is invalid", () => {
-    component.verifyOTPControl.setValue("");
+  it("should disable enroll action if input is invalid", () => {
+    component.clientPartControl.setValue("");
     fixture.detectChanges();
     expect(component.invalidInputSignal()).toBe(true);
     expect(component.dialogActions()[0].disabled).toBe(true);
   });
 
-  it("should enable verify action if input is valid", () => {
-    component.verifyOTPControl.setValue("123456");
+  it("should enable enroll action if input is valid", () => {
+    component.clientPartControl.setValue("SOMEKEY");
     fixture.detectChanges();
     expect(component.invalidInputSignal()).toBe(false);
     expect(component.dialogActions()[0].disabled).toBe(false);
   });
 
-  it("should call verifyToken and close dialog on successful verify", () => {
-    component.verifyOTPControl.setValue("123456");
-    component.onDialogAction("verify");
-    expect(mockTokenService.verifyToken).toHaveBeenCalled();
+  it("should call enrollToken and close dialog on successful enroll", () => {
+    mockTokenService.enrollToken = jest.fn().mockReturnValue(of({
+      detail: { serial: "X", rollout_state: "enrolled" },
+      result: { status: true }
+    } as any));
+    component.clientPartControl.setValue("SOMEKEY");
+    component.onDialogAction("enroll");
+    expect(mockTokenService.enrollToken).toHaveBeenCalled();
     expect(dialogRefSpy.close).toHaveBeenCalled();
   });
 
-  it("should not close dialog if rollout_state is not enrolled", () => {
-    mockTokenService.verifyToken = jest.fn().mockReturnValue(of({
-      result: { status: true },
-      detail: { rollout_state: "client_wait", serial: "123", type: "hotp" },
-      type: "hotp"
-    }));
-    component.verifyOTPControl.setValue("123456");
-    component.onDialogAction("verify");
-    expect(mockTokenService.verifyToken).toHaveBeenCalled();
+  it("should not close dialog if rollout_state is client_wait", () => {
+     mockTokenService.enrollToken = jest.fn().mockReturnValue(of({
+      detail: { serial: "X", rollout_state: "client_wait" },
+      result: { status: true }
+    } as any));
+    component.clientPartControl.setValue("SOMEKEY");
+    component.onDialogAction("enroll");
+    expect(mockTokenService.enrollToken).toHaveBeenCalled();
     expect(dialogRefSpy.close).not.toHaveBeenCalled();
   });
 
-  it("should close dialog on switch route", () => {
-    component.onSwitchRoute();
-    expect(dialogRefSpy.close).toHaveBeenCalled();
+  it('should remove twoStepInit from enrollParameters.data when enrolling', () => {
+    component.clientPartControl.setValue('SOMEKEY');
+    fixture.detectChanges();
+    jest.spyOn(component['tokenService'], 'enrollToken').mockImplementation((params) => {
+      expect(params.data.type).toEqual("hotp");
+      expect(params.data['twoStepInit']).toBeUndefined();
+      return of({ result: { status: true }, detail: { rollout_state: 'enrolled', type: 'hotp', serial: '123' }, type: 'hotp' });
+    });
+    component.onDialogAction('enroll');
   });
 });

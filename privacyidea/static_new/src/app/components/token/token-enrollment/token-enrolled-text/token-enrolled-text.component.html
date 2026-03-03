@@ -1,0 +1,56 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+
+@if (!rollover()) {
+    <div class="margin-bottom-1">
+      <span i18n>
+        The token was successfully enrolled with serial number
+        <a (click)="tokenSelected()"> {{ serial() }} </a>.
+      </span>
+      @if (containerSerial()) {
+        <div i18n>
+          It has been enrolled in the container
+          <a (click)="containerSelected()">
+            {{ containerSerial() }}
+          </a>
+          .
+        </div>
+      }
+      @if (username() && userRealm() != "" && !onlyAddToRealm()) {
+        <div i18n>The user
+          <span>{{ username() }}</span>
+                  in the realm
+          <span>{{ userRealm() }}</span>
+                  was assigned to the token.
+        </div>
+      } @else if (userRealm() && onlyAddToRealm()) {
+        <div i18n>The token was assigned to the realm
+          <span>{{ userRealm() }}</span>.
+        </div>
+      }
+    </div>
+  } @else {
+    <div class="margin-bottom-1">
+      <span i18n>
+        The token with serial number
+        <a (click)="tokenSelected()"> {{ serial() }} </a>
+        was successfully rolled over.
+      </span>
+    </div>
+  }

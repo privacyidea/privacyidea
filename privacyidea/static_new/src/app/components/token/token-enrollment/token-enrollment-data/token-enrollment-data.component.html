@@ -16,7 +16,7 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<div class="flex-row gap-16">
+<div class="flex-row gap-16 margin-bottom-8">
   @if (showQRCode() && qrCode()) {
     <img
       alt="QR Code"
@@ -38,7 +38,7 @@
         mat-stroked-button
         i18n>
         <mat-icon>autorenew</mat-icon>
-        Regenerate {{ regenerateButtonText() }}
+          {{ regenerateButtonText() }}
       </button>
     }
     @if (enrolledData()?.["password"]) {

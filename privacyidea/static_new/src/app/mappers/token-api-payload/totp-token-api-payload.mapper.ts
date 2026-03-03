@@ -32,6 +32,8 @@ export interface TotpEnrollmentData extends TokenEnrollmentData {
   otpLength?: number;
   hashAlgorithm?: string;
   timeStep?: number;
+  twoStepInit?: boolean;
+  otpKeyFormat?: string;
 }
 
 export interface TotpEnrollmentPayload extends TokenEnrollmentPayload {
@@ -41,6 +43,8 @@ export interface TotpEnrollmentPayload extends TokenEnrollmentPayload {
   hashlib?: string;
   timeStep?: number;
   serial?: string | null;
+  "2stepinit"?: boolean;
+  otpkeyformat?: string;
 }
 
 @Injectable({ providedIn: "root" })
@@ -54,7 +58,9 @@ export class TotpApiPayloadMapper extends BaseApiPayloadMapper implements TokenA
       genkey: data.generateOnServer ? 1 : 0,
       ...(data.otpLength !== undefined && { otplen: Number(data.otpLength) }),
       ...(data.hashAlgorithm !== undefined && { hashlib: data.hashAlgorithm }),
-      ...(data.timeStep !== undefined && { timeStep: Number(data.timeStep) })
+      ...(data.timeStep !== undefined && { timeStep: Number(data.timeStep) }),
+      ...(data.twoStepInit !== null && { "2stepinit": data.twoStepInit }),
+      ...(data.otpKey && data.otpKeyFormat && { otpkeyformat: data.otpKeyFormat })
     };
     if (data.onlyAddToRealm) {
       payload.realm = data.realm;

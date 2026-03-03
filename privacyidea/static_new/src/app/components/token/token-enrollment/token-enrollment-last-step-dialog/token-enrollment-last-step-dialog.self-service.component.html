@@ -19,74 +19,20 @@
 <app-dialog-wrapper
   title="Token Successfully Enrolled"
   i18n-title="@@tokenEnrolledTitle"
+  [showCancelButton]="true"
+  cancelButtonLabel="Close"
+  i18n-cancelButtonLabel="@@closeButtonLabel"
   (close)="close()">
-  <mat-dialog-content>
-    <div class="margin-bottom-1">
-      <div i18n>
-        The token was successfully enrolled with serial number
-        <a (click)="tokenSelected(serial)"> {{ serial }}</a>
-        .
-      </div>
-      @if (containerSerial) {
-        <div i18n>
-          It has been enrolled in the container
-          <a (click)="containerSelected(containerSerial)">
-            {{ containerSerial }}
-          </a>
-          .
-        </div>
-      }
-    </div>
-    <div class="flex-row gap-16">
-      @if (showQRCode() && qrCode) {
-        <img
-          alt="QR Code"
-          i18n-alt="@@qrCodeAlt"
-          class="qr-code"
-          height="300px"
-          src="{{ qrCode }}"
-          width="300px" />
-      }
-      <div class="flex-column gap-16">
-        @if (url && showQRCode()) {
-          <app-qr-code-text
-            [tokenType]="data.tokentype.key"
-            [url]="url" />
-        }
-        @if (url && showRegenerateButton()) {
-          <button
-            (click)="regenerateQRCode()"
-            class="card-button-1"
-            mat-stroked-button>
-            <mat-icon>autorenew</mat-icon>
-            <span i18n>Regenerate {{ regenerateButtonText() }}</span>
-          </button>
-        }
+  <app-token-enrolled-text
+        [serial]="serial"
+        [containerSerial]="containerSerial"
+        [rollover]="data.rollover ?? false"
+        (switchRoute)="onSwitchRoute()"></app-token-enrolled-text>
 
-        @if (data.response.detail["password"]) {
-          <p i18n>
-            Your Password: <strong>{{ data.response.detail["password"] }}</strong>.
-          </p>
-        }
-
-        @if (data.response.detail.otpkey?.value && !data.response.detail["otps"] && showQRCode()) {
-          <app-otp-key
-            [otpKeyHex]="data.response.detail.otpkey?.value ?? ''"
-            [otpKeyBase32]="data.response.detail.otpkey?.value_b32 ?? ''" />
-        }
-
-        @if (data.tokentype.key === "tiqr") {
-          <app-tiqr-enroll-url [url]="data.response.detail['tiqrenroll']?.value ?? ''" />
-        }
-
-        @if (data.tokentype.key === "registration") {
-          <app-registration-code [registrationCode]="data.response.detail['registrationcode']" />
-        }
-
-        @if (data.response.detail["otps"]) {
-          <app-otp-values [otpValues]="data.response.detail['otps']" />
-        }
-      </div>
-    </div>
-  </mat-dialog-content>
+  @if (data.showEnrollData !== false) {
+    <app-token-enrollment-data
+      [enrolledInputData]="data.response?.detail"
+      [tokenType]="data.tokenType"
+      [enrollmentParameters]="data.enrollParameters"></app-token-enrollment-data>
+  }
 </app-dialog-wrapper>

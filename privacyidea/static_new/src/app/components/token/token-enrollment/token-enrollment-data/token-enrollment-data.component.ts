@@ -17,27 +17,30 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, inject, Input, input } from "@angular/core";
-import { TokenService, TokenServiceInterface, TokenTypeKey } from "../../../../services/token/token.service";
+import { Component, computed, inject, input, linkedSignal } from "@angular/core";
+import { EnrollTokenArguments, TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
-import { FormControl, Validators } from "@angular/forms";
 import {
   NO_QR_CODE_TOKEN_TYPES,
   NO_REGENERATE_TOKEN_TYPES,
   REGENERATE_AS_VALUES_TOKEN_TYPES
 } from "../token-enrollment.constants";
 import {
+  BaseApiPayloadMapper,
   EnrollmentResponseDetail,
   TokenEnrollmentData
 } from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
-import { OtpKeyComponent } from "../token-enrollment-last-step-dialog/otp-key/otp-key.component";
-import { OtpValuesComponent } from "../token-enrollment-last-step-dialog/otp-values/otp-values.component";
-import { QrCodeTextComponent } from "../token-enrollment-last-step-dialog/qr-code-text/qr-code-text.component";
-import { RegistrationCodeComponent } from "../token-enrollment-last-step-dialog/registration-code/registration-code.component";
-import { TiqrEnrollUrlComponent } from "../token-enrollment-last-step-dialog/tiqr-enroll-url/tiqr-enroll-url.component";
+import { OtpKeyComponent } from "@components/token/token-enrollment/token-enrollment-data/otp-key/otp-key.component";
+import { OtpValuesComponent } from "@components/token/token-enrollment/token-enrollment-data/otp-values/otp-values.component";
+import { QrCodeTextComponent } from "@components/token/token-enrollment/token-enrollment-data/qr-code-text/qr-code-text.component";
+import { RegistrationCodeComponent } from "@components/token/token-enrollment/token-enrollment-data/registration-code/registration-code.component";
+import { TiqrEnrollUrlComponent } from "@components/token/token-enrollment/token-enrollment-data/tiqr-enroll-url/tiqr-enroll-url.component";
 import { MatButton } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
-import { NgOptimizedImage } from "@angular/common";
+import {
+  NotificationService,
+  NotificationServiceInterface
+} from "../../../../services/notification/notification.service";
 
 @Component({
   selector: "app-token-enrollment-data",
@@ -48,8 +51,7 @@ import { NgOptimizedImage } from "@angular/common";
     OtpValuesComponent,
     QrCodeTextComponent,
     RegistrationCodeComponent,
-    TiqrEnrollUrlComponent,
-    NgOptimizedImage
+    TiqrEnrollUrlComponent
   ],
   standalone: true,
   templateUrl: "./token-enrollment-data.component.html",
@@ -58,11 +60,13 @@ import { NgOptimizedImage } from "@angular/common";
 export class TokenEnrollmentDataComponent {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
+  protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   protected readonly Object = Object;
-  enrolledData = input<EnrollmentResponseDetail>();
-  enrollmentParameters = input<TokenEnrollmentData>();
+  enrolledInputData = input<EnrollmentResponseDetail>();
+  enrollmentParameters = input<EnrollTokenArguments>();
   tokenType = input<string>(this.tokenService.selectedTokenType()?.key);
 
+  enrolledData = linkedSignal(() => this.enrolledInputData());
   protected readonly serial = computed(() => this.enrolledData()?.serial ?? "");
   protected readonly containerSerial = computed(() => this.enrolledData()?.["container_serial"] ?? "");
   protected readonly qrCode = computed(() =>
@@ -78,31 +82,29 @@ export class TokenEnrollmentDataComponent {
     this.enrolledData()?.tiqrenroll?.value ??
     "");
   protected readonly verify_message = computed(() => this.enrolledData()?.verify?.message ?? null);
-  verifyOTPControl = new FormControl("", { nonNullable: true });
 
   showQRCode = computed(() => !NO_QR_CODE_TOKEN_TYPES.includes(this.tokenType()));
   showRegenerateButton = computed(() => !NO_REGENERATE_TOKEN_TYPES.includes(this.tokenType()));
   regenerateButtonText = computed(() =>
-    REGENERATE_AS_VALUES_TOKEN_TYPES.includes(this.tokenType()) ? "Values" : "QR" + " Code");
+    REGENERATE_AS_VALUES_TOKEN_TYPES.includes(this.tokenType()) ? $localize`Regenerate Values` : $localize`Regenerate QR Code`);
 
   regenerateQRCode() {
-    // TODO
-    // this.data.serial.set(this.data.response.detail?.serial ?? null);
-    // this.data.enrollToken();
-    // this.data.serial.set(null);
-    // this.dialogRef.close();
-
     if (!this.enrollmentParameters()) {
-      // TODO: Handle this case
+      this.notificationService.openSnackBar($localize`Enrollment parameters are missing. Cannot regenerate token.`);
+      return;
     }
-    if (!this.enrollmentParameters()?.serial) {
-      this.enrollmentParameters
-    }
-    const newEnrollmentData = {
-      ...(this.enrollmentParameters() ?? {}),
-      ...(this.enrollmentParameters()?.serial && { serial: this.enrollmentParameters()?.serial })
-    }
+    const newEnrollmentData: TokenEnrollmentData = {
+      ...(this.enrollmentParameters()?.data ?? {} as TokenEnrollmentData),
+      ...(this.enrollmentParameters()?.data?.serial && { serial: this.enrollmentParameters()?.data?.serial })
+    };
+    const mapper = this.enrollmentParameters()?.mapper ?? new BaseApiPayloadMapper();
 
-    // this.tokenService.enrollToken(newEnrollmentData);
+    this.tokenService.enrollToken({ data: newEnrollmentData, mapper: mapper }).subscribe({
+      next: (response) => {
+        if (response?.detail) {
+          this.enrolledData.set(response.detail);
+        }
+      }
+    });
   }
 }

@@ -34,7 +34,9 @@ import {
 import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
 import {
-  EnrollmentResponse, EnrollmentResponseDetail,
+  BaseApiPayloadMapper,
+  EnrollmentResponse,
+  EnrollmentResponseDetail,
   TokenApiPayloadMapper,
   TokenEnrollmentData
 } from "../../mappers/token-api-payload/_token-api-payload.mapper";
@@ -165,6 +167,19 @@ export interface WebAuthnRegisterRequest {
 }
 
 export type LostTokenResponse = PiResponse<LostTokenData>;
+
+export type EnrollTokenArguments = { data: TokenEnrollmentData, mapper: BaseApiPayloadMapper };
+
+export type TokenEnrollmentDialogData = {
+  tokenType: string;
+  response: EnrollmentResponse | null;
+  enrollParameters: EnrollTokenArguments;
+  username?: string;
+  userRealm?: string;
+  onlyAddToRealm?: boolean;
+  rollover?: boolean;
+  showEnrollData?: boolean;
+}
 
 export interface LostTokenData {
   disable: number;

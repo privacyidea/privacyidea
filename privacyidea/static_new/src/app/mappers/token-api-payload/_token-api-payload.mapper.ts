@@ -23,6 +23,7 @@ import { TokenDetails } from "../../services/token/token.service";
 export interface EnrollmentResponse<D extends EnrollmentResponseDetail = EnrollmentResponseDetail> {
   type: string;
   detail: D;
+  result: {status: boolean}
 
   [key: string]: any;
 }
@@ -98,7 +99,7 @@ export class BaseApiPayloadMapper implements TokenApiPayloadMapper<TokenEnrollme
       ...(data.validityPeriodEnd != null && { validity_period_end: data.validityPeriodEnd }),
       ...(data.user && { user: data.user }),
       ...(data.realm && data.user && { realm: data.realm }),
-      ...(data.pin != null && { pin: data.pin }),
+      ...(data.pin && { pin: data.pin }),
       ...(data.serial != null && { serial: data.serial }),
       ...(data.rollover != null && { rollover: data.rollover })
     };
