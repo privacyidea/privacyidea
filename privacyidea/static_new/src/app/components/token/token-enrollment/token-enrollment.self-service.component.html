@@ -70,7 +70,7 @@
         </div>
       </div>
     </div>
-    <div class="token-type-paragraph">
+    <div class="width-980">
       <p>{{ tokenTypeDescription() }}</p>
     </div>
     @switch (tokenService.selectedTokenType().key) {
@@ -207,7 +207,7 @@
           (reopenDialogChange)="updateReopenDialog($event)" />
       }
     }
-    <mat-form-field class="description-form">
+    <mat-form-field class="input-width-l">
       <mat-label>Description</mat-label>
       <textarea
         [formControl]="descriptionControl"
@@ -218,7 +218,7 @@
     </mat-form-field>
 
     @if (tokenService.selectedTokenType().key !== "passkey") {
-      <div class="flex-column user-pin-container margin-bottom-16">
+      <div class="flex-column margin-bottom-16">
         <h4 class="enroll-h4">Set PIN</h4>
         <input
           class="hidden-input"
@@ -226,17 +226,17 @@
         <input
           class="hidden-input"
           type="password" />
-        <div class="user-pin-input">
+        <div class="flex-column">
           <input
             [formControl]="setPinControl"
             [type]="'password'"
-            class="input"
+            class="input input-width-l"
             placeholder="PIN" />
 
           <input
             [formControl]="repeatPinControl"
             [type]="'password'"
-            class="input"
+            class="input input-width-l"
             placeholder="Repeat PIN" />
         </div>
         @if (
@@ -252,7 +252,7 @@
       @if (authService.actionAllowed("container_list")) {
         <div class="flex-column width-100">
           <h4 class="enroll-h4">Add Token to a Container</h4>
-          <mat-form-field class="width-47 input-height">
+          <mat-form-field class="input-width-l input-height">
             <mat-label>Enter Container</mat-label>
             <app-clearable-input
               (onClick)="selectedContainerControl.setValue(null)"

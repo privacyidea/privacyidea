@@ -17,7 +17,7 @@
   SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div class="assign-user-container">
-  <mat-form-field class="width-50 input-height">
+  <mat-form-field class="input-width-l input-height">
     <mat-label>Select Realm of User</mat-label>
     <mat-select
       [formControl]="selectedUserRealmCtrl"
@@ -28,7 +28,7 @@
       }
     </mat-select>
   </mat-form-field>
-  <mat-form-field class="width-50 input-height">
+  <mat-form-field class="input-width-l input-height">
     <mat-label>Enter User</mat-label>
     <app-clearable-input
       (onClick)="userFilterCtrl.setValue('')"

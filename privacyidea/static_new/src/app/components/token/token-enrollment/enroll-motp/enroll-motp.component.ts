@@ -51,8 +51,7 @@ export interface MotpEnrollmentOptions extends TokenEnrollmentData {
   selector: "app-enroll-motp",
   standalone: true,
   imports: [FormsModule, ReactiveFormsModule, MatFormField, MatInput, MatLabel, MatCheckbox, MatError],
-  templateUrl: "./enroll-motp.component.html",
-  styleUrl: "./enroll-motp.component.scss"
+  templateUrl: "./enroll-motp.component.html"
 })
 export class EnrollMotpComponent implements OnInit {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);

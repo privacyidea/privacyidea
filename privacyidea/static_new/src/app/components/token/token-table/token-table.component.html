@@ -17,6 +17,7 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div
+  #scrollContainer
   appScrollToTop
   aria-label="Token Table"
   class="token-table-layout"
@@ -50,7 +51,12 @@
         [pageSize]="pageSize()"
         showFirstLastButtons />
     </div>
-    <app-token-table-actions />
+    <div #stickySentinel></div>
+    <div
+      #stickyHeader
+      class="sticky-header">
+      <app-token-table-actions />
+    </div>
     <div class="table-container">
       <table
         [dataSource]="tokenDataSource()"

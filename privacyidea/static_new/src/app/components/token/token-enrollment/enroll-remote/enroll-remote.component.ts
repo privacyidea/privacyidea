@@ -60,8 +60,7 @@ export class RemoteErrorStateMatcher implements ErrorStateMatcher {
     MatCheckbox,
     MatError
   ],
-  templateUrl: "./enroll-remote.component.html",
-  styleUrl: "./enroll-remote.component.scss"
+  templateUrl: "./enroll-remote.component.html"
 })
 export class EnrollRemoteComponent implements OnInit {
   protected readonly enrollmentMapper: RemoteApiPayloadMapper = inject(RemoteApiPayloadMapper);

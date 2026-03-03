@@ -352,7 +352,8 @@ export class ContainerService implements ContainerServiceInterface {
       ...(this.loadAllContainers() && {
         no_token: 1,
         user: this.userService.selectedUser()?.username ?? "",
-        realm: this.userService.selectedUserRealm() ?? ""
+        realm: (this.userService.selectedUserRealm() && this.userService.selectedUser()?.username)
+          ? this.userService.selectedUserRealm() : ""
       }),
       sortby: this.sort().active,
       sortdir: this.sort().direction,

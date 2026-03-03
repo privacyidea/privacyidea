@@ -70,229 +70,234 @@
         </div>
       </div>
     </div>
-    <div class="token-type-paragraph">
-      <p>{{ tokenTypeDescription() }}</p>
-    </div>
-    @switch (tokenService.selectedTokenType().key) {
-      @case ("hotp") {
-        <app-enroll-hotp
-          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
+    <div class="margin-left-16">
+      <div class="width-980">
+        <p>{{ tokenTypeDescription() }}</p>
+      </div>
+      @switch (tokenService.selectedTokenType().key) {
+        @case ("hotp") {
+          <app-enroll-hotp
+            (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
+            (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
+        }
+        @case ("totp") {
+          <app-enroll-totp
+            (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
+            (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
+        }
+        @case ("spass") {
+          <app-enroll-spass
+            (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
+            (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
+        }
+        @case ("motp") {
+          <app-enroll-motp
+            (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
+            (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
+        }
+        @case ("sshkey") {
+          <app-enroll-sshkey
+            (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
+            (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
+        }
+        @case ("yubikey") {
+          <app-enroll-yubikey
+            (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
+            (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
+        }
+        @case ("remote") {
+          <app-enroll-remote
+            (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
+            (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
+        }
+        @case ("yubico") {
+          <app-enroll-yubico
+            (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
+            (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
+        }
+        @case ("radius") {
+          <app-enroll-radius
+            (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
+            (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
+        }
+        @case ("sms") {
+          <app-enroll-sms
+            (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
+            (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
+        }
+        @case ("4eyes") {
+          <app-enroll-foureyes
+            (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
+            (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
+        }
+        @case ("applspec") {
+          <app-enroll-applspec
+            (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
+            (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
+        }
+        @case ("daypassword") {
+          <app-enroll-daypassword
+            (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
+            (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
+        }
+        @case ("certificate") {
+          <app-enroll-certificate
+            (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
+            (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
+        }
+        @case ("email") {
+          <app-enroll-email
+            (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
+            (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
+        }
+        @case ("indexedsecret") {
+          <app-enroll-indexedsecret
+            (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
+            (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
+        }
+        @case ("paper") {
+          <app-enroll-paper
+            (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
+            (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
+        }
+        @case ("push") {
+          <app-enroll-push
+            (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
+            (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)"
+            (onEnrollmentResponseChange)="updateOnEnrollmentResponse($event)"
+            (reopenDialogChange)="updateReopenDialog($event)" />
+        }
+        @case ("question") {
+          <app-enroll-question
+            (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
+            (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
+        }
+        @case ("registration") {
+          <app-enroll-registration
+            (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
+            (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
+        }
+        @case ("tan") {
+          <app-enroll-tan
+            (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
+            (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
+        }
+        @case ("tiqr") {
+          <app-enroll-tiqr
+            (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
+            (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
+        }
+        @case ("u2f") {
+          <app-enroll-u2f
+            (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
+            (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
+        }
+        @case ("vasco") {
+          <app-enroll-vasco
+            (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
+            (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
+        }
+        @case ("webauthn") {
+          <app-enroll-webauthn
+            (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
+            (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)"
+            (onEnrollmentResponseChange)="updateOnEnrollmentResponse($event)" />
+        }
+        @case ("passkey") {
+          <app-enroll-passkey
+            (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
+            (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)"
+            (onEnrollmentResponseChange)="updateOnEnrollmentResponse($event)"
+            (reopenDialogChange)="updateReopenDialog($event)" />
+        }
       }
-      @case ("totp") {
-        <app-enroll-totp
-          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-      }
-      @case ("spass") {
-        <app-enroll-spass
-          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-      }
-      @case ("motp") {
-        <app-enroll-motp
-          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-      }
-      @case ("sshkey") {
-        <app-enroll-sshkey
-          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-      }
-      @case ("yubikey") {
-        <app-enroll-yubikey
-          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-      }
-      @case ("remote") {
-        <app-enroll-remote
-          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-      }
-      @case ("yubico") {
-        <app-enroll-yubico
-          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-      }
-      @case ("radius") {
-        <app-enroll-radius
-          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-      }
-      @case ("sms") {
-        <app-enroll-sms
-          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-      }
-      @case ("4eyes") {
-        <app-enroll-foureyes
-          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-      }
-      @case ("applspec") {
-        <app-enroll-applspec
-          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-      }
-      @case ("daypassword") {
-        <app-enroll-daypassword
-          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-      }
-      @case ("certificate") {
-        <app-enroll-certificate
-          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-      }
-      @case ("email") {
-        <app-enroll-email
-          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-      }
-      @case ("indexedsecret") {
-        <app-enroll-indexedsecret
-          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-      }
-      @case ("paper") {
-        <app-enroll-paper
-          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-      }
-      @case ("push") {
-        <app-enroll-push
-          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)"
-          (onEnrollmentResponseChange)="updateOnEnrollmentResponse($event)"
-          (reopenDialogChange)="updateReopenDialog($event)" />
-      }
-      @case ("question") {
-        <app-enroll-question
-          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-      }
-      @case ("registration") {
-        <app-enroll-registration
-          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-      }
-      @case ("tan") {
-        <app-enroll-tan
-          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-      }
-      @case ("tiqr") {
-        <app-enroll-tiqr
-          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-      }
-      @case ("u2f") {
-        <app-enroll-u2f
-          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-      }
-      @case ("vasco") {
-        <app-enroll-vasco
-          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-      }
-      @case ("webauthn") {
-        <app-enroll-webauthn
-          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)"
-          (onEnrollmentResponseChange)="updateOnEnrollmentResponse($event)" />
-      }
-      @case ("passkey") {
-        <app-enroll-passkey
-          (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)"
-          (onEnrollmentResponseChange)="updateOnEnrollmentResponse($event)"
-          (reopenDialogChange)="updateReopenDialog($event)" />
-      }
-    }
-    <mat-form-field class="description-form">
-      <mat-label>Description</mat-label>
-      <textarea
-        [formControl]="descriptionControl"
-        [maxlength]="80"
-        matInput
-        placeholder="Enter description"
-        rows="3"></textarea>
-    </mat-form-field>
-    <div class="gap-16">
-      @if (authService.actionAllowed("userlist")) {
-        <div class="width-100">
-          <h4 class="enroll-h4">Assign Token to User</h4>
-          <app-user-assignment
-            [selectedUserRealmControl]="selectedUserRealmControl"
-            [showOnlyAddToRealm]="
+      <mat-form-field class="width-100 margin-top-16">
+        <mat-label>Description</mat-label>
+        <textarea
+          [formControl]="descriptionControl"
+          [maxlength]="80"
+          matInput
+          placeholder="Enter description"
+          rows="3"></textarea>
+      </mat-form-field>
+      <div class="gap-16">
+        @if (authService.actionAllowed("userlist")) {
+          <div class="width-100">
+            <h4 class="enroll-h4">Assign Token to User</h4>
+            <app-user-assignment
+              [selectedUserRealmControl]="selectedUserRealmControl"
+              [showOnlyAddToRealm]="
               !['passkey', 'webauthn', 'tiqr', 'push'].includes(tokenService.selectedTokenType().key)
             "
-            [userFilterControl]="userFilterControl"></app-user-assignment>
-        </div>
-      }
-    </div>
-
-    @if (tokenService.selectedTokenType().key !== "passkey" && authService.actionAllowed("enrollpin")) {
-      <div class="user-pin-container">
-        <h4 class="enroll-h4">Set PIN</h4>
-        <input
-          style="display: none"
-          type="text" />
-        <input
-          style="display: none"
-          type="password" />
-        <div class="user-pin-input margin-bottom-16">
-          <mat-form-field>
-            <mat-label>PIN</mat-label>
-            <input
-              [formControl]="setPinControl"
-              [type]="'password'"
-              matInput />
-          </mat-form-field>
-          <mat-form-field>
-            <mat-label>Repeat PIN</mat-label>
-            <input
-              [formControl]="repeatPinControl"
-              [type]="'password'"
-              matInput />
-          </mat-form-field>
-        </div>
-        @if (formGroupSignal().hasError("pinMismatch") &&
-        (formGroupSignal().get("setPin")?.touched || formGroupSignal().get("repeatPin")?.touched)) {
-          <mat-error class="pin-error">PINs do not match.</mat-error>
+              [userFilterControl]="userFilterControl"></app-user-assignment>
+          </div>
         }
       </div>
-    }
 
-    @if (authService.actionAllowed("container_list")) {
-      <h4 class="flex-column enroll-h4">Add Token to a Container</h4>
-      <mat-form-field class="width-33 input-height">
-        <app-clearable-input
-          (onClick)="selectedContainerControl.setValue('')"
-          [showClearButton]="containerService.selectedContainer() !== ''">
-          <input
-            [formControl]="selectedContainerControl"
-            [matAutocomplete]="containerAuto"
-            matInput />
-        </app-clearable-input>
-        <mat-label>Enter Container</mat-label>
-        <mat-autocomplete #containerAuto="matAutocomplete">
-          @for (option of containerService.filteredContainerOptions(); track option) {
-            <mat-option [value]="option">{{ option }}</mat-option>
-          }
-        </mat-autocomplete>
-      </mat-form-field>
-    }
+      <div class="flex-row gap-16">
+        @if (tokenService.selectedTokenType().key !== "passkey" && authService.actionAllowed("enrollpin")) {
+          <div class="flex-column">
+            <h4 class="enroll-h4">Set PIN</h4>
+            <input
+              style="display: none"
+              type="text" />
+            <input
+              style="display: none"
+              type="password" />
+            <div class="flex-column margin-bottom-16">
+              <mat-form-field class="input-width-l">
+                <mat-label>PIN</mat-label>
+                <input
+                  [formControl]="setPinControl"
+                  [type]="'password'"
+                  matInput />
+              </mat-form-field>
+              <mat-form-field class="input-width-l">
+                <mat-label>Repeat PIN</mat-label>
+                <input
+                  [formControl]="repeatPinControl"
+                  [type]="'password'"
+                  matInput />
+              </mat-form-field>
+            </div>
+            @if (formGroupSignal().hasError("pinMismatch") &&
+            (formGroupSignal().get("setPin")?.touched || formGroupSignal().get("repeatPin")?.touched)) {
+              <mat-error class="pin-error">PINs do not match.</mat-error>
+            }
+          </div>
+        }
 
+        @if (authService.actionAllowed("container_list")) {
+          <div class="flex-column">
+            <h4 class="flex-column enroll-h4">Add Token to a Container</h4>
+            <mat-form-field class="input-width-l input-height">
+              <app-clearable-input
+                (onClick)="selectedContainerControl.setValue('')"
+                [showClearButton]="containerService.selectedContainer() !== ''">
+                <input
+                  [formControl]="selectedContainerControl"
+                  [matAutocomplete]="containerAuto"
+                  matInput />
+              </app-clearable-input>
+              <mat-label>Enter Container</mat-label>
+              <mat-autocomplete #containerAuto="matAutocomplete">
+                @for (option of containerService.filteredContainerOptions(); track option) {
+                  <mat-option [value]="option">{{ option }}</mat-option>
+                }
+              </mat-autocomplete>
+            </mat-form-field>
+          </div>
+        }
+      </div>
+    </div>
     <div>
       <mat-accordion>
         <mat-expansion-panel class="expansion-panel">
           <mat-expansion-panel-header>
             <mat-panel-title> Extended Attributes</mat-panel-title>
           </mat-expansion-panel-header>
-          <div class="flex-row">
-            <mat-form-field class="date-picker">
+          <div class="flex-row gap-16">
+            <mat-form-field class="input-width-l">
               <mat-label>Choose a Start Date</mat-label>
               <input
                 [formControl]="selectedStartDateControl"
@@ -306,7 +311,7 @@
               <mat-datepicker #startPicker></mat-datepicker>
             </mat-form-field>
 
-            <mat-form-field class="time-picker">
+            <mat-form-field class="input-width-l">
               <mat-label>Enter a Start Time</mat-label>
               <input
                 [formControl]="selectedStartTimeControl"
@@ -317,7 +322,7 @@
                 type="time" />
             </mat-form-field>
 
-            <mat-form-field class="zone-picker">
+            <mat-form-field class="input-width-l">
               <mat-label>Timezone Offset</mat-label>
               <mat-select [formControl]="selectedTimezoneOffsetControl">
                 @for (option of timezoneOptions; track option) {
@@ -326,8 +331,8 @@
               </mat-select>
             </mat-form-field>
           </div>
-          <div class="flex-row">
-            <mat-form-field class="date-picker">
+          <div class="flex-row gap-16">
+            <mat-form-field class="input-width-l">
               <mat-label>Choose an End Date</mat-label>
               <input
                 [formControl]="selectedEndDateControl"
@@ -341,7 +346,7 @@
               <mat-datepicker #endPicker></mat-datepicker>
             </mat-form-field>
 
-            <mat-form-field class="time-picker">
+            <mat-form-field class="input-width-l">
               <mat-label>Enter an End Time</mat-label>
               <input
                 [formControl]="selectedEndTimeControl"

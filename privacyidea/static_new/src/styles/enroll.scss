@@ -13,7 +13,7 @@
 }
 
 .enroll-h4 {
-  margin: 0 0 16px 8px;
+  margin: 0 0 16px 0;
 }
 
 .inline-hint {
@@ -28,4 +28,8 @@
   background: var(--inline-warning-bg);
   padding: 8px;
   border-radius: var(--border-radius);
+}
+
+.width-980 {
+  width: 980px;
 }
