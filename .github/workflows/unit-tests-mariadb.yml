@@ -33,6 +33,12 @@ on:
 permissions:
   contents: read
 
+# Cancel any in-progress run for the same branch/PR so that a push to a
+# branch with an open PR does not trigger the job twice.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
     name: 'Python ${{ matrix.python-version }}'

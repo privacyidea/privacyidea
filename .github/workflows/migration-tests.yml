@@ -35,6 +35,13 @@ on:
 permissions:
   contents: read
 
+# Cancel any in-progress run for the same branch/PR so that a push to a
+# branch with an open PR does not trigger the job twice.
+# Scheduled runs get their own group so they are never cancelled.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name != 'schedule' }}
+
 jobs:
   migration-tests:
     # Migration correctness does not depend on the Python version — run on
