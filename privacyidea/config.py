@@ -155,7 +155,8 @@ class TestingConfig(Config):
     # This is used to encrypt the auth token
     SUPERUSER_REALM = ['adminrealm']
     SECRET_KEY = 'secret'  # nosec B105 # used for testing
-    SQLALCHEMY_DATABASE_URI = "postgresql+psycopg2://privacyidea:privacyidea@127.0.0.1:5432/privacyidea_test"
+    SQLALCHEMY_DATABASE_URI = os.environ.get(ConfigKey.TEST_DATABASE_URL) or \
+                              'sqlite:///' + os.path.join(basedir, 'data-test.sqlite')
     # This is used to encrypt the admin passwords
     PI_PEPPER = ""
     # This is only for testing encrypted files
@@ -218,54 +219,28 @@ class ProductionConfig(Config):
     SUPERUSER_REALM = ['superuser']
 
 
-docker_secrets_dir = Path(os.environ.get("PI_SECRETS_DIR", "/run/secrets/"))
+docker_secrets_dir = Path("/run/secrets/")
 
 
 def _get_secrets_from_environment(name: str) -> str | None:
-    """
-    Read a secret value either from a file (if ``{name}_FILE`` env var is set)
-    or directly from the environment variable ``name``.
-
-    This supports Docker secrets (``/run/secrets/``), Kubernetes secret volume
-    mounts, and any secrets manager that injects secrets as files — as long as
-    the ``{name}_FILE`` env var points to the correct path.
-
-    :param name: The environment variable name (e.g. ``PI_PEPPER``)
-    :return: The secret value, or None if not found
-    """
     if f"{name}_FILE" in os.environ:
         file_name = os.environ[f"{name}_FILE"]
         try:
             with open(file_name) as f:
                 return f.read().strip()
-        except IOError as e:
-            sys.stderr.write(f"Could not read configured secret file: {e}\n")
+        except IOError as _e:
+            sys.stderr.write(f"Could not read secret from file defined in variable '{name}_FILE'\n")
     return os.getenv(name)
 
 
 def _get_secrets_paths_from_environment(path: str, name: str) -> str | None:
-    """
-    Resolve the path to a secret file. Checks in order:
-    1. ``PI_SECRETS_DIR/<path>`` (configurable secrets directory, defaults to ``/run/secrets/``)
-    2. The environment variable ``name`` (must point to an existing file)
-
-    This allows using Docker Swarm secrets, Kubernetes secret volume mounts,
-    or any secrets manager that injects secrets as files, by setting
-    ``PI_SECRETS_DIR`` to the correct mount path (e.g. ``/mnt/secrets/``).
-
-    :param path: The filename within the secrets directory (e.g. ``enckey``)
-    :param name: Fallback environment variable name (e.g. ``PI_ENCFILE``)
-    :return: The resolved file path, or None if not found
-    """
-    secret_file = docker_secrets_dir / path
-    if secret_file.is_file():
-        return str(secret_file)
+    if (docker_secrets_dir / path).is_file():
+        return str(docker_secrets_dir / path)
     elif name in os.environ:
         if Path(os.environ[name]).is_file():
             return os.environ[name]
         else:
-            sys.stderr.write(f"Secret file path defined in variable '{name}' "
-                             f"does not exist: '{os.environ[name]}'\n")
+            sys.stderr.write(f"Could not read secret file path defined in variable '{name}'\n")
             return None
     else:
         return None
