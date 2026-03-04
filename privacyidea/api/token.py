@@ -1122,8 +1122,10 @@ def loadtokens_api(filename=None):
     if file_type not in known_types:
         log.error(f"Unknown file type: '{file_type}'. Supported types are: "
                   f"{', '.join(known_types)}")
-        raise TokenAdminError(lazy_gettext("Unknown file type: '{file_type}'. Supported "
-                                "file types are 'aes', 'pskc', 'yubico', 'oath', and 'safekey'.").format(file_type=file_type))
+        raise TokenAdminError(
+            lazy_gettext("Unknown file type: '{file_type}'. Supported file types are: {known_types}")
+            .format(file_type=file_type, known_types=', '.join(known_types))
+        )
 
     # Decrypt file, if necessary
     if file_contents.startswith("-----BEGIN PGP MESSAGE-----"):
