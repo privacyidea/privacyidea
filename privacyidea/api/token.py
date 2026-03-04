@@ -79,7 +79,7 @@ from ..lib.token import (init_token, get_tokens_paginate, assign_token,
 from ..lib.fido2.util import get_credential_ids_for_user
 from werkzeug.datastructures import FileStorage
 from privacyidea.lib.error import (ParameterError, TokenAdminError,
-                                   ResourceNotFoundError, PolicyError, ERROR)
+                                   ResourceNotFoundError, PolicyError, Error)
 from privacyidea.lib import lazy_gettext
 from privacyidea.lib.importotp import (parseOATHcsv, parseSafeNetXML,
                                        parseYubicoCSV, parsePSKCdata, GPGImport)
@@ -320,7 +320,7 @@ def init():
             init_details = token.get_init_detail(param, user)
             response_details.update(init_details)
         except ParameterError as e:
-            if e.id is ERROR.PARAMETER_USER_MISSING:
+            if e.id is Error.PARAMETER_USER_MISSING:
                 remove_token(serial=token.get_serial())
             raise e
 

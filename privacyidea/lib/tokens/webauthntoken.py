@@ -33,7 +33,7 @@ from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.crypto import geturandom
 from privacyidea.lib.decorators import check_token_locked
-from privacyidea.lib.error import ParameterError, EnrollmentError, PolicyError, ERROR
+from privacyidea.lib.error import ParameterError, EnrollmentError, PolicyError, Error
 from privacyidea.lib.fido2.config import FIDO2ConfigOptions
 from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction
 from privacyidea.lib.fido2.token_info import FIDO2TokenInfo
@@ -931,7 +931,7 @@ class WebAuthnTokenClass(TokenClass):
                 raise ValueError("Creating a WebAuthn token requires params to be provided")
             if not user:
                 raise ParameterError("User must be provided for WebAuthn enrollment!",
-                                     id=ERROR.PARAMETER_USER_MISSING)
+                                     id=Error.PARAMETER_USER_MISSING)
 
             user_verification = get_required(params, FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT)
             timeout = get_required(params, FIDO2PolicyAction.TIMEOUT)

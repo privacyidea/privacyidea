@@ -13,7 +13,7 @@ from privacyidea.lib.auditmodules.base import Audit
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.container import init_container, find_container_by_serial
 from privacyidea.lib.containers.container_info import RegistrationState, TokenContainerInfoData
-from privacyidea.lib.error import ParameterError, privacyIDEAError
+from privacyidea.lib.error import ParameterError, PrivacyIDEAError
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policies.conditions import (PolicyConditionClass, ConditionSection,
                                                  ConditionHandleMissingData)
@@ -253,7 +253,7 @@ class PolicyTestCase(MyTestCase):
             self.assertEqual("Priority must be at least 1", exception.exception.message)
 
         # Invalid client ip
-        with self.assertRaises(privacyIDEAError) as exception:
+        with self.assertRaises(PrivacyIDEAError) as exception:
             set_policy(name="invalid", action=PolicyAction.ENABLE, client="10.1.2.3.4")
             self.assertEqual("Invalid client definition!", exception.exception.message)
 

@@ -37,7 +37,7 @@ from privacyidea.lib.user import User
 from privacyidea.lib.token import init_token
 from privacyidea.lib.policy import Match
 from privacyidea.lib.realm import get_default_realm
-from privacyidea.lib.error import RegistrationError, ERROR
+from privacyidea.lib.error import RegistrationError, Error
 from privacyidea.lib import lazy_gettext
 from privacyidea.api.lib.prepolicy import required_email, prepolicy
 from privacyidea.lib.smtpserver import send_email_identifier
@@ -187,5 +187,5 @@ def register_post():
             action=PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE,
             realm=realm,
         ).any():
-            return send_error("Failed registering new user", error_code=ERROR.REGISTRATION), map_error_to_code(e)
+            return send_error("Failed registering new user", error_code=Error.REGISTRATION), map_error_to_code(e)
         raise

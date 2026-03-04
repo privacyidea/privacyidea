@@ -35,7 +35,7 @@ from privacyidea.api.auth import check_auth_token
 from privacyidea.api.lib.utils import send_result
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.crypto import get_hsm
-from privacyidea.lib.error import AuthError, ERROR
+from privacyidea.lib.error import AuthError, Error
 from privacyidea.lib.policy import PolicyAction, Match, SCOPE
 from privacyidea.lib.resolver import get_resolver_list, get_resolver_class
 import logging
@@ -250,7 +250,7 @@ def resolversz():
         try:
             check_auth_token(required_role=[ROLE.ADMIN])
         except AuthError as e:
-            if e.id != ERROR.AUTHENTICATE_AUTH_HEADER:
+            if e.id != Error.AUTHENTICATE_AUTH_HEADER:
                 raise
             authenticated = False
         else:

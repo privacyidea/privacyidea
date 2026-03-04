@@ -25,7 +25,7 @@ from privacyidea.lib.config import (set_privacyidea_config,
                                     get_inc_fail_count_on_false_pin,
                                     delete_privacyidea_config, SYSCONF)
 from privacyidea.lib.container import init_container, find_container_by_serial, create_container_template
-from privacyidea.lib.error import ERROR
+from privacyidea.lib.error import Error
 from privacyidea.lib.event import delete_event
 from privacyidea.lib.event import set_event
 from privacyidea.lib.machine import attach_token, detach_token
@@ -481,7 +481,7 @@ class AValidateOfflineTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, status_code, res)
             data = res.json
-            self.assertEqual(data["result"]["error"]["code"], ERROR.VALIDATE)
+            self.assertEqual(data["result"]["error"]["code"], Error.VALIDATE)
             self.assertEqual(data["result"]["error"]["message"], "Failed offline token refill")
         finally:
             delete_policy("hide_specific_error_message")
@@ -2721,7 +2721,7 @@ class ValidateAPITestCase(MyApiTestCase):
             self.assertEqual(res.status_code, 403)
             result = res.json.get("result")
             self.assertEqual(result.get("status"), False)
-            self.assertEqual(result.get("error").get("code"), ERROR.POLICY)
+            self.assertEqual(result.get("error").get("code"), Error.POLICY)
             detail = res.json.get("detail")
             self.assertEqual(detail, None)
 

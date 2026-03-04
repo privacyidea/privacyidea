@@ -4,7 +4,7 @@ This test file tests the lib/passwordreset.py
 from .base import MyTestCase, FakeFlaskG
 from privacyidea.lib.smtpserver import add_smtpserver
 from . import smtpmock
-from privacyidea.lib.error import privacyIDEAError
+from privacyidea.lib.error import PrivacyIDEAError
 from privacyidea.lib.passwordreset import (create_recoverycode,
                                            check_recoverycode,
                                            is_password_reset)
@@ -45,7 +45,7 @@ class RecoveryTestCase(MyTestCase):
         smtpmock.setdata(response={"user@localhost.localdomain": (200, "OK")})
 
         # missing configuration
-        self.assertRaises(privacyIDEAError, create_recoverycode,
+        self.assertRaises(PrivacyIDEAError, create_recoverycode,
                           user=User("cornelius", self.realm1))
 
         # recover password with "recovery.identifier"

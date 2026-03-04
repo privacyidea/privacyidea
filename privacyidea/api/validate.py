@@ -103,7 +103,7 @@ from privacyidea.lib.config import (return_saml_attributes, get_from_config,
                                     return_saml_attributes_on_fail,
                                     SYSCONF, ensure_no_config_object, get_privacyidea_node)
 from privacyidea.lib.container import find_container_for_token, find_container_by_serial, check_container_challenge
-from privacyidea.lib.error import ParameterError, PolicyError, ResourceNotFoundError, ERROR
+from privacyidea.lib.error import ParameterError, PolicyError, ResourceNotFoundError, Error
 from privacyidea.lib.event import EventConfiguration
 from privacyidea.lib.event import event
 from privacyidea.lib.machine import list_machine_tokens, get_auth_items, attach_token
@@ -261,7 +261,7 @@ def offlinerefill():
                 action=PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE_FOR_OFFLINE_REFILL,
                 user_object=request.User if hasattr(request, "User") else None,
         ).any():
-            return send_error("Failed offline token refill", error_code=ERROR.VALIDATE), map_error_to_code(e)
+            return send_error("Failed offline token refill", error_code=Error.VALIDATE), map_error_to_code(e)
         raise
 
 

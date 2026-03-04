@@ -26,7 +26,7 @@ from werkzeug.test import EnvironBuilder
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.crypto import geturandom
 from privacyidea.lib.error import ConfigAdminError
-from privacyidea.lib.error import ParameterError, privacyIDEAError, PolicyError
+from privacyidea.lib.error import ParameterError, PrivacyIDEAError, PolicyError
 from privacyidea.lib.framework import get_app_local_store
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import (SCOPE, set_policy, delete_policy, LOGINMODE, PolicyClass)
@@ -1381,7 +1381,7 @@ class PushTokenTestCase(MyTestCase):
 
     def test_07_check_timestamp(self):
         timestamp_fmt = 'broken_timestamp_010203'
-        self.assertRaisesRegex(privacyIDEAError,
+        self.assertRaisesRegex(PrivacyIDEAError,
                                r'Could not parse timestamp {0!s}. ISO-Format '
                                r'required.'.format(timestamp_fmt),
                                PushTokenClass._check_timestamp_in_range, timestamp_fmt, 10)
@@ -1394,14 +1394,14 @@ class PushTokenTestCase(MyTestCase):
             PushTokenClass._check_timestamp_in_range(timestamp.isoformat(), 10)
         with mock.patch('privacyidea.lib.tokens.pushtoken.datetime') as mock_dt:
             mock_dt.now.return_value = timestamp + timedelta(minutes=9)
-            self.assertRaisesRegex(privacyIDEAError,
+            self.assertRaisesRegex(PrivacyIDEAError,
                                    r'Timestamp {0!s} not in valid '
                                    r'range.'.format(timestamp.isoformat().replace('+', r'\+')),
                                    PushTokenClass._check_timestamp_in_range,
                                    timestamp.isoformat(), 8)
         with mock.patch('privacyidea.lib.tokens.pushtoken.datetime') as mock_dt:
             mock_dt.now.return_value = timestamp - timedelta(minutes=9)
-            self.assertRaisesRegex(privacyIDEAError,
+            self.assertRaisesRegex(PrivacyIDEAError,
                                    r'Timestamp {0!s} not in valid '
                                    r'range.'.format(timestamp.isoformat().replace('+', r'\+')),
                                    PushTokenClass._check_timestamp_in_range,
@@ -1415,7 +1415,7 @@ class PushTokenTestCase(MyTestCase):
 
         request = Request(builder.get_environ())
         request.all_data = {'serial': 'SPASS01'}
-        self.assertRaisesRegex(privacyIDEAError,
+        self.assertRaisesRegex(PrivacyIDEAError,
                                'Method PUT not allowed in \'api_endpoint\' '
                                'for push token.',
                                PushTokenClass.api_endpoint, request, g)
@@ -1440,7 +1440,7 @@ class PushTokenTestCase(MyTestCase):
         request.all_data = {'serial': 'SPASS01',
                             'timestamp': '2019-10-05T22:13:23+0100',
                             'signature': 'unknown'}
-        self.assertRaisesRegex(privacyIDEAError,
+        self.assertRaisesRegex(PrivacyIDEAError,
                                r'Timestamp 2019-10-05T22:13:23\+0100 not in valid range.',
                                PushTokenClass.api_endpoint, request, g)
 
@@ -1449,7 +1449,7 @@ class PushTokenTestCase(MyTestCase):
         request.all_data = {'serial': 'SPASS01',
                             'timestamp': (datetime.now(utc) - timedelta(minutes=2)).isoformat(),
                             'signature': 'unknown'}
-        self.assertRaisesRegex(privacyIDEAError,
+        self.assertRaisesRegex(PrivacyIDEAError,
                                r'Timestamp .* not in valid range.',
                                PushTokenClass.api_endpoint, request, g)
 
@@ -1458,7 +1458,7 @@ class PushTokenTestCase(MyTestCase):
         request.all_data = {'serial': 'SPASS01',
                             'timestamp': (datetime.now(utc) + timedelta(minutes=2)).isoformat(),
                             'signature': 'unknown'}
-        self.assertRaisesRegex(privacyIDEAError,
+        self.assertRaisesRegex(PrivacyIDEAError,
                                r'Timestamp .* not in valid range.',
                                PushTokenClass.api_endpoint, request, g)
 
@@ -1467,7 +1467,7 @@ class PushTokenTestCase(MyTestCase):
         request.all_data = {'serial': 'SPASS01',
                             'timestamp': '2019-broken-timestamp',
                             'signature': 'unknown'}
-        self.assertRaisesRegex(privacyIDEAError,
+        self.assertRaisesRegex(PrivacyIDEAError,
                                r'Could not parse timestamp .*\. ISO-Format required.',
                                PushTokenClass.api_endpoint, request, g)
 
@@ -1476,7 +1476,7 @@ class PushTokenTestCase(MyTestCase):
         request.all_data = {'serial': 'SPASS01',
                             'timestamp': datetime.now(timezone.utc),
                             'signature': 'unknown'}
-        self.assertRaisesRegex(privacyIDEAError,
+        self.assertRaisesRegex(PrivacyIDEAError,
                                r'Could not parse timestamp .*\. ISO-Format required.',
                                PushTokenClass.api_endpoint, request, g)
 
@@ -1485,7 +1485,7 @@ class PushTokenTestCase(MyTestCase):
         request.all_data = {'serial': 'SPASS01',
                             'timestamp': datetime.now(timezone.utc).isoformat(),
                             'signature': 'unknown'}
-        self.assertRaisesRegex(privacyIDEAError,
+        self.assertRaisesRegex(PrivacyIDEAError,
                                r'Could not verify signature!',
                                PushTokenClass.api_endpoint, request, g)
 
@@ -1535,7 +1535,7 @@ class PushTokenTestCase(MyTestCase):
         req = Request(builder.get_environ())
         req.all_data = req_data
         req.all_data.update({'signature': 'bad-signature'})
-        self.assertRaisesRegex(privacyIDEAError, 'Could not verify signature!',
+        self.assertRaisesRegex(PrivacyIDEAError, 'Could not verify signature!',
                                PushTokenClass.api_endpoint, req, g)
 
         # Create a correct signature
@@ -1714,7 +1714,7 @@ class PushTokenTestCase(MyTestCase):
                         return_value=timestamp_polling), mock.patch(
                 'privacyidea.lib.tokens.pushtoken.datetime') as mock_dt2:
             mock_dt2.now.return_value = timestamp + timedelta(seconds=15)
-            self.assertRaisesRegex(privacyIDEAError,
+            self.assertRaisesRegex(PrivacyIDEAError,
                                    r'Could not verify signature!',
                                    PushTokenClass.api_endpoint, request, g)
 
@@ -1729,7 +1729,7 @@ class PushTokenTestCase(MyTestCase):
                         return_value=timestamp_polling), mock.patch(
                 'privacyidea.lib.tokens.pushtoken.datetime') as mock_dt2:
             mock_dt2.now.return_value = timestamp + timedelta(seconds=15)
-            self.assertRaisesRegex(privacyIDEAError,
+            self.assertRaisesRegex(PrivacyIDEAError,
                                    r'Could not verify signature!',
                                    PushTokenClass.api_endpoint, request, g)
 
@@ -1745,7 +1745,7 @@ class PushTokenTestCase(MyTestCase):
                         return_value=timestamp_polling), mock.patch(
                 'privacyidea.lib.tokens.pushtoken.datetime') as mock_dt2:
             mock_dt2.now.return_value = timestamp + timedelta(seconds=15)
-            self.assertRaisesRegex(privacyIDEAError,
+            self.assertRaisesRegex(PrivacyIDEAError,
                                    r'Could not verify signature!',
                                    PushTokenClass.api_endpoint, request, g)
 
@@ -1757,7 +1757,7 @@ class PushTokenTestCase(MyTestCase):
                             'timestamp': datetime.now(tz=utc).isoformat(),
                             'signature': b32encode(b"signature not needed")}
         # poll for challenges
-        self.assertRaisesRegex(privacyIDEAError,
+        self.assertRaisesRegex(PrivacyIDEAError,
                                r'Could not verify signature!',
                                PushTokenClass.api_endpoint, request, g)
 
@@ -1773,7 +1773,7 @@ class PushTokenTestCase(MyTestCase):
                         return_value=timestamp_polling), mock.patch(
                 'privacyidea.lib.tokens.pushtoken.datetime') as mock_dt2:
             mock_dt2.now.return_value = timestamp + timedelta(seconds=15)
-            self.assertRaisesRegex(privacyIDEAError,
+            self.assertRaisesRegex(PrivacyIDEAError,
                                    r'Could not verify signature!',
                                    PushTokenClass.api_endpoint, request, g)
 
@@ -1787,7 +1787,7 @@ class PushTokenTestCase(MyTestCase):
                         return_value=timestamp_polling), mock.patch(
                 'privacyidea.lib.tokens.pushtoken.datetime') as mock_dt2:
             mock_dt2.now.return_value = timestamp + timedelta(seconds=15)
-            self.assertRaisesRegex(privacyIDEAError,
+            self.assertRaisesRegex(PrivacyIDEAError,
                                    r'Could not verify signature!',
                                    PushTokenClass.api_endpoint, request, g)
 
