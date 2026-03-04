@@ -777,7 +777,7 @@ def verify_enrollment(request=None, action=None):
                     # TODO: we need to add the tokentype here or the second init_token() call fails
                     request.all_data.update(type=tokenobj.get_tokentype())
                     tokenobj.token.rollout_state = ROLLOUTSTATE.ENROLLED
-                    tokenobj.token.save() # todo evaluate
+                    tokenobj.token.save()  # todo evaluate
                 else:
                     from privacyidea.lib.error import ParameterError
                     raise ParameterError("Verification of the new token failed.")
@@ -2604,7 +2604,8 @@ def require_description(request=None, action=None):
         # only if no token exists, yet, we need to check the description
         if not token and not request.all_data.get("description"):
             log.error(f"Missing description for {type_value} token.")
-            raise PolicyError(lazy_gettext(f"Description required for {type_value} token."))
+            raise PolicyError(
+                lazy_gettext("Description required for {type_value} token.").format(type_value=type_value))
 
 
 def require_description_on_edit(request=None, action=None):
