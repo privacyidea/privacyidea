@@ -2639,7 +2639,11 @@ def require_description_on_edit(request=None, action=None):
         description = request.all_data.get("description", "").strip()
         if not description:
             log.error(f"Missing description for {type_value} token.")
-            raise PolicyError(lazy_gettext(f"Description required for {type_value} token."))
+            raise PolicyError(
+                lazy_gettext("Description required for {type_value} token.").format(
+                    type_value=type_value
+                )
+            )
 
 
 def jwt_validity(request, action):
