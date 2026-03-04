@@ -1,5 +1,9 @@
 # Update Notes
 
+## Update from 3.12 to 3.13
+* `enrollpin` right enforcement has been made stricter. If you try to enroll a token with a PIN but do not have the
+  the right, the enrollment will be denied with a PolicyError.
+
 ## Update from 3.11 to 3.12
 * To enable the preview of the new WebUI, edit `pi.cfg` and add the following two lines:
 

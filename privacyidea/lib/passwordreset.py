@@ -79,7 +79,7 @@ def create_recoverycode(user, email=None, expiration_seconds=3600,
     res = False
     if not user:
         raise UserError("User required for recovery token.")
-    user_email = user.info.get("email")
+    user_email = user.get_specific_info(["email"]).get("email")
     if email and email.lower() != user_email.lower():
         raise UserError("The email does not match the users email.")
 

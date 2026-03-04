@@ -28,8 +28,9 @@ import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ActivatedRoute, Router } from "@angular/router";
 import { MockResolverService } from "../../../../testing/mock-services/mock-resolver-service";
-import { MockNotificationService, MockTableUtilsService } from "../../../../testing/mock-services";
+import { MockNotificationService } from "../../../../testing/mock-services";
 import { MockAuthService } from "../../../../testing/mock-services/mock-auth-service";
+import { MockTableUtilsService } from "src/testing/mock-services/mock-table-utils-service";
 
 class LocalMockMatDialog {
   result$ = of(true);

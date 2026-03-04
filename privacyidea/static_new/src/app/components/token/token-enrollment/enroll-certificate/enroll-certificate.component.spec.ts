@@ -41,4 +41,28 @@ describe("EnrollCertComponent", () => {
   it("should create", () => {
     expect(component).toBeTruthy();
   });
+
+  describe("ngOnInit with enrollmentData input", () => {
+    it("should set initial values from enrollmentData", () => {
+      fixture.componentRef.setInput("enrollmentData", {
+        type: "certificate",
+        caConnector: "connector-123",
+        certTemplate: "template-abc"
+      });
+      component.ngOnInit();
+      expect(component.caConnectorControl.value).toBe("connector-123");
+      expect(component.certTemplateControl.value).toBe("template-abc");
+    });
+
+    it("should ignore values from enrollmentData if they are undefined", () => {
+      fixture.componentRef.setInput("enrollmentData", {
+        type: "certificate",
+        caConnector: undefined,
+        certTemplate: undefined
+      });
+      component.ngOnInit();
+      expect(component.caConnectorControl.value).toBe("");
+      expect(component.certTemplateControl.value).toBe("");
+    });
+  });
 });

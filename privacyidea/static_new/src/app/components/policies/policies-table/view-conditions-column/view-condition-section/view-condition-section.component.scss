@@ -1,0 +1,29 @@
+@use "mixins";
+@use "@angular/material" as mat;
+
+.conditions-grid-container {
+  align-items: baseline;
+  display: grid;
+  gap: var(--half-global-padding);
+  grid-template-columns: auto minmax(0, 1fr);
+  padding: var(--quarter-global-padding) 0;
+
+  .conditions-label {
+    color: var(--mat-sys-on-surface-variant);
+    font-size: 0.9rem;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .conditions-chips-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+
+    .marker-chip {
+      @include mixins.compact-badge-base;
+      background-color: transparent;
+      border: 1px solid var(--mat-sys-outline-variant);
+      color: var(--mat-sys-on-surface);
+    }
+  }
+}

@@ -1,5 +1,6 @@
-@use "../../../../../styles";
-@use "../../../container-templates-table/container-templates.component.scss";
+@use "styles";
+@use "table";
+@use "../../container-templates/container-templates.component.scss";
 @use "@angular/material" as mat;
 
 // --- Main Layout ---

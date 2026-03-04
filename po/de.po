@@ -7,13 +7,14 @@
 # Jelina Unger <jelina.unger@netknights.it>, 2024.
 # Nils Behlen <nils.behlen@netknights.it>, 2024, 2025.
 # Moonwalk4797 <moonwalk4797@users.noreply.hosted.weblate.org>, 2024.
+# Lucas Scholz <lucas.scholz@netknights.it>, 2026.
 msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: translations@privacyidea.org\n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2025-09-08 12:00+0000\n"
-"Last-Translator: Nils Behlen <nils.behlen@netknights.it>\n"
+"PO-Revision-Date: 2026-02-28 09:09+0000\n"
+"Last-Translator: Lucas Scholz <lucas.scholz@netknights.it>\n"
 "Language-Team: German <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-webui/de/>\n"
 "Language: de\n"
@@ -21,7 +22,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 5.14-dev\n"
+"X-Generator: Weblate 5.16.1-dev\n"
 
 # This is the level in the subscriptions
 #. level of subscription
@@ -1194,7 +1195,7 @@ msgstr "Erstelle regelmäßigen Aufgabe"
 
 #: privacyidea/static/components/config/views/config.policies.html:13
 msgid "Create new Policy"
-msgstr "Erzeuge einen neue Richtlinie"
+msgstr "Erzeuge eine neue Richtlinie"
 
 #: privacyidea/static/components/config/views/config.system.html:119
 msgid "Create new SMS Gateway definition"

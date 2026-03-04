@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,27 +16,28 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import {
-  Challenge,
-  ChallengesService,
-  ChallengesServiceInterface
-} from "../../../services/token/challenges/challenges.service";
-import { Component, ElementRef, ViewChild, WritableSignal, inject, linkedSignal } from "@angular/core";
-import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
-import { MatPaginator, MatPaginatorModule, PageEvent } from "@angular/material/paginator";
-import { MatTableDataSource, MatTableModule } from "@angular/material/table";
-import { TableUtilsService, TableUtilsServiceInterface } from "../../../services/table-utils/table-utils.service";
-import { TokenService, TokenServiceInterface } from "../../../services/token/token.service";
 
-import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
-import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
+import { NgClass } from "@angular/common";
+import { Component, inject, linkedSignal, WritableSignal, ViewChild, ElementRef } from "@angular/core";
+import { MatButtonModule } from "@angular/material/button";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
-import { NgClass } from "@angular/common";
-import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
-import { MatButtonModule } from "@angular/material/button";
-import { FilterValue } from "../../../core/models/filter_value";
+import { MatPaginatorModule, MatPaginator, PageEvent } from "@angular/material/paginator";
+import { MatTableModule, MatTableDataSource } from "@angular/material/table";
+import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
+import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { FilterValue } from "src/app/core/models/filter_value/filter_value";
+import { ContentServiceInterface, ContentService } from "src/app/services/content/content.service";
+import { NotificationServiceInterface, NotificationService } from "src/app/services/notification/notification.service";
+import { TableUtilsServiceInterface, TableUtilsService } from "src/app/services/table-utils/table-utils.service";
+import {
+  ChallengesServiceInterface,
+  ChallengesService,
+  Challenge
+} from "src/app/services/token/challenges/challenges.service";
+import { TokenServiceInterface, TokenService } from "src/app/services/token/token.service";
 
 const columnKeysMap = [
   { key: "timestamp", label: "Timestamp" },
@@ -69,6 +70,7 @@ export class ChallengesTableComponent {
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   protected readonly challengesService: ChallengesServiceInterface = inject(ChallengesService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
+  protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
 
   columnsKeyMap = columnKeysMap;
   displayedColumns = columnKeysMap.map((c) => c.key);
@@ -136,5 +138,17 @@ export class ChallengesTableComponent {
     } else {
       this.contentService.tokenSelected(element.serial);
     }
+  }
+
+  onDeleteExpiredChallenges(): void {
+    this.challengesService.deleteExpiredChallenges().subscribe({
+      next: () => {
+        this.challengesService.challengesResource.reload();
+      },
+      error: (err) => {
+        const message = err?.error?.result?.error?.message ?? "Failed to delete expired challenges.";
+        this.notificationService.openSnackBar(message);
+      }
+    });
   }
 }

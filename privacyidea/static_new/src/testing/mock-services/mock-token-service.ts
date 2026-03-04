@@ -16,9 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { signal, WritableSignal } from "@angular/core";
+import { computed, Signal, signal, WritableSignal } from "@angular/core";
 import { Sort } from "@angular/material/sort";
-import { FilterValue } from "../../app/core/models/filter_value";
 import {
   BulkResult,
   LostTokenResponse,
@@ -31,6 +30,7 @@ import {
 import { MockHttpResourceRef, MockPiResponse } from "./mock-utils";
 import { PiResponse } from "../../app/app.component";
 import { of, Subject } from "rxjs";
+import { FilterValue } from "src/app/core/models/filter_value/filter_value";
 
 function makeTokenDetailResponse(tokentype: string): PiResponse<Tokens> {
   return {
@@ -78,10 +78,6 @@ function makeTokenDetailResponse(tokentype: string): PiResponse<Tokens> {
 }
 
 export class MockTokenService implements TokenServiceInterface {
-  getSerial = jest.fn().mockReturnValue(of({ result: { status: true, value: { count: 1, serial: "X" } } } as any));
-  bulkUnassignTokens = jest
-    .fn()
-    .mockReturnValue(of(MockPiResponse.fromValue<BulkResult>({ failed: [], unauthorized: [], count_success: 1 })));
   apiFilterKeyMap: Record<string, string> = {};
   stopPolling$: Subject<void> = new Subject<void>();
   tokenBaseUrl: string = "mockEnvironment.proxyUrl + '/token'";
@@ -119,11 +115,18 @@ export class MockTokenService implements TokenServiceInterface {
   readonly pageIndex = signal(0);
   readonly tokenResource = new MockHttpResourceRef<PiResponse<Tokens> | undefined>(undefined as any);
   readonly tokenSelection: WritableSignal<TokenDetails[]> = signal<TokenDetails[]>([]);
+  selectedToken: WritableSignal<string | null> = signal(null);
+  tokenOptions: WritableSignal<string[]> = signal<string[]>([]);
+  filteredTokenOptions: Signal<string[]> = computed(() => {
+    const filter = (this.selectedToken() || "").toLowerCase();
+    return this.tokenOptions().filter((option) => option.toLowerCase().includes(filter));
+  });
   clearFilter = jest.fn();
   handleFilterInput = jest.fn();
   readonly toggleActive = jest.fn().mockReturnValue(of({}));
   readonly resetFailCount = jest.fn().mockReturnValue(of(null));
   readonly saveTokenDetail = jest.fn().mockReturnValue(of(MockPiResponse.fromValue<boolean>(true)));
+  getSerial = jest.fn().mockReturnValue(of({ result: { status: true, value: { count: 1, serial: "X" } } } as any));
   readonly setTokenInfos = jest.fn().mockReturnValue(of({}));
   readonly deleteToken = jest.fn().mockReturnValue(of({}));
   readonly bulkDeleteTokens = jest
@@ -134,6 +137,9 @@ export class MockTokenService implements TokenServiceInterface {
   readonly deleteInfo = jest.fn().mockReturnValue(of({}));
   readonly unassignUserFromAll = jest.fn().mockReturnValue(of([]));
   readonly unassignUser = jest.fn().mockReturnValue(of(null));
+  bulkUnassignTokens = jest
+    .fn()
+    .mockReturnValue(of(MockPiResponse.fromValue<BulkResult>({ failed: [], unauthorized: [], count_success: 1 })));
   readonly assignUserToAll = jest.fn().mockReturnValue(of([]));
   readonly assignUser = jest.fn().mockReturnValue(of(null));
   setPin = jest.fn();

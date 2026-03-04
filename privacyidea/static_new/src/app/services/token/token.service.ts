@@ -45,7 +45,7 @@ import { ContentService, ContentServiceInterface } from "../content/content.serv
 import { StringUtils } from "../../utils/string.utils";
 import { DialogService, DialogServiceInterface } from "../dialog/dialog.service";
 import { SimpleConfirmationDialogComponent } from "../../components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
-import { FilterValue } from "../../core/models/filter_value";
+import { FilterValue } from "src/app/core/models/filter_value/filter_value";
 
 export type TokenTypeKey =
   | "hotp"
@@ -137,6 +137,7 @@ export interface TokenType {
   name: string;
   info: string;
   text: string;
+  rollover?: boolean;
 }
 
 export interface WebAuthnRegisterRequest {
@@ -193,7 +194,7 @@ export interface TokenServiceInterface {
   tokenBaseUrl: string;
   eventPageSize: number;
   tokenSerial: WritableSignal<string>;
-  selectedTokenType: Signal<TokenType>;
+  selectedTokenType: WritableSignal<TokenType>;
   showOnlyTokenNotInContainer: WritableSignal<boolean>;
   tokenFilter: WritableSignal<FilterValue>;
   tokenDetailResource: HttpResourceRef<PiResponse<Tokens> | undefined>;
@@ -212,6 +213,9 @@ export interface TokenServiceInterface {
   pageIndex: WritableSignal<number>;
   tokenResource: HttpResourceRef<PiResponse<Tokens> | undefined>;
   tokenSelection: WritableSignal<TokenDetails[]>;
+  selectedToken: WritableSignal<string | null>;
+  tokenOptions: Signal<string[]>;
+  filteredTokenOptions: Signal<string[]>;
 
   clearFilter(): void;
 
@@ -317,6 +321,19 @@ export class TokenService implements TokenServiceInterface {
       .filter(([key, v]) => (key === "container_serial" ? true : StringUtils.validFilterValue(v)))
       .map(([key, v]) => [key, plainKeys.has(key) ? v : `*${v}*`] as const);
     return Object.fromEntries(entries) as Record<string, string>;
+  });
+
+  tokenSerialResource = httpResource<PiResponse<Tokens>>(() => {
+    const filter = this.selectedToken();
+    if (!filter || filter.length < 1) {
+      return undefined;
+    }
+    return {
+      url: this.tokenBaseUrl,
+      method: "GET",
+      headers: this.authService.getHeaders(),
+      params: { serial: `*${filter}*` }
+    };
   });
 
   constructor() {
@@ -531,6 +548,20 @@ export class TokenService implements TokenServiceInterface {
       tokenResource: this.tokenResource.value()
     }),
     computation: () => []
+  });
+
+  selectedToken: WritableSignal<string | null> = signal(null);
+
+  tokenOptions = linkedSignal({
+    source: this.tokenSerialResource.value,
+    computation: (tokenSerialResource) => {
+      return tokenSerialResource?.result?.value?.tokens?.map((token) => token.serial) ?? [];
+    }
+  });
+
+  filteredTokenOptions = computed(() => {
+    const filter = (this.selectedToken() || "").toLowerCase();
+    return this.tokenOptions().filter((option) => option.toLowerCase().includes(filter));
   });
 
   bulkUnassignTokens(tokenDetails: TokenDetails[]): Observable<PiResponse<BulkResult, any>> {

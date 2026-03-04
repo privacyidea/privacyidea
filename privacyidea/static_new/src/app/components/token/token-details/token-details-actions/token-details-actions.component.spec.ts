@@ -20,7 +20,7 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { signal } from "@angular/core";
 import { of } from "rxjs";
 import { TokenDetailsActionsComponent } from "./token-details-actions.component";
-import { TokenService } from "../../../../services/token/token.service";
+import { TokenService, TokenTypeKey } from "../../../../services/token/token.service";
 import { ValidateService } from "../../../../services/validate/validate.service";
 import { MachineService } from "../../../../services/machine/machine.service";
 import { NotificationService } from "../../../../services/notification/notification.service";
@@ -184,6 +184,21 @@ describe("TokenDetailsActionsComponent", () => {
       mtid: "77"
     });
     expect(reloadSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("rolloverTokenTypes determined correctly", () => {
+    expect(component.rolloverTokenTypes()).toContain("totp");
+    expect(component.rolloverTokenTypes()).toContain("hotp");
+  });
+
+  it("tokenTypeKey is set correctly", () => {
+    component.tokenType.set("yubikey");
+    expect(component.tokenTypeKey()).toEqual("yubikey" as TokenTypeKey);
+    expect(component.rolloverTokenTypes().indexOf(component.tokenTypeKey())).toBe(-1);
+
+    component.tokenType.set("daypassword");
+    expect(component.tokenTypeKey()).toEqual("daypassword" as TokenTypeKey);
+    expect(component.rolloverTokenTypes().indexOf(component.tokenTypeKey())).toBeGreaterThan(-1);
   });
 
   describe("openLostTokenDialog()", () => {

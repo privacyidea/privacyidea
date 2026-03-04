@@ -1,0 +1,19 @@
+<div class="conditions-grid-container">
+  <span
+    class="conditions-label"
+    i18n>
+    {{ label() }}:
+  </span>
+  <div class="conditions-chips-container">
+    @for (value of values(); track value) {
+      <div>
+        {{ value }}
+      </div>
+    }
+    @if (marker()) {
+      <div class="marker-chip">
+        {{ marker() }}
+      </div>
+    }
+  </div>
+</div>
