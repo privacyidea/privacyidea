@@ -32,7 +32,7 @@ describe("ConfigService", () => {
 
   const mockConfig: AppConfig = {
     remote_user: "testUser",
-    force_remote_user: "forceUser",
+    force_remote_user: true,
     password_reset: true,
     hsm_ready: true,
     customization: "custom",
@@ -71,7 +71,7 @@ describe("ConfigService", () => {
   it("should have default config values", () => {
     expect(service.config()).toEqual({
       remote_user: "",
-      force_remote_user: "",
+      force_remote_user: false,
       password_reset: false,
       hsm_ready: false,
       customization: "",
@@ -117,7 +117,7 @@ describe("ConfigService", () => {
     // Should keep the default config values
     expect(service.config()).toEqual({
       remote_user: "",
-      force_remote_user: "",
+      force_remote_user: false,
       password_reset: false,
       hsm_ready: false,
       customization: "",
