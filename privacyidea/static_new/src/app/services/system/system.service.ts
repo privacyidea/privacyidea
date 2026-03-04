@@ -122,10 +122,18 @@ export class SystemService implements SystemServiceInterface {
     source: this.caConnectorResource?.value,
     computation: (source, previous) => source?.result?.value ?? previous?.value ?? []
   });
-  nodesResource = httpResource<PiResponse<PiNode[]>>({
-    url: this.systemBaseUrl + "nodes",
-    method: "GET",
-    headers: this.authService.getHeaders()
+  nodesResource = httpResource<PiResponse<PiNode[]>>(() => {
+    if (
+      !this.contentService.onConfigurationPeriodicTasks() &&
+      !this.contentService.onConfigurationSystem()
+    ) {
+      return undefined;
+    }
+    return {
+      url: this.systemBaseUrl + "nodes",
+      method: "GET",
+      headers: this.authService.getHeaders()
+    };
   });
   systemConfig = computed<any>(() => {
     return this.systemConfigResource.value()?.result?.value ?? {};
