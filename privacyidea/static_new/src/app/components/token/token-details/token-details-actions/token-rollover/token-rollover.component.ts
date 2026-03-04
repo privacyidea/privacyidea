@@ -130,10 +130,6 @@ export class TokenRolloverComponent extends AbstractDialogComponent<{
 
   // Only required if we later add the reopen rollover dialog function
   enrollResponse: WritableSignal<EnrollmentResponse | null> = signal(null);
-  _lastTokenEnrollmentLastStepDialogData: WritableSignal<TokenEnrollmentLastStepDialogData | null> = linkedSignal({
-    source: this.tokenService.selectedTokenType,
-    computation: () => null
-  });
 
   constructor() {
     super();
@@ -178,6 +174,7 @@ export class TokenRolloverComponent extends AbstractDialogComponent<{
     const basicOptions: TokenEnrollmentData = {
       type: this.token()!.type,
       serial: this.token()!.serial,
+      description: this.token()!.description,
       rollover: true
     };
 
