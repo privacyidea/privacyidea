@@ -48,7 +48,7 @@ from ..lib.policy import (set_policy, rename_policy,
                           get_policy_condition_comparators, Match, validate_values, get_policies, SCOPE)
 from ..lib.token import get_dynamic_policy_definitions
 from ..lib.error import (ParameterError)
-from privacyidea.lib.framework import _
+from privacyidea.lib import lazy_gettext
 from privacyidea.lib.utils import is_true
 from privacyidea.lib.config import get_privacyidea_node_names
 from ..api.lib.prepolicy import prepolicy, check_base_action
@@ -435,12 +435,12 @@ def import_policy_api(filename=None):
             file_contents = file_contents.decode()
     except UnicodeDecodeError as e:
         log.error(f"Unable to convert contents of file '{filename}' to unicode: {e}")
-        raise ParameterError(_("Unable to convert file contents. Binary data is not supported"))
+        raise ParameterError(lazy_gettext("Unable to convert file contents. Binary data is not supported"))
 
     if file_contents == "":
         log.error("Error loading/importing policy file. file {0!s} empty!".format(
                   filename))
-        raise ParameterError(_("Error loading policy. File empty!"))
+        raise ParameterError(lazy_gettext("Error loading policy. File empty!"))
 
     policy_num = import_policies(file_contents=file_contents)
     g.audit_object.log({"success": True,

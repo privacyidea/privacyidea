@@ -41,7 +41,7 @@ from flask import g, jsonify, current_app
 import logging
 from privacyidea.api.lib.utils import get_all_params, map_error_to_code, send_error
 from privacyidea.lib.error import ParameterError
-from privacyidea.lib.framework import _
+from privacyidea.lib import lazy_gettext
 from privacyidea.lib.policy import PolicyClass, PolicyAction, SCOPE, Match
 from privacyidea.lib.audit import getAudit
 from privacyidea.lib.config import (get_token_class, get_from_config,
@@ -104,7 +104,7 @@ def token(ttype=None):
     tokenc = get_token_class(ttype)
     if tokenc is None:
         log.error("Invalid tokentype provided. ttype: {}".format(ttype.lower()))
-        raise ParameterError(_("Invalid tokentype provided. ttype: {}").format(ttype.lower()))
+        raise ParameterError(lazy_gettext("Invalid tokentype provided. ttype: {}").format(ttype.lower()))
     try:
         res = tokenc.api_endpoint(request, g)
     except Exception as e:

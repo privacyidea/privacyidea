@@ -52,7 +52,7 @@ from ..lib.realm import (set_default_realm,
                          delete_realm)
 from ..api.lib.prepolicy import prepolicy, check_base_action
 from ..lib.utils import reduce_realms
-from privacyidea.lib import _
+from privacyidea.lib import lazy_gettext
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.config import check_node_uuid_exists
 from privacyidea.lib.error import ParameterError
@@ -527,13 +527,13 @@ def set_realm_node_api(realm, nodeid):
     """
     if not check_node_uuid_exists(nodeid):
         log.warning(f"Node with UUID {nodeid} does not exist in the database!")
-        raise ParameterError(_("The given node does not exist!"))
+        raise ParameterError(lazy_gettext("The given node does not exist!"))
 
     data = request.json
     resolvers = []
     if "resolver" not in data:
         log.warning("Missing resolver data in request")
-        raise ParameterError(_("Could not verify data in request!"))
+        raise ParameterError(lazy_gettext("Could not verify data in request!"))
 
     for res in data["resolver"]:
         try:
@@ -543,7 +543,7 @@ def set_realm_node_api(realm, nodeid):
         except (KeyError, ValueError) as e:
             log.warning(f"Could not parse resolver data {res}: {e}")
             log.debug(e.__traceback__)
-            raise ParameterError(_("Could not verify data in request!"))
+            raise ParameterError(lazy_gettext("Could not verify data in request!"))
 
     # since this endpoint is node-specific, we would delete all other resolvers
     # which are specified for a different node or no node at all. We need to
