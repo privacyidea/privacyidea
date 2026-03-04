@@ -28,4 +28,12 @@ def upgrade():
 
 
 def downgrade():
-    op.drop_index(op.f('ix_challenge_expiration'), table_name='challenge')
+    try:
+        op.drop_index(op.f('ix_challenge_expiration'), table_name='challenge')
+    except (OperationalError, ProgrammingError) as exx:
+        msg = str(exx.orig).lower()
+        if "no such index" in msg or "does not exist" in msg or "check that it exists" in msg:
+            print("Index 'ix_challenge_expiration' already removed.")
+        else:
+            print("Could not remove index 'ix_challenge_expiration' from table 'challenge'.")
+            raise
