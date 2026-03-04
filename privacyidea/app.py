@@ -88,7 +88,7 @@ from privacyidea.models import db, NodeName
 from privacyidea.webui.certificate import cert_blueprint
 from privacyidea.webui.login import login_blueprint, get_accepted_language
 
-ENV_KEY = "PRIVACYIDEA_CONFIGFILE"
+CONFIG_FILE = "PRIVACYIDEA_CONFIGFILE"
 
 CSP = {
     'default-src': [
@@ -324,8 +324,8 @@ def create_app(config_name="development",
     # Load configuration from environment variables prefixed with PRIVACYIDEA_
     app.config.from_prefixed_env("PRIVACYIDEA")
 
-    if ENV_KEY in os.environ:
-        config_file = os.environ[ENV_KEY]
+    if CONFIG_FILE in os.environ:
+        config_file = os.environ[CONFIG_FILE]
     if app.config.get(ConfigKey.VERBOSE):
         print("Additional configuration will be read from the file {0!s}".format(config_file))
 
@@ -333,7 +333,7 @@ def create_app(config_name="development",
         # Try to load the given config_file.
         app.config.from_pyfile(config_file, silent=False)
     except IOError as e:
-        if config_name != "docker" or ENV_KEY in os.environ:
+        if config_name != "docker" or CONFIG_FILE in os.environ:
             sys.stderr.write("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n")
             sys.stderr.write("  WARNING: Unable to load additional configuration\n")
             sys.stderr.write(f"  from {config_file}!\n")
@@ -466,6 +466,15 @@ def create_docker_app():
 
     # Set up Plug-Ins
     db.init_app(app)
+
+    # Initialize Flask-Migrate so that `flask db upgrade` works in the entrypoint
+    migration_dir = "privacyidea/migrations"
+    try:
+        migration_path = [f for f in metadata.files("privacyidea") if f.match("migrations/env.py")][0]
+        migration_dir = str(migration_path.locate().parent.resolve())
+    except (PackageNotFoundError, IndexError):
+        pass
+    migrate.init_app(app, db, directory=migration_dir)
 
     Versioned(app, format='%(path)s?v=%(version)s')
 
