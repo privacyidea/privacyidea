@@ -23,6 +23,7 @@ import { ComponentRef } from "@angular/core";
 import { MockResolverService } from "../../../../../testing/mock-services/mock-resolver-service";
 import { ResolverService } from "../../../../services/resolver/resolver.service";
 import { of } from "rxjs";
+import { MockPiResponse } from "../../../../../testing/mock-services";
 
 describe("HttpResolverComponent", () => {
   let component: HttpResolverComponent;
@@ -60,9 +61,7 @@ describe("HttpResolverComponent", () => {
       method: "POST",
       verify_tls: false
     };
-    mockResolverService.getDefaultResolverConfig.mockReturnValue(of({
-      result: { status: true, value: defaults }
-    }));
+    mockResolverService.getDefaultResolverConfig.mockReturnValue(of(MockPiResponse.fromValue(defaults)));
 
     // Trigger effect by changing type or just re-initializing if possible
     // Since it's already initialized in beforeEach, let's manually call or trigger

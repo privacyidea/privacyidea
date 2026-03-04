@@ -41,6 +41,7 @@ import { ClearableInputComponent } from "../../../shared/clearable-input/clearab
 import { parseBooleanValue } from "../../../../utils/parse-boolean-value";
 import { HttpGroupsAttributeComponent } from "./http-groups-attribute/http-groups-attribute.component";
 import { ResolverService } from "../../../../services/resolver/resolver.service";
+import { PiResponse } from "../../../../app.component";
 
 export type AttributeMappingRow = {
   privacyideaAttr: string | null;
@@ -92,7 +93,7 @@ export class HttpResolverComponent {
   protected readonly displayedColumns: string[] = ["privacyideaAttr", "userStoreAttr", "actions"];
   protected readonly CUSTOM_ATTR_VALUE = "__custom__";
   private resolverService = inject(ResolverService);
-  data = input<any>({});
+  data = input({});
   type = input<string>("httpresolver");
   serverDefaults = signal<any>({});
   mergedData = computed(() => {
@@ -400,14 +401,14 @@ export class HttpResolverComponent {
     }
   }
 
-  private formatConfigValue(value: any): string {
+  private formatConfigValue(value: {} | null): string {
     if (typeof value === 'object' && value !== null) {
       if (Object.keys(value).length === 0) {
         return "";
       }
       return JSON.stringify(value);
     }
-    return value ?? "";
+    return <string>value ?? "";
   }
 
   protected onMappingChanged(): void {

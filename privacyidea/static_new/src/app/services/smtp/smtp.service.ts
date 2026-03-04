@@ -93,49 +93,46 @@ export class SmtpService implements SmtpServiceInterface {
     const url = `${this.smtpServerBaseUrl}${server.identifier}`;
     const request = this.http.post<PiResponse<any>>(url, server, { headers: this.authService.getHeaders() });
 
-    return lastValueFrom(request)
-      .then(() => {
-        this.notificationService.openSnackBar($localize`Successfully saved SMTP server.`);
-        this.smtpServerResource.reload();
-      })
-      .catch((error) => {
-        const message = error.error?.result?.error?.message || "";
-        this.notificationService.openSnackBar($localize`Failed to save SMTP server. ` + message);
-        throw new Error("post-failed");
-      });
+    try {
+      await lastValueFrom(request);
+      this.notificationService.openSnackBar($localize`Successfully saved SMTP server.`);
+      this.smtpServerResource.reload();
+    } catch (error: any) {
+      const message = error.error?.result?.error?.message || "";
+      this.notificationService.openSnackBar($localize`Failed to save SMTP server. ` + message);
+      throw new Error("post-failed");
+    }
   }
 
   async testSmtpServer(params: any): Promise<boolean> {
     const url = `${this.smtpServerBaseUrl}send_test_email`;
     const request = this.http.post<PiResponse<boolean>>(url, params, { headers: this.authService.getHeaders() });
-    return lastValueFrom(request)
-      .then((res) => {
-        if (res?.result?.value) {
-          this.notificationService.openSnackBar($localize`Test email sent successfully.`);
-          return true;
-        }
-        return false;
-      })
-      .catch((error) => {
-        const message = error.error?.result?.error?.message || "";
-        this.notificationService.openSnackBar($localize`Failed to send test email. ` + message);
-        return false;
-      });
+    try {
+      const res = await lastValueFrom(request);
+      if (res?.result?.value) {
+        this.notificationService.openSnackBar($localize`Test email sent successfully.`);
+        return true;
+      }
+      return false;
+    } catch (error: any) {
+      const message = error.error?.result?.error?.message || "";
+      this.notificationService.openSnackBar($localize`Failed to send test email. ` + message);
+      return false;
+    }
   }
 
   async deleteSmtpServer(identifier: string): Promise<void> {
     const request = this.http.delete<PiResponse<any>>(`${this.smtpServerBaseUrl}${identifier}`, {
       headers: this.authService.getHeaders()
     });
-    return lastValueFrom(request)
-      .then(() => {
-        this.notificationService.openSnackBar($localize`Successfully deleted SMTP server: ${identifier}.`);
-        this.smtpServerResource.reload();
-      })
-      .catch((error) => {
-        const message = error.error?.result?.error?.message || "";
-        this.notificationService.openSnackBar($localize`Failed to delete SMTP server. ` + message);
-        throw new Error("delete-failed");
-      });
+    try {
+      await lastValueFrom(request);
+      this.notificationService.openSnackBar($localize`Successfully deleted SMTP server: ${identifier}.`);
+      this.smtpServerResource.reload();
+    } catch (error: any) {
+      const message = error.error?.result?.error?.message || "";
+      this.notificationService.openSnackBar($localize`Failed to delete SMTP server. ` + message);
+      throw new Error("delete-failed");
+    }
   }
 }

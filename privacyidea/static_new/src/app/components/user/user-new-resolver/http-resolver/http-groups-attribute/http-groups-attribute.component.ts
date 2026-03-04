@@ -17,14 +17,13 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, Input, OnDestroy, OnInit } from "@angular/core";
+import { Component, computed, Input, OnDestroy, OnInit, signal } from "@angular/core";
 import { FormGroup, FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { Subscription } from "rxjs";
 import { MatInput, MatLabel } from "@angular/material/input";
 import { MatSlideToggle } from "@angular/material/slide-toggle";
 import { MatOption, MatSelect } from "@angular/material/select";
 import { MatFormField, MatHint } from "@angular/material/form-field";
-import { computed, signal } from '@angular/core';
 import { MatTooltip } from "@angular/material/tooltip";
 
 @Component({
@@ -45,32 +44,28 @@ import { MatTooltip } from "@angular/material/tooltip";
   styleUrl: "./http-groups-attribute.component.scss"
 })
 export class HttpGroupsAttributeComponent implements OnInit, OnDestroy {
-  @Input({ required: true }) userGroupsControl!: FormGroup;
-  @Input({ required: true }) resolverType!: string;
-
-  private activeSubscription?: Subscription;
-  private methodSubscription?: Subscription;
-
   // Signal for the 'active' value
   readonly activeSignal = signal<boolean>(false);
-
   // Computed signal for the tooltip
   readonly slideToggleTooltipSignal = computed(() =>
     this.activeSignal()
       ? $localize`Disable user groups retrieval`
       : $localize`Enable user groups retrieval`
   );
+  private activeSubscription?: Subscription;
+  private methodSubscription?: Subscription;
+  @Input({ required: true }) userGroupsControl!: FormGroup;
+  @Input({ required: true }) resolverType!: string;
 
   ngOnInit() {
     if (this.userGroupsControl) {
       this.activeSubscription?.unsubscribe();
       const activeControl = this.userGroupsControl.get("active");
       if (activeControl) {
-        this.activeSignal.set(!!activeControl.value);
+        const controls = ["user_groups_attribute", "method", "endpoint"];
 
-        this.activeSubscription = activeControl.valueChanges.subscribe((active: boolean) => {
+        const updateControls = (active: boolean) => {
           this.activeSignal.set(active);
-          const controls = ["user_groups_attribute", "method", "endpoint"];
           controls.forEach(ctrl => {
             const control = this.userGroupsControl.get(ctrl);
             if (active) {
@@ -79,17 +74,10 @@ export class HttpGroupsAttributeComponent implements OnInit, OnDestroy {
               control?.disable({ emitEvent: false });
             }
           });
-        });
+        };
 
-        const controls = ["user_groups_attribute", "method", "endpoint"];
-        controls.forEach(ctrl => {
-          const control = this.userGroupsControl.get(ctrl);
-          if (activeControl.value) {
-            control?.enable({ emitEvent: false });
-          } else {
-            control?.disable({ emitEvent: false });
-          }
-        });
+        this.activeSubscription = activeControl.valueChanges.subscribe(updateControls);
+        updateControls(!!activeControl.value);
 
         const methodControl = this.userGroupsControl.get("method");
         if (methodControl) {

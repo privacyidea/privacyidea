@@ -42,7 +42,16 @@ export interface CaConnectorServiceInterface {
 
   deleteCaConnector(connectorname: string): Promise<void>;
 
-  getCaSpecificOptions(catype: string, params: any): Promise<any>;
+  getCaSpecificOptions(catype: string, params: {
+    hostname: any;
+    port?: any;
+    use_ssl?: any;
+    ssl_ca_cert?: any;
+    ssl_client_cert?: any;
+    ssl_client_key?: any;
+    ssl_client_key_password?: any;
+    http_proxy?: any;
+  }): Promise<any>;
 }
 
 @Injectable({
