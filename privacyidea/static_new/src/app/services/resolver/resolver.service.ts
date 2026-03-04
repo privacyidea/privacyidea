@@ -102,7 +102,8 @@ export interface SQLResolverData extends ResolverData {
 }
 
 export interface PasswdResolverData extends ResolverData {
-  fileName: string;
+  fileName?: string;
+  filename?: string;
 }
 
 export interface SCIMResolverData extends ResolverData {
