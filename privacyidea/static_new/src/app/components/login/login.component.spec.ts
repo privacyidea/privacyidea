@@ -39,12 +39,14 @@ import { ROUTE_PATHS } from "../../route_paths";
 import { MockAuthService } from "../../../testing/mock-services/mock-auth-service";
 import { ConfigService } from "../../services/config/config.service";
 import { By } from "@angular/platform-browser";
+import { MockConfigService } from "../../../testing/mock-services/mock-config-service";
 
 describe("LoginComponent", () => {
   let fixture: ComponentFixture<LoginComponent>;
   let component: LoginComponent;
   let authService: MockAuthService;
   let localService: MockLocalService;
+  let configService: MockConfigService;
   let notificationService: MockNotificationService;
   let sessionTimerService: jest.Mocked<SessionTimerServiceInterface>;
   let validateService: MockValidateService;
@@ -74,6 +76,7 @@ describe("LoginComponent", () => {
         { provide: ValidateService, useClass: MockValidateService },
         { provide: SessionTimerService, useValue: sessionTimerServiceMock },
         { provide: Router, useValue: routerMock },
+        { provide: ConfigService, useClass: MockConfigService },
         MockLocalService,
         MockNotificationService
       ]
@@ -85,6 +88,7 @@ describe("LoginComponent", () => {
     notificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;
     sessionTimerService = TestBed.inject(SessionTimerService) as unknown as jest.Mocked<SessionTimerServiceInterface>;
     validateService = TestBed.inject(ValidateService) as unknown as MockValidateService;
+    configService = TestBed.inject(ConfigService) as unknown as MockConfigService;
     router = TestBed.inject(Router) as jest.Mocked<Router>;
 
     // Default setup for most tests (not logged in)
@@ -240,7 +244,7 @@ describe("LoginComponent", () => {
 
       component.onSubmit();
       // "please enter otp:" is not duplicated
-      expect(component.loginMessage()).toEqual([
+      expect(component.authMessage()).toEqual([
         "please enter otp: ",
         "Please confirm with your WebAuthn token (Generic WebAuthn Token)"
       ]);
@@ -264,7 +268,7 @@ describe("LoginComponent", () => {
 
       component.onSubmit();
 
-      expect(component.loginMessage()).toEqual(["Please enter OTP"]); // Now this assertion is correct
+      expect(component.authMessage()).toEqual(["Please enter OTP"]); // Now this assertion is correct
       expect(component.showOtpField()).toBe(true);
       expect(localService.saveData).not.toHaveBeenCalled();
       expect(sessionTimerService.startRefreshingRemainingTime).not.toHaveBeenCalled();
@@ -414,67 +418,105 @@ describe("LoginComponent", () => {
       });
     });
   });
-});
 
-describe("LoginComponent Realm Selection", () => {
-  let fixture: ComponentFixture<LoginComponent>;
-  let component: LoginComponent;
-  let configService: ConfigService;
+  describe("Realm Selection", () => {
+    it("should display realm selection if realms are provided", () => {
+      configService.config.set({
+        ...configService.config(),
+        realms: "realm1,realm2"
+      });
+      fixture.detectChanges();
 
-  beforeEach(async () => {
-    await TestBed.configureTestingModule({
-      imports: [LoginComponent],
-      providers: [provideHttpClient(), ConfigService]
-    }).compileComponents();
+      expect(component.realms()).toEqual(["realm1", "realm2"]);
+      expect(component.realm()).toEqual("realm1");
+      const realmSelect = fixture.debugElement.query(By.css("mat-select"));
+      expect(realmSelect).toBeTruthy();
 
-    fixture = TestBed.createComponent(LoginComponent);
-    component = fixture.componentInstance;
-    configService = TestBed.inject(ConfigService);
-  });
+      // Open the select dropdown to render options
+      realmSelect.componentInstance.open();
+      fixture.detectChanges();
 
-  it("should display realm selection if realms are provided", () => {
-    configService.config.set({
-      ...configService.config(),
-      realms: "realm1,realm2"
+      const options = fixture.debugElement.queryAll(By.css("mat-option"));
+      expect(options.length).toBe(2);
+      expect(options[0].nativeElement.textContent).toContain("realm1");
+      expect(options[1].nativeElement.textContent).toContain("realm2");
     });
-    fixture.detectChanges();
 
-    expect(component.realms()).toEqual(["realm1", "realm2"]);
-    expect(component.realm()).toEqual("realm1");
-    const realmSelect = fixture.debugElement.query(By.css("mat-select"));
-    expect(realmSelect).toBeTruthy();
+    it("should preselect the first realm", () => {
+      configService.config.set({
+        ...configService.config(),
+        realms: "realmA,realmB"
+      });
+      fixture.detectChanges();
 
-    // Open the select dropdown to render options
-    realmSelect.componentInstance.open();
-    fixture.detectChanges();
-
-    const options = fixture.debugElement.queryAll(By.css("mat-option"));
-    expect(options.length).toBe(2);
-    expect(options[0].nativeElement.textContent).toContain("realm1");
-    expect(options[1].nativeElement.textContent).toContain("realm2");
-  });
-
-  it("should preselect the first realm", () => {
-    configService.config.set({
-      ...configService.config(),
-      realms: "realmA,realmB"
+      expect(component.realm()).toBe("realmA");
     });
-    fixture.detectChanges();
 
-    expect(component.realm()).toBe("realmA");
-  });
+    it("should not display realm selection if realms list is empty", () => {
+      configService.config.set({
+        ...configService.config(),
+        realms: ""
+      });
+      fixture.detectChanges();
 
-  it("should not display realm selection if realms list is empty", () => {
-    configService.config.set({
-      ...configService.config(),
-      realms: ""
+      const realmSelect = fixture.debugElement.query(By.css("mat-select"));
+      expect(realmSelect).toBeFalsy();
     });
-    fixture.detectChanges();
-
-    const realmSelect = fixture.debugElement.query(By.css("mat-select"));
-    expect(realmSelect).toBeFalsy();
   });
-});
+
+  describe("Remote user login", () => {
+    it("should show remote user login button when remote_user is set", () => {
+      configService.config.set({ ...configService.config(), remote_user: "testuser", force_remote_user: false });
+      fixture.detectChanges();
+      const btn = fixture.debugElement.query(By.css("button[aria-label='Remote Login Button']"));
+      expect(btn).toBeTruthy();
+      expect(btn.nativeElement.textContent).toContain("Log In");
+    });
+
+    it("should call remoteLogin and authenticate with remote_user", () => {
+      configService.config.set({ ...configService.config(), remote_user: "testuser", force_remote_user: false });
+      fixture.detectChanges();
+      const authSpy = jest.spyOn(authService, "authenticate").mockReturnValue(of({ result: { status: true } }));
+      const remoteLoginSpy = jest.spyOn(component, "remoteLogin")
+      const btn = fixture.debugElement.query(By.css("button[aria-label='Remote Login Button']"));
+      btn.nativeElement.click();
+      fixture.detectChanges();
+      expect(remoteLoginSpy).toHaveBeenCalled();
+      expect(authSpy).toHaveBeenCalledWith({ username: "testuser" });
+    });
+
+    it("remoteLogin should show error if remote_user is not set", () => {
+      configService.config.set({ ...configService.config(), remote_user: "" });
+      fixture.detectChanges();
+      const spy = jest.spyOn(notificationService, "openSnackBar");
+      component.remoteLogin();
+      expect(spy).toHaveBeenCalledWith(expect.stringContaining("Remote user not available"));
+    });
+
+    it("Login with credentials button should switch to normal login", () => {
+      configService.config.set({ ...configService.config(), remote_user: "testuser", force_remote_user: false });
+      fixture.detectChanges();
+      expect(component.useRemoteLogin()).toBe(true);
+      let btn = fixture.debugElement.query(By.css("button[aria-label='Login with credentials Button']"));
+      btn.nativeElement.click();
+      fixture.detectChanges();
+
+      expect(component.useRemoteLogin()).toBe(false);
+      btn = fixture.debugElement.query(By.css("button[aria-label='Login with credentials Button']"));
+      expect(btn).toBeNull();
+      const loginBtn = fixture.debugElement.query(By.css("button[aria-label='Login Button']"));
+      expect(loginBtn).toBeTruthy();
+    });
+
+    it("should hide login with credentials button if forceRemoteUser is true", () => {
+      configService.config.set({ ...configService.config(), remote_user: "testuser", force_remote_user: true });
+      fixture.detectChanges();
+      const btn = fixture.debugElement.query(By.css("button[aria-label='Login with credentials Button']"));
+      expect(btn).toBeNull();
+    });
+  });
+})
+;
 
 describe("passkeyLoginEnabled signal", () => {
   let fixture: ComponentFixture<LoginComponent>;

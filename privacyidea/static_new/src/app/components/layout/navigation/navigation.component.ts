@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, inject } from "@angular/core";
+import { Component, computed, inject } from "@angular/core";
 import { DatePipe, NgClass, NgOptimizedImage } from "@angular/common";
 import {
   MatAccordion,
@@ -67,6 +67,7 @@ import { CaConnectorService, CaConnectorServiceInterface } from "../../../servic
 import { ServiceIdService, ServiceIdServiceInterface } from "../../../services/service-id/service-id.service";
 import { EventService, EventServiceInterface } from "../../../services/event/event.service";
 import { SystemService, SystemServiceInterface } from "../../../services/system/system.service";
+import { ConfigService, ConfigServiceInterface } from "../../../services/config/config.service";
 
 @Component({
   selector: "app-navigation",
@@ -123,10 +124,13 @@ export class NavigationComponent {
   protected readonly periodicTaskService = inject(PeriodicTaskService);
   protected readonly eventService: EventServiceInterface = inject(EventService);
   protected readonly systemService: SystemServiceInterface = inject(SystemService);
+  protected readonly configService: ConfigServiceInterface = inject(ConfigService);
   protected readonly router: Router = inject(Router);
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
 
   profileText = this.authService.username() + " @" + this.authService.realm() + " (" + this.authService.role() + ")";
+
+  localNode = computed(() => this.configService.config().show_node);
 
   logout(): void {
     this.authService.logout();

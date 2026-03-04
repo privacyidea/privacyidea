@@ -83,7 +83,7 @@ export class LoginComponent implements OnDestroy {
   username = signal<string>("");
   password = signal<string>("");
   otp = signal<string>("");
-  loginMessage = signal<string[]>([]);
+  authMessage = signal<string[]>([]);  // messages returned from the auth endpoint
   errorMessage = signal<string>("");
 
   showOtpField = signal<boolean>(false);
@@ -119,7 +119,14 @@ export class LoginComponent implements OnDestroy {
     return loginMode !== "hide";
   });
 
+  // custom login text configured in the policies
   loginText = computed(() => this.configService.config()?.login_text || "");
+
+  customLogo = computed(() => this.configService.config()?.logo);
+
+  remoteUser = computed(() => this.configService.config()?.remote_user);
+  useRemoteLogin = linkedSignal(() => !!this.remoteUser());
+  forceRemoteUser = computed(() => this.configService.config()?.force_remote_user);
 
   constructor() {
     if (this.authService.isAuthenticated()) {
@@ -149,13 +156,25 @@ export class LoginComponent implements OnDestroy {
 
     if (isChallengeResponse) {
       this.stopPushPolling();
-      this.loginMessage.set([]);
+      this.authMessage.set([]);
       this.errorMessage.set("");
       params.transaction_id = this.transactionId;
     } else {
       this.resetChallengeState();
     }
 
+    this.authService.authenticate(params).subscribe({
+      next: (response) => this.evaluateResponse(response, "password"),
+      error: (err) => this.handleError(err, "password")
+    });
+  }
+
+  remoteLogin(): void {
+    if (!this.remoteUser()) {
+      this.notificationService.openSnackBar($localize`Remote user not available. Remote Login not possible.`);
+      return;
+    }
+    const params: any = { username: this.remoteUser() };
     this.authService.authenticate(params).subscribe({
       next: (response) => this.evaluateResponse(response, "password"),
       error: (err) => this.handleError(err, "password")
@@ -251,7 +270,7 @@ export class LoginComponent implements OnDestroy {
 
   private resetChallengeState(): void {
     this.stopPushPolling();
-    this.loginMessage.set([]);
+    this.authMessage.set([]);
     this.errorMessage.set("");
     this.pushTriggered.set(false);
     this.webAuthnTriggered.set(null);
@@ -300,10 +319,10 @@ export class LoginComponent implements OnDestroy {
         webauthn: "Login with WebAuthn failed."
       };
       if (response.detail.multi_challenge?.length) {
-        this.loginMessage.set([...new Set(response.detail.multi_challenge.map((c) => c.message))]);
+        this.authMessage.set([...new Set(response.detail.multi_challenge.map((c) => c.message))]);
       } else {
         const message = response.detail.message || defaultMessages[context];
-        this.loginMessage.set([message]);
+        this.authMessage.set([message]);
       }
     } else {
       // fail
@@ -343,7 +362,8 @@ export class LoginComponent implements OnDestroy {
     }
   }
 
-  clearRealmSelection(): void {
+  clearRealmSelection(event: MouseEvent) {
+    event.stopPropagation();
     this.realm.set("");
   }
 }

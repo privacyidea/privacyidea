@@ -82,7 +82,12 @@
   <div class="utils-group">
     <div class="account-div">
       <mat-icon>account_box</mat-icon>
-      <h4>{{ profileText }}</h4>
+      <div class="text-div">
+        <h4 class="margin-0">{{ profileText }}</h4>
+        @if (localNode()) {
+          <i>{{ localNode() }}</i>
+        }
+      </div>
       <button
         (click)="logout()"
         aria-label="Logout"

@@ -147,12 +147,17 @@
 .account-div {
   display: flex;
   flex-direction: row;
-  width: 256px;
   justify-content: space-around;
   align-items: center;
+  width: 256px;
   background: var(--mat-sys-surface-container);
   border-radius: var(--border-radius);
-  height: 40px;
+}
+
+.text-div {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 0;
 }
 
 .utils-group {

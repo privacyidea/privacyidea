@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,26 +16,26 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, EventEmitter, input, Output } from "@angular/core";
-import { MatIcon } from "@angular/material/icon";
-import { MatIconButton } from "@angular/material/button";
-import { MatTooltip } from "@angular/material/tooltip";
+import { ConfigServiceInterface } from "../../app/services/config/config.service";
+import { signal } from "@angular/core";
 
-@Component({
-  selector: "app-clear-button",
-  templateUrl: "./clear-button.component.html",
-  imports: [
-    MatIcon,
-    MatIconButton,
-    MatTooltip
-  ],
-  styleUrls: ["./clear-button.component.scss"]
-})
-export class ClearButtonComponent {
-  toolTipText = input<string>();
-  @Output() onClick = new EventEmitter<MouseEvent>();
+export class MockConfigService implements ConfigServiceInterface {
+  config = signal({
+    remote_user: "",
+    force_remote_user: false,
+    password_reset: false,
+    hsm_ready: false,
+    customization: "",
+    realms: "",
+    logo: "",
+    show_node: "",
+    external_links: false,
+    has_job_queue: "false",
+    login_text: "",
+    gdpr_link: "",
+    translation_warning: false,
+    passkey_login: "show"
+  });
 
-  clearInput(event: MouseEvent): void {
-    this.onClick.emit(event);
-  }
+  loadConfig = jest.fn().mockImplementation(() => {});
 }
