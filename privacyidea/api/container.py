@@ -21,7 +21,7 @@ import json
 import logging
 
 from flask import Blueprint, request, g
-from flask_babel import lazy_gettext
+from privacyidea.lib import lazy_gettext
 
 from privacyidea.api.auth import admin_required
 from privacyidea.api.lib.prepolicy import (check_base_action, prepolicy, check_user_params, check_token_action,
