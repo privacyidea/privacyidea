@@ -3,8 +3,6 @@
 @use "../../container-templates/container-templates.component.scss";
 @use "@angular/material" as mat;
 
-// --- Main Layout ---
-
 .placeholder-for-right-column {
   grid-area: right-column;
 }
@@ -14,7 +12,6 @@
   --mat-checkbox-disabled-label-color: var(--mat-sys-on-surface);
   --mdc-filled-text-field-disabled-label-text-color: var(--mat-sys-on-surface);
   --mat-select-disabled-trigger-text-color: var(--mat-sys-on-surface);
-  // --mat-form-field-disabled-input-text-placeholder-color: var(--mat-sys-on-surface);
   --mdc-filled-text-field-disabled-input-text-color: var(--mat-sys-on-surface);
 
   border-radius: var(--border-radius);

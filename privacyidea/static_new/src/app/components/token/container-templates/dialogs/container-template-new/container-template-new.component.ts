@@ -36,7 +36,7 @@ import {
 import { ContainerTemplate } from "../../../../../services/container/container.service";
 import { deepCopy } from "../../../../../utils/deep-copy.utils";
 import { ContainerTypeOption } from "../../../container-create/container-create.component";
-import { TemplateAddedTokenRowComponent } from "../../template-added-token-row/template-added-token-row.component";
+import { TemplateAddedTokenRowComponent } from "../template-added-token-row/template-added-token-row.component";
 import { ContainerTemplateAddTokenChipsComponent } from "../container-template-add-token-chips/container-template-add-token-chips.component";
 
 @Component({
