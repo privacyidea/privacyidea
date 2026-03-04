@@ -106,6 +106,42 @@ export interface PasswdResolverData extends ResolverData {
   filename?: string;
 }
 
+export interface HTTPResolverData extends ResolverData {
+  base_url?: string;
+  attribute_mapping?: { [key: string]: string };
+  Editable?: boolean;
+  verify_tls?: boolean;
+  tls_ca_path?: string;
+  timeout?: number;
+  advanced?: boolean;
+  config_get_user_list?: any;
+  config_get_user_by_id?: any;
+  config_get_user_by_name?: any;
+  config_create_user?: any;
+  config_edit_user?: any;
+  config_delete_user?: any;
+  config_authorization?: any;
+  config_user_auth?: any;
+  config_get_user_groups?: any;
+}
+
+export interface EntraIDResolverData extends HTTPResolverData {
+  client_id?: string;
+  tenant?: string;
+  client_credential_type?: "secret" | "certificate";
+  client_secret?: string;
+  client_certificate?: {
+    private_key_file?: string;
+    private_key_password?: string;
+    certificate_fingerprint?: string;
+  };
+  authority?: string;
+}
+
+export interface KeycloakResolverData extends HTTPResolverData {
+  realm?: string;
+}
+
 export interface SCIMResolverData extends ResolverData {
   Authserver: string;
   Resourceserver: string;
