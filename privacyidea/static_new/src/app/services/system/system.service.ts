@@ -20,7 +20,7 @@ import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
 import { computed, inject, Injectable, linkedSignal, Signal, WritableSignal } from "@angular/core";
 
-import { environment } from "@env/environment";
+import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
 import { CaConnectors } from "../ca-connector/ca-connector.service";
 import { ContentService, ContentServiceInterface } from "../content/content.service";

@@ -464,11 +464,11 @@ describe("UserNewResolverComponent", () => {
 
     component.resolverType = "entraidresolver";
     component.onTypeChange("entraidresolver");
-    expect(component.formData["base_url"]).toBeDefined();
+    expect(component.formData).toEqual({});
 
     component.resolverType = "keycloakresolver";
     component.onTypeChange("keycloakresolver");
-    expect(component.formData["config_authorization"]).toBeDefined();
+    expect(component.formData).toEqual({});
 
     component.resolverType = "httpresolver";
     component.onTypeChange("httpresolver");

@@ -21,7 +21,7 @@ import { computed, inject, Injectable, Signal } from "@angular/core";
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
 
-import { environment } from "@env/environment";
+import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
 import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
 import { lastValueFrom } from "rxjs";

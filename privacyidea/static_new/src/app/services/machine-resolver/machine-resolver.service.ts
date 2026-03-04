@@ -18,7 +18,7 @@
  **/
 
 import { computed, inject, Injectable, Signal } from "@angular/core";
-import { environment } from "@env/environment";
+import { environment } from "../../../environments/environment";
 import { HttpClient, httpResource } from "@angular/common/http";
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { PiResponse } from "../../app.component";

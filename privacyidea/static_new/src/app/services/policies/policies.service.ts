@@ -20,7 +20,7 @@
 import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
 import { computed, inject, Injectable, linkedSignal, Signal } from "@angular/core";
 import { lastValueFrom } from "rxjs";
-import { environment } from "@env/environment";
+import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { ContentService, ContentServiceInterface } from "../content/content.service";

@@ -73,6 +73,12 @@ describe("HttpGroupsAttributeComponent", () => {
     expect(component.userGroupsControl.get("endpoint")!.disabled).toBe(true);
   });
 
+  it("should handle updates with emitEvent: true", async () => {
+    userGroupsControl.get("active")!.setValue(true, { emitEvent: true });
+    fixture.detectChanges();
+    expect(userGroupsControl.get("user_groups_attribute")!.enabled).toBe(true);
+  });
+
   it("should normalize method value to uppercase", () => {
     userGroupsControl.get("method")!.setValue("get");
     fixture.detectChanges();

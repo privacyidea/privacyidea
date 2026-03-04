@@ -342,34 +342,34 @@ export class HttpResolverComponent {
     const data = this.mergedData();
     if (!data) return;
 
-    if (data.endpoint !== undefined) this.endpointControl.setValue(data.endpoint, { emitEvent: false });
-    if (data.method !== undefined) this.methodControl.setValue(data.method.toUpperCase(), { emitEvent: false });
-    if (data.requestMapping !== undefined) this.requestMappingControl.setValue(this.formatConfigValue(data.requestMapping), { emitEvent: false });
-    if (data.headers !== undefined) this.headersControl.setValue(this.formatConfigValue(data.headers), { emitEvent: false });
-    if (data.responseMapping !== undefined) this.responseMappingControl.setValue(this.formatConfigValue(data.responseMapping), { emitEvent: false });
-    if (data.errorResponse !== undefined) this.errorResponseControl.setValue(this.formatConfigValue(data.errorResponse), { emitEvent: false });
-    if (data.base_url !== undefined) this.baseUrlControl.setValue(data.base_url, { emitEvent: false });
-    if (data.tenant !== undefined) this.tenantControl.setValue(data.tenant, { emitEvent: false });
-    if (data.client_id !== undefined) this.clientIdControl.setValue(data.client_id, { emitEvent: false });
-    if (data.client_secret !== undefined) this.clientSecretControl.setValue(data.client_secret, { emitEvent: false });
+    if (data.endpoint !== undefined) this.endpointControl.setValue(data.endpoint);
+    if (data.method !== undefined) this.methodControl.setValue(data.method.toUpperCase());
+    if (data.requestMapping !== undefined) this.requestMappingControl.setValue(this.formatConfigValue(data.requestMapping));
+    if (data.headers !== undefined) this.headersControl.setValue(this.formatConfigValue(data.headers));
+    if (data.responseMapping !== undefined) this.responseMappingControl.setValue(this.formatConfigValue(data.responseMapping));
+    if (data.errorResponse !== undefined) this.errorResponseControl.setValue(this.formatConfigValue(data.errorResponse));
+    if (data.base_url !== undefined) this.baseUrlControl.setValue(data.base_url);
+    if (data.tenant !== undefined) this.tenantControl.setValue(data.tenant);
+    if (data.client_id !== undefined) this.clientIdControl.setValue(data.client_id);
+    if (data.client_secret !== undefined) this.clientSecretControl.setValue(data.client_secret);
 
-    if (data.realm !== undefined) this.realmControl.setValue(data.realm, { emitEvent: false });
-    if (data.headers !== undefined) this.globalHeadersControl.setValue(this.formatConfigValue(data.headers), { emitEvent: false });
-    if (data.Editable !== undefined) this.editableControl.setValue(parseBooleanValue(data.Editable), { emitEvent: false });
-    if (data.verify_tls !== undefined) this.verifyTlsControl.setValue(parseBooleanValue(data.verify_tls), { emitEvent: false });
-    if (data.tls_ca_path !== undefined) this.tlsCaPathControl.setValue(data.tls_ca_path, { emitEvent: false });
-    if (data.timeout !== undefined) this.timeoutControl.setValue(Number(data.timeout), { emitEvent: false });
-    if (data.username !== undefined) this.usernameControl.setValue(data.username, { emitEvent: false });
-    if (data.password !== undefined) this.passwordControl.setValue(data.password, { emitEvent: false });
-    if (data.authority !== undefined) this.authorityControl.setValue(data.authority, { emitEvent: false });
-    if (data.client_credential_type !== undefined) this.clientCredentialTypeControl.setValue(data.client_credential_type, { emitEvent: false });
+    if (data.realm !== undefined) this.realmControl.setValue(data.realm);
+    if (data.headers !== undefined) this.globalHeadersControl.setValue(this.formatConfigValue(data.headers));
+    if (data.Editable !== undefined) this.editableControl.setValue(parseBooleanValue(data.Editable));
+    if (data.verify_tls !== undefined) this.verifyTlsControl.setValue(parseBooleanValue(data.verify_tls));
+    if (data.tls_ca_path !== undefined) this.tlsCaPathControl.setValue(data.tls_ca_path);
+    if (data.timeout !== undefined) this.timeoutControl.setValue(Number(data.timeout));
+    if (data.username !== undefined) this.usernameControl.setValue(data.username);
+    if (data.password !== undefined) this.passwordControl.setValue(data.password);
+    if (data.authority !== undefined) this.authorityControl.setValue(data.authority);
+    if (data.client_credential_type !== undefined) this.clientCredentialTypeControl.setValue(data.client_credential_type);
 
     if (data.client_certificate) {
-      this.clientCertificateGroup.patchValue(data.client_certificate, { emitEvent: false });
+      this.clientCertificateGroup.patchValue(data.client_certificate);
     }
 
     if (data.attribute_mapping) {
-      this.attributeMappingControl.setValue(data.attribute_mapping, { emitEvent: false });
+      this.attributeMappingControl.setValue(data.attribute_mapping);
     } else {
       this.syncMappingToData();
     }
@@ -396,7 +396,7 @@ export class HttpResolverComponent {
           sanitizedConfig[field] = this.formatConfigValue(sanitizedConfig[field]);
         }
       });
-      group.patchValue(sanitizedConfig, { emitEvent: false });
+      group.patchValue(sanitizedConfig);
     }
   }
 
