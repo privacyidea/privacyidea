@@ -2,7 +2,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: var(--half-global-gap);
-  padding: var(--quarter-global-padding) var(--half-global-padding);
+  padding: var(--half-global-padding) var(--global-padding);
 
   &:not(:last-child) {
     border-bottom: 1px solid var(--mat-sys-on-surface-variant);
@@ -11,4 +11,8 @@
 
 .token-item {
   white-space: nowrap;
+}
+
+h2 {
+  padding-left: var(--half-global-padding);
 }

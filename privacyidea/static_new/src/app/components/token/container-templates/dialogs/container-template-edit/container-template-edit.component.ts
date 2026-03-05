@@ -37,6 +37,7 @@ import { deepCopy } from "../../../../../utils/deep-copy.utils";
 import { ContainerTypeOption } from "../../../container-create/container-create.component";
 import { TemplateAddedTokenRowComponent } from "../template-added-token-row/template-added-token-row.component";
 import { ContainerTemplateAddTokenChipsComponent } from "../container-template-add-token-chips/container-template-add-token-chips.component";
+import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
 
 @Component({
   selector: "app-container-template-edit",
@@ -59,7 +60,7 @@ import { ContainerTemplateAddTokenChipsComponent } from "../container-template-a
   styleUrl: "./container-template-edit.component.scss",
   encapsulation: ViewEncapsulation.ShadowDom
 })
-export class ContainerTemplateEditComponent {
+export class ContainerTemplateEditComponent extends AbstractDialogComponent {
   // Angular Inputs and Services
   readonly templateOriginal = input.required<ContainerTemplate>();
   readonly containerTemplateService: ContainerTemplateServiceInterface = inject(ContainerTemplateService);

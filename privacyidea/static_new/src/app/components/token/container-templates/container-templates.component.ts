@@ -36,6 +36,7 @@ import { ViewTemplateOptionsComponent } from "./view-template-options/view-templ
 import { FilterValueGeneric } from "src/app/core/models/filter_value_generic/filter-value-generic";
 import { FilterOption } from "src/app/core/models/filter_value_generic/filter-option";
 import { DialogService, DialogServiceInterface } from "src/app/services/dialog/dialog.service";
+import { ContainerTemplateEditComponent } from "./dialogs/container-template-edit/container-template-edit.component";
 
 const containerTemplateFilterOptions: FilterOption<ContainerTemplate>[] = [
   new FilterOption<ContainerTemplate>({
@@ -85,14 +86,22 @@ export class ContainerTemplatesComponent {
   readonly authService: AuthServiceInterface = inject(AuthService);
   readonly dialogService: DialogServiceInterface = inject(DialogService);
 
-  readonly containerTemplates = input.required<ContainerTemplate[]>();
+  readonly containerTemplates = computed(() => {
+    const templates = this.containerTemplateService.templates();
+    const filter = this.filter();
+    return templates;
+  });
   readonly filter = signal<FilterValueGeneric<ContainerTemplate>>(
     new FilterValueGeneric({ availableFilters: containerTemplateFilterOptions })
   );
 
-  readonly selectedContainerTemplates = model.required<ContainerTemplate[]>();
+  readonly selectedContainerTemplates = signal<ContainerTemplate[]>([]);
 
-  readonly dataSource = computed(() => new MatTableDataSource(this.containerTemplates()));
+  readonly dataSource = computed(() => {
+    const templates = this.containerTemplates();
+    console.log("Templates in dataSource computation:", templates);
+    return new MatTableDataSource(templates);
+  });
   readonly selection = new SelectionModel<ContainerTemplate>(true, []);
 
   readonly columns = {
@@ -135,7 +144,7 @@ export class ContainerTemplatesComponent {
 
   openEditDialog(template: ContainerTemplate): void {
     this.dialogService.openDialog({
-      component: ViewTemplateOptionsComponent
+      component: ContainerTemplateEditComponent
     });
   }
 }

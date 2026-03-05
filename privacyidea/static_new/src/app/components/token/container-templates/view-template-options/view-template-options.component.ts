@@ -11,7 +11,7 @@ import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dial
   templateUrl: "./view-template-options.component.html",
   styleUrl: "./view-template-options.component.scss"
 })
-export class ViewTemplateOptionsComponent extends AbstractDialogComponent {
+export class ViewTemplateOptionsComponent {
   readonly templateOptions = input.required<{
     options: any;
     tokens: Array<any>;
