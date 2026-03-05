@@ -16,11 +16,12 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Injectable, signal, WritableSignal } from "@angular/core";
-import { ROUTE_PATHS } from "../../route_paths";
+import { computed, Injectable, Signal, signal, WritableSignal } from "@angular/core";
 
 export interface VersioningServiceInterface {
-  version: WritableSignal<string>;
+  rawVersion: WritableSignal<string>;
+  version: Signal<string>;
+
   getVersion(): string;
 }
 
@@ -28,7 +29,12 @@ export interface VersioningServiceInterface {
   providedIn: "root"
 })
 export class VersioningService implements VersioningServiceInterface {
-  version = signal("");
+  rawVersion = signal("");
+  version = computed(() => {
+    // Extract major.minor.patch from rawVersion
+    const match = this.rawVersion().match(/^(\d+\.\d+\.\d+)/);
+    return match ? match[1] : "";
+  });
 
   getVersion(): string {
     return this.version();

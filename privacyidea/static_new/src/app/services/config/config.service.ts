@@ -70,7 +70,7 @@ export class ConfigService implements ConfigServiceInterface {
   });
 
   loadConfig() {
-    return this.http.get<PiResponse<Record<any, any>>>(environment.proxyUrl + "/config")
+    this.http.get<PiResponse<Record<any, any>>>(environment.proxyUrl + "/config")
       .pipe(
         catchError((error) => {
           console.error("Failed to load config:", error);
@@ -88,7 +88,7 @@ export class ConfigService implements ConfigServiceInterface {
       )
       .subscribe((data) => {
         this.config.set(data.result?.value as AppConfig);
-        this.versioningService.version.set(data.versionnumber);
+        this.versioningService.rawVersion.set(data.versionnumber);
       });
   }
 }
