@@ -103,25 +103,29 @@ def _drop_all_tables(engine):
         conn.commit()
 
 
-def _setup_db_at_start_revision(flask_app, start_revision: str):
+def _load_seed_db(engine):
     """
-    Set up the database at `start_revision` without running ancient migrations.
+    Load the v3.9 seed SQL file into the database.
 
-    Strategy:
-    1. db.create_all() — creates the full current schema using SQLAlchemy models.
-    2. stamp head    — tells Alembic the DB is already at head.
-    3. downgrade     — rolls back to `start_revision` so only migrations after
-                       that point will be applied by the test.
+    This replaces the old _setup_db_at_start_revision() strategy of:
+      db.create_all() → stamp head → downgrade to START_REVISION
 
-    This avoids running migrations from 10 years ago that expect tables to
-    already exist (ALTER TABLE etc.) from an empty database.
+    That approach was fragile because it relied on the *current* models being
+    perfectly downgrade-compatible with the historical schema. Instead we load
+    a SQL file derived directly from the v3.9 models, which is a faithful
+    representation of a real v3.9 installation including the alembic_version
+    stamp at START_REVISION.
+
+    The seed file is split on ";" and each non-empty statement is executed
+    individually so that the MariaDB driver does not choke on multi-statement
+    blobs.
     """
-    from alembic import command
-    from privacyidea.models import db
-
-    db.create_all()
-    command.stamp(_get_alembic_cfg(), "head")
-    command.downgrade(_get_alembic_cfg(), start_revision)
+    sql = SEED_SQL_PATH.read_text(encoding="utf-8")
+    statements = [s.strip() for s in sql.split(";") if s.strip() and not s.strip().startswith("--")]
+    with engine.connect() as conn:
+        for stmt in statements:
+            conn.execute(text(stmt))
+        conn.commit()
 
 
 @pytest.fixture(autouse=True)
@@ -139,8 +143,8 @@ def clean_database():
 @pytest.fixture
 def flask_app():
     """
-    Provide a Flask app whose SQLAlchemy engine points to the test database.
-    db.create_all() is NOT called here — _setup_db_at_start_revision() does it.
+    Provide a Flask app context pointing at the test database.
+    Schema setup is done by _load_seed_db(), not db.create_all().
     """
     from privacyidea.app import create_app
 
@@ -195,7 +199,7 @@ def test_upgrade_to_head_creates_all_model_tables(flask_app):
     """
     from flask_migrate import upgrade as flask_upgrade
 
-    _setup_db_at_start_revision(flask_app, START_REVISION)
+    _load_seed_db(create_engine(DB_URL))
     flask_upgrade()
 
     engine = create_engine(DB_URL)
@@ -214,7 +218,7 @@ def test_current_revision_matches_head_after_upgrade(flask_app):
     """After upgrading to head, the alembic_version in the DB must equal the head revision."""
     from flask_migrate import upgrade as flask_upgrade
 
-    _setup_db_at_start_revision(flask_app, START_REVISION)
+    _load_seed_db(create_engine(DB_URL))
     flask_upgrade()
 
     head_rev = ScriptDirectory.from_config(_get_alembic_cfg()).get_current_head()
@@ -234,7 +238,7 @@ def test_migrations_since_start_revision_are_reversible(flask_app):
     """
     from alembic import command
 
-    _setup_db_at_start_revision(flask_app, START_REVISION)
+    _load_seed_db(create_engine(DB_URL))
     command.upgrade(_get_alembic_cfg(), "head")
 
     script = ScriptDirectory.from_config(_get_alembic_cfg())
@@ -243,9 +247,17 @@ def test_migrations_since_start_revision_are_reversible(flask_app):
 
     for rev in revisions_in_window:
         if rev.down_revision is None:
-            break
+            pytest.fail(
+                f"Revision {rev.revision!r} ('{rev.doc}') has no down_revision. "
+                f"Every migration in the tested window must be reversible."
+            )
+        # Merge revisions have a tuple of parents — downgrade to the first one.
+        if isinstance(rev.down_revision, tuple):
+            target = rev.down_revision[0]
+        else:
+            target = rev.down_revision
         try:
-            command.downgrade(_get_alembic_cfg(), rev.down_revision)
+            command.downgrade(_get_alembic_cfg(), target)
         except Exception as e:
             pytest.fail(
                 f"downgrade() of revision {rev.revision!r} "
@@ -261,7 +273,7 @@ def test_upgrade_then_downgrade_then_upgrade_is_idempotent(flask_app):
     from alembic import command
     from flask_migrate import upgrade as flask_upgrade
 
-    _setup_db_at_start_revision(flask_app, START_REVISION)
+    _load_seed_db(create_engine(DB_URL))
     flask_upgrade()
 
     engine = create_engine(DB_URL)
@@ -302,7 +314,7 @@ def test_schema_matches_models_after_upgrade_to_head(flask_app):
     from flask_migrate import upgrade as flask_upgrade
     from privacyidea.models import db
 
-    _setup_db_at_start_revision(flask_app, START_REVISION)
+    _load_seed_db(create_engine(DB_URL))
     flask_upgrade()
 
     engine = create_engine(DB_URL)
@@ -418,7 +430,7 @@ def test_each_migration_survives_round_trip(flask_app):
     revisions_in_window = list(reversed(list(script.iterate_revisions("head", START_REVISION))))
 
     # Set up the DB once — all iterations share this starting point.
-    _setup_db_at_start_revision(flask_app, START_REVISION)
+    _load_seed_db(create_engine(DB_URL))
 
     for rev in revisions_in_window:
         # Merge revisions have a tuple of parents — use the first one.
@@ -499,36 +511,30 @@ def test_downgrade_does_not_destroy_data_in_surviving_tables(flask_app):
     """
     Downgrading must not delete data from tables that survive the downgrade.
 
-    Strategy: upgrade to head, insert data into a stable table (realm),
-    downgrade to START_REVISION, verify the data still exists.
+    Strategy: seed the DB at START_REVISION (which already contains data in
+    stable tables like realm), upgrade to head, then downgrade back to
+    START_REVISION and verify the seeded realm rows are still present.
     The realm table is created long before START_REVISION so it survives
     every downgrade in the window.
     """
     from alembic import command
     from flask_migrate import upgrade as flask_upgrade
 
-    _setup_db_at_start_revision(flask_app, START_REVISION)
+    _load_seed_db(create_engine(DB_URL))
     flask_upgrade()
 
-    engine = create_engine(DB_URL)
-    with engine.connect() as conn:
-        conn.execute(text(
-            "INSERT INTO realm (id, name, `default`) VALUES (42, 'persistent_realm', 0)"
-        ))
-        conn.commit()
-    engine.dispose()
-
-    # Downgrade all the way back to START_REVISION
+    # The seed already has realm rows (id=1 'defrealm', id=2 'testrealm').
+    # Downgrade all the way back to START_REVISION and verify they survived.
     command.downgrade(_get_alembic_cfg(), START_REVISION)
 
     engine = create_engine(DB_URL)
     with engine.connect() as conn:
         result = conn.execute(
-            text("SELECT name FROM realm WHERE id = 42")
+            text("SELECT name FROM realm WHERE id = 1")
         ).scalar()
     engine.dispose()
 
-    assert result == "persistent_realm", (
+    assert result == "defrealm", (
         f"Data in the 'realm' table was lost during downgrade. "
-        f"Expected 'persistent_realm', got {result!r}."
+        f"Expected 'defrealm', got {result!r}."
     )
