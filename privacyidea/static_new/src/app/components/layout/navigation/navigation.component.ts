@@ -68,7 +68,7 @@ import { ServiceIdService, ServiceIdServiceInterface } from "../../../services/s
 import { EventService, EventServiceInterface } from "../../../services/event/event.service";
 import { SystemService, SystemServiceInterface } from "../../../services/system/system.service";
 import { ConfigService, ConfigServiceInterface } from "../../../services/config/config.service";
-import { environment } from "@env/environment";
+import { environment } from "../../../../environments/environment";
 
 @Component({
   selector: "app-navigation",
@@ -132,7 +132,12 @@ export class NavigationComponent {
   profileText = this.authService.username() + " @" + this.authService.realm() + " (" + this.authService.role() + ")";
 
   localNode = computed(() => this.configService.config().show_node);
-  customLogo = computed(() => environment.proxyUrl + "/static/public/" + this.configService.config()?.logo);
+  customLogo = computed(() => {
+    if (!this.configService.config()?.logo) {
+      return null;
+    }
+    return environment.proxyUrl + "/static/public/" + this.configService.config()?.logo;
+  });
   versionText = computed(() => {
     if (this.customLogo()) {
       return $localize`privacyIDEA Version ` + this.versioningService.version();

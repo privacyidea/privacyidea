@@ -45,7 +45,7 @@ import { ValidateService, ValidateServiceInterface } from "../../services/valida
 import { ConfigService } from "../../services/config/config.service";
 import { MatOption, MatSelect } from "@angular/material/select";
 import { ClearButtonComponent } from "../shared/clear-button/clear-button.component";
-import { environment } from "@env/environment";
+import { environment } from "../../../environments/environment";
 
 const PUSH_POLLING_INTERVAL_MS = 500;
 const PUSH_POLLING_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
@@ -123,7 +123,12 @@ export class LoginComponent implements OnDestroy {
   // custom login text configured in the policies
   loginText = computed(() => this.configService.config()?.login_text || "");
 
-  customLogo = computed(() => environment.proxyUrl + "/static/public/" + this.configService.config()?.logo);
+  customLogo = computed(() => {
+    if (!this.configService.config()?.logo) {
+      return null;
+    }
+    return environment.proxyUrl + "/static/public/" + this.configService.config()?.logo;
+  });
 
   remoteUser = computed(() => this.configService.config()?.remote_user);
   useRemoteLogin = linkedSignal(() => !!this.remoteUser());
