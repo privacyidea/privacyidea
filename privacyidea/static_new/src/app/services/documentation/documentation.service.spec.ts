@@ -23,10 +23,7 @@ import { PolicyService } from "../policies/policies.service";
 import { signal } from "@angular/core";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-
-class MockVersioningService {
-  version = signal("3.9.1+123.456");
-}
+import { MockVersioningService } from "../../../testing/mock-services";
 
 class MockPolicyService {
   selectedAction = signal<{ name: string } | null>(null);
@@ -48,7 +45,8 @@ describe("DocumentationService", () => {
       ]
     });
     service = TestBed.inject(DocumentationService);
-    versioningService = TestBed.inject(VersioningService) as any;
+    versioningService = TestBed.inject(VersioningService) as MockVersioningService;
+    versioningService.version.set("3.9.1");
   });
 
   it("should be created", () => {
