@@ -24,11 +24,12 @@ import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
 import { provideHttpClient } from "@angular/common/http";
 import { VersioningService, VersioningServiceInterface } from "../version/version.service";
+import { MockVersioningService } from "../../../testing/mock-services/mock-versioning-service";
 
 describe("ConfigService", () => {
   let service: ConfigService;
   let httpMock: HttpTestingController;
-  let versioningService: VersioningServiceInterface;
+  let versioningService: MockVersioningService;
 
   const mockConfig: AppConfig = {
     remote_user: "testUser",
@@ -53,11 +54,12 @@ describe("ConfigService", () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         ConfigService,
-        VersioningService]
+        { provide: VersioningService, useClass: MockVersioningService }
+      ]
     });
     service = TestBed.inject(ConfigService);
     httpMock = TestBed.inject(HttpTestingController);
-    versioningService = TestBed.inject(VersioningService);
+    versioningService = TestBed.inject(VersioningService) as MockVersioningService;
   });
 
   afterEach(() => {
@@ -88,6 +90,8 @@ describe("ConfigService", () => {
   });
 
   it("should load config from API", () => {
+    // Spy on rawVersion.set
+    const setSpy = jest.spyOn(versioningService.rawVersion, "set");
     service.loadConfig();
     const req = httpMock.expectOne(environment.proxyUrl + "/config");
     expect(req.request.method).toBe("GET");
@@ -106,7 +110,7 @@ describe("ConfigService", () => {
     req.flush(mockResponse);
 
     expect(service.config()).toEqual(mockConfig);
-    expect(versioningService.getVersion()).toBe("3.8");
+    expect(setSpy).toHaveBeenCalledWith("3.8");
   });
 
   it("should handle error and keep default config", () => {
