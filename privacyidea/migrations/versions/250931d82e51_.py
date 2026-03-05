@@ -35,7 +35,6 @@ def upgrade():
 
 
 def downgrade():
-    from sqlalchemy.exc import DatabaseError
     for col in ['user_agent_version', 'user_agent', 'authentication']:
         try:
             op.drop_column('pidea_audit', col)

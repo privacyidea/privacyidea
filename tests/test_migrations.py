@@ -1,12 +1,3 @@
-import os
-import pathlib
-
-import pytest
-from alembic.config import Config as AlembicConfig
-from alembic.runtime.migration import MigrationContext
-from alembic.script import ScriptDirectory
-from sqlalchemy import create_engine, text, inspect as sa_inspect
-
 """
 Alembic Database Migration Test Suite
 
@@ -31,6 +22,15 @@ Note: Data transformation tests for specific migrations (e.g., testing that data
 moves from column A to column B) do not belong in this file. They must be placed in 
 isolated `test_migration_<rev_id>.py` files using SQLAlchemy Core for historical data seeding.
 """
+
+import os
+import pathlib
+
+import pytest
+from alembic.config import Config as AlembicConfig
+from alembic.runtime.migration import MigrationContext
+from alembic.script import ScriptDirectory
+from sqlalchemy import create_engine, text, inspect as sa_inspect
 
 # Skip these tests if no database URL is provided (e.g. during standard fast unit tests)
 pytestmark = [

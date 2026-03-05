@@ -7,7 +7,6 @@ Create Date: 2026-01-16 12:21:02.005022
 """
 import sqlalchemy as sa
 from alembic import op
-from sqlalchemy.exc import DatabaseError
 
 # revision identifiers, used by Alembic.
 revision = 'b637a1eeeeeb'
