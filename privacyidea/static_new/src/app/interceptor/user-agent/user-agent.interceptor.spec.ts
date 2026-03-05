@@ -46,7 +46,7 @@ describe("userAgentInterceptor", () => {
   it("should add the User-Agent header with the correct version", (done) => {
     const req = new HttpRequest("GET", "/test");
     const next = (request: HttpRequest<any>) => {
-      expect(request.headers.get("User-Agent")).toBe("privacyIDEA-WebUI/1.2.3dev224");
+      expect(request.headers.get("User-Agent")).toBe("privacyIDEA-WebUI/1.2.3.dev224");
       done();
       return null as any;
     };
