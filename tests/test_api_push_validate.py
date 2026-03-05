@@ -781,6 +781,10 @@ class PushAPITestCase(MyApiTestCase):
                           f"{PushAction.REGISTRATION_URL}={REGISTRATION_URL}")
         set_policy("push_mode_code_to_phone", scope=SCOPE.AUTH,
                    action=f"{PushAction.PUSH_CODE_TO_PHONE}=1")
+
+        expected_message = 'test message'
+        set_policy("code_to_phone_message", scope=SCOPE.AUTH,
+                   action=f"{PushAction.PUSH_CODE_TO_PHONE_MESSAGE}={expected_message}")
         # Create push token for user
         # 1st step
         with self.app.test_request_context('/token/init',
@@ -880,6 +884,9 @@ class PushAPITestCase(MyApiTestCase):
             display_code = detail.get("display_code")
             self.assertTrue(display_code)
             self.assertEqual(2, len(display_code))
+            # Check that there is a second message for showing the code to the user on the phone
+            self.assertIn("message", detail)
+            self.assertEqual(expected_message, detail["message"])
 
         # Verify challenge data was updated
         challenge = get_challenges(serial=self.serial_push, transaction_id=transaction_id)[0]
@@ -903,6 +910,7 @@ class PushAPITestCase(MyApiTestCase):
         remove_token(self.serial_push)
         delete_policy("push_config")
         delete_policy("push_mode_code_to_phone")
+        delete_policy("code_to_phone_message")
 
     def test_18_push_code_to_phone_fail(self):
         """

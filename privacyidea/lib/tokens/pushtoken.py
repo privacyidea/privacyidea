@@ -190,7 +190,8 @@ def _get_presence_options(options) -> list:
     return available_presence_options
 
 
-def _build_smartphone_data(token: TokenClass, challenge: str, registration_url: str, private_key_pem: str, options: dict,
+def _build_smartphone_data(token: TokenClass, challenge: str, registration_url: str, private_key_pem: str,
+                           options: dict,
                            presence_options: list = None, push_code_to_phone_code: str = None) -> dict:
     """
     Create the dictionary to be sent to the smartphone as challenge
@@ -464,7 +465,12 @@ class PushTokenClass(TokenClass):
                                'type': 'bool',
                                'desc': _('Require the user to confirm the login with an OTP that is received in the'
                                          ' smartphone app. push_require_presence has precedence over this. '
-                                         'It is not compatible with push_wait'),
+                                         'It is not compatible with push_wait.'),
+                               'group': 'PUSH'
+                           },
+                           PushAction.PUSH_CODE_TO_PHONE_MESSAGE: {
+                               'type': 'str',
+                               'desc': _('The message that is shown above the code on the smartphone.'),
                                'group': 'PUSH'
                            },
                            PushAction.PRESENCE_OPTIONS: {
@@ -693,7 +699,7 @@ class PushTokenClass(TokenClass):
             raise privacyIDEAError(f'Timestamp {timestamp} not in valid range.')
 
     @classmethod
-    def _handle_enrollment_step2(cls, serial:str, request_data:dict) -> tuple[bool, dict]:
+    def _handle_enrollment_step2(cls, serial: str, request_data: dict) -> tuple[bool, dict]:
         log.debug("Do the 2nd step of the enrollment.")
         try:
             token = get_one_token(serial=serial, tokentype="push", rollout_state=RolloutState.CLIENTWAIT)
@@ -777,13 +783,14 @@ class PushTokenClass(TokenClass):
                             # code_to_phone 2-step: smartphone confirmed.
                             # Generate a short display code and store it in the challenge data.
                             display_code = "".join([str(secrets.randbelow(10))
-                                                 for _ in range(CODE_TO_PHONE_DISPLAY_CODE_LENGTH)])
+                                                    for _ in range(CODE_TO_PHONE_DISPLAY_CODE_LENGTH)])
                             challenge_data["smartphone_confirmed"] = True
                             challenge_data["display_code"] = display_code
                             challenge.set_data(challenge_data)
                             # Do NOT mark otp_valid yet; the client still needs to send the display_code.
                             details["display_code"] = display_code
-                            details["message"] = str(DEFAULT_MOBILE_TEXT_CODE_TO_PHONE)
+                            details["message"] = request_data.get(PushAction.PUSH_CODE_TO_PHONE_MESSAGE) or str(
+                                DEFAULT_MOBILE_TEXT_CODE_TO_PHONE)
                         else:
                             challenge.set_otp_status(True)
                     challenge.save()
@@ -818,7 +825,7 @@ class PushTokenClass(TokenClass):
             raise privacyIDEAError('Could not verify signature!')
 
     @classmethod
-    def _api_endpoint_post(cls, request_data: dict) -> tuple[bool, dict]:
+    def _api_endpoint_post(cls, g, request_data: dict) -> tuple[bool, dict]:
         """ Handle all POST requests to the api endpoint
 
         :param request_data: Dictionary containing the parameters of the request
@@ -1099,7 +1106,7 @@ class PushTokenClass(TokenClass):
         """
         details = {}
         if request.method == 'POST':
-            result, details = cls._api_endpoint_post(request.all_data)
+            result, details = cls._api_endpoint_post(g, request.all_data)
         elif request.method == 'GET':
             result = cls._api_endpoint_get(g, request.all_data)
         else:
@@ -1157,7 +1164,7 @@ class PushTokenClass(TokenClass):
         require_presence = Match.user(g, scope=SCOPE.AUTH, action=PushAction.REQUIRE_PRESENCE,
                                       user_object=options.get("user")).any()
         code_to_phone_enabled = Match.user(g, scope=SCOPE.AUTH, action=PushAction.PUSH_CODE_TO_PHONE,
-                                   user_object=options.get("user")).any()
+                                           user_object=options.get("user")).any()
         data = {"type": "push", "mode": PushMode.STANDARD}
         current_presence_options = None
         code_to_phone_code = None
