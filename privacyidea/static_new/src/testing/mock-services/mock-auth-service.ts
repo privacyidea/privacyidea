@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { computed, signal } from "@angular/core";
+import { computed, linkedSignal, signal } from "@angular/core";
 import { AuthData, AuthDetail, AuthRole, AuthServiceInterface, JwtData } from "../../app/services/auth/auth.service";
 import { MockAuthData, MockAuthDetail } from "./mock-validate-service";
 import { MockPiResponse } from "./mock-utils";
@@ -40,11 +40,11 @@ export class MockAuthService implements AuthServiceInterface {
   readonly isAuthenticated = signal(true);
   readonly logLevel = signal(0);
   readonly menus = computed(() => this.authData()?.menus ?? []);
-  readonly realm = computed(() => this.authData()?.realm ?? "");
+  readonly realm = linkedSignal(() => this.authData()?.realm ?? "");
   readonly rights = computed(() => this.authData()?.rights ?? []);
-  readonly role = computed<AuthRole>(() => this.authData()?.role ?? "admin");
+  readonly role = linkedSignal<AuthRole>(() => this.authData()?.role ?? "admin");
   readonly token = computed(() => this.authData()?.token ?? "");
-  readonly username = computed(() => this.authData()?.username ?? "");
+  readonly username = linkedSignal(() => this.authData()?.username ?? "");
   readonly logoutTimeSeconds = computed(() => this.authData()?.logout_time ?? null);
   readonly auditPageSize = computed(() => this.authData()?.audit_page_size ?? 10);
   readonly tokenPageSize = computed(() => this.authData()?.token_page_size ?? 10);

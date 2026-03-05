@@ -17,6 +17,7 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div class="navigation-self-service-column">
+
   @if (authService.actionAllowed("userlist")) {
     <mat-accordion>
       <mat-expansion-panel class="user-details-panel">
@@ -26,8 +27,8 @@
               supervised_user_circle
             </mat-icon>
             <span class="username">
-        {{ userData().username || "-" }}
-      </span>
+              {{ userData().username || "-" }}
+            </span>
           </mat-panel-title>
         </mat-expansion-panel-header>
 
@@ -53,6 +54,9 @@
       </mat-expansion-panel>
     </mat-accordion>
   }
+
+  <app-user-utils-panel-self-service></app-user-utils-panel-self-service>
+
   @if (!authService.tokenWizard() && !authService.containerWizard().enabled) {
     <app-navigation-self-service-button
       i18n-title
