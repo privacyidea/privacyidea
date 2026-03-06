@@ -758,7 +758,7 @@ class UserTestCase(MyTestCase):
         realm_id = get_realm_id(self.realm1)
 
         # user has no attributes yet
-        attributes = get_attributes(user.uid, user.resolver, user.realm)
+        attributes = get_attributes(user.uid, user.resolver, realm_id)
         self.assertDictEqual({}, attributes)
 
         # add some attributes
