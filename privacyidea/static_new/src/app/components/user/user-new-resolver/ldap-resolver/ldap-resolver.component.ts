@@ -95,6 +95,7 @@ export class LdapResolverComponent {
   multivalueAttributesControl = new FormControl<string>("", { nonNullable: true });
   uidTypeControl = new FormControl<string>("DN", { nonNullable: true });
   recursiveGroupSearchControl = new FormControl<boolean>(false, { nonNullable: true });
+  groupBaseDNControl = new FormControl<string>("", { nonNullable: true });
   groupSearchFilterControl = new FormControl<string>("", { nonNullable: true });
   groupNameAttributeControl = new FormControl<string>("", { nonNullable: true });
   groupAttributeMappingKeyControl = new FormControl<string>("", { nonNullable: true });
@@ -127,6 +128,7 @@ export class LdapResolverComponent {
     MULTIVALUEATTRIBUTES: this.multivalueAttributesControl,
     UIDTYPE: this.uidTypeControl,
     recursive_group_search: this.recursiveGroupSearchControl,
+    group_base_dn: this.groupBaseDNControl,
     group_search_filter: this.groupSearchFilterControl,
     group_name_attribute: this.groupNameAttributeControl,
     group_attribute_mapping_key: this.groupAttributeMappingKeyControl,
@@ -163,6 +165,7 @@ export class LdapResolverComponent {
       if (initial.MULTIVALUEATTRIBUTES !== undefined) this.multivalueAttributesControl.setValue(initial.MULTIVALUEATTRIBUTES, { emitEvent: false });
       if (initial.UIDTYPE !== undefined) this.uidTypeControl.setValue(initial.UIDTYPE, { emitEvent: false });
       if (initial.recursive_group_search !== undefined) this.recursiveGroupSearchControl.setValue(parseBooleanValue(initial.recursive_group_search), { emitEvent: false });
+      if (initial.group_base_dn !== undefined) this.groupBaseDNControl.setValue(initial.group_base_dn, { emitEvent: false });
       if (initial.group_search_filter !== undefined) this.groupSearchFilterControl.setValue(initial.group_search_filter, { emitEvent: false });
       if (initial.group_name_attribute !== undefined) this.groupNameAttributeControl.setValue(initial.group_name_attribute, { emitEvent: false });
       if (initial.group_attribute_mapping_key !== undefined) this.groupAttributeMappingKeyControl.setValue(initial.group_attribute_mapping_key, { emitEvent: false });

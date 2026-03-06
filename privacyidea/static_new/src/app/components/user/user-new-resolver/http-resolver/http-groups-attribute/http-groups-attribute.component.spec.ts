@@ -30,7 +30,7 @@ describe("HttpGroupsAttributeComponent", () => {
     userGroupsControl = new FormGroup({
       active: new FormControl(false),
       user_groups_attribute: new FormControl(""),
-      method: new FormControl("get"),
+      method: new FormControl("GET"),
       endpoint: new FormControl("")
     });
 
@@ -73,12 +73,18 @@ describe("HttpGroupsAttributeComponent", () => {
     expect(component.userGroupsControl.get("endpoint")!.disabled).toBe(true);
   });
 
-  it("should normalize method value to lowercase", () => {
-    userGroupsControl.get("method")!.setValue("GET");
+  it("should handle updates with emitEvent: true", async () => {
+    userGroupsControl.get("active")!.setValue(true, { emitEvent: true });
     fixture.detectChanges();
-    expect(userGroupsControl.get("method")!.value).toBe("get");
+    expect(userGroupsControl.get("user_groups_attribute")!.enabled).toBe(true);
+  });
+
+  it("should normalize method value to uppercase", () => {
+    userGroupsControl.get("method")!.setValue("get");
+    fixture.detectChanges();
+    expect(userGroupsControl.get("method")!.value).toBe("GET");
     userGroupsControl.get("method")!.setValue("PoSt");
     fixture.detectChanges();
-    expect(userGroupsControl.get("method")!.value).toBe("post");
+    expect(userGroupsControl.get("method")!.value).toBe("POST");
   });
 });

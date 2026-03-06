@@ -94,55 +94,7 @@
     </p>
   </div>
 
-  <div class="utils-group">
-    <div class="account-div">
-      <mat-icon>account_box</mat-icon>
-      <div class="text-div">
-        <h4 class="margin-0">{{ profileText }}</h4>
-        @if (localNode()) {
-          <i>{{ localNode() }}</i>
-        }
-      </div>
-      <button
-        (click)="logout()"
-        aria-label="Logout"
-        class="logout-btn"
-        i18n-aria-label
-        mat-icon-button
-        matTooltip="Return to login">
-        <mat-icon>logout</mat-icon>
-      </button>
-    </div>
-
-    <div class="utils">
-      <app-theme-switcher></app-theme-switcher>
-      <button
-        (click)="refreshPage()"
-        class="refresh-btn"
-        mat-fab
-        matTooltip="Refresh resources">
-        <mat-icon>refresh</mat-icon>
-      </button>
-      <div
-        [ngClass]="[
-          sessionTimerService.remainingTime()! < 31000
-            ? 'red-light'
-            : sessionTimerService.remainingTime()! < 60000
-              ? 'yellow-light'
-              : 'surface-highest'
-        ]"
-        class="session-timer"
-        matTooltip="Time until session expires">
-        @if (sessionTimerService.remainingTime()! < 599500) {
-          {{ sessionTimerService.remainingTime() | date: "m:ss" : "UTC" }}
-        } @else if (sessionTimerService.remainingTime()! < 3600000) {
-          {{ sessionTimerService.remainingTime() | date: "m" : "UTC" }}min
-        } @else {
-          {{ sessionTimerService.remainingTime() | date: "H'h' mm'min'" : "UTC" }}
-        }
-      </div>
-    </div>
-  </div>
+  <app-user-utils-panel></app-user-utils-panel>
 
   @if (false) {
     <form class="width-100">

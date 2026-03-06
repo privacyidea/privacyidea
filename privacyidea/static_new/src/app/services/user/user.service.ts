@@ -19,7 +19,7 @@
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
 import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
-import { computed, inject, Injectable, linkedSignal, Signal, signal, WritableSignal } from "@angular/core";
+import { computed, effect, inject, Injectable, linkedSignal, Signal, signal, WritableSignal } from "@angular/core";
 import { RealmService, RealmServiceInterface } from "../realm/realm.service";
 import { TokenService, TokenServiceInterface } from "../token/token.service";
 
@@ -326,8 +326,16 @@ export class UserService implements UserServiceInterface {
   });
 
   users: WritableSignal<UserData[]> = linkedSignal({
-    source: this.usersResource.value,
-    computation: (source, previous) => source?.result?.value ?? previous?.value ?? []
+    source: () => ({
+      resourceValue: this.usersResource.value(),
+      realm: this.selectedUserRealm()
+    }),
+    computation: (source, previous) => {
+      if (source.realm !== previous?.source.realm) {
+        return [];
+      }
+      return source.resourceValue?.result?.value ?? previous?.value ?? [];
+    }
   });
 
   selectedUser = computed<UserData | null>(() => {

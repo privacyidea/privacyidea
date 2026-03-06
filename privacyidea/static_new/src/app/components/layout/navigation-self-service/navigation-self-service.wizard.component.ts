@@ -16,17 +16,15 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, inject } from "@angular/core";
+import { Component } from "@angular/core";
 import { NavigationSelfServiceButtonComponent } from "./navigation-self-service-button/navigation-self-service-button.component";
-import { ROUTE_PATHS } from "../../../route_paths";
-import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
-import { TokenService, TokenServiceInterface } from "../../../services/token/token.service";
 import { NavigationSelfServiceComponent } from "./navigation-self-service.component";
+import { UserUtilsPanelSelfServiceComponent } from "@components/layout/user-utils-panel/user-utils-panel.self-service.component";
 
 @Component({
   selector: "app-navigation-self-service-wizard",
   standalone: true,
-  imports: [NavigationSelfServiceButtonComponent],
+  imports: [NavigationSelfServiceButtonComponent, UserUtilsPanelSelfServiceComponent],
   templateUrl: "./navigation-self-service.wizard.component.html",
   styleUrl: "./navigation-self-service.component.scss"
 })

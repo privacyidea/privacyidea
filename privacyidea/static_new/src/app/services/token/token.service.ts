@@ -34,7 +34,9 @@ import {
 import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
 import {
+  BaseApiPayloadMapper,
   EnrollmentResponse,
+  EnrollmentResponseDetail,
   TokenApiPayloadMapper,
   TokenEnrollmentData
 } from "../../mappers/token-api-payload/_token-api-payload.mapper";
@@ -166,6 +168,19 @@ export interface WebAuthnRegisterRequest {
 
 export type LostTokenResponse = PiResponse<LostTokenData>;
 
+export type EnrollTokenArguments = { data: TokenEnrollmentData, mapper: BaseApiPayloadMapper };
+
+export type TokenEnrollmentDialogData = {
+  tokenType: string;
+  response: EnrollmentResponse | null;
+  enrollParameters: EnrollTokenArguments;
+  username?: string;
+  userRealm?: string;
+  onlyAddToRealm?: boolean;
+  rollover?: boolean;
+  showEnrollData?: boolean;
+}
+
 export interface LostTokenData {
   disable: number;
   end_date: string;
@@ -273,6 +288,8 @@ export interface TokenServiceInterface {
     data: T;
     mapper: TokenApiPayloadMapper<T>;
   }): Observable<R>;
+
+  verifyToken(verifyData: TokenEnrollmentData): Observable<PiResponse<boolean, EnrollmentResponseDetail>>;
 
   lostToken(tokenSerial: string): Observable<LostTokenResponse>;
 
@@ -969,6 +986,19 @@ export class TokenService implements TokenServiceInterface {
           console.error("Failed to enroll token.", error);
           const message = error.error?.result?.error?.message || "";
           this.notificationService.openSnackBar("Failed to enroll token. " + message);
+          return throwError(() => error);
+        })
+      );
+  }
+
+  verifyToken(verifyData: TokenEnrollmentData): Observable<PiResponse<boolean, EnrollmentResponseDetail>> {
+    const headers = this.authService.getHeaders();
+    return this.http.post<PiResponse<boolean, EnrollmentResponseDetail>>(`${this.tokenBaseUrl}init`, verifyData, { headers })
+      .pipe(
+        catchError((error) => {
+          console.error("Failed to verify token.", error);
+          const message = error.error?.result?.error?.message || "";
+          this.notificationService.openSnackBar("Failed to verify token. " + message);
           return throwError(() => error);
         })
       );

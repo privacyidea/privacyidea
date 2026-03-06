@@ -26,7 +26,7 @@ import {
   MockAuthDetail,
   MockLocalService,
   MockNotificationService,
-  MockPiResponse,
+  MockPiResponse, MockSessionTimerService,
   MockValidateService
 } from "../../../testing/mock-services";
 import { AuthData, AuthDetail, AuthService } from "../../services/auth/auth.service";
@@ -48,18 +48,11 @@ describe("LoginComponent", () => {
   let localService: MockLocalService;
   let configService: MockConfigService;
   let notificationService: MockNotificationService;
-  let sessionTimerService: jest.Mocked<SessionTimerServiceInterface>;
+  let sessionTimerService: MockSessionTimerService;
   let validateService: MockValidateService;
   let router: jest.Mocked<Router>;
 
   beforeEach(async () => {
-    // Mock for SessionTimerService as it's not in mock-services.ts
-    const sessionTimerServiceMock = {
-      startRefreshingRemainingTime: jest.fn(),
-      startTimer: jest.fn(),
-      resetTimer: jest.fn()
-    };
-
     const routerMock = {
       navigateByUrl: jest.fn().mockResolvedValue(true),
       navigate: jest.fn().mockResolvedValue(true)
@@ -74,7 +67,7 @@ describe("LoginComponent", () => {
         { provide: LocalService, useClass: MockLocalService },
         { provide: NotificationService, useClass: MockNotificationService },
         { provide: ValidateService, useClass: MockValidateService },
-        { provide: SessionTimerService, useValue: sessionTimerServiceMock },
+        { provide: SessionTimerService, useClass: MockSessionTimerService },
         { provide: Router, useValue: routerMock },
         { provide: ConfigService, useClass: MockConfigService },
         MockLocalService,
@@ -86,7 +79,7 @@ describe("LoginComponent", () => {
     authService = TestBed.inject(AuthService) as unknown as MockAuthService;
     localService = TestBed.inject(LocalService) as unknown as MockLocalService;
     notificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;
-    sessionTimerService = TestBed.inject(SessionTimerService) as unknown as jest.Mocked<SessionTimerServiceInterface>;
+    sessionTimerService = TestBed.inject(SessionTimerService) as unknown as MockSessionTimerService;
     validateService = TestBed.inject(ValidateService) as unknown as MockValidateService;
     configService = TestBed.inject(ConfigService) as unknown as MockConfigService;
     router = TestBed.inject(Router) as jest.Mocked<Router>;

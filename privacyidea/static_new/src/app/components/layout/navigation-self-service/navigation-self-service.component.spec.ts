@@ -28,6 +28,22 @@ describe("NavigationSelfServiceComponent", () => {
   let component: NavigationSelfServiceComponent;
   let fixture: ComponentFixture<NavigationSelfServiceComponent>;
 
+  beforeAll(async () => {
+    Object.defineProperty(window, "matchMedia", {
+      writable: true,
+      value: (q: string) => ({
+        matches: false,
+        media: q,
+        onchange: null,
+        addListener: jest.fn(),
+        removeListener: jest.fn(),
+        addEventListener: jest.fn(),
+        removeEventListener: jest.fn(),
+        dispatchEvent: jest.fn()
+      })
+    });
+  });
+
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       providers: [

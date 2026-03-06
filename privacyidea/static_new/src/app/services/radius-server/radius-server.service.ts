@@ -21,6 +21,7 @@ import { inject, Injectable, linkedSignal, WritableSignal } from "@angular/core"
 import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
+import { ContentService, ContentServiceInterface } from "../content/content.service";
 import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
 import { lastValueFrom } from "rxjs";
 
@@ -41,7 +42,9 @@ export interface RadiusServerConfiguration {
 export interface RadiusServerServiceInterface {
   radiusServerConfigurationResource: HttpResourceRef<PiResponse<RadiusServerConfigurations> | undefined>;
   radiusServerConfigurations: WritableSignal<RadiusServerConfiguration[]>;
+
   postRadiusServer(server: any): Promise<void>;
+
   deleteRadiusServer(name: string): Promise<void>;
 }
 
@@ -50,16 +53,22 @@ export interface RadiusServerServiceInterface {
 })
 export class RadiusServerService implements RadiusServerServiceInterface {
   private readonly authService: AuthServiceInterface = inject(AuthService);
+  private readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly http: HttpClient = inject(HttpClient);
 
   readonly radiusServerBaseUrl = environment.proxyUrl + "/radiusserver/";
 
-  radiusServerConfigurationResource = httpResource<PiResponse<RadiusServerConfigurations>>(() => ({
-    url: this.radiusServerBaseUrl,
-    method: "GET",
-    headers: this.authService.getHeaders()
-  }));
+  radiusServerConfigurationResource = httpResource<PiResponse<RadiusServerConfigurations>>(() => {
+    if (!this.contentService.onExternalRadius()) {
+      return undefined;
+    }
+    return {
+      url: this.radiusServerBaseUrl,
+      method: "GET",
+      headers: this.authService.getHeaders()
+    };
+  });
 
   radiusServerConfigurations: WritableSignal<RadiusServerConfiguration[]> = linkedSignal({
     source: this.radiusServerConfigurationResource.value,

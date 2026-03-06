@@ -20,15 +20,24 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { HttpResolverComponent } from "./http-resolver.component";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { ComponentRef } from "@angular/core";
+import { MockResolverService } from "../../../../../testing/mock-services/mock-resolver-service";
+import { ResolverService } from "../../../../services/resolver/resolver.service";
+import { of } from "rxjs";
+import { MockPiResponse } from "../../../../../testing/mock-services";
 
 describe("HttpResolverComponent", () => {
   let component: HttpResolverComponent;
   let componentRef: ComponentRef<HttpResolverComponent>;
   let fixture: ComponentFixture<HttpResolverComponent>;
+  let mockResolverService: MockResolverService;
 
   beforeEach(async () => {
+    mockResolverService = new MockResolverService();
     await TestBed.configureTestingModule({
-      imports: [HttpResolverComponent, NoopAnimationsModule]
+      imports: [HttpResolverComponent, NoopAnimationsModule],
+      providers: [
+        { provide: ResolverService, useValue: mockResolverService }
+      ]
     })
       .compileComponents();
 
@@ -40,6 +49,28 @@ describe("HttpResolverComponent", () => {
 
   it("should create", () => {
     expect(component).toBeTruthy();
+  });
+
+  it("should fetch defaults when data is empty", () => {
+    expect(mockResolverService.getDefaultResolverConfig).toHaveBeenCalledWith("httpresolver");
+  });
+
+  it("should apply defaults from server", () => {
+    const defaults = {
+      endpoint: "http://default-endpoint",
+      method: "POST",
+      verify_tls: false
+    };
+    mockResolverService.getDefaultResolverConfig.mockReturnValue(of(MockPiResponse.fromValue(defaults)));
+
+    // Trigger effect by changing type or just re-initializing if possible
+    // Since it's already initialized in beforeEach, let's manually call or trigger
+    componentRef.setInput("data", {}); // Ensure it's empty
+    fixture.detectChanges();
+
+    expect(component.endpointControl.value).toBe("http://default-endpoint");
+    expect(component.methodControl.value).toBe("POST");
+    expect(component.verifyTlsControl.value).toBe(false);
   });
 
   it("should expose controls via signal", () => {

@@ -34,6 +34,9 @@ import { TokenDetailsActionsComponent } from "./token-details-actions/token-deta
 import { TokenDetailsInfoComponent } from "./token-details-info/token-details-info.component";
 import { TokenDetailsUserSelfServiceComponent } from "./token-details-user/token-details-user.self-service.component";
 import { TokenDetailsComponent } from "./token-details.component";
+import { TokenDetailsMachineComponent } from "@components/token/token-details/token-details-machine/token-details-machine.component";
+import { RouterLink } from "@angular/router";
+import { MatTooltip } from "@angular/material/tooltip";
 
 @Component({
   selector: "app-token-details-self-service",
@@ -60,7 +63,10 @@ import { TokenDetailsComponent } from "./token-details.component";
     TokenDetailsActionsComponent,
     EditButtonsComponent,
     CopyButtonComponent,
-    ClearableInputComponent
+    ClearableInputComponent,
+    TokenDetailsMachineComponent,
+    RouterLink,
+    MatTooltip
   ],
   templateUrl: "./token-details.self-service.component.html",
   styleUrls: ["./token-details.component.scss"]

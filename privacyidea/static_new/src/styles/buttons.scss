@@ -239,7 +239,6 @@ $button-low-contrast-variant: linear-gradient(
   color: var(--mat-sys-on-surface-variant);
   background-color: transparent;
   transition: background-color 0.2s ease-in-out;
-  margin-left: 16px;
 
   &:hover {
     background-color: var(--mat-sys-surface-container);
