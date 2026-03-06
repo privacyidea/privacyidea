@@ -128,7 +128,6 @@ export class UserUtilsPanelComponent {
 
   logout(): void {
     this.authService.logout();
-    this.router.navigate(["login"]).then(() => this.notificationService.openSnackBar($localize`Logout successful.`));
   }
 
   refreshPage() {

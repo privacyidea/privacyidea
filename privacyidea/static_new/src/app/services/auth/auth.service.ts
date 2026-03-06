@@ -231,8 +231,8 @@ export class AuthService implements AuthServiceInterface {
   readonly username = computed(() => this.jwtData()?.username || this.authData()?.username || "");
   readonly logoutTimeS = computed(() => this.authData()?.logout_time || null);
   readonly jwtLogoutTimeS = computed(() => {
-    const expiration = this.jwtExpDate() ?? new Date(0);
-    if (!expiration) return null;
+    const expiration = this.jwtExpDate();
+    if (expiration == null) return null;
     const now = new Date();
     return Math.max(0, Math.floor((expiration.getTime() - now.getTime()) / 1000));
   });
@@ -314,7 +314,7 @@ export class AuthService implements AuthServiceInterface {
     this.jwtData.set(null);
     this.localService.removeData(BEARER_TOKEN_STORAGE_KEY);
     this.authenticationAccepted.set(false);
-    this.router.navigate(["login"]).then(() => this.notificationService.openSnackBar("Logout successful."));
+    this.router.navigate(["login"]).then(() => this.notificationService.openSnackBar($localize`Logout successful.`));
   }
 
   actionAllowed(action: PolicyAction): boolean {

@@ -51,7 +51,7 @@ import { NotificationService } from "../../../services/notification/notification
 import { MatSnackBar } from "@angular/material/snack-bar";
 import { ROUTE_PATHS } from "../../../route_paths";
 
-describe("UserPanelComponent", () => {
+describe("UserUtilsPanelComponent", () => {
   let component: UserUtilsPanelComponent;
   let fixture: ComponentFixture<UserUtilsPanelComponent>;
   let tokenService: MockTokenService;
@@ -238,12 +238,9 @@ describe("UserPanelComponent", () => {
   });
 
   describe("logout", () => {
-    it("calls authService.logout and navigates to login", async () => {
-      const navSpy = jest.spyOn(router, "navigate").mockResolvedValue(true as any);
+    it("calls authService.logout", async () => {
       await component.logout();
       expect(authService.logout).toHaveBeenCalled();
-      expect(navSpy).toHaveBeenCalledWith(["login"]);
-      expect(notificationService.openSnackBar).toHaveBeenCalledWith(expect.stringContaining("Logout successful."));
     });
   });
 });

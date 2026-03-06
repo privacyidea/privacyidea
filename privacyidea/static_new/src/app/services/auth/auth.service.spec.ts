@@ -298,6 +298,28 @@ describe("AuthService", () => {
     jest.useRealTimers();
   });
 
+  it("jwtExpDate and jwtLogoutTimeS are null if expiration or no jwt data at all are defined", () => {
+    jest.useFakeTimers().setSystemTime(new Date("2025-01-01T00:00:00Z"));
+
+    expect(authService.jwtExpDate()).toBeNull();
+    expect(authService.jwtLogoutTimeS()).toBeNull();
+
+    const jwt = {
+      username: "bob",
+      realm: "r",
+      nonce: "n",
+      role: "admin",
+      authtype: "cookie",
+      rights: []
+    };
+    (authService as any).jwtData.set(jwt);
+
+    expect(authService.jwtExpDate()).toBeNull();
+    expect(authService.jwtLogoutTimeS()).toBeNull();
+
+    jest.useRealTimers();
+  });
+
   it("decodeJwtPayload returns null and logs error for invalid token", () => {
     const res = authService.decodeJwtPayload("nope.invalid.jwt");
     expect(res).toBeNull();
