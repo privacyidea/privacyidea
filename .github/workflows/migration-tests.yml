@@ -15,6 +15,7 @@ on:
       - 'privacyidea/migrations/**'
       - 'privacyidea/models/**'
       - 'tests/test_migrations.py'
+      - 'tests/test_migration_*.py'
       - 'tests/testdata/migrations/**'
       - 'pyproject.toml'
       - 'requirements.txt'
@@ -28,6 +29,7 @@ on:
       - 'privacyidea/migrations/**'
       - 'privacyidea/models/**'
       - 'tests/test_migrations.py'
+      - 'tests/test_migration_*.py'
       - 'tests/testdata/migrations/**'
       - 'pyproject.toml'
       - 'requirements.txt'
@@ -116,4 +118,4 @@ jobs:
           TEST_DATABASE_URL: ${{ matrix.db.db_url }}
           PYTHONWARNINGS: "once::DeprecationWarning"
         run: |
-          python -b -m pytest -v --tb=short -m migration tests/test_migrations.py
+          python -b -m pytest -v --tb=short -m migration tests/test_migrations.py tests/test_migration_*.py
