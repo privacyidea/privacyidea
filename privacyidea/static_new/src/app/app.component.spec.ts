@@ -66,16 +66,14 @@ describe("AppComponent", () => {
     expect(fixture.componentInstance.title).toBe("privacyidea-webui");
   });
 
-  it("starts timer and shows snackbar when user already authenticated", () => {
+  it("shows snackbar when user already authenticated", () => {
     const auth = TestBed.inject(AuthService) as unknown as MockAuthService;
-    const timer = TestBed.inject(SessionTimerService) as unknown as MockSessionTimerService;
     const note = TestBed.inject(NotificationService) as unknown as MockNotificationService;
 
     auth.isAuthenticated.set(true);
 
     TestBed.createComponent(AppComponent).detectChanges();
 
-    expect(timer.startTimer).toHaveBeenCalled();
     expect(note.openSnackBar).toHaveBeenCalledWith("User is already logged in.");
   });
 

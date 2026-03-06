@@ -116,8 +116,6 @@ export class AppComponent implements OnInit {
   lastSessionReset = 0;
 
   constructor() {
-    this.sessionTimerService.startTimer();
-
     if (this.authService.isAuthenticated()) {
       console.warn("User is already logged in.");
       this.notificationService.openSnackBar("User is already logged in.");
@@ -135,6 +133,8 @@ export class AppComponent implements OnInit {
   @HostListener("document:mousemove")
   @HostListener("document:scroll")
   resetSessionTimer() {
+    if (!this.authService.isAuthenticated()) return;
+
     const now = Date.now();
     if (now - this.lastSessionReset >= 1000) {
       this.lastSessionReset = now;
