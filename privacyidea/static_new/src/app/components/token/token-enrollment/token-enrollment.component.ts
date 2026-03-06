@@ -301,17 +301,9 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
   });
   descriptionRequired = computed(() => {
     const selectedTokenType = this.tokenService.selectedTokenType();
-    return this.authService.requireDescription().includes(selectedTokenType.key)
+    return this.authService.requireDescription().includes(selectedTokenType.key);
   });
-  private descriptionRequiredEffect = effect(() => {
-    const isRequired = this.descriptionRequired();
-    const currentValidators = [Validators.maxLength(80)];
-    if (isRequired) {
-      currentValidators.push(Validators.required);
-    }
-    this.descriptionControl.setValidators(currentValidators);
-    this.descriptionControl.updateValueAndValidity();
-  });
+
   setPinControl = new FormControl<string>("", { nonNullable: true });
   repeatPinControl = new FormControl<string>("", { nonNullable: true });
   selectedContainerControl = new FormControl(this.containerService.selectedContainer(), { nonNullable: true });
@@ -371,6 +363,18 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
 
   updateOnEnrollmentResponse(event: OnEnrollmentResponseFn) {
     this.onEnrollmentResponse.set(event);
+  }
+
+  constructor() {
+    effect(() => {
+      const isRequired = this.descriptionRequired();
+      const currentValidators = [Validators.maxLength(80)];
+      if (isRequired) {
+        currentValidators.push(Validators.required);
+      }
+      this.descriptionControl.setValidators(currentValidators);
+      this.descriptionControl.updateValueAndValidity();
+    });
   }
 
   ngOnInit(): void {
@@ -614,7 +618,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
         this.enrollResponse.set(result);
         this.enrolledDialogData.set({
           ...this.enrolledDialogData()!,
-          showEnrollData: false,
+          showEnrollData: false
         });
         this.handleVerifyEnrollment(result);
       }
