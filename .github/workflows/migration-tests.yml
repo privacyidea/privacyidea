@@ -2,12 +2,12 @@
 #
 # SPDX-License-Identifier: CC0-1.0
 #
-# Runs database migration tests against a MariaDB container.
+# Runs database migration tests against MariaDB and PostgreSQL containers.
 # These tests are intentionally separate from the standard unit tests
 # so they can be triggered and reviewed independently.
 #
 
-name: Migration Tests MariaDB
+name: Migration Tests
 
 on:
   push:
@@ -15,6 +15,7 @@ on:
       - 'privacyidea/migrations/**'
       - 'privacyidea/models/**'
       - 'tests/test_migrations.py'
+      - 'tests/testdata/migrations/**'
       - 'pyproject.toml'
       - 'requirements.txt'
       - '.github/workflows/migration-tests.yml'
@@ -27,6 +28,7 @@ on:
       - 'privacyidea/migrations/**'
       - 'privacyidea/models/**'
       - 'tests/test_migrations.py'
+      - 'tests/testdata/migrations/**'
       - 'pyproject.toml'
       - 'requirements.txt'
       - '.github/workflows/migration-tests.yml'
@@ -35,21 +37,30 @@ on:
 permissions:
   contents: read
 
-# Cancel any in-progress run for the same branch/PR so that a push to a
-# branch with an open PR does not trigger the job twice.
-# Scheduled runs get their own group so they are never cancelled.
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: ${{ github.event_name != 'schedule' }}
 
 jobs:
   migration-tests:
-    # Migration correctness does not depend on the Python version — run on
-    # the latest stable version only to keep CI fast.
-    name: Migration tests (MariaDB / Python 3.13)
+    name: Migration tests (${{ matrix.db.label }} / Python 3.13)
     permissions:
       checks: write
     runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        db:
+          - label: MariaDB
+            service: mariadb
+            db_url: "mysql+pymysql://privacyidea:privacyidea@127.0.0.1:3306/privacyidea_migration_test"
+            pip_extra: "PyMySQL"
+
+          - label: PostgreSQL
+            service: postgresql
+            db_url: "postgresql+psycopg2://privacyidea:privacyidea@127.0.0.1:5432/privacyidea_migration_test"
+            pip_extra: "psycopg2-binary"
 
     services:
       mariadb:
@@ -63,6 +74,20 @@ jobs:
           - 3306:3306
         options: >-
           --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+      postgresql:
+        image: postgres:17
+        env:
+          POSTGRES_DB: privacyidea_migration_test
+          POSTGRES_USER: privacyidea
+          POSTGRES_PASSWORD: privacyidea
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U privacyidea"
           --health-interval=10s
           --health-timeout=5s
           --health-retries=10
@@ -84,11 +109,11 @@ jobs:
       - name: Install dependencies
         run: |
           pip install -r tests/requirements.txt
-          pip install PyMySQL
+          pip install ${{ matrix.db.pip_extra }}
 
       - name: Run migration tests
         env:
-          TEST_DATABASE_URL: "mysql+pymysql://privacyidea:privacyidea@127.0.0.1:3306/privacyidea_migration_test"
+          TEST_DATABASE_URL: ${{ matrix.db.db_url }}
           PYTHONWARNINGS: "once::DeprecationWarning"
         run: |
           python -b -m pytest -v --tb=short -m migration tests/test_migrations.py

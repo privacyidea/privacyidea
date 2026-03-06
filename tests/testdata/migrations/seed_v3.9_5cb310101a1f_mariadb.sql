@@ -967,8 +967,8 @@ CREATE TABLE IF NOT EXISTS `smtpserver` (
     PRIMARY KEY (`id`)
 ) ROW_FORMAT=DYNAMIC;
 
-INSERT INTO `smtpserver` (`id`, `identifier`, `server`, `port`, `sender`, `tls`) VALUES
-    (1, 'default-smtp', 'mail.example.com', 587, 'noreply@example.com', 1);
+INSERT INTO `smtpserver` (`id`, `identifier`, `server`, `port`, `sender`, `tls`, `enqueue_job`) VALUES
+    (1, 'default-smtp', 'mail.example.com', 587, 'noreply@example.com', 1, 0);
 
 -- ---------------------------------------------------------------------------
 -- radiusserver
