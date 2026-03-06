@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, inject } from "@angular/core";
+import { Component, computed, inject } from "@angular/core";
 import { NgClass, NgOptimizedImage } from "@angular/common";
 import {
   MatAccordion,
@@ -50,6 +50,8 @@ import { RealmService, RealmServiceInterface } from "../../../services/realm/rea
 import { PeriodicTaskService } from "../../../services/periodic-task/periodic-task.service";
 import { EventService, EventServiceInterface } from "../../../services/event/event.service";
 import { SystemService, SystemServiceInterface } from "../../../services/system/system.service";
+import { ConfigService, ConfigServiceInterface } from "../../../services/config/config.service";
+import { environment } from "../../../../environments/environment";
 import { UserUtilsPanelComponent } from "@components/layout/user-utils-panel/user-utils-panel.component";
 
 @Component({
@@ -91,8 +93,22 @@ export class NavigationComponent {
   protected readonly periodicTaskService = inject(PeriodicTaskService);
   protected readonly eventService: EventServiceInterface = inject(EventService);
   protected readonly systemService: SystemServiceInterface = inject(SystemService);
+  protected readonly configService: ConfigServiceInterface = inject(ConfigService);
   protected readonly router: Router = inject(Router);
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
+
+  customLogo = computed(() => {
+    if (!this.configService.config()?.logo) {
+      return null;
+    }
+    return environment.proxyUrl + "/static/public/" + this.configService.config()?.logo;
+  });
+  versionText = computed(() => {
+    if (this.customLogo()) {
+      return $localize`privacyIDEA Version ` + this.versioningService.version();
+    }
+    return $localize`Version ` + this.versioningService.version();
+  });
 
   onSingleHeaderClick(event: MouseEvent, route_path: string): void {
     event.preventDefault();

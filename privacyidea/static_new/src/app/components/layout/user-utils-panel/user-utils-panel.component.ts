@@ -58,6 +58,7 @@ import { PeriodicTaskService } from "../../../services/periodic-task/periodic-ta
 import { EventService, EventServiceInterface } from "../../../services/event/event.service";
 import { SystemService, SystemServiceInterface } from "../../../services/system/system.service";
 import { ROUTE_PATHS } from "../../../route_paths";
+import { ConfigService, ConfigServiceInterface } from "../../../services/config/config.service";
 
 @Component({
   selector: "app-user-utils-panel",
@@ -125,6 +126,7 @@ export class UserUtilsPanelComponent {
     return "H'\u202Fh' mm'\u202Fmin'";
   });
 
+  localNode = computed(() => this.authService.showNode());
 
   logout(): void {
     this.authService.logout();

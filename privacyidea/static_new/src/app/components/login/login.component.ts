@@ -45,6 +45,7 @@ import { ValidateService, ValidateServiceInterface } from "../../services/valida
 import { ConfigService } from "../../services/config/config.service";
 import { MatOption, MatSelect } from "@angular/material/select";
 import { ClearButtonComponent } from "../shared/clear-button/clear-button.component";
+import { environment } from "../../../environments/environment";
 
 const PUSH_POLLING_INTERVAL_MS = 500;
 const PUSH_POLLING_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
@@ -83,7 +84,7 @@ export class LoginComponent implements OnDestroy {
   username = signal<string>("");
   password = signal<string>("");
   otp = signal<string>("");
-  loginMessage = signal<string[]>([]);
+  authMessage = signal<string[]>([]);  // messages returned from the auth endpoint
   errorMessage = signal<string>("");
 
   showOtpField = signal<boolean>(false);
@@ -119,7 +120,21 @@ export class LoginComponent implements OnDestroy {
     return loginMode !== "hide";
   });
 
+  // custom login text configured in the policies
   loginText = computed(() => this.configService.config()?.login_text || "");
+
+  customLogo = computed(() => {
+    if (!this.configService.config()?.logo) {
+      return null;
+    }
+    return environment.proxyUrl + "/static/public/" + this.configService.config()?.logo;
+  });
+
+  remoteUser = computed(() => this.configService.config()?.remote_user);
+  useRemoteLogin = linkedSignal(() => !!this.remoteUser());
+  forceRemoteUser = computed(() => this.configService.config()?.force_remote_user);
+
+  node = computed(() => this.configService.config()?.show_node);
 
   constructor() {
     if (this.authService.isAuthenticated()) {
@@ -149,13 +164,25 @@ export class LoginComponent implements OnDestroy {
 
     if (isChallengeResponse) {
       this.stopPushPolling();
-      this.loginMessage.set([]);
+      this.authMessage.set([]);
       this.errorMessage.set("");
       params.transaction_id = this.transactionId;
     } else {
       this.resetChallengeState();
     }
 
+    this.authService.authenticate(params).subscribe({
+      next: (response) => this.evaluateResponse(response, "password"),
+      error: (err) => this.handleError(err, "password")
+    });
+  }
+
+  remoteLogin(): void {
+    if (!this.remoteUser()) {
+      this.notificationService.openSnackBar($localize`Remote user not available. Remote Login not possible.`);
+      return;
+    }
+    const params: any = { username: this.remoteUser() };
     this.authService.authenticate(params).subscribe({
       next: (response) => this.evaluateResponse(response, "password"),
       error: (err) => this.handleError(err, "password")
@@ -251,7 +278,7 @@ export class LoginComponent implements OnDestroy {
 
   private resetChallengeState(): void {
     this.stopPushPolling();
-    this.loginMessage.set([]);
+    this.authMessage.set([]);
     this.errorMessage.set("");
     this.pushTriggered.set(false);
     this.webAuthnTriggered.set(null);
@@ -299,10 +326,10 @@ export class LoginComponent implements OnDestroy {
         webauthn: "Login with WebAuthn failed."
       };
       if (response.detail.multi_challenge?.length) {
-        this.loginMessage.set([...new Set(response.detail.multi_challenge.map((c) => c.message))]);
+        this.authMessage.set([...new Set(response.detail.multi_challenge.map((c) => c.message))]);
       } else {
         const message = response.detail.message || defaultMessages[context];
-        this.loginMessage.set([message]);
+        this.authMessage.set([message]);
       }
     } else {
       // fail
@@ -342,7 +369,8 @@ export class LoginComponent implements OnDestroy {
     }
   }
 
-  clearRealmSelection(): void {
+  clearRealmSelection(event: MouseEvent) {
+    event.stopPropagation();
     this.realm.set("");
   }
 }
