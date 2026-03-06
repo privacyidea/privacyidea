@@ -134,6 +134,8 @@ export class LoginComponent implements OnDestroy {
   useRemoteLogin = linkedSignal(() => !!this.remoteUser());
   forceRemoteUser = computed(() => this.configService.config()?.force_remote_user);
 
+  node = computed(() => this.configService.config()?.show_node);
+
   constructor() {
     if (this.authService.isAuthenticated()) {
       console.warn("User is already logged in.");
