@@ -23,7 +23,7 @@
       @for (type of tokenTypes; track type) {
         <mat-chip (click)="addToken(type)">
           {{ type }}
-          <mat-icon>add</mat-icon>
+          <mat-icon matChipTrailingIcon>add</mat-icon>
         </mat-chip>
       }
     </mat-chip-listbox>

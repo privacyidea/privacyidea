@@ -48,7 +48,7 @@ export class DialogWrapperComponent<R = any> {
   ngOnInit() {
     assert(
       this.actions().length !== 0 || this.showCancelButton(),
-      "Dialog must have at least one action or a close button."
+      "Dialog must have at least one action or a cancel button."
     );
   }
 }

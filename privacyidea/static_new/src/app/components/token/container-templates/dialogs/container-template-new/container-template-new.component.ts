@@ -18,13 +18,13 @@
  **/
 
 import { CommonModule } from "@angular/common";
-import { Component, inject, signal, linkedSignal, computed } from "@angular/core";
+import { Component, inject, linkedSignal, computed } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCardModule } from "@angular/material/card";
 import { MatChipsModule } from "@angular/material/chips";
 import { MatOptionModule } from "@angular/material/core";
-import { MatExpansionModule, MatExpansionPanel } from "@angular/material/expansion";
+import { MatExpansionModule } from "@angular/material/expansion";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
 import { MatSelectModule } from "@angular/material/select";
@@ -35,9 +35,18 @@ import {
 } from "../../../../../services/container-template/container-template.service";
 import { ContainerTemplate } from "../../../../../services/container/container.service";
 import { deepCopy } from "../../../../../utils/deep-copy.utils";
-import { ContainerTypeOption } from "../../../container-create/container-create.component";
 import { TemplateAddedTokenRowComponent } from "../template-added-token-row/template-added-token-row.component";
 import { ContainerTemplateAddTokenChipsComponent } from "../container-template-add-token-chips/container-template-add-token-chips.component";
+import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
+import { MatListModule } from "@angular/material/list";
+import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
+import { MatCheckboxModule } from "@angular/material/checkbox";
+import { SelectorButtonsComponent } from "@components/policies/dialogs/edit-policy-dialog/policy-panels/edit-action-tab/selector-buttons/selector-buttons.component";
+
+type ContainerTemplateNewComponentData = {
+  // Define any data you want to pass to the dialog here, e.g.:
+  // existingTemplate?: ContainerTemplate;
+};
 
 @Component({
   selector: "app-container-template-new",
@@ -55,26 +64,34 @@ import { ContainerTemplateAddTokenChipsComponent } from "../container-template-a
     MatOptionModule,
     TemplateAddedTokenRowComponent,
     ContainerTemplateAddTokenChipsComponent,
-    MatChipsModule
+    MatChipsModule,
+    MatListModule,
+    DialogWrapperComponent,
+    MatCheckboxModule,
+    SelectorButtonsComponent
   ],
   templateUrl: "./container-template-new.component.html",
   styleUrl: "./container-template-new.component.scss"
 })
-export class ContainerTemplateNewComponent {
+export class ContainerTemplateNewComponent extends AbstractDialogComponent<
+  ContainerTemplateNewComponentData,
+  ContainerTemplate
+> {
+  setContainerType($event: string | undefined) {
+    throw new Error("Method not implemented.");
+  }
   // Angular Inputs and Services
   readonly containerTemplateService: ContainerTemplateServiceInterface = inject(ContainerTemplateService);
-  readonly isEditMode = signal<boolean>(false);
+  readonly isEditMode = this.data ? true : false;
   readonly newTemplate = linkedSignal<any, ContainerTemplate>({
     source: () => ({
       emptyContainerTemplate: this.containerTemplateService.emptyContainerTemplate,
-      isEditMode: this.isEditMode(),
       containerType: this.containerTemplateService.availableContainerTypes()[0] ?? ""
     }),
     computation: (source) => deepCopy({ ...source.emptyContainerTemplate, container_type: source.containerType })
   });
 
   readonly isTemplateEdited = computed(() => {
-    if (!this.isEditMode()) return false;
     // Dont compare container type, only everything else
     return (
       JSON.stringify({ ...this.newTemplate(), container_type: "" }) !==
@@ -85,29 +102,19 @@ export class ContainerTemplateNewComponent {
     );
   });
 
-  // Event Handlers
-  handleExpansion() {
-    this.isEditMode.set(true);
-  }
+  readonly tokens = computed(() => this.newTemplate().template_options.tokens);
+  readonly options = computed(() => this.newTemplate().template_options.options);
 
-  handleCollapse(panel: MatExpansionPanel) {
-    if (!this.confirmDiscardChanges()) {
-      panel.open();
-      return;
-    }
-    this.isEditMode.set(false);
-  }
+  readonly containerTypes = computed(() => this.containerTemplateService.availableContainerTypes());
 
   canSaveTemplate(): boolean {
     return this.containerTemplateService.canSaveTemplate(this.newTemplate());
   }
 
   // Action Methods
-  saveTemplate(panel?: MatExpansionPanel) {
+  saveTemplate() {
     if (!this.canSaveTemplate()) return;
     this.containerTemplateService.postTemplateEdits(this.newTemplate());
-    this.isEditMode.set(false);
-    if (panel) panel.close();
   }
 
   deleteTemplate(templateName: string): void {
@@ -118,7 +125,6 @@ export class ContainerTemplateNewComponent {
 
   cancelEditMode() {
     if (!this.confirmDiscardChanges()) return;
-    this.isEditMode.set(false);
   }
 
   confirmDiscardChanges(): boolean {
@@ -135,7 +141,7 @@ export class ContainerTemplateNewComponent {
     this._editTemplate({ name: newName });
   }
 
-  onTypeChange(newType: ContainerTypeOption) {
+  onTypeChange(newType: string | undefined) {
     this._editTemplate({ container_type: newType });
   }
 
@@ -145,7 +151,6 @@ export class ContainerTemplateNewComponent {
   }
 
   onEditToken(patch: Partial<any>, index: number) {
-    if (!this.isEditMode()) return;
     const updatedTokens = this.newTemplate().template_options.tokens.map((token, i) =>
       i === index ? { ...token, ...patch } : token
     );
@@ -158,7 +163,6 @@ export class ContainerTemplateNewComponent {
   }
 
   onAddToken(tokenType: string) {
-    if (!this.isEditMode()) return;
     const containerTemplateToken: any = {
       type: tokenType
     };
@@ -172,7 +176,6 @@ export class ContainerTemplateNewComponent {
   }
 
   onDeleteToken(index: number) {
-    if (!this.isEditMode()) return;
     const updatedTokens = this.newTemplate().template_options.tokens.filter((_, i) => i !== index);
     this._editTemplate({
       template_options: {
@@ -183,7 +186,10 @@ export class ContainerTemplateNewComponent {
   }
 
   _editTemplate(templateUpdates: Partial<ContainerTemplate>) {
-    if (!this.isEditMode()) return;
     this.newTemplate.set({ ...this.newTemplate(), ...templateUpdates });
+  }
+
+  closeDialog() {
+    super.close(this.newTemplate());
   }
 }

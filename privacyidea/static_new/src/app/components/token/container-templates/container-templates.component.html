@@ -28,7 +28,11 @@
   <table
     mat-table
     [dataSource]="dataSource()"
-    class="container-templates-table">
+    class="container-templates-table"
+    matSort
+    matSortActive="priority"
+    matSortDirection="asc"
+    (matSortChange)="sort.set($event)">
     <ng-container matColumnDef="select">
       <th
         mat-header-cell
@@ -53,19 +57,26 @@
     @for (column of columns | keyvalue: keepOrder; track column.key) {
       <ng-container [matColumnDef]="column.key">
         <th
+          *matHeaderCellDef
+          [class]="'col-' + column.key"
           mat-header-cell
-          *matHeaderCellDef>
-          <div class="header-cell-content">
+          [mat-sort-header]="column.key"
+          [disabled]="['actions', 'conditions'].includes(column.key)">
+          <div class="table-header-container">
             @if (column.value.label) {
               <div>{{ column.value.label }}</div>
             }
-
             @if (column.value.filterable) {
-              <button
-                mat-icon-button
-                (click)="onClickFilter(column.key)">
-                <mat-icon> filter_alt </mat-icon>
-              </button>
+              <div class="flex">
+                <button
+                  (click)="$event.stopPropagation(); onClickFilter(column.key)"
+                  class="filter-button"
+                  mat-icon-button>
+                  <mat-icon class="keyword-button-icon margin-left-0">
+                    {{ getFilterIconName(column.key) }}
+                  </mat-icon>
+                </button>
+              </div>
             }
           </div>
         </th>
@@ -85,11 +96,9 @@
           @case ("options") {
             <td
               mat-cell
-              *matCellDef="let element">
-              <app-view-template-options
-                class="no-padding"
-                [templateOptions]="element.template_options">
-              </app-view-template-options>
+              *matCellDef="let element"
+              class="options-cell">
+              <app-view-template-options [templateOptions]="element.template_options"> </app-view-template-options>
             </td>
           }
           @default {

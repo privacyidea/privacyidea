@@ -1,126 +1,85 @@
-<!--
- (c) NetKnights GmbH 2025,  https://netknights.it
-
- This code is free software; you can redistribute it and/or
- modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
- as published by the Free Software Foundation; either
- version 3 of the License, or any later version.
-
- This code is distributed in the hope that it will be useful,
- but WITHOUT ANY WARRANTY; without even the implied warranty of
- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- GNU AFFERO GENERAL PUBLIC LICENSE for more details.
-
- You should have received a copy of the GNU Affero General Public
- License along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
- SPDX-License-Identifier: AGPL-3.0-or-later
--->
-<div class="template-card">
-  <mat-expansion-panel
-    #panel
-    class="margin-4"
-    [disabled]="isEditMode() && isTemplateEdited()"
-    (opened)="handleExpansion()"
-    (closed)="handleCollapse(panel)">
-    <mat-expansion-panel-header>
-      @if (panel.expanded) {
-        @if (newTemplate().default) {
-          <div
-            class="template-default-indicator-container"
-            matTooltip="Unset as default template"
-            i18n-matTooltip="@@containerTemplate.unsetAsDefaultTooltip">
-            <button
-              mat-icon-button
-              (click)="$event.stopPropagation(); onDefaultToggle()">
-              <mat-icon>star</mat-icon>
-            </button>
-          </div>
-        } @else {
-          <div
-            class="template-default-indicator-container"
-            matTooltip="Set as default template"
-            i18n-matTooltip="@@containerTemplate.setAsDefaultTooltip">
-            <button
-              mat-icon-button
-              (click)="$event.stopPropagation(); onDefaultToggle()">
-              <mat-icon>star_border</mat-icon>
-            </button>
-          </div>
-        }
-      }
+<app-dialog-wrapper
+  title="New Container Template"
+  i18n-title
+  [showCancelButton]="true">
+  <div class="flex-column">
+    <mat-card class="default-template-card-row">
       <div class="template-name-container">
-        @if (panel.expanded) {
-          <input
-            type="text"
-            class="template-name-input"
-            placeholder="Template Name"
-            [ngModel]="newTemplate().name"
-            (ngModelChange)="onNameChange($event)"
-            (click)="$event.stopPropagation(); panel.expanded = true"
-            (keydown)="$event.stopPropagation()" />
-        } @else {
-          <p i18n>New Template</p>
-        }
+        <input
+          matInput
+          type="text"
+          class="template-name-input"
+          placeholder="Template Name"
+          [ngModel]="newTemplate().name"
+          (ngModelChange)="onNameChange($event)"
+          (keydown)="$event.stopPropagation()" />
       </div>
 
-      <div class="template-type-select-container">
-        @if (panel.expanded) {
-          <mat-select
-            [ngModel]="newTemplate().container_type"
-            (ngModelChange)="onTypeChange($event)"
-            (click)="$event.stopPropagation()"
-            (keydown)="$event.stopPropagation()"
-            placeholder="Container Type"
-            i18n-placeholder>
-            @for (type of containerTemplateService.availableContainerTypes(); track type) {
-              <mat-option [value]="type">
-                {{ type }}
-              </mat-option>
-            }
-          </mat-select>
-        }
-      </div>
+      <mat-card-content>
+        <mat-checkbox
+          [checked]="newTemplate().default"
+          (change)="onDefaultToggle()"
+          (click)="$event.stopPropagation()"
+          matTooltip="Set as default template"
+          i18n-matTooltip="@@containerTemplate.setAsDefaultTooltip">
+          <span i18n>Set as default template</span>
+        </mat-checkbox>
+      </mat-card-content>
+    </mat-card>
 
-      <div class="template-actions">
-        @if (panel.expanded) {
-          <button
-            mat-icon-button
-            [disabled]="!canSaveTemplate()"
-            (click)="$event.stopPropagation(); saveTemplate(panel)">
-            <mat-icon>save</mat-icon>
-          </button>
-          <button
-            mat-icon-button
-            (click)="$event.stopPropagation(); panel.close(); cancelEditMode()">
-            <mat-icon>close</mat-icon>
-          </button>
+    <div>
+      <h3 i18n>Select Scope</h3>
+      <app-selector-buttons
+        [values]="containerTypes()"
+        [initialValue]="newTemplate().container_type"
+        [allowDeselect]="true"
+        (onSelect)="onTypeChange($event)" />
+    </div>
+    <div class="template-type-select-container">
+      <mat-select
+        [ngModel]="newTemplate().container_type"
+        (ngModelChange)="onTypeChange($event)"
+        (click)="$event.stopPropagation()"
+        (keydown)="$event.stopPropagation()"
+        placeholder="Container Type"
+        i18n-placeholder>
+        @for (type of containerTemplateService.availableContainerTypes(); track type) {
+          <mat-option [value]="type">
+            {{ type }}
+          </mat-option>
         }
-      </div>
-      @if (isTemplateEdited()) {
-        <div>
-          <!-- Spacer to align the expansion arrow -->
-        </div>
-      }
-    </mat-expansion-panel-header>
-    <div class="flex-column">
-      @if (newTemplate().container_type) {
-        <app-container-template-add-token-chips
-          [containerType]="newTemplate().container_type"
-          (onAddToken)="onAddToken($event)" />
-      }
+      </mat-select>
+    </div>
 
-      <div class="addedTokensList">
-        @for (token of newTemplate().template_options.tokens; track $index) {
+    @if (newTemplate().container_type) {
+      <app-container-template-add-token-chips
+        [containerType]="newTemplate().container_type"
+        (onAddToken)="onAddToken($event)" />
+    }
+
+    @if (options() && (options() | keyvalue).length > 0) {
+      <h2>Options:</h2>
+      <mat-list>
+        @for (option of options() | keyvalue; track option.key) {
+          <mat-list-item>
+            <strong>{{ option.key }}:</strong> {{ option.value }}
+          </mat-list-item>
+        }
+      </mat-list>
+    }
+
+    @if (tokens() && tokens().length > 0) {
+      <div class="added-tokens-list">
+        @for (token of tokens(); track $index) {
           <app-template-added-token-row
             [token]="token"
             [index]="$index"
-            [isEditMode]="isEditMode()"
+            [isEditMode]="isEditMode"
             (onEditToken)="onEditToken($event, $index)"
             (onRemoveToken)="onDeleteToken($event)">
           </app-template-added-token-row>
         }
       </div>
-    </div>
-  </mat-expansion-panel>
-</div>
+    }
+  </div>
+</app-dialog-wrapper>

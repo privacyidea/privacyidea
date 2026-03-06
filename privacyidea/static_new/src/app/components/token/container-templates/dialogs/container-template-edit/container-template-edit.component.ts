@@ -34,7 +34,6 @@ import {
 } from "../../../../../services/container-template/container-template.service";
 import { ContainerTemplate } from "../../../../../services/container/container.service";
 import { deepCopy } from "../../../../../utils/deep-copy.utils";
-import { ContainerTypeOption } from "../../../container-create/container-create.component";
 import { TemplateAddedTokenRowComponent } from "../template-added-token-row/template-added-token-row.component";
 import { ContainerTemplateAddTokenChipsComponent } from "../container-template-add-token-chips/container-template-add-token-chips.component";
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
@@ -130,7 +129,7 @@ export class ContainerTemplateEditComponent extends AbstractDialogComponent {
     this._editTemplate({ name: newName });
   }
 
-  onTypeChange(newType: ContainerTypeOption) {
+  onTypeChange(newType: string) {
     this._editTemplate({ container_type: newType });
   }
 

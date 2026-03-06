@@ -1,87 +1,87 @@
 @use "styles";
 @use "table";
-@use "../../container-templates/container-templates.component.scss";
+@use "../../container-templates.component.scss";
 @use "@angular/material" as mat;
 
-// --- Main Layout ---
-
-.placeholder-for-right-column {
-  grid-area: right-column;
-}
-
-.template-card {
-  border-radius: var(--border-radius);
-  mat-expansion-panel {
-    border-radius: var(--border-radius);
-  }
-  mat-expansion-panel-header {
-    padding: 0 var(--global-padding);
-    display: flex;
-    align-items: center;
-    gap: var(--global-gap);
-    .mat-content {
-      gap: var(--global-gap);
-    }
-    .template-default-indicator-container {
-      width: 40px;
-      flex-shrink: 0;
-    }
-
-    .template-name-container {
-      align-content: center;
-      .template-name-input {
-        background-color: transparent;
-        border: none;
-        border-bottom: 1px solid var(--mat-sys-outline-variant);
-        border-radius: 0;
-        box-sizing: border-box;
-        font-size: 1rem;
-        margin-left: 2px;
-        padding: var(--half-global-padding) 0;
-      }
-
-      .template-name-plain {
-        font-size: 1rem;
-        font-weight: 500;
-      }
-    }
-
-    .template-type-select-container {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-grow: 1;
-      mat-select {
-        width: 300px;
-      }
-
-      ::ng-deep .mat-mdc-select-trigger {
-        border-bottom: 1px solid var(--mat-sys-outline-variant);
-      }
-    }
-
-    .template-actions {
-      display: flex;
-      align-items: center;
-      width: 80px;
-      button {
-        background: transparent;
-        border: none;
-        cursor: pointer;
-      }
-    }
-  }
-}
-
-.mat-expansion-panel-body {
-  gap: var(--global-gap);
+.flex-column {
   display: flex;
   flex-direction: column;
-  border-radius: var(--border-radius);
+  gap: var(--global-gap);
 }
 
-.add-token-row {
+.default-template-card-row {
   display: flex;
-  gap: 16px;
+  flex-direction: row;
   align-items: center;
+  justify-content: space-between;
+  background-color: var(--mat-sys-surface-container-low) !important;
+  padding: 0 16px;
+  border-radius: var(--border-radius);
+  min-height: 64px;
+
+  .template-name-container {
+    flex: 1;
+    margin-right: 24px;
+    align-content: center;
+
+    .template-name-input {
+      background-color: transparent;
+      border: none;
+      border-bottom: 1px solid var(--mat-sys-outline-variant);
+      border-radius: 0;
+      box-sizing: border-box;
+      font-size: 1rem;
+      width: 100%;
+      padding: var(--half-global-padding) 0;
+
+      &:focus {
+        outline: none;
+        border-bottom-color: var(--mat-sys-primary);
+      }
+    }
+  }
+
+  mat-card-content {
+    padding: 0 !important;
+    display: flex;
+    align-items: center;
+    flex: 0 0 auto;
+  }
+
+  mat-checkbox {
+    white-space: nowrap;
+  }
+}
+
+.template-type-select-container {
+  display: flex;
+  align-items: center;
+  width: 100%;
+
+  mat-select {
+    width: 100%;
+    max-width: 300px;
+  }
+
+  ::ng-deep .mat-mdc-select-trigger {
+    border-bottom: 1px solid var(--mat-sys-outline-variant);
+  }
+}
+
+.template-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  button {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+  }
+}
+
+.added-tokens-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--half-global-gap);
 }

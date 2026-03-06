@@ -37,6 +37,8 @@ import { FilterValueGeneric } from "src/app/core/models/filter_value_generic/fil
 import { FilterOption } from "src/app/core/models/filter_value_generic/filter-option";
 import { DialogService, DialogServiceInterface } from "src/app/services/dialog/dialog.service";
 import { ContainerTemplateEditComponent } from "./dialogs/container-template-edit/container-template-edit.component";
+import { MatSortModule, Sort } from "@angular/material/sort";
+import { MatButtonModule } from "@angular/material/button";
 
 const containerTemplateFilterOptions: FilterOption<ContainerTemplate>[] = [
   new FilterOption<ContainerTemplate>({
@@ -72,7 +74,9 @@ const containerTemplateFilterOptions: FilterOption<ContainerTemplate>[] = [
     CommonModule,
     MatExpansionModule,
     MatIconModule,
+    MatButtonModule,
     MatTableModule,
+    MatSortModule,
     ContainerTemplatesFilterComponent,
     ContainerTemplatesTableActionsComponent,
     MatCheckbox,
@@ -102,6 +106,8 @@ export class ContainerTemplatesComponent {
     console.log("Templates in dataSource computation:", templates);
     return new MatTableDataSource(templates);
   });
+
+  readonly sort = signal<Sort>({ active: "", direction: "" });
   readonly selection = new SelectionModel<ContainerTemplate>(true, []);
 
   readonly columns = {
@@ -146,5 +152,22 @@ export class ContainerTemplatesComponent {
     this.dialogService.openDialog({
       component: ContainerTemplateEditComponent
     });
+  }
+
+  public getFilterIconName(columnKey: string): string {
+    const actionType =
+      containerTemplateFilterOptions.find((o) => o.key === columnKey)?.getActionType?.(this.filter()) ?? "none";
+    switch (actionType) {
+      case "add":
+        return "filter_alt";
+      case "remove":
+        return "filter_alt_off";
+      case "change":
+        return "screen_rotation_alt";
+      case "none":
+        return "";
+      default:
+        return "filter_alt";
+    }
   }
 }

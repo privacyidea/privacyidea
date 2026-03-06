@@ -79,8 +79,6 @@ import { UserAssignmentComponent } from "../user-assignment/user-assignment.comp
 import { ContainerTemplateService } from "../../../services/container-template/container-template.service";
 import { ClearButtonComponent } from "../../shared/clear-button/clear-button.component";
 
-export type ContainerTypeOption = "generic" | "smartphone" | "yubikey";
-
 @Component({
   selector: "app-container-create",
   imports: [

@@ -1,6 +1,8 @@
-import { Component, input } from "@angular/core";
+import { Component, inject, input } from "@angular/core";
 import { ContainerTemplate } from "../../../../services/container/container.service";
 import { MatButton } from "@angular/material/button";
+import { DialogServiceInterface, DialogService } from "src/app/services/dialog/dialog.service";
+import { ContainerTemplateNewComponent } from "../dialogs/container-template-new/container-template-new.component";
 
 @Component({
   selector: "app-container-templates-table-actions",
@@ -10,5 +12,11 @@ import { MatButton } from "@angular/material/button";
   imports: [MatButton]
 })
 export class ContainerTemplatesTableActionsComponent {
+  readonly dialogService: DialogServiceInterface = inject(DialogService);
   readonly selectedContainerTemplates = input.required<ContainerTemplate[]>();
+  openNewTemplateDialog() {
+    this.dialogService.openDialog({
+      component: ContainerTemplateNewComponent
+    });
+  }
 }
