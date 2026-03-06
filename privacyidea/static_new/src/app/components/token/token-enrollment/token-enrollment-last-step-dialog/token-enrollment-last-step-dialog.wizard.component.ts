@@ -19,15 +19,15 @@
 import { AsyncPipe } from "@angular/common";
 import { HttpClient } from "@angular/common/http";
 import { Component, computed, inject, SecurityContext, Signal } from "@angular/core";
-import { MAT_DIALOG_DATA, MatDialogContent } from "@angular/material/dialog";
+import { MatDialogContent } from "@angular/material/dialog";
 import { DomSanitizer } from "@angular/platform-browser";
 import { map } from "rxjs";
 import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
-import { OtpKeyComponent } from "./otp-key/otp-key.component";
-import { TiqrEnrollUrlComponent } from "./tiqr-enroll-url/tiqr-enroll-url.component";
-import { RegistrationCodeComponent } from "./registration-code/registration-code.component";
-import { OtpValuesComponent } from "./otp-values/otp-values.component";
+import { OtpKeyComponent } from "@components/token/token-enrollment/token-enrollment-data/otp-key/otp-key.component";
+import { TiqrEnrollUrlComponent } from "@components/token/token-enrollment/token-enrollment-data/tiqr-enroll-url/tiqr-enroll-url.component";
+import { RegistrationCodeComponent } from "@components/token/token-enrollment/token-enrollment-data/registration-code/registration-code.component";
+import { OtpValuesComponent } from "@components/token/token-enrollment/token-enrollment-data/otp-values/otp-values.component";
 import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
 import { Router, RouterLink } from "@angular/router";
 import {
@@ -35,14 +35,14 @@ import {
   NotificationServiceInterface
 } from "../../../../services/notification/notification.service";
 import { ROUTE_PATHS } from "../../../../route_paths";
-import { QrCodeTextComponent } from "./qr-code-text/qr-code-text.component";
 import { StringUtils } from "../../../../utils/string.utils";
 import { environment } from "../../../../../environments/environment";
 import { DialogWrapperComponent } from "../../../shared/dialog/dialog-wrapper/dialog-wrapper.component";
 import { TokenEnrollmentLastStepDialogComponent } from "./token-enrollment-last-step-dialog.component";
-import { TokenEnrollmentLastStepDialogData } from "./token-enrollment-last-step-dialog.self-service.component";
 import { DialogAction } from "../../../../models/dialog";
 import { MatButtonModule } from "@angular/material/button";
+import { TokenEnrolledTextComponent } from "@components/token/token-enrollment/token-enrolled-text/token-enrolled-text.component";
+
 @Component({
   selector: "app-token-enrollment-last-step-dialog-wizard",
   imports: [
@@ -52,9 +52,9 @@ import { MatButtonModule } from "@angular/material/button";
     TiqrEnrollUrlComponent,
     RegistrationCodeComponent,
     OtpValuesComponent,
-    QrCodeTextComponent,
     DialogWrapperComponent,
-    MatButtonModule
+    MatButtonModule,
+    TokenEnrolledTextComponent
   ],
   templateUrl: "./token-enrollment-last-step-dialog.wizard.component.html",
   styleUrl: "./token-enrollment-last-step-dialog.component.scss"
@@ -76,7 +76,6 @@ export class TokenEnrollmentLastStepDialogWizardComponent extends TokenEnrollmen
   protected override readonly Object = Object;
   private readonly http: HttpClient = inject(HttpClient);
   private readonly sanitizer: DomSanitizer = inject(DomSanitizer);
-  public override readonly data: TokenEnrollmentLastStepDialogData = inject(MAT_DIALOG_DATA);
   protected override readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected override readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
@@ -110,6 +109,7 @@ export class TokenEnrollmentLastStepDialogWizardComponent extends TokenEnrollmen
   constructor() {
     super();
   }
+
   protected readonly RouterLink = RouterLink;
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
 
@@ -123,9 +123,11 @@ export class TokenEnrollmentLastStepDialogWizardComponent extends TokenEnrollmen
         break;
     }
   }
+
   private createContainer(): void {
     this.router.navigate([ROUTE_PATHS.TOKENS_CONTAINERS_WIZARD]);
   }
+
   logout(): void {
     this.authService.logout();
   }

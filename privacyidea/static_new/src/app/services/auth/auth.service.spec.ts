@@ -429,11 +429,75 @@ describe("AuthService", () => {
   });
 
   it("should extract token types from rollover policy", () => {
-    authService.authData.set({token_rollover: {hotp: [], totp: []}} as unknown as AuthData);
+    authService.authData.set({ token_rollover: { hotp: [], totp: [] } } as unknown as AuthData);
     expect(authService.tokenRollover()).toEqual(["hotp", "totp"]);
 
     // token_rollover data not set
     authService.authData.set({} as unknown as AuthData);
     expect(authService.tokenRollover()).toEqual([]);
+  });
+
+  it("rightsWithValues should parse rights with and without values", () => {
+    const authData = {
+      username: "bob",
+      realm: "realm",
+      nonce: "n",
+      role: "admin",
+      authtype: "cookie",
+      exp: 0,
+      rights: [
+        "foo=bar",
+        "baz=qux=quux",
+        "simple"
+      ]
+    };
+    authService.authData.set(authData as unknown as AuthData);
+    const result = authService.rightsWithValues();
+    expect(result).toEqual({
+      foo: "bar",
+      baz: "qux=quux",
+      simple: null
+    });
+  });
+
+  describe("check2Step", () => {
+    beforeEach(() => {
+      authService.authData.set({} as unknown as AuthData);
+    });
+
+    it("should return 'allow' if value is 'allow'", () => {
+      authService.authData.set({
+        rights: ["totp_2step=allow"]
+      } as unknown as AuthData);
+      expect(authService.check2Step("totp")).toBe("allow");
+    });
+
+    it("should return 'force' if value is 'force'", () => {
+      authService.authData.set({
+        rights: ["totp_2step=force"]
+      } as unknown as AuthData);
+      expect(authService.check2Step("totp")).toBe("force");
+    });
+
+    it("should return 'disabled' if value is not 'allow' or 'force'", () => {
+      authService.authData.set({
+        rights: ["totp_2step=deny"]
+      } as unknown as AuthData);
+      expect(authService.check2Step("totp")).toBe("disabled");
+    });
+
+    it("should return 'disabled' if right is not present", () => {
+      authService.authData.set({
+        rights: []
+      } as unknown as AuthData);
+      expect(authService.check2Step("totp")).toBe("disabled");
+    });
+
+    it("should keep value if right is present without value", () => {
+      authService.authData.set({
+        rights: ["totp_2step=allow", "totp_2step"]
+      } as unknown as AuthData);
+      expect(authService.check2Step("totp")).toBe("allow");
+    });
   });
 });

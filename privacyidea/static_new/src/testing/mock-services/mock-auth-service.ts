@@ -44,6 +44,7 @@ export class MockAuthService implements AuthServiceInterface {
   readonly menus = computed(() => this.authData()?.menus ?? []);
   readonly realm = linkedSignal(() => this.authData()?.realm ?? "");
   readonly rights = computed(() => this.authData()?.rights ?? []);
+  readonly rightsWithValues = signal({});
   readonly role = linkedSignal<AuthRole>(() => this.authData()?.role ?? "admin");
   readonly token = computed(() => this.authData()?.token ?? "");
   readonly username = linkedSignal(() => this.authData()?.username ?? "");
@@ -99,6 +100,7 @@ export class MockAuthService implements AuthServiceInterface {
   tokenEnrollmentAllowed = jest.fn().mockReturnValue(true);
   anyTokenActionAllowed = jest.fn().mockReturnValue(true);
   checkForceServerGenerateOTPKey = jest.fn().mockReturnValue(false);
+  check2Step = jest.fn().mockReturnValue("disabled");
 
   static MOCK_AUTH_DATA: AuthData = {
     log_level: 0,

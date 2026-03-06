@@ -146,7 +146,11 @@ export class MockTokenService implements TokenServiceInterface {
   setRandomPin = jest.fn();
   readonly resyncOTPToken = jest.fn().mockReturnValue(of(null));
   readonly getTokenDetails = jest.fn().mockReturnValue(of({}));
-  readonly enrollToken = jest.fn().mockReturnValue(of({ detail: { serial: "X" } } as any));
+  enrollToken = jest.fn().mockReturnValue(of({ detail: { serial: "X" } } as any));
+  verifyToken = jest.fn().mockReturnValue(of({
+    detail: { serial: "ABC123", rollout_state: "enrolled" },
+    result: { status: true }
+  }));
   readonly lostToken = jest
     .fn<ReturnType<TokenService["lostToken"]>, Parameters<TokenService["lostToken"]>>()
     .mockImplementation((_serial: string) => {

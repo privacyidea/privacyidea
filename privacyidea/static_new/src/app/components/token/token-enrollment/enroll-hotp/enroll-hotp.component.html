@@ -19,6 +19,14 @@
 @if (!wizard) {
   <div class="flex-column">
     <h4 class="enroll-h4">Token Configuration</h4>
+    @if (twoStep() !== "disabled") {
+      <mat-checkbox
+        [formControl]="twoStepControl"
+        class="margin-bottom-16"
+        i18n>
+        Use two-step enrollment with the privacyIDEA Authenticator App.
+      </mat-checkbox>
+    }
     <mat-checkbox
       [formControl]="generateOnServerFormControl"
       class="server-checkbox"
@@ -33,8 +41,7 @@
             matInput
             [formControl]="otpKeyFormControl"
             i18n-placeholder
-            placeholder="Enter OTP key"
-            required />
+            placeholder="Enter OTP key" />
           @if (otpKeyFormControl.hasError("required")) {
             <mat-error i18n> OTP key is <strong>required</strong></mat-error>
           }

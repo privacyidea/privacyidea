@@ -30,6 +30,10 @@ import {
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
 import { TokenEnrollmentData } from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
+import {
+  NotificationService,
+  NotificationServiceInterface
+} from "../../../../services/notification/notification.service";
 
 export interface DaypasswordEnrollmentOptions extends TokenEnrollmentData {
   type: "daypassword";
@@ -62,6 +66,7 @@ export class EnrollDaypasswordComponent implements OnInit {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly enrollmentMapper: DaypasswordApiPayloadMapper = inject(DaypasswordApiPayloadMapper);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
+  protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   readonly otpLengthOptions = [6, 8];
   readonly hashAlgorithmOptions = [
     { value: "sha1", viewValue: "SHA1" },
@@ -133,14 +138,13 @@ export class EnrollDaypasswordComponent implements OnInit {
     }
   }
 
-  enrollmentArgsGetter = (
-    basicOptions: TokenEnrollmentData
-  ): {
+  enrollmentArgsGetter = ( basicOptions: TokenEnrollmentData ): {
     data: DaypasswordEnrollmentData;
     mapper: DaypasswordApiPayloadMapper;
   } | null => {
     if (this.daypasswordForm.invalid) {
       this.daypasswordForm.markAllAsTouched();
+      this.notificationService.openSnackBar($localize`Invalid enrollment data.`);
       return null;
     }
     const enrollmentData: DaypasswordEnrollmentOptions = {
