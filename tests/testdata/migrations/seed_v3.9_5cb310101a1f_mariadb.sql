@@ -1,36 +1,512 @@
--- Seed data for migration tests pinned at START_REVISION 5cb310101a1f (v3.9)
+-- Auto-generated MariaDB seed SQL
+-- Source: SQLAlchemy metadata
 --
--- This file represents a realistic privacyIDEA v3.9 database state.
--- It is derived directly from the v3.9 SQLAlchemy models (single models.py).
--- Load this instead of running _setup_db_at_start_revision() so that migration
--- tests operate on a real historical schema rather than a downgraded approximation
--- of the current models.
---
--- Table creation order respects foreign key dependencies.
--- All INSERT rows are minimal but representative of a real installation.
--- Encrypted / hashed fields use obviously-fake values since crypto correctness
--- is not the concern of migration tests.
---
--- Usage:
---   engine = create_engine(DB_URL)
---   with engine.connect() as conn:
---       for statement in _read_seed_sql():
---           conn.execute(text(statement))
---       conn.commit()
---   command.stamp(cfg, "5cb310101a1f")
-
 SET FOREIGN_KEY_CHECKS = 0;
 
+CREATE TABLE `admin` (
+	username VARCHAR(120) NOT NULL, 
+	password VARCHAR(255), 
+	email VARCHAR(255), 
+	PRIMARY KEY (username)
+)ROW_FORMAT=DYNAMIC;
+
+CREATE TABLE authcache (
+	id INTEGER NOT NULL AUTO_INCREMENT, 
+	first_auth DATETIME(6), 
+	last_auth DATETIME(6), 
+	username VARCHAR(64), 
+	resolver VARCHAR(120), 
+	realm VARCHAR(120), 
+	client_ip VARCHAR(40), 
+	user_agent VARCHAR(120), 
+	auth_count INTEGER, 
+	authentication VARCHAR(255), 
+	PRIMARY KEY (id)
+)ROW_FORMAT=DYNAMIC;
+
+CREATE TABLE caconnector (
+	id INTEGER NOT NULL AUTO_INCREMENT, 
+	name VARCHAR(255) NOT NULL, 
+	catype VARCHAR(255) NOT NULL, 
+	PRIMARY KEY (id), 
+	UNIQUE (name)
+)ROW_FORMAT=DYNAMIC;
+
+CREATE TABLE challenge (
+	id INTEGER NOT NULL AUTO_INCREMENT, 
+	transaction_id VARCHAR(64) NOT NULL, 
+	data VARCHAR(512), 
+	challenge VARCHAR(512), 
+	`session` VARCHAR(512), 
+	serial VARCHAR(40), 
+	timestamp DATETIME(6), 
+	expiration DATETIME(6), 
+	received_count INTEGER, 
+	otp_valid BOOL, 
+	PRIMARY KEY (id)
+)ROW_FORMAT=DYNAMIC;
+
+CREATE TABLE clientapplication (
+	id INTEGER NOT NULL AUTO_INCREMENT, 
+	ip VARCHAR(255) NOT NULL, 
+	hostname VARCHAR(255), 
+	clienttype VARCHAR(255) NOT NULL, 
+	lastseen DATETIME(6), 
+	node VARCHAR(255) NOT NULL, 
+	PRIMARY KEY (id), 
+	CONSTRAINT caix UNIQUE (ip, clienttype, node)
+)ROW_FORMAT=DYNAMIC;
+
+CREATE TABLE config (
+	`Key` VARCHAR(255) NOT NULL, 
+	`Value` VARCHAR(2000), 
+	`Type` VARCHAR(2000), 
+	`Description` VARCHAR(2000), 
+	PRIMARY KEY (`Key`)
+)ROW_FORMAT=DYNAMIC;
+
+CREATE TABLE eventcounter (
+	id INTEGER NOT NULL AUTO_INCREMENT, 
+	counter_name VARCHAR(80) NOT NULL, 
+	counter_value INTEGER, 
+	node VARCHAR(255) NOT NULL, 
+	PRIMARY KEY (id), 
+	CONSTRAINT evctr_1 UNIQUE (counter_name, node)
+)ROW_FORMAT=DYNAMIC;
+
+CREATE TABLE eventhandler (
+	id INTEGER NOT NULL AUTO_INCREMENT, 
+	name VARCHAR(64), 
+	active BOOL, 
+	ordering INTEGER NOT NULL, 
+	position VARCHAR(10), 
+	event VARCHAR(255) NOT NULL, 
+	handlermodule VARCHAR(255) NOT NULL, 
+	`condition` VARCHAR(1024), 
+	action VARCHAR(1024), 
+	PRIMARY KEY (id)
+)ROW_FORMAT=DYNAMIC;
+
+CREATE TABLE machineresolver (
+	id INTEGER NOT NULL AUTO_INCREMENT, 
+	name VARCHAR(255) NOT NULL, 
+	rtype VARCHAR(255) NOT NULL, 
+	PRIMARY KEY (id), 
+	UNIQUE (name)
+)ROW_FORMAT=DYNAMIC;
+
+CREATE TABLE monitoringstats (
+	id INTEGER NOT NULL AUTO_INCREMENT, 
+	timestamp DATETIME(6) NOT NULL, 
+	stats_key VARCHAR(128) NOT NULL, 
+	stats_value INTEGER NOT NULL, 
+	PRIMARY KEY (id), 
+	CONSTRAINT msix_1 UNIQUE (timestamp, stats_key)
+)ROW_FORMAT=DYNAMIC;
+
+CREATE TABLE passwordreset (
+	id INTEGER NOT NULL AUTO_INCREMENT, 
+	recoverycode VARCHAR(255) NOT NULL, 
+	username VARCHAR(64) NOT NULL, 
+	realm VARCHAR(64) NOT NULL, 
+	resolver VARCHAR(64), 
+	email VARCHAR(255), 
+	timestamp DATETIME(6), 
+	expiration DATETIME(6), 
+	PRIMARY KEY (id)
+)ROW_FORMAT=DYNAMIC;
+
+CREATE TABLE periodictask (
+	id INTEGER NOT NULL AUTO_INCREMENT, 
+	name VARCHAR(64) NOT NULL, 
+	active BOOL NOT NULL, 
+	retry_if_failed BOOL NOT NULL, 
+	`interval` VARCHAR(256) NOT NULL, 
+	nodes VARCHAR(256) NOT NULL, 
+	taskmodule VARCHAR(256) NOT NULL, 
+	ordering INTEGER NOT NULL, 
+	last_update DATETIME(6) NOT NULL, 
+	PRIMARY KEY (id), 
+	UNIQUE (name)
+)ROW_FORMAT=DYNAMIC;
+
+CREATE TABLE pidea_audit (
+	id INTEGER NOT NULL AUTO_INCREMENT, 
+	date DATETIME(6), 
+	startdate DATETIME(6), 
+	duration DATETIME(6), 
+	signature VARCHAR(620), 
+	action VARCHAR(50), 
+	success INTEGER, 
+	serial VARCHAR(40), 
+	token_type VARCHAR(12), 
+	user VARCHAR(20), 
+	realm VARCHAR(20), 
+	resolver VARCHAR(50), 
+	administrator VARCHAR(20), 
+	action_detail VARCHAR(50), 
+	info VARCHAR(50), 
+	privacyidea_server VARCHAR(255), 
+	client VARCHAR(50), 
+	loglevel VARCHAR(12), 
+	clearance_level VARCHAR(12), 
+	thread_id VARCHAR(20), 
+	policies VARCHAR(255), 
+	PRIMARY KEY (id)
+)ROW_FORMAT=DYNAMIC;
+
+CREATE TABLE policy (
+	id INTEGER NOT NULL AUTO_INCREMENT, 
+	active BOOL, 
+	check_all_resolvers BOOL, 
+	name VARCHAR(64) NOT NULL, 
+	scope VARCHAR(32) NOT NULL, 
+	action VARCHAR(2000), 
+	realm VARCHAR(256), 
+	adminrealm VARCHAR(256), 
+	adminuser VARCHAR(256), 
+	resolver VARCHAR(256), 
+	pinode VARCHAR(256), 
+	user VARCHAR(256), 
+	client VARCHAR(256), 
+	time VARCHAR(64), 
+	priority INTEGER NOT NULL, 
+	PRIMARY KEY (id), 
+	UNIQUE (name)
+)ROW_FORMAT=DYNAMIC;
+
+CREATE TABLE privacyideaserver (
+	id INTEGER NOT NULL AUTO_INCREMENT, 
+	identifier VARCHAR(255) NOT NULL, 
+	url VARCHAR(255) NOT NULL, 
+	tls BOOL, 
+	description VARCHAR(2000), 
+	PRIMARY KEY (id), 
+	UNIQUE (identifier)
+)ROW_FORMAT=DYNAMIC;
+
+CREATE TABLE radiusserver (
+	id INTEGER NOT NULL AUTO_INCREMENT, 
+	identifier VARCHAR(255) NOT NULL, 
+	server VARCHAR(255) NOT NULL, 
+	port INTEGER, 
+	secret VARCHAR(255), 
+	dictionary VARCHAR(255), 
+	description VARCHAR(2000), 
+	timeout INTEGER, 
+	retries INTEGER, 
+	PRIMARY KEY (id), 
+	UNIQUE (identifier)
+)ROW_FORMAT=DYNAMIC;
+
+CREATE TABLE realm (
+	id INTEGER NOT NULL AUTO_INCREMENT, 
+	name VARCHAR(255) NOT NULL, 
+	`default` BOOL, 
+	`option` VARCHAR(40), 
+	PRIMARY KEY (id), 
+	UNIQUE (name)
+)ROW_FORMAT=DYNAMIC;
+
+CREATE TABLE resolver (
+	id INTEGER NOT NULL AUTO_INCREMENT, 
+	name VARCHAR(255) NOT NULL, 
+	rtype VARCHAR(255) NOT NULL, 
+	PRIMARY KEY (id), 
+	UNIQUE (name)
+)ROW_FORMAT=DYNAMIC;
+
+CREATE TABLE serviceid (
+	id INTEGER NOT NULL AUTO_INCREMENT, 
+	name VARCHAR(255) NOT NULL, 
+	`Description` VARCHAR(2000), 
+	PRIMARY KEY (id), 
+	UNIQUE (name)
+)ROW_FORMAT=DYNAMIC;
+
+CREATE TABLE smsgateway (
+	id INTEGER NOT NULL AUTO_INCREMENT, 
+	identifier VARCHAR(255) NOT NULL, 
+	description VARCHAR(1024), 
+	providermodule VARCHAR(1024) NOT NULL, 
+	PRIMARY KEY (id), 
+	UNIQUE (identifier)
+)ROW_FORMAT=DYNAMIC;
+
+CREATE TABLE smtpserver (
+	id INTEGER NOT NULL AUTO_INCREMENT, 
+	identifier VARCHAR(255) NOT NULL, 
+	server VARCHAR(255) NOT NULL, 
+	port INTEGER, 
+	username VARCHAR(255), 
+	password VARCHAR(255), 
+	sender VARCHAR(255), 
+	tls BOOL, 
+	description VARCHAR(2000), 
+	timeout INTEGER, 
+	enqueue_job BOOL NOT NULL, 
+	PRIMARY KEY (id)
+)ROW_FORMAT=DYNAMIC;
+
+CREATE TABLE subscription (
+	id INTEGER NOT NULL AUTO_INCREMENT, 
+	application VARCHAR(80), 
+	for_name VARCHAR(80) NOT NULL, 
+	for_address VARCHAR(128), 
+	for_email VARCHAR(128) NOT NULL, 
+	for_phone VARCHAR(50) NOT NULL, 
+	for_url VARCHAR(80), 
+	for_comment VARCHAR(255), 
+	by_name VARCHAR(50) NOT NULL, 
+	by_email VARCHAR(128) NOT NULL, 
+	by_address VARCHAR(128), 
+	by_phone VARCHAR(50), 
+	by_url VARCHAR(80), 
+	date_from DATETIME(6), 
+	date_till DATETIME(6), 
+	num_users INTEGER, 
+	num_tokens INTEGER, 
+	num_clients INTEGER, 
+	level VARCHAR(80), 
+	signature VARCHAR(640), 
+	PRIMARY KEY (id)
+)ROW_FORMAT=DYNAMIC;
+
+CREATE TABLE token (
+	id INTEGER NOT NULL AUTO_INCREMENT, 
+	description VARCHAR(80), 
+	serial VARCHAR(40) NOT NULL, 
+	tokentype VARCHAR(30), 
+	user_pin VARCHAR(512), 
+	user_pin_iv VARCHAR(32), 
+	so_pin VARCHAR(512), 
+	so_pin_iv VARCHAR(32), 
+	pin_seed VARCHAR(32), 
+	otplen INTEGER, 
+	pin_hash VARCHAR(512), 
+	key_enc VARCHAR(2800), 
+	key_iv VARCHAR(32), 
+	maxfail INTEGER, 
+	active BOOL NOT NULL, 
+	revoked BOOL, 
+	locked BOOL, 
+	failcount INTEGER, 
+	count INTEGER, 
+	count_window INTEGER, 
+	sync_window INTEGER, 
+	rollout_state VARCHAR(10), 
+	PRIMARY KEY (id)
+)ROW_FORMAT=DYNAMIC;
+
+CREATE TABLE tokengroup (
+	id INTEGER NOT NULL AUTO_INCREMENT, 
+	name VARCHAR(255) NOT NULL, 
+	`Description` VARCHAR(2000), 
+	PRIMARY KEY (id), 
+	UNIQUE (name)
+)ROW_FORMAT=DYNAMIC;
+
+CREATE TABLE usercache (
+	id INTEGER NOT NULL AUTO_INCREMENT, 
+	username VARCHAR(64), 
+	used_login VARCHAR(64), 
+	resolver VARCHAR(120), 
+	user_id VARCHAR(320), 
+	timestamp DATETIME(6), 
+	PRIMARY KEY (id)
+)ROW_FORMAT=DYNAMIC;
+
+CREATE TABLE caconnectorconfig (
+	id INTEGER NOT NULL AUTO_INCREMENT, 
+	caconnector_id INTEGER, 
+	`Key` VARCHAR(255) NOT NULL, 
+	`Value` VARCHAR(2000), 
+	`Type` VARCHAR(2000), 
+	`Description` VARCHAR(2000), 
+	PRIMARY KEY (id), 
+	CONSTRAINT ccix_2 UNIQUE (caconnector_id, `Key`), 
+	FOREIGN KEY(caconnector_id) REFERENCES caconnector (id)
+)ROW_FORMAT=DYNAMIC;
+
+CREATE TABLE customuserattribute (
+	id INTEGER NOT NULL AUTO_INCREMENT, 
+	user_id VARCHAR(320), 
+	resolver VARCHAR(120), 
+	realm_id INTEGER, 
+	`Key` VARCHAR(255) NOT NULL, 
+	`Value` TEXT, 
+	`Type` VARCHAR(100), 
+	PRIMARY KEY (id), 
+	FOREIGN KEY(realm_id) REFERENCES realm (id)
+);
+
+CREATE TABLE eventhandlercondition (
+	id INTEGER NOT NULL AUTO_INCREMENT, 
+	eventhandler_id INTEGER, 
+	`Key` VARCHAR(255) NOT NULL, 
+	`Value` VARCHAR(2000), 
+	comparator VARCHAR(255), 
+	PRIMARY KEY (id), 
+	CONSTRAINT ehcix_1 UNIQUE (eventhandler_id, `Key`), 
+	FOREIGN KEY(eventhandler_id) REFERENCES eventhandler (id)
+)ROW_FORMAT=DYNAMIC;
+
+CREATE TABLE eventhandleroption (
+	id INTEGER NOT NULL AUTO_INCREMENT, 
+	eventhandler_id INTEGER, 
+	`Key` VARCHAR(255) NOT NULL, 
+	`Value` VARCHAR(2000), 
+	`Type` VARCHAR(2000), 
+	`Description` VARCHAR(2000), 
+	PRIMARY KEY (id), 
+	CONSTRAINT ehoix_1 UNIQUE (eventhandler_id, `Key`), 
+	FOREIGN KEY(eventhandler_id) REFERENCES eventhandler (id)
+)ROW_FORMAT=DYNAMIC;
+
+CREATE TABLE machineresolverconfig (
+	id INTEGER NOT NULL AUTO_INCREMENT, 
+	resolver_id INTEGER, 
+	`Key` VARCHAR(255) NOT NULL, 
+	`Value` VARCHAR(2000), 
+	`Type` VARCHAR(2000), 
+	`Description` VARCHAR(2000), 
+	PRIMARY KEY (id), 
+	CONSTRAINT mrcix_2 UNIQUE (resolver_id, `Key`), 
+	FOREIGN KEY(resolver_id) REFERENCES machineresolver (id)
+)ROW_FORMAT=DYNAMIC;
+
+CREATE TABLE machinetoken (
+	id INTEGER NOT NULL AUTO_INCREMENT, 
+	token_id INTEGER, 
+	machineresolver_id INTEGER, 
+	machine_id VARCHAR(255), 
+	application VARCHAR(64), 
+	PRIMARY KEY (id), 
+	FOREIGN KEY(token_id) REFERENCES token (id)
+)ROW_FORMAT=DYNAMIC;
+
+CREATE TABLE periodictasklastrun (
+	id INTEGER NOT NULL AUTO_INCREMENT, 
+	periodictask_id INTEGER, 
+	node VARCHAR(255) NOT NULL, 
+	timestamp DATETIME(6) NOT NULL, 
+	PRIMARY KEY (id), 
+	CONSTRAINT ptlrix_1 UNIQUE (periodictask_id, node), 
+	FOREIGN KEY(periodictask_id) REFERENCES periodictask (id)
+)ROW_FORMAT=DYNAMIC;
+
+CREATE TABLE periodictaskoption (
+	id INTEGER NOT NULL AUTO_INCREMENT, 
+	periodictask_id INTEGER, 
+	`key` VARCHAR(255) NOT NULL, 
+	value VARCHAR(2000), 
+	PRIMARY KEY (id), 
+	CONSTRAINT ptoix_1 UNIQUE (periodictask_id, `key`), 
+	FOREIGN KEY(periodictask_id) REFERENCES periodictask (id)
+)ROW_FORMAT=DYNAMIC;
+
+CREATE TABLE policycondition (
+	id INTEGER NOT NULL AUTO_INCREMENT, 
+	policy_id INTEGER NOT NULL, 
+	section VARCHAR(255) NOT NULL, 
+	`Key` VARCHAR(255) NOT NULL, 
+	comparator VARCHAR(255) NOT NULL, 
+	`Value` VARCHAR(2000) NOT NULL, 
+	active BOOL NOT NULL, 
+	PRIMARY KEY (id), 
+	FOREIGN KEY(policy_id) REFERENCES policy (id)
+)ROW_FORMAT=DYNAMIC;
+
+CREATE TABLE resolverconfig (
+	id INTEGER NOT NULL AUTO_INCREMENT, 
+	resolver_id INTEGER, 
+	`Key` VARCHAR(255) NOT NULL, 
+	`Value` VARCHAR(2000), 
+	`Type` VARCHAR(2000), 
+	`Description` VARCHAR(2000), 
+	PRIMARY KEY (id), 
+	CONSTRAINT rcix_2 UNIQUE (resolver_id, `Key`), 
+	FOREIGN KEY(resolver_id) REFERENCES resolver (id)
+)ROW_FORMAT=DYNAMIC;
+
+CREATE TABLE resolverrealm (
+	id INTEGER NOT NULL AUTO_INCREMENT, 
+	resolver_id INTEGER, 
+	realm_id INTEGER, 
+	priority INTEGER, 
+	PRIMARY KEY (id), 
+	CONSTRAINT rrix_2 UNIQUE (resolver_id, realm_id), 
+	FOREIGN KEY(resolver_id) REFERENCES resolver (id), 
+	FOREIGN KEY(realm_id) REFERENCES realm (id)
+)ROW_FORMAT=DYNAMIC;
+
+CREATE TABLE smsgatewayoption (
+	id INTEGER NOT NULL AUTO_INCREMENT, 
+	`Key` VARCHAR(255) NOT NULL, 
+	`Value` TEXT, 
+	`Type` VARCHAR(100), 
+	gateway_id INTEGER, 
+	PRIMARY KEY (id), 
+	CONSTRAINT sgix_1 UNIQUE (gateway_id, `Key`, `Type`), 
+	FOREIGN KEY(gateway_id) REFERENCES smsgateway (id)
+)ROW_FORMAT=DYNAMIC;
+
+CREATE TABLE tokeninfo (
+	id INTEGER NOT NULL AUTO_INCREMENT, 
+	`Key` VARCHAR(255) NOT NULL, 
+	`Value` TEXT, 
+	`Type` VARCHAR(100), 
+	`Description` VARCHAR(2000), 
+	token_id INTEGER, 
+	PRIMARY KEY (id), 
+	CONSTRAINT tiix_2 UNIQUE (token_id, `Key`), 
+	FOREIGN KEY(token_id) REFERENCES token (id)
+)ROW_FORMAT=DYNAMIC;
+
+CREATE TABLE tokenowner (
+	id INTEGER NOT NULL AUTO_INCREMENT, 
+	token_id INTEGER, 
+	resolver VARCHAR(120), 
+	user_id VARCHAR(320), 
+	realm_id INTEGER, 
+	PRIMARY KEY (id), 
+	FOREIGN KEY(token_id) REFERENCES token (id), 
+	FOREIGN KEY(realm_id) REFERENCES realm (id)
+)ROW_FORMAT=DYNAMIC;
+
+CREATE TABLE tokenrealm (
+	id INTEGER AUTO_INCREMENT, 
+	token_id INTEGER, 
+	realm_id INTEGER, 
+	PRIMARY KEY (id), 
+	CONSTRAINT trix_2 UNIQUE (token_id, realm_id), 
+	FOREIGN KEY(token_id) REFERENCES token (id), 
+	FOREIGN KEY(realm_id) REFERENCES realm (id)
+)ROW_FORMAT=DYNAMIC;
+
+CREATE TABLE tokentokengroup (
+	id INTEGER AUTO_INCREMENT, 
+	token_id INTEGER, 
+	tokengroup_id INTEGER, 
+	PRIMARY KEY (id), 
+	CONSTRAINT ttgix_2 UNIQUE (token_id, tokengroup_id), 
+	FOREIGN KEY(token_id) REFERENCES token (id), 
+	FOREIGN KEY(tokengroup_id) REFERENCES tokengroup (id)
+)ROW_FORMAT=DYNAMIC;
+
+CREATE TABLE machinetokenoptions (
+	id INTEGER NOT NULL AUTO_INCREMENT, 
+	machinetoken_id INTEGER, 
+	mt_key VARCHAR(64) NOT NULL, 
+	mt_value VARCHAR(64) NOT NULL, 
+	PRIMARY KEY (id), 
+	FOREIGN KEY(machinetoken_id) REFERENCES machinetoken (id)
+)ROW_FORMAT=DYNAMIC;
+
+
 -- ---------------------------------------------------------------------------
--- config
+-- Data
 -- ---------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS `config` (
-    `Key`         VARCHAR(255)  NOT NULL,
-    `Value`       VARCHAR(2000) DEFAULT '',
-    `Type`        VARCHAR(2000) DEFAULT '',
-    `Description` VARCHAR(2000) DEFAULT '',
-    PRIMARY KEY (`Key`)
-) ROW_FORMAT=DYNAMIC;
 
 INSERT INTO `config` (`Key`, `Value`, `Type`, `Description`) VALUES
     ('PI_PEPPER',          'dGVzdHBlcHBlcg==', 'password', 'Pepper for hashing'),
@@ -788,5 +1264,5 @@ CREATE TABLE IF NOT EXISTS `alembic_version` (
 
 INSERT INTO `alembic_version` (`version_num`) VALUES ('5cb310101a1f');
 
-SET FOREIGN_KEY_CHECKS = 1;
 
+SET FOREIGN_KEY_CHECKS = 1;

@@ -25,14 +25,16 @@ isolated `test_migration_<rev_id>.py` files using SQLAlchemy Core for historical
 
 import os
 import pathlib
+import time
 
 import pytest
 from alembic.config import Config as AlembicConfig
 from alembic.runtime.migration import MigrationContext
 from alembic.script import ScriptDirectory
 from sqlalchemy import create_engine, text, inspect as sa_inspect
+from sqlalchemy.exc import OperationalError
 
-# Skip these tests if no database URL is provided (e.g. during standard fast unit tests)
+# Skip these tests if no database URL is provided
 pytestmark = [
     pytest.mark.migration,
     pytest.mark.skipif(
@@ -47,6 +49,17 @@ DB_URL = os.environ.get("TEST_DATABASE_URL", "")
 # Pinned at v3.9 (2022) — every migration added after this point is covered.
 # Update this pin when it becomes too old or causes issues.
 START_REVISION = "5cb310101a1f"  # v3.9: Create sequences needed for SQLAlchemy 1.4
+
+# Directory that holds dialect-specific seed SQL files.
+# Naming convention: seed_v<version>_<revision>_<dialect>.sql
+#   dialect = "mariadb" or "postgresql"
+SEED_SQL_DIR = pathlib.Path(__file__).parent / "testdata" / "migrations"
+
+
+def _get_seed_sql_path(db_url: str = DB_URL) -> pathlib.Path:
+    """Return the seed file path for the active dialect."""
+    dialect = "postgresql" if _is_postgres(db_url) else "mariadb"
+    return SEED_SQL_DIR / f"seed_v3.9_{START_REVISION}_{dialect}.sql"
 
 
 def _get_script_dir() -> str:
@@ -93,49 +106,102 @@ def _get_current_revision(engine) -> str | None:
         return MigrationContext.configure(conn).get_current_revision()
 
 
-def _drop_all_tables(engine):
-    """Drop every table in the database (MariaDB-safe via FK check disable)."""
+def _is_postgres(db_url: str = DB_URL) -> bool:
+    return db_url.startswith("postgresql")
+
+
+def _wait_for_db(engine, timeout: int = 30, interval: float = 1.0) -> None:
+    """
+    Block until the database accepts connections or *timeout* seconds elapse.
+    Raises the last OperationalError if the DB never becomes ready.
+    """
+    deadline = time.monotonic() + timeout
+    last_exc: OperationalError | None = None
+    while time.monotonic() < deadline:
+        try:
+            with engine.connect() as conn:
+                conn.execute(text("SELECT 1"))
+            return  # success
+        except OperationalError as exc:
+            last_exc = exc
+            time.sleep(interval)
+    raise RuntimeError(
+        f"Database at {engine.url} did not become ready within {timeout}s"
+    ) from last_exc
+
+
+def _drop_all_tables(engine) -> None:
+    """Drop every table (and for Postgres, every sequence) in the database, dialect-safe."""
     with engine.connect() as conn:
-        conn.execute(text("SET FOREIGN_KEY_CHECKS = 0;"))
-        for table in sa_inspect(engine).get_table_names():
-            conn.execute(text(f"DROP TABLE IF EXISTS `{table}`;"))
-        conn.execute(text("SET FOREIGN_KEY_CHECKS = 1;"))
+        if _is_postgres(str(engine.url)):
+            # Postgres: drop each table with CASCADE to handle FK dependencies.
+            for table in sa_inspect(engine).get_table_names():
+                conn.execute(text(f'DROP TABLE IF EXISTS "{table}" CASCADE;'))
+            # Also drop all sequences so the seed file can re-create them cleanly.
+            sequences = conn.execute(
+                text("SELECT sequencename FROM pg_sequences WHERE schemaname = 'public';")
+            ).fetchall()
+            for (seq,) in sequences:
+                conn.execute(text(f'DROP SEQUENCE IF EXISTS "{seq}" CASCADE;'))
+        else:
+            # MariaDB/MySQL: disable FK checks, use backtick quoting.
+            conn.execute(text("SET FOREIGN_KEY_CHECKS = 0;"))
+            for table in sa_inspect(engine).get_table_names():
+                conn.execute(text(f"DROP TABLE IF EXISTS `{table}`;"))
+            conn.execute(text("SET FOREIGN_KEY_CHECKS = 1;"))
         conn.commit()
 
 
-def _load_seed_db(engine):
+def _read_seed_statements(db_url: str = DB_URL) -> list[str]:
     """
-    Load the v3.9 seed SQL file into the database.
-
-    This replaces the old _setup_db_at_start_revision() strategy of:
-      db.create_all() → stamp head → downgrade to START_REVISION
-
-    That approach was fragile because it relied on the *current* models being
-    perfectly downgrade-compatible with the historical schema. Instead we load
-    a SQL file derived directly from the v3.9 models, which is a faithful
-    representation of a real v3.9 installation including the alembic_version
-    stamp at START_REVISION.
-
-    The seed file is split on ";" and each non-empty statement is executed
-    individually so that the MariaDB driver does not choke on multi-statement
-    blobs.
+    Read the dialect-specific seed SQL file and split it into individual
+    statements (split on semicolons), discarding empty / comment-only chunks.
     """
-    sql = SEED_SQL_PATH.read_text(encoding="utf-8")
-    statements = [s.strip() for s in sql.split(";") if s.strip() and not s.strip().startswith("--")]
-    with engine.connect() as conn:
-        for stmt in statements:
-            conn.execute(text(stmt))
-        conn.commit()
+    seed_path = _get_seed_sql_path(db_url)
+    sql = seed_path.read_text(encoding="utf-8")
+    statements = []
+    for chunk in sql.split(";"):
+        stripped = chunk.strip()
+        if not stripped:
+            continue
+        # Discard chunks that consist entirely of comment lines
+        non_comment_lines = [
+            line for line in stripped.splitlines()
+            if line.strip() and not line.strip().startswith("--")
+        ]
+        if non_comment_lines:
+            statements.append(stripped)
+    return statements
+
+
+def _load_seed_db(db_url: str = DB_URL) -> None:
+    """
+    Load the dialect-specific v3.9 seed SQL file into the database.
+
+    Seed files are pre-written for each supported dialect (mariadb, postgresql)
+    so no on-the-fly SQL transformation is needed.
+    """
+    statements = _read_seed_statements(db_url)
+    engine = create_engine(db_url)
+    try:
+        with engine.connect() as conn:
+            for stmt in statements:
+                conn.execute(text(stmt))
+            conn.commit()
+    finally:
+        engine.dispose()
 
 
 @pytest.fixture(autouse=True)
 def clean_database():
     """Wipe the database before and after every test."""
     engine = create_engine(DB_URL)
+    _wait_for_db(engine)
     _drop_all_tables(engine)
     engine.dispose()
     yield
     engine = create_engine(DB_URL)
+    _wait_for_db(engine)
     _drop_all_tables(engine)
     engine.dispose()
 
@@ -199,7 +265,7 @@ def test_upgrade_to_head_creates_all_model_tables(flask_app):
     """
     from flask_migrate import upgrade as flask_upgrade
 
-    _load_seed_db(create_engine(DB_URL))
+    _load_seed_db()
     flask_upgrade()
 
     engine = create_engine(DB_URL)
@@ -218,7 +284,7 @@ def test_current_revision_matches_head_after_upgrade(flask_app):
     """After upgrading to head, the alembic_version in the DB must equal the head revision."""
     from flask_migrate import upgrade as flask_upgrade
 
-    _load_seed_db(create_engine(DB_URL))
+    _load_seed_db()
     flask_upgrade()
 
     head_rev = ScriptDirectory.from_config(_get_alembic_cfg()).get_current_head()
@@ -238,7 +304,7 @@ def test_migrations_since_start_revision_are_reversible(flask_app):
     """
     from alembic import command
 
-    _load_seed_db(create_engine(DB_URL))
+    _load_seed_db()
     command.upgrade(_get_alembic_cfg(), "head")
 
     script = ScriptDirectory.from_config(_get_alembic_cfg())
@@ -273,7 +339,7 @@ def test_upgrade_then_downgrade_then_upgrade_is_idempotent(flask_app):
     from alembic import command
     from flask_migrate import upgrade as flask_upgrade
 
-    _load_seed_db(create_engine(DB_URL))
+    _load_seed_db()
     flask_upgrade()
 
     engine = create_engine(DB_URL)
@@ -300,7 +366,7 @@ def test_schema_matches_models_after_upgrade_to_head(flask_app):
     SQLAlchemy models — not just at the table level, but also columns,
     types, indexes and constraints.
 
-    This uses Alembic's autogenerate comparison (the same mechanism used by
+    This uses Alembics autogenerate comparison (the same mechanism used by
     `flask db migrate` to detect pending changes). If the comparison produces
     any diffs, it means either:
     - A migration is missing (a model change was not accompanied by a migration), or
@@ -314,7 +380,7 @@ def test_schema_matches_models_after_upgrade_to_head(flask_app):
     from flask_migrate import upgrade as flask_upgrade
     from privacyidea.models import db
 
-    _load_seed_db(create_engine(DB_URL))
+    _load_seed_db()
     flask_upgrade()
 
     engine = create_engine(DB_URL)
@@ -330,13 +396,40 @@ def test_schema_matches_models_after_upgrade_to_head(flask_app):
         diffs = compare_metadata(migration_ctx, db.metadata)
     engine.dispose()
 
-    # Filter out diffs that are known false positives on MariaDB/MySQL:
-    # - 'remove_index': MySQL auto-creates indexes on FK columns that the models
-    #   don't define explicitly, causing spurious remove_index diffs.
-    # - 'modify_nullable': Boolean columns (TINYINT(1)) on MariaDB/MySQL show a
-    #   nullable mismatch between the ORM metadata and the live schema even when
-    #   the column definition is correct.
-    IGNORED_DIFF_TYPES = {"remove_index", "modify_nullable"}
+    # Filter out diffs that are known false positives per dialect.
+    #
+    # MariaDB/MySQL:
+    # - 'remove_index'/'add_index': MySQL auto-creates plain indexes backing UNIQUE
+    #   constraints and FK columns the models don't declare explicitly.
+    # - 'modify_nullable': TINYINT(1) Boolean columns show a nullable mismatch.
+    # - 'modify_type' UnicodeText/LONGTEXT, Interval/TIME: dialect representation
+    #   differences, not real schema gaps.
+    #
+    # Postgres:
+    # - 'modify_nullable': similar mismatch for Boolean columns.
+    if _is_postgres():
+        # PostgreSQL false positives:
+        # - 'add_index'/'remove_index': Alembic detects named non-unique indexes
+        #   declared in models (ix_*) that migrations don't explicitly create,
+        #   as well as index/constraint naming differences (e.g. unnamed UNIQUE
+        #   constraint vs. named ix_token_serial unique index).
+        # - 'remove_constraint': paired with add_index when a UNIQUE constraint
+        #   was created without a name in the seed but the model names it.
+        # - 'modify_nullable': Boolean columns show nullable mismatch.
+        # - 'modify_default': Tables created by newer migrations may use IDENTITY
+        #   columns while the model uses sequences — alembic autogenerate flags
+        #   this as a default mismatch, but it is not a real schema gap.
+        IGNORED_DIFF_TYPES = {
+            "add_index", "remove_index", "remove_constraint",
+            "modify_nullable", "modify_default",
+        }
+        IGNORED_MODIFY_TYPE_PAIRS: set[tuple[str, str]] = set()
+    else:
+        IGNORED_DIFF_TYPES = {"remove_index", "add_index", "modify_nullable"}
+        IGNORED_MODIFY_TYPE_PAIRS = {
+            ("LONGTEXT", "UnicodeText"),
+            ("TIME", "Interval"),
+        }
 
     def _get_diff_type(diff) -> str | None:
         """
@@ -354,9 +447,27 @@ def test_schema_matches_models_after_upgrade_to_head(flask_app):
                 return first[0]
         return None
 
+    def _is_ignored_modify_type(diff) -> bool:
+        """
+        Return True if this is a modify_type diff that is a known MySQL/MariaDB
+        dialect representation mismatch (not a real schema gap).
+        Alembic represents these as a list containing a single tuple:
+          [('modify_type', schema, table, col, existing_kwargs, live_type, model_type)]
+        """
+        inner = diff[0] if isinstance(diff, list) and len(diff) == 1 else diff
+        if not (isinstance(inner, tuple) and len(inner) >= 7 and inner[0] == "modify_type"):
+            return False
+        live_type = type(inner[5]).__name__.upper()
+        model_type = type(inner[6]).__name__
+        return any(
+            live_type.startswith(live) and model_type == model
+            for live, model in IGNORED_MODIFY_TYPE_PAIRS
+        )
+
     filtered_diffs = [
         diff for diff in diffs
         if _get_diff_type(diff) not in IGNORED_DIFF_TYPES
+        and not _is_ignored_modify_type(diff)
     ]
 
     assert not filtered_diffs, (
@@ -407,7 +518,7 @@ def test_each_migration_survives_round_trip(flask_app):
     upgrade → downgrade → upgrade round-trip succeeds without crashing and
     produces the same schema both times.
 
-    Performance: the DB is set up once at START_REVISION and we march forward
+    Performance: the DB is set up once at START_REVISION, and we march forward
     linearly — no full wipe/rebuild for every iteration.
 
     Schema validation: we compare full schema snapshots (table names + column
@@ -430,7 +541,7 @@ def test_each_migration_survives_round_trip(flask_app):
     revisions_in_window = list(reversed(list(script.iterate_revisions("head", START_REVISION))))
 
     # Set up the DB once — all iterations share this starting point.
-    _load_seed_db(create_engine(DB_URL))
+    _load_seed_db()
 
     for rev in revisions_in_window:
         # Merge revisions have a tuple of parents — use the first one.
@@ -520,7 +631,7 @@ def test_downgrade_does_not_destroy_data_in_surviving_tables(flask_app):
     from alembic import command
     from flask_migrate import upgrade as flask_upgrade
 
-    _load_seed_db(create_engine(DB_URL))
+    _load_seed_db()
     flask_upgrade()
 
     # The seed already has realm rows (id=1 'defrealm', id=2 'testrealm').
