@@ -293,12 +293,7 @@ describe("AuthService", () => {
 
     expect(authService.authtype()).toBe("cookie");
     expect(authService.jwtExpDate()).toEqual(new Date(jwt.exp * 1000));
-
-    (authService as any).authData.set({ ...(authService as any).authData(), logout_time: 300 } as any);
-    expect(authService.logoutTimeSeconds()).toBe(120);
-
-    (authService as any).authData.set({ ...(authService as any).authData(), logout_time: 60 } as any);
-    expect(authService.logoutTimeSeconds()).toBe(60);
+    expect(authService.jwtLogoutTimeS()).toEqual(120);
 
     jest.useRealTimers();
   });
