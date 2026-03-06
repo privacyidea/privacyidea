@@ -82,6 +82,22 @@ describe("SessionTimerService", () => {
     expect(service.remainingTime()).toEqual(20_000);
   });
 
+  it("remainingTime allows 0 values", () => {
+    authService.logoutTimeS.set(0);
+    authService.jwtLogoutTimeS.set(null);
+    (service as any).startTime.set(Date.now());
+    (service as any).currentTime.set(Date.now());
+    expect(service.remainingTime()).toEqual(0);
+
+    authService.logoutTimeS.set(null);
+    authService.jwtLogoutTimeS.set(0);
+    expect(service.remainingTime()).toEqual(0);
+
+    authService.logoutTimeS.set(0);
+    authService.jwtLogoutTimeS.set(0);
+    expect(service.remainingTime()).toEqual(0);
+  });
+
   it("remainingTime uses shortest time if both are given", () => {
     authService.logoutTimeS.set(20);
     authService.jwtLogoutTimeS.set(30);
@@ -107,7 +123,7 @@ describe("SessionTimerService", () => {
     expect(router.navigate).not.toHaveBeenCalled();
   });
 
-  it("startTimer schedules timeout and triggers logout + navigation on expiry", () => {
+  it("startTimer schedules timeout and triggers logout on expiry", () => {
     authService.logoutTimeS.set(2);
     const clearIntervalSpy = jest.spyOn(global, "clearInterval");
 
@@ -190,6 +206,13 @@ describe("SessionTimerService", () => {
     expect((service as any).logoutTimeMs()).toBe(0);
   });
 
+  it("logoutTimeMs allows 0 value", () => {
+    authService.logoutTimeS.set(0);
+    (service as any).startTime.set(Date.now());
+    (service as any).currentTime.set(Date.now());
+    expect((service as any).logoutTimeMs()).toBe(0);
+  });
+
   it("logoutTimeMs returns correct value for positive input", () => {
     authService.logoutTimeS.set(100);
     (service as any).startTime.set(Date.now());
@@ -209,6 +232,13 @@ describe("SessionTimerService", () => {
     expect((service as any).jwtLogoutTimeMs()).toBe(0);
   });
 
+  it("jwtLogoutTimeMs allows 0", () => {
+    authService.jwtLogoutTimeS.set(0);
+    (service as any).loginTime.set(Date.now());
+    (service as any).currentTime.set(Date.now());
+    expect((service as any).jwtLogoutTimeMs()).toBe(0);
+  });
+
   it("jwtLogoutTimeMs returns correct value for positive input", () => {
     authService.jwtLogoutTimeS.set(100);
     (service as any).loginTime.set(Date.now());
@@ -219,5 +249,21 @@ describe("SessionTimerService", () => {
   it("jwtLogoutTimeMs returns null for null input", () => {
     authService.jwtLogoutTimeS.set(null);
     expect((service as any).jwtLogoutTimeMs()).toBeNull();
+  });
+
+  it("initiallyStartTimer sets loginTime, strats time refreshing and starts timer", () => {
+    const startTimerSpy = jest.spyOn(service, "startTimer");
+    const startRefreshingSpy = jest.spyOn(service, "startRefreshingRemainingTime");
+
+    (service as any).startTime.set(Date.now() - 5000);
+    (service as any).loginTime.set(Date.now() - 5000);
+    (service as any).currentTime.set(Date.now() - 5000);
+
+    service.initialTimerStart();
+
+    expect((service as any).loginTime()).toBeGreaterThanOrEqual(Date.now() - 500);
+    expect((service as any).startTime()).toBeGreaterThanOrEqual(Date.now() - 500);
+    expect(startRefreshingSpy).toHaveBeenCalled();
+    expect(startTimerSpy).toHaveBeenCalled();
   });
 });

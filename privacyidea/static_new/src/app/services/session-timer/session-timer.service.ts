@@ -24,6 +24,8 @@ import { NotificationService, NotificationServiceInterface } from "../notificati
 export interface SessionTimerServiceInterface {
   remainingTime: Signal<number | undefined>;
 
+  initialTimerStart(): void;
+
   startTimer(): void;
 
   resetTimer(): void;
@@ -43,7 +45,7 @@ export class SessionTimerService implements SessionTimerServiceInterface {
   private readonly logoutTimeMs = computed(() => {
     // Logout time which can be refreshed by user activity
     let logoutTime = this.authService.logoutTimeS();
-    if (!logoutTime) return null;
+    if (logoutTime === null) return null;
     logoutTime *= 1_000;
     const offset = this.currentTime() - this.startTime();
     if (offset > 0) {
@@ -56,7 +58,7 @@ export class SessionTimerService implements SessionTimerServiceInterface {
   private readonly jwtLogoutTimeMs = computed(() => {
     // Logout time based on JWT token expiration, cannot be refreshed by user activity
     let jwtLogoutTime = this.authService.jwtLogoutTimeS();
-    if (!jwtLogoutTime) return null;
+    if (jwtLogoutTime === null) return null;
     jwtLogoutTime *= 1_000;
     const offset = this.currentTime() - this.loginTime();
     if (offset > 0) {
@@ -72,11 +74,17 @@ export class SessionTimerService implements SessionTimerServiceInterface {
   private loginTime = signal(Date.now());
   private currentTime = signal(Date.now());
   remainingTime = computed(() => {
-    if (!this.jwtLogoutTimeMs() && !this.logoutTimeMs()) return;
-    if (!this.logoutTimeMs()) return this.jwtLogoutTimeMs() ?? undefined;
-    if (!this.jwtLogoutTimeMs()) return this.logoutTimeMs() ?? undefined;
+    if (this.jwtLogoutTimeMs() == null && this.logoutTimeMs() == null) return;
+    if (this.logoutTimeMs() == null) return this.jwtLogoutTimeMs() ?? undefined;
+    if (this.jwtLogoutTimeMs() == null) return this.logoutTimeMs() ?? undefined;
     return Math.min(this.jwtLogoutTimeMs() ?? 0, this.logoutTimeMs() ?? 0);
   });
+
+  initialTimerStart(): void {
+    this.loginTime.set(Date.now());
+    this.startRefreshingRemainingTime();
+    this.startTimer();
+  }
 
   startTimer(): void {
     this.resetTimer();
