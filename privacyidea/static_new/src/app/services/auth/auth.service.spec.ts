@@ -293,12 +293,29 @@ describe("AuthService", () => {
 
     expect(authService.authtype()).toBe("cookie");
     expect(authService.jwtExpDate()).toEqual(new Date(jwt.exp * 1000));
+    expect(authService.jwtLogoutTimeS()).toEqual(120);
 
-    (authService as any).authData.set({ ...(authService as any).authData(), logout_time: 300 } as any);
-    expect(authService.logoutTimeSeconds()).toBe(120);
+    jest.useRealTimers();
+  });
 
-    (authService as any).authData.set({ ...(authService as any).authData(), logout_time: 60 } as any);
-    expect(authService.logoutTimeSeconds()).toBe(60);
+  it("jwtExpDate and jwtLogoutTimeS are null if expiration or no jwt data at all are defined", () => {
+    jest.useFakeTimers().setSystemTime(new Date("2025-01-01T00:00:00Z"));
+
+    expect(authService.jwtExpDate()).toBeNull();
+    expect(authService.jwtLogoutTimeS()).toBeNull();
+
+    const jwt = {
+      username: "bob",
+      realm: "r",
+      nonce: "n",
+      role: "admin",
+      authtype: "cookie",
+      rights: []
+    };
+    (authService as any).jwtData.set(jwt);
+
+    expect(authService.jwtExpDate()).toBeNull();
+    expect(authService.jwtLogoutTimeS()).toBeNull();
 
     jest.useRealTimers();
   });

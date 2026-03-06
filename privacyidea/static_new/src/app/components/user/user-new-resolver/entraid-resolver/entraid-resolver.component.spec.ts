@@ -21,18 +21,29 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { EntraidResolverComponent } from "./entraid-resolver.component";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { ComponentRef } from "@angular/core";
+import { provideHttpClient } from "@angular/common/http";
+import { provideHttpClientTesting } from "@angular/common/http/testing";
+import { ResolverService } from "../../../../services/resolver/resolver.service";
+import { MockResolverService } from "../../../../../testing/mock-services/mock-resolver-service";
 
 describe("EntraidResolverComponent", () => {
   let component: EntraidResolverComponent;
   let componentRef: ComponentRef<EntraidResolverComponent>;
   let fixture: ComponentFixture<EntraidResolverComponent>;
+  let resolverService: MockResolverService;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: ResolverService, useClass: MockResolverService }
+      ],
       imports: [EntraidResolverComponent, NoopAnimationsModule]
     })
       .compileComponents();
 
+    resolverService = TestBed.inject(ResolverService) as unknown as MockResolverService;
     fixture = TestBed.createComponent(EntraidResolverComponent);
     component = fixture.componentInstance;
     componentRef = fixture.componentRef;
@@ -44,7 +55,12 @@ describe("EntraidResolverComponent", () => {
   });
 
   it("should initialize default data on creation", () => {
-    componentRef.setInput("data", {});
+    const defaultData = {
+      base_url: "https://graph.microsoft.com/v1.0",
+      authority: "https://login.microsoftonline.com/{tenant}",
+      config_get_user_list: { endpoint: "/users" }
+    };
+    componentRef.setInput("data", defaultData);
     fixture.detectChanges();
     expect(component.baseUrlControl.value).toBe("https://graph.microsoft.com/v1.0");
     expect(component.authorityControl.value).toBe("https://login.microsoftonline.com/{tenant}");

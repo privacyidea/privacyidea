@@ -28,6 +28,7 @@ import {
   MatExpansionPanelHeader,
   MatExpansionPanelTitle
 } from "@angular/material/expansion";
+import { UserUtilsPanelSelfServiceComponent } from "@components/layout/user-utils-panel/user-utils-panel.self-service.component";
 
 @Component({
   selector: "app-navigation-self-service",
@@ -38,7 +39,8 @@ import {
     MatExpansionPanel,
     MatExpansionPanelHeader,
     MatExpansionPanelTitle,
-    MatAccordion
+    MatAccordion,
+    UserUtilsPanelSelfServiceComponent
   ],
   templateUrl: "./navigation-self-service.component.html",
   styleUrl: "./navigation-self-service.component.scss"

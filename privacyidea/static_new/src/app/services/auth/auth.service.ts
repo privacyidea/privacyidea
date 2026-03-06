@@ -131,6 +131,8 @@ export interface AuthServiceInterface {
   readonly jwtNonce: Signal<string>;
   readonly authtype: Signal<"cookie" | "none">;
   readonly jwtExpDate: Signal<Date | null>;
+  readonly jwtLogoutTimeS: Signal<number | null>;
+  readonly logoutTimeS: Signal<number | null>;
   readonly isAuthenticated: Signal<boolean>;
   readonly logLevel: Signal<number>;
   readonly menus: Signal<string[]>;
@@ -140,7 +142,6 @@ export interface AuthServiceInterface {
   readonly role: Signal<AuthRole>;
   readonly token: Signal<string>;
   readonly username: Signal<string>;
-  readonly logoutTimeSeconds: Signal<number | null>;
   readonly auditPageSize: Signal<number>;
   readonly tokenPageSize: Signal<number | null>;
   readonly userPageSize: Signal<number>;
@@ -250,17 +251,12 @@ export class AuthService implements AuthServiceInterface {
   readonly role = computed(() => this.jwtData()?.role || this.authData()?.role || "");
   readonly token = computed(() => this.authData()?.token || "");
   readonly username = computed(() => this.jwtData()?.username || this.authData()?.username || "");
-  readonly logoutTimeSeconds = computed(() => {
-    const jwtExpDate = this.jwtExpDate()!;
-    let jwtLogoutTime: number | null = null;
-    const authDataLogoutTime = this.authData()?.logout_time || null;
-    if (jwtExpDate) {
-      const now = new Date();
-      jwtLogoutTime = Math.max(0, Math.floor((jwtExpDate.getTime() - now.getTime()) / 1000));
-    }
-    if (jwtLogoutTime === null) return authDataLogoutTime;
-    if (authDataLogoutTime === null) return jwtLogoutTime;
-    return Math.min(jwtLogoutTime, authDataLogoutTime);
+  readonly logoutTimeS = computed(() => this.authData()?.logout_time || null);
+  readonly jwtLogoutTimeS = computed(() => {
+    const expiration = this.jwtExpDate();
+    if (expiration == null) return null;
+    const now = new Date();
+    return Math.max(0, Math.floor((expiration.getTime() - now.getTime()) / 1000));
   });
   readonly auditPageSize = computed(() => this.authData()?.audit_page_size || 10);
   readonly tokenPageSize = computed(() => this.authData()?.token_page_size || null);
@@ -340,7 +336,7 @@ export class AuthService implements AuthServiceInterface {
     this.jwtData.set(null);
     this.localService.removeData(BEARER_TOKEN_STORAGE_KEY);
     this.authenticationAccepted.set(false);
-    this.router.navigate(["login"]).then(() => this.notificationService.openSnackBar("Logout successful."));
+    this.router.navigate(["login"]).then(() => this.notificationService.openSnackBar($localize`Logout successful.`));
   }
 
   actionAllowed(action: PolicyAction): boolean {

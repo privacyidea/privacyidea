@@ -60,11 +60,6 @@
   flex: 1 1 0;
 }
 
-.session-timer {
-  width: 70px;
-  text-align: right;
-}
-
 .mat-expansion-panel {
   background: var(--mat-sys-surface-container-low);
 }
@@ -142,30 +137,6 @@
 .sticky-actions a[mat-fab] {
   width: 100%;
   justify-content: flex-start;
-}
-
-.account-div {
-  display: flex;
-  flex-direction: row;
-  width: 256px;
-  justify-content: space-around;
-  align-items: center;
-  background: var(--mat-sys-surface-container);
-  border-radius: var(--border-radius);
-  height: 40px;
-}
-
-.utils-group {
-  border: solid 1px var(--mat-sys-surface-container-highest);
-  border-radius: var(--border-radius);
-  margin-bottom: 6px;
-}
-
-.utils {
-  display: flex;
-  flex-direction: row;
-  justify-content: space-around;
-  align-items: center;
 }
 
 .drawer-div {
