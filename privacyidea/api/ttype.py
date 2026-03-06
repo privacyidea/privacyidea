@@ -107,6 +107,8 @@ def token(ttype=None):
         log.error("Invalid tokentype provided. ttype: {}".format(ttype.lower()))
         raise ParameterError("Invalid tokentype provided. ttype: {}".format(ttype.lower()))
 
+    # Code to phone message
+    # TODO this is probably not perfect, but we can not evaluate policies in the token class itself
     code_to_phone_message = None
     policies = Match.user(g, scope=SCOPE.AUTH, action=PushAction.PUSH_CODE_TO_PHONE_MESSAGE,
                        user_object=None).action_values(unique=True, allow_white_space_in_action=True,
