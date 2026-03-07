@@ -104,8 +104,7 @@ from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
 from privacyidea.lib.tokens.pushtoken import PUSH_ACTION
 from privacyidea.lib.tokens.u2ftoken import (U2FACTION, parse_registration_data)
 # Token specific imports!
-from privacyidea.lib.tokens.webauthn import (WebAuthnRegistrationResponse,
-                                             AUTHENTICATOR_ATTACHMENT_TYPES,
+from privacyidea.lib.tokens.webauthn import (AUTHENTICATOR_ATTACHMENT_TYPES,
                                              USER_VERIFICATION_LEVELS, ATTESTATION_LEVELS,
                                              ATTESTATION_FORMS)
 from privacyidea.lib.tokens.webauthntoken import (DEFAULT_PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE,
@@ -777,7 +776,7 @@ def verify_enrollment(request=None, action=None):
                     # TODO: we need to add the tokentype here or the second init_token() call fails
                     request.all_data.update(type=tokenobj.get_tokentype())
                     tokenobj.token.rollout_state = ROLLOUTSTATE.ENROLLED
-                    tokenobj.token.save() # todo evaluate
+                    tokenobj.token.save()  # todo evaluate
                 else:
                     from privacyidea.lib.error import ParameterError
                     raise ParameterError("Verification of the new token failed.")
@@ -2388,20 +2387,6 @@ def webauthntoken_allowed(request, action):
 
     # If a WebAuthn token is being enrolled.
     if ttype and ttype.lower() == WebAuthnTokenClass.get_class_type() and reg_data:
-        serial = request.all_data.get("serial")
-        att_obj = WebAuthnRegistrationResponse.parse_attestation_object(reg_data)
-        (
-            attestation_type,
-            trust_path,
-            credential_pub_key,
-            cred_id,
-            aaguid
-        ) = WebAuthnRegistrationResponse.verify_attestation_statement(fmt=att_obj.get('fmt'),
-                                                                      att_stmt=att_obj.get('attStmt'),
-                                                                      auth_data=att_obj.get('authData'))
-        # TODO: trust_path can be a certificate chain. All certificates in the
-        #  path should be considered
-        attestation_cert = trust_path[0] if trust_path else None
         allowed_certs_pols = Match.user(g, scope=SCOPE.ENROLL, action=FIDO2PolicyAction.REQ,
                                         user_object=request.User if hasattr(request, 'User')
                                         else None).action_values(unique=False)
@@ -2409,32 +2394,8 @@ def webauthntoken_allowed(request, action):
         allowed_aaguids_pols = Match.user(g, scope=SCOPE.ENROLL, action=FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST,
                                           user_object=request.User if hasattr(request, 'User')
                                           else None).action_values(unique=False, allow_white_space_in_action=True)
-        allowed_aaguids = set(
-            aaguid
-            for allowed_aaguid_pol in allowed_aaguids_pols
-            for aaguid in allowed_aaguid_pol.split()
-        )
-
-        # attestation_cert is of type X509. If you get a warning from your IDE
-        # here, it is because your IDE mistakenly assumes it to be of type PKey,
-        # due to a bug in pyOpenSSL 18.0.0. This bug is – however – purely
-        # cosmetic (a wrongly hinted return type in X509.from_cryptography()),
-        # and can be safely ignored.
-        #
-        # See also:
-        # https://github.com/pyca/pyopenssl/commit/4121e2555d07bbba501ac237408a0eea1b41f467
-        if allowed_certs_pols and not _attestation_certificate_allowed(attestation_cert, allowed_certs_pols):
-            log.warning(
-                "The WebAuthn token {0!s} is not allowed to be registered due to policy restriction {1!s}"
-                .format(serial, FIDO2PolicyAction.REQ))
-            raise PolicyError("The WebAuthn token is not allowed to be registered due to a policy restriction.")
-
-        if allowed_aaguids and aaguid not in [allowed_aaguid.replace("-", "") for allowed_aaguid in allowed_aaguids]:
-            log.warning(
-                "The WebAuthn token {0!s} is not allowed to be registered due to policy restriction {1!s}"
-                .format(serial, FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST))
-            raise PolicyError("The WebAuthn token is not allowed to be registered due to a policy restriction.")
-
+        request.all_data[FIDO2PolicyAction.REQ] = allowed_certs_pols
+        request.all_data[FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST] = allowed_aaguids_pols
     return True
 
 
