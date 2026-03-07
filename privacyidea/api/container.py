@@ -21,6 +21,7 @@ import json
 import logging
 
 from flask import Blueprint, request, g
+from privacyidea.lib import lazy_gettext
 
 from privacyidea.api.auth import admin_required
 from privacyidea.api.lib.prepolicy import (check_base_action, prepolicy, check_user_params, check_token_action,
@@ -48,7 +49,7 @@ from privacyidea.lib.container import (find_container_by_serial, init_container,
 from privacyidea.lib.containers.container_info import (TokenContainerInfoData, PI_INTERNAL, RegistrationState,
                                                        CHALLENGE_TTL, REGISTRATION_TTL, SERVER_URL, SSL_VERIFY)
 from privacyidea.lib.containers.container_states import ContainerStates
-from privacyidea.lib.error import ParameterError, ContainerNotRegistered, ERROR
+from privacyidea.lib.error import ParameterError, ContainerNotRegistered, Error
 from privacyidea.lib.event import event
 from privacyidea.lib.log import log_with
 from privacyidea.lib.policies.actions import PolicyAction
@@ -199,7 +200,7 @@ def unassign(container_serial):
     # Check if required parameter is present
     _ = get_required_one_of(request.all_data, ["user", "user_id"])
     if user.login and not user.realm and not user.resolver and not user.uid:
-        raise ParameterError("Missing parameter 'realm', 'resolver', and/or 'user_id'")
+        raise ParameterError(lazy_gettext("Missing parameter 'realm', 'resolver', and/or 'user_id'"))
 
     res = unassign_user(container_serial, user)
 
@@ -716,7 +717,7 @@ def registration_finalize():
             action=PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE,
             user_object=request.User if hasattr(request, "User") else None,
         ).any():
-            return send_error("Failed finalizing container registration", error_code=ERROR.CONTAINER), map_error_to_code(e)
+            return send_error("Failed finalizing container registration", error_code=Error.CONTAINER), map_error_to_code(e)
         raise
 
 
@@ -791,7 +792,7 @@ def registration_terminate_client():
             action=PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE,
             user_object=request.User if hasattr(request, "User") else None,
         ).any():
-            return send_error("Failed terminating container registration", error_code=ERROR.CONTAINER), map_error_to_code(e)
+            return send_error("Failed terminating container registration", error_code=Error.CONTAINER), map_error_to_code(e)
         raise
 
 
@@ -854,7 +855,7 @@ def create_challenge():
             action=PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE,
             user_object=request.User if hasattr(request, "User") else None,
         ).any():
-            return send_error("Failed creating container challenge", error_code=ERROR.CONTAINER), map_error_to_code(e)
+            return send_error("Failed creating container challenge", error_code=Error.CONTAINER), map_error_to_code(e)
         raise
 
 
@@ -990,7 +991,7 @@ def synchronize():
             action=PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE,
             user_object=request.User if hasattr(request, "User") else None,
         ).any():
-            return send_error("Failed container synchronization", error_code=ERROR.CONTAINER), map_error_to_code(e)
+            return send_error("Failed container synchronization", error_code=Error.CONTAINER), map_error_to_code(e)
         raise
 
 
@@ -1063,7 +1064,7 @@ def rollover():
             action=PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE,
             user_object=request.User if hasattr(request, "User") else None,
         ).any():
-            return send_error("Failed container rollover", error_code=ERROR.CONTAINER), map_error_to_code(e)
+            return send_error("Failed container rollover", error_code=Error.CONTAINER), map_error_to_code(e)
         raise
 
 
@@ -1144,7 +1145,7 @@ def create_template_with_name(container_type, template_name):
 
     # Check parameters
     if not isinstance(template_options, dict):
-        raise ParameterError("'template_options' must be a dictionary!")
+        raise ParameterError(lazy_gettext("'template_options' must be a dictionary!"))
 
     # check if name already exists
     existing_templates = get_templates_by_query(template_name)["templates"]

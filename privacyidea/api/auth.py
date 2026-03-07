@@ -51,7 +51,7 @@ from functools import wraps
 from datetime import (datetime, timezone)
 
 from privacyidea.api.lib.policyhelper import check_last_auth_policy, get_realm_for_authentication
-from privacyidea.lib.error import AuthError, ERROR
+from privacyidea.lib.error import AuthError, Error
 from privacyidea.lib.crypto import geturandom, init_hsm
 from privacyidea.lib.audit import getAudit
 from privacyidea.lib.auth import (check_webui_user, ROLE, verify_db_admin,
@@ -77,7 +77,7 @@ from privacyidea.lib.utils import (get_client_ip, hexlify_and_unicode, to_unicod
                                    AUTH_RESPONSE)
 from privacyidea.lib.config import get_from_config, SYSCONF, ensure_no_config_object, get_privacyidea_node
 from privacyidea.lib.event import event, EventConfiguration
-from privacyidea.lib import _
+from privacyidea.lib import lazy_gettext
 import logging
 import traceback
 import threading
@@ -257,13 +257,13 @@ def get_auth_token():
     passkey_login_success = False
     if not passkey_login_enabled and credential_id:
         log.debug("WebUI passkey login disabled in pi.cfg!")
-        raise AuthError(_("Authentication with passkey disabled."), id=ERROR.AUTHENTICATE_ILLEGAL_METHOD)
+        raise AuthError(lazy_gettext("Authentication with passkey disabled."), id=Error.AUTHENTICATE_ILLEGAL_METHOD)
     if credential_id and passkey_login_enabled:
         transaction_id: str = get_required(request.all_data, "transaction_id")
         token = get_fido2_token_by_credential_id(credential_id)
         if not token:
-            raise AuthError(_("Authentication failure. The passkey is not registered."),
-                            id=ERROR.AUTHENTICATE_WRONG_CREDENTIALS)
+            raise AuthError(lazy_gettext("Authentication failure. The passkey is not registered."),
+                            id=Error.AUTHENTICATE_WRONG_CREDENTIALS)
         if not token.is_active():
             log.debug(f"Authentication attempted with disabled token {token.get_serial()}")
             g.audit_object.log({"info": log_used_user(user, "Token is disabled"),
@@ -274,18 +274,18 @@ def get_auth_token():
             return send_result(False, rid=2, details={"message": "Token is disabled"})
 
         if not token.user:
-            raise AuthError(_("Authentication failure. Token has no user."),
-                            id=ERROR.AUTHENTICATE_MISSING_USERNAME)
+            raise AuthError(lazy_gettext("Authentication failure. Token has no user."),
+                            id=Error.AUTHENTICATE_MISSING_USERNAME)
         if token.get_type() in request.all_data.get("disabled_token_types", []):
             raise AuthError(
-                _("Authentication failure. The token type {token_type} is disabled.").format(
+                lazy_gettext("Authentication failure. The token type {token_type} is disabled.").format(
                     token_type=token.get_type()),
-                id=ERROR.AUTHENTICATE_WRONG_CREDENTIALS)
+                id=Error.AUTHENTICATE_WRONG_CREDENTIALS)
         if not check_last_auth_policy(g, token):
             log.debug(f"Last authentication policy check failed for token {token.get_serial()}.")
             raise AuthError(
-                _("Authentication failure. Last authentication policy check failed for token {serial}").format(
-                    serial=token.get_serial()), id=ERROR.AUTHENTICATE_MISSING_RIGHT)
+                lazy_gettext("Authentication failure. Last authentication policy check failed for token {serial}").format(
+                    serial=token.get_serial()), id=Error.AUTHENTICATE_MISSING_RIGHT)
 
         # TODO For the WebUI login, always require user_verification so that it is a 2FA
         request.all_data.update({FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT: "required"})
@@ -297,16 +297,16 @@ def get_auth_token():
             username = user.login
             passkey_login_success = True
         else:
-            raise AuthError(_("Authentication failure using passkey."), id=ERROR.AUTHENTICATE_WRONG_CREDENTIALS)
+            raise AuthError(lazy_gettext("Authentication failure using passkey."), id=Error.AUTHENTICATE_WRONG_CREDENTIALS)
     # End passkey login
     else:
         # The realm parameter has precedence! Check if it exists
         if realm_param and not realm_is_defined(realm_param):
-            raise AuthError(_("Authentication failure. Unknown realm:") + f" {realm_param}.",
-                            id=ERROR.AUTHENTICATE_WRONG_CREDENTIALS)
+            raise AuthError(lazy_gettext("Authentication failure. Unknown realm:") + f" {realm_param}.",
+                            id=Error.AUTHENTICATE_WRONG_CREDENTIALS)
 
         if username is None:
-            raise AuthError(_("Authentication failure. Missing Username"), id=ERROR.AUTHENTICATE_MISSING_USERNAME)
+            raise AuthError(lazy_gettext("Authentication failure. Missing Username"), id=Error.AUTHENTICATE_MISSING_USERNAME)
 
         if not user or not user.realm:
             # The user could not be resolved, but it could still be a local administrator
@@ -440,7 +440,7 @@ def get_auth_token():
                 return send_result(False, rid=2, details=details)
 
     if not admin_auth and not user_auth:
-        raise AuthError(_("Authentication failure. Wrong credentials"), id=ERROR.AUTHENTICATE_WRONG_CREDENTIALS,
+        raise AuthError(lazy_gettext("Authentication failure. Wrong credentials"), id=Error.AUTHENTICATE_WRONG_CREDENTIALS,
                         details=details or {})
     else:
         g.audit_object.log({"success": True})

@@ -45,7 +45,7 @@ from privacyidea.lib import _
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.crypto import (decryptPassword, encryptPassword,
                                     FAILED_TO_DECRYPT_PASSWORD)
-from privacyidea.lib.error import (ConfigAdminError, privacyIDEAError,
+from privacyidea.lib.error import (ConfigAdminError, PrivacyIDEAError,
                                    ResourceNotFoundError)
 from privacyidea.lib.log import log_with
 from privacyidea.lib.resolver import CENSORED
@@ -140,12 +140,12 @@ class RADIUSServer(object):
             if not response.verify_message_authenticator(original_authenticator=request_authenticator):
                 log.warning("Verification of Message-Authenticator Attribute in response failed!")
                 if verify_message_authenticator:
-                    raise privacyIDEAError("Verification of Message-Authenticator Attribute in response failed!")
+                    raise PrivacyIDEAError("Verification of Message-Authenticator Attribute in response failed!")
         except Exception as e:
             # Either there was no Message-Authenticator Attribute in the response or the secret is missing
             log.warning(f"Unable to verify Message-Authenticator Attribute in response: {e}")
             if verify_message_authenticator:
-                raise privacyIDEAError("Unable to verify Message-Authenticator Attribute in response!")
+                raise PrivacyIDEAError("Unable to verify Message-Authenticator Attribute in response!")
 
         return response
 
@@ -260,7 +260,7 @@ def add_radius(identifier: str, server: str = None, secret: str = None,
         encrypted_secret = existing_server.secret
 
     if len(encrypted_secret) > 255:
-        raise privacyIDEAError(description=_("The RADIUS secret is too long"), id=2234)
+        raise PrivacyIDEAError(description=_("The RADIUS secret is too long"), id=2234)
 
     if existing_server:
         if server is not None:
@@ -327,7 +327,7 @@ def test_radius(identifier, server, secret, user, password, port=1812, descripti
             # Maybe __CENSORED__ is the secret?
             pass
     if len(encrypted_secret) > 255:
-        raise privacyIDEAError("The RADIUS secret is too long")
+        raise PrivacyIDEAError("The RADIUS secret is too long")
     # Create a (temporary) RADIUS Server database object in order to initialize the RADUISServer object
     s = RADIUSServerDB(identifier=identifier, server=server, port=port,
                        secret=encrypted_secret, dictionary=dictionary,

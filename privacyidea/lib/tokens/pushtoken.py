@@ -57,7 +57,7 @@ from privacyidea.lib.crypto import geturandom, generate_keypair
 from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.error import (ResourceNotFoundError, ValidateError,
-                                   privacyIDEAError, ConfigAdminError, PolicyError)
+                                   PrivacyIDEAError, ConfigAdminError, PolicyError)
 from privacyidea.lib.log import log_with
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import (SCOPE, GROUP, Match,
@@ -685,7 +685,7 @@ class PushTokenClass(TokenClass):
             ts = isoparse(timestamp)
         except (ValueError, TypeError) as _e:
             log.debug(f'{traceback.format_exc()}')
-            raise privacyIDEAError(f'Could not parse timestamp {timestamp}. ISO-Format required.')
+            raise PrivacyIDEAError(f'Could not parse timestamp {timestamp}. ISO-Format required.')
         td = timedelta(minutes=window)
         # We don't know if the passed timestamp is timezone aware. If no
         # timezone is passed, we assume UTC
@@ -698,7 +698,7 @@ class PushTokenClass(TokenClass):
             # We need to add the timezone UTC to the naive timestamp
             ts = ts.replace(tzinfo=timezone.utc)
         if not (now - td <= ts <= now + td):
-            raise privacyIDEAError(f'Timestamp {timestamp} not in valid range.')
+            raise PrivacyIDEAError(f'Timestamp {timestamp} not in valid range.')
 
     @classmethod
     def _api_endpoint_post(cls, request_data):
@@ -806,7 +806,7 @@ class PushTokenClass(TokenClass):
                 # signature error, even if the token with the serial could not be found
                 log.debug(f'{traceback.format_exc()}')
                 log.info(f'The following error occurred during the signature check: "{e}"')
-                raise privacyIDEAError('Could not verify signature!')
+                raise PrivacyIDEAError('Could not verify signature!')
         else:
             raise ParameterError("Missing parameters!")
 
@@ -888,7 +888,7 @@ class PushTokenClass(TokenClass):
             # signature error even if the token with the serial could not be found
             log.debug(f'{traceback.format_exc()}')
             log.info(f'The following error occurred during the signature check: "{e}"')
-            raise privacyIDEAError('Could not verify signature!')
+            raise PrivacyIDEAError('Could not verify signature!')
 
         return result
 
@@ -976,7 +976,7 @@ class PushTokenClass(TokenClass):
         elif request.method == 'GET':
             result = cls._api_endpoint_get(g, request.all_data)
         else:
-            raise privacyIDEAError(f'Method {request.method} not allowed in \'api_endpoint\' for push token.')
+            raise PrivacyIDEAError(f'Method {request.method} not allowed in \'api_endpoint\' for push token.')
 
         return "json", prepare_result(result, details=details)
 

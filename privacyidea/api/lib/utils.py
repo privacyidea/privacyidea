@@ -35,11 +35,11 @@ import jwt
 from flask import (jsonify,
                    current_app, Response)
 
-from privacyidea.lib import _
+from privacyidea.lib import lazy_gettext
 from privacyidea.lib.utils import (prepare_result, get_version, to_unicode,
                                    get_plugin_info_from_useragent)
 from ...lib.error import (ParameterError, PolicyError, ResourceNotFoundError,
-                          privacyIDEAError, AuthError, ERROR)
+                          PrivacyIDEAError, AuthError, Error)
 from ...lib.log import log_with
 
 log = logging.getLogger(__name__)
@@ -398,13 +398,13 @@ def verify_auth_token(auth_token, required_role=None):
     if required_role is None:
         required_role = ["admin", "user"]
     if auth_token is None:
-        raise AuthError(_("Authentication failure. Missing Authorization header."), id=ERROR.AUTHENTICATE_AUTH_HEADER)
+        raise AuthError(lazy_gettext("Authentication failure. Missing Authorization header."), id=Error.AUTHENTICATE_AUTH_HEADER)
 
     try:
         headers = jwt.get_unverified_header(auth_token)
     except jwt.DecodeError as err:
-        raise AuthError(_("Authentication failure. Error decoding the Authorization token:") + f" {err!s}",
-                        id=ERROR.AUTHENTICATE_DECODING_ERROR)
+        raise AuthError(lazy_gettext("Authentication failure. Error decoding the Authorization token:") + f" {err!s}",
+                        id=Error.AUTHENTICATE_DECODING_ERROR)
     algorithm = headers.get("alg")
     wrong_username = None
     if algorithm in TRUSTED_JWT_ALGOS:
@@ -427,27 +427,27 @@ def verify_auth_token(auth_token, required_role=None):
                 log.info("A given JWT definition does not match.")
             except jwt.ExpiredSignatureError as err:
                 # We have the correct token. It expired, so we raise an error
-                raise AuthError(_("Authentication failure. Your token has expired:") + f" {err!s}",
-                                id=ERROR.AUTHENTICATE_TOKEN_EXPIRED)
+                raise AuthError(lazy_gettext("Authentication failure. Your token has expired:") + f" {err!s}",
+                                id=Error.AUTHENTICATE_TOKEN_EXPIRED)
 
     if not r:
         try:
             r = jwt.decode(auth_token, current_app.secret_key, algorithms=['HS256'])
         except jwt.DecodeError as err:
-            raise AuthError(_("Authentication failure. Error decoding the Authorization token:") + f" {err!s}",
-                            id=ERROR.AUTHENTICATE_DECODING_ERROR)
+            raise AuthError(lazy_gettext("Authentication failure. Error decoding the Authorization token:") + f" {err!s}",
+                            id=Error.AUTHENTICATE_DECODING_ERROR)
         except jwt.ExpiredSignatureError as err:
-            raise AuthError(_("Authentication failure. Your token has expired:") + f" {err!s}",
-                            id=ERROR.AUTHENTICATE_TOKEN_EXPIRED)
+            raise AuthError(lazy_gettext("Authentication failure. Your token has expired:") + f" {err!s}",
+                            id=Error.AUTHENTICATE_TOKEN_EXPIRED)
     if wrong_username:
-        raise AuthError(_("Authentication failure. The username {wrong_username} "
+        raise AuthError(lazy_gettext("Authentication failure. The username {wrong_username} "
                           "is not allowed to impersonate via JWT.").format(wrong_username=wrong_username))
     if required_role and r.get("role") not in required_role:
         # If we require a certain role like "admin", but the users role does
         # not match
-        raise AuthError(_("Authentication failure. You do not have the necessary "
+        raise AuthError(lazy_gettext("Authentication failure. You do not have the necessary "
                           "role ({required_role}) to access this resource!").format(required_role=required_role),
-                        id=ERROR.AUTHENTICATE_MISSING_RIGHT)
+                        id=Error.AUTHENTICATE_MISSING_RIGHT)
     return r
 
 
@@ -462,10 +462,10 @@ def check_policy_name(name):
                            ("^pi-update-policy-", re.IGNORECASE)]
     for disallowed_pattern in disallowed_patterns:
         if re.search(disallowed_pattern[0], name, flags=disallowed_pattern[1]):
-            raise ParameterError(_("Invalid policy name:") + f" {name}")
+            raise ParameterError(lazy_gettext("Invalid policy name:") + f" {name}")
 
     if not re.match(r'^[a-zA-Z0-9_.\- ]*$', name):
-        raise ParameterError(_("The name of the policy may only contain the characters a-zA-Z0-9_. -"))
+        raise ParameterError(lazy_gettext("The name of the policy may only contain the characters a-zA-Z0-9_. -"))
 
 
 def attestation_certificate_allowed(cert_info, allowed_certs_pols):
@@ -526,7 +526,7 @@ def is_fqdn(x):
 
 def map_error_to_code(error: Exception, default: int = 500) -> int:
     error_mapping: dict[type[Exception], int] = {
-        privacyIDEAError: 400,
+        PrivacyIDEAError: 400,
         AuthError: 401,
         PolicyError: 403,
         ResourceNotFoundError: 404,

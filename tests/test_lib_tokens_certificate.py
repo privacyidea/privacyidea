@@ -14,7 +14,7 @@ from privacyidea.lib.caconnector import save_caconnector
 from privacyidea.lib.caconnectors.baseca import AvailableCAConnectors
 from privacyidea.lib.caconnectors.msca import ATTR as MS_ATTR
 from privacyidea.lib.caconnectors.msca import MSCAConnector
-from privacyidea.lib.error import ParameterError, privacyIDEAError
+from privacyidea.lib.error import ParameterError, PrivacyIDEAError
 from privacyidea.lib.policy import set_policy, delete_policy, PolicyClass, SCOPE
 from privacyidea.lib.token import get_tokens, remove_token, import_tokens
 from privacyidea.lib.token import init_token
@@ -400,7 +400,7 @@ class CertificateTokenTestCase(MyTestCase):
         token = CertificateTokenClass(db_token)
 
         # A cert request will fail, since the attestation certificate does not match
-        self.assertRaises(privacyIDEAError,
+        self.assertRaises(PrivacyIDEAError,
                           token.update,
                           {"ca": "localCA",
                            "attestation": BOGUS_ATTESTATION,

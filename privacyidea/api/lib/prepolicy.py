@@ -80,7 +80,7 @@ from privacyidea.api.lib.policyhelper import (get_init_tokenlabel_parameters,
                                               UserAttributes,
                                               get_container_user_attributes)
 from privacyidea.api.lib.utils import getParam, attestation_certificate_allowed, is_fqdn, get_optional
-from privacyidea.lib import _
+from privacyidea.lib import lazy_gettext
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.clientapplication import save_clientapplication
 from privacyidea.lib.config import get_token_class
@@ -777,7 +777,7 @@ def verify_enrollment(request=None, action=None):
                     # TODO: we need to add the tokentype here or the second init_token() call fails
                     request.all_data.update(type=tokenobj.get_tokentype())
                     tokenobj.token.rollout_state = ROLLOUTSTATE.ENROLLED
-                    tokenobj.token.save() # todo evaluate
+                    tokenobj.token.save()  # todo evaluate
                 else:
                     from privacyidea.lib.error import ParameterError
                     raise ParameterError("Verification of the new token failed.")
@@ -2604,7 +2604,8 @@ def require_description(request=None, action=None):
         # only if no token exists, yet, we need to check the description
         if not token and not request.all_data.get("description"):
             log.error(f"Missing description for {type_value} token.")
-            raise PolicyError(_(f"Description required for {type_value} token."))
+            raise PolicyError(
+                lazy_gettext("Description required for {type_value} token.").format(type_value=type_value))
 
 
 def require_description_on_edit(request=None, action=None):
@@ -2639,7 +2640,11 @@ def require_description_on_edit(request=None, action=None):
         description = request.all_data.get("description", "").strip()
         if not description:
             log.error(f"Missing description for {type_value} token.")
-            raise PolicyError(_(f"Description required for {type_value} token."))
+            raise PolicyError(
+                lazy_gettext("Description required for {type_value} token.").format(
+                    type_value=type_value
+                )
+            )
 
 
 def jwt_validity(request, action):
@@ -2869,7 +2874,7 @@ def auth_timelimit(request, action):
         result, reply_dict = check_max_auth_success(user, user_search_dict, check_validate_check=not local_admin)
 
     if not result:
-        raise AuthError(_("Authentication failure. The account has exceeded the authentication time limit!"),
+        raise AuthError(lazy_gettext("Authentication failure. The account has exceeded the authentication time limit!"),
                         details=reply_dict)
 
     return True

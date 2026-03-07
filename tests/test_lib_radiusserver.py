@@ -6,7 +6,7 @@ from testfixtures import LogCapture
 import pyrad
 
 from .base import MyTestCase
-from privacyidea.lib.error import ConfigAdminError, privacyIDEAError
+from privacyidea.lib.error import ConfigAdminError, PrivacyIDEAError
 from privacyidea.lib.radiusserver import (add_radius, delete_radius,
                                           get_radiusservers, get_radius,
                                           test_radius)
@@ -124,7 +124,7 @@ class RADIUSServerTestCase(MyTestCase):
                                       "Challenge-Response (Answer: ['Please enter OTP'])"))
 
         # raises error on long secrets
-        self.assertRaises(privacyIDEAError,
+        self.assertRaises(PrivacyIDEAError,
                           test_radius,
                           identifier="myserver", server="1.2.3.4",
                           user="user", password="password",
@@ -152,7 +152,7 @@ class RADIUSServerTestCase(MyTestCase):
         radius = get_radius("myserver")
         radiusmock.setdata(response=radiusmock.AccessAccept)
         with LogCapture(level=logging.WARNING) as lc:
-            self.assertRaises(privacyIDEAError, radius.request, "user", "password")
+            self.assertRaises(PrivacyIDEAError, radius.request, "user", "password")
             self.assertTrue(lc.records[0].message.startswith("Unable to verify Message-Authenticator "
                                                              "Attribute in response:"))
         delete_radius("myserver")

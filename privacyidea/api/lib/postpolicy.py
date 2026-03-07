@@ -57,7 +57,7 @@ from flask import g, current_app, make_response, Request
 
 from privacyidea.api.lib.utils import get_all_params
 from privacyidea.config import ConfigKey
-from privacyidea.lib import _, lazy_gettext
+from privacyidea.lib import lazy_gettext
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.config import get_multichallenge_enrollable_types, get_token_class, get_privacyidea_node
 from privacyidea.lib.crypto import Sign
@@ -909,7 +909,7 @@ def container_create_via_multichallenge(request: Request, content: dict, contain
         message_policies = Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.ENROLL_VIA_MULTICHALLENGE_TEXT,
                                       user_object=user).action_values(unique=True, write_to_audit_log=False,
                                                                       allow_white_space_in_action=True)
-        message = _("Please scan the QR code to register the container.")
+        message = str(lazy_gettext("Please scan the QR code to register the container."))
         if message_policies:
             message = list(message_policies)[0]
         # Registration
@@ -976,7 +976,7 @@ def hide_specific_error_message(request, response):
         if hide_message:
             content = response.json
             threadid = content.get("detail", {}).get("threadid")
-            detail = {"message": _("Authentication failed.")}
+            detail = {"message": str(lazy_gettext("Authentication failed."))}
             if threadid:
                 detail["threadid"] = threadid
             # Overwrite the whole detail object so that it always has the same content
