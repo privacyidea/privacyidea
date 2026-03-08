@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2025 NetKnights GmbH <https://netknights.it>
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
 # http://www.privacyidea.org
 # (c) cornelius kölbel, privacyidea.org
 #
@@ -27,7 +30,7 @@ import logging
 
 from flask import g, Blueprint, request
 
-from privacyidea.api.auth import admin_required, user_required
+from privacyidea.api.auth import admin_required
 from privacyidea.api.lib.prepolicy import prepolicy, check_base_action, realmadmin, check_custom_user_attributes
 from privacyidea.api.lib.utils import getParam, send_result
 from privacyidea.lib.error import ParameterError
@@ -45,7 +48,6 @@ user_blueprint = Blueprint('user_blueprint', __name__)
 @user_blueprint.route('/', methods=['GET'])
 @prepolicy(realmadmin, request, PolicyAction.USERLIST)
 @prepolicy(check_base_action, request, PolicyAction.USERLIST)
-@user_required
 @event("user_list", request, g)
 def get_users():
     """
@@ -119,7 +121,6 @@ def get_users():
 
 @user_blueprint.route('/attribute', methods=['POST'])
 @prepolicy(check_custom_user_attributes, request, "set")
-@user_required
 @event("set_custom_user_attribute", request, g)
 def set_user_attribute():
     """
@@ -159,7 +160,6 @@ def set_user_attribute():
 
 
 @user_blueprint.route('/attribute', methods=['GET'])
-@user_required
 @event("get_user_attribute", request, g)
 def get_user_attribute():
     """
@@ -186,7 +186,6 @@ def get_user_attribute():
 
 
 @user_blueprint.route('/editable_attributes/', methods=['GET'])
-@user_required
 @event("get_editable_attributes", request, g)
 def get_editable_attributes():
     """
@@ -209,7 +208,6 @@ def get_editable_attributes():
 
 @user_blueprint.route('/attribute/<attrkey>/<username>/<realm>', methods=['DELETE'])
 @prepolicy(check_custom_user_attributes, request, "delete")
-@user_required
 @event("delete_custom_user_attribute", request, g)
 def delete_user_attribute(attrkey, username, realm=None):
     """
