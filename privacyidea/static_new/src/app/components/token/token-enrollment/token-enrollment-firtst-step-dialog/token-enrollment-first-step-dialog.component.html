@@ -1,5 +1,5 @@
 <!--
- (c) NetKnights GmbH 2026,  https://netknights.it
+ (c) NetKnights GmbH 2026, https://netknights.it
 
  This code is free software; you can redistribute it and/or
  modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -12,21 +12,19 @@
  GNU AFFERO GENERAL PUBLIC LICENSE for more details.
 
  You should have received a copy of the GNU Affero General Public
- License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ License along with this program. If not, see <http://www.gnu.org/licenses/>.
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <app-dialog-wrapper
-  title="Take action on your authenticator"
+  (close)="close()"
   [showCancelButton]="true"
-  (close)="close()">
+  title="Take action on your authenticator">
   <mat-dialog-content>
-    @if (
-      data.enrollmentResponse.detail["webAuthnRegisterRequest"] || data.enrollmentResponse.detail.passkey_registration
-    ) {
+    @if (data.enrollmentResponse.detail["webAuthnRegisterRequest"] || data.enrollmentResponse.detail.passkey_registration) {
       <p
-        i18n
-        class="max-width-600">
+        class="max-width-600"
+        i18n>
         You need to confirm the registration with your authenticator. For an external authenticator, this usually means
         pushing the button on the authenticator, or replugging it (if there is no button on the authenticator). If you
         want to use an authenticator that is integrated into your device, look for a dialog box from your operating
@@ -35,8 +33,8 @@
     }
     @if (data.enrollmentResponse.detail.u2fRegisterRequest) {
       <p
-        i18n
-        class="max-width-600">
+        class="max-width-600"
+        i18n>
         You need to confirm the registration with your token either by pushing the blinking button or by replugging your
         token. This depends on the actual token model.
       </p>
@@ -44,10 +42,10 @@
     @if (data.enrollmentResponse.detail.pushurl) {
       <div class="flex-row gap-16">
         <img
-          i18n-alt
           alt="QR Code"
           class="qr-code"
           height="300px"
+          i18n-alt
           src="{{ data.enrollmentResponse.detail.pushurl.img }}"
           width="300px" />
         <p class="max-width-600">

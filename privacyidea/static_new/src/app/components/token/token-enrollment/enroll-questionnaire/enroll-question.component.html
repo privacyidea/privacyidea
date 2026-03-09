@@ -25,8 +25,7 @@
     class="margin-top-16 form-group">
     @for (question of configQuestions(); track question; let i = $index) {
       <mat-form-field
-        class="question-input-width"
-        subscriptSizing="dynamic">
+        class="question-input-width">
         <mat-label>{{ question.question }}</mat-label>
         <input
           [formControlName]="questionControlNames()[i]"

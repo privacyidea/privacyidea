@@ -1,5 +1,5 @@
 <!--
- (c) NetKnights GmbH 2026,  https://netknights.it
+ (c) NetKnights GmbH 2026, https://netknights.it
 
  This code is free software; you can redistribute it and/or
  modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -12,52 +12,52 @@
  GNU AFFERO GENERAL PUBLIC LICENSE for more details.
 
  You should have received a copy of the GNU Affero General Public
- License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ License along with this program. If not, see <http://www.gnu.org/licenses/>.
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 
 <app-dialog-wrapper
-  title="Verify Token Enrollment"
-  i18n-title="@@tokenEnrollVerifyTitle"
-  [showCancelButton]="true"
-  [actions]="dialogActions()"
-  (onAction)="onDialogAction($event)"
-  cancelButtonLabel="Close"
-  i18n-cancelButtonLabel="@@closeButtonLabel"
-  (close)="close()">
+ title="Verify Token Enrollment"
+ i18n-title="@@tokenEnrollVerifyTitle"
+ [showCancelButton]="true"
+ [actions]="dialogActions()"
+ (onAction)="onDialogAction($event)"
+ cancelButtonLabel="Close"
+ i18n-cancelButtonLabel="@@closeButtonLabel"
+ (close)="close()">
 
-  <app-token-enrolled-text
-    [serial]="responseDetails?.serial"
-    [containerSerial]="enrollData?.containerSerial"
-    [username]="enrollData?.user"
-    [userRealm]="enrollData?.realm"
-    [onlyAddToRealm]="enrollData?.onlyAddToRealm"
-    [rollover]="data.rollover ?? false"
-    (switchRoute)="onSwitchRoute()"></app-token-enrolled-text>
+ <app-token-enrolled-text
+ [serial]="responseDetails?.serial"
+ [containerSerial]="enrollData?.containerSerial"
+ [username]="enrollData?.user"
+ [userRealm]="enrollData?.realm"
+ [onlyAddToRealm]="enrollData?.onlyAddToRealm"
+ [rollover]="data.rollover ?? false"
+ (switchRoute)="onSwitchRoute()"></app-token-enrolled-text>
 
-  <span
-    class="margin-bottom-16"
-    i18n>However, to activate your token you still need to verify the enrollment.</span>
+ <span
+ class="margin-bottom-16"
+ i18n>However, to activate your token you still need to verify the enrollment.</span>
 
-  @if (data.showEnrollData !== false) {
-    <app-token-enrollment-data
-      [enrolledInputData]="responseDetails"
-      [tokenType]="tokenType"
-      [enrollmentParameters]="enrollParameters"></app-token-enrollment-data>
-  }
+ @if (data.showEnrollData !== false) {
+ <app-token-enrollment-data
+ [enrolledInputData]="responseDetails"
+ [tokenType]="tokenType"
+ [enrollmentParameters]="enrollParameters"></app-token-enrollment-data>
+ }
 
-  <div class="margin-top-16">
-    <h3 i18n>Verify Enrollment</h3>
-  </div>
-  <mat-form-field class="width-100">
-    <mat-label i18n>OTP</mat-label>
-    <input
-      [formControl]="verifyOTPControl"
-      matInput />
-    <mat-hint>
-      {{ verifyMessage }}
-    </mat-hint>
-  </mat-form-field>
+ <div class="margin-top-16">
+ <h3 i18n>Verify Enrollment</h3>
+ </div>
+ <mat-form-field class="width-100">
+ <mat-label i18n>OTP</mat-label>
+ <input
+ [formControl]="verifyOTPControl"
+ matInput />
+ <mat-hint>
+ {{ verifyMessage }}
+ </mat-hint>
+ </mat-form-field>
 
 </app-dialog-wrapper>

@@ -32,8 +32,7 @@
       <div class="sticky-controls ali-center">
         <div class="select-token-type-container">
           <mat-form-field
-            class="width-100"
-            subscriptSizing="dynamic">
+            class="width-100">
             <mat-select
               [(ngModel)]="tokenService.selectedTokenType"
               [ngModelOptions]="{ standalone: true }"
@@ -41,9 +40,9 @@
               [value]="tokenService.selectedTokenType()">
               @for (type of tokenService.tokenTypeOptions(); track type) {
                 <mat-option
-                  class="select-option"
+                  [matTooltip]="type.info.split(':')[1]"
                   [value]="type"
-                  [matTooltip]="type.info.split(':')[1]">
+                  class="select-option">
                   {{ type.info.split(":")[0] }}
                 </mat-option>
               }
@@ -239,10 +238,8 @@
             class="input input-width-l"
             placeholder="Repeat PIN" />
         </div>
-        @if (
-          formGroupSignal().hasError("pinMismatch") &&
-          (formGroupSignal().get("setPin")?.touched || formGroupSignal().get("repeatPin")?.touched)
-        ) {
+        @if (formGroupSignal().hasError("pinMismatch") &&
+        (formGroupSignal().get("setPin")?.touched || formGroupSignal().get("repeatPin")?.touched)) {
           <mat-error class="pin-error">PINs do not match.</mat-error>
         }
       </div>
@@ -252,7 +249,7 @@
       @if (authService.actionAllowed("container_list")) {
         <div class="flex-column width-100">
           <h4>Add Token to a Container</h4>
-          <mat-form-field class="input-width-l" subscriptSizing="dynamic">
+          <mat-form-field class="input-width-l">
             <mat-label>Enter Container</mat-label>
             <app-clearable-input
               (onClick)="selectedContainerControl.setValue(null)"

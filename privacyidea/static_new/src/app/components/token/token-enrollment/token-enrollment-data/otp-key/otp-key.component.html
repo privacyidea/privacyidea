@@ -1,5 +1,5 @@
 <!--
- (c) NetKnights GmbH 2026,  https://netknights.it
+ (c) NetKnights GmbH 2026, https://netknights.it
 
  This code is free software; you can redistribute it and/or
  modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -12,18 +12,18 @@
  GNU AFFERO GENERAL PUBLIC LICENSE for more details.
 
  You should have received a copy of the GNU Affero General Public
- License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ License along with this program. If not, see <http://www.gnu.org/licenses/>.
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <mat-accordion class="otpkey-expansion">
-  <mat-expansion-panel>
-    <mat-expansion-panel-header>
-      <mat-panel-title i18n> OTP Key</mat-panel-title>
-    </mat-expansion-panel-header>
-    <p class="otpkey-p">Hex: {{ otpKeyHex }}</p>
-    @if (otpKeyBase32) {
-      <p class="otpkey-p">Base32: {{ otpKeyBase32 }}</p>
-    }
-  </mat-expansion-panel>
+ <mat-expansion-panel>
+ <mat-expansion-panel-header>
+ <mat-panel-title i18n> OTP Key</mat-panel-title>
+ </mat-expansion-panel-header>
+ <p class="otpkey-p">Hex: {{ otpKeyHex }}</p>
+ @if (otpKeyBase32) {
+ <p class="otpkey-p">Base32: {{ otpKeyBase32 }}</p>
+ }
+ </mat-expansion-panel>
 </mat-accordion>

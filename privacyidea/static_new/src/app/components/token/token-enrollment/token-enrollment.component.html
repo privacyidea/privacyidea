@@ -32,8 +32,7 @@
       <div class="sticky-controls ali-center">
         <div class="select-token-type-container">
           <mat-form-field
-            class="width-100"
-            subscriptSizing="dynamic">
+            class="width-100">
             <mat-select
               [(ngModel)]="tokenService.selectedTokenType"
               [ngModelOptions]="{ standalone: true }"
@@ -213,8 +212,7 @@
         }
       }
       <mat-form-field
-        class="width-100 margin-top-16"
-        subscriptSizing="dynamic">
+        class="width-100 margin-top-16">
         <mat-label>Description</mat-label>
         <textarea
           [formControl]="descriptionControl"
@@ -230,8 +228,8 @@
             <app-user-assignment
               [selectedUserRealmControl]="selectedUserRealmControl"
               [showOnlyAddToRealm]="
-              !['passkey', 'webauthn', 'tiqr', 'push'].includes(tokenService.selectedTokenType().key)
-            "
+ !['passkey', 'webauthn', 'tiqr', 'push'].includes(tokenService.selectedTokenType().key)
+ "
               [userFilterControl]="userFilterControl"></app-user-assignment>
           </div>
         }
@@ -273,7 +271,7 @@
         @if (authService.actionAllowed("container_list")) {
           <div class="flex-column">
             <h4>Add Token to a Container</h4>
-            <mat-form-field class="input-width-l input-height">
+            <mat-form-field class="input-width-l">
               <app-clearable-input
                 (onClick)="selectedContainerControl.setValue('')"
                 [showClearButton]="containerService.selectedContainer() !== ''">

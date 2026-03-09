@@ -36,40 +36,41 @@
         Remote Server is <strong>required</strong>
       </mat-error>
     </mat-form-field>
-    <mat-form-field
-      class="input-width-l">
+    <mat-form-field class="input-width-l">
       <mat-label i18n>Remote Serial</mat-label>
       <input
+        [errorStateMatcher]="remoteErrorStateMatcher"
         [formControl]="remoteSerialControl"
-        matInput />
-      <mat-error>Remote Serial is <strong>required</strong></mat-error>
+        matInput
+        required />
+      <mat-error i18n>Remote Serial is <strong>required</strong></mat-error>
     </mat-form-field>
   </div>
   <div class="otp-inputs-container">
-    <mat-form-field
-      class="input-width-l">
+    <mat-form-field class="input-width-l">
       <mat-label i18n>Remote User</mat-label>
       <input
+        [errorStateMatcher]="remoteErrorStateMatcher"
         [formControl]="remoteUserControl"
-        matInput />
-      <!-- Assuming optional based on TS -->
+        matInput
+        required />
       <mat-error i18n>Remote User is <strong>required</strong></mat-error>
     </mat-form-field>
     <mat-form-field
-      class="input-width-l"
-      subscriptSizing="dynamic">
+      class="input-width-l">
       <mat-label i18n>Remote Realm</mat-label>
       <input
         [formControl]="remoteRealmControl"
         matInput />
     </mat-form-field>
-    <mat-form-field
-      class="input-width-l">
+    <mat-form-field class="input-width-l">
       <mat-label i18n>Remote Resolver</mat-label>
       <input
+        [errorStateMatcher]="remoteErrorStateMatcher"
         [formControl]="remoteResolverControl"
-        matInput />
-      <mat-error>Remote Resolver is <strong>required</strong></mat-error>
+        matInput
+        required />
+      <mat-error i18n>Remote Resolver is <strong>required</strong></mat-error>
     </mat-form-field>
   </div>
 </div>
