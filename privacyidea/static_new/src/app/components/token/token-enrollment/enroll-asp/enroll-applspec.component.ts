@@ -70,6 +70,7 @@ export class EnrollApplspecComponent implements OnInit {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
 
+  enrollmentData = input<ApplspecEnrollmentData>();
   @Input() wizard: boolean = false;
   @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
@@ -100,6 +101,49 @@ export class EnrollApplspecComponent implements OnInit {
 
   serviceIdOptions = computed(() => this.serviceIdService.serviceIds().map((s) => s.servicename) || []);
   applspecErrorStateMatcher = new ApplspecErrorStateMatcher();
+
+  constructor() {
+    effect(() => (this.disabled() ? this._disableFormControls() : this._enableFormControls()));
+  }
+
+  ngOnInit(): void {
+    this._setInitialFormValues();
+    this.additionalFormFieldsChange.emit({
+      serviceId: this.serviceIdControl,
+      generateOnServer: this.generateOnServerControl,
+      otpKey: this.otpKeyFormControl
+    });
+    this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
+    this._applyPolicies();
+  }
+
+  private _setInitialFormValues() {
+    if (!!this.enrollmentData()) {
+      this.serviceIdControl.setValue(this.enrollmentData()!.serviceId ?? "");
+      this.generateOnServerControl.setValue(this.enrollmentData()!.generateOnServer ?? true);
+      if (!this.enrollmentData()!.generateOnServer) {
+        this.otpKeyFormControl.setValue(this.enrollmentData()!.otpKey ?? "");
+      }
+    }
+  }
+
+  private _applyPolicies() {
+    if (this.authService.checkForceServerGenerateOTPKey("applspec")) {
+      this.generateOnServerControl.disable({ emitEvent: false });
+    } else {
+      this.generateOnServerControl.valueChanges.subscribe((generate) => {
+        if (!generate) {
+          this.otpKeyFormControl.enable({ emitEvent: false });
+          this.otpKeyFormControl.setValidators([Validators.required]);
+        } else {
+          this.otpKeyFormControl.disable({ emitEvent: false });
+          this.otpKeyFormControl.clearValidators();
+        }
+        this.otpKeyFormControl.updateValueAndValidity();
+      });
+    }
+  }
+
   enrollmentArgsGetter = (
     basicOptions: TokenEnrollmentData
   ): {
@@ -129,39 +173,4 @@ export class EnrollApplspecComponent implements OnInit {
       mapper: this.enrollmentMapper
     };
   };
-
-  constructor() {
-    effect(() => {
-      const compDisabled = this.disabled();
-      const otpKeyDisabled = this.isOtpKeyDisabled();
-
-      if (compDisabled) {
-        this.applspecForm.disable({ emitEvent: false });
-      } else {
-        this.applspecForm.enable({ emitEvent: false });
-        if (otpKeyDisabled) {
-          this.otpKeyFormControl.disable({ emitEvent: false });
-        }
-      }
-
-      if (otpKeyDisabled) {
-        this.otpKeyFormControl.clearValidators();
-        if (!compDisabled) {
-          this.otpKeyFormControl.markAsUntouched();
-        }
-      } else {
-        this.otpKeyFormControl.setValidators([Validators.required]);
-      }
-      this.otpKeyFormControl.updateValueAndValidity();
-    });
-  }
-
-  ngOnInit(): void {
-    this.additionalFormFieldsChange.emit({
-      serviceId: this.serviceIdControl,
-      generateOnServer: this.generateOnServerControl,
-      otpKey: this.otpKeyFormControl
-    });
-    this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
-  }
 }

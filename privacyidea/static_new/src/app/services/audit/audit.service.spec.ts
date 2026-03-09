@@ -23,7 +23,7 @@ import { environment } from "../../../environments/environment";
 import { provideHttpClient } from "@angular/common/http";
 import { signal } from "@angular/core";
 import { AuthService } from "../auth/auth.service";
-import { FilterValue } from "../../core/models/filter_value";
+import { FilterValue } from "../../core/models/filter_value/filter_value";
 import { MockContentService, MockLocalService, MockNotificationService } from "../../../testing/mock-services";
 import { MockAuthService } from "../../../testing/mock-services/mock-auth-service";
 

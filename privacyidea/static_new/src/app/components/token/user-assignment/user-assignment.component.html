@@ -66,11 +66,13 @@
     }
   </mat-form-field>
   @if (showOnlyAddToRealm()) {
-    <mat-checkbox
-      (change)="onOnlyAddToRealmChange($event)"
-      [checked]="onlyAddToRealm()"
-      [disabled]="!!userFilterCtrl.value">
-      Only add to the realm (no user assignment)
-    </mat-checkbox>
+    <div class="margin-bottom-16">
+      <mat-checkbox
+        [checked]="onlyAddToRealm()"
+        [disabled]="!!userFilterCtrl.value"
+        (change)="onOnlyAddToRealmChange($event)">
+        Only add to the realm (no user assignment)
+      </mat-checkbox>
+    </div>
   }
 </div>

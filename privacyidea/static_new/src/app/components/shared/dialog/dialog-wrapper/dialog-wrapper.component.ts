@@ -21,7 +21,7 @@ import { Component, input, output } from "@angular/core";
 import { assert } from "../../../../utils/assert";
 import { DialogAction } from "../../../../models/dialog";
 import { CommonModule } from "@angular/common";
-import { MatDialogClose, MatDialogModule } from "@angular/material/dialog";
+import { MatDialogModule } from "@angular/material/dialog";
 import { MatIcon, MatIconModule } from "@angular/material/icon";
 import { MatButton } from "@angular/material/button";
 import { A11yModule } from "@angular/cdk/a11y";

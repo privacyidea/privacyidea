@@ -30,20 +30,13 @@
         class="margin-top-16"></div>
     } @else {
       <h2 i18n>Token Successfully Enrolled</h2>
-      <div class="margin-bottom-16">
-        <span i18n>
-          The token was successfully enrolled with serial number
-          <a (click)="tokenSelected(serial)"> {{ serial }} </a>.
-        </span>
-        @if (url && showQRCode()) {
-          <app-qr-code-text
-            [tokenType]="data.tokentype.key"
-            [url]="url"
-            [showRegenerateText]="false" />
-        }
-      </div>
-    }
 
+      <app-token-enrolled-text
+        [serial]="serial"
+        [rollover]="data.rollover ?? false"
+        (switchRoute)="onSwitchRoute()"></app-token-enrolled-text>
+
+    }
     <div class="flex-row gap-16">
       @if (showQRCode() && qrCode) {
         <img
@@ -55,36 +48,37 @@
           width="300px" />
       }
 
-      <div class="flex-column gap-16">
-        @if (data.response.detail["password"]) {
-          <p i18n>
-            Your Password: <strong>{{ data.response.detail["password"] }}</strong
-            >.
-          </p>
-        }
+      @if (data.showEnrollData !== false) {
+        <div class="flex-column gap-16">
+          @if (data.response?.detail?.["password"]) {
+            <p i18n>
+              Your Password: <strong>{{ data.response?.detail?.["password"] }}</strong>.
+            </p>
+          }
 
-        @if (data.response.detail.otpkey?.value && !data.response.detail["otps"] && showQRCode()) {
-          <app-otp-key
-            [otpKeyHex]="data.response.detail.otpkey?.value ?? ''"
-            [otpKeyBase32]="data.response.detail.otpkey?.value_b32 ?? ''" />
-        }
+          @if (data.response?.detail?.otpkey?.value && !data.response?.detail?.["otps"] && showQRCode()) {
+            <app-otp-key
+              [otpKeyHex]="data.response?.detail?.otpkey?.value ?? ''"
+              [otpKeyBase32]="data.response?.detail?.otpkey?.value_b32 ?? ''" />
+          }
 
-        @if (data.tokentype.key === "tiqr") {
-          <app-tiqr-enroll-url [url]="data.response.detail['tiqrenroll']?.value ?? ''" />
-        }
+          @if (data.tokenType === "tiqr") {
+            <app-tiqr-enroll-url [url]="data.response?.detail?.['tiqrenroll']?.value ?? ''" />
+          }
 
-        @if (data.tokentype.key === "registration") {
-          <app-registration-code [registrationCode]="data.response.detail['registrationcode']" />
-        }
+          @if (data.tokenType === "registration") {
+            <app-registration-code [registrationCode]="data.response?.detail?.['registrationcode'] ?? ''" />
+          }
 
-        @if (data.response.detail["otps"]) {
-          <app-otp-values [otpValues]="data.response.detail['otps']" />
-        }
-      </div>
+          @if (data.response?.detail?.["otps"]) {
+            <app-otp-values [otpValues]="data.response?.detail?.['otps'] ?? []" />
+          }
+        </div>
+      }
+
+      <div
+        [innerHTML]="postBottomHtml$ | async"
+        class="margin-bottom-16"></div>
     </div>
-
-    <div
-      [innerHTML]="postBottomHtml$ | async"
-      class="margin-bottom-16"></div>
   </mat-dialog-content>
 </app-dialog-wrapper>

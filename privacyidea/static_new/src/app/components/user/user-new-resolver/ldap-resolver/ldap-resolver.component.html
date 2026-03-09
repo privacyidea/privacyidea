@@ -387,6 +387,24 @@
       @if (recursiveGroupSearchControl.value) {
         <mat-form-field class="field-lg">
           <mat-label i18n>
+            Base DN of User Groups
+          </mat-label>
+          <mat-hint i18n>
+            Enter the base DN for the user groups. Leave this field empty if the groups are located in the same base DN
+            as defined for the users above.
+          </mat-hint>
+          <app-clearable-input
+            (onClick)="groupBaseDNControl.setValue('')"
+            [showClearButton]="!!groupBaseDNControl.value">
+            <input
+              [formControl]="groupBaseDNControl"
+              matInput
+              placeholder="ou=groups,dc=domain,dc=tld" />
+          </app-clearable-input>
+        </mat-form-field>
+
+        <mat-form-field class="field-lg">
+          <mat-label i18n>
             Search Filter for User Groups
           </mat-label>
           <mat-hint>

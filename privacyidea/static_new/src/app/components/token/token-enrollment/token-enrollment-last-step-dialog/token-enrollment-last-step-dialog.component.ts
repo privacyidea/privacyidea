@@ -16,25 +16,21 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, inject } from "@angular/core";
+import { Component, computed, inject, Signal } from "@angular/core";
 import { DialogWrapperComponent } from "../../../shared/dialog/dialog-wrapper/dialog-wrapper.component";
-
-import { OtpValuesComponent } from "./otp-values/otp-values.component";
-import { RegistrationCodeComponent } from "./registration-code/registration-code.component";
-import { TiqrEnrollUrlComponent } from "./tiqr-enroll-url/tiqr-enroll-url.component";
-import { OtpKeyComponent } from "./otp-key/otp-key.component";
-import { ContentServiceInterface, ContentService } from "../../../../services/content/content.service";
-import { TokenServiceInterface, TokenService } from "../../../../services/token/token.service";
+import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
 import {
-  NO_QR_CODE_TOKEN_TYPES,
-  NO_REGENERATE_TOKEN_TYPES,
-  REGENERATE_AS_VALUES_TOKEN_TYPES
-} from "../token-enrollment.constants";
+  TokenEnrollmentDialogData,
+  TokenService,
+  TokenServiceInterface
+} from "../../../../services/token/token.service";
+import { NO_QR_CODE_TOKEN_TYPES } from "../token-enrollment.constants";
 import { MatIconModule } from "@angular/material/icon";
-import { QrCodeTextComponent } from "./qr-code-text/qr-code-text.component";
-import { TokenEnrollmentLastStepDialogData } from "./token-enrollment-last-step-dialog.self-service.component";
 import { AbstractDialogComponent } from "../../../shared/dialog/abstract-dialog/abstract-dialog.component";
 import { MatButtonModule } from "@angular/material/button";
+import { ReactiveFormsModule } from "@angular/forms";
+import { TokenEnrollmentDataComponent } from "@components/token/token-enrollment/token-enrollment-data/token-enrollment-data.component";
+import { TokenEnrolledTextComponent } from "@components/token/token-enrollment/token-enrolled-text/token-enrolled-text.component";
 
 @Component({
   selector: "app-token-enrollment-last-step-dialog",
@@ -43,60 +39,47 @@ import { MatButtonModule } from "@angular/material/button";
   standalone: true,
   imports: [
     DialogWrapperComponent,
-    OtpValuesComponent,
-    RegistrationCodeComponent,
-    TiqrEnrollUrlComponent,
-    OtpKeyComponent,
     MatIconModule,
-    QrCodeTextComponent,
-    MatButtonModule
+    MatButtonModule,
+    ReactiveFormsModule,
+    TokenEnrollmentDataComponent,
+    TokenEnrolledTextComponent
   ]
 })
-export class TokenEnrollmentLastStepDialogComponent extends AbstractDialogComponent<TokenEnrollmentLastStepDialogData> {
+export class TokenEnrollmentLastStepDialogComponent extends AbstractDialogComponent<TokenEnrollmentDialogData> {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly Object = Object;
-  protected readonly serial = this.data.response.detail?.serial ?? "";
-  protected readonly containerSerial = this.data.response.detail?.["container_serial"] ?? "";
+  protected readonly serial = this.data.response?.detail?.serial ?? "";
+  protected readonly containerSerial = this.data.response?.detail?.["container_serial"] ?? "";
   protected readonly qrCode =
-    this.data.response.detail.googleurl?.img ??
-    this.data.response.detail.motpurl?.img ??
-    this.data.response.detail.otpkey?.img ??
-    this.data.response.detail.tiqrenroll?.img ??
+    this.data.response?.detail.googleurl?.img ??
+    this.data.response?.detail.motpurl?.img ??
+    this.data.response?.detail.otpkey?.img ??
+    this.data.response?.detail.tiqrenroll?.img ??
     "";
   protected readonly url =
-    this.data.response.detail?.googleurl?.value ??
-    this.data.response.detail?.motpurl?.value ??
-    this.data.response.detail?.otpkey?.value ??
-    this.data.response.detail?.tiqrenroll?.value ??
-    "";
+    this.data.response?.detail?.googleurl?.value ??
+    this.data.response?.detail?.motpurl?.value ??
+    this.data.response?.detail?.otpkey?.value ??
+    this.data.response?.detail?.tiqrenroll?.value ?? "";
+  protected readonly rollover = this.data.rollover ?? false;
+
+  title: Signal<string> = computed(() => this.rollover ? $localize`Token Successfully Rolled Over` :
+    $localize`Token Successfully Enrolled`);
+
   showQRCode(): boolean {
-    return !NO_QR_CODE_TOKEN_TYPES.includes(this.data.tokentype?.key);
+    return !NO_QR_CODE_TOKEN_TYPES.includes(this.data.tokenType);
   }
-  showRegenerateButton(): boolean {
-    return !NO_REGENERATE_TOKEN_TYPES.includes(this.data.tokentype?.key);
-  }
-  regenerateButtonText(): string {
-    return REGENERATE_AS_VALUES_TOKEN_TYPES.includes(this.data.tokentype?.key) ? "Values" : "QR Code";
-  }
+
   constructor() {
     super();
     this.dialogRef.afterClosed().subscribe(() => {
       this.tokenService.stopPolling();
     });
   }
-  tokenSelected(tokenSerial: string) {
+
+  onSwitchRoute() {
     this.dialogRef.close();
-    this.contentService.tokenSelected(tokenSerial);
-  }
-  regenerateQRCode() {
-    this.data.serial.set(this.data.response.detail?.serial ?? null);
-    this.data.enrollToken();
-    this.data.serial.set(null);
-    this.dialogRef.close();
-  }
-  containerSelected(containerSerial: string) {
-    this.dialogRef.close();
-    this.contentService.containerSelected(containerSerial);
   }
 }

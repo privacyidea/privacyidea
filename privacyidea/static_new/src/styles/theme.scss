@@ -45,14 +45,15 @@ html {
 
     --mat-sys-primary: var(--mat-sys-primary-base);
     --mat-sys-on-primary: light-dark(hsl(198, 66%, 95%), hsl(198, 66%, 10%));
-    --mat-sys-primary-container: light-dark(hsl(0, 0%, 100%), hsl(198, 66%, 40%));
-    --mat-sys-surface-container-lowest: light-dark(hsl(0, 0%, 97.5%), hsl(0, 0%, 10%));
-    --mat-sys-surface-container-low: light-dark(hsl(0, 0%, 90%), hsl(0, 0%, 15%));
-    --mat-sys-surface-container: light-dark(hsl(0, 0%, 85%), hsl(0, 0%, 20%));
-    --mat-sys-surface-container-high: light-dark(hsl(0, 0%, 80%), hsl(0, 0%, 25%));
-    --mat-sys-surface-container-highest: light-dark(hsl(0, 0%, 75%), hsl(0, 0%, 30%));
-    --mat-sys-surface-variant: light-dark(hsl(0, 0%, 95%), hsl(0, 0%, 22.5%));
+    --mat-sys-primary-container: light-dark(hsl(198, 66%, 90%), hsl(198, 66%, 20%));
+    --mat-sys-surface-container-lowest: light-dark(hsl(0, 0%, 98%), hsl(0, 0%, 10%));
+    --mat-sys-surface-container-low: light-dark(hsl(0, 0%, 93%), hsl(0, 0%, 15%));
+    --mat-sys-surface-container: light-dark(hsl(0, 0%, 90%), hsl(0, 0%, 20%));
+    --mat-sys-surface-container-high: light-dark(hsl(0, 0%, 85%), hsl(0, 0%, 25%));
+    --mat-sys-surface-container-highest: light-dark(hsl(0, 0%, 80%), hsl(0, 0%, 30%));
+    --mat-sys-surface-variant: light-dark(hsl(0, 0%, 91%), hsl(0, 0%, 22.5%));
     --mat-sys-background: light-dark(hsl(0, 0%, 90%), hsl(0, 0%, 20%));
+    --mat-sys-surface: var(--mat-sys-background);
     --mat-sys-on-surface: light-dark(hsl(0, 0%, 10%), hsl(0, 0%, 90%));
     --mat-sys-on-surface-variant: light-dark(hsl(0, 0%, 30%), hsl(0, 0%, 80%));
     --mat-sys-on-primary-container: light-dark(hsl(198, 66%, 10%), hsl(198, 66%, 80%));
@@ -62,6 +63,8 @@ html {
 
     --inline-hint-bg: light-dark(hsl(200, 65%, 91%), hsl(200, 65%, 20%));
     --inline-warning-bg: light-dark(hsl(0, 83%, 95%), hsl(0, 83%, 18%));
+    --mdc-plain-tooltip-container-color: var(--mat-sys-surface-container-highest);
+    --mdc-plain-tooltip-supporting-text-color: var(--mat-sys-on-surface);
   }
 
   &.light {
@@ -109,14 +112,15 @@ html {
 
     --mat-sys-primary: var(--mat-sys-primary-base);
     --mat-sys-on-primary: hsl(198, 66%, 95%);
-    --mat-sys-primary-container: hsl(0, 0%, 100%);
-    --mat-sys-surface-container-lowest: hsl(0, 0%, 97.5%);
-    --mat-sys-surface-container-low: hsl(0, 0%, 90%);
-    --mat-sys-surface-container: hsl(0, 0%, 85%);
-    --mat-sys-surface-container-high: hsl(0, 0%, 80%);
-    --mat-sys-surface-container-highest: hsl(0, 0%, 75%);
-    --mat-sys-surface-variant: hsl(0, 0%, 95%);
+    --mat-sys-primary-container: hsl(198, 66%, 90%);
+    --mat-sys-surface-container-lowest: hsl(0, 0%, 98%);
+    --mat-sys-surface-container-low: hsl(0, 0%, 93%);
+    --mat-sys-surface-container: hsl(0, 0%, 90%);
+    --mat-sys-surface-container-high: hsl(0, 0%, 85%);
+    --mat-sys-surface-container-highest: hsl(0, 0%, 80%);
+    --mat-sys-surface-variant: hsl(0, 0%, 91%);
     --mat-sys-background: hsl(0, 0%, 90%);
+    --mat-sys-surface: var(--mat-sys-background);
     --mat-sys-on-surface: hsl(0, 0%, 10%);
     --mat-sys-on-surface-variant: hsl(0, 0%, 30%);
     --mat-sys-on-primary-container: hsl(198, 66%, 10%);
@@ -125,6 +129,8 @@ html {
 
     --inline-hint-bg: hsl(200, 65%, 91%);
     --inline-warning-bg: hsl(0, 83%, 95%);
+    --mdc-plain-tooltip-container-color: var(--mat-sys-surface-container-highest);
+    --mdc-plain-tooltip-supporting-text-color: var(--mat-sys-on-surface);
   }
 
   &.dark {
@@ -172,7 +178,7 @@ html {
 
     --mat-sys-primary: var(--mat-sys-primary-base);
     --mat-sys-on-primary: hsl(198, 66%, 10%);
-    --mat-sys-primary-container: hsl(198, 66%, 40%);
+    --mat-sys-primary-container: hsl(198, 66%, 20%);
     --mat-sys-surface-container-lowest: hsl(0, 0%, 10%);
     --mat-sys-surface-container-low: hsl(0, 0%, 15%);
     --mat-sys-surface-container: hsl(0, 0%, 20%);
@@ -180,6 +186,7 @@ html {
     --mat-sys-surface-container-highest: hsl(0, 0%, 30%);
     --mat-sys-surface-variant: hsl(0, 0%, 22.5%);
     --mat-sys-background: hsl(0, 0%, 20%);
+    --mat-sys-surface: var(--mat-sys-background);
     --mat-sys-on-surface: hsl(0, 0%, 90%);
     --mat-sys-on-surface-variant: hsl(0, 0%, 80%);
     --mat-sys-on-primary-container: hsl(198, 66%, 80%);
@@ -188,6 +195,8 @@ html {
 
     --inline-hint-bg: hsl(200, 65%, 20%);
     --inline-warning-bg: hsl(0, 83%, 18%);
+    --mdc-plain-tooltip-container-color: var(--mat-sys-surface-container-highest);
+    --mdc-plain-tooltip-supporting-text-color: var(--mat-sys-on-surface);
   }
 
   @include mat.theme(

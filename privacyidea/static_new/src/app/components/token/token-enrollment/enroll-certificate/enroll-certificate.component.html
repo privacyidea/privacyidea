@@ -71,9 +71,12 @@
   </div>
   @switch (intentionToggleControl.value) {
     @case ("generate") {
-      <span i18n>
-        The server will create the private RSA key and store it in the database. You can later download the PKCS#12 file.
-      </span>
+      <span
+        i18n
+        class="margin-bottom-16">
+        The server will create the private RSA key and store it in the database. <br />
+        You can later download the PKCS#12 file.</span
+      >
     }
     @case ("uploadRequest") {
       <mat-form-field

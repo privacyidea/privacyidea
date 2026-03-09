@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -17,7 +17,13 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Injectable } from "@angular/core";
-import { TokenApiPayloadMapper, TokenEnrollmentData, TokenEnrollmentPayload } from "./_token-api-payload.mapper";
+import {
+  BaseApiPayloadMapper,
+  TokenApiPayloadMapper,
+  TokenEnrollmentData,
+  TokenEnrollmentPayload
+} from "./_token-api-payload.mapper";
+import { TokenDetails } from "../../services/token/token.service";
 
 export interface HotpEnrollmentData extends TokenEnrollmentData {
   type: "hotp";
@@ -25,6 +31,8 @@ export interface HotpEnrollmentData extends TokenEnrollmentData {
   otpKey?: string;
   otpLength?: number;
   hashAlgorithm?: string;
+  twoStepInit?: boolean;
+  otpKeyFormat?: string;
 }
 
 export interface HotpEnrollmentPayload extends TokenEnrollmentPayload {
@@ -33,40 +41,44 @@ export interface HotpEnrollmentPayload extends TokenEnrollmentPayload {
   otplen?: number;
   hashlib?: string;
   serial?: string | null;
+  "2stepinit"?: boolean;
+  otpkeyformat?: string;
 }
 
 @Injectable({ providedIn: "root" })
-export class HotpApiPayloadMapper implements TokenApiPayloadMapper<HotpEnrollmentData> {
-  toApiPayload(data: HotpEnrollmentData): HotpEnrollmentPayload {
+export class HotpApiPayloadMapper extends BaseApiPayloadMapper implements TokenApiPayloadMapper<HotpEnrollmentData> {
+
+  override toApiPayload(data: HotpEnrollmentData): HotpEnrollmentPayload {
+    const basePayload = super.toApiPayload(data);
     const payload: HotpEnrollmentPayload = {
-      type: data.type,
-      description: data.description,
-      container_serial: data.containerSerial,
-      validity_period_start: data.validityPeriodStart,
-      validity_period_end: data.validityPeriodEnd,
-      user: data.user,
-      realm: data.user ? data.realm : null,
-      pin: data.pin,
+      ...basePayload,
       otpkey: data.generateOnServer ? null : (data.otpKey ?? null),
       genkey: data.generateOnServer ? 1 : 0,
-      otplen: data.otpLength !== undefined ? Number(data.otpLength) : undefined,
-      hashlib: data.hashAlgorithm,
-      serial: data.serial ?? null
+      ...(data.otpLength !== undefined && { otplen: Number(data.otpLength) }),
+      ...(data.hashAlgorithm !== undefined && { hashlib: data.hashAlgorithm }),
+      ...(data.twoStepInit !== undefined && { "2stepinit": data.twoStepInit }),
+      ...(data.otpKey && data.otpKeyFormat && { otpkeyformat: data.otpKeyFormat })
     };
 
     if (data.onlyAddToRealm) {
       payload.realm = data.realm;
       payload.user = null;
     }
-    if (payload.otplen === undefined) delete payload.otplen;
-    if (payload.hashlib === undefined) delete payload.hashlib;
-    if (payload.serial === null) delete payload.serial;
 
     return payload;
   }
 
-  fromApiPayload(payload: any): HotpEnrollmentData {
+  override fromApiPayload(payload: any): HotpEnrollmentData {
     // Placeholder: Implement transformation from API payload. We will replace this later.
     return payload as HotpEnrollmentData;
+  }
+
+  override fromTokenDetailsToEnrollmentData(details: TokenDetails): HotpEnrollmentData {
+    return {
+      ...super.fromTokenDetailsToEnrollmentData(details),
+      type: "hotp",
+      otpLength: details.otplen !== undefined ? Number(details.otplen) : undefined,
+      hashAlgorithm: details.info?.hashlib ?? undefined
+    };
   }
 }

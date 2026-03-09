@@ -1,8 +1,9 @@
-@use "../../../../styles";
+@use "styles";
+@use "table";
 @use "@angular/material" as mat;
 
 .token-enrollment-container {
-  @include styles.table-container-styles;
+  @include table.table-container-styles;
   max-height: var(--max-height);
   overflow: auto;
   display: grid;
@@ -26,6 +27,12 @@ h5 {
   margin-top: 16px;
 }
 
+.description-form {
+  width: 100%;
+  margin-top: 16px;
+  margin-bottom: 16px;
+}
+
 .select-token-type-container {
   display: flex;
   flex-direction: row;
@@ -33,6 +40,3 @@ h5 {
   flex: 2;
 }
 
-.hidden-input {
-  display: none;
-}

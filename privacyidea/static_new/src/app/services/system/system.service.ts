@@ -67,7 +67,10 @@ export class SystemService implements SystemServiceInterface {
   private readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly http: HttpClient = inject(HttpClient);
   private onAllowedRoutes = computed(() => {
-    return this.contentService.onTokensEnrollment() || this.contentService.onTokensWizard() || this.contentService.onConfigurationSystem() || this.contentService.onConfigurationTokenTypes();
+    // Token details is required for rollover
+    return this.contentService.onTokensEnrollment() || this.contentService.onTokensWizard() ||
+      this.contentService.onConfigurationSystem() || this.contentService.onConfigurationTokenTypes() ||
+      this.contentService.onTokenDetails();
   });
 
   systemConfigResource = httpResource<any>(() => {
@@ -119,10 +122,18 @@ export class SystemService implements SystemServiceInterface {
     source: this.caConnectorResource?.value,
     computation: (source, previous) => source?.result?.value ?? previous?.value ?? []
   });
-  nodesResource = httpResource<PiResponse<PiNode[]>>({
-    url: this.systemBaseUrl + "nodes",
-    method: "GET",
-    headers: this.authService.getHeaders()
+  nodesResource = httpResource<PiResponse<PiNode[]>>(() => {
+    if (
+      !this.contentService.onConfigurationPeriodicTasks() &&
+      !this.contentService.onConfigurationSystem()
+    ) {
+      return undefined;
+    }
+    return {
+      url: this.systemBaseUrl + "nodes",
+      method: "GET",
+      headers: this.authService.getHeaders()
+    };
   });
   systemConfig = computed<any>(() => {
     return this.systemConfigResource.value()?.result?.value ?? {};

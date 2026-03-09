@@ -34,7 +34,9 @@ import {
 import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
 import {
+  BaseApiPayloadMapper,
   EnrollmentResponse,
+  EnrollmentResponseDetail,
   TokenApiPayloadMapper,
   TokenEnrollmentData
 } from "../../mappers/token-api-payload/_token-api-payload.mapper";
@@ -45,7 +47,7 @@ import { ContentService, ContentServiceInterface } from "../content/content.serv
 import { StringUtils } from "../../utils/string.utils";
 import { DialogService, DialogServiceInterface } from "../dialog/dialog.service";
 import { SimpleConfirmationDialogComponent } from "../../components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
-import { FilterValue } from "../../core/models/filter_value";
+import { FilterValue } from "src/app/core/models/filter_value/filter_value";
 
 export type TokenTypeKey =
   | "hotp"
@@ -137,6 +139,7 @@ export interface TokenType {
   name: string;
   info: string;
   text: string;
+  rollover?: boolean;
 }
 
 export interface WebAuthnRegisterRequest {
@@ -164,6 +167,19 @@ export interface WebAuthnRegisterRequest {
 }
 
 export type LostTokenResponse = PiResponse<LostTokenData>;
+
+export type EnrollTokenArguments = { data: TokenEnrollmentData, mapper: BaseApiPayloadMapper };
+
+export type TokenEnrollmentDialogData = {
+  tokenType: string;
+  response: EnrollmentResponse | null;
+  enrollParameters: EnrollTokenArguments;
+  username?: string;
+  userRealm?: string;
+  onlyAddToRealm?: boolean;
+  rollover?: boolean;
+  showEnrollData?: boolean;
+}
 
 export interface LostTokenData {
   disable: number;
@@ -193,7 +209,7 @@ export interface TokenServiceInterface {
   tokenBaseUrl: string;
   eventPageSize: number;
   tokenSerial: WritableSignal<string>;
-  selectedTokenType: Signal<TokenType>;
+  selectedTokenType: WritableSignal<TokenType>;
   showOnlyTokenNotInContainer: WritableSignal<boolean>;
   tokenFilter: WritableSignal<FilterValue>;
   tokenDetailResource: HttpResourceRef<PiResponse<Tokens> | undefined>;
@@ -272,6 +288,8 @@ export interface TokenServiceInterface {
     data: T;
     mapper: TokenApiPayloadMapper<T>;
   }): Observable<R>;
+
+  verifyToken(verifyData: TokenEnrollmentData): Observable<PiResponse<boolean, EnrollmentResponseDetail>>;
 
   lostToken(tokenSerial: string): Observable<LostTokenResponse>;
 
@@ -968,6 +986,19 @@ export class TokenService implements TokenServiceInterface {
           console.error("Failed to enroll token.", error);
           const message = error.error?.result?.error?.message || "";
           this.notificationService.openSnackBar("Failed to enroll token. " + message);
+          return throwError(() => error);
+        })
+      );
+  }
+
+  verifyToken(verifyData: TokenEnrollmentData): Observable<PiResponse<boolean, EnrollmentResponseDetail>> {
+    const headers = this.authService.getHeaders();
+    return this.http.post<PiResponse<boolean, EnrollmentResponseDetail>>(`${this.tokenBaseUrl}init`, verifyData, { headers })
+      .pipe(
+        catchError((error) => {
+          console.error("Failed to verify token.", error);
+          const message = error.error?.result?.error?.message || "";
+          this.notificationService.openSnackBar("Failed to verify token. " + message);
           return throwError(() => error);
         })
       );

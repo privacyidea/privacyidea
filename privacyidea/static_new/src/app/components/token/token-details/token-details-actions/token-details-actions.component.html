@@ -23,6 +23,10 @@
   [ngClass]="{ 'ali-center': overflowService.isWidthOverflowing('body', 1580) }"
   class="actions-otp-container">
   <h4 class="margin-0">Token Actions</h4>
+  @if (token()?.rollout_state === "verify") {
+    <app-verify-enrollment></app-verify-enrollment>
+    <mat-divider class="margin-top-16 margin-bottom-16" />
+  }
   @if (authService.actionAllowed("setpin") || authService.actionsAllowed(["setrandompin", "otp_pin_set_random"])) {
     <div class="flex-column gap-8">
       <app-set-pin-action
@@ -73,7 +77,7 @@
         } @else {
           <button
             (click)="attachPasskeyToMachine()"
-            class="action-button-secondary width-mm"
+            class="action-button-secondary button-width-m"
             i18n
             mat-stroked-button>
             <mat-icon>computer</mat-icon>
@@ -90,52 +94,63 @@
           Use Offline
         </button>
       }
-      @if ((tokenIsActive() && authService.actionAllowed("disable")) ||
-      (!tokenIsActive() && authService.actionAllowed("enable"))) {
-        <button
-          (click)="toggleActive()"
-          [disabled]="tokenIsRevoked()"
-          [ngClass]="[tokenIsActive()
+    }
+    @if ((tokenIsActive() && authService.actionAllowed("disable")) ||
+    (!tokenIsActive() && authService.actionAllowed("enable"))) {
+      <button
+        (click)="toggleActive()"
+        [disabled]="tokenIsRevoked()"
+        [ngClass]="[tokenIsActive()
                       ? 'action-button-delete-primary button-width-m'
                       : 'action-button-primary button-width-m'
                 ]"
-          i18n
-          mat-stroked-button>
-          <mat-icon>{{ tokenIsActive() ? "lock" : "play_circle" }}</mat-icon>
-          {{ tokenIsActive() ? "Deactivate" : "Activate" }}
-        </button>
-      }
-      @if (authService.actionAllowed("delete")) {
-        <button
-          (click)="deleteToken()"
-          class="action-button-delete-secondary button-width-m"
-          i18n
-          mat-stroked-button>
-          <mat-icon> delete</mat-icon>
-          Delete
-        </button>
-      }
-      @if (authService.actionAllowed("revoke")) {
-        <button
-          (click)="revokeToken()"
-          [disabled]="tokenIsRevoked()"
-          class="action-button-delete-secondary button-width-m"
-          i18n
-          mat-stroked-button>
-          <mat-icon>undo</mat-icon>
-          Revoke
-        </button>
-      }
-      @if (authService.actionAllowed("losttoken")) {
-        <button
-          (click)="openLostTokenDialog()"
-          class="action-button-secondary button-width-m"
-          i18n
-          mat-stroked-button>
-          <mat-icon>remove_red_eye</mat-icon>
-          Lost Token
-        </button>
-      }
+        i18n
+        mat-stroked-button>
+        <mat-icon>{{ tokenIsActive() ? "lock" : "play_circle" }}</mat-icon>
+        {{ tokenIsActive() ? "Deactivate" : "Activate" }}
+      </button>
+    }
+    @if (authService.actionAllowed("delete")) {
+      <button
+        (click)="deleteToken()"
+        class="action-button-delete-secondary button-width-m"
+        i18n
+        mat-stroked-button>
+        <mat-icon> delete</mat-icon>
+        Delete
+      </button>
+    }
+    @if (authService.actionAllowed("revoke")) {
+      <button
+        (click)="revokeToken()"
+        [disabled]="tokenIsRevoked()"
+        class="action-button-delete-secondary button-width-m"
+        i18n
+        mat-stroked-button>
+        <mat-icon>undo</mat-icon>
+        Revoke
+      </button>
+    }
+    @if (authService.tokenRollover().indexOf(tokenType()) >= 0 &&
+    rolloverTokenTypes().indexOf(tokenTypeKey()) >= 0) {
+      <button
+        (click)="rolloverToken()"
+        class="action-button-secondary button-width-m"
+        i18n
+        mat-stroked-button>
+        <mat-icon>sync</mat-icon>
+        Rollover
+      </button>
+    }
+    @if (authService.actionAllowed("losttoken")) {
+      <button
+        (click)="openLostTokenDialog()"
+        class="action-button-secondary button-width-m"
+        i18n
+        mat-stroked-button>
+        <mat-icon>remove_red_eye</mat-icon>
+        Lost Token
+      </button>
     }
   </div>
 </div>

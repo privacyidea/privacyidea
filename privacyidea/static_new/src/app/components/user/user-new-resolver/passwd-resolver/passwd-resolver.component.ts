@@ -52,7 +52,7 @@ export class PasswdResolverComponent {
 
   constructor() {
     effect(() => {
-      const initial = this.data()?.fileName;
+      const initial = this.data()?.fileName || this.data()?.filename;
       if (initial !== undefined) {
         this.filenameControl.setValue(initial, { emitEvent: false });
       }

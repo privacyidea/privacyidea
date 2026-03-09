@@ -18,9 +18,19 @@
 -->
 @if (!wizard) {
   <div class="flex-column">
+    <h4 class="enroll-h4">Token Configuration</h4>
+    @if (twoStep() !== "disabled") {
+      <mat-checkbox
+        [formControl]="twoStepControl"
+        class="margin-bottom-16"
+        i18n>
+        Use two-step enrollment with the privacyIDEA Authenticator App.
+      </mat-checkbox>
+    }
     <mat-checkbox
       [formControl]="generateOnServerFormControl"
-      class="server-checkbox">
+      class="margin-bottom-16"
+      i18n>
       Generate the OTP key on the server and show a QR code to scan.
     </mat-checkbox>
     <div class="otp-inputs-container">
@@ -74,7 +84,6 @@
       <mat-form-field
         class="input-width-l margin-top-16"
         subscriptSizing="dynamic">
-        <!-- Adjusted width to fit in a 3-column layout -->
         <mat-label>Timestep</mat-label>
         <mat-select
           [formControl]="timeStepControl"

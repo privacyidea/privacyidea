@@ -51,6 +51,21 @@ def _check_policy_name(polname, policies):
     return contained
 
 
+class MockUser:
+    login = 'login'
+    realm = 'realm'
+    resolver = 'resolver'
+    info = {}
+
+    def get_specific_info(self, attributes: list[str] = None) -> dict:
+        info = {key: value for key, value in self.info.items() if key in attributes}
+        return info
+
+    @property
+    def available_info_keys(self) -> list[str]:
+        return list(self.info.keys())
+
+
 class PolicyTestCase(MyTestCase):
     """
     Test the policies on a database level
@@ -1421,11 +1436,6 @@ class PolicyTestCase(MyTestCase):
                                (ConditionSection.USERINFO, "groups", PrimaryComparators.CONTAINS, "b", True)])
         P = PolicyClass()
 
-        class MockUser(object):
-            login = 'login'
-            realm = 'realm'
-            resolver = 'resolver'
-
         empty_user = User()
 
         user1 = MockUser()
@@ -1481,11 +1491,6 @@ class PolicyTestCase(MyTestCase):
 
     def test_30_filter_by_conditions_errors(self):
         P = PolicyClass()
-
-        class MockUser(object):
-            login = 'login'
-            realm = 'realm'
-            resolver = 'resolver'
 
         user1 = MockUser()
         user1.info = {"type": "verysecure", "groups": ["a", "b", "c"]}
@@ -1633,11 +1638,6 @@ class PolicyTestCase(MyTestCase):
 
         P = PolicyClass()
 
-        class MockUser(object):
-            login = 'login'
-            realm = 'realm'
-            resolver = 'resolver'
-
         user1 = MockUser()
         user1.info = {"email": "foo@bar.com"}
 
@@ -1685,11 +1685,6 @@ class PolicyTestCase(MyTestCase):
         db_token.save()
 
         P = PolicyClass()
-
-        class MockUser(object):
-            login = 'login'
-            realm = 'realm'
-            resolver = 'resolver'
 
         user1 = MockUser()
         user1.info = {"email": "foo@bar.com"}
@@ -1750,11 +1745,6 @@ class PolicyTestCase(MyTestCase):
         db_token.delete()
 
     def test_33_get_allowed_attributes(self):
-
-        class MockUser(object):
-            login = 'login'
-            realm = 'realm'
-            resolver = 'resolver'
 
         user = MockUser()
         g = FakeFlaskG()

@@ -17,10 +17,9 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { NgClass } from "@angular/common";
-import { Component, computed, inject, Input, signal, WritableSignal } from "@angular/core";
+import { Component, computed, inject, input, Input, signal, WritableSignal } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { MatButton } from "@angular/material/button";
-import { MatDialog } from "@angular/material/dialog";
 import { MatDivider } from "@angular/material/divider";
 import { MatIcon } from "@angular/material/icon";
 import {
@@ -28,7 +27,12 @@ import {
   NotificationServiceInterface
 } from "../../../../services/notification/notification.service";
 import { OverflowService, OverflowServiceInterface } from "../../../../services/overflow/overflow.service";
-import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
+import {
+  TokenDetails,
+  TokenService,
+  TokenServiceInterface,
+  TokenTypeKey
+} from "../../../../services/token/token.service";
 import { ValidateService, ValidateServiceInterface } from "../../../../services/validate/validate.service";
 import {
   SshMachineAssignDialogData,
@@ -49,6 +53,10 @@ import { SimpleConfirmationDialogComponent } from "../../../shared/dialog/confir
 import { ROUTE_PATHS } from "../../../../route_paths";
 import { Router } from "@angular/router";
 import { DialogService, DialogServiceInterface } from "../../../../services/dialog/dialog.service";
+import { TokenRolloverComponent } from "./token-rollover/token-rollover.component";
+import { tokenTypes } from "../../../../utils/token.utils";
+import { VerifyEnrollmentComponent } from "@components/token/token-details/token-details-actions/verify-enrollment/verify-enrollment.component";
+
 
 @Component({
   selector: "app-token-details-actions",
@@ -61,7 +69,8 @@ import { DialogService, DialogServiceInterface } from "../../../../services/dial
     SetPinActionComponent,
     ResyncTokenActionComponent,
     TestOtpPinActionComponent,
-    MatButton
+    MatButton,
+    VerifyEnrollmentComponent
   ],
   templateUrl: "./token-details-actions.component.html",
   styleUrl: "./token-details-actions.component.scss"
@@ -78,10 +87,12 @@ export class TokenDetailsActionsComponent {
   @Input() setPinValue!: WritableSignal<string>;
   @Input() repeatPinValue!: WritableSignal<string>;
   @Input() tokenType!: WritableSignal<string>;
+  token = input<TokenDetails>();
   tokenSerial = this.tokenService.tokenSerial;
   tokenIsActive = this.tokenService.tokenIsActive;
   tokenIsRevoked = this.tokenService.tokenIsRevoked;
   isLost = signal(false);
+  tokenTypeKey = computed(() => this.tokenType() as TokenTypeKey);
 
   isAttachedToMachine = computed<boolean>(() => {
     const tokenApplications = this.machineService.tokenApplications();
@@ -246,4 +257,19 @@ export class TokenDetailsActionsComponent {
       }
     });
   }
+
+  rolloverToken() {
+    if (!this.token()) return;
+
+    this.dialogService.openDialog({
+      component: TokenRolloverComponent,
+      data: {
+        token: this.token()
+      }
+    });
+  }
+
+  readonly rolloverTokenTypes = computed(() =>
+    tokenTypes.filter(t => t.rollover === true).map(t => t.key)
+  );
 }

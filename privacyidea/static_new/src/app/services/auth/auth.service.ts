@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { HttpClient, HttpHeaders } from "@angular/common/http";
-import { computed, effect, inject, Injectable, Signal, signal, WritableSignal } from "@angular/core";
+import { computed, inject, Injectable, Signal, signal, WritableSignal } from "@angular/core";
 import { Observable, throwError } from "rxjs";
 import { catchError, tap } from "rxjs/operators";
 import { environment } from "../../../environments/environment";
@@ -54,7 +54,7 @@ export interface AuthData {
   dialog_no_token: boolean;
   search_on_enter: boolean;
   timeout_action: string;
-  token_rollover: any;
+  token_rollover?: Record<string, string[]>;
   hide_welcome: boolean;
   hide_buttons: boolean;
   deletion_confirmation: boolean;
@@ -116,6 +116,8 @@ export interface AuthDetail {
   type?: string;
 }
 
+export type TwoStepValue = "disabled" | "allow" | "force";
+
 export interface AuthServiceInterface {
   // Properties
   readonly authUrl: string;
@@ -129,15 +131,17 @@ export interface AuthServiceInterface {
   readonly jwtNonce: Signal<string>;
   readonly authtype: Signal<"cookie" | "none">;
   readonly jwtExpDate: Signal<Date | null>;
+  readonly jwtLogoutTimeS: Signal<number | null>;
+  readonly logoutTimeS: Signal<number | null>;
   readonly isAuthenticated: Signal<boolean>;
   readonly logLevel: Signal<number>;
   readonly menus: Signal<string[]>;
   readonly realm: Signal<string>;
   readonly rights: Signal<string[]>;
+  readonly rightsWithValues: Signal<Record<string, string | null>>;
   readonly role: Signal<AuthRole>;
   readonly token: Signal<string>;
   readonly username: Signal<string>;
-  readonly logoutTimeSeconds: Signal<number | null>;
   readonly auditPageSize: Signal<number>;
   readonly tokenPageSize: Signal<number | null>;
   readonly userPageSize: Signal<number>;
@@ -151,7 +155,7 @@ export interface AuthServiceInterface {
   readonly dialogNoToken: Signal<boolean>;
   readonly searchOnEnter: Signal<boolean>;
   readonly timeoutAction: Signal<string>;
-  readonly tokenRollover: Signal<any>;
+  readonly tokenRollover: Signal<string[]>;
   readonly hideWelcome: Signal<boolean>;
   readonly hideButtons: Signal<boolean>;
   readonly deletionConfirmation: Signal<boolean>;
@@ -195,6 +199,8 @@ export interface AuthServiceInterface {
   anyTokenActionAllowed(): boolean;
 
   checkForceServerGenerateOTPKey(tokenType: string): boolean;
+
+  check2Step(tokenType: string): TwoStepValue;
 }
 
 @Injectable({
@@ -225,20 +231,32 @@ export class AuthService implements AuthServiceInterface {
   readonly menus = computed(() => this.authData()?.menus || []);
   readonly realm = computed(() => this.jwtData()?.realm || this.authData()?.realm || "");
   readonly rights = computed(() => this.jwtData()?.rights || this.authData()?.rights || []);
+  readonly rightsWithValues = computed(() => {
+    const rightsList = this.rights();
+    const result: Record<string, string | null> = {};
+    rightsList.forEach(entry => {
+      const equation_index = entry.indexOf("=");
+      if (equation_index === -1) {
+        if (!(entry in result)) {
+          // avoid overwriting existing keys with null if they have a value in another entry
+          result[entry] = null;
+        }
+      } else {
+        const key = entry.substring(0, equation_index);
+        result[key] = entry.substring(equation_index + 1);
+      }
+    });
+    return result;
+  });
   readonly role = computed(() => this.jwtData()?.role || this.authData()?.role || "");
   readonly token = computed(() => this.authData()?.token || "");
   readonly username = computed(() => this.jwtData()?.username || this.authData()?.username || "");
-  readonly logoutTimeSeconds = computed(() => {
-    const jwtExpDate = this.jwtExpDate()!;
-    let jwtLogoutTime: number | null = null;
-    const authDataLogoutTime = this.authData()?.logout_time || null;
-    if (jwtExpDate) {
-      const now = new Date();
-      jwtLogoutTime = Math.max(0, Math.floor((jwtExpDate.getTime() - now.getTime()) / 1000));
-    }
-    if (jwtLogoutTime === null) return authDataLogoutTime;
-    if (authDataLogoutTime === null) return jwtLogoutTime;
-    return Math.min(jwtLogoutTime, authDataLogoutTime);
+  readonly logoutTimeS = computed(() => this.authData()?.logout_time || null);
+  readonly jwtLogoutTimeS = computed(() => {
+    const expiration = this.jwtExpDate();
+    if (expiration == null) return null;
+    const now = new Date();
+    return Math.max(0, Math.floor((expiration.getTime() - now.getTime()) / 1000));
   });
   readonly auditPageSize = computed(() => this.authData()?.audit_page_size || 10);
   readonly tokenPageSize = computed(() => this.authData()?.token_page_size || null);
@@ -253,7 +271,7 @@ export class AuthService implements AuthServiceInterface {
   readonly dialogNoToken = computed(() => this.authData()?.dialog_no_token || false);
   readonly searchOnEnter = computed(() => this.authData()?.search_on_enter || false);
   readonly timeoutAction = computed(() => this.authData()?.timeout_action || "logout");
-  readonly tokenRollover = computed(() => this.authData()?.token_rollover || {});
+  readonly tokenRollover = computed(() => Object.keys(this.authData()?.token_rollover || {}));
   readonly hideWelcome = computed(() => this.authData()?.hide_welcome || false);
   readonly hideButtons = computed(() => this.authData()?.hide_buttons || false);
   readonly deletionConfirmation = computed(() => this.authData()?.deletion_confirmation || false);
@@ -318,7 +336,7 @@ export class AuthService implements AuthServiceInterface {
     this.jwtData.set(null);
     this.localService.removeData(BEARER_TOKEN_STORAGE_KEY);
     this.authenticationAccepted.set(false);
-    this.router.navigate(["login"]).then(() => this.notificationService.openSnackBar("Logout successful."));
+    this.router.navigate(["login"]).then(() => this.notificationService.openSnackBar($localize`Logout successful.`));
   }
 
   actionAllowed(action: PolicyAction): boolean {
@@ -354,6 +372,18 @@ export class AuthService implements AuthServiceInterface {
 
   checkForceServerGenerateOTPKey(tokenType: string): boolean {
     return this.actionAllowed((tokenType + "_force_server_generate") as PolicyAction);
+  }
+
+  check2Step(tokenType: string): TwoStepValue {
+    const key = tokenType + "_2step";
+    const value = this.rightsWithValues()[key];
+    if (value === "allow") {
+      return "allow";
+    } else if (value === "force") {
+      return "force";
+    } else {
+      return "disabled";
+    }
   }
 
   decodeJwtPayload(token: string): JwtData | null {

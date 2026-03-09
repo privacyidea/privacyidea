@@ -24,6 +24,8 @@ import { NotificationService, NotificationServiceInterface } from "../notificati
 export interface SessionTimerServiceInterface {
   remainingTime: Signal<number | undefined>;
 
+  initialTimerStart(): void;
+
   startTimer(): void;
 
   resetTimer(): void;
@@ -40,33 +42,60 @@ export class SessionTimerService implements SessionTimerServiceInterface {
 
   private readonly authService: AuthServiceInterface = inject(AuthService);
 
-  private readonly sessionTimeoutMs = computed<number | undefined>(() => {
-    const logoutTimeSeconds = this.authService.logoutTimeSeconds();
-    if (logoutTimeSeconds) {
-      return logoutTimeSeconds * 1_000;
+  private readonly logoutTimeMs = computed(() => {
+    // Logout time which can be refreshed by user activity
+    let logoutTime = this.authService.logoutTimeS();
+    if (logoutTime === null) return null;
+    logoutTime *= 1_000;
+    const offset = this.currentTime() - this.startTime();
+    if (offset > 0) {
+      // Initially, loginTime and startTime are set to the actual time which can cause a negative offset.
+      logoutTime -= offset;
     }
-    return;
+    return Math.max(0, logoutTime);
   });
+
+  private readonly jwtLogoutTimeMs = computed(() => {
+    // Logout time based on JWT token expiration, cannot be refreshed by user activity
+    let jwtLogoutTime = this.authService.jwtLogoutTimeS();
+    if (jwtLogoutTime === null) return null;
+    jwtLogoutTime *= 1_000;
+    const offset = this.currentTime() - this.loginTime();
+    if (offset > 0) {
+      // Initially, loginTime and currentTime are set to the actual time which can cause a negative offset.
+      jwtLogoutTime -= offset;
+    }
+    return Math.max(0, jwtLogoutTime);
+  });
+
   private timer: NodeJS.Timeout | undefined;
   private intervalId: NodeJS.Timeout | undefined;
   private startTime = signal(Date.now());
+  private loginTime = signal(Date.now());
   private currentTime = signal(Date.now());
   remainingTime = computed(() => {
-    const sessionTimeoutMs = this.sessionTimeoutMs();
-    if (sessionTimeoutMs) {
-      return sessionTimeoutMs - (this.currentTime() - this.startTime());
-    }
-    return;
+    if (this.jwtLogoutTimeMs() == null && this.logoutTimeMs() == null) return;
+    if (this.logoutTimeMs() == null) return this.jwtLogoutTimeMs() ?? undefined;
+    if (this.jwtLogoutTimeMs() == null) return this.logoutTimeMs() ?? undefined;
+    return Math.min(this.jwtLogoutTimeMs() ?? 0, this.logoutTimeMs() ?? 0);
   });
+
+  initialTimerStart(): void {
+    this.loginTime.set(Date.now());
+    this.startRefreshingRemainingTime();
+    this.startTimer();
+  }
 
   startTimer(): void {
     this.resetTimer();
     this.startTime.set(Date.now());
-    const sessionTimeoutMs = this.sessionTimeoutMs();
-    if (sessionTimeoutMs) {
+    let sessionTimeoutMs = this.remainingTime();
+    if (sessionTimeoutMs != null) {
+      // Trigger logout slightly before the actual timeout to already open the notification and ensure the user sees it
+      sessionTimeoutMs = Math.max(0, sessionTimeoutMs - 500);
       this.timer = setTimeout(() => {
         this.handleSessionTimeout();
-      }, this.sessionTimeoutMs());
+      }, sessionTimeoutMs);
     } else {
       clearTimeout(this.timer);
       this.timer = undefined;
@@ -96,10 +125,14 @@ export class SessionTimerService implements SessionTimerServiceInterface {
   }
 
   private handleSessionTimeout(): void {
-    this.authService.logout();
-    this.notificationService.openSnackBar("Session expired. Redirecting to login page.");
-    this.router.navigate(["login"]);
-    this.clearRefreshInterval();
+    this.notificationService.openSnackBar(
+      $localize`Your session has expired. You will be logged out and redirected to the login page.`);
+    // Keep notification visible for 1.5s before logging out to ensure the user sees it
+    setTimeout(() => {
+      this.clearRefreshInterval();
+      this.resetTimer();
+      this.authService.logout();
+    }, 1500);
   }
 
   private clearRefreshInterval(): void {

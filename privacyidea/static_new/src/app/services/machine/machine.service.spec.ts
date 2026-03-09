@@ -31,7 +31,7 @@ import { MachineService } from "./machine.service";
 import { TableUtilsService } from "../table-utils/table-utils.service";
 import { TestBed } from "@angular/core/testing";
 import { environment } from "../../../environments/environment";
-import { FilterValue } from "../../core/models/filter_value";
+import { FilterValue } from "../../core/models/filter_value/filter_value";
 
 environment.proxyUrl = "/api";
 

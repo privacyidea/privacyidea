@@ -40,8 +40,7 @@ import { VersioningService } from "../../../services/version/version.service";
 import { ContentService } from "../../../services/content/content.service";
 import { DialogService } from "../../../services/dialog/dialog.service";
 import { FormControl, FormGroup } from "@angular/forms";
-import { lastValueFrom, of, throwError } from "rxjs";
-import { signal } from "@angular/core";
+import { of } from "rxjs";
 import { provideHttpClient } from "@angular/common/http";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { TokenEnrollmentSelfServiceComponent } from "./token-enrollment.self-service.component";
@@ -55,6 +54,9 @@ import { HttpTestingController, provideHttpClientTesting } from "@angular/common
 import { MockAuthService } from "../../../../testing/mock-services/mock-auth-service";
 import { environment } from "../../../../environments/environment";
 import { MockDialogService } from "../../../../testing/mock-services/mock-dialog-service";
+import { TokenCompleteEnrollmentComponent } from "@components/token/token-enrollment/token-complete-enrollment/token-complete-enrollment.component";
+import { TokenEnrollmentLastStepDialogComponent } from "@components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
+import { TokenVerifyEnrollmentComponent } from "@components/token/token-enrollment/token-verify-enrollment/token-verify-enrollment.component";
 
 describe("TokenEnrollmentComponent", () => {
   let fixture: ComponentFixture<TokenEnrollmentComponent>;
@@ -62,7 +64,7 @@ describe("TokenEnrollmentComponent", () => {
   let selfFixture: ComponentFixture<TokenEnrollmentSelfServiceComponent>;
   let selfComponent: TokenEnrollmentSelfServiceComponent;
 
-  let tokenSvc: MockTokenService;
+  let tokenService: MockTokenService;
   let userSvc: MockUserService;
   let notificationServiceMock: MockNotificationService;
   let dialogServiceMock: MockDialogService;
@@ -123,7 +125,7 @@ describe("TokenEnrollmentComponent", () => {
     selfFixture = TestBed.createComponent(TokenEnrollmentSelfServiceComponent);
     selfComponent = selfFixture.componentInstance;
 
-    tokenSvc = TestBed.inject(TokenService) as unknown as MockTokenService;
+    tokenService = TestBed.inject(TokenService) as unknown as MockTokenService;
     userSvc = TestBed.inject(UserService) as unknown as MockUserService;
     notificationServiceMock = TestBed.inject(NotificationService) as unknown as MockNotificationService;
     mockVersioningService = TestBed.inject(VersioningService) as unknown as MockVersioningService;
@@ -153,6 +155,11 @@ describe("TokenEnrollmentComponent", () => {
     expect(result).toBe("2025-09-10T08:05+0200");
   });
 
+  it("no default values for validity period", () => {
+    expect(component.selectedStartDateControl.value).toBeNull();
+    expect(component.selectedEndDateControl.value).toBeNull();
+  });
+
   it("pinMismatchValidator: returns error when PINs differ; null when equal", () => {
     const group = new FormGroup({
       setPin: new FormControl("1234", { nonNullable: true }),
@@ -165,16 +172,16 @@ describe("TokenEnrollmentComponent", () => {
   });
 
   it("isUserRequired depends on selected token type", () => {
-    tokenSvc.selectedTokenType.set({ key: "hotp", name: "HOTP", info: "", text: "HOTP" });
+    tokenService.selectedTokenType.set({ key: "hotp", name: "HOTP", info: "", text: "HOTP" });
     expect(component.isUserRequired).toBe(false);
 
-    tokenSvc.selectedTokenType.set({ key: "webauthn", name: "Webauthn", info: "", text: "WebAuthn" });
+    tokenService.selectedTokenType.set({ key: "webauthn", name: "Webauthn", info: "", text: "WebAuthn" });
     expect(component.isUserRequired).toBe(true);
 
-    tokenSvc.selectedTokenType.set({ key: "passkey", name: "Passkey", info: "", text: "Passkey" });
+    tokenService.selectedTokenType.set({ key: "passkey", name: "Passkey", info: "", text: "Passkey" });
     expect(component.isUserRequired).toBe(true);
 
-    tokenSvc.selectedTokenType.set({ key: "certificate", name: "Certificate", info: "", text: "Cert" });
+    tokenService.selectedTokenType.set({ key: "certificate", name: "Certificate", info: "", text: "Cert" });
     expect(component.isUserRequired).toBe(true);
   });
 
@@ -223,7 +230,7 @@ describe("TokenEnrollmentComponent", () => {
 
   describe("enrollToken()", () => {
     it("snacks and returns when no token type selected", async () => {
-      (tokenSvc.selectedTokenType as any).set("");
+      (tokenService.selectedTokenType as any).set("");
 
       await (component as any).enrollToken();
 
@@ -231,7 +238,7 @@ describe("TokenEnrollmentComponent", () => {
     });
 
     it("snacks when user is required but missing", async () => {
-      tokenSvc.selectedTokenType.set({ key: "webauthn", name: "Webauthn", info: "", text: "" });
+      tokenService.selectedTokenType.set({ key: "webauthn", name: "Webauthn", info: "", text: "" });
       userSvc.selectedUser.set(null);
 
       component.setPinControl.setValue("1234");
@@ -247,7 +254,7 @@ describe("TokenEnrollmentComponent", () => {
     });
 
     it("snacks when form is invalid (e.g., PIN mismatch)", async () => {
-      tokenSvc.selectedTokenType.set({ key: "hotp", name: "HOTP", info: "", text: "" });
+      tokenService.selectedTokenType.set({ key: "hotp", name: "HOTP", info: "", text: "" });
       userSvc.selectedUser.set(null);
 
       component.setPinControl.setValue("1234");
@@ -261,7 +268,7 @@ describe("TokenEnrollmentComponent", () => {
     });
 
     it("snacks when clickEnroll is not provided", async () => {
-      tokenSvc.selectedTokenType.set({ key: "hotp", name: "HOTP", info: "", text: "" });
+      tokenService.selectedTokenType.set({ key: "hotp", name: "HOTP", info: "", text: "" });
 
       component.setPinControl.setValue("1234");
       component.repeatPinControl.setValue("1234");
@@ -275,63 +282,8 @@ describe("TokenEnrollmentComponent", () => {
       );
     });
 
-    it("calls clickEnroll, sets enrollResponse, opens last step dialog", async () => {
-      tokenSvc.selectedTokenType.set({ key: "hotp", name: "HOTP", info: "", text: "" });
-      component.descriptionControl.setValue("desc");
-      component.setPinControl.setValue("0000");
-      component.repeatPinControl.setValue("0000");
-      component.selectedContainerControl.setValue("CONT-1");
-      component.selectedUserRealmControl.setValue("");
-
-      const response = { detail: { rollout_state: "done" } } as any;
-
-      const enrollmentArgsGetterFn = jest.fn().mockReturnValue(of(response));
-      component.updateEnrollmentArgsGetter(enrollmentArgsGetterFn);
-      const onEnrollmentResponseFn = jest.fn().mockReturnValue(lastValueFrom(of(response)));
-      component.updateOnEnrollmentResponse(onEnrollmentResponseFn);
-
-      const spyOpen = jest.spyOn(component as any, "openLastStepDialog");
-
-      await component.enrollToken();
-
-      expect(enrollmentArgsGetterFn).toHaveBeenCalledTimes(1);
-      expect(component.enrollResponse()).toBe(response);
-      expect(spyOpen).toHaveBeenCalledWith({ response, user: null });
-    });
-
-    it("handles clickEnroll rejection by showing error snack", async () => {
-      tokenSvc.selectedTokenType.set({ key: "hotp", name: "HOTP", info: "", text: "" });
-      component.setPinControl.setValue("1111");
-      component.repeatPinControl.setValue("1111");
-
-      const error = { error: { result: { error: { message: "nope" } } } };
-      const enrollmentArgsGetterFn = jest.fn().mockReturnValue({});
-      component.updateEnrollmentArgsGetter(enrollmentArgsGetterFn);
-      tokenSvc.enrollToken.mockReturnValue(Promise.reject(error));
-
-      await component.enrollToken().catch(() => undefined);
-
-      expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith("Failed to enroll token: nope");
-    });
-
-    it("does NOT open dialog if rollout_state is 'clientwait'", async () => {
-      tokenSvc.selectedTokenType.set({ key: "hotp", name: "HOTP", info: "", text: "" });
-      component.setPinControl.setValue("0000");
-      component.repeatPinControl.setValue("0000");
-      TestBed.flushEffects();
-
-      const response = { detail: { rollout_state: "clientwait" } } as any;
-      tokenSvc.enrollToken.mockReturnValue(of(response));
-
-      const spyOpen = jest.spyOn(component as any, "openLastStepDialog");
-
-      await component.enrollToken();
-
-      expect(spyOpen).not.toHaveBeenCalled();
-    });
-
     it("_handleEnrollmentResponse snacks when user is required but missing", () => {
-      tokenSvc.selectedTokenType.set({ key: "webauthn", name: "Webauthn", info: "", text: "" });
+      tokenService.selectedTokenType.set({ key: "webauthn", name: "Webauthn", info: "", text: "" });
       (component as any)._handleEnrollmentResponse({
         response: { detail: { rollout_state: "done" } } as any,
         user: null
@@ -341,36 +293,349 @@ describe("TokenEnrollmentComponent", () => {
         "User is required for this token type, but no user was provided."
       );
     });
+
+    it("Default values for enrollment", () => {
+      const enrollmentArgsGetterSpy = jest.fn().mockReturnValue({ data: {}, mapper: {} });
+      component.enrollmentArgsGetter = enrollmentArgsGetterSpy;
+
+      component.enrollToken();
+
+      const expected_parameters = {
+        type: "hotp",
+        description: "",
+        containerSerial: "",
+        validityPeriodStart: "",
+        validityPeriodEnd: "",
+        user: "",
+        realm: "",
+        onlyAddToRealm: false,
+        pin: "",
+        serial: null
+      };
+      expect(enrollmentArgsGetterSpy).toHaveBeenCalledWith(expected_parameters);
+    });
+
+    it("Setting validity dates works", () => {
+      const enrollmentArgsGetterSpy = jest.fn().mockReturnValue({ data: {}, mapper: {} });
+      component.enrollmentArgsGetter = enrollmentArgsGetterSpy;
+      component.selectedStartDateControl.setValue(new Date("2026-01-01"));
+      component.selectedEndDateControl.setValue(new Date("2026-12-31"));
+
+      component.enrollToken();
+
+      const expected_parameters = {
+        type: "hotp",
+        description: "",
+        containerSerial: "",
+        validityPeriodStart: "2026-01-01T00:00+0000",
+        validityPeriodEnd: "2026-12-31T23:59+0000",
+        user: "",
+        realm: "",
+        onlyAddToRealm: false,
+        pin: "",
+        serial: null
+      };
+      expect(enrollmentArgsGetterSpy).toHaveBeenCalledWith(expected_parameters);
+    });
+
+    describe("enrollment flows", () => {
+      it("Simple enrollment only opens last step dialog", async () => {
+        tokenService.selectedTokenType.set({ key: "totp", name: "TOTP", info: "", text: "" });
+        const enrollmentArgsGetterFn = jest.fn().mockReturnValue({
+          data: { type: "totp" },
+          mapper: jest.fn().mockReturnValue({ type: "totp" }) as any
+        });
+        component.updateEnrollmentArgsGetter(enrollmentArgsGetterFn);
+
+        // Simulate 2-step init enrollment response
+        const enrollResponse = {
+          result: { status: true },
+          detail: { serial: "TOTP0123456", googleurl: { img: "", value: "" } }
+        };
+        tokenService.enrollToken.mockReturnValueOnce(of(enrollResponse));
+
+        const spyOpen = jest.spyOn(component as any, "openLastStepDialog");
+
+        // Call enrollToken (should open last step dialog)
+        await component.enrollToken();
+
+        expect(enrollmentArgsGetterFn).toHaveBeenCalledTimes(1);
+        expect(component.enrollResponse()).toBe(enrollResponse);
+        expect(spyOpen).toHaveBeenCalledWith(enrollResponse);
+
+        // Initial enroll API request
+        expect(tokenService.enrollToken).toHaveBeenCalled();
+        // Open complete dialog
+        expect(dialogServiceMock.openDialog).toHaveBeenCalledWith(
+          expect.objectContaining({
+            component: TokenEnrollmentLastStepDialogComponent,
+            data: expect.objectContaining({ response: enrollResponse })
+          })
+        );
+
+        // Complete and Verify dialog were not opened
+        expect(dialogServiceMock.openDialog).not.toHaveBeenCalledWith(
+          expect.objectContaining({
+            component: TokenCompleteEnrollmentComponent,
+            data: expect.anything()
+          })
+        );
+        expect(dialogServiceMock.openDialog).not.toHaveBeenCalledWith(
+          expect.objectContaining({
+            component: TokenVerifyEnrollmentComponent,
+            data: expect.anything()
+          })
+        );
+      });
+
+      it("handles clickEnroll rejection by showing error snack", async () => {
+        tokenService.selectedTokenType.set({ key: "hotp", name: "HOTP", info: "", text: "" });
+        component.setPinControl.setValue("1111");
+        component.repeatPinControl.setValue("1111");
+
+        const error = { error: { result: { error: { message: "nope" } } } };
+        const enrollmentArgsGetterFn = jest.fn().mockReturnValue({});
+        component.updateEnrollmentArgsGetter(enrollmentArgsGetterFn);
+        tokenService.enrollToken.mockReturnValue(Promise.reject(error));
+
+        await component.enrollToken().catch(() => undefined);
+
+        expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith("Failed to enroll token: nope");
+      });
+
+      it("Two step enrollment: complete dialog -> last step dialog", async () => {
+        tokenService.selectedTokenType.set({ key: "totp", name: "TOTP", info: "", text: "" });
+        const enrollmentArgsGetterFn = jest.fn().mockReturnValue({
+          data: { type: "totp" },
+          mapper: jest.fn().mockReturnValue({ type: "totp", "2stepinit": true }) as any
+        });
+        component.updateEnrollmentArgsGetter(enrollmentArgsGetterFn);
+
+        // Simulate 2-step init enrollment response
+        const twoStepDetail = {
+          serial: "TOTP0123456",
+          "2step_output": 64,
+          "2step_difficulty": 10000,
+          "2step_salt": 1,
+          googleurl: { img: "", value: "" },
+          rollout_state: "clientwait"
+        };
+        const enrollResponse = { result: { status: true }, detail: twoStepDetail, type: "hotp" };
+        tokenService.enrollToken.mockReturnValueOnce(of(enrollResponse));
+
+        // Mock dialogService.openDialog for both dialogs
+        const completeDetail = { serial: "TOTP0123456", googleurl: { img: "", value: "" }, rollout_state: "" };
+        const completeResponse = { result: { status: true }, detail: completeDetail, type: "hotp" };
+        const afterClosedCompleteMock = jest.fn().mockReturnValue(of(completeResponse));
+        dialogServiceMock.openDialog.mockImplementation((opts) => {
+          if (opts.component && opts.component.name === "TokenCompleteEnrollmentComponent") {
+            return { afterClosed: afterClosedCompleteMock };
+          }
+          if (opts.component && opts.component.name === "TokenEnrollmentLastStepDialogComponent") {
+            return { afterClosed: undefined };
+          }
+          return { afterClosed: jest.fn().mockReturnValue(of(null)) };
+        });
+
+        // Call enrollToken (should open complete dialog, skip verify, open last step dialog)
+        await component.enrollToken();
+
+        // Initial enroll API request
+        expect(tokenService.enrollToken).toHaveBeenCalled();
+        // Open complete dialog
+        expect(dialogServiceMock.openDialog).toHaveBeenCalledWith(
+          expect.objectContaining({
+            component: TokenCompleteEnrollmentComponent,
+            data: expect.objectContaining({ response: enrollResponse })
+          })
+        );
+        // After closed complete dialog called and opened last step dialog with correct data
+        expect(afterClosedCompleteMock).toHaveBeenCalled();
+        expect(dialogServiceMock.openDialog).toHaveBeenCalledWith(
+          expect.objectContaining({
+            component: TokenEnrollmentLastStepDialogComponent,
+            data: expect.objectContaining({ response: completeResponse })
+          })
+        );
+
+        // Verify dialog was not opened
+        expect(dialogServiceMock.openDialog).not.toHaveBeenCalledWith(
+          expect.objectContaining({
+            component: TokenVerifyEnrollmentComponent,
+            data: expect.anything()
+          })
+        );
+      });
+
+      it("Two step + verify enrollment: complete dialog -> verify dialog -> last step dialog", async () => {
+        tokenService.selectedTokenType.set({ key: "totp", name: "TOTP", info: "", text: "" });
+        const enrollmentArgsGetterFn = jest.fn().mockReturnValue({
+          data: { type: "totp" },
+          mapper: jest.fn().mockReturnValue({ type: "totp", "2stepinit": true }) as any
+        });
+        component.updateEnrollmentArgsGetter(enrollmentArgsGetterFn);
+
+        // Simulate 2-step init enrollment response
+        const twoStepDetail = {
+          serial: "TOTP0123456",
+          "2step_output": 64,
+          "2step_difficulty": 10000,
+          "2step_salt": 1,
+          googleurl: { img: "", value: "" },
+          rollout_state: "clientwait"
+        };
+        const enrollResponse = { result: { status: true }, detail: twoStepDetail };
+        tokenService.enrollToken.mockReturnValueOnce(of(enrollResponse));
+
+        // Mock dialogService.openDialog for all dialogs
+        const completeDetail = {
+          serial: "TOTP0123456",
+          googleurl: { img: "", value: "" },
+          rollout_state: "verify",
+          verify: { message: "Please enter a valid OTP value of the new token" }
+        };
+        const completeResponse = { result: { status: true }, detail: completeDetail };
+        const afterClosedCompleteMock = jest.fn().mockReturnValue(of(completeResponse));
+        const verifyResponse = {
+          result: { status: true },
+          detail: { serial: "TOTP0123456", rollout_state: "enrolled" }
+        };
+        const afterClosedVerifyMock = jest.fn().mockReturnValue(of(verifyResponse));
+        dialogServiceMock.openDialog.mockImplementation((opts) => {
+          if (opts.component && opts.component.name === "TokenCompleteEnrollmentComponent") {
+            return { afterClosed: afterClosedCompleteMock };
+          }
+          if (opts.component && opts.component.name === "TokenVerifyEnrollmentComponent") {
+            return { afterClosed: afterClosedVerifyMock };
+          }
+          if (opts.component && opts.component.name === "TokenEnrollmentLastStepDialogComponent") {
+            return { afterClosed: undefined };
+          }
+          return { afterClosed: jest.fn().mockReturnValue(of(null)) };
+        });
+
+        // Call enrollToken (should open complete dialog -> open verify dialog -> open last step dialog)
+        await component.enrollToken();
+
+        // Initial enroll API request
+        expect(tokenService.enrollToken).toHaveBeenCalled();
+        // Open complete dialog
+        expect(dialogServiceMock.openDialog).toHaveBeenCalledWith(
+          expect.objectContaining({
+            component: TokenCompleteEnrollmentComponent,
+            data: expect.objectContaining({ response: enrollResponse })
+          })
+        );
+        // After closed complete dialog called and opened verify with correct data
+        expect(afterClosedCompleteMock).toHaveBeenCalled();
+        expect(dialogServiceMock.openDialog).toHaveBeenCalledWith(
+          expect.objectContaining({
+            component: TokenVerifyEnrollmentComponent,
+            data: expect.objectContaining({ response: completeResponse })
+          })
+        );
+        // verify dialog closed and last step dialog opened with correct data
+        expect(afterClosedVerifyMock).toHaveBeenCalled();
+        expect(dialogServiceMock.openDialog).toHaveBeenCalledWith(
+          expect.objectContaining({
+            component: TokenEnrollmentLastStepDialogComponent,
+            data: expect.objectContaining({ response: verifyResponse })
+          })
+        );
+      });
+
+      it("Verify enrollment: verify dialog -> last step dialog", async () => {
+        tokenService.selectedTokenType.set({ key: "totp", name: "TOTP", info: "", text: "" });
+        const enrollmentArgsGetterFn = jest.fn().mockReturnValue({
+          data: { type: "totp" },
+          mapper: jest.fn().mockReturnValue({ type: "totp" }) as any
+        });
+        component.updateEnrollmentArgsGetter(enrollmentArgsGetterFn);
+
+        // Simulate init enrollment response
+        const completeDetail = {
+          serial: "TOTP0123456",
+          googleurl: { img: "", value: "" },
+          rollout_state: "verify",
+          verify: { message: "Please enter a valid OTP value of the new token" }
+        };
+        const enrollResponse = { result: { status: true }, detail: completeDetail };
+        tokenService.enrollToken.mockReturnValueOnce(of(enrollResponse));
+
+        // Mock dialogService.openDialog for all dialogs
+        const verifyResponse = {
+          result: { status: true },
+          detail: { serial: "TOTP0123456", rollout_state: "enrolled" }
+        };
+        const afterClosedVerifyMock = jest.fn().mockReturnValue(of(verifyResponse));
+        dialogServiceMock.openDialog.mockImplementation((opts) => {
+          if (opts.component && opts.component.name === "TokenVerifyEnrollmentComponent") {
+            return { afterClosed: afterClosedVerifyMock };
+          }
+          if (opts.component && opts.component.name === "TokenEnrollmentLastStepDialogComponent") {
+            return { afterClosed: undefined };
+          }
+          return { afterClosed: jest.fn().mockReturnValue(of(null)) };
+        });
+
+        // Call enrollToken (should open complete dialog -> open verify dialog -> open last step dialog)
+        await component.enrollToken();
+
+        // Initial enroll API request
+        expect(tokenService.enrollToken).toHaveBeenCalled();
+        // Open verify dialog
+        expect(dialogServiceMock.openDialog).toHaveBeenCalledWith(
+          expect.objectContaining({
+            component: TokenVerifyEnrollmentComponent,
+            data: expect.objectContaining({ response: enrollResponse })
+          })
+        );
+        // closed verify dialog and open last step dialog with correct data
+        expect(afterClosedVerifyMock).toHaveBeenCalled();
+        expect(dialogServiceMock.openDialog).toHaveBeenCalledWith(
+          expect.objectContaining({
+            component: TokenEnrollmentLastStepDialogComponent,
+            data: expect.objectContaining({ response: verifyResponse })
+          })
+        );
+
+        // Complete dialog was not opened
+        expect(dialogServiceMock.openDialog).not.toHaveBeenCalledWith(
+          expect.objectContaining({
+            component: TokenCompleteEnrollmentComponent,
+            data: expect.anything()
+          })
+        );
+      });
+
+    });
   });
 
   describe("open/reopen dialog flows", () => {
     it("openLastStepDialog: snacks when response is null", () => {
-      (component as any).openLastStepDialog({ response: null, user: null });
+      (component as any).openLastStepDialog(null);
       expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith("No enrollment response available.");
     });
 
     it("openLastStepDialog: stores last-step data and opens dialog", () => {
-      tokenSvc.selectedTokenType.set({ key: "hotp", name: "HOTP", info: "", text: "" });
+      tokenService.selectedTokenType.set({ key: "hotp", name: "HOTP", info: "", text: "" });
+      component.enrolledDialogData.set({ response: {} as any, enrollParameters: {} as any, tokenType: "hotp" });
       const response = { detail: {} } as any;
-      (component as any).openLastStepDialog({ response, user: null });
+      (component as any).openLastStepDialog(response);
 
       expect(dialogServiceMock.openDialog).toHaveBeenCalledTimes(1);
       expect(dialogServiceMock.openDialog).toHaveBeenCalledWith(
         expect.objectContaining({
-          component: expect.any(Function),
+          component: TokenEnrollmentLastStepDialogComponent,
           data: expect.objectContaining({
-            tokentype: tokenSvc.selectedTokenType(),
+            tokenType: "hotp",
             response,
-            serial: expect.any(Function),
-            enrollToken: expect.any(Function),
-            user: null,
-            userRealm: "",
-            onlyAddToRealm: false
+            enrollParameters: {}
           })
         })
       );
-
-      expect(component._lastTokenEnrollmentLastStepDialogData()).toBeTruthy();
+      expect(component.enrolledDialogData()).toBeDefined();
+      expect(component.enrolledDialogData()?.response).toEqual(response);
     });
 
     it("reopenEnrollmentDialog: uses reopen function when provided", () => {
@@ -383,16 +648,12 @@ describe("TokenEnrollmentComponent", () => {
     });
 
     it("reopenEnrollmentDialog: falls back to last-step data", () => {
-      tokenSvc.selectedTokenType.set({ key: "hotp", name: "HOTP", info: "", text: "" });
-      (component as any)._lastTokenEnrollmentLastStepDialogData.set({
-        tokentype: tokenSvc.selectedTokenType(),
-        response: {},
-        serial: signal(null),
-        enrollToken: () => Promise.resolve(null),
-        user: null,
-        userRealm: "",
-        onlyAddToRealm: false
-      } as any);
+      tokenService.selectedTokenType.set({ key: "hotp", name: "HOTP", info: "", text: "" });
+      component.enrolledDialogData.set({
+        tokenType: "hotp",
+        response: {} as any,
+        enrollParameters: {} as any
+      });
 
       component.reopenEnrollmentDialog();
       expect(dialogServiceMock.openDialog).toHaveBeenCalledTimes(1);

@@ -76,10 +76,8 @@ from dateutil.tz import tzlocal
 from flask import Request
 from flask_sqlalchemy.session import Session
 from sqlalchemy import and_, func, or_, select
-from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.sql import Select
 from sqlalchemy.sql.expression import delete
-from sqlalchemy.sql.functions import FunctionElement
 
 from privacyidea.api.lib.utils import send_result
 from privacyidea.lib import _
@@ -116,6 +114,7 @@ from privacyidea.lib.utils import (is_true, BASE58, hexlify_and_unicode, check_s
 from privacyidea.models import (db, Token, Realm, TokenRealm, Challenge,
                                 TokenInfo, TokenOwner, TokenTokengroup, Tokengroup, TokenContainer,
                                 TokenContainerToken)
+from privacyidea.models.utils import clob_to_varchar
 
 log = logging.getLogger(__name__)
 
@@ -130,20 +129,6 @@ PI_TOKEN_SERIAL_RANDOM = "PI_TOKEN_SERIAL_RANDOM"  # nosec B105
 B32_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567'
 
 
-# Define a function to convert Oracle CLOBs to VARCHAR before using them in a
-# compare operation.
-# By using <https://docs.sqlalchemy.org/en/13/core/compiler.html> we can
-# differentiate between different dialects.
-class clob_to_varchar(FunctionElement):
-    name = 'clob_to_varchar'
-    inherit_cache = True
-
-
-@compiles(clob_to_varchar)
-def fn_clob_to_varchar_default(element, compiler, **kw):
-    return compiler.process(element.clauses, **kw)
-
-
 @dataclass(frozen=True)
 class TokenImportResult:
     successful_tokens: list[str]
@@ -155,11 +140,6 @@ class TokenImportResult:
 class TokenExportResult:
     successful_tokens: list[str]  # The serialized tokens for which the export succeeded
     failed_tokens: list[str]  # The serial of tokens for which the export failed
-
-
-@compiles(clob_to_varchar, 'oracle')
-def fn_clob_to_varchar_oracle(element, compiler, **kw):
-    return "to_char(%s)" % compiler.process(element.clauses, **kw)
 
 
 @log_with(log)
@@ -2976,7 +2956,7 @@ def challenge_text_replace(message, user, token_obj, additional_tags: dict = Non
 
     if token_type == "email":
         if is_true(TokenClass.get_tokeninfo(token_obj, "dynamic_email")):
-            email = token_obj.user.info.get(token_obj.EMAIL_ADDRESS_KEY)
+            email = token_obj.user.get_specific_info([token_obj.EMAIL_ADDRESS_KEY]).get(token_obj.EMAIL_ADDRESS_KEY)
             if isinstance(email, list) and email:
                 # If there is a non-empty list, we use the first entry
                 email = email[0]

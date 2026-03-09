@@ -121,7 +121,7 @@
           @if (resolverType === 'ldapresolver') {
             <button
               (click)="onQuickTest()"
-              [disabled]="isSaving || isTesting || !resolverType || !isAdditionalFieldsValid"
+              [disabled]="isSaving() || isTesting() || !resolverType || !isAdditionalFieldsValid"
               class="action-button-secondary button-width-l"
               mat-stroked-button>
               <mat-icon>wifi</mat-icon>
@@ -131,7 +131,7 @@
 
           <button
             (click)="onTest()"
-            [disabled]="isSaving || isTesting || !resolverType || !isAdditionalFieldsValid"
+            [disabled]="isSaving() || isTesting() || !resolverType || !isAdditionalFieldsValid"
             class="action-button-secondary button-width-m"
             mat-stroked-button>
             <mat-icon>wifi</mat-icon>
@@ -148,7 +148,7 @@
 
         <button
           (click)="onSave()"
-          [disabled]="!resolverName || !resolverType || !isAdditionalFieldsValid"
+          [disabled]="!canSave"
           class="action-button-primary button-width-s"
           mat-stroked-button>
           <mat-icon>save</mat-icon>

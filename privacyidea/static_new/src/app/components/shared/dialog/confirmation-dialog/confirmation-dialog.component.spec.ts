@@ -34,11 +34,6 @@ describe("ConfirmationDialogComponent", () => {
         label: "Delete",
         value: true
       },
-      cancelAction: {
-        type: "cancel",
-        label: "Cancel",
-        value: false
-      },
       items: ["Item 1", "Item 2", "Item 3"],
       itemType: "items"
     };

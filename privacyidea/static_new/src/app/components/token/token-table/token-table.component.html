@@ -90,8 +90,7 @@
                         (click)="onKeywordClick(apiFilterKeyMap[column.key])"
                         class="filter-button"
                         mat-icon-button>
-                        <mat-icon
-                          class="keyword-button-icon margin-left-0">
+                        <mat-icon class="keyword-button-icon margin-left-0">
                           {{ getFilterIconName(column.key) }}
                         </mat-icon>
                       </button>
@@ -140,8 +139,8 @@
                       <span
                         (click)="toggleActive(tokenDetails)"
                         [ngClass]="tableUtilsService.getClassForColumn(column.key, tokenDetails)">
-                      {{ tableUtilsService.getDisplayText(column.key, tokenDetails) }}
-                    </span>
+                        {{ tableUtilsService.getDisplayText(column.key, tokenDetails) }}
+                      </span>
                     }
                   }
                   @case ("failcount") {
@@ -149,8 +148,8 @@
                       <span
                         (click)="resetFailCount(tokenDetails)"
                         [ngClass]="tableUtilsService.getClassForColumn(column.key, tokenDetails)">
-                      {{ tableUtilsService.getDisplayText(column.key, tokenDetails) }}
-                    </span>
+                        {{ tableUtilsService.getDisplayText(column.key, tokenDetails) }}
+                      </span>
                     }
                   }
                   @case ("realms") {

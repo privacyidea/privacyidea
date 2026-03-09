@@ -15,15 +15,36 @@
 #
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
-from datetime import datetime, timezone
 
+from datetime import datetime, timezone
+from sqlalchemy.ext.compiler import compiles
+from sqlalchemy.sql.functions import FunctionElement
 from privacyidea.models import db
+
 
 def utc_now() -> datetime:
     """
     Return the current UTC time as a naive datetime object.
     """
     return datetime.now(timezone.utc).replace(tzinfo=None)
+
+
+# Define a function to convert Oracle CLOBs to VARCHAR before using them in a
+# compare operation. (See https://docs.sqlalchemy.org/en/20/core/compiler.html)
+class clob_to_varchar(FunctionElement):
+    name = 'clob_to_varchar'
+    inherit_cache = True
+
+
+@compiles(clob_to_varchar)
+def fn_clob_to_varchar_default(element, compiler, **kw):
+    return compiler.process(element.clauses, **kw)
+
+
+@compiles(clob_to_varchar, 'oracle')
+def fn_clob_to_varchar_oracle(element, compiler, **kw):
+    return "to_char(%s)" % compiler.process(element.clauses, **kw)
+
 
 class MethodsMixin:
     """
