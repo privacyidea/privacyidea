@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,18 +16,26 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { ConfigServiceInterface } from "../../app/services/config/config.service";
+import { signal } from "@angular/core";
 
-import { HttpInterceptorFn } from "@angular/common/http";
-import { VersioningService, VersioningServiceInterface } from "../../services/version/version.service";
-import { inject } from "@angular/core";
-
-export const userAgentInterceptor: HttpInterceptorFn = (req, next) => {
-  const versioningService: VersioningServiceInterface = inject(VersioningService);
-  const userAgentReq = req.clone({
-    // TODO: include the original user-agent
-    setHeaders: {
-      "User-Agent": "privacyIDEA-WebUI/" + versioningService.rawVersion()
-    }
+export class MockConfigService implements ConfigServiceInterface {
+  config = signal({
+    remote_user: "",
+    force_remote_user: false,
+    password_reset: false,
+    hsm_ready: false,
+    customization: "",
+    realms: "",
+    logo: "",
+    show_node: "",
+    external_links: false,
+    has_job_queue: "false",
+    login_text: "",
+    gdpr_link: "",
+    translation_warning: false,
+    passkey_login: "show"
   });
-  return next(userAgentReq);
-};
+
+  loadConfig = jest.fn().mockImplementation(() => {});
+}

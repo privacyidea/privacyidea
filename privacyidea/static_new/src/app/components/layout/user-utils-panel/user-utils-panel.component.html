@@ -20,7 +20,13 @@
 <div class="utils-group">
   <div class="account-div">
     <span><mat-icon>account_box</mat-icon></span>
-    <span class="profile-text">{{ profileText() }}</span>
+
+    <div class="text-div">
+      <span class="profile-text">{{ profileText() }}</span>
+      @if (localNode()) {
+        <i>{{ localNode() }}</i>
+      }
+    </div>
     <button
       (click)="logout()"
       aria-label="Logout"

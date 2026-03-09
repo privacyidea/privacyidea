@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2026 NetKnights GmbH <https://netknights.it>
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
 # http://www.privacyidea.org
 # (c) cornelius kölbel, privacyidea.org
 #
@@ -160,6 +163,7 @@ def before_create_user_request():
         #  If now realm is specified, we need to add "filterrealms".
         #  If the admin tries to view realms, he is not allowed to, we need to
         #  raise an exception.
+
 
 @user_blueprint.before_request
 @user_required

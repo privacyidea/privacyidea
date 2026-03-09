@@ -1,4 +1,7 @@
 /**
+ * SPDX-FileCopyrightText: 2015 NetKnights GmbH <https://netknights.it>
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ *
  * http://www.privacyidea.org
  * (c) cornelius kölbel, cornelius@privacyidea.org
  *
@@ -447,7 +450,7 @@ angular.module("privacyideaApp")
                     if ($scope.params.emailFilter) {
                         params.email = "*" + $scope.params.emailFilter + "*";
                     }
-                    params.attributes = "username,givenname,surname,email,phone,mobile,description,userid,editable";
+                    params.attributes = "username,givenname,surname,email,phone,mobile,description,userid,editable,resolver";
                     UserFactory.getUsers(params,
                         function (data) {
                             //debug: console.log("success");
