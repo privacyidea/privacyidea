@@ -45,9 +45,6 @@ $button-low-contrast-variant: linear-gradient(
   &:disabled {
     color: #909090 !important;
   }
-  &:hover {
-    background-color: var(--mat-sys-surface-container-highest) !important;
-  }
 }
 
 @mixin hover-or-active($bg, $shadow, $translate: false) {
@@ -431,7 +428,6 @@ $button-low-contrast-variant: linear-gradient(
 
 %action-button-base {
   border-radius: var(--border-radius);
-  justify-content: start;
   border-style: solid;
   border-width: 1px;
   transition:

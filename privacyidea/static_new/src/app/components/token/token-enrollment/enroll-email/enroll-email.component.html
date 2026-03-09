@@ -21,8 +21,9 @@
     <span
       class="inline-warning"
       i18n>
- For Email tokens to work properly you need to set the <a href="#">Email Token Config</a>!
- </span><!-- TODO: Link -->
+      For Email tokens to work properly you need to set the
+      <a (click)="onEmailTokenConfig()">Email Token Config</a>!
+    </span>
   }
   <mat-checkbox
     [formControl]="readEmailDynamicallyControl"

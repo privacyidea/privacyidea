@@ -48,7 +48,8 @@
     <app-tiqr-config [formData]="formData()"></app-tiqr-config>
     <app-email-config
       [formData]="formData()"
-      [smtpServers]="smtpServerIdentifiers()"></app-email-config>
+      [smtpServers]="smtpServerIdentifiers()"
+      [expanded]="expandEmail()"></app-email-config>
     <app-questionnaire-config
       (onAddQuestion)="addQuestion($event)"
       (onDeleteEntry)="deleteQuestion($event)"

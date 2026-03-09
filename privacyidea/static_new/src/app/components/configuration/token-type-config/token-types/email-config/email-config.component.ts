@@ -45,4 +45,5 @@ export class EmailConfigComponent {
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
   formData = input.required<Record<string, any>>();
   smtpServers = input.required<string[]>();
+  expanded = input<boolean>(false);
 }
