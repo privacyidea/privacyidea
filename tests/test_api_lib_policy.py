@@ -41,7 +41,6 @@ from privacyidea.api.lib.prepolicy import (check_token_upload,
                                            mangle, is_remote_user_allowed,
                                            required_email, auditlog_age, hide_audit_columns,
                                            papertoken_count,
-                                           u2ftoken_verify_cert,
                                            tantoken_count, sms_identifiers,
                                            pushtoken_add_config, pushtoken_validate,
                                            indexedsecret_force_attribute,
@@ -1751,41 +1750,6 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
 
         # finally delete policy
         delete_policy("tanpol")
-
-    def test_21_u2f_verify_cert(self):
-        # Usually the attestation certificate gets verified during enrollment unless
-        # we set the policy scope=enrollment, action=no_verify
-        from privacyidea.lib.tokens.u2ftoken import U2FACTION
-        g.logged_in_user = {"username": "user1",
-                            "realm": "",
-                            "role": "user"}
-        builder = EnvironBuilder(method='POST',
-                                 data={'serial': "OATH123456"},
-                                 headers={})
-        env = builder.get_environ()
-        # Set the remote address so that we can filter for it
-        env["REMOTE_ADDR"] = "10.0.0.1"
-        g.client_ip = env["REMOTE_ADDR"]
-        req = Request(env)
-        req.User = User()
-        # The default behaviour is to verify the certificate
-        req.all_data = {
-            "type": "u2f"}
-        u2ftoken_verify_cert(req, "init")
-        self.assertTrue(req.all_data.get("u2f.verify_cert"))
-
-        # Set a policy that defines to NOT verify the certificate
-        set_policy(name="polu2f1",
-                   scope=SCOPE.ENROLL,
-                   action=U2FACTION.NO_VERIFY_CERT)
-        g.policy_object = PolicyClass()
-        req.all_data = {
-            "type": "u2f"}
-        u2ftoken_verify_cert(req, "init")
-        self.assertFalse(req.all_data.get("u2f.verify_cert"))
-
-        # finally delete policy
-        delete_policy("polu2f1")
 
     def test_01_sms_identifier(self):
         # every admin is allowed to enroll sms token with gw1 or gw2

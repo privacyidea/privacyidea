@@ -102,7 +102,7 @@ from privacyidea.lib.tokens.certificatetoken import ACTION as CERTIFICATE_ACTION
 from privacyidea.lib.tokens.indexedsecrettoken import PIIXACTION
 from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
 from privacyidea.lib.tokens.pushtoken import PUSH_ACTION
-from privacyidea.lib.tokens.u2ftoken import (U2FACTION, parse_registration_data)
+from privacyidea.lib.tokens.u2ftoken import (U2FACTION)
 # Token specific imports!
 from privacyidea.lib.tokens.webauthn import (AUTHENTICATOR_ATTACHMENT_TYPES,
                                              USER_VERIFICATION_LEVELS, ATTESTATION_LEVELS,
@@ -1910,56 +1910,6 @@ def u2ftoken_verify_cert(request, action):
     return True
 
 
-def u2ftoken_allowed(request, action):
-    """
-    This is a token specific wrapper for u2f token for the endpoint
-     /token/init.
-     According to the policy scope=SCOPE.ENROLL,
-     action=U2FACTION.REQ it checks, if the assertion certificate is an
-     allowed U2F token type.
-
-     If the token, which is enrolled contains a non allowed attestation
-     certificate, we bail out.
-
-    :param request:
-    :param action:
-    :return:
-    """
-
-    ttype = request.all_data.get("type")
-
-    # Get the registration data of the 2nd step of enrolling a U2F device
-    reg_data = request.all_data.get("regdata")
-
-    if ttype and ttype.lower() == "u2f" and reg_data:
-        # We have a registered u2f device!
-        serial = request.all_data.get("serial")
-
-        # We just check, if the issuer is allowed, not if the certificate
-        # is still valid! (verify_cert=False)
-        attestation_cert, user_pub_key, key_handle, \
-            signature, description = parse_registration_data(reg_data,
-                                                             verify_cert=False)
-
-        allowed_certs_pols = Match.user(g, scope=SCOPE.ENROLL, action=U2FACTION.REQ,
-                                        user_object=request.User if request.User else None) \
-            .action_values(unique=False)
-
-        if (len(allowed_certs_pols)
-                and not _attestation_certificate_allowed(
-                    attestation_cert.to_cryptography(), allowed_certs_pols)):
-            log.warning("The U2F device {0!s} is not "
-                        "allowed to be registered due to policy "
-                        "restriction".format(serial))
-            raise PolicyError("The U2F device is not allowed "
-                              "to be registered due to policy "
-                              "restriction.")
-            # TODO: Maybe we should delete the token, as it is a not
-            # usable U2F token, now.
-
-    return True
-
-
 def indexedsecret_force_attribute(request, action):
     """
     This is a token specific wrapper for indexedsecret token for the endpoint
@@ -2354,29 +2304,39 @@ def fido2_enroll(request, action):
 
 def webauthntoken_allowed(request, action):
     """
-    This is a token specific wrapper for WebAuthn token for the endpoint /token/init.
+    Prepare WebAuthn enrollment authorization constraints for ``/token/init``.
 
-    According to the policy scope=SCOPE.ENROLL,
-    action=WEBAUTHNACTION.REQ it checks, if the assertion certificate is
-    for an allowed WebAuthn token type. According to the policy
-    scope=SCOPE.ENROLL, action=WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST
-    it checks, whether the AAGUID is whitelisted. Note: If self-attestation
-    is allowed, it is – of course – possible to bypass the check for
-    WEBAUTHNACTION.REQ
+    This prepolicy hook is invoked for token initialization requests. For
+    second-step WebAuthn enrollment requests (``type=webauthn`` and
+    ``regdata`` present), it resolves the applicable enrollment policies and
+    stores them in ``request.all_data`` so downstream WebAuthn processing can
+    enforce them.
 
-    If the token, which is being enrolled does not contain an allowed attestation
-    certificate, or does not have an allowed AAGUID, we bail out.
+    Policy actions read from ``scope=SCOPE.ENROLL``:
 
-    A very similar check (same policy actions, different policy scope) is
-    performed during authorization,  however due to architectural limitations,
-    this lives within the token implementation itself.
+    - ``FIDO2PolicyAction.REQ``: one or more attestation-certificate matching
+      expressions.
+    - ``FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST``: one or more
+      whitespace-separated AAGUID allowlists.
 
-    :param request:
-    :type request:
-    :param action:
-    :type action:
-    :return:
-    :rtype:
+    Request data added:
+
+    - ``request.all_data[FIDO2PolicyAction.REQ]`` contains the matched
+      certificate policies.
+    - ``request.all_data[FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST]``
+      contains a deduplicated set of allowed AAGUID values.
+
+    Note: This function does not perform the cryptographic attestation/AAGUID
+    verification itself; it forwards policy constraints for later WebAuthn
+    enrollment validation.
+
+    :param request: Flask request proxy with ``all_data`` and optional
+        ``User``.
+    :type request: flask.Request
+    :param action: Unused prepolicy action context parameter.
+    :type action: str
+    :return: Always ``True``.
+    :rtype: bool
     """
     ttype = request.all_data.get("type")
 
@@ -2392,8 +2352,15 @@ def webauthntoken_allowed(request, action):
         allowed_aaguids_pols = Match.user(g, scope=SCOPE.ENROLL, action=FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST,
                                           user_object=request.User if hasattr(request, 'User')
                                           else None).action_values(unique=False, allow_white_space_in_action=True)
+
+        allowed_aaguids = set(
+            aaguid
+            for allowed_aaguid_pol in allowed_aaguids_pols
+            for aaguid in allowed_aaguid_pol.split()
+        )
+
         request.all_data[FIDO2PolicyAction.REQ] = allowed_certs_pols
-        request.all_data[FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST] = allowed_aaguids_pols
+        request.all_data[FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST] = allowed_aaguids
     return True
 
 

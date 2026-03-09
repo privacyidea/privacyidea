@@ -202,6 +202,7 @@ class DatabaseError(privacyIDEAError):
 
 class ResolverError(privacyIDEAError):
     """Error in user resolver"""
+
     def __init__(self, description="resolver error!", eid=ERROR.RESOLVER):
         privacyIDEAError.__init__(self, description=description, id=eid)
 
@@ -224,3 +225,8 @@ class ContainerInvalidChallenge(ContainerError):
 class ContainerRollover(ContainerError):
     def __init__(self, description="container rollover error", eid=ERROR.CONTAINER_ROLLOVER):
         ContainerError.__init__(self, description=description, eid=eid)
+
+
+class NoLongerSupportedError(privacyIDEAError):
+    def __init__(self, description="This method is no longer supported!", id=ERROR.SERVER):
+        privacyIDEAError.__init__(self, description=description, id=id)

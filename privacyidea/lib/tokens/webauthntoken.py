@@ -516,7 +516,7 @@ def _attestation_certificate_allowed(attestation_cert, allowed_certs_pols):
     :param attestation_cert: The attestation certificate.
     :type attestation_cert: cryptography.x509.Certificate or None
     :param allowed_certs_pols: The policies restricting enrollment.
-    :type allowed_certs_pols: dict or None
+    :type allowed_certs_pols: Iterable[str] or None
     :return: Whether the token should be allowed to complete enrollment based on its attestation.
     :rtype: bool
     """
@@ -529,6 +529,18 @@ def _attestation_certificate_allowed(attestation_cert, allowed_certs_pols):
     return attestation_certificate_allowed(cert_info, allowed_certs_pols)
 
 
+def _needs_ec2_curve_patch(cose_key):
+    """
+    Return True if *cose_key* (a decoded COSE dict) is an EC2 key missing
+    the mandatory curve parameter (-1) but carrying x/y coordinates.
+    """
+    return (isinstance(cose_key, dict)
+            and cose_key.get(1) == 2
+            and -1 not in cose_key
+            and -2 in cose_key
+            and -3 in cose_key)
+
+
 def _normalize_ec2_public_key_curve_in_cose_key(credential_public_key_bytes):
     """
     Older U2F credentials may store an EC2 COSE key without the mandatory
@@ -536,13 +548,8 @@ def _normalize_ec2_public_key_curve_in_cose_key(credential_public_key_bytes):
     """
     try:
         credential_public_key = cbor2.loads(credential_public_key_bytes)
-        if not isinstance(credential_public_key, dict):
+        if not _needs_ec2_curve_patch(credential_public_key):
             return credential_public_key_bytes
-        if credential_public_key.get(1) != 2 or -1 in credential_public_key:
-            return credential_public_key_bytes
-        if -2 not in credential_public_key or -3 not in credential_public_key:
-            return credential_public_key_bytes
-
         credential_public_key[-1] = 1  # P-256
         return cbor2.dumps(credential_public_key)
     except Exception as ex:
@@ -556,7 +563,6 @@ def _normalize_ec2_public_key_curve_in_attestation_object(attestation_object_byt
     curve parameter (-1). The webauthn library requires this field and rejects
     otherwise valid registrations.
     """
-
     try:
         attestation_object = cbor2.loads(attestation_object_bytes)
         auth_data = attestation_object.get("authData")
@@ -572,23 +578,20 @@ def _normalize_ec2_public_key_curve_in_attestation_object(attestation_object_byt
         if credential_id_end > len(auth_data):
             return attestation_object_bytes
 
-        credential_public_key_and_extensions = bytes(auth_data[credential_id_end:])
-        decoder = cbor2.CBORDecoder(io.BytesIO(credential_public_key_and_extensions))
+        tail = bytes(auth_data[credential_id_end:])
+        decoder = cbor2.CBORDecoder(io.BytesIO(tail))
         credential_public_key = decoder.decode()
-        credential_public_key_length = decoder.fp.tell()
+        pub_key_len = decoder.fp.tell()
 
-        if not isinstance(credential_public_key, dict):
+        if not _needs_ec2_curve_patch(credential_public_key):
             return attestation_object_bytes
 
-        patched_public_key = _normalize_ec2_public_key_curve_in_cose_key(cbor2.dumps(credential_public_key))
-        if patched_public_key == cbor2.dumps(credential_public_key):
-            return attestation_object_bytes
-        patched_auth_data = (
+        credential_public_key[-1] = 1  # P-256
+        attestation_object["authData"] = (
                 bytes(auth_data[:credential_id_end])
-                + patched_public_key
-                + credential_public_key_and_extensions[credential_public_key_length:]
+                + cbor2.dumps(credential_public_key)
+                + tail[pub_key_len:]
         )
-        attestation_object["authData"] = patched_auth_data
         return cbor2.dumps(attestation_object)
     except Exception as ex:
         log.debug(f"Could not normalize attestation object credential public key: {ex}")
@@ -1369,6 +1372,8 @@ class WebAuthnTokenClass(TokenClass):
         allowed_transports = get_required(options, FIDO2PolicyAction.ALLOWED_TRANSPORTS)
         if isinstance(allowed_transports, str):
             transport_values = [transport for transport in allowed_transports.split() if transport]
+        elif isinstance(allowed_transports, list):
+            transport_values = allowed_transports
         else:
             transport_values = []
 
