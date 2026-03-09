@@ -53,36 +53,4 @@ describe("ChallengesTableComponent", () => {
   it("should create", () => {
     expect(component).toBeTruthy();
   });
-
-  it("should delete expired challenges and reload on success", () => {
-    const deleteSpy = jest.spyOn(challengesService, "deleteExpiredChallenges").mockReturnValue(of({} as any));
-    const reloadSpy = jest.spyOn(challengesService.challengesResource, "reload");
-
-    component.onDeleteExpiredChallenges();
-
-    expect(deleteSpy).toHaveBeenCalled();
-    expect(reloadSpy).toHaveBeenCalled();
-    expect(mockNotificationService.openSnackBar).not.toHaveBeenCalled();
-  });
-
-  it("should show api error message from response on failure", () => {
-    const apiError = { error: { result: { error: { message: "Delete failed" } } } };
-    jest.spyOn(challengesService, "deleteExpiredChallenges").mockReturnValue(throwError(() => apiError));
-    const reloadSpy = jest.spyOn(challengesService.challengesResource, "reload");
-
-    component.onDeleteExpiredChallenges();
-
-    expect(reloadSpy).not.toHaveBeenCalled();
-    expect(mockNotificationService.openSnackBar).toHaveBeenCalledWith("Delete failed");
-  });
-
-  it("should show fallback message when error has no api message", () => {
-    jest.spyOn(challengesService, "deleteExpiredChallenges").mockReturnValue(throwError(() => new Error("Network error")));
-    const reloadSpy = jest.spyOn(challengesService.challengesResource, "reload");
-
-    component.onDeleteExpiredChallenges();
-
-    expect(reloadSpy).not.toHaveBeenCalled();
-    expect(mockNotificationService.openSnackBar).toHaveBeenCalledWith("Failed to delete expired challenges.");
-  });
 });

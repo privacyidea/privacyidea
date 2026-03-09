@@ -39,6 +39,8 @@ import {
 } from "src/app/services/token/challenges/challenges.service";
 import { TokenServiceInterface, TokenService } from "src/app/services/token/token.service";
 
+import { ChallengesTableActionsComponent } from "./challenges-table-actions/challenges-table-actions.component";
+
 const columnKeysMap = [
   { key: "timestamp", label: "Timestamp" },
   { key: "serial", label: "Serial" },
@@ -60,7 +62,8 @@ const columnKeysMap = [
     NgClass,
     CopyButtonComponent,
     ScrollToTopDirective,
-    ClearableInputComponent
+    ClearableInputComponent,
+    ChallengesTableActionsComponent
   ],
   templateUrl: "./challenges-table.component.html",
   styleUrls: ["./challenges-table.component.scss"]
@@ -138,17 +141,5 @@ export class ChallengesTableComponent {
     } else {
       this.contentService.tokenSelected(element.serial);
     }
-  }
-
-  onDeleteExpiredChallenges(): void {
-    this.challengesService.deleteExpiredChallenges().subscribe({
-      next: () => {
-        this.challengesService.challengesResource.reload();
-      },
-      error: (err) => {
-        const message = err?.error?.result?.error?.message ?? "Failed to delete expired challenges.";
-        this.notificationService.openSnackBar(message);
-      }
-    });
   }
 }
