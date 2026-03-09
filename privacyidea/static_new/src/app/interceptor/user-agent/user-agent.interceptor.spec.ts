@@ -22,27 +22,31 @@ import { VersioningService, VersioningServiceInterface } from "../../services/ve
 import { HttpEvent, HttpHeaders, HttpRequest } from "@angular/common/http";
 import { TestBed } from "@angular/core/testing";
 import { Observable } from "rxjs";
+import { MockVersioningService } from "../../../testing/mock-services";
 
 describe("userAgentInterceptor", () => {
 
   const run = (req: HttpRequest<any>, next: (req: HttpRequest<any>) => Observable<HttpEvent<any>>) =>
     TestBed.runInInjectionContext(() => userAgentInterceptor(req, next));
+  let versioningService: MockVersioningService;
 
 
   beforeEach(() => {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
-      providers: [{ provide: VersioningService, useClass: VersioningService }]
+      providers: [{ provide: VersioningService, useClass: MockVersioningService }]
     });
 
-    let versioningService: VersioningServiceInterface = TestBed.inject(VersioningService);
+    versioningService = TestBed.inject(VersioningService) as MockVersioningService;
+    versioningService.rawVersion.set("1.2.3.dev224");
     versioningService.version.set("1.2.3");
+    versioningService.getVersion = jest.fn().mockReturnValue("1.2.3");
   });
 
   it("should add the User-Agent header with the correct version", (done) => {
     const req = new HttpRequest("GET", "/test");
     const next = (request: HttpRequest<any>) => {
-      expect(request.headers.get("User-Agent")).toBe("privacyIDEA-WebUI/1.2.3");
+      expect(request.headers.get("User-Agent")).toBe("privacyIDEA-WebUI/1.2.3.dev224");
       done();
       return null as any;
     };
@@ -55,7 +59,7 @@ describe("userAgentInterceptor", () => {
     } as any);
     const next = (request: HttpRequest<any>) => {
       expect(request.headers.get("PI-Authorization")).toBe("abc");
-      expect(request.headers.get("User-Agent")).toBe("privacyIDEA-WebUI/1.2.3");
+      expect(request.headers.get("User-Agent")).toBe("privacyIDEA-WebUI/1.2.3.dev224");
       done();
       return null as any;
     };

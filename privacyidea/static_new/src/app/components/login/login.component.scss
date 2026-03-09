@@ -35,6 +35,13 @@ $border-radius: var(--border-radius);
     height: auto;
   }
 
+  .custom-logo {
+    max-width: 300px;
+    max-height: 25vh;
+    width: auto;
+    height: auto;
+  }
+
   .login-form {
     display: flex;
     flex-direction: column;

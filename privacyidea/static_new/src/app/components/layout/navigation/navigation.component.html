@@ -17,8 +17,30 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div class="drawer-div">
+  <div
+    class="preview"
+    i18n>
+    Beta
+  </div>
   <div class="brand">
-    <div class="brand-row">
+    @if (customLogo()) {
+      <a
+        [routerLink]="[ROUTE_PATHS.TOKENS]"
+        aria-label="Go to Token Overview"
+        class="clickable-logo">
+        <img
+          alt="logo"
+          aria-label="Logo"
+          class="custom-logo"
+          height="307"
+          i18n-alt
+          i18n-aria-label
+          ngSrc="{{customLogo()}}"
+          ngSrcset="1x"
+          sizes="(max-width: 307px) 100vw, 307px"
+          width="307" />
+      </a>
+    } @else {
       <a
         [routerLink]="[ROUTE_PATHS.TOKENS]"
         aria-label="Go to Token Overview"
@@ -35,33 +57,26 @@
           sizes="(max-width: 307px) 100vw, 307px"
           width="307" />
       </a>
-
-      <h4
-        class="preview"
-        i18n>
-        Preview
-      </h4>
-    </div>
-
-    <a
-      [routerLink]="[ROUTE_PATHS.TOKENS]"
-      aria-label="Go to Token Overview"
-      class="clickable-logo-text">
-      <img
-        alt="logo-text"
-        aria-label="Logo Text"
-        class="logo-text"
-        height="109"
-        i18n-alt
-        i18n-aria-label
-        ngSrc="assets/logo-text.png"
-        ngSrcset="1x"
-        sizes="(max-width: 575px) 100vw, 575px"
-        width="575" />
-    </a>
+      <a
+        [routerLink]="[ROUTE_PATHS.TOKENS]"
+        aria-label="Go to Token Overview"
+        class="clickable-logo-text">
+        <img
+          alt="logo-text"
+          aria-label="Logo Text"
+          class="logo-text"
+          height="109"
+          i18n-alt
+          i18n-aria-label
+          ngSrc="assets/logo-text.png"
+          ngSrcset="1x"
+          sizes="(max-width: 575px) 100vw, 575px"
+          width="575" />
+      </a>
+    }
     <p
-      class="margin-0 version-text">
-      Version {{ versioningService.version() }}
+      class="margin-bottom-0 version-text">
+      {{ versionText() }}
     </p>
     <p class="footer-text">
       An open-source project

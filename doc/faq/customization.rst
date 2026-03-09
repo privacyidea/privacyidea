@@ -151,13 +151,20 @@ do it like this::
 Logo
 ~~~~
 
-The default logo is located at ``privacyidea/static/css/privacyIDEA1.png``.
-If you want to use your own logo, you can put your file "mylogo.png" just
-in the same folder and set
+To use your own logo, specify the PI_LOGO parameter in the pi.cfg configuration file with the filename of your logo
+image. For example:
 
-   PI_LOGO = "mylogo.png"
+    PI_LOGO = "mylogo.png"
 
-in the ``pi.cfg`` config file.
+Put your logo at the following location:
+
+*Old WebUI*::
+
+    privacyidea/static/css
+
+*New WebUI*::
+
+    privacyidea/static_new/public
 
 .. _customize_menu:
 
