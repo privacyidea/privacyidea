@@ -1,5 +1,17 @@
 <span class="glyphicon glyphicon-filter"
       ng-click="filterVisible=!filterVisible; focusInput=true"
       ng-class="{filtered:filterValue}"></span>
- <input ng-show="filterVisible" ng-change="updateFilter()"
-        ng-model="filterValue" focus-me="focusInput" placeholder="filter" class="form-control">
+<div ng-show="filterVisible" class="pi-filter-wrap">
+    <input ng-change="updateFilter()"
+           ng-model="filterValue" focus-me="focusInput" placeholder="filter"
+           class="form-control pi-filter-input"
+           ng-class="{'pi-filter-input-with-submit': hasSubmit}">
+    <span class="pi-filter-btns">
+        <button ng-if="hasSubmit" class="pi-filter-btn" type="button" ng-click="submitFilter()">
+            <span class="glyphicon glyphicon-search"></span>
+        </button>
+        <button class="pi-filter-btn" type="button" ng-click="clearFilter()">
+            <span class="glyphicon glyphicon-remove"></span>
+        </button>
+    </span>
+</div>

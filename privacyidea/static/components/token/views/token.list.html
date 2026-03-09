@@ -71,7 +71,16 @@
                            ng-keypress="($event.which==13)?get():return"
                 ></pi-filter>
             </th>
-            <th ng-show="loggedInUser.role == 'admin'" translate>user</th>
+            <th class="pifilter" ng-show="loggedInUser.role == 'admin'">
+                <button class="btn btn-default unsorted btn-capitalize"
+                        pi-sort-by="username"
+                        translate>user
+                </button>
+                <pi-filter ng-model="usernameFilter"
+                           ng-keypress="($event.which==13)?get():return"
+                           on-submit="get()"
+                ></pi-filter>
+            </th>
             <th ng-show="loggedInUser.role == 'admin'" translate>realm</th>
             <th class="pifilter" ng-show="loggedInUser.role == 'admin'"><translate>Token realms</translate>
                 <pi-filter ng-model="tokenrealmFilter"

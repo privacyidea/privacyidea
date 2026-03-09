@@ -63,6 +63,8 @@ myApp.controller("tokenController", ['TokenFactory', 'ConfigFactory', '$scope',
                 $scope.params.type = "*" + ($scope.typeFilter || "") + "*";
                 $scope.params.description = "*" + ($scope.descriptionFilter || "") + "*";
                 $scope.params.rollout_state = "*" + ($scope.rolloutStateFilter || "") + "*";
+                // "user" is resolved against the user store by exact name, so no wildcard wrapping.
+                $scope.params.user = $scope.usernameFilter || "";
                 $scope.params.userid = "*" + ($scope.userIdFilter || "") + "*";
                 $scope.params.resolver = "*" + ($scope.resolverFilter || "") + "*";
                 $scope.params.pagesize = $scope.token_page_size;
@@ -73,7 +75,7 @@ myApp.controller("tokenController", ['TokenFactory', 'ConfigFactory', '$scope',
                     $scope.params.sortdir = "asc";
                 }
                 Object.keys($scope.params).forEach(function (key) {
-                    if ($scope.params[key] === "**") {
+                    if ($scope.params[key] === "**" || $scope.params[key] === "") {
                         delete $scope.params[key];
                     }
                 });

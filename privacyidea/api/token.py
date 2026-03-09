@@ -439,7 +439,12 @@ def list_api():
     :query type: Display only token of type. You can do a not strict matching by
         specifying a tokentype like "*otp*", to find hotp and totp tokens.
     :query type_list: Comma separated list of token types. Display only tokens of the types in the list.
-    :query user: display tokens of this user
+    :query user: Filter by this username. Can include the realm as ``user@realm``. When
+        combined with the ``realm`` parameter the realm from ``realm`` takes
+        precedence. Admins may use this to query tokens of any user; regular
+        authenticated users always see only their own tokens regardless of this
+        parameter.
+    :query realm: Realm of the user given in the ``user`` parameter.
     :query tokenrealm: takes a realm, only the tokens in this realm will be
         displayed
     :query basestring description: Display token with this kind of description
@@ -465,7 +470,6 @@ def list_api():
     :rtype: json
     """
     param = request.all_data
-    user = request.User
     serial = getParam(param, "serial", optional)
     page = int(getParam(param, "page", optional, default=1))
     tokentype = getParam(param, "type", optional)
@@ -479,6 +483,17 @@ def list_api():
     realm = getParam(param, "tokenrealm", optional)
     userid = getParam(param, "userid", optional)
     resolver = getParam(param, "resolver", optional)
+
+    # If an explicit "user" query parameter is given, build a filter User from
+    # it (and the optional "realm" param). This lets admins query tokens of a
+    # specific user via GET /token/?user=alice&realm=defrealm.
+    # When no "user" param is present, fall back to request.User so that a
+    # regular authenticated user still only sees their own tokens.
+    user_param = getParam(param, "user", optional)
+    if user_param:
+        user = get_user_from_param(param)
+    else:
+        user = request.User
     output_format = getParam(param, "outform", optional)
     assigned = getParam(param, "assigned", optional)
     active = getParam(param, "active", optional)
