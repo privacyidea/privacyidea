@@ -34,6 +34,30 @@
       <mat-icon>receipt_long</mat-icon>
     </button>
   </div>
+
+  @if (userData().editable) {
+    <div class="flex gap-8 margin-bottom-16">
+      @if (authService.actionsAllowed(["updateuser", "resolverread"])) {
+        <button
+          (click)="editUser()"
+          class="action-button-1"
+          mat-stroked-button>
+          <mat-icon> edit</mat-icon>
+          <span i18n>Edit</span>
+        </button>
+      }
+      @if (authService.actionAllowed("deleteuser")) {
+        <button
+          (click)="deleteUser()"
+          class="action-button-delete"
+          mat-stroked-button>
+          <mat-icon> delete</mat-icon>
+          <span i18n>Delete</span>
+        </button>
+      }
+    </div>
+  }
+
   <div class="user-details">
     @for (col of detailsColumns(); track $index) {
       <div class="user-details-column">
