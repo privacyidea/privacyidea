@@ -2,22 +2,22 @@
 # Copyright (C) 2020 ORGANIZATION
 # This file is distributed under the same license as the PROJECT project.
 # FIRST AUTHOR <EMAIL@ADDRESS>, 2020.
-#
+# Paul Lettich <paul.lettich@netknights.it>, 2026.
 msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: translations@privacyidea.org\n"
 "POT-Creation-Date: 2025-09-05 15:12+0200\n"
-"PO-Revision-Date: 2025-03-28 09:25+0000\n"
-"Last-Translator: Anonymous <noreply@weblate.org>\n"
+"PO-Revision-Date: 2026-03-03 16:09+0000\n"
+"Last-Translator: Paul Lettich <paul.lettich@netknights.it>\n"
 "Language-Team: Spanish <https://hosted.weblate.org/projects/privacyidea/"
-"branch-3-11/es/>\n"
+"privacyidea-server/es/>\n"
 "Language: es\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 5.11-dev\n"
+"X-Generator: Weblate 5.17-dev\n"
 "Generated-By: Babel 2.12.1\n"
 
 #: api/auth.py:256
@@ -55,10 +55,8 @@ msgid "Authentication failure using passkey."
 msgstr "Fallo la autenticación. Usuario no encontrado"
 
 #: api/auth.py:299
-#, fuzzy
-#| msgid "Authentication failure. Unknown realm: {0!s}."
 msgid "Authentication failure. Unknown realm:"
-msgstr "Fallo en la autenticación. Dominio desconocido {0!s}."
+msgstr "Fallo en la autenticación. Dominio desconocido:"
 
 #: api/auth.py:303
 msgid "Authentication failure. Missing Username"
@@ -137,33 +135,26 @@ msgstr ""
 "{0!s}"
 
 #: api/lib/utils.py:430 api/lib/utils.py:440
-#, fuzzy
-#| msgid "Authentication failure. Your token has expired: {0!s}"
 msgid "Authentication failure. Your token has expired:"
-msgstr "Fallo la autenticación. El token ha expirado: {0!s}"
+msgstr "Fallo la autenticación. El token ha expirado:"
 
 #: api/lib/utils.py:443
-#, fuzzy, python-brace-format
-#| msgid ""
-#| "Authentication failure. The username {0!s} is not allowed to impersonate "
-#| "via JWT."
+#, python-brace-format
 msgid ""
 "Authentication failure. The username {wrong_username} is not allowed to "
 "impersonate via JWT."
 msgstr ""
-"Fallo en la autenticación. El usuario {0!s} no puede autenticarse vía JWT."
+"Fallo en la autenticación. El usuario {wrong_username} no puede autenticarse "
+"vía JWT."
 
 #: api/lib/utils.py:448
-#, fuzzy, python-brace-format
-#| msgid ""
-#| "Authentication failure. You do not have the necessary role ({0!s}) to "
-#| "access this resource!"
+#, python-brace-format
 msgid ""
 "Authentication failure. You do not have the necessary role ({required_role}) "
 "to access this resource!"
 msgstr ""
-"Fallo la autenticación. Usted no tiene el rol ({0!s}) necesario para acceder "
-"al recurso!"
+"Fallo la autenticación. Usted no tiene el rol ({required_role}) necesario "
+"para acceder al recurso!"
 
 #: api/lib/utils.py:465
 #, fuzzy
