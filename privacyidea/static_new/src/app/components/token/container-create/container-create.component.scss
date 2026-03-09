@@ -1,7 +1,8 @@
-@use "../../../../styles";
+@use "styles";
+@use "table";
 
 .container-create-container {
-  @include styles.table-container-styles;
+  @include table.table-container-styles;
   width: 920px;
   max-height: var(--max-height);
   max-width: calc(100vw - var(--global-padding) * 5 - 48px);

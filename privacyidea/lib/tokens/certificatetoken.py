@@ -507,7 +507,7 @@ class CertificateTokenClass(TokenClass):
             * and the certificate
             We need the user for whom the certificate should be created
             """
-            user = get_user_from_param(param, optionalOrRequired=required)
+            user = get_user_from_param(param, optional_or_required=required)
             keysize = get_optional(param, "keysize", 2048)
             # The key size should be at least 2048
             if keysize < 2048:
@@ -526,9 +526,10 @@ class CertificateTokenClass(TokenClass):
                 req.get_subject().localityName = 'xxx'
                 req.get_subject().organizationName = 'xxx'
                 """
-                if "email" in subject_components and user.info.get("email"):
+                user_email = user.get_specific_info(["email"]).get("email")
+                if "email" in subject_components and user_email:
                     subject_name.append(
-                        x509.NameAttribute(x509.NameOID.EMAIL_ADDRESS, user.info.get("email"))
+                        x509.NameAttribute(x509.NameOID.EMAIL_ADDRESS, user_email)
                     )
                 if "realm" in subject_components:
                     subject_name.append(

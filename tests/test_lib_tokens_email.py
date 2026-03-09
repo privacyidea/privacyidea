@@ -396,7 +396,7 @@ class EmailTokenTestCase(MyTestCase):
         # if the email is a multi-value attribute, the first address should be chosen
         new_user_info = token.user.info.copy()
         new_user_info['email'] = ['email1@example.com', 'email2@example.com']
-        with mock.patch('privacyidea.lib.resolvers.PasswdIdResolver.IdResolver.getUserInfo') as mock_user_info:
+        with mock.patch('privacyidea.lib.resolvers.PasswdIdResolver.IdResolver.get_user_info') as mock_user_info:
             mock_user_info.return_value = new_user_info
             self.assertEqual(token._email_address, 'email1@example.com')
 

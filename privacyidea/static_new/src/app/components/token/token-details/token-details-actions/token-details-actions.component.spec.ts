@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -19,9 +19,8 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { signal } from "@angular/core";
 import { of } from "rxjs";
-
 import { TokenDetailsActionsComponent } from "./token-details-actions.component";
-import { TokenService } from "../../../../services/token/token.service";
+import { TokenService, TokenTypeKey } from "../../../../services/token/token.service";
 import { ValidateService } from "../../../../services/validate/validate.service";
 import { MachineService } from "../../../../services/machine/machine.service";
 import { NotificationService } from "../../../../services/notification/notification.service";
@@ -79,7 +78,6 @@ describe("TokenDetailsActionsComponent", () => {
     machineSvc = TestBed.inject(MachineService) as unknown as MockMachineService;
     notifSvc = TestBed.inject(NotificationService) as unknown as MockNotificationService;
     dialog = TestBed.inject(MatDialog) as unknown as jest.Mocked<MatDialog>;
-
     fixture = TestBed.createComponent(TokenDetailsActionsComponent);
     component = fixture.componentInstance;
 
@@ -188,14 +186,38 @@ describe("TokenDetailsActionsComponent", () => {
     expect(reloadSpy).toHaveBeenCalledTimes(1);
   });
 
+  it("rolloverTokenTypes determined correctly", () => {
+    expect(component.rolloverTokenTypes()).toContain("totp");
+    expect(component.rolloverTokenTypes()).toContain("hotp");
+  });
+
+  it("tokenTypeKey is set correctly", () => {
+    component.tokenType.set("yubikey");
+    expect(component.tokenTypeKey()).toEqual("yubikey" as TokenTypeKey);
+    expect(component.rolloverTokenTypes().indexOf(component.tokenTypeKey())).toBe(-1);
+
+    component.tokenType.set("daypassword");
+    expect(component.tokenTypeKey()).toEqual("daypassword" as TokenTypeKey);
+    expect(component.rolloverTokenTypes().indexOf(component.tokenTypeKey())).toBeGreaterThan(-1);
+  });
+
   describe("openLostTokenDialog()", () => {
     it("passes the isLost & tokenSerial signals to the dialog", () => {
+      const reloadSpy = machineSvc.tokenApplicationResource.reload as jest.Mock;
+      reloadSpy.mockClear();
+
+      matDialogOpen.mockReturnValue({
+        afterClosed: () => of(of({}))
+      });
+
       component.openLostTokenDialog();
       expect(dialog.open).toHaveBeenCalledWith(expect.any(Function), {
         data: {
           isLost: component.isLost,
           tokenSerial: component.tokenSerial
-        }
+        },
+        disableClose: false,
+        hasBackdrop: true
       });
     });
   });

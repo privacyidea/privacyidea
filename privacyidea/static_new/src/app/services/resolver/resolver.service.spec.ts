@@ -24,12 +24,16 @@ import { HttpHeaders, provideHttpClient } from "@angular/common/http";
 import { MockPiResponse } from "../../../testing/mock-services";
 import { AuthService } from "../auth/auth.service";
 import { MockAuthService } from "../../../testing/mock-services/mock-auth-service";
+import { MockContentService } from "../../../testing/mock-services/mock-content-service";
+import { ContentService } from "../content/content.service";
+import { ROUTE_PATHS } from "../../route_paths";
 import { lastValueFrom, of } from "rxjs";
 
 describe("ResolverService", () => {
   let resolverService: ResolverService;
   let httpMock: HttpTestingController;
   let authService: MockAuthService;
+  let contentService: MockContentService;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
@@ -37,13 +41,16 @@ describe("ResolverService", () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: AuthService, useClass: MockAuthService },
+        { provide: ContentService, useClass: MockContentService },
         ResolverService
       ]
     });
     resolverService = TestBed.inject(ResolverService);
     httpMock = TestBed.inject(HttpTestingController);
     authService = TestBed.inject(AuthService) as unknown as MockAuthService;
+    contentService = TestBed.inject(ContentService) as unknown as MockContentService;
     jest.spyOn(authService, "getHeaders").mockReturnValue(new HttpHeaders({ Authorization: "test-token" }));
+    contentService.routeUrl.set(ROUTE_PATHS.USERS);
   });
 
   afterEach(() => {

@@ -21,6 +21,7 @@ import { inject, Injectable, linkedSignal, WritableSignal } from "@angular/core"
 import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
+import { ContentService, ContentServiceInterface } from "../content/content.service";
 import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
 import { lastValueFrom } from "rxjs";
 
@@ -51,16 +52,22 @@ export interface ServiceIdServiceInterface {
 })
 export class ServiceIdService implements ServiceIdServiceInterface {
   private readonly authService: AuthServiceInterface = inject(AuthService);
+  private readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly http: HttpClient = inject(HttpClient);
 
   private readonly serviceIdBaseUrl = environment.proxyUrl + "/serviceid/";
 
-  serviceIdResource = httpResource<PiResponse<ServiceIds>>(() => ({
-    url: this.serviceIdBaseUrl,
-    method: "GET",
-    headers: this.authService.getHeaders()
-  }));
+  serviceIdResource = httpResource<PiResponse<ServiceIds>>(() => {
+    if (!this.contentService.onExternalServiceIds()) {
+      return undefined;
+    }
+    return {
+      url: this.serviceIdBaseUrl,
+      method: "GET",
+      headers: this.authService.getHeaders()
+    };
+  });
 
   serviceIds: WritableSignal<ServiceId[]> = linkedSignal({
     source: this.serviceIdResource.value,

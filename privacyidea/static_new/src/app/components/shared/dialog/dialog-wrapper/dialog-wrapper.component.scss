@@ -1,0 +1,28 @@
+@use "styles";
+@use "table";
+
+.pi-dialog {
+  background-color: var(--mat-sys-surface-container-low);
+  border-radius: var(--border-radius);
+  overflow: auto;
+  --mat-dialog-content-padding: 0 var(--global-padding);
+
+  .pi-dialog-header {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: var(--half-global-padding) var(--global-padding);
+  }
+
+  .pi-dialog-header h2 {
+    margin: 0;
+  }
+
+  .pi-dialog-footer {
+    display: flex;
+    justify-content: flex-end;
+    padding: var(--half-global-padding) var(--global-padding);
+
+    gap: var(--half-global-gap);
+  }
+}

@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -25,12 +25,15 @@ import { PiResponse } from "../../app.component";
 import { TestBed } from "@angular/core/testing";
 import { TokenService } from "./token.service";
 import { AuthService } from "../auth/auth.service";
-import { FilterValue } from "../../core/models/filter_value";
+import { FilterValue } from "../../core/models/filter_value/filter_value";
 import { MockContentService } from "../../../testing/mock-services";
 import { ROUTE_PATHS } from "../../route_paths";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
 import { environment } from "../../../environments/environment";
 import { MockAuthService } from "../../../testing/mock-services/mock-auth-service";
+import { DialogService } from "../dialog/dialog.service";
+import { MockDialogService } from "../../../testing/mock-services/mock-dialog-service";
+import { MockMatDialogRef } from "../../../testing/mock-mat-dialog-ref";
 
 class MockNotificationService {
   openSnackBar = jest.fn();
@@ -44,6 +47,7 @@ describe("TokenService", () => {
   let authService: MockAuthService;
   let notificationService: MockNotificationService;
   let contentServiceMock: MockContentService;
+  let dialogServiceMock: MockDialogService;
   let getSpy: jest.SpyInstance;
 
   beforeEach(() => {
@@ -55,12 +59,14 @@ describe("TokenService", () => {
         TokenService,
         { provide: AuthService, useClass: MockAuthService },
         { provide: NotificationService, useClass: MockNotificationService },
-        { provide: ContentService, useClass: MockContentService }
+        { provide: ContentService, useClass: MockContentService },
+        { provide: DialogService, useClass: MockDialogService }
       ]
     });
 
     tokenService = TestBed.inject(TokenService);
     contentServiceMock = TestBed.inject(ContentService) as unknown as MockContentService;
+    dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
     http = TestBed.inject(HttpClient);
     postSpy = jest.spyOn(http, "post");
     deleteSpy = jest.spyOn(http, "delete");
@@ -548,27 +554,24 @@ describe("TokenService", () => {
   });
 
   describe("bulkDeleteWithConfirmDialog()", () => {
-    let dialog: any;
     let afterDeleteCallback: jest.Mock;
 
     beforeEach(() => {
       afterDeleteCallback = jest.fn();
-      dialog = {
-        open: jest.fn().mockReturnValue({
-          afterClosed: () => of({ confirmed: true })
-        })
-      };
+      const dialogRefMock = new MockMatDialogRef();
+      dialogRefMock.afterClosed.mockReturnValue(of(true));
+      dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
     });
 
     it("should open confirmation dialog", () => {
-      tokenService.bulkDeleteWithConfirmDialog(["S1"], dialog, afterDeleteCallback);
-      expect(dialog.open).toHaveBeenCalled();
+      tokenService.bulkDeleteWithConfirmDialog(["S1"], afterDeleteCallback);
+      expect(dialogServiceMock.openDialog).toHaveBeenCalled();
     });
 
     it("should do nothing if dialog is cancelled", () => {
-      dialog.open.mockReturnValue({ afterClosed: () => of(false) });
+      dialogServiceMock.openDialog.mockReturnValue({ afterClosed: () => of(false) });
       const bulkDeleteSpy = jest.spyOn(tokenService, "bulkDeleteTokens").mockReturnValue(of());
-      tokenService.bulkDeleteWithConfirmDialog(["S1"], dialog, afterDeleteCallback);
+      tokenService.bulkDeleteWithConfirmDialog(["S1"], afterDeleteCallback);
       expect(bulkDeleteSpy).not.toHaveBeenCalled();
     });
 
@@ -576,7 +579,7 @@ describe("TokenService", () => {
       const response = { result: { value: { count_success: 1, failed: [], unauthorized: [] } } };
       const bulkDeleteSpy = jest.spyOn(tokenService, "bulkDeleteTokens").mockReturnValue(of(response as any));
 
-      tokenService.bulkDeleteWithConfirmDialog(["S1"], dialog, afterDeleteCallback);
+      tokenService.bulkDeleteWithConfirmDialog(["S1"], afterDeleteCallback);
 
       expect(bulkDeleteSpy).toHaveBeenCalledWith(["S1"]);
       setTimeout(() => {
@@ -598,7 +601,7 @@ describe("TokenService", () => {
       };
       jest.spyOn(tokenService, "bulkDeleteTokens").mockReturnValue(of(response as any));
 
-      tokenService.bulkDeleteWithConfirmDialog(["S1", "TOKEN1", "TOKEN2"], dialog);
+      tokenService.bulkDeleteWithConfirmDialog(["S1", "TOKEN1", "TOKEN2"]);
 
       setTimeout(() => {
         expect(notificationService.openSnackBar).toHaveBeenCalledWith(
@@ -615,7 +618,7 @@ describe("TokenService", () => {
       });
       jest.spyOn(tokenService, "bulkDeleteTokens").mockReturnValue(throwError(() => error));
 
-      tokenService.bulkDeleteWithConfirmDialog(["S1"], dialog);
+      tokenService.bulkDeleteWithConfirmDialog(["S1"]);
 
       setTimeout(() => {
         expect(notificationService.openSnackBar).toHaveBeenCalledWith("An error occurred while deleting tokens.");

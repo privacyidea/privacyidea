@@ -38,6 +38,7 @@ export interface AppConfig {
   login_text: string;
   gdpr_link: string;
   translation_warning: boolean;
+  passkey_login: string;
 }
 
 @Injectable({
@@ -59,7 +60,8 @@ export class ConfigService {
     has_job_queue: "false",
     login_text: "",
     gdpr_link: "",
-    translation_warning: false
+    translation_warning: false,
+    passkey_login: "show"
   });
 
   loadConfig() {

@@ -66,6 +66,7 @@ export class EnrollSmsComponent implements OnInit {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
 
+  enrollmentData = input<SmsEnrollmentData>();
   @Input() wizard: boolean = false;
   @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
@@ -114,6 +115,11 @@ export class EnrollSmsComponent implements OnInit {
         this.smsGatewayControl.setValue(id);
       }
     });
+    effect(() => {
+      if (this.enrollmentData()) {
+        this._setInitialFormValues();
+      }
+    });
   }
 
   ngOnInit(): void {
@@ -125,6 +131,20 @@ export class EnrollSmsComponent implements OnInit {
     this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
 
     this._applyPolicies();
+  }
+
+  private _setInitialFormValues() {
+    if (!!this.enrollmentData()) {
+      this.smsGatewayControl.setValue(this.enrollmentData()?.smsGateway ?? "", { emitEvent: false });
+      this.readNumberDynamicallyControl.setValue(this.enrollmentData()?.readNumberDynamically ?? false, { emitEvent: false });
+      this.phoneNumberControl.setValue(this.enrollmentData()?.phoneNumber ?? "", { emitEvent: false });
+
+      if (this.enrollmentData()?.readNumberDynamically) {
+        this.phoneNumberControl.disable({ emitEvent: false });
+        this.phoneNumberControl.clearValidators();
+        this.phoneNumberControl.updateValueAndValidity({ emitEvent: false });
+      }
+    }
   }
 
   private _applyPolicies() {

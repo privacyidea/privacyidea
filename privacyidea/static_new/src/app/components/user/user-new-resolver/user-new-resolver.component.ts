@@ -26,6 +26,7 @@ import {
   OnDestroy,
   Renderer2,
   ResourceStatus,
+  signal,
   ViewChild,
   viewChild
 } from "@angular/core";
@@ -52,15 +53,13 @@ import { EntraidResolverComponent } from "./entraid-resolver/entraid-resolver.co
 import { KeycloakResolverComponent } from "./keycloak-resolver/keycloak-resolver.component";
 import { ActivatedRoute, Router } from "@angular/router";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
-import { MAT_DIALOG_DATA, MatDialog, MatDialogModule, MatDialogRef } from "@angular/material/dialog";
+import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from "@angular/material/dialog";
 import { ROUTE_PATHS } from "../../../route_paths";
 import { ContentService } from "../../../services/content/content.service";
-import {
-  ConfirmationDialogComponent,
-  ConfirmationDialogResult
-} from "../../shared/confirmation-dialog/confirmation-dialog.component";
 import { PendingChangesService } from "../../../services/pending-changes/pending-changes.service";
 import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
+import { DialogService, DialogServiceInterface } from "../../../services/dialog/dialog.service";
+import { SimpleConfirmationDialogComponent } from "../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
 
 @Component({
   selector: "app-user-new-resolver",
@@ -97,7 +96,7 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
   private readonly contentService = inject(ContentService);
-  private readonly dialog = inject(MatDialog);
+  private readonly dialogService: DialogServiceInterface = inject(DialogService);
   private readonly pendingChangesService = inject(PendingChangesService);
   protected readonly renderer: Renderer2 = inject(Renderer2);
   public readonly dialogRef = inject(MatDialogRef<UserNewResolverComponent>, { optional: true });
@@ -136,8 +135,8 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
   formData: Record<string, any> = {
     fileName: "/etc/passwd"
   };
-  isSaving = false;
-  isTesting = false;
+  isSaving = signal(false);
+  isTesting = signal(false);
   testUsername = "";
   testUserId = "";
 
@@ -154,7 +153,7 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
     } else if (dialogResolverName) {
       this.resolverService.selectedResolverName.set(dialogResolverName);
     } else {
-      this.route.paramMap.pipe(takeUntilDestroyed()).subscribe(params => {
+      this.route.paramMap.pipe(takeUntilDestroyed()).subscribe((params) => {
         this.resolverService.selectedResolverName.set(params.get("name") || "");
       });
     }
@@ -164,7 +163,7 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
       this.dialogRef.backdropClick().subscribe(() => {
         this.onCancel();
       });
-      this.dialogRef.keydownEvents().subscribe(event => {
+      this.dialogRef.keydownEvents().subscribe((event) => {
         if (event.key === "Escape") {
           this.onCancel();
         }
@@ -231,17 +230,21 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
   }
 
   get isAdditionalFieldsValid(): boolean {
-    return Object.values(this.additionalFormFields()).every(control => control.valid);
+    const fields = Object.values(this.additionalFormFields());
+    if (fields.length === 0) {
+      return false;
+    }
+    return fields.every((control) => control.valid);
   }
 
   get canSave(): boolean {
     const nameOk = this.resolverName.trim().length > 0;
     const typeOk = !!this.resolverType;
-    return nameOk && typeOk && this.isAdditionalFieldsValid && !this.isSaving;
+    return nameOk && typeOk && this.isAdditionalFieldsValid && !this.isSaving();
   }
 
   get hasChanges(): boolean {
-    if (Object.values(this.additionalFormFields()).some(control => control.dirty)) {
+    if (Object.values(this.additionalFormFields()).some((control) => control.dirty)) {
       return true;
     }
 
@@ -313,68 +316,7 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
         };
       } else if (type === "sqlresolver") {
         this.formData = {};
-      } else if (type === "entraidresolver") {
-        this.formData = {
-          base_url: "https://graph.microsoft.com/v1.0",
-          authority: "https://login.microsoftonline.com/{tenant}",
-          client_credential_type: "secret",
-          timeout: 60,
-          verify_tls: true,
-          config_get_user_by_id: { method: "GET", endpoint: "/users/{userid}" },
-          config_get_user_by_name: { method: "GET", endpoint: "/users/{username}" },
-          config_get_user_list: {
-            method: "GET",
-            endpoint: "/users",
-            headers: "{\"ConsistencyLevel\": \"eventual\"}"
-          },
-          config_create_user: {
-            method: "POST",
-            endpoint: "/users",
-            requestMapping:
-              "{\"accountEnabled\": true, \"displayName\": \"{givenname} {surname}\", \"mailNickname\": \"{givenname}\", \"passwordProfile\": {\"password\": \"{password}\"}}"
-          },
-          config_edit_user: { "method": "PATCH", "endpoint": "/users/{userid}" },
-          config_delete_user: { "method": "DELETE", "endpoint": "/users/{userid}" },
-          config_user_auth: {
-            method: "POST",
-            headers: "{\"Content-Type\": \"application/x-www-form-urlencoded\"}",
-            endpoint: "https://login.microsoftonline.com/{tenant}/oauth2/v2.0/token",
-            requestMapping:
-              "client_id={client_id}&scope=https://graph.microsoft.com/.default&username={username}&password={password}&grant_type=password&client_secret={client_credential}"
-          }
-        };
-      } else if (type === "keycloakresolver") {
-        this.formData = {
-          config_authorization: {
-            method: "POST",
-            endpoint: "/realms/{realm}/protocol/openid-connect/token",
-            headers: "{\"Content-Type\": \"application/x-www-form-urlencoded\"}",
-            requestMapping: "grant_type=password&client_id=admin-cli&username={username}&password={password}",
-            responseMapping: "{\"Authorization\": \"Bearer {access_token}\"}"
-          },
-          config_user_auth: {
-            method: "POST",
-            endpoint: "/realms/{realm}/protocol/openid-connect/token",
-            headers: "{\"Content-Type\": \"application/x-www-form-urlencoded\"}",
-            requestMapping: "grant_type=password&client_id=admin-cli&username={username}&password={password}"
-          },
-          config_get_user_list: {
-            method: "GET",
-            endpoint: "/admin/realms/{realm}/users"
-          },
-          config_get_user_by_id: {
-            method: "GET",
-            endpoint: "/admin/realms/{realm}/users/{userid}"
-          },
-          config_get_user_by_name: {
-            method: "GET",
-            endpoint: "/admin/realms/{realm}/users",
-            requestMapping: "{\"username\": \"{username}\", \"exact\": true}"
-          }
-        };
       } else if (type === "scimresolver") {
-        this.formData = {};
-      } else if (type === "httpresolver") {
         this.formData = {};
       }
     }
@@ -405,18 +347,16 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
       payload[key] = control.value;
     }
 
-    this.isSaving = true;
+    this.isSaving.set(true);
 
-    return new Promise<void>(resolve => {
+    return new Promise<void>((resolve) => {
       this.resolverService
         .postResolver(name, payload)
         .subscribe({
           next: (res: PiResponse<any, any>) => {
             if (res.result?.status === true && (res.result.value ?? 0) >= 0) {
               this.notificationService.openSnackBar(
-                this.isEditMode
-                  ? $localize`Resolver "${name}" updated.`
-                  : $localize`Resolver "${name}" created.`
+                this.isEditMode ? $localize`Resolver "${name}" updated.` : $localize`Resolver "${name}" created.`
               );
               this.resolverService.resolversResource.reload?.();
 
@@ -428,7 +368,8 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
                 this.router.navigateByUrl(ROUTE_PATHS.USERS_RESOLVERS);
               }
             } else {
-              const message = res.detail?.description || res.result?.error?.message || $localize`Unknown error occurred.`;
+              const message =
+                res.detail?.description || res.result?.error?.message || $localize`Unknown error occurred.`;
               this.notificationService.openSnackBar($localize`Failed to save resolver. ${message}`);
             }
           },
@@ -438,7 +379,7 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
           }
         })
         .add(() => {
-          this.isSaving = false;
+          setTimeout(() => this.isSaving.set(false));
           resolve();
         });
     });
@@ -454,35 +395,35 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
 
   onCancel(): void {
     if (this.hasChanges) {
-      this.dialog
-        .open(ConfirmationDialogComponent, {
+      this.dialogService
+        .openDialog({
+          component: SimpleConfirmationDialogComponent,
           data: {
             title: $localize`Discard changes`,
-            action: "discard",
-            type: "resolver",
-            allowSaveExit: true,
-            saveExitDisabled: !this.canSave
+            confirmAction: { label: "Save and exit", type: "confirm", value: true },
+            items: [this.resolverName || "New Resolver"],
+            itemType: "resolver"
           }
         })
         .afterClosed()
-        .subscribe((result: ConfirmationDialogResult | undefined) => {
-          if (result === "discard") {
-            this.pendingChangesService.unregisterHasChanges();
-            this.closeActual();
-          } else if (result === "save-exit") {
+        .subscribe((result) => {
+          if (result === true) {
             if (!this.canSave) return;
             Promise.resolve(this.pendingChangesService.save()).then(() => {
               this.pendingChangesService.unregisterHasChanges();
-              this.closeActual();
+              this.closeCurrent();
             });
+          } else if (result === false) {
+            this.pendingChangesService.unregisterHasChanges();
+            this.closeCurrent();
           }
         });
     } else {
-      this.closeActual();
+      this.closeCurrent();
     }
   }
 
-  private closeActual(): void {
+  private closeCurrent(): void {
     if (this.dialogRef) {
       this.dialogRef.close();
     } else {
@@ -501,7 +442,7 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
       return;
     }
 
-    this.isTesting = true;
+    this.isTesting.set(true);
 
     const payload: any = {
       type: this.resolverType,
@@ -539,6 +480,6 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
           this.notificationService.openSnackBar($localize`Failed to test resolver. ${message}`);
         }
       })
-      .add(() => (this.isTesting = false));
+      .add(() => setTimeout(() => this.isTesting.set(false)));
   }
 }

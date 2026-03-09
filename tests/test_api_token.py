@@ -3788,6 +3788,48 @@ class APITokenTestCase(MyApiTestCase):
         delete_policy("change_pin")
         delete_policy("loginmode")
 
+    def test_65_enroll_pin_not_allowed(self):
+        # We need to set a policy in the admin scope so that policies_at_all is not empty.
+        # We allow enrollment of SPASS tokens, but we do NOT allow setting a PIN (enrollpin).
+        set_policy(name="admin_policy", scope=SCOPE.ADMIN, action="enrollSPASS")
+
+        # Now try to enroll a token with a PIN
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"type": "spass", "pin": "123456"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(403, res.status_code)
+            result = res.json.get("result")
+            self.assertFalse(result.get("status"))
+            # Avoid brittle exact string comparison; ensure the message indicates missing 'enrollpin' right.
+            self.assertIn("missing 'enrollpin' right", result.get("error", {}).get("message", ""))
+
+        delete_policy("admin_policy")
+
+    def test_66_enroll_pin_allowed(self):
+        # We allow enrollment of SPASS tokens AND setting a PIN (enrollpin).
+        set_policy(name="admin_policy", scope=SCOPE.ADMIN,
+                   action=["enrollSPASS", PolicyAction.ENROLLPIN])
+
+        # Now try to enroll a token with a PIN
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"type": "spass", "pin": "123456"},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"))
+            self.assertTrue(result.get("value"))
+
+            # Verify that the token has a PIN set
+            serial = res.json.get("detail").get("serial")
+            token = get_tokens(serial=serial)[0]
+            self.assertTrue(token.token.pin_hash)
+
+        delete_policy("admin_policy")
+
 
 class API00TokenPerformance(MyApiTestCase):
     token_count = 21

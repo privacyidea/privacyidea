@@ -554,8 +554,22 @@ You can use your own internal news feeds, if you want to provide your own inform
 rss_age
 ~~~~~~~
 
-type: int
+type: ``int``
 
 This defines the age of the displayed news feeds. The default is 180 days. You can specify a different age in days.
 
 .. note:: If you specify the age 0, then the UI tab "News" will be hidden.
+
+
+.. _policy_passkey_login:
+
+passkey_login
+~~~~~~~~~~~~~~
+
+type: ``string``
+
+Select whether the passkey login button should be visible on the login page.
+Allowed values are ``show`` and ``hide``.
+The default behavior is to show the passkey login option on the login page.
+
+.. versionadded:: 3.13

@@ -1,0 +1,77 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+
+<div class="action-selector-container">
+  <app-clearable-input
+    (onClick)="actionFilter.set('')"
+    [showClearButton]="actionFilter() !== ''">
+    <input
+      clearableInput
+      type="text"
+      placeholder="Search action ..."
+      [ngModel]="actionFilter()"
+      (ngModelChange)="actionFilter.set($event)"
+      class="search-input" />
+  </app-clearable-input>
+
+  <div>
+    <h3 i18n>Select Scope</h3>
+    <app-selector-buttons
+      [values]="allPolicyScopes"
+      [initialValue]="policy().scope"
+      [allowDeselect]="true"
+      (onSelect)="selectActionScope($event)"
+      [disabled]="!policyHasNoActions()" />
+    @if (actionGroupNamesFiltered().length > 1) {
+      <h3 i18n>Select Group</h3>
+      <app-selector-buttons
+        [values]="actionGroupNamesFiltered()"
+        [initialValue]="selectedActionGroup()"
+        (onSelect)="selectActionGroup($event)"
+        [disabled]="!policy().scope" />
+    }
+  </div>
+
+  @if ((actionsFiltered() | keyvalue).length > 0) {
+    <div class="add-action-details">
+      <div class="policy-action-items">
+        @for (action of actionsFiltered() | keyvalue; track action.key) {
+          <app-policy-action-item-new
+            [actionName]="action.key"
+            [actionDetail]="action.value"
+            (actionAdd)="addPolicyAction($event)" />
+        }
+      </div>
+    </div>
+  } @else {
+    <div class="flex-column">
+      @if (actionFilter() !== "") {
+        <p i18n>No actions match the search filter.</p>
+        <button
+          mat-stroked-button
+          (click)="actionFilter.set('')"
+          i18n>
+          Clear Filter
+        </button>
+      } @else {
+        <p i18n>No actions available for the selected scope and group.</p>
+      }
+    </div>
+  }
+</div>

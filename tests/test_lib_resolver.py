@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2015 NetKnights GmbH <https://netknights.it>
+# SPDX-License-Identifier: AGPL-3.0-or-later
+
 """
 This test file tests the lib.resolver and all
 the resolvers under it:
@@ -31,7 +34,7 @@ from privacyidea.lib.resolver import (save_resolver,
                                       get_resolver_config,
                                       get_resolver_list,
                                       get_resolver_object, pretestresolver,
-                                      CENSORED)
+                                      CENSORED, _replace_censored_values)
 from privacyidea.lib.resolvers.EntraIDResolver import (CLIENT_ID, TENANT, CLIENT_CREDENTIAL_TYPE, ClientCredentialType,
                                                        CLIENT_CERTIFICATE, PRIVATE_KEY_FILE, PRIVATE_KEY_PASSWORD,
                                                        CERTIFICATE_FINGERPRINT)
@@ -190,48 +193,48 @@ class SQLResolverTestCase(MyTestCase):
     def test_00_delete_achmeds(self):
         # If the test failed and some achmeds are still in the database (from
         #  add_user) we delete them here.
-        y = SQLResolver()
-        y.loadConfig(self.parameters)
+        resolver = SQLResolver()
+        resolver.loadConfig(self.parameters)
         for username in ["achmed", "achmed2", "corneliusReg"]:
             uid = True
             while uid:
-                uid = y.getUserId(username)
-                y.delete_user(uid)
+                uid = resolver.getUserId(username)
+                resolver.delete_user(uid)
 
     def test_01_sqlite_resolver(self):
-        y = SQLResolver()
-        y.loadConfig(self.parameters)
+        resolver = SQLResolver()
+        resolver.loadConfig(self.parameters)
 
-        userlist = y.getUserList()
+        userlist = resolver.getUserList()
         self.assertEqual(len(userlist), self.num_users, userlist)
 
         user = "cornelius"
-        user_id = y.getUserId(user)
+        user_id = resolver.getUserId(user)
         self.assertEqual(user_id, '3', user_id)
 
-        rid = y.getResolverId()
+        rid = resolver.getResolverId()
         self.assertTrue(rid.startswith("sql."))
 
-        rtype = y.getResolverType()
+        rtype = resolver.getResolverType()
         self.assertTrue(rtype == "sqlresolver", rtype)
 
-        rdesc = y.getResolverDescriptor()
+        rdesc = resolver.getResolverDescriptor()
         self.assertTrue("sqlresolver" in rdesc, rdesc)
         self.assertTrue("config" in rdesc.get("sqlresolver"), rdesc)
         self.assertTrue("clazz" in rdesc.get("sqlresolver"), rdesc)
 
-        uinfo = y.getUserInfo(user_id)
+        uinfo = resolver.get_user_info(user_id)
         self.assertEqual("cornelius", uinfo.get("username"), uinfo)
 
-        ret = y.getUserList({"username": "cornelius"})
+        ret = resolver.getUserList({"username": "cornelius"})
         self.assertEqual(len(ret), 1, ret)
 
         # Test some failing search parameter
         with LogCapture(level=logging.ERROR) as lc:
-            self.assertRaises(ParameterError, y.getUserList, {"unknown": "parameter"})
+            self.assertRaises(ParameterError, resolver.getUserList, {"unknown": "parameter"})
             lc.check_present(("privacyidea.lib.resolvers.SQLIdResolver", "ERROR",
                               f"Could not find search key (['unknown']) in the "
-                              f"column mapping keys ({list(y.map.keys())})."))
+                              f"column mapping keys ({list(resolver.map.keys())})."))
 
         # Test a correct map entry with a missing column in the db
         params = self.parameters.copy()
@@ -240,296 +243,296 @@ class SQLResolverTestCase(MyTestCase):
                     "email" : "email", \
                     "not_in_db" : "not_a_column", \
                     "password" : "password"}'})
-        y.loadConfig(params)
+        resolver.loadConfig(params)
         with LogCapture(level=logging.ERROR) as lc:
-            self.assertRaises(ResolverError, y.getUserList, {"not_in_db": "parameter"})
+            self.assertRaises(ResolverError, resolver.getUserList, {"not_in_db": "parameter"})
             lc.check_present(("privacyidea.lib.resolvers.SQLIdResolver", "ERROR",
                               f"Mapped column ('not_a_column') is not available in the database "
-                              f"table 'users' ({list(y.TABLE.columns.keys())})."))
+                              f"table 'users' ({list(resolver.TABLE.columns.keys())})."))
 
-        username = y.getUsername(user_id)
+        username = resolver.getUsername(user_id)
         self.assertEqual(username, "cornelius", username)
 
     def test_01a_where_tests(self):
-        y = SQLResolver()
+        resolver = SQLResolver()
         d = self.parameters.copy()
         d.update({"Where": "givenname == hans"})
-        y.loadConfig(d)
-        userlist = y.getUserList()
+        resolver.loadConfig(d)
+        userlist = resolver.getUserList()
         self.assertTrue(len(userlist) == 1, userlist)
 
-        y = SQLResolver()
+        resolver = SQLResolver()
         d = self.parameters.copy()
         d.update({"Where": "givenname like hans"})
-        y.loadConfig(d)
-        userlist = y.getUserList()
+        resolver.loadConfig(d)
+        userlist = resolver.getUserList()
         self.assertEqual(len(userlist), 1)
 
-        y = SQLResolver()
+        resolver = SQLResolver()
         d = self.parameters.copy()
         d.update({"Where": "id > 2"})
-        y.loadConfig(d)
-        userlist = y.getUserList()
+        resolver.loadConfig(d)
+        userlist = resolver.getUserList()
         self.assertEqual(len(userlist), self.num_users - 2)
 
-        y = SQLResolver()
+        resolver = SQLResolver()
         d = self.parameters.copy()
         d.update({"Where": "id < 5"})
-        y.loadConfig(d)
-        userlist = y.getUserList()
+        resolver.loadConfig(d)
+        userlist = resolver.getUserList()
         self.assertEqual(len(userlist), 4)
 
     def test_02_check_passwords(self):
-        y = SQLResolver()
-        y.loadConfig(self.parameters)
+        resolver = SQLResolver()
+        resolver.loadConfig(self.parameters)
 
         # SHA256 of "dunno"
         # 772cb52221f19104310cd2f549f5131fbfd34e0f4de7590c87b1d73175812607
 
-        self.assertTrue(y.checkPass('3', "dunno"))
+        self.assertTrue(resolver.checkPass('3', "dunno"))
         '''
         SHA1 base64 encoded of "dunno"
         Lg8DuLoXOwvPkMABDprnaTp0JOA=
         '''
-        self.assertTrue(y.checkPass('2', "dunno"))
+        self.assertTrue(resolver.checkPass('2', "dunno"))
 
-        self.assertTrue(y.checkPass('1', "dunno"))
+        self.assertTrue(resolver.checkPass('1', "dunno"))
 
-        self.assertTrue(y.checkPass('4', "dunno"))
+        self.assertTrue(resolver.checkPass('4', "dunno"))
 
-        self.assertTrue(y.checkPass('5', "dunno"))
+        self.assertTrue(resolver.checkPass('5', "dunno"))
 
         '''
         >>> PH = PasswordHash()
         >>> PH.hash_password("testpassword")
         '$P$Bz4R6lzp6VWCL0SCeTozqKHNV8DM.Q/'
         '''
-        self.assertTrue(y.checkPass('6', "testpassword"))
+        self.assertTrue(resolver.checkPass('6', "testpassword"))
 
-        self.assertTrue(y.checkPass('8', "dunno"))
+        self.assertTrue(resolver.checkPass('8', "dunno"))
 
-        self.assertTrue(y.checkPass('9', "dunno"))
+        self.assertTrue(resolver.checkPass('9', "dunno"))
 
         # bcrypt hashes
-        self.assertTrue(y.checkPass('10', "test"))
-        self.assertFalse(y.checkPass('10', "testw"))
-        self.assertTrue(y.checkPass('11', "test"))
-        self.assertFalse(y.checkPass('11', "testw"))
-        self.assertTrue(y.checkPass('12', "dunno"))
-        self.assertFalse(y.checkPass('12', "dunno2"))
+        self.assertTrue(resolver.checkPass('10', "test"))
+        self.assertFalse(resolver.checkPass('10', "testw"))
+        self.assertTrue(resolver.checkPass('11', "test"))
+        self.assertFalse(resolver.checkPass('11', "testw"))
+        self.assertTrue(resolver.checkPass('12', "dunno"))
+        self.assertFalse(resolver.checkPass('12', "dunno2"))
         # unknown password hash type
-        self.assertFalse(y.checkPass('13', "dunno2"))
+        self.assertFalse(resolver.checkPass('13', "dunno2"))
 
     def test_03_testconnection(self):
-        y = SQLResolver()
-        result = y.testconnection(self.parameters)
+        resolver = SQLResolver()
+        result = resolver.testconnection(self.parameters)
         self.assertEqual(result[0], self.num_users)
         self.assertTrue('Found {0!s} users.'.format(self.num_users) in result[1])
 
     def test_05_add_user_update_delete(self):
-        y = SQLResolver()
+        resolver = SQLResolver()
         # This has no password hash type set at all
-        y.loadConfig(self.parameters)
-        uid = y.add_user({"username": "achmed",
+        resolver.loadConfig(self.parameters)
+        uid = resolver.add_user({"username": "achmed",
                           "email": "achmed@world.net",
                           "password": "passw0rd",
                           "mobile": "12345"})
         self.assertTrue(uid > self.num_users)
-        self.assertTrue(y.checkPass(uid, "passw0rd"))
-        self.assertFalse(y.checkPass(uid, "password"))
+        self.assertTrue(resolver.checkPass(uid, "passw0rd"))
+        self.assertFalse(resolver.checkPass(uid, "password"))
         # check that we actually store SSHA256
-        stored_password = y.session.execute(
-            y.TABLE.select().where(y.TABLE.c.username == "achmed")).first().password
+        stored_password = resolver.session.execute(
+            resolver.TABLE.select().where(resolver.TABLE.c.username == "achmed")).first().password
         self.assertTrue(stored_password.startswith("{SSHA256}"), stored_password)
 
         # we assume here the uid is of type int
-        uid = y.getUserId("achmed")
+        uid = resolver.getUserId("achmed")
         self.assertGreater(int(uid), self.num_users)
 
-        r = y.update_user(uid, {"username": "achmed2",
+        r = resolver.update_user(uid, {"username": "achmed2",
                                 "password": "test"})
         # check that we actually store SSHA256
-        stored_password = y.session.execute(
-            y.TABLE.select().where(y.TABLE.c.username == "achmed2")).first().password
+        stored_password = resolver.session.execute(
+            resolver.TABLE.select().where(resolver.TABLE.c.username == "achmed2")).first().password
         self.assertTrue(stored_password.startswith("{SSHA256}"), stored_password)
-        uname = y.getUsername(uid)
+        uname = resolver.getUsername(uid)
         self.assertEqual(uname, "achmed2")
-        r = y.checkPass(uid, "test")
+        r = resolver.checkPass(uid, "test")
         self.assertTrue(r)
         # Now we delete the user
-        y.delete_user(uid)
+        resolver.delete_user(uid)
         # Now there should be no achmed anymore
-        uid = y.getUserId("achmed2")
+        uid = resolver.getUserId("achmed2")
         self.assertFalse(uid)
-        uid = y.getUserId("achmed")
+        uid = resolver.getUserId("achmed")
         self.assertFalse(uid)
 
     def test_06_append_where_filter(self):
-        y = SQLResolver()
+        resolver = SQLResolver()
         d = self.parameters.copy()
         d.update({"Where": "givenname == hans and name == dampf"})
-        y.loadConfig(d)
-        userlist = y.getUserList()
+        resolver.loadConfig(d)
+        userlist = resolver.getUserList()
         self.assertTrue(len(userlist) == 1, userlist)
 
-        y = SQLResolver()
+        resolver = SQLResolver()
         d = self.parameters.copy()
         d.update({"Where": "givenname == hans AND name == dampf"})
-        y.loadConfig(d)
-        userlist = y.getUserList()
+        resolver.loadConfig(d)
+        userlist = resolver.getUserList()
         self.assertTrue(len(userlist) == 1, userlist)
 
         # Also allow more than one blank surrounding the "and"
         # SQLAlchemy strips the blanks in the condition
-        y = SQLResolver()
+        resolver = SQLResolver()
         d = self.parameters.copy()
         d.update({"Where": "givenname == hans   AND name == dampf"})
-        y.loadConfig(d)
-        userlist = y.getUserList()
+        resolver.loadConfig(d)
+        userlist = resolver.getUserList()
         self.assertTrue(len(userlist) == 1, userlist)
 
-        y = SQLResolver()
+        resolver = SQLResolver()
         d = self.parameters.copy()
         d.update({"Where": "givenname == hans and name == test"})
-        y.loadConfig(d)
-        userlist = y.getUserList()
+        resolver.loadConfig(d)
+        userlist = resolver.getUserList()
         self.assertTrue(len(userlist) == 0, userlist)
 
-        y = SQLResolver()
+        resolver = SQLResolver()
         d = self.parameters.copy()
         d.update({"Where": "givenname == chandler"})
-        y.loadConfig(d)
-        userlist = y.getUserList()
+        resolver.loadConfig(d)
+        userlist = resolver.getUserList()
         self.assertTrue(len(userlist) == 0, userlist)
 
     def test_06b_where_filter_and_delete_user(self):
-        y = SQLResolver()
+        resolver = SQLResolver()
         d = self.parameters.copy()
         d.update({"Where": "id > 10"})
-        y.loadConfig(d)
-        userlist = y.getUserList()
+        resolver.loadConfig(d)
+        userlist = resolver.getUserList()
         self.assertGreaterEqual(len(userlist), 3, userlist)
-        uid = y.add_user({"username": "testuser",
+        uid = resolver.add_user({"username": "testuser",
                           "email": "user@test.net",
                           "password": "passw0rd",
                           "mobile": "1234567"})
         self.assertTrue(uid > self.num_users)
-        userlist = y.getUserList()
+        userlist = resolver.getUserList()
         self.assertGreaterEqual(len(userlist), 4, userlist)
-        y.delete_user(uid)
-        uid = y.getUserId("testuser")
+        resolver.delete_user(uid)
+        uid = resolver.getUserId("testuser")
         self.assertFalse(uid)
 
     def test_07_add_user_update_delete_hashes(self):
-        y = SQLResolver()
+        resolver = SQLResolver()
         parameters = self.parameters.copy()
         # sha256 at first
         parameters["Password_Hash_Type"] = "SSHA256"
-        y.loadConfig(parameters)
-        uid = y.add_user({"username": "achmed",
+        resolver.loadConfig(parameters)
+        uid = resolver.add_user({"username": "achmed",
                           "email": "achmed@world.net",
                           "password": "passw0rd",
                           "mobile": "12345"})
         self.assertTrue(uid > self.num_users)
-        self.assertTrue(y.checkPass(uid, "passw0rd"))
-        self.assertFalse(y.checkPass(uid, "password"))
+        self.assertTrue(resolver.checkPass(uid, "passw0rd"))
+        self.assertFalse(resolver.checkPass(uid, "password"))
         # check that we actually store SSHA256 at first
-        stored_password = y.session.execute(
-            y.TABLE.select().where(y.TABLE.c.username == "achmed")).first().password
+        stored_password = resolver.session.execute(
+            resolver.TABLE.select().where(resolver.TABLE.c.username == "achmed")).first().password
         self.assertTrue(stored_password.startswith("{SSHA256}"), stored_password)
 
-        self.assertTrue(y.update_user(uid, {"username": "achmed2",
+        self.assertTrue(resolver.update_user(uid, {"username": "achmed2",
                                             "password": "test"}))
-        stored_password = y.session.execute(
-            y.TABLE.select().where(y.TABLE.c.username == "achmed2")).first().password
+        stored_password = resolver.session.execute(
+            resolver.TABLE.select().where(resolver.TABLE.c.username == "achmed2")).first().password
         self.assertTrue(stored_password.startswith("{SSHA256}"), stored_password)
-        self.assertEqual(y.getUsername(uid), "achmed2")
-        self.assertTrue(y.checkPass(uid, "test"))
+        self.assertEqual(resolver.getUsername(uid), "achmed2")
+        self.assertTrue(resolver.checkPass(uid, "test"))
 
         # change to SSHA512
-        y = SQLResolver()
+        resolver = SQLResolver()
         parameters["Password_Hash_Type"] = "SSHA512"
-        y.loadConfig(parameters)
+        resolver.loadConfig(parameters)
 
-        self.assertTrue(y.update_user(uid, {"username": "achmed2",
+        self.assertTrue(resolver.update_user(uid, {"username": "achmed2",
                                             "password": "test2"}))
-        stored_password = y.session.execute(
-            y.TABLE.select().where(y.TABLE.c.username == "achmed2")).first().password
+        stored_password = resolver.session.execute(
+            resolver.TABLE.select().where(resolver.TABLE.c.username == "achmed2")).first().password
         self.assertTrue(stored_password.startswith("{SSHA512}"), stored_password)
-        self.assertTrue(y.checkPass(uid, "test2"))
-        self.assertFalse(y.checkPass(uid, "test"))
+        self.assertTrue(resolver.checkPass(uid, "test2"))
+        self.assertFalse(resolver.checkPass(uid, "test"))
 
         # PHPASS
         parameters["Password_Hash_Type"] = "PHPASS"
-        y.loadConfig(parameters)
-        self.assertTrue(y.update_user(uid, {"username": "achmed2",
+        resolver.loadConfig(parameters)
+        self.assertTrue(resolver.update_user(uid, {"username": "achmed2",
                                             "password": "test3"}))
-        stored_password = y.session.execute(
-            y.TABLE.select().where(y.TABLE.c.username == "achmed2")).first().password
+        stored_password = resolver.session.execute(
+            resolver.TABLE.select().where(resolver.TABLE.c.username == "achmed2")).first().password
         self.assertTrue(stored_password.startswith("$P$"), stored_password)
-        self.assertTrue(y.checkPass(uid, "test3"))
-        self.assertFalse(y.checkPass(uid, "test"))
+        self.assertTrue(resolver.checkPass(uid, "test3"))
+        self.assertFalse(resolver.checkPass(uid, "test"))
 
         # SHA
         parameters["Password_Hash_Type"] = "SHA"
-        y.loadConfig(parameters)
-        self.assertTrue(y.update_user(uid, {"username": "achmed2",
+        resolver.loadConfig(parameters)
+        self.assertTrue(resolver.update_user(uid, {"username": "achmed2",
                                             "password": "test4"}))
-        stored_password = y.session.execute(
-            y.TABLE.select().where(y.TABLE.c.username == "achmed2")).first().password
+        stored_password = resolver.session.execute(
+            resolver.TABLE.select().where(resolver.TABLE.c.username == "achmed2")).first().password
         self.assertTrue(stored_password.startswith("{SHA}"), stored_password)
-        self.assertTrue(y.checkPass(uid, "test4"))
-        self.assertFalse(y.checkPass(uid, "test"))
+        self.assertTrue(resolver.checkPass(uid, "test4"))
+        self.assertFalse(resolver.checkPass(uid, "test"))
 
         # SSHA
         parameters["Password_Hash_Type"] = "SSHA"
-        y.loadConfig(parameters)
-        self.assertTrue(y.update_user(uid, {"username": "achmed2",
+        resolver.loadConfig(parameters)
+        self.assertTrue(resolver.update_user(uid, {"username": "achmed2",
                                             "password": "test5"}))
-        stored_password = y.session.execute(
-            y.TABLE.select().where(y.TABLE.c.username == "achmed2")).first().password
+        stored_password = resolver.session.execute(
+            resolver.TABLE.select().where(resolver.TABLE.c.username == "achmed2")).first().password
         self.assertTrue(stored_password.startswith("{SSHA}"), stored_password)
-        self.assertTrue(y.checkPass(uid, "test5"))
-        self.assertFalse(y.checkPass(uid, "test"))
+        self.assertTrue(resolver.checkPass(uid, "test5"))
+        self.assertFalse(resolver.checkPass(uid, "test"))
 
         # SHA256CRYPT
         parameters["Password_Hash_Type"] = "SHA256CRYPT"
-        y.loadConfig(parameters)
-        self.assertTrue(y.update_user(uid, {"username": "achmed2",
+        resolver.loadConfig(parameters)
+        self.assertTrue(resolver.update_user(uid, {"username": "achmed2",
                                             "password": "test6"}))
-        stored_password = y.session.execute(
-            y.TABLE.select().where(y.TABLE.c.username == "achmed2")).first().password
+        stored_password = resolver.session.execute(
+            resolver.TABLE.select().where(resolver.TABLE.c.username == "achmed2")).first().password
         self.assertTrue(stored_password.startswith("$5$rounds="), stored_password)
-        self.assertTrue(y.checkPass(uid, "test6"))
-        self.assertFalse(y.checkPass(uid, "test"))
+        self.assertTrue(resolver.checkPass(uid, "test6"))
+        self.assertFalse(resolver.checkPass(uid, "test"))
 
         # SHA512CRYPT
         parameters["Password_Hash_Type"] = "SHA512CRYPT"
-        y.loadConfig(parameters)
-        self.assertTrue(y.update_user(uid, {"username": "achmed2",
+        resolver.loadConfig(parameters)
+        self.assertTrue(resolver.update_user(uid, {"username": "achmed2",
                                             "password": "test7"}))
-        stored_password = y.session.execute(
-            y.TABLE.select().where(y.TABLE.c.username == "achmed2")).first().password
+        stored_password = resolver.session.execute(
+            resolver.TABLE.select().where(resolver.TABLE.c.username == "achmed2")).first().password
         self.assertTrue(stored_password.startswith("$6$rounds="), stored_password)
-        self.assertTrue(y.checkPass(uid, "test7"))
-        self.assertFalse(y.checkPass(uid, "test"))
+        self.assertTrue(resolver.checkPass(uid, "test7"))
+        self.assertFalse(resolver.checkPass(uid, "test"))
 
         # MD5CRYPT
         parameters["Password_Hash_Type"] = "MD5CRYPT"
-        y.loadConfig(parameters)
-        self.assertTrue(y.update_user(uid, {"username": "achmed2",
+        resolver.loadConfig(parameters)
+        self.assertTrue(resolver.update_user(uid, {"username": "achmed2",
                                             "password": "test8"}))
-        stored_password = y.session.execute(
-            y.TABLE.select().where(y.TABLE.c.username == "achmed2")).first().password
+        stored_password = resolver.session.execute(
+            resolver.TABLE.select().where(resolver.TABLE.c.username == "achmed2")).first().password
         self.assertTrue(stored_password.startswith("$1$"), stored_password)
-        self.assertTrue(y.checkPass(uid, "test8"))
-        self.assertFalse(y.checkPass(uid, "test"))
+        self.assertTrue(resolver.checkPass(uid, "test8"))
+        self.assertFalse(resolver.checkPass(uid, "test"))
 
         # TODO: check unknown hash type
         parameters["Password_Hash_Type"] = "UNKNOWN"
-        y.loadConfig(parameters)
+        resolver.loadConfig(parameters)
         with mock.patch("logging.Logger.error") as mock_log:
-            self.assertFalse(y.update_user(uid, {"username": "achmed2",
+            self.assertFalse(resolver.update_user(uid, {"username": "achmed2",
                                                  "password": "test9"}))
             expected = "Error updating user attributes for user with uid 14: " \
                        "Unsupported password hashtype 'UNKNOWN'. Use one of " \
@@ -539,74 +542,140 @@ class SQLResolverTestCase(MyTestCase):
 
         # set hash type to default
         parameters.pop("Password_Hash_Type")
-        y.loadConfig(parameters)
+        resolver.loadConfig(parameters)
 
         # Now we delete the user
-        y.delete_user(uid)
+        resolver.delete_user(uid)
         # Now there should be no achmed anymore
-        uid = y.getUserId("achmed2")
+        uid = resolver.getUserId("achmed2")
         self.assertFalse(uid)
-        uid = y.getUserId("achmed")
+        uid = resolver.getUserId("achmed")
         self.assertFalse(uid)
 
         # Add a new user
-        uid = y.add_user({"username": "hans",
+        uid = resolver.add_user({"username": "hans",
                           "email": "hans@world.net",
                           "password": "foo",
                           "mobile": "12345"})
-        self.assertTrue(y.checkPass(uid, "foo"))
-        self.assertFalse(y.checkPass(uid, "bar"))
+        self.assertTrue(resolver.checkPass(uid, "foo"))
+        self.assertFalse(resolver.checkPass(uid, "bar"))
         # check that we actually store SSHA265 now since it is the default
-        stored_password = y.session.execute(
-            y.TABLE.select().where(y.TABLE.c.username == "hans")).first().password
+        stored_password = resolver.session.execute(
+            resolver.TABLE.select().where(resolver.TABLE.c.username == "hans")).first().password
         self.assertTrue(stored_password.startswith("{SSHA256}"), stored_password)
 
-        y.delete_user(uid)
+        resolver.delete_user(uid)
 
     def test_08_resolver_id(self):
-        y = SQLResolver()
-        y.loadConfig(self.parameters)
-        rid1 = y.getResolverId()
+        resolver = SQLResolver()
+        resolver.loadConfig(self.parameters)
+        rid1 = resolver.getResolverId()
 
-        y = SQLResolver()
+        resolver = SQLResolver()
         param2 = self.parameters.copy()
         param2["Where"] = "1 = 1"
-        y.loadConfig(param2)
-        rid2 = y.getResolverId()
+        resolver.loadConfig(param2)
+        rid2 = resolver.getResolverId()
 
         # rid1 == rid2, because only the WHERE clause has changed, which does not have any effect on the resolver id!
         self.assertEqual(rid1, rid2)
 
-        y = SQLResolver()
+        resolver = SQLResolver()
         param3 = self.parameters.copy()
         param3["Server"] = '/tests/../tests/testdata/'
-        y.loadConfig(param3)
-        rid3 = y.getResolverId()
+        resolver.loadConfig(param3)
+        rid3 = resolver.getResolverId()
 
         # rid1 != rid3, because the connect string has changed
         self.assertNotEqual(rid1, rid3)
 
-        y = SQLResolver()
+        resolver = SQLResolver()
         param4 = self.parameters.copy()
         param4["poolSize"] = "42"
-        y.loadConfig(param4)
-        rid4 = y.getResolverId()
+        resolver.loadConfig(param4)
+        rid4 = resolver.getResolverId()
 
         # rid1 != rid4, because the pool size has changed
         self.assertNotEqual(rid1, rid4)
 
     def test_08_noninteger_userid(self):
-        y = SQLResolver()
-        y.loadConfig(self.parameters)
-        y.map["userid"] = "username"
+        resolver = SQLResolver()
+        resolver.loadConfig(self.parameters)
+        resolver.map["userid"] = "username"
         user = "cornelius"
-        user_info = y.getUserInfo(user)
+        user_info = resolver.get_user_info(user)
         self.assertEqual(user_info.get("userid"), "cornelius")
 
+    def test_09_get_available_info_keys(self):
+        resolver = SQLResolver()
+        resolver.loadConfig(self.parameters)
+        keys = resolver.get_available_info_keys()
+        self.assertSetEqual(
+            {"id", "username", "userid", "email", "surname", "givenname", "password", "phone", "mobile"},
+            set(keys))
+
+    def test_10_get_user_info(self):
+        resolver = SQLResolver()
+        resolver.loadConfig(self.parameters)
+
+        user_info = resolver.get_user_info(2)
+        # only includes keys for a valid value (which is not true for phone and mobile)
+        self.assertSetEqual({"id", "username", "userid", "email", "surname", "givenname", "password"},
+                            set(user_info.keys()))
+        self.assertEqual("fred", user_info.get("username"))
+        self.assertEqual(2, user_info.get("id"))
+        self.assertEqual("2", user_info.get("userid"))
+        self.assertEqual("fred@artists.com", user_info.get("email"))
+        self.assertEqual("stair", user_info.get("surname"))
+        self.assertEqual("fred", user_info.get("givenname"))
+        self.assertEqual("{sha}Lg8DuLoXOwvPkMABDprnaTp0JOA=", user_info.get("password"))
+
+        # gte user with all attributes defined
+        user_info = resolver.get_user_info(1)
+        self.assertSetEqual(
+            {"id", "username", "userid", "email", "surname", "givenname", "mobile", "phone", "password"},
+            set(user_info.keys()))
+
+        # request specific attributes only
+        user_info = resolver.get_user_info(2, ["username", "email", "unknown"])
+        # id is always included, unknown attributes are ignored
+        self.assertSetEqual({"username", "email", "id"}, set(user_info.keys()))
+        self.assertEqual("fred", user_info.get("username"))
+        self.assertEqual("fred@artists.com", user_info.get("email"))
+        self.assertEqual(2, user_info.get("id"))
+
+    def test_11_getUserList(self):
+        resolver = SQLResolver()
+        resolver.loadConfig(self.parameters)
+
+        users = resolver.getUserList()
+        user_info = users[0]
+        # only includes keys for a valid value (which is not true for phone and mobile) + not include password
+        self.assertSetEqual({"id", "username", "userid", "email", "surname", "givenname", "mobile", "phone"},
+                            set(user_info.keys()))
+        self.assertEqual("user1", user_info.get("username"))
+        self.assertEqual(1, user_info.get("id"))
+        self.assertEqual("1", user_info.get("userid"))
+        self.assertEqual("user1@testdomain.com", user_info.get("email"))
+        self.assertEqual("dampf", user_info.get("surname"))
+        self.assertEqual("hans", user_info.get("givenname"))
+        self.assertEqual("+49 151 123454656", user_info.get("mobile"))
+        self.assertEqual("030 123454566", user_info.get("phone"))
+
+        # request specific attributes only
+        users = resolver.getUserList(attributes=["username", "email", "unknown"])
+        user_info = users[0]
+        # id and userid are always included, unknown attributes are ignored
+        self.assertSetEqual({"username", "email", "id", "userid"}, set(user_info.keys()))
+        self.assertEqual("user1", user_info.get("username"))
+        self.assertEqual("user1@testdomain.com", user_info.get("email"))
+        self.assertEqual(1, user_info.get("id"))
+        self.assertEqual("1", user_info.get("userid"))
+
     def test_99_testconnection_fail(self):
-        y = SQLResolver()
+        resolver = SQLResolver()
         self.parameters['Database'] = "does_not_exist"
-        result = y.testconnection(self.parameters)
+        result = resolver.testconnection(self.parameters)
         self.assertTrue(result[0] == -1, result)
         self.assertEqual("Failed to retrieve users.", result[1], result)
 
@@ -710,18 +779,18 @@ class SCIMResolverTestCase(MyTestCase):
         responses.add(responses.GET, self.TOKEN_URL, status=200,
                       content_type='application/json',
                       body=self.BODY_ACCESSTOKEN)
-        y = SCIMResolver()
-        y.loadConfig({'Authserver': self.AUTHSERVER, 'Resourceserver': self.RESOURCESERVER, 'Client': self.CLIENT,
+        resolver = SCIMResolver()
+        resolver.loadConfig({'Authserver': self.AUTHSERVER, 'Resourceserver': self.RESOURCESERVER, 'Client': self.CLIENT,
                       'Secret': self.SECRET, 'Mapping': "{}"})
 
-        rid = y.getResolverId()
+        rid = resolver.getResolverId()
         self.assertEqual(rid, self.AUTHSERVER)
 
-        r = y.getResolverClassDescriptor()
+        r = resolver.getResolverClassDescriptor()
         self.assertTrue("scimresolver" in r)
-        r = y.getResolverDescriptor()
+        r = resolver.getResolverDescriptor()
         self.assertTrue("scimresolver" in r)
-        r = y.getResolverType()
+        r = resolver.getResolverType()
         self.assertEqual("scimresolver", r)
 
     @responses.activate
@@ -729,11 +798,11 @@ class SCIMResolverTestCase(MyTestCase):
         responses.add(responses.GET, self.TOKEN_URL, status=200,
                       content_type='application/json',
                       body=self.BODY_ACCESSTOKEN)
-        y = SCIMResolver()
-        y.loadConfig({'Authserver': self.AUTHSERVER, 'Resourceserver': self.RESOURCESERVER, 'Client': self.CLIENT,
+        resolver = SCIMResolver()
+        resolver.loadConfig({'Authserver': self.AUTHSERVER, 'Resourceserver': self.RESOURCESERVER, 'Client': self.CLIENT,
                       'Secret': self.SECRET, 'Mapping': "{}"})
 
-        r = y.checkPass("uid", "password")
+        r = resolver.checkPass("uid", "password")
         self.assertFalse(r)
 
     @responses.activate
@@ -745,21 +814,28 @@ class SCIMResolverTestCase(MyTestCase):
                       status=200, content_type='application/json',
                       body=self.BODY_SINGLE_USER)
 
-        y = SCIMResolver()
-        y.loadConfig({'Authserver': self.AUTHSERVER, 'Resourceserver': self.RESOURCESERVER, 'Client': self.CLIENT,
+        resolver = SCIMResolver()
+        resolver.loadConfig({'Authserver': self.AUTHSERVER, 'Resourceserver': self.RESOURCESERVER, 'Client': self.CLIENT,
                       'Secret': self.SECRET, 'Mapping': "{username: 'userName'}"})
 
-        r = y.getUserInfo("bjensen")
+        r = resolver.get_user_info("bjensen")
+        self.assertSetEqual(set(resolver.get_available_info_keys()), set(r.keys()))
         self.assertEqual(r.get("username"), "bjensen")
         self.assertEqual(r.get("phone"), "555-555-8377")
         self.assertEqual(r.get("givenname"), "Barbara")
         self.assertEqual(r.get("surname"), "Jensen")
         self.assertEqual(r.get("email"), "bjensen@example.com")
 
-        r = y.getUsername("bjensen")
+        # request specific attributes only
+        r = resolver.get_user_info("bjensen", ["username", "email", "unknown"])
+        self.assertSetEqual({"username", "email"}, set(r.keys()))
+        self.assertEqual("bjensen", r.get("username"))
+        self.assertEqual("bjensen@example.com", r.get("email"))
+
+        r = resolver.getUsername("bjensen")
         self.assertEqual(r, "bjensen")
 
-        r = y.getUserId("bjensen")
+        r = resolver.getUserId("bjensen")
         self.assertEqual(r, "bjensen")
 
     @responses.activate
@@ -771,14 +847,22 @@ class SCIMResolverTestCase(MyTestCase):
                       status=200, content_type='application/json',
                       body=self.BODY_USERS)
 
-        y = SCIMResolver()
-        y.loadConfig({'Authserver': self.AUTHSERVER, 'Resourceserver': self.RESOURCESERVER, 'Client': self.CLIENT,
+        resolver = SCIMResolver()
+        resolver.loadConfig({'Authserver': self.AUTHSERVER, 'Resourceserver': self.RESOURCESERVER, 'Client': self.CLIENT,
                       'Secret': self.SECRET, 'Mapping': "{}"})
 
-        r = y.getUserList()
-        self.assertEqual(len(r), 2)
-        self.assertEqual(r[0].get("username"), "bjensen")
-        self.assertEqual(r[1].get("username"), "jsmith")
+        users = resolver.getUserList()
+        self.assertEqual(len(users), 2)
+        self.assertSetEqual(set(resolver.get_available_info_keys()), set(users[0].keys()))
+        self.assertEqual(users[0].get("username"), "bjensen")
+        self.assertEqual(users[1].get("username"), "jsmith")
+
+        # request specific attributes
+        users = resolver.getUserList(attributes=["username", "unknown"])
+        self.assertEqual(len(users), 2)
+        self.assertSetEqual({"username"}, set(users[0].keys()))
+        self.assertEqual(users[0].get("username"), "bjensen")
+        self.assertEqual(users[1].get("username"), "jsmith")
 
     @responses.activate
     def test_06_failed_get_user(self):
@@ -809,6 +893,11 @@ class SCIMResolverTestCase(MyTestCase):
         self.assertRaises(Exception, SCIMResolver._search_users,
                           resource_server=self.RESOURCESERVER,
                           access_token="")
+
+    def test_08_get_available_info_keys(self):
+        resolver = SCIMResolver()
+        keys = resolver.get_available_info_keys()
+        self.assertSetEqual({"username", "phone", "mobile", "email", "surname", "givenname"}, set(keys))
 
 
 class LDAPResolverTestCase(MyTestCase):
@@ -848,8 +937,8 @@ class LDAPResolverTestCase(MyTestCase):
     @ldap3mock.activate
     def test_01_LDAP_DN(self):
         ldap3mock.setLDAPDirectory(LDAPDirectory)
-        y = LDAPResolver()
-        y.loadConfig({'LDAPURI': 'ldap://localhost',
+        resolver = LDAPResolver()
+        resolver.loadConfig({'LDAPURI': 'ldap://localhost',
                       'LDAPBASE': 'o=test',
                       'BINDDN': 'cn=manager,ou=example,o=test',
                       'BINDPW': 'ldaptest',
@@ -864,40 +953,40 @@ class LDAPResolverTestCase(MyTestCase):
                       'UIDTYPE': 'DN',
                       })
 
-        result = y.getUserList({'username': '*'})
+        result = resolver.getUserList({'username': '*'})
         self.assertEqual(len(result), len(LDAPDirectory))
 
         user = "bob"
-        user_id = y.getUserId(user)
+        user_id = resolver.getUserId(user)
         self.assertTrue(user_id == "cn=bob,ou=example,o=test", user_id)
 
-        rid = y.getResolverId()
+        rid = resolver.getResolverId()
         self.assertTrue(rid == "035fbc6272907bc79a2c036b5bf9665ca921d558", rid)
 
-        rtype = y.getResolverType()
+        rtype = resolver.getResolverType()
         self.assertTrue(rtype == "ldapresolver", rtype)
 
-        rdesc = y.getResolverDescriptor()
+        rdesc = resolver.getResolverDescriptor()
         self.assertTrue("ldapresolver" in rdesc, rdesc)
         self.assertTrue("config" in rdesc.get("ldapresolver"), rdesc)
         self.assertTrue("clazz" in rdesc.get("ldapresolver"), rdesc)
 
-        uinfo = y.getUserInfo(user_id)
+        uinfo = resolver.get_user_info(user_id)
         self.assertTrue(uinfo.get("username") == "bob", uinfo)
 
-        ret = y.getUserList({"username": "bob"})
+        ret = resolver.getUserList({"username": "bob"})
         self.assertEqual(1, len(ret), ret)
 
         # Get user list with a wrong search parameter
         with LogCapture(level=logging.ERROR) as lc:
-            self.assertRaises(ParameterError, y.getUserList, {"unknown": "parameter"})
+            self.assertRaises(ParameterError, resolver.getUserList, {"unknown": "parameter"})
             lc.check_present(("privacyidea.lib.resolvers.LDAPIdResolver", "ERROR",
                               f"Could not find search key (['unknown']) in the "
-                              f"attribute mapping keys ({list(y.userinfo.keys())})."))
+                              f"attribute mapping keys ({list(resolver.userinfo.keys())})."))
 
         # user list with searchResRef entries
         # we are mocking the mock here
-        original_search = y.connection.extend.standard.paged_search
+        original_search = resolver.connection.extend.standard.paged_search
         with mock.patch.object(ldap3mock.Connection.Extend.Standard, 'paged_search') as mock_search:
             def _search_with_ref(*args, **kwargs):
                 results = original_search(*args, **kwargs)
@@ -907,26 +996,26 @@ class LDAPResolverTestCase(MyTestCase):
                 yield {'type': 'searchResRef', 'foo': 'bar'}
 
             mock_search.side_effect = _search_with_ref
-            ret = y.getUserList({"username": "bob"})
+            ret = resolver.getUserList({"username": "bob"})
             self.assertTrue(mock_search.called)
             self.assertTrue(len(ret) == 1, ret)
 
-        username = y.getUsername(user_id)
+        username = resolver.getUsername(user_id)
         self.assertTrue(username == "bob", username)
 
         pw = "bobpwééé"
-        res = y.checkPass(user_id, pw)
+        res = resolver.checkPass(user_id, pw)
         self.assertTrue(res)
-        self.assertTrue(y.checkPass(user_id, pw.encode('utf8')))
+        self.assertTrue(resolver.checkPass(user_id, pw.encode('utf8')))
 
-        res = y.checkPass(user_id, "wrong pw")
+        res = resolver.checkPass(user_id, "wrong pw")
         self.assertFalse(res)
 
     @ldap3mock.activate
     def test_01_LDAP_double_mapping(self):
         ldap3mock.setLDAPDirectory(LDAPDirectory)
-        y = LDAPResolver()
-        y.loadConfig({'LDAPURI': 'ldap://localhost',
+        resolver = LDAPResolver()
+        resolver.loadConfig({'LDAPURI': 'ldap://localhost',
                       'LDAPBASE': 'o=test',
                       'BINDDN': 'cn=manager,ou=example,o=test',
                       'BINDPW': 'ldaptest',
@@ -940,27 +1029,27 @@ class LDAPResolverTestCase(MyTestCase):
                       'UIDTYPE': 'DN',
                       })
 
-        result = y.getUserList({'username': '*'})
+        result = resolver.getUserList({'username': '*'})
         self.assertEqual(len(result), len(LDAPDirectory))
 
         user = "bob"
-        user_id = y.getUserId(user)
+        user_id = resolver.getUserId(user)
         self.assertEqual("cn=bob,ou=example,o=test", user_id)
 
-        rid = y.getResolverId()
+        rid = resolver.getResolverId()
         self.assertEqual('2a92363e3f9da66321d9ff71b3cd0c464e990b02', rid)
 
-        rtype = y.getResolverType()
+        rtype = resolver.getResolverType()
         self.assertTrue(rtype == "ldapresolver", rtype)
 
-        rdesc = y.getResolverClassDescriptor()
-        rdesc = y.getResolverDescriptor()
+        rdesc = resolver.getResolverClassDescriptor()
+        rdesc = resolver.getResolverDescriptor()
         self.assertTrue("ldapresolver" in rdesc, rdesc)
         self.assertTrue("config" in rdesc.get("ldapresolver"), rdesc)
         self.assertTrue("clazz" in rdesc.get("ldapresolver"), rdesc)
 
         # Use email as logon name
-        y.loadConfig({'LDAPURI': 'ldap://localhost',
+        resolver.loadConfig({'LDAPURI': 'ldap://localhost',
                       'LDAPBASE': 'o=test',
                       'BINDDN': 'cn=manager,ou=example,o=test',
                       'BINDPW': 'ldaptest',
@@ -974,27 +1063,27 @@ class LDAPResolverTestCase(MyTestCase):
                       'UIDTYPE': 'DN',
                       })
 
-        uinfo = y.getUserInfo("cn=bob,ou=example,o=test")
+        uinfo = resolver.get_user_info("cn=bob,ou=example,o=test")
         self.assertTrue(uinfo.get("email") == "bob@example.com", uinfo)
 
-        ret = y.getUserList({"username": "bob@example.com"})
+        ret = resolver.getUserList({"username": "bob@example.com"})
         self.assertTrue(len(ret) == 1, ret)
 
-        username = y.getUsername(user_id)
+        username = resolver.getUsername(user_id)
         self.assertTrue(username == "bob@example.com", username)
 
-        res = y.checkPass(user_id, "bobpwééé")
+        res = resolver.checkPass(user_id, "bobpwééé")
         self.assertTrue(res)
 
-        res = y.checkPass(user_id, "wrong pw")
+        res = resolver.checkPass(user_id, "wrong pw")
         self.assertFalse(res)
 
     @ldap3mock.activate
     def test_01_broken_uidtype(self):
         # checkPass with wrong UIDtype
         ldap3mock.setLDAPDirectory(LDAPDirectory)
-        y = LDAPResolver()
-        y.loadConfig({'LDAPURI': 'ldap://localhost',
+        resolver = LDAPResolver()
+        resolver.loadConfig({'LDAPURI': 'ldap://localhost',
                       'LDAPBASE': 'o=test',
                       'BINDDN': 'cn=manager,ou=example,o=test',
                       'BINDPW': 'ldaptest',
@@ -1010,29 +1099,29 @@ class LDAPResolverTestCase(MyTestCase):
                       'CACHE_TIMEOUT': 0
                       })
 
-        result = y.getUserList({'username': '*'})
+        result = resolver.getUserList({'username': '*'})
         self.assertEqual(len(result), len(LDAPDirectory))
 
-        rid = y.getResolverId()
+        rid = resolver.getResolverId()
         self.assertTrue(rid == "035fbc6272907bc79a2c036b5bf9665ca921d558", rid)
 
-        rtype = y.getResolverType()
+        rtype = resolver.getResolverType()
         self.assertTrue(rtype == "ldapresolver", rtype)
 
-        rdesc = y.getResolverClassDescriptor()
-        rdesc = y.getResolverDescriptor()
+        rdesc = resolver.getResolverClassDescriptor()
+        rdesc = resolver.getResolverDescriptor()
         self.assertTrue("ldapresolver" in rdesc, rdesc)
         self.assertTrue("config" in rdesc.get("ldapresolver"), rdesc)
         self.assertTrue("clazz" in rdesc.get("ldapresolver"), rdesc)
 
-        res = y.checkPass("bob", "bobpwééé")
+        res = resolver.checkPass("bob", "bobpwééé")
         self.assertFalse(res)
 
     @ldap3mock.activate
     def test_02_LDAP_OID(self):
         ldap3mock.setLDAPDirectory(LDAPDirectory)
-        y = LDAPResolver()
-        y.loadConfig({'LDAPURI': 'ldap://localhost',
+        resolver = LDAPResolver()
+        resolver.loadConfig({'LDAPURI': 'ldap://localhost',
                       'LDAPBASE': 'o=test',
                       'BINDDN': 'cn=manager,ou=example,o=test',
                       'BINDPW': 'ldaptest',
@@ -1048,44 +1137,44 @@ class LDAPResolverTestCase(MyTestCase):
                       'CACHE_TIMEOUT': 0
                       })
 
-        result = y.getUserList({'username': '*'})
+        result = resolver.getUserList({'username': '*'})
         self.assertEqual(len(result), len(LDAPDirectory))
 
         user = "bob"
-        user_id = y.getUserId(user)
+        user_id = resolver.getUserId(user)
         self.assertTrue(user_id == "3", "{0!s}".format(user_id))
 
-        rid = y.getResolverId()
+        rid = resolver.getResolverId()
         self.assertTrue(rid == "035fbc6272907bc79a2c036b5bf9665ca921d558", rid)
 
-        rtype = y.getResolverType()
+        rtype = resolver.getResolverType()
         self.assertTrue(rtype == "ldapresolver", rtype)
 
-        rdesc = y.getResolverClassDescriptor()
+        rdesc = resolver.getResolverClassDescriptor()
         self.assertTrue("ldapresolver" in rdesc, rdesc)
         self.assertTrue("config" in rdesc.get("ldapresolver"), rdesc)
         self.assertTrue("clazz" in rdesc.get("ldapresolver"), rdesc)
 
-        uinfo = y.getUserInfo("3")
+        uinfo = resolver.get_user_info("3")
         self.assertTrue(uinfo.get("username") == "bob", uinfo)
 
-        ret = y.getUserList({"username": "bob"})
+        ret = resolver.getUserList({"username": "bob"})
         self.assertTrue(len(ret) == 1, ret)
 
-        username = y.getUsername(user_id)
+        username = resolver.getUsername(user_id)
         self.assertTrue(username == "bob", username)
 
-        res = y.checkPass(user_id, "bobpwééé")
+        res = resolver.checkPass(user_id, "bobpwééé")
         self.assertTrue(res)
 
-        res = y.checkPass(user_id, "wrong pw")
+        res = resolver.checkPass(user_id, "wrong pw")
         self.assertFalse(res)
 
     @ldap3mock.activate
     def test_03_testconnection(self):
         ldap3mock.setLDAPDirectory(LDAPDirectory)
-        y = LDAPResolver()
-        res = y.testconnection({'LDAPURI': 'ldap://localhost',
+        resolver = LDAPResolver()
+        res = resolver.testconnection({'LDAPURI': 'ldap://localhost',
                                 'LDAPBASE': 'o=test',
                                 'BINDDN': 'cn=manager,ou=example,o=test',
                                 'BINDPW': 'ldaptest',
@@ -1108,8 +1197,8 @@ class LDAPResolverTestCase(MyTestCase):
     @ldap3mock.activate
     def test_03_testconnection_anonymous(self):
         ldap3mock.setLDAPDirectory(LDAPDirectory)
-        y = LDAPResolver()
-        res = y.testconnection({'LDAPURI': 'ldap://localhost',
+        resolver = LDAPResolver()
+        res = resolver.testconnection({'LDAPURI': 'ldap://localhost',
                                 'LDAPBASE': 'o=test',
                                 'LOGINNAMEATTRIBUTE': 'cn',
                                 'LDAPSEARCHFILTER': '(cn=*)',
@@ -1131,8 +1220,8 @@ class LDAPResolverTestCase(MyTestCase):
     @ldap3mock.activate
     def test_04_testconnection_fail(self):
         ldap3mock.setLDAPDirectory(LDAPDirectory)
-        y = LDAPResolver()
-        res = y.testconnection({'LDAPURI': 'ldap://localhost',
+        resolver = LDAPResolver()
+        res = resolver.testconnection({'LDAPURI': 'ldap://localhost',
                                 'LDAPBASE': 'o=test',
                                 'BINDDN': 'cn=manager,ou=example,o=test',
                                 'BINDPW': 'wrongpw',
@@ -1154,8 +1243,8 @@ class LDAPResolverTestCase(MyTestCase):
     @ldap3mock.activate
     def test_05_authtype_not_supported(self):
         ldap3mock.setLDAPDirectory(LDAPDirectory)
-        y = LDAPResolver()
-        res = y.testconnection({'LDAPURI': 'ldap://localhost',
+        resolver = LDAPResolver()
+        res = resolver.testconnection({'LDAPURI': 'ldap://localhost',
                                 'LDAPBASE': 'o=test',
                                 'BINDDN': 'cn=manager,ou=example,o=test',
                                 'BINDPW': 'ldaptest',
@@ -1173,7 +1262,7 @@ class LDAPResolverTestCase(MyTestCase):
                                 })
 
         self.assertFalse(res[0], res)
-        self.assertTrue("Authtype unknown not supported" in res[1], res)
+        self.assertEqual("ERR907: Unsupported authentication type: unknown", res[1], res)
 
     def test_06_split_uri(self):
         uri = "ldap://server"
@@ -1251,8 +1340,8 @@ class LDAPResolverTestCase(MyTestCase):
     @ldap3mock.activate
     def test_08_trimresult(self):
         ldap3mock.setLDAPDirectory(LDAPDirectory)
-        y = LDAPResolver()
-        y.loadConfig({'LDAPURI': 'ldap://localhost',
+        resolver = LDAPResolver()
+        resolver.loadConfig({'LDAPURI': 'ldap://localhost',
                       'LDAPBASE': 'o=test',
                       'BINDDN': 'cn=manager,ou=example,o=test',
                       'BINDPW': 'ldaptest',
@@ -1268,7 +1357,7 @@ class LDAPResolverTestCase(MyTestCase):
                       'NOREFERRALS': True,
                       'CACHE_TIMEOUT': 0
                       })
-        r = y._trim_result([{"type": "searchResEntry",
+        r = resolver._trim_result([{"type": "searchResEntry",
                              "DN": "blafoo"},
                             {"type": "searchResEntry",
                              "DN": "foobar"},
@@ -1280,8 +1369,8 @@ class LDAPResolverTestCase(MyTestCase):
     @ldap3mock.activate
     def test_09_test_objectGUID(self):
         ldap3mock.setLDAPDirectory(LDAPDirectory)
-        y = LDAPResolver()
-        y.loadConfig({'LDAPURI': 'ldap://localhost',
+        resolver = LDAPResolver()
+        resolver.loadConfig({'LDAPURI': 'ldap://localhost',
                       'LDAPBASE': 'o=test',
                       'BINDDN': 'cn=manager,ou=example,o=test',
                       'BINDPW': 'ldaptest',
@@ -1298,23 +1387,23 @@ class LDAPResolverTestCase(MyTestCase):
                       'NOREFERRALS': True,
                       'CACHE_TIMEOUT': 0
                       })
-        user_id = y.getUserId("bob")
-        res = y.checkPass(user_id, "bobpwééé")
+        user_id = resolver.getUserId("bob")
+        res = resolver.checkPass(user_id, "bobpwééé")
         self.assertTrue(res)
 
         # Test changing the password
-        res = y.update_user(user_id, {"password": "test"})
+        res = resolver.update_user(user_id, {"password": "test"})
         self.assertTrue(res)
 
-        user_id = y.getUserId("bob")
-        res = y.checkPass(user_id, "test")
+        user_id = resolver.getUserId("bob")
+        res = resolver.checkPass(user_id, "test")
         self.assertTrue(res)
 
     @ldap3mock.activate
     def test_09b_test_curly_braced_objectGUID(self):
         ldap3mock.setLDAPDirectory(LDAPDirectory_curly_objectGUID)
-        y = LDAPResolver()
-        y.loadConfig({'LDAPURI': 'ldap://localhost',
+        resolver = LDAPResolver()
+        resolver.loadConfig({'LDAPURI': 'ldap://localhost',
                       'LDAPBASE': 'o=test',
                       'BINDDN': 'cn=manager,ou=example,o=test',
                       'BINDPW': 'ldaptest',
@@ -1331,19 +1420,19 @@ class LDAPResolverTestCase(MyTestCase):
                       'NOREFERRALS': True,
                       'CACHE_TIMEOUT': 0
                       })
-        user_id = y.getUserId("bob")
-        res = y.checkPass(user_id, "bobpwééé")
+        user_id = resolver.getUserId("bob")
+        res = resolver.checkPass(user_id, "bobpwééé")
         self.assertTrue(res)
 
         # Test changing the password
-        res = y.update_user(user_id, {"password": "test"})
+        res = resolver.update_user(user_id, {"password": "test"})
         self.assertTrue(res)
 
-        user_id = y.getUserId("bob")
+        user_id = resolver.getUserId("bob")
         self.assertEqual(user_id, objectGUIDs[0])
         self.assertNotIn("{", user_id)
         self.assertNotIn("}", user_id)
-        res = y.checkPass(user_id, "test")
+        res = resolver.checkPass(user_id, "test")
         self.assertTrue(res)
 
     def test_10_escape_loginname(self):
@@ -1358,8 +1447,8 @@ class LDAPResolverTestCase(MyTestCase):
     def test_11_extended_userinfo(self):
         # For testing the return of additional SAML attributes.
         ldap3mock.setLDAPDirectory(LDAPDirectory)
-        y = LDAPResolver()
-        y.loadConfig({'LDAPURI': 'ldap://localhost',
+        resolver = LDAPResolver()
+        resolver.loadConfig({'LDAPURI': 'ldap://localhost',
                       'LDAPBASE': 'o=test',
                       'BINDDN': 'cn=manager,ou=example,o=test',
                       'BINDPW': 'ldaptest',
@@ -1376,16 +1465,16 @@ class LDAPResolverTestCase(MyTestCase):
                       'NOREFERRALS': True,
                       'CACHE_TIMEOUT': 0}
                      )
-        uid = y.getUserId("bob")
+        uid = resolver.getUserId("bob")
         self.assertEqual(uid, 'cn=bob,ou=example,o=test')
-        userinfo = y.getUserInfo(uid)
+        userinfo = resolver.get_user_info(uid)
         self.assertEqual(userinfo.get("additionalAttr"), "/home/bob")
 
     @ldap3mock.activate
     def test_12_get_expired_accounts(self):
         ldap3mock.setLDAPDirectory(LDAPDirectory)
-        y = LDAPResolver()
-        y.loadConfig({'LDAPURI': 'ldap://localhost',
+        resolver = LDAPResolver()
+        resolver.loadConfig({'LDAPURI': 'ldap://localhost',
                       'LDAPBASE': 'o=test',
                       'BINDDN': 'cn=manager,ou=example,o=test',
                       'BINDPW': 'ldaptest',
@@ -1402,16 +1491,16 @@ class LDAPResolverTestCase(MyTestCase):
                       'NOREFERRALS': True,
                       'CACHE_TIMEOUT': 0
                       })
-        res = y.getUserList({"accountExpires": 1})
+        res = resolver.getUserList({"accountExpires": 1})
         self.assertEqual(len(res), 1)
         self.assertEqual(res[0].get("username"), "alice")
 
     @ldap3mock.activate
     def test_13_add_user_update_delete(self):
         ldap3mock.setLDAPDirectory(LDAPDirectory)
-        y = LDAPResolver()
+        resolver = LDAPResolver()
         classes = "top, inetOrgPerson"
-        y.loadConfig({'LDAPURI': 'ldap://localhost',
+        resolver.loadConfig({'LDAPURI': 'ldap://localhost',
                       'LDAPBASE': 'o=test',
                       'BINDDN': 'cn=manager,ou=example,o=test',
                       'BINDPW': 'ldaptest',
@@ -1435,64 +1524,64 @@ class LDAPResolverTestCase(MyTestCase):
         user = "achmed"
 
         # First we add the user with add_user
-        r = y.add_user({"username": user,
+        success = resolver.add_user({"username": user,
                         "surname": "Ali",
                         "email": "achmed.ali@example.com",
                         "password": "testing123",
                         'mobile': ["1234", "45678"],
                         "givenname": "Achmed"})
-        self.assertTrue(r)
+        self.assertTrue(success)
 
         # Find the new users user_id
-        user_id = y.getUserId("achmed")
+        user_id = resolver.getUserId("achmed")
         self.assertTrue(user_id == "cn=achmed,ou=example,o=test", user_id)
 
         # Test changing the password
-        r = y.update_user(user_id, {"password": "test"})
-        self.assertTrue(r)
+        success = resolver.update_user(user_id, {"password": "test"})
+        self.assertTrue(success)
 
         # Test checking the password
-        r = y.checkPass(user_id, "test")
-        self.assertTrue(r)
+        success = resolver.checkPass(user_id, "test")
+        self.assertTrue(success)
 
         # Test MODIFY_DELETE
-        r = y.update_user(user_id, {"email": ""})
-        self.assertTrue(r)
-        userinfo = y.getUserInfo(user_id)
+        success = resolver.update_user(user_id, {"email": ""})
+        self.assertTrue(success)
+        userinfo = resolver.get_user_info(user_id)
         self.assertFalse(userinfo.get("email"))
 
         # Test MODIFY_REPLACE
-        r = y.update_user(user_id, {"surname": "Smith"})
-        self.assertTrue(r)
-        userinfo = y.getUserInfo(user_id)
+        success = resolver.update_user(user_id, {"surname": "Smith"})
+        self.assertTrue(success)
+        userinfo = resolver.get_user_info(user_id)
         self.assertEqual(userinfo.get("surname"), "Smith")
 
         # Test MODIFY_ADD
-        r = y.update_user(user_id, {"email": "bob@testing.com"})
-        self.assertTrue(r)
-        userinfo = y.getUserInfo(user_id)
+        success = resolver.update_user(user_id, {"email": "bob@testing.com"})
+        self.assertTrue(success)
+        userinfo = resolver.get_user_info(user_id)
         self.assertEqual(userinfo.get("email"), "bob@testing.com")
 
         # Test multiple changes in a single transaction
-        r = y.update_user(user_id, {"email": "",
+        success = resolver.update_user(user_id, {"email": "",
                                     "givenname": "Charlie"})
-        self.assertTrue(r)
-        userinfo = y.getUserInfo(user_id)
+        self.assertTrue(success)
+        userinfo = resolver.get_user_info(user_id)
         self.assertEqual(userinfo.get("givenname"), "Charlie")
         self.assertFalse(userinfo.get("email"))
 
         # Now we delete the user with add_user
-        y.delete_user(user_id)
+        resolver.delete_user(user_id)
         # Now there should be no achmed anymore
-        user_id = y.getUserId("achmed")
+        user_id = resolver.getUserId("achmed")
         self.assertFalse(user_id)
 
     @ldap3mock.activate
     def test_14_add_user_update_delete_objectGUID(self):
         ldap3mock.setLDAPDirectory(LDAPDirectory)
         classes = 'top, inetOrgPerson'
-        y = LDAPResolver()
-        y.loadConfig({'LDAPURI': 'ldap://localhost',
+        resolver = LDAPResolver()
+        resolver.loadConfig({'LDAPURI': 'ldap://localhost',
                       'LDAPBASE': 'o=test',
                       'BINDDN': 'cn=manager,ou=example,o=test',
                       'BINDPW': 'ldaptest',
@@ -1527,20 +1616,20 @@ class LDAPResolverTestCase(MyTestCase):
                       "givenname": "Achmed"}
 
         # First we add the user with add_user
-        r = y.add_user(attributes)
+        r = resolver.add_user(attributes)
         self.assertTrue(r)
 
         # Now we delete the user with add_user
-        y.delete_user(user_id)
+        resolver.delete_user(user_id)
         # Now there should be no achmed anymore
-        user_id = y.getUserId("achmed")
+        user_id = resolver.getUserId("achmed")
         self.assertFalse(user_id)
 
     @ldap3mock.activate
     def test_21_test_objectGUID_getUserInfo(self):
         ldap3mock.setLDAPDirectory(LDAPDirectory)
-        y = LDAPResolver()
-        y.loadConfig({'LDAPURI': 'ldap://localhost',
+        resolver = LDAPResolver()
+        resolver.loadConfig({'LDAPURI': 'ldap://localhost',
                       'LDAPBASE': 'o=test',
                       'BINDDN': 'cn=manager,ou=example,o=test',
                       'BINDPW': 'ldaptest',
@@ -1556,8 +1645,8 @@ class LDAPResolverTestCase(MyTestCase):
                       'NOREFERRALS': True,
                       'CACHE_TIMEOUT': 0
                       })
-        user_id = y.getUserId("bob")
-        user_info = y.getUserInfo(user_id)
+        user_id = resolver.getUserId("bob")
+        user_info = resolver.get_user_info(user_id)
         self.assertEqual(user_info.get("username"), "bob")
         self.assertEqual(user_info.get("surname"), "Marley")
         self.assertEqual(user_info.get("givenname"), "Robert")
@@ -1568,12 +1657,12 @@ class LDAPResolverTestCase(MyTestCase):
         # different resolvers. Alice is cached as not found in the first
         # resolver but alice will be found in the other resolver.
         ldap3mock.setLDAPDirectory(LDAPDirectory_small)
-        y = LDAPResolver()
+        resolver = LDAPResolver()
         # We add :789 to the LDAPURI in order to force a unused resolver ID.
         # If we omit it, the test occasionally fails because of leftover
         # cache entries from a resolver with the same resolver ID
         # that was instantiated in the test_api_validate.py tests.
-        y.loadConfig({'LDAPURI': 'ldap://localhost:789',
+        resolver.loadConfig({'LDAPURI': 'ldap://localhost:789',
                       'LDAPBASE': 'o=test',
                       'BINDDN': 'cn=manager,ou=example,o=test',
                       'BINDPW': 'ldaptest',
@@ -1591,12 +1680,12 @@ class LDAPResolverTestCase(MyTestCase):
                       })
 
         # in the small LDAP there is no user "alice"!
-        user_id = y.getUserId("alice")
+        user_id = resolver.getUserId("alice")
         self.assertEqual(user_id, "")
 
         ldap3mock.setLDAPDirectory(LDAPDirectory)
-        y = LDAPResolver()
-        y.loadConfig({'LDAPURI': 'ldap://localhost',
+        resolver = LDAPResolver()
+        resolver.loadConfig({'LDAPURI': 'ldap://localhost',
                       'LDAPBASE': 'o=test',
                       'BINDDN': 'cn=manager,ou=example,o=test',
                       'BINDPW': 'ldaptest',
@@ -1614,8 +1703,8 @@ class LDAPResolverTestCase(MyTestCase):
 
         # but in the full LDAP there is a "alice". We need to find it, since it
         # is not cached yet in the new resolver cache
-        user_id = y.getUserId("alice")
-        user_info = y.getUserInfo(user_id)
+        user_id = resolver.getUserId("alice")
+        user_info = resolver.get_user_info(user_id)
         self.assertEqual(user_info.get("username"), "alice")
         self.assertEqual(user_info.get("surname"), "Cooper")
         self.assertEqual(user_info.get("givenname"), "Alice")
@@ -1766,8 +1855,8 @@ class LDAPResolverTestCase(MyTestCase):
     def test_25_LDAP_DN_with_utf8(self):
         # This tests usernames are entered in the LDAPresolver as utf-8 encoded
         ldap3mock.setLDAPDirectory(LDAPDirectory)
-        y = LDAPResolver()
-        y.loadConfig({'LDAPURI': 'ldap://localhost',
+        resolver = LDAPResolver()
+        resolver.loadConfig({'LDAPURI': 'ldap://localhost',
                       'LDAPBASE': 'o=test',
                       'BINDDN': 'cn=manager,ou=example,o=test',
                       'BINDPW': 'ldaptest',
@@ -1782,46 +1871,46 @@ class LDAPResolverTestCase(MyTestCase):
                       'UIDTYPE': 'DN',
                       })
 
-        result = y.getUserList({'username': '*'})
+        result = resolver.getUserList({'username': '*'})
         self.assertEqual(len(result), len(LDAPDirectory))
 
         user = "kölbel".encode('utf8')
-        user_id = y.getUserId(user)
+        user_id = resolver.getUserId(user)
         self.assertEqual(user_id, "cn=kölbel,ou=example,o=test")
 
-        rid = y.getResolverId()
+        rid = resolver.getResolverId()
         self.assertTrue(rid == "035fbc6272907bc79a2c036b5bf9665ca921d558", rid)
 
-        rtype = y.getResolverType()
+        rtype = resolver.getResolverType()
         self.assertTrue(rtype == "ldapresolver", rtype)
 
-        rdesc = y.getResolverClassDescriptor()
-        rdesc = y.getResolverDescriptor()
+        rdesc = resolver.getResolverClassDescriptor()
+        rdesc = resolver.getResolverDescriptor()
         self.assertTrue("ldapresolver" in rdesc, rdesc)
         self.assertTrue("config" in rdesc.get("ldapresolver"), rdesc)
         self.assertTrue("clazz" in rdesc.get("ldapresolver"), rdesc)
 
-        uinfo = y.getUserInfo(user_id)
+        uinfo = resolver.get_user_info(user_id)
         self.assertEqual(to_bytes(uinfo.get("username")), user, uinfo)
 
-        ret = y.getUserList({"username": user})
+        ret = resolver.getUserList({"username": user})
         self.assertTrue(len(ret) == 1, ret)
 
-        username = y.getUsername(user_id)
+        username = resolver.getUsername(user_id)
         self.assertTrue(to_bytes(username) == user, username)
 
-        res = y.checkPass(user_id, "mySecret")
+        res = resolver.checkPass(user_id, "mySecret")
         self.assertTrue(res)
 
-        res = y.checkPass(user_id, "wrong pw")
+        res = resolver.checkPass(user_id, "wrong pw")
         self.assertFalse(res)
 
     @ldap3mock.activate
     def test_26_LDAP_DN_with_unicode(self):
         # This tests usernames are entered in the LDAPresolver as unicode.
         ldap3mock.setLDAPDirectory(LDAPDirectory)
-        y = LDAPResolver()
-        y.loadConfig({'LDAPURI': 'ldap://localhost',
+        resolver = LDAPResolver()
+        resolver.loadConfig({'LDAPURI': 'ldap://localhost',
                       'LDAPBASE': 'o=test',
                       'BINDDN': 'cn=manager,ou=example,o=test',
                       'BINDPW': 'ldaptest',
@@ -1836,46 +1925,46 @@ class LDAPResolverTestCase(MyTestCase):
                       'UIDTYPE': 'DN',
                       })
 
-        result = y.getUserList({'username': '*'})
+        result = resolver.getUserList({'username': '*'})
         self.assertEqual(len(result), len(LDAPDirectory))
 
         user = "kölbel"
-        user_id = y.getUserId(user)
+        user_id = resolver.getUserId(user)
         self.assertEqual(user_id, "cn=kölbel,ou=example,o=test")
 
-        rid = y.getResolverId()
+        rid = resolver.getResolverId()
         self.assertTrue(rid == "035fbc6272907bc79a2c036b5bf9665ca921d558", rid)
 
-        rtype = y.getResolverType()
+        rtype = resolver.getResolverType()
         self.assertTrue(rtype == "ldapresolver", rtype)
 
-        rdesc = y.getResolverClassDescriptor()
-        rdesc = y.getResolverDescriptor()
+        rdesc = resolver.getResolverClassDescriptor()
+        rdesc = resolver.getResolverDescriptor()
         self.assertTrue("ldapresolver" in rdesc, rdesc)
         self.assertTrue("config" in rdesc.get("ldapresolver"), rdesc)
         self.assertTrue("clazz" in rdesc.get("ldapresolver"), rdesc)
 
-        uinfo = y.getUserInfo(user_id)
+        uinfo = resolver.get_user_info(user_id)
         self.assertEqual(to_unicode(uinfo.get("username")), user, uinfo)
 
-        ret = y.getUserList({"username": user})
+        ret = resolver.getUserList({"username": user})
         self.assertTrue(len(ret) == 1, ret)
 
-        username = y.getUsername(user_id)
+        username = resolver.getUsername(user_id)
         self.assertTrue(to_unicode(username) == user, username)
 
-        res = y.checkPass(user_id, "mySecret")
+        res = resolver.checkPass(user_id, "mySecret")
         self.assertTrue(res)
 
-        res = y.checkPass(user_id, "wrong pw")
+        res = resolver.checkPass(user_id, "wrong pw")
         self.assertFalse(res)
 
     @ldap3mock.activate
     def test_27_LDAP_multiple_loginnames(self):
         # This tests usernames are entered in the LDAPresolver as unicode.
         ldap3mock.setLDAPDirectory(LDAPDirectory)
-        y = LDAPResolver()
-        y.loadConfig({'LDAPURI': 'ldap://localhost',
+        resolver = LDAPResolver()
+        resolver.loadConfig({'LDAPURI': 'ldap://localhost',
                       'LDAPBASE': 'o=test',
                       'BINDDN': 'cn=manager,ou=example,o=test',
                       'BINDPW': 'ldaptest',
@@ -1889,23 +1978,23 @@ class LDAPResolverTestCase(MyTestCase):
                       'UIDTYPE': 'DN',
                       })
 
-        result = y.getUserList({'username': '*'})
+        result = resolver.getUserList({'username': '*'})
         self.assertEqual(len(result), len(LDAPDirectory))
 
         user = "kölbel"
-        user_id = y.getUserId(user)
+        user_id = resolver.getUserId(user)
         self.assertEqual(user_id, "cn=kölbel,ou=example,o=test")
 
         username = "cko@o"
-        user_id = y.getUserId(username)
+        user_id = resolver.getUserId(username)
         self.assertEqual(user_id, "cn=kölbel,ou=example,o=test")
 
     @ldap3mock.activate
     def test_28_LDAP_multivalues(self):
         # This tests usernames are entered in the LDAPresolver as unicode.
         ldap3mock.setLDAPDirectory(LDAPDirectory)
-        y = LDAPResolver()
-        y.loadConfig({'LDAPURI': 'ldap://localhost',
+        resolver = LDAPResolver()
+        resolver.loadConfig({'LDAPURI': 'ldap://localhost',
                       'LDAPBASE': 'o=test',
                       'BINDDN': 'cn=manager,ou=example,o=test',
                       'BINDPW': 'ldaptest',
@@ -1921,13 +2010,13 @@ class LDAPResolverTestCase(MyTestCase):
                       'MULTIVALUEATTRIBUTES': "['piAttr']"
                       })
 
-        result = y.getUserList({'username': '*'})
+        result = resolver.getUserList({'username': '*'})
         self.assertEqual(len(result), len(LDAPDirectory))
 
         user = "kölbel"
-        user_id = y.getUserId(user)
+        user_id = resolver.getUserId(user)
         self.assertEqual(user_id, "cn=kölbel,ou=example,o=test")
-        info = y.getUserInfo(user_id)
+        info = resolver.get_user_info(user_id)
         self.assertTrue("value1" in info.get("piAttr"))
         self.assertTrue("value2" in info.get("piAttr"))
 
@@ -1935,8 +2024,8 @@ class LDAPResolverTestCase(MyTestCase):
     def test_29_sizelimit(self):
         # This tests usernames are entered in the LDAPresolver as unicode.
         ldap3mock.setLDAPDirectory(LDAPDirectory)
-        y = LDAPResolver()
-        y.loadConfig({'LDAPURI': 'ldap://localhost',
+        resolver = LDAPResolver()
+        resolver.loadConfig({'LDAPURI': 'ldap://localhost',
                       'LDAPBASE': 'o=test',
                       'BINDDN': 'cn=manager,ou=example,o=test',
                       'BINDPW': 'ldaptest',
@@ -1952,11 +2041,11 @@ class LDAPResolverTestCase(MyTestCase):
                       "SIZELIMIT": "3"
                       })
 
-        result = y.getUserList({'username': '*'})
+        result = resolver.getUserList({'username': '*'})
         self.assertEqual(len(result), 3)
 
         # We imitate ldap3 2.4.1 and raise an exception without having returned any entries
-        original_search = y.connection.extend.standard.paged_search
+        original_search = resolver.connection.extend.standard.paged_search
         with mock.patch.object(ldap3mock.Connection.Extend.Standard, 'paged_search') as mock_search:
             def _search_with_exception(*args, **kwargs):
                 original_search(*args, **kwargs)
@@ -1966,7 +2055,7 @@ class LDAPResolverTestCase(MyTestCase):
                 yield
 
             mock_search.side_effect = _search_with_exception
-            ret = y.getUserList({"username": "*"})
+            ret = resolver.getUserList({"username": "*"})
             self.assertTrue(mock_search.called)
             # We get all three entries, due to the workaround in ``ignore_sizelimit_exception``!
             self.assertEqual(len(ret), 3)
@@ -1992,7 +2081,7 @@ class LDAPResolverTestCase(MyTestCase):
                 raise LDAPOperationResult(result=RESULT_SIZE_LIMIT_EXCEEDED)
 
             mock_search.side_effect = _search_with_exception
-            ret = y.testconnection({'LDAPURI': 'ldap://localhost',
+            ret = resolver.testconnection({'LDAPURI': 'ldap://localhost',
                                     'LDAPBASE': 'o=test',
                                     'BINDDN': 'cn=manager,ou=example,o=test',
                                     'BINDPW': 'ldaptest',
@@ -2017,8 +2106,8 @@ class LDAPResolverTestCase(MyTestCase):
     def test_30_login_with_objectGUID(self):
         ldap3mock.setLDAPDirectory(LDAPDirectory)
         classes = 'top, inetOrgPerson'
-        y = LDAPResolver()
-        y.loadConfig({'LDAPURI': 'ldap://localhost',
+        resolver = LDAPResolver()
+        resolver.loadConfig({'LDAPURI': 'ldap://localhost',
                       'LDAPBASE': 'o=test',
                       'BINDDN': 'cn=manager,ou=example,o=test',
                       'BINDPW': 'ldaptest',
@@ -2041,19 +2130,19 @@ class LDAPResolverTestCase(MyTestCase):
                       })
 
         # Alice, the email address and objectGUID of alice return the same uid.
-        uid = y.getUserId("alice")
+        uid = resolver.getUserId("alice")
         self.assertEqual(uid, objectGUIDs[0])
-        uid = y.getUserId(objectGUIDs[0])
+        uid = resolver.getUserId(objectGUIDs[0])
         self.assertEqual(uid, objectGUIDs[0])
-        uid = y.getUserId("alice@test.com")
+        uid = resolver.getUserId("alice@test.com")
         self.assertEqual(uid, objectGUIDs[0])
 
     @ldap3mock.activate
     def test_31_login_with_objectGUID_only(self):
         ldap3mock.setLDAPDirectory(LDAPDirectory)
         classes = 'top, inetOrgPerson'
-        y = LDAPResolver()
-        y.loadConfig({'LDAPURI': 'ldap://localhost',
+        resolver = LDAPResolver()
+        resolver.loadConfig({'LDAPURI': 'ldap://localhost',
                       'LDAPBASE': 'o=test',
                       'BINDDN': 'cn=manager,ou=example,o=test',
                       'BINDPW': 'ldaptest',
@@ -2076,10 +2165,10 @@ class LDAPResolverTestCase(MyTestCase):
                       })
 
         # We can now authenticate using the objectGUID
-        uid = y.getUserId(objectGUIDs[0])
+        uid = resolver.getUserId(objectGUIDs[0])
         self.assertEqual(uid, objectGUIDs[0])
 
-        info = y.getUserInfo(uid)
+        info = resolver.get_user_info(uid)
         self.assertEqual(info['username'], objectGUIDs[0])
 
     @ldap3mock.activate
@@ -2088,8 +2177,8 @@ class LDAPResolverTestCase(MyTestCase):
         # entries. NOTE: This does not test a multi-threaded scenario!
         ldap3mock.setLDAPDirectory(LDAPDirectory_small)
         cache_timeout = 120
-        y = LDAPResolver()
-        y.loadConfig({'LDAPURI': 'ldap://localhost',
+        resolver = LDAPResolver()
+        resolver.loadConfig({'LDAPURI': 'ldap://localhost',
                       'LDAPBASE': 'o=test',
                       'BINDDN': 'cn=manager,ou=example,o=test',
                       'BINDPW': 'ldaptest',
@@ -2107,28 +2196,28 @@ class LDAPResolverTestCase(MyTestCase):
                       })
         from privacyidea.lib.resolvers.LDAPIdResolver import CACHE
         # assert that the other tests haven't left anything in the cache
-        self.assertNotIn(y.getResolverId(), CACHE)
-        bob_id = y.getUserId('bob')
+        self.assertNotIn(resolver.getResolverId(), CACHE)
+        bob_id = resolver.getUserId('bob')
         # assert the cache contains this entry
-        self.assertEqual(CACHE[y.getResolverId()]['getUserId']['bob']['value'], bob_id)
+        self.assertEqual(CACHE[resolver.getResolverId()]['getUserId']['bob']['value'], bob_id)
         # assert subsequent requests for the same data hit the cache
         with mock.patch.object(ldap3mock.Connection, 'search') as mock_search:
-            bob_id2 = y.getUserId('bob')
+            bob_id2 = resolver.getUserId('bob')
             self.assertEqual(bob_id, bob_id2)
             mock_search.assert_not_called()
-        self.assertIn('bob', CACHE[y.getResolverId()]['getUserId'])
+        self.assertIn('bob', CACHE[resolver.getResolverId()]['getUserId'])
         # assert requests later than CACHE_TIMEOUT seconds query the directory again
         now = datetime.datetime.now(tz=datetime.timezone.utc)
         with mock.patch('privacyidea.lib.resolvers.LDAPIdResolver.datetime.datetime',
                         wraps=datetime.datetime) as mock_datetime:
             # we now live CACHE_TIMEOUT + 2 seconds in the future
             mock_datetime.now.return_value = now + datetime.timedelta(seconds=cache_timeout + 2)
-            with mock.patch.object(ldap3mock.Connection, 'search', wraps=y.connection.search) as mock_search:
-                bob_id3 = y.getUserId('bob')
+            with mock.patch.object(ldap3mock.Connection, 'search', wraps=resolver.connection.search) as mock_search:
+                bob_id3 = resolver.getUserId('bob')
                 self.assertEqual(bob_id, bob_id3)
                 mock_search.assert_called_once()
         # assert the cache contains this entry, with the updated timestamp
-        self.assertEqual(CACHE[y.getResolverId()]['getUserId']['bob'],
+        self.assertEqual(CACHE[resolver.getResolverId()]['getUserId']['bob'],
                          {'value': bob_id,
                           'timestamp': now + datetime.timedelta(seconds=cache_timeout + 2)})
         # we now go 2 * (CACHE_TIMEOUT + 2) seconds to the future and query for someone else's user ID.
@@ -2136,17 +2225,17 @@ class LDAPResolverTestCase(MyTestCase):
         with mock.patch('privacyidea.lib.resolvers.LDAPIdResolver.datetime.datetime',
                         wraps=datetime.datetime) as mock_datetime:
             mock_datetime.now.return_value = now + datetime.timedelta(seconds=2 * (cache_timeout + 2))
-            manager_id = y.getUserId('manager')
+            manager_id = resolver.getUserId('manager')
             self.assertEqual(manager_id, objectGUIDs[1])
-        self.assertEqual(list(CACHE[y.getResolverId()]['getUserId'].keys()), ['manager'])
+        self.assertEqual(list(CACHE[resolver.getResolverId()]['getUserId'].keys()), ['manager'])
 
     @ldap3mock.activate
     def test_33_cache_disabled(self):
         # This test checks if the short-living cache deletes expired
         # entries. NOTE: This does not test a multi-threaded scenario!
         ldap3mock.setLDAPDirectory(LDAPDirectory_small)
-        y = LDAPResolver()
-        y.loadConfig({'LDAPURI': 'ldap://localhost',
+        resolver = LDAPResolver()
+        resolver.loadConfig({'LDAPURI': 'ldap://localhost',
                       'LDAPBASE': 'o=test',
                       'BINDDN': 'cn=manager,ou=example,o=test',
                       'BINDPW': 'ldaptest',
@@ -2164,13 +2253,13 @@ class LDAPResolverTestCase(MyTestCase):
                       })
         from privacyidea.lib.resolvers.LDAPIdResolver import CACHE
         # assert that the other tests haven't left anything in the cache
-        self.assertNotIn(y.getResolverId(), CACHE)
-        bob_id = y.getUserId('bob')
+        self.assertNotIn(resolver.getResolverId(), CACHE)
+        bob_id = resolver.getUserId('bob')
         # assert the cache does not contain this entry
-        self.assertNotIn(y.getResolverId(), CACHE)
+        self.assertNotIn(resolver.getResolverId(), CACHE)
         # assert subsequent requests query the directory
-        with mock.patch.object(ldap3mock.Connection, 'search', wraps=y.connection.search) as mock_search:
-            bob_id2 = y.getUserId('bob')
+        with mock.patch.object(ldap3mock.Connection, 'search', wraps=resolver.connection.search) as mock_search:
+            bob_id2 = resolver.getUserId('bob')
             self.assertEqual(bob_id, bob_id2)
             mock_search.assert_called_once()
 
@@ -2194,17 +2283,17 @@ class LDAPResolverTestCase(MyTestCase):
         # But the UI sends the __CENSORED__ password. The resolver password stays the same
         params["resolver"] = "testname1"
         params["type"] = "ldapresolver"
-        r = save_resolver(params)
-        self.assertTrue(r)
+        id = save_resolver(params)
+        self.assertTrue(id)
         # Now save the resolver with a censored password
         params["BINDPW"] = CENSORED
-        r = save_resolver(params)
-        self.assertTrue(r)
+        id = save_resolver(params)
+        self.assertTrue(id)
         # Check the password in the DB. It is the originial one, not "__CENSORED__".
-        c = get_resolver_config("testname1")
-        self.assertEqual(c.get("BINDPW"), "ldaptest")
-        r = delete_resolver("testname1")
-        self.assertTrue(r)
+        config = get_resolver_config("testname1")
+        self.assertEqual(config.get("BINDPW"), "ldaptest")
+        id = delete_resolver("testname1")
+        self.assertTrue(id)
 
     @ldap3mock.activate
     def test_35_persistent_serverpool(self):
@@ -2222,29 +2311,29 @@ class LDAPResolverTestCase(MyTestCase):
                   'CACHE_TIMEOUT': '0',  # to disable the per-process cache
                   'resolver': 'testpool',
                   'type': 'ldapresolver'}
-        y1 = LDAPResolver()
-        y1.loadConfig(params)
-        y2 = LDAPResolver()
-        y2.loadConfig(params)
+        resolver1 = LDAPResolver()
+        resolver1.loadConfig(params)
+        resolver2 = LDAPResolver()
+        resolver2.loadConfig(params)
         # Make a query, so that a ServerPool is instantiated
-        y1.getUserId('bob')
-        y2.getUserId('bob')
+        resolver1.getUserId('bob')
+        resolver2.getUserId('bob')
         # We haven't configured a persistent serverpool, so every resolver has its own ServerPool
-        self.assertIs(type(y1.serverpool), ldap3.ServerPool)
-        self.assertIs(type(y2.serverpool), ldap3.ServerPool)
-        self.assertIsNot(y1.serverpool, y2.serverpool)
+        self.assertIs(type(resolver1.serverpool), ldap3.ServerPool)
+        self.assertIs(type(resolver2.serverpool), ldap3.ServerPool)
+        self.assertIsNot(resolver1.serverpool, resolver2.serverpool)
         # Now, we configure a persistent serverpool
         params["SERVERPOOL_PERSISTENT"] = "true"
-        y3 = LDAPResolver()
-        y3.loadConfig(params)
-        y4 = LDAPResolver()
-        y4.loadConfig(params)
-        y3.getUserId('bob')
-        y4.getUserId('bob')
+        resolver3 = LDAPResolver()
+        resolver3.loadConfig(params)
+        resolver4 = LDAPResolver()
+        resolver4.loadConfig(params)
+        resolver3.getUserId('bob')
+        resolver4.getUserId('bob')
         # The resolvers share a ServerPool
-        self.assertIs(type(y3.serverpool), LockingServerPool)
-        self.assertIs(type(y4.serverpool), LockingServerPool)
-        self.assertIs(y3.serverpool, y4.serverpool)
+        self.assertIs(type(resolver3.serverpool), LockingServerPool)
+        self.assertIs(type(resolver4.serverpool), LockingServerPool)
+        self.assertIs(resolver3.serverpool, resolver4.serverpool)
 
     def test_36_locking_serverpool(self):
         # check that the LockingServerPool correctly forwards all relevant method calls
@@ -2405,20 +2494,20 @@ class LDAPResolverTestCase(MyTestCase):
     def test_39_create_search_filter(self):
         resolver = LDAPResolver()
         resolver.loadConfig({'LDAPURI': 'ldap://localhost',
-                      'LDAPBASE': 'o=test',
-                      'BINDDN': 'cn=manager,ou=example,o=test',
-                      'BINDPW': 'ldaptest',
-                      'LOGINNAMEATTRIBUTE': 'cn',
-                      'LDAPSEARCHFILTER': '(cn=*)',
-                      'USERINFO': '{ "username": "cn",'
-                                  '"phone" : "telephoneNumber", '
-                                  '"mobile" : "mobile"'
-                                  ', "email" : "mail", '
-                                  '"surname" : "sn", '
-                                  '"givenname" : "givenName",'
-                                  '"accountExpired": "accountExpired" }',
-                      'UIDTYPE': 'DN',
-                      })
+                             'LDAPBASE': 'o=test',
+                             'BINDDN': 'cn=manager,ou=example,o=test',
+                             'BINDPW': 'ldaptest',
+                             'LOGINNAMEATTRIBUTE': 'cn',
+                             'LDAPSEARCHFILTER': '(cn=*)',
+                             'USERINFO': '{ "username": "cn",'
+                                         '"phone" : "telephoneNumber", '
+                                         '"mobile" : "mobile"'
+                                         ', "email" : "mail", '
+                                         '"surname" : "sn", '
+                                         '"givenname" : "givenName",'
+                                         '"accountExpired": "accountExpired" }',
+                             'UIDTYPE': 'DN'
+                             })
 
         search_filter = resolver._create_search_filter({"surname": "***"})
         self.assertEqual("(&(cn=*))", search_filter)
@@ -2432,23 +2521,338 @@ class LDAPResolverTestCase(MyTestCase):
         search_filter = resolver._create_search_filter({"accountExpired": 1})
         self.assertEqual("(&(cn=*)(accountExpired=1))", search_filter)
 
+    def test_40_get_available_info_keys(self):
+        resolver = LDAPResolver()
+
+        # config without groups
+        resolver.loadConfig({'LDAPURI': 'ldap://localhost',
+                      'LDAPBASE': 'o=test',
+                      'BINDDN': 'cn=manager,ou=example,o=test',
+                      'BINDPW': 'ldaptest',
+                      'LOGINNAMEATTRIBUTE': 'cn',
+                      'LDAPSEARCHFILTER': '(cn=*)',
+                      'USERINFO': '{ "username": "cn",'
+                                  '"phone" : "telephoneNumber", '
+                                  '"mobile" : "mobile"'
+                                  ', "email" : "mail", '
+                                  '"surname" : "sn", '
+                                  '"givenname" : "givenName" }',
+                      'UIDTYPE': 'objectGUID'
+                      })
+        available_keys = resolver.get_available_info_keys()
+        self.assertSetEqual({"username", "phone", "mobile", "email", "surname", "givenname"}, set(available_keys))
+
+        # config with groups
+        resolver.loadConfig({'LDAPURI': 'ldap://localhost',
+                      'LDAPBASE': 'o=test',
+                      'BINDDN': 'cn=manager,ou=example,o=test',
+                      'BINDPW': 'ldaptest',
+                      'LOGINNAMEATTRIBUTE': 'cn',
+                      'LDAPSEARCHFILTER': '(cn=*)',
+                      'USERINFO': '{ "username": "cn",'
+                                  '"phone" : "telephoneNumber", '
+                                  '"mobile" : "mobile"'
+                                  ', "email" : "mail", '
+                                  '"surname" : "sn", '
+                                  '"givenname" : "givenName" }',
+                      'UIDTYPE': 'objectGUID',
+                      'recursive_group_search': True,
+                      'group_search_filter': '(&(sAMAccountName=*)(objectCategory=group)(member:1.2.840.113556.1.4.1941:=cn={username},{base_dn}))',
+                      'group_name_attribute': 'distinguishedName',
+                      'group_attribute_mapping_key': 'groups'
+                      })
+        available_keys = resolver.get_available_info_keys()
+        self.assertSetEqual({"username", "phone", "mobile", "email", "surname", "givenname", "groups"},
+                            set(available_keys))
+
+        # invalid recursive group search config
+        resolver.loadConfig({'LDAPURI': 'ldap://localhost',
+                      'LDAPBASE': 'o=test',
+                      'BINDDN': 'cn=manager,ou=example,o=test',
+                      'BINDPW': 'ldaptest',
+                      'LOGINNAMEATTRIBUTE': 'cn',
+                      'LDAPSEARCHFILTER': '(cn=*)',
+                      'USERINFO': '{ "username": "cn",'
+                                  '"phone" : "telephoneNumber", '
+                                  '"mobile" : "mobile"'
+                                  ', "email" : "mail", '
+                                  '"surname" : "sn", '
+                                  '"givenname" : "givenName" }',
+                      'UIDTYPE': 'DN',
+                      'recursive_group_search': True
+                      })
+        available_keys = resolver.get_available_info_keys()
+        self.assertSetEqual({"username", "phone", "mobile", "email", "surname", "givenname"},
+                            set(available_keys))
+
+    @ldap3mock.activate
+    def test_41_get_user_info_without_cache(self):
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
+        resolver = LDAPResolver()
+        resolver.loadConfig({'LDAPURI': 'ldap://localhost',
+                      'LDAPBASE': 'o=test',
+                      'BINDDN': 'cn=manager,ou=example,o=test',
+                      'BINDPW': 'ldaptest',
+                      'LOGINNAMEATTRIBUTE': 'cn',
+                      'LDAPSEARCHFILTER': '(cn=*)',
+                      'USERINFO': '{"username": "cn",'
+                                  '"phone" : "telephoneNumber",'
+                                  '"mobile" : "mobile",'
+                                  '"email" : "email",'
+                                  '"surname" : "sn",'
+                                  '"givenname" : "givenName" }',
+                      'UIDTYPE': 'objectGUID',
+                      'CACHE_TIMEOUT': 0
+                      })
+
+        # Get all attributes for Alice except the ones which are not available in the ldap user (phone)
+        user_info = resolver.get_user_info(objectGUIDs[0])
+        self.assertSetEqual({"username", "mobile", "email", "surname", "givenname"}, set(user_info.keys()),
+                            user_info)
+        self.assertEqual("alice", user_info["username"])
+        self.assertEqual(["1234", "45678"], user_info["mobile"])
+        self.assertEqual("alice@test.com", user_info["email"])
+        self.assertEqual("Cooper", user_info["surname"])
+        self.assertEqual("Alice", user_info["givenname"])
+
+        # specify attributes to receive, unknown attributes are ignored
+        user_info = resolver.get_user_info(objectGUIDs[0], attributes=["username", "givenname", "phone", "groups", "unknown"])
+        self.assertSetEqual({"username", "givenname"}, set(user_info.keys()),
+                            user_info)
+        self.assertEqual("alice", user_info["username"])
+        self.assertEqual("Alice", user_info["givenname"])
+
+    @ldap3mock.activate
+    def test_42_get_user_info_with_cache(self):
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
+        resolver = LDAPResolver()
+        resolver.loadConfig({'LDAPURI': 'ldap://localhost',
+                      'LDAPBASE': 'o=test',
+                      'BINDDN': 'cn=manager,ou=example,o=test',
+                      'BINDPW': 'ldaptest',
+                      'LOGINNAMEATTRIBUTE': 'cn',
+                      'LDAPSEARCHFILTER': '(cn=*)',
+                      'USERINFO': '{"username": "cn",'
+                                  '"phone" : "telephoneNumber",'
+                                  '"mobile" : "mobile",'
+                                  '"email" : "email",'
+                                  '"surname" : "sn",'
+                                  '"givenname" : "givenName" }',
+                      'UIDTYPE': 'objectGUID',
+                      'CACHE_TIMEOUT': 120
+                      })
+
+        # specify attributes to receive
+        user_info = resolver.get_user_info(objectGUIDs[0], attributes=["username", "givenname"])
+        self.assertSetEqual({"username", "givenname"}, set(user_info.keys()),
+                            user_info)
+        self.assertEqual("alice", user_info["username"])
+        self.assertEqual("Alice", user_info["givenname"])
+
+        # Get all attributes for Alice except the ones which are not available in the ldap user (phone)
+        user_info = resolver.get_user_info(objectGUIDs[0])
+        self.assertSetEqual({"username", "mobile", "email", "surname", "givenname"}, set(user_info.keys()),
+                            user_info)
+        self.assertEqual("alice", user_info["username"])
+        self.assertEqual(["1234", "45678"], user_info["mobile"])
+        self.assertEqual("alice@test.com", user_info["email"])
+        self.assertEqual("Cooper", user_info["surname"])
+        self.assertEqual("Alice", user_info["givenname"])
+
+        # specify attributes to receive
+        user_info = resolver.get_user_info(objectGUIDs[0], attributes=["username", "surname"])
+        self.assertSetEqual({"username", "surname"}, set(user_info.keys()),
+                            user_info)
+        self.assertEqual("alice", user_info["username"])
+        self.assertEqual("Cooper", user_info["surname"])
+
+    @ldap3mock.activate
+    def test_43_get_user_info_with_groups_without_cache(self):
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
+        resolver = LDAPResolver()
+        resolver.loadConfig({'LDAPURI': 'ldap://localhost',
+                      'LDAPBASE': 'ou=example,o=test',
+                      'BINDDN': 'cn=manager,ou=example,o=test',
+                      'BINDPW': 'ldaptest',
+                      'LOGINNAMEATTRIBUTE': 'cn',
+                      'LDAPSEARCHFILTER': '(cn=*)',
+                      'USERINFO': '{"username": "cn",'
+                                  '"phone" : "telephoneNumber",'
+                                  '"mobile" : "mobile",'
+                                  '"email" : "email",'
+                                  '"surname" : "sn",'
+                                  '"givenname" : "givenName" }',
+                      'UIDTYPE': 'objectGUID',
+                      'CACHE_TIMEOUT': 0,
+                      'recursive_group_search': True,
+                      'group_search_filter': '(&(sAMAccountName=*)(objectCategory=group)(member:1.2.840.113556.1.4.1941:=cn={username},{base_dn}))',
+                      'group_name_attribute': 'distinguishedName',
+                      'group_attribute_mapping_key': 'groups'
+                      })
+
+        # Get all attributes for Alice except the ones which are not available in the ldap user (phone)
+        with mock.patch("privacyidea.lib.resolvers.LDAPIdResolver.IdResolver._get_user_groups_recursive",
+                        return_value=["testgroup"]):
+            user_info = resolver.get_user_info(objectGUIDs[0])
+            self.assertSetEqual({"username", "mobile", "email", "surname", "givenname", "groups"},
+                                set(user_info.keys()),
+                                user_info)
+            self.assertEqual("alice", user_info["username"])
+            self.assertEqual(["1234", "45678"], user_info["mobile"])
+            self.assertEqual("alice@test.com", user_info["email"])
+            self.assertEqual("Cooper", user_info["surname"])
+            self.assertEqual("Alice", user_info["givenname"])
+            self.assertEqual(["testgroup"], user_info["groups"])
+
+            # specify attributes without groups
+            user_info = resolver.get_user_info(objectGUIDs[0], attributes=["username", "givenname"])
+            self.assertSetEqual({"username", "givenname"}, set(user_info.keys()),
+                                user_info)
+            self.assertEqual("alice", user_info["username"])
+            self.assertEqual("Alice", user_info["givenname"])
+
+            # specify attributes to receive with groups
+            user_info = resolver.get_user_info(objectGUIDs[0], attributes=["username", "givenname", "groups"])
+            self.assertSetEqual({"username", "givenname", "groups"}, set(user_info.keys()),
+                                user_info)
+            self.assertEqual("alice", user_info["username"])
+            self.assertEqual("Alice", user_info["givenname"])
+            self.assertEqual(["testgroup"], user_info["groups"])
+
+    @ldap3mock.activate
+    def test_44_get_user_info_with_groups_with_cache(self):
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
+        resolver = LDAPResolver()
+        resolver.loadConfig({'LDAPURI': 'ldap://localhost',
+                      'LDAPBASE': 'ou=example,o=test',
+                      'BINDDN': 'cn=manager,ou=example,o=test',
+                      'BINDPW': 'ldaptest',
+                      'LOGINNAMEATTRIBUTE': 'cn',
+                      'LDAPSEARCHFILTER': '(cn=*)',
+                      'USERINFO': '{"username": "cn",'
+                                  '"phone" : "telephoneNumber",'
+                                  '"mobile" : "mobile",'
+                                  '"email" : "email",'
+                                  '"surname" : "sn",'
+                                  '"givenname" : "givenName" }',
+                      'UIDTYPE': 'objectGUID',
+                      'CACHE_TIMEOUT': 120,
+                      'recursive_group_search': True,
+                      'group_search_filter': '(&(sAMAccountName=*)(objectCategory=group)(member:1.2.840.113556.1.4.1941:=cn={username},{base_dn}))',
+                      'group_name_attribute': 'distinguishedName',
+                      'group_attribute_mapping_key': 'groups'
+                      })
+
+        # Get all attributes for Alice except the ones which are not available in the ldap user (phone)
+        with mock.patch("privacyidea.lib.resolvers.LDAPIdResolver.IdResolver._get_user_groups_recursive",
+                        return_value=["testgroup"]) as mock_recursive_groups:
+            # specify attributes without groups
+            user_info = resolver.get_user_info(objectGUIDs[0], attributes=["username", "givenname"])
+            self.assertSetEqual({"username", "givenname"}, set(user_info.keys()),
+                                user_info)
+            self.assertEqual("alice", user_info["username"])
+            self.assertEqual("Alice", user_info["givenname"])
+            # no groups requested
+            assert not mock_recursive_groups.called
+
+            # specify attributes to receive with groups
+            user_info = resolver.get_user_info(objectGUIDs[0], attributes=["username", "givenname", "groups"])
+            self.assertSetEqual({"username", "givenname", "groups"}, set(user_info.keys()),
+                                user_info)
+            self.assertEqual("alice", user_info["username"])
+            self.assertEqual("Alice", user_info["givenname"])
+            self.assertEqual(["testgroup"], user_info["groups"])
+            # groups requested for the first time, hence they are not in the cache
+            assert mock_recursive_groups.called
+
+        with mock.patch("privacyidea.lib.resolvers.LDAPIdResolver.IdResolver._get_user_groups_recursive",
+                        return_value=["testgroup"]) as mock_recursive_groups:
+            # get all attributes
+            user_info = resolver.get_user_info(objectGUIDs[0])
+            self.assertSetEqual({"username", "mobile", "email", "surname", "givenname", "groups"},
+                                set(user_info.keys()),
+                                user_info)
+            self.assertEqual("alice", user_info["username"])
+            self.assertEqual(["1234", "45678"], user_info["mobile"])
+            self.assertEqual("alice@test.com", user_info["email"])
+            self.assertEqual("Cooper", user_info["surname"])
+            self.assertEqual("Alice", user_info["givenname"])
+            self.assertEqual(["testgroup"], user_info["groups"])
+            # groups are in the cache, but other attributes are not, so everything is fetched again
+            assert mock_recursive_groups.called
+
+    @ldap3mock.activate
+    def test_45_getUserList(self):
+        ldap3mock.setLDAPDirectory(LDAPDirectory)
+        resolver = LDAPResolver()
+        resolver.loadConfig({'LDAPURI': 'ldap://localhost',
+                      'LDAPBASE': 'ou=example,o=test',
+                      'BINDDN': 'cn=manager,ou=example,o=test',
+                      'BINDPW': 'ldaptest',
+                      'LOGINNAMEATTRIBUTE': 'cn',
+                      'LDAPSEARCHFILTER': '(cn=*)',
+                      'USERINFO': '{"username": "cn",'
+                                  '"phone" : "telephoneNumber",'
+                                  '"mobile" : "mobile",'
+                                  '"email" : "email",'
+                                  '"surname" : "sn",'
+                                  '"givenname" : "givenName" }',
+                      'UIDTYPE': 'objectGUID',
+                      'CACHE_TIMEOUT': 0,
+                      'recursive_group_search': True,
+                      'group_search_filter': '(&(sAMAccountName=*)(objectCategory=group)(member:1.2.840.113556.1.4.1941:=cn={username},{base_dn}))',
+                      'group_name_attribute': 'distinguishedName',
+                      'group_attribute_mapping_key': 'groups'
+                      })
+
+        # Get user list with all attributes
+        with mock.patch("privacyidea.lib.resolvers.LDAPIdResolver.IdResolver._get_user_groups_recursive",
+                        return_value=["testgroup"]) as mock_recursive_groups:
+            users = resolver.getUserList()
+            assert mock_recursive_groups.called
+            self.assertEqual(4, len(users), users)
+            # all users should contain all attributes
+            for user in users:
+                # all attributes defined in user info + groups + userid, but without the ones that does not exist in
+                # the ldap user (phone)
+                self.assertSetEqual({"username", "mobile", "email", "surname", "givenname", "groups", "userid"},
+                                    set(user.keys()), user)
+                self.assertListEqual(["testgroup"], user["groups"])
+
+        # Specify attributes
+        with mock.patch("privacyidea.lib.resolvers.LDAPIdResolver.IdResolver._get_user_groups_recursive",
+                        return_value=["testgroup"]) as mock_recursive_groups:
+            users = resolver.getUserList(attributes=["username", "givenname"])
+            assert not mock_recursive_groups.called
+            for user in users:
+                self.assertSetEqual({"username", "givenname"},
+                                    set(user.keys()), user)
+
+            # attributes containing groups
+            users = resolver.getUserList(attributes=["username", "givenname", "groups"])
+            assert mock_recursive_groups.called
+            for user in users:
+                self.assertSetEqual({"username", "givenname", "groups"},
+                                    set(user.keys()), user)
+                self.assertListEqual(["testgroup"], user["groups"])
+
 
 class BaseResolverTestCase(MyTestCase):
 
     def test_00_basefunctions(self):
         resolver = UserIdResolver()
-        r = resolver.add_user({"name": "tester"})
-        self.assertEqual(r, None)
+        success = resolver.add_user({"name": "tester"})
+        self.assertEqual(success, None)
 
-        r = resolver.delete_user("hans")
-        self.assertEqual(r, None)
+        success = resolver.delete_user("hans")
+        self.assertEqual(success, None)
 
-        r = resolver.update_user(1, {"surname": "schmidt"})
-        self.assertEqual(r, None)
+        success = resolver.update_user(1, {"surname": "schmidt"})
+        self.assertEqual(success, None)
 
-        r = UserIdResolver.testconnection({})
-        self.assertEqual(r[0], False)
-        self.assertEqual(r[1], "Not implemented")
+        success = UserIdResolver.testconnection({})
+        self.assertEqual(success[0], False)
+        self.assertEqual(success[1], "Not implemented")
 
 
 class ResolverTestCase(MyTestCase):
@@ -2626,12 +3030,12 @@ class ResolverTestCase(MyTestCase):
                   'UIDTYPE': 'DN',
                   'EDITABLE': True,
                   'CACHE_TIMEOUT': 0}
-        r = save_resolver(params)
-        self.assertTrue(r)
+        id = save_resolver(params)
+        self.assertTrue(id)
         reso_list = get_resolver_list(editable=True)
         self.assertTrue(len(reso_list) == 1)
-        r = delete_resolver("editableReso")
-        self.assertTrue(r)
+        id = delete_resolver("editableReso")
+        self.assertTrue(id)
 
         reso_list = get_resolver_list(editable=False)
         self.assertEqual(len(reso_list), 2)
@@ -2649,10 +3053,10 @@ class ResolverTestCase(MyTestCase):
         save_resolver(config)
         reso_list = get_resolver_list(filter_resolver_name="EntraID")
         reso_data = reso_list["EntraID"]["data"]
-        # Dicts are already loaded (for advanced HTTPResolvers also the headers)
+        # Dicts are already loaded (except for the headers to be consistent with the basic HTTP resolver)
         self.assertTrue(isinstance(reso_data[CLIENT_CERTIFICATE], dict))
         self.assertTrue(isinstance(reso_data[CONFIG_GET_USER_BY_NAME], dict))
-        self.assertDictEqual({"Content-Type": "application/json"}, reso_data[HEADERS])
+        self.assertEqual('{"Content-Type": "application/json"}', reso_data[HEADERS])
         # Data should not be censored
         self.assertEqual("Test1234", reso_data[CLIENT_CERTIFICATE][PRIVATE_KEY_PASSWORD])
 
@@ -2722,27 +3126,27 @@ class ResolverTestCase(MyTestCase):
     def test_11_base_resolver_class(self):
         save_resolver({"resolver": "baseresolver",
                        "type": "UserIdResolver"})
-        y = get_resolver_object("baseresolver")
-        self.assertTrue(y, y)
-        rtype = y.getResolverType()
+        resolver = get_resolver_object("baseresolver")
+        self.assertTrue(resolver, resolver)
+        rtype = resolver.getResolverType()
         self.assertTrue(rtype == "UserIdResolver", rtype)
         # close hook
-        desc = y.getResolverDescriptor()
+        desc = resolver.getResolverDescriptor()
         self.assertTrue("clazz" in desc.get("UserIdResolver"), desc)
         self.assertTrue("config" in desc.get("UserIdResolver"), desc)
 
-        id = y.getUserId("some user")
+        id = resolver.getUserId("some user")
         self.assertTrue(id == "dummy_user_id", id)
-        name = y.getUsername("some user")
+        name = resolver.getUsername("some user")
         self.assertTrue(name == "dummy_user_name", name)
 
-        self.assertTrue(y.getUserInfo("dummy") == {})
-        self.assertTrue(len(y.getUserList()) == 1)
-        self.assertTrue(len(y.getUserList()) == 1)
-        rid = y.getResolverId()
+        self.assertTrue(resolver.get_user_info("dummy") == {})
+        self.assertTrue(len(resolver.getUserList()) == 1)
+        self.assertTrue(len(resolver.getUserList()) == 1)
+        rid = resolver.getResolverId()
         self.assertTrue(rid == "baseid", rid)
-        self.assertFalse(y.checkPass("dummy", "pw"))
-        y.close()
+        self.assertFalse(resolver.checkPass("dummy", "pw"))
+        resolver.close()
 
     @ldap3mock.activate
     def test_13_update_resolver(self):
@@ -2830,3 +3234,36 @@ class ResolverTestCase(MyTestCase):
         self.assertRaises(Exception, delete_resolver, self.resolvername1)
         delete_realm("myrealm")
         delete_resolver(self.resolvername1)
+
+    def test_replace_censored_values(self):
+        old_config = {"data": {"key1": "secret1", "layer1": {"layer2": {"layer3": "secret2"}}},
+                      "censor_keys": ["key1", "layer1.layer2.layer3"]}
+        new_config = {"key1": CENSORED, "layer1": {"layer2": {"layer3": CENSORED}}}
+
+        _replace_censored_values(new_config, old_config)
+        self.assertEqual("secret1", new_config.get("key1"))
+        censored_value_nested = new_config.get("layer1").get("layer2").get("layer3")
+        self.assertEqual("secret2", censored_value_nested)
+
+        # censored key layer does not exist
+        old_config["censor_keys"] = ["key1.key2.key3"]
+        new_config = {"key1": "new_value", "layer1": {"layer2": {"layer3": CENSORED}}}
+        _replace_censored_values(new_config, old_config)
+
+        # do not replace if the value is not censored
+        old_config = {"data": {"key1": "secret1", "layer1": {"layer2": {"layer3": "secret2"}}},
+                      "censor_keys": ["key1", "layer1.layer2.layer3"]}
+        new_config = {"key1": "new_secret1", "layer1": {"layer2": {"layer3": "new_secret2"}}}
+
+        _replace_censored_values(new_config, old_config)
+        self.assertEqual("new_secret1", new_config.get("key1"))
+        censored_value_nested = new_config.get("layer1").get("layer2").get("layer3")
+        self.assertEqual("new_secret2", censored_value_nested)
+
+        # uncensored value does not exist in old config
+        old_config = {"data": {"key1": "secret1", "layer1": {"layer2": "wrong_value"}},
+                      "censor_keys": ["key1", "layer1.layer2.layer3"]}
+        new_config = {"key1": CENSORED, "layer1": {"layer2": {"layer3": CENSORED}}}
+
+        _replace_censored_values(new_config, old_config)
+        self.assertEqual("secret1", new_config.get("key1"))

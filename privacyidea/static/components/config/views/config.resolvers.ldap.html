@@ -29,7 +29,7 @@
             <div class="col-sm-9">
                 <input name="serveruri" class="form-control"
                        ng-model="params.LDAPURI" required
-                       placeholder="ldap://privacyidea.server1, ldap://privacyidea.server2"/>
+                       placeholder="ldaps://privacyidea.server1, ldap://privacyidea.server2"/>
             </div>
         </div>
         <div class="form-group"
@@ -60,13 +60,13 @@
                        ng-model="params.START_TLS"
                        type="checkbox"/>
                 <p class="help-block" translate>
-                    Use STARTTLS on a plain LDAP connection usually on port 389.
+                    Use STARTTLS on a plain LDAP connection, usually on port 389.
                 </p>
             </div>
         </div>
         <div class="form-group"
              ng-show="params.LDAPURI.toLowerCase().substring(0,5) === 'ldaps' ||
-                 params.START_TLS">
+                 (params.LDAPURI.toLowerCase().substring(0,5) ==='ldap:' && params.START_TLS)">
             <label for="tls_version"
                    class="col-sm-3 control-label" translate>
                 TLS Version
@@ -86,7 +86,7 @@
         </div>
         <div class="form-group"
              ng-show="params.LDAPURI.toLowerCase().substring(0,5) === 'ldaps' ||
-                 params.START_TLS">
+                 (params.LDAPURI.toLowerCase().substring(0,5) ==='ldap:' && params.START_TLS)">
             <label for="tls"
                    class="col-sm-3 control-label" translate>
                 Verify TLS

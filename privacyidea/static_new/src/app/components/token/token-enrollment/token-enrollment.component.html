@@ -218,6 +218,15 @@
         matInput
         placeholder="Enter description"
         rows="3"></textarea>
+      @if (descriptionControl.hasError("required")) {
+        <mat-error i18n>
+          Description is <strong>required</strong>.
+        </mat-error>
+      } @else if (descriptionControl.hasError("maxlength")) {
+        <mat-error i18n>
+          Description cannot exceed <strong>80 characters</strong>.
+        </mat-error>
+      }
     </mat-form-field>
     <div class="gap-16">
       @if (authService.actionAllowed("userlist")) {
@@ -233,7 +242,7 @@
       }
     </div>
 
-    @if (tokenService.selectedTokenType().key !== "passkey") {
+    @if (tokenService.selectedTokenType().key !== "passkey" && authService.actionAllowed("enrollpin")) {
       <div class="user-pin-container">
         <h4 class="enroll-h4">Set PIN</h4>
         <input
@@ -242,7 +251,7 @@
         <input
           style="display: none"
           type="password" />
-        <div class="user-pin-input margin-bottom-1">
+        <div class="user-pin-input margin-bottom-16">
           <input
             [formControl]="setPinControl"
             [type]="'password'"
@@ -254,10 +263,8 @@
             class="input"
             placeholder="Repeat PIN" />
         </div>
-        @if (
-          formGroupSignal().hasError("pinMismatch") &&
-          (formGroupSignal().get("setPin")?.touched || formGroupSignal().get("repeatPin")?.touched)
-        ) {
+        @if (formGroupSignal().hasError("pinMismatch") &&
+        (formGroupSignal().get("setPin")?.touched || formGroupSignal().get("repeatPin")?.touched)) {
           <mat-error class="pin-error">PINs do not match.</mat-error>
         }
       </div>
@@ -287,17 +294,17 @@
       <mat-accordion>
         <mat-expansion-panel class="expansion-panel">
           <mat-expansion-panel-header>
-            <mat-panel-title> Extended Attributes</mat-panel-title>
+            <mat-panel-title i18n> Extended Attributes</mat-panel-title>
           </mat-expansion-panel-header>
           <div class="flex-row">
             <mat-form-field class="date-picker">
-              <mat-label>Choose a Start Date</mat-label>
+              <mat-label i18n>Validity Start Date</mat-label>
               <input
                 [formControl]="selectedStartDateControl"
                 [matDatepicker]="startPicker"
                 matInput
-                placeholder="Start date" />
-              <mat-hint>Date Format: YYYY-MM-DD</mat-hint>
+                placeholder="2026-01-01" />
+              <mat-hint i18n>Date Format: YYYY-MM-DD</mat-hint>
               <mat-datepicker-toggle
                 [for]="startPicker"
                 matIconSuffix></mat-datepicker-toggle>
@@ -305,18 +312,17 @@
             </mat-form-field>
 
             <mat-form-field class="time-picker">
-              <mat-label>Enter a Start Time</mat-label>
+              <mat-label i18n>Validity Start Time</mat-label>
               <input
                 [formControl]="selectedStartTimeControl"
                 matInput
                 max="23"
                 min="0"
-                placeholder="HH"
                 type="time" />
             </mat-form-field>
 
             <mat-form-field class="zone-picker">
-              <mat-label>Timezone Offset</mat-label>
+              <mat-label i18n>Timezone</mat-label>
               <mat-select [formControl]="selectedTimezoneOffsetControl">
                 @for (option of timezoneOptions; track option) {
                   <mat-option [value]="option.value">{{ option.label }}</mat-option>
@@ -326,13 +332,13 @@
           </div>
           <div class="flex-row">
             <mat-form-field class="date-picker">
-              <mat-label>Choose an End Date</mat-label>
+              <mat-label i18n>Validity End Date</mat-label>
               <input
                 [formControl]="selectedEndDateControl"
                 [matDatepicker]="endPicker"
                 matInput
-                placeholder="End date" />
-              <mat-hint>Date Format: YYYY-MM-DD</mat-hint>
+                placeholder="2027-01-01" />
+              <mat-hint i18n>Date Format: YYYY-MM-DD</mat-hint>
               <mat-datepicker-toggle
                 [for]="endPicker"
                 matIconSuffix></mat-datepicker-toggle>
@@ -340,7 +346,7 @@
             </mat-form-field>
 
             <mat-form-field class="time-picker">
-              <mat-label>Enter an End Time</mat-label>
+              <mat-label i18n>Validity End Time</mat-label>
               <input
                 [formControl]="selectedEndTimeControl"
                 matInput

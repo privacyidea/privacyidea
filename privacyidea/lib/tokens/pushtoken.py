@@ -143,14 +143,17 @@ def create_push_token_url(url: Optional[str] = None, ttl: Union[int, str] = 10, 
     user = user or ""
 
     # Deprecated
-    label = tokenlabel.replace("<s>", serial).replace("<u>", user).replace("<r>", realm)
+    label = tokenlabel.replace("<s>",
+                               serial).replace("<u>",
+                                               user).replace("<r>", realm)
+    user_info = user_obj.get_specific_info(["givenname", "surname"])
     label = label.format(serial=serial, user=user, realm=realm,
-                         givenname=user_obj.info.get("givenname", ""),
-                         surname=user_obj.info.get("surname", ""))
+                         givenname=user_info.get("givenname", ""),
+                         surname=user_info.get("surname", ""))
 
     issuer = issuer.format(serial=serial, user=user, realm=realm,
-                           givenname=user_obj.info.get("givenname", ""),
-                           surname=user_obj.info.get("surname", ""))
+                           givenname=user_info.get("givenname", ""),
+                           surname=user_info.get("surname", ""))
 
     url_label = quote(label.encode("utf-8"))
     url_issuer = quote(issuer.encode("utf-8"))

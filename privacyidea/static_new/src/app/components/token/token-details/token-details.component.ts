@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -52,9 +52,10 @@ import {
 import { TokenDetailsMachineComponent } from "./token-details-machine/token-details-machine.component";
 import { PolicyAction } from "../../../services/auth/policy-actions";
 import { MachineService, MachineServiceInterface } from "../../../services/machine/machine.service";
-import { FilterValue } from "../../../core/models/filter_value";
+import { FilterValue } from "../../../core/models/filter_value/filter_value";
 import { MatTooltip } from "@angular/material/tooltip";
 import { AuditService, AuditServiceInterface } from "../../../services/audit/audit.service";
+import { DialogService, DialogServiceInterface } from "../../../services/dialog/dialog.service";
 
 export const tokenDetailsKeyMap = [
   { key: "tokentype", label: "Type" },
@@ -127,7 +128,7 @@ export const infoDetailsKeyMap = [{ key: "info", label: "Information" }];
   styleUrls: ["./token-details.component.scss"]
 })
 export class TokenDetailsComponent {
-  protected readonly matDialog: MatDialog = inject(MatDialog);
+  protected readonly dialogService: DialogServiceInterface = inject(DialogService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
   protected readonly realmService: RealmServiceInterface = inject(RealmService);
@@ -159,29 +160,29 @@ export class TokenDetailsComponent {
       return res && res.result?.value?.tokens[0]
         ? (res.result?.value.tokens[0] as TokenDetails)
         : {
-          active: false,
-          container_serial: "",
-          count: 0,
-          count_window: 0,
-          description: "",
-          failcount: 0,
-          id: 0,
-          info: {},
-          locked: false,
-          maxfail: 0,
-          otplen: 0,
-          realms: [],
-          resolver: "",
-          revoked: false,
-          rollout_state: "",
-          serial: "",
-          sync_window: 0,
-          tokengroup: [],
-          tokentype: "hotp",
-          user_id: "",
-          user_realm: "",
-          username: ""
-        };
+            active: false,
+            container_serial: "",
+            count: 0,
+            count_window: 0,
+            description: "",
+            failcount: 0,
+            id: 0,
+            info: {},
+            locked: false,
+            maxfail: 0,
+            otplen: 0,
+            realms: [],
+            resolver: "",
+            revoked: false,
+            rollout_state: "",
+            serial: "",
+            sync_window: 0,
+            tokengroup: [],
+            tokentype: "hotp",
+            user_id: "",
+            user_realm: "",
+            username: ""
+          };
     }
   });
   tokenDetailData = linkedSignal({
@@ -371,9 +372,7 @@ export class TokenDetailsComponent {
       tokenType: this.tokenType()
     };
 
-    this.matDialog.open(TokenSshMachineAssignDialogComponent, {
-      data: data
-    });
+    this.dialogService.openDialog({ component: TokenSshMachineAssignDialogComponent, data: data });
   }
 
   protected showTokenAuditLog() {

@@ -1,5 +1,6 @@
 @use "sass:meta";
-@use "../../../../../styles/styles";
+@use "styles";
+@use "table";
 @use "@angular/material" as mat;
 
 .tile-size-scope {

@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { CommonModule } from "@angular/common";
-import { Component, EventEmitter, inject, OnInit, Output } from "@angular/core";
+import { Component, EventEmitter, inject, input, OnInit, Output } from "@angular/core";
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
@@ -45,6 +45,7 @@ export class EnrollYubikeyComponent implements OnInit {
   protected readonly enrollmentMapper: YubikeyApiPayloadMapper = inject(YubikeyApiPayloadMapper);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
 
+  enrollmentData = input<YubikeyEnrollmentData>();
   @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
@@ -89,6 +90,7 @@ export class EnrollYubikeyComponent implements OnInit {
   };
 
   ngOnInit(): void {
+    this._setInitialFormValues();
     this.additionalFormFieldsChange.emit({
       otpKey: this.otpKeyControl,
       otpLength: this.otpLengthControl
@@ -105,5 +107,12 @@ export class EnrollYubikeyComponent implements OnInit {
           this.otpLengthControl.setValue(len, { emitEvent: false });
         }
       });
+  }
+
+  private _setInitialFormValues() {
+    if (!!this.enrollmentData()) {
+      this.otpKeyControl.setValue(this.enrollmentData()?.otpKey ?? "", { emitEvent: false });
+      this.otpLengthControl.setValue(this.enrollmentData()?.otpLength ?? 44, { emitEvent: false });
+    }
   }
 }

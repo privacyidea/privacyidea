@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,39 +16,34 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { ComponentFixture, TestBed } from "@angular/core/testing";
 
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { provideNoopAnimations } from "@angular/platform-browser/animations";
-import { of } from "rxjs";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MatDialog, MatDialogRef } from "@angular/material/dialog";
-import { ActivatedRoute, NavigationEnd, Router } from "@angular/router";
-
-import { TokenTableActionsComponent } from "./token-table-actions.component";
-
+import { provideNoopAnimations } from "@angular/platform-browser/animations";
+import { Router, NavigationEnd, ActivatedRoute } from "@angular/router";
+import { of } from "rxjs";
 import {
-  NotificationService,
-  NotificationServiceInterface
-} from "../../../../services/notification/notification.service";
-
-import { BulkResult, TokenDetails, TokenService } from "../../../../services/token/token.service";
-
-import { VersioningService } from "../../../../services/version/version.service";
-import { ConfirmationDialogComponent } from "../../../shared/confirmation-dialog/confirmation-dialog.component";
-import { ContentService } from "../../../../services/content/content.service";
-import { AuthService } from "../../../../services/auth/auth.service";
-import { AuditService } from "../../../../services/audit/audit.service";
-
-import {
-  MockAuditService,
-  MockContentService,
-  MockNotificationService,
-  MockPiResponse,
   MockTokenService,
   MockVersioningService,
+  MockNotificationService,
+  MockContentService,
+  MockAuditService,
+  MockPiResponse
 } from "../../../../../testing/mock-services";
 import { MockAuthService } from "../../../../../testing/mock-services/mock-auth-service";
+import { AuditService } from "../../../../services/audit/audit.service";
+import { AuthService } from "../../../../services/auth/auth.service";
+import { ContentService } from "../../../../services/content/content.service";
+import {
+  NotificationServiceInterface,
+  NotificationService
+} from "../../../../services/notification/notification.service";
+import { TokenService, TokenDetails, BulkResult } from "../../../../services/token/token.service";
+import { VersioningService } from "../../../../services/version/version.service";
+import { SimpleConfirmationDialogComponent } from "../../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { TokenTableActionsComponent } from "./token-table-actions.component";
 
 describe("TokenTableActionsComponent", () => {
   let component: TokenTableActionsComponent;
@@ -63,7 +58,7 @@ describe("TokenTableActionsComponent", () => {
     const dialogMock = {
       open: jest.fn().mockReturnValue({
         afterClosed: () => of({ confirmed: true })
-      } as unknown as MatDialogRef<ConfirmationDialogComponent>)
+      } as unknown as MatDialogRef<SimpleConfirmationDialogComponent>)
     };
 
     const routerMock = {
@@ -150,11 +145,7 @@ describe("TokenTableActionsComponent", () => {
 
       component.deleteSelectedTokens();
 
-      expect(tokenService.bulkDeleteWithConfirmDialog).toHaveBeenCalledWith(
-        ["TOKEN1", "TOKEN2"],
-        expect.objectContaining({ open: expect.any(Function) }),
-        expect.any(Function)
-      );
+      expect(tokenService.bulkDeleteWithConfirmDialog).toHaveBeenCalledWith(["TOKEN1", "TOKEN2"], expect.any(Function));
     });
   });
 
@@ -185,14 +176,15 @@ describe("TokenTableActionsComponent", () => {
       component.tokenSelection.set(mockTokens);
       component.unassignSelectedTokens();
 
-      expect(dialogSpy).toHaveBeenCalledWith(ConfirmationDialogComponent, {
+      expect(dialogSpy).toHaveBeenCalledWith(SimpleConfirmationDialogComponent, {
         data: {
-          serialList: ["TOKEN1"],
-          title: "Unassign Selected Tokens",
-          type: "token",
-          action: "unassign",
-          numberOfTokens: 1
-        }
+          confirmAction: { label: "Unassign", type: "destruct", value: true },
+          itemType: "token",
+          items: ["TOKEN1"],
+          title: "Unassign Selected Tokens"
+        },
+        disableClose: false,
+        hasBackdrop: true
       });
       expect(bulkUnassignSpy).toHaveBeenCalledWith(mockTokens);
       expect(notificationService.openSnackBar).toHaveBeenCalledWith("Successfully unassigned 1 token.");

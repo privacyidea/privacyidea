@@ -114,6 +114,11 @@ export class LoginComponent implements OnDestroy {
     }
   });
 
+  passkeyLoginEnabled = computed(() => {
+    const loginMode = this.configService.config()?.passkey_login;
+    return loginMode !== "hide";
+  });
+
   loginText = computed(() => this.configService.config()?.login_text || "");
 
   constructor() {
@@ -258,8 +263,7 @@ export class LoginComponent implements OnDestroy {
       // Successful auth -> log in
       this.localService.saveData("bearer_token", response.result.value.token);
       this.showOtpField.set(false);
-      this.sessionTimerService.startRefreshingRemainingTime();
-      this.sessionTimerService.startTimer();
+      this.sessionTimerService.initialTimerStart();
       if (this.authService.tokenWizard()) {
         this.router.navigateByUrl(ROUTE_PATHS.TOKENS_WIZARD).then();
       } else if (this.authService.containerWizard().enabled) {

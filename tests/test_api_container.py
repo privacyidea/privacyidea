@@ -1,5 +1,8 @@
+# SPDX-FileCopyrightText: 2024 NetKnights GmbH <https://netknights.it>
+# SPDX-License-Identifier: AGPL-3.0-or-later
 import base64
 import json
+import mock
 from dataclasses import dataclass
 from datetime import datetime, timezone, timedelta
 
@@ -40,7 +43,6 @@ from privacyidea.lib.utils.compare import PrimaryComparators
 from privacyidea.models import Realm
 from tests.base import MyApiTestCase
 from tests.test_lib_tokencontainer import MockSmartphone
-
 
 UNSPECIFIC_ERROR_MESSAGES: dict[str, str] = {
     "container/rollover": "Failed container rollover",
@@ -91,7 +93,8 @@ class APIContainerTest(MyApiTestCase):
         self.clear_flask_g()
 
         if try_unspecific:
-            set_policy(name="hide_specific_error_message", scope=SCOPE.CONTAINER, action=f"{PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE}=true")
+            set_policy(name="hide_specific_error_message", scope=SCOPE.CONTAINER,
+                       action=f"{PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE}=true")
             try:
                 return self.request_assert_error(status_code, url, data, auth_token,
                                                  method=method, error_code=ERROR.CONTAINER,
@@ -2917,7 +2920,7 @@ class APIContainer(APIContainerTest):
         payload = {"realms": self.realm2}
         result = self.request_assert_success(f'/container/{container_serial}/realms', payload, self.at, 'POST')
         # TODO: Should we also add the result for the users realm even if they are not in the requested realms?
-        #self.assertTrue(result["result"]["value"][self.realm1])
+        # self.assertTrue(result["result"]["value"][self.realm1])
         self.assertTrue(result["result"]["value"][self.realm2])
 
         delete_container_by_serial(container_serial)
@@ -5152,8 +5155,10 @@ class APIContainerSynchronization(APIContainerTest):
 
         # Initial Sync
         sync_time = datetime.now(timezone.utc)
-        result = self.request_assert_success("container/synchronize",
-                                             params, None, 'POST')
+        with mock.patch("privacyidea.lib.containerclass.datetime") as mock_dt:
+            mock_dt.now.return_value = sync_time
+            result = self.request_assert_success("container/synchronize",
+                                                 params, None, 'POST')
         result_entries = result["result"]["value"].keys()
         self.assertEqual("AES", result["result"]["value"]["encryption_algorithm"])
         self.assertIn("encryption_params", result_entries)
@@ -5166,8 +5171,7 @@ class APIContainerSynchronization(APIContainerTest):
         # check last synchronization timestamp
         smartphone = find_container_by_serial(smartphone_serial)
         last_sync = smartphone.last_synchronization
-        time_diff = abs((sync_time - last_sync).total_seconds())
-        self.assertLessEqual(time_diff, 1)
+        self.assertEqual(last_sync, sync_time)
 
         # check tokens of container
         smartphone_tokens = smartphone.get_tokens()
@@ -6070,7 +6074,7 @@ class APIContainerTemplate(APIContainerTest):
         tokens = container.get_tokens()
         self.assertEqual(0, len(tokens))
 
-        # Not allowed to set the pin
+        # Not allowed to set the PIN. This will cause the token to not be enrolled at all
         delete_policy("otp_pin")
         delete_policy("enrollPIN")
         template_params = {"name": "test",
@@ -6084,9 +6088,7 @@ class APIContainerTemplate(APIContainerTest):
         container_serial = result["result"]["value"]["container_serial"]
         container = find_container_by_serial(container_serial)
         tokens = container.get_tokens()
-        self.assertEqual(1, len(tokens))
-        self.assertEqual("hotp", tokens[0].get_type())
-        self.assertEqual(-1, tokens[0].token.get_pin())
+        self.assertEqual(0, len(tokens))
 
         # random pin
         set_policy("random_pin", scope=SCOPE.ENROLL, action={PolicyAction.OTPPINRANDOM: 8})

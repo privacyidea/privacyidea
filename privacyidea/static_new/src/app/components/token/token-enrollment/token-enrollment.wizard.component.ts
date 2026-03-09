@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -34,7 +34,7 @@ import { DialogService, DialogServiceInterface } from "../../../services/dialog/
 import { NotificationService, NotificationServiceInterface } from "../../../services/notification/notification.service";
 import { RealmService, RealmServiceInterface } from "../../../services/realm/realm.service";
 import { TokenService, TokenServiceInterface, TokenType } from "../../../services/token/token.service";
-import { UserData, UserService, UserServiceInterface } from "../../../services/user/user.service";
+import { UserService, UserServiceInterface } from "../../../services/user/user.service";
 import { VersioningService, VersioningServiceInterface } from "../../../services/version/version.service";
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { EnrollApplspecComponent } from "./enroll-asp/enroll-applspec.component";
@@ -65,10 +65,10 @@ import { EnrollYubicoComponent } from "./enroll-yubico/enroll-yubico.component";
 import { EnrollYubikeyComponent } from "./enroll-yubikey/enroll-yubikey.component";
 import { TokenEnrollmentComponent } from "./token-enrollment.component";
 import { AuthService } from "../../../services/auth/auth.service";
-import { TokenEnrollmentLastStepDialogData } from "./token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
 import { tokenTypes } from "../../../utils/token.utils";
 import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
 import { environment } from "../../../../environments/environment";
+import { TokenEnrollmentLastStepDialogWizardComponent } from "./token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.wizard.component";
 
 @Component({
   selector: "app-token-enrollment-wizard",
@@ -132,32 +132,11 @@ export class TokenEnrollmentWizardComponent extends TokenEnrollmentComponent {
   protected override wizard = true;
   protected readonly tokenType = computed(() => {
     const defaultType = this.authService.defaultTokentype() || "hotp";
-    return tokenTypes.find((type) => type.key === defaultType) ||
-      { key: defaultType, name: defaultType, info: "", text: "" } as TokenType;
+    return (
+      tokenTypes.find((type) => type.key === defaultType) ||
+      ({ key: defaultType, name: defaultType, info: "", text: "" } as TokenType)
+    );
   });
-
-
-  protected override openLastStepDialog(args: { response: EnrollmentResponse | null; user: UserData | null }): void {
-    const { response, user } = args;
-    if (!response) {
-      this.notificationService.openSnackBar("No enrollment response available.");
-      return;
-    }
-
-    const dialogData: TokenEnrollmentLastStepDialogData = {
-      tokentype: this.tokenType(),
-      response: response,
-      serial: this.serial,
-      enrollToken: this.enrollToken.bind(this),
-      user: user,
-      userRealm: this.userService.selectedUserRealm(),
-      onlyAddToRealm: false
-    };
-    this._lastTokenEnrollmentLastStepDialogData.set(dialogData);
-    this.dialogService.openTokenEnrollmentLastStepDialog({
-      data: dialogData
-    });
-  }
 
   // TODO: Get custom path from pi.cfg
   customizationPath = "/static/public/customize/";
@@ -180,5 +159,22 @@ export class TokenEnrollmentWizardComponent extends TokenEnrollmentComponent {
 
   constructor() {
     super();
+  }
+
+  override openLastStepDialog(response: EnrollmentResponse | null): void {
+    if (!response) {
+      this.notificationService.openSnackBar("No enrollment response available.");
+      return;
+    }
+
+    this.enrolledDialogData.set({
+      ...this.enrolledDialogData()!,
+      response: response
+    });
+
+    this.dialogService.openDialog({
+      component: TokenEnrollmentLastStepDialogWizardComponent,
+      data: this.enrolledDialogData()
+    });
   }
 }

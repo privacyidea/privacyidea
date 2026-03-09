@@ -25,7 +25,19 @@
     <div class="details-header">
       <h3 i18n>Details for Token:</h3>
       <h3 class="token-serial">{{ tokenSerial() }}</h3>
+      @if ((tokenType() === "passkey" || tokenType() === "hotp") && isAttachedToMachine()) {
+        <h3 i18n>{{ " (Offline)" }}</h3>
+      }
       <app-copy-button [copyText]="tokenSerial()"></app-copy-button>
+      @if (authService.actionAllowed("auditlog")) {
+        <button
+          (click)="showTokenAuditLog()"
+          [routerLink]="[ROUTE_PATHS.AUDIT]"
+          mat-icon-button
+          matTooltip="Show token in audit log">
+          <mat-icon>receipt_long</mat-icon>
+        </button>
+      }
     </div>
     <div
       [ngClass]="[overflowService.isWidthOverflowing('body', 1310) ? 'flex-column' : 'flex-row']"
@@ -53,19 +65,18 @@
               @switch (element.keyMap.key) {
                 @case ("container_serial") {
                   @if (element.isEditing()) {
-                    <mat-form-field class="width-288px container-form-field">
+                    <mat-form-field class="width-288px">
                       <mat-label i18n>Enter Container</mat-label>
                       <app-clearable-input
                         (onClick)="containerService.selectedContainer.set(null)"
                         [showClearButton]="containerService.selectedContainer() !== ''">
                         <input
-                          #containerHTMLInputElement
                           matInput
                           [(ngModel)]="containerService.selectedContainer"
                           [matAutocomplete]="containerAuto" />
                       </app-clearable-input>
                       <mat-autocomplete #containerAuto="matAutocomplete">
-                        @for (option of containerService.filteredContainerOptions(); track option) {
+                        @for (option of containerService.containersForTokenType(); track option) {
                           <mat-option [value]="option">{{ option }}</mat-option>
                         }
                       </mat-autocomplete>
@@ -136,7 +147,7 @@
                       <input
                         type="number"
                         matInput
-                        [(ngModel)]="element.value"/>
+                        [(ngModel)]="element.value" />
                     </mat-form-field>
                   } @else if (element.isEditing()) {
                     <mat-form-field class="width-18rem">
@@ -175,24 +186,13 @@
               class="edit-column-cell"
               mat-cell>
               <div class="ali-center">
-                @if (element.keyMap.key === "active" && !isAnyEditingOrRevoked()) {
-                  @if ((tokenIsActive() && authService.actionAllowed("disable")) || (!tokenIsActive() &&
-                    authService.actionAllowed("enable"))) {
-                    <div class="edit-button-container">
-                      <button
-                        mat-icon-button
-                        (click)="toggleActive(element.value)"
-                        i18n-aria-label="Toggle Token Active State">
-                        <mat-icon>{{ tokenIsActive() ? "lock" : "play_circle" }}</mat-icon>
-                      </button>
-                    </div>
-                  }
-                } @else if (element.keyMap.key === "failcount" && !isAnyEditingOrRevoked() &&
+                @if (element.keyMap.key === "failcount" && !isAnyEditingOrRevoked() &&
                 authService.actionAllowed("reset")) {
                   <div class="edit-button-container">
                     <button
                       mat-icon-button
-                      (click)="resetFailCount()">
+                      (click)="resetFailCount()"
+                      i18n-aria-label="Reset Fail Count">
                       <mat-icon> lock_reset</mat-icon>
                     </button>
                   </div>
@@ -202,7 +202,8 @@
                     <button
                       mat-icon-button
                       class="red"
-                      (click)="removeFromContainer()">
+                      (click)="removeFromContainer()"
+                      i18n-aria-label="Delete Container">
                       <mat-icon>folder_delete</mat-icon>
                     </button>
                   </div>
@@ -240,11 +241,15 @@
             [isAnyEditingOrRevoked]="isAnyEditingOrRevoked"
             [isEditingInfo]="isEditingInfo"
             [isEditingUser]="isEditingUser"></app-token-details-info>
+          @if (tokenType() === "sshkey" || tokenType() === "hotp") {
+            <app-token-details-machine />
+          }
         </div>
         <app-token-details-actions
           [repeatPinValue]="repeatPinValue"
           [setPinValue]="setPinValue"
-          [tokenType]="tokenType"></app-token-details-actions>
+          [tokenType]="tokenType"
+          [token]="tokenDetails()"></app-token-details-actions>
       </div>
     </div>
   </div>

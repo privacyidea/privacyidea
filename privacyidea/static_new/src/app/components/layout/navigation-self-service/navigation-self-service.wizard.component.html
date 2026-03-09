@@ -17,6 +17,8 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div class="navigation-self-service-column">
+  <app-user-utils-panel-self-service [wizard]="true"></app-user-utils-panel-self-service>
+
   @if (authService.tokenWizard()) {
     <app-navigation-self-service-button
       i18n-title

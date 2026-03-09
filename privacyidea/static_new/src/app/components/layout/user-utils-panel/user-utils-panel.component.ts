@@ -1,0 +1,220 @@
+/**
+ * (c) NetKnights GmbH 2026,  https://netknights.it
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ **/
+
+import { Component, computed, inject } from "@angular/core";
+import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
+import { MatIcon } from "@angular/material/icon";
+import { MatTooltip } from "@angular/material/tooltip";
+import { MatFabButton, MatIconButton } from "@angular/material/button";
+import { ThemeSwitcherComponent } from "@components/shared/theme-switcher/theme-switcher.component";
+import { DatePipe, NgClass } from "@angular/common";
+import { Router } from "@angular/router";
+import { NotificationService, NotificationServiceInterface } from "../../../services/notification/notification.service";
+import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
+import { TokenService, TokenServiceInterface } from "../../../services/token/token.service";
+import { ContainerService, ContainerServiceInterface } from "../../../services/container/container.service";
+import { ChallengesService, ChallengesServiceInterface } from "../../../services/token/challenges/challenges.service";
+import { MachineService, MachineServiceInterface } from "../../../services/machine/machine.service";
+import { UserService, UserServiceInterface } from "../../../services/user/user.service";
+import { RealmService, RealmServiceInterface } from "../../../services/realm/realm.service";
+import { VersioningService, VersioningServiceInterface } from "../../../services/version/version.service";
+import {
+  DocumentationService,
+  DocumentationServiceInterface
+} from "../../../services/documentation/documentation.service";
+import { AuditService, AuditServiceInterface } from "../../../services/audit/audit.service";
+import {
+  SessionTimerService,
+  SessionTimerServiceInterface
+} from "../../../services/session-timer/session-timer.service";
+import { ResolverService, ResolverServiceInterface } from "../../../services/resolver/resolver.service";
+import { SmtpService, SmtpServiceInterface } from "../../../services/smtp/smtp.service";
+import { RadiusService, RadiusServiceInterface } from "../../../services/radius/radius.service";
+import { SmsGatewayService, SmsGatewayServiceInterface } from "../../../services/sms-gateway/sms-gateway.service";
+import {
+  PrivacyideaServerService,
+  PrivacyideaServerServiceInterface
+} from "../../../services/privacyidea-server/privacyidea-server.service";
+import { TokengroupService, TokengroupServiceInterface } from "../../../services/tokengroup/tokengroup.service";
+import { CaConnectorService, CaConnectorServiceInterface } from "../../../services/ca-connector/ca-connector.service";
+import { ServiceIdService, ServiceIdServiceInterface } from "../../../services/service-id/service-id.service";
+import { PeriodicTaskService } from "../../../services/periodic-task/periodic-task.service";
+import { EventService, EventServiceInterface } from "../../../services/event/event.service";
+import { SystemService, SystemServiceInterface } from "../../../services/system/system.service";
+import { ROUTE_PATHS } from "../../../route_paths";
+
+@Component({
+  selector: "app-user-utils-panel",
+  imports: [
+    MatIcon,
+    MatIconButton,
+    MatTooltip,
+    ThemeSwitcherComponent,
+    MatFabButton,
+    NgClass,
+    DatePipe
+  ],
+  templateUrl: "./user-utils-panel.component.html",
+  styleUrl: "./user-utils-panel.component.scss"
+})
+export class UserUtilsPanelComponent {
+  private readonly tokenService: TokenServiceInterface = inject(TokenService);
+  private readonly containerService: ContainerServiceInterface = inject(ContainerService);
+  private readonly challengeService: ChallengesServiceInterface = inject(ChallengesService);
+  private readonly machineService: MachineServiceInterface = inject(MachineService);
+  protected readonly userService: UserServiceInterface = inject(UserService);
+  protected readonly realmService: RealmServiceInterface = inject(RealmService);
+  protected readonly versioningService: VersioningServiceInterface = inject(VersioningService);
+  protected readonly documentationService: DocumentationServiceInterface = inject(DocumentationService);
+  protected readonly contentService: ContentServiceInterface = inject(ContentService);
+  private readonly auditService: AuditServiceInterface = inject(AuditService);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
+  protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
+  protected readonly sessionTimerService: SessionTimerServiceInterface = inject(SessionTimerService);
+  private readonly resolverService: ResolverServiceInterface = inject(ResolverService);
+  private readonly smtpService: SmtpServiceInterface = inject(SmtpService);
+  private readonly radiusService: RadiusServiceInterface = inject(RadiusService);
+  private readonly smsGatewayService: SmsGatewayServiceInterface = inject(SmsGatewayService);
+  private readonly privacyideaService: PrivacyideaServerServiceInterface = inject(PrivacyideaServerService);
+  private readonly tokengroupService: TokengroupServiceInterface = inject(TokengroupService);
+  private readonly caConnectorService: CaConnectorServiceInterface = inject(CaConnectorService);
+  private readonly serviceIdService: ServiceIdServiceInterface = inject(ServiceIdService);
+  protected readonly periodicTaskService = inject(PeriodicTaskService);
+  protected readonly eventService: EventServiceInterface = inject(EventService);
+  protected readonly systemService: SystemServiceInterface = inject(SystemService);
+  protected readonly router: Router = inject(Router);
+  protected readonly ROUTE_PATHS = ROUTE_PATHS;
+
+  profileText = computed(() => {
+    let profileText = this.authService.username();
+    if (this.authService.realm()) {
+      profileText += " @ " + this.authService.realm();
+    }
+    if (this.authService.role()) {
+      profileText += " (" + this.authService.role() + ")";
+    }
+    return profileText;
+  });
+
+  sessionTimeFormat = computed(() => {
+    // Use non-breaking half space (U+202F) between number and unit
+    if (this.sessionTimerService.remainingTime()! < 599999) {
+      // less than 10 minutes remaining, show minutes and seconds
+      return "m:ss";
+    } else if (this.sessionTimerService.remainingTime()! < 3600000) {
+      // less than an hour, show only minutes
+      return "m'\u202Fmin'";
+    }
+    // show hours and minutes
+    return "H'\u202Fh' mm'\u202Fmin'";
+  });
+
+
+  logout(): void {
+    this.authService.logout();
+  }
+
+  refreshPage() {
+    if (this.contentService.onTokenDetails()) {
+      this.tokenService.tokenDetailResource.reload();
+      this.containerService.containerResource.reload();
+      return;
+
+    } else if (this.contentService.onTokensContainersDetails()) {
+      this.containerService.containerDetailResource.reload();
+      this.tokenService.tokenResource.reload();
+      return;
+
+    } else if (this.contentService.onUserDetails()) {
+      this.userService.usersResource.reload();
+      this.tokenService.tokenResource.reload();
+      this.tokenService.userTokenResource.reload();
+      this.containerService.containerResource.reload();
+      return;
+    }
+
+    switch (this.contentService.routeUrl()) {
+      case ROUTE_PATHS.TOKENS:
+        this.tokenService.tokenResource.reload();
+        break;
+      case ROUTE_PATHS.TOKENS_CONTAINERS:
+        this.containerService.containerResource.reload();
+        break;
+      case ROUTE_PATHS.TOKENS_CHALLENGES:
+        this.challengeService.challengesResource.reload();
+        break;
+      case ROUTE_PATHS.TOKENS_APPLICATIONS:
+        this.machineService.tokenApplicationResource.reload();
+        break;
+      case ROUTE_PATHS.TOKENS_ENROLLMENT:
+        this.containerService.containerResource.reload();
+        this.userService.usersResource.reload();
+        break;
+      case ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS:
+        this.userService.usersResource.reload();
+        break;
+      case ROUTE_PATHS.AUDIT:
+        this.auditService.auditResource.reload();
+        break;
+      case ROUTE_PATHS.USERS:
+        this.userService.usersResource.reload();
+        break;
+      case ROUTE_PATHS.USERS_REALMS:
+        this.realmService.realmResource.reload();
+        this.resolverService.resolversResource.reload();
+        break;
+      case ROUTE_PATHS.CONFIGURATION_PERIODIC_TASKS:
+        this.periodicTaskService.periodicTasksResource.reload();
+        break;
+      case ROUTE_PATHS.CONFIGURATION_SYSTEM:
+        this.systemService.systemConfigResource.reload();
+        break;
+      case ROUTE_PATHS.USERS_RESOLVERS:
+        this.resolverService.resolversResource.reload();
+        break;
+      case ROUTE_PATHS.EXTERNAL_SERVICES_SMTP:
+        this.smtpService.smtpServerResource.reload();
+        break;
+      case ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS:
+        this.radiusService.radiusServerResource.reload();
+        break;
+      case ROUTE_PATHS.EXTERNAL_SERVICES_SMS:
+        this.smsGatewayService.smsGatewayResource.reload();
+        break;
+      case ROUTE_PATHS.EXTERNAL_SERVICES_PRIVACYIDEA:
+        this.privacyideaService.privacyideaServerResource.reload();
+        break;
+      case ROUTE_PATHS.EXTERNAL_SERVICES_TOKENGROUPS:
+        this.tokengroupService.tokengroupResource.reload();
+        break;
+      case ROUTE_PATHS.EXTERNAL_SERVICES_CA_CONNECTORS:
+        this.caConnectorService.caConnectorResource.reload();
+        break;
+      case ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS:
+        this.serviceIdService.serviceIdResource.reload();
+        break;
+      case ROUTE_PATHS.EVENTS:
+        this.eventService.allEventsResource.reload();
+        break;
+      case ROUTE_PATHS.CONFIGURATION_TOKENTYPES:
+        this.systemService.systemConfigResource.reload();
+        break;
+    }
+  }
+}

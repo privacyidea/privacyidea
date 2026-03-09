@@ -79,50 +79,7 @@
     </p>
   </div>
 
-  <div class="utils-group">
-    <div class="account-div">
-      <mat-icon>account_box</mat-icon>
-      <h4>{{ profileText }}</h4>
-      <button
-        (click)="logout()"
-        aria-label="Logout"
-        class="logout-btn"
-        i18n-aria-label
-        mat-icon-button
-        matTooltip="Return to login">
-        <mat-icon>logout</mat-icon>
-      </button>
-    </div>
-
-    <div class="utils">
-      <app-theme-switcher></app-theme-switcher>
-      <button
-        (click)="refreshPage()"
-        class="refresh-btn"
-        mat-fab
-        matTooltip="Refresh resources">
-        <mat-icon>refresh</mat-icon>
-      </button>
-      <div
-        [ngClass]="[
-          sessionTimerService.remainingTime()! < 31000
-            ? 'red-light'
-            : sessionTimerService.remainingTime()! < 60000
-              ? 'yellow-light'
-              : 'surface-highest'
-        ]"
-        class="session-timer"
-        matTooltip="Time until session expires">
-        @if (sessionTimerService.remainingTime()! < 599500) {
-          {{ sessionTimerService.remainingTime() | date: "m:ss" : "UTC" }}
-        } @else if (sessionTimerService.remainingTime()! < 3600000) {
-          {{ sessionTimerService.remainingTime() | date: "m" : "UTC" }}min
-        } @else {
-          {{ sessionTimerService.remainingTime() | date: "H'h' mm'min'" : "UTC" }}
-        }
-      </div>
-    </div>
-  </div>
+  <app-user-utils-panel></app-user-utils-panel>
 
   @if (false) {
     <form class="width-100">
@@ -138,8 +95,7 @@
 
   <mat-accordion>
     <mat-expansion-panel
-      [expanded]="router.url.startsWith(ROUTE_PATHS.TOKENS) && !router.url.includes('containers')"
-      class="nav-expension-panel">
+      [expanded]="router.url.startsWith(ROUTE_PATHS.TOKENS) && !router.url.includes('containers')">
       <mat-expansion-panel-header (click)="router.navigate([ROUTE_PATHS.TOKENS])">
         <mat-panel-title>
           <mat-icon>shield</mat-icon>
@@ -224,6 +180,18 @@
             </button>
           </mat-list-item>
         }
+        <mat-list-item>
+          <button
+            [ngClass]="
+                contentService.routeUrl() === ROUTE_PATHS.TOKENS_GET_SERIAL ? 'card-button-active' : 'card-button-1'
+              "
+            [routerLink]="[ROUTE_PATHS.TOKENS_GET_SERIAL]"
+            i18n
+            mat-stroked-button>
+            <mat-icon>policy</mat-icon>
+            Get Serial
+          </button>
+        </mat-list-item>
       </mat-list>
     </mat-expansion-panel>
 
@@ -507,21 +475,24 @@
         </mat-panel-title>
       </mat-expansion-panel-header>
       <mat-list>
+        @if (authService.actionAllowed('configread')) {
+          <mat-list-item>
+            <button
+              [ngClass]="contentService.routeUrl() === ROUTE_PATHS.CONFIGURATION_SYSTEM
+              ? 'card-button-active' : 'card-button-1'"
+              [routerLink]="[ROUTE_PATHS.CONFIGURATION_SYSTEM]"
+              mat-stroked-button>
+              <mat-icon>build</mat-icon>
+              System
+            </button>
+          </mat-list-item>
+        }
         <mat-list-item>
           <button
-            class="card-button-1"
-            disabled
-            mat-stroked-button>
-            <mat-icon>build</mat-icon>
-            System
-          </button>
-        </mat-list-item>
-        <mat-list-item>
-          <button
-            class="card-button-1"
             [ngClass]="contentService.routeUrl() === ROUTE_PATHS.SUBSCRIPTION ? 'card-button-active' :
             'card-button-1'"
             [routerLink]="[ROUTE_PATHS.SUBSCRIPTION]"
+            class="card-button-1"
             mat-stroked-button>
             <mat-icon>event_repeat</mat-icon>
             Subscription
@@ -529,22 +500,25 @@
         </mat-list-item>
         <mat-list-item>
           <button
+            [ngClass]="contentService.routeUrl() === ROUTE_PATHS.CONFIGURATION_TOKENTYPES ? 'card-button-active' : 'card-button-1'"
+            [routerLink]="[ROUTE_PATHS.CONFIGURATION_TOKENTYPES]"
             class="card-button-1"
-            disabled
             mat-stroked-button>
             <mat-icon>safety_check</mat-icon>
             Tokentypes
           </button>
         </mat-list-item>
-        <mat-list-item>
-          <button
-            class="card-button-1"
-            disabled
-            mat-stroked-button>
-            <mat-icon>point_of_sale</mat-icon>
-            Machines
-          </button>
-        </mat-list-item>
+        @if (authService.actionAllowed("machinelist")) {
+          <mat-list-item>
+            <button
+              [ngClass]="contentService.routeUrl() === ROUTE_PATHS.CONFIGURATION_MACHINES ? 'card-button-active' : 'card-button-1'"
+              [routerLink]="[ROUTE_PATHS.CONFIGURATION_MACHINES]"
+              mat-stroked-button>
+              <mat-icon>point_of_sale</mat-icon>
+              Machines
+            </button>
+          </mat-list-item>
+        }
         @if (authService.actionAllowed("mresolverread")) {
           <mat-list-item>
             <button

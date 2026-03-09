@@ -16,14 +16,21 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { HttpParams } from "@angular/common/http";
-import { Signal, signal, WritableSignal } from "@angular/core";
+import { computed, Signal, signal, WritableSignal } from "@angular/core";
 import { Sort } from "@angular/material/sort";
-import { of, Subject } from "rxjs";
-import { FilterValue } from "../../app/core/models/filter_value";
-import { BulkResult, LostTokenResponse, TokenDetails, Tokens, TokenService, TokenServiceInterface, TokenType } from "../../app/services/token/token.service";
+import {
+  BulkResult,
+  LostTokenResponse,
+  TokenDetails,
+  Tokens,
+  TokenService,
+  TokenServiceInterface,
+  TokenType
+} from "../../app/services/token/token.service";
 import { MockHttpResourceRef, MockPiResponse } from "./mock-utils";
 import { PiResponse } from "../../app/app.component";
+import { of, Subject } from "rxjs";
+import { FilterValue } from "src/app/core/models/filter_value/filter_value";
 
 function makeTokenDetailResponse(tokentype: string): PiResponse<Tokens> {
   return {
@@ -76,11 +83,18 @@ export class MockTokenService implements TokenServiceInterface {
   tokenBaseUrl: string = "mockEnvironment.proxyUrl + '/token'";
   readonly eventPageSize = 10;
   tokenSerial = signal("");
-  selectedTokenType: WritableSignal<TokenType> = signal({ key: "hotp", name: "HOTP", info: "", text: "HMAC-based One-Time Password" });
+  selectedTokenType: WritableSignal<TokenType> = signal({
+    key: "hotp",
+    name: "HOTP",
+    info: "",
+    text: "HMAC-based One-Time Password"
+  });
   showOnlyTokenNotInContainer = signal(false);
   tokenFilter: WritableSignal<FilterValue> = signal(new FilterValue());
   readonly tokenDetailResource = new MockHttpResourceRef<PiResponse<Tokens>>(makeTokenDetailResponse("hotp"));
-  readonly tokenTypesResource = new MockHttpResourceRef<PiResponse<{}, unknown> | undefined>(MockPiResponse.fromValue({}));
+  readonly tokenTypesResource = new MockHttpResourceRef<PiResponse<{}, unknown> | undefined>(
+    MockPiResponse.fromValue({})
+  );
   readonly userTokenResource = new MockHttpResourceRef<PiResponse<Tokens> | undefined>(
     MockPiResponse.fromValue<Tokens>({ count: 0, current: 0, tokens: [] })
   );
@@ -101,38 +115,42 @@ export class MockTokenService implements TokenServiceInterface {
   readonly pageIndex = signal(0);
   readonly tokenResource = new MockHttpResourceRef<PiResponse<Tokens> | undefined>(undefined as any);
   readonly tokenSelection: WritableSignal<TokenDetails[]> = signal<TokenDetails[]>([]);
+  selectedToken: WritableSignal<string | null> = signal(null);
+  tokenOptions: WritableSignal<string[]> = signal<string[]>([]);
+  filteredTokenOptions: Signal<string[]> = computed(() => {
+    const filter = (this.selectedToken() || "").toLowerCase();
+    return this.tokenOptions().filter((option) => option.toLowerCase().includes(filter));
+  });
   clearFilter = jest.fn();
   handleFilterInput = jest.fn();
   readonly toggleActive = jest.fn().mockReturnValue(of({}));
   readonly resetFailCount = jest.fn().mockReturnValue(of(null));
   readonly saveTokenDetail = jest.fn().mockReturnValue(of(MockPiResponse.fromValue<boolean>(true)));
-
-  getSerial(_otp: string, _params: HttpParams) {
-    throw new Error("Method not implemented.");
-  }
-
+  getSerial = jest.fn().mockReturnValue(of({ result: { status: true, value: { count: 1, serial: "X" } } } as any));
   readonly setTokenInfos = jest.fn().mockReturnValue(of({}));
   readonly deleteToken = jest.fn().mockReturnValue(of({}));
-  readonly bulkDeleteTokens = jest.fn().mockReturnValue(
-    of(MockPiResponse.fromValue<BulkResult>({ failed: [], unauthorized: [], count_success: 1 }))
-  );
+  readonly bulkDeleteTokens = jest
+    .fn()
+    .mockReturnValue(of(MockPiResponse.fromValue<BulkResult>({ failed: [], unauthorized: [], count_success: 1 })));
   bulkDeleteWithConfirmDialog = jest.fn();
   readonly revokeToken = jest.fn().mockReturnValue(of({}));
   readonly deleteInfo = jest.fn().mockReturnValue(of({}));
   readonly unassignUserFromAll = jest.fn().mockReturnValue(of([]));
   readonly unassignUser = jest.fn().mockReturnValue(of(null));
-
-  bulkUnassignTokens(_tokenDetails: TokenDetails[]) {
-    throw new Error("Method not implemented.");
-  }
-
+  bulkUnassignTokens = jest
+    .fn()
+    .mockReturnValue(of(MockPiResponse.fromValue<BulkResult>({ failed: [], unauthorized: [], count_success: 1 })));
   readonly assignUserToAll = jest.fn().mockReturnValue(of([]));
   readonly assignUser = jest.fn().mockReturnValue(of(null));
   setPin = jest.fn();
   setRandomPin = jest.fn();
   readonly resyncOTPToken = jest.fn().mockReturnValue(of(null));
   readonly getTokenDetails = jest.fn().mockReturnValue(of({}));
-  readonly enrollToken = jest.fn().mockReturnValue(of({ detail: { serial: "X" } } as any));
+  enrollToken = jest.fn().mockReturnValue(of({ detail: { serial: "X" } } as any));
+  verifyToken = jest.fn().mockReturnValue(of({
+    detail: { serial: "ABC123", rollout_state: "enrolled" },
+    result: { status: true }
+  }));
   readonly lostToken = jest
     .fn<ReturnType<TokenService["lostToken"]>, Parameters<TokenService["lostToken"]>>()
     .mockImplementation((_serial: string) => {
@@ -146,13 +164,24 @@ export class MockTokenService implements TokenServiceInterface {
         detail: {},
         result: {
           status: true,
-          value: { disable: 1, end_date: "2025-01-31", init: true, password: "****", pin: false, serial: _serial, user: true, valid_to: "2025-02-28" }
+          value: {
+            disable: 1,
+            end_date: "2025-01-31",
+            init: true,
+            password: "****",
+            pin: false,
+            serial: _serial,
+            user: true,
+            valid_to: "2025-02-28"
+          }
         }
       } as any;
       return of(response);
     });
   readonly stopPolling = jest.fn();
-  readonly pollTokenRolloutState = jest.fn().mockReturnValue(of({ result: { status: true, value: { tokens: [{ rollout_state: "enrolled" }] } } } as any));
+  readonly pollTokenRolloutState = jest
+    .fn()
+    .mockReturnValue(of({ result: { status: true, value: { tokens: [{ rollout_state: "enrolled" }] } } } as any));
   setTokenRealm = jest.fn();
   getTokengroups = jest.fn();
   setTokengroup = jest.fn();

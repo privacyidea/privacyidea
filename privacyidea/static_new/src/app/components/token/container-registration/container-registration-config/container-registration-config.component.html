@@ -17,7 +17,7 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <mat-checkbox
-  class="width-100 margin-bottom-1"
+  class="width-100 margin-bottom-16"
   [(ngModel)]="userStorePassphrase"
   [disabled]="!containerHasOwner"
   (change)="onUserStorePassphraseChange()">
@@ -37,7 +37,7 @@
     enter.
   </mat-hint>
 </mat-form-field>
-<mat-form-field class="width-100 margin-top-2 margin-bottom-1">
+<mat-form-field class="width-100 margin-top-2 margin-bottom-16">
   <mat-label i18n> Passphrase Response</mat-label>
   <input
     [(ngModel)]="passphraseResponse"
@@ -58,7 +58,7 @@
     This is the correct answer to the passphrase prompt the user has to enter to successfully register the container.
   </mat-hint>
 </mat-form-field>
-<mat-form-field class="width-100 margin-bottom-1">
+<mat-form-field class="width-100 margin-bottom-16">
   <mat-label i18n> Repeat Passphrase Response</mat-label>
   <input
     [(ngModel)]="repeatPassphraseResponse"

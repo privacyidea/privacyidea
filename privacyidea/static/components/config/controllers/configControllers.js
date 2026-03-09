@@ -1,4 +1,7 @@
 /**
+ * SPDX-FileCopyrightText:  NetKnights GmbH <https://netknights.it>
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ *
  * http://www.privacyidea.org
  * (c) cornelius kölbel, cornelius@privacyidea.org
  *
@@ -37,8 +40,8 @@ myApp.controller("policyListController", ["$scope", "$stateParams", "$location",
                 // converts action object to string and creates new list "action_desc"
                 $scope.policies.forEach(function (value, i) {
                     $scope.policies[i]['action_desc'] = [];
-                    for (const [key, value] of Object.entries($scope.policies[i]['action'])) {
-                        $scope.policies[i]['action_desc'].push((`${key}: ${value}`));
+                    for (const [actionKey, actionVal] of Object.entries($scope.policies[i]['action'])) {
+                        $scope.policies[i]['action_desc'].push((`${actionKey}: ${actionVal}`));
                     }
                 });
             });
@@ -172,8 +175,9 @@ myApp.controller("policyDetailsController", ["$scope", "$stateParams",
 
         $scope.getTemplate = function (templateName) {
             PolicyTemplateFactory.getTemplate(templateName, function (data) {
-                //debug: console.log("Get template ". templateName);
-                //debug: console.log(data);
+                // Auto-hide the templates list
+                $scope.viewPolicyTemplates = false;
+
                 // Set template data.
                 $scope.policyname = data.name;
                 $scope.presetEditValues2({
@@ -185,7 +189,11 @@ myApp.controller("policyDetailsController", ["$scope", "$stateParams",
                     adminrealm: data.adminrealm || [],
                     conditions: data.conditions || [],
                     pinode: [],
-                    user_agents: data.user_agents || []
+                    user_agents: data.user_agents || [],
+                    // Preserve the existing priority (or default to 1)
+                    priority: $scope.params.priority || 1,
+                    // Force the template to be active
+                    active: true
                 });
             });
         };
@@ -546,6 +554,21 @@ myApp.controller("policyDetailsController", ["$scope", "$stateParams",
                     !$scope.onlySelectedVisible) &&
                 (re.test(action.name) || re.test(action.desc));
         };
+
+        $scope.checkGroupVisible = function (group) {
+            if (!$scope.actions) {
+                return false;
+            }
+            for (let i = 0; i < $scope.actions.length; i++) {
+                let action = $scope.actions[i];
+                if (action.group === group) {
+                    if ($scope.checkOpenGroup(action, $scope.action_filter)) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        };
     }]);
 
 myApp.controller("tokenConfigController", ["$scope", "$location", "$rootScope",
@@ -668,19 +691,6 @@ myApp.controller("configController", ["$scope", "$location", "$rootScope",
         }
 
         $scope.items = ["item1", "item2", "item3"];
-        $scope.dragControlListeners = {
-            accept: function (sourceItemHandleScope, destSortableScope) {
-                return boolean;
-            },
-            //override to determine drag is allowed or not. default is true.
-            itemMoved: function (event) {
-                //Do what you want},
-            },
-            orderChanged: function (event) {
-                //Do what you want},
-            },
-            containment: '#board'//optional param.
-        };
 
         // TODO: This information needs to be fetched from the server
         $scope.availableResolverTypes = ['passwdresolver', 'ldapresolver', 'sqlresolver', 'scimresolver',
@@ -1107,6 +1117,11 @@ myApp.controller("LdapResolverController", ["$scope", "ConfigFactory", "$state",
                 $scope.params.group_search_filter = "";
                 $scope.params.group_attribute_mapping_key = "";
             }
+            // Remove username and password from params in case of anonymous bind
+            if ($scope.params.AUTHTYPE === "Anonymous") {
+                $scope.params.BINDDN = "";
+                $scope.params.BINDPW = "";
+            }
             ConfigFactory.setResolver($scope.resolvername, $scope.params, function (data) {
                 $scope.set_result = data.result.value;
                 $scope.getResolvers();
@@ -1115,13 +1130,19 @@ myApp.controller("LdapResolverController", ["$scope", "ConfigFactory", "$state",
         };
 
         $scope.testResolver = function (size_limit) {
-            var params = $.extend({}, $scope.params);
+            let params = $.extend({}, $scope.params);
             params["SIZELIMIT"] = size_limit;
             params["resolver"] = $scope.resolvername;
-            if (params['AUTHTYPE'] === $scope.authtypes['Anonymous']) {
-                params['AUTHTYPE'] = $scope.authtypes['Simple'];
-                params['BINDPW'] = '';
-                params['BINDDN'] = '';
+            if (!$scope.params.recursive_group_search) {
+                params["group_base_dn"] = "";
+                params["group_name_attribute"] = "";
+                params["group_search_filter"] = "";
+                params["group_attribute_mapping_key"] = "";
+            }
+            // Remove username and password from params in case of anonymous bind
+            if ($scope.params.AUTHTYPE === "Anonymous") {
+                params["BINDDN"] = "";
+                params["BINDPW"] = "";
             }
             ConfigFactory.testResolver(params, function (data) {
                 if (data.result.value === true) {
@@ -1276,11 +1297,21 @@ myApp.controller("HTTPResolverController", ["$scope", "ConfigFactory", "$state",
             errorResponse: ""
         };
 
+        $scope.methods = {"get": "GET", "post": "POST", "put": "PUT", "patch": "PATCH", "delete": "DELETE"};
+        $scope.groups_config = {active: false, method: "get", endpoint: "", user_groups_attribute: ""};
+
         $scope.typeMapping = {
             "httpresolver": "HTTP Resolver",
             "entraidresolver": "EntraID Resolver",
             "keycloakresolver": "Keycloak Resolver"
         };
+
+        $scope.customAttribute = {value: ""};
+
+        $scope.addCustomKey = function () {
+            $scope.advancedParams.attribute_mapping[$scope.customAttribute.value] = "";
+            $scope.customAttribute.value = "";
+        }
 
         $scope.setTags = function () {
             if ($scope.params.type === "entraidresolver") {
@@ -1433,6 +1464,10 @@ myApp.controller("HTTPResolverController", ["$scope", "ConfigFactory", "$state",
                 if (params["realm"]) {
                     $scope.advancedParams["realm"] = params["realm"];
                 }
+
+                if (params["config_get_user_groups"]) {
+                    $scope.groups_config = params["config_get_user_groups"];
+                }
             } else {
                 $scope.params = params;
             }
@@ -1484,6 +1519,7 @@ myApp.controller("HTTPResolverController", ["$scope", "ConfigFactory", "$state",
                     $scope.advancedParams["username"] = $scope.serviceAccount["username"];
                     $scope.advancedParams["password"] = $scope.serviceAccount["password"];
                 }
+                $scope.advancedParams["config_get_user_groups"] = $scope.groups_config;
                 serverParams = $scope.advancedParams;
 
                 // Set empty endpoint configs to empty dicts, to indicate that an old config can be removed

@@ -35,6 +35,7 @@ import { AttributeMappingRow, HttpResolverComponent } from "../http-resolver/htt
 import { MatButtonToggle, MatButtonToggleGroup } from "@angular/material/button-toggle";
 import { HttpConfigComponent } from "../http-resolver/http-config/http-config.component";
 import { ClearableInputComponent } from "../../../shared/clearable-input/clearable-input.component";
+import { HttpGroupsAttributeComponent } from "../http-resolver/http-groups-attribute/http-groups-attribute.component";
 
 @Component({
   selector: "app-keycloak-resolver",
@@ -62,7 +63,8 @@ import { ClearableInputComponent } from "../../../shared/clearable-input/clearab
     MatButtonToggleGroup,
     MatButtonToggle,
     HttpConfigComponent,
-    ClearableInputComponent
+    ClearableInputComponent,
+    HttpGroupsAttributeComponent
   ],
   templateUrl: "../http-resolver/http-resolver.component.html",
   styleUrl: "../http-resolver/http-resolver.component.scss"
@@ -80,60 +82,5 @@ export class KeycloakResolverComponent extends HttpResolverComponent {
 
   constructor() {
     super();
-    effect(() => {
-      this.initializeKeycloakData();
-    });
-  }
-
-  protected initializeKeycloakData(): void {
-    const data: any = this.data();
-    if (!data) return;
-
-    if (!data.base_url) {
-      this.baseUrlControl.setValue("http://localhost:8080", { emitEvent: false });
-    }
-    if (!data.timeout) {
-      this.timeoutControl.setValue(60, { emitEvent: false });
-    }
-    if (data.verify_tls === undefined) {
-      this.verifyTlsControl.setValue(true, { emitEvent: false });
-    }
-
-    if (!data.config_authorization || Object.keys(data.config_authorization).length === 0) {
-      this.configAuthorizationGroup.patchValue({
-        method: "POST",
-        endpoint: "/realms/{realm}/protocol/openid-connect/token",
-        headers: "{\"Content-Type\": \"application/x-www-form-urlencoded\"}",
-        requestMapping: "grant_type=password&client_id=admin-cli&username={username}&password={password}",
-        responseMapping: "{\"Authorization\": \"Bearer {access_token}\"}"
-      }, { emitEvent: false });
-    }
-    if (!data.config_user_auth || Object.keys(data.config_user_auth).length === 0) {
-      this.configUserAuthGroup.patchValue({
-        method: "POST",
-        endpoint: "/realms/{realm}/protocol/openid-connect/token",
-        headers: "{\"Content-Type\": \"application/x-www-form-urlencoded\"}",
-        requestMapping: "grant_type=password&client_id=admin-cli&username={username}&password={password}"
-      }, { emitEvent: false });
-    }
-    if (!data.config_get_user_list || Object.keys(data.config_get_user_list).length === 0) {
-      this.configGetUserListGroup.patchValue({
-        method: "GET",
-        endpoint: "/admin/realms/{realm}/users"
-      }, { emitEvent: false });
-    }
-    if (!data.config_get_user_by_id || Object.keys(data.config_get_user_by_id).length === 0) {
-      this.configGetUserByIdGroup.patchValue({
-        method: "GET",
-        endpoint: "/admin/realms/{realm}/users/{userid}"
-      }, { emitEvent: false });
-    }
-    if (!data.config_get_user_by_name || Object.keys(data.config_get_user_by_name).length === 0) {
-      this.configGetUserByNameGroup.patchValue({
-        method: "GET",
-        endpoint: "/admin/realms/{realm}/users",
-        requestMapping: "{\"username\": \"{username}\", \"exact\": true}"
-      }, { emitEvent: false });
-    }
   }
 }

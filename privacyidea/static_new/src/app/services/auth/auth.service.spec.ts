@@ -18,7 +18,7 @@
  **/
 import { TestBed } from "@angular/core/testing";
 
-import { AuthResponse, AuthService, JwtData } from "./auth.service";
+import { AuthData, AuthResponse, AuthService, JwtData } from "./auth.service";
 import { AppComponent } from "../../app.component";
 import { provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
@@ -293,12 +293,29 @@ describe("AuthService", () => {
 
     expect(authService.authtype()).toBe("cookie");
     expect(authService.jwtExpDate()).toEqual(new Date(jwt.exp * 1000));
+    expect(authService.jwtLogoutTimeS()).toEqual(120);
 
-    (authService as any).authData.set({ ...(authService as any).authData(), logout_time: 300 } as any);
-    expect(authService.logoutTimeSeconds()).toBe(120);
+    jest.useRealTimers();
+  });
 
-    (authService as any).authData.set({ ...(authService as any).authData(), logout_time: 60 } as any);
-    expect(authService.logoutTimeSeconds()).toBe(60);
+  it("jwtExpDate and jwtLogoutTimeS are null if expiration or no jwt data at all are defined", () => {
+    jest.useFakeTimers().setSystemTime(new Date("2025-01-01T00:00:00Z"));
+
+    expect(authService.jwtExpDate()).toBeNull();
+    expect(authService.jwtLogoutTimeS()).toBeNull();
+
+    const jwt = {
+      username: "bob",
+      realm: "r",
+      nonce: "n",
+      role: "admin",
+      authtype: "cookie",
+      rights: []
+    };
+    (authService as any).jwtData.set(jwt);
+
+    expect(authService.jwtExpDate()).toBeNull();
+    expect(authService.jwtLogoutTimeS()).toBeNull();
 
     jest.useRealTimers();
   });
@@ -409,5 +426,78 @@ describe("AuthService", () => {
       rights: []
     } as JwtData);
     expect(authService.isSelfServiceUser()).toBe(true);
+  });
+
+  it("should extract token types from rollover policy", () => {
+    authService.authData.set({ token_rollover: { hotp: [], totp: [] } } as unknown as AuthData);
+    expect(authService.tokenRollover()).toEqual(["hotp", "totp"]);
+
+    // token_rollover data not set
+    authService.authData.set({} as unknown as AuthData);
+    expect(authService.tokenRollover()).toEqual([]);
+  });
+
+  it("rightsWithValues should parse rights with and without values", () => {
+    const authData = {
+      username: "bob",
+      realm: "realm",
+      nonce: "n",
+      role: "admin",
+      authtype: "cookie",
+      exp: 0,
+      rights: [
+        "foo=bar",
+        "baz=qux=quux",
+        "simple"
+      ]
+    };
+    authService.authData.set(authData as unknown as AuthData);
+    const result = authService.rightsWithValues();
+    expect(result).toEqual({
+      foo: "bar",
+      baz: "qux=quux",
+      simple: null
+    });
+  });
+
+  describe("check2Step", () => {
+    beforeEach(() => {
+      authService.authData.set({} as unknown as AuthData);
+    });
+
+    it("should return 'allow' if value is 'allow'", () => {
+      authService.authData.set({
+        rights: ["totp_2step=allow"]
+      } as unknown as AuthData);
+      expect(authService.check2Step("totp")).toBe("allow");
+    });
+
+    it("should return 'force' if value is 'force'", () => {
+      authService.authData.set({
+        rights: ["totp_2step=force"]
+      } as unknown as AuthData);
+      expect(authService.check2Step("totp")).toBe("force");
+    });
+
+    it("should return 'disabled' if value is not 'allow' or 'force'", () => {
+      authService.authData.set({
+        rights: ["totp_2step=deny"]
+      } as unknown as AuthData);
+      expect(authService.check2Step("totp")).toBe("disabled");
+    });
+
+    it("should return 'disabled' if right is not present", () => {
+      authService.authData.set({
+        rights: []
+      } as unknown as AuthData);
+      expect(authService.check2Step("totp")).toBe("disabled");
+    });
+
+    it("should keep value if right is present without value", () => {
+      authService.authData.set({
+        rights: ["totp_2step=allow", "totp_2step"]
+      } as unknown as AuthData);
+      expect(authService.check2Step("totp")).toBe("allow");
+    });
   });
 });

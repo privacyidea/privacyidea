@@ -1,4 +1,5 @@
-@use "../../../../styles";
+@use "styles";
+@use "table";
 @use "@angular/material" as mat;
 
 .details-container {
@@ -18,10 +19,6 @@
   .mdc-list-item.mdc-list-item--with-one-line {
     // height: auto;
   }
-}
-
-.container-form-field {
-  margin-bottom: -1.25em;
 }
 
 .token-serial {

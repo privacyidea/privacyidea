@@ -1,10 +1,11 @@
-@use "../../../../../styles";
+@use "styles";
+@use "table";
 
 .container-details-token-table-layout {
-  @include styles.base-table-structure(
-                  ".container-details-token-table",
-                  ".container-details-token-table-filter",
-                  ".table-scroll-container"
+  @include table.base-table-structure(
+    ".container-details-token-table",
+    ".container-details-token-table-filter",
+    ".table-scroll-container"
   );
 
   .container-details-token-table-filter {

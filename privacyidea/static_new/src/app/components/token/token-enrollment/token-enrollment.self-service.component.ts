@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -70,6 +70,8 @@ import {
   CustomDateAdapter,
   TokenEnrollmentComponent
 } from "./token-enrollment.component";
+import { TokenEnrollmentLastStepDialogSelfServiceComponent } from "./token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.self-service.component";
+import { EnrollmentResponse } from "../../../mappers/token-api-payload/_token-api-payload.mapper";
 
 @Component({
   selector: "app-token-enrollment-self-service",
@@ -141,5 +143,22 @@ export class TokenEnrollmentSelfServiceComponent extends TokenEnrollmentComponen
 
   constructor() {
     super();
+  }
+
+  protected override openLastStepDialog(response: EnrollmentResponse | null): void {
+    if (!response) {
+      this.notificationService.openSnackBar("No enrollment response available.");
+      return;
+    }
+
+    this.enrolledDialogData.set({
+      ...this.enrolledDialogData()!,
+      response: response
+    });
+
+    this.dialogService.openDialog({
+      component: TokenEnrollmentLastStepDialogSelfServiceComponent,
+      data: this.enrolledDialogData()
+    });
   }
 }

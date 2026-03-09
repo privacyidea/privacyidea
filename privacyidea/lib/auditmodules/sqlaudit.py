@@ -93,12 +93,14 @@ def fn_to_isodate(element, compiler, **kw):
     return "date_format(%s, '%%%%Y-%%%%m-%%%%d %%%%H:%%%%i:%%%%s')" % compiler.process(
         element.clauses, **kw)
 
+
 def _now():
     """
     Returns the current local date and time.
     This function is required to be able to mock datetime.now() in tests.
     """
     return datetime.datetime.now()
+
 
 class Audit(AuditBase):
     """
@@ -575,7 +577,7 @@ class Audit(AuditBase):
                 # Fill the list
                 paging_object.auditdata.append(self.audit_entry_to_dict(le))
             except StopIteration as _e:
-                log.debug("Interation stopped.")
+                log.debug("Iteration stopped.")
                 break
             except UnicodeDecodeError as _e:
                 # Unfortunately if one of the audit entries fails, the whole
