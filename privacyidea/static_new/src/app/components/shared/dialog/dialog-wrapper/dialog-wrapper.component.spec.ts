@@ -37,10 +37,10 @@ describe("DialogWrapperComponent", () => {
     fixture.componentRef.setInput("showCancelButton", true);
     fixture.componentRef.setInput("title", "Test Title");
     fixture.componentRef.setInput("actions", [
-      { value: "confirm", label: "Confirm", type: "confirm" },
-      { value: "delete", label: "Delete", type: "destruct" },
+      { value: "confirm", label: "Confirm", type: "confirm", primary: true },
+      { value: "delete", label: "Delete", type: "destruct", primary: true },
       { value: "reject", label: "Reject", type: "cancel" },
-      { value: "help", label: "Help", type: "auxiliary" }
+      { value: "help", label: "Help", type: "auxiliary", primary: true }
     ]);
     fixture.detectChanges();
   });
@@ -123,7 +123,7 @@ describe("DialogWrapperComponent", () => {
     jest.spyOn(component, "onActionClick");
     const actionButtons = nativeElement.querySelectorAll<HTMLButtonElement>(".pi-dialog-footer button");
     actionButtons[1].click();
-    expect(component.onActionClick).toHaveBeenCalledWith({ value: "confirm", label: "Confirm", type: "confirm" });
+    expect(component.onActionClick).toHaveBeenCalledWith({ value: "confirm", label: "Confirm", type: "confirm", primary: true });
   });
 
   it("should throw an error if no actions and no close button", () => {

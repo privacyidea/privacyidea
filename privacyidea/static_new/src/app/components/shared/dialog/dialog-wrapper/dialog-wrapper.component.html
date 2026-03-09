@@ -34,11 +34,7 @@
             [attr.cdkFocusInitial]="action.primary || null"
             [class.action-button-delete-primary]="action.type === 'destruct' && action.primary"
             [class.action-button-delete-secondary]="action.type === 'destruct' && !action.primary"
-            [class.action-button-primary]="(action.primary
-            && action.type !== 'destruct' && (
-            action.type === 'confirm' ||
-            action.type === 'auxiliary' ||
-            !action.type))"
+            [class.action-button-primary]="action.primary && action.type !== 'destruct'"
             [class.action-button-secondary]="!action.primary"
             [disabled]="action.disabled"
             class="button-width-s"
