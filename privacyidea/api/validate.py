@@ -492,11 +492,11 @@ def _handle_enrollment_cancellation(data: dict) -> Response:
 
     details = {}
     if success:
-        details["message"] = lazy_gettext("Cancelled enrollment via multichallenge")
-        message = lazy_gettext("Cancelled enrollment via multichallenge for transaction_id ") + f"{transaction_id}"
+        details["message"] = str(lazy_gettext("Cancelled enrollment via multichallenge"))
+        message = str(lazy_gettext("Cancelled enrollment via multichallenge for transaction_id ")) + f"{transaction_id}"
     else:
-        details["message"] = lazy_gettext("Failed to cancel enrollment via multichallenge")
-        message = lazy_gettext("Failed to cancel enrollment via multichallenge for transaction_id ") + f"{transaction_id}"
+        details["message"] = str(lazy_gettext("Failed to cancel enrollment via multichallenge"))
+        message = str(lazy_gettext("Failed to cancel enrollment via multichallenge for transaction_id ")) + f"{transaction_id}"
 
     ret = send_result(success, rid=2, details=details)
 

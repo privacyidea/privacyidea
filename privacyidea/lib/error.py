@@ -28,6 +28,8 @@ contains Errors and Exceptions
 
 import logging
 
+from flask_babel import LazyString
+
 log = logging.getLogger(__name__)
 
 
@@ -80,7 +82,9 @@ class PrivacyIDEAError(Exception):
         return self.message
 
     def __str__(self):
-        return f"ERR{self.id}: {self.message}"
+        if isinstance(self.message, str) or isinstance(self.message, LazyString):
+            return f"ERR{self.id}: {self.message}"
+        return f"ERR{self.id}: {self.message!r}"
 
 
     def __repr__(self):
