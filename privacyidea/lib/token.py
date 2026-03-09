@@ -2418,15 +2418,15 @@ def create_challenges_from_tokens(token_list, reply_dict, options=None):
                 challenge_info["serial"] = token.token.serial
                 token_type = token.get_tokentype()
                 challenge_info["type"] = token_type
-                challenge_info["client_mode"] = token.client_mode
+                # Only set client_mode if it has not been returned by the tokenclass creating the challenge
+                challenge_info["client_mode"] = challenge_info.get("client_mode") or token.client_mode
                 challenge_info["message"] = message
                 # If they exist, add next pin and next password change
                 next_pin = token.get_tokeninfo("next_pin_change")
                 if next_pin:
                     challenge_info["next_pin_change"] = next_pin
                     challenge_info["pin_change"] = token.is_pin_change()
-                next_passw = token.get_tokeninfo(
-                    "next_password_change")
+                next_passw = token.get_tokeninfo("next_password_change")
                 if next_passw:
                     challenge_info["next_password_change"] = next_passw
                     challenge_info["password_change"] = token.is_pin_change(password=True)
