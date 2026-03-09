@@ -22,39 +22,37 @@
   aria-label="Import Tokens"
   class="token-import-container"
   i18n-aria-label>
-  <div class="margin-left-16">
-    <h3 i18n>
-      Import Tokens
-    </h3>
-  </div>
+  <h3
+    class="margin-8"
+    i18n>
+    Import Tokens
+  </h3>
   <div #stickySentinel></div>
   <div
     #stickyHeader
     class="sticky-header">
     <div class="sticky-controls">
-      <div class="select-type">
-        <mat-form-field
-          class="width-66"
-          subscriptSizing="dynamic">
-          <mat-label i18n>File Type</mat-label>
-          <mat-select
-            [(ngModel)]="fileType"
-            [ngModelOptions]="{ standalone: true }"
-            [panelClass]="'single-column-panel'"
-            [value]="fileType()">
-            @for (type of Object.keys(fileTypes); track type) {
-              <mat-option
-                [value]="type"
-                class="select-option">{{ fileTypes[type] }}
-              </mat-option>
-            }
-          </mat-select>
-        </mat-form-field>
-      </div>
+      <mat-form-field
+        class="width-66"
+        subscriptSizing="dynamic">
+        <mat-label i18n>File Type</mat-label>
+        <mat-select
+          [(ngModel)]="fileType"
+          [ngModelOptions]="{ standalone: true }"
+          [panelClass]="'single-column-panel'"
+          [value]="fileType()">
+          @for (type of Object.keys(fileTypes); track type) {
+            <mat-option
+              [value]="type"
+              class="select-option">{{ fileTypes[type] }}
+            </mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
       <button
         (click)="importTokens()"
         [disabled]="!inputForm.valid"
-        class="action-button-primary button-width-s"
+        class="action-button-primary button-width-s margin-left-auto"
         mat-stroked-button>
         <mat-icon>input</mat-icon>
         Import
@@ -62,7 +60,7 @@
     </div>
   </div>
 
-  <div class="margin-top-16 margin-bottom-32">
+  <div class="margin-top-16 margin-left-16">
     @switch (fileType()) {
       @case ("aladdin-xml") {
         Here you can upload an XML file from Aladdin or SafeNet as it was used with Aladdin TMS or SafeNet SAM.
@@ -97,7 +95,7 @@
           format or the password.
         </div>
         <div>
-          <mat-form-field class="width-100 margin-bottom-16">
+          <mat-form-field class="width-66 margin-bottom-16">
             <mat-label>Pre Shared Key</mat-label>
             <input
               [formControl]="preSharedKey"
@@ -112,7 +110,7 @@
           </mat-form-field>
         </div>
         <div>
-          <mat-form-field class="width-100">
+          <mat-form-field class="width-66">
             <mat-label>Password</mat-label>
             <input
               [(ngModel)]="pskPassword"
@@ -123,7 +121,7 @@
         </div>
         <div>
           <mat-form-field
-            class="width-100"
+            class="width-66"
             subscriptSizing="dynamic">
             <mat-label>Verification Method for the Authenticity of Imported Tokens</mat-label>
             <mat-select
@@ -139,9 +137,11 @@
     }
   </div>
 
-  <div class="margin-bottom-16">
-    <h4 class="sub-headings">Realm</h4>
-    <mat-form-field class="width-50 margin-bottom-16" subscriptSizing="dynamic">
+  <div class="margin-bottom-16 margin-left-16">
+    <h4>Realm</h4>
+    <mat-form-field
+      class="input-width-l"
+      subscriptSizing="dynamic">
       <mat-label>Select Realm for Tokens</mat-label>
       <mat-select
         [(ngModel)]="selectedRealms"
@@ -158,8 +158,8 @@
     </mat-form-field>
   </div>
 
-  <div>
-    <h4 class="sub-headings">Select File</h4>
+  <div class="margin-left-16">
+    <h4>Select File</h4>
 
     <div class="input-container file-input-container">
       @if (fileName()) {
