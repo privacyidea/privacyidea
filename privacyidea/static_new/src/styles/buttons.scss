@@ -120,8 +120,12 @@ $button-low-contrast-variant: linear-gradient(
 .mat-mdc-outlined-button.card-button-1,
 .mat-mdc-outlined-button[class*="card-button-1"] {
   --mat-outlined-button-state-layer-color: var(--mat-sys-surface-container-highest);
-  --mat-outlined-button-ripple-color: var(--mat-sys-surface-container-high);
+  --mat-outlined-button-ripple-color: var(--mat-sys-surface-container-highest);
   --mdc-ripple-color: var(--mat-sys-surface-container-high);
+
+  &:hover {
+    background-color: var(--mat-sys-surface-container-high) !important;
+  }
 }
 
 .mat-mdc-outlined-button[class*="card-button-active"] {
