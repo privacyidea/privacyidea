@@ -1,15 +1,17 @@
 # SPDX-FileCopyrightText: (C) 2014 NetKnights GmbH <https://netknights.it>
 # SPDX-License-Identifier: CC0-1.0
 #
-# Runs the full unit test suite against MariaDB for all supported Python
-# versions. Migration tests are excluded — they have their own dedicated
-# workflow (migration-tests.yml).
+# Runs the full unit test suite against MariaDB.
+# On push/PR: only the oldest and newest supported Python versions are tested
+# to keep feedback fast. The middle versions (3.11, 3.12, 3.13) run nightly
+# as a dependency health check — they are unlikely to catch Python-version
+# bugs that min+max would miss, but they will surface broken installs or
+# subtle stdlib regressions introduced and reverted mid-stream.
+# Migration tests are excluded — they have their own dedicated workflow.
 
 name: Unit Tests MariaDB
 
 on:
-  # run on each push to every branch of the repository but only on
-  # pull requests to the 'master' and 'branch-*' branches
   push:
     paths:
       - 'privacyidea/**.py'
@@ -29,6 +31,9 @@ on:
       - 'requirements.txt'
       - 'tools/**'
       - '.github/workflows/unit-tests-mariadb.yml'
+  schedule:
+    # Nightly at 02:00 UTC — runs all Python versions as a dependency health check
+    - cron: '0 2 * * *'
 
 permissions:
   contents: read
@@ -49,7 +54,13 @@ jobs:
       # Do not cancel running matrix tests when one test fails
       fail-fast: false
       matrix:
-        python-version: ['3.10', '3.11', '3.12', '3.13', '3.14']
+        # On push/PR only test min and max; nightly runs all versions.
+        python-version: >-
+          ${{
+            (github.event_name == 'schedule')
+            && fromJSON('["3.10","3.11","3.12","3.13","3.14"]')
+            || fromJSON('["3.10","3.14"]')
+          }}
 
     services:
       mariadb:
@@ -93,10 +104,16 @@ jobs:
         PYTHONWARNINGS: "once::DeprecationWarning"
       run: |
         pip freeze
-        python -b -m pytest -v --cov=privacyidea --cov-report=xml -m "not migration" tests/
+        # Collect coverage only on the lowest Python version to avoid redundant
+        # reports and reduce overhead on all other matrix jobs.
+        if [ "${{ matrix.python-version }}" = "3.10" ]; then
+          python -b -m pytest -v --cov=privacyidea --cov-report=xml -m "not migration" tests/
+        else
+          python -b -m pytest -v -m "not migration" tests/
+        fi
 
     - name: Codecov upload
-      if: ${{ steps.pytest_run.outcome == 'success' }}
+      if: ${{ steps.pytest_run.outcome == 'success' && matrix.python-version == '3.10' }}
       uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # v5.5.2
       with:
         files: ./coverage.xml
