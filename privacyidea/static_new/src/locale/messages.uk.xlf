@@ -3365,7 +3365,7 @@
         <source>Search for Token</source>
         <target state="translated">Пошук токена</target>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-get-serial/get-serial-result-dialog/get-serial-result-dialog.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-get-serial/get-serial-result-dialog/find-serial-result-dialog.component.html</context>
           <context context-type="linenumber">1,2</context>
         </context-group>
       </trans-unit>
@@ -3373,7 +3373,7 @@
         <source>The Serial number for the OTP value <x id="INTERPOLATION" equiv-text="{{ data.otpValue }}"></x> is <x id="START_LINK" ctype="x-a" equiv-text="&lt;a           class=&quot;link&quot;           attr.aria-label=&quot;{{ data.foundSerial }} Link&quot;           (click)=&quot;data.onClickSerial()&quot;&gt;"></x> <x id="INTERPOLATION_1" equiv-text="{{ data.foundSerial }}"></x><x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"></x> . </source>
         <target state="translated">Серійний номер для значення OTP <x id="INTERPOLATION" equiv-text="{{ data.otpValue }}"></x> is <x id="START_LINK" ctype="x-a" equiv-text="&lt;a           class=&quot;link&quot;           attr.aria-label=&quot;{{ data.foundSerial }} Link&quot;           (click)=&quot;data.onClickSerial()&quot;&gt;"></x> <x id="INTERPOLATION_1" equiv-text="{{ data.foundSerial }}"></x><x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"></x> . </target>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-get-serial/get-serial-result-dialog/get-serial-result-dialog.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-get-serial/get-serial-result-dialog/find-serial-result-dialog.component.html</context>
           <context context-type="linenumber">6,13</context>
         </context-group>
       </trans-unit>
@@ -3381,7 +3381,7 @@
         <source>No Serial number could be found for OTP value <x id="INTERPOLATION" equiv-text="{{ data.otpValue }}"></x>. </source>
         <target state="translated">Не вдалося знайти серійний номер для значення OTP <x id="INTERPOLATION" equiv-text="{{ data.otpValue }}"></x>. </target>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-get-serial/get-serial-result-dialog/get-serial-result-dialog.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-get-serial/get-serial-result-dialog/find-serial-result-dialog.component.html</context>
           <context context-type="linenumber">18,20</context>
         </context-group>
       </trans-unit>
@@ -3389,7 +3389,7 @@
         <source>OK</source>
         <target state="translated">OK</target>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-get-serial/get-serial-result-dialog/get-serial-result-dialog.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-get-serial/get-serial-result-dialog/find-serial-result-dialog.component.html</context>
           <context context-type="linenumber">33</context>
         </context-group>
       </trans-unit>
@@ -3397,7 +3397,7 @@
         <source>Token Get Serial</source>
         <target state="translated">Отримання серійного номера токена</target>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-get-serial/token-get-serial.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-get-serial/token-find-serial.component.html</context>
           <context context-type="linenumber">1</context>
         </context-group>
       </trans-unit>
@@ -3405,7 +3405,7 @@
         <source>Get Serial Number</source>
         <target state="translated">Отримати серійний номер</target>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-get-serial/token-get-serial.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-get-serial/token-find-serial.component.html</context>
           <context context-type="linenumber">2,3</context>
         </context-group>
       </trans-unit>
@@ -3413,7 +3413,7 @@
         <source>By entering an OTP value you can get the serial number of the token. You can also enter additional optional parameters, to narrow down the search for the token. So you can only search within certain token types or in assigned or unassigned tokens.</source>
         <target state="translated">Ввівши значення OTP, ви можете отримати серійний номер токена. Ви також можете ввести додаткові необов'язкові параметри, щоб звузити пошук токена. Таким чином, ви можете шукати тільки серед певних типів токенів або серед призначених чи не призначених токенів.</target>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-get-serial/token-get-serial.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-get-serial/token-find-serial.component.html</context>
           <context context-type="linenumber">4,6</context>
         </context-group>
       </trans-unit>
@@ -3421,7 +3421,7 @@
         <source>OTP Value</source>
         <target state="translated">Значення одноразового пароля</target>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-get-serial/token-get-serial.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-get-serial/token-find-serial.component.html</context>
           <context context-type="linenumber">10</context>
         </context-group>
       </trans-unit>
@@ -3429,7 +3429,7 @@
         <source>Enter some OTP value</source>
         <target state="translated">Введіть значення OTP</target>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-get-serial/token-get-serial.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-get-serial/token-find-serial.component.html</context>
           <context context-type="linenumber">19,20</context>
         </context-group>
       </trans-unit>
@@ -3437,7 +3437,7 @@
         <source>OTP value is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"></x>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"></x></source>
         <target state="translated">Значення OTP <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"></x>обов'язкове<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"></x></target>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-get-serial/token-get-serial.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-get-serial/token-find-serial.component.html</context>
           <context context-type="linenumber">22,23</context>
         </context-group>
       </trans-unit>
@@ -3445,7 +3445,7 @@
         <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x><x id="INTERPOLATION" equiv-text="{{ currentStep() !== &quot;searching&quot; ? &quot;play_arrow&quot; : &quot;stop&quot; }}"></x><x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> <x id="INTERPOLATION_1" equiv-text="{{ currentStep() !== &quot;searching&quot; ? &quot;Run&quot; : &quot;Stop&quot; }}"></x> <x id="START_TAG_SPAN" ctype="x-span" equiv-text="&lt;span&gt;"></x>Search<x id="CLOSE_TAG_SPAN" ctype="x-span" equiv-text="&lt;/span&gt;"></x></source>
         <target state="translated"><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x><x id="INTERPOLATION" equiv-text="{{ currentStep() !== &quot;searching&quot; ? &quot;play_arrow&quot; : &quot;stop&quot; }}"></x><x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> <x id="INTERPOLATION_1" equiv-text="{{ currentStep() !== &quot;searching&quot; ? &quot;Run&quot; : &quot;Stop&quot; }}"></x> <x id="START_TAG_SPAN" ctype="x-span" equiv-text="&lt;span&gt;"></x>Пошук<x id="CLOSE_TAG_SPAN" ctype="x-span" equiv-text="&lt;/span&gt;"></x></target>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-get-serial/token-get-serial.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-get-serial/token-find-serial.component.html</context>
           <context context-type="linenumber">32,35</context>
         </context-group>
       </trans-unit>
@@ -3453,7 +3453,7 @@
         <source>Search Configuration</source>
         <target state="translated">Конфігурація пошуку</target>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-get-serial/token-get-serial.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-get-serial/token-find-serial.component.html</context>
           <context context-type="linenumber">36,37</context>
         </context-group>
       </trans-unit>
@@ -3461,7 +3461,7 @@
         <source>Token Type</source>
         <target state="translated">Тип токена</target>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-get-serial/token-get-serial.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-get-serial/token-find-serial.component.html</context>
           <context context-type="linenumber">38</context>
         </context-group>
       </trans-unit>
@@ -3469,7 +3469,7 @@
         <source>Select token type</source>
         <target state="translated">Виберіть тип токена</target>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-get-serial/token-get-serial.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-get-serial/token-find-serial.component.html</context>
           <context context-type="linenumber">39,40</context>
         </context-group>
       </trans-unit>
@@ -3477,7 +3477,7 @@
         <source>Assignment State</source>
         <target state="translated">Стан призначення</target>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-get-serial/token-get-serial.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-get-serial/token-find-serial.component.html</context>
           <context context-type="linenumber">46</context>
         </context-group>
       </trans-unit>
@@ -3485,7 +3485,7 @@
         <source>Specify assignment state</source>
         <target state="translated">Вкажіть стан призначення</target>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-get-serial/token-get-serial.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-get-serial/token-find-serial.component.html</context>
           <context context-type="linenumber">51,53</context>
         </context-group>
       </trans-unit>
@@ -3493,7 +3493,7 @@
         <source><x id="INTERPOLATION" equiv-text="{{ assignment.info }}"></x> </source>
         <target state="translated"><x id="INTERPOLATION" equiv-text="{{ assignment.info }}"></x> </target>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-get-serial/token-get-serial.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-get-serial/token-find-serial.component.html</context>
           <context context-type="linenumber">54,55</context>
         </context-group>
       </trans-unit>
@@ -3501,7 +3501,7 @@
         <source>Serial Substring</source>
         <target state="translated">Підрядок серійного номера</target>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-get-serial/token-get-serial.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-get-serial/token-find-serial.component.html</context>
           <context context-type="linenumber">61</context>
         </context-group>
       </trans-unit>
@@ -3509,7 +3509,7 @@
         <source>Enter optional serial substring</source>
         <target state="translated">Введіть необов'язковий підрядок серійного номера</target>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-get-serial/token-get-serial.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-get-serial/token-find-serial.component.html</context>
           <context context-type="linenumber">68,69</context>
         </context-group>
       </trans-unit>
@@ -3517,7 +3517,7 @@
         <source>Count Window</source>
         <target state="translated">Вікно підрахунку</target>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-get-serial/token-get-serial.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-get-serial/token-find-serial.component.html</context>
           <context context-type="linenumber">74</context>
         </context-group>
       </trans-unit>
@@ -3525,7 +3525,7 @@
         <source>Lookahead OTP values</source>
         <target state="translated">Значення OTP для попереднього перегляду</target>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-get-serial/token-get-serial.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-get-serial/token-find-serial.component.html</context>
           <context context-type="linenumber">81,82</context>
         </context-group>
       </trans-unit>
@@ -3533,7 +3533,7 @@
         <source>Set number of lookahead OTP values (default 10).</source>
         <target state="translated">Встановіть кількість значень OTP для попереднього перегляду (за замовчуванням 10).</target>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-get-serial/token-get-serial.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-get-serial/token-find-serial.component.html</context>
           <context context-type="linenumber">84</context>
         </context-group>
       </trans-unit>

@@ -34,7 +34,7 @@ import { ContentService, ContentServiceInterface } from "../../../services/conte
 import { NotificationService, NotificationServiceInterface } from "../../../services/notification/notification.service";
 import { TokenService, TokenServiceInterface, TokenType } from "../../../services/token/token.service";
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
-import { GetSerialResultDialogComponent } from "./get-serial-result-dialog/get-serial-result-dialog.component";
+import { FindSerialResultDialogComponent } from "@components/token/token-find-serial/find-serial-result-dialog/find-serial-result-dialog.component";
 import { DialogService, DialogServiceInterface } from "../../../services/dialog/dialog.service";
 import { SearchTokenDialogComponent } from "./search-token-dialog/search-token-dialog";
 
@@ -55,10 +55,10 @@ import { SearchTokenDialogComponent } from "./search-token-dialog/search-token-d
     MatLabel,
     ScrollToTopDirective
   ],
-  templateUrl: "./token-get-serial.component.html",
-  styleUrl: "./token-get-serial.component.scss"
+  templateUrl: "./token-find-serial.component.html",
+  styleUrl: "./token-find-serial.component.scss"
 })
-export class TokenGetSerialComponent {
+export class TokenFindSerialComponent {
   otpValue = signal<string>("");
   tokenType = signal<string>("");
   assignmentState = signal<string>("");
@@ -185,7 +185,7 @@ export class TokenGetSerialComponent {
         const serial = response.result?.value?.serial ?? "";
         const afterClosed = this.dialogService
           .openDialog({
-            component: GetSerialResultDialogComponent,
+            component: FindSerialResultDialogComponent,
             data: {
               foundSerial: serial,
               otpValue: this.otpValue()
