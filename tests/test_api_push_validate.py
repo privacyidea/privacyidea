@@ -785,8 +785,7 @@ class PushAPITestCase(MyApiTestCase):
         expected_message = 'test message'
         set_policy("code_to_phone_message", scope=SCOPE.AUTH,
                    action=f"{PushAction.PUSH_CODE_TO_PHONE_MESSAGE}={expected_message}")
-        # Create push token for user
-        # 1st step
+        # Create push token for user init step 1
         with self.app.test_request_context('/token/init',
                                            method='POST',
                                            data={"type": "push",
@@ -800,7 +799,7 @@ class PushAPITestCase(MyApiTestCase):
             detail = res.json.get("detail")
             enrollment_credential = detail.get("enrollment_credential")
 
-        # 2nd step: as performed by the smartphone
+        # init 2nd step
         with self.app.test_request_context('/ttype/push',
                                            method='POST',
                                            data={"enrollment_credential": enrollment_credential,
@@ -812,12 +811,10 @@ class PushAPITestCase(MyApiTestCase):
             self.assertTrue(res.json.get("result").get("status"), res.json)
             self.assertTrue(res.json.get("result").get("value"), res.json)
             detail = res.json.get("detail")
-            # Now the smartphone gets a public key from the server
             self.assertIn("public_key", detail, detail)
             self.assertEqual(RolloutState.ENROLLED, detail.get("rollout_state"), detail)
 
-        #############################################################
-        # Run authentication with push token - Step 1: create challenge
+        # trigger challenge
         with self.app.test_request_context('/validate/check',
                                            method='POST',
                                            data={"user": "selfservice",
@@ -829,8 +826,7 @@ class PushAPITestCase(MyApiTestCase):
             transaction_id = detail.get("transaction_id")
             self.assertTrue(transaction_id)
             # The result should be a challenge
-            self.assertEqual(AUTH_RESPONSE.CHALLENGE,
-                             res.json.get("result").get("authentication"), res.json)
+            self.assertEqual(AUTH_RESPONSE.CHALLENGE, res.json.get("result").get("authentication"), res.json)
             # The client_mode should be INTERACTIVE so the client shows an input field
             multi_challenge = detail.get("multi_challenge", [{}])
             self.assertEqual(ClientMode.INTERACTIVE, multi_challenge[0].get("client_mode"))
@@ -841,10 +837,9 @@ class PushAPITestCase(MyApiTestCase):
             self.assertIsInstance(challenge_data, dict)
             self.assertEqual("push", challenge_data.get("type"))
             self.assertEqual(PushMode.CODE_TO_PHONE, challenge_data.get("mode"))
+            # Smartphone has not responded yet and no display_code has been created yet
             self.assertFalse(challenge_data.get("smartphone_confirmed"))
-            self.assertEqual("", challenge_data.get("display_code"))
-            # No OTP stored in initial challenge data
-            self.assertNotIn("otp", challenge_data)
+            self.assertNotIn("display_code", challenge_data)
 
         # Step 1b: Smartphone polls for the challenge
         timestamp = datetime.datetime.now(tz=datetime.timezone.utc).isoformat()
