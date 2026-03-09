@@ -119,8 +119,7 @@ export interface ContainerTemplate {
   default: boolean;
   name: string;
   template_options: {
-    options: any;
-    tokens: Array<any>;
+    tokens: Array<Object>;
   };
 }
 

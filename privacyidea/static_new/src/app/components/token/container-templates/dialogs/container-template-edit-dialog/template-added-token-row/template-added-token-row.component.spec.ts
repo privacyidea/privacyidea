@@ -18,11 +18,11 @@
  **/
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { ContainerTemplateService } from "../../../../../services/container-template/container-template.service";
+import { ContainerTemplateService } from "../../../../../../services/container-template/container-template.service";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { MockContainerTemplateService } from "../../../../../../testing/mock-services/mock-container-template-service";
+import { MockContainerTemplateService } from "../../../../../../../testing/mock-services/mock-container-template-service";
 import { TemplateAddedTokenRowComponent } from "./template-added-token-row.component";
 import { ContainerTemplateEditComponent } from "../container-template-edit/container-template-edit.component";
 

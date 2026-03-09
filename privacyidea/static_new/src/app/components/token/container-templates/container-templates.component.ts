@@ -16,14 +16,12 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-
 import { SelectionModel } from "@angular/cdk/collections";
 import { CommonModule } from "@angular/common";
-import { Component, computed, effect, inject, input, model, signal } from "@angular/core";
+import { Component, computed, effect, inject, signal } from "@angular/core";
 import { MatCheckbox } from "@angular/material/checkbox";
-import { MatExpansionModule } from "@angular/material/expansion";
 import { MatIconModule } from "@angular/material/icon";
-import { MatTableDataSource, MatTableModule } from "@angular/material/table";
+import { MatTableModule } from "@angular/material/table";
 import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
 import {
   ContainerTemplateService,
@@ -32,37 +30,49 @@ import {
 import { ContainerTemplate } from "../../../services/container/container.service";
 import { ContainerTemplatesTableActionsComponent } from "./container-templates-table-actions/container-templates-table-actions.component";
 import { ContainerTemplatesFilterComponent } from "./container-templates-filter/container-templates-filter.component";
-import { ViewTemplateOptionsComponent } from "./view-template-options/view-template-options.component";
 import { FilterValueGeneric } from "src/app/core/models/filter_value_generic/filter-value-generic";
 import { FilterOption } from "src/app/core/models/filter_value_generic/filter-option";
 import { DialogService, DialogServiceInterface } from "src/app/services/dialog/dialog.service";
-import { ContainerTemplateEditComponent } from "./dialogs/container-template-edit/container-template-edit.component";
-import { MatSortModule, Sort } from "@angular/material/sort";
+import { MatSortModule } from "@angular/material/sort";
 import { MatButtonModule } from "@angular/material/button";
+import { ContainerTemplateEditDialogComponent } from "./dialogs/container-template-edit-dialog/container-template-edit-dialog.component";
+import { ViewTemplateTokensComponent } from "./view-template-tokens/view-template-tokens.component";
 
 const containerTemplateFilterOptions: FilterOption<ContainerTemplate>[] = [
   new FilterOption<ContainerTemplate>({
     key: "name",
     label: $localize`Name`,
     matches: (item, filter) => {
-      const val = filter.getValueOfKey("scope");
-      return !val || item.name.toLowerCase().includes(val.toLowerCase());
+      const filterValue = filter.getFilterOfKey("scope");
+      return !filterValue || item.name.toLowerCase().includes(filterValue.toLowerCase());
     }
   }),
   new FilterOption<ContainerTemplate>({
     key: "container_type",
     label: $localize`Container Type`,
     matches: (item, filter) => {
-      const val = filter.getValueOfKey("type");
-      return !val || item.container_type.toLowerCase().includes(val.toLowerCase());
+      const filterValue = filter.getFilterOfKey("type");
+      return !filterValue || item.container_type.toLowerCase().includes(filterValue.toLowerCase());
     }
   }),
   new FilterOption<ContainerTemplate>({
     key: "default",
     label: $localize`Default`,
     matches: (item, filter) => {
-      const val = filter.getValueOfKey("default");
-      return !val || (val === "true" ? item.default === true : item.default === false);
+      const filterValue = filter.getFilterOfKey("default");
+      return !filterValue || (filterValue === "true" ? item.default === true : item.default === false);
+    }
+  }),
+  new FilterOption<ContainerTemplate>({
+    key: "tokens",
+    label: $localize`Tokens`,
+    matches: (item, filter) => {
+      const filterString = filter.getFilterOfKey("tokens");
+      if (!filterString) return true;
+      if (!item.template_options.tokens) return false;
+      return item.template_options.tokens.some((token) =>
+        Object.values(token).some((val) => val?.toString().toLowerCase().includes(filterString.toLowerCase()))
+      );
     }
   })
 ];
@@ -72,7 +82,6 @@ const containerTemplateFilterOptions: FilterOption<ContainerTemplate>[] = [
   standalone: true,
   imports: [
     CommonModule,
-    MatExpansionModule,
     MatIconModule,
     MatButtonModule,
     MatTableModule,
@@ -80,81 +89,65 @@ const containerTemplateFilterOptions: FilterOption<ContainerTemplate>[] = [
     ContainerTemplatesFilterComponent,
     ContainerTemplatesTableActionsComponent,
     MatCheckbox,
-    ViewTemplateOptionsComponent
+    ViewTemplateTokensComponent
   ],
   templateUrl: "./container-templates.component.html",
   styleUrl: "./container-templates.component.scss"
 })
 export class ContainerTemplatesComponent {
+  // Services
   readonly containerTemplateService: ContainerTemplateServiceInterface = inject(ContainerTemplateService);
   readonly authService: AuthServiceInterface = inject(AuthService);
   readonly dialogService: DialogServiceInterface = inject(DialogService);
 
-  readonly containerTemplates = computed(() => {
-    const templates = this.containerTemplateService.templates();
-    const filter = this.filter();
-    return templates;
-  });
+  // Signals
   readonly filter = signal<FilterValueGeneric<ContainerTemplate>>(
     new FilterValueGeneric({ availableFilters: containerTemplateFilterOptions })
   );
 
-  readonly selectedContainerTemplates = signal<ContainerTemplate[]>([]);
+  // Selection Model
+  readonly selection = new SelectionModel<ContainerTemplate>(true, [], true, (a, b) => a.name === b.name);
 
-  readonly dataSource = computed(() => {
-    const templates = this.containerTemplates();
-    console.log("Templates in dataSource computation:", templates);
-    return new MatTableDataSource(templates);
-  });
-
-  readonly sort = signal<Sort>({ active: "", direction: "" });
-  readonly selection = new SelectionModel<ContainerTemplate>(true, []);
-
+  // Table Configuration
   readonly columns = {
-    name: { label: "Name", sortable: true, filterable: true },
-    container_type: { label: "Container Type", sortable: false, filterable: true },
-    default: { label: "Default", sortable: false, filterable: true },
-    options: { label: "Options", sortable: false, filterable: true }
+    name: { label: "Name", filterable: true },
+    container_type: { label: "Container Type", filterable: true },
+    default: { label: "Default", filterable: true },
+    tokens: { label: "Tokens", filterable: true }
   } as const;
 
-  readonly keepOrder = () => 0;
+  // Computed Properties
+  readonly filteredContainerTemplates = computed(() => {
+    const templates = this.containerTemplateService.templates();
+    return this.filter().hasActiveFilters ? this.filter().filterItems(templates) : templates;
+  });
 
-  constructor() {
-    effect(() => {
-      this.selectedContainerTemplates.set(this.selection.selected);
-    });
-  }
-
+  // Column Handling
   get displayedColumns(): string[] {
     return ["select", ...Object.keys(this.columns)];
   }
 
+  readonly keepOrder = () => 0;
+
+  // Selection Logic
   isAllSelected(): boolean {
-    const numSelected = this.selection.selected.length;
-    const numRows = this.dataSource().data.length;
-    return numSelected === numRows;
+    return this.selection.selected.length === this.filteredContainerTemplates().length;
   }
 
   toggleAllRows(): void {
     if (this.isAllSelected()) {
       this.selection.clear();
-      return;
+    } else {
+      this.selection.select(...this.filteredContainerTemplates());
     }
-    this.selection.select(...this.dataSource().data);
   }
 
+  // Filtering Logic
   onClickFilter(filterKey: string): void {
-    const newFilter = this.filter().toggleKey(filterKey);
-    this.filter.set(newFilter);
+    this.filter.set(this.filter().toggleKey(filterKey));
   }
 
-  openEditDialog(template: ContainerTemplate): void {
-    this.dialogService.openDialog({
-      component: ContainerTemplateEditComponent
-    });
-  }
-
-  public getFilterIconName(columnKey: string): string {
+  getFilterIconName(columnKey: string): string {
     const actionType =
       containerTemplateFilterOptions.find((o) => o.key === columnKey)?.getActionType?.(this.filter()) ?? "none";
     switch (actionType) {
@@ -164,10 +157,16 @@ export class ContainerTemplatesComponent {
         return "filter_alt_off";
       case "change":
         return "screen_rotation_alt";
-      case "none":
-        return "";
       default:
         return "filter_alt";
     }
+  }
+
+  // Dialog Handling
+  openEditDialog(template: ContainerTemplate): void {
+    this.dialogService.openDialog({
+      component: ContainerTemplateEditDialogComponent,
+      data: template
+    });
   }
 }

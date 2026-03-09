@@ -1,5 +1,19 @@
 /**
  * (c) NetKnights GmbH 2026,  https://netknights.it
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
@@ -241,7 +255,7 @@ const policyFilterOptions = [
     key: "priority",
     label: $localize`Priority`,
     matches: (item, filter) => {
-      const val = filter.getValueOfKey("priority");
+      const val = filter.getFilterOfKey("priority");
       if (!val) return true;
       const priority = item.priority;
       try {
@@ -265,17 +279,17 @@ const policyFilterOptions = [
     key: "active",
     label: $localize`Active`,
     toggle: (filter) => {
-      const v = filter.getValueOfKey("active")?.toLowerCase();
+      const v = filter.getFilterOfKey("active")?.toLowerCase();
       if (v === "true") return filter.setValueOfKey("active", "false");
       if (v === "false") return filter.removeKey("active");
       return filter.setValueOfKey("active", "true");
     },
     getActionType: (filter) => {
-      const v = filter.getValueOfKey("active")?.toLowerCase();
+      const v = filter.getFilterOfKey("active")?.toLowerCase();
       return v === "true" ? "change" : v === "false" ? "remove" : "add";
     },
     matches: (item, filter) => {
-      const v = filter.getValueOfKey("active")?.toLowerCase();
+      const v = filter.getFilterOfKey("active")?.toLowerCase();
       return v === "true" ? item.active === true : v === "false" ? item.active === false : true;
     }
   }),
@@ -283,7 +297,7 @@ const policyFilterOptions = [
     key: "name",
     label: $localize`Policy Name`,
     matches: (item, filter) => {
-      const val = filter.getValueOfKey("name");
+      const val = filter.getFilterOfKey("name");
       return !val || item.name.toLowerCase().includes(val.toLowerCase());
     }
   }),
@@ -291,7 +305,7 @@ const policyFilterOptions = [
     key: "scope",
     label: $localize`Scope`,
     matches: (item, filter) => {
-      const val = filter.getValueOfKey("scope");
+      const val = filter.getFilterOfKey("scope");
       return !val || item.scope.toLowerCase().includes(val.toLowerCase());
     }
   }),
@@ -299,7 +313,7 @@ const policyFilterOptions = [
     key: "actions",
     label: $localize`Actions`,
     matches: (item, filter) => {
-      const val = filter.getValueOfKey("actions")?.toLowerCase();
+      const val = filter.getFilterOfKey("actions")?.toLowerCase();
       if (!val || !item.action) return true;
       return Object.entries(item.action).some(
         ([n, v]) => n.toLowerCase().includes(val) || String(v).toLowerCase().includes(val)
@@ -310,7 +324,7 @@ const policyFilterOptions = [
     key: "conditions",
     label: $localize`Conditions`,
     matches: (item, filter) => {
-      const val = filter.getValueOfKey("conditions")?.toLowerCase();
+      const val = filter.getFilterOfKey("conditions")?.toLowerCase();
       if (!val) return true;
       const fields = [
         item.adminrealm,

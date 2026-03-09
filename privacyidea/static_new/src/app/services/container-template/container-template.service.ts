@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -27,75 +27,62 @@ import { NotificationService, NotificationServiceInterface } from "../notificati
 import { ContainerService, ContainerServiceInterface, ContainerTemplate } from "../container/container.service";
 import { environment } from "../../../environments/environment";
 
-export interface ContainerTemplateServiceInterface {
-  availableContainerTypes: Signal<string[]>;
-
-  canSaveTemplate(template: ContainerTemplate): boolean;
-
-  containerTemplateBaseUrl: string;
-
-  deleteTemplate(name: string): void;
-
-  emptyContainerTemplate: ContainerTemplate;
-
-  getTokenTypesForContainerType(containerType: string): string[];
-
-  postTemplateEdits(template: ContainerTemplate): Promise<boolean>;
-
-  templates: WritableSignal<ContainerTemplate[]>;
-  templatesResource: HttpResourceRef<PiResponse<{ templates: ContainerTemplate[] }, unknown> | undefined>;
-  templateTokenTypes: Signal<TemplateTokenTypes>;
-  templateTokenTypesResource: HttpResourceRef<PiResponse<TemplateTokenTypes, unknown> | undefined>;
+export interface TemplateTokenType {
+  description: string;
+  token_types: string[];
 }
 
 export interface TemplateTokenTypes {
   [key: string]: TemplateTokenType;
 }
 
-export interface TemplateTokenType {
-  description: string;
-  token_types: string[];
+export interface ContainerTemplateServiceInterface {
+  containerTemplateBaseUrl: string;
+  emptyContainerTemplate: ContainerTemplate;
+  templates: WritableSignal<ContainerTemplate[]>;
+  templatesResource: HttpResourceRef<PiResponse<{ templates: ContainerTemplate[] }, unknown> | undefined>;
+  templateTokenTypes: Signal<TemplateTokenTypes>;
+  templateTokenTypesResource: HttpResourceRef<PiResponse<TemplateTokenTypes, unknown> | undefined>;
+  availableContainerTypes: Signal<string[]>;
+
+  canSaveTemplate(template: ContainerTemplate): boolean;
+  copyTemplate(template: ContainerTemplate, newName: string): Promise<boolean>;
+  deleteTemplate(name: string): void;
+  getTokenTypesForContainerType(containerType: string): string[];
+  postTemplateEdits(template: ContainerTemplate): Promise<boolean>;
 }
 
 @Injectable({
   providedIn: "root"
 })
 export class ContainerTemplateService implements ContainerTemplateServiceInterface {
+  // --- Constants & Data ---
+  readonly containerTemplateBaseUrl = environment.proxyUrl + "/container/templates";
   readonly emptyContainerTemplate: ContainerTemplate = {
     container_type: "",
     default: false,
     name: "",
     template_options: {
-      options: undefined,
       tokens: []
     }
   };
 
-  authService: AuthServiceInterface = inject(AuthService);
-  availableContainerTypes = computed(() => {
-    return Object.keys(this.templateTokenTypes());
-  });
-  containerService: ContainerServiceInterface = inject(ContainerService);
-  containerTemplateBaseUrl = environment.proxyUrl + "/container/templates";
-  contentService: ContentServiceInterface = inject(ContentService);
-  http = inject(HttpClient);
+  // --- Services ---
+  readonly authService: AuthServiceInterface = inject(AuthService);
+  readonly containerService: ContainerServiceInterface = inject(ContainerService);
+  readonly contentService: ContentServiceInterface = inject(ContentService);
+  readonly http = inject(HttpClient);
+  readonly notificationService: NotificationServiceInterface = inject(NotificationService);
 
-  notificationService: NotificationServiceInterface = inject(NotificationService);
-  templatesResource = httpResource<PiResponse<{ templates: ContainerTemplate[] }>>(() => {
-    // Do not load templates if the action is not allowed.
-    if (!this.authService.actionAllowed("container_template_list")) {
+  // --- Resources ---
+  readonly templatesResource = httpResource<PiResponse<{ templates: ContainerTemplate[] }>>(() => {
+    if (!this.authService.actionAllowed("container_template_list")) return undefined;
+    if (!this.contentService.onTokensContainersCreate() && !this.contentService.onTokensContainersTemplates())
       return undefined;
-    }
-    // Only load templates on the container create route.
-    if (!this.contentService.onTokensContainersCreate() && !this.contentService.onTokensContainersTemplates()) {
-      return undefined;
-    }
 
     let params: any = {};
     if (this.containerService.selectedContainerType()) {
-      params = {
-        container_type: this.containerService.selectedContainerType()!.containerType
-      };
+      params = { container_type: this.containerService.selectedContainerType()!.containerType };
     }
 
     return {
@@ -106,22 +93,11 @@ export class ContainerTemplateService implements ContainerTemplateServiceInterfa
     };
   });
 
-  templates: WritableSignal<ContainerTemplate[]> = linkedSignal({
-    source: () => this.templatesResource.value(),
-    computation: (templatesResource, previous) => templatesResource?.result?.value?.templates ?? previous?.value ?? []
-  });
-
-  templateTokenTypes = computed<TemplateTokenTypes>(() => {
-    return this.templateTokenTypesResource.value()?.result?.value ?? {};
-  });
-
-  templateTokenTypesResource = httpResource<PiResponse<TemplateTokenTypes>>(() => {
-    if (!this.authService.actionAllowed("container_template_list")) {
+  readonly templateTokenTypesResource = httpResource<PiResponse<TemplateTokenTypes>>(() => {
+    if (!this.authService.actionAllowed("container_template_list")) return undefined;
+    if (!this.contentService.onTokensContainersCreate() && !this.contentService.onTokensContainersTemplates())
       return undefined;
-    }
-    if (!this.contentService.onTokensContainersCreate() && !this.contentService.onTokensContainersTemplates()) {
-      return undefined;
-    }
+
     return {
       url: environment.proxyUrl + `/container/template/tokentypes`,
       method: "GET",
@@ -129,20 +105,37 @@ export class ContainerTemplateService implements ContainerTemplateServiceInterfa
     };
   });
 
+  // --- Signals & Computed ---
+  readonly templates: WritableSignal<ContainerTemplate[]> = linkedSignal({
+    source: () => this.templatesResource.value(),
+    computation: (templatesResource, previous) => templatesResource?.result?.value?.templates ?? previous?.value ?? []
+  });
+
+  readonly templateTokenTypes = computed<TemplateTokenTypes>(() => {
+    return this.templateTokenTypesResource.value()?.result?.value ?? {};
+  });
+
+  readonly availableContainerTypes = computed(() => {
+    return Object.keys(this.templateTokenTypes());
+  });
+
+  // --- Public Methods ---
   canSaveTemplate(template: ContainerTemplate): boolean {
-    if (template.name.trim().length === 0) {
-      return false;
-    }
-    if (template.container_type.trim().length === 0) {
-      return false;
-    }
-    if (template.template_options.tokens.length === 0) {
-      return false;
-    }
+    if (template.name.trim().length === 0) return false;
+    if (template.container_type.trim().length === 0) return false;
+    if (template.template_options.tokens.length === 0) return false;
     return true;
   }
 
-  deleteTemplate(name: string) {
+  copyTemplate(template: ContainerTemplate, newName: string): Promise<boolean> {
+    const newTemplate: ContainerTemplate = {
+      ...template,
+      name: newName
+    };
+    return this.postTemplateEdits(newTemplate);
+  }
+
+  deleteTemplate(name: string): void {
     if (!this.authService.actionAllowed("container_template_delete")) {
       this.notificationService.openSnackBar("You are not allowed to delete container templates.");
       return;
@@ -177,6 +170,7 @@ export class ContainerTemplateService implements ContainerTemplateServiceInterfa
     const request = this.http
       .post<PiResponse<any>>(url, template, { headers: this.authService.getHeaders() })
       .pipe(shareReplay(1));
+
     request
       .pipe(
         catchError((error) => {
@@ -192,6 +186,7 @@ export class ContainerTemplateService implements ContainerTemplateServiceInterfa
           this.notificationService.openSnackBar(`Successfully saved template edits.`);
         }
       });
+
     return lastValueFrom(request.pipe(last()))
       .then(() => true)
       .catch(() => false);

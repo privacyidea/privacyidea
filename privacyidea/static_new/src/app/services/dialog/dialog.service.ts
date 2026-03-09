@@ -22,6 +22,8 @@ import { ComponentType } from "@angular/cdk/overlay";
 import { lastValueFrom, take } from "rxjs";
 import { AbstractDialogComponent } from "../../components/shared/dialog/abstract-dialog/abstract-dialog.component";
 import { SimpleConfirmationDialogComponent } from "../../components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { ContainerTemplateDeleteDialogComponent } from "@components/token/container-templates/dialogs/container-template-delete-dialog/container-template-delete-dialog.component";
+import { ContainerTemplate } from "../container/container.service";
 
 export interface DialogServiceInterface {
   closeDialog<R>(ref: MatDialogRef<AbstractDialogComponent<any, R>, R>, result?: R): boolean;
@@ -30,7 +32,11 @@ export interface DialogServiceInterface {
     data?: D;
     configOverride?: Partial<MatDialogConfig<D>>;
   }): MatDialogRef<AbstractDialogComponent<D, R>, R>;
-
+  openDialogAsync<D, R>(arg0: {
+    component: ComponentType<AbstractDialogComponent<D, R>>;
+    data: D;
+    configOverride?: Partial<MatDialogConfig<D>>;
+  }): Promise<R | undefined>;
   closeLatestDialog(): void;
   closeAllDialogs(): void;
   isAnyDialogOpen(): boolean;
@@ -80,6 +86,15 @@ export class DialogService implements DialogServiceInterface {
       });
 
     return dialogRef;
+  }
+
+  async openDialogAsync<D, R>(args: {
+    component: ComponentType<AbstractDialogComponent<D, R>>;
+    data: D;
+    configOverride?: Partial<MatDialogConfig<D>>;
+  }): Promise<R | undefined> {
+    const dialogRef = this.openDialog(args);
+    return lastValueFrom(dialogRef.afterClosed());
   }
 
   /**

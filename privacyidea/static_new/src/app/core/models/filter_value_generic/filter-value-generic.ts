@@ -6,15 +6,29 @@
  * as published by the Free Software Foundation; either
  * version 3 of the License, or any later version.
  *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
+import { ContainerTemplate } from "src/app/services/container/container.service";
 import { FilterOption, DummyFilterOption } from "./filter-option";
 
 export class FilterValueGeneric<T> {
   readonly filterMap: Map<string, FilterOption<T>>;
   readonly hiddenFilterMap: Map<string, FilterOption<T>>;
+  readonly allFilters: FilterOption<T>[];
   readonly availableFilters: Map<string, FilterOption<T>>;
+
+  get hasActiveFilters(): boolean {
+    return this.filterMap.size > 0 || this.hiddenFilterMap.size > 0;
+  }
 
   constructor(
     args:
@@ -39,6 +53,7 @@ export class FilterValueGeneric<T> {
     }
     this.filterMap = args.filterMap ?? new Map<string, FilterOption<T>>();
     this.hiddenFilterMap = args.hiddenFilterMap ?? new Map<string, FilterOption<T>>();
+    this.allFilters = [...this.filterMap.values(), ...this.hiddenFilterMap.values()];
   }
 
   get isEmpty(): boolean {
@@ -88,12 +103,23 @@ export class FilterValueGeneric<T> {
     });
   }
 
+  matches(item: T): boolean {
+    console.log("Matching item", item, "against filters", this.allFilters);
+    return this.allFilters.every((filter) => {
+      const match = filter.matches(item, this);
+      console.log(`Filter ${filter.key} with value ${filter.value} ${match ? "matches" : "does not match"} item`, item);
+      return match;
+    });
+  }
+
   filterItems(unfiltered: T[]): T[] {
     if (!unfiltered?.length) return [];
     if (this.isEmpty && this.hiddenIsEmpty) return unfiltered;
 
-    const allFilters = [...this.filterMap.values(), ...this.hiddenFilterMap.values()];
-    return unfiltered.filter((item) => allFilters.every((filter) => filter.matches(item, this)));
+    console.log("Unfiltered items", unfiltered);
+    const filtered = unfiltered.filter((item) => this.matches(item));
+    console.log("Filtered items", filtered);
+    return filtered;
   }
 
   public addKey(key: string): FilterValueGeneric<T> {
@@ -128,7 +154,7 @@ export class FilterValueGeneric<T> {
   /**
    * Safe lookup that distinguishes between null (key exists, no value) and undefined.
    */
-  public getValueOfKey(key: string): string | null | undefined {
+  public getFilterOfKey(key: string): string | null | undefined {
     if (this.filterMap.has(key)) return this.filterMap.get(key)!.value;
     if (this.hiddenFilterMap.has(key)) return this.hiddenFilterMap.get(key)!.value;
     return undefined;

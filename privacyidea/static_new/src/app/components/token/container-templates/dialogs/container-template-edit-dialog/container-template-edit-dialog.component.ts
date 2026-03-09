@@ -1,0 +1,175 @@
+/**
+ * (c) NetKnights GmbH 2026,  https://netknights.it
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * SPDX-License-Identifier: AGPL-3.0-or-later
+ **/
+
+import { Component, inject, computed, linkedSignal, Signal } from "@angular/core";
+import { CommonModule } from "@angular/common";
+import { FormsModule } from "@angular/forms";
+import { MatButtonModule } from "@angular/material/button";
+import { MatCardModule } from "@angular/material/card";
+import { MatFormFieldModule } from "@angular/material/form-field";
+import { MatIconModule } from "@angular/material/icon";
+import { MatTooltipModule } from "@angular/material/tooltip";
+import { MatInputModule } from "@angular/material/input";
+import { MatCheckboxModule } from "@angular/material/checkbox";
+import { MatListModule } from "@angular/material/list";
+import {
+  ContainerTemplateServiceInterface,
+  ContainerTemplateService
+} from "../../../../../services/container-template/container-template.service";
+import { ContainerTemplate } from "../../../../../services/container/container.service";
+import { deepCopy } from "../../../../../utils/deep-copy.utils";
+import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
+import { SelectorButtonsComponent } from "@components/policies/dialogs/edit-policy-dialog/policy-panels/edit-action-tab/selector-buttons/selector-buttons.component";
+import { DialogAction } from "src/app/models/dialog";
+import { ContainerTemplateAddTokenComponent } from "./container-template-add-token-chips/container-template-add-token.component";
+import { TemplateAddedTokenRowComponent } from "./template-added-token-row/template-added-token-row.component";
+import { PendingChangesDialogComponent } from "@components/shared/dialog/abstract-dialog/pending-changes-dialog.component";
+
+@Component({
+  selector: "app-container-template-edit-dialog",
+  standalone: true,
+  imports: [
+    CommonModule,
+    MatInputModule,
+    MatCardModule,
+    MatIconModule,
+    MatButtonModule,
+    FormsModule,
+    MatTooltipModule,
+    MatFormFieldModule,
+    MatListModule,
+    DialogWrapperComponent,
+    MatCheckboxModule,
+    SelectorButtonsComponent,
+    ContainerTemplateAddTokenComponent,
+    TemplateAddedTokenRowComponent
+  ],
+  templateUrl: "./container-template-edit-dialog.component.html",
+  styleUrl: "./container-template-edit-dialog.component.scss"
+})
+export class ContainerTemplateEditDialogComponent extends PendingChangesDialogComponent<
+  ContainerTemplate | undefined,
+  ContainerTemplate
+> {
+  // --- Services ---
+  readonly containerTemplateService: ContainerTemplateServiceInterface = inject(ContainerTemplateService);
+
+  // --- State Signals ---
+  readonly template = linkedSignal<any, ContainerTemplate>({
+    source: () => ({
+      initialData: this.data ?? this.containerTemplateService.emptyContainerTemplate,
+      containerType: this.containerTemplateService.availableContainerTypes()[0] ?? ""
+    }),
+    computation: (source) => deepCopy({ ...source.initialData, container_type: source.containerType })
+  });
+
+  // --- Pending Changes Implementations ---
+  override readonly canSave = computed(() => this.canSaveTemplate());
+  override readonly isDirty = computed(() => {
+    const current = JSON.stringify(this.template());
+    const base = JSON.stringify(this.data ?? this.containerTemplateService.emptyContainerTemplate);
+    return current !== base;
+  });
+
+  override onSave(): void {
+    this.onAction("save");
+  }
+
+  // --- Computed - General State ---
+  readonly isNewTemplate = computed(() => !this.data);
+  readonly containerTypes = computed(() => this.containerTemplateService.availableContainerTypes());
+  readonly availableTokenTypes = computed(() =>
+    this.containerTemplateService.getTokenTypesForContainerType(this.template().container_type)
+  );
+
+  // --- Computed - Tokens ---
+  readonly tokens = computed(() => this.template().template_options.tokens);
+  readonly hasToken = computed(() => this.tokens().length > 0);
+
+  // --- Computed - Validation & Conflict ---
+  readonly nameConflict = computed(() =>
+    this.containerTemplateService.templates().some((t) => t.name === this.template().name && t.name !== this.data?.name)
+  );
+  readonly canSaveTemplate = computed<boolean>(() => {
+    return this.containerTemplateService.canSaveTemplate(this.template()) && !this.nameConflict();
+  });
+  readonly nameErrorMatcher = {
+    isErrorState: () => this.nameConflict()
+  };
+
+  // --- Computed - Dialog Actions ---
+  readonly actions = computed<DialogAction<String>[]>(() => [
+    {
+      label: $localize`Save`,
+      value: "save",
+      icon: "save",
+      type: "confirm",
+      disabled: !this.canSaveTemplate()
+    }
+  ]);
+
+  // --- Action Handling ---
+  async onAction(action: String): Promise<void> {
+    if (action === "save") {
+      const result = await this._saveTemplate();
+      if (result) {
+        if (this.data && this.data.name !== this.template().name) {
+          this.containerTemplateService.deleteTemplate(this.data.name);
+        }
+        this.dialogRef.close(this.template());
+      }
+    }
+  }
+
+  // --- Data Modification Methods ---
+  editTemplate(templateUpdates: Partial<ContainerTemplate>) {
+    this.template.set({ ...this.template(), ...templateUpdates });
+  }
+
+  onAddToken(tokenType: string) {
+    const updatedTokens = [...this.tokens(), { type: tokenType }];
+    this.updateTokens(updatedTokens);
+  }
+
+  onEditToken(patch: Partial<any>, index: number) {
+    const updatedTokens = this.tokens().map((token, i) => (i === index ? { ...token, ...patch } : token));
+    this.updateTokens(updatedTokens);
+  }
+
+  onDeleteToken(index: number) {
+    this.updateTokens(this.tokens().filter((_, i) => i !== index));
+  }
+
+  // --- Private Helper Methods ---
+  private updateTokens(tokens: any[]) {
+    this.editTemplate({
+      template_options: {
+        ...this.template().template_options,
+        tokens
+      }
+    });
+  }
+
+  private async _saveTemplate(): Promise<boolean> {
+    if (this.canSaveTemplate()) {
+      return this.containerTemplateService.postTemplateEdits(this.template());
+    }
+    return false;
+  }
+}

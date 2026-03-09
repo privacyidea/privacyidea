@@ -17,22 +17,22 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { ContainerTemplateAddTokenChipsComponent } from "./container-template-add-token-chips.component";
+import { ContainerTemplateAddTokenComponent } from "./container-template-add-token.component";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { provideHttpClient } from "@angular/common/http";
 
 describe("ContainerTemplateAddTokenChipsComponent", () => {
-  let component: ContainerTemplateAddTokenChipsComponent;
-  let fixture: ComponentFixture<ContainerTemplateAddTokenChipsComponent>;
+  let component: ContainerTemplateAddTokenComponent;
+  let fixture: ComponentFixture<ContainerTemplateAddTokenComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ContainerTemplateAddTokenChipsComponent, NoopAnimationsModule],
+      imports: [ContainerTemplateAddTokenComponent, NoopAnimationsModule],
       providers: [provideHttpClient(), provideHttpClientTesting()]
     }).compileComponents();
 
-    fixture = TestBed.createComponent(ContainerTemplateAddTokenChipsComponent);
+    fixture = TestBed.createComponent(ContainerTemplateAddTokenComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

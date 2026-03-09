@@ -1,0 +1,18 @@
+@if (templateTokens() && templateTokens()!.length > 0) {
+  <div class="template-tokens-container">
+    @for (token of templateTokens(); track token) {
+      <div class="token-container">
+        @if (token.type) {
+          <span class="token-item"> <strong i18n> Type:</strong>&nbsp;{{ token.type }} </span>
+        }
+        @for (entry of token | keyvalue; track entry.key) {
+          @if (entry.key !== "type") {
+            <span class="token-item">
+              <strong>{{ entry.key }}:</strong>&nbsp;{{ entry.value }}
+            </span>
+          }
+        }
+      </div>
+    }
+  </div>
+}

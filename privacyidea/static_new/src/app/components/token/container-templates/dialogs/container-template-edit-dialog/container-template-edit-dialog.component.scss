@@ -7,38 +7,20 @@
   display: flex;
   flex-direction: column;
   gap: var(--global-gap);
+  width: 1434px;
+  height: 600px;
+  overflow-y: clip;
 }
 
 .default-template-card-row {
   display: flex;
   flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-  background-color: var(--mat-sys-surface-container-low) !important;
-  padding: 0 16px;
+  padding: 0 var(--global-padding);
   border-radius: var(--border-radius);
-  min-height: 64px;
 
-  .template-name-container {
+  mat-form-field {
+    --mdc-filled-text-field-container-color: transparent;
     flex: 1;
-    margin-right: 24px;
-    align-content: center;
-
-    .template-name-input {
-      background-color: transparent;
-      border: none;
-      border-bottom: 1px solid var(--mat-sys-outline-variant);
-      border-radius: 0;
-      box-sizing: border-box;
-      font-size: 1rem;
-      width: 100%;
-      padding: var(--half-global-padding) 0;
-
-      &:focus {
-        outline: none;
-        border-bottom-color: var(--mat-sys-primary);
-      }
-    }
   }
 
   mat-card-content {
@@ -62,10 +44,6 @@
     width: 100%;
     max-width: 300px;
   }
-
-  ::ng-deep .mat-mdc-select-trigger {
-    border-bottom: 1px solid var(--mat-sys-outline-variant);
-  }
 }
 
 .template-actions {
@@ -80,8 +58,18 @@
   }
 }
 
+.flex-fix-size {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--global-gap);
+}
+
 .added-tokens-list {
+  flex: 1;
   display: flex;
   flex-direction: column;
   gap: var(--half-global-gap);
+  overflow: auto;
+  padding: var(--half-global-padding);
 }

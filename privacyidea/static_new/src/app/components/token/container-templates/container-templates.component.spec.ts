@@ -24,7 +24,7 @@ import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { MockContainerTemplateService } from "../../../../testing/mock-services";
 import { ContainerTemplateService } from "../../../services/container-template/container-template.service";
 import { ContainerTemplatesComponent } from "./container-templates.component";
-import { ContainerTemplateEditComponent } from "./dialogs/container-template-edit/container-template-edit.component";
+import { ContainerTemplateEditDialogComponent } from "./dialogs/container-template-edit-dialog/container-template-edit-dialog.component";
 
 describe("ContainerTemplatesComponent", () => {
   let component: ContainerTemplatesComponent;
@@ -33,7 +33,7 @@ describe("ContainerTemplatesComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ContainerTemplatesComponent, NoopAnimationsModule, ContainerTemplateEditComponent],
+      imports: [ContainerTemplatesComponent, NoopAnimationsModule, ContainerTemplateEditDialogComponent],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),

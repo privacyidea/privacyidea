@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -24,20 +24,20 @@ import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ContainerTemplateService } from "../../../../../services/container-template/container-template.service";
 import { MockContainerTemplateService } from "../../../../../../testing/mock-services/mock-container-template-service";
-import { ContainerTemplateNewComponent } from "./container-template-new.component";
+import { ContainerTemplateEditDialogComponent } from "./container-template-edit-dialog.component";
 import { HarnessLoader } from "@angular/cdk/testing";
 import { TestbedHarnessEnvironment } from "@angular/cdk/testing/testbed";
 import { MatExpansionPanelHarness } from "@angular/material/expansion/testing";
 
 describe("ContainerTemplateNewComponent", () => {
-  let component: ContainerTemplateNewComponent;
-  let fixture: ComponentFixture<ContainerTemplateNewComponent>;
+  let component: ContainerTemplateEditDialogComponent;
+  let fixture: ComponentFixture<ContainerTemplateEditDialogComponent>;
   let templateServiceMock: MockContainerTemplateService;
   let loader: HarnessLoader;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ContainerTemplateNewComponent, NoopAnimationsModule, MatExpansionModule],
+      imports: [ContainerTemplateEditDialogComponent, NoopAnimationsModule, MatExpansionModule],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
@@ -45,7 +45,7 @@ describe("ContainerTemplateNewComponent", () => {
       ]
     }).compileComponents();
 
-    fixture = TestBed.createComponent(ContainerTemplateNewComponent);
+    fixture = TestBed.createComponent(ContainerTemplateEditDialogComponent);
     templateServiceMock = TestBed.inject(ContainerTemplateService) as unknown as MockContainerTemplateService;
     component = fixture.componentInstance;
     loader = TestbedHarnessEnvironment.loader(fixture);
