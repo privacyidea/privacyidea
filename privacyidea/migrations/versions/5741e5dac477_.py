@@ -51,7 +51,20 @@ def upgrade():
 
 
 def downgrade():
-    op.drop_table('description')
+    try:
+        op.drop_table('description')
+    except (OperationalError, ProgrammingError) as exx:
+        msg = str(exx.orig).lower()
+        if "no such table" in msg or "unknown table" in msg or "does not exist" in msg:
+            print("Table 'description' already removed.")
+        else:
+            raise
     seq = Sequence('description_seq')
     if context.get_context().dialect.supports_sequences:
-        op.execute(DropSequence(seq))
+        try:
+            op.execute(DropSequence(seq))
+        except (OperationalError, ProgrammingError) as exx:
+            if "does not exist" in str(exx.orig).lower():
+                print(f"Sequence '{seq.name}' already removed.")
+            else:
+                raise

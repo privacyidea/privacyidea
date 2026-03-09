@@ -82,11 +82,12 @@ def downgrade():
         op.drop_column('tokencontainer', 'template_id')
     except (OperationalError, ProgrammingError) as exx:
         msg = str(exx.orig).lower()
-        if "no such column" in msg or "does not exist" in msg:
+        if "no such column" in msg or "does not exist" in msg or "check that it exists" in msg:
             print("Column 'template_id' already removed.")
         else:
             print("Could not remove column 'template_id' from table 'tokencontainer'.")
             print(exx)
+            raise
 
     try:
         op.drop_table('tokencontainertemplate')

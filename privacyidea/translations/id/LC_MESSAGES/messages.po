@@ -3,40 +3,40 @@
 # This file is distributed under the same license as the privacyIDEA
 # project.
 # FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
-# Tomasss <tomasss1024+weblate.org-privacyidea@gmail.com>, 2026.
+# Arif Budiman <arifpedia@gmail.com>, 2026.
 msgid ""
 msgstr ""
 "Project-Id-Version: privacyIDEA VERSION\n"
 "Report-Msgid-Bugs-To: translations@privacyidea.org\n"
 "POT-Creation-Date: 2025-09-05 15:12+0200\n"
 "PO-Revision-Date: 2026-03-06 04:09+0000\n"
-"Last-Translator: Tomasss <tomasss1024+weblate.org-privacyidea@gmail.com>\n"
-"Language-Team: Slovak <https://hosted.weblate.org/projects/privacyidea/"
-"privacyidea-server/sk/>\n"
-"Language: sk\n"
+"Last-Translator: Arif Budiman <arifpedia@gmail.com>\n"
+"Language-Team: Indonesian <https://hosted.weblate.org/projects/privacyidea/"
+"privacyidea-server/id/>\n"
+"Language: id\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=3; plural=((n==1) ? 0 : (n>=2 && n<=4) ? 1 : 2);\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
 "X-Generator: Weblate 5.17-dev\n"
 "Generated-By: Babel 2.17.0\n"
 
 #: api/auth.py:256
 msgid "Authentication with passkey disabled."
-msgstr "Autentifikácia cez passkey je vypnutá."
+msgstr ""
 
 #: api/auth.py:261
 msgid "Authentication failure. The passkey is not registered."
-msgstr "Autentifikácia zlyhala. Passkey nie je registrované."
+msgstr ""
 
 #: api/auth.py:273
 msgid "Authentication failure. Token has no user."
-msgstr "Autentifikácia zlyhala. Tokenu nie je priradený používateľ."
+msgstr ""
 
 #: api/auth.py:277
 #, python-brace-format
 msgid "Authentication failure. The token type {token_type} is disabled."
-msgstr "Autentifikácia zlyhala. Token typu {token_type} je vypnutý."
+msgstr ""
 
 #: api/auth.py:282
 #, python-brace-format
@@ -44,59 +44,55 @@ msgid ""
 "Authentication failure. Last authentication policy check failed for token"
 " {serial}"
 msgstr ""
-"Autentifikácia zlyhala. Posledná kontrola pravidiel overovania zlyhala pre "
-"token {serial}"
 
 #: api/auth.py:294
 msgid "Authentication failure using passkey."
-msgstr "Autentifikácia passkey zlyhala."
+msgstr ""
 
 #: api/auth.py:299
 msgid "Authentication failure. Unknown realm:"
-msgstr "Autentifikácia zlyhala. Neznáma doména:"
+msgstr ""
 
 #: api/auth.py:303
 msgid "Authentication failure. Missing Username"
-msgstr "Autentifikácia zlyhala. Chýbajúce meno"
+msgstr ""
 
 #: api/auth.py:437
 msgid "Authentication failure. Wrong credentials"
-msgstr "Autentifikácia zlyhala. Zlé prihlasovacie údaje"
+msgstr ""
 
 #: api/realm.py:530
 msgid "The given node does not exist!"
-msgstr "Daný sever neexistuje!"
+msgstr ""
 
 #: api/realm.py:536 api/realm.py:546
 msgid "Could not verify data in request!"
-msgstr "Nie je možné overiť údaje z požiadavky!"
+msgstr ""
 
 #: api/validate.py:443
 msgid "Cancelled enrollment via multichallenge"
-msgstr "Zrušená registrácia prostredníctvom multichallenge"
+msgstr ""
 
 #: api/validate.py:445
 msgid "Cancelled enrollment via multichallenge for transaction_id "
-msgstr "Zrušená registrácia prostredníctvom multichallenge pre transaction_id "
+msgstr ""
 
 #: api/validate.py:448
 msgid "Failed to cancel enrollment via multichallenge"
-msgstr "Zrušenie registrácie prostredníctvom multichallenge výzvy zlyhalo"
+msgstr ""
 
 #: api/validate.py:450
 msgid "Failed to cancel enrollment via multichallenge for transaction_id "
 msgstr ""
-"Zrušenie registrácie prostredníctvom multichallenge pre transaction_id "
-"zlyhalo "
 
 #: api/validate.py:500
 #, python-brace-format
 msgid "Last authentication policy check failed for token {serial}"
-msgstr "Posledná kontrola pravidiel overovania zlyhala pre token {serial}"
+msgstr ""
 
 #: api/validate.py:519 lib/token.py:2636
 msgid "Found matching challenge"
-msgstr "Nájdená zopovedajúca výzva"
+msgstr ""
 
 #: api/lib/postpolicy.py:100
 #, python-brace-format
@@ -113,25 +109,25 @@ msgstr ""
 
 #: api/lib/postpolicy.py:911
 msgid "Please scan the QR code to register the container."
-msgstr "Prosím naskenuj QR kód pre registráciu kontajnera."
+msgstr ""
 
 #: api/lib/prepolicy.py:2884
 msgid ""
 "Authentication failure. The account has exceeded the authentication time "
 "limit!"
-msgstr "Autentifikácia zlyhala. Účtu vypršal časový limit pre autentifikáciu!"
+msgstr ""
 
 #: api/lib/utils.py:401
 msgid "Authentication failure. Missing Authorization header."
-msgstr "Autentifikácia zlyhala. Chýbajúca autorizačná hlavička."
+msgstr ""
 
 #: api/lib/utils.py:406 api/lib/utils.py:437
 msgid "Authentication failure. Error decoding the Authorization token:"
-msgstr "Autentifikácia zlyhala. Zlyhalo dekódovanie autorizačného tokenu:"
+msgstr ""
 
 #: api/lib/utils.py:430 api/lib/utils.py:440
 msgid "Authentication failure. Your token has expired:"
-msgstr "Autentifikácia zlyhala. Vášmu tokenu vypršala platnosť:"
+msgstr ""
 
 #: api/lib/utils.py:443
 #, python-brace-format
@@ -139,8 +135,6 @@ msgid ""
 "Authentication failure. The username {wrong_username} is not allowed to "
 "impersonate via JWT."
 msgstr ""
-"Autentifikácia zlyhala. . Používateľské meno {wrong_username} nie je možné "
-"stotožniť pomocou JWT."
 
 #: api/lib/utils.py:448
 #, python-brace-format
@@ -148,54 +142,50 @@ msgid ""
 "Authentication failure. You do not have the necessary role "
 "({required_role}) to access this resource!"
 msgstr ""
-"Autentifikácia zlyhala. Nemáte potrebnú rolu ({required_role}) pre prístup k "
-"zdrojom!"
 
 #: api/lib/utils.py:465
 msgid "Invalid policy name:"
-msgstr "Neplatný názov politiky:"
+msgstr ""
 
 #: api/lib/utils.py:468
 msgid "The name of the policy may only contain the characters a-zA-Z0-9_. -"
-msgstr "Názov politiky môže byť iba zo znakov a-zA-Z0-9_. -"
+msgstr ""
 
 #: lib/challengeresponsedecorators.py:150
 msgid "Please enter the new PIN again"
-msgstr "Prosím znovu zadajte nový PIN"
+msgstr ""
 
 #: lib/challengeresponsedecorators.py:164
 msgid "Please enter a new PIN"
-msgstr "Prosím vložte nový PIN"
+msgstr ""
 
 #: lib/challengeresponsedecorators.py:202
 msgid "To resync your token, please enter the next OTP value"
-msgstr "Pre synchronizáciu tokenu zadajte další jednorázový kód"
+msgstr ""
 
 #: lib/containerclass.py:868
 msgid "General purpose container that can hold any type and any number of token."
 msgstr ""
-"Univerzálny kontajner, ktorý môže obsahovať akýkoľvek typ a ľubovoľný počet "
-"tokenov."
 
 #: lib/decorators.py:44 lib/token.py:2490
 msgid "This action is not possible, since the token is locked"
-msgstr "Akcia nie je dostupná, pretože token je uzamknutý"
+msgstr ""
 
 #: lib/decorators.py:88
 msgid "You either need to provide user or serial"
-msgstr "Musíte vložiť používateľa alebo sériové číslo"
+msgstr ""
 
 #: lib/decorators.py:117
 msgid "You need to specify a serial, user or credential_id."
-msgstr "Musíte špecifikovať sériové číslo, použivateľa alebo credentail_id."
+msgstr ""
 
 #: lib/decorators.py:119
 msgid "Invalid serial number."
-msgstr "Chybné sériove číslo."
+msgstr ""
 
 #: lib/decorators.py:121
 msgid "Invalid user."
-msgstr "Chybný používateľ."
+msgstr ""
 
 #: lib/policy.py:218
 msgid ""
@@ -205,23 +195,23 @@ msgstr ""
 
 #: lib/policy.py:1209
 msgid "Policy does not exist:"
-msgstr "Politika neexistuje:"
+msgstr ""
 
 #: lib/policy.py:1211
 msgid "Policy already exists:"
-msgstr "Politika už existuje:"
+msgstr ""
 
 #: lib/policy.py:1374
 msgid "Invalid client definition!"
-msgstr "Chybná definícia klienta!"
+msgstr ""
 
 #: lib/policy.py:1611
 msgid "Define in which resolver the user should be registered."
-msgstr "Definuje v ktorom resolveri má byť používateľ zaregistrovaný."
+msgstr ""
 
 #: lib/policy.py:1615
 msgid "Define in which realm the user should be registered."
-msgstr "Definuje v ktorej doméne má byť používateľ zaregistrovaný."
+msgstr ""
 
 #: lib/policy.py:1619
 msgid ""
@@ -1940,7 +1930,7 @@ msgstr ""
 #: lib/eventhandler/containerhandler.py:102
 #: lib/eventhandler/containerhandler.py:124
 msgid "Description of the container"
-msgstr "Popis kontajnera"
+msgstr "Deskripsi kontainer"
 
 #: lib/eventhandler/containerhandler.py:107
 msgid "Assign container to user in request or to token/container owner"
