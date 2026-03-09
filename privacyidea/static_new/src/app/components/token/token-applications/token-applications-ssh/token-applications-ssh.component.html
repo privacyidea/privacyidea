@@ -20,17 +20,19 @@
   aria-label="Token Applications SSH"
   class="token-applications-ssh"
   i18n-aria-label>
-  <div class="details-flex-layout flex-column">
-    <div class="application-p-div">
-      <p i18n>
-        SSH Tokens can be attached to a service ID with a user. The user is the user on the SSH server and may differ
-        from the token owner. To attach the token to a service ID go to the token details.
-      </p>
-      <p i18n>
-        To define service IDs go to
-        <a ui-sref="config.serviceid">Service ID config.</a>
-      </p>
-    </div>
+  <div class="margin-left-16 margin-bottom-16">
+    <p i18n>
+      SSH Tokens can be attached to a service ID with a user. The user is the user on the SSH server and may differ from
+      the token owner.
+      <br />
+      To attach the token to a service ID go to the token details.
+    </p>
+    <p
+      class="margin-bottom-32"
+      i18n>
+      To define service IDs go to
+      <a ui-sref="config.serviceid">Service ID config.</a>
+    </p>
   </div>
   <div
     appScrollToTop
@@ -55,23 +57,6 @@
             placeholder="Example query: 'service_id: myService'" />
         </app-clearable-input>
       </mat-form-field>
-      <button
-        [matMenuTriggerFor]="advancedFilterMenu"
-        class="action-button-primary button-width-m"
-        mat-stroked-button>
-        <mat-icon> filter_list</mat-icon>
-        More Filter
-      </button>
-      <mat-menu #advancedFilterMenu="matMenu">
-        @for (keyword of machineService.advancedApiFilter; track keyword) {
-          <button
-            (click)="onAdvancedFilterClick(keyword)"
-            mat-menu-item>
-            <mat-icon class="margin-right-16">{{ getFilterIconName(keyword) }}</mat-icon>
-            {{ keyword }}
-          </button>
-        }
-      </mat-menu>
       <mat-paginator
         (page)="machineService.onPageEvent($event)"
         [length]="length()"
@@ -79,6 +64,9 @@
         [pageSizeOptions]="pageSizeOptions()"
         [pageSize]="machineService.pageSize()"
         showFirstLastButtons />
+    </div>
+    <div class="margin-bottom-16">
+      <app-token-applications-actions />
     </div>
     <table
       [dataSource]="dataSource()"

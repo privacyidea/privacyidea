@@ -20,6 +20,7 @@ import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
 import { HttpClient, HttpParams, httpResource, HttpResourceRef } from "@angular/common/http";
 import { computed, inject, Injectable, linkedSignal, Signal, WritableSignal } from "@angular/core";
+import { DOCUMENT } from "@angular/common";
 import { TableUtilsService, TableUtilsServiceInterface } from "../table-utils/table-utils.service";
 import { FilterValue } from "../../core/models/filter_value/filter_value";
 import { Observable, shareReplay } from "rxjs";
@@ -124,6 +125,12 @@ export interface MachineServiceInterface {
   onPageEvent(event: PageEvent): void;
 
   onSortEvent($event: Sort): void;
+
+  toggleFilter(filterKeyword: string): void;
+
+  getFilterIconName(keyword: string): string;
+
+  focusActiveInput(): void;
 }
 
 @Injectable({
@@ -135,6 +142,7 @@ export class MachineService implements MachineServiceInterface {
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+  private readonly document: Document = inject(DOCUMENT);
   private baseUrl = environment.proxyUrl + "/machine/";
   sshApiFilter = ["serial", "service_id"];
   offlineApiFilter = ["serial", "count", "rounds"];
@@ -395,5 +403,51 @@ export class MachineService implements MachineServiceInterface {
 
   onSortEvent($event: Sort): void {
     this.sort.set($event);
+  }
+
+  toggleFilter(filterKeyword: string): void {
+    let newValue;
+    if (filterKeyword === "machineid & resolver") {
+      const current = this.machineFilter();
+      const hasMachineId = current.hasKey("machineid");
+      const hasResolver = current.hasKey("resolver");
+
+      if (hasMachineId && hasResolver) {
+        newValue = this.tableUtilsService.toggleKeywordInFilter({ keyword: "machineid", currentValue: current });
+        newValue = this.tableUtilsService.toggleKeywordInFilter({ keyword: "resolver", currentValue: newValue });
+      } else if (!hasMachineId && !hasResolver) {
+        newValue = this.tableUtilsService.toggleKeywordInFilter({ keyword: "machineid", currentValue: current });
+        newValue = this.tableUtilsService.toggleKeywordInFilter({ keyword: "resolver", currentValue: newValue });
+      } else if (hasMachineId && !hasResolver) {
+        newValue = this.tableUtilsService.toggleKeywordInFilter({ keyword: "resolver", currentValue: current });
+      } else {
+        newValue = this.tableUtilsService.toggleKeywordInFilter({ keyword: "machineid", currentValue: current });
+      }
+    } else {
+      newValue = this.tableUtilsService.toggleKeywordInFilter({
+        keyword: filterKeyword,
+        currentValue: this.machineFilter()
+      });
+    }
+    this.machineFilter.set(newValue);
+  }
+
+  getFilterIconName(keyword: string): string {
+    if (keyword === "machineid & resolver") {
+      const current = this.machineFilter();
+      const selected = current.hasKey("machineid") && current.hasKey("resolver");
+      return selected ? "filter_alt_off" : "filter_alt";
+    }
+    const isSelected = this.machineFilter().hasKey(keyword);
+    return isSelected ? "filter_alt_off" : "filter_alt";
+  }
+
+  focusActiveInput(): void {
+    const type = this.selectedApplicationType();
+    const id = type === "ssh" ? "ssh-filter-input" : "offline-filter-input";
+    setTimeout(() => {
+      const el = this.document.getElementById(id) as HTMLInputElement | null;
+      el?.focus();
+    });
   }
 }

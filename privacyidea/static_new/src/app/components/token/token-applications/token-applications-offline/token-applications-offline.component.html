@@ -21,7 +21,7 @@
   class="token-applications-offline"
   i18n-aria-label>
   <div class="details-flex-layout flex-column">
-    <div class="application-p-div">
+    <div class="margin-left-16 margin-bottom-16">
       <p i18n>HOTP tokens can be attached with offline to e.g. notebooks.</p>
     </div>
   </div>
@@ -49,23 +49,6 @@
           placeholder="Example query: 'service_id: myService'" />
       </app-clearable-input>
     </mat-form-field>
-    <button
-      [matMenuTriggerFor]="advancedFilterMenu"
-      class="action-button-primary button-width-m"
-      mat-stroked-button>
-      <mat-icon> filter_list</mat-icon>
-      More Filter
-    </button>
-    <mat-menu #advancedFilterMenu="matMenu">
-      @for (keyword of machineService.advancedApiFilter; track keyword) {
-        <button
-          (click)="onAdvancedFilterClick(keyword)"
-          mat-menu-item>
-          <mat-icon class="margin-right-16">{{ getFilterIconName(keyword) }}</mat-icon>
-          {{ keyword }}
-        </button>
-      }
-    </mat-menu>
     <mat-paginator
       (page)="machineService.onPageEvent($event)"
       [length]="length()"
@@ -73,6 +56,9 @@
       [pageSizeOptions]="pageSizeOptions()"
       [pageSize]="machineService.pageSize()"
       showFirstLastButtons />
+  </div>
+  <div class="margin-bottom-16">
+    <app-token-applications-actions />
   </div>
   <table
     [dataSource]="dataSource()"
