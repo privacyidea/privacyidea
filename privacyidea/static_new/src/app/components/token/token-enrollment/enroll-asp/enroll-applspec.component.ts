@@ -102,10 +102,6 @@ export class EnrollApplspecComponent implements OnInit {
   serviceIdOptions = computed(() => this.serviceIdService.serviceIds().map((s) => s.servicename) || []);
   applspecErrorStateMatcher = new ApplspecErrorStateMatcher();
 
-  constructor() {
-    effect(() => (this.disabled() ? this._disableFormControls() : this._enableFormControls()));
-  }
-
   ngOnInit(): void {
     this._setInitialFormValues();
     this.additionalFormFieldsChange.emit({
