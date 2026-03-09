@@ -155,7 +155,7 @@ def downgrade():
         op.drop_column('pidea_audit', 'container_type')
     except (OperationalError, ProgrammingError) as exx:
         msg = str(exx.orig).lower()
-        if "no such column" in msg or "does not exist" in msg:
+        if "no such column" in msg or "does not exist" in msg or "check that it exists" in msg:
             print("Column 'container_type' already removed.")
         else:
             print("Could not remove column 'container_type' from table 'pidea_audit'.")
@@ -165,7 +165,7 @@ def downgrade():
         op.drop_column('pidea_audit', 'container_serial')
     except (OperationalError, ProgrammingError) as exx:
         msg = str(exx.orig).lower()
-        if "no such column" in msg or "does not exist" in msg:
+        if "no such column" in msg or "does not exist" in msg or "check that it exists" in msg:
             print("Column 'container_serial' already removed.")
         else:
             print("Could not remove column 'container_serial' from table 'pidea_audit'.")
