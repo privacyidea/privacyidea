@@ -89,11 +89,12 @@ jobs:
       env:
         TEST_DATABASE_URL: "postgresql+psycopg2://privacyidea:privacyidea@127.0.0.1:5432/privacyidea_test"
         PYTHONWARNINGS: "once::DeprecationWarning"
+        PYTHON_VERSION: ${{ matrix.python-version }}
       run: |
         pip freeze
         # Collect coverage only on the lowest Python version to avoid redundant
         # reports and reduce overhead on all other matrix jobs.
-        if [ "${{ matrix.python-version }}" = "3.10" ]; then
+        if [ "$PYTHON_VERSION" = "3.10" ]; then
           python -b -m pytest -v --cov=privacyidea --cov-report=xml -m "not migration" tests/
         else
           python -b -m pytest -v -m "not migration" tests/
