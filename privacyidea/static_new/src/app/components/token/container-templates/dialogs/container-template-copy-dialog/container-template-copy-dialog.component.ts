@@ -102,8 +102,13 @@ export class ContainerTemplateCopyDialogComponent extends PendingChangesDialogCo
     this.template.set({ ...this.template(), name: newName });
   }
 
-  onSave() {
-    this.onAction("copy");
+  async onSave() {
+    try {
+      await this.onAction("copy");
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   async onAction(action: string): Promise<void> {

@@ -19,7 +19,7 @@
 
 import { ComponentRef } from "@angular/core";
 import { MatDialogContainer, MatDialogRef, MatDialogState } from "@angular/material/dialog";
-import { Observable, of, Subject } from "rxjs";
+import { Subject } from "rxjs";
 
 type PublicPart<T> = { [K in keyof T]: T[K] };
 
@@ -41,7 +41,15 @@ export class MockMatDialogRef<T, R = any> implements PublicPart<MatDialogRef<T, 
   // --- Mocked Methods ---
   close = jest.fn((result?: R) => {
     this._beforeClosed$.next(result);
+    this._beforeClosed$.complete();
+
     this._afterClosed$.next(result);
+    this._afterClosed$.complete();
+
+    // Also complete other subjects to prevent leaks
+    this._backdropClick$.complete();
+    this._keydownEvents$.complete();
+    this._afterOpened$.complete();
   });
 
   // These methods return observables that stay silent until triggered

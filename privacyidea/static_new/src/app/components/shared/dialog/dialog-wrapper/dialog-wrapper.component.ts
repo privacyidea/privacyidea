@@ -29,7 +29,7 @@ import { MatButtonModule } from "@angular/material/button";
   selector: "app-dialog-wrapper",
   templateUrl: "./dialog-wrapper.component.html",
   standalone: true,
-  imports: [CommonModule, MatDialogModule, MatIconModule, MatButtonModule, MatIconModule],
+  imports: [CommonModule, MatDialogModule, MatIconModule, MatButtonModule],
   styleUrls: ["./dialog-wrapper.component.scss"]
 })
 export class DialogWrapperComponent<R = any> {

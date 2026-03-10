@@ -88,6 +88,15 @@ describe("PendingChangesDialogComponent", () => {
     expect(dialogRef.disableClose).toBe(true);
   });
 
+  it("should unsubscribe from backdrop clicks on destroy", () => {
+    const handleSpy = jest.spyOn(component as any, "handleCloseAttempt");
+
+    fixture.destroy();
+    backdropClickSubject.next(new MouseEvent("click"));
+
+    expect(handleSpy).not.toHaveBeenCalled();
+  });
+
   it("should close directly if not dirty when backdrop is clicked", async () => {
     component.isDirty.set(false);
 
@@ -119,6 +128,7 @@ describe("PendingChangesDialogComponent", () => {
 
     fixture.detectChanges();
     await fixture.whenStable();
+    await Promise.resolve();
     await Promise.resolve();
 
     expect(onSaveSpy).toHaveBeenCalled();

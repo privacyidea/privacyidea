@@ -17,7 +17,8 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Directive, inject, OnDestroy, OnInit, Signal } from "@angular/core";
+import { DestroyRef, Directive, inject, OnDestroy, OnInit, Signal } from "@angular/core";
+import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { DialogService, DialogServiceInterface } from "src/app/services/dialog/dialog.service";
@@ -30,6 +31,7 @@ export abstract class PendingChangesDialogComponent<D = any, R = any>
 {
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
   protected readonly pendingChangesService: PendingChangesService = inject(PendingChangesService);
+  private readonly destroyRef = inject(DestroyRef);
 
   abstract canSave: Signal<boolean>;
   abstract isDirty: Signal<boolean>;
@@ -37,16 +39,19 @@ export abstract class PendingChangesDialogComponent<D = any, R = any>
   ngOnInit(): void {
     this.pendingChangesService.registerHasChanges(this.isDirty);
     this.dialogRef.disableClose = true;
-    this.dialogRef.backdropClick().subscribe(() => {
-      this.handleCloseAttempt();
-    });
+    this.dialogRef
+      .backdropClick()
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        this.handleCloseAttempt();
+      });
   }
 
   ngOnDestroy(): void {
     this.pendingChangesService.unregisterHasChanges();
   }
 
-  abstract onSave(): Promise<boolean> | void;
+  abstract onSave(): Promise<boolean>;
 
   protected async handleCloseAttempt(): Promise<void> {
     if (!this.isDirty()) {

@@ -74,9 +74,12 @@ export class ContainerTemplateEditDialogComponent extends PendingChangesDialogCo
   readonly template = linkedSignal<any, ContainerTemplate>({
     source: () => ({
       initialData: this.data ?? this.containerTemplateService.emptyContainerTemplate,
-      containerType: this.containerTemplateService.availableContainerTypes()[0] ?? ""
+      defaultType: this.containerTemplateService.availableContainerTypes()[0] ?? ""
     }),
-    computation: (source) => deepCopy({ ...source.initialData, container_type: source.containerType })
+    computation: (source) => {
+      const type = source.initialData.container_type || source.defaultType;
+      return deepCopy({ ...source.initialData, container_type: type });
+    }
   });
 
   // --- Pending Changes Implementations ---
@@ -87,8 +90,13 @@ export class ContainerTemplateEditDialogComponent extends PendingChangesDialogCo
     return current !== base;
   });
 
-  override onSave(): void {
-    this.onAction("save");
+  override async onSave(): Promise<boolean> {
+    try {
+      await this.onAction("save");
+      return true;
+    } catch {
+      return false;
+    }
   }
 
   // --- Computed - General State ---
@@ -114,7 +122,7 @@ export class ContainerTemplateEditDialogComponent extends PendingChangesDialogCo
   };
 
   // --- Computed - Dialog Actions ---
-  readonly actions = computed<DialogAction<String>[]>(() => [
+  readonly actions = computed<DialogAction<string>[]>(() => [
     {
       label: $localize`Save`,
       value: "save",
@@ -125,7 +133,7 @@ export class ContainerTemplateEditDialogComponent extends PendingChangesDialogCo
   ]);
 
   // --- Action Handling ---
-  async onAction(action: String): Promise<void> {
+  async onAction(action: string): Promise<void> {
     if (action === "save") {
       const result = await this._saveTemplate();
       if (result) {

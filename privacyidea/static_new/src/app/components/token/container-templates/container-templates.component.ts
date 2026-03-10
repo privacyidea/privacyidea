@@ -18,7 +18,7 @@
  **/
 import { SelectionModel } from "@angular/cdk/collections";
 import { CommonModule } from "@angular/common";
-import { Component, computed, effect, inject, signal } from "@angular/core";
+import { Component, computed, inject, signal } from "@angular/core";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatIconModule } from "@angular/material/icon";
 import { MatTableModule } from "@angular/material/table";
@@ -131,7 +131,9 @@ export class ContainerTemplatesComponent {
 
   // Selection Logic
   isAllSelected(): boolean {
-    return this.selection.selected.length === this.filteredContainerTemplates().length;
+    const numSelected = this.selection.selected.length;
+    const numRows = this.filteredContainerTemplates().length;
+    return numRows > 0 && numSelected === numRows;
   }
 
   toggleAllRows(): void {

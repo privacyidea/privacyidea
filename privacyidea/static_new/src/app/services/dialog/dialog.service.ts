@@ -22,8 +22,6 @@ import { ComponentType } from "@angular/cdk/overlay";
 import { lastValueFrom, take } from "rxjs";
 import { AbstractDialogComponent } from "../../components/shared/dialog/abstract-dialog/abstract-dialog.component";
 import { SimpleConfirmationDialogComponent } from "../../components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
-import { ContainerTemplateDeleteDialogComponent } from "@components/token/container-templates/dialogs/container-template-delete-dialog/container-template-delete-dialog.component";
-import { ContainerTemplate } from "../container/container.service";
 
 export interface DialogServiceInterface {
   closeDialog<R>(ref: MatDialogRef<AbstractDialogComponent<any, R>, R>, result?: R): boolean;
