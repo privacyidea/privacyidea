@@ -11,6 +11,7 @@
   max-height: var(--max-height);
   overflow-x: hidden;
   overflow-y: auto;
+  width: 1100px;
 }
 
 .user-details {
@@ -73,24 +74,6 @@
   .value {
     grid-column: 1;
   }
-}
-
-.custom-details {
-  max-width: 1035px;
-}
-
-.token-option {
-  border: 1px solid var(--mat-sys-outline);
-  background: var(--mat-sys-surface-container-low);
-  margin: 0 1px;
-  border-radius: var(--border-radius);
-}
-
-.token-option-span {
-  background: var(--mat-sys-surface-container-lowest);
-  padding: 6px;
-  border-radius: var(--border-radius);
-  margin-right: 8px;
 }
 
 .filter-paginator-container {

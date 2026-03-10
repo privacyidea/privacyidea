@@ -57,10 +57,10 @@
 
   <div class="flex-column">
     <div class="details-header">
-      <h3 i18n>Custom Attributes:</h3>
+      <h4 i18n>Custom Attributes:</h4>
     </div>
     <div class="add-attr-row">
-      <mat-form-field class="button-width-l">
+      <mat-form-field class="input-width-l">
         <mat-label i18n>Attribute Key</mat-label>
         <div class="flex-row">
           @if (keyMode() === "select") {
@@ -97,7 +97,7 @@
         </div>
       </mat-form-field>
 
-      <mat-form-field class="button-width-l">
+      <mat-form-field class="input-width-l">
         <mat-label i18n>Attribute Value</mat-label>
 
         @if (isValueInput()) {
@@ -151,7 +151,7 @@
   <app-user-details-token-table />
 
   <div class="flex-row filter-paginator-container">
-    <mat-form-field class="width-66">
+    <mat-form-field class="width-100">
       <mat-label i18n>Assign Token to User</mat-label>
       <app-clearable-input
         (onClick)="tokenService.clearFilter()"
