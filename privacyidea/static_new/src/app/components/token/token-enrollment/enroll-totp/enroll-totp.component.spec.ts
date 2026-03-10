@@ -47,6 +47,13 @@ describe("EnrollTotpComponent", () => {
     expect(component).toBeTruthy();
   });
 
+  it("should initially have generateOnServer enabled and otpKey disabled", () => {
+    expect(component.generateOnServerFormControl.value).toBe(true);
+    expect(component.generateOnServerFormControl.disabled).toBe(false);
+    expect(component.otpKeyFormControl.value).toEqual("");
+    expect(component.otpKeyFormControl.disabled).toBe(true);
+  });
+
   it("disables generateOnServer when policy forces server-side key generation", () => {
     authService.checkForceServerGenerateOTPKey.mockReturnValue(true);
     fixture = TestBed.createComponent(EnrollTotpComponent);

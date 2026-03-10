@@ -69,6 +69,15 @@ describe("EnrollHotpComponent", () => {
     expect(component.enrollmentArgsGetterChange.emit).toHaveBeenCalledWith(component.enrollmentArgsGetter);
   });
 
+  it("should initially have generateOnServer enabled and otpKey disabled", () => {
+    createAndInit();
+
+    expect(component.generateOnServerFormControl.value).toBe(true);
+    expect(component.generateOnServerFormControl.disabled).toBe(false);
+    expect(component.otpKeyFormControl.value).toEqual("");
+    expect(component.otpKeyFormControl.disabled).toBe(true);
+  });
+
   it("disables generateOnServer when policy forces server-side key generation", () => {
     (TestBed.inject(AuthService) as unknown as MockAuthService).checkForceServerGenerateOTPKey.mockReturnValue(true);
     createAndInit();

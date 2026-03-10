@@ -42,6 +42,13 @@ describe("EnrollDaypasswordComponent", () => {
     expect(component).toBeTruthy();
   });
 
+  it("should initially have generateOnServer enabled and otpKey disabled", () => {
+    expect(component.generateOnServerControl.value).toBe(true);
+    expect(component.generateOnServerControl.disabled).toBe(false);
+    expect(component.otpKeyFormControl.value).toEqual("");
+    expect(component.otpKeyFormControl.disabled).toBe(true);
+  });
+
   describe("ngOnInit with enrollmentData input", () => {
     it("should set initial values from enrollmentData", () => {
       fixture.componentRef.setInput("enrollmentData", {

@@ -150,10 +150,12 @@ export class EnrollTotpComponent implements OnInit {
       });
     }
 
+    console.log("Force :", this.authService.checkForceServerGenerateOTPKey("totp"));
     if (this.authService.checkForceServerGenerateOTPKey("totp")) {
       this.generateOnServerFormControl.disable({ emitEvent: false });
     } else {
       this.generateOnServerFormControl.valueChanges.subscribe((generate) => {
+        console.log("Generate on server changed:", generate);
         if (!generate) {
           this.otpKeyFormControl.enable({ emitEvent: false });
           this.otpKeyFormControl.setValidators([Validators.required, Validators.minLength(16)]);
@@ -201,7 +203,13 @@ export class EnrollTotpComponent implements OnInit {
   };
 
   private _enableFormControls(): void {
-    this.totpForm.enable({ emitEvent: false });
+    this.generateOnServerFormControl.enable();
+    this.otpLengthFormControl.enable();
+    if (!this.generateOnServerFormControl.value) {
+      this.otpKeyFormControl.enable();
+    }
+    this.hashAlgorithmControl.enable();
+    this.timeStepControl.enable();
     this._applyPolicies();
   }
 }
