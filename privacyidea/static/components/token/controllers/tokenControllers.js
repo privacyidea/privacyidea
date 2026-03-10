@@ -57,11 +57,8 @@ myApp.controller("tokenController", ['TokenFactory', 'ConfigFactory', '$scope',
         if ($scope.loggedInUser.role === "admin") {
             ConfigFactory.getRealms(function (data) {
                 $scope.realms = data.result.value;
-                angular.forEach($scope.realms, function (realm, realmname) {
-                    if (realm.default && !$scope.userRealmFilter) {
-                        $scope.userRealmFilter = realmname;
-                    }
-                });
+                // Do not pre-select any realm — leave userRealmFilter empty so
+                // "— all —" is the effective default and all tokens are shown.
             });
         }
 
