@@ -459,9 +459,9 @@ export class UserService implements UserServiceInterface {
     payload["resolver"] = resolver;
     return this.http.post<PiResponse<number>>(this.baseUrl, payload, {
       headers: this.authService.getHeaders()
-    }).pipe(map(() => true),
+    }).pipe(map((response) => response.result?.status || false),
       catchError((error) => {
-        console.log("Failed to create user", error);
+        console.warn("Failed to create user", error);
         const message = error.error?.result?.error?.message || "";
         this.notificationService.openSnackBar($localize`Failed to create user ${userData.username}. ` + message);
         return of(false);
@@ -479,9 +479,9 @@ export class UserService implements UserServiceInterface {
     payload["resolver"] = resolver;
     return this.http.put<PiResponse<number>>(this.baseUrl, payload, { headers: this.authService.getHeaders() })
       .pipe(
-        map(() => true),
+        map((response) => response.result?.status || false),
         catchError((error) => {
-          console.log("Failed to update user", error);
+          console.warn("Failed to update user", error);
           const message = error.error?.result?.error?.message || "";
           this.notificationService.openSnackBar($localize`Failed to update user ${userData.username}. ` + message);
           return of(false);
@@ -490,12 +490,12 @@ export class UserService implements UserServiceInterface {
   }
 
   deleteUser(resolver: string, username: string): Observable<boolean> {
-    const url = this.baseUrl + resolver + "/" + username;
+    const url = this.baseUrl + encodeURIComponent(resolver) + "/" + encodeURIComponent(username);
     return this.http.delete<PiResponse<any>>(url, { headers: this.authService.getHeaders() })
       .pipe(
-        map(() => true),
+        map((response) => response.result?.status || false),
         catchError((error) => {
-          console.log("Failed to delete user", error);
+          console.warn("Failed to delete user", error);
           const message = error.error?.result?.error?.message || "";
           this.notificationService.openSnackBar($localize`Failed to delete user ${username}. ` + message);
           return of(false);

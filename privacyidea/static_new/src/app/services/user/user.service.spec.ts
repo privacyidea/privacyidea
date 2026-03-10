@@ -416,8 +416,21 @@ describe("UserService", () => {
         resultValue = result;
       });
       const req = httpMock.expectOne(r => r.method === "POST" && r.url.includes("/user/"));
-      req.flush({ result: { value: true } });
+      req.flush({ result: { value: true, status: true } });
       expect(resultValue).toBe(true);
+      expect(req.request.body).toEqual({ user: "new-user", resolver });
+    });
+
+    it("should handle shallow failure of creating user", () => {
+      const resolver = "test";
+      const userData = { username: "new-user" } as any;
+      let resultValue: boolean | undefined;
+      userService.createUser(resolver, userData).subscribe(result => {
+        resultValue = result;
+      });
+      const req = httpMock.expectOne(r => r.method === "POST" && r.url.includes("/user/"));
+      req.flush({ result: { value: true, status: false } });
+      expect(resultValue).toBe(false);
       expect(req.request.body).toEqual({ user: "new-user", resolver });
     });
 
@@ -446,8 +459,21 @@ describe("UserService", () => {
         resultValue = result;
       });
       const req = httpMock.expectOne(r => r.method === "PUT" && r.url.includes("/user/"));
-      req.flush({ result: { value: true } });
+      req.flush({ result: { value: true, status: true } });
       expect(resultValue).toBe(true);
+      expect(req.request.body).toEqual({ user: "edit-user", resolver });
+    });
+
+    it("should handle shallow edit user failure", () => {
+      const resolver = "test";
+      const userData = { username: "edit-user" } as any;
+      let resultValue: boolean | undefined;
+      userService.editUser(resolver, userData).subscribe(result => {
+        resultValue = result;
+      });
+      const req = httpMock.expectOne(r => r.method === "PUT" && r.url.includes("/user/"));
+      req.flush({ result: { value: true, status: false } });
+      expect(resultValue).toBe(false);
       expect(req.request.body).toEqual({ user: "edit-user", resolver });
     });
 
@@ -474,8 +500,20 @@ describe("UserService", () => {
         resultValue = result;
       });
       const req = httpMock.expectOne(r => r.method === "DELETE" && r.url.includes("/user/"));
-      req.flush({ result: { value: true } });
+      req.flush({ result: { value: true, status: true } });
       expect(resultValue).toBe(true);
+    });
+
+    it("should handle shallow failure", () => {
+      const resolver = "test";
+      const username = "deleteuser";
+      let resultValue: boolean | undefined;
+      userService.deleteUser(resolver, username).subscribe(result => {
+        resultValue = result;
+      });
+      const req = httpMock.expectOne(r => r.method === "DELETE" && r.url.includes("/user/"));
+      req.flush({ result: { value: true, status: false } });
+      expect(resultValue).toBe(false);
     });
 
     it("should handle delete user failure", () => {

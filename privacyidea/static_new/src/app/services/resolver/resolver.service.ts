@@ -224,7 +224,12 @@ export class ResolverService implements ResolverServiceInterface {
     }
 
     if (typeof userInfo === "string") {
-      userInfo = JSON.parse(userInfo);
+      try {
+        userInfo = JSON.parse(userInfo);
+      } catch (error) {
+        console.warn($localize`Failed to parse user info for resolver ${this.selectedResolverName()}` + ": ", error);
+        userInfo = {};
+      }
     }
     return Object.keys(userInfo);
   });

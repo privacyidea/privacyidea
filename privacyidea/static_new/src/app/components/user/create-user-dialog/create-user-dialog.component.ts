@@ -36,6 +36,7 @@ import { MatOption, MatSelect } from "@angular/material/select";
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { RealmService } from "../../../services/realm/realm.service";
 import { MatInput } from "@angular/material/input";
+import { toSignal } from "@angular/core/rxjs-interop";
 
 @Component({
   selector: "app-create-user-dialog",
@@ -61,16 +62,9 @@ export class CreateUserDialogComponent extends AbstractDialogComponent<CreateUse
   protected readonly notificationService = inject(NotificationService);
 
   realm = linkedSignal(() => this.data.realm || this.userService.selectedUserRealm() || "");
-  resolver = linkedSignal(() => {
-    let resolver = this.data.resolver;
-    if (!resolver && this.realm()) {
-      const realmConfig = this.realmService.realms()[this.realm()];
-      resolver = realmConfig.resolver[0]?.name;
-    }
-    return resolver || "";
-  });
   username = new FormControl("", { nonNullable: true, validators: [Validators.required] });
-  resolverControl = new FormControl(this.resolver(), { nonNullable: true, validators: [Validators.required] });
+  resolverControl = new FormControl("", { nonNullable: true, validators: [Validators.required] });
+  selectedResolver = toSignal(this.resolverControl.valueChanges, { initialValue: this.resolverControl.value });
   inputGroup = new FormGroup({
     username: this.username,
     resolver: this.resolverControl
@@ -83,6 +77,14 @@ export class CreateUserDialogComponent extends AbstractDialogComponent<CreateUse
     this.inputGroup.statusChanges.subscribe(() => {
       this.inputGroupInvalid.set(this.inputGroup.invalid);
     });
+
+    // Select initial resolver
+    let resolver = this.data.resolver;
+    if (!resolver && this.realm()) {
+      const realmConfig = this.realmService.realms()[this.realm()];
+      resolver = realmConfig?.resolver[0]?.name;
+    }
+    this.resolverControl.setValue(resolver || "");
   }
 
   title = $localize`Create New User`;
@@ -104,7 +106,7 @@ export class CreateUserDialogComponent extends AbstractDialogComponent<CreateUse
     const realms = this.realmService.realms();
     const result: string[] = [];
     for (const [realmName, realmObj] of Object.entries(realms)) {
-      if (realmObj.resolver.some(resolver => resolver.name === this.resolver())) {
+      if (realmObj.resolver.some(resolver => resolver.name === this.selectedResolver())) {
         result.push(realmName);
       }
     }

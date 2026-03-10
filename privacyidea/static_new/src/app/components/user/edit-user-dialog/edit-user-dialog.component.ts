@@ -36,7 +36,8 @@ import { UserDetailsEditComponent } from "@components/user/user-details-edit/use
 export class EditUserDialogComponent extends AbstractDialogComponent<UserData, boolean> {
   protected readonly userService = inject(UserService);
 
-  title = computed(() => $localize`Edit User` + (this.data?.username ? ": " + this.data.username : ""));
+  username = computed(() => this.data.username);
+  title = computed(() => $localize`Edit User` + (this.username() ? ": " + this.username() : ""));
   dialogActions = linkedSignal(() => {
     return [{
       type: "confirm",
@@ -48,7 +49,7 @@ export class EditUserDialogComponent extends AbstractDialogComponent<UserData, b
     if (this.data) {
       return this.data;
     }
-    return { username: "" };
+    return { username: this.username() || "" };
   });
 
   onUpdateUserData(newData: EditUserData): void {
@@ -56,6 +57,7 @@ export class EditUserDialogComponent extends AbstractDialogComponent<UserData, b
   }
 
   save() {
+    this.editedUserData().username = this.username();
     this.userService.editUser(this.data.resolver, this.editedUserData()).subscribe({
       next: (success) => {
         if (success) {

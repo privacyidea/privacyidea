@@ -149,8 +149,12 @@ describe("ResolverService", () => {
       sql1: { data: {}, type: "sqlresolver" }
     };
     const mockResponse = MockPiResponse.fromValue(mockResolvers);
-    // Simulate resolversResource signal value
-    (resolverService as any).resolversResource.set(mockResponse);
+    TestBed.flushEffects();
+    const req = httpMock.expectOne(resolverService.resolverBaseUrl);
+    expect(req.request.method).toBe("GET");
+    req.flush(mockResponse);
+    await lastValueFrom(of({})); // Wait for async updates
+
     TestBed.flushEffects && TestBed.flushEffects();
     expect(resolverService.editableResolvers()).toEqual(["ldap1", "ldap2", "ldap3"]);
   });
@@ -171,6 +175,23 @@ describe("ResolverService", () => {
       await lastValueFrom(of({})); // Wait for async updates
 
       expect(resolverService.userAttributes()).toEqual(["surname", "givenname"]);
+    });
+
+    it("should return empty attributes list for invalid JSON string", async () => {
+      const mockResolvers = {
+        ldap1: { data: { USERINFO: "{ 'surname': 'sn', 'givenname': 'givenName' " }, type: "ldapresolver" }
+      };
+      (resolverService as any).selectedResolverName.set("ldap1");
+      const mockResponse = MockPiResponse.fromValue(mockResolvers);
+
+      TestBed.flushEffects();
+      httpMock.expectOne(resolverService.resolverBaseUrl); // accept initial load of all resolvers;
+      const req = httpMock.expectOne(resolverService.resolverBaseUrl + "ldap1");
+      expect(req.request.method).toBe("GET");
+      req.flush(mockResponse);
+      await lastValueFrom(of({})); // Wait for async updates
+
+      expect(resolverService.userAttributes()).toEqual([]);
     });
 
     it("should return attribute keys for sqlresolver", async () => {
@@ -216,7 +237,6 @@ describe("ResolverService", () => {
     });
 
     it("should return empty array if no resolver resource is loaded", () => {
-      (resolverService as any).selectedResolverResource.set(undefined);
       expect(resolverService.userAttributes()).toEqual([]);
     });
   });
