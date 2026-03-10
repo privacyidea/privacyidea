@@ -224,10 +224,11 @@
           <div class="width-100">
             <h4>Assign Token to User</h4>
             <app-user-assignment
+              [required]="isUserRequired()"
               [selectedUserRealmControl]="selectedUserRealmControl"
               [showOnlyAddToRealm]="
- !['passkey', 'webauthn', 'tiqr', 'push'].includes(tokenService.selectedTokenType().key)
- "
+                !['passkey', 'webauthn', 'tiqr', 'push'].includes(tokenService.selectedTokenType().key)
+              "
               [userFilterControl]="userFilterControl"></app-user-assignment>
           </div>
         }

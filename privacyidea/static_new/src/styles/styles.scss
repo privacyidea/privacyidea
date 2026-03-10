@@ -621,8 +621,8 @@ body {
   }
 
   .mat-mdc-option.mat-mdc-option-active {
-    background-color: var(--mat-sys-primary-container) !important;
-    color: var(--mat-sys-on-primary-container) !important;
+    background-color: var(--mat-sys-surface-container-low) !important;
+    color: var(--mat-sys-on-surface) !important;
   }
 
   .cdk-overlay-container {

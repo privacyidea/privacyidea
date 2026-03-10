@@ -23,8 +23,8 @@
     <mat-select
       (selectionChange)="onSelectedRealmChange($event.value)"
       [formControl]="selectedUserRealmCtrl"
-      [value]="userService.selectedUserRealm()"
-      required>
+      [required]="required()"
+      [value]="userService.selectedUserRealm()">
       @for (option of realmService.realmOptions(); track option) {
         <mat-option [value]="option">{{ option }}</mat-option>
       }
@@ -42,8 +42,8 @@
       <input
         [formControl]="userFilterCtrl"
         [matAutocomplete]="userAuto"
-        matInput
-        required />
+        [required]="required()"
+        matInput />
     </app-clearable-input>
     <mat-autocomplete
       #userAuto="matAutocomplete"
