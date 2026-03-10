@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -27,25 +27,39 @@ import { ContainerTemplate } from "../../app/services/container/container.servic
 import { MockHttpResourceRef } from "../mock-services";
 
 export class MockContainerTemplateService implements ContainerTemplateServiceInterface {
+  // --- Properties ---
   containerTemplateBaseUrl: string = "/mock/container/templates/";
+
   templatesResource = new MockHttpResourceRef<PiResponse<{ templates: ContainerTemplate[] }, unknown> | undefined>(
     undefined
   );
   templates = signal<ContainerTemplate[]>([]);
+
   templateTokenTypesResource = new MockHttpResourceRef<PiResponse<TemplateTokenTypes, unknown> | undefined>(undefined);
   templateTokenTypes = signal<TemplateTokenTypes>({});
+
   availableContainerTypes = signal<string[]>([]);
-  getTokenTypesForContainerType = jest.fn(() => []);
+
   emptyContainerTemplate: ContainerTemplate = {
     name: "",
     container_type: "",
     default: false,
     template_options: {
-      options: undefined,
       tokens: []
     }
   };
-  deleteTemplate = jest.fn();
-  postTemplateEdits = jest.fn();
-  canSaveTemplate = jest.fn();
+
+  // --- Mocked Methods ---
+  getTokenTypesForContainerType = jest.fn((_type: string) => []);
+
+  deleteTemplate = jest.fn().mockResolvedValue(true);
+
+  postTemplateEdits = jest.fn().mockResolvedValue(true);
+
+  canSaveTemplate = jest.fn().mockReturnValue(true);
+
+  copyTemplate = jest.fn((_template: ContainerTemplate, _newName: string) => Promise.resolve(true));
+
+  // If your interface requires a refresh method:
+  refreshTemplates = jest.fn();
 }

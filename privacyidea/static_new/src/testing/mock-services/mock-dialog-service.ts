@@ -23,6 +23,7 @@ import { MockMatDialogRef } from "../mock-mat-dialog-ref";
 export class MockDialogService implements DialogServiceInterface {
   closeDialog = jest.fn().mockReturnValue(true);
   openDialog = jest.fn().mockReturnValue(new MockMatDialogRef());
+  openDialogAsync = jest.fn().mockResolvedValue(Promise.resolve(true));
   closeLatestDialog = jest.fn();
   closeAllDialogs = jest.fn();
   isDialogOpen = jest.fn().mockReturnValue(false);

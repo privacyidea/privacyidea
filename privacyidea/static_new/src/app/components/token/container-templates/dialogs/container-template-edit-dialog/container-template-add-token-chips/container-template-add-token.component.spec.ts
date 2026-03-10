@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,13 +16,15 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { ContainerTemplateAddTokenComponent } from "./container-template-add-token.component";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { provideHttpClient } from "@angular/common/http";
+import { By } from "@angular/platform-browser";
 
-describe("ContainerTemplateAddTokenChipsComponent", () => {
+describe("ContainerTemplateAddTokenComponent", () => {
   let component: ContainerTemplateAddTokenComponent;
   let fixture: ComponentFixture<ContainerTemplateAddTokenComponent>;
 
@@ -34,6 +36,10 @@ describe("ContainerTemplateAddTokenChipsComponent", () => {
 
     fixture = TestBed.createComponent(ContainerTemplateAddTokenComponent);
     component = fixture.componentInstance;
+
+    // Set required inputs before first detectChanges
+    fixture.componentRef.setInput("tokenTypes", ["totp", "hotp", "webauthn"]);
+
     fixture.detectChanges();
   });
 
@@ -41,10 +47,38 @@ describe("ContainerTemplateAddTokenChipsComponent", () => {
     expect(component).toBeTruthy();
   });
 
-  it("addToken should emit onAddToken with the correct token type", () => {
-    jest.spyOn(component.onAddToken, "emit");
+  it("should render a chip for each token type", () => {
+    const chips = fixture.debugElement.queryAll(By.css("mat-chip"));
+    expect(chips.length).toBe(3);
+    expect(chips[0].nativeElement.textContent).toContain("totp");
+    expect(chips[1].nativeElement.textContent).toContain("hotp");
+    expect(chips[2].nativeElement.textContent).toContain("webauthn");
+  });
+
+  it("should emit onAddToken when addToken is called directly", () => {
+    const spy = jest.spyOn(component.onAddToken, "emit");
     const tokenType = "totp";
+
     component.addToken(tokenType);
-    expect(component.onAddToken.emit).toHaveBeenCalledWith(tokenType);
+
+    expect(spy).toHaveBeenCalledWith(tokenType);
+  });
+
+  it("should emit onAddToken when a chip is clicked", () => {
+    const spy = jest.spyOn(component.onAddToken, "emit");
+    const firstChip = fixture.debugElement.query(By.css("mat-chip")).nativeElement;
+
+    firstChip.click();
+
+    expect(spy).toHaveBeenCalledWith("totp");
+  });
+
+  it("should update rendered chips when tokenTypes input changes", () => {
+    fixture.componentRef.setInput("tokenTypes", ["yubikey"]);
+    fixture.detectChanges();
+
+    const chips = fixture.debugElement.queryAll(By.css("mat-chip"));
+    expect(chips.length).toBe(1);
+    expect(chips[0].nativeElement.textContent).toContain("yubikey");
   });
 });

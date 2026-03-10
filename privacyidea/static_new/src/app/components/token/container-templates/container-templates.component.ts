@@ -43,7 +43,7 @@ const containerTemplateFilterOptions: FilterOption<ContainerTemplate>[] = [
     key: "name",
     label: $localize`Name`,
     matches: (item, filter) => {
-      const filterValue = filter.getFilterOfKey("scope");
+      const filterValue = filter.getFilterOfKey("name");
       return !filterValue || item.name.toLowerCase().includes(filterValue.toLowerCase());
     }
   }),
@@ -51,7 +51,7 @@ const containerTemplateFilterOptions: FilterOption<ContainerTemplate>[] = [
     key: "container_type",
     label: $localize`Container Type`,
     matches: (item, filter) => {
-      const filterValue = filter.getFilterOfKey("type");
+      const filterValue = filter.getFilterOfKey("container_type");
       return !filterValue || item.container_type.toLowerCase().includes(filterValue.toLowerCase());
     }
   }),

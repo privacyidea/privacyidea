@@ -17,30 +17,29 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Directive, inject, Signal } from "@angular/core";
+import { Directive, inject, OnDestroy, OnInit, Signal } from "@angular/core";
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { DialogService, DialogServiceInterface } from "src/app/services/dialog/dialog.service";
 import { PendingChangesService } from "src/app/services/pending-changes/pending-changes.service";
 
 @Directive()
-export abstract class PendingChangesDialogComponent<D = any, R = any> extends AbstractDialogComponent<D, R> {
+export abstract class PendingChangesDialogComponent<D = any, R = any>
+  extends AbstractDialogComponent<D, R>
+  implements OnInit, OnDestroy
+{
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
   protected readonly pendingChangesService: PendingChangesService = inject(PendingChangesService);
 
   abstract canSave: Signal<boolean>;
   abstract isDirty: Signal<boolean>;
 
-  constructor() {
-    super();
+  ngOnInit(): void {
+    this.pendingChangesService.registerHasChanges(this.isDirty);
     this.dialogRef.disableClose = true;
     this.dialogRef.backdropClick().subscribe(() => {
       this.handleCloseAttempt();
     });
-  }
-
-  ngOnInit(): void {
-    this.pendingChangesService.registerHasChanges(this.isDirty);
   }
 
   ngOnDestroy(): void {

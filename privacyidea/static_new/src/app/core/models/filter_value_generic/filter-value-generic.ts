@@ -17,19 +17,16 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { ContainerTemplate } from "src/app/services/container/container.service";
 import { FilterOption, DummyFilterOption } from "./filter-option";
 
 export class FilterValueGeneric<T> {
+  // --- Members ---
   readonly filterMap: Map<string, FilterOption<T>>;
   readonly hiddenFilterMap: Map<string, FilterOption<T>>;
   readonly allFilters: FilterOption<T>[];
   readonly availableFilters: Map<string, FilterOption<T>>;
 
-  get hasActiveFilters(): boolean {
-    return this.filterMap.size > 0 || this.hiddenFilterMap.size > 0;
-  }
-
+  // --- Constructor ---
   constructor(
     args:
       | {
@@ -56,20 +53,25 @@ export class FilterValueGeneric<T> {
     this.allFilters = [...this.filterMap.values(), ...this.hiddenFilterMap.values()];
   }
 
+  // --- Getters / State ---
   get isEmpty(): boolean {
     return this.filterMap.size === 0;
-  }
-
-  get hiddenIsEmpty(): boolean {
-    return this.hiddenFilterMap.size === 0;
   }
 
   get isNotEmpty(): boolean {
     return this.filterMap.size > 0;
   }
 
+  get hiddenIsEmpty(): boolean {
+    return this.hiddenFilterMap.size === 0;
+  }
+
   get hiddenIsNotEmpty(): boolean {
     return this.hiddenFilterMap.size > 0;
+  }
+
+  get hasActiveFilters(): boolean {
+    return this.filterMap.size > 0 || this.hiddenFilterMap.size > 0;
   }
 
   get rawValue(): string {
@@ -92,34 +94,30 @@ export class FilterValueGeneric<T> {
       .join(" ");
   }
 
-  private _copyWith(args?: {
-    filterMap?: Map<string, FilterOption<T>>;
-    hiddenFilterMap?: Map<string, FilterOption<T>>;
-  }): FilterValueGeneric<T> {
-    return new FilterValueGeneric<T>({
-      availableFiltersMap: this.availableFilters,
-      filterMap: args?.filterMap ?? this.filterMap,
-      hiddenFilterMap: args?.hiddenFilterMap ?? this.hiddenFilterMap
-    });
+  // --- Public API ---
+  public matches(item: T): boolean {
+    return this.allFilters.every((filter) => filter.matches(item, this));
   }
 
-  matches(item: T): boolean {
-    console.log("Matching item", item, "against filters", this.allFilters);
-    return this.allFilters.every((filter) => {
-      const match = filter.matches(item, this);
-      console.log(`Filter ${filter.key} with value ${filter.value} ${match ? "matches" : "does not match"} item`, item);
-      return match;
-    });
-  }
-
-  filterItems(unfiltered: T[]): T[] {
+  public filterItems(unfiltered: T[]): T[] {
     if (!unfiltered?.length) return [];
     if (this.isEmpty && this.hiddenIsEmpty) return unfiltered;
 
-    console.log("Unfiltered items", unfiltered);
-    const filtered = unfiltered.filter((item) => this.matches(item));
-    console.log("Filtered items", filtered);
-    return filtered;
+    return unfiltered.filter((item) => this.matches(item));
+  }
+
+  public hasKey(key: string): boolean {
+    return this.filterMap.has(key);
+  }
+
+  public getOptionForKey(key: string): FilterOption<T> | undefined {
+    return this.availableFilters.get(key);
+  }
+
+  public getFilterOfKey(key: string): string | null | undefined {
+    if (this.filterMap.has(key)) return this.filterMap.get(key)!.value;
+    if (this.hiddenFilterMap.has(key)) return this.hiddenFilterMap.get(key)!.value;
+    return undefined;
   }
 
   public addKey(key: string): FilterValueGeneric<T> {
@@ -145,19 +143,6 @@ export class FilterValueGeneric<T> {
     }
     const newHiddenFilterMap = new Map(this.hiddenFilterMap);
     return this._copyWith({ hiddenFilterMap: newHiddenFilterMap.set(key, optionFromMap) });
-  }
-
-  public getOptionForKey(key: string): FilterOption<T> | undefined {
-    return this.availableFilters.get(key);
-  }
-
-  /**
-   * Safe lookup that distinguishes between null (key exists, no value) and undefined.
-   */
-  public getFilterOfKey(key: string): string | null | undefined {
-    if (this.filterMap.has(key)) return this.filterMap.get(key)!.value;
-    if (this.hiddenFilterMap.has(key)) return this.hiddenFilterMap.get(key)!.value;
-    return undefined;
   }
 
   public setValueOfKey(key: string, value: string | null): FilterValueGeneric<T> {
@@ -186,10 +171,6 @@ export class FilterValueGeneric<T> {
     return this;
   }
 
-  public hasKey(key: string): boolean {
-    return this.filterMap.has(key);
-  }
-
   public toggleKey(key: string): FilterValueGeneric<T> {
     return this.hasKey(key) ? this.removeKey(key) : this.addKey(key);
   }
@@ -209,12 +190,22 @@ export class FilterValueGeneric<T> {
       hiddenFilterMap: new Map()
     });
   }
+
+  // --- Private Helpers ---
+  private _copyWith(args?: {
+    filterMap?: Map<string, FilterOption<T>>;
+    hiddenFilterMap?: Map<string, FilterOption<T>>;
+  }): FilterValueGeneric<T> {
+    return new FilterValueGeneric<T>({
+      availableFiltersMap: this.availableFilters,
+      filterMap: args?.filterMap ?? this.filterMap,
+      hiddenFilterMap: args?.hiddenFilterMap ?? this.hiddenFilterMap
+    });
+  }
 }
 
-/**
- * Modular Parser Constants
- */
-const RE_KEY = /^[A-Za-z0-9_]+/;
+// --- Modular Parser Constants ---
+const RE_KEY = /^[A-Za-z0-9_-]+/;
 const RE_COLON_WHITESPACE = /^(\s*:\s*)/;
 const RE_QUOTED_DBL = /^"((?:\\.|[^"\\])*)"/;
 const RE_QUOTED_SNG = /^'((?:\\.|[^'\\])*)'/;
@@ -225,7 +216,6 @@ function parseToMap(text: string): Map<string, string | null> {
   let remaining = text.trim();
 
   while (remaining.length > 0) {
-    // 1. Match Key
     const keyMatch = remaining.match(RE_KEY);
     if (!keyMatch) {
       remaining = remaining.slice(1).trim();
@@ -234,10 +224,8 @@ function parseToMap(text: string): Map<string, string | null> {
     const key = keyMatch[0];
     let tempRemaining = remaining.slice(key.length);
 
-    // 2. Check for Colon
     const colonMatch = tempRemaining.match(RE_COLON_WHITESPACE);
     if (!colonMatch) {
-      // Standalone dummy key
       map.set(key, null);
       remaining = tempRemaining.trim();
       continue;
@@ -246,7 +234,6 @@ function parseToMap(text: string): Map<string, string | null> {
     const colonStr = colonMatch[0];
     tempRemaining = tempRemaining.slice(colonStr.length);
 
-    // 3. Handle Value
     let value: string | null = "";
     let valMatch: RegExpMatchArray | null = null;
 
@@ -257,9 +244,6 @@ function parseToMap(text: string): Map<string, string | null> {
       value = valMatch[1].replace(/\\'/g, "'").replace(/\\\\/g, "\\");
       remaining = tempRemaining.slice(valMatch[0].length).trim();
     } else {
-      // Logic for unquoted values:
-      // If there is whitespace after the colon AND the next thing looks like 'key:',
-      // we treat the current value as empty.
       const hasTrailingSpaceInColon =
         colonStr.endsWith(" ") || (tempRemaining.length > 0 && tempRemaining.startsWith(" "));
       const nextKeyCandidate = tempRemaining.match(RE_KEY);
@@ -267,7 +251,7 @@ function parseToMap(text: string): Map<string, string | null> {
         nextKeyCandidate && tempRemaining.slice(nextKeyCandidate[0].length).match(RE_COLON_WHITESPACE);
 
       if (hasTrailingSpaceInColon && followedByColon) {
-        value = ""; // Found 'key1: key2:' scenario
+        value = "";
         remaining = tempRemaining.trim();
       } else {
         valMatch = tempRemaining.match(RE_UNQUOTED);
@@ -275,7 +259,7 @@ function parseToMap(text: string): Map<string, string | null> {
           value = valMatch[1].replace(/\\\\/g, "\\");
           remaining = tempRemaining.slice(valMatch[0].length).trim();
         } else {
-          value = ""; // Fallback for 'key:' at end of string
+          value = "";
           remaining = tempRemaining.trim();
         }
       }

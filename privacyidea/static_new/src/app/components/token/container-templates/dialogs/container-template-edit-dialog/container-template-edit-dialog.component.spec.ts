@@ -19,36 +19,42 @@
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { MatExpansionModule } from "@angular/material/expansion";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
+import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { ContainerTemplateService } from "../../../../../services/container-template/container-template.service";
 import { MockContainerTemplateService } from "../../../../../../testing/mock-services/mock-container-template-service";
 import { ContainerTemplateEditDialogComponent } from "./container-template-edit-dialog.component";
-import { HarnessLoader } from "@angular/cdk/testing";
-import { TestbedHarnessEnvironment } from "@angular/cdk/testing/testbed";
-import { MatExpansionPanelHarness } from "@angular/material/expansion/testing";
+import { DialogService } from "src/app/services/dialog/dialog.service";
+import { PendingChangesService } from "src/app/services/pending-changes/pending-changes.service";
+import { MockDialogService, MockPendingChangesService } from "src/testing/mock-services";
+import { MockMatDialogRef } from "src/testing/mock-mat-dialog-ref";
 
-describe("ContainerTemplateNewComponent", () => {
+describe("ContainerTemplateEditDialogComponent", () => {
   let component: ContainerTemplateEditDialogComponent;
   let fixture: ComponentFixture<ContainerTemplateEditDialogComponent>;
-  let templateServiceMock: MockContainerTemplateService;
-  let loader: HarnessLoader;
+  let containerTemplateServiceMock: MockContainerTemplateService;
+  let dialogRefMock: MockMatDialogRef<any>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [ContainerTemplateEditDialogComponent, NoopAnimationsModule, MatExpansionModule],
+      imports: [ContainerTemplateEditDialogComponent, NoopAnimationsModule],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
-        { provide: ContainerTemplateService, useClass: MockContainerTemplateService }
+        { provide: ContainerTemplateService, useClass: MockContainerTemplateService },
+        { provide: DialogService, useClass: MockDialogService },
+        { provide: PendingChangesService, useClass: MockPendingChangesService },
+        { provide: MatDialogRef, useClass: MockMatDialogRef },
+        { provide: MAT_DIALOG_DATA, useValue: null }
       ]
     }).compileComponents();
 
     fixture = TestBed.createComponent(ContainerTemplateEditDialogComponent);
-    templateServiceMock = TestBed.inject(ContainerTemplateService) as unknown as MockContainerTemplateService;
+    containerTemplateServiceMock = TestBed.inject(ContainerTemplateService) as unknown as MockContainerTemplateService;
+    dialogRefMock = TestBed.inject(MatDialogRef) as unknown as MockMatDialogRef<any>;
     component = fixture.componentInstance;
-    loader = TestbedHarnessEnvironment.loader(fixture);
+
     fixture.detectChanges();
   });
 
@@ -56,112 +62,93 @@ describe("ContainerTemplateNewComponent", () => {
     expect(component).toBeTruthy();
   });
 
-  it("should not be in edit mode initially", () => {
-    expect(component.isEditMode()).toBeFalsy();
+  it("should correctly compute isDirty when template is modified", () => {
+    expect(component.isDirty()).toBeFalsy();
+    component.editTemplate({ name: "New Name" });
+    expect(component.isDirty()).toBeTruthy();
   });
 
-  it("should enter edit mode on expansion", () => {
-    component.handleExpansion();
-    expect(component.isEditMode()).toBeTruthy();
+  it("should detect name conflicts using the service", () => {
+    const existing = { name: "Conflict" };
+    containerTemplateServiceMock.templates.set([existing as any]);
+
+    component.editTemplate({ name: "Conflict" });
+
+    expect(component.nameConflict()).toBeTruthy();
+    expect(component.canSave()).toBeFalsy();
   });
 
-  it("should save template", () => {
-    jest.spyOn(templateServiceMock, "postTemplateEdits");
-    jest.spyOn(component, "canSaveTemplate").mockReturnValue(true);
-    component.saveTemplate();
-    expect(templateServiceMock.postTemplateEdits).toHaveBeenCalled();
+  it("should add a token to the template signal", () => {
+    const initialCount = component.tokens().length;
+    component.onAddToken("totp");
+    expect(component.tokens().length).toBe(initialCount + 1);
+    expect((component.tokens()[initialCount] as any).type).toBe("totp");
   });
 
-  it("should not save template if it is not valid", () => {
-    jest.spyOn(templateServiceMock, "postTemplateEdits");
-    jest.spyOn(component, "canSaveTemplate").mockReturnValue(false);
-    component.saveTemplate();
-    expect(templateServiceMock.postTemplateEdits).not.toHaveBeenCalled();
-  });
-
-  it("should add a token", () => {
-    component.isEditMode.set(true);
-    const initialTokens = component.newTemplate().template_options.tokens.length;
+  it("should update a specific token by index", () => {
     component.onAddToken("hotp");
-    const newTokens = component.newTemplate().template_options.tokens.length;
-    expect(newTokens).toBe(initialTokens + 1);
-    expect(component.newTemplate().template_options.tokens[initialTokens].type).toBe("hotp");
+    component.onEditToken({ description: "Updated" }, 0);
+    expect((component.tokens()[0] as any).description).toBe("Updated");
   });
 
-  it("should delete a token", () => {
-    component.isEditMode.set(true);
+  it("should remove a token by index", () => {
     component.onAddToken("hotp");
-    const initialTokens = component.newTemplate().template_options.tokens.length;
     component.onDeleteToken(0);
-    const newTokens = component.newTemplate().template_options.tokens.length;
-    expect(newTokens).toBe(initialTokens - 1);
+    expect(component.tokens().length).toBe(0);
   });
 
-  it("should handle collapse and keep panel open if changes are not discarded", async () => {
-    jest.spyOn(window, "confirm").mockReturnValue(false);
-    const panel = await loader.getHarness(MatExpansionPanelHarness);
-    await panel.expand();
-    component.onNameChange("new name");
-    fixture.detectChanges();
-    expect(component.isTemplateEdited()).toBeTruthy();
-    await panel.collapse();
-    expect(component.isEditMode()).toBeTruthy();
-    expect(await panel.isExpanded()).toBeTruthy();
+  it("should close the dialog with the template data on successful save", async () => {
+    jest.spyOn(containerTemplateServiceMock, "canSaveTemplate").mockReturnValue(true);
+    jest.spyOn(containerTemplateServiceMock, "postTemplateEdits").mockResolvedValue(true);
+
+    component.editTemplate({ name: "ValidName" });
+    await component.onAction("save");
+
+    expect(containerTemplateServiceMock.postTemplateEdits).toHaveBeenCalled();
+    expect(dialogRefMock.close).toHaveBeenCalledWith(component.template());
   });
 
-  it("should delete template", () => {
-    jest.spyOn(window, "confirm").mockReturnValue(true);
-    jest.spyOn(templateServiceMock, "deleteTemplate");
-    component.deleteTemplate("test");
-    expect(templateServiceMock.deleteTemplate).toHaveBeenCalledWith("test");
+  it("should delete the old template name if name was renamed during edit", async () => {
+    const oldData = { name: "OldName", container_type: "type1", template_options: { tokens: [] } };
+    (component as any).data = oldData;
+
+    component.editTemplate({ name: "NewName" });
+
+    jest.spyOn(containerTemplateServiceMock, "canSaveTemplate").mockReturnValue(true);
+    jest.spyOn(containerTemplateServiceMock, "postTemplateEdits").mockResolvedValue(true);
+    const deleteSpy = jest.spyOn(containerTemplateServiceMock, "deleteTemplate");
+
+    await component.onAction("save");
+
+    expect(deleteSpy).toHaveBeenCalledWith("OldName");
+    expect(dialogRefMock.close).toHaveBeenCalled();
   });
 
-  it("should not delete template if not confirmed", () => {
-    jest.spyOn(window, "confirm").mockReturnValue(false);
-    jest.spyOn(templateServiceMock, "deleteTemplate");
-    component.deleteTemplate("test");
-    expect(templateServiceMock.deleteTemplate).not.toHaveBeenCalled();
+  it("should not call close if saving the template fails", async () => {
+    jest.spyOn(containerTemplateServiceMock, "canSaveTemplate").mockReturnValue(true);
+    jest.spyOn(containerTemplateServiceMock, "postTemplateEdits").mockResolvedValue(false);
+
+    await component.onAction("save");
+
+    expect(dialogRefMock.close).not.toHaveBeenCalled();
   });
 
-  it("should cancel edit mode", () => {
-    jest.spyOn(window, "confirm").mockReturnValue(true);
-    component.isEditMode.set(true);
-    component.onNameChange("new name");
-    component.cancelEditMode();
-    expect(component.isEditMode()).toBeFalsy();
+  it("should close directly on backdrop click if NOT dirty", () => {
+    expect(component.isDirty()).toBeFalsy();
+    dialogRefMock.fireBackdropClick();
+    expect(dialogRefMock.close).toHaveBeenCalled();
   });
 
-  it("should not cancel edit mode if not confirmed", () => {
-    jest.spyOn(window, "confirm").mockReturnValue(false);
-    component.isEditMode.set(true);
-    component.onNameChange("new name");
-    component.cancelEditMode();
-    expect(component.isEditMode()).toBeTruthy();
-  });
+  it("should open confirmation dialog on backdrop click if dirty", async () => {
+    component.editTemplate({ name: "Changed Name" });
+    expect(component.isDirty()).toBeTruthy();
 
-  it("should change name", () => {
-    component.isEditMode.set(true);
-    component.onNameChange("new name");
-    expect(component.newTemplate().name).toBe("new name");
-  });
+    const dialogService = TestBed.inject(DialogService);
+    const openDialogSpy = jest.spyOn(dialogService, "openDialogAsync").mockResolvedValue("none");
 
-  it("should change type", () => {
-    component.isEditMode.set(true);
-    component.onTypeChange("new type" as any);
-    expect(component.newTemplate().container_type).toBe("new type");
-  });
+    dialogRefMock.fireBackdropClick();
 
-  it("should toggle default", () => {
-    component.isEditMode.set(true);
-    const initialDefault = component.newTemplate().default;
-    component.onDefaultToggle();
-    expect(component.newTemplate().default).toBe(!initialDefault);
-  });
-
-  it("should edit token", () => {
-    component.isEditMode.set(true);
-    component.onAddToken("hotp");
-    component.onEditToken({ description: "new description" }, 0);
-    expect(component.newTemplate().template_options.tokens[0].description).toBe("new description");
+    expect(dialogRefMock.close).not.toHaveBeenCalled();
+    expect(openDialogSpy).toHaveBeenCalled();
   });
 });

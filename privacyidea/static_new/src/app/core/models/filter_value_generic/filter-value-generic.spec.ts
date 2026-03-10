@@ -29,12 +29,9 @@ describe("FilterValueGeneric", () => {
     realm: string;
     tags: string[];
     description: string;
+    "api-key": string; // Added for hyphen testing
   }
 
-  /**
-   * Factory using the actual class to ensure 'withValue' and other
-   * methods are correctly present on the prototype.
-   */
   const createMockOption = (key: string): FilterOption<PolicyMock> => {
     return new FilterOption<PolicyMock>({
       key,
@@ -60,7 +57,8 @@ describe("FilterValueGeneric", () => {
         createMockOption("priority"),
         createMockOption("realm"),
         createMockOption("tags"),
-        createMockOption("description")
+        createMockOption("description"),
+        createMockOption("api-key")
       ]
     });
   });
@@ -75,7 +73,7 @@ describe("FilterValueGeneric", () => {
 
     it("should correctly build the availableFilters map from an array", () => {
       expect(filter.availableFilters.has("name")).toBe(true);
-      expect(filter.availableFilters.size).toBe(7);
+      expect(filter.availableFilters.size).toBe(8);
     });
 
     it("should throw error when adding a hidden key that is not in availableFilters", () => {
@@ -109,6 +107,11 @@ describe("FilterValueGeneric", () => {
       const res = filter.setByString("scope:admin active:true");
       expect(res.getFilterOfKey("scope")).toBe("admin");
       expect(res.getFilterOfKey("active")).toBe("true");
+    });
+
+    it("should support hyphens in keys (RE_KEY fix verification)", () => {
+      const res = filter.setByString("api-key: secret-token-123");
+      expect(res.getFilterOfKey("api-key")).toBe("secret-token-123");
     });
 
     it("should handle multi-word values with double quotes (lowercase output)", () => {
@@ -149,9 +152,27 @@ describe("FilterValueGeneric", () => {
 
   describe("4. Filtering Logic & Item Processing", () => {
     const data: PolicyMock[] = [
-      { name: "P1", scope: "admin", priority: 1, active: true, realm: "r1", tags: [], description: "" },
-      { name: "P2", scope: "user", priority: 2, active: true, realm: "r2", tags: [], description: "" },
-      { name: "P3", scope: "admin", priority: 1, active: false, realm: "r1", tags: [], description: "" }
+      {
+        name: "P1",
+        scope: "admin",
+        priority: 1,
+        active: true,
+        realm: "r1",
+        tags: [],
+        description: "",
+        "api-key": "k1"
+      },
+      { name: "P2", scope: "user", priority: 2, active: true, realm: "r2", tags: [], description: "", "api-key": "k2" },
+      {
+        name: "P3",
+        scope: "admin",
+        priority: 1,
+        active: false,
+        realm: "r1",
+        tags: [],
+        description: "",
+        "api-key": "k3"
+      }
     ];
 
     it("should filter using AND logic for multiple active keys", () => {
