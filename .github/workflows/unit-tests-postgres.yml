@@ -8,18 +8,7 @@
 name: Unit Tests PostgreSQL
 
 on:
-  push:
-    paths:
-      - 'privacyidea/**.py'
-      - 'tests/**'
-      - 'pyproject.toml'
-      - 'requirements.txt'
-      - 'tools/**'
-      - '.github/workflows/unit-tests-postgres.yml'
   pull_request:
-    branches:
-      - 'master'
-      - 'branch-*'
     paths:
       - 'privacyidea/**.py'
       - 'tests/**'
