@@ -46,10 +46,10 @@ describe("PendingChangesDialogComponent", () => {
   let dialogService: MockDialogService;
   let pendingChangesService: MockPendingChangesService;
   let dialogRef: MockMatDialogRef<any>;
-  let backdropClick$: Subject<MouseEvent>;
+  let backdropClickSubject: Subject<MouseEvent>;
 
   beforeEach(async () => {
-    backdropClick$ = new Subject<MouseEvent>();
+    backdropClickSubject = new Subject<MouseEvent>();
 
     await TestBed.configureTestingModule({
       imports: [TestDialogComponent],
@@ -61,12 +61,14 @@ describe("PendingChangesDialogComponent", () => {
       ]
     }).compileComponents();
 
+    dialogRef = TestBed.inject(MatDialogRef) as unknown as MockMatDialogRef<any>;
+    jest.spyOn(dialogRef, "backdropClick").mockReturnValue(backdropClickSubject.asObservable());
+
     fixture = TestBed.createComponent(TestDialogComponent);
     component = fixture.componentInstance;
 
     dialogService = TestBed.inject(DialogService) as unknown as MockDialogService;
     pendingChangesService = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
-    dialogRef = TestBed.inject(MatDialogRef) as unknown as MockMatDialogRef<any>;
 
     fixture.detectChanges();
   });
@@ -89,7 +91,8 @@ describe("PendingChangesDialogComponent", () => {
   it("should close directly if not dirty when backdrop is clicked", async () => {
     component.isDirty.set(false);
 
-    backdropClick$.next(new MouseEvent("click"));
+    backdropClickSubject.next(new MouseEvent("click"));
+    fixture.detectChanges();
 
     expect(dialogRef.close).toHaveBeenCalled();
   });
@@ -98,10 +101,10 @@ describe("PendingChangesDialogComponent", () => {
     component.isDirty.set(true);
     jest.spyOn(dialogService, "openDialogAsync").mockResolvedValue("discard");
 
-    backdropClick$.next(new MouseEvent("click"));
+    backdropClickSubject.next(new MouseEvent("click"));
 
-    // Resolve openDialogAsync promise
-    await Promise.resolve();
+    fixture.detectChanges();
+    await fixture.whenStable();
 
     expect(dialogService.openDialogAsync).toHaveBeenCalled();
     expect(dialogRef.close).toHaveBeenCalled();
@@ -112,11 +115,10 @@ describe("PendingChangesDialogComponent", () => {
     jest.spyOn(dialogService, "openDialogAsync").mockResolvedValue("save-exit");
     const onSaveSpy = jest.spyOn(component, "onSave").mockResolvedValue(true);
 
-    backdropClick$.next(new MouseEvent("click"));
+    backdropClickSubject.next(new MouseEvent("click"));
 
-    // Wait for async step: openDialogAsync resolution
-    await Promise.resolve();
-    // Wait for async step: onSave resolution
+    fixture.detectChanges();
+    await fixture.whenStable();
     await Promise.resolve();
 
     expect(onSaveSpy).toHaveBeenCalled();
@@ -128,10 +130,10 @@ describe("PendingChangesDialogComponent", () => {
     jest.spyOn(dialogService, "openDialogAsync").mockResolvedValue("save-exit");
     jest.spyOn(component, "onSave").mockResolvedValue(false);
 
-    backdropClick$.next(new MouseEvent("click"));
+    backdropClickSubject.next(new MouseEvent("click"));
 
-    // Wait for async step: openDialogAsync resolution
-    await Promise.resolve();
+    fixture.detectChanges();
+    await fixture.whenStable();
 
     expect(dialogRef.close).not.toHaveBeenCalled();
   });
@@ -140,10 +142,10 @@ describe("PendingChangesDialogComponent", () => {
     component.isDirty.set(true);
     jest.spyOn(dialogService, "openDialogAsync").mockResolvedValue(undefined);
 
-    backdropClick$.next(new MouseEvent("click"));
+    backdropClickSubject.next(new MouseEvent("click"));
 
-    // Wait for async step: openDialogAsync resolution
-    await Promise.resolve();
+    fixture.detectChanges();
+    await fixture.whenStable();
 
     expect(dialogRef.close).not.toHaveBeenCalled();
   });

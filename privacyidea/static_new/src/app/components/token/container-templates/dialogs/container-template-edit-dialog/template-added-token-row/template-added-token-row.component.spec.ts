@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -18,56 +18,184 @@
  **/
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { ContainerTemplateService } from "../../../../../../services/container-template/container-template.service";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { provideHttpClient } from "@angular/common/http";
-import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { MockContainerTemplateService } from "../../../../../../../testing/mock-services/mock-container-template-service";
 import { TemplateAddedTokenRowComponent } from "./template-added-token-row.component";
-import { ContainerTemplateEditComponent } from "../container-template-edit/container-template-edit.component";
+import { FormControl } from "@angular/forms";
+import { By } from "@angular/platform-browser";
+import { Component, Output, EventEmitter } from "@angular/core";
+import { EnrollHotpComponent } from "src/app/components/token/token-enrollment/enroll-hotp/enroll-hotp.component";
+
+@Component({
+  selector: "app-enroll-hotp",
+  standalone: true,
+  template: ""
+})
+class MockEnrollHotpComponent {
+  @Output() additionalFormFieldsChange = new EventEmitter<any>();
+}
 
 describe("TemplateAddedTokenRowComponent", () => {
   let component: TemplateAddedTokenRowComponent;
   let fixture: ComponentFixture<TemplateAddedTokenRowComponent>;
-  let containerTemplateServiceMock: MockContainerTemplateService;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [TemplateAddedTokenRowComponent, NoopAnimationsModule, ContainerTemplateEditComponent],
-      providers: [
-        provideHttpClient(),
-        provideHttpClientTesting(),
-        { provide: ContainerTemplateService, useClass: MockContainerTemplateService }
-      ]
-    }).compileComponents();
+      imports: [TemplateAddedTokenRowComponent, NoopAnimationsModule]
+    })
+      .overrideComponent(TemplateAddedTokenRowComponent, {
+        remove: { imports: [EnrollHotpComponent] },
+        add: { imports: [MockEnrollHotpComponent] }
+      })
+      .compileComponents();
 
     fixture = TestBed.createComponent(TemplateAddedTokenRowComponent);
-    containerTemplateServiceMock = TestBed.inject(ContainerTemplateService) as unknown as MockContainerTemplateService;
     component = fixture.componentInstance;
   });
-  it("should create", () => {
-    expect(component).toBeTruthy();
-  });
 
-  it("updateToken should call editToken on containerTemplateService", () => {
-    jest.spyOn(component.onEditToken, "emit");
-    const tokenUpdate = { serial: "T-001", type: "totp" };
-    component.updateToken(tokenUpdate);
-    expect(component.onEditToken.emit).toHaveBeenCalledWith(tokenUpdate);
-  });
-  describe("onRemoveToken", () => {
-    it("should call onRemoveToken emit with the correct token serial", () => {
-      jest.spyOn(component.onRemoveToken, "emit");
+  describe("Core Functionality", () => {
+    it("should create", () => {
+      fixture.componentRef.setInput("token", { type: "hotp" });
       fixture.componentRef.setInput("index", 0);
-      component.removeToken();
-      expect(component.onRemoveToken.emit).toHaveBeenCalledWith(0);
+      fixture.detectChanges();
+      expect(component).toBeTruthy();
     });
 
-    it("should not call onRemoveToken emit if index is not valid", () => {
-      jest.spyOn(component.onRemoveToken, "emit");
+    it("should render the correct child component based on token type", () => {
+      fixture.componentRef.setInput("token", { type: "hotp" });
+      fixture.componentRef.setInput("index", 0);
+      fixture.detectChanges();
+
+      const hotpChild = fixture.debugElement.query(By.css("app-enroll-hotp"));
+      expect(hotpChild).toBeTruthy();
+    });
+
+    it("should disable expansion panel if child has no form fields", () => {
+      fixture.componentRef.setInput("token", { type: "hotp" });
+      fixture.componentRef.setInput("index", 0);
+      fixture.detectChanges();
+
+      expect(component.childHadNoForm()).toBe(true);
+      const panel = fixture.debugElement.query(By.css("mat-expansion-panel"));
+      expect(panel.componentInstance.disabled).toBe(true);
+    });
+
+    it("should emit onRemoveToken when delete button is clicked", () => {
+      fixture.componentRef.setInput("token", { type: "hotp" });
+      fixture.componentRef.setInput("index", 5);
+      const spy = jest.spyOn(component.onRemoveToken, "emit");
+      fixture.detectChanges();
+
+      const deleteBtn = fixture.debugElement.query(By.css("button[mat-icon-button]"));
+      deleteBtn.nativeElement.click();
+
+      expect(spy).toHaveBeenCalledWith(5);
+    });
+
+    it("should sync form field changes to onEditToken", () => {
+      fixture.componentRef.setInput("token", { type: "hotp" });
+      fixture.componentRef.setInput("index", 0);
+      const spy = jest.spyOn(component.onEditToken, "emit");
+      fixture.detectChanges();
+
+      const mockControl = new FormControl("initial");
+      component.updateAdditionalFormFields({ testKey: mockControl });
+
+      mockControl.setValue("updatedValue");
+      expect(spy).toHaveBeenCalledWith({ testKey: "updatedValue" });
+    });
+  });
+
+  describe("Token Data Synchronization", () => {
+    it("should perform initial token fill for undefined fields", () => {
+      fixture.componentRef.setInput("token", { type: "hotp" });
+      fixture.componentRef.setInput("index", 0);
+      const spy = jest.spyOn(component.onEditToken, "emit");
+      fixture.detectChanges();
+
+      const mockControl = new FormControl("default-value");
+      component.updateAdditionalFormFields({ secret: mockControl });
+
+      expect(spy).toHaveBeenCalledWith({ secret: "default-value" });
+    });
+
+    it("should not overwrite existing token values during initial fill", () => {
+      fixture.componentRef.setInput("token", { type: "hotp", secret: "existing" });
+      fixture.componentRef.setInput("index", 0);
+      const spy = jest.spyOn(component.onEditToken, "emit");
+      fixture.detectChanges();
+
+      const mockControl = new FormControl("should-be-ignored");
+      component.updateAdditionalFormFields({ secret: mockControl });
+
+      expect(spy).not.toHaveBeenCalled();
+    });
+
+    it("should sync external token changes to existing form controls via effect", async () => {
+      fixture.componentRef.setInput("token", { type: "hotp", description: "old" });
+      fixture.componentRef.setInput("index", 0);
+
+      const mockControl = new FormControl("old");
+      component.updateAdditionalFormFields({ description: mockControl });
+      fixture.detectChanges();
+
+      fixture.componentRef.setInput("token", { type: "hotp", description: "new" });
+
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      expect(mockControl.value).toBe("new");
+    });
+  });
+
+  describe("Lifecycle & UI Logic", () => {
+    it("should update childHadNoForm to false when fields are added", () => {
+      fixture.componentRef.setInput("token", { type: "hotp" });
+      fixture.componentRef.setInput("index", 0);
+      fixture.detectChanges();
+
+      expect(component.childHadNoForm()).toBe(true);
+
+      component.updateAdditionalFormFields({ pin: new FormControl("") });
+      fixture.detectChanges();
+
+      expect(component.childHadNoForm()).toBe(false);
+    });
+
+    it("should replace old form controls when updateAdditionalFormFields is called again", () => {
+      fixture.componentRef.setInput("token", { type: "hotp" });
+      fixture.componentRef.setInput("index", 0);
+
+      const firstControl = new FormControl("first");
+      component.updateAdditionalFormFields({ key: firstControl });
+
+      const secondControl = new FormControl("second");
+      component.updateAdditionalFormFields({ key: secondControl });
+
+      expect(component.formControls()).toEqual({ key: secondControl });
+    });
+
+    it("should stop propagation on delete button click", () => {
+      fixture.componentRef.setInput("token", { type: "hotp" });
+      fixture.componentRef.setInput("index", 0);
+      fixture.detectChanges();
+
+      const deleteBtn = fixture.debugElement.query(By.css("button[mat-icon-button]"));
+      const clickEvent = new MouseEvent("click", { bubbles: true, cancelable: true });
+      const stopSpy = jest.spyOn(clickEvent, "stopPropagation");
+
+      deleteBtn.nativeElement.dispatchEvent(clickEvent);
+
+      expect(stopSpy).toHaveBeenCalled();
+    });
+
+    it("should handle invalid index by not emitting remove event", () => {
+      fixture.componentRef.setInput("token", { type: "hotp" });
       fixture.componentRef.setInput("index", -1);
+      const spy = jest.spyOn(component.onRemoveToken, "emit");
+      fixture.detectChanges();
+
       component.removeToken();
-      expect(component.onRemoveToken.emit).not.toHaveBeenCalled();
+      expect(spy).not.toHaveBeenCalled();
     });
   });
 });
