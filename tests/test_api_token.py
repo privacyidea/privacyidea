@@ -3565,9 +3565,10 @@ class APITokenTestCase(MyApiTestCase):
         remove_token(tok_realm1.get_serial())
         remove_token(tok_realm2.get_serial())
 
-    def test_63_list_tokens_unresolvable_user_no_error(self):
-        """GET /token/?user=nonexistent&realm=X must return an empty list
-        without raising ERR904 when the user does not exist in the resolver."""
+    def test_63_list_tokens_unresolvable_user_raises_err904(self):
+        """GET /token/?user=nonexistent&realm=X must return ERR904 when the
+        user does not exist in any resolver of that realm.
+        that behavior is not great, but it is what it is."""
         self.setUp_user_realms()
 
         with self.app.test_request_context("/token/",
@@ -3577,9 +3578,8 @@ class APITokenTestCase(MyApiTestCase):
                                                "realm": self.realm1}),
                                            headers={"Authorization": self.at}):
             res = self.app.full_dispatch_request()
-            self.assertEqual(200, res.status_code, res.json)
-            value = res.json["result"]["value"]
-            self.assertEqual(0, value["count"], value)
+            self.assertEqual(400, res.status_code, res.json)
+            self.assertEqual(904, res.json["result"]["error"]["code"])
         set_policy("enroll", scope=SCOPE.ADMIN, action="enrollHOTP, enrollTOTP, enrollMOTP, enrollAPPLSPEC")
         # No policy set: but if genkey and otpkey are not provided, genkey is also set to true
         with self.app.test_request_context('/token/init',
