@@ -96,7 +96,7 @@ describe("CreateUserDialogComponent", () => {
     expect(component.selectedResolver()).toBe("");
   });
 
-  it("selectedResolver signal shoould update when resolverControl value changes", () => {
+  it("selectedResolver signal should update when resolverControl value changes", () => {
     expect(component.selectedResolver()).toBe("resolver1");
     component.resolverControl.setValue("resolver2");
     fixture.detectChanges();
