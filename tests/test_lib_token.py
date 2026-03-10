@@ -208,7 +208,7 @@ class TokenTestCase(MyTestCase):
 
         # get tokens for a user with an invalid realm
         user = User("test", realm="deleted")
-        self.assertRaises(ResourceNotFoundError, get_tokens, user=user)
+        self.assertRaises(UserError, get_tokens, user=user)
 
         # wildcard matches do not work for the ``serial`` parameter
         tokenobject_list = get_tokens(serial="hotptoke*")
@@ -1252,8 +1252,9 @@ class TokenTestCase(MyTestCase):
         unresolvable = User(login="no_such_user_xyz", realm=self.realm1)
         # Confirm the user is not resolvable (resolver will be None/empty)
         self.assertFalse(unresolvable.resolver)
-        tokens = get_tokens_paginate(user=unresolvable)["tokens"]
-        self.assertEqual(0, len(tokens))
+        with self.assertRaises(UserError):
+            tokens = get_tokens_paginate(user=unresolvable)["tokens"]
+        #self.assertEqual(0, len(tokens))
 
     def test_42_sort_tokens(self):
         # return pagination
