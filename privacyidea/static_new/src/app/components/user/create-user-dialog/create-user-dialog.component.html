@@ -53,6 +53,6 @@
 
   <app-user-details-edit
     [resolver]="resolverControl.value"
-    (updateData)="onUpdateUserData($event)"></app-user-details-edit>
+    (updateData)="editedUserData.set($event)"></app-user-details-edit>
 
 </app-dialog-wrapper>

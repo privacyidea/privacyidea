@@ -17,26 +17,134 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { ComponentFixture, TestBed } from '@angular/core/testing';
+import {ComponentFixture, TestBed} from '@angular/core/testing';
 
-import { UserDetailsEditComponent } from './user-details-edit.component';
+import {UserDetailsEditComponent} from './user-details-edit.component';
+import {MockResolverService} from '../../../../testing/mock-services/mock-resolver-service';
+import {ResolverService} from '../../../services/resolver/resolver.service';
+import {EditUserData, UserData} from '../../../services/user/user.service';
 
 describe('UserDetailsEditComponent', () => {
-  let component: UserDetailsEditComponent;
-  let fixture: ComponentFixture<UserDetailsEditComponent>;
+    let component: UserDetailsEditComponent;
+    let fixture: ComponentFixture<UserDetailsEditComponent>;
+    let mockResolverService: MockResolverService;
 
-  beforeEach(async () => {
-    await TestBed.configureTestingModule({
-      imports: [UserDetailsEditComponent]
-    })
-    .compileComponents();
+    const testUserData: UserData = {
+        username: 'testuser',
+        resolver: 'testresolver',
+        email: 'test@example.com',
+        surname: 'Test',
+        givenname: 'User',
+        description: '',
+        editable: true,
+        mobile: '',
+        phone: '',
+        userid: '123'
+    };
 
-    fixture = TestBed.createComponent(UserDetailsEditComponent);
-    component = fixture.componentInstance;
-    fixture.detectChanges();
-  });
+    beforeEach(async () => {
+        await TestBed.configureTestingModule({
+            imports: [UserDetailsEditComponent],
+            providers: [
+                {provide: ResolverService, useClass: MockResolverService}
+            ]
+        }).compileComponents();
 
-  it('should create', () => {
-    expect(component).toBeTruthy();
-  });
+        mockResolverService = TestBed.inject(ResolverService) as unknown as MockResolverService;
+        mockResolverService.userAttributes.set(['username', 'email', 'surname', 'givenname']);
+
+        fixture = TestBed.createComponent(UserDetailsEditComponent);
+        component = fixture.componentInstance;
+        // Set required inputs using setInput (Angular 17+)
+        fixture.componentRef.setInput('resolver', 'testresolver');
+        fixture.componentRef.setInput('initialUserData', testUserData);
+        fixture.detectChanges();
+    });
+
+    it('should create', () => {
+        expect(component).toBeTruthy();
+    });
+
+    it('should initialize newUserData from initialUserData and userAttributes', () => {
+        const expected = {
+            username: 'testuser',
+            email: 'test@example.com',
+            surname: 'Test',
+            givenname: 'User'
+        };
+        expect(component["newUserData"]()).toEqual(expected);
+    });
+
+    it('should emit updateData and update newUserData on updateAttribute', () => {
+        let emitted: EditUserData | undefined;
+        component.updateData.subscribe((data: EditUserData) => emitted = data);
+        component.setNewUserData('email', 'changed@example.com');
+        expect(component["newUserData"]().email).toBe('changed@example.com');
+        expect(emitted).toEqual(expect.objectContaining({email: 'changed@example.com'}));
+    });
+
+    it('should compute attributes without username and userid', () => {
+        mockResolverService.userAttributes.set(['username', 'userid', 'email', 'surname']);
+        fixture.detectChanges();
+        expect(component.attributes()).toEqual(['email', 'surname']);
+    });
+
+    it('should compute attributeColumns as two columns', () => {
+        mockResolverService.userAttributes.set(['username', 'email', 'surname', 'givenname']);
+        fixture.detectChanges();
+        const columns = component.attributeColumns();
+        expect(columns.length).toBe(2);
+        expect(columns[0]).toEqual(['email', 'surname']);
+        expect(columns[1]).toEqual(['givenname']);
+    });
+
+    it('should set selectedResolverName on resolver input', () => {
+        fixture.componentRef.setInput('resolver', 'anotherresolver');
+        fixture.detectChanges();
+        expect(mockResolverService.selectedResolverName()).toBe('anotherresolver');
+    });
+
+    it('should handle empty userAttributes gracefully', () => {
+        mockResolverService.userAttributes.set([]);
+        fixture.detectChanges();
+        expect(component["newUserData"]()).toEqual({username: ''});
+        expect(component.attributes()).toEqual([]);
+    });
+
+    it("should re-init newUserData if userAttributes change", () => {
+        mockResolverService.userAttributes.set(['username', 'email']);
+        fixture.detectChanges();
+        expect(component["newUserData"]()).toEqual({
+            username: 'testuser',
+            email: "test@example.com"
+        });
+
+        mockResolverService.userAttributes.set(['username', 'surname']);
+        fixture.detectChanges();
+        expect(component["newUserData"]()).toEqual({
+            username: 'testuser',
+            surname: "Test"
+        });
+    });
+
+    it("should keep existing values in newUserData when userAttributes change", () => {
+        mockResolverService.userAttributes.set(['username', 'surname', "givenname", "email"]);
+        fixture.detectChanges();
+        expect(component["newUserData"]()).toEqual({
+            username: 'testuser',
+            surname: 'Test',
+            givenname: 'User',
+            email: "test@example.com"
+        });
+        component.setNewUserData("surname", "New-Name")
+
+        mockResolverService.userAttributes.set(['username', 'surname', "givenname", "mobile"]);
+        fixture.detectChanges();
+        expect(component["newUserData"]()).toEqual({
+            username: 'testuser',
+            surname: 'New-Name',
+            givenname: 'User',
+            mobile: ""
+        });
+    });
 });

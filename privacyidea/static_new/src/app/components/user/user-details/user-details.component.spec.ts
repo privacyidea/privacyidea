@@ -40,6 +40,8 @@ import {
 } from "../../../../testing/mock-services";
 import { ActivatedRoute } from "@angular/router";
 import { MockAuthService } from "../../../../testing/mock-services/mock-auth-service";
+import { EditUserDialogComponent } from "@components/user/edit-user-dialog/edit-user-dialog.component";
+import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 
 class MockMatDialog {
   open = jest.fn().mockReturnValue({
@@ -54,6 +56,19 @@ describe("UserDetailsComponent", () => {
   let userServiceMock: MockUserService;
   let tokenServiceMock: MockTokenService;
   let dialogMock: MockMatDialog;
+
+  const mockUserData = {
+    username: "alice",
+    resolver: "default",
+    description: "",
+    editable: true,
+    email: "alice@example.com",
+    givenname: "Alice",
+    surname: "Smith",
+    userid: "u123",
+    mobile: "",
+    phone: ""
+  };
 
   beforeEach(async () => {
     TestBed.resetTestingModule();
@@ -269,5 +284,45 @@ describe("UserDetailsComponent", () => {
     expect(keys).toContain("email");
     expect(keys).toContain("userid");
     expect(keys).toContain("resolver");
+  });
+
+  it("editUser opens EditUserDialogComponent with user data", () => {
+    const dialogSpy = jest.spyOn(dialogMock, "open");
+    component.userData.set(mockUserData);
+
+    component.editUser();
+
+    expect(dialogSpy).toHaveBeenCalledWith(
+      EditUserDialogComponent,
+      expect.objectContaining({
+        data: expect.objectContaining(mockUserData)
+      })
+    );
+  });
+
+  it("deleteUser opens confirmation dialog, deletes user, navigates, and reloads", () => {
+    const dialogSpy = jest.spyOn(dialogMock, "open");
+    component.userData.set(mockUserData);
+
+    const deleteSpy = jest.spyOn(userServiceMock, "deleteUser").mockReturnValue(of(true));
+    const routerSpy = jest.spyOn((component as any).router, "navigateByUrl").mockResolvedValue(true);
+    userServiceMock.usersResource = { reload: jest.fn() } as any;
+
+    component.deleteUser();
+
+    expect(dialogSpy).toHaveBeenCalledWith(
+      SimpleConfirmationDialogComponent,
+      expect.objectContaining({
+        data: expect.objectContaining({
+          title: "Delete User",
+          items: ["alice"],
+          itemType: "user",
+          confirmAction: expect.any(Object)
+        })
+      })
+    );
+    expect(deleteSpy).toHaveBeenCalledWith("default", "alice");
+    expect(routerSpy).toHaveBeenCalledWith(expect.any(String));
+    expect(userServiceMock.usersResource.reload).toHaveBeenCalled();
   });
 });

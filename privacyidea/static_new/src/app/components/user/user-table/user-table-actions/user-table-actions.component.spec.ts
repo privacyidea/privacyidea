@@ -20,20 +20,36 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { UserTableActionsComponent } from "./user-table-actions.component";
+import { DialogService } from "../../../../services/dialog/dialog.service";
+import { UserService } from "../../../../services/user/user.service";
+import { ResolverService } from "../../../../services/resolver/resolver.service";
+import { MockResolverService } from "../../../../../testing/mock-services/mock-resolver-service";
+import { MockDialogService, MockUserService } from "../../../../../testing/mock-services";
 
 
-describe("UserTalbeActionsComponent", () => {
+
+describe("UserTableActionsComponent", () => {
   let component: UserTableActionsComponent;
   let fixture: ComponentFixture<UserTableActionsComponent>;
+  let resolverService: MockResolverService;
+  let userService: MockUserService;
+  let dialogService: MockDialogService;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       providers: [
         provideHttpClient(),
-        provideHttpClientTesting()
+        provideHttpClientTesting(),
+        { provide: ResolverService, useClass: MockResolverService },
+        { provide: UserService, useClass: MockUserService },
+        { provide: DialogService, useClass: MockDialogService }
       ],
       imports: [UserTableActionsComponent]
     }).compileComponents();
+
+    resolverService = TestBed.inject(ResolverService) as unknown as MockResolverService;
+    userService = TestBed.inject(UserService) as unknown as MockUserService;
+    dialogService = TestBed.inject(DialogService) as unknown as MockDialogService;
 
     fixture = TestBed.createComponent(UserTableActionsComponent);
     component = fixture.componentInstance;
@@ -42,5 +58,26 @@ describe("UserTalbeActionsComponent", () => {
 
   it("should create", () => {
     expect(component).toBeTruthy();
+  });
+
+  it("anyEditableResolver returns true if editableResolvers is non-empty", () => {
+    resolverService.editableResolvers.set(["resolver1"]);
+    expect(component.anyEditableResolver()).toBe(true);
+  });
+
+  it("anyEditableResolver returns false if editableResolvers is empty", () => {
+    resolverService.editableResolvers.set([]);
+    expect(component.anyEditableResolver()).toBe(false);
+  });
+
+  it("openCreateUserDialog calls dialogService.openDialog with correct data", () => {
+    userService.selectedUserRealm.set("testRealm");
+    component.openCreateUserDialog();
+    expect(dialogService.openDialog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        component: expect.anything(),
+        data: { realm: "testRealm" }
+      })
+    );
   });
 });

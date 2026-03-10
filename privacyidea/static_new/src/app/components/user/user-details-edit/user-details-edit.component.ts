@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, effect, inject, input, linkedSignal, output, WritableSignal } from "@angular/core";
+import {Component, computed, effect, inject, input, linkedSignal, output, signal, WritableSignal} from "@angular/core";
 import { EditUserData, UserData } from "../../../services/user/user.service";
 import { ResolverService, ResolverServiceInterface } from "../../../services/resolver/resolver.service";
 import { MatInput } from "@angular/material/input";
@@ -40,12 +40,16 @@ export class UserDetailsEditComponent {
   initialUserData = input<UserData>();
   updateData = output<EditUserData>();
 
-  newUserData: WritableSignal<EditUserData> = linkedSignal(() => {
+  // Store the latest user data to preserve edits
+  private lastUserData: WritableSignal<EditUserData | null> = signal(null);
+
+  protected newUserData: WritableSignal<EditUserData> = linkedSignal(() => {
     let newData: EditUserData = { username: "" };
     const attributes = this.resolverService.userAttributes();
-    const initial = this.initialUserData();
+    const previousData = this.lastUserData() || this.initialUserData();
     for (const attribute of attributes) {
-      newData[attribute] = initial?.[attribute] ?? "";
+      // Preserve existing value for attributes that remain, else initialize with empty string
+      newData[attribute] = previousData?.[attribute] ?? "";
     }
     return newData;
   });
@@ -68,8 +72,10 @@ export class UserDetailsEditComponent {
     });
   }
 
-  updateAttribute(attribute: string, value: string) {
-    this.newUserData.set({ ...this.newUserData(), [attribute]: value });
+  setNewUserData(attribute: string, value: string) {
+    const updated = { ...this.newUserData(), [attribute]: value };
+    this.newUserData.set(updated);
+    this.lastUserData.set(updated);
     this.updateData.emit(this.newUserData());
   }
 }

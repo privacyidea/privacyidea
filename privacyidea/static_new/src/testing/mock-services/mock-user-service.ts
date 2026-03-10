@@ -113,4 +113,8 @@ export class MockUserService implements UserServiceInterface {
     this.selectedUsername.set(name);
     return name;
   });
+
+  createUser = jest.fn();
+  editUser = jest.fn();
+  deleteUser = jest.fn();
 }

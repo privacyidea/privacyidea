@@ -76,7 +76,6 @@ export class CreateUserDialogComponent extends AbstractDialogComponent<CreateUse
     resolver: this.resolverControl
   });
 
-  // Signal to track invalid state
   inputGroupInvalid = signal(this.inputGroup.invalid);
 
   constructor() {
@@ -111,10 +110,6 @@ export class CreateUserDialogComponent extends AbstractDialogComponent<CreateUse
     }
     return result;
   });
-
-  onUpdateUserData(newData: EditUserData): void {
-    this.editedUserData.set(newData);
-  }
 
   create() {
     if (this.inputGroup.invalid) {
