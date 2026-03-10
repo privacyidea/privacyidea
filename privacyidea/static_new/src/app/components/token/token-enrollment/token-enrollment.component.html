@@ -283,7 +283,7 @@
             [matAutocomplete]="containerAuto"
             matInput />
         </app-clearable-input>
-        <mat-label>Enter Container</mat-label>
+        <mat-label i18n>Container Serial</mat-label>
         <mat-autocomplete #containerAuto="matAutocomplete">
           @for (option of containerService.filteredContainerOptions(); track option) {
             <mat-option [value]="option">{{ option }}</mat-option>

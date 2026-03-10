@@ -43,7 +43,9 @@
                 <mat-option
                   class="select-option"
                   [value]="type"
-                  [matTooltip]="type.info.split(':')[1]">
+                  [matTooltip]="type.info.split(':')[1]"
+                  #tooltip="matTooltip"
+                  (click)="tooltip.hide()">
                   {{ type.info.split(":")[0] }}
                 </mat-option>
               }
@@ -52,7 +54,7 @@
         </div>
         <div class="enroll-button-container">
           <button
-            [disabled]="!tokenService.selectedTokenType()"
+            [disabled]="formGroupSignal().invalid || !tokenService.selectedTokenType()"
             class="action-button-1 width-238"
             mat-stroked-button
             type="submit">
@@ -163,7 +165,8 @@
         <app-enroll-push
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
           (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)"
-          (reopenDialogChange)="updateReopenDialog($event)" />
+          (reopenDialogChange)="updateReopenDialog($event)"
+          (onEnrollmentResponseChange)="updateOnEnrollmentResponse($event)" />
       }
       @case ("question") {
         <app-enroll-question
@@ -198,13 +201,15 @@
       @case ("webauthn") {
         <app-enroll-webauthn
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
+          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)"
+          (onEnrollmentResponseChange)="updateOnEnrollmentResponse($event)" />
       }
       @case ("passkey") {
         <app-enroll-passkey
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
           (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)"
-          (reopenDialogChange)="updateReopenDialog($event)" />
+          (reopenDialogChange)="updateReopenDialog($event)"
+          (onEnrollmentResponseChange)="updateOnEnrollmentResponse($event)" />
       }
     }
     <mat-form-field class="description-form">
@@ -215,24 +220,32 @@
         matInput
         placeholder="Enter description"
         rows="3"></textarea>
+      @if (descriptionControl.hasError("required")) {
+        <mat-error i18n>
+          Description is <strong>required</strong>.
+        </mat-error>
+      } @else if (descriptionControl.hasError("maxlength")) {
+        <mat-error i18n>
+          Description cannot exceed <strong>80 characters</strong>.
+        </mat-error>
+      }
     </mat-form-field>
 
-    @if (tokenService.selectedTokenType().key !== "passkey") {
-      <div class="flex-column user-pin-container margin-bottom-16">
+    @if (tokenService.selectedTokenType().key !== "passkey" && authService.actionAllowed("enrollpin")) {
+      <div class="user-pin-container">
         <h4 class="enroll-h4">Set PIN</h4>
         <input
-          class="hidden-input"
+          style="display: none"
           type="text" />
         <input
-          class="hidden-input"
+          style="display: none"
           type="password" />
-        <div class="user-pin-input">
+        <div class="user-pin-input margin-bottom-16">
           <input
             [formControl]="setPinControl"
             [type]="'password'"
             class="input"
             placeholder="PIN" />
-
           <input
             [formControl]="repeatPinControl"
             [type]="'password'"
@@ -248,29 +261,24 @@
       </div>
     }
 
-    <div class="flex-row gap-16">
-      @if (authService.actionAllowed("container_list")) {
-        <div class="flex-column width-100">
-          <h4 class="enroll-h4">Add Token to a Container</h4>
-          <mat-form-field class="width-47 input-height">
-            <mat-label>Enter Container</mat-label>
-            <app-clearable-input
-              (onClick)="selectedContainerControl.setValue(null)"
-              [showClearButton]="containerService.selectedContainer() !== ''">
-              <input
-                [formControlName]="'selectedContainer'"
-                [formControl]="selectedContainerControl"
-                [matAutocomplete]="containerAuto"
-                matInput />
-            </app-clearable-input>
-            <mat-autocomplete #containerAuto="matAutocomplete">
-              @for (option of containerService.filteredContainerOptions(); track option) {
-                <mat-option [value]="option">{{ option }}</mat-option>
-              }
-            </mat-autocomplete>
-          </mat-form-field>
-        </div>
-      }
-    </div>
+    @if (authService.actionAllowed("container_list")) {
+      <h4 class="flex-column enroll-h4">Add Token to a Container</h4>
+      <mat-form-field class="width-33 input-height">
+        <app-clearable-input
+          (onClick)="selectedContainerControl.setValue('')"
+          [showClearButton]="containerService.selectedContainer() !== ''">
+          <input
+            [formControl]="selectedContainerControl"
+            [matAutocomplete]="containerAuto"
+            matInput />
+        </app-clearable-input>
+        <mat-label i18n>Container Serial</mat-label>
+        <mat-autocomplete #containerAuto="matAutocomplete">
+          @for (option of containerService.filteredContainerOptions(); track option) {
+            <mat-option [value]="option">{{ option }}</mat-option>
+          }
+        </mat-autocomplete>
+      </mat-form-field>
+    }
   </form>
 </div>

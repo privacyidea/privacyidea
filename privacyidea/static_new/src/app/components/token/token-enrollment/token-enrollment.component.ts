@@ -365,15 +365,19 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     this.onEnrollmentResponse.set(event);
   }
 
+  setDescriptionValidators(): void {
+    const isRequired = this.descriptionRequired();
+    const currentValidators = [Validators.maxLength(80)];
+    if (isRequired) {
+      currentValidators.push(Validators.required);
+    }
+    this.descriptionControl.setValidators(currentValidators);
+    this.descriptionControl.updateValueAndValidity();
+  }
+
   constructor() {
     effect(() => {
-      const isRequired = this.descriptionRequired();
-      const currentValidators = [Validators.maxLength(80)];
-      if (isRequired) {
-        currentValidators.push(Validators.required);
-      }
-      this.descriptionControl.setValidators(currentValidators);
-      this.descriptionControl.updateValueAndValidity();
+      this.setDescriptionValidators();
     });
   }
 

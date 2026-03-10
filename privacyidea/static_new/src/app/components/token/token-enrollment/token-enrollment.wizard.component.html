@@ -17,6 +17,7 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div
+  #scrollContainer
   appScrollToTop
   aria-label="Token Enrollment"
   class="token-enrollment-container"
@@ -32,23 +33,30 @@
   <form
     (ngSubmit)="enrollToken()"
     [formGroup]="formGroupSignal()">
-    <div class="enroll-button-container margin-bottom-16">
-      <button
-        [disabled]="formGroupSignal().invalid"
-        class="action-button-1 width-238"
-        mat-stroked-button
-        type="submit">
-        <mat-icon>add</mat-icon>
-        Enroll
-      </button>
-      <button
-        (click)="reopenEnrollmentDialog()"
-        [matTooltip]="'Reopen enrollment dialog'"
-        [ngClass]="{ hidden: !canReopenEnrollmentDialog() }"
-        mat-icon-button
-        type="button">
-        <mat-icon>open_in_new</mat-icon>
-      </button>
+    <div #stickySentinel></div>
+    <div
+      #stickyHeader
+      class="sticky-header">
+      <div class="sticky-controls ali-center">
+        <div class="enroll-button-container">
+          <button
+            [disabled]="formGroupSignal().invalid"
+            class="action-button-1 width-238"
+            mat-stroked-button
+            type="submit">
+            <mat-icon>add</mat-icon>
+            Enroll
+          </button>
+          <button
+            (click)="reopenEnrollmentDialog()"
+            [matTooltip]="'Reopen enrollment dialog'"
+            [ngClass]="{ hidden: !canReopenEnrollmentDialog() }"
+            mat-icon-button
+            type="button">
+            <mat-icon>open_in_new</mat-icon>
+          </button>
+        </div>
+      </div>
     </div>
     @switch (authService.defaultTokentype() || "hotp") {
       @case ("hotp") {
@@ -150,7 +158,8 @@
           [wizard]="wizard"
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
           (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)"
-          (reopenDialogChange)="updateReopenDialog($event)" />
+          (reopenDialogChange)="updateReopenDialog($event)"
+          (onEnrollmentResponseChange)="updateOnEnrollmentResponse($event)" />
       }
       @case ("question") {
         <app-enroll-question
@@ -188,17 +197,19 @@
         <app-enroll-webauthn
           [wizard]="wizard"
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
+          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)"
+          (onEnrollmentResponseChange)="updateOnEnrollmentResponse($event)" />
       }
       @case ("passkey") {
         <app-enroll-passkey
           [wizard]="wizard"
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
           (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)"
-          (reopenDialogChange)="updateReopenDialog($event)" />
+          (reopenDialogChange)="updateReopenDialog($event)"
+          (onEnrollmentResponseChange)="updateOnEnrollmentResponse($event)" />
       }
     }
-    @if (authService.requireDescription().includes(tokenType().key)) {
+    @if (descriptionRequired()) {
       <mat-form-field class="description-form">
         <mat-label>Description</mat-label>
         <textarea
@@ -207,6 +218,15 @@
           matInput
           placeholder="Enter description"
           rows="3"></textarea>
+        @if (descriptionControl.hasError("required")) {
+          <mat-error i18n>
+            Description is <strong>required</strong>.
+          </mat-error>
+        } @else if (descriptionControl.hasError("maxlength")) {
+          <mat-error i18n>
+            Description cannot exceed <strong>80 characters</strong>.
+          </mat-error>
+        }
       </mat-form-field>
     }
   </form>

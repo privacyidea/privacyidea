@@ -39,7 +39,7 @@ import { AuthService } from "../../../services/auth/auth.service";
 import { VersioningService } from "../../../services/version/version.service";
 import { ContentService } from "../../../services/content/content.service";
 import { DialogService } from "../../../services/dialog/dialog.service";
-import { FormControl, FormGroup } from "@angular/forms";
+import { FormControl, FormGroup, Validators } from "@angular/forms";
 import { of } from "rxjs";
 import { provideHttpClient } from "@angular/common/http";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
@@ -769,22 +769,97 @@ describe("TokenEnrollmentComponent", () => {
     });
 
     it("show custom content if defined", () => {
-      authServiceMock.authData.set({
-        ...authServiceMock.authData()!,
-        token_wizard: true
+        authServiceMock.authData.set({
+          ...authServiceMock.authData()!,
+          token_wizard: true
+        });
+        wizardFixture.detectChanges();
+        const req = httpTestingController.expectOne(
+          environment.proxyUrl + "/static/public/customize/token-enrollment.wizard.pre.top.html"
+        );
+        req.flush("Custom Content");
+        const req2 = httpTestingController.expectOne(
+          environment.proxyUrl + "/static/public/customize/token-enrollment.wizard.pre.bottom.html"
+        );
+        req2.flush("");
+        wizardFixture.detectChanges();
+        expect(wizardFixture.nativeElement.textContent).toContain("Custom Content");
+        expect(wizardFixture.nativeElement.textContent).not.toContain("Enroll HOTP Token");
       });
-      wizardFixture.detectChanges();
-      const req = httpTestingController.expectOne(
-        environment.proxyUrl + "/static/public/customize/token-enrollment.wizard.pre.top.html"
-      );
-      req.flush("Custom Content");
-      const req2 = httpTestingController.expectOne(
-        environment.proxyUrl + "/static/public/customize/token-enrollment.wizard.pre.bottom.html"
-      );
-      req2.flush("");
-      wizardFixture.detectChanges();
-      expect(wizardFixture.nativeElement.textContent).toContain("Custom Content");
-      expect(wizardFixture.nativeElement.textContent).not.toContain("Enroll HOTP Token");
+
+    describe("wizard renders description correctly", () => {
+      beforeEach(() => {
+        wizardFixture.detectChanges();
+        const req = httpTestingController.expectOne(
+          environment.proxyUrl + "/static/public/customize/token-enrollment.wizard.pre.top.html"
+        );
+        req.flush("");
+        const req2 = httpTestingController.expectOne(
+          environment.proxyUrl + "/static/public/customize/token-enrollment.wizard.pre.bottom.html"
+        );
+        req2.flush("");
+      });
+
+      it("sets description validator correctly when description is required", () => {
+        // Set require_description for HOTP
+        authServiceMock.authData.set({
+          ...authServiceMock.authData()!,
+          require_description: ["hotp"],
+          token_wizard: true,
+          default_tokentype: "hotp"
+        });
+        wizardFixture.detectChanges();
+        wizardComponent.setDescriptionValidators();
+        wizardFixture.detectChanges();
+        expect(wizardComponent.descriptionRequired()).toBe(true);
+        expect(wizardComponent.descriptionControl.hasValidator(Validators.required)).toBe(true);
+        // Should have required error if empty
+        wizardComponent.descriptionControl.setValue("");
+        wizardComponent.descriptionControl.markAsTouched();
+        wizardComponent.descriptionControl.updateValueAndValidity();
+        expect(wizardComponent.descriptionControl.hasError("required")).toBe(true);
+      });
+
+      it("does not set required validator if description is not required", () => {
+        // Remove require_description
+        authServiceMock.authData.set({
+          ...authServiceMock.authData()!,
+          require_description: ["totp"],
+          token_wizard: true,
+          default_tokentype: "hotp"
+        });
+        wizardFixture.detectChanges();
+        wizardComponent.setDescriptionValidators();
+        wizardFixture.detectChanges();
+        expect(wizardComponent.descriptionRequired()).toBe(false);
+        expect(wizardComponent.descriptionControl.hasValidator(Validators.required)).toBe(false);
+        wizardComponent.descriptionControl.setValue("");
+        wizardComponent.descriptionControl.markAsTouched();
+        wizardComponent.descriptionControl.updateValueAndValidity();
+        expect(wizardComponent.descriptionControl.hasError("required")).toBe(false);
+      });
+
+      it("shows description input only if description is required", () => {
+        // Description required
+        authServiceMock.authData.set({
+          ...authServiceMock.authData()!,
+          require_description: ["hotp"],
+          token_wizard: true,
+          default_tokentype: "hotp"
+        });
+        wizardFixture.detectChanges();
+        expect(wizardFixture.nativeElement.querySelector("mat-form-field.description-form")).not.toBeNull();
+
+        // Description not required
+        authServiceMock.authData.set({
+          ...authServiceMock.authData()!,
+          require_description: [],
+          token_wizard: true,
+          default_tokentype: "hotp"
+        });
+        wizardFixture.detectChanges();
+        expect(wizardFixture.nativeElement.querySelector("mat-form-field.description-form")).toBeNull();
+      });
     });
   });
 });
