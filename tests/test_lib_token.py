@@ -1233,6 +1233,28 @@ class TokenTestCase(MyTestCase):
         self.assertEqual(1, len(tokens))
         token.delete_token()
 
+        # Realm-only filter (no login in the user object)
+        # A User with empty login but a realm set should filter by realm without raising.
+        self.setUp_user_realm2()
+        tok1 = init_token({"type": "hotp", "genkey": True}, user=User("hans", self.realm2))
+        tok2 = init_token({"type": "hotp", "genkey": True}, user=User("cornelius", self.realm1))
+        realm2_only = User(login="", realm=self.realm2)
+        tokens = get_tokens_paginate(user=realm2_only)["tokens"]
+        serials = [t["serial"] for t in tokens]
+        self.assertIn(tok1.get_serial(), serials)
+        self.assertNotIn(tok2.get_serial(), serials)
+        tok1.delete_token()
+        tok2.delete_token()
+
+        # Unresolvable user does not raise ERR904, returns empty result
+        # A User whose login cannot be found in any resolver should return no tokens
+        # instead of raising a UserError (ERR904).
+        unresolvable = User(login="no_such_user_xyz", realm=self.realm1)
+        # Confirm the user is not resolvable (resolver will be None/empty)
+        self.assertFalse(unresolvable.resolver)
+        tokens = get_tokens_paginate(user=unresolvable)["tokens"]
+        self.assertEqual(0, len(tokens))
+
     def test_42_sort_tokens(self):
         # return pagination
         tokendata = get_tokens_paginate(sortby=Token.serial, page=1, psize=5)

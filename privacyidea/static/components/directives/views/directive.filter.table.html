@@ -1,17 +1,24 @@
 <span class="glyphicon glyphicon-filter"
       ng-click="filterVisible=!filterVisible; focusInput=true"
-      ng-class="{filtered:filterValue}"></span>
+      ng-class="{filtered:filterValue}"
+      role="button"
+      aria-label="{{ 'Toggle filter' | translate }}"
+      title="{{ 'Toggle filter' | translate }}"
+      aria-hidden="false"></span>
 <div ng-show="filterVisible" class="pi-filter-wrap">
     <input ng-change="updateFilter()"
            ng-model="filterValue" focus-me="focusInput" placeholder="filter"
-           class="form-control pi-filter-input"
-           ng-class="{'pi-filter-input-with-submit': hasSubmit}">
+           class="form-control pi-filter-input">
     <span class="pi-filter-btns">
-        <button ng-if="hasSubmit" class="pi-filter-btn" type="button" ng-click="submitFilter()">
-            <span class="glyphicon glyphicon-search"></span>
+        <button ng-if="hasSubmit" class="pi-filter-btn" type="button" ng-click="submitFilter()"
+                aria-label="{{ 'Search' | translate }}"
+                title="{{ 'Search' | translate }}">
+            <span class="glyphicon glyphicon-search" aria-hidden="true"></span>
         </button>
-        <button class="pi-filter-btn" type="button" ng-click="clearFilter()">
-            <span class="glyphicon glyphicon-remove"></span>
+        <button class="pi-filter-btn" type="button" ng-click="clearFilter()"
+                aria-label="{{ 'Clear filter' | translate }}"
+                title="{{ 'Clear filter' | translate }}">
+            <span class="glyphicon glyphicon-remove" aria-hidden="true"></span>
         </button>
     </span>
 </div>

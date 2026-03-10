@@ -54,6 +54,12 @@ myApp.directive("piFilter", ["instanceUrl", "versioningSuffixProvider", function
         templateUrl: instanceUrl + "/static/components/directives/views/directive.filter.table.html" + versioningSuffixProvider.$get(),
         link: function (scope, element, attr, ctrl) {
             scope.hasSubmit = !!attr.onSubmit;
+
+            // keep the input in sync if the model is set externally
+            ctrl.$render = function () {
+                scope.filterValue = ctrl.$viewValue;
+            };
+
             scope.updateFilter = function () {
                 ctrl.$setViewValue(scope.filterValue);
             };

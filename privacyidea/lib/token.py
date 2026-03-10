@@ -75,7 +75,7 @@ from typing import Union
 from dateutil.tz import tzlocal
 from flask import Request
 from flask_sqlalchemy.session import Session
-from sqlalchemy import and_, func, or_, select
+from sqlalchemy import and_, false, func, or_, select
 from sqlalchemy.sql import Select
 from sqlalchemy.sql.expression import delete
 
@@ -297,20 +297,26 @@ def _create_token_query(tokentype=None, token_type_list=None, realm=None, assign
 
     # Filtering by user object
     if user and not user.is_empty():
-        if user.realm:
-            realm_db = select(Realm).where(func.lower(Realm.name) == user.realm.lower())
-            # Execute the subquery using the provided session
-            realm_db_result = session.execute(realm_db).scalars().first()
-            if realm_db_result:
-                sql_query = sql_query.where(TokenOwner.realm_id == realm_db_result.id)
-            else:
-                raise ResourceNotFoundError(f"Realm '{user.realm}' does not exist.")
-        if user.resolver:
-            sql_query = sql_query.where(TokenOwner.resolver == user.resolver)
-        (uid, _rtype, _resolver) = user.get_user_identifiers()
-        if uid:
-            uid_str = str(uid) if isinstance(uid, int) else uid
-            sql_query = sql_query.where(TokenOwner.user_id == uid_str)
+        if user.login and not user.resolver:
+            # A specific username was requested but could not be found in any
+            # resolver. Apply an impossible filter so zero tokens are returned
+            # instead of leaking all tokens that match the realm constraint.
+            sql_query = sql_query.where(false())
+        else:
+            if user.realm:
+                realm_db = select(Realm).where(func.lower(Realm.name) == user.realm.lower())
+                # Execute the subquery using the provided session
+                realm_db_result = session.execute(realm_db).scalars().first()
+                if realm_db_result:
+                    sql_query = sql_query.where(TokenOwner.realm_id == realm_db_result.id)
+                else:
+                    raise ResourceNotFoundError(f"Realm '{user.realm}' does not exist.")
+            if user.resolver:
+                sql_query = sql_query.where(TokenOwner.resolver == user.resolver)
+                (uid, _rtype, _resolver) = user.get_user_identifiers()
+                if uid:
+                    uid_str = str(uid) if isinstance(uid, int) else uid
+                    sql_query = sql_query.where(TokenOwner.user_id == uid_str)
 
     # Filtering by token status flags
     if active is not None:

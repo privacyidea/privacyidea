@@ -62,7 +62,7 @@ from .lib.utils import optional, send_result, send_csv_result, required, getPara
 from ..lib.tokenclass import ROLLOUTSTATE
 from ..lib.tokens.passkeytoken import PasskeyTokenClass
 from ..lib.tokens.webauthntoken import WebAuthnTokenClass
-from ..lib.user import get_user_from_param
+from ..lib.user import get_user_from_param, User
 from ..lib.token import (init_token, get_tokens_paginate, assign_token,
                          unassign_token, remove_token, enable_token,
                          revoke_token,
@@ -487,11 +487,16 @@ def list_api():
     # If an explicit "user" query parameter is given, build a filter User from
     # it (and the optional "realm" param). This lets admins query tokens of a
     # specific user via GET /token/?user=alice&realm=defrealm.
-    # When no "user" param is present, fall back to request.User so that a
-    # regular authenticated user still only sees their own tokens.
+    # When no "user" param is present but a "realm" param is given, build a
+    # realm-only User so the token filter applies the realm constraint.
+    # When no "user" or "realm" param is present, fall back to request.User so
+    # that a regular authenticated user still only sees their own tokens.
     user_param = getParam(param, "user", optional)
+    realm_param = getParam(param, "realm", optional)
     if user_param:
         user = get_user_from_param(param)
+    elif realm_param:
+        user = User(login="", realm=realm_param)
     else:
         user = request.User
     output_format = getParam(param, "outform", optional)

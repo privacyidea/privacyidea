@@ -16,13 +16,10 @@ pi-filter {
 /* input fills the full column width; padding-right reserves space for the button(s) */
 .pi-filter-input {
     width: 100%;
-    padding-right: 22px;
+    padding-right: 40px; /* room for clear + search buttons */
     box-sizing: border-box;
 }
 
-.pi-filter-input-with-submit {
-    padding-right: 40px;
-}
 
 /* buttons are absolutely positioned inside the input on the right edge */
 .pi-filter-btns {
@@ -47,3 +44,15 @@ pi-filter {
 .pi-filter-btn:hover {
     color: #333;
 }
+
+/* expanded user/realm filter panel inside the th */
+.pi-user-filter {
+    display: block;
+    min-width: 160px;
+}
+
+.pi-user-filter select {
+    margin-bottom: 4px;
+}
+
+

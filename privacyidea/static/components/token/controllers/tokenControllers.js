@@ -48,6 +48,22 @@ myApp.controller("tokenController", ['TokenFactory', 'ConfigFactory', '$scope',
         $scope.loggedInUser = AuthFactory.getUser();
         $scope.selectedToken = {serial: null};
         $scope.clientpart = "";
+        $scope.realms = {};
+        $scope.userRealmFilter = "";
+        $scope.userFilterVisible = false;
+        $scope.realmFilterVisible = false;
+
+        // Load realms for the user/realm filter dropdowns (admin only)
+        if ($scope.loggedInUser.role === "admin") {
+            ConfigFactory.getRealms(function (data) {
+                $scope.realms = data.result.value;
+                angular.forEach($scope.realms, function (realm, realmname) {
+                    if (realm.default && !$scope.userRealmFilter) {
+                        $scope.userRealmFilter = realmname;
+                    }
+                });
+            });
+        }
 
         // Change the pagination
         $scope.pageChanged = function () {
@@ -65,6 +81,12 @@ myApp.controller("tokenController", ['TokenFactory', 'ConfigFactory', '$scope',
                 $scope.params.rollout_state = "*" + ($scope.rolloutStateFilter || "") + "*";
                 // "user" is resolved against the user store by exact name, so no wildcard wrapping.
                 $scope.params.user = $scope.usernameFilter || "";
+                // realm for user lookup — always pass when set, independently of the username filter.
+                // We delete it explicitly here so the ** cleanup loop below doesn't need to know about it.
+                delete $scope.params.realm;
+                if ($scope.userRealmFilter) {
+                    $scope.params.realm = $scope.userRealmFilter;
+                }
                 $scope.params.userid = "*" + ($scope.userIdFilter || "") + "*";
                 $scope.params.resolver = "*" + ($scope.resolverFilter || "") + "*";
                 $scope.params.pagesize = $scope.token_page_size;

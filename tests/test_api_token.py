@@ -3537,7 +3537,49 @@ class APITokenTestCase(MyApiTestCase):
         remove_token(token.get_serial())
         delete_policy("helpdesk")
 
-    def test_62_init_token_with_force_genkey(self):
+    def test_62_list_tokens_realm_only_filter(self):
+        """GET /token/?realm=X without a user param must return tokens assigned
+        to users in that realm and must not raise ERR904."""
+        self.setUp_user_realms()
+        self.setUp_user_realm2()
+
+        tok_realm1 = init_token({"genkey": 1},
+                                user=User(login="cornelius", realm=self.realm1,
+                                          resolver=self.resolvername1))
+        tok_realm2 = init_token({"genkey": 1},
+                                user=User(login="hans", realm=self.realm2,
+                                          resolver=self.resolvername1))
+
+        # realm filter without user param — must succeed and only return realm1 tokens
+        with self.app.test_request_context("/token/",
+                                           method="GET",
+                                           query_string=urlencode({"realm": self.realm1}),
+                                           headers={"Authorization": self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            value = res.json["result"]["value"]
+            serials = [t["serial"] for t in value["tokens"]]
+            self.assertIn(tok_realm1.get_serial(), serials)
+            self.assertNotIn(tok_realm2.get_serial(), serials)
+
+        remove_token(tok_realm1.get_serial())
+        remove_token(tok_realm2.get_serial())
+
+    def test_63_list_tokens_unresolvable_user_no_error(self):
+        """GET /token/?user=nonexistent&realm=X must return an empty list
+        without raising ERR904 when the user does not exist in the resolver."""
+        self.setUp_user_realms()
+
+        with self.app.test_request_context("/token/",
+                                           method="GET",
+                                           query_string=urlencode({
+                                               "user": "no_such_user_xyz",
+                                               "realm": self.realm1}),
+                                           headers={"Authorization": self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            value = res.json["result"]["value"]
+            self.assertEqual(0, value["count"], value)
         set_policy("enroll", scope=SCOPE.ADMIN, action="enrollHOTP, enrollTOTP, enrollMOTP, enrollAPPLSPEC")
         # No policy set: but if genkey and otpkey are not provided, genkey is also set to true
         with self.app.test_request_context('/token/init',

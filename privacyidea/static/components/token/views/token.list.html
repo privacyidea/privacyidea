@@ -71,17 +71,63 @@
                            ng-keypress="($event.which==13)?get():return"
                 ></pi-filter>
             </th>
-            <th class="pifilter" ng-show="loggedInUser.role == 'admin'">
+            <th ng-show="loggedInUser.role == 'admin'" class="pifilter">
                 <button class="btn btn-default unsorted btn-capitalize"
                         pi-sort-by="username"
                         translate>user
                 </button>
-                <pi-filter ng-model="usernameFilter"
-                           ng-keypress="($event.which==13)?get():return"
-                           on-submit="get()"
-                ></pi-filter>
+                <span class="glyphicon glyphicon-filter"
+                      ng-click="userFilterVisible=!userFilterVisible"
+                      ng-class="{filtered: usernameFilter}"
+                      role="button"
+                      aria-label="{{ 'Toggle user filter' | translate }}"
+                      title="{{ 'Toggle user filter' | translate }}"></span>
+                <div ng-show="userFilterVisible" class="pi-user-filter">
+                    <select class="form-control input-sm"
+                            ng-model="userRealmFilter"
+                            ng-change="get()"
+                            ng-options="realmname as realmname for (realmname, realm) in realms"
+                            title="{{ 'Filter by realm' | translate }}">
+                    </select>
+                    <div class="pi-filter-wrap">
+                        <input class="form-control pi-filter-input"
+                               ng-model="usernameFilter"
+                               ng-keypress="($event.which==13)?get():return"
+                               placeholder="{{ 'username' | translate }}">
+                        <span class="pi-filter-btns">
+                            <button class="pi-filter-btn" type="button"
+                                    ng-click="usernameFilter=''; get()"
+                                    aria-label="{{ 'Clear filter' | translate }}"
+                                    title="{{ 'Clear filter' | translate }}">
+                                <span class="glyphicon glyphicon-remove" aria-hidden="true"></span>
+                            </button>
+                            <button class="pi-filter-btn" type="button"
+                                    ng-click="get()"
+                                    aria-label="{{ 'Search' | translate }}"
+                                    title="{{ 'Search' | translate }}">
+                                <span class="glyphicon glyphicon-search" aria-hidden="true"></span>
+                            </button>
+                        </span>
+                    </div>
+                </div>
             </th>
-            <th ng-show="loggedInUser.role == 'admin'" translate>realm</th>
+            <th ng-show="loggedInUser.role == 'admin'" class="pifilter">
+                <span translate>realm</span>
+                <span class="glyphicon glyphicon-filter"
+                      ng-click="realmFilterVisible=!realmFilterVisible"
+                      role="button"
+                      aria-label="{{ 'Toggle realm filter' | translate }}"
+                      title="{{ 'Toggle realm filter' | translate }}"></span>
+                <div ng-show="realmFilterVisible" class="pi-user-filter">
+                    <select class="form-control input-sm"
+                            ng-model="userRealmFilter"
+                            ng-change="get()"
+                            ng-options="realmname as realmname for (realmname, realm) in realms"
+                            title="{{ 'Filter by realm' | translate }}">
+                        <option value="" translate>— all —</option>
+                    </select>
+                </div>
+            </th>
             <th class="pifilter" ng-show="loggedInUser.role == 'admin'"><translate>Token realms</translate>
                 <pi-filter ng-model="tokenrealmFilter"
                            ng-change="get('livesearch')"
