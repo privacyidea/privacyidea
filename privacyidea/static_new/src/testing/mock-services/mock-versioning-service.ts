@@ -1,3 +1,6 @@
+import { VersioningServiceInterface } from "../../app/services/version/version.service";
+import { signal } from "@angular/core";
+
 /**
  * (c) NetKnights GmbH 2026,  https://netknights.it
  *
@@ -16,6 +19,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-export class MockVersioningService {
-  version = { set: jest.fn() } as any;
+export class MockVersioningService implements VersioningServiceInterface {
+  rawVersion = signal("3.13.1.dev224");
+  version = signal("3.13.1");
+  getVersion = jest.fn().mockReturnValue("3.13.1");
 }

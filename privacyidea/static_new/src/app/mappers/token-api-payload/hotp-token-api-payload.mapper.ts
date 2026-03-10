@@ -31,6 +31,8 @@ export interface HotpEnrollmentData extends TokenEnrollmentData {
   otpKey?: string;
   otpLength?: number;
   hashAlgorithm?: string;
+  twoStepInit?: boolean;
+  otpKeyFormat?: string;
 }
 
 export interface HotpEnrollmentPayload extends TokenEnrollmentPayload {
@@ -39,6 +41,8 @@ export interface HotpEnrollmentPayload extends TokenEnrollmentPayload {
   otplen?: number;
   hashlib?: string;
   serial?: string | null;
+  "2stepinit"?: boolean;
+  otpkeyformat?: string;
 }
 
 @Injectable({ providedIn: "root" })
@@ -51,7 +55,9 @@ export class HotpApiPayloadMapper extends BaseApiPayloadMapper implements TokenA
       otpkey: data.generateOnServer ? null : (data.otpKey ?? null),
       genkey: data.generateOnServer ? 1 : 0,
       ...(data.otpLength !== undefined && { otplen: Number(data.otpLength) }),
-      ...(data.hashAlgorithm !== undefined && { hashlib: data.hashAlgorithm })
+      ...(data.hashAlgorithm !== undefined && { hashlib: data.hashAlgorithm }),
+      ...(data.twoStepInit !== undefined && { "2stepinit": data.twoStepInit }),
+      ...(data.otpKey && data.otpKeyFormat && { otpkeyformat: data.otpKeyFormat })
     };
 
     if (data.onlyAddToRealm) {

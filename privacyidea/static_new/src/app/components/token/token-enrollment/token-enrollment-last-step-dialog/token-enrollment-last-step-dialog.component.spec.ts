@@ -20,17 +20,15 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { TokenEnrollmentLastStepDialogComponent } from "./token-enrollment-last-step-dialog.component";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { ContentService } from "../../../../services/content/content.service";
-import { TokenService } from "../../../../services/token/token.service";
+import { TokenEnrollmentDialogData, TokenService } from "../../../../services/token/token.service";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { MockMatDialogRef } from "../../../../../testing/mock-mat-dialog-ref";
 import { MockContentService, MockTokenService } from "../../../../../testing/mock-services";
-import { TokenEnrollmentLastStepDialogData } from "./token-enrollment-last-step-dialog.self-service.component";
-import { signal } from "@angular/core";
 
 describe("TokenEnrollmentLastStepDialogComponent", () => {
   let component: TokenEnrollmentLastStepDialogComponent;
   let fixture: ComponentFixture<TokenEnrollmentLastStepDialogComponent>;
-  const mockDialogData: TokenEnrollmentLastStepDialogData = {
+  const mockDialogData: TokenEnrollmentDialogData = {
     response: {
       type: "totp",
       detail: {
@@ -41,14 +39,13 @@ describe("TokenEnrollmentLastStepDialogComponent", () => {
           img: "",
           value: "otpauth://totp/Example:user?secret=ABCDEF1234567890&issuer=Example"
         }
-      }
+      },
+      result: { status: true }
     },
-    tokentype: { key: "totp", name: "TOTP Token", info: "", text: "" },
-    serial: signal(null),
-    enrollToken: {} as any,
-    user: null,
+    tokenType: "totp",
     userRealm: "test-realm",
-    onlyAddToRealm: false
+    onlyAddToRealm: false,
+    enrollParameters: { data: {} as any, mapper: jest.fn() as any }
   };
 
   beforeEach(async () => {
@@ -71,8 +68,17 @@ describe("TokenEnrollmentLastStepDialogComponent", () => {
     expect(component).toBeTruthy();
   });
 
-  it("should show QR code for supported token types", () => {
-    component.data.tokentype.key = "hotp";
-    expect(component.showQRCode()).toBe(true);
+  it("should render title for normal enrollment", () => {
+    expect(component["rollover"]).toBe(false);
+    expect(component.title()).toBe("Token Successfully Enrolled");
+  });
+
+  it("should render title for rollover", () => {
+    mockDialogData.rollover = true;
+    fixture = TestBed.createComponent(TokenEnrollmentLastStepDialogComponent);
+    component = fixture.componentInstance;
+
+    expect(component["rollover"]).toBe(true);
+    expect(component.title()).toBe("Token Successfully Rolled Over");
   });
 });

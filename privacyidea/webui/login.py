@@ -226,4 +226,7 @@ def single_page_application():
 @login_blueprint.route('/config', methods=['GET'])
 def get_ui_config():
     render_context = get_render_context()
+    # For the new UI we do not define a default logo
+    logo = current_app.config.get("PI_LOGO", "")
+    render_context['logo'] = logo
     return send_result(render_context)

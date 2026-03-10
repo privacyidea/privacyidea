@@ -21,6 +21,7 @@ import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http"
 import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
 import { AuthService } from "../auth/auth.service";
+import { ContentService, ContentServiceInterface } from "../content/content.service";
 import { computed, inject, Injectable, Signal, signal, WritableSignal } from "@angular/core";
 import { catchError, Observable, throwError } from "rxjs";
 
@@ -74,6 +75,7 @@ export interface LDAPResolverData extends ResolverData {
   DN_TEMPLATE?: string;
   MULTIVALUEATTRIBUTES?: string;
   recursive_group_search?: boolean;
+  group_base_dn?: string;
   group_search_filter?: string;
   group_name_attribute?: string;
   group_attribute_mapping_key?: string;
@@ -100,7 +102,44 @@ export interface SQLResolverData extends ResolverData {
 }
 
 export interface PasswdResolverData extends ResolverData {
-  fileName: string;
+  fileName?: string;
+  filename?: string;
+}
+
+export interface HTTPResolverData extends ResolverData {
+  base_url?: string;
+  attribute_mapping?: { [key: string]: string };
+  Editable?: boolean;
+  verify_tls?: boolean;
+  tls_ca_path?: string;
+  timeout?: number;
+  advanced?: boolean;
+  config_get_user_list?: any;
+  config_get_user_by_id?: any;
+  config_get_user_by_name?: any;
+  config_create_user?: any;
+  config_edit_user?: any;
+  config_delete_user?: any;
+  config_authorization?: any;
+  config_user_auth?: any;
+  config_get_user_groups?: any;
+}
+
+export interface EntraIDResolverData extends HTTPResolverData {
+  client_id?: string;
+  tenant?: string;
+  client_credential_type?: "secret" | "certificate";
+  client_secret?: string;
+  client_certificate?: {
+    private_key_file?: string;
+    private_key_password?: string;
+    certificate_fingerprint?: string;
+  };
+  authority?: string;
+}
+
+export interface KeycloakResolverData extends HTTPResolverData {
+  realm?: string;
 }
 
 export interface SCIMResolverData extends ResolverData {
@@ -123,6 +162,8 @@ export interface ResolverServiceInterface {
   postResolver(resolverName: string, data: any): Observable<PiResponse<any, any>>;
 
   deleteResolver(resolverName: string): Observable<PiResponse<any, any>>;
+
+  getDefaultResolverConfig(resolverType: string): Observable<PiResponse<any, any>>;
 }
 
 @Injectable({
@@ -131,13 +172,30 @@ export interface ResolverServiceInterface {
 export class ResolverService implements ResolverServiceInterface {
   readonly resolverBaseUrl = environment.proxyUrl + "/resolver/";
   private readonly authService = inject(AuthService);
+  private readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly http: HttpClient = inject(HttpClient);
-  resolversResource = httpResource<PiResponse<Resolvers>>({
-    url: this.resolverBaseUrl,
-    method: "GET",
-    headers: this.authService.getHeaders()
+  resolversResource = httpResource<PiResponse<Resolvers>>(() => {
+    if (!this.contentService.onAnyUsersRoute()) {
+      return undefined;
+    }
+    return {
+      url: this.resolverBaseUrl,
+      method: "GET",
+      headers: this.authService.getHeaders()
+    };
   });
   selectedResolverName = signal<string>("");
+  selectedResolverResource = httpResource<PiResponse<any>>(() => {
+    const resolverName = this.selectedResolverName();
+    if (resolverName === "") {
+      return undefined;
+    }
+    return {
+      url: this.resolverBaseUrl + resolverName,
+      method: "GET",
+      headers: this.authService.getHeaders()
+    };
+  });
   resolvers = computed<Resolver[]>(() => {
     const resolvers = this.resolversResource.value()?.result?.value;
     return resolvers ? Object.entries(resolvers).map(([name, data]) => ({
@@ -177,15 +235,12 @@ export class ResolverService implements ResolverServiceInterface {
     );
   }
 
-  selectedResolverResource = httpResource<PiResponse<any>>(() => {
-    const resolverName = this.selectedResolverName();
-    if (resolverName === "") {
-      return undefined;
-    }
-    return {
-      url: this.resolverBaseUrl + resolverName,
-      method: "GET",
-      headers: this.authService.getHeaders()
-    };
-  });
+  getDefaultResolverConfig(resolverType: string): Observable<PiResponse<any, any>> {
+    return this.http.get<PiResponse<any, any>>(this.resolverBaseUrl + resolverType + "/default", { headers: this.authService.getHeaders() }).pipe(
+      catchError((error) => {
+        console.error(`Error during getting default resolver config for ${resolverType}:`, error);
+        return throwError(() => error);
+      })
+    );
+  }
 }

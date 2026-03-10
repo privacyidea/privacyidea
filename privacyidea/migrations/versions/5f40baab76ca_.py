@@ -35,10 +35,11 @@ def downgrade():
         op.drop_column('policycondition', 'handle_missing_data')
     except (OperationalError, ProgrammingError) as exx:
         msg = str(exx.orig).lower()
-        if "no such column" in msg or "does not exist" in msg:
+        if "no such column" in msg or "does not exist" in msg or "check that it exists" in msg:
             print("Column 'handle_missing_data' already removed.")
         else:
             print("Could not remove column 'handle_missing_data' from table 'policycondition'.")
             print(exx)
+            raise
 
     # ### end Alembic commands ###

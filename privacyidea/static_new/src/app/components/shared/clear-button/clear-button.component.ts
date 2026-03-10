@@ -33,9 +33,9 @@ import { MatTooltip } from "@angular/material/tooltip";
 })
 export class ClearButtonComponent {
   toolTipText = input<string>();
-  @Output() onClick = new EventEmitter<void>();
+  @Output() onClick = new EventEmitter<MouseEvent>();
 
-  clearInput(): void {
-    this.onClick.emit();
+  clearInput(event: MouseEvent): void {
+    this.onClick.emit(event);
   }
 }

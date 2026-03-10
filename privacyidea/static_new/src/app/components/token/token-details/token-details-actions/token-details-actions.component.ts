@@ -55,6 +55,7 @@ import { Router } from "@angular/router";
 import { DialogService, DialogServiceInterface } from "../../../../services/dialog/dialog.service";
 import { TokenRolloverComponent } from "./token-rollover/token-rollover.component";
 import { tokenTypes } from "../../../../utils/token.utils";
+import { VerifyEnrollmentComponent } from "@components/token/token-details/token-details-actions/verify-enrollment/verify-enrollment.component";
 
 
 @Component({
@@ -68,7 +69,8 @@ import { tokenTypes } from "../../../../utils/token.utils";
     SetPinActionComponent,
     ResyncTokenActionComponent,
     TestOtpPinActionComponent,
-    MatButton
+    MatButton,
+    VerifyEnrollmentComponent
   ],
   templateUrl: "./token-details-actions.component.html",
   styleUrl: "./token-details-actions.component.scss"

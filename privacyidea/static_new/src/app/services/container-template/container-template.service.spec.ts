@@ -447,7 +447,7 @@ describe("ContainerTemplateService", () => {
     });
 
     it("should handle http error when fetching templatesResource", async () => {
-      contentServiceMock.onTokensContainersTemplates.set(true);
+      contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_CONTAINERS_TEMPLATES);
       TestBed.flushEffects();
       const req = httpMock.expectOne(`${service.containerTemplateBaseUrl}`);
       req.error(new ProgressEvent("error"));
@@ -457,7 +457,7 @@ describe("ContainerTemplateService", () => {
     });
 
     it("should handle http error when fetching templateTokentypesResource", async () => {
-      contentServiceMock.onTokensContainersTemplates.set(true);
+      contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_CONTAINERS_TEMPLATES);
       TestBed.flushEffects();
       const req = httpMock.expectOne(`${environment.proxyUrl}/container/template/tokentypes`);
       req.error(new ProgressEvent("error"));
@@ -467,7 +467,7 @@ describe("ContainerTemplateService", () => {
     });
 
     it("should handle malformed success response when fetching templatesResource", async () => {
-      contentServiceMock.onTokensContainersTemplates.set(true);
+      contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_CONTAINERS_TEMPLATES);
       TestBed.flushEffects();
       const req = httpMock.expectOne(`${service.containerTemplateBaseUrl}`);
       req.flush({ result: { value: {} } }); // Malformed, missing 'templates'
@@ -530,7 +530,7 @@ describe("ContainerTemplateService", () => {
       }
     });
     it("should fetch templates without query parameter if no container type is selected", () => {
-      contentServiceMock.onTokensContainersTemplates.set(true);
+      contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_CONTAINERS_TEMPLATES);
       containerServiceMock.selectedContainerType.set(undefined);
       TestBed.flushEffects();
       const req = httpMock.expectOne(`${service.containerTemplateBaseUrl}`);
@@ -542,7 +542,7 @@ describe("ContainerTemplateService", () => {
   describe("Authentication", () => {
     it("should not make any http requests if user is not logged in", () => {
       authServiceMock.actionAllowed.mockReturnValue(false);
-      contentServiceMock.onTokensContainersTemplates.set(true);
+      contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_CONTAINERS_TEMPLATES);
       TestBed.flushEffects();
       httpMock.expectNone(`${service.containerTemplateBaseUrl}`);
       httpMock.expectNone(`${environment.proxyUrl}/container/template/tokentypes`);
