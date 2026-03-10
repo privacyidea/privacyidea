@@ -2,11 +2,10 @@
 # SPDX-License-Identifier: CC0-1.0
 #
 # Runs the full unit test suite against MariaDB.
-# On push/PR: only the oldest and newest supported Python versions are tested
-# to keep feedback fast. The middle versions (3.11, 3.12, 3.13) run nightly
-# as a dependency health check — they are unlikely to catch Python-version
-# bugs that min+max would miss, but they will surface broken installs or
-# subtle stdlib regressions introduced and reverted mid-stream.
+# On pull requests: only the oldest and newest supported Python versions are
+# tested to keep feedback fast. The middle versions run nightly as a dependency
+# health check — they are unlikely to catch Python-version bugs that min+max
+# would miss, but they will surface broken installs or subtle stdlib regressions.
 # Migration tests are excluded — they have their own dedicated workflow.
 
 name: Unit Tests MariaDB
@@ -27,8 +26,7 @@ on:
 permissions:
   contents: read
 
-# Cancel any in-progress run for the same branch/PR so that a push to a
-# branch with an open PR does not trigger the job twice.
+# Cancel any in-progress run for the same PR when a new commit is pushed.
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true

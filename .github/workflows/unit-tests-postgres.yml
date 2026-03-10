@@ -20,8 +20,7 @@ on:
 permissions:
   contents: read
 
-# Cancel any in-progress run for the same branch/PR so that a push to a
-# branch with an open PR does not trigger the job twice.
+# Cancel any in-progress run for the same PR when a new commit is pushed.
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
