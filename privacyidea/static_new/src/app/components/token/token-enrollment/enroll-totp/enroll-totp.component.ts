@@ -150,12 +150,10 @@ export class EnrollTotpComponent implements OnInit {
       });
     }
 
-    console.log("Force :", this.authService.checkForceServerGenerateOTPKey("totp"));
     if (this.authService.checkForceServerGenerateOTPKey("totp")) {
       this.generateOnServerFormControl.disable({ emitEvent: false });
     } else {
       this.generateOnServerFormControl.valueChanges.subscribe((generate) => {
-        console.log("Generate on server changed:", generate);
         if (!generate) {
           this.otpKeyFormControl.enable({ emitEvent: false });
           this.otpKeyFormControl.setValidators([Validators.required, Validators.minLength(16)]);
