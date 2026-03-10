@@ -40,8 +40,8 @@ myApp.controller("tokenMenuController", ['$scope', '$location', '$rootScope', 'A
     }]);
 
 myApp.controller("tokenController", ['TokenFactory', 'ConfigFactory', '$scope',
-    '$location', 'AuthFactory', 'instanceUrl', '$rootScope',
-    function (TokenFactory, ConfigFactory, $scope, $location, AuthFactory, instanceUrl, $rootScope) {
+    '$location', 'AuthFactory', 'instanceUrl', '$rootScope', 'inform', 'gettextCatalog',
+    function (TokenFactory, ConfigFactory, $scope, $location, AuthFactory, instanceUrl, $rootScope, inform, gettextCatalog) {
         $scope.tokensPerPage = $scope.token_page_size;
         $scope.params = {page: 1, sortdir: "asc"};
         $scope.reverse = false;
@@ -57,7 +57,7 @@ myApp.controller("tokenController", ['TokenFactory', 'ConfigFactory', '$scope',
         if ($scope.loggedInUser.role === "admin") {
             ConfigFactory.getRealms(function (data) {
                 $scope.realms = data.result.value;
-                // Do not pre-select any realm — leave userRealmFilter empty so
+                // Do not preselect any realm — leave userRealmFilter empty so
                 // "— all —" is the effective default and all tokens are shown.
             });
         }
@@ -83,6 +83,12 @@ myApp.controller("tokenController", ['TokenFactory', 'ConfigFactory', '$scope',
                 delete $scope.params.realm;
                 if ($scope.userRealmFilter) {
                     $scope.params.realm = $scope.userRealmFilter;
+                } else if ($scope.usernameFilter) {
+                    // No realm selected but a username is given: the server will use the default realm.
+                    inform.add(
+                        gettextCatalog.getString("Searching for a user in all realms is not possible, using default realm."),
+                        {type: "info", ttl: 5000}
+                    );
                 }
                 $scope.params.userid = "*" + ($scope.userIdFilter || "") + "*";
                 $scope.params.resolver = "*" + ($scope.resolverFilter || "") + "*";
