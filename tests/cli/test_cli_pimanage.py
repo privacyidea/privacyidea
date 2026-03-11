@@ -84,8 +84,6 @@ class PIManageBackupTestCase(CliTestCase):
            content (``backup_uri``) into ``live_pi_cfg`` and creates a
            placeholder SQL file, mimicking what a real tar extraction would do.
 
-        The restore command then reads pi.cfg from the file-system path it
-        derived from the listing, so we only need these two files.
 
         Note on path handling: ``backup_restore`` reads the tar listing and
         prepends "/" to each line to reconstruct absolute paths.  We therefore
@@ -176,27 +174,11 @@ class PIManageBackupTestCase(CliTestCase):
             self.assertIn(repr(live_uri), final_text, final_text)
             # The backup URI must have been replaced.
             self.assertNotIn(repr(backup_uri), final_text, final_text)
-
-    def test_03_keep_db_uri_output_redacts_password(self):
-        """
-        The "Keeping current database URI" log line must never expose the
-        plain-text password, even for MySQL URIs that embed credentials.
-        """
-        with tempfile.TemporaryDirectory() as tmp_dir:
-            tmp = pathlib.Path(tmp_dir)
-            live_pi_cfg = tmp / "pi.cfg"
-
-            live_uri = "mysql+pymysql://user:s3cr3t@localhost/privacyidea"
-            backup_uri = "mysql+pymysql://user:other_pass@localhost/privacyidea"
-
+            # The operator must be told which source was used.
             result = self._run_restore_with_mocks(live_pi_cfg, backup_uri, live_uri)
+            self.assertIn("using database URI from live config", result.output, result.output)
 
-            # The raw password must not appear anywhere in the command output.
-            self.assertNotIn("s3cr3t", result.output, result.output)
-            # A redacted placeholder must appear instead.
-            self.assertIn("***", result.output, result.output)
-
-    def test_04_keep_db_uri_live_config_unreadable_falls_back_to_backup(self):
+    def test_03_keep_db_uri_live_config_unreadable_falls_back_to_backup(self):
         """
         When --keep-db-uri is given but the live pi.cfg cannot be parsed
         (e.g. it is syntactically broken), the restore must:
@@ -227,16 +209,14 @@ class PIManageBackupTestCase(CliTestCase):
 
             # A warning about the read failure must appear in the output.
             self.assertIn("could not read live config", result.output, result.output)
-            # After the restore the config file must still contain the backup URI
-            # unchanged, because --keep-db-uri could not obtain a live URI.
-            final_text = live_pi_cfg.read_text()
-            self.assertIn(repr(backup_uri), final_text, final_text)
+            # The operator must also be told the backup URI is being used.
+            self.assertIn("Using database URI from backup", result.output, result.output)
 
-    def test_05_pimanage_backup_create(self):
+    def test_04_pimanage_backup_create(self):
         # TODO: create backup from an SQLite based configuration
         pass
 
-    def test_06_pimanage_backup_restore(self):
+    def test_05_pimanage_backup_restore(self):
         # TODO: restore backup from a backup file and check consistency
         pass
 

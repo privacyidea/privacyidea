@@ -193,23 +193,13 @@ def backup_restore(backup_file, keep_db_uri):
             current_sqluri = current_cfg.get("SQLALCHEMY_DATABASE_URI")
         except Exception as e:
             click.secho(f"--keep-db-uri: could not read live config ({e}). "
-                        "The database URI from the backup will be used instead.",
+                        "Using database URI from backup.",
                         fg="yellow")
         if current_sqluri:
-            # Redact password from URI before printing so credentials are not
-            # leaked into terminal output, logs or automation transcripts.
-            parsed = urlparse(current_sqluri)
-            if parsed.password:
-                redacted_netloc = parsed.netloc.replace(
-                    f":{parsed.password}@", ":***@", 1
-                )
-                redacted_url = parsed._replace(netloc=redacted_netloc).geturl()
-            else:
-                redacted_url = current_sqluri
-            click.echo(f"Keeping current database URI: {redacted_url}")
-        elif keep_db_uri:
-            click.secho("--keep-db-uri specified but no SQLALCHEMY_DATABASE_URI "
-                        "found in the current config. Using the one from the backup.",
+            click.echo("--keep-db-uri: using database URI from live config.")
+        else:
+            click.secho("--keep-db-uri: no SQLALCHEMY_DATABASE_URI found in live config. "
+                        "Using database URI from backup.",
                         fg="yellow")
 
     subprocess.run(["tar", "-zxf", backup_file, "-C", "/"])
