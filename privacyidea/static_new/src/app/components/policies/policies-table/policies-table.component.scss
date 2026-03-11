@@ -30,22 +30,6 @@
   gap: var(--global-gap);
   overflow: auto;
 
-  .filter-paginator-container {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    width: 100%;
-    gap: var(--global-gap);
-
-    app-policy-filter {
-      flex: 1;
-    }
-
-    mat-paginator {
-      background: transparent;
-    }
-  }
-
   .policies-table {
     border-collapse: collapse;
     table-layout: auto;

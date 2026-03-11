@@ -8,7 +8,19 @@
         @for (entry of token | keyvalue; track entry.key) {
           @if (entry.key !== "type") {
             <span class="token-item">
-              <strong>{{ entry.key }}:</strong>&nbsp;{{ entry.value }}
+              <strong>{{ entry.key }}:</strong>&nbsp;
+
+              @if (isObject(entry.value)) {
+                <span class="nested-group">
+                  @for (nested of asObject(entry.value) | keyvalue; track nested.key) {
+                    <span class="nested-item">
+                      <small>{{ nested.key }}:</small> {{ nested.value }}
+                    </span>
+                  }
+                </span>
+              } @else {
+                {{ entry.value }}
+              }
             </span>
           }
         }

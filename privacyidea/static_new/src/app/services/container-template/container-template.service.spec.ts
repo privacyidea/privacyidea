@@ -308,8 +308,7 @@ describe("ContainerTemplateService", () => {
       container_type: "generic",
       default: false,
       template_options: {
-        tokens: [],
-        options: undefined
+        tokens: []
       }
     };
 
@@ -360,8 +359,7 @@ describe("ContainerTemplateService", () => {
         container_type: "generic",
         default: false,
         template_options: {
-          tokens: [{ type: "token1", genkey: false, hashlib: "", otplen: 6, timeStep: 0, user: false }],
-          options: undefined
+          tokens: [{ type: "token1", genkey: false, hashlib: "", otplen: 6, timeStep: 0, user: false }]
         }
       };
     });
@@ -398,8 +396,7 @@ describe("ContainerTemplateService", () => {
         container_type: "generic",
         default: false,
         template_options: {
-          tokens: [],
-          options: undefined
+          tokens: []
         }
       };
       service.postTemplateEdits(template);
@@ -435,8 +432,7 @@ describe("ContainerTemplateService", () => {
         container_type: "generic",
         default: false,
         template_options: {
-          tokens: [],
-          options: undefined
+          tokens: []
         }
       };
       service.postTemplateEdits(template);

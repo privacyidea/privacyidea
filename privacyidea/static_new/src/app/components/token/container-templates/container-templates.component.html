@@ -33,7 +33,8 @@
       [pageSize]="pageSize()"
       showFirstLastButtons />
   </div>
-  <app-container-templates-table-actions [selectedTemplates]="selection.selected">
+
+  <app-container-templates-table-actions [selectedTemplates]="selectedTemplates()">
   </app-container-templates-table-actions>
 
   <table
@@ -47,7 +48,7 @@
         mat-header-cell
         *matHeaderCellDef>
         <mat-checkbox
-          (change)="$event ? toggleAllRows() : null"
+          (change)="toggleAllRows()"
           [checked]="isAllSelected()"
           [indeterminate]="isPartiallySelected()"
           [disabled]="containerTemplateService.templates().length === 0">
@@ -58,8 +59,8 @@
         *matCellDef="let row">
         <mat-checkbox
           (click)="$event.stopPropagation()"
-          (change)="$event ? selection.toggle(row) : null"
-          [checked]="selection.isSelected(row)"
+          (change)="updateSelection($event, row)"
+          [checked]="selectedTemplateNames().has(row.name)"
           [disabled]="!row.name">
         </mat-checkbox>
       </td>
@@ -93,39 +94,32 @@
           </div>
         </th>
 
-        @switch (column.key) {
-          @case ("name") {
-            <td
-              mat-cell
-              *matCellDef="let element">
-              @if (element.name) {
+        <td
+          mat-cell
+          *matCellDef="let element"
+          [class]="'col-' + column.key">
+          @if (element.name) {
+            @switch (column.key) {
+              @case ("name") {
                 <a
                   (click)="openEditDialog(element)"
                   class="cursor-pointer">
                   {{ element.name }}
                 </a>
               }
-            </td>
-          }
-          @case ("tokens") {
-            <td
-              mat-cell
-              *matCellDef="let element"
-              class="options-cell">
-              @if (element.name) {
+              @case ("tokens") {
                 <app-view-template-tokens [templateTokens]="element.template_options.tokens">
                 </app-view-template-tokens>
               }
-            </td>
+              @case ("default") {
+                {{ element.default }}
+              }
+              @default {
+                {{ element[column.key] }}
+              }
+            }
           }
-          @default {
-            <td
-              mat-cell
-              *matCellDef="let element">
-              {{ element[column.key] }}
-            </td>
-          }
-        }
+        </td>
       </ng-container>
     }
 

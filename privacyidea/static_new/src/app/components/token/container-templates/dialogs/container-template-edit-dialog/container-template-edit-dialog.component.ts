@@ -102,6 +102,9 @@ export class ContainerTemplateEditDialogComponent extends PendingChangesDialogCo
   // --- Computed - General State ---
   readonly isNewTemplate = computed(() => !this.data);
   readonly containerTypes = computed(() => this.containerTemplateService.availableContainerTypes());
+  readonly containerTypesTitleCase = computed(() =>
+    this.containerTemplateService.availableContainerTypes().map((type) => type.charAt(0).toUpperCase() + type.slice(1))
+  );
   readonly availableTokenTypes = computed(() =>
     this.containerTemplateService.getTokenTypesForContainerType(this.template().container_type)
   );

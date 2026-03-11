@@ -68,15 +68,13 @@ export class ContainerTemplatesTableActionsComponent {
     const templatesToDelete = this.selectedTemplates();
     if (templatesToDelete.length === 0) return;
 
-    for (const template of templatesToDelete) {
-      const confirmed = await this.dialogService.openDialogAsync({
-        component: ContainerTemplateDeleteDialogComponent,
-        data: template
-      });
+    const confirmed = await this.dialogService.openDialogAsync({
+      component: ContainerTemplateDeleteDialogComponent,
+      data: templatesToDelete
+    });
 
-      if (confirmed === true) {
-        this.containerTemplateService.deleteTemplate(template.name);
-      }
+    if (confirmed === true) {
+      this.containerTemplateService.deleteTemplates(templatesToDelete.map((t) => t.name));
     }
   }
 }

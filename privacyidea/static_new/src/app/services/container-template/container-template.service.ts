@@ -47,7 +47,8 @@ export interface ContainerTemplateServiceInterface {
 
   canSaveTemplate(template: ContainerTemplate): boolean;
   copyTemplate(template: ContainerTemplate, newName: string): Promise<boolean>;
-  deleteTemplate(name: string): void;
+  deleteTemplate(name: string): Promise<void>;
+  deleteTemplates(name: string[]): Promise<void>;
   getTokenTypesForContainerType(containerType: string): string[];
   postTemplateEdits(template: ContainerTemplate): Promise<boolean>;
 }
@@ -135,12 +136,12 @@ export class ContainerTemplateService implements ContainerTemplateServiceInterfa
     return this.postTemplateEdits(newTemplate);
   }
 
-  deleteTemplate(name: string): void {
+  async deleteTemplate(name: string) {
     if (!this.authService.actionAllowed("container_template_delete")) {
       this.notificationService.openSnackBar("You are not allowed to delete container templates.");
       return;
     }
-    this.http
+    const observable = this.http
       .delete<PiResponse<any>>(`${environment.proxyUrl}/container/template/${name}`, {
         headers: this.authService.getHeaders()
       })
@@ -151,13 +152,20 @@ export class ContainerTemplateService implements ContainerTemplateServiceInterfa
           this.notificationService.openSnackBar("Failed to delete template. " + message);
           return throwError(() => error);
         })
-      )
-      .subscribe({
-        next: () => {
-          this.templatesResource.reload();
-          this.notificationService.openSnackBar("Successfully deleted template.");
-        }
-      });
+      );
+    observable.subscribe({
+      next: () => {
+        this.templatesResource.reload();
+        this.notificationService.openSnackBar("Successfully deleted template.");
+      }
+    });
+    await lastValueFrom(observable);
+  }
+
+  async deleteTemplates(name: string[]) {
+    for (const n of name) {
+      await this.deleteTemplate(n);
+    }
   }
 
   getTokenTypesForContainerType(containerType: string): string[] {

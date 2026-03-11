@@ -25,6 +25,7 @@
   <div class="filter-paginator-container">
     @if (authService.actionAllowed("policyread")) {
       <app-policy-filter
+        class="policies-table-filter"
         #filterComponent
         [initialFilter]="filter()"
         [unfilteredPolicies]="policyService.allPolicies()"

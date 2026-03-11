@@ -38,4 +38,8 @@ export class ContainerTemplateAddTokenComponent {
   addToken(tokenType: string) {
     this.onAddToken.emit(tokenType);
   }
+
+  protected _toTitleCase(str: string): string {
+    return str.charAt(0).toUpperCase() + str.slice(1);
+  }
 }

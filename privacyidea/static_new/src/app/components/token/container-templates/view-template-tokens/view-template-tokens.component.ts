@@ -30,4 +30,12 @@ import { CommonModule } from "@angular/common";
 })
 export class ViewTemplateTokensComponent {
   readonly templateTokens = input.required<Array<any> | undefined>();
+
+  isObject(value: any): boolean {
+    return value !== null && typeof value === "object" && !Array.isArray(value);
+  }
+
+  asObject(value: any): Object {
+    return value as Object;
+  }
 }

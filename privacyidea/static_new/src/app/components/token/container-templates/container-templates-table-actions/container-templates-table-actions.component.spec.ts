@@ -25,7 +25,7 @@ import { ContainerTemplateService } from "../../../../services/container-templat
 import { MockDialogService, MockContainerTemplateService } from "src/testing/mock-services";
 import { ContainerTemplateEditDialogComponent } from "../dialogs/container-template-edit-dialog/container-template-edit-dialog.component";
 import { ContainerTemplateCopyDialogComponent } from "../dialogs/container-template-copy-dialog/container-template-copy-dialog.component";
-import { ContainerTemplateDeleteDialogComponent } from "../dialogs/container-template-delete-dialog/container-template-delete-dialog.component";
+import { ContainerTemplateDeleteDialogComponent } from "../dialogs/container-template-delete-single-dialog/container-template-delete-dialog.component";
 import { By } from "@angular/platform-browser";
 
 describe("ContainerTemplatesTableActionsComponent", () => {

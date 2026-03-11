@@ -16,7 +16,6 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-
 <app-dialog-wrapper
   title="Delete Container Template"
   i18n-title
@@ -26,10 +25,21 @@
   <div class="delete-confirmation-container">
     <mat-icon class="warn-icon">warning</mat-icon>
     <div class="message-content">
-      <p i18n>
-        Are you sure you want to delete the template <b>{{ data.name }}</b
-        >?
-      </p>
+      @if (data.length === 1) {
+        <p i18n>
+          Are you sure you want to delete the template <b>{{ data[0].name }}</b
+          >?
+        </p>
+      } @else {
+        <p i18n>Are you sure you want to delete the following templates?</p>
+        <ul class="template-list">
+          @for (template of data; track template.name) {
+            <li>
+              <b>{{ template.name }}</b>
+            </li>
+          }
+        </ul>
+      }
       <p
         class="sub-message"
         i18n>

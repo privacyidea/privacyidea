@@ -19,8 +19,7 @@
     display: block;
     overflow-x: auto;
     width: 100%;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
+    padding-bottom: var(--half-global-padding);
 
     &::-webkit-scrollbar {
       display: none;

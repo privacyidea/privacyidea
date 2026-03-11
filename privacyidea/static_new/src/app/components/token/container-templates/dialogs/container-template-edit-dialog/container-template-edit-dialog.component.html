@@ -55,9 +55,10 @@
       </mat-card>
 
       <div>
-        <h3 i18n>Select Scope</h3>
+        <h3 i18n>Container Type</h3>
         <app-selector-buttons
           [values]="containerTypes()"
+          [labels]="containerTypesTitleCase()"
           [initialValue]="template().container_type"
           [allowDeselect]="true"
           (onSelect)="editTemplate({ container_type: $event })"

@@ -244,6 +244,9 @@ function parseToMap(text: string): Map<string, string | null> {
       value = valMatch[1].replace(/\\'/g, "'").replace(/\\\\/g, "\\");
       remaining = tempRemaining.slice(valMatch[0].length).trim();
     } else {
+      // Logic for unquoted values:
+      // If there is whitespace after the colon AND the next thing looks like 'key:',
+      // we treat the current value as empty.
       const hasTrailingSpaceInColon =
         colonStr.endsWith(" ") || (tempRemaining.length > 0 && tempRemaining.startsWith(" "));
       const nextKeyCandidate = tempRemaining.match(RE_KEY);

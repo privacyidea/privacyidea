@@ -123,12 +123,14 @@ describe("TokenRolloverComponent", () => {
     expect(component.formGroupInvalid()).toBe(true);
     expect(component.dialogActions()).toEqual([expect.objectContaining({ disabled: true })]);
 
+    // Make the form valid
     enrollControl1.setValue("test@example.com");
     fixture.detectChanges();
 
     expect(component.formGroupInvalid()).toBe(false);
     expect(component.dialogActions()).toEqual([expect.objectContaining({ disabled: false })]);
 
+    // Invalidate other control
     enrollControl2.setValue(4);
     fixture.detectChanges();
 

@@ -102,7 +102,7 @@ describe("EnrollPushComponent", () => {
 
   it("enrolls, opens dialog, polls to done, closes dialog and returns initResp", async () => {
     const initResp = makeInitResp("S-1");
-    const pollResp = makePollResp("done");
+    const pollResp = makePollResp("enrolled");
 
     tokenSvc.enrollToken.mockReturnValue(of(initResp) as any);
     tokenSvc.pollTokenRolloutState.mockReturnValue(of(pollResp) as any);
@@ -118,7 +118,7 @@ describe("EnrollPushComponent", () => {
     const finalResponse = await finalResponsePromise;
 
     expect(finalResponse).toEqual({
-      detail: { rollout_state: "done", serial: "S-1" },
+      detail: { rollout_state: "enrolled", serial: "S-1" },
       result: { status: true, value: true },
       type: "push"
     });

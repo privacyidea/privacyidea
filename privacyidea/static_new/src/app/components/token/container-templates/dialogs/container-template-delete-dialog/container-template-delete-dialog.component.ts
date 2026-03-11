@@ -32,8 +32,7 @@ import { ContainerTemplate } from "../../../../../services/container/container.s
   templateUrl: "./container-template-delete-dialog.component.html",
   styleUrl: "./container-template-delete-dialog.component.scss"
 })
-export class ContainerTemplateDeleteDialogComponent extends AbstractDialogComponent<ContainerTemplate, boolean> {
-  // --- Computed Properties ---
+export class ContainerTemplateDeleteDialogComponent extends AbstractDialogComponent<ContainerTemplate[], boolean> {
   readonly actions = computed<DialogAction<string>[]>(() => [
     {
       label: $localize`Delete`,
@@ -43,7 +42,6 @@ export class ContainerTemplateDeleteDialogComponent extends AbstractDialogCompon
     }
   ]);
 
-  // --- Methods ---
   onAction(action: string): void {
     if (action === "delete") {
       this.dialogRef.close(true);

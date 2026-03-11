@@ -16,12 +16,11 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { SelectionModel } from "@angular/cdk/collections";
-import { CommonModule } from "@angular/common";
+
+import { CommonModule, KeyValuePipe } from "@angular/common";
 import { Component, computed, inject, linkedSignal, signal } from "@angular/core";
-import { toSignal } from "@angular/core/rxjs-interop";
 import { MatButtonModule } from "@angular/material/button";
-import { MatCheckbox } from "@angular/material/checkbox";
+import { MatCheckbox, MatCheckboxChange } from "@angular/material/checkbox";
 import { MatIconModule } from "@angular/material/icon";
 import { MatPaginatorModule, PageEvent } from "@angular/material/paginator";
 import { MatSortModule, Sort } from "@angular/material/sort";
@@ -84,6 +83,7 @@ const containerTemplateFilterOptions: FilterOption<ContainerTemplate>[] = [
   standalone: true,
   imports: [
     CommonModule,
+    KeyValuePipe,
     MatIconModule,
     MatButtonModule,
     MatTableModule,
@@ -103,10 +103,10 @@ export class ContainerTemplatesComponent {
   readonly dialogService: DialogServiceInterface = inject(DialogService);
 
   readonly columns = {
-    name: { label: "Name", filterable: true, sortable: true },
-    container_type: { label: "Container Type", filterable: true, sortable: true },
-    default: { label: "Default", filterable: true, sortable: true },
-    tokens: { label: "Tokens", filterable: true, sortable: false }
+    name: { label: $localize`Name`, filterable: true, sortable: true },
+    container_type: { label: $localize`Container Type`, filterable: true, sortable: true },
+    default: { label: $localize`Default`, filterable: true, sortable: true },
+    tokens: { label: $localize`Tokens`, filterable: true, sortable: false }
   } as const;
 
   readonly columnKeys = computed(() => ["select", ...Object.keys(this.columns)]);
@@ -118,9 +118,6 @@ export class ContainerTemplatesComponent {
   readonly pageSize = signal(10);
   readonly pageSizeOptions = signal([5, 10, 25, 100]);
   readonly activeSort = signal<Sort>({ active: "", direction: "" });
-
-  readonly selection = new SelectionModel<ContainerTemplate>(true, [], true, (a, b) => a.name === b.name);
-  readonly selectionChanged = toSignal(this.selection.changed);
 
   readonly emptyResource = linkedSignal({
     source: this.pageSize,
@@ -177,19 +174,40 @@ export class ContainerTemplatesComponent {
     return data.slice(startIndex, startIndex + this.pageSize());
   });
 
-  readonly isAllSelected = computed(() => {
-    this.selectionChanged();
-    const displayedRows = this.pagedContainerTemplates();
+  readonly selectedTemplateNames = linkedSignal<ContainerTemplate[], Set<string>>({
+    source: () => this.pagedContainerTemplates(),
+    computation: (paged, previous) => {
+      const selected = new Set(previous?.value ?? []);
+      if (this.containerTemplateService.templates().length === 0) {
+        return new Set();
+      }
+      const currentPagedNames = new Set(paged.map((t) => t.name));
+      for (const name of selected) {
+        if (!currentPagedNames.has(name)) {
+          selected.delete(name);
+        }
+      }
+      return selected;
+    }
+  });
+
+  readonly selectedTemplates = computed(() => {
     const templates = this.containerTemplateService.templates();
-    if (templates.length === 0 || displayedRows.length === 0) return false;
-    return displayedRows.every((row) => this.selection.isSelected(row));
+    if (templates.length === 0) return [];
+    const selectedNames = this.selectedTemplateNames();
+    return templates.filter((t) => selectedNames.has(t.name));
+  });
+
+  readonly isAllSelected = computed(() => {
+    const displayedRows = this.pagedContainerTemplates().filter((r) => !!r.name);
+    if (displayedRows.length === 0) return false;
+    return displayedRows.every((row) => this.selectedTemplateNames().has(row.name));
   });
 
   readonly isPartiallySelected = computed(() => {
-    this.selectionChanged();
-    const displayedRows = this.pagedContainerTemplates();
-    const selectedRows = displayedRows.filter((row) => this.selection.isSelected(row));
-    return selectedRows.length > 0 && selectedRows.length < displayedRows.length;
+    const selectedCount = this.selectedTemplateNames().size;
+    const displayedCount = this.pagedContainerTemplates().filter((r) => !!r.name).length;
+    return selectedCount > 0 && selectedCount < displayedCount;
   });
 
   readonly keepOrder = () => 0;
@@ -199,12 +217,19 @@ export class ContainerTemplatesComponent {
   }
 
   toggleAllRows(): void {
-    const displayedRows = this.pagedContainerTemplates();
+    const displayedRows = this.pagedContainerTemplates().filter((r) => !!r.name);
     if (this.isAllSelected()) {
-      this.selection.deselect(...displayedRows);
+      this.selectedTemplateNames.set(new Set());
     } else {
-      this.selection.select(...displayedRows);
+      this.selectedTemplateNames.set(new Set(displayedRows.map((r) => r.name)));
     }
+  }
+
+  updateSelection(event: MatCheckboxChange, template: ContainerTemplate): void {
+    if (!template.name) return;
+    const selected = new Set(this.selectedTemplateNames());
+    event.checked ? selected.add(template.name) : selected.delete(template.name);
+    this.selectedTemplateNames.set(selected);
   }
 
   onPageEvent(event: PageEvent): void {

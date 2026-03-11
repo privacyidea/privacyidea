@@ -34,31 +34,47 @@
 
   @switch (token().type) {
     @case ("hotp") {
-      <app-enroll-hotp (additionalFormFieldsChange)="updateAdditionalFormFields($event)" />
+      <app-enroll-hotp
+        [enrollmentData]="token()"
+        (additionalFormFieldsChange)="updateAdditionalFormFields($event)" />
     }
     @case ("totp") {
-      <app-enroll-totp (additionalFormFieldsChange)="updateAdditionalFormFields($event)" />
+      <app-enroll-totp
+        [enrollmentData]="token()"
+        (additionalFormFieldsChange)="updateAdditionalFormFields($event)" />
     }
     @case ("spass") {
       <app-enroll-spass (additionalFormFieldsChange)="updateAdditionalFormFields($event)" />
     }
     @case ("remote") {
-      <app-enroll-remote (additionalFormFieldsChange)="updateAdditionalFormFields($event)" />
+      <app-enroll-remote
+        [enrollmentData]="token()"
+        (additionalFormFieldsChange)="updateAdditionalFormFields($event)" />
     }
     @case ("sms") {
-      <app-enroll-sms (additionalFormFieldsChange)="updateAdditionalFormFields($event)" />
+      <app-enroll-sms
+        [enrollmentData]="token()"
+        (additionalFormFieldsChange)="updateAdditionalFormFields($event)" />
     }
     @case ("4eyes") {
-      <app-enroll-foureyes (additionalFormFieldsChange)="updateAdditionalFormFields($event)" />
+      <app-enroll-foureyes
+        [enrollmentData]="token()"
+        (additionalFormFieldsChange)="updateAdditionalFormFields($event)" />
     }
     @case ("applspec") {
-      <app-enroll-applspec (additionalFormFieldsChange)="updateAdditionalFormFields($event)" />
+      <app-enroll-applspec
+        [enrollmentData]="token()"
+        (additionalFormFieldsChange)="updateAdditionalFormFields($event)" />
     }
     @case ("daypassword") {
-      <app-enroll-daypassword (additionalFormFieldsChange)="updateAdditionalFormFields($event)" />
+      <app-enroll-daypassword
+        [enrollmentData]="token()"
+        (additionalFormFieldsChange)="updateAdditionalFormFields($event)" />
     }
     @case ("email") {
-      <app-enroll-email (additionalFormFieldsChange)="updateAdditionalFormFields($event)" />
+      <app-enroll-email
+        [enrollmentData]="token()"
+        (additionalFormFieldsChange)="updateAdditionalFormFields($event)" />
     }
     @case ("indexedsecret") {
       <app-enroll-indexedsecret (additionalFormFieldsChange)="updateAdditionalFormFields($event)" />

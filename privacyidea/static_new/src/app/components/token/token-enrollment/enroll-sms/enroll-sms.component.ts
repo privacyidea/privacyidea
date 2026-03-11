@@ -136,7 +136,9 @@ export class EnrollSmsComponent implements OnInit {
   private _setInitialFormValues() {
     if (!!this.enrollmentData()) {
       this.smsGatewayControl.setValue(this.enrollmentData()?.smsGateway ?? "", { emitEvent: false });
-      this.readNumberDynamicallyControl.setValue(this.enrollmentData()?.readNumberDynamically ?? false, { emitEvent: false });
+      this.readNumberDynamicallyControl.setValue(this.enrollmentData()?.readNumberDynamically ?? false, {
+        emitEvent: false
+      });
       this.phoneNumberControl.setValue(this.enrollmentData()?.phoneNumber ?? "", { emitEvent: false });
 
       if (this.enrollmentData()?.readNumberDynamically) {

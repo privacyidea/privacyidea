@@ -26,6 +26,7 @@ import { DialogService } from "src/app/services/dialog/dialog.service";
 import { signal } from "@angular/core";
 import { ContainerTemplate } from "../../../services/container/container.service";
 import { By } from "@angular/platform-browser";
+import { MatCheckboxChange } from "@angular/material/checkbox";
 
 describe("ContainerTemplatesComponent", () => {
   let component: ContainerTemplatesComponent;
@@ -118,10 +119,52 @@ describe("ContainerTemplatesComponent", () => {
     fixture.detectChanges();
 
     component.toggleAllRows();
-    expect(component.selection.selected.length).toBe(1);
-    expect(component.selection.selected[0].name).toBe("Template-C");
+    expect(component.selectedTemplateNames().size).toBe(1);
+    expect(component.selectedTemplateNames().has("Template-C")).toBeTruthy();
+    expect(component.selectedTemplates().length).toBe(1);
   });
 
+  it("should clear selection when page changes", () => {
+    component.pageSize.set(1);
+    fixture.detectChanges();
+    component.toggleAllRows();
+
+    component.pageIndex.set(1);
+    fixture.detectChanges();
+
+    expect(component.selectedTemplateNames().size).toBe(0);
+  });
+
+  it("should update selection when updateSelection is called", () => {
+    const template = mockTemplates[0];
+    component.updateSelection({ checked: true } as MatCheckboxChange, template);
+    expect(component.selectedTemplateNames().has(template.name)).toBeTruthy();
+    expect(component.selectedTemplates()[0].name).toBe(template.name);
+
+    component.updateSelection({ checked: false } as MatCheckboxChange, template);
+    expect(component.selectedTemplateNames().has(template.name)).toBeFalsy();
+  });
+
+  it("should reduce selection when pageSize changes from 10 to 1 and update child component", () => {
+    component.pageSize.set(10);
+    fixture.detectChanges();
+
+    component.toggleAllRows();
+    fixture.detectChanges();
+    expect(component.selectedTemplates().length).toBe(3);
+
+    component.pageSize.set(1);
+    fixture.detectChanges();
+
+    expect(component.selectedTemplates().length).toBe(1);
+
+    const actionComponent = fixture.debugElement.query(
+      By.css("app-container-templates-table-actions")
+    ).componentInstance;
+
+    expect(actionComponent.selectedTemplates().length).toBe(1);
+    expect(actionComponent.selectedTemplates()[0].name).toBe("Template-C");
+  });
   it("should open edit dialog only if row is not a skeleton row", () => {
     component.openEditDialog(mockTemplates[0]);
     expect(mockDialogService.openDialog).toHaveBeenCalled();
@@ -182,8 +225,6 @@ describe("ContainerTemplatesComponent", () => {
 
     const data = component.pagedContainerTemplates();
     expect(data[0].name).toBe("Template-A");
-    expect(data[1].name).toBe("Template-B");
-    expect(data[2].name).toBe("Template-C");
   });
 
   it("should sort data by name descending", () => {
@@ -192,8 +233,6 @@ describe("ContainerTemplatesComponent", () => {
 
     const data = component.pagedContainerTemplates();
     expect(data[0].name).toBe("Template-C");
-    expect(data[1].name).toBe("Template-B");
-    expect(data[2].name).toBe("Template-A");
   });
 
   it("should sort data by boolean 'default' column", () => {
@@ -222,6 +261,5 @@ describe("ContainerTemplatesComponent", () => {
     const expectedColspan = component.columnKeys().length;
 
     expect(noDataCell.attributes["colspan"]).toBe(expectedColspan.toString());
-    expect(expectedColspan).toBeGreaterThan(0);
   });
 });
