@@ -44,6 +44,7 @@ Wrapping the functions in a decorator class enables easy modular testing.
 
 The functions of this module are tested in tests/test_api_lib_policy.py
 """
+from flask_babel import _
 import copy
 import datetime
 import functools
@@ -57,7 +58,6 @@ from flask import g, current_app, make_response, Request
 
 from privacyidea.api.lib.utils import get_all_params
 from privacyidea.config import ConfigKey
-from privacyidea.lib import lazy_gettext
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.config import get_multichallenge_enrollable_types, get_token_class, get_privacyidea_node
 from privacyidea.lib.crypto import Sign
@@ -97,7 +97,7 @@ DEFAULT_TOKENTYPE = "hotp"
 DEFAULT_CONTAINER_TYPE = "generic"
 DEFAULT_TIMEOUT_ACTION = "lockscreen"
 DEFAULT_POLICY_TEMPLATE_URL = "/static/policy-templates/"
-BODY_TEMPLATE = lazy_gettext("""
+BODY_TEMPLATE = _("""
 <--- Please describe your Problem in detail --->
 
 <--- Please provide as much additional information as possible --->
@@ -909,7 +909,7 @@ def container_create_via_multichallenge(request: Request, content: dict, contain
         message_policies = Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.ENROLL_VIA_MULTICHALLENGE_TEXT,
                                       user_object=user).action_values(unique=True, write_to_audit_log=False,
                                                                       allow_white_space_in_action=True)
-        message = str(lazy_gettext("Please scan the QR code to register the container."))
+        message = str(_("Please scan the QR code to register the container."))
         if message_policies:
             message = list(message_policies)[0]
         # Registration
@@ -976,7 +976,7 @@ def hide_specific_error_message(request, response):
         if hide_message:
             content = response.json
             threadid = content.get("detail", {}).get("threadid")
-            detail = {"message": str(lazy_gettext("Authentication failed."))}
+            detail = {"message": str(_("Authentication failed."))}
             if threadid:
                 detail["threadid"] = threadid
             # Overwrite the whole detail object so that it always has the same content

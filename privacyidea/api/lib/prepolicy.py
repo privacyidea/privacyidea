@@ -63,6 +63,7 @@ Wrapping the functions in a decorator class enables easy modular testing.
 The functions of this module are tested in tests/test_api_lib_policy.py
 """
 
+from flask_babel import _
 import functools
 import importlib
 import logging
@@ -80,7 +81,6 @@ from privacyidea.api.lib.policyhelper import (get_init_tokenlabel_parameters,
                                               UserAttributes,
                                               get_container_user_attributes)
 from privacyidea.api.lib.utils import getParam, attestation_certificate_allowed, is_fqdn, get_optional
-from privacyidea.lib import lazy_gettext
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.clientapplication import save_clientapplication
 from privacyidea.lib.config import get_token_class
@@ -2605,7 +2605,7 @@ def require_description(request=None, action=None):
         if not token and not request.all_data.get("description"):
             log.error(f"Missing description for {type_value} token.")
             raise PolicyError(
-                lazy_gettext("Description required for {type_value} token.").format(type_value=type_value))
+                _("Description required for {type_value} token.").format(type_value=type_value))
 
 
 def require_description_on_edit(request=None, action=None):
@@ -2641,7 +2641,7 @@ def require_description_on_edit(request=None, action=None):
         if not description:
             log.error(f"Missing description for {type_value} token.")
             raise PolicyError(
-                lazy_gettext("Description required for {type_value} token.").format(
+                _("Description required for {type_value} token.").format(
                     type_value=type_value
                 )
             )
@@ -2874,7 +2874,7 @@ def auth_timelimit(request, action):
         result, reply_dict = check_max_auth_success(user, user_search_dict, check_validate_check=not local_admin)
 
     if not result:
-        raise AuthError(lazy_gettext("Authentication failure. The account has exceeded the authentication time limit!"),
+        raise AuthError(_("Authentication failure. The account has exceeded the authentication time limit!"),
                         details=reply_dict)
 
     return True

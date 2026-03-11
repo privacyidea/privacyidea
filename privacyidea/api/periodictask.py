@@ -20,6 +20,7 @@ periodic tasks.
 
 This module is tested in tests/test_api_periodictask.py"""
 
+from flask_babel import _
 import json
 import logging
 
@@ -30,7 +31,6 @@ from privacyidea.lib.tokenclass import AUTH_DATE_FORMAT
 from privacyidea.api.lib.prepolicy import prepolicy, check_base_action
 from privacyidea.api.lib.utils import send_result, getParam
 from privacyidea.lib.error import ParameterError
-from privacyidea.lib import lazy_gettext
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.log import log_with
 from privacyidea.lib.periodictask import get_periodic_tasks, set_periodic_task, delete_periodic_task, \
@@ -149,10 +149,10 @@ def set_periodic_task_api():
     if node_string.strip():
         node_list = [node.strip() for node in node_string.split(",")]
     else:
-        raise ParameterError(lazy_gettext("nodes: expected at least one node"))
+        raise ParameterError(_("nodes: expected at least one node"))
     taskmodule = getParam(param, "taskmodule", optional=False)
     if taskmodule not in get_available_taskmodules():
-        raise ParameterError(lazy_gettext("Unknown task module: {!r}").format(taskmodule))
+        raise ParameterError(_("Unknown task module: {!r}").format(taskmodule))
     ordering = int(getParam(param, "ordering", optional=False))
     options = getParam(param, "options", optional=True)
     if options is None:
@@ -160,7 +160,7 @@ def set_periodic_task_api():
     elif not isinstance(options, dict):
         options = json.loads(options)
         if not isinstance(options, dict):
-            raise ParameterError(lazy_gettext("options: expected dictionary, got {!r}").format(options))
+            raise ParameterError(_("options: expected dictionary, got {!r}").format(options))
     result = set_periodic_task(name, interval, node_list, taskmodule, ordering, options, active, ptask_id,
                                retry_if_failed)
     g.audit_object.log({"success": True, "info": result})

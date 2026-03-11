@@ -27,7 +27,7 @@ It also contains the error handlers.
 
 import copy
 
-from flask_babel import lazy_gettext
+from flask_babel import _
 
 from .lib.utils import (get_all_params, get_optional, map_error_to_code, send_error, verify_auth_token)
 from .container import container_blueprint
@@ -511,7 +511,7 @@ def auth_error(error):
             hide_message = Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE,
                                       user_object=request.User if hasattr(request, 'User') else None).any()
             if hide_message:
-                error.message = lazy_gettext("Authentication failed.")
+                error.message = _("Authentication failed.")
                 error.details["message"] = error.message
                 error.details.pop("loginmode", None)
 

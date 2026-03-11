@@ -54,6 +54,7 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+from flask_babel import _
 from flask import (Blueprint, request, g, current_app)
 
 from ..lib.container import find_container_by_serial, add_token_to_container, add_not_authorized_tokens_result
@@ -80,7 +81,6 @@ from ..lib.fido2.util import get_credential_ids_for_user
 from werkzeug.datastructures import FileStorage
 from privacyidea.lib.error import (ParameterError, TokenAdminError,
                                    ResourceNotFoundError, PolicyError, Error)
-from privacyidea.lib import lazy_gettext
 from privacyidea.lib.importotp import (parseOATHcsv, parseSafeNetXML,
                                        parseYubicoCSV, parsePSKCdata, GPGImport)
 import logging
@@ -1092,7 +1092,7 @@ def loadtokens_api(filename=None):
     aes_psk = getParam(request.all_data, "psk")
     aes_password = getParam(request.all_data, "password")
     if aes_psk and len(aes_psk) != 32:
-        raise TokenAdminError(lazy_gettext("The Pre Shared Key must be 128 Bit hex "
+        raise TokenAdminError(_("The Pre Shared Key must be 128 Bit hex "
                                 "encoded. It must be 32 characters long!"))
     trealms = getParam(request.all_data, "tokenrealms") or ""
     tokenrealms = []
@@ -1113,17 +1113,17 @@ def loadtokens_api(filename=None):
             file_contents = file_contents.decode()
     except UnicodeDecodeError as e:
         log.error(f"Unable to convert contents of file '{filename}' to unicode: {e}")
-        raise ParameterError(lazy_gettext("Unable to convert file contents. Binary data is not supported"))
+        raise ParameterError(_("Unable to convert file contents. Binary data is not supported"))
 
     if file_contents == "":
         log.error(f"Error loading/importing token file. File {filename} is empty!")
-        raise ParameterError(lazy_gettext("Error loading token file. File empty!"))
+        raise ParameterError(_("Error loading token file. File empty!"))
 
     if file_type not in known_types:
         log.error(f"Unknown file type: '{file_type}'. Supported types are: "
                   f"{', '.join(known_types)}")
         raise TokenAdminError(
-            lazy_gettext("Unknown file type: '{file_type}'. Supported file types are: {known_types}")
+            _("Unknown file type: '{file_type}'. Supported file types are: {known_types}")
             .format(file_type=file_type, known_types=', '.join(known_types))
         )
 
@@ -1235,7 +1235,7 @@ def lost_api(serial=None):
     if userobj:
         toks = get_tokens(serial=serial, user=userobj)
         if not toks:
-            raise TokenAdminError(lazy_gettext("The user {0!r} does not own the token {1!s}").format(
+            raise TokenAdminError(_("The user {0!r} does not own the token {1!s}").format(
                 userobj, serial))
 
     options = {"g": g,

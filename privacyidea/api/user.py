@@ -23,6 +23,7 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+from flask_babel import _
 import logging
 
 from flask import g, Blueprint, request
@@ -31,7 +32,6 @@ from privacyidea.api.auth import admin_required, user_required
 from privacyidea.api.lib.prepolicy import prepolicy, check_base_action, realmadmin, check_custom_user_attributes
 from privacyidea.api.lib.utils import getParam, send_result
 from privacyidea.lib.error import ParameterError
-from privacyidea.lib import lazy_gettext
 from privacyidea.lib.event import event
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import get_allowed_custom_attributes
@@ -150,7 +150,7 @@ def set_user_attribute():
     internal_prefixes = InternalCustomUserAttributes.get_internal_prefixes()
     for prefix in internal_prefixes:
         if attrkey.startswith(prefix):
-            raise ParameterError(lazy_gettext("Invalid attribute name! The name shall not start with {prefix}. "
+            raise ParameterError(_("Invalid attribute name! The name shall not start with {prefix}. "
                                    "This is an internally used prefix.").format(prefix=prefix))
 
     r = request.User.set_attribute(attrkey, attrvalue, attrtype)
