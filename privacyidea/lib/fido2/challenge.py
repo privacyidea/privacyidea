@@ -116,11 +116,9 @@ def verify_fido2_challenge(transaction_id: str, token: TokenClass, params: dict)
         log.error(f"Challenge with transaction_id {transaction_id} has timed out.")
         raise AuthError(f"The challenge {transaction_id} has timed out.")
 
-    # Get the user_verification requirement from the challenge data.
     # New challenges store the value under FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT.
-    # Legacy challenges (created before this key change) stored it under the raw "user_verification"
-    # string. The translation to the canonical constant happens here so token classes never need
-    # to know about the legacy key.
+    # Challenges created by older code used the raw "user_verification" string instead.
+    # The translation happens here so token classes can always read the constant without a fallback.
     data = challenge.get_data()
     if not isinstance(data, dict):
         log.error(f"Invalid challenge data for transaction_id {transaction_id}.")

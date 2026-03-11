@@ -943,7 +943,7 @@ class WebAuthnTokenClass(TokenClass):
             response_detail['rollout_state'] = self.token.rollout_state
             # To aid with unit testing a fixed nonce may be passed in.
             nonce = self._get_nonce()
-            data = {"user_verification": user_verification}
+            data = {FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT: user_verification}
             # Create the challenge in the database
             challenge = Challenge(serial=self.token.serial,
                                   transaction_id=get_optional(params, "transaction_id"),
@@ -1099,7 +1099,7 @@ class WebAuthnTokenClass(TokenClass):
             nonce = binascii.unhexlify(challenge)
 
         user_verification = get_required(options, FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT)
-        data = {"user_verification": user_verification}
+        data = {FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT: user_verification}
         # Create the challenge in the database
         db_challenge = Challenge(serial=self.token.serial,
                                  transaction_id=transactionid,
@@ -1188,10 +1188,7 @@ class WebAuthnTokenClass(TokenClass):
             except ParameterError:
                 raise ValueError("When performing WebAuthn authorization, options must contain user")
 
-            uv_req = get_optional_one_of(options,
-                                         [FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT,
-                                          "user_verification"],
-                                         "preferred")
+            uv_req = get_optional(options, FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT, "preferred")
             # Check if challenge is base64 encoded to be able to use login via passkey with webauthn
             challenge = get_required(options, "challenge").rstrip("=")
             challenge_decoded = None

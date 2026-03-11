@@ -111,7 +111,7 @@ def get_optional_one_of(param, keys, default=None):
     If none of the keys is present, return the default value or None.
     """
     for key in keys:
-        ret = _get_param(param, key, default)
+        ret = _get_param(param, key, None)
         if ret is not None:
             return ret
     return default
