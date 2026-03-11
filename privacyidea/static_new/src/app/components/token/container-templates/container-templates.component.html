@@ -19,17 +19,28 @@
 <div
   class="container-templates-layout"
   aria-label="Container Templates Layout">
-  <app-container-templates-filter
-    [initialFilter]="filter()"
-    (filterChange)="filter.set($event)">
-  </app-container-templates-filter>
-
+  <div class="filter-paginator-container">
+    <app-container-templates-filter
+      class="container-templates-table-filter"
+      [initialFilter]="filter()"
+      (filterChange)="onFilterChange($event)">
+    </app-container-templates-filter>
+    <mat-paginator
+      (page)="onPageEvent($event)"
+      [length]="totalLength()"
+      [pageIndex]="pageIndex()"
+      [pageSizeOptions]="pageSizeOptions()"
+      [pageSize]="pageSize()"
+      showFirstLastButtons />
+  </div>
   <app-container-templates-table-actions [selectedTemplates]="selection.selected">
   </app-container-templates-table-actions>
 
   <table
     mat-table
-    [dataSource]="filteredContainerTemplates()"
+    matSort
+    (matSortChange)="onSortChange($event)"
+    [dataSource]="pagedContainerTemplates()"
     class="container-templates-table">
     <ng-container matColumnDef="select">
       <th
@@ -37,8 +48,9 @@
         *matHeaderCellDef>
         <mat-checkbox
           (change)="$event ? toggleAllRows() : null"
-          [checked]="selection.hasValue() && isAllSelected()"
-          [indeterminate]="selection.hasValue() && !isAllSelected()">
+          [checked]="isAllSelected()"
+          [indeterminate]="isPartiallySelected()"
+          [disabled]="containerTemplateService.templates().length === 0">
         </mat-checkbox>
       </th>
       <td
@@ -47,7 +59,8 @@
         <mat-checkbox
           (click)="$event.stopPropagation()"
           (change)="$event ? selection.toggle(row) : null"
-          [checked]="selection.isSelected(row)">
+          [checked]="selection.isSelected(row)"
+          [disabled]="!row.name">
         </mat-checkbox>
       </td>
     </ng-container>
@@ -57,6 +70,8 @@
         <th
           mat-header-cell
           *matHeaderCellDef
+          mat-sort-header
+          [disabled]="!column.value.sortable || containerTemplateService.templates().length === 0"
           [class]="'col-' + column.key">
           <div class="table-header-container">
             @if (column.value.label) {
@@ -67,6 +82,7 @@
                 <button
                   mat-icon-button
                   class="filter-button"
+                  [disabled]="containerTemplateService.templates().length === 0"
                   (click)="$event.stopPropagation(); onClickFilter(column.key)">
                   <mat-icon class="keyword-button-icon margin-left-0">
                     {{ getFilterIconName(column.key) }}
@@ -82,11 +98,13 @@
             <td
               mat-cell
               *matCellDef="let element">
-              <a
-                (click)="openEditDialog(element)"
-                class="cursor-pointer">
-                {{ element.name }}
-              </a>
+              @if (element.name) {
+                <a
+                  (click)="openEditDialog(element)"
+                  class="cursor-pointer">
+                  {{ element.name }}
+                </a>
+              }
             </td>
           }
           @case ("tokens") {
@@ -94,7 +112,10 @@
               mat-cell
               *matCellDef="let element"
               class="options-cell">
-              <app-view-template-tokens [templateTokens]="element.template_options.tokens"> </app-view-template-tokens>
+              @if (element.name) {
+                <app-view-template-tokens [templateTokens]="element.template_options.tokens">
+                </app-view-template-tokens>
+              }
             </td>
           }
           @default {
@@ -110,25 +131,22 @@
 
     <tr
       mat-header-row
-      *matHeaderRowDef="displayedColumns"></tr>
+      *matHeaderRowDef="columnKeys()"></tr>
     <tr
       mat-row
-      *matRowDef="let row; columns: displayedColumns"></tr>
+      *matRowDef="let row; columns: columnKeys()"
+      [class.skeleton-row]="!row.name"></tr>
 
     <tr
       *matNoDataRow
-      class="mat-mdc-row">
+      aria-label="No Data Row"
+      i18n-aria-label>
       <td
-        class="no-data-cell"
-        [attr.colspan]="displayedColumns.length">
-        <div class="no-data-container">
-          <mat-icon>info</mat-icon>
-          @if (filter().hasActiveFilters) {
-            <div i18n>No container template matching the filter.</div>
-          } @else {
-            <div i18n>No container template found.</div>
-          }
-        </div>
+        [attr.colspan]="columnKeys().length"
+        aria-label="No Data Cell"
+        i18n
+        i18n-aria-label>
+        No data matching the filter.
       </td>
     </tr>
   </table>

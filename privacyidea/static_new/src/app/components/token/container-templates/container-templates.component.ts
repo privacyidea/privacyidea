@@ -18,23 +18,25 @@
  **/
 import { SelectionModel } from "@angular/cdk/collections";
 import { CommonModule } from "@angular/common";
-import { Component, computed, inject, signal } from "@angular/core";
+import { Component, computed, inject, linkedSignal, signal } from "@angular/core";
+import { toSignal } from "@angular/core/rxjs-interop";
+import { MatButtonModule } from "@angular/material/button";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatIconModule } from "@angular/material/icon";
+import { MatPaginatorModule, PageEvent } from "@angular/material/paginator";
+import { MatSortModule, Sort } from "@angular/material/sort";
 import { MatTableModule } from "@angular/material/table";
+import { FilterOption } from "src/app/core/models/filter_value_generic/filter-option";
+import { FilterValueGeneric } from "src/app/core/models/filter_value_generic/filter-value-generic";
 import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
 import {
   ContainerTemplateService,
   ContainerTemplateServiceInterface
 } from "../../../services/container-template/container-template.service";
 import { ContainerTemplate } from "../../../services/container/container.service";
-import { ContainerTemplatesTableActionsComponent } from "./container-templates-table-actions/container-templates-table-actions.component";
-import { ContainerTemplatesFilterComponent } from "./container-templates-filter/container-templates-filter.component";
-import { FilterValueGeneric } from "src/app/core/models/filter_value_generic/filter-value-generic";
-import { FilterOption } from "src/app/core/models/filter_value_generic/filter-option";
 import { DialogService, DialogServiceInterface } from "src/app/services/dialog/dialog.service";
-import { MatSortModule } from "@angular/material/sort";
-import { MatButtonModule } from "@angular/material/button";
+import { ContainerTemplatesFilterComponent } from "./container-templates-filter/container-templates-filter.component";
+import { ContainerTemplatesTableActionsComponent } from "./container-templates-table-actions/container-templates-table-actions.component";
 import { ContainerTemplateEditDialogComponent } from "./dialogs/container-template-edit-dialog/container-template-edit-dialog.component";
 import { ViewTemplateTokensComponent } from "./view-template-tokens/view-template-tokens.component";
 
@@ -89,64 +91,134 @@ const containerTemplateFilterOptions: FilterOption<ContainerTemplate>[] = [
     ContainerTemplatesFilterComponent,
     ContainerTemplatesTableActionsComponent,
     MatCheckbox,
-    ViewTemplateTokensComponent
+    ViewTemplateTokensComponent,
+    MatPaginatorModule
   ],
   templateUrl: "./container-templates.component.html",
   styleUrl: "./container-templates.component.scss"
 })
 export class ContainerTemplatesComponent {
-  // Services
   readonly containerTemplateService: ContainerTemplateServiceInterface = inject(ContainerTemplateService);
   readonly authService: AuthServiceInterface = inject(AuthService);
   readonly dialogService: DialogServiceInterface = inject(DialogService);
 
-  // Signals
+  readonly columns = {
+    name: { label: "Name", filterable: true, sortable: true },
+    container_type: { label: "Container Type", filterable: true, sortable: true },
+    default: { label: "Default", filterable: true, sortable: true },
+    tokens: { label: "Tokens", filterable: true, sortable: false }
+  } as const;
+
+  readonly columnKeys = computed(() => ["select", ...Object.keys(this.columns)]);
+
   readonly filter = signal<FilterValueGeneric<ContainerTemplate>>(
     new FilterValueGeneric({ availableFilters: containerTemplateFilterOptions })
   );
+  readonly pageIndex = signal(0);
+  readonly pageSize = signal(10);
+  readonly pageSizeOptions = signal([5, 10, 25, 100]);
+  readonly activeSort = signal<Sort>({ active: "", direction: "" });
 
-  // Selection Model
   readonly selection = new SelectionModel<ContainerTemplate>(true, [], true, (a, b) => a.name === b.name);
+  readonly selectionChanged = toSignal(this.selection.changed);
 
-  // Table Configuration
-  readonly columns = {
-    name: { label: "Name", filterable: true },
-    container_type: { label: "Container Type", filterable: true },
-    default: { label: "Default", filterable: true },
-    tokens: { label: "Tokens", filterable: true }
-  } as const;
+  readonly emptyResource = linkedSignal({
+    source: this.pageSize,
+    computation: (pageSize: number) =>
+      Array.from(
+        { length: pageSize },
+        () =>
+          ({
+            name: "",
+            container_type: "",
+            default: false,
+            template_options: { tokens: [] }
+          }) as ContainerTemplate
+      )
+  });
 
-  // Computed Properties
   readonly filteredContainerTemplates = computed(() => {
     const templates = this.containerTemplateService.templates();
+    if (templates.length === 0) return this.emptyResource();
     return this.filter().hasActiveFilters ? this.filter().filterItems(templates) : templates;
   });
 
-  // Column Handling
-  get displayedColumns(): string[] {
-    return ["select", ...Object.keys(this.columns)];
-  }
+  readonly sortedContainerTemplates = computed(() => {
+    const data = [...this.filteredContainerTemplates()];
+    const sort = this.activeSort();
+
+    if (!sort.active || sort.direction === "" || this.containerTemplateService.templates().length === 0) {
+      return data;
+    }
+
+    return data.sort((a, b) => {
+      const isAsc = sort.direction === "asc";
+      const valueA = a[sort.active as keyof ContainerTemplate];
+      const valueB = b[sort.active as keyof ContainerTemplate];
+
+      if (typeof valueA === "string" && typeof valueB === "string") {
+        return valueA.localeCompare(valueB) * (isAsc ? 1 : -1);
+      }
+      return (valueA < valueB ? -1 : 1) * (isAsc ? 1 : -1);
+    });
+  });
+
+  readonly totalLength = computed(() => {
+    const templates = this.containerTemplateService.templates();
+    return templates.length > 0 ? this.filteredContainerTemplates().length : 0;
+  });
+
+  readonly pagedContainerTemplates = computed(() => {
+    const data = this.sortedContainerTemplates();
+    const templates = this.containerTemplateService.templates();
+    if (templates.length === 0) return data;
+
+    const startIndex = this.pageIndex() * this.pageSize();
+    return data.slice(startIndex, startIndex + this.pageSize());
+  });
+
+  readonly isAllSelected = computed(() => {
+    this.selectionChanged();
+    const displayedRows = this.pagedContainerTemplates();
+    const templates = this.containerTemplateService.templates();
+    if (templates.length === 0 || displayedRows.length === 0) return false;
+    return displayedRows.every((row) => this.selection.isSelected(row));
+  });
+
+  readonly isPartiallySelected = computed(() => {
+    this.selectionChanged();
+    const displayedRows = this.pagedContainerTemplates();
+    const selectedRows = displayedRows.filter((row) => this.selection.isSelected(row));
+    return selectedRows.length > 0 && selectedRows.length < displayedRows.length;
+  });
 
   readonly keepOrder = () => 0;
 
-  // Selection Logic
-  isAllSelected(): boolean {
-    const numSelected = this.selection.selected.length;
-    const numRows = this.filteredContainerTemplates().length;
-    return numRows > 0 && numSelected === numRows;
+  onSortChange(sort: Sort): void {
+    this.activeSort.set(sort);
   }
 
   toggleAllRows(): void {
+    const displayedRows = this.pagedContainerTemplates();
     if (this.isAllSelected()) {
-      this.selection.clear();
+      this.selection.deselect(...displayedRows);
     } else {
-      this.selection.select(...this.filteredContainerTemplates());
+      this.selection.select(...displayedRows);
     }
   }
 
-  // Filtering Logic
+  onPageEvent(event: PageEvent): void {
+    this.pageSize.set(event.pageSize);
+    this.pageIndex.set(event.pageIndex);
+  }
+
+  onFilterChange(newFilter: FilterValueGeneric<ContainerTemplate>): void {
+    this.filter.set(newFilter);
+    this.pageIndex.set(0);
+  }
+
   onClickFilter(filterKey: string): void {
-    this.filter.set(this.filter().toggleKey(filterKey));
+    this.onFilterChange(this.filter().toggleKey(filterKey));
   }
 
   getFilterIconName(columnKey: string): string {
@@ -164,8 +236,8 @@ export class ContainerTemplatesComponent {
     }
   }
 
-  // Dialog Handling
   openEditDialog(template: ContainerTemplate): void {
+    if (!template.name) return;
     this.dialogService.openDialog({
       component: ContainerTemplateEditDialogComponent,
       data: template

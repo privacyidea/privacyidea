@@ -13,7 +13,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--global-gap);
-  width: 1200px;
+  width: 1300px;
   max-height: var(--max-height);
   overflow: auto;
 
@@ -37,11 +37,6 @@
 
   .options-cell {
     padding: 0;
-  }
-
-  .no-data-cell {
-    text-align: center;
-    background-color: var(--table-color);
   }
 
   .no-data-container {
