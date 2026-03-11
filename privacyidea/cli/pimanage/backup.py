@@ -152,7 +152,7 @@ def backup_restore(backup_file, keep_db_uri):
     #  extract to the base /
     # TODO: extracting the SQLite file does not work if there are other SQLite
     #  files in the archive
-    sqluri = None
+
     config_file = None
     sqlfile = None
     enckey_contained = False
@@ -187,12 +187,27 @@ def backup_restore(backup_file, keep_db_uri):
     # If requested, capture the current DB URI before extraction overwrites pi.cfg.
     current_sqluri = None
     if keep_db_uri and config_file.exists():
-        current_cfg = Config(config_file.parent)
-        current_cfg.from_pyfile(config_file)
-        current_sqluri = current_cfg.get("SQLALCHEMY_DATABASE_URI")
+        try:
+            current_cfg = Config(config_file.parent)
+            current_cfg.from_pyfile(config_file)
+            current_sqluri = current_cfg.get("SQLALCHEMY_DATABASE_URI")
+        except Exception as e:
+            click.secho(f"--keep-db-uri: could not read live config ({e}). "
+                        "The database URI from the backup will be used instead.",
+                        fg="yellow")
         if current_sqluri:
-            click.echo(f"Keeping current database URI: {current_sqluri}")
-        else:
+            # Redact password from URI before printing so credentials are not
+            # leaked into terminal output, logs or automation transcripts.
+            parsed = urlparse(current_sqluri)
+            if parsed.password:
+                redacted_netloc = parsed.netloc.replace(
+                    f":{parsed.password}@", ":***@", 1
+                )
+                redacted_url = parsed._replace(netloc=redacted_netloc).geturl()
+            else:
+                redacted_url = current_sqluri
+            click.echo(f"Keeping current database URI: {redacted_url}")
+        elif keep_db_uri:
             click.secho("--keep-db-uri specified but no SQLALCHEMY_DATABASE_URI "
                         "found in the current config. Using the one from the backup.",
                         fg="yellow")
@@ -205,19 +220,21 @@ def backup_restore(backup_file, keep_db_uri):
     cfg.from_pyfile(config_file)
 
     if keep_db_uri and current_sqluri:
-        # Patch the restored pi.cfg to restore the original DB URI in-place
-        # so that the rest of this function (and any future app start) uses it.
+        # Patch the restored pi.cfg to keep the original DB URI in-place.
+        # repr() ensures the value is a properly escaped Python string literal,
+        # so URIs containing quotes, backslashes or other special characters
+        # cannot corrupt the config file syntax.
         cfg_text = config_file.read_text()
-        new_line = f'SQLALCHEMY_DATABASE_URI = "{current_sqluri}"\n'
+        new_line = f'SQLALCHEMY_DATABASE_URI = {repr(current_sqluri)}'
         if re.search(r'^SQLALCHEMY_DATABASE_URI\s*=', cfg_text, re.MULTILINE):
             cfg_text = re.sub(
                 r'^SQLALCHEMY_DATABASE_URI\s*=.*$',
-                new_line.rstrip('\n'),
+                new_line,
                 cfg_text,
                 flags=re.MULTILINE,
             )
         else:
-            cfg_text += f'\n{new_line}'
+            cfg_text += f'\n{new_line}\n'
         config_file.write_text(cfg_text)
         sqluri = current_sqluri
     else:
