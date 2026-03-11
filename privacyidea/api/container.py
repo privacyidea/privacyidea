@@ -198,7 +198,7 @@ def unassign(container_serial):
         user.uid = str(user_id)
 
     # Check if required parameter is present
-    _ = get_required_one_of(request.all_data, ["user", "user_id"])
+    __ = get_required_one_of(request.all_data, ["user", "user_id"])
     if user.login and not user.realm and not user.resolver and not user.uid:
         raise ParameterError(_("Missing parameter 'realm', 'resolver', and/or 'user_id'"))
 

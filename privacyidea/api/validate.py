@@ -559,7 +559,7 @@ def _handle_fido2_auth(context: dict, credential_id: str):
             if evm and Match.user(g, scope=SCOPE.AUTH,
                                   action=PolicyAction.ENROLL_VIA_MULTICHALLENGE_PASSKEY_OFFLINE,
                                   user_object=user).any():
-                _ = attach_token(token.get_serial(), "offline")
+                __ = attach_token(token.get_serial(), "offline")
                 offline_data = get_auth_items(serial=token.get_serial(), application="offline",
                                               user_agent=request.user_agent.string)
                 if offline_data:
@@ -715,7 +715,7 @@ def _finalize_auth_response(context):
                           user_object=user).allowed():
                 token = get_one_token(serial=serial, silent_fail=True)
                 if token:
-                    user_agent, _, _ = get_plugin_info_from_useragent(request.user_agent.string)
+                    user_agent, __, __ = get_plugin_info_from_useragent(request.user_agent.string)
                     if user.exist():
                         user.set_attribute(f"{InternalCustomUserAttributes.LAST_USED_TOKEN}_{user_agent}",
                                            token.get_tokentype(), INTERNAL_USAGE)
