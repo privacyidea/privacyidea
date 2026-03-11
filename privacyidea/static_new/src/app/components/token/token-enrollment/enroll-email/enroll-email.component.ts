@@ -31,6 +31,9 @@ import {
 } from "../../../../mappers/token-api-payload/email-token-api-payload.mapper";
 import { SystemService, SystemServiceInterface } from "../../../../services/system/system.service";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
+import { ROUTE_PATHS } from "../../../../route_paths";
+import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
+import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
 
 export interface EmailEnrollmentOptions extends TokenEnrollmentData {
   type: "email";
@@ -49,6 +52,8 @@ export class EnrollEmailComponent implements OnInit {
   protected readonly systemService: SystemServiceInterface = inject(SystemService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly enrollmentMapper: EmailApiPayloadMapper = inject(EmailApiPayloadMapper);
+  protected readonly contentService: ContentServiceInterface = inject(ContentService);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
 
   enrollmentData = input<EmailEnrollmentData>();
   @Output() additionalFormFieldsChange = new EventEmitter<{
@@ -128,4 +133,8 @@ export class EnrollEmailComponent implements OnInit {
       mapper: this.enrollmentMapper
     };
   };
+
+  goToEmailConfig() {
+    this.contentService.router.navigate([ROUTE_PATHS.CONFIGURATION_TOKENTYPES], { fragment: 'email' });
+  }
 }

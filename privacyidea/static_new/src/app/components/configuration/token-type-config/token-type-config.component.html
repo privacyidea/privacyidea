@@ -40,21 +40,27 @@
     <app-webauthn-config [formData]="formData()"></app-webauthn-config>
     <app-radius-config
       [formData]="formData()"
-      [radiusServers]="systemService.radiusServerResource.value()?.result?.value ?? []"></app-radius-config>
+      [radiusServers]="systemService.radiusServerResource.value()?.result?.value ?? []"
+      [expanded]="expandedPanel === 'radius'"></app-radius-config>
     <app-remote-config [formData]="formData()"></app-remote-config>
     <app-sms-config
       [formData]="formData()"
-      [smsGateways]="smsGatewayNames()"></app-sms-config>
+      [smsGateways]="smsGatewayNames()"
+      [expanded]="expandedPanel === 'sms'"></app-sms-config>
     <app-tiqr-config [formData]="formData()"></app-tiqr-config>
     <app-email-config
       [formData]="formData()"
-      [smtpServers]="smtpServerIdentifiers()"></app-email-config>
+      [smtpServers]="smtpServerIdentifiers()"
+      [expanded]="expandedPanel === 'email'"></app-email-config>
     <app-questionnaire-config
       (onAddQuestion)="addQuestion($event)"
       (onDeleteEntry)="deleteQuestion($event)"
       [formData]="formData()"
-      [questionKeys]="questionKeys"></app-questionnaire-config>
-    <app-yubico-config [formData]="formData()"></app-yubico-config>
+      [questionKeys]="questionKeys"
+      [expanded]="expandedPanel === 'questionnaire'"></app-questionnaire-config>
+    <app-yubico-config
+      [formData]="formData()"
+      [expanded]="expandedPanel === 'yubico'"></app-yubico-config>
     <app-yubikey-config
       (onDeleteEntry)="deleteSystemEntry($event)"
       (onYubikeyCreateNewKey)="yubikeyCreateNewKey($event)"

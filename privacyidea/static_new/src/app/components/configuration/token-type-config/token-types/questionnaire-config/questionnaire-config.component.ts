@@ -45,6 +45,7 @@ import { MatDivider } from "@angular/material/list";
 export class QuestionnaireConfigComponent {
   formData = input.required<Record<string, any>>();
   questionKeys = input.required<string[]>();
+  expanded = input<boolean>(false);
 
   onAddQuestion = output<string>();
   onDeleteEntry = output<string>();

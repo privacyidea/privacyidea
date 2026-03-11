@@ -43,4 +43,5 @@ export class RadiusConfigComponent {
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
   formData = input.required<Record<string, any>>();
   radiusServers = input.required<string[]>();
+  expanded = input<boolean>(false);
 }

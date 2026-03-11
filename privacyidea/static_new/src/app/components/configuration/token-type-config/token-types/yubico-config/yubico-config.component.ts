@@ -38,4 +38,5 @@ import { MatInputModule } from "@angular/material/input";
 })
 export class YubicoConfigComponent {
   formData = input.required<Record<string, any>>();
+  expanded = input<boolean>(false);
 }
