@@ -50,9 +50,9 @@ describe("ContainerTemplateAddTokenComponent", () => {
   it("should render a chip for each token type", () => {
     const chips = fixture.debugElement.queryAll(By.css("mat-chip"));
     expect(chips.length).toBe(3);
-    expect(chips[0].nativeElement.textContent).toContain("totp");
-    expect(chips[1].nativeElement.textContent).toContain("hotp");
-    expect(chips[2].nativeElement.textContent).toContain("webauthn");
+    expect(chips[0].nativeElement.textContent).toContain("Totp");
+    expect(chips[1].nativeElement.textContent).toContain("Hotp");
+    expect(chips[2].nativeElement.textContent).toContain("Webauthn");
   });
 
   it("should emit onAddToken when addToken is called directly", () => {
@@ -79,6 +79,6 @@ describe("ContainerTemplateAddTokenComponent", () => {
 
     const chips = fixture.debugElement.queryAll(By.css("mat-chip"));
     expect(chips.length).toBe(1);
-    expect(chips[0].nativeElement.textContent).toContain("yubikey");
+    expect(chips[0].nativeElement.textContent).toContain("Yubikey");
   });
 });

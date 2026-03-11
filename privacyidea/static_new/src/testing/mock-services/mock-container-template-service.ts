@@ -53,6 +53,7 @@ export class MockContainerTemplateService implements ContainerTemplateServiceInt
   getTokenTypesForContainerType = jest.fn((_type: string) => []);
 
   deleteTemplate = jest.fn().mockResolvedValue(true);
+  deleteTemplates = jest.fn().mockResolvedValue(true);
 
   postTemplateEdits = jest.fn().mockResolvedValue(true);
 

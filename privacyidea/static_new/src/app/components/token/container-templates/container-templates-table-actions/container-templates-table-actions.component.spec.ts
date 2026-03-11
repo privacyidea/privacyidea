@@ -25,7 +25,7 @@ import { ContainerTemplateService } from "../../../../services/container-templat
 import { MockDialogService, MockContainerTemplateService } from "src/testing/mock-services";
 import { ContainerTemplateEditDialogComponent } from "../dialogs/container-template-edit-dialog/container-template-edit-dialog.component";
 import { ContainerTemplateCopyDialogComponent } from "../dialogs/container-template-copy-dialog/container-template-copy-dialog.component";
-import { ContainerTemplateDeleteDialogComponent } from "../dialogs/container-template-delete-single-dialog/container-template-delete-dialog.component";
+import { ContainerTemplateDeleteDialogComponent } from "../dialogs/container-template-delete-dialog/container-template-delete-dialog.component";
 import { By } from "@angular/platform-browser";
 
 describe("ContainerTemplatesTableActionsComponent", () => {
@@ -130,21 +130,20 @@ describe("ContainerTemplatesTableActionsComponent", () => {
     fixture.detectChanges();
 
     const dialogSpy = jest.spyOn(dialogServiceMock, "openDialogAsync").mockResolvedValue(true);
-    const serviceSpy = jest.spyOn(containerTemplateServiceMock, "deleteTemplate");
+    const serviceSpy = jest.spyOn(containerTemplateServiceMock, "deleteTemplates");
 
     await component.openDeleteTemplateDialog();
 
-    expect(dialogSpy).toHaveBeenCalledTimes(2);
+    expect(dialogSpy).toHaveBeenCalledTimes(1);
     expect(dialogSpy).toHaveBeenNthCalledWith(
       1,
       expect.objectContaining({
         component: ContainerTemplateDeleteDialogComponent,
-        data: mockTemplates[0]
+        data: mockTemplates
       })
     );
-    expect(serviceSpy).toHaveBeenCalledTimes(2);
-    expect(serviceSpy).toHaveBeenCalledWith("Template1");
-    expect(serviceSpy).toHaveBeenCalledWith("Template2");
+    expect(serviceSpy).toHaveBeenCalledTimes(1);
+    expect(serviceSpy).toHaveBeenCalledWith(["Template1", "Template2"]);
   });
 
   it("should not call deleteTemplate if deletion is not confirmed", async () => {
