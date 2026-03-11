@@ -21,6 +21,7 @@
   @if (showClearButton) {
     <button
       (click)="clearInput()"
+      [disabled]="disabled"
       type="button"
       mat-icon-button>
       <mat-icon>add_circle</mat-icon>
