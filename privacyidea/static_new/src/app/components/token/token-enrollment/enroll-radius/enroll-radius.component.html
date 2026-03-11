@@ -16,7 +16,7 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<div class="flex-column">
+<div class="flex-column margin-bottom-16">
   <h4 class="enroll-h4">Token Configuration</h4>
   @if (!defaultRadiusServerIsSet() && authService.role() === "admin") {
     <span
@@ -49,7 +49,7 @@
         <mat-error i18n>RADIUS Server is <strong>required</strong></mat-error>
       </mat-form-field>
     }
-    <mat-form-field class="input-height width-33">
+    <mat-form-field class="width-33">
       <mat-label i18n>RADIUS User</mat-label>
       <input
         [formControl]="radiusUserControl"
