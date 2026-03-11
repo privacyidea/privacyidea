@@ -37,7 +37,7 @@ DEFAULT_COUNT = 100
 SALT_LENGTH = 4
 
 
-class TANACTION(object):
+class TANAction:
     TANTOKEN_COUNT = "tantoken_count"
 
 
@@ -102,7 +102,7 @@ class TanTokenClass(PaperTokenClass):
                'ui_enroll': ["admin", "user"],
                'policy': {
                    SCOPE.ENROLL: {
-                       TANACTION.TANTOKEN_COUNT: {
+                       TANAction.TANTOKEN_COUNT: {
                            "type": "int",
                            "desc": _("The number of OTP values, which are "
                                      "printed on the paper.")
