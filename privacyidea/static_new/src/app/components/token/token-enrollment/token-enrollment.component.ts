@@ -66,7 +66,13 @@ import { ContainerService, ContainerServiceInterface } from "../../../services/c
 import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
 import { NotificationService, NotificationServiceInterface } from "../../../services/notification/notification.service";
 import { RealmService, RealmServiceInterface } from "../../../services/realm/realm.service";
-import { TokenService, TokenServiceInterface, TokenType } from "../../../services/token/token.service";
+import {
+  EnrollTokenArguments,
+  TokenEnrollmentDialogData,
+  TokenService,
+  TokenServiceInterface,
+  TokenType
+} from "../../../services/token/token.service";
 import { UserData, UserService, UserServiceInterface } from "../../../services/user/user.service";
 import { VersioningService, VersioningServiceInterface } from "../../../services/version/version.service";
 import { EnrollApplspecComponent } from "./enroll-asp/enroll-applspec.component";
@@ -109,6 +115,8 @@ import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.s
 import { UserAssignmentComponent } from "../user-assignment/user-assignment.component";
 import { TokenEnrollmentLastStepDialogComponent } from "./token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
 import { TokenEnrollmentLastStepDialogData } from "./token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.self-service.component";
+import { TokenVerifyEnrollmentComponent } from "./token-verify-enrollment/token-verify-enrollment.component";
+import { TokenCompleteEnrollmentComponent } from "@components/token/token-enrollment/token-complete-enrollment/token-complete-enrollment.component";
 
 export type enrollmentArgsGetterFn<T extends TokenEnrollmentData = TokenEnrollmentData> = (
   enrollmentOptions: TokenEnrollmentData
@@ -285,11 +293,17 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     source: this.tokenService.selectedTokenType,
     computation: () => undefined
   });
+  enrolledDialogData: WritableSignal<TokenEnrollmentDialogData | null> = signal(null);
 
   descriptionControl = new FormControl<string>("", {
     nonNullable: true,
     validators: [Validators.maxLength(80)]
   });
+  descriptionRequired = computed(() => {
+    const selectedTokenType = this.tokenService.selectedTokenType();
+    return this.authService.requireDescription().includes(selectedTokenType.key);
+  });
+
   setPinControl = new FormControl<string>("", { nonNullable: true });
   repeatPinControl = new FormControl<string>("", { nonNullable: true });
   selectedContainerControl = new FormControl(this.containerService.selectedContainer(), { nonNullable: true });
@@ -346,8 +360,21 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     }
     this.additionalFormFields.set(validControls);
   }
+
   updateOnEnrollmentResponse(event: OnEnrollmentResponseFn) {
     this.onEnrollmentResponse.set(event);
+  }
+
+  constructor() {
+    effect(() => {
+      const isRequired = this.descriptionRequired();
+      const currentValidators = [Validators.maxLength(80)];
+      if (isRequired) {
+        currentValidators.push(Validators.required);
+      }
+      this.descriptionControl.setValidators(currentValidators);
+      this.descriptionControl.updateValueAndValidity();
+    });
   }
 
   ngOnInit(): void {
@@ -417,18 +444,14 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
       let enrollmentResponse: EnrollmentResponse | null = await enrollPromise;
       this.enrollResponse.set(enrollmentResponse);
       if (enrollmentResponse) {
-        this._handleEnrollmentResponse({
-          response: enrollmentResponse,
-          user: this.userService.selectedUser()
-        });
+        this._handleEnrollmentResponse(enrollmentResponse);
       }
       return;
     }
-    const lastStepData = this._lastTokenEnrollmentLastStepDialogData();
-    if (lastStepData) {
+    if (this.enrolledDialogData()) {
       this.dialogService.openDialog({
         component: TokenEnrollmentLastStepDialogComponent,
-        data: lastStepData
+        data: this.enrolledDialogData()
       });
     }
   }
@@ -541,7 +564,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
       serial: this.serial()
     };
 
-    const enrollmentArgs = this.enrollmentArgsGetter(basicOptions);
+    const enrollmentArgs: EnrollTokenArguments | null = this.enrollmentArgsGetter(basicOptions);
     if (!enrollmentArgs) return;
     const enrollResponse = this.tokenService.enrollToken(enrollmentArgs);
 
@@ -552,17 +575,81 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
       this.notificationService.openSnackBar(`Failed to enroll token: ${message || error.message || error}`);
     });
     let enrollmentResponse: EnrollmentResponse | null = await enrollPromise;
+
+    this.enrolledDialogData.set({
+      response: enrollmentResponse,
+      enrollParameters: enrollmentArgs,
+      tokenType: this.tokenService.selectedTokenType().key,
+      username: enrollmentArgs.data.user,
+      userRealm: enrollmentArgs.data.realm,
+      onlyAddToRealm: enrollmentArgs.data.onlyAddToRealm ?? false,
+      rollover: false
+    });
+
+    // Complete enrollment
+    // Push, passkey, webauthn (TODO: maybe we can integrate this into the complete enrollment dialog component)
     const onEnrollmentResponseFn = this.onEnrollmentResponse();
     if (onEnrollmentResponseFn && enrollmentResponse) {
       enrollmentResponse = await onEnrollmentResponseFn(enrollmentResponse, enrollmentArgs.data);
     }
+    // two step enrollment + handles further enrollment steps (verify + success dialog)
+    this.handleCompleteEnrollment(enrollmentResponse);
+  }
+
+  handleCompleteEnrollment(enrollmentResponse: EnrollmentResponse | null): void {
+    if (!this.enrolledDialogData() || !enrollmentResponse) return;
+
     this.enrollResponse.set(enrollmentResponse);
-    if (enrollmentResponse) {
-      this._handleEnrollmentResponse({
-        response: enrollmentResponse,
-        user: user
-      });
+    this.enrolledDialogData.set({
+      ...this.enrolledDialogData()!,
+      response: enrollmentResponse
+    });
+
+    if (enrollmentResponse?.detail.rollout_state !== "clientwait") {
+      return this.handleVerifyEnrollment(enrollmentResponse);
     }
+
+    const dialogRef = this.dialogService.openDialog({
+      component: TokenCompleteEnrollmentComponent,
+      data: this.enrolledDialogData()
+    });
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.enrollResponse.set(result);
+        this.enrolledDialogData.set({
+          ...this.enrolledDialogData()!,
+          showEnrollData: false
+        });
+        this.handleVerifyEnrollment(result);
+      }
+    });
+  }
+
+  handleVerifyEnrollment(enrollmentResponse: EnrollmentResponse | null): void {
+    if (!this.enrolledDialogData() || !enrollmentResponse) return;
+
+    this.enrollResponse.set(enrollmentResponse);
+    this.enrolledDialogData.set({
+      ...this.enrolledDialogData()!,
+      response: enrollmentResponse
+    });
+
+    if (!enrollmentResponse?.detail?.verify) {
+      // No verify required, directly open last step dialog
+      return this._handleEnrollmentResponse(enrollmentResponse);
+    }
+
+    // Open verify dialog
+    const dialogRef = this.dialogService.openDialog({
+      component: TokenVerifyEnrollmentComponent,
+      data: this.enrolledDialogData()
+    });
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.enrollResponse.set(result);
+        this._handleEnrollmentResponse(result);
+      }
+    });
   }
 
   private _toPromise<T>(observable: Observable<T> | Promise<T>): Promise<T> {
@@ -573,33 +660,24 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     }
   }
 
-  protected openLastStepDialog(args: { response: EnrollmentResponse | null; user: UserData | null; rollover?: boolean | null }): void {
-    const { response, user, rollover } = args;
+  protected openLastStepDialog(response: EnrollmentResponse | null): void {
     if (!response) {
       this.notificationService.openSnackBar("No enrollment response available.");
       return;
     }
 
-    const dialogData: TokenEnrollmentLastStepDialogData = {
-      tokentype: this.tokenService.selectedTokenType(),
-      response: response,
-      serial: this.serial,
-      enrollToken: this.enrollToken.bind(this),
-      user: user,
-      userRealm: this.userService.selectedUserRealm(),
-      onlyAddToRealm: this.userAssignmentComponent?.onlyAddToRealm() ?? false,
-      rollover: rollover ?? false
-    };
-    this._lastTokenEnrollmentLastStepDialogData.set(dialogData);
+    this.enrolledDialogData.set({
+      ...this.enrolledDialogData()!,
+      response: response
+    });
 
     this.dialogService.openDialog({
       component: TokenEnrollmentLastStepDialogComponent,
-      data: dialogData
+      data: this.enrolledDialogData()
     });
   }
 
-  protected _handleEnrollmentResponse(args: { response: EnrollmentResponse; user: UserData | null; rollover?: boolean }): void {
-    const { response, user, rollover } = args;
+  protected _handleEnrollmentResponse(response: EnrollmentResponse): void {
     const detail = response.detail || {};
     const rolloutState = detail.rollout_state;
 
@@ -607,11 +685,11 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
       return;
     }
 
-    if (this.isUserRequired && !user && !rollover) {
+    if (this.isUserRequired && !this.userService.selectedUser() && !this.enrolledDialogData()?.rollover) {
       this.notificationService.openSnackBar("User is required for this token type, but no user was provided.");
       return;
     }
 
-    this.openLastStepDialog({ response, user, rollover });
+    this.openLastStepDialog(response);
   }
 }

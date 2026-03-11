@@ -23,6 +23,7 @@ import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { PiResponse } from "../../app.component";
 import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
 import { lastValueFrom } from "rxjs";
+import { ContentService, ContentServiceInterface } from "../content/content.service";
 
 export interface RadiusServer {
   identifier: string;
@@ -45,8 +46,11 @@ export type RadiusServers = {
 export interface RadiusServiceInterface {
   radiusServerResource: HttpResourceRef<PiResponse<RadiusServers> | undefined>;
   readonly radiusServers: Signal<RadiusServer[]>;
+
   postRadiusServer(server: RadiusServer): Promise<void>;
+
   testRadiusServer(params: any): Promise<boolean>;
+
   deleteRadiusServer(identifier: string): Promise<void>;
 }
 
@@ -57,10 +61,15 @@ export class RadiusService implements RadiusServiceInterface {
   readonly radiusServerBaseUrl = environment.proxyUrl + "/radiusserver/";
 
   readonly authService: AuthServiceInterface = inject(AuthService);
+  readonly contentService: ContentServiceInterface = inject(ContentService);
   readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   readonly http: HttpClient = inject(HttpClient);
 
   readonly radiusServerResource = httpResource<PiResponse<RadiusServers>>(() => {
+    if (!this.contentService.onExternalRadius()) {
+      return undefined;
+    }
+
     return {
       url: `${this.radiusServerBaseUrl}`,
       method: "GET",

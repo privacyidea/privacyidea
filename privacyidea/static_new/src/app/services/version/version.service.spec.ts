@@ -43,13 +43,19 @@ describe("VersioningService", () => {
 
   it("should update the version signal", () => {
     const newVersion = "1.2.3";
-    service.version.set(newVersion);
+    service.rawVersion.set(newVersion);
     expect(service.version()).toBe(newVersion);
   });
 
   it("should return the updated version from getVersion()", () => {
     const newVersion = "4.5.6";
-    service.version.set(newVersion);
+    service.rawVersion.set(newVersion);
     expect(service.getVersion()).toBe(newVersion);
+  });
+
+  it("should parse major.minor.patch from a complex rawVersion string", () => {
+    service.rawVersion.set("3.11.4.dev224+g914e93375.d20250701");
+    expect(service.version()).toBe("3.11.4");
+    expect(service.getVersion()).toBe("3.11.4");
   });
 });

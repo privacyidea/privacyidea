@@ -37,12 +37,16 @@ export class MockResolverService implements ResolverServiceInterface {
   };
   resolvers: Signal<Resolver[]> = this._resolversValue.asReadonly();
   resolverOptions: Signal<string[]> = this._resolverOptionsValue.asReadonly();
+  editableResolvers: WritableSignal<string[]> = signal([]);
+  userAttributes: WritableSignal<string[]> = signal([]);
 
   postResolverTest = jest.fn(() => of({} as PiResponse<any, any>));
 
   postResolver = jest.fn((resolverName: string, data: any) => of({} as PiResponse<any, any>));
 
   deleteResolver = jest.fn((resolverName: string) => of({} as PiResponse<any, any>));
+
+  getDefaultResolverConfig = jest.fn((resolverType: string) => of({} as PiResponse<any, any>));
 
   setResolvers(data: Resolver[]): void {
     this._resolversValue.set(data);

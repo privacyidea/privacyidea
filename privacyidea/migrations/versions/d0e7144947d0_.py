@@ -89,8 +89,9 @@ def downgrade():
             batch_op.create_unique_constraint('rrix_2', ['resolver_id', 'realm_id'])
             batch_op.drop_column('node_uuid')
     except DatabaseError as e:
-        if "already exists" in str(e.orig).lower():
-            print("Ok, constraint already exists.")
+        msg = str(e.orig).lower()
+        if "already exists" in msg or "check that it exists" in msg or "does not exist" in msg:
+            print("Ok, constraint or column already handled (already exists or already removed).")
             print(e)
         else:
             raise

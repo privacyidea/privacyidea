@@ -24,12 +24,18 @@ from sqlalchemy import (
     Sequence,
     Interval,
     Unicode,
+    BigInteger,
 )
+from sqlalchemy.dialects import sqlite
 from sqlalchemy.orm import Mapped, mapped_column
 
-from privacyidea.lib.utils import convert_column_to_unicode
 from privacyidea.models import db
 from privacyidea.models.utils import MethodsMixin
+
+# Use a variant type for sqlite since it does not allow auto-increment with BigInteger type.
+# (See https://docs.sqlalchemy.org/en/20/dialects/sqlite.html#allowing-autoincrement-behavior-sqlalchemy-types-other-than-integer-integer)
+BigIntegerType = BigInteger()
+BigIntegerType = BigIntegerType.with_variant(sqlite.INTEGER(), "sqlite")
 
 audit_column_length = {"signature": 1100,
                        "action": 200,
@@ -58,7 +64,8 @@ AUDIT_TABLE_NAME = 'pidea_audit'
 
 class Audit(MethodsMixin, db.Model):
     __tablename__ = AUDIT_TABLE_NAME
-    id: Mapped[int] = mapped_column(Sequence("audit_seq"), primary_key=True)
+    id: Mapped[int] = mapped_column(BigIntegerType,
+                                    Sequence("audit_seq", data_type=BigInteger), primary_key=True)
     date: Mapped[Optional[datetime]] = mapped_column(default=datetime.now, index=True)
     startdate: Mapped[Optional[datetime]]
     duration: Mapped[Optional[Interval]] = mapped_column(Interval(second_precision=6))
@@ -90,27 +97,3 @@ class Audit(MethodsMixin, db.Model):
                                                            default="default")
     thread_id: Mapped[Optional[str]] = mapped_column(Unicode(audit_column_length.get("thread_id")), default="0")
     policies: Mapped[Optional[str]] = mapped_column(Unicode(audit_column_length.get("policies")), default="")
-
-    def __init__(self, **kw):
-        super().__init__(**kw)
-        self.signature = convert_column_to_unicode(self.signature)
-        self.action = convert_column_to_unicode(self.action)
-        self.authentication = convert_column_to_unicode(self.authentication)
-        self.serial = convert_column_to_unicode(self.serial)
-        self.token_type = convert_column_to_unicode(self.token_type)
-        self.container_serial = convert_column_to_unicode(self.container_serial)
-        self.container_type = convert_column_to_unicode(self.container_type)
-        self.user = convert_column_to_unicode(self.user)
-        self.realm = convert_column_to_unicode(self.realm)
-        self.resolver = convert_column_to_unicode(self.resolver)
-        self.administrator = convert_column_to_unicode(self.administrator)
-        self.action_detail = convert_column_to_unicode(self.action_detail)
-        self.info = convert_column_to_unicode(self.info)
-        self.privacyidea_server = convert_column_to_unicode(self.privacyidea_server)
-        self.client = convert_column_to_unicode(self.client)
-        self.loglevel = convert_column_to_unicode(self.loglevel)
-        self.clearance_level = convert_column_to_unicode(self.clearance_level)
-        self.thread_id = convert_column_to_unicode(self.thread_id)
-        self.policies = convert_column_to_unicode(self.policies)
-        self.user_agent = convert_column_to_unicode(self.user_agent)
-        self.user_agent_version = convert_column_to_unicode(self.user_agent_version)

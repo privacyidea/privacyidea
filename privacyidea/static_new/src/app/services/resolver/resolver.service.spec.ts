@@ -19,17 +19,21 @@
 
 import { TestBed } from "@angular/core/testing";
 import { Resolver, Resolvers, ResolverService } from "./resolver.service";
-import { HttpTestingController, provideHttpClientTesting, TestRequest } from "@angular/common/http/testing";
+import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
 import { HttpHeaders, provideHttpClient } from "@angular/common/http";
 import { MockPiResponse } from "../../../testing/mock-services";
 import { AuthService } from "../auth/auth.service";
 import { MockAuthService } from "../../../testing/mock-services/mock-auth-service";
+import { MockContentService } from "../../../testing/mock-services/mock-content-service";
+import { ContentService } from "../content/content.service";
+import { ROUTE_PATHS } from "../../route_paths";
 import { lastValueFrom, of } from "rxjs";
 
 describe("ResolverService", () => {
   let resolverService: ResolverService;
   let httpMock: HttpTestingController;
   let authService: MockAuthService;
+  let contentService: MockContentService;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
@@ -37,13 +41,16 @@ describe("ResolverService", () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: AuthService, useClass: MockAuthService },
+        { provide: ContentService, useClass: MockContentService },
         ResolverService
       ]
     });
     resolverService = TestBed.inject(ResolverService);
     httpMock = TestBed.inject(HttpTestingController);
     authService = TestBed.inject(AuthService) as unknown as MockAuthService;
+    contentService = TestBed.inject(ContentService) as unknown as MockContentService;
     jest.spyOn(authService, "getHeaders").mockReturnValue(new HttpHeaders({ Authorization: "test-token" }));
+    contentService.routeUrl.set(ROUTE_PATHS.USERS);
   });
 
   afterEach(() => {
@@ -131,5 +138,106 @@ describe("ResolverService", () => {
     await lastValueFrom(of({})); // Wait for async updates
 
     expect(resolverService.resolverOptions()).toEqual(["resolver1", "resolver2"]);
+  });
+
+  it("editableResolvers should return only editable resolvers (case-insensitive)", async () => {
+    const mockResolvers = {
+      ldap1: { data: { Editable: true }, type: "ldapresolver" },
+      ldap2: { data: { editable: "true" }, type: "ldapresolver" },
+      ldap3: { data: { EDITABLE: 1 }, type: "ldapresolver" },
+      ldap4: { data: { Editable: false }, type: "ldapresolver" },
+      sql1: { data: {}, type: "sqlresolver" }
+    };
+    const mockResponse = MockPiResponse.fromValue(mockResolvers);
+    TestBed.flushEffects();
+    const req = httpMock.expectOne(resolverService.resolverBaseUrl);
+    expect(req.request.method).toBe("GET");
+    req.flush(mockResponse);
+    await lastValueFrom(of({})); // Wait for async updates
+
+    TestBed.flushEffects && TestBed.flushEffects();
+    expect(resolverService.editableResolvers()).toEqual(["ldap1", "ldap2", "ldap3"]);
+  });
+
+  describe("userAttributes signal", () => {
+    it("should return attribute keys for ldapresolver  with stringified mapping", async () => {
+      const mockResolvers = {
+        ldap1: { data: { USERINFO: "{ \"surname\": \"sn\", \"givenname\": \"givenName\" }" }, type: "ldapresolver" }
+      };
+      (resolverService as any).selectedResolverName.set("ldap1");
+      const mockResponse = MockPiResponse.fromValue(mockResolvers);
+
+      TestBed.flushEffects();
+      httpMock.expectOne(resolverService.resolverBaseUrl); // accept initial load of all resolvers;
+      const req = httpMock.expectOne(resolverService.resolverBaseUrl + "ldap1");
+      expect(req.request.method).toBe("GET");
+      req.flush(mockResponse);
+      await lastValueFrom(of({})); // Wait for async updates
+
+      expect(resolverService.userAttributes()).toEqual(["surname", "givenname"]);
+    });
+
+    it("should return empty attributes list for invalid JSON string", async () => {
+      const mockResolvers = {
+        ldap1: { data: { USERINFO: "{ 'surname': 'sn', 'givenname': 'givenName' " }, type: "ldapresolver" }
+      };
+      (resolverService as any).selectedResolverName.set("ldap1");
+      const mockResponse = MockPiResponse.fromValue(mockResolvers);
+
+      TestBed.flushEffects();
+      httpMock.expectOne(resolverService.resolverBaseUrl); // accept initial load of all resolvers;
+      const req = httpMock.expectOne(resolverService.resolverBaseUrl + "ldap1");
+      expect(req.request.method).toBe("GET");
+      req.flush(mockResponse);
+      await lastValueFrom(of({})); // Wait for async updates
+
+      expect(resolverService.userAttributes()).toEqual([]);
+    });
+
+    it("should return attribute keys for sqlresolver", async () => {
+      const mockResolvers = {
+        sql1: { data: { Map: { givenname: "displayname", email: "mail" } }, type: "sqlresolver" }
+      };
+      const mockResponse = MockPiResponse.fromValue(mockResolvers);
+      (resolverService as any).selectedResolverName.set("sql1");
+
+      TestBed.flushEffects();
+      httpMock.expectOne(resolverService.resolverBaseUrl); // accept initial load of all resolvers;
+      const req = httpMock.expectOne(resolverService.resolverBaseUrl + "sql1");
+      expect(req.request.method).toBe("GET");
+      req.flush(mockResponse);
+      await lastValueFrom(of({})); // Wait for async updates
+
+      expect(resolverService.userAttributes()).toEqual(["givenname", "email"]);
+    });
+
+    it("should return attribute keys for httpresolver", async () => {
+      const mockResolvers = {
+        http1: {
+          data: {
+            attribute_mapping: {
+              username: "userPrincipalName",
+              mobile: "mobilePhone",
+              surname: "surname"
+            }
+          }, type: "httpresolver"
+        }
+      };
+      const mockResponse = MockPiResponse.fromValue(mockResolvers);
+      (resolverService as any).selectedResolverName.set("http1");
+
+      TestBed.flushEffects();
+      httpMock.expectOne(resolverService.resolverBaseUrl); // accept initial load of all resolvers;
+      const req = httpMock.expectOne(resolverService.resolverBaseUrl + "http1");
+      expect(req.request.method).toBe("GET");
+      req.flush(mockResponse);
+      await lastValueFrom(of({})); // Wait for async updates
+
+      expect(resolverService.userAttributes()).toEqual(["username", "mobile", "surname"]);
+    });
+
+    it("should return empty array if no resolver resource is loaded", () => {
+      expect(resolverService.userAttributes()).toEqual([]);
+    });
   });
 });

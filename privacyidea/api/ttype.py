@@ -51,6 +51,8 @@ from privacyidea.lib.utils import get_client_ip, get_plugin_info_from_useragent
 from privacyidea.lib.event import EventConfiguration, event
 import json
 
+from ..lib.tokens.push_types import PushAction
+
 log = logging.getLogger(__name__)
 
 ttype_blueprint = Blueprint('ttype_blueprint', __name__)
@@ -101,17 +103,29 @@ def token(ttype=None):
 
     :return: Token Type dependent
     """
-    tokenc = get_token_class(ttype)
-    if tokenc is None:
+    token_class = get_token_class(ttype)
+    if token_class is None:
         log.error("Invalid tokentype provided. ttype: {}".format(ttype.lower()))
-        raise ParameterError(_("Invalid tokentype provided. ttype: {}").format(ttype.lower()))
+        raise ParameterError("Invalid tokentype provided. ttype: {}".format(ttype.lower()))
+
+    if ttype == "push":
+        # Code to phone message
+        # TODO this is probably not perfect, but we can not evaluate policies in the token class itself
+        code_to_phone_message = None
+        policies = Match.user(g, scope=SCOPE.AUTH, action=PushAction.PUSH_CODE_TO_PHONE_MESSAGE,
+                           user_object=None).action_values(unique=True, allow_white_space_in_action=True,
+                                                                  write_to_audit_log=False)
+        if len(policies) >= 1:
+            code_to_phone_message = list(policies)[0]
+        request.all_data[PushAction.PUSH_CODE_TO_PHONE_MESSAGE] = code_to_phone_message
+
     try:
-        res = tokenc.api_endpoint(request, g)
+        res = token_class.api_endpoint(request, g)
     except Exception as e:
         if Match.action_only(
-            g,
-            scope=SCOPE.TOKEN,
-            action=PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE_FOR_TTYPE,
+                g,
+                scope=SCOPE.TOKEN,
+                action=PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE_FOR_TTYPE
         ).any():
             return send_error("Failed special token function"), map_error_to_code(e)
         raise

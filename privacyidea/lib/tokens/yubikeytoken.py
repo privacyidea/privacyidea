@@ -65,7 +65,7 @@ import base64
 import hmac
 from hashlib import sha1
 from privacyidea.lib.config import get_from_config
-from privacyidea.lib.tokenclass import TOKENKIND
+from privacyidea.lib.tokenclass import Tokenkind
 from privacyidea.lib import _
 from privacyidea.lib.policy import SCOPE, GROUP
 from privacyidea.lib.policies.actions import PolicyAction
@@ -77,39 +77,43 @@ required = False
 log = logging.getLogger(__name__)
 
 
+
+# Keys that are part of the Yubico Validation Protocol v2 and must be included
+# in the HMAC signature.  Everything else in request.all_data (e.g. 'ttype',
+# or any future privacyIDEA-internal key) is silently ignored.
+# https://developers.yubico.com/yubikey-val/Validation_Protocol_V2.0.html
+_YUBICO_PROTOCOL_KEYS = frozenset({"id", "nonce", "otp", "sl", "timeout", "timestamp"})
+
+
 def yubico_api_signature(data, api_key):
     """
-    Get a dictionary "data", sort the dictionary by the keys
-    and sign it HMAC-SHA1 with the api_key
+    Sign a subset of *data* with HMAC-SHA1 using *api_key*.
 
-    :param data: The data to be signed
+    Only the keys defined by the Yubico Validation Protocol v2 are included in
+    the signature.  All other keys (e.g. ``h``, ``ttype``, or any
+    privacyIDEA-internal key that may be present in ``request.all_data``) are
+    ignored, so adding new parameters to the request can never silently corrupt
+    signature verification.
+
+    :param data: The request parameters (may contain extra keys)
     :type data: dict
-    :param api_key: base64 encoded API key
-    :type api_key: basestring
-    :return: base64 encoded signature
+    :param api_key: base64-encoded API key
+    :type api_key: str
+    :return: base64-encoded HMAC-SHA1 signature
+    :rtype: str
     """
-    r = dict(data)
-    if 'h' in r:
-        del r['h']
-    if 'ttype' in r:
-        # The /ttype/yubikey endpoint adds ttype=yubikey to the request parameters which is obviously not included in
-        # the signature according to the yubico specification
-        del r['ttype']
-    keys = sorted(r.keys())
-    data_string = ""
-    for key in keys:
-        data_string += "{0!s}={1!s}&".format(key, r.get(key))
-    data_string = data_string.strip("&")
+    r = {k: v for k, v in data.items() if k in _YUBICO_PROTOCOL_KEYS}
+    data_string = "&".join(
+        "{0!s}={1!s}".format(k, r[k]) for k in sorted(r)
+    )
     api_key_bin = base64.b64decode(api_key)
-    # generate the signature
     h = hmac.new(api_key_bin, to_bytes(data_string), sha1).digest()
-    h_b64 = b64encode_and_unicode(h)
-    return h_b64
+    return b64encode_and_unicode(h)
 
 
 def yubico_check_api_signature(data, api_key, signature=None):
     """
-    Verfiy the signature of the data.
+    Verify the signature of the data.
     Either provide the signature as parameter or take it from the data
 
     :param data: The data to be signed
@@ -488,4 +492,4 @@ h={h}
         if not len(update_params["otpkey"]) == 32:
             raise EnrollmentError("The otpkey must be 32 characters long for yubikey token in AES mode")
         TokenClass.update(self, update_params, reset_failcount)
-        self.add_tokeninfo("tokenkind", TOKENKIND.HARDWARE)
+        self.add_tokeninfo("tokenkind", Tokenkind.HARDWARE)

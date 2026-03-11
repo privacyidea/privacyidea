@@ -41,7 +41,7 @@ from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import (SCOPE, GROUP, comma_escape_text,
                                     get_action_values_from_options, Match)
 from privacyidea.lib.token import get_tokens
-from privacyidea.lib.tokenclass import TokenClass, CLIENTMODE, ROLLOUTSTATE
+from privacyidea.lib.tokenclass import TokenClass, ClientMode, RolloutState
 from privacyidea.lib.tokens.u2f import (check_registration_data, url_decode,
                                         parse_registration_data, url_encode,
                                         parse_response_data, check_response,
@@ -201,7 +201,7 @@ optional = True
 required = False
 
 
-class U2FACTION(object):
+class U2FAction:
     FACETS = "u2f_facets"
     REQ = "u2f_req"
     NO_VERIFY_CERT = "u2f_no_verify_certificate"
@@ -212,7 +212,7 @@ class U2fTokenClass(TokenClass):
     The U2F Token implementation.
     """
 
-    client_mode = CLIENTMODE.U2F
+    client_mode = ClientMode.U2F
 
     @staticmethod
     def get_class_type():
@@ -255,7 +255,7 @@ class U2fTokenClass(TokenClass):
                'ui_enroll': ["admin", "user"],
                'policy': {
                    SCOPE.AUTH: {
-                       U2FACTION.FACETS: {
+                       U2FAction.FACETS: {
                            'type': 'str',
                            'desc': _("This is a list of FQDN hostnames "
                                      "trusting the registered U2F tokens.")},
@@ -269,7 +269,7 @@ class U2fTokenClass(TokenClass):
                        }
                    },
                    SCOPE.AUTHZ: {
-                       U2FACTION.REQ: {
+                       U2FAction.REQ: {
                            'type': 'str',
                            'desc': _("Only specified U2F tokens are "
                                      "authorized."),
@@ -277,12 +277,12 @@ class U2fTokenClass(TokenClass):
                        }
                    },
                    SCOPE.ENROLL: {
-                       U2FACTION.REQ: {
+                       U2FAction.REQ: {
                            'type': 'str',
                            'desc': _("Only specified U2F tokens are allowed "
                                      "to be registered."),
                            'group': GROUP.TOKEN},
-                       U2FACTION.NO_VERIFY_CERT: {
+                       U2FAction.NO_VERIFY_CERT: {
                            'type': 'bool',
                            'desc': _("Do not verify the U2F attestation certificate."),
                            'group': GROUP.TOKEN
@@ -333,11 +333,11 @@ class U2fTokenClass(TokenClass):
         reg_data = getParam(param, "regdata")
         verify_cert = is_true(getParam(param, "u2f.verify_cert", default=True))
         if not reg_data:
-            self.token.rollout_state = ROLLOUTSTATE.CLIENTWAIT
+            self.token.rollout_state = RolloutState.CLIENTWAIT
             # Set the description in the first enrollment step
             if "description" in param:
                 self.set_description(getParam(param, "description", default=""))
-        elif reg_data and self.token.rollout_state == ROLLOUTSTATE.CLIENTWAIT:
+        elif reg_data and self.token.rollout_state == RolloutState.CLIENTWAIT:
             attestation_cert, user_pub_key, key_handle, \
                 signature, automatic_description = parse_registration_data(reg_data,
                                                                            verify_cert=verify_cert)
@@ -374,7 +374,7 @@ class U2fTokenClass(TokenClass):
         """
         response_detail = {}
         # get_init_details runs after "update" method. So in the first step clientwait has already been set
-        if self.token.rollout_state == ROLLOUTSTATE.CLIENTWAIT:
+        if self.token.rollout_state == RolloutState.CLIENTWAIT:
             # This is the first step of the init request
             app_id = get_from_config("u2f.appId", "").strip("/")
             from privacyidea.lib.error import TokenAdminError
@@ -490,7 +490,7 @@ class U2fTokenClass(TokenClass):
         image_url = IMAGES.get(self.token.description.lower().split()[0], "")
         dataimage = convert_imagefile_to_dataimage(image_url) if image_url else ""
         reply_dict = {"attributes": {"u2fSignRequest": u2f_sign_request,
-                                     "hideResponseInput": self.client_mode != CLIENTMODE.INTERACTIVE,
+                                     "hideResponseInput": self.client_mode != ClientMode.INTERACTIVE,
                                      "img": dataimage},
                       "image": dataimage}
 
@@ -552,7 +552,7 @@ class U2fTokenClass(TokenClass):
                             Match
                                     .user(options.get("g"),
                                           scope=SCOPE.AUTHZ,
-                                          action=U2FACTION.REQ,
+                                          action=U2FAction.REQ,
                                           user_object=self.user if self.user else None)
                                     .action_values(unique=False)
                     ):
@@ -589,7 +589,7 @@ class U2fTokenClass(TokenClass):
         app_id = configured_app_id.strip("/")
 
         # Read the facets from the policies
-        pol_facets = Match.action_only(g, scope=SCOPE.AUTH, action=U2FACTION.FACETS).action_values(unique=False)
+        pol_facets = Match.action_only(g, scope=SCOPE.AUTH, action=U2FAction.FACETS).action_values(unique=False)
         facet_list = ["https://{0!s}".format(x) for x in pol_facets]
         facet_list.append(app_id)
 

@@ -103,11 +103,9 @@ export class SmtpServersComponent {
         }
       })
       .afterClosed()
-      .subscribe({
-        next: (result) => {
-          if (result) {
-            this.smtpService.deleteSmtpServer(server.identifier);
-          }
+      .subscribe(async (result) => {
+        if (result) {
+          await this.smtpService.deleteSmtpServer(server.identifier);
         }
       });
   }

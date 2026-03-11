@@ -21,6 +21,7 @@ import { inject, Injectable, linkedSignal, WritableSignal } from "@angular/core"
 import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
+import { ContentService, ContentServiceInterface } from "../content/content.service";
 import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
 import { lastValueFrom } from "rxjs";
 
@@ -51,16 +52,22 @@ export interface TokengroupServiceInterface {
 })
 export class TokengroupService implements TokengroupServiceInterface {
   private readonly authService: AuthServiceInterface = inject(AuthService);
+  private readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly http: HttpClient = inject(HttpClient);
 
   private readonly tokengroupBaseUrl = environment.proxyUrl + "/tokengroup/";
 
-  tokengroupResource = httpResource<PiResponse<Tokengroups>>(() => ({
-    url: this.tokengroupBaseUrl,
-    method: "GET",
-    headers: this.authService.getHeaders()
-  }));
+  tokengroupResource = httpResource<PiResponse<Tokengroups>>(() => {
+    if (!this.contentService.onExternalTokenGroups()) {
+      return undefined;
+    }
+    return {
+      url: this.tokengroupBaseUrl,
+      method: "GET",
+      headers: this.authService.getHeaders()
+    };
+  });
 
   tokengroups: WritableSignal<Tokengroup[]> = linkedSignal({
     source: this.tokengroupResource.value,

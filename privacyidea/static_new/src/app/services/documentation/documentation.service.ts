@@ -45,11 +45,10 @@ export interface DocumentationServiceInterface {
 })
 export class DocumentationService implements DocumentationServiceInterface {
   private _versioningService = inject(VersioningService);
-  private _version = this._versioningService.version;
   private _baseUrl = "https://privacyidea.readthedocs.io/en/"; //TODO translation
   getVersionUrl(pageUrl: string): string {
     pageUrl = pageUrl.replace(/^\/+/, ""); // Remove leading slashes
-    const version = this._version().split("+")[0];
+    const version = this._versioningService.version();
     return `${this._baseUrl}v${version}/${pageUrl}`;
   }
   getFallbackUrl(pageUrl: string): string {

@@ -172,7 +172,7 @@ class ConfigTestCase(MyApiTestCase):
 
             self.assertEqual("static/customize", config["customization"])
             self.assertEqual("", config["custom_css"])
-            self.assertEqual("privacyIDEA1.png", config["logo"])
+            self.assertEqual("", config["logo"])
             self.assertEqual("privacyIDEA Authentication System", config["page_title"])
             self.assertEqual("", config["realms"])
             self.assertEqual("", config["show_node"])
