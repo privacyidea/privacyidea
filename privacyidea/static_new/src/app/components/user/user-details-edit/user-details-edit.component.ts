@@ -60,12 +60,6 @@ export class UserDetailsEditComponent {
     return attributes.filter(attribute => attribute !== "username" && attribute !== "userid");
   });
 
-  attributeColumns = computed(() => {
-    const attributes = this.attributes();
-    const middle = Math.ceil(attributes.length / 2);
-    return [attributes.slice(0, middle), attributes.slice(middle)];
-  });
-
   constructor() {
     effect(() => {
       this.resolverService.selectedResolverName.set(this.resolver());

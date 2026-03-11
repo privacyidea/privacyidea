@@ -89,15 +89,6 @@ describe("UserDetailsEditComponent", () => {
     expect(component.attributes()).toEqual(["email", "surname"]);
   });
 
-  it("should compute attributeColumns as two columns", () => {
-    mockResolverService.userAttributes.set(["username", "email", "surname", "givenname"]);
-    fixture.detectChanges();
-    const columns = component.attributeColumns();
-    expect(columns.length).toBe(2);
-    expect(columns[0]).toEqual(["email", "surname"]);
-    expect(columns[1]).toEqual(["givenname"]);
-  });
-
   it("should set selectedResolverName on resolver input", () => {
     fixture.componentRef.setInput("resolver", "anotherresolver");
     fixture.detectChanges();
