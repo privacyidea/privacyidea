@@ -17,14 +17,15 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { signal } from "@angular/core";
-import { PiResponse } from "../../app/app.component";
+import { HttpResourceRef } from "@angular/common/http";
+import { signal, WritableSignal, Signal } from "@angular/core";
+import { PiResponse } from "src/app/app.component";
 import {
   ContainerTemplateServiceInterface,
   TemplateTokenTypes
-} from "../../app/services/container-template/container-template.service";
-import { ContainerTemplate } from "../../app/services/container/container.service";
-import { MockHttpResourceRef } from "../mock-services";
+} from "src/app/services/container-template/container-template.service";
+import { ContainerTemplate } from "src/app/services/container/container.service";
+import { MockHttpResourceRef } from "./mock-utils";
 
 export class MockContainerTemplateService implements ContainerTemplateServiceInterface {
   // --- Properties ---
@@ -32,13 +33,17 @@ export class MockContainerTemplateService implements ContainerTemplateServiceInt
 
   templatesResource = new MockHttpResourceRef<PiResponse<{ templates: ContainerTemplate[] }, unknown> | undefined>(
     undefined
-  );
-  templates = signal<ContainerTemplate[]>([]);
+  ) as unknown as HttpResourceRef<PiResponse<{ templates: ContainerTemplate[] }, unknown> | undefined>;
 
-  templateTokenTypesResource = new MockHttpResourceRef<PiResponse<TemplateTokenTypes, unknown> | undefined>(undefined);
-  templateTokenTypes = signal<TemplateTokenTypes>({});
+  templates = signal<ContainerTemplate[]>([]) as WritableSignal<ContainerTemplate[]>;
 
-  availableContainerTypes = signal<string[]>([]);
+  templateTokenTypesResource = new MockHttpResourceRef<PiResponse<TemplateTokenTypes, unknown> | undefined>(
+    undefined
+  ) as unknown as HttpResourceRef<PiResponse<TemplateTokenTypes, unknown> | undefined>;
+
+  templateTokenTypes = signal<TemplateTokenTypes>({}) as Signal<TemplateTokenTypes>;
+
+  availableContainerTypes = signal<string[]>([]) as Signal<string[]>;
 
   emptyContainerTemplate: ContainerTemplate = {
     name: "",
@@ -50,17 +55,14 @@ export class MockContainerTemplateService implements ContainerTemplateServiceInt
   };
 
   // --- Mocked Methods ---
-  getTokenTypesForContainerType = jest.fn((_type: string) => []);
 
-  deleteTemplate = jest.fn().mockResolvedValue(true);
-  deleteTemplates = jest.fn().mockResolvedValue(true);
+  getTokenTypesForContainerType = jest.fn((_type: string): string[] => []);
 
-  postTemplateEdits = jest.fn().mockResolvedValue(true);
+  deleteTemplate = jest.fn((_name: string) => Promise.resolve());
+  deleteTemplates = jest.fn((_names: string[]) => Promise.resolve());
 
-  canSaveTemplate = jest.fn().mockReturnValue(true);
-
+  postTemplateEdits = jest.fn((_template: ContainerTemplate) => Promise.resolve(true));
   copyTemplate = jest.fn((_template: ContainerTemplate, _newName: string) => Promise.resolve(true));
 
-  // If your interface requires a refresh method:
-  refreshTemplates = jest.fn();
+  canSaveTemplate = jest.fn((_template: ContainerTemplate): boolean => true);
 }

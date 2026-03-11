@@ -30,9 +30,9 @@ export interface DialogServiceInterface {
     data?: D;
     configOverride?: Partial<MatDialogConfig<D>>;
   }): MatDialogRef<AbstractDialogComponent<D, R>, R>;
-  openDialogAsync<D, R>(arg0: {
+  openDialogAsync<D, R>(args: {
     component: ComponentType<AbstractDialogComponent<D, R>>;
-    data: D;
+    data?: D;
     configOverride?: Partial<MatDialogConfig<D>>;
   }): Promise<R | undefined>;
   closeLatestDialog(): void;
@@ -66,7 +66,7 @@ export class DialogService implements DialogServiceInterface {
     component: ComponentType<AbstractDialogComponent<D, R>>;
     data?: D;
     configOverride?: Partial<MatDialogConfig<D>>;
-  }): MatDialogRef<AbstractDialogComponent, R> {
+  }): MatDialogRef<AbstractDialogComponent<D, R>, R> {
     const { component, data, configOverride } = args;
     const config: MatDialogConfig<D> = {
       disableClose: false,
@@ -74,7 +74,7 @@ export class DialogService implements DialogServiceInterface {
       data,
       ...configOverride
     };
-    const dialogRef = this.dialog.open(component, config) as MatDialogRef<AbstractDialogComponent, R>;
+    const dialogRef = this.dialog.open(component, config) as MatDialogRef<AbstractDialogComponent<D, R>, R>;
     this.openDialogs.add(dialogRef);
     dialogRef
       .afterClosed()
@@ -88,7 +88,7 @@ export class DialogService implements DialogServiceInterface {
 
   async openDialogAsync<D, R>(args: {
     component: ComponentType<AbstractDialogComponent<D, R>>;
-    data: D;
+    data?: D;
     configOverride?: Partial<MatDialogConfig<D>>;
   }): Promise<R | undefined> {
     const dialogRef = this.openDialog(args);
@@ -100,7 +100,7 @@ export class DialogService implements DialogServiceInterface {
    * @param result The optional return value of the dialog.
    * @returns true if the dialog was found and closed.
    */
-  closeDialog<R>(ref: MatDialogRef<AbstractDialogComponent, R>, result?: R): boolean {
+  closeDialog<R>(ref: MatDialogRef<AbstractDialogComponent<any, R>, R>, result?: R): boolean {
     if (this.openDialogs.has(ref)) {
       ref.close(result);
       return true;

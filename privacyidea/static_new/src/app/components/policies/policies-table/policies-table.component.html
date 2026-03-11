@@ -59,7 +59,9 @@
           (change)="masterToggle()"
           [checked]="isAllSelected()"
           [indeterminate]="selectedPolicies().size > 0 && !isAllSelected()"
-          [disabled]="policyService.allPolicies().length === 0">
+          [disabled]="policyService.allPolicies().length === 0"
+          aria-label="Select all policies"
+          i18n-aria-label>
         </mat-checkbox>
       </th>
       <td
@@ -69,7 +71,9 @@
           (click)="$event.stopPropagation()"
           (change)="updateSelection($event, policy.name)"
           [checked]="selectedPolicies().has(policy.name)"
-          [disabled]="!policy.name">
+          [disabled]="!policy.name"
+          aria-label="Select policy"
+          i18n-aria-label>
         </mat-checkbox>
       </td>
     </ng-container>

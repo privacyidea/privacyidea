@@ -141,7 +141,7 @@ export class ContainerTemplateEditDialogComponent extends PendingChangesDialogCo
       const result = await this._saveTemplate();
       if (result) {
         if (this.data && this.data.name !== this.template().name) {
-          this.containerTemplateService.deleteTemplate(this.data.name);
+          await this.containerTemplateService.deleteTemplate(this.data.name);
         }
         this.dialogRef.close(this.template());
       }

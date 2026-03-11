@@ -59,7 +59,7 @@ export class ContainerTemplatesTableActionsComponent {
         data: template.name
       });
       if (newName && newName.trim() !== "" && newName !== template.name) {
-        this.containerTemplateService.copyTemplate(template, newName);
+        await this.containerTemplateService.copyTemplate(template, newName);
       }
     }
   }
@@ -74,7 +74,7 @@ export class ContainerTemplatesTableActionsComponent {
     });
 
     if (confirmed === true) {
-      this.containerTemplateService.deleteTemplates(templatesToDelete.map((t) => t.name));
+      await this.containerTemplateService.deleteTemplates(templatesToDelete.map((t) => t.name));
     }
   }
 }

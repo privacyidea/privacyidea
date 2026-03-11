@@ -51,7 +51,9 @@
           (change)="toggleAllRows()"
           [checked]="isAllSelected()"
           [indeterminate]="isPartiallySelected()"
-          [disabled]="containerTemplateService.templates().length === 0">
+          [disabled]="containerTemplateService.templates().length === 0"
+          aria-label="Select all templates"
+          i18n-aria-label>
         </mat-checkbox>
       </th>
       <td
@@ -61,7 +63,9 @@
           (click)="$event.stopPropagation()"
           (change)="updateSelection($event, row)"
           [checked]="selectedTemplateNames().has(row.name)"
-          [disabled]="!row.name">
+          [disabled]="!row.name"
+          [aria-label]="row.name ? 'Select template ' + row.name : 'Select template'"
+          i18n-aria-label>
         </mat-checkbox>
       </td>
     </ng-container>
@@ -102,8 +106,14 @@
             @switch (column.key) {
               @case ("name") {
                 <a
-                  (click)="openEditDialog(element)"
-                  class="cursor-pointer">
+                  role="button"
+                  tabindex="0"
+                  (click)="$event.stopPropagation(); openEditDialog(element)"
+                  (keydown.enter)="$event.stopPropagation(); openEditDialog(element)"
+                  (keydown.space)="$event.preventDefault(); $event.stopPropagation(); openEditDialog(element)"
+                  class="text-link-button cursor-pointer"
+                  [attr.aria-label]="element.name ? 'Edit template ' + element.name : 'Edit template'"
+                  i18n-aria-label>
                   {{ element.name }}
                 </a>
               }
