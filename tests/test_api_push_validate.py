@@ -1303,7 +1303,7 @@ class PushAPITestCase(MyApiTestCase):
                                                  "pass": "push_pin"}):
             res = self.app.full_dispatch_request()
             self.assertEqual(200, res.status_code, res)
-            # Check that we actually waited (push_wait=10)
+            # Check that we actually waited
             self.assertGreater(time.time() - start_time, push_wait_time_seconds-1)
             result = res.json.get("result")
             # The challenge was not answered in time, so we get reject

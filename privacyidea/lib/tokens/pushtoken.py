@@ -79,7 +79,7 @@ DEFAULT_CHALLENGE_TEXT = lazy_gettext("Please confirm the authentication on your
 ERROR_CHALLENGE_TEXT = lazy_gettext("Use the polling feature of your privacyIDEA Authenticator App"
                                     " to check for a new Login request.")
 DEFAULT_MOBILE_TEXT = lazy_gettext("Do you want to confirm the login?")
-DEFAULT_MOBILE_TEXT_CODE_TO_PHONE = lazy_gettext("Enter the code in the login!")
+DEFAULT_MOBILE_TEXT_CODE_TO_PHONE = lazy_gettext("Enter the code to log in")
 PRIVATE_KEY_SERVER = "private_key_server"
 PUBLIC_KEY_SERVER = "public_key_server"
 PUBLIC_KEY_SMARTPHONE = "public_key_smartphone"
@@ -766,7 +766,8 @@ class PushTokenClass(TokenClass):
                             else:
                                 challenge.set_otp_status(True)
                         # Check if presence_answer is missing but its required
-                        elif (challenge_data and challenge_data.get("mode", "") == PushMode.REQUIRE_PRESENCE
+                        elif (isinstance(challenge_data, dict)
+                              and challenge_data.get("mode") == PushMode.REQUIRE_PRESENCE
                               and not presence_answer):
                             log.warning("'push_require_presence' Policy is set but the presence answer "
                                         "is not present in the smartphone request!")
@@ -1276,19 +1277,15 @@ class PushTokenClass(TokenClass):
                         break
                     time.sleep(POLL_INTERVAL - (elapsed_time % POLL_INTERVAL))
 
-        elif code_to_phone_enabled:
-            # Check if passw matches the display_code from a code_to_phone challenge
-            transaction_id = options.get("transaction_id")
-            challenges = get_challenges(serial=self.token.serial, transaction_id=transaction_id)
-            for challenge in challenges:
-                if challenge.is_valid():
-                    c_data = challenge.get_data()
-                    if (isinstance(c_data, dict) and c_data.get("mode") == PushMode.CODE_TO_PHONE
-                            and c_data.get("smartphone_confirmed")
-                            and c_data.get("display_code") == passw):
-                        # Success! Smartphone confirmed and display_code matches.
-                        challenge.delete()
-                        return True, 1, {}
+        elif code_to_phone_enabled and options.get("transaction_id"):
+            # Step 2 of code_to_phone: the user submits the display_code shown after
+            # the smartphone confirmed. Delegate entirely to check_challenge_response,
+            # which enforces transaction_id binding and increments the failcount on
+            # wrong codes — avoiding both the unbounded-challenge-scan and the missing
+            # failcount increment that a hand-rolled loop here would have.
+            otp_counter = self.check_challenge_response(passw=passw, options=options)
+            if otp_counter >= 0:
+                return True, otp_counter, {}
 
         return pin_match, otp_counter, reply
 
