@@ -127,22 +127,26 @@
     </div>
 
     @if (userService.userAttributesList().length > 0) {
-      <div class="custom-user-details mt-12 custom-details">
-        @for (attr of userService.userAttributesList(); track attr.key) {
-          <div class="label">{{ attr.key }}:</div>
-          <div class="value">{{ attr.value || "-" }}</div>
-          @if (deletableAttributes().includes(attr.key) || deletableAttributes().includes("*")) {
-            <button
-              (click)="deleteCustomAttribute(attr.key)"
-              aria-label="Delete custom attribute"
-              class="ml-4 small-icon-button"
-              i18n-aria-label="Delete custom attribute"
-              mat-icon-button>
-              <mat-icon>delete</mat-icon>
-            </button>
-          } @else {
-            <div class="small-icon-button"></div>
-          }
+      <div class="custom-user-details mt-12">
+        @for (col of customAttributeColumns(); track $index) {
+          <div class="custom-user-details-column">
+            @for (attr of col; track attr.key) {
+              <div class="label">{{ attr.key }}:</div>
+              <div class="value">{{ attr.value || "-" }}</div>
+              @if (deletableAttributes().includes(attr.key) || deletableAttributes().includes("*")) {
+                <button
+                  (click)="deleteCustomAttribute(attr.key)"
+                  aria-label="Delete custom attribute"
+                  class="ml-4 small-icon-button"
+                  i18n-aria-label="Delete custom attribute"
+                  mat-icon-button>
+                  <mat-icon>delete</mat-icon>
+                </button>
+              } @else {
+                <div class="small-icon-button"></div>
+              }
+            }
+          </div>
         }
       </div>
     }

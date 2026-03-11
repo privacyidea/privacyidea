@@ -192,6 +192,13 @@ export class UserDetailsComponent {
     return Array.from({ length: colCount }, (_, i) => entries.slice(i * perCol, (i + 1) * perCol));
   });
 
+  customAttributeColumns = computed(() => {
+    const attributes = this.userService.userAttributesList();
+    const colCount = 2;
+    const perCol = Math.ceil(attributes.length / colCount);
+    return Array.from({ length: colCount }, (_, i) => attributes.slice(i * perCol, (i + 1) * perCol));
+  });
+
   switchToCustomKey() {
     this.keyMode.set("input");
     this.selectedKey.set(null);
