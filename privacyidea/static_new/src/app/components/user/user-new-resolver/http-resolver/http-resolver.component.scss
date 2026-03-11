@@ -3,29 +3,13 @@
 
 :host {
   display: block;
-  width: 1100px;
 }
 
 .type-section {
-  padding: 0 16px 0 16px;;
+  padding: 0 16px 0 16px;
   border: 1px solid var(--pi-border-color, #dcdcdc);
   border-radius: var(--border-radius);
   background: var(--mat-sys-surface-container-low);
-}
-
-.form-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-
-  @media (max-width: 1100px) {
-    grid-template-columns: 1fr;
-  }
-}
-
-textarea[matInput] {
-  min-height: 6rem;
-  resize: vertical;
 }
 
 .mapping-header {
@@ -53,15 +37,6 @@ textarea[matInput] {
       background-color: var(--table-color) !important;
     }
   }
-
-  .cell-field {
-    width: 100%;
-  }
-}
-
-.actions-cell {
-  width: 80px;
-  text-align: center !important;
 }
 
 .actions-buttons {
@@ -78,34 +53,7 @@ textarea[matInput] {
 .auth-description {
   margin: 0 0 12px 0;
   opacity: 0.8;
-}
-
-.auth-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  column-gap: 16px;
-  row-gap: 12px;
-  align-items: start;
-
-  mat-form-field {
-    width: 100%;
-  }
-
-  @media (max-width: 1100px) {
-    grid-template-columns: 1fr;
-  }
-}
-
-.auth-wide {
-  grid-column: 1 / -1;
-}
-
-.auth-endpoint {
-  grid-column: 2 / -1;
-
-  @media (max-width: 1100px) {
-    grid-column: 1 / -1;
-  }
+  max-width: 914px;
 }
 
 .hint {

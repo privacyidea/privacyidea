@@ -93,7 +93,7 @@
       <div class="sticky-controls ali-center">
         @if (resolverType !== 'passwdresolver') {
           @if (['entraidresolver', 'keycloakresolver', 'httpresolver'].includes(resolverType)) {
-            <mat-form-field>
+            <mat-form-field class="input-width-m">
               <mat-label i18n>Test Username</mat-label>
               <app-clearable-input
                 (onClick)="testUsername = ''"
@@ -105,7 +105,7 @@
               </app-clearable-input>
             </mat-form-field>
 
-            <mat-form-field>
+            <mat-form-field class="input-width-m">
               <mat-label i18n>Test User ID</mat-label>
               <app-clearable-input
                 (onClick)="testUserId = ''"
