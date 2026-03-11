@@ -19,7 +19,7 @@
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
 import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
-import { computed, effect, inject, Injectable, linkedSignal, Signal, signal, WritableSignal } from "@angular/core";
+import { computed, inject, Injectable, linkedSignal, Signal, signal, WritableSignal } from "@angular/core";
 import { RealmService, RealmServiceInterface } from "../realm/realm.service";
 import { TokenService, TokenServiceInterface } from "../token/token.service";
 
@@ -28,8 +28,10 @@ import { PiResponse } from "../../app.component";
 import { environment } from "../../../environments/environment";
 import { ROUTE_PATHS } from "../../route_paths";
 import { StringUtils } from "../../utils/string.utils";
-import { Observable } from "rxjs";
+import { Observable, of } from "rxjs";
 import { Router } from "@angular/router";
+import { catchError, map } from "rxjs/operators";
+import { NotificationService } from "../notification/notification.service";
 
 const apiFilter = ["description", "email", "givenname", "mobile", "phone", "resolver", "surname", "username"];
 const advancedApiFilter: string[] = [];
@@ -45,6 +47,19 @@ export interface UserData {
   surname: string;
   userid: string;
   username: string;
+
+  [key: string]: unknown; // Allow additional custom properties
+}
+
+export interface EditUserData {
+  username: string;
+  description?: string;
+  email?: string;
+  givenname?: string;
+  surname?: string;
+  mobile?: string;
+  phone?: string;
+
   [key: string]: unknown; // Allow additional custom properties
 }
 
@@ -91,6 +106,12 @@ export interface UserServiceInterface {
 
   deleteUserAttribute(key: string): Observable<PiResponse<any, unknown>>;
 
+  createUser(resolver: string, userData: EditUserData): Observable<boolean>;
+
+  editUser(resolver: string, userData: EditUserData): Observable<boolean>;
+
+  deleteUser(resolver: string, username: string): Observable<boolean>;
+
   resetFilter(): void;
 
   handleFilterInput($event: Event): void;
@@ -106,6 +127,7 @@ export class UserService implements UserServiceInterface {
   private readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly tokenService: TokenServiceInterface = inject(TokenService);
   private readonly authService: AuthServiceInterface = inject(AuthService);
+  private readonly notificationService = inject(NotificationService);
   private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
   readonly apiFilter = apiFilter;
@@ -425,5 +447,59 @@ export class UserService implements UserServiceInterface {
       this.baseUrl +
       `attribute/${encodeURIComponent(key)}/${encodeURIComponent(username)}/${encodeURIComponent(realm)}`;
     return this.http.delete<PiResponse<any>>(url, { headers: this.authService.getHeaders() });
+  }
+
+  createUser(resolver: string, userData: EditUserData) {
+    const payload = { ...userData };
+    // Rename username to user
+    if (payload['username']) {
+      payload['user'] = payload['username'];
+      delete (payload as any)['username'];
+    }
+    payload["resolver"] = resolver;
+    return this.http.post<PiResponse<number>>(this.baseUrl, payload, {
+      headers: this.authService.getHeaders()
+    }).pipe(map((response) => response.result?.status || false),
+      catchError((error) => {
+        console.warn("Failed to create user", error);
+        const message = error.error?.result?.error?.message || "";
+        this.notificationService.openSnackBar($localize`Failed to create user ${userData.username}. ` + message);
+        return of(false);
+      })
+    );
+  }
+
+  editUser(resolver: string, userData: EditUserData) {
+    const payload = { ...userData };
+    // Rename username to user
+    if (payload['username']) {
+      payload['user'] = payload['username'];
+      delete (payload as any)['username'];
+    }
+    payload["resolver"] = resolver;
+    return this.http.put<PiResponse<number>>(this.baseUrl, payload, { headers: this.authService.getHeaders() })
+      .pipe(
+        map((response) => response.result?.status || false),
+        catchError((error) => {
+          console.warn("Failed to update user", error);
+          const message = error.error?.result?.error?.message || "";
+          this.notificationService.openSnackBar($localize`Failed to update user ${userData.username}. ` + message);
+          return of(false);
+        })
+      );
+  }
+
+  deleteUser(resolver: string, username: string): Observable<boolean> {
+    const url = this.baseUrl + encodeURIComponent(resolver) + "/" + encodeURIComponent(username);
+    return this.http.delete<PiResponse<any>>(url, { headers: this.authService.getHeaders() })
+      .pipe(
+        map((response) => response.result?.status || false),
+        catchError((error) => {
+          console.warn("Failed to delete user", error);
+          const message = error.error?.result?.error?.message || "";
+          this.notificationService.openSnackBar($localize`Failed to delete user ${username}. ` + message);
+          return of(false);
+        })
+      );
   }
 }
