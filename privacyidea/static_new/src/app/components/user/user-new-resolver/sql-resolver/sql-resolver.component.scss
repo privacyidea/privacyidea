@@ -3,18 +3,13 @@
 
 :host {
   display: block;
-  width: 1100px;
 }
 
 .type-sections-container {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+  display: flex;
+  flex-direction: column;
   gap: 1rem;
   width: 100%;
-
-  @media (max-width: 1100px) {
-    grid-template-columns: 1fr;
-  }
 }
 
 .type-section {
@@ -22,36 +17,13 @@
   border: 1px solid var(--pi-border-color, #dcdcdc);
   border-radius: var(--border-radius);
   background: var(--mat-sys-surface-container-low);
-
-  &.section-full {
-    grid-column: 1 / -1;
-  }
-}
-
-.form-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-
-  @media (max-width: 1100px) {
-    grid-template-columns: 1fr;
-  }
-}
-
-.options-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 0.75rem;
-}
-
-textarea[matInput] {
-  min-height: 6rem;
-  resize: vertical;
 }
 
 .hint {
   font-size: var(--mat-sys-body-small-size);
   color: var(--mat-sys-primary);
+  max-width: 208px;
+  margin-left: 16px;
 }
 
 .preset-buttons-container {
@@ -59,22 +31,12 @@ textarea[matInput] {
   flex-wrap: wrap;
   align-items: center;
   flex-direction: column;
-  margin-bottom: 16px;
   width: fit-content;
 
-  .preset-label {
-    font-weight: 500;
-    margin-bottom: 1rem;
-    margin-right: auto;
-  }
-
   .preset-buttons {
-    display: flex;
-    gap: 0.25rem;
-  }
-
-  button {
-    line-height: 34px;
+    display: grid;
+    gap: 8px;
+    grid-template-columns: repeat(5, auto);
   }
 }
 
