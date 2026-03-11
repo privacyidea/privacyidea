@@ -651,11 +651,17 @@ describe("TokenEnrollmentComponent", () => {
       tokenService.selectedTokenType.set({ key: "hotp", name: "HOTP", info: "", text: "" });
       component.enrolledDialogData.set({
         tokenType: "hotp",
-        response: {} as any,
+        response: { result: {}, detail: {} } as any,
         enrollParameters: {} as any
       });
 
+      const completeSpy = jest.spyOn(component as any, "handleCompleteEnrollment");
+      const verifySpy = jest.spyOn(component as any, "handleVerifyEnrollment");
+      const successSpy = jest.spyOn(component as any, "_handleEnrollmentResponse");
       component.reopenEnrollmentDialog();
+      expect(completeSpy).toHaveBeenCalledTimes(1);
+      expect(verifySpy).toHaveBeenCalledTimes(1);
+      expect(successSpy).toHaveBeenCalledTimes(1);
       expect(dialogServiceMock.openDialog).toHaveBeenCalledTimes(1);
     });
   });
@@ -769,23 +775,23 @@ describe("TokenEnrollmentComponent", () => {
     });
 
     it("show custom content if defined", () => {
-        authServiceMock.authData.set({
-          ...authServiceMock.authData()!,
-          token_wizard: true
-        });
-        wizardFixture.detectChanges();
-        const req = httpTestingController.expectOne(
-          environment.proxyUrl + "/static/public/customize/token-enrollment.wizard.pre.top.html"
-        );
-        req.flush("Custom Content");
-        const req2 = httpTestingController.expectOne(
-          environment.proxyUrl + "/static/public/customize/token-enrollment.wizard.pre.bottom.html"
-        );
-        req2.flush("");
-        wizardFixture.detectChanges();
-        expect(wizardFixture.nativeElement.textContent).toContain("Custom Content");
-        expect(wizardFixture.nativeElement.textContent).not.toContain("Enroll HOTP Token");
+      authServiceMock.authData.set({
+        ...authServiceMock.authData()!,
+        token_wizard: true
       });
+      wizardFixture.detectChanges();
+      const req = httpTestingController.expectOne(
+        environment.proxyUrl + "/static/public/customize/token-enrollment.wizard.pre.top.html"
+      );
+      req.flush("Custom Content");
+      const req2 = httpTestingController.expectOne(
+        environment.proxyUrl + "/static/public/customize/token-enrollment.wizard.pre.bottom.html"
+      );
+      req2.flush("");
+      wizardFixture.detectChanges();
+      expect(wizardFixture.nativeElement.textContent).toContain("Custom Content");
+      expect(wizardFixture.nativeElement.textContent).not.toContain("Enroll HOTP Token");
+    });
 
     describe("wizard renders description correctly", () => {
       beforeEach(() => {
