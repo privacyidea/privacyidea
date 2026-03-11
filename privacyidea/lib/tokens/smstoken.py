@@ -64,7 +64,7 @@ from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.smsprovider.SMSProvider import (get_sms_provider_class,
                                                      create_sms_instance,
                                                      get_smsgateway)
-from privacyidea.lib.tokenclass import CHALLENGE_SESSION, AUTHENTICATIONMODE
+from privacyidea.lib.tokenclass import ChallengeSession, AuthenticationMode
 from privacyidea.lib.tokens.hotptoken import HotpTokenClass
 from privacyidea.lib.utils import is_true, create_tag_dict
 from privacyidea.models import Challenge
@@ -76,7 +76,7 @@ keylen = {'sha1': 20,
           'sha512': 64}
 
 
-class SMSACTION(object):
+class SMSAction:
     SMSTEXT = "smstext"
     SMSAUTO = "smsautosend"
     GATEWAYS = "sms_gateways"
@@ -160,7 +160,7 @@ class SmsTokenClass(HotpTokenClass):
 
 
     """
-    mode = [AUTHENTICATIONMODE.CHALLENGE]
+    mode = [AuthenticationMode.CHALLENGE]
 
     def __init__(self, db_token):
         HotpTokenClass.__init__(self, db_token)
@@ -202,14 +202,14 @@ class SmsTokenClass(HotpTokenClass):
                'ui_enroll': ["admin", "user"],
                'policy': {
                    SCOPE.AUTH: {
-                       SMSACTION.SMSTEXT: {
+                       SMSAction.SMSTEXT: {
                            'type': 'str',
                            'desc': _('The text that will be send via SMS for '
                                      'an SMS token. Use tags like {otp} and {serial} '
                                      'as parameters.')
                                    + " " + comma_escape_text
                        },
-                       SMSACTION.SMSAUTO: {
+                       SMSAction.SMSAUTO: {
                            'type': 'bool',
                            'desc': _('If set, a new SMS OTP will be sent '
                                      'after successful authentication with '
@@ -224,7 +224,7 @@ class SmsTokenClass(HotpTokenClass):
                        }
                    },
                    SCOPE.ADMIN: {
-                       SMSACTION.GATEWAYS: {
+                       SMSAction.GATEWAYS: {
                            'type': 'str',
                            'desc': "{0!s} ({1!s})".format(
                                _('Choose the gateways the administrator is allowed to set.'),
@@ -232,7 +232,7 @@ class SmsTokenClass(HotpTokenClass):
                        }
                    },
                    SCOPE.USER: {
-                       SMSACTION.GATEWAYS: {
+                       SMSAction.GATEWAYS: {
                            'type': 'str',
                            'desc': "{0!s} ({1!s})".format(
                                _('Choose the gateways the user is allowed to set.'),
@@ -340,7 +340,7 @@ class SmsTokenClass(HotpTokenClass):
             try:
                 data = None
                 # Only if this is NOT a multichallenge enrollment, we try to send the sms
-                if options.get("session") != CHALLENGE_SESSION.ENROLLMENT:
+                if options.get("session") != ChallengeSession.ENROLLMENT:
                     self.inc_otp_counter(counter, reset=False)
                     message_template = self._get_sms_text(options)
                     success, sent_message = self._send_sms(
@@ -534,7 +534,7 @@ class SmsTokenClass(HotpTokenClass):
         g = options.get("g")
         user_object = options.get("user")
         if g:
-            messages = Match.user(g, scope=SCOPE.AUTH, action=SMSACTION.SMSTEXT,
+            messages = Match.user(g, scope=SCOPE.AUTH, action=SMSAction.SMSTEXT,
                                   user_object=user_object if user_object else None).action_values(
                 allow_white_space_in_action=True, unique=True)
             if len(messages) == 1:
@@ -558,7 +558,7 @@ class SmsTokenClass(HotpTokenClass):
         g = options.get("g")
         user_object = options.get("user")
         if g:
-            autosmspol = Match.user(g, scope=SCOPE.AUTH, action=SMSACTION.SMSAUTO, user_object=user_object).policies()
+            autosmspol = Match.user(g, scope=SCOPE.AUTH, action=SMSAction.SMSAUTO, user_object=user_object).policies()
             autosms = len(autosmspol) >= 1
 
         return autosms
@@ -593,7 +593,7 @@ class SmsTokenClass(HotpTokenClass):
         :return: None, the content is modified
         """
         from privacyidea.lib.token import init_token
-        from privacyidea.lib.tokenclass import CLIENTMODE
+        from privacyidea.lib.tokenclass import ClientMode
         token_obj = init_token({"type": cls.get_class_type(),
                                 "dynamic_phone": 1}, user=user_obj)
         content.get("result")["value"] = False
@@ -601,12 +601,12 @@ class SmsTokenClass(HotpTokenClass):
 
         detail = content.setdefault("detail", {})
         # Create a challenge!
-        options = {"session": CHALLENGE_SESSION.ENROLLMENT, "g": g, "user": user_obj}
+        options = {"session": ChallengeSession.ENROLLMENT, "g": g, "user": user_obj}
         c = token_obj.create_challenge(options=options)
         detail["transaction_ids"] = [c[2]]
         chal = {"transaction_id": c[2],
                 "image": None,
-                "client_mode": CLIENTMODE.INTERACTIVE,
+                "client_mode": ClientMode.INTERACTIVE,
                 "serial": token_obj.token.serial,
                 "type": token_obj.type,
                 "message": message or _("Please enter your new phone number!")}

@@ -897,7 +897,7 @@ def log_used_user(user: User, other_text: str = "") -> str:
     return "logged in as {0}. {1}".format(user.used_login, other_text) if user.used_login != user.login else other_text
 
 
-def get_attributes(uid: str, resolver: str, realm_id: str, requested_attributes: list[str] = None) -> dict:
+def get_attributes(uid: str, resolver: str, realm_id: int, requested_attributes: list[str] = None) -> dict:
     """
     Returns the attributes for the given user.
 

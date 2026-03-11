@@ -43,16 +43,18 @@ import { MatTableDataSource } from "@angular/material/table";
 import { MatPaginator, PageEvent } from "@angular/material/paginator";
 import { UserDetailsContainerTableComponent } from "./user-details-container-table/user-details-container-table.component";
 import { UserDetailsPinDialogComponent } from "./user-details-pin-dialog/user-details-pin-dialog.component";
-import { MatDialog } from "@angular/material/dialog";
 import { filter } from "rxjs";
 import { FormsModule } from "@angular/forms";
 import { MatSelectModule } from "@angular/material/select";
 import { FilterValue } from "../../../core/models/filter_value/filter_value";
 import { AuditService, AuditServiceInterface } from "../../../services/audit/audit.service";
 import { MatTooltip } from "@angular/material/tooltip";
-import { RouterLink } from "@angular/router";
+import { Router, RouterLink } from "@angular/router";
 import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
 import { DialogService, DialogServiceInterface } from "../../../services/dialog/dialog.service";
+import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { EditUserDialogComponent } from "@components/user/edit-user-dialog/edit-user-dialog.component";
+import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
 
 @Component({
   selector: "app-user-details",
@@ -87,6 +89,9 @@ export class UserDetailsComponent {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   private readonly auditService: AuditServiceInterface = inject(AuditService);
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
+  private router = inject(Router);
+
   readonly labels: Record<string, string> = {
     username: $localize`Username`,
     givenname: $localize`Given name`,
@@ -258,6 +263,41 @@ export class UserDetailsComponent {
 
   showUserAuditLog() {
     this.auditService.auditFilter.set(new FilterValue({ value: `user: ${this.userService.detailsUsername()}` }));
+  }
+
+  editUser() {
+    this.dialogService.openDialog({
+      component: EditUserDialogComponent,
+      data: this.userData()
+    });
+  }
+
+  deleteUser() {
+    this.dialogService
+      .openDialog({
+        component: SimpleConfirmationDialogComponent,
+        data: {
+          title: "Delete User",
+          items: [this.userData().username],
+          itemType: "user",
+          confirmAction: { label: "Delete", value: true, type: "destruct" }
+        }
+      })
+      .afterClosed()
+      .subscribe({
+        next: (result) => {
+          if (result) {
+            this.userService.deleteUser(this.userData().resolver, this.userData().username).subscribe({
+              next: (success) => {
+                if (success) {
+                  this.router.navigateByUrl(ROUTE_PATHS.USERS).then();
+                  this.userService.usersResource.reload();
+                }
+              }
+            });
+          }
+        }
+      });
   }
 
   protected readonly Array = Array;

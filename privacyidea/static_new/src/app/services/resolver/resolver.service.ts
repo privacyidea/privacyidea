@@ -22,8 +22,11 @@ import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
 import { AuthService } from "../auth/auth.service";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
+import { RealmService } from "../realm/realm.service";
 import { computed, inject, Injectable, Signal, signal, WritableSignal } from "@angular/core";
 import { catchError, Observable, throwError } from "rxjs";
+import { parseBooleanValue } from "../../utils/parse-boolean-value";
+import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
 
 export type ResolverType =
   "ldapresolver"
@@ -156,6 +159,8 @@ export interface ResolverServiceInterface {
   selectedResolverResource: HttpResourceRef<PiResponse<any> | undefined>;
   resolvers: Signal<Resolver[]>;
   resolverOptions: Signal<string[]>;
+  editableResolvers: Signal<string[]>;
+  userAttributes: Signal<string[]>;
 
   postResolverTest(data: any): Observable<PiResponse<any, any>>;
 
@@ -173,6 +178,7 @@ export class ResolverService implements ResolverServiceInterface {
   readonly resolverBaseUrl = environment.proxyUrl + "/resolver/";
   private readonly authService = inject(AuthService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
+  private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly http: HttpClient = inject(HttpClient);
   resolversResource = httpResource<PiResponse<Resolvers>>(() => {
     if (!this.contentService.onAnyUsersRoute()) {
@@ -196,6 +202,37 @@ export class ResolverService implements ResolverServiceInterface {
       headers: this.authService.getHeaders()
     };
   });
+  userAttributes = computed(() => {
+    const resolverResource = this.selectedResolverResource.value()?.result?.value;
+    if (!resolverResource) return [];
+    const resolverConfig = resolverResource[this.selectedResolverName()];
+    const resolverType = resolverConfig?.type;
+    let userInfo: Record<string, any> | string = {};
+
+    switch (resolverType) {
+      case "ldapresolver":
+        userInfo = resolverConfig.data?.USERINFO || {};
+        break;
+      case "sqlresolver":
+        userInfo = resolverConfig.data?.Map || {};
+        break;
+      case "httpresolver":
+      case "entraidresolver":
+      case "keycloakresolver":
+        userInfo = resolverConfig.data?.attribute_mapping || {};
+        break;
+    }
+
+    if (typeof userInfo === "string") {
+      try {
+        userInfo = JSON.parse(userInfo);
+      } catch (error) {
+        console.warn($localize`Failed to parse user info for resolver ${this.selectedResolverName()}` + ": ", error);
+        userInfo = {};
+      }
+    }
+    return Object.keys(userInfo);
+  });
   resolvers = computed<Resolver[]>(() => {
     const resolvers = this.resolversResource.value()?.result?.value;
     return resolvers ? Object.entries(resolvers).map(([name, data]) => ({
@@ -206,6 +243,19 @@ export class ResolverService implements ResolverServiceInterface {
   resolverOptions = computed(() => {
     const resolvers = this.resolversResource.value()?.result?.value;
     return resolvers ? Object.keys(resolvers) : [];
+  });
+
+  editableResolvers = computed(() => {
+    const resolvers = this.resolversResource.value()?.result?.value;
+    if (!resolvers) return [];
+    let editableResolverNames: string[] = [];
+    for (const [name, resolver] of Object.entries(resolvers)) {
+      const editable = resolver.data?.["Editable"] || resolver.data?.["editable"] || resolver.data?.["EDITABLE"] || false;
+      if (parseBooleanValue(editable)) {
+        editableResolverNames.push(name);
+      }
+    }
+    return editableResolverNames;
   });
 
   postResolverTest(data: any = {}): Observable<PiResponse<any, any>> {

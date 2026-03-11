@@ -28,7 +28,7 @@ from privacyidea.lib import _
 from privacyidea.api.lib.utils import getParam
 from privacyidea.lib.error import TokenAdminError
 from privacyidea.lib.log import log_with
-from privacyidea.lib.tokenclass import TokenClass, ROLLOUTSTATE, AUTHENTICATIONMODE
+from privacyidea.lib.tokenclass import TokenClass, RolloutState, AuthenticationMode
 from privacyidea.lib.policy import SCOPE, GROUP
 from privacyidea.lib.policies.actions import PolicyAction
 
@@ -50,7 +50,7 @@ class SSHkeyTokenClass(TokenClass):
     SSH key. This can be used to manage SSH keys and retrieve the public ssh key
     to import it to authorized keys files.
     """
-    mode = [AUTHENTICATIONMODE.AUTHENTICATE]
+    mode = [AuthenticationMode.AUTHENTICATE]
     using_pin = False
 
     def __init__(self, db_token):
@@ -125,12 +125,12 @@ class SSHkeyTokenClass(TokenClass):
         key_elem = param.get("sshkey").split(" ", 2)
         if key_elem[0] not in ["ssh-rsa", "ssh-ed25519", "ecdsa-sha2-nistp256",
                                "sk-ecdsa-sha2-nistp256@openssh.com", "sk-ssh-ed25519@openssh.com"]:
-            self.token.rollout_state = ROLLOUTSTATE.BROKEN
+            self.token.rollout_state = RolloutState.BROKEN
             self.token.save()
             raise TokenAdminError("The keytype you specified is not supported.")
 
         if len(key_elem) < 2:
-            self.token.rollout_state = ROLLOUTSTATE.BROKEN
+            self.token.rollout_state = RolloutState.BROKEN
             self.token.save()
             raise TokenAdminError("Missing key.")
 

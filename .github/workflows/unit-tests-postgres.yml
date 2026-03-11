@@ -1,0 +1,97 @@
+# SPDX-FileCopyrightText: (C) 2026 NetKnights GmbH <https://netknights.it>
+# SPDX-License-Identifier: CC0-1.0
+#
+# Runs the full unit test suite against PostgreSQL for all supported Python
+# versions. Migration tests are excluded — they have their own dedicated
+# workflow (migration-tests.yml).
+
+name: Unit Tests PostgreSQL
+
+on:
+  pull_request:
+    paths:
+      - 'privacyidea/**.py'
+      - 'tests/**'
+      - 'pyproject.toml'
+      - 'requirements.txt'
+      - 'tools/**'
+      - '.github/workflows/unit-tests-postgres.yml'
+
+permissions:
+  contents: read
+
+# Cancel any in-progress run for the same PR when a new commit is pushed.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: 'Python ${{ matrix.python-version }}'
+    permissions:
+      checks: write
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # Run on oldest and latest supported versions only — enough to catch
+        # PostgreSQL dialect issues without duplicating the full MariaDB matrix.
+        python-version: ['3.10', '3.14']
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: privacyidea_test
+          POSTGRES_USER: privacyidea
+          POSTGRES_PASSWORD: privacyidea
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U privacyidea"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      with:
+        persist-credentials: false
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+      with:
+        python-version: ${{ matrix.python-version }}
+        cache: 'pip'
+        cache-dependency-path: |
+          requirements.txt
+          tests/requirements.txt
+
+    - name: Install dependencies
+      run: |
+        pip install -r tests/requirements.txt
+        pip install psycopg2-binary
+
+    - name: Test with pytest
+      id: pytest_run
+      env:
+        TEST_DATABASE_URL: "postgresql+psycopg2://privacyidea:privacyidea@127.0.0.1:5432/privacyidea_test"
+        PYTHONWARNINGS: "once::DeprecationWarning"
+        PYTHON_VERSION: ${{ matrix.python-version }}
+      run: |
+        pip freeze
+        # Collect coverage only on the lowest Python version to avoid redundant
+        # reports and reduce overhead on all other matrix jobs.
+        if [ "$PYTHON_VERSION" = "3.10" ]; then
+          python -b -m pytest -v --cov=privacyidea --cov-report=xml -m "not migration" tests/
+        else
+          python -b -m pytest -v -m "not migration" tests/
+        fi
+
+    - name: Codecov upload
+      if: ${{ steps.pytest_run.outcome == 'success' && matrix.python-version == '3.10' }}
+      uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # v5.5.2
+      with:
+        files: ./coverage.xml
+        token: ${{ secrets.CODECOV_TOKEN }}
+
