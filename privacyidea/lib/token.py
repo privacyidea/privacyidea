@@ -75,7 +75,7 @@ from typing import Union
 from dateutil.tz import tzlocal
 from flask import Request
 from flask_sqlalchemy.session import Session
-from sqlalchemy import and_, false, func, or_, select
+from sqlalchemy import and_, func, or_, select
 from sqlalchemy.sql import Select
 from sqlalchemy.sql.expression import delete
 

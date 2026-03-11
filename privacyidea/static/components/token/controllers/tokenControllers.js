@@ -53,6 +53,11 @@ myApp.controller("tokenController", ['TokenFactory', 'ConfigFactory', '$scope',
         $scope.userFilterVisible = false;
         $scope.realmFilterVisible = false;
 
+        $scope.toggleUserFilter = function () {
+            $scope.userFilterVisible = !$scope.userFilterVisible;
+            $scope.realmFilterVisible = $scope.userFilterVisible;
+        };
+
         // Load realms for the user/realm filter dropdowns (admin only)
         if ($scope.loggedInUser.role === "admin") {
             ConfigFactory.getRealms(function (data) {

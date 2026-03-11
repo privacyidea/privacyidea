@@ -77,9 +77,11 @@
                         translate>user
                 </button>
                 <span class="glyphicon glyphicon-filter"
-                      ng-click="userFilterVisible=!userFilterVisible; realmFilterVisible=userFilterVisible"
+                      ng-click="toggleUserFilter()"
                       ng-class="{filtered: usernameFilter}"
                       role="button"
+                      tabindex="0"
+                      ng-keydown="($event.keyCode === 13 || $event.keyCode === 32) && toggleUserFilter()"
                       aria-label="{{ 'Toggle user filter' | translate }}"
                       title="{{ 'Toggle user filter' | translate }}"></span>
                 <div ng-show="userFilterVisible" class="pi-user-filter">
@@ -110,6 +112,8 @@
                 <span class="glyphicon glyphicon-filter"
                       ng-click="realmFilterVisible=!realmFilterVisible"
                       role="button"
+                      tabindex="0"
+                      ng-keydown="($event.keyCode === 13 || $event.keyCode === 32) && (realmFilterVisible=!realmFilterVisible)"
                       aria-label="{{ 'Toggle realm filter' | translate }}"
                       title="{{ 'Toggle realm filter' | translate }}"></span>
                 <div ng-show="realmFilterVisible" class="pi-user-filter">

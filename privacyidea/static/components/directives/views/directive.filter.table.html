@@ -2,6 +2,8 @@
       ng-click="filterVisible=!filterVisible; focusInput=true"
       ng-class="{filtered:filterValue}"
       role="button"
+      tabindex="0"
+      ng-keydown="($event.keyCode === 13 || $event.keyCode === 32) && (filterVisible=!filterVisible; focusInput=true)"
       aria-label="{{ 'Toggle filter' | translate }}"
       title="{{ 'Toggle filter' | translate }}"
       aria-hidden="false"></span>

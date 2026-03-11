@@ -439,12 +439,13 @@ def list_api():
     :query type: Display only token of type. You can do a not strict matching by
         specifying a tokentype like "*otp*", to find hotp and totp tokens.
     :query type_list: Comma separated list of token types. Display only tokens of the types in the list.
-    :query user: Filter by this username. Can include the realm as ``user@realm``. When
+    :query user: **Admin only.** Filter by this username. Can include the realm as ``user@realm``. When
         combined with the ``realm`` parameter the realm from ``realm`` takes
-        precedence. Admins may use this to query tokens of any user; regular
-        authenticated users always see only their own tokens regardless of this
-        parameter.
-    :query realm: Realm of the user given in the ``user`` parameter.
+        precedence. This parameter is ignored for callers with the ``user`` role —
+        they always see only their own tokens.
+    :query realm: **Admin only.** Realm of the user given in the ``user`` parameter. When provided
+        without a ``user`` parameter, returns tokens assigned to any user in that realm.
+        Ignored for callers with the ``user`` role.
     :query tokenrealm: takes a realm, only the tokens in this realm will be
         displayed
     :query basestring description: Display token with this kind of description
@@ -484,18 +485,17 @@ def list_api():
     userid = getParam(param, "userid", optional)
     resolver = getParam(param, "resolver", optional)
 
-    # If an explicit "user" query parameter is given, build a filter User from
-    # it (and the optional "realm" param). This lets admins query tokens of a
-    # specific user via GET /token/?user=alice&realm=defrealm.
-    # When no "user" param is present but a "realm" param is given, build a
-    # realm-only User so the token filter applies the realm constraint.
-    # When no "user" or "realm" param is present, fall back to request.User so
-    # that a regular authenticated user still only sees their own tokens.
+    # Only admins may use the "user" and "realm" query parameters to query
+    # tokens of arbitrary users or realms. For callers with role "user" we
+    # always use request.User (which resolve_logged_in_user already forced to
+    # their own identity) so that a regular user can never see other users'
+    # tokens via these params.
+    is_admin = g.logged_in_user.get("role") == "admin"
     user_param = getParam(param, "user", optional)
     realm_param = getParam(param, "realm", optional)
-    if user_param:
+    if is_admin and user_param:
         user = get_user_from_param(param)
-    elif realm_param:
+    elif is_admin and realm_param:
         user = User(login="", realm=realm_param)
     else:
         user = request.User

@@ -1246,15 +1246,12 @@ class TokenTestCase(MyTestCase):
         tok1.delete_token()
         tok2.delete_token()
 
-        # Unresolvable user does not raise ERR904, returns empty result
-        # A User whose login cannot be found in any resolver should return no tokens
-        # instead of raising a UserError (ERR904).
+        # Unresolvable user raises ERR904 "user can not be found in any resolver..."
         unresolvable = User(login="no_such_user_xyz", realm=self.realm1)
         # Confirm the user is not resolvable (resolver will be None/empty)
         self.assertFalse(unresolvable.resolver)
         with self.assertRaises(UserError):
             tokens = get_tokens_paginate(user=unresolvable)["tokens"]
-        #self.assertEqual(0, len(tokens))
 
     def test_42_sort_tokens(self):
         # return pagination

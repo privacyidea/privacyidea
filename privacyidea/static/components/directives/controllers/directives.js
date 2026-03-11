@@ -66,9 +66,12 @@ myApp.directive("piFilter", ["instanceUrl", "versioningSuffixProvider", function
             scope.clearFilter = function () {
                 scope.filterValue = "";
                 ctrl.$setViewValue("");
-                if (scope.ngChange) {
-                    scope.ngChange();
-                } else if (scope.onSubmit) {
+                // $setViewValue triggers $viewChangeListeners, which already calls
+                // ngChange() when provided — no need to call it again here.
+                // For submit-mode filters (onSubmit without ngChange), we still
+                // need to fire the callback explicitly because $viewChangeListeners
+                // only calls ngChange.
+                if (!scope.ngChange && scope.onSubmit) {
                     scope.onSubmit();
                 }
             };
