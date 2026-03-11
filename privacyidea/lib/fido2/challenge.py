@@ -74,7 +74,7 @@ def create_fido2_challenge(rp_id: str, user_verification: str = "preferred", tra
         "challenge": nonce,
         "message": message,
         "rpId": rp_id,
-        # "user_verification" is the browser-facing field name (WebAuthn spec), kept as-is
+        # "user_verification" is the browser-facing field name
         "user_verification": user_verification
     }
 
