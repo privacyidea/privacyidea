@@ -190,8 +190,7 @@
           mat-cell>
           @if (!row.isCustom) {
             <mat-form-field
-              class="cell-field"
-              subscriptSizing="dynamic">
+              class="cell-field">
               <mat-select
                 (selectionChange)="onPrivacyIdeaAttrChanged(i, $event.value)"
                 [value]="row.privacyideaAttr"
@@ -214,8 +213,7 @@
 
           @if (row.isCustom) {
             <mat-form-field
-              class="cell-field"
-              subscriptSizing="dynamic">
+              class="cell-field">
               <app-clearable-input
                 (onClick)="setCustomAttr(i, '')"
                 [showClearButton]="!!row.privacyideaAttr">
@@ -241,8 +239,7 @@
           *matCellDef="let row; let i = index"
           mat-cell>
           <mat-form-field
-            class="cell-field"
-            subscriptSizing="dynamic">
+            class="cell-field">
             <app-clearable-input
               (onClick)="row.userStoreAttr = ''; onMappingChanged()"
               [showClearButton]="!!row.userStoreAttr">

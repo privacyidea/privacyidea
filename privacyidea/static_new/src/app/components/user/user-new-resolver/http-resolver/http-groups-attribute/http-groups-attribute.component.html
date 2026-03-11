@@ -23,7 +23,6 @@
   <mat-slide-toggle [formControlName]="'active'" [matTooltip]="slideToggleTooltipSignal()">
   </mat-slide-toggle>
   <mat-form-field
-    subscriptSizing="dynamic"
     class="flex-size-1">
     @if (resolverType === "entraidresolver") {
       <mat-label i18n>Group Identifier</mat-label>
@@ -41,7 +40,7 @@
   </mat-form-field>
 
   @if (resolverType !== "entraidresolver") {
-    <mat-form-field class="flex-size-1" subscriptSizing="dynamic">
+    <mat-form-field class="flex-size-1">
       <mat-label i18n>Method</mat-label>
       <mat-select
         formControlName="method">
@@ -55,7 +54,6 @@
     </mat-form-field>
 
     <mat-form-field
-      subscriptSizing="dynamic"
       class="flex-size-2">
       <mat-label i18n>Endpoint</mat-label>
       <input

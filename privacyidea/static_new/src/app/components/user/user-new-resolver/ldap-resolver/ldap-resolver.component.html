@@ -326,23 +326,37 @@
     <h4 i18n>Attributes & Mapping</h4>
 
     <div class="flex-column">
-      <mat-form-field class="input-width-l">
-        <mat-label i18n>Loginname Attribute</mat-label>
-        <app-clearable-input
-          (onClick)="loginNameAttributeControl.setValue('')"
-          [showClearButton]="!!loginNameAttributeControl.value">
-          <input
-            [formControl]="loginNameAttributeControl"
-            matInput
-            placeholder="sAMAccountName"
-            required />
-        </app-clearable-input>
-        @if (loginNameAttributeControl.hasError('required') && loginNameAttributeControl.touched) {
-          <mat-error i18n>Loginname attribute is <strong>required</strong>.</mat-error>
-        }
-      </mat-form-field>
+      <div class="flex-row just-space-between">
+        <mat-form-field class="input-width-l">
+          <mat-label i18n>Loginname Attribute</mat-label>
+          <app-clearable-input
+            (onClick)="loginNameAttributeControl.setValue('')"
+            [showClearButton]="!!loginNameAttributeControl.value">
+            <input
+              [formControl]="loginNameAttributeControl"
+              matInput
+              placeholder="sAMAccountName"
+              required />
+          </app-clearable-input>
+          @if (loginNameAttributeControl.hasError('required') && loginNameAttributeControl.touched) {
+            <mat-error i18n>Loginname attribute is <strong>required</strong>.</mat-error>
+          }
+        </mat-form-field>
 
-      <mat-form-field class="input-width-l">
+        <mat-form-field class="input-width-s">
+          <mat-label i18n>UID Type</mat-label>
+          <app-clearable-input
+            (onClick)="uidTypeControl.setValue('')"
+            [showClearButton]="!!uidTypeControl.value">
+            <input
+              [formControl]="uidTypeControl"
+              matInput
+              placeholder="DN" />
+          </app-clearable-input>
+        </mat-form-field>
+      </div>
+
+      <mat-form-field class="width-100">
         <mat-label i18n>Search Filter</mat-label>
         <app-clearable-input
           (onClick)="ldapSearchFilterControl.setValue('')"
@@ -358,7 +372,7 @@
         }
       </mat-form-field>
 
-      <mat-form-field class="input-width-l">
+      <mat-form-field class="width-100">
         <mat-label i18n>Attribute Mapping</mat-label>
         <textarea
           [formControl]="userInfoControl"
@@ -371,7 +385,7 @@
         }
       </mat-form-field>
 
-      <mat-form-field class="input-width-l">
+      <mat-form-field class="width-100">
         <mat-label i18n>Multivalue Attributes</mat-label>
         <app-clearable-input
           (onClick)="multivalueAttributesControl.setValue('')"
@@ -380,18 +394,6 @@
             [formControl]="multivalueAttributesControl"
             matInput
             placeholder='["mobile"]' />
-        </app-clearable-input>
-      </mat-form-field>
-
-      <mat-form-field class="input-width-l">
-        <mat-label i18n>UID Type</mat-label>
-        <app-clearable-input
-          (onClick)="uidTypeControl.setValue('')"
-          [showClearButton]="!!uidTypeControl.value">
-          <input
-            [formControl]="uidTypeControl"
-            matInput
-            placeholder="DN" />
         </app-clearable-input>
       </mat-form-field>
 
@@ -420,7 +422,7 @@
           </app-clearable-input>
         </mat-form-field>
 
-        <mat-form-field class="input-width-l">
+        <mat-form-field class="width-100">
           <mat-label i18n>
             Search Filter for User Groups
           </mat-label>
@@ -438,48 +440,52 @@
           </app-clearable-input>
         </mat-form-field>
 
-        <mat-form-field class="input-width-l">
-          <mat-label i18n>Group Name Attribute</mat-label>
-          <mat-hint>
-            The group attribute defining the group's name, which should be stored in the user info.
-          </mat-hint>
-          <app-clearable-input
-            (onClick)="groupNameAttributeControl.setValue('')"
-            [showClearButton]="!!groupNameAttributeControl.value">
-            <input
-              [formControl]="groupNameAttributeControl"
-              matInput
-              placeholder="distinguishedName" />
-          </app-clearable-input>
-        </mat-form-field>
+        <div class="flex-row just-space-between margin-bottom-32">
+          <mat-form-field class="input-width-l">
+            <mat-label i18n>Group Name Attribute</mat-label>
+            <mat-hint>
+              The group attribute defining the group's name, which should be stored in the user info.
+            </mat-hint>
+            <app-clearable-input
+              (onClick)="groupNameAttributeControl.setValue('')"
+              [showClearButton]="!!groupNameAttributeControl.value">
+              <input
+                [formControl]="groupNameAttributeControl"
+                matInput
+                placeholder="distinguishedName" />
+            </app-clearable-input>
+          </mat-form-field>
 
-        <mat-form-field class="input-width-l">
-          <mat-label i18n>User Info Key</mat-label>
-          <mat-hint>
-            The key to store the groups in the user info (attribute mapping key).
-          </mat-hint>
-          <app-clearable-input
-            (onClick)="groupAttributeMappingKeyControl.setValue('')"
-            [showClearButton]="!!groupAttributeMappingKeyControl.value">
-            <input
-              [formControl]="groupAttributeMappingKeyControl"
-              matInput
-              placeholder="groups" />
-          </app-clearable-input>
-        </mat-form-field>
+          <mat-form-field class="input-width-l">
+            <mat-label i18n>User Info Key</mat-label>
+            <mat-hint>
+              The key to store the groups in the user info (attribute mapping key).
+            </mat-hint>
+            <app-clearable-input
+              (onClick)="groupAttributeMappingKeyControl.setValue('')"
+              [showClearButton]="!!groupAttributeMappingKeyControl.value">
+              <input
+                [formControl]="groupAttributeMappingKeyControl"
+                matInput
+                placeholder="groups" />
+            </app-clearable-input>
+          </mat-form-field>
+        </div>
       }
 
-      <mat-checkbox
-        [formControl]="noReferralsControl"
-        i18n>
-        No Anonymous Referral Chasing
-      </mat-checkbox>
+      <div class="flex-row just-space-between">
+        <mat-checkbox
+          [formControl]="noReferralsControl"
+          i18n>
+          No Anonymous Referral Chasing
+        </mat-checkbox>
 
-      <mat-checkbox
-        [formControl]="noSchemasControl"
-        i18n>
-        No Retrieval of Schema Information
-      </mat-checkbox>
+        <mat-checkbox
+          [formControl]="noSchemasControl"
+          i18n>
+          No Retrieval of Schema Information
+        </mat-checkbox>
+      </div>
     </div>
   </div>
 </div>

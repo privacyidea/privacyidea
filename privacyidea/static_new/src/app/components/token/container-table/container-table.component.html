@@ -24,8 +24,7 @@
   @if (authService.actionAllowed("container_list")) {
     <div class="filter-paginator-container">
       <mat-form-field
-        class="container-table-filter"
-        subscriptSizing="dynamic">
+        class="container-table-filter">
         <mat-label i18n>Filter Containers...</mat-label>
         <app-clearable-input
           (onClick)="containerService.clearFilter()"
@@ -105,7 +104,7 @@
             <td
               *matCellDef="let element; let row"
               [ngClass]="{
-                'width-18rem': column.key === 'description',
+                'input-width-l': column.key === 'description',
                 'table-checkbox': column.key === 'select'
               }"
               attr.aria-label="{{ column.label }} Cell"

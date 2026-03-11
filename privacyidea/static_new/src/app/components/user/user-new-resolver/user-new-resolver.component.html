@@ -40,8 +40,7 @@
       #leftColumn
       class="flex-row margin-bottom-0 margin-left-16 margin-top-16">
       <mat-form-field
-        class="input-width-l"
-        subscriptSizing="dynamic">
+        class="input-width-l">
         <mat-label i18n>Resolver Name</mat-label>
         <mat-hint>
           @if (isEditMode) {
@@ -94,7 +93,7 @@
       <div class="sticky-controls ali-center">
         @if (resolverType !== 'passwdresolver') {
           @if (['entraidresolver', 'keycloakresolver', 'httpresolver'].includes(resolverType)) {
-            <mat-form-field subscriptSizing="dynamic">
+            <mat-form-field>
               <mat-label i18n>Test Username</mat-label>
               <app-clearable-input
                 (onClick)="testUsername = ''"
@@ -106,7 +105,7 @@
               </app-clearable-input>
             </mat-form-field>
 
-            <mat-form-field subscriptSizing="dynamic">
+            <mat-form-field>
               <mat-label i18n>Test User ID</mat-label>
               <app-clearable-input
                 (onClick)="testUserId = ''"

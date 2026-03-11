@@ -23,7 +23,7 @@
 <div
   [formGroup]="formGroup"
   class="auth-grid">
-  <mat-form-field class="button-width-l" subscriptSizing="dynamic">
+  <mat-form-field class="button-width-l">
     <mat-label i18n>Method</mat-label>
     <mat-select formControlName="method">
       <mat-option value="POST">POST</mat-option>
@@ -34,7 +34,7 @@
     </mat-select>
   </mat-form-field>
 
-  <mat-form-field class="auth-endpoint" subscriptSizing="dynamic">
+  <mat-form-field class="auth-endpoint">
     <mat-label i18n>Endpoint</mat-label>
     <app-clearable-input
       (onClick)="formGroup.get('endpoint')?.setValue('')"
@@ -49,7 +49,7 @@
     }
   </mat-form-field>
 
-  <mat-form-field class="auth-wide" subscriptSizing="dynamic">
+  <mat-form-field class="auth-wide">
     <mat-label i18n>Headers (JSON format)</mat-label>
     <textarea
       formControlName="headers"
@@ -57,7 +57,7 @@
       placeholder='{"Content-Type":"application/json; charset=UTF-8"}'></textarea>
   </mat-form-field>
 
-  <mat-form-field class="auth-wide" subscriptSizing="dynamic">
+  <mat-form-field class="auth-wide">
     <mat-label i18n>Request Mapping (JSON format)</mat-label>
     <textarea
       formControlName="requestMapping"
@@ -68,7 +68,7 @@
     }
   </mat-form-field>
 
-  <mat-form-field class="auth-wide" subscriptSizing="dynamic">
+  <mat-form-field class="auth-wide">
     <mat-label i18n>Response Mapping (JSON format)</mat-label>
     <textarea
       formControlName="responseMapping"
@@ -84,7 +84,7 @@
   </mat-checkbox>
 
   @if (formGroup.get('hasSpecialErrorHandler')?.value) {
-    <mat-form-field class="auth-wide" subscriptSizing="dynamic">
+    <mat-form-field class="auth-wide">
       <mat-label i18n>Response Contains (JSON format)</mat-label>
       <textarea
         formControlName="errorResponse"

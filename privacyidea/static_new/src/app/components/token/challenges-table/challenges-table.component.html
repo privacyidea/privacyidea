@@ -19,11 +19,10 @@
 <div
   appScrollToTop
   class="challenges-table-container">
-  <div class="filter-paginator-container margin-bottom-16">
+  <div class="filter-paginator-container">
     <mat-form-field
       appearance="fill"
-      class="challenges-table-filter"
-      subscriptSizing="dynamic">
+      class="challenges-table-filter">
       <mat-label i18n>Filter Challenges...</mat-label>
       <app-clearable-input
         (onClick)="challengesService.clearFilter()"

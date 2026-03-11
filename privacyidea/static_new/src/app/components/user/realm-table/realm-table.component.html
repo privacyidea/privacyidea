@@ -7,8 +7,7 @@
     class="realm-table-container">
     <div class="filter-paginator-container">
       <mat-form-field
-        class="token-table-filter"
-        subscriptSizing="dynamic">
+        class="token-table-filter">
         <mat-label i18n>Filter Realms...</mat-label>
         <app-clearable-input
           (onClick)="resetFilter()"
@@ -31,10 +30,9 @@
         showFirstLastButtons />
     </div>
 
-    <div class="flex-row margin-bottom-16">
+    <div class="flex-row">
       <mat-form-field
-        class="button-width-l"
-        subscriptSizing="dynamic">
+        class="button-width-l">
         <mat-label i18n>Node</mat-label>
 
         <mat-select
@@ -124,8 +122,7 @@
                           </div>
 
                           <mat-form-field
-                            class="node-resolvers-select"
-                            subscriptSizing="dynamic">
+                            class="node-resolvers-select">
                             <mat-label i18n>Resolvers</mat-label>
                             <mat-select
                               (selectionChange)="onEditNodeResolversChange(group.id, $event.value)"
@@ -259,8 +256,7 @@
                 @switch (column.key) {
                   @case ("name") {
                     <mat-form-field
-                      class="new-realm-name-field"
-                      subscriptSizing="dynamic">
+                      class="new-realm-name-field">
                       <mat-label i18n>Realm Name</mat-label>
                       <input
                         (input)="newRealmName.set($any($event.target).value)"
@@ -282,8 +278,7 @@
                           </div>
 
                           <mat-form-field
-                            class="node-resolvers-select"
-                            subscriptSizing="dynamic">
+                            class="node-resolvers-select">
                             <mat-label i18n>Resolvers</mat-label>
                             <mat-select
                               (selectionChange)="onNewRealmNodeResolversChange(group.id, $event.value)"
@@ -314,7 +309,7 @@
                     </div>
                   }
                   @case ("actions") {
-                    <div class="actions-buttons">
+                    <div class="actions-buttons flex-column">
                       <button
                         (click)="onCreateRealm()"
                         [disabled]="!canSubmitNewRealm()"

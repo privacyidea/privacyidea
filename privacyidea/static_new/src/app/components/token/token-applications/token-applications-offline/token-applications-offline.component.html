@@ -29,10 +29,9 @@
 <div
   appScrollToTop
   class="application-table-container">
-  <div class="filter-paginator-container margin-bottom-16">
+  <div class="filter-paginator-container">
     <mat-form-field
-      class="application-table-filter"
-      subscriptSizing="dynamic">
+      class="application-table-filter">
       <mat-label i18n>Filter Offline Applications...</mat-label>
       <app-clearable-input
         (onClick)="machineService.clearFilter()"

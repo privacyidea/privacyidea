@@ -42,7 +42,7 @@
     </div>
   </div>
 
-  <div class="filter-paginator-container margin-bottom-16">
+  <div class="filter-paginator-container">
     <h3
       class="margin-0"
       i18n>Tokens and Applications
@@ -110,8 +110,7 @@
             @if (token.application === 'ssh') {
               <div class="flex-column margin-top-16 gap-8">
                 <mat-form-field
-                  appearance="fill"
-                  subscriptSizing="dynamic">
+                  appearance="fill">
                   <mat-label i18n>Service ID</mat-label>
                   <mat-select [(ngModel)]="editedOptions[token.id]['service_id']">
                     @for (v of applicationsDef().ssh.options.sshkey.service_id.value; track v) {
@@ -122,8 +121,7 @@
                   </mat-select>
                 </mat-form-field>
                 <mat-form-field
-                  appearance="fill"
-                  subscriptSizing="dynamic">
+                  appearance="fill">
                   <mat-label i18n>User</mat-label>
                   <input
                     [(ngModel)]="editedOptions[token.id]['user']"
@@ -198,8 +196,7 @@
     <div class="flex-row ali-center gap-16">
       <mat-form-field
         appearance="fill"
-        class="flex-size-2"
-        subscriptSizing="dynamic">
+        class="flex-size-2">
         <mat-label i18n>Token Serial</mat-label>
         <input
           [(ngModel)]="newTokenSerial"
@@ -217,8 +214,7 @@
 
       <mat-form-field
         appearance="fill"
-        class="flex-size-1"
-        subscriptSizing="dynamic">
+        class="flex-size-1">
         <mat-label i18n>Application</mat-label>
         <mat-select
           [(ngModel)]="selectedApplication"
