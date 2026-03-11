@@ -12,18 +12,10 @@
 }
 
 .type-section {
-  padding: 1rem;
+  padding: 0 16px 0 16px;;
   border: 1px solid var(--pi-border-color, #dcdcdc);
   border-radius: var(--border-radius);
   background: var(--mat-sys-surface-container-low);
-  margin-bottom: 16px;
-
-  h3 {
-    margin-top: 0;
-    margin-bottom: 1rem;
-    font-size: 1.2rem;
-    font-weight: 500;
-  }
 }
 
 .form-grid {
@@ -33,18 +25,6 @@
 
   @media (max-width: 1100px) {
     grid-template-columns: 1fr;
-  }
-
-  mat-form-field {
-    width: 100%;
-  }
-
-  .field-lg {
-    grid-column: span 2;
-
-    @media (max-width: 1100px) {
-      grid-column: span 1;
-    }
   }
 
   &.field-4fr {
@@ -92,7 +72,6 @@ textarea[matInput] {
   }
 
   button {
-    height: 36px;
     line-height: 34px;
   }
 }

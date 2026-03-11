@@ -16,24 +16,14 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<div class="type-section">
-  <h4 i18n>Passwd settings</h4>
-  <div class="form">
-    <mat-form-field class="input-width-l">
-      <mat-label i18n>Filename</mat-label>
-      <app-clearable-input
-        (onClick)="filenameControl.setValue('')"
-        [showClearButton]="!!filenameControl.value">
-        <input
-          [formControl]="filenameControl"
-          matInput
-          placeholder="/etc/passwd"
-          required />
-      </app-clearable-input>
-
-      @if (filenameControl.hasError('required') && filenameControl.touched) {
-        <mat-error i18n>Filename is <strong>required</strong>.</mat-error>
-      }
-    </mat-form-field>
-  </div>
+<div class="flex-row gap-8 margin-bottom-16">
+  @if (authService.actionAllowed("resolverwrite")) {
+    <button
+      (click)="onNewResolver()"
+      class="action-button-primary button-width-m"
+      mat-stroked-button>
+      <mat-icon>add</mat-icon>
+      <span i18n>New Resolver</span>
+    </button>
+  }
 </div>

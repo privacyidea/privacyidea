@@ -18,11 +18,11 @@
 -->
 <div class="type-sections-container">
   <div class="type-section">
+    <h4
+      class="margin-bottom-16"
+      i18n>Connection Details
+    </h4>
     <div class="form-grid">
-      <h3
-        class="margin-bottom-16"
-        i18n>Connection Details
-      </h3>
       <mat-form-field>
         <mat-label i18n>Server URI</mat-label>
         <app-clearable-input
@@ -295,8 +295,8 @@
         @for (preset of ldapPresets; track preset.name) {
           <button
             (click)="applyLdapPreset(preset)"
-            mat-stroked-button
             class="action-button-secondary button-width-m"
+            mat-stroked-button
             type="button">
             {{ preset.name }}
           </button>

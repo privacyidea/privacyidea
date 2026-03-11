@@ -17,10 +17,10 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div class="type-section">
-  <h3 i18n>SCIM settings</h3>
+  <h4 i18n>SCIM settings</h4>
   <div class="form-grid">
 
-    <mat-form-field class="field-lg">
+    <mat-form-field class="input-width-l">
       <mat-label i18n>Authentication Server URI</mat-label>
       <app-clearable-input
         (onClick)="authServerControl.setValue('')"
@@ -36,7 +36,7 @@
       }
     </mat-form-field>
 
-    <mat-form-field class="field-lg">
+    <mat-form-field class="input-width-l">
       <mat-label i18n>Resource Server Uri</mat-label>
       <app-clearable-input
         (onClick)="resourceServerControl.setValue('')"
@@ -52,7 +52,7 @@
       }
     </mat-form-field>
 
-    <mat-form-field>
+    <mat-form-field class="input-width-l">
       <mat-label i18n>Client</mat-label>
       <app-clearable-input
         (onClick)="clientControl.setValue('')"
@@ -68,7 +68,7 @@
       }
     </mat-form-field>
 
-    <mat-form-field>
+    <mat-form-field class="input-width-l">
       <mat-label i18n>Secret</mat-label>
       <app-clearable-input
         (onClick)="secretControl.setValue('')"
@@ -84,18 +84,17 @@
         <mat-error i18n>Secret is <strong>required</strong>.</mat-error>
       }
     </mat-form-field>
-
-    <mat-form-field class="field-lg">
-      <mat-label i18n>Mapping</mat-label>
-      <textarea
-        [formControl]="mappingControl"
-        matInput
-        placeholder='{"userName": "username", "id": "userid", "emails.0.value": "email"}'
-        required></textarea>
-      @if (mappingControl.hasError('required') && mappingControl.touched) {
-        <mat-error i18n>Mapping is <strong>required</strong>.</mat-error>
-      }
-    </mat-form-field>
-
   </div>
+
+  <mat-form-field class="width-100 margin-top-16">
+    <mat-label i18n>Mapping</mat-label>
+    <textarea
+      [formControl]="mappingControl"
+      matInput
+      placeholder='{"userName": "username", "id": "userid", "emails.0.value": "email"}'
+      required></textarea>
+    @if (mappingControl.hasError('required') && mappingControl.touched) {
+      <mat-error i18n>Mapping is <strong>required</strong>.</mat-error>
+    }
+  </mat-form-field>
 </div>

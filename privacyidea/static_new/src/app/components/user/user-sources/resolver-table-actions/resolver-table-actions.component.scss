@@ -1,0 +1,10 @@
+@use "styles";
+
+.flex-row {
+  display: flex;
+  flex-direction: row;
+}
+
+.gap-8 {
+  gap: 8px;
+}

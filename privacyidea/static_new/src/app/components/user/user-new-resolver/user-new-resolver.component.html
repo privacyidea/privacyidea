@@ -26,21 +26,21 @@
     class="user-new-resolver-container">
     @if (isEditMode) {
       <h3
-        class="margin-left-16"
+        class="margin-8"
         i18n>Edit User Source
       </h3>
     } @else {
       <h3
-        class="margin-left-16"
+        class="margin-8"
         i18n>Create User Source
       </h3>
     }
 
     <div
       #leftColumn
-      class="flex-row margin-bottom-0">
+      class="flex-row margin-bottom-0 margin-left-16 margin-top-16">
       <mat-form-field
-        class="min-width-40"
+        class="input-width-l"
         subscriptSizing="dynamic">
         <mat-label i18n>Resolver Name</mat-label>
         <mat-hint>
@@ -66,7 +66,8 @@
         }
       </mat-form-field>
 
-      <mat-form-field class="button-width-l margin-left-16 type-selecting-height">
+      <mat-form-field
+        class="input-width-l margin-left-16">
         <mat-label i18n>Type</mat-label>
         <mat-select
           (ngModelChange)="onTypeChange($event)"
@@ -93,7 +94,7 @@
       <div class="sticky-controls ali-center">
         @if (resolverType !== 'passwdresolver') {
           @if (['entraidresolver', 'keycloakresolver', 'httpresolver'].includes(resolverType)) {
-            <mat-form-field>
+            <mat-form-field subscriptSizing="dynamic">
               <mat-label i18n>Test Username</mat-label>
               <app-clearable-input
                 (onClick)="testUsername = ''"
@@ -105,7 +106,7 @@
               </app-clearable-input>
             </mat-form-field>
 
-            <mat-form-field>
+            <mat-form-field subscriptSizing="dynamic">
               <mat-label i18n>Test User ID</mat-label>
               <app-clearable-input
                 (onClick)="testUserId = ''"
@@ -141,7 +142,6 @@
         <button
           (click)="onCancel()"
           class="action-button-secondary button-width-s"
-          mat-button
           mat-stroked-button>
           <span i18n>Cancel</span>
         </button>
