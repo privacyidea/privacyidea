@@ -356,7 +356,8 @@ class PasskeyTokenClass(TokenClass):
                         - "userHandle" or "userhandle"
                         - "HTTP_ORIGIN"
                         The following keys are optional:
-                        - "webauthn_user_verification_requirement", defaults to preferred
+                        - "webauthn_user_verification_requirement" (FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT),
+                          defaults to preferred
 
         :type options: dict
         :return: A numerical value where values larger than zero indicate success.
@@ -368,8 +369,7 @@ class PasskeyTokenClass(TokenClass):
         user_handle = get_optional_one_of(options, ["userHandle", "userhandle"])
         expected_challenge = get_required(options, "challenge").encode("utf-8")
         expected_origin = get_required(options, "HTTP_ORIGIN")
-        user_verification = get_optional(options, "user_verification", "preferred")
-
+        user_verification = get_optional(options, FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT, "preferred")
         credential_id = self.token.get_otpkey().getKey().decode("utf-8")
         rp_id = self.get_tokeninfo(FIDO2TokenInfo.RELYING_PARTY_ID)
 
@@ -469,7 +469,7 @@ class PasskeyTokenClass(TokenClass):
             user_handle = get_optional_one_of(options, ["userHandle", "userhandle"])
             expected_challenge = get_required(options, "challenge").encode("utf-8")
             expected_origin = get_required(options, "HTTP_ORIGIN")
-            user_verification = get_optional(options, "user_verification", "preferred")
+            user_verification = get_optional(options, FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT, "preferred")
         except ParameterError as e:
             log.debug(f"Missing parameter for authentication with passkey: {e}")
             # TODO authenticate has horrible return values

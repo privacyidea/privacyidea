@@ -536,6 +536,58 @@ class WebAuthnTokenTestCase(MyTestCase):
         # Returns the sign count on success which is 79
         self.assertEqual(res, 79)
 
+    def test_11b_uv_required_via_fido2_challenge_flow(self):
+        """
+        Regression test for the UV bypass bug:
+        verify_fido2_challenge() reads "user_verification" from the challenge data (an internal storage
+        key used by create_fido2_challenge) and must translate it to the canonical
+        FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT key when building the options dict for
+        check_otp(). Before the fix, it passed "user_verification" directly, while check_otp()
+        read FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT — the mismatch caused the UV requirement
+        to be silently ignored (falling back to "preferred"), allowing assertions without UV even
+        when policy was "required".
+        This test calls check_otp() directly with the canonical constant key, as verify_fido2_challenge
+        now produces.
+        """
+        self._setup_token()
+        self.token.add_tokeninfo(FIDO2TokenInfo.PUB_KEY, "a50102032620012158202eb296d6dfafe813d096743f8d1ba75b37af2"
+                                                         "e1e0e6356df112a57bc29c7200c22582022f057ded7de836a23a04be4cef4a"
+                                                         "5a1bd6d263a1554ea4107b74e3e12844c60")
+        self.token.set_otpkey(hexlify_and_unicode(webauthn_b64_decode("dvFzp44mRo8Wgu5926p-WawbCPWiwVHmFfldMDPL1tUMOpf5"
+                                                                      "eSRyg2phkH0Ar88ic2ck4Cy9Yrti5CpBkrvsCA")))
+        self.token.add_tokeninfo(FIDO2TokenInfo.RELYING_PARTY_ID, "cool.nils")
+
+        # UV bit NOT set in authenticatordata (ends with B), UV requirement = "required" → must fail.
+        res = self.token.check_otp(otpval=None, options={
+            "credentialid": "dvFzp44mRo8Wgu5926p-WawbCPWiwVHmFfldMDPL1tUMOpf5eSRyg2phkH0Ar88ic2ck4Cy9Yrti5CpBkrvsCA",
+            "authenticatordata": "tPp8c-wXo6hFUbdedkHcOP1s-xkwOrHsxfvNfhI7wVcBAAAATQ",
+            "clientdata": "eyJ0eXBlIjoid2ViYXV0aG4uZ2V0IiwiY2hhbGxlbmdlIjoiMUJuU3Q0VFlIU3NObVFMblFLSnIxYWZCQmJKYndJdndQ"
+                          "aklFeDNmbXgtOCIsIm9yaWdpbiI6Imh0dHBzOi8vY29vbC5uaWxzOjUwMDAiLCJjcm9zc09yaWdpbiI6ZmFsc2V9",
+            "signaturedata": "MEYCIQC_kKwpVlWx7LQ5UXPjt0etsC45-EQHjvxq7oOHrdH_swIhAMSBzfY8JXJkP0zQMSQ39g2z-lLE1iAvZPM6"
+                             "0iWyPNtX",
+            "user": self.user,
+            "challenge": hexlify_and_unicode(webauthn_b64_decode("1BnSt4TYHSsNmQLnQKJr1afBBbJbwIvwPjIEx3fmx-8")),
+            "HTTP_ORIGIN": "https://cool.nils:5000",
+            FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT: "required"
+        })
+        self.assertEqual(-1, res, "user_verification should not be bypassed")
+
+        # UV bit IS set in authenticatordata (ends with F), UV requirement = "required" → must succeed.
+        res = self.token.check_otp(otpval=None, options={
+            "credentialid": "dvFzp44mRo8Wgu5926p-WawbCPWiwVHmFfldMDPL1tUMOpf5eSRyg2phkH0Ar88ic2ck4Cy9Yrti5CpBkrvsCA",
+            "authenticatordata": "tPp8c-wXo6hFUbdedkHcOP1s-xkwOrHsxfvNfhI7wVcFAAAATw",
+            "clientdata": "eyJ0eXBlIjoid2ViYXV0aG4uZ2V0IiwiY2hhbGxlbmdlIjoialFjck15WUFjTENjM0FudXlpdWlGNzhDUGFYSDFLRUVz"
+                          "R0Vrbkd3aHJYbyIsIm9yaWdpbiI6Imh0dHBzOi8vY29vbC5uaWxzOjUwMDAiLCJjcm9zc09yaWdpbiI6ZmFsc2V9",
+            "signaturedata": "MEUCIAMH6YDQCT4mA0GAgCJ53EA2mOOk1vB-pghsmREk-0aOAiEAtG5T-2M_sFC9KBQS9ybJdPSTZvfofZmR9GbHT"
+                             "-mBQrM",
+            "user": self.user,
+            "challenge": hexlify_and_unicode(webauthn_b64_decode("jQcrMyYAcLCc3AnuyiuiF78CPaXH1KEEsGEknGwhrXo")),
+            "HTTP_ORIGIN": "https://cool.nils:5000",
+            FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT: "required"
+        })
+        # Returns the sign count on success which is 79
+        self.assertEqual(79, res)
+
     def test_12_webauthn_token_export(self):
         # Set up the webauthn token for testing
         self._setup_token()
