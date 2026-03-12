@@ -24,18 +24,20 @@
   <div class="details-flex-layout flex-column">
     <div class="details-header">
       <h3 i18n>Details for Token:</h3>
-      <h3 style="color: var(--mat-sys-primary)">{{ tokenSerial() }}</h3>
+      <h3 class="token-serial">{{ tokenSerial() }}</h3>
       @if ((tokenType() === "passkey" || tokenType() === "hotp") && isAttachedToMachine()) {
         <h3 i18n>{{ " (Offline)" }}</h3>
       }
       <app-copy-button [copyText]="tokenSerial()"></app-copy-button>
-      <button
-        (click)="showTokenAuditLog()"
-        [routerLink]="[ROUTE_PATHS.AUDIT]"
-        mat-icon-button
-        matTooltip="Show token in audit log">
-        <mat-icon>receipt_long</mat-icon>
-      </button>
+      @if (authService.actionAllowed("auditlog")) {
+        <button
+          (click)="showTokenAuditLog()"
+          [routerLink]="[ROUTE_PATHS.AUDIT]"
+          mat-icon-button
+          matTooltip="Show token in audit log">
+          <mat-icon>receipt_long</mat-icon>
+        </button>
+      }
     </div>
     <div
       [ngClass]="[overflowService.isWidthOverflowing('body', 1310) ? 'flex-column' : 'flex-row']"
@@ -63,7 +65,7 @@
               @switch (element.keyMap.key) {
                 @case ("container_serial") {
                   @if (element.isEditing()) {
-                    <mat-form-field class="width-18rem container-form-field">
+                    <mat-form-field class="width-18rem">
                       <mat-label i18n>Enter Container</mat-label>
                       <app-clearable-input
                         (onClick)="containerService.selectedContainer.set(null)"
@@ -74,7 +76,7 @@
                           [matAutocomplete]="containerAuto" />
                       </app-clearable-input>
                       <mat-autocomplete #containerAuto="matAutocomplete">
-                        @for (option of containerService.filteredContainerOptions(); track option) {
+                        @for (option of containerService.containersForTokenType(); track option) {
                           <mat-option [value]="option">{{ option }}</mat-option>
                         }
                       </mat-autocomplete>
@@ -102,8 +104,7 @@
                           @if (option === userRealm) {
                             <mat-option
                               value="{{ option }}"
-                              disabled
-                              >{{ option }}
+                              disabled>{{ option }}
                             </mat-option>
                           } @else {
                             <mat-option value="{{ option }}">{{ option }}</mat-option>
@@ -135,8 +136,7 @@
                           @if (option === userRealm) {
                             <mat-option
                               value="{{ option }}"
-                              disabled
-                              >{{ option }}
+                              disabled>{{ option }}
                             </mat-option>
                           } @else {
                             <mat-option value="{{ option }}">{{ option }}</mat-option>
@@ -222,9 +222,7 @@
               class="edit-column-cell"
               mat-cell>
               <div class="ali-center">
-                @if (
-                  element.keyMap.key === "failcount" && !isAnyEditingOrRevoked() && authService.actionAllowed("reset")
-                ) {
+                @if (element.keyMap.key === "failcount" && !isAnyEditingOrRevoked() && authService.actionAllowed("reset")) {
                   <div class="edit-button-container">
                     <button
                       mat-icon-button
@@ -233,12 +231,10 @@
                       <mat-icon> lock_reset</mat-icon>
                     </button>
                   </div>
-                } @else if (
-                  element.keyMap.key === "container_serial" &&
-                  !isAnyEditingOrRevoked() &&
-                  element.value &&
-                  authService.actionAllowed("container_remove_token")
-                ) {
+                } @else if (element.keyMap.key === "container_serial" &&
+                !isAnyEditingOrRevoked() &&
+                element.value &&
+                authService.actionAllowed("container_remove_token")) {
                   <div class="edit-button-container">
                     <button
                       mat-icon-button
@@ -289,7 +285,8 @@
         <app-token-details-actions
           [repeatPinValue]="repeatPinValue"
           [setPinValue]="setPinValue"
-          [tokenType]="tokenType"></app-token-details-actions>
+          [tokenType]="tokenType"
+          [token]="tokenDetails()"></app-token-details-actions>
       </div>
     </div>
   </div>

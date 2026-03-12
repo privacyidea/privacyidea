@@ -1,0 +1,22 @@
+@use "styles";
+
+.conditions-grid {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--global-gap) / 4 * 3);
+  min-width: 350px;
+}
+
+.conditions-container {
+  background-color: var(--mat-sys-surface-container);
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: var(--border-radius);
+  box-shadow: var(--mat-sys-level1);
+  padding: var(--half-global-padding) var(--three-quarters-global-padding);
+
+  .conditions-title {
+    font-size: 1.2em;
+    font-weight: 500;
+    margin: 0 0 var(--half-global-padding);
+  }
+}

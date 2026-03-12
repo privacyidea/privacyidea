@@ -71,8 +71,62 @@
                            ng-keypress="($event.which==13)?get():return"
                 ></pi-filter>
             </th>
-            <th ng-show="loggedInUser.role == 'admin'" translate>user</th>
-            <th ng-show="loggedInUser.role == 'admin'" translate>realm</th>
+            <th ng-show="loggedInUser.role == 'admin'" class="pifilter">
+                <button class="btn btn-default unsorted btn-capitalize"
+                        pi-sort-by="username"
+                        translate>user
+                </button>
+                <span class="glyphicon glyphicon-filter"
+                      ng-click="toggleUserFilter()"
+                      ng-class="{filtered: usernameFilter}"
+                      role="button"
+                      tabindex="0"
+                      ng-keydown="($event.keyCode === 13 || $event.keyCode === 32) && toggleUserFilter()"
+                      aria-label="{{ 'Toggle user filter' | translate }}"
+                      title="{{ 'Toggle user filter' | translate }}"></span>
+                <div ng-show="userFilterVisible" class="pi-user-filter">
+                    <div class="pi-filter-wrap">
+                        <input class="form-control pi-filter-input"
+                               ng-model="usernameFilter"
+                               ng-keypress="($event.which==13)?get():return"
+                               placeholder="{{ 'press enter to search' | translate }}">
+                        <span class="pi-filter-btns">
+                            <button class="pi-filter-btn" type="button"
+                                    ng-click="usernameFilter=''; get()"
+                                    aria-label="{{ 'Clear filter' | translate }}"
+                                    title="{{ 'Clear filter' | translate }}">
+                                <span class="glyphicon glyphicon-remove" aria-hidden="true"></span>
+                            </button>
+                            <button class="pi-filter-btn" type="button"
+                                    ng-click="get()"
+                                    aria-label="{{ 'Search' | translate }}"
+                                    title="{{ 'Search' | translate }}">
+                                <span class="glyphicon glyphicon-search" aria-hidden="true"></span>
+                            </button>
+                        </span>
+                    </div>
+                </div>
+            </th>
+            <th ng-show="loggedInUser.role == 'admin'" class="pifilter">
+                <span translate>realm</span>
+                <span class="glyphicon glyphicon-filter"
+                      ng-click="realmFilterVisible=!realmFilterVisible"
+                      role="button"
+                      tabindex="0"
+                      ng-keydown="($event.keyCode === 13 || $event.keyCode === 32) && (realmFilterVisible=!realmFilterVisible)"
+                      aria-label="{{ 'Toggle realm filter' | translate }}"
+                      title="{{ 'Toggle realm filter' | translate }}"></span>
+                <div ng-show="realmFilterVisible" class="pi-user-filter">
+                    <select class="form-control input-sm"
+                            ng-model="userRealmFilter"
+                            ng-change="get()"
+                            title="{{ 'Filter by realm' | translate }}">
+                        <option value="" translate>— all —</option>
+                        <option ng-repeat="(realmname, realm) in realms"
+                                value="{{ realmname }}">{{ realmname }}</option>
+                    </select>
+                </div>
+            </th>
             <th class="pifilter" ng-show="loggedInUser.role == 'admin'"><translate>Token realms</translate>
                 <pi-filter ng-model="tokenrealmFilter"
                            ng-change="get('livesearch')"

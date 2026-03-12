@@ -1,0 +1,91 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<div class="policy-action-item">
+  <span class="detail-label">{{ action().name }}</span>
+
+  <div class="detail-input">
+    @if (!isBooleanAction(action().name)) {
+      @if (actionDetail()?.value; as actionValues) {
+        @if (actionDetail()?.multiple) {
+          <app-multi-select-only
+            class="flex-2"
+            subscriptSizing="dynamic"
+            placeholder="Select options..."
+            [items]="actionValues"
+            [selectedItems]="selectedItems()"
+            (selectionChange)="updateAction($event)">
+          </app-multi-select-only>
+        } @else if (actionValues.length === 0) {
+          <p i18n>No values available.</p>
+        } @else if (actionValues.length <= 3) {
+          <app-selector-buttons
+            class="flex-1"
+            [values]="actionValues"
+            [initialValue]="action().value"
+            (onSelect)="updateAction($event)" />
+        } @else {
+          <mat-form-field
+            appearance="fill"
+            class="flex-1"
+            subscriptSizing="dynamic">
+            <mat-select
+              [value]="isNumber(action().value) ? +action().value : action().value"
+              (selectionChange)="updateAction($event.value)">
+              @for (option of actionValues; track option) {
+                <mat-option [value]="option">{{ option }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+        }
+      } @else {
+        @switch (actionDetail()?.type) {
+          @case ("str") {
+            <input
+              type="text"
+              class="action-value-input flex-2"
+              [ngModel]="action().value"
+              (ngModelChange)="updateAction($event)" />
+          }
+          @case ("int") {
+            <input
+              type="number"
+              class="action-value-input flex-2"
+              [ngModel]="action().value"
+              (ngModelChange)="updateAction($event)" />
+          }
+          @case ("text") {
+            <textarea
+              class="action-value-textarea flex-2"
+              [ngModel]="action().value"
+              (ngModelChange)="updateAction($event)"></textarea>
+          }
+        }
+      }
+    }
+  </div>
+
+  <span class="detail-description">{{ actionDetail()?.desc }}</span>
+
+  <button
+    mat-icon-button
+    class="delete-icon-button"
+    (click)="removeAction(); $event.stopPropagation()">
+    <mat-icon>delete</mat-icon>
+  </button>
+</div>

@@ -18,7 +18,7 @@ from privacyidea.lib.error import ParameterError, privacyIDEAError
 from privacyidea.lib.policy import set_policy, delete_policy, PolicyClass, SCOPE
 from privacyidea.lib.token import get_tokens, remove_token, import_tokens
 from privacyidea.lib.token import init_token
-from privacyidea.lib.tokenclass import ROLLOUTSTATE
+from privacyidea.lib.tokenclass import RolloutState
 from privacyidea.lib.tokens.certificatetoken import (parse_chainfile, ACTION,
                                                      verify_certificate_path,
                                                      CertificateTokenClass)
@@ -666,25 +666,25 @@ class MSCACertTestCase(MyTestCase):
                                    "realm": self.realm1
                                    }, User("cornelius", self.realm1))
             self.assertEqual("certificate", cert_tok.type)
-            self.assertEqual(ROLLOUTSTATE.PENDING, cert_tok.rollout_state)
+            self.assertEqual(RolloutState.PENDING, cert_tok.rollout_state)
 
             # Fetch the rolloutstate from the CA
             r = cert_tok._update_rollout_state()
             # Still pending
             self.assertEqual(5, r)
-            self.assertEqual(ROLLOUTSTATE.PENDING, cert_tok.rollout_state)
+            self.assertEqual(RolloutState.PENDING, cert_tok.rollout_state)
             # Enroll the certificated
             mock_conncect_worker.return_value.disposition = 3
 
             # Fetch the rolloutstate again
             r = cert_tok._update_rollout_state()
             self.assertEqual(3, r)
-            self.assertEqual(ROLLOUTSTATE.ENROLLED, cert_tok.rollout_state)
+            self.assertEqual(RolloutState.ENROLLED, cert_tok.rollout_state)
 
             # Fet the rollout state again, but the cert is not pending anymore
             r = cert_tok._update_rollout_state()
             self.assertEqual(-1, r)
-            self.assertEqual(ROLLOUTSTATE.ENROLLED, cert_tok.rollout_state)
+            self.assertEqual(RolloutState.ENROLLED, cert_tok.rollout_state)
 
     @unittest.skipUnless("privacyidea.lib.caconnectors.msca.MSCAConnector" in AvailableCAConnectors,
                          "Can not test MSCA. grpc module seems not available.")
@@ -705,25 +705,25 @@ class MSCACertTestCase(MyTestCase):
                                    "realm": self.realm1
                                    }, User("cornelius", self.realm1))
             self.assertEqual("certificate", cert_tok.type)
-            self.assertEqual(ROLLOUTSTATE.PENDING, cert_tok.rollout_state)
+            self.assertEqual(RolloutState.PENDING, cert_tok.rollout_state)
 
             # Fetch the rolloutstate from the CA
             r = cert_tok._update_rollout_state()
             # Still pending
             self.assertEqual(5, r)
-            self.assertEqual(ROLLOUTSTATE.PENDING, cert_tok.rollout_state)
+            self.assertEqual(RolloutState.PENDING, cert_tok.rollout_state)
             # Enroll the certificated
             mock_conncect_worker.return_value.disposition = 2
 
             # Fetch the rolloutstate again
             r = cert_tok._update_rollout_state()
             self.assertEqual(2, r)
-            self.assertEqual(ROLLOUTSTATE.DENIED, cert_tok.rollout_state)
+            self.assertEqual(RolloutState.DENIED, cert_tok.rollout_state)
 
             # Fet the rollout state again, but the cert is not pending anymore
             r = cert_tok._update_rollout_state()
             self.assertEqual(-1, r)
-            self.assertEqual(ROLLOUTSTATE.DENIED, cert_tok.rollout_state)
+            self.assertEqual(RolloutState.DENIED, cert_tok.rollout_state)
 
     @unittest.skipUnless("privacyidea.lib.caconnectors.msca.MSCAConnector" in AvailableCAConnectors,
                          "Can not test MSCA. grpc module seems not available.")
@@ -744,17 +744,17 @@ class MSCACertTestCase(MyTestCase):
                                    "realm": self.realm1
                                    }, User("cornelius", self.realm1))
             self.assertEqual("certificate", cert_tok.type)
-            self.assertEqual(ROLLOUTSTATE.PENDING, cert_tok.rollout_state)
+            self.assertEqual(RolloutState.PENDING, cert_tok.rollout_state)
 
             # Fetch the rolloutstate from the CA
             r = cert_tok._update_rollout_state()
             # Still pending
             self.assertEqual(5, r)
-            self.assertEqual(ROLLOUTSTATE.PENDING, cert_tok.rollout_state)
+            self.assertEqual(RolloutState.PENDING, cert_tok.rollout_state)
             # turn the certificate token to be broken
             cert_tok.delete_tokeninfo("requestId")
 
             # Fetch the rolloutstate again, it will fail, since no requestId available
             r = cert_tok._update_rollout_state()
             self.assertEqual(-1, r)
-            self.assertEqual(ROLLOUTSTATE.PENDING, cert_tok.rollout_state)
+            self.assertEqual(RolloutState.PENDING, cert_tok.rollout_state)

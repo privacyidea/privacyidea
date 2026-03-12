@@ -77,10 +77,7 @@ user. The administrator can see all the details of the token.
 The administrator can click on one token, to show more details of this token
 and to perform actions on this token. Read on here:
 
-.. toctree::
-   :maxdepth: 1
-
-   token_details
+   :ref:`token_details`
 
 In the *Token Applications* the administrator can check for all SSH Keys attached to
 services and for HOTP tokens attached to machines for offline authentication.
@@ -148,14 +145,14 @@ Read about the functionality of the users view in the following sections.
    manage_users
    user_attributes
 
-.. _machines:
+.. _webui_machines:
 
 Machines
 --------
 
-In this view :ref:`machines` are listed which are fetched by the configured machine resolvers.
-Machines are only necessary if you plan special use cases like managing SSH keys or doing offline OTP.
-In most cases there is no need to manage machines and this view is empty.
+In this view Machines are listed which are fetched by the configured machine resolvers.
+Machines are only necessary if you plan :ref:`special use cases<machines>` like
+managing SSH keys or doing offline OTP. In most cases there is no need to manage machines and this view is empty.
 
 .. figure:: images/machinesview.png
    :width: 500

@@ -33,7 +33,7 @@ from privacyidea.lib.fido2.util import get_credential_ids_for_user, get_fido2_to
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import SCOPE
 from privacyidea.lib.token import (init_token, remove_token, unassign_token, import_tokens, get_tokens)
-from privacyidea.lib.tokenclass import ROLLOUTSTATE, TokenClass
+from privacyidea.lib.tokenclass import RolloutState, TokenClass
 from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
 from privacyidea.lib.user import User
 from privacyidea.models import TokenCredentialIdHash
@@ -55,7 +55,7 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
         registration_request = self._initialize_registration()
         token = registration_request.token
         token.update(registration_request.registration_response)
-        self.assertEqual(token.token.rollout_state, ROLLOUTSTATE.ENROLLED)
+        self.assertEqual(token.token.rollout_state, RolloutState.ENROLLED)
         return token
 
     @dataclass(frozen=True)
@@ -69,7 +69,7 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
             get_init_detail_options = {}
         token = init_token({"type": "passkey"}, user=self.user)
         self.assertIsInstance(token, PasskeyTokenClass)
-        self.assertEqual(token.rollout_state, ROLLOUTSTATE.CLIENTWAIT)
+        self.assertEqual(token.rollout_state, RolloutState.CLIENTWAIT)
         param = {}
         if get_init_detail_options:
             param.update(get_init_detail_options)
@@ -157,7 +157,7 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
         self.assertIn("details", update_response)
         self.assertEqual(update_response["details"]["serial"], self.first_serial)
         # Verify that the token is enrolled and token info was written
-        self.assertEqual(token.rollout_state, ROLLOUTSTATE.ENROLLED)
+        self.assertEqual(token.rollout_state, RolloutState.ENROLLED)
         token_info = token.get_tokeninfo()
         self.assertTrue(token_info["credential_id_hash"])
         self.assertTrue(token_info["public_key"])
@@ -269,7 +269,7 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
         self.assertIn("User must be provided", ex.exception.message)
 
         # Invalid enrollment state returns empty init detail
-        token.token.rollout_state = ROLLOUTSTATE.PENDING
+        token.token.rollout_state = RolloutState.PENDING
         init_detail = token.get_init_detail(param)
         self.assertFalse(init_detail)
         remove_token(serial=token.get_serial())

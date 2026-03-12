@@ -1,3 +1,6 @@
+# SPDX-FileCopyrightText: 2025 NetKnights GmbH <https://netknights.it>
+# SPDX-License-Identifier: AGPL-3.0-or-later
+#
 # http://www.privacyidea.org
 # (c) cornelius kölbel, privacyidea.org
 #
@@ -23,16 +26,17 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from flask import g, Blueprint, request
 import logging
 
-from privacyidea.api.auth import admin_required, user_required
+from flask import g, Blueprint, request
+
+from privacyidea.api.auth import admin_required
 from privacyidea.api.lib.prepolicy import prepolicy, check_base_action, realmadmin, check_custom_user_attributes
 from privacyidea.api.lib.utils import getParam, send_result
 from privacyidea.lib.error import ParameterError
 from privacyidea.lib.event import event
-from privacyidea.lib.policy import get_allowed_custom_attributes
 from privacyidea.lib.policies.actions import PolicyAction
+from privacyidea.lib.policy import get_allowed_custom_attributes
 from privacyidea.lib.user import get_user_list, create_user, User, is_attribute_at_all
 from privacyidea.lib.users.custom_user_attributes import InternalCustomUserAttributes
 
@@ -44,7 +48,6 @@ user_blueprint = Blueprint('user_blueprint', __name__)
 @user_blueprint.route('/', methods=['GET'])
 @prepolicy(realmadmin, request, PolicyAction.USERLIST)
 @prepolicy(check_base_action, request, PolicyAction.USERLIST)
-@user_required
 @event("user_list", request, g)
 def get_users():
     """
@@ -57,6 +60,9 @@ def get_users():
                   from this realm
     :query resolver: a distinct resolvername
     :query <searchexpr>: a search expression, that depends on the ResolverClass
+    :query attributes: a comma separated list of attributes that should be returned for each user. If not given, all
+        attributes are returned. If an attribute is not available in the user store, an empty value is returned for
+        this attribute.
 
     :return: json result with "result": true and the userlist in "value".
 
@@ -98,8 +104,14 @@ def get_users():
         }
     """
     realm = getParam(request.all_data, "realm")
-    attr = is_attribute_at_all()
-    users = get_user_list(request.all_data, custom_attributes=attr)
+    search_parameters = dict(request.all_data)
+    custom_attributes = is_attribute_at_all()
+    requested_attributes = request.all_data.get("attributes")
+    if requested_attributes:
+        requested_attributes = [attr.strip() for attr in requested_attributes.split(",")]
+        del search_parameters['attributes']
+    users = get_user_list(search_parameters, include_custom_attributes=custom_attributes,
+                          requested_attributes=requested_attributes)
 
     g.audit_object.log({'success': True,
                         'info': "realm: {0!s}".format(realm)})
@@ -109,7 +121,6 @@ def get_users():
 
 @user_blueprint.route('/attribute', methods=['POST'])
 @prepolicy(check_custom_user_attributes, request, "set")
-@user_required
 @event("set_custom_user_attribute", request, g)
 def set_user_attribute():
     """
@@ -149,7 +160,6 @@ def set_user_attribute():
 
 
 @user_blueprint.route('/attribute', methods=['GET'])
-@user_required
 @event("get_user_attribute", request, g)
 def get_user_attribute():
     """
@@ -176,7 +186,6 @@ def get_user_attribute():
 
 
 @user_blueprint.route('/editable_attributes/', methods=['GET'])
-@user_required
 @event("get_editable_attributes", request, g)
 def get_editable_attributes():
     """
@@ -199,7 +208,6 @@ def get_editable_attributes():
 
 @user_blueprint.route('/attribute/<attrkey>/<username>/<realm>', methods=['DELETE'])
 @prepolicy(check_custom_user_attributes, request, "delete")
-@user_required
 @event("delete_custom_user_attribute", request, g)
 def delete_user_attribute(attrkey, username, realm=None):
     """

@@ -1,4 +1,5 @@
-@use "../../../../../styles";
+@use "styles";
+@use "table";
 
 .token-type-paragraph {
   text-align: justify;
@@ -11,8 +12,4 @@
 
 .dot {
   margin-left: -4px;
-}
-
-.server-checkbox {
-  margin-bottom: 16px;
 }

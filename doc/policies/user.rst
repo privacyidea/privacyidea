@@ -130,8 +130,8 @@ type: ``bool``
 
 If the action ``enrollpin`` is defined, the user
 can set a token PIN during enrollment. If the action is not defined and
-the user tries to set a PIN during enrollment, this PIN is deleted
-from the request.
+the user tries to set a PIN during enrollment, the enrollment will fail with a PolicyError.
+In versions 3.12 and earlier, the PIN was silently deleted and an enrollment was possible.
 
 hide_tokeninfo
 ~~~~~~~~~~~~~~

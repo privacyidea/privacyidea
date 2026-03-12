@@ -28,6 +28,8 @@ export class MockContentService implements ContentServiceInterface {
   previousUrl = signal("");
   tokenSerial = signal("");
   containerSerial = signal("");
+  machineResolver = signal("");
+
   onLogin = computed(() => this.routeUrl() === ROUTE_PATHS.LOGIN);
   onAudit = computed(() => this.routeUrl() === ROUTE_PATHS.AUDIT);
   onTokens = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS);
@@ -49,11 +51,26 @@ export class MockContentService implements ContentServiceInterface {
   onTokensContainersWizard = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS_CONTAINERS_WIZARD);
   onAnyTokensRoute = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS || this.routeUrl().startsWith(ROUTE_PATHS.TOKENS + "/"));
   onAnyUsersRoute = computed(() => this.routeUrl() === ROUTE_PATHS.USERS || this.routeUrl().startsWith(ROUTE_PATHS.USERS + "/"));
-  onTokensContainersTemplates: WritableSignal<boolean> = signal(false);
+  onTokensContainersTemplates: Signal<boolean> = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS_CONTAINERS_TEMPLATES);
   onEvents = computed(() => this.routeUrl() === ROUTE_PATHS.EVENTS);
   onConfigurationSystem: Signal<boolean> = computed(() => this.routeUrl() === ROUTE_PATHS.CONFIGURATION_SYSTEM);
   onConfigurationTokenTypes: Signal<boolean> = computed(() => this.routeUrl() === ROUTE_PATHS.CONFIGURATION_TOKENTYPES);
+  onConfigurationMachines = computed(() => this.routeUrl() === ROUTE_PATHS.CONFIGURATION_MACHINES);
+
+  onExternalSmtp = computed(() => this.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_SMTP);
+  onExternalRadius = computed(() => this.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS);
+  onExternalSms = computed(() => this.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_SMS);
+  onExternalCaConnectors = computed(() => this.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_CA_CONNECTORS);
+  onExternalPrivacyIdea = computed(() => this.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_PRIVACYIDEA);
+  onExternalTokenGroups = computed(() => this.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_TOKENGROUPS);
+  onExternalServiceIds = computed(() => this.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS);
+  onUsersResolvers = computed(() => this.routeUrl() === ROUTE_PATHS.USERS_RESOLVERS);
+  onConfigurationPeriodicTasks = computed(() => this.routeUrl() === ROUTE_PATHS.CONFIGURATION_PERIODIC_TASKS);
+  onConfigurationSubscription = computed(() => this.routeUrl() === ROUTE_PATHS.SUBSCRIPTION);
+  onMachineResolver = computed(() => this.routeUrl() === ROUTE_PATHS.MACHINE_RESOLVER);
+
   tokenSelected = jest.fn();
   containerSelected = jest.fn();
   userSelected = jest.fn();
+  machineResolverSelected = jest.fn();
 }

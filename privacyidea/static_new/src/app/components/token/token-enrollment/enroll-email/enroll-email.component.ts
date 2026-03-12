@@ -50,6 +50,7 @@ export class EnrollEmailComponent implements OnInit {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly enrollmentMapper: EmailApiPayloadMapper = inject(EmailApiPayloadMapper);
 
+  enrollmentData = input<EmailEnrollmentData>();
   @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
@@ -80,6 +81,7 @@ export class EnrollEmailComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this._setInitialFormValues();
     this.additionalFormFieldsChange.emit({
       emailAddress: this.emailAddressControl,
       readEmailDynamically: this.readEmailDynamicallyControl
@@ -94,6 +96,13 @@ export class EnrollEmailComponent implements OnInit {
       }
       this.emailAddressControl.updateValueAndValidity();
     });
+  }
+
+  private _setInitialFormValues() {
+    if (!!this.enrollmentData()) {
+      this.emailAddressControl.setValue(this.enrollmentData()?.emailAddress ?? "");
+      this.readEmailDynamicallyControl.setValue(this.enrollmentData()?.readEmailDynamically ?? false);
+    }
   }
 
   enrollmentArgsGetter = (

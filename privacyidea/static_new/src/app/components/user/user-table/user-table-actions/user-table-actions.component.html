@@ -16,9 +16,10 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<div class="flex-row">
+<div class="actions-div">
   <mat-form-field
-    class="width-238">
+    class="width-238"
+    subscriptSizing="dynamic">
     <mat-label>Select Realm</mat-label>
     <mat-select
       [(ngModel)]="userService.selectedUserRealm"
@@ -28,4 +29,14 @@
       }
     </mat-select>
   </mat-form-field>
+
+  @if (authService.actionAllowed("adduser") && anyEditableResolver()) {
+    <button
+      (click)="openCreateUserDialog()"
+      class="action-button-1"
+      mat-stroked-button>
+      <mat-icon> add</mat-icon>
+      <span i18n>Create User</span>
+    </button>
+  }
 </div>

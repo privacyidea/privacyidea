@@ -58,4 +58,21 @@ describe("PasswdResolverComponent", () => {
 
     expect(component.filenameControl.value).toBe("/etc/passwd");
   });
+
+  it("should also accept all filename variable, but prioritise fileName", () => {
+    componentRef.setInput("data", {
+      filename: "/etc/filename-passwd"
+    });
+    fixture.detectChanges();
+
+    expect(component.filenameControl.value).toBe("/etc/filename-passwd");
+
+    componentRef.setInput("data", {
+      filename: "/etc/filename-passwd",
+      fileName: "/etc/passwd"
+    });
+    fixture.detectChanges();
+
+    expect(component.filenameControl.value).toBe("/etc/passwd");
+  });
 });

@@ -17,8 +17,30 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div class="drawer-div">
+  <div
+    class="preview"
+    i18n>
+    Beta
+  </div>
   <div class="brand">
-    <div class="brand-row">
+    @if (customLogo()) {
+      <a
+        [routerLink]="[ROUTE_PATHS.TOKENS]"
+        aria-label="Go to Token Overview"
+        class="clickable-logo">
+        <img
+          alt="logo"
+          aria-label="Logo"
+          class="custom-logo"
+          height="307"
+          i18n-alt
+          i18n-aria-label
+          ngSrc="{{customLogo()}}"
+          ngSrcset="1x"
+          sizes="(max-width: 307px) 100vw, 307px"
+          width="307" />
+      </a>
+    } @else {
       <a
         [routerLink]="[ROUTE_PATHS.TOKENS]"
         aria-label="Go to Token Overview"
@@ -35,33 +57,26 @@
           sizes="(max-width: 307px) 100vw, 307px"
           width="307" />
       </a>
-
-      <h4
-        class="preview"
-        i18n>
-        Preview
-      </h4>
-    </div>
-
-    <a
-      [routerLink]="[ROUTE_PATHS.TOKENS]"
-      aria-label="Go to Token Overview"
-      class="clickable-logo-text">
-      <img
-        alt="logo-text"
-        aria-label="Logo Text"
-        class="logo-text"
-        height="109"
-        i18n-alt
-        i18n-aria-label
-        ngSrc="assets/logo-text.png"
-        ngSrcset="1x"
-        sizes="(max-width: 575px) 100vw, 575px"
-        width="575" />
-    </a>
+      <a
+        [routerLink]="[ROUTE_PATHS.TOKENS]"
+        aria-label="Go to Token Overview"
+        class="clickable-logo-text">
+        <img
+          alt="logo-text"
+          aria-label="Logo Text"
+          class="logo-text"
+          height="109"
+          i18n-alt
+          i18n-aria-label
+          ngSrc="assets/logo-text.png"
+          ngSrcset="1x"
+          sizes="(max-width: 575px) 100vw, 575px"
+          width="575" />
+      </a>
+    }
     <p
-      class="margin-0 version-text">
-      Version {{ versioningService.version() }}
+      class="margin-bottom-0 version-text">
+      {{ versionText() }}
     </p>
     <p class="footer-text">
       An open-source project
@@ -79,50 +94,7 @@
     </p>
   </div>
 
-  <div class="utils-group">
-    <div class="account-div">
-      <mat-icon>account_box</mat-icon>
-      <h4>{{ profileText }}</h4>
-      <button
-        (click)="logout()"
-        aria-label="Logout"
-        class="logout-btn"
-        i18n-aria-label
-        mat-icon-button
-        matTooltip="Return to login">
-        <mat-icon>logout</mat-icon>
-      </button>
-    </div>
-
-    <div class="utils">
-      <app-theme-switcher></app-theme-switcher>
-      <button
-        (click)="refreshPage()"
-        class="refresh-btn"
-        mat-fab
-        matTooltip="Refresh resources">
-        <mat-icon>refresh</mat-icon>
-      </button>
-      <div
-        [ngClass]="[
-          sessionTimerService.remainingTime()! < 31000
-            ? 'red-light'
-            : sessionTimerService.remainingTime()! < 60000
-              ? 'yellow-light'
-              : 'surface-highest'
-        ]"
-        class="session-timer"
-        matTooltip="Time until session expires">
-        @if (sessionTimerService.remainingTime()! < 599500) {
-          {{ sessionTimerService.remainingTime() | date: "m:ss" : "UTC" }}
-        } @else if (sessionTimerService.remainingTime()! < 3600000) {
-          {{ sessionTimerService.remainingTime() | date: "m" : "UTC" }}min
-        } @else {
-          {{ sessionTimerService.remainingTime() | date: "H'h' mm'min'" : "UTC" }}
-        }
-      </div>
-    </div>
-  </div>
+  <app-user-utils-panel></app-user-utils-panel>
 
   @if (false) {
     <form class="width-100">
@@ -551,15 +523,17 @@
             Tokentypes
           </button>
         </mat-list-item>
-        <mat-list-item>
-          <button
-            class="card-button-1"
-            disabled
-            mat-stroked-button>
-            <mat-icon>point_of_sale</mat-icon>
-            Machines
-          </button>
-        </mat-list-item>
+        @if (authService.actionAllowed("machinelist")) {
+          <mat-list-item>
+            <button
+              [ngClass]="contentService.routeUrl() === ROUTE_PATHS.CONFIGURATION_MACHINES ? 'card-button-active' : 'card-button-1'"
+              [routerLink]="[ROUTE_PATHS.CONFIGURATION_MACHINES]"
+              mat-stroked-button>
+              <mat-icon>point_of_sale</mat-icon>
+              Machines
+            </button>
+          </mat-list-item>
+        }
         @if (authService.actionAllowed("mresolverread")) {
           <mat-list-item>
             <button

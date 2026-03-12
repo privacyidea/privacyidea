@@ -1,0 +1,98 @@
+@use "styles";
+@use "buttons";
+@use "@angular/material";
+
+.policy-action-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  min-height: 52px;
+  padding: 0 16px;
+  margin: 4px 0;
+  border-radius: var(--border-radius);
+  box-shadow: var(--mat-sys-level1);
+  background-color: var(--mat-sys-surface-container-low);
+  font-weight: 500;
+  box-sizing: border-box;
+}
+
+.detail-label {
+  flex: 0 0 25%;
+  max-width: 25%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.detail-description {
+  flex: 1 1 auto;
+  padding: 8px 0;
+}
+
+.detail-input {
+  flex: 0 0 20%;
+  max-width: 20%;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+
+  .flex-1 {
+    flex: 1;
+    min-width: 0;
+  }
+  .flex-2 {
+    flex: 2;
+    min-width: 0;
+  }
+}
+
+.add-action-button {
+  appearance: none;
+  background-color: var(--mat-sys-surface-variant);
+  border: 1px solid var(--mat-sys-outline-variant);
+  border-radius: var(--border-radius);
+  color: var(--mat-sys-on-surface-variant);
+  width: 44px;
+  height: 40px;
+  flex: 0 0 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  margin: 0;
+
+  mat-icon {
+    font-size: 24px;
+    width: 24px;
+    height: 24px;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  &:focus-visible {
+    outline: 1px solid var(--mat-sys-primary-light);
+    outline-offset: 1px;
+  }
+}
+
+.action-value-input,
+.action-value-textarea {
+  background-color: var(--mat-sys-surface);
+  border: 1px solid var(--mat-sys-outline);
+  border-radius: var(--border-radius);
+
+  box-sizing: border-box;
+  color: var(--mat-sys-on-surface);
+  font-family: inherit;
+  width: unset;
+}
+
+.action-value-textarea {
+  min-height: 40px;
+  resize: vertical;
+}

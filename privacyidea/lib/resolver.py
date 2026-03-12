@@ -45,6 +45,7 @@ webservice!
 import copy
 import json
 import logging
+from typing import Any
 
 from sqlalchemy import func, delete, select
 
@@ -171,10 +172,10 @@ def save_resolver(params):
             existing_config.Description = desc.get(key, "")
         else:
             config = ResolverConfig(resolver_id=resolver_id,
-                           Key=key,
-                           Value=value,
-                           Type=types.get(key, ""),
-                           Description=desc.get(key, ""))
+                                    Key=key,
+                                    Value=value,
+                                    Type=types.get(key, ""),
+                                    Description=desc.get(key, ""))
             db.session.add(config)
 
     # Remove corresponding entries from the user cache
@@ -394,6 +395,39 @@ def get_resolver_object(resolvername):
         return resolver_objects[resolvername]
 
 
+def _replace_censored_values(params: dict[str, Any], old_config: dict[str, Any]):
+    """
+    Helper to replace censored values in params with the values from old_config.
+    """
+    for key in old_config.get("censor_keys", []):
+        # Censored keys can be nested e.g. client_certificate.private_key_password
+        layers = key.split('.')
+        last_layer = params
+        for nested_key in layers[:-1]:
+            if not isinstance(last_layer, dict):
+                # seems to be a wrong config, we cannot replace the censored value. So we continue with the next one
+                break
+            last_layer = last_layer.get(nested_key, {})
+        if not isinstance(last_layer, dict):
+            continue
+        value = last_layer.get(layers[-1])
+        if value == CENSORED:
+            # Overwrite with the value from the database
+            old_value = old_config.get("data", {})
+            valid_value = True
+            for layer_key in layers:
+                if not isinstance(old_value, dict):
+                    # we can not read the correct old value from the database
+                    log.debug(
+                        "Failed to replace censored value for %s, because no uncensored value exists in the database.",
+                        key)
+                    valid_value = False
+                    break
+                old_value = old_value.get(layer_key, {})
+            if valid_value:
+                last_layer[layers[-1]] = old_value
+
+
 @log_with(log)
 def pretestresolver(resolvertype, params):
     """
@@ -410,10 +444,7 @@ def pretestresolver(resolvertype, params):
     if params.get("resolver"):
         old_config_list = get_resolver_list(filter_resolver_name=params.get("resolver")) or {}
         old_config = old_config_list.get(params.get("resolver")) or {}
-        for key in old_config.get("censor_keys", []):
-            if params.get(key) == CENSORED:
-                # Overwrite with the value from the database
-                params[key] = old_config.get("data").get(key)
+        _replace_censored_values(params, old_config)
 
     # determine the class by the given type
     r_obj_class = get_resolver_class(resolvertype)

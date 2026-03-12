@@ -23,7 +23,7 @@
   class="system-config-container"
   i18n-aria-label>
 
-  <div class="system-config-scroll-container margin-top-1 margin-bottom-32">
+  <div class="system-config-scroll-container margin-top-16 margin-bottom-32">
     <form
       #systemConfigForm="ngForm"
       class="system-config-form">
@@ -54,7 +54,7 @@
         </div>
       </div>
 
-      <div class="form-group margin-bottom-1">
+      <div class="form-group margin-bottom-16">
         <mat-checkbox
           [(ngModel)]="params.splitAtSign"
           class="margin-left-1"
@@ -63,7 +63,7 @@
         </mat-checkbox>
       </div>
 
-      <div class="flex-row full-width-grid-column gap-16 ali-center margin-bottom-1">
+      <div class="flex-row full-width-grid-column gap-16 ali-center margin-bottom-16">
         <div class="form-group">
           <mat-checkbox
             [(ngModel)]="params.IncFailCountOnFalsePin"
@@ -83,7 +83,7 @@
         </mat-form-field>
       </div>
 
-      <div class="form-group margin-bottom-1">
+      <div class="form-group margin-bottom-16">
         <mat-checkbox
           [(ngModel)]="params.no_auth_counter"
           class="margin-left-1"
@@ -92,7 +92,7 @@
         </mat-checkbox>
       </div>
 
-      <div class="form-group margin-bottom-1">
+      <div class="form-group margin-bottom-16">
         <mat-checkbox
           [(ngModel)]="params.PrependPin"
           class="margin-left-1"
@@ -101,7 +101,7 @@
         </mat-checkbox>
       </div>
 
-      <div class="form-group margin-bottom-1">
+      <div class="form-group margin-bottom-16">
         <mat-checkbox
           [(ngModel)]="params.ReturnSamlAttributes"
           class="margin-left-1"
@@ -110,7 +110,7 @@
         </mat-checkbox>
       </div>
 
-      <div class="form-group margin-bottom-1">
+      <div class="form-group margin-bottom-16">
         <mat-checkbox
           [(ngModel)]="params.ReturnSamlAttributesOnFail"
           [disabled]="!params.ReturnSamlAttributes"
@@ -120,7 +120,7 @@
         </mat-checkbox>
       </div>
 
-      <div class="flex-row full-width-grid-column gap-16 ali-center margin-bottom-1">
+      <div class="flex-row full-width-grid-column gap-16 ali-center margin-bottom-16">
         <div class="form-group">
           <mat-checkbox
             [(ngModel)]="params.AutoResync"
@@ -152,7 +152,7 @@
         </mat-form-field>
         <button
           (click)="deleteUserCache()"
-          class="action-button-delete min-width-238 margin-bottom-1 margin-left-auto"
+          class="action-button-delete min-width-238 margin-bottom-16 margin-left-auto"
           i18n
           mat-stroked-button>
           <mat-icon>delete</mat-icon>
@@ -191,9 +191,9 @@
         </mat-hint>
       </mat-form-field>
 
-      <div class="well margin-top-1 padding-16 border-radius-1 full-width-grid-column">
+      <div class="well margin-top-16 padding-16 border-radius-1 full-width-grid-column">
         <h4
-          class="margin-bottom-1"
+          class="margin-bottom-16"
           i18n>Default Settings for New Tokens
         </h4>
 

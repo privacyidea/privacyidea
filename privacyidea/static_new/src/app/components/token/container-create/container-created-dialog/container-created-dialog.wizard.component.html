@@ -21,7 +21,7 @@
   @if (postTopHtml?.hasContent) {
     <div
       [innerHTML]="postTopHtml?.sanitized"
-      class="margin-top-1"></div>
+      class="margin-top-16"></div>
   } @else {
     <h2>Container Successfully Created</h2>
     <span
@@ -55,5 +55,5 @@
 
   <div
     [innerHTML]="postBottomHtml$ | async"
-    class="margin-bottom-1"></div>
+    class="margin-bottom-16"></div>
 </mat-dialog-content>

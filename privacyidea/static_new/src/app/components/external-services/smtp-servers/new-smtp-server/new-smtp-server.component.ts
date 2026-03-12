@@ -32,7 +32,7 @@ import { ROUTE_PATHS } from "../../../../route_paths";
 import { Router } from "@angular/router";
 import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
 import { PendingChangesService } from "../../../../services/pending-changes/pending-changes.service";
-import { DialogServiceInterface, DialogService } from "../../../../services/dialog/dialog.service";
+import { DialogService, DialogServiceInterface } from "../../../../services/dialog/dialog.service";
 import { SaveAndExitDialogComponent } from "../../../shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 
 @Component({
@@ -97,6 +97,10 @@ export class NewSmtpServerComponent implements OnInit, OnDestroy {
     return this.smtpForm.valid;
   }
 
+  get showTLS(): boolean {
+    return !this.smtpForm.get("server")?.value?.toLowerCase().startsWith("smtps:");
+  }
+
   ngOnInit(): void {
     this.isEditMode = !!this.data;
     this.smtpForm = this.formBuilder.group({
@@ -110,6 +114,11 @@ export class NewSmtpServerComponent implements OnInit, OnDestroy {
       description: [this.data?.description || ""],
       tls: [this.data?.tls ?? true],
       enqueue_job: [this.data?.enqueue_job ?? false],
+      certificate: [this.data?.certificate || ""],
+      private_key: [this.data?.private_key || ""],
+      private_key_password: [this.data?.private_key_password || ""],
+      smime: [this.data?.smime ?? false],
+      dont_send_on_error: [this.data?.dont_send_on_error ?? false],
       recipient: [""]
     });
 
@@ -122,24 +131,22 @@ export class NewSmtpServerComponent implements OnInit, OnDestroy {
     this.pendingChangesService.unregisterHasChanges();
   }
 
-  save(): Promise<void> | void {
+  async save(): Promise<void> {
     if (this.smtpForm.valid) {
       const server: SmtpServer = {
         ...this.smtpForm.getRawValue()
       };
-      return this.smtpService.postSmtpServer(server).then(() => {
-        this.dialogRef.close(true);
-      });
+      await this.smtpService.postSmtpServer(server);
+      this.dialogRef.close(true);
     }
   }
 
-  test(): void {
+  async test(): Promise<void> {
     if (this.smtpForm.valid) {
       this.isTesting.set(true);
       const params = this.smtpForm.getRawValue();
-      this.smtpService.testSmtpServer(params).then(() => {
-        this.isTesting.set(false);
-      });
+      await this.smtpService.testSmtpServer(params);
+      this.isTesting.set(false);
     }
   }
 
@@ -154,16 +161,15 @@ export class NewSmtpServerComponent implements OnInit, OnDestroy {
           }
         })
         .afterClosed()
-        .subscribe((result) => {
+        .subscribe(async (result) => {
           if (result === "discard") {
             this.pendingChangesService.unregisterHasChanges();
             this.closeCurrent();
           } else if (result === "save-exit") {
             if (!this.canSave) return;
-            Promise.resolve(this.pendingChangesService.save()).then(() => {
-              this.pendingChangesService.unregisterHasChanges();
-              this.closeCurrent();
-            });
+            await this.pendingChangesService.save();
+            this.pendingChangesService.unregisterHasChanges();
+            this.closeCurrent();
           }
         });
     } else {

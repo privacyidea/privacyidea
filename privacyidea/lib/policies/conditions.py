@@ -383,10 +383,10 @@ class PolicyConditionClass:
         data = ConditionSectionData("user")
         data.object_available = user is not None
         if data.object_available:
-            user_info = user.info
+            user_info = user.get_specific_info([self.key])
             data.value = user_info.get(self.key)
             if data.value is None:
-                data.available_keys = list(user_info.keys())
+                data.available_keys = user.available_info_keys
         return data
 
     def get_request_header_data(self, request_header: Union[EnvironHeaders, None]) -> ConditionSectionData:

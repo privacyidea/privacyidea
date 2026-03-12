@@ -20,7 +20,7 @@
   <div class="type-section">
     <div class="form-grid">
       <h3
-        class="margin-bottom-1"
+        class="margin-bottom-16"
         i18n>Connection Details
       </h3>
       <mat-form-field>
@@ -84,7 +84,7 @@
 
       @if (tlsVerifyControl.value && startTlsControl.value) {
         <mat-form-field
-          class="margin-bottom-1">
+          class="margin-bottom-16">
           <mat-label i18n>CA Certificate</mat-label>
           <mat-hint i18n>
             The file containing the CA certificate which signed the LDAP TLS certificate.
@@ -384,6 +384,24 @@
       </mat-checkbox>
 
       @if (recursiveGroupSearchControl.value) {
+        <mat-form-field class="field-lg">
+          <mat-label i18n>
+            Base DN of User Groups
+          </mat-label>
+          <mat-hint i18n>
+            Enter the base DN for the user groups. Leave this field empty if the groups are located in the same base DN
+            as defined for the users above.
+          </mat-hint>
+          <app-clearable-input
+            (onClick)="groupBaseDNControl.setValue('')"
+            [showClearButton]="!!groupBaseDNControl.value">
+            <input
+              [formControl]="groupBaseDNControl"
+              matInput
+              placeholder="ou=groups,dc=domain,dc=tld" />
+          </app-clearable-input>
+        </mat-form-field>
+
         <mat-form-field class="field-lg">
           <mat-label i18n>
             Search Filter for User Groups

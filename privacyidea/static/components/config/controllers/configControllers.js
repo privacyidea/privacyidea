@@ -1297,11 +1297,21 @@ myApp.controller("HTTPResolverController", ["$scope", "ConfigFactory", "$state",
             errorResponse: ""
         };
 
+        $scope.methods = {"get": "GET", "post": "POST", "put": "PUT", "patch": "PATCH", "delete": "DELETE"};
+        $scope.groups_config = {active: false, method: "get", endpoint: "", user_groups_attribute: ""};
+
         $scope.typeMapping = {
             "httpresolver": "HTTP Resolver",
             "entraidresolver": "EntraID Resolver",
             "keycloakresolver": "Keycloak Resolver"
         };
+
+        $scope.customAttribute = {value: ""};
+
+        $scope.addCustomKey = function () {
+            $scope.advancedParams.attribute_mapping[$scope.customAttribute.value] = "";
+            $scope.customAttribute.value = "";
+        }
 
         $scope.setTags = function () {
             if ($scope.params.type === "entraidresolver") {
@@ -1454,6 +1464,10 @@ myApp.controller("HTTPResolverController", ["$scope", "ConfigFactory", "$state",
                 if (params["realm"]) {
                     $scope.advancedParams["realm"] = params["realm"];
                 }
+
+                if (params["config_get_user_groups"]) {
+                    $scope.groups_config = params["config_get_user_groups"];
+                }
             } else {
                 $scope.params = params;
             }
@@ -1505,6 +1519,7 @@ myApp.controller("HTTPResolverController", ["$scope", "ConfigFactory", "$state",
                     $scope.advancedParams["username"] = $scope.serviceAccount["username"];
                     $scope.advancedParams["password"] = $scope.serviceAccount["password"];
                 }
+                $scope.advancedParams["config_get_user_groups"] = $scope.groups_config;
                 serverParams = $scope.advancedParams;
 
                 // Set empty endpoint configs to empty dicts, to indicate that an old config can be removed

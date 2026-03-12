@@ -26,7 +26,7 @@ export const userAgentInterceptor: HttpInterceptorFn = (req, next) => {
   const userAgentReq = req.clone({
     // TODO: include the original user-agent
     setHeaders: {
-      "User-Agent": "privacyIDEA-WebUI/" + versioningService.getVersion()
+      "User-Agent": "privacyIDEA-WebUI/" + versioningService.rawVersion()
     }
   });
   return next(userAgentReq);

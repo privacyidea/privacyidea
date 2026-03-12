@@ -43,7 +43,6 @@ export class MockAuthData implements AuthData {
   dialog_no_token = false;
   search_on_enter = false;
   timeout_action = "";
-  token_rollover: any = null;
   hide_welcome = false;
   hide_buttons = false;
   deletion_confirmation = false;

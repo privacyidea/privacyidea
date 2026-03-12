@@ -47,14 +47,43 @@ myApp.directive("piFilter", ["instanceUrl", "versioningSuffixProvider", function
     return {
         require: 'ngModel',
         restrict: 'E',
-        scope: {},
+        scope: {
+            onSubmit: '&?',
+            ngChange: '&?'
+        },
         templateUrl: instanceUrl + "/static/components/directives/views/directive.filter.table.html" + versioningSuffixProvider.$get(),
         link: function (scope, element, attr, ctrl) {
+            scope.hasSubmit = !!attr.onSubmit;
+
+            // keep the input in sync if the model is set externally
+            ctrl.$render = function () {
+                scope.filterValue = ctrl.$viewValue;
+            };
+
             scope.updateFilter = function () {
                 ctrl.$setViewValue(scope.filterValue);
             };
+            scope.clearFilter = function () {
+                scope.filterValue = "";
+                ctrl.$setViewValue("");
+                // $setViewValue triggers $viewChangeListeners, which already calls
+                // ngChange() when provided — no need to call it again here.
+                // For submit-mode filters (onSubmit without ngChange), we still
+                // need to fire the callback explicitly because $viewChangeListeners
+                // only calls ngChange.
+                if (!scope.ngChange && scope.onSubmit) {
+                    scope.onSubmit();
+                }
+            };
+            scope.submitFilter = function () {
+                if (scope.onSubmit) {
+                    scope.onSubmit();
+                }
+            };
             ctrl.$viewChangeListeners.push(function () {
-                scope.$eval(attr.ngChange);
+                if (scope.ngChange) {
+                    scope.ngChange();
+                }
             });
         }
     };
@@ -188,9 +217,10 @@ myApp.directive('assignUser', ["$http", "$rootScope", "userUrl", "AuthFactory", 
                 }
 
                 const auth_token = AuthFactory.getAuthToken();
+                const attributesParam = "&attributes=userid,username,givenname,surname,email,mobile,phone";
                 return $http({
                     method: 'GET',
-                    url: userUrl + "/?username=*" + query + "*" + "&realm=" + scope.newUserObject.realm,
+                    url: userUrl + "/?username=*" + query + "*" + "&realm=" + scope.newUserObject.realm + attributesParam,
                     headers: {'PI-Authorization': auth_token}
                 }).then(function ($response) {
                     const users = $response.data.result.value.map(function (item) {

@@ -28,7 +28,7 @@
     class="smtp-form">
     <mat-form-field
       appearance="fill"
-      class="width-100 margin-bottom-1">
+      class="width-100 margin-bottom-16">
       <mat-label i18n>Identifier</mat-label>
       <input
         formControlName="identifier"
@@ -105,7 +105,7 @@
 
     <mat-form-field
       appearance="fill"
-      class="width-100 margin-bottom-1">
+      class="width-100 margin-bottom-16">
       <mat-label i18n>Username</mat-label>
       <input
         formControlName="username"
@@ -136,14 +136,68 @@
     </mat-form-field>
 
     <div class="checkbox-group">
-      <mat-checkbox
-        formControlName="tls"
-        i18n>Use StartTLS
-      </mat-checkbox>
+      @if (showTLS) {
+        <mat-checkbox
+          formControlName="tls"
+          i18n>Use StartTLS
+        </mat-checkbox>
+      }
       <mat-checkbox
         formControlName="enqueue_job"
         i18n>Send mail from job queue
       </mat-checkbox>
+    </div>
+
+    <div class="smime-section">
+      <input
+        class="hidden-input"
+        type="text"/>
+      <input
+        class="hidden-input"
+        type="password"/>
+
+      <h3 i18n>S/MIME</h3>
+      <mat-form-field
+        appearance="fill"
+        class="width-100">
+        <mat-label i18n>Certificate</mat-label>
+        <input
+          formControlName="certificate"
+          matInput
+          placeholder="The path to the certificate file" />
+      </mat-form-field>
+
+      <mat-form-field
+        appearance="fill"
+        class="width-100">
+        <mat-label i18n>Private Key</mat-label>
+        <input
+          formControlName="private_key"
+          matInput
+          placeholder="The path to the private key file" />
+      </mat-form-field>
+
+      <mat-form-field
+        appearance="fill"
+        class="width-100">
+        <mat-label i18n>Password for the Private Key</mat-label>
+        <input
+          formControlName="private_key_password"
+          matInput
+          placeholder="topsecret"
+          type="password" />
+      </mat-form-field>
+
+      <div class="checkbox-group">
+        <mat-checkbox
+          formControlName="smime"
+          i18n>S/MIME signing
+        </mat-checkbox>
+        <mat-checkbox
+          formControlName="dont_send_on_error"
+          i18n>Don't send on signing error
+        </mat-checkbox>
+      </div>
     </div>
 
     <div class="test-section">

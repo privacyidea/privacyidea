@@ -16,8 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { NgClass } from "@angular/common";
-import { Component, effect, EventEmitter, inject, input, Input, OnInit, Output } from "@angular/core";
+import { Component, computed, effect, EventEmitter, inject, input, Input, OnInit, Output } from "@angular/core";
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatOption } from "@angular/material/core";
@@ -34,6 +33,10 @@ import {
 } from "../../../../mappers/token-api-payload/totp-token-api-payload.mapper";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
+import {
+  NotificationService,
+  NotificationServiceInterface
+} from "../../../../services/notification/notification.service";
 
 export interface TotpEnrollmentOptions extends TokenEnrollmentData {
   type: "totp";
@@ -42,6 +45,7 @@ export interface TotpEnrollmentOptions extends TokenEnrollmentData {
   otpKey?: string;
   hashAlgorithm: string;
   timeStep: number;
+  twoStepInit?: boolean;
 }
 
 @Component({
@@ -66,6 +70,7 @@ export class EnrollTotpComponent implements OnInit {
   protected readonly enrollmentMapper: TotpApiPayloadMapper = inject(TotpApiPayloadMapper);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
+  protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   readonly otpLengthOptions = [6, 8];
   readonly hashAlgorithmOptions = [
     { value: "sha1", viewValue: "SHA1" },
@@ -73,6 +78,7 @@ export class EnrollTotpComponent implements OnInit {
     { value: "sha512", viewValue: "SHA512" }
   ];
   readonly timeStepOptions = [30, 60];
+  enrollmentData = input<TotpEnrollmentData>();
   @Input() wizard: boolean = false;
   @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
@@ -83,6 +89,8 @@ export class EnrollTotpComponent implements OnInit {
       mapper: TokenApiPayloadMapper<TotpEnrollmentData>;
     } | null
   >();
+  twoStep = computed(() => this.authService.check2Step("totp"));
+  twoStepControl = new FormControl<boolean>(this.twoStep() === "force");
   generateOnServerFormControl = new FormControl<boolean>(true, [Validators.required]);
   otpLengthFormControl = new FormControl<number>(6, [Validators.required]);
   otpKeyFormControl = new FormControl<string>({ value: "", disabled: true });
@@ -103,7 +111,9 @@ export class EnrollTotpComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    this._setInitialFormValues();
     this.additionalFormFieldsChange.emit({
+      twoStep: this.twoStepControl,
       generateOnServer: this.generateOnServerFormControl,
       otpLength: this.otpLengthFormControl,
       otpKey: this.otpKeyFormControl,
@@ -114,7 +124,32 @@ export class EnrollTotpComponent implements OnInit {
     this._applyPolicies();
   }
 
+  private _setInitialFormValues() {
+    if (!!this.enrollmentData()) {
+      this.generateOnServerFormControl.setValue(this.enrollmentData()?.generateOnServer ?? true, { emitEvent: false });
+      this.otpLengthFormControl.setValue(this.enrollmentData()?.otpLength ?? 6, { emitEvent: false });
+      this.hashAlgorithmControl.setValue(this.enrollmentData()?.hashAlgorithm ?? "sha1", { emitEvent: false });
+      this.timeStepControl.setValue(this.enrollmentData()?.timeStep ?? 30, { emitEvent: false });
+    }
+  }
+
   private _applyPolicies() {
+    if (this.twoStep() === "force") {
+      this.twoStepControl.setValue(true, { emitEvent: false });
+      this.twoStepControl.disable({ emitEvent: false });
+      this.generateOnServerFormControl.disable({ emitEvent: false });
+    }
+    else if (this.twoStep() === "allow") {
+      this.twoStepControl.valueChanges.subscribe((twoStepEnabled) => {
+        if (twoStepEnabled) {
+          this.generateOnServerFormControl.disable({ emitEvent: false });
+          this.generateOnServerFormControl.setValue(true);
+        } else if (!this.authService.checkForceServerGenerateOTPKey("totp")) {
+          this.generateOnServerFormControl.enable({ emitEvent: false });
+        }
+      });
+    }
+
     if (this.authService.checkForceServerGenerateOTPKey("totp")) {
       this.generateOnServerFormControl.disable({ emitEvent: false });
     } else {
@@ -125,22 +160,23 @@ export class EnrollTotpComponent implements OnInit {
         } else {
           this.otpKeyFormControl.disable({ emitEvent: false });
           this.otpKeyFormControl.clearValidators();
+          this.otpKeyFormControl.setValue("");
         }
         this.otpKeyFormControl.updateValueAndValidity();
       });
     }
   }
 
-  enrollmentArgsGetter = (
-    basicOptions: TokenEnrollmentData
-  ): {
+  enrollmentArgsGetter = (basicOptions: TokenEnrollmentData): {
     data: TotpEnrollmentData;
     mapper: TokenApiPayloadMapper<TotpEnrollmentData>;
   } | null => {
     if (this.totpForm.invalid) {
+      this.notificationService.openSnackBar($localize`Invalid enrollment data.`);
       this.totpForm.markAllAsTouched();
       return null;
     }
+
     const timeStepValue =
       typeof this.timeStepControl.value === "string"
         ? parseInt(this.timeStepControl.value, 10)
@@ -152,7 +188,8 @@ export class EnrollTotpComponent implements OnInit {
       generateOnServer: !!this.generateOnServerFormControl.value,
       otpLength: this.otpLengthFormControl.value ?? 6,
       hashAlgorithm: this.hashAlgorithmControl.value ?? "sha1",
-      timeStep: timeStepValue
+      timeStep: timeStepValue,
+      twoStepInit: !!this.twoStepControl.value
     };
     if (!enrollmentData.generateOnServer) {
       enrollmentData.otpKey = this.otpKeyFormControl.value ?? "";
@@ -162,6 +199,7 @@ export class EnrollTotpComponent implements OnInit {
       mapper: this.enrollmentMapper
     };
   };
+
   private _enableFormControls(): void {
     this.totpForm.enable({ emitEvent: false });
     this._applyPolicies();

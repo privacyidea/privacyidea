@@ -21,7 +21,7 @@ import { Component, input, output } from "@angular/core";
 import { assert } from "../../../../utils/assert";
 import { DialogAction } from "../../../../models/dialog";
 import { CommonModule } from "@angular/common";
-import { MatDialogClose, MatDialogModule } from "@angular/material/dialog";
+import { MatDialogModule } from "@angular/material/dialog";
 import { MatIcon, MatIconModule } from "@angular/material/icon";
 import { MatButton } from "@angular/material/button";
 
@@ -29,7 +29,7 @@ import { MatButton } from "@angular/material/button";
   selector: "app-dialog-wrapper",
   templateUrl: "./dialog-wrapper.component.html",
   standalone: true,
-  imports: [CommonModule, MatDialogModule, MatIconModule, MatButton, MatDialogClose, MatIcon],
+  imports: [CommonModule, MatDialogModule, MatIconModule, MatButton, MatIcon],
   styleUrls: ["./dialog-wrapper.component.scss"]
 })
 export class DialogWrapperComponent<R = any> {

@@ -1,4 +1,5 @@
-@use "../../../styles";
+@use "styles";
+@use "table";
 @use "@angular/material" as mat;
 
 $btn-bg: var(--background-blue);
@@ -31,6 +32,13 @@ $border-radius: var(--border-radius);
 
   .logo-text {
     width: 15%;
+    height: auto;
+  }
+
+  .custom-logo {
+    max-width: 300px;
+    max-height: 25vh;
+    width: auto;
     height: auto;
   }
 

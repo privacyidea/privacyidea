@@ -78,7 +78,8 @@ describe("LdapResolverComponent", () => {
       recursive_group_search: "False",
       TLS_VERIFY: "True",
       TIMEOUT: "5",
-      EDITABLE: "False"
+      EDITABLE: "False",
+      group_base_dn: "ou=groups,dc=example,dc=com"
     });
 
     fixture.detectChanges();
@@ -87,6 +88,7 @@ describe("LdapResolverComponent", () => {
     expect(component.tlsVerifyControl.value).toBe(true);
     expect(component.timeoutControl.value).toBe(5);
     expect(component.editableControl.value).toBe(false);
+    expect(component.groupBaseDNControl.value).toBe("ou=groups,dc=example,dc=com");
   });
 
   it("should parse '1' and '0' strings as booleans from data input", () => {

@@ -1,0 +1,51 @@
+@use "mixins";
+@use "@angular/material";
+@use "../edit-conditions-tab.component.scss";
+
+.admin-chip-edit {
+  @include mixins.compact-badge-base;
+  align-items: center;
+  background-color: var(--mat-sys-surface-container-high);
+  display: flex;
+  max-width: 300px;
+
+  span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+.admin-list {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: var(--half-global-padding);
+  scrollbar-width: thin;
+}
+
+.admin-input-container {
+  align-items: center;
+  display: flex;
+}
+
+.add-admin-input {
+  flex-grow: 1;
+}
+
+.remove-admin-btn {
+  align-items: center;
+  display: flex;
+  height: 18px;
+  justify-content: center;
+  margin-left: 4px;
+  padding: 0;
+  width: 18px;
+}
+
+.remove-admin-icon {
+  font-size: 14px;
+  height: 14px;
+  width: 14px;
+}

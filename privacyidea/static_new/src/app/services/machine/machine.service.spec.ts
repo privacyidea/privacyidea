@@ -31,7 +31,7 @@ import { MachineService } from "./machine.service";
 import { TableUtilsService } from "../table-utils/table-utils.service";
 import { TestBed } from "@angular/core/testing";
 import { environment } from "../../../environments/environment";
-import { FilterValue } from "../../core/models/filter_value";
+import { FilterValue } from "../../core/models/filter_value/filter_value";
 
 environment.proxyUrl = "/api";
 
@@ -86,9 +86,11 @@ describe("MachineService (with mock classes)", () => {
     expect(opts.headers instanceof HttpHeaders).toBe(true);
   });
 
-  it("postTokenOption builds correct request body", async () => {
+  it("postTokenOption builds correct request body with merged options", async () => {
     httpStub.post.mockReturnValue(of({}));
-    await lastValueFrom(machineService.postTokenOption("host", "mid", "res", "serial", "ssh", "mtid"));
+    await lastValueFrom(
+      machineService.postTokenOption("host", "mid", "res", "serial", "ssh", "mtid", { user: "u", service_id: "svc" })
+    );
     const [url, body, opts] = (httpStub.post as jest.Mock).mock.calls[0];
     expect(url).toBe("/api/machine/tokenoption");
     expect(body).toEqual({
@@ -97,7 +99,9 @@ describe("MachineService (with mock classes)", () => {
       resolver: "res",
       serial: "serial",
       application: "ssh",
-      mtid: "mtid"
+      mtid: "mtid",
+      user: "u",
+      service_id: "svc"
     });
     expect(opts.headers instanceof HttpHeaders).toBe(true);
   });
@@ -159,9 +163,18 @@ describe("MachineService (with mock classes)", () => {
     await lastValueFrom(machineService.deleteToken("S", "M", "R", "ssh"));
     const [url] = (httpStub.delete as jest.Mock).mock.calls[0];
     expect(url).toBe("/api/machine/token/S/M/R/ssh");
-    await lastValueFrom(machineService.deleteTokenMtid("S2", "offline", "MT"));
+    await lastValueFrom(machineService.deleteTokenById("S2", "offline", "MT"));
     const [url2] = (httpStub.delete as jest.Mock).mock.calls[1];
     expect(url2).toBe("/api/machine/token/S2/offline/MT");
+  });
+
+  it("getMachineTokens calls /machine/token with machineid and resolver", async () => {
+    httpStub.get.mockReturnValue(of({ result: { value: [] } }));
+    await lastValueFrom(machineService.getMachineTokens({ machineid: 1, resolver: "RES" }));
+    const [url, opts] = (httpStub.get as jest.Mock).mock.calls.at(-1);
+    expect(url).toBe("/api/machine/token");
+    expect(opts.params.get("machineid")).toBe("1");
+    expect(opts.params.get("resolver")).toBe("RES");
   });
 
   it("filterParams produces expected object for ssh", () => {

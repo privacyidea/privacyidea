@@ -25,6 +25,7 @@ import { HttpTestingController, provideHttpClientTesting } from "@angular/common
 import { provideHttpClient } from "@angular/common/http";
 import { MockAuthService } from "../../../testing/mock-services/mock-auth-service";
 import { MockContentService, MockNotificationService, MockPiResponse } from "../../../testing/mock-services";
+import { ROUTE_PATHS } from "../../route_paths";
 
 describe("MachineResolverService", () => {
   let service: MachineResolverService;
@@ -56,6 +57,7 @@ describe("MachineResolverService", () => {
     authServiceMock = TestBed.inject(AuthService) as unknown as MockAuthService;
     contentServiceMock = TestBed.inject(ContentService) as unknown as MockContentService;
     notificationServiceMock = TestBed.inject(NotificationService) as unknown as MockNotificationService;
+    contentServiceMock.routeUrl.set(ROUTE_PATHS.MACHINE_RESOLVER);
   });
   afterEach(() => {
     httpMock.verify();
