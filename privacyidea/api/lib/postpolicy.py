@@ -44,7 +44,7 @@ Wrapping the functions in a decorator class enables easy modular testing.
 
 The functions of this module are tested in tests/test_api_lib_policy.py
 """
-from flask_babel import _
+from flask_babel import _, lazy_gettext
 import copy
 import datetime
 import functools
@@ -95,7 +95,7 @@ DEFAULT_TOKENTYPE = "hotp"
 DEFAULT_CONTAINER_TYPE = "generic"
 DEFAULT_TIMEOUT_ACTION = "lockscreen"
 DEFAULT_POLICY_TEMPLATE_URL = "/static/policy-templates/"
-BODY_TEMPLATE = _("""
+BODY_TEMPLATE = lazy_gettext("""
 <--- Please describe your Problem in detail --->
 
 <--- Please provide as much additional information as possible --->
