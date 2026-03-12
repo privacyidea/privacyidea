@@ -23,7 +23,7 @@
         <span i18n>OTP Values</span>
         @if (otpValues) {
           <button
-            (click)="printOtps($event)"
+            (click)="$event.stopPropagation(); printOtps()"
             mat-icon-button>
             <mat-icon>print</mat-icon>
           </button>

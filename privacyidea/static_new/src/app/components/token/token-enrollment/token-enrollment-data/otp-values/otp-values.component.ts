@@ -44,10 +44,7 @@ export class OtpValuesComponent {
   @Input() otpValues!: Array<string>;
   protected readonly Object = Object;
 
-  printOtps(event?: MouseEvent): void {
-    if (event) {
-      event.stopPropagation();
-    }
+  printOtps(): void {
     const printContents = document.getElementById("otp-values")?.innerHTML;
     if (printContents) {
       const printWindow = window.open("", "_blank", "width=800,height=600");
