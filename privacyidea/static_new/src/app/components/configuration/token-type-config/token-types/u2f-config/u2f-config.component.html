@@ -27,7 +27,7 @@
 
     <mat-form-field
       appearance="fill"
-      class="margin-bottom-32">
+      class="input-width-l margin-bottom-32">
       <mat-label i18n>AppID</mat-label>
       <input
         [(ngModel)]="formData()['u2f.appId']"
@@ -35,10 +35,11 @@
         placeholder="https://pi.server.com"
         required
         type="url">
-      <mat-hint i18n>The URL of your privacyIDEA installation. This must be a valid FQDN with also a valid top level
-                     domain - otherwise you might receive a U2F Error 2 (Bad Request).
-      </mat-hint>
     </mat-form-field>
+    <span
+      class="hint"
+      i18n>The URL of your privacyIDEA installation. This must be a valid FQDN with also a valid top level
+                     domain - otherwise you might receive a U2F Error 2 (Bad Request).</span>
 
     @if (formData()['u2f.appId'] && !formData()['u2f.appId'].startsWith('https:')) {
       <div

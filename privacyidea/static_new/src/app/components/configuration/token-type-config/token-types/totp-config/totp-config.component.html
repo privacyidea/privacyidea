@@ -36,7 +36,8 @@
     </p>
 
     <mat-form-field
-      appearance="fill">
+      appearance="fill"
+      class="input-width-m">
       <mat-label i18n>Default Time Step</mat-label>
       <mat-select [(ngModel)]="formData()['totp.timeStep']">
         @for (step of totpSteps(); track step) {
@@ -46,7 +47,8 @@
     </mat-form-field>
 
     <mat-form-field
-      appearance="fill">
+      appearance="fill"
+      class="input-width-s">
       <mat-label i18n>Default Time Window</mat-label>
       <input
         [(ngModel)]="formData()['totp.timeWindow']"
@@ -56,7 +58,8 @@
     </mat-form-field>
 
     <mat-form-field
-      appearance="fill">
+      appearance="fill"
+      class="input-width-s">
       <mat-label i18n>Default Time Shift</mat-label>
       <input
         [(ngModel)]="formData()['totp.timeShift']"
@@ -66,7 +69,8 @@
     </mat-form-field>
 
     <mat-form-field
-      appearance="fill">
+      appearance="fill"
+      class="input-width-m">
       <mat-label i18n>Default Hashlib</mat-label>
       <mat-select [(ngModel)]="formData()['totp.hashlib']">
         @for (hashlib of hashLibs(); track hashlib) {

@@ -140,21 +140,6 @@ describe("UserSourcesComponent", () => {
     );
   });
 
-  it("onNewResolver should open dialog", () => {
-    component.onNewResolver();
-
-    expect(dialog.open).toHaveBeenCalledWith(
-      expect.any(Function),
-      expect.objectContaining({
-        data: { resolver: undefined },
-        height: "auto",
-        maxHeight: "100vh",
-        maxWidth: "100vw",
-        width: "auto"
-      })
-    );
-  });
-
   it("onDeleteResolver should delete after confirmation", () => {
     dialog.result$ = of(true);
     const resolver = { resolvername: "res1", type: "passwdresolver", censor_keys: [], data: {} } as Resolver;

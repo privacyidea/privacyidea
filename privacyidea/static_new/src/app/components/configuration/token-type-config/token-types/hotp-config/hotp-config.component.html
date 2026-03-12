@@ -34,7 +34,8 @@
     </p>
 
     <mat-form-field
-      appearance="fill">
+      appearance="fill"
+      class="input-width-m">
       <mat-label i18n>Default Hashlib</mat-label>
       <mat-select [(ngModel)]="formData()['hotp.hashlib']">
         @for (hashlib of hashLibs(); track hashlib) {

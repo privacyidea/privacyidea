@@ -28,7 +28,8 @@
     <p i18n>Here you can define how the SMS will be sent - via which kind of gateway.</p>
 
     <mat-form-field
-      appearance="fill">
+      appearance="fill"
+      class="input-width-m">
       <mat-label i18n>SMS Gateway Configuration</mat-label>
       <mat-select [(ngModel)]="formData()['sms.identifier']">
         <mat-option
@@ -47,7 +48,8 @@
     </mat-form-field>
 
     <mat-form-field
-      appearance="fill">
+      appearance="fill"
+      class="input-width-s">
       <mat-label i18n>OTP Validity Time</mat-label>
       <input
         [(ngModel)]="formData()['sms.providerTimeout']"

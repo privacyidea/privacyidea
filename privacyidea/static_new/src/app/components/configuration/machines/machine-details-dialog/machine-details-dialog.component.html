@@ -196,7 +196,7 @@
     <div class="flex-row ali-center gap-16">
       <mat-form-field
         appearance="fill"
-        class="flex-size-2">
+        class="input-width-l">
         <mat-label i18n>Token Serial</mat-label>
         <input
           [(ngModel)]="newTokenSerial"
@@ -214,7 +214,7 @@
 
       <mat-form-field
         appearance="fill"
-        class="flex-size-1">
+        class="input-width-s">
         <mat-label i18n>Application</mat-label>
         <mat-select
           [(ngModel)]="selectedApplication"
@@ -229,7 +229,7 @@
 
       <button
         [disabled]="!newTokenSerial || !selectedApplication"
-        class="action-button-primary button-width-s"
+        class="action-button-primary button-width-s margin-bottom-16"
         mat-stroked-button
         type="submit">
         <mat-icon>add</mat-icon>
