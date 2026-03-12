@@ -3523,8 +3523,9 @@ class ValidateAPITestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertEqual(400, res.status_code, res)
             error = res.json.get("result").get("error")
-            self.assertEqual(905, error.get("code"), error)
-            self.assertEqual("ERR905: Given serial does not belong to given user!", error.get("message"), error)
+            self.assertEqual(904, error.get("code"), error)
+            self.assertIn("ERR904", error.get("message"))
+            self.assertIn("user can not be found in any resolver in this realm", error.get("message"))
 
         # --- Resolver is not in realm ---
         with self.app.test_request_context('/validate/check', method="POST",

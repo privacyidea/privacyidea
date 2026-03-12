@@ -92,7 +92,7 @@ from privacyidea.lib.decorators import (check_user_or_serial,
                                         check_copy_serials)
 from privacyidea.lib.error import (TokenAdminError,
                                    ParameterError,
-                                   privacyIDEAError, ResourceNotFoundError, PolicyError)
+                                   privacyIDEAError, ResourceNotFoundError, PolicyError, UserError)
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.log import log_with
 from privacyidea.lib.policies.actions import PolicyAction
@@ -295,22 +295,29 @@ def _create_token_query(tokentype=None, token_type_list=None, realm=None, assign
     if serial_list:
         sql_query = sql_query.where(Token.serial.in_(serial_list))
 
+
+
     # Filtering by user object
     if user and not user.is_empty():
-        if user.realm:
-            realm_db = select(Realm).where(func.lower(Realm.name) == user.realm.lower())
-            # Execute the subquery using the provided session
-            realm_db_result = session.execute(realm_db).scalars().first()
-            if realm_db_result:
-                sql_query = sql_query.where(TokenOwner.realm_id == realm_db_result.id)
-            else:
-                raise ResourceNotFoundError(f"Realm '{user.realm}' does not exist.")
-        if user.resolver:
-            sql_query = sql_query.where(TokenOwner.resolver == user.resolver)
-        (uid, _rtype, _resolver) = user.get_user_identifiers()
-        if uid:
-            uid_str = str(uid) if isinstance(uid, int) else uid
-            sql_query = sql_query.where(TokenOwner.user_id == uid_str)
+        if user.login and not user.resolver:
+            # A specific username was requested but could not be found in any
+            # resolver. Raise the user error here instead of in the user class. The condition is the same.
+            raise UserError("The user can not be found in any resolver in this realm!")
+        else:
+            if user.realm:
+                realm_db = select(Realm).where(func.lower(Realm.name) == user.realm.lower())
+                # Execute the subquery using the provided session
+                realm_db_result = session.execute(realm_db).scalars().first()
+                if realm_db_result:
+                    sql_query = sql_query.where(TokenOwner.realm_id == realm_db_result.id)
+                else:
+                    raise ResourceNotFoundError(f"Realm '{user.realm}' does not exist.")
+            if user.resolver:
+                sql_query = sql_query.where(TokenOwner.resolver == user.resolver)
+                (uid, _rtype, _resolver) = user.get_user_identifiers()
+                if uid:
+                    uid_str = str(uid) if isinstance(uid, int) else uid
+                    sql_query = sql_query.where(TokenOwner.user_id == uid_str)
 
     # Filtering by token status flags
     if active is not None:
