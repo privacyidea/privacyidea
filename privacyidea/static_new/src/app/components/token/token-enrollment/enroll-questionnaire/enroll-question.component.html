@@ -24,7 +24,16 @@
         i18n
         class="inline-warning">
         To enable questionnaire token enrollment, you need to set up the
-        <a (click)="goToQuestionConfig()">Questionnaire Token Configuration</a>!
+        <a
+          role="button"
+          tabindex="0"
+          aria-label="Go to Questionnaire token configuration"
+          i18n-aria-label
+          (click)="goToQuestionConfig()"
+          (keydown)="onQuestionConfigKeydown($event)"
+        >
+          Questionnaire Token Configuration
+        </a>!
       </span>
     } @else {
       <span

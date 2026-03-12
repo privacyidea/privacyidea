@@ -161,4 +161,10 @@ export class EnrollRadiusComponent implements OnInit {
   goToRadiusConfig() {
     this.contentService.router.navigate([ROUTE_PATHS.CONFIGURATION_TOKENTYPES], { fragment: 'radius' });
   }
+
+  onRadiusConfigKeydown(event: KeyboardEvent) {
+    if (event.key === 'Enter' || event.key === ' ') {
+      this.goToRadiusConfig();
+    }
+  }
 }

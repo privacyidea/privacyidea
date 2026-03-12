@@ -137,4 +137,10 @@ export class EnrollEmailComponent implements OnInit {
   goToEmailConfig() {
     this.contentService.router.navigate([ROUTE_PATHS.CONFIGURATION_TOKENTYPES], { fragment: 'email' });
   }
+
+  onEmailConfigKeydown(event: KeyboardEvent) {
+    if (event.key === 'Enter' || event.key === ' ') {
+      this.goToEmailConfig();
+    }
+  }
 }

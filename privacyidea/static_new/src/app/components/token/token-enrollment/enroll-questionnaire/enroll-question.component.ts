@@ -174,4 +174,10 @@ export class EnrollQuestionComponent implements OnInit {
   goToQuestionConfig() {
     this.contentService.router.navigate([ROUTE_PATHS.CONFIGURATION_TOKENTYPES], { fragment: 'questionnaire' });
   }
+
+  onQuestionConfigKeydown(event: KeyboardEvent) {
+    if (event.key === 'Enter' || event.key === ' ') {
+      this.goToQuestionConfig();
+    }
+  }
 }

@@ -24,7 +24,16 @@
         i18n
         class="inline-warning">
         For Yubico tokens to work properly you need to set the
-        <a (click)="goToYubicoConfig()">Yubico Token Config</a>!
+        <a
+          role="button"
+          tabindex="0"
+          aria-label="Go to Yubico token configuration"
+          i18n-aria-label
+          (click)="goToYubicoConfig()"
+          (keydown)="onYubicoConfigKeydown($event)"
+        >
+          Yubico Token Configuration
+        </a>!
       </span>
     } @else {
       <span

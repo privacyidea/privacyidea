@@ -23,7 +23,15 @@
       i18n
       class="inline-hint">
       To ease the enrollment you can set default values in the
-      <a (click)="goToSmsConfig()">SMS Token Config</a>!
+      <a
+        role="button"
+        tabindex="0"
+        aria-label="Go to SMS token configuration"
+        i18n-aria-label
+        (click)="goToSmsConfig()"
+        (keydown)="onSmsConfigKeydown($event)">
+          SMS Token Configuration
+        </a>!
     </span>
   }
   <mat-checkbox
