@@ -5,7 +5,7 @@
   .token-container {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--half-global-gap);
+    gap: var(--global-gap);
     padding: var(--half-global-padding) var(--global-padding);
 
     &:not(:last-child) {
@@ -14,7 +14,40 @@
   }
 
   .token-item {
+    display: inline-flex;
+    align-items: center;
     white-space: nowrap;
+  }
+
+  .nested-group {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
+    background-color: var(--mat-sys-surface-container-low);
+    padding: 2px 6px;
+    border-radius: 4px;
+    margin: 0 2px;
+
+    .bracket {
+      font-weight: bold;
+      opacity: 0.6;
+    }
+
+    .separator {
+      margin-right: 4px;
+      opacity: 0.5;
+    }
+  }
+
+  .nested-item {
+    display: inline-flex;
+    align-items: center;
+
+    small {
+      color: var(--mat-sys-on-surface-variant);
+      font-weight: 500;
+    }
   }
 
   h2 {
