@@ -5,12 +5,14 @@ Version 3.13
     If you have any feedback, please share it with us! The old WebUI is still the default for this version.
 
   Enhancements:
+  * Token in the token table can be filtered by realm and by user. Search for a user is only possible with exact matches and requires to press enter. (#5032)
+  * Added --keep-db-uri flag to pi-manage backup restore, so that the database URI will not be overwritten with the value from the backup (#5033)
   * Registration of passkeys during authentication can now directly enable offline usage with the
     enroll_via_multichallenge_passkey_offline policy (#4259)
   * Alternative Mode for Push Token: push_mode_code_to_phone. After confirming on their phone, the user is shown a
     a number in the app, which they have to enter in the client/login to complete the authentication (#4907)
   * Keycloak/EntraID Resolvers can now handle group memberships (#4880)
-  * The unlock mechanism for the smartphone app can now be set explicitly by policy TODO should also be in container sync
+  * The unlock mechanism for the smartphone app can now be set explicitly by policy (#4719)
   * Emails can optionally be signed with S/MIME (#4288)
   * The passkey login button for the WebUI login can now be disabled (#4949)
   * Improved the search options for LDAP resolvers TODO (#4874)
