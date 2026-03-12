@@ -76,7 +76,7 @@
         </mat-form-field>
       </div>
 
-      <mat-form-field class="width-100">
+      <mat-form-field class="input-width-l">
         <mat-label i18n>Request Mapping (JSON Format)</mat-label>
         <textarea
           [formControl]="requestMappingControl"
@@ -88,7 +88,7 @@
         }
       </mat-form-field>
 
-      <mat-form-field class="width-100">
+      <mat-form-field class="input-width-l">
         <mat-label i18n>Headers (JSON Format)</mat-label>
         <textarea
           [formControl]="headersControl"
@@ -100,7 +100,7 @@
         }
       </mat-form-field>
 
-      <mat-form-field class="width-100">
+      <mat-form-field class="input-width-l">
         <mat-label i18n>Response Mapping (JSON Format)</mat-label>
         <textarea
           [formControl]="responseMappingControl"
@@ -121,7 +121,7 @@
     </mat-checkbox>
 
     @if (editableControl.value) {
-      <mat-form-field class="auth-wide width-100">
+      <mat-form-field class="auth-wide input-width-l">
         <mat-label i18n>Response contains (JSON Format)</mat-label>
         <textarea
           [formControl]="errorResponseControl"
@@ -152,7 +152,7 @@
     }
 
     <div class="flex-column">
-      <mat-form-field class="width-66">
+      <mat-form-field class="input-width-l">
         <mat-label i18n>Base URL</mat-label>
         <app-clearable-input
           (onClick)="baseUrlControl.setValue('')"
@@ -307,7 +307,7 @@
       [userGroupsControl]="userGroupsControl"></app-http-groups-attribute>
 
     <div class="flex-column margin-top-16">
-      <mat-form-field class="width-100">
+      <mat-form-field class="input-width-l">
         <mat-label i18n>Headers (JSON Format)</mat-label>
         <textarea
           [formControl]="globalHeadersControl"
@@ -383,7 +383,7 @@
                 of these settings in the app registration in the Entra Admin Center or you also have to add them there.
               </p>
               <div class="flex-column">
-                <mat-form-field class="width-66">
+                <mat-form-field class="input-width-l">
                   <mat-label i18n>Authority</mat-label>
                   <app-clearable-input
                     (onClick)="authorityControl.setValue('')"
@@ -471,7 +471,7 @@
 
                   <div
                     [formGroup]="clientCertificateGroup"
-                    class="flex-column width-100">
+                    class="flex-column input-width-l">
                     <div class="flex-row just-space-between">
                       <mat-form-field class="input-width-l">
                         <mat-label i18n>Path to the Private Key File</mat-label>

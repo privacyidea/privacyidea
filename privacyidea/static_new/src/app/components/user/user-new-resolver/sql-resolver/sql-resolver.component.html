@@ -121,7 +121,7 @@
         </span>
 
         @if (editableControl.value) {
-          <mat-form-field class="width-66 margin-bottom-16">
+          <mat-form-field class="input-width-l margin-bottom-16">
             <mat-label i18n>Password Hash for Editable Users</mat-label>
             <mat-select
               [formControl]="passwordHashTypeControl"
@@ -226,7 +226,7 @@
         </mat-form-field>
       </div>
 
-      <mat-form-field class="width-100">
+      <mat-form-field class="input-width-l">
         <mat-label i18n>Mapping</mat-label>
         <textarea
           [formControl]="mapControl"
@@ -262,7 +262,7 @@
         </mat-form-field>
       </div>
 
-      <mat-form-field class="width-100">
+      <mat-form-field class="input-width-l">
         <mat-label i18n>Where Statement</mat-label>
         <app-clearable-input
           (onClick)="whereControl.setValue('')"

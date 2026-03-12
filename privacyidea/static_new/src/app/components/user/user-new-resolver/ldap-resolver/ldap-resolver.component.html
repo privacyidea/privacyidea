@@ -121,7 +121,7 @@
 
       <div class="grid-row-full">
         <div class="spacer"></div>
-        <mat-form-field class="width-100 flex-grow-1">
+        <mat-form-field class="input-width-l">
           <mat-label i18n>Base DN</mat-label>
           <app-clearable-input
             (onClick)="ldapBaseControl.setValue('')"
@@ -191,7 +191,7 @@
       </div>
 
       @if (authTypeControl.value !== "anonymous") {
-        <mat-form-field class="width-100 flex-grow-1">
+        <mat-form-field class="input-width-l">
           <mat-label i18n>Bind DN</mat-label>
           <app-clearable-input
             (onClick)="bindDnControl.setValue('')"
@@ -275,7 +275,7 @@
     </div>
     @if (editableControl.value) {
       <div class="flex-column">
-        <mat-form-field class="width-100">
+        <mat-form-field class="input-width-l">
           <mat-label i18n> Object Classes of a New Created User Object</mat-label>
           <app-clearable-input
             (onClick)="objectClassesControl.setValue('')"
@@ -286,7 +286,7 @@
           </app-clearable-input>
         </mat-form-field>
 
-        <mat-form-field class="width-100">
+        <mat-form-field class="input-width-l">
           <mat-label i18n> DN of a New Created User Object</mat-label>
           <app-clearable-input
             (onClick)="dnTemplateControl.setValue('')"
@@ -356,7 +356,7 @@
         </mat-form-field>
       </div>
 
-      <mat-form-field class="width-100">
+      <mat-form-field class="input-width-l">
         <mat-label i18n>Search Filter</mat-label>
         <app-clearable-input
           (onClick)="ldapSearchFilterControl.setValue('')"
@@ -372,7 +372,7 @@
         }
       </mat-form-field>
 
-      <mat-form-field class="width-100">
+      <mat-form-field class="input-width-l">
         <mat-label i18n>Attribute Mapping</mat-label>
         <textarea
           [formControl]="userInfoControl"
@@ -385,7 +385,7 @@
         }
       </mat-form-field>
 
-      <mat-form-field class="width-100">
+      <mat-form-field class="input-width-l">
         <mat-label i18n>Multivalue Attributes</mat-label>
         <app-clearable-input
           (onClick)="multivalueAttributesControl.setValue('')"
@@ -404,7 +404,7 @@
       </mat-checkbox>
 
       @if (recursiveGroupSearchControl.value) {
-        <mat-form-field class="width-100">
+        <mat-form-field class="input-width-l">
           <mat-label i18n>
             Base DN of User Groups
           </mat-label>
@@ -422,7 +422,7 @@
           </app-clearable-input>
         </mat-form-field>
 
-        <mat-form-field class="width-100">
+        <mat-form-field class="input-width-l">
           <mat-label i18n>
             Search Filter for User Groups
           </mat-label>

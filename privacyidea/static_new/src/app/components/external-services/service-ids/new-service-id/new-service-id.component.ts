@@ -36,6 +36,7 @@ import { ContentService, ContentServiceInterface } from "../../../../services/co
 import { PendingChangesService } from "../../../../services/pending-changes/pending-changes.service";
 import { SaveAndExitDialogComponent } from "../../../shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { DialogServiceInterface, DialogService } from "../../../../services/dialog/dialog.service";
+import { ClearableInputComponent } from "../../../shared/clearable-input/clearable-input.component";
 
 @Component({
   selector: "app-new-service-id",
@@ -47,7 +48,8 @@ import { DialogServiceInterface, DialogService } from "../../../../services/dial
     MatFormFieldModule,
     MatInputModule,
     MatButtonModule,
-    MatIconModule
+    MatIconModule,
+    ClearableInputComponent
   ],
   templateUrl: "./new-service-id.component.html",
   styleUrl: "./new-service-id.component.scss"

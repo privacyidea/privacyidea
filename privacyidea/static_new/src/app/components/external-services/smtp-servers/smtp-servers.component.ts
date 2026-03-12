@@ -87,7 +87,8 @@ export class SmtpServersComponent {
   openEditDialog(server?: SmtpServer): void {
     this.dialog.open(NewSmtpServerComponent, {
       data: server ? { ...server } : null,
-      width: "600px"
+      width: "auto",
+      maxWidth: "100vw"
     });
   }
 

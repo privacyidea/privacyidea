@@ -1,10 +1,6 @@
 @use "../../../../../styles";
 @use "@angular/material" as mat;
 
-.sms-form {
-  padding-top: 10px;
-}
-
 .parameters-form {
   margin-top: 16px;
 }
@@ -42,13 +38,6 @@
   mat-form-field {
     flex: 1;
   }
-}
-
-h3 {
-  margin-top: 24px;
-  margin-bottom: 16px;
-  border-bottom: 1px solid var(--mat-sys-outline-variant);
-  padding-bottom: 8px;
 }
 
 .table-wrapper {

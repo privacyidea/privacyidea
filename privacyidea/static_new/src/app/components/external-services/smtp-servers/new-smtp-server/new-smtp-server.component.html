@@ -16,11 +16,11 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<h2
-  i18n
-  mat-dialog-title>
+<h3
+  class="margin-8 external-service-dialog-title"
+  i18n>
   {{ isEditMode ? 'Edit SMTP Server' : 'Create SMTP Server' }}
-</h2>
+</h3>
 
 <mat-dialog-content class="smtp-dialog-content">
   <form
@@ -28,12 +28,16 @@
     class="smtp-form">
     <mat-form-field
       appearance="fill"
-      class="width-100 margin-bottom-16">
+      class="input-width-l margin-bottom-16">
       <mat-label i18n>Identifier</mat-label>
-      <input
-        formControlName="identifier"
-        matInput
-        placeholder="mySmtpServer" />
+      <app-clearable-input
+        (onClick)="smtpForm.get('identifier')?.setValue('')"
+        [showClearButton]="!isEditMode && !!smtpForm.get('identifier')?.value">
+        <input
+          formControlName="identifier"
+          matInput
+          placeholder="mySmtpServer" />
+      </app-clearable-input>
       <mat-hint i18n>The unique identifying name of the SMTP server definition.</mat-hint>
       @if (smtpForm.get('identifier')?.hasError('required')) {
         <mat-error
@@ -42,15 +46,19 @@
       }
     </mat-form-field>
 
-    <div class="row">
+    <div class="flex-row gap-16">
       <mat-form-field
         appearance="fill"
-        class="flex-size-2">
+        class="input-width-l">
         <mat-label i18n>IP or FQDN</mat-label>
-        <input
-          formControlName="server"
-          matInput
-          placeholder="smtp://mail.example.com" />
+        <app-clearable-input
+          (onClick)="smtpForm.get('server')?.setValue('')"
+          [showClearButton]="!!smtpForm.get('server')?.value">
+          <input
+            formControlName="server"
+            matInput
+            placeholder="smtp://mail.example.com" />
+        </app-clearable-input>
         @if (smtpForm.get('server')?.hasError('required')) {
           <mat-error
             i18n>Server is required
@@ -60,7 +68,7 @@
 
       <mat-form-field
         appearance="fill"
-        class="flex-size-1">
+        class="input-width-s">
         <mat-label i18n>Port</mat-label>
         <input
           formControlName="port"
@@ -70,10 +78,10 @@
       </mat-form-field>
     </div>
 
-    <div class="row">
+    <div class="flex-row just-space-between">
       <mat-form-field
         appearance="fill"
-        class="flex-size-1">
+        class="input-width-s">
         <mat-label i18n>Timeout</mat-label>
         <input
           formControlName="timeout"
@@ -84,12 +92,16 @@
 
       <mat-form-field
         appearance="fill"
-        class="flex-size-1">
+        class="input-width-l">
         <mat-label i18n>Sender Email</mat-label>
-        <input
-          formControlName="sender"
-          matInput
-          placeholder="privacyidea@example.com" />
+        <app-clearable-input
+          (onClick)="smtpForm.get('sender')?.setValue('')"
+          [showClearButton]="!!smtpForm.get('sender')?.value">
+          <input
+            formControlName="sender"
+            matInput
+            placeholder="privacyidea@example.com" />
+        </app-clearable-input>
         @if (smtpForm.get('sender')?.hasError('required')) {
           <mat-error
             i18n>Sender email is required
@@ -103,36 +115,50 @@
       </mat-form-field>
     </div>
 
-    <mat-form-field
-      appearance="fill"
-      class="width-100 margin-bottom-16">
-      <mat-label i18n>Username</mat-label>
-      <input
-        formControlName="username"
-        matInput
-        placeholder="user@example.com" />
-      <mat-hint i18n>If the SMTP server requires authentication.</mat-hint>
-    </mat-form-field>
+    <div class="flex-row just-space-between">
+      <mat-form-field
+        appearance="fill"
+        class="input-width-l margin-bottom-16">
+        <mat-label i18n>Username</mat-label>
+        <app-clearable-input
+          (onClick)="smtpForm.get('username')?.setValue('')"
+          [showClearButton]="!!smtpForm.get('username')?.value">
+          <input
+            formControlName="username"
+            matInput
+            placeholder="user@example.com" />
+        </app-clearable-input>
+        <mat-hint i18n>If the SMTP server requires authentication.</mat-hint>
+      </mat-form-field>
 
-    <mat-form-field
-      appearance="fill"
-      class="width-100">
-      <mat-label i18n>Password</mat-label>
-      <input
-        formControlName="password"
-        matInput
-        placeholder="topsecret"
-        type="password" />
-    </mat-form-field>
+      <mat-form-field
+        appearance="fill"
+        class="input-width-l">
+        <mat-label i18n>Password</mat-label>
+        <app-clearable-input
+          (onClick)="smtpForm.get('password')?.setValue('')"
+          [showClearButton]="!!smtpForm.get('password')?.value">
+          <input
+            formControlName="password"
+            matInput
+            placeholder="topsecret"
+            type="password" />
+        </app-clearable-input>
+      </mat-form-field>
+    </div>
 
     <mat-form-field
       appearance="fill"
       class="width-100">
       <mat-label i18n>Description</mat-label>
-      <input
-        formControlName="description"
-        matInput
-        placeholder="some wise words" />
+      <app-clearable-input
+        (onClick)="smtpForm.get('description')?.setValue('')"
+        [showClearButton]="!!smtpForm.get('description')?.value">
+        <input
+          formControlName="description"
+          matInput
+          placeholder="some wise words" />
+      </app-clearable-input>
     </mat-form-field>
 
     <div class="checkbox-group">
@@ -148,45 +174,32 @@
       </mat-checkbox>
     </div>
 
-    <div class="smime-section">
+    <mat-divider />
+
+    <h3 i18n>S/MIME</h3>
+
+    <div class="flex-column">
       <input
         class="hidden-input"
-        type="text"/>
+        type="text" />
       <input
         class="hidden-input"
-        type="password"/>
-
-      <h3 i18n>S/MIME</h3>
-      <mat-form-field
-        appearance="fill"
-        class="width-100">
-        <mat-label i18n>Certificate</mat-label>
-        <input
-          formControlName="certificate"
-          matInput
-          placeholder="The path to the certificate file" />
-      </mat-form-field>
-
-      <mat-form-field
-        appearance="fill"
-        class="width-100">
-        <mat-label i18n>Private Key</mat-label>
-        <input
-          formControlName="private_key"
-          matInput
-          placeholder="The path to the private key file" />
-      </mat-form-field>
-
-      <mat-form-field
-        appearance="fill"
-        class="width-100">
-        <mat-label i18n>Password for the Private Key</mat-label>
-        <input
-          formControlName="private_key_password"
-          matInput
-          placeholder="topsecret"
-          type="password" />
-      </mat-form-field>
+        type="password" />
+      <div class="flex-row just-space-between">
+        <mat-form-field
+          appearance="fill"
+          class="input-width-l">
+          <mat-label i18n>Certificate</mat-label>
+          <app-clearable-input
+            (onClick)="smtpForm.get('certificate')?.setValue('')"
+            [showClearButton]="!!smtpForm.get('certificate')?.value">
+            <input
+              formControlName="certificate"
+              matInput
+              placeholder="The path to the certificate file" />
+          </app-clearable-input>
+        </mat-form-field>
+      </div>
 
       <div class="checkbox-group">
         <mat-checkbox
@@ -198,28 +211,63 @@
           i18n>Don't send on signing error
         </mat-checkbox>
       </div>
+
+      <div class="flex-row gap-16">
+        <mat-form-field
+          appearance="fill"
+          class="input-width-l">
+          <mat-label i18n>Private Key</mat-label>
+          <app-clearable-input
+            (onClick)="smtpForm.get('private_key')?.setValue('')"
+            [showClearButton]="!!smtpForm.get('private_key')?.value">
+            <input
+              formControlName="private_key"
+              matInput
+              placeholder="The path to the private key file" />
+          </app-clearable-input>
+        </mat-form-field>
+
+        <mat-form-field
+          appearance="fill"
+          class="input-width-l">
+          <mat-label i18n>Password for the Private Key</mat-label>
+          <app-clearable-input
+            (onClick)="smtpForm.get('private_key_password')?.setValue('')"
+            [showClearButton]="!!smtpForm.get('private_key_password')?.value">
+            <input
+              formControlName="private_key_password"
+              matInput
+              placeholder="topsecret"
+              type="password" />
+          </app-clearable-input>
+        </mat-form-field>
+      </div>
     </div>
 
-    <div class="test-section">
-      <mat-form-field
-        appearance="fill"
-        class="width-100">
-        <mat-label i18n>Recipient for Testing</mat-label>
+    <mat-divider />
+
+    <mat-form-field
+      appearance="fill"
+      class="input-width-l margin-top-16">
+      <mat-label i18n>Recipient for Testing</mat-label>
+      <app-clearable-input
+        (onClick)="smtpForm.get('recipient')?.setValue('')"
+        [showClearButton]="!!smtpForm.get('recipient')?.value">
         <input
           formControlName="recipient"
           matInput />
-        <button
-          (click)="test()"
-          [disabled]="isTesting()"
-          class="margin-right-16"
-          i18n-matTooltip
-          mat-icon-button
-          matSuffix
-          matTooltip="Send Test Email">
-          <mat-icon>send</mat-icon>
-        </button>
-      </mat-form-field>
-    </div>
+      </app-clearable-input>
+      <button
+        (click)="test()"
+        [disabled]="isTesting()"
+        class="margin-right-16"
+        i18n-matTooltip
+        mat-icon-button
+        matSuffix
+        matTooltip="Send Test Email">
+        <mat-icon>send</mat-icon>
+      </button>
+    </mat-form-field>
   </form>
 </mat-dialog-content>
 

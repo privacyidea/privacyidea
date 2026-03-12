@@ -34,6 +34,8 @@ import { ContentService, ContentServiceInterface } from "../../../../services/co
 import { PendingChangesService } from "../../../../services/pending-changes/pending-changes.service";
 import { DialogService, DialogServiceInterface } from "../../../../services/dialog/dialog.service";
 import { SaveAndExitDialogComponent } from "../../../shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
+import { ClearableInputComponent } from "../../../shared/clearable-input/clearable-input.component";
+import { MatDivider } from "@angular/material/list";
 
 @Component({
   selector: "app-smtp-edit-dialog",
@@ -47,7 +49,9 @@ import { SaveAndExitDialogComponent } from "../../../shared/dialog/save-and-exit
     MatCheckboxModule,
     MatButtonModule,
     MatIconModule,
-    MatTooltip
+    MatTooltip,
+    ClearableInputComponent,
+    MatDivider
   ],
   templateUrl: "./new-smtp-server.component.html",
   styleUrl: "./new-smtp-server.component.scss"

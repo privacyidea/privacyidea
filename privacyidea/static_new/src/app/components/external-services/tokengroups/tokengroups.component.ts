@@ -92,7 +92,8 @@ export class TokengroupsComponent {
   openEditDialog(group?: Tokengroup): void {
     this.dialog.open(NewTokengroupComponent, {
       data: group ? { ...group } : null,
-      width: "800px"
+      width: "auto",
+      maxWidth: "100vw"
     });
   }
 

@@ -35,6 +35,7 @@ import { PendingChangesService } from "../../../../services/pending-changes/pend
 import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
 import { SaveAndExitDialogComponent } from "../../../shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { DialogService, DialogServiceInterface } from "../../../../services/dialog/dialog.service";
+import { ClearableInputComponent } from "../../../shared/clearable-input/clearable-input.component";
 
 @Component({
   selector: "app-new-radius-server",
@@ -48,7 +49,8 @@ import { DialogService, DialogServiceInterface } from "../../../../services/dial
     MatCheckboxModule,
     MatButtonModule,
     MatIconModule,
-    MatTooltip
+    MatTooltip,
+    ClearableInputComponent
   ],
   templateUrl: "./new-radius-server.component.html",
   styleUrl: "./new-radius-server.component.scss"
