@@ -1185,7 +1185,7 @@ class WebAuthnTokenClass(TokenClass):
             except ParameterError:
                 raise ValueError("When performing WebAuthn authorization, options must contain user")
 
-            uv_req = get_optional(options, FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT)
+            uv_req = get_optional(options, "user_verification")
             # Check if challenge is base64 encoded to be able to use login via passkey with webauthn
             challenge = get_required(options, "challenge").rstrip("=")
             challenge_decoded = None
