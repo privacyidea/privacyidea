@@ -1,1 +1,58 @@
-th.pifilter { white-space: nowrap; }
+th.pifilter {
+    white-space: nowrap;
+}
+
+/* inline so the filter icon sits on the same line as the sort button */
+pi-filter {
+    display: inline;
+}
+
+/* block so the input row sits below the icon, still inside the th */
+.pi-filter-wrap {
+    display: block;
+    position: relative;
+}
+
+/* input fills the full column width; padding-right reserves space for the button(s) */
+.pi-filter-input {
+    width: 100%;
+    padding-right: 40px; /* room for clear + search buttons */
+    box-sizing: border-box;
+}
+
+
+/* buttons are absolutely positioned inside the input on the right edge */
+.pi-filter-btns {
+    position: absolute;
+    top: 50%;
+    right: 4px;
+    transform: translateY(-50%);
+    display: flex;
+    gap: 2px;
+}
+
+.pi-filter-btn {
+    background: none;
+    border: none;
+    padding: 0 2px;
+    line-height: 1;
+    color: #888;
+    cursor: pointer;
+    font-size: 11px;
+}
+
+.pi-filter-btn:hover {
+    color: #333;
+}
+
+/* expanded user/realm filter panel inside the th */
+.pi-user-filter {
+    display: block;
+    min-width: 160px;
+}
+
+.pi-user-filter select {
+    margin-bottom: 4px;
+}
+
+

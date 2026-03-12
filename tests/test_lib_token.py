@@ -208,7 +208,7 @@ class TokenTestCase(MyTestCase):
 
         # get tokens for a user with an invalid realm
         user = User("test", realm="deleted")
-        self.assertRaises(ResourceNotFoundError, get_tokens, user=user)
+        self.assertRaises(UserError, get_tokens, user=user)
 
         # wildcard matches do not work for the ``serial`` parameter
         tokenobject_list = get_tokens(serial="hotptoke*")
@@ -1232,6 +1232,26 @@ class TokenTestCase(MyTestCase):
         tokens = get_tokens_paginate(user=User(login="hans", realm=self.realm2), allowed_realms=[self.realm1])["tokens"]
         self.assertEqual(1, len(tokens))
         token.delete_token()
+
+        # Realm-only filter (no login in the user object)
+        # A User with empty login but a realm set should filter by realm without raising.
+        self.setUp_user_realm2()
+        tok1 = init_token({"type": "hotp", "genkey": True}, user=User("hans", self.realm2))
+        tok2 = init_token({"type": "hotp", "genkey": True}, user=User("cornelius", self.realm1))
+        realm2_only = User(login="", realm=self.realm2)
+        tokens = get_tokens_paginate(user=realm2_only)["tokens"]
+        serials = [t["serial"] for t in tokens]
+        self.assertIn(tok1.get_serial(), serials)
+        self.assertNotIn(tok2.get_serial(), serials)
+        tok1.delete_token()
+        tok2.delete_token()
+
+        # Unresolvable user raises ERR904 "user can not be found in any resolver..."
+        unresolvable = User(login="no_such_user_xyz", realm=self.realm1)
+        # Confirm the user is not resolvable (resolver will be None/empty)
+        self.assertFalse(unresolvable.resolver)
+        with self.assertRaises(UserError):
+            tokens = get_tokens_paginate(user=unresolvable)["tokens"]
 
     def test_42_sort_tokens(self):
         # return pagination

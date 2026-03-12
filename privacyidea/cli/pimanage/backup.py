@@ -142,14 +142,17 @@ def backup_create(backup_dir, config_dir, radius_dir, enckey):
 
 @backup_cli.command("restore")
 @click.argument("backup_file", type=str)
-def backup_restore(backup_file):
+@click.option("--keep-db-uri", is_flag=True, default=False,
+              help="Keep the current SQLALCHEMY_DATABASE_URI from the live config "
+                   "instead of overwriting it with the one stored in the backup.")
+def backup_restore(backup_file, keep_db_uri):
     """Restore a previously made backup from the BACKUP_FILE"""
     # TODO: Use tarfile package
     # TODO: Also allow to specify a target directory, otherwise it will always
     #  extract to the base /
     # TODO: extracting the SQLite file does not work if there are other SQLite
     #  files in the archive
-    sqluri = None
+
     config_file = None
     sqlfile = None
     enckey_contained = False
@@ -181,12 +184,56 @@ def backup_restore(backup_file):
                     "KEY MANUALLY!", fg='yellow')
     click.echo(f"Restoring to {config_file} with data from {sqlfile}")
 
+    # If requested, capture the current DB URI before extraction overwrites pi.cfg.
+    current_sqluri = None
+    read_success = False
+    if keep_db_uri and config_file.exists():
+        try:
+            current_cfg = Config(config_file.parent)
+            current_cfg.from_pyfile(config_file)
+            read_success = True
+            current_sqluri = current_cfg.get("SQLALCHEMY_DATABASE_URI")
+        except Exception as e:
+            click.secho(f"--keep-db-uri: could not read live config ({e}). "
+                        "Using database URI from backup.",
+                        fg="yellow")
+        if read_success:
+            if current_sqluri:
+                click.echo("--keep-db-uri: using database URI from live config.")
+            else:
+                click.secho(
+                    "--keep-db-uri: no SQLALCHEMY_DATABASE_URI found in live config. "
+                    "Using database URI from backup.",
+                    fg="yellow",
+                )
+
     subprocess.run(["tar", "-zxf", backup_file, "-C", "/"])
     click.echo(60 * "=")
-    # use Flask config to read in the config file
+
+    # use Flask config to read in the config file (now restored from backup)
     cfg = Config(config_file.parent)
     cfg.from_pyfile(config_file)
-    sqluri = cfg["SQLALCHEMY_DATABASE_URI"]
+
+    if keep_db_uri and current_sqluri:
+        # Patch the restored pi.cfg to keep the original DB URI in-place.
+        # repr() ensures the value is a properly escaped Python string literal,
+        # so URIs containing quotes, backslashes or other special characters
+        # cannot corrupt the config file syntax.
+        cfg_text = config_file.read_text()
+        new_line = f'SQLALCHEMY_DATABASE_URI = {repr(current_sqluri)}'
+        if re.search(r'^SQLALCHEMY_DATABASE_URI\s*=', cfg_text, re.MULTILINE):
+            cfg_text = re.sub(
+                r'^SQLALCHEMY_DATABASE_URI\s*=.*$',
+                new_line,
+                cfg_text,
+                flags=re.MULTILINE,
+            )
+        else:
+            cfg_text += f'\n{new_line}\n'
+        config_file.write_text(cfg_text)
+        sqluri = current_sqluri
+    else:
+        sqluri = cfg["SQLALCHEMY_DATABASE_URI"]
 
     if sqluri is None:
         click.secho(f"No SQLALCHEMY_DATABASE_URI found in {config_file}",
