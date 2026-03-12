@@ -364,7 +364,7 @@ def preferred_client_mode(request, response):
     """
     This policy function is used to add the preferred client mode.
     The admin can set the list of client modes in the policy in the
-    same order as he preferred them. The faction will pick the first
+    same order as he preferred them. The function will pick the first
     client mode from the list, that is also in the multichallenge and
     set it as preferred_client_mode
 
