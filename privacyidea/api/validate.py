@@ -492,11 +492,11 @@ def _handle_enrollment_cancellation(data: dict) -> Response:
 
     details = {}
     if success:
-        details["message"] = str(_("Cancelled enrollment via multichallenge"))
-        message = str(_("Cancelled enrollment via multichallenge for transaction_id ")) + f"{transaction_id}"
+        details["message"] = _("Cancelled enrollment via multichallenge")
+        message = _("Cancelled enrollment via multichallenge for transaction_id ") + f"{transaction_id}"
     else:
-        details["message"] = str(_("Failed to cancel enrollment via multichallenge"))
-        message = str(_("Failed to cancel enrollment via multichallenge for transaction_id ")) + f"{transaction_id}"
+        details["message"] = _("Failed to cancel enrollment via multichallenge")
+        message = _("Failed to cancel enrollment via multichallenge for transaction_id ") + f"{transaction_id}"
 
     ret = send_result(success, rid=2, details=details)
 

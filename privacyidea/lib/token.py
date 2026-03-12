@@ -92,7 +92,7 @@ from privacyidea.lib.decorators import (check_user_or_serial,
                                         check_copy_serials)
 from privacyidea.lib.error import (TokenAdminError,
                                    ParameterError,
-                                   PrivacyIDEAError, ResourceNotFoundError, PolicyError)
+                                   PrivacyIDEAError, ResourceNotFoundError, PolicyError, UserError)
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.log import log_with
 from privacyidea.lib.policies.actions import PolicyAction
