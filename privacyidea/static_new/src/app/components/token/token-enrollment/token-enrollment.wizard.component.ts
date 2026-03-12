@@ -66,9 +66,10 @@ import { EnrollYubikeyComponent } from "./enroll-yubikey/enroll-yubikey.componen
 import { TokenEnrollmentComponent } from "./token-enrollment.component";
 import { AuthService } from "../../../services/auth/auth.service";
 import { tokenTypes } from "../../../utils/token.utils";
-import { MatError, MatFormField, MatInput, MatLabel } from "@angular/material/input";
+import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
 import { environment } from "../../../../environments/environment";
 import { TokenEnrollmentLastStepDialogWizardComponent } from "./token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.wizard.component";
+import { MatError } from "@angular/material/form-field";
 
 @Component({
   selector: "app-token-enrollment-wizard",

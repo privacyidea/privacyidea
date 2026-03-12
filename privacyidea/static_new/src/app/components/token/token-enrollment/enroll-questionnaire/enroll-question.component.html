@@ -33,9 +33,8 @@
         The questionnaire token enrollment is not completely configured. Please contact your administrator.
       </span>
     }
-  }
-  @if (configMinNumberOfAnswers() > 0) {
-    <span> Please answer at least {{ configMinNumberOfAnswers() }} of the following questions: </span>
+  } @else {
+    <span i18n> Please answer at least {{ configMinNumberOfAnswers() }} of the following questions: </span>
   }
   <div
     [formGroup]="questionForm()"

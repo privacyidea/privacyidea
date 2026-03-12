@@ -44,6 +44,8 @@ import { YubicoConfigComponent } from "./token-types/yubico-config/yubico-config
 import { YubikeyConfigComponent } from "./token-types/yubikey-config/yubikey-config.component";
 import { DaypasswordConfigComponent } from "./token-types/daypassword-config/daypassword-config.component";
 import { ActivatedRoute } from "@angular/router";
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { DestroyRef } from '@angular/core';
 
 @Component({
   selector: "app-token-type-config",
@@ -126,7 +128,9 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit {
 
   ngOnInit() {
     // allow opening a specific panel via URL fragment, e.g. /configuration/token-types#yubico
-    this.route.fragment.subscribe(fragment => {
+    this.route.fragment
+        .pipe(takeUntilDestroyed(inject(DestroyRef)))
+        .subscribe(fragment => {
       if (fragment) {
         this.expandedPanel = fragment;
       }
