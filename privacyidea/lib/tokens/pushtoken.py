@@ -816,7 +816,7 @@ class PushTokenClass(TokenClass):
             # signature error, even if the token with the serial could not be found
             log.debug(f'{traceback.format_exc()}')
             log.info(f'The following error occurred during the signature check: "{e}"')
-            raise privacyIDEAError('Could not verify signature!')
+            raise PrivacyIDEAError('Could not verify signature!')
 
     @classmethod
     def _api_endpoint_post(cls, g, request_data: dict) -> tuple[bool, dict]:
