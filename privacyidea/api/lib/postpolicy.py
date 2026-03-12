@@ -364,9 +364,9 @@ def preferred_client_mode(request, response):
     """
     This policy function is used to add the preferred client mode.
     The admin can set the list of client modes in the policy in the
-    same order as  he preferred them. The faction will pick the first
+    same order as he preferred them. The faction will pick the first
     client mode from the list, that is also in the multichallenge and
-    set it as preferred client mode
+    set it as preferred_client_mode
 
     :param request:
     :param response:
@@ -390,7 +390,7 @@ def preferred_client_mode(request, response):
                                           user_object=user).allowed()
     last_used_token_type = None
     if client_mode_per_user_pol:
-        user_agent, _, _ = get_plugin_info_from_useragent(request.user_agent.string)
+        user_agent, __, __ = get_plugin_info_from_useragent(request.user_agent.string)
         user_attributes = user.attributes
         last_used_token_type = user_attributes.get(f"{InternalCustomUserAttributes.LAST_USED_TOKEN}_{user_agent}")
 
@@ -399,7 +399,7 @@ def preferred_client_mode(request, response):
         if detail.get("multi_challenge"):
             multi_challenge = detail.get("multi_challenge")
 
-            # First try to use the users preferred token type
+            # First, try to use the users' preferred token type
             preferred = None
             if last_used_token_type:
                 for challenge in multi_challenge:
@@ -409,7 +409,7 @@ def preferred_client_mode(request, response):
                         break
 
             if not preferred:
-                # User preferred client mode not found, check the policy
+                # User preferred_client_mode not found, check the policy
                 client_modes = [x.get('client_mode') for x in multi_challenge]
                 try:
                     preferred = [x for x in preferred_client_mode_list if x in client_modes][0]

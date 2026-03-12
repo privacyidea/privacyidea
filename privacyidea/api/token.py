@@ -320,7 +320,7 @@ def init():
             init_details = token.get_init_detail(param, user)
             response_details.update(init_details)
         except ParameterError as e:
-            if e.id is Error.PARAMETER_USER_MISSING:
+            if e.id == Error.PARAMETER_USER_MISSING:
                 remove_token(serial=token.get_serial())
             raise e
 
