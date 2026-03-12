@@ -1009,7 +1009,11 @@ def initialize():
         details["passkey"] = challenge
         details["transaction_id"] = challenge["transaction_id"]
     else:
-        raise ParameterError(_("Unsupported token type '{token_type}' for authentication initialization!").format(token_type=token_type))
+        raise ParameterError(
+            _("Unsupported token type '{token_type}' for authentication initialization!").format(
+                token_type=token_type
+            )
+        )
 
     g.audit_object.log({"success": True})
     response = send_result(False, rid=2, details=details)
