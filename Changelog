@@ -1,7 +1,7 @@
 Version 3.13
 
   Features:
-  * The new WebUI 2.0 is now in beta, containing all admin functionality. But please be aware that bugs may still occur.
+  * The new WebUI 2.0 is now in beta, containing all admin functionality. But please be aware that layouts are not final and bugs may still occur.
     If you have any feedback, please share it with us! The old WebUI is still the default for this version.
 
   Enhancements:
