@@ -167,7 +167,11 @@ class PIManageBackupTestCase(CliTestCase):
             live_uri = "sqlite:////live/data.sqlite"
             backup_uri = "sqlite:////backup/data.sqlite"
 
-            self._run_restore_with_mocks(live_pi_cfg, backup_uri, live_uri)
+            result = self._run_restore_with_mocks(live_pi_cfg, backup_uri, live_uri)
+
+            # Assert the command completed successfully before checking file contents.
+            self.assertEqual(result.exit_code, 0, result.output)
+            self.assertIsNone(result.exception, result.exception)
 
             final_text = live_pi_cfg.read_text()
             # The live URI must survive the restore.
@@ -175,7 +179,6 @@ class PIManageBackupTestCase(CliTestCase):
             # The backup URI must have been replaced.
             self.assertNotIn(repr(backup_uri), final_text, final_text)
             # The operator must be told which source was used.
-            result = self._run_restore_with_mocks(live_pi_cfg, backup_uri, live_uri)
             self.assertIn("using database URI from live config", result.output, result.output)
 
     def test_03_keep_db_uri_live_config_unreadable_falls_back_to_backup(self):
@@ -206,6 +209,10 @@ class PIManageBackupTestCase(CliTestCase):
                             pi_manage,
                             ["backup", "restore", "--keep-db-uri", "fake.tgz"],
                         )
+
+            # Assert the command completed successfully.
+            self.assertEqual(result.exit_code, 0, result.output)
+            self.assertIsNone(result.exception, result.exception)
 
             # A warning about the read failure must appear in the output.
             self.assertIn("could not read live config", result.output, result.output)

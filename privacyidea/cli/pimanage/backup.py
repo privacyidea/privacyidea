@@ -186,21 +186,26 @@ def backup_restore(backup_file, keep_db_uri):
 
     # If requested, capture the current DB URI before extraction overwrites pi.cfg.
     current_sqluri = None
+    read_success = False
     if keep_db_uri and config_file.exists():
         try:
             current_cfg = Config(config_file.parent)
             current_cfg.from_pyfile(config_file)
+            read_success = True
             current_sqluri = current_cfg.get("SQLALCHEMY_DATABASE_URI")
         except Exception as e:
             click.secho(f"--keep-db-uri: could not read live config ({e}). "
                         "Using database URI from backup.",
                         fg="yellow")
-        if current_sqluri:
-            click.echo("--keep-db-uri: using database URI from live config.")
-        else:
-            click.secho("--keep-db-uri: no SQLALCHEMY_DATABASE_URI found in live config. "
-                        "Using database URI from backup.",
-                        fg="yellow")
+        if read_success:
+            if current_sqluri:
+                click.echo("--keep-db-uri: using database URI from live config.")
+            else:
+                click.secho(
+                    "--keep-db-uri: no SQLALCHEMY_DATABASE_URI found in live config. "
+                    "Using database URI from backup.",
+                    fg="yellow",
+                )
 
     subprocess.run(["tar", "-zxf", backup_file, "-C", "/"])
     click.echo(60 * "=")
