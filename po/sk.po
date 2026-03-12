@@ -3,7 +3,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: translations@privacyidea.org\n"
-"PO-Revision-Date: 2026-03-06 04:10+0000\n"
+"PO-Revision-Date: 2026-03-13 06:42+0000\n"
 "Last-Translator: Tomasss <tomasss1024+weblate.org-privacyidea@gmail.com>\n"
 "Language-Team: Slovak <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-webui/sk/>\n"
@@ -400,6 +400,8 @@ msgid ""
 "As the values are encrypted with AES128-CBC, you need to give a\n"
 "            32 characters long hex string."
 msgstr ""
+"Keďže hodnoty sú šifrované pomocou AES128-CBC, musíte zadať\n"
+"            32-znakový hexadecimálny reťazec."
 
 #: privacyidea/static/components/token/views/token.details.html:606
 msgid "Assign Container"
@@ -469,7 +471,7 @@ msgstr "Stav priradenia"
 
 #: privacyidea/static/components/token/views/token.details.html:793
 msgid "Attach Machine"
-msgstr ""
+msgstr "Priradiť stanicu"
 
 #: privacyidea/static/components/machine/views/machine.details.html:159
 msgid "Attach Token"
@@ -477,7 +479,7 @@ msgstr "Pripojiť token"
 
 #: privacyidea/static/components/token/views/token.details.html:743
 msgid "Attach to a new Machine"
-msgstr ""
+msgstr "Priradiť k novej stanici"
 
 #: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:44
 msgid "Attribute Mapping"
@@ -513,7 +515,7 @@ msgstr "Autorita"
 
 #: privacyidea/static/components/config/views/config.system.edit.html:80
 msgid "Auto resync timeout"
-msgstr ""
+msgstr "Časový limit automatickej opätovnej synchronizácie"
 
 #: privacyidea/static/components/config/views/config.system.edit.html:76
 msgid "Automatic resync during authentication"
@@ -526,7 +528,7 @@ msgstr "Chybná požiadavka U2F"
 #: privacyidea/static/components/config/views/config.caconnectors.local.html:28
 #: privacyidea/static/components/config/views/config.caconnectors.microsoft.html:28
 msgid "Base Config"
-msgstr ""
+msgstr "Základné nastavenia"
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:100
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:116
@@ -539,11 +541,11 @@ msgstr ""
 
 #: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:20
 msgid "Base URL"
-msgstr ""
+msgstr "Základná URL adresa"
 
 #: privacyidea/static/components/config/views/config.resolvers.http.html:13
 msgid "Basic Settings"
-msgstr ""
+msgstr "Základné nastavenia"
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:110
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:151
@@ -567,6 +569,11 @@ msgid ""
 "    search for the token. So you can only search within certain token types\n"
 "    or in assigned or unassigned tokens."
 msgstr ""
+"Zadaním hodnoty OTP môžete získať sériové číslo tokenu.\n"
+"    Môžete tiež zadať ďalšie voliteľné parametre, aby ste zúžili\n"
+"    vyhľadávanie tokenu. Môžete teda vyhľadávať iba v rámci určitých typov "
+"tokenov\n"
+"    alebo v priradených alebo nepriradených tokenoch."
 
 #: privacyidea/static/components/config/views/config.caconnectors.local.html:31
 msgid "CA Certificate"
@@ -680,6 +687,9 @@ msgstr "Skontrolovať iba jednorázový token."
 msgid ""
 "Check all possible resolvers of a user to match the resolver in this policy."
 msgstr ""
+"Skontrolujte všetky možné resolvery používateľa, aby sa zhodovali s "
+"resolverom\n"
+"                        v tejto politike."
 
 #: privacyidea/static/components/token/views/token.enroll.radius.html:18
 #: privacyidea/static/components/token/views/token.enroll.remote.html:12
@@ -688,7 +698,7 @@ msgstr "Kontrolovať PIN lokálne"
 
 #: privacyidea/static/components/token/views/token.details.html:504
 msgid "Check with OTP PIN."
-msgstr ""
+msgstr "Skontrolovať OTP PIN."
 
 #: privacyidea/static/components/config/views/config.realms.list.html:147
 msgid "Clear Default Realm"
