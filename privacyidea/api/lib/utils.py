@@ -80,10 +80,8 @@ def get_required(dictionary, key, allow_empty=False):
     If the parameter is present, but empty, raise a ParameterError.
     """
     ret = _get_param(dictionary, key, None)
-    if ret is None:
+    if ret is None or not allow_empty and ret == "":
         raise ParameterError(f"Missing parameter: {key}", id=905)
-    if not allow_empty and ret == "":
-        raise ParameterError(f"Parameter {key} must not be empty", id=905)
     return ret
 
 
