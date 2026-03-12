@@ -35,6 +35,7 @@ import {
   NotificationService,
   NotificationServiceInterface
 } from "../../../../services/notification/notification.service";
+import { SystemService, SystemServiceInterface } from "../../../../services/system/system.service";
 
 export interface HotpEnrollmentOptions extends TokenEnrollmentData {
   type: "hotp";
@@ -68,6 +69,7 @@ export class EnrollHotpComponent implements OnInit {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
+  protected readonly systemService: SystemServiceInterface = inject(SystemService);
   readonly otpLengthOptions = [6, 8];
   readonly hashAlgorithmOptions = [
     { value: "sha1", viewValue: "SHA1" },
@@ -91,7 +93,8 @@ export class EnrollHotpComponent implements OnInit {
   generateOnServerFormControl = new FormControl<boolean>(true, [Validators.required]);
   otpLengthFormControl = new FormControl<number>(6, [Validators.required]);
   otpKeyFormControl = new FormControl<string>({ value: "", disabled: true });
-  hashAlgorithmFormControl = new FormControl<string>("sha1", [Validators.required]);
+  defaultHashlib = computed(() => this.systemService.systemConfig()["hotp.hashlib"] ?? "sha1");
+  hashAlgorithmFormControl = new FormControl<string>(this.defaultHashlib(), [Validators.required]);
 
   constructor() {
     effect(() => (this.disabled() ? this._disableFormControls() : this._enableFormControls()));
@@ -149,6 +152,20 @@ export class EnrollHotpComponent implements OnInit {
         }
         this.otpKeyFormControl.updateValueAndValidity();
       });
+    }
+
+    const hashlib = this.authService.rightsWithValues()["hotp_hashlib"];
+    if (hashlib) {
+      this.hashAlgorithmFormControl.setValue(hashlib, { emitEvent: false });
+      this.hashAlgorithmFormControl.disable({ emitEvent: false });
+    }
+    const otpLength = this.authService.rightsWithValues()["hotp_otplen"];
+    if (otpLength) {
+      const otpLengthNumber = parseInt(otpLength, 10);
+      if (!isNaN(otpLengthNumber)) {
+        this.otpLengthFormControl.setValue(otpLengthNumber, { emitEvent: false });
+        this.otpLengthFormControl.disable({ emitEvent: false });
+      }
     }
   }
 

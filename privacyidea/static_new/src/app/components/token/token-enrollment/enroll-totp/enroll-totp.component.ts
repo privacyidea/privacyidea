@@ -37,6 +37,7 @@ import {
   NotificationService,
   NotificationServiceInterface
 } from "../../../../services/notification/notification.service";
+import { SystemService, SystemServiceInterface } from "../../../../services/system/system.service";
 
 export interface TotpEnrollmentOptions extends TokenEnrollmentData {
   type: "totp";
@@ -71,6 +72,7 @@ export class EnrollTotpComponent implements OnInit {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
+  protected readonly systemService: SystemServiceInterface = inject(SystemService);
   readonly otpLengthOptions = [6, 8];
   readonly hashAlgorithmOptions = [
     { value: "sha1", viewValue: "SHA1" },
@@ -94,8 +96,20 @@ export class EnrollTotpComponent implements OnInit {
   generateOnServerFormControl = new FormControl<boolean>(true, [Validators.required]);
   otpLengthFormControl = new FormControl<number>(6, [Validators.required]);
   otpKeyFormControl = new FormControl<string>({ value: "", disabled: true });
-  hashAlgorithmControl = new FormControl<string>("sha1", [Validators.required]);
-  timeStepControl = new FormControl<number | string>(30, [Validators.required]);
+  defaultHashlib = computed(() => this.systemService.systemConfig()["totp.hashlib"] ?? "sha1");
+  hashAlgorithmControl = new FormControl<string>(this.defaultHashlib(), [Validators.required]);
+  defaultTimeStep = computed(() => {
+    let timeStep = 30;
+    const configTimeStep = this.systemService.systemConfig()["totp.timeStep"];
+    if (configTimeStep) {
+      const parsedTimeStep = parseInt(configTimeStep, 10);
+      if (!isNaN(parsedTimeStep)) {
+        timeStep = parsedTimeStep;
+      }
+    }
+    return timeStep;
+  });
+  timeStepControl = new FormControl<number | string>(this.defaultTimeStep(), [Validators.required]);
   totpForm = new FormGroup({
     generateOnServer: this.generateOnServerFormControl,
     otpLength: this.otpLengthFormControl,
@@ -127,10 +141,11 @@ export class EnrollTotpComponent implements OnInit {
 
   private _setInitialFormValues() {
     if (!!this.enrollmentData()) {
+      // Editing a token, e.g. for rollover or in templates
       this.generateOnServerFormControl.setValue(this.enrollmentData()?.generateOnServer ?? true, { emitEvent: false });
       this.otpLengthFormControl.setValue(this.enrollmentData()?.otpLength ?? 6, { emitEvent: false });
-      this.hashAlgorithmControl.setValue(this.enrollmentData()?.hashAlgorithm ?? "sha1", { emitEvent: false });
-      this.timeStepControl.setValue(this.enrollmentData()?.timeStep ?? 30, { emitEvent: false });
+      this.hashAlgorithmControl.setValue(this.enrollmentData()?.hashAlgorithm ?? this.defaultHashlib(), { emitEvent: false });
+      this.timeStepControl.setValue(this.enrollmentData()?.timeStep ?? this.defaultTimeStep(), { emitEvent: false });
     }
   }
 
@@ -156,6 +171,28 @@ export class EnrollTotpComponent implements OnInit {
       this.generateOnServerFormControl.valueChanges.subscribe(() => {
         this._enableDisableOtpKeyControl(false);
       });
+    }
+
+    const hashlib = this.authService.rightsWithValues()["totp_hashlib"];
+    if (hashlib) {
+      this.hashAlgorithmControl.setValue(hashlib, { emitEvent: false });
+      this.hashAlgorithmControl.disable({ emitEvent: false });
+    }
+    const otpLength = this.authService.rightsWithValues()["totp_otplen"];
+    if (otpLength) {
+      const otpLengthNumber = parseInt(otpLength, 10);
+      if (!isNaN(otpLengthNumber)) {
+        this.otpLengthFormControl.setValue(otpLengthNumber, { emitEvent: false });
+        this.otpLengthFormControl.disable({ emitEvent: false });
+      }
+    }
+    const timeStep = this.authService.rightsWithValues()["totp_timestep"];
+    if (timeStep) {
+      const timeStepNumber = parseInt(timeStep, 10);
+      if (!isNaN(timeStepNumber)) {
+        this.timeStepControl.setValue(timeStepNumber, { emitEvent: false });
+        this.timeStepControl.disable({ emitEvent: false });
+      }
     }
   }
 

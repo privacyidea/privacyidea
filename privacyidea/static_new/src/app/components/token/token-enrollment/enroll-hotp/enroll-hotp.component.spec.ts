@@ -23,8 +23,9 @@ import { EnrollHotpComponent } from "./enroll-hotp.component";
 import { TokenService } from "../../../../services/token/token.service";
 import { AuthService } from "../../../../services/auth/auth.service";
 import { HotpApiPayloadMapper } from "../../../../mappers/token-api-payload/hotp-token-api-payload.mapper";
-import { MockTokenService } from "../../../../../testing/mock-services";
+import { MockSystemService, MockTokenService } from "../../../../../testing/mock-services";
 import { MockAuthService } from "../../../../../testing/mock-services/mock-auth-service";
+import { SystemService } from "../../../../services/system/system.service";
 
 
 describe("EnrollHotpComponent", () => {
@@ -32,6 +33,7 @@ describe("EnrollHotpComponent", () => {
   let fixture: ComponentFixture<EnrollHotpComponent>;
   let tokenService: MockTokenService;
   let authService: MockAuthService;
+  let systemService: MockSystemService;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -39,7 +41,8 @@ describe("EnrollHotpComponent", () => {
       providers: [
         { provide: TokenService, useClass: MockTokenService },
         { provide: AuthService, useClass: MockAuthService },
-        { provide: HotpApiPayloadMapper, useValue: {} }
+        { provide: HotpApiPayloadMapper, useValue: {} },
+        { provide: SystemService, useClass: MockSystemService }
       ]
     }).compileComponents();
   });
@@ -47,8 +50,11 @@ describe("EnrollHotpComponent", () => {
   function createAndInit() {
     fixture = TestBed.createComponent(EnrollHotpComponent);
     component = fixture.componentInstance;
+
     tokenService = TestBed.inject(TokenService) as unknown as MockTokenService;
     authService = TestBed.inject(AuthService) as unknown as MockAuthService;
+    systemService = TestBed.inject(SystemService) as unknown as MockSystemService;
+
     jest.spyOn(component.additionalFormFieldsChange, "emit");
     jest.spyOn(component.enrollmentArgsGetterChange, "emit");
     fixture.detectChanges();
@@ -69,13 +75,64 @@ describe("EnrollHotpComponent", () => {
     expect(component.enrollmentArgsGetterChange.emit).toHaveBeenCalledWith(component.enrollmentArgsGetter);
   });
 
-  it("should initially have generateOnServer enabled and otpKey disabled", () => {
+  it("Check default values are set correctly on init", () => {
     createAndInit();
 
     expect(component.generateOnServerFormControl.value).toBe(true);
     expect(component.generateOnServerFormControl.disabled).toBe(false);
     expect(component.otpKeyFormControl.value).toEqual("");
     expect(component.otpKeyFormControl.disabled).toBe(true);
+    expect(component.otpLengthFormControl.value).toBe(6);
+    expect(component.otpLengthFormControl.disabled).toBe(false);
+    expect(component.hashAlgorithmFormControl.value).toBe("sha1");
+    expect(component.hashAlgorithmFormControl.disabled).toBe(false);
+  });
+
+  it("Default values from system config are used", () => {
+    createAndInit();
+    const mockConfig = {
+      "totp.hashlib": "sha256",
+      "totp.timeStep": "60",
+      "hotp.hashlib": "sha512"
+    };
+    systemService.systemConfig.set(mockConfig);
+
+    fixture = TestBed.createComponent(EnrollHotpComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+
+    expect(component.hashAlgorithmFormControl.value).toBe("sha512");
+    expect(component.hashAlgorithmFormControl.disabled).toBe(false);
+  });
+
+  it("Uses policy values for hashlib and otplen over system config defaults", () => {
+    createAndInit();
+    const mockConfig = {
+      "hotp.hashlib": "sha512"
+    };
+    systemService.systemConfig.set(mockConfig);
+    authService.rightsWithValues.set({ hotp_hashlib: "sha256", hotp_otplen: "8" });
+    fixture = TestBed.createComponent(EnrollHotpComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+
+    function checkPolicyEnforcedValues() {
+      expect(component.hashAlgorithmFormControl.value).toBe("sha256");
+      expect(component.hashAlgorithmFormControl.disabled).toBe(true);
+      expect(component.otpLengthFormControl.value).toBe(8);
+      expect(component.otpLengthFormControl.disabled).toBe(true);
+    }
+
+    checkPolicyEnforcedValues();
+
+    // disable - enable all controls should not change policy-enforced values
+    fixture.componentRef.setInput("disabled", true);
+    fixture.detectChanges();
+    checkPolicyEnforcedValues();
+
+    fixture.componentRef.setInput("disabled", false);
+    fixture.detectChanges();
+    checkPolicyEnforcedValues();
   });
 
   it("disables generateOnServer when policy forces server-side key generation", () => {

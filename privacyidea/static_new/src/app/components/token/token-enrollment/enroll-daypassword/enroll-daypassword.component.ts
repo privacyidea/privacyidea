@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, effect, EventEmitter, inject, input, Input, OnInit, Output } from "@angular/core";
+import { Component, computed, effect, EventEmitter, inject, input, Input, OnInit, Output } from "@angular/core";
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatOption } from "@angular/material/core";
@@ -34,6 +34,7 @@ import {
   NotificationService,
   NotificationServiceInterface
 } from "../../../../services/notification/notification.service";
+import { SystemService, SystemServiceInterface } from "../../../../services/system/system.service";
 
 export interface DaypasswordEnrollmentOptions extends TokenEnrollmentData {
   type: "daypassword";
@@ -67,6 +68,7 @@ export class EnrollDaypasswordComponent implements OnInit {
   protected readonly enrollmentMapper: DaypasswordApiPayloadMapper = inject(DaypasswordApiPayloadMapper);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
+  protected readonly systemService: SystemServiceInterface = inject(SystemService);
   readonly otpLengthOptions = [6, 8];
   readonly hashAlgorithmOptions = [
     { value: "sha1", viewValue: "SHA1" },
@@ -87,8 +89,10 @@ export class EnrollDaypasswordComponent implements OnInit {
   disabled = input<boolean>(false);
 
   otpKeyFormControl = new FormControl<string>({ value: "", disabled: true });
-  hashAlgorithmControl = new FormControl<string>("sha256", [Validators.required]);
-  timeStepControl = new FormControl<string>("24h", [Validators.required]);
+  defaultHashlib = computed(() => this.systemService.systemConfig()["daypassword.hashlib"] ?? "sha1");
+  hashAlgorithmControl = new FormControl<string>(this.defaultHashlib(), [Validators.required]);
+  defaultTimeStep = computed(() => this.systemService.systemConfig()["daypassword.timeStep"] ?? "24h");
+  timeStepControl = new FormControl<string>(this.defaultTimeStep(), [Validators.required]);
   generateOnServerControl = new FormControl(true);
   otpLengthControl = new FormControl<number>(6, [Validators.required]);
 
@@ -136,9 +140,28 @@ export class EnrollDaypasswordComponent implements OnInit {
         this.updateOtpKeyControlState(generateOnServer ?? true);
       });
     }
+
+    const hashlib = this.authService.rightsWithValues()["daypassword_hashlib"];
+    if (hashlib) {
+      this.hashAlgorithmControl.setValue(hashlib, { emitEvent: false });
+      this.hashAlgorithmControl.disable({ emitEvent: false });
+    }
+    const otpLength = this.authService.rightsWithValues()["daypassword_otplen"];
+    if (otpLength) {
+      const otpLengthNumber = parseInt(otpLength, 10);
+      if (!isNaN(otpLengthNumber)) {
+        this.otpLengthControl.setValue(otpLengthNumber, { emitEvent: false });
+        this.otpLengthControl.disable({ emitEvent: false });
+      }
+    }
+    const timeStep = this.authService.rightsWithValues()["daypassword_timestep"];
+    if (timeStep) {
+      this.timeStepControl.setValue(timeStep, { emitEvent: false });
+      this.timeStepControl.disable({ emitEvent: false });
+    }
   }
 
-  enrollmentArgsGetter = ( basicOptions: TokenEnrollmentData ): {
+  enrollmentArgsGetter = (basicOptions: TokenEnrollmentData): {
     data: DaypasswordEnrollmentData;
     mapper: DaypasswordApiPayloadMapper;
   } | null => {

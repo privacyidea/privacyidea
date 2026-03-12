@@ -22,16 +22,27 @@ import { EnrollDaypasswordComponent } from "./enroll-daypassword.component";
 import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
+import { MockSystemService } from "../../../../../testing/mock-services";
+import { SystemService } from "../../../../services/system/system.service";
+import { MockAuthService } from "../../../../../testing/mock-services/mock-auth-service";
+import { AuthService } from "../../../../services/auth/auth.service";
 
 describe("EnrollDaypasswordComponent", () => {
   let component: EnrollDaypasswordComponent;
   let fixture: ComponentFixture<EnrollDaypasswordComponent>;
+  let systemService: MockSystemService;
+  let authService: MockAuthService;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [EnrollDaypasswordComponent, BrowserAnimationsModule],
-      providers: [provideHttpClient(), provideHttpClientTesting()]
+      providers: [provideHttpClient(), provideHttpClientTesting(),
+        { provide: SystemService, useClass: MockSystemService },
+        { provide: AuthService, useClass: MockAuthService }]
     }).compileComponents();
+
+    systemService = TestBed.inject(SystemService) as unknown as MockSystemService;
+    authService = TestBed.inject(AuthService) as unknown as MockAuthService;
 
     fixture = TestBed.createComponent(EnrollDaypasswordComponent);
     component = fixture.componentInstance;
@@ -42,11 +53,71 @@ describe("EnrollDaypasswordComponent", () => {
     expect(component).toBeTruthy();
   });
 
-  it("should initially have generateOnServer enabled and otpKey disabled", () => {
+  it("Check default values are set correctly on init", () => {
     expect(component.generateOnServerControl.value).toBe(true);
     expect(component.generateOnServerControl.disabled).toBe(false);
     expect(component.otpKeyFormControl.value).toEqual("");
     expect(component.otpKeyFormControl.disabled).toBe(true);
+    expect(component.otpLengthControl.value).toBe(6);
+    expect(component.otpLengthControl.disabled).toBe(false);
+    expect(component.hashAlgorithmControl.value).toBe("sha1");
+    expect(component.hashAlgorithmControl.disabled).toBe(false);
+    expect(component.timeStepControl.value).toBe("24h");
+    expect(component.timeStepControl.disabled).toBe(false);
+  });
+
+  it("Default values from system config are used", () => {
+    const mockConfig = {
+      "totp.hashlib": "sha256",
+      "totp.timeStep": 60,
+      "daypassword.hashlib": "sha512",
+      "daypassword.timeStep": "12h"
+    };
+    systemService.systemConfig.set(mockConfig);
+    fixture = TestBed.createComponent(EnrollDaypasswordComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+
+    expect(component.hashAlgorithmControl.value).toBe("sha512");
+    expect(component.hashAlgorithmControl.disabled).toBe(false);
+    expect(component.timeStepControl.value).toBe("12h");
+    expect(component.timeStepControl.disabled).toBe(false);
+  });
+
+  it("Uses policy values for hashlib, otplen, and time step over system config defaults", () => {
+    const mockConfig = {
+      "daypassword.hashlib": "sha512",
+      "daypassword.timeStep": "12h"
+    };
+    systemService.systemConfig.set(mockConfig);
+    authService.rightsWithValues.set({
+      daypassword_hashlib: "sha256",
+      daypassword_otplen: "8",
+      daypassword_timestep: "48h"
+    });
+    fixture = TestBed.createComponent(EnrollDaypasswordComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+
+    function checkPolicyEnforcedValues() {
+      expect(component.hashAlgorithmControl.value).toBe("sha256");
+      expect(component.hashAlgorithmControl.disabled).toBe(true);
+      expect(component.timeStepControl.value).toBe("48h");
+      expect(component.timeStepControl.disabled).toBe(true);
+      expect(component.otpLengthControl.value).toBe(8);
+      expect(component.otpLengthControl.disabled).toBe(true);
+    }
+
+    checkPolicyEnforcedValues();
+
+    // disable - enable all controls should not change policy-enforced values
+    fixture.componentRef.setInput("disabled", true);
+    fixture.detectChanges();
+    checkPolicyEnforcedValues();
+
+    fixture.componentRef.setInput("disabled", false);
+    fixture.detectChanges();
+    checkPolicyEnforcedValues();
   });
 
   describe("ngOnInit with enrollmentData input", () => {
@@ -57,7 +128,7 @@ describe("EnrollDaypasswordComponent", () => {
         otpLength: 8,
         hashAlgorithm: "SHA512",
         timeStep: "12h",
-        generateOnServer: false,
+        generateOnServer: false
       });
       component.ngOnInit();
       expect(component.otpKeyFormControl.value).toBe("otp-key-123");
@@ -74,7 +145,7 @@ describe("EnrollDaypasswordComponent", () => {
         otpLength: undefined,
         hashAlgorithm: undefined,
         timeStep: undefined,
-        generateOnServer: undefined,
+        generateOnServer: undefined
       });
       component.ngOnInit();
       expect(component.otpKeyFormControl.value).toBe("");
