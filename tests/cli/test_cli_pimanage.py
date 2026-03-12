@@ -16,19 +16,22 @@
 # SPDX-FileCopyrightText: 2024 Paul Lettich <paul.lettich@netknights.it>
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
+import datetime as dt
+import pathlib
+import tempfile
+
 import pytest
 import sqlalchemy as sa
 from sqlalchemy.orm.session import close_all_sessions
 
 from privacyidea.app import create_app
-from privacyidea.models import db, Challenge
 from privacyidea.cli.pimanage import cli as pi_manage
 from privacyidea.lib.lifecycle import call_finalizers
 from privacyidea.lib.resolver import (save_resolver, delete_resolver,
                                       get_resolver_list)
+from privacyidea.models import db, Challenge
 from .base import CliTestCase
 from ..base import PWFILE
-import datetime as dt
 
 
 class PIManageAdminTestCase(CliTestCase):
@@ -66,12 +69,161 @@ class PIManageBackupTestCase(CliTestCase):
         result = runner.invoke(pi_manage, ["backup", "restore", "-h"])
         self.assertIn("Usage: cli backup restore [OPTIONS] BACKUP_FILE",
                       result.output, result)
+        self.assertIn("--keep-db-uri", result.output, result)
 
-    def test_02_pimanage_backup_create(self):
+    @staticmethod
+    def _make_fake_run(live_pi_cfg, backup_uri):
+        """
+        Return a ``subprocess.run`` replacement that simulates two tar calls:
+
+        1. ``tar -ztf <archive>`` (listing) – returns a two-line stdout with
+           the relative paths of pi.cfg and the SQL dump so that
+           ``backup_restore`` can locate both files inside the archive.
+
+        2. ``tar -zxf <archive> -C /`` (extraction) – writes the backup
+           content (``backup_uri``) into ``live_pi_cfg`` and creates a
+           placeholder SQL file, mimicking what a real tar extraction would do.
+
+
+        Note on path handling: ``backup_restore`` reads the tar listing and
+        prepends "/" to each line to reconstruct absolute paths.  We therefore
+        strip the leading "/" from the absolute ``live_pi_cfg`` path so that
+        prepending "/" gives back the original absolute path.
+        """
+        import unittest.mock as mock
+
+        sql_file_path = live_pi_cfg.parent / "dbdump-20240101-1200.sql"
+        # Strip the leading "/" so backup_restore's "/{line}" reconstruction
+        # resolves to the same absolute path we started with.
+        cfg_rel = str(live_pi_cfg).lstrip("/")
+        sql_rel = str(sql_file_path).lstrip("/")
+
+        def fake_run(cmd, **kwargs):
+            r = mock.MagicMock()
+            r.returncode = 0
+            if "-ztf" in cmd:
+                # Simulate `tar -ztf fake.tgz` listing the archive contents.
+                r.stdout = f"{cfg_rel}\n{sql_rel}\n"
+            elif "-zxf" in cmd:
+                # Simulate `tar -zxf fake.tgz -C /` extraction:
+                # overwrite pi.cfg with the content that was stored in the
+                # backup (backup_uri), and create a minimal SQL file.
+                live_pi_cfg.write_text(
+                    f'SQLALCHEMY_DATABASE_URI = {repr(backup_uri)}\n'
+                    'SECRET_KEY = "secret"\n'
+                )
+                sql_file_path.write_text("-- sql dump placeholder\n")
+            return r
+
+        return fake_run
+
+    def _run_restore_with_mocks(self, live_pi_cfg, backup_uri, live_uri):
+        """
+        Invoke ``backup restore --keep-db-uri fake.tgz`` with all external
+        calls mocked so the test is fully self-contained:
+
+        - ``subprocess.run`` is replaced by :meth:`_make_fake_run` which
+          fakes the two tar invocations (listing + extraction).
+        - ``shutil.copyfile`` is patched out because for SQLite URIs the
+          restore command would try to copy the dump to the database path
+          which does not exist in the test environment.
+        - ``os.unlink`` is patched out for the same reason.
+
+        Before invoking the command, ``live_pi_cfg`` is written with
+        ``live_uri`` so that ``--keep-db-uri`` has an existing config to read.
+        After extraction the fake tar overwrites it with ``backup_uri``;
+        the command should then patch it back to ``live_uri``.
+        """
+        import unittest.mock as mock
+
+        # Pre-populate the live config that --keep-db-uri will read BEFORE
+        # extraction.  The fake tar extraction will overwrite this with
+        # backup_uri; the command must then restore it to live_uri.
+        live_pi_cfg.write_text(
+            f'SQLALCHEMY_DATABASE_URI = {repr(live_uri)}\n'
+            'SECRET_KEY = "secret"\n'
+        )
+
+        runner = self.app.test_cli_runner()
+        with mock.patch("privacyidea.cli.pimanage.backup.subprocess.run",
+                        side_effect=self._make_fake_run(live_pi_cfg, backup_uri)):
+            with mock.patch("privacyidea.cli.pimanage.backup.shutil.copyfile"):
+                with mock.patch("privacyidea.cli.pimanage.backup.os.unlink"):
+                    return runner.invoke(
+                        pi_manage,
+                        ["backup", "restore", "--keep-db-uri", "fake.tgz"],
+                    )
+
+    def test_02_keep_db_uri_replaces_backup_uri_in_config(self):
+        """
+        Core --keep-db-uri behaviour: after a restore the pi.cfg on disk must
+        contain the *live* URI (the one that was there before the restore), not
+        the URI that was stored inside the backup archive.
+        """
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp = pathlib.Path(tmp_dir)
+            live_pi_cfg = tmp / "pi.cfg"
+
+            live_uri = "sqlite:////live/data.sqlite"
+            backup_uri = "sqlite:////backup/data.sqlite"
+
+            result = self._run_restore_with_mocks(live_pi_cfg, backup_uri, live_uri)
+
+            # Assert the command completed successfully before checking file contents.
+            self.assertEqual(result.exit_code, 0, result.output)
+            self.assertIsNone(result.exception, result.exception)
+
+            final_text = live_pi_cfg.read_text()
+            # The live URI must survive the restore.
+            self.assertIn(repr(live_uri), final_text, final_text)
+            # The backup URI must have been replaced.
+            self.assertNotIn(repr(backup_uri), final_text, final_text)
+            # The operator must be told which source was used.
+            self.assertIn("using database URI from live config", result.output, result.output)
+
+    def test_03_keep_db_uri_live_config_unreadable_falls_back_to_backup(self):
+        """
+        When --keep-db-uri is given but the live pi.cfg cannot be parsed
+        (e.g. it is syntactically broken), the restore must:
+
+        - emit a warning so the operator knows why the flag was ignored, and
+        - complete successfully using the URI from the backup archive.
+        """
+        import unittest.mock as mock
+
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp = pathlib.Path(tmp_dir)
+            live_pi_cfg = tmp / "pi.cfg"
+            backup_uri = "sqlite:////backup/data.sqlite"
+
+            # Write a syntactically invalid Python file so Flask's from_pyfile
+            # raises a SyntaxError, triggering the fallback path.
+            live_pi_cfg.write_text("this is not valid python !!!\n")
+
+            runner = self.app.test_cli_runner()
+            with mock.patch("privacyidea.cli.pimanage.backup.subprocess.run",
+                            side_effect=self._make_fake_run(live_pi_cfg, backup_uri)):
+                with mock.patch("privacyidea.cli.pimanage.backup.shutil.copyfile"):
+                    with mock.patch("privacyidea.cli.pimanage.backup.os.unlink"):
+                        result = runner.invoke(
+                            pi_manage,
+                            ["backup", "restore", "--keep-db-uri", "fake.tgz"],
+                        )
+
+            # Assert the command completed successfully.
+            self.assertEqual(result.exit_code, 0, result.output)
+            self.assertIsNone(result.exception, result.exception)
+
+            # A warning about the read failure must appear in the output.
+            self.assertIn("could not read live config", result.output, result.output)
+            # The operator must also be told the backup URI is being used.
+            self.assertIn("Using database URI from backup", result.output, result.output)
+
+    def test_04_pimanage_backup_create(self):
         # TODO: create backup from an SQLite based configuration
         pass
 
-    def test_03_pimanage_backup_restore(self):
+    def test_05_pimanage_backup_restore(self):
         # TODO: restore backup from a backup file and check consistency
         pass
 

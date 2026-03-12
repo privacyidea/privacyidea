@@ -69,8 +69,8 @@ from privacyidea.lib.token import (create_tokenclass_object,
                                    set_tokengroups)
 from privacyidea.lib.token import log as token_log
 from privacyidea.lib.token import weigh_token_type, import_tokens, export_tokens
-from privacyidea.lib.tokenclass import DATE_FORMAT, ROLLOUTSTATE
-from privacyidea.lib.tokenclass import (TokenClass, TOKENKIND,
+from privacyidea.lib.tokenclass import DATE_FORMAT, RolloutState
+from privacyidea.lib.tokenclass import (TokenClass, Tokenkind,
                                         FAILCOUNTER_EXCEEDED,
                                         FAILCOUNTER_CLEAR_TIMEOUT)
 from privacyidea.lib.tokengroup import set_tokengroup, delete_tokengroup
@@ -208,7 +208,7 @@ class TokenTestCase(MyTestCase):
 
         # get tokens for a user with an invalid realm
         user = User("test", realm="deleted")
-        self.assertRaises(ResourceNotFoundError, get_tokens, user=user)
+        self.assertRaises(UserError, get_tokens, user=user)
 
         # wildcard matches do not work for the ``serial`` parameter
         tokenobject_list = get_tokens(serial="hotptoke*")
@@ -930,7 +930,7 @@ class TokenTestCase(MyTestCase):
         end = start + datetime.timedelta(days=5)
         invalid_token.set_validity_period_start(start.isoformat())
         invalid_token.set_validity_period_end(end.isoformat())
-        clientwait_token.token.rollout_state = ROLLOUTSTATE.CLIENTWAIT
+        clientwait_token.token.rollout_state = RolloutState.CLIENTWAIT
         auth_max_token.set_count_auth(100)
         auth_max_token.set_count_auth_max(100)
 
@@ -1232,6 +1232,26 @@ class TokenTestCase(MyTestCase):
         tokens = get_tokens_paginate(user=User(login="hans", realm=self.realm2), allowed_realms=[self.realm1])["tokens"]
         self.assertEqual(1, len(tokens))
         token.delete_token()
+
+        # Realm-only filter (no login in the user object)
+        # A User with empty login but a realm set should filter by realm without raising.
+        self.setUp_user_realm2()
+        tok1 = init_token({"type": "hotp", "genkey": True}, user=User("hans", self.realm2))
+        tok2 = init_token({"type": "hotp", "genkey": True}, user=User("cornelius", self.realm1))
+        realm2_only = User(login="", realm=self.realm2)
+        tokens = get_tokens_paginate(user=realm2_only)["tokens"]
+        serials = [t["serial"] for t in tokens]
+        self.assertIn(tok1.get_serial(), serials)
+        self.assertNotIn(tok2.get_serial(), serials)
+        tok1.delete_token()
+        tok2.delete_token()
+
+        # Unresolvable user raises ERR904 "user can not be found in any resolver..."
+        unresolvable = User(login="no_such_user_xyz", realm=self.realm1)
+        # Confirm the user is not resolvable (resolver will be None/empty)
+        self.assertFalse(unresolvable.resolver)
+        with self.assertRaises(UserError):
+            tokens = get_tokens_paginate(user=unresolvable)["tokens"]
 
     def test_42_sort_tokens(self):
         # return pagination
@@ -1692,52 +1712,52 @@ class TokenTestCase(MyTestCase):
         # A normal token will be of kind "software"
         tok = init_token({"type": "totp", "otpkey": self.otpkey})
         kind = tok.get_tokeninfo("tokenkind")
-        self.assertEqual(kind, TOKENKIND.SOFTWARE)
+        self.assertEqual(kind, Tokenkind.SOFTWARE)
         tok.delete_token()
 
         # A token, that is imported, will be of kind "hardware"
         tok = init_token({"type": "totp", "otpkey": self.otpkey},
-                         tokenkind=TOKENKIND.HARDWARE)
+                         tokenkind=Tokenkind.HARDWARE)
         kind = tok.get_tokeninfo("tokenkind")
-        self.assertEqual(kind, TOKENKIND.HARDWARE)
+        self.assertEqual(kind, Tokenkind.HARDWARE)
         tok.delete_token()
 
         # A yubikey initialized as HOTP is hardware
         tok = init_token({"type": "hotp", "otpkey": self.otpkey,
                           "serial": "UBOM111111"})
         kind = tok.get_tokeninfo("tokenkind")
-        self.assertEqual(kind, TOKENKIND.HARDWARE)
+        self.assertEqual(kind, Tokenkind.HARDWARE)
         tok.delete_token()
 
         # A yubikey and yubicloud tokentype is hardware
         tok = init_token({"type": "yubikey", "otpkey": self.yubikey_token_key})
         kind = tok.get_tokeninfo("tokenkind")
-        self.assertEqual(kind, TOKENKIND.HARDWARE)
+        self.assertEqual(kind, Tokenkind.HARDWARE)
         tok.delete_token()
 
         tok = init_token({"type": "yubico",
                           "yubico.tokenid": "123456789012"})
         kind = tok.get_tokeninfo("tokenkind")
-        self.assertEqual(kind, TOKENKIND.HARDWARE)
+        self.assertEqual(kind, Tokenkind.HARDWARE)
         tok.delete_token()
 
         # 4eyes, radius and remote are virtual tokens
         tok = init_token({"type": "radius", "radius.identifier": "1",
                           "radius.user": "hans"})
         kind = tok.get_tokeninfo("tokenkind")
-        self.assertEqual(kind, TOKENKIND.VIRTUAL)
+        self.assertEqual(kind, Tokenkind.VIRTUAL)
         tok.delete_token()
 
         tok = init_token({"type": "remote", "remote.server": "1",
                           "radius.user": "hans"})
         kind = tok.get_tokeninfo("tokenkind")
-        self.assertEqual(kind, TOKENKIND.VIRTUAL)
+        self.assertEqual(kind, Tokenkind.VIRTUAL)
         tok.delete_token()
 
         tok = init_token({"type": "4eyes", "4eyes": "realm1",
                           "separator": ","})
         kind = tok.get_tokeninfo("tokenkind")
-        self.assertEqual(kind, TOKENKIND.VIRTUAL)
+        self.assertEqual(kind, Tokenkind.VIRTUAL)
         tok.delete_token()
 
     def test_52_import_token(self):

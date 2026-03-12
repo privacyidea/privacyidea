@@ -59,10 +59,10 @@ from flask import (Blueprint, request, g, current_app)
 from ..lib.container import find_container_by_serial, add_token_to_container, add_not_authorized_tokens_result
 from ..lib.log import log_with
 from .lib.utils import optional, send_result, send_csv_result, required, getParam, get_optional, get_required
-from ..lib.tokenclass import ROLLOUTSTATE
+from ..lib.tokenclass import RolloutState
 from ..lib.tokens.passkeytoken import PasskeyTokenClass
 from ..lib.tokens.webauthntoken import WebAuthnTokenClass
-from ..lib.user import get_user_from_param
+from ..lib.user import get_user_from_param, User
 from ..lib.token import (init_token, get_tokens_paginate, assign_token,
                          unassign_token, remove_token, enable_token,
                          revoke_token,
@@ -311,7 +311,7 @@ def init():
         # If the token is a fido2 token, find all enrolled fido2 token for the user
         # to avoid registering the same authenticator multiple times
         if (token.get_type().lower() in [PasskeyTokenClass.get_class_type(), WebAuthnTokenClass.get_class_type()]
-                and token.rollout_state == ROLLOUTSTATE.CLIENTWAIT):
+                and token.rollout_state == RolloutState.CLIENTWAIT):
             param["registered_credential_ids"] = get_credential_ids_for_user(user)
 
         # The token was created successfully, so we add token specific init details like the Google URL to the response
@@ -439,7 +439,13 @@ def list_api():
     :query type: Display only token of type. You can do a not strict matching by
         specifying a tokentype like "*otp*", to find hotp and totp tokens.
     :query type_list: Comma separated list of token types. Display only tokens of the types in the list.
-    :query user: display tokens of this user
+    :query user: **Admin only.** Filter by this username. Can include the realm as ``user@realm``. When
+        combined with the ``realm`` parameter the realm from ``realm`` takes
+        precedence. This parameter is ignored for callers with the ``user`` role —
+        they always see only their own tokens.
+    :query realm: **Admin only.** Realm of the user given in the ``user`` parameter. When provided
+        without a ``user`` parameter, returns tokens assigned to any user in that realm.
+        Ignored for callers with the ``user`` role.
     :query tokenrealm: takes a realm, only the tokens in this realm will be
         displayed
     :query basestring description: Display token with this kind of description
@@ -465,7 +471,6 @@ def list_api():
     :rtype: json
     """
     param = request.all_data
-    user = request.User
     serial = getParam(param, "serial", optional)
     page = int(getParam(param, "page", optional, default=1))
     tokentype = getParam(param, "type", optional)
@@ -479,6 +484,21 @@ def list_api():
     realm = getParam(param, "tokenrealm", optional)
     userid = getParam(param, "userid", optional)
     resolver = getParam(param, "resolver", optional)
+
+    # Only admins may use the "user" and "realm" query parameters to query
+    # tokens of arbitrary users or realms. For callers with role "user" we
+    # always use request.User (which resolve_logged_in_user already forced to
+    # their own identity) so that a regular user can never see other users'
+    # tokens via these params.
+    is_admin = g.logged_in_user.get("role") == "admin"
+    user_param = getParam(param, "user", optional)
+    realm_param = getParam(param, "realm", optional)
+    if is_admin and user_param:
+        user = get_user_from_param(param)
+    elif is_admin and realm_param:
+        user = User(login="", realm=realm_param)
+    else:
+        user = request.User
     output_format = getParam(param, "outform", optional)
     assigned = getParam(param, "assigned", optional)
     active = getParam(param, "active", optional)

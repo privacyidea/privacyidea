@@ -156,7 +156,7 @@ class UtilsTestCase(MyApiTestCase):
                                 key=key,
                                 algorithm="RS256")
 
-        # The authenticated but non-existing user tries for fetch his tokens
+        # The authenticated but non-existing user tries to fetch his tokens
         with self.app.test_request_context('/token/',
                                            method='GET',
                                            headers={"Authorization": auth_token}):

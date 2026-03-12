@@ -38,6 +38,7 @@ import { ROUTE_PATHS } from "../../route_paths";
 import { PiResponse } from "../../app.component";
 import { MockAuthService } from "../../../testing/mock-services/mock-auth-service";
 import { environment } from "../../../environments/environment";
+import { NotificationService } from "../notification/notification.service";
 
 function buildUser(username: string): UserData {
   return {
@@ -85,6 +86,7 @@ describe("UserService", () => {
   let httpMock: HttpTestingController;
   let contentServiceMock: MockContentService;
   let authServiceMock: MockAuthService;
+  let notificationServiceMock: MockNotificationService;
 
   let users: UserData[];
   let alice: UserData;
@@ -100,8 +102,8 @@ describe("UserService", () => {
         { provide: AuthService, useClass: MockAuthService },
         { provide: ContentService, useClass: MockContentService },
         { provide: TokenService, useClass: MockTokenService },
-        MockLocalService,
-        MockNotificationService
+        { provide: NotificationService, useClass: MockNotificationService },
+        MockLocalService
       ]
     });
 
@@ -110,6 +112,7 @@ describe("UserService", () => {
     httpMock = TestBed.inject(HttpTestingController);
     contentServiceMock = TestBed.inject(ContentService) as unknown as MockContentService;
     authServiceMock = TestBed.inject(AuthService) as unknown as MockAuthService;
+    notificationServiceMock = TestBed.inject(NotificationService) as unknown as MockNotificationService;
 
     alice = buildUser("Alice");
     users = [alice, buildUser("Bob"), buildUser("Charlie")];
@@ -401,6 +404,129 @@ describe("UserService", () => {
       TestBed.flushEffects();
 
       expect(userService.users()).toHaveLength(0);
+    });
+  });
+
+  describe("UserService createUser", () => {
+    it("should create user successfully", () => {
+      const resolver = "test";
+      const userData = { username: "new-user" } as any;
+      let resultValue: boolean | undefined;
+      userService.createUser(resolver, userData).subscribe(result => {
+        resultValue = result;
+      });
+      const req = httpMock.expectOne(r => r.method === "POST" && r.url.includes("/user/"));
+      req.flush({ result: { value: true, status: true } });
+      expect(resultValue).toBe(true);
+      expect(req.request.body).toEqual({ user: "new-user", resolver });
+    });
+
+    it("should handle shallow failure of creating user", () => {
+      const resolver = "test";
+      const userData = { username: "new-user" } as any;
+      let resultValue: boolean | undefined;
+      userService.createUser(resolver, userData).subscribe(result => {
+        resultValue = result;
+      });
+      const req = httpMock.expectOne(r => r.method === "POST" && r.url.includes("/user/"));
+      req.flush({ result: { value: true, status: false } });
+      expect(resultValue).toBe(false);
+      expect(req.request.body).toEqual({ user: "new-user", resolver });
+    });
+
+    it("should handle create user failure", () => {
+      const resolver = "test";
+      const userData = { username: "fail-user" } as any;
+      let resultValue: boolean | undefined;
+      userService.createUser(resolver, userData).subscribe(result => {
+        resultValue = result;
+      });
+      const req = httpMock.expectOne(r => r.method === "POST" && r.url.includes("/user/"));
+      req.flush({ result: { status: false, error: { message: "fail message" } } },
+        { status: 500, statusText: "Server Error" });
+      expect(resultValue).toBe(false);
+      expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith("Failed to create user fail-user. fail" +
+        " message");
+    });
+  });
+
+  describe("UserService editUser", () => {
+    it("should edit user successfully", () => {
+      const resolver = "test";
+      const userData = { username: "edit-user" } as any;
+      let resultValue: boolean | undefined;
+      userService.editUser(resolver, userData).subscribe(result => {
+        resultValue = result;
+      });
+      const req = httpMock.expectOne(r => r.method === "PUT" && r.url.includes("/user/"));
+      req.flush({ result: { value: true, status: true } });
+      expect(resultValue).toBe(true);
+      expect(req.request.body).toEqual({ user: "edit-user", resolver });
+    });
+
+    it("should handle shallow edit user failure", () => {
+      const resolver = "test";
+      const userData = { username: "edit-user" } as any;
+      let resultValue: boolean | undefined;
+      userService.editUser(resolver, userData).subscribe(result => {
+        resultValue = result;
+      });
+      const req = httpMock.expectOne(r => r.method === "PUT" && r.url.includes("/user/"));
+      req.flush({ result: { value: true, status: false } });
+      expect(resultValue).toBe(false);
+      expect(req.request.body).toEqual({ user: "edit-user", resolver });
+    });
+
+    it("should handle edit user failure", () => {
+      const resolver = "test";
+      const userData = { username: "fail-user" } as any;
+      let resultValue: boolean | undefined;
+      userService.editUser(resolver, userData).subscribe(result => {
+        resultValue = result;
+      });
+      const req = httpMock.expectOne(r => r.method === "PUT" && r.url.includes("/user/"));
+      req.flush({ result: { status: false, error: { message: "fail" } } }, { status: 500, statusText: "Server Error" });
+      expect(resultValue).toBe(false);
+      expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith("Failed to update user fail-user. fail");
+    });
+  });
+
+  describe("UserService deleteUser", () => {
+    it("should delete user successfully", () => {
+      const resolver = "test";
+      const username = "deleteuser";
+      let resultValue: boolean | undefined;
+      userService.deleteUser(resolver, username).subscribe(result => {
+        resultValue = result;
+      });
+      const req = httpMock.expectOne(r => r.method === "DELETE" && r.url.includes("/user/"));
+      req.flush({ result: { value: true, status: true } });
+      expect(resultValue).toBe(true);
+    });
+
+    it("should handle shallow failure", () => {
+      const resolver = "test";
+      const username = "deleteuser";
+      let resultValue: boolean | undefined;
+      userService.deleteUser(resolver, username).subscribe(result => {
+        resultValue = result;
+      });
+      const req = httpMock.expectOne(r => r.method === "DELETE" && r.url.includes("/user/"));
+      req.flush({ result: { value: true, status: false } });
+      expect(resultValue).toBe(false);
+    });
+
+    it("should handle delete user failure", () => {
+      const resolver = "test";
+      const username = "fail-user";
+      let resultValue: boolean | undefined;
+      userService.deleteUser(resolver, username).subscribe(result => {
+        resultValue = result;
+      });
+      const req = httpMock.expectOne(r => r.method === "DELETE" && r.url.includes("/user/"));
+      req.flush({ result: { error: { message: "fail" } } }, { status: 500, statusText: "Server Error" });
+      expect(resultValue).toBe(false);
+      expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith("Failed to delete user fail-user. fail");
     });
   });
 });

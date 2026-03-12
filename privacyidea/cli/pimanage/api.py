@@ -65,7 +65,7 @@ def api_createtoken(ctx, role, days, realm, username):
         "nonce": geturandom(hex=True),
         "role": role,
         "authtype": authtype,
-        "exp": datetime.datetime.utcnow() + validity,
+        "exp": datetime.datetime.now(datetime.timezone.utc) + validity,
         "rights": "TODO"},
         secret)
     click.echo(f"Username:   {username}")

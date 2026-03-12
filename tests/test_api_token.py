@@ -50,9 +50,9 @@ from privacyidea.lib.token import (get_tokens, remove_token, get_one_token,
                                    check_serial_pass, unassign_token, init_token,
                                    assign_token, token_exist, add_tokeninfo)
 from privacyidea.lib.tokenclass import DATE_FORMAT
-from privacyidea.lib.tokenclass import ROLLOUTSTATE
+from privacyidea.lib.tokenclass import RolloutState
 from privacyidea.lib.tokens.hotptoken import VERIFY_ENROLLMENT_MESSAGE
-from privacyidea.lib.tokens.smstoken import SMSACTION
+from privacyidea.lib.tokens.smstoken import SMSAction
 from privacyidea.lib.user import User
 from privacyidea.models import db
 from .base import MyApiTestCase, PWFILE2
@@ -3074,12 +3074,12 @@ class APITokenTestCase(MyApiTestCase):
             result = res.json.get("result")
             self.assertTrue(result.get("status"))
             self.assertTrue(result.get("value"))
-            self.assertEqual(detail.get("rollout_state"), ROLLOUTSTATE.VERIFYPENDING, detail)
+            self.assertEqual(detail.get("rollout_state"), RolloutState.VERIFY_PENDING, detail)
             self.assertEqual(detail.get("verify").get("message"), VERIFY_ENROLLMENT_MESSAGE, detail)
             serial = detail.get("serial")
             tokenobj_list = get_tokens(serial=serial)
             # Check the token rollout state
-            self.assertEqual(tokenobj_list[0].token.rollout_state, ROLLOUTSTATE.VERIFYPENDING)
+            self.assertEqual(tokenobj_list[0].token.rollout_state, RolloutState.VERIFY_PENDING)
 
         # Try to authenticate with this not readily enrolled token and fail
         with self.app.test_request_context('/validate/check',
@@ -3120,7 +3120,7 @@ class APITokenTestCase(MyApiTestCase):
             self.assertTrue(result.get("value"))
             tokenobj_list = get_tokens(serial=serial)
             # Check the token rollout state, it is empty now.
-            self.assertEqual(ROLLOUTSTATE.ENROLLED, tokenobj_list[0].token.rollout_state)
+            self.assertEqual(RolloutState.ENROLLED, tokenobj_list[0].token.rollout_state)
 
         delete_policy("verify_toks1")
         delete_policy("verify_toks2")
@@ -3150,12 +3150,12 @@ class APITokenTestCase(MyApiTestCase):
             result = res.json.get("result")
             self.assertTrue(result.get("status"))
             self.assertTrue(result.get("value"))
-            self.assertEqual(detail.get("rollout_state"), ROLLOUTSTATE.VERIFYPENDING)
+            self.assertEqual(detail.get("rollout_state"), RolloutState.VERIFY_PENDING)
             self.assertEqual(detail.get("verify").get("message"), "ENTER EMAIL TOKEN", detail)
             serial = detail.get("serial")
             tokenobj_list = get_tokens(serial=serial)
             # Check the token rollout state
-            self.assertEqual(tokenobj_list[0].token.rollout_state, ROLLOUTSTATE.VERIFYPENDING)
+            self.assertEqual(tokenobj_list[0].token.rollout_state, RolloutState.VERIFY_PENDING)
 
         # Now run the second step: verify enrollment and test again
         with self.app.test_request_context('/token/init',
@@ -3171,7 +3171,7 @@ class APITokenTestCase(MyApiTestCase):
             self.assertTrue(result.get("value"))
             tokenobj_list = get_tokens(serial=serial)
             # Check the token rollout state, it is empty now.
-            self.assertEqual(ROLLOUTSTATE.ENROLLED, tokenobj_list[0].token.rollout_state)
+            self.assertEqual(RolloutState.ENROLLED, tokenobj_list[0].token.rollout_state)
 
         delete_policy("verify_toks1")
         delete_policy("email_challenge_text")
@@ -3200,7 +3200,7 @@ class APITokenTestCase(MyApiTestCase):
                    action="{0!s}=sms".format(PolicyAction.VERIFY_ENROLLMENT))
         sms_text = "YOUR SMS TOKEN: {otp}"
         set_policy(name="smstext", scope=SCOPE.AUTH,
-                   action=f"{SMSACTION.SMSTEXT}={sms_text}")
+                   action=f"{SMSAction.SMSTEXT}={sms_text}")
         set_policy("enroll", scope=SCOPE.ADMIN, action=["enrollSMS"])
 
         # Enroll an SMS token
@@ -3216,7 +3216,7 @@ class APITokenTestCase(MyApiTestCase):
             result = res.json.get("result")
             self.assertTrue(result.get("status"))
             self.assertTrue(result.get("value"))
-            self.assertEqual(detail.get("rollout_state"), ROLLOUTSTATE.VERIFYPENDING)
+            self.assertEqual(detail.get("rollout_state"), RolloutState.VERIFY_PENDING)
             # Without a challenge-text policy we get the default challenge message for SMS tokens
             self.assertEqual("Enter the OTP from the SMS:", detail.get("verify").get("message"), detail)
             calls = req_mock.post.mock_calls
@@ -3226,7 +3226,7 @@ class APITokenTestCase(MyApiTestCase):
             serial = detail.get("serial")
             tokenobj_list = get_tokens(serial=serial)
             # Check the token rollout state
-            self.assertEqual(tokenobj_list[0].token.rollout_state, ROLLOUTSTATE.VERIFYPENDING)
+            self.assertEqual(tokenobj_list[0].token.rollout_state, RolloutState.VERIFY_PENDING)
 
         # Now run the second step: verify enrollment and test again
         with self.app.test_request_context('/token/init',
@@ -3242,7 +3242,7 @@ class APITokenTestCase(MyApiTestCase):
             self.assertTrue(result.get("value"))
             tokenobj_list = get_tokens(serial=serial)
             # Check the token rollout state, it is empty now.
-            self.assertEqual(ROLLOUTSTATE.ENROLLED, tokenobj_list[0].token.rollout_state)
+            self.assertEqual(RolloutState.ENROLLED, tokenobj_list[0].token.rollout_state)
 
         delete_policy("verify_toks1")
         delete_policy("smstext")
@@ -3267,13 +3267,13 @@ class APITokenTestCase(MyApiTestCase):
             self.assertTrue(result.get("status"))
             self.assertTrue(result.get("value"))
             self.assertEqual(SECRET, secret)
-            self.assertEqual(ROLLOUTSTATE.VERIFYPENDING, detail.get("rollout_state"))
+            self.assertEqual(RolloutState.VERIFY_PENDING, detail.get("rollout_state"))
             message = detail.get("verify").get("message")
             self.assertTrue(message.startswith("Please enter the positions"))
             serial = detail.get("serial")
             tokenobj_list = get_tokens(serial=serial)
             # Check the token rollout state
-            self.assertEqual(ROLLOUTSTATE.VERIFYPENDING, tokenobj_list[0].token.rollout_state)
+            self.assertEqual(RolloutState.VERIFY_PENDING, tokenobj_list[0].token.rollout_state)
             # Check the default otplen
             self.assertEqual(6, tokenobj_list[0].token.otplen)
             s_pos = message.strip("Please enter the positions ").strip(" from your secret.")
@@ -3296,7 +3296,7 @@ class APITokenTestCase(MyApiTestCase):
             self.assertTrue(result.get("value"))
             tokenobj_list = get_tokens(serial=serial)
             # Check the token rollout state, it is empty now.
-            self.assertEqual(ROLLOUTSTATE.ENROLLED, tokenobj_list[0].token.rollout_state)
+            self.assertEqual(RolloutState.ENROLLED, tokenobj_list[0].token.rollout_state)
             # Check the default otplen of the token
             self.assertEqual(6, tokenobj_list[0].token.otplen)
 
@@ -3318,13 +3318,13 @@ class APITokenTestCase(MyApiTestCase):
             result = res.json.get("result")
             self.assertTrue(result.get("status"), result)
             self.assertTrue(result.get("value"), result)
-            self.assertEqual(detail.get("rollout_state"), ROLLOUTSTATE.VERIFYPENDING, detail)
+            self.assertEqual(detail.get("rollout_state"), RolloutState.VERIFY_PENDING, detail)
             self.assertEqual(detail.get("verify").get("message"), VERIFY_ENROLLMENT_MESSAGE, detail)
             otps = detail.get("otps")
             serial = detail.get("serial")
             tokenobj_list = get_tokens(serial=serial)
             # Check the token rollout state
-            self.assertEqual(tokenobj_list[0].token.rollout_state, ROLLOUTSTATE.VERIFYPENDING)
+            self.assertEqual(tokenobj_list[0].token.rollout_state, RolloutState.VERIFY_PENDING)
 
         # Try to authenticate with this not readily enrolled token and fail
         with self.app.test_request_context('/validate/check',
@@ -3366,7 +3366,7 @@ class APITokenTestCase(MyApiTestCase):
             self.assertTrue(result.get("value"), result)
             tokenobj_list = get_tokens(serial=serial)
             # Check the token rollout state, it is empty now.
-            self.assertEqual(ROLLOUTSTATE.ENROLLED, tokenobj_list[0].token.rollout_state)
+            self.assertEqual(RolloutState.ENROLLED, tokenobj_list[0].token.rollout_state)
 
         delete_policy("verify_paper_toks")
 
@@ -3386,13 +3386,13 @@ class APITokenTestCase(MyApiTestCase):
             result = res.json.get("result")
             self.assertTrue(result.get("status"), result)
             self.assertTrue(result.get("value"), result)
-            self.assertEqual(detail.get("rollout_state"), ROLLOUTSTATE.VERIFYPENDING, detail)
+            self.assertEqual(detail.get("rollout_state"), RolloutState.VERIFY_PENDING, detail)
             self.assertEqual(detail.get("verify").get("message"), VERIFY_ENROLLMENT_MESSAGE, detail)
             otps = detail.get("otps")
             serial = detail.get("serial")
             tokenobj_list = get_tokens(serial=serial)
             # Check the token rollout state
-            self.assertEqual(tokenobj_list[0].token.rollout_state, ROLLOUTSTATE.VERIFYPENDING)
+            self.assertEqual(tokenobj_list[0].token.rollout_state, RolloutState.VERIFY_PENDING)
 
         # Try to authenticate with this not readily enrolled token and fail
         with self.app.test_request_context('/validate/check',
@@ -3434,7 +3434,7 @@ class APITokenTestCase(MyApiTestCase):
             self.assertTrue(result.get("value"), result)
             tokenobj_list = get_tokens(serial=serial)
             # Check the token rollout state, it is empty now.
-            self.assertEqual(ROLLOUTSTATE.ENROLLED, tokenobj_list[0].token.rollout_state)
+            self.assertEqual(RolloutState.ENROLLED, tokenobj_list[0].token.rollout_state)
 
         delete_policy("verify_tan_toks")
 
@@ -3537,7 +3537,101 @@ class APITokenTestCase(MyApiTestCase):
         remove_token(token.get_serial())
         delete_policy("helpdesk")
 
-    def test_62_init_token_with_force_genkey(self):
+    def test_62_list_tokens_realm_only_filter(self):
+        """GET /token/?realm=X without a user param must return tokens assigned
+        to users in that realm and must not raise ERR904."""
+        self.setUp_user_realms()
+        self.setUp_user_realm2()
+
+        tok_realm1 = init_token({"genkey": 1},
+                                user=User(login="cornelius", realm=self.realm1,
+                                          resolver=self.resolvername1))
+        tok_realm2 = init_token({"genkey": 1},
+                                user=User(login="hans", realm=self.realm2,
+                                          resolver=self.resolvername1))
+
+        # realm filter without user param — must succeed and only return realm1 tokens
+        with self.app.test_request_context("/token/",
+                                           method="GET",
+                                           query_string=urlencode({"realm": self.realm1}),
+                                           headers={"Authorization": self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            value = res.json["result"]["value"]
+            serials = [t["serial"] for t in value["tokens"]]
+            self.assertIn(tok_realm1.get_serial(), serials)
+            self.assertNotIn(tok_realm2.get_serial(), serials)
+
+        remove_token(tok_realm1.get_serial())
+        remove_token(tok_realm2.get_serial())
+
+    def test_63_list_tokens_user_role_cannot_escalate(self):
+        """A caller with role 'user' must not be able to list tokens of other
+        users by passing user= or realm= query parameters."""
+        self.setUp_user_realms()
+        # authenticate as 'selfservice' (user role)
+        self.authenticate_selfservice_user()
+
+        # token assigned to a different user
+        other_token = init_token({"genkey": 1},
+                                 user=User(login="cornelius", realm=self.realm1,
+                                           resolver=self.resolvername1))
+        # token assigned to selfservice (the logged-in user)
+        own_token = init_token({"genkey": 1},
+                               user=User(login="selfservice", realm=self.realm1,
+                                         resolver=self.resolvername1))
+
+        try:
+            # Attempt 1: user role tries ?user=cornelius — must only see own tokens
+            with self.app.test_request_context("/token/",
+                                               method="GET",
+                                               query_string=urlencode({
+                                                   "user": "cornelius",
+                                                   "realm": self.realm1}),
+                                               headers={"Authorization": self.at_user}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res.json)
+                value = res.json["result"]["value"]
+                serials = [t["serial"] for t in value["tokens"]]
+                # must not see cornelius' token
+                self.assertNotIn(other_token.get_serial(), serials,
+                                 "user role must not see another user's token via user= param")
+                # must only see own token
+                self.assertIn(own_token.get_serial(), serials,
+                              "user role must still see their own token")
+
+            # Attempt 2: user role tries ?realm=realm1 without user — must only see own tokens
+            with self.app.test_request_context("/token/",
+                                               method="GET",
+                                               query_string=urlencode({"realm": self.realm1}),
+                                               headers={"Authorization": self.at_user}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res.json)
+                value = res.json["result"]["value"]
+                serials = [t["serial"] for t in value["tokens"]]
+                self.assertNotIn(other_token.get_serial(), serials,
+                                 "user role must not see another user's token via realm= param")
+                self.assertIn(own_token.get_serial(), serials,
+                              "user role must still see their own token")
+        finally:
+            remove_token(other_token.get_serial())
+            remove_token(own_token.get_serial())
+
+    def test_64_list_tokens_unresolvable_user_raises_err904(self):
+        """GET /token/?user=nonexistent&realm=X must return ERR904 when the
+        user does not exist in any resolver of that realm.
+        that behavior is not great, but it is what it is."""
+        self.setUp_user_realms()
+
+        with self.app.test_request_context("/token/",
+                                           method="GET",
+                                           query_string=urlencode({
+                                               "user": "no_such_user_xyz",
+                                               "realm": self.realm1}),
+                                           headers={"Authorization": self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(400, res.status_code, res.json)
+            self.assertEqual(904, res.json["result"]["error"]["code"])
         set_policy("enroll", scope=SCOPE.ADMIN, action="enrollHOTP, enrollTOTP, enrollMOTP, enrollAPPLSPEC")
         # No policy set: but if genkey and otpkey are not provided, genkey is also set to true
         with self.app.test_request_context('/token/init',
@@ -3624,7 +3718,7 @@ class APITokenTestCase(MyApiTestCase):
         delete_policy("applspec_genkey")
         delete_policy("enroll")
 
-    def test_63_bulk_unassign(self):
+    def test_65_bulk_unassign(self):
         set_policy(name="policy", scope=SCOPE.ADMIN, action=PolicyAction.UNASSIGN, realm=self.realm1)
 
         # create tokens
@@ -3656,7 +3750,7 @@ class APITokenTestCase(MyApiTestCase):
 
         delete_policy("policy")
 
-    def test_64_change_pin_every(self):
+    def test_66_change_pin_every(self):
         self.setUp_user_realms()
         self.authenticate_selfservice_user()
         set_policy("change_pin", scope=SCOPE.ENROLL, action=f"{PolicyAction.CHANGE_PIN_EVERY}=1d")
@@ -3788,7 +3882,7 @@ class APITokenTestCase(MyApiTestCase):
         delete_policy("change_pin")
         delete_policy("loginmode")
 
-    def test_65_enroll_pin_not_allowed(self):
+    def test_67_enroll_pin_not_allowed(self):
         # We need to set a policy in the admin scope so that policies_at_all is not empty.
         # We allow enrollment of SPASS tokens, but we do NOT allow setting a PIN (enrollpin).
         set_policy(name="admin_policy", scope=SCOPE.ADMIN, action="enrollSPASS")
@@ -3807,7 +3901,7 @@ class APITokenTestCase(MyApiTestCase):
 
         delete_policy("admin_policy")
 
-    def test_66_enroll_pin_allowed(self):
+    def test_68_enroll_pin_allowed(self):
         # We allow enrollment of SPASS tokens AND setting a PIN (enrollpin).
         set_policy(name="admin_policy", scope=SCOPE.ADMIN,
                    action=["enrollSPASS", PolicyAction.ENROLLPIN])
@@ -4186,7 +4280,7 @@ class APIRolloutState(MyApiTestCase):
     def test_01_enroll_two_tokens(self):
         r = init_token({"2stepinit": 1,
                         "genkey": 1})
-        self.assertEqual(r.rollout_state, ROLLOUTSTATE.CLIENTWAIT)
+        self.assertEqual(r.rollout_state, RolloutState.CLIENTWAIT)
         serial1 = r.token.serial
 
         r = init_token({"genkey": 1})
@@ -4205,7 +4299,7 @@ class APIRolloutState(MyApiTestCase):
         # Only one token in the rollout state client_wait
         with self.app.test_request_context('/token/',
                                            method='GET',
-                                           query_string={"rollout_state": ROLLOUTSTATE.CLIENTWAIT},
+                                           query_string={"rollout_state": RolloutState.CLIENTWAIT},
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
@@ -4213,7 +4307,7 @@ class APIRolloutState(MyApiTestCase):
             # we have one token
             self.assertEqual(1, result.get("value").get("count"))
             tok = result.get("value").get("tokens")[0]
-            self.assertEqual(ROLLOUTSTATE.CLIENTWAIT, tok.get("rollout_state"))
+            self.assertEqual(RolloutState.CLIENTWAIT, tok.get("rollout_state"))
             self.assertEqual(serial1, tok.get("serial"))
 
         # Test wildcard rollout_state filter
@@ -4270,7 +4364,7 @@ class APIMSCACertTestCase(MyApiTestCase):
                                    "realm": self.realm1
                                    }, User("cornelius", self.realm1))
             self.assertEqual("certificate", cert_tok.type)
-            self.assertEqual(ROLLOUTSTATE.PENDING, cert_tok.rollout_state)
+            self.assertEqual(RolloutState.PENDING, cert_tok.rollout_state)
             # Check, that there is no pkcs12 container in the tokeninfo and init details
             self.assertIsNotNone(cert_tok.get_tokeninfo("pkcs12"), cert_tok.get_tokeninfo())
             init_details = cert_tok.get_init_details()
@@ -4286,7 +4380,7 @@ class APIMSCACertTestCase(MyApiTestCase):
                 result = res.json.get("result")
                 token = result.get("value").get("tokens")[0]
                 # certificate is still pending
-                self.assertEqual(ROLLOUTSTATE.PENDING, token.get("rollout_state"))
+                self.assertEqual(RolloutState.PENDING, token.get("rollout_state"))
 
             # Enroll the certificated
             mock_conncect_worker.return_value.disposition = 3
@@ -4300,7 +4394,7 @@ class APIMSCACertTestCase(MyApiTestCase):
                 result = res.json.get("result")
                 token = result.get("value").get("tokens")[0]
                 # certificate is still pending
-                self.assertEqual(ROLLOUTSTATE.ENROLLED, token.get("rollout_state"))
+                self.assertEqual(RolloutState.ENROLLED, token.get("rollout_state"))
 
     def test_02_msca_certificate_pending_and_denied(self):
         with mock.patch.object(MSCAConnector, "_connect_to_worker") as mock_conncect_worker:
@@ -4319,7 +4413,7 @@ class APIMSCACertTestCase(MyApiTestCase):
                                    "realm": self.realm1
                                    }, User("cornelius", self.realm1))
             self.assertEqual("certificate", cert_tok.type)
-            self.assertEqual(ROLLOUTSTATE.PENDING, cert_tok.rollout_state)
+            self.assertEqual(RolloutState.PENDING, cert_tok.rollout_state)
 
             # Fetch the rolloutstate by fetching the token
             with self.app.test_request_context('/token/?serial={0!s}'.format(cert_tok.token.serial),
@@ -4330,7 +4424,7 @@ class APIMSCACertTestCase(MyApiTestCase):
                 result = res.json.get("result")
                 token = result.get("value").get("tokens")[0]
                 # certificate is still pending
-                self.assertEqual(ROLLOUTSTATE.PENDING, token.get("rollout_state"))
+                self.assertEqual(RolloutState.PENDING, token.get("rollout_state"))
 
             # Enroll the certificated
             mock_conncect_worker.return_value.disposition = 2
@@ -4344,7 +4438,7 @@ class APIMSCACertTestCase(MyApiTestCase):
                 result = res.json.get("result")
                 token = result.get("value").get("tokens")[0]
                 # certificate is still pending
-                self.assertEqual(ROLLOUTSTATE.DENIED, token.get("rollout_state"))
+                self.assertEqual(RolloutState.DENIED, token.get("rollout_state"))
 
 
 class APITokengroupTestCase(MyApiTestCase):

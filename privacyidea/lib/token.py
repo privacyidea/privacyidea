@@ -92,7 +92,7 @@ from privacyidea.lib.decorators import (check_user_or_serial,
                                         check_copy_serials)
 from privacyidea.lib.error import (TokenAdminError,
                                    ParameterError,
-                                   privacyIDEAError, ResourceNotFoundError, PolicyError)
+                                   privacyIDEAError, ResourceNotFoundError, PolicyError, UserError)
 from privacyidea.lib.framework import get_app_config_value
 from privacyidea.lib.log import log_with
 from privacyidea.lib.policies.actions import PolicyAction
@@ -107,7 +107,7 @@ from privacyidea.lib.policydecorators import (libpolicy,
                                               reset_all_user_tokens, force_challenge_response)
 from privacyidea.lib.realm import realm_is_defined, get_realms
 from privacyidea.lib.resolver import get_resolver_object
-from privacyidea.lib.tokenclass import DATE_FORMAT, TOKENKIND, TokenClass
+from privacyidea.lib.tokenclass import DATE_FORMAT, Tokenkind, TokenClass
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import (is_true, BASE58, hexlify_and_unicode, check_serial_valid, create_tag_dict,
                                    redacted_phone_number, redacted_email)
@@ -295,22 +295,29 @@ def _create_token_query(tokentype=None, token_type_list=None, realm=None, assign
     if serial_list:
         sql_query = sql_query.where(Token.serial.in_(serial_list))
 
+
+
     # Filtering by user object
     if user and not user.is_empty():
-        if user.realm:
-            realm_db = select(Realm).where(func.lower(Realm.name) == user.realm.lower())
-            # Execute the subquery using the provided session
-            realm_db_result = session.execute(realm_db).scalars().first()
-            if realm_db_result:
-                sql_query = sql_query.where(TokenOwner.realm_id == realm_db_result.id)
-            else:
-                raise ResourceNotFoundError(f"Realm '{user.realm}' does not exist.")
-        if user.resolver:
-            sql_query = sql_query.where(TokenOwner.resolver == user.resolver)
-        (uid, _rtype, _resolver) = user.get_user_identifiers()
-        if uid:
-            uid_str = str(uid) if isinstance(uid, int) else uid
-            sql_query = sql_query.where(TokenOwner.user_id == uid_str)
+        if user.login and not user.resolver:
+            # A specific username was requested but could not be found in any
+            # resolver. Raise the user error here instead of in the user class. The condition is the same.
+            raise UserError("The user can not be found in any resolver in this realm!")
+        else:
+            if user.realm:
+                realm_db = select(Realm).where(func.lower(Realm.name) == user.realm.lower())
+                # Execute the subquery using the provided session
+                realm_db_result = session.execute(realm_db).scalars().first()
+                if realm_db_result:
+                    sql_query = sql_query.where(TokenOwner.realm_id == realm_db_result.id)
+                else:
+                    raise ResourceNotFoundError(f"Realm '{user.realm}' does not exist.")
+            if user.resolver:
+                sql_query = sql_query.where(TokenOwner.resolver == user.resolver)
+                (uid, _rtype, _resolver) = user.get_user_identifiers()
+                if uid:
+                    uid_str = str(uid) if isinstance(uid, int) else uid
+                    sql_query = sql_query.where(TokenOwner.user_id == uid_str)
 
     # Filtering by token status flags
     if active is not None:
@@ -1259,7 +1266,7 @@ def import_token(serial, token_dict, tokenrealms=None):
     # Imported tokens are usually hardware tokens
     token = init_token(init_param, user=user_obj,
                        tokenrealms=tokenrealms,
-                       tokenkind=TOKENKIND.HARDWARE)
+                       tokenkind=Tokenkind.HARDWARE)
     if token_dict.get("counter"):
         token.set_otp_count(token_dict.get("counter"))
     if token_dict.get("timeShift"):
@@ -2418,15 +2425,15 @@ def create_challenges_from_tokens(token_list, reply_dict, options=None):
                 challenge_info["serial"] = token.token.serial
                 token_type = token.get_tokentype()
                 challenge_info["type"] = token_type
-                challenge_info["client_mode"] = token.client_mode
+                # Only set client_mode if it has not been returned by the tokenclass creating the challenge
+                challenge_info["client_mode"] = challenge_info.get("client_mode") or token.client_mode
                 challenge_info["message"] = message
                 # If they exist, add next pin and next password change
                 next_pin = token.get_tokeninfo("next_pin_change")
                 if next_pin:
                     challenge_info["next_pin_change"] = next_pin
                     challenge_info["pin_change"] = token.is_pin_change()
-                next_passw = token.get_tokeninfo(
-                    "next_password_change")
+                next_passw = token.get_tokeninfo("next_password_change")
                 if next_passw:
                     challenge_info["next_password_change"] = next_passw
                     challenge_info["password_change"] = token.is_pin_change(password=True)

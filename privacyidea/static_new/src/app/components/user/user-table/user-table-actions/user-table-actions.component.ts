@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, inject } from "@angular/core";
+import { Component, computed, inject } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
 import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
@@ -26,6 +26,10 @@ import { MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatOption, MatSelect } from "@angular/material/select";
 import { UserService, UserServiceInterface } from "../../../../services/user/user.service";
 import { RealmService, RealmServiceInterface } from "../../../../services/realm/realm.service";
+import { MatIcon } from "@angular/material/icon";
+import { DialogService } from "../../../../services/dialog/dialog.service";
+import { CreateUserDialogComponent } from "@components/user/create-user-dialog/create-user-dialog.component";
+import { ResolverService, ResolverServiceInterface } from "../../../../services/resolver/resolver.service";
 
 @Component({
   selector: "app-user-table-actions",
@@ -35,7 +39,8 @@ import { RealmService, RealmServiceInterface } from "../../../../services/realm/
     MatLabel,
     MatOption,
     MatSelect,
-    FormsModule
+    FormsModule,
+    MatIcon
   ],
   templateUrl: "./user-table-actions.component.html",
   styleUrl: "./user-table-actions.component.scss"
@@ -45,5 +50,18 @@ export class UserTableActionsComponent {
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly userService: UserServiceInterface = inject(UserService);
   protected readonly realmService: RealmServiceInterface = inject(RealmService);
+  protected readonly dialogService = inject(DialogService);
+  protected readonly resolverService: ResolverServiceInterface = inject(ResolverService);
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
+
+  anyEditableResolver = computed(() => this.resolverService.editableResolvers().length > 0);
+
+  openCreateUserDialog() {
+    this.dialogService.openDialog({
+      component: CreateUserDialogComponent,
+      data: {
+        realm: this.userService.selectedUserRealm()
+      }
+    });
+  }
 }

@@ -40,14 +40,32 @@ myApp.controller("tokenMenuController", ['$scope', '$location', '$rootScope', 'A
     }]);
 
 myApp.controller("tokenController", ['TokenFactory', 'ConfigFactory', '$scope',
-    '$location', 'AuthFactory', 'instanceUrl', '$rootScope',
-    function (TokenFactory, ConfigFactory, $scope, $location, AuthFactory, instanceUrl, $rootScope) {
+    '$location', 'AuthFactory', 'instanceUrl', '$rootScope', 'inform', 'gettextCatalog',
+    function (TokenFactory, ConfigFactory, $scope, $location, AuthFactory, instanceUrl, $rootScope, inform, gettextCatalog) {
         $scope.tokensPerPage = $scope.token_page_size;
         $scope.params = {page: 1, sortdir: "asc"};
         $scope.reverse = false;
         $scope.loggedInUser = AuthFactory.getUser();
         $scope.selectedToken = {serial: null};
         $scope.clientpart = "";
+        $scope.realms = {};
+        $scope.userRealmFilter = "";
+        $scope.userFilterVisible = false;
+        $scope.realmFilterVisible = false;
+
+        $scope.toggleUserFilter = function () {
+            $scope.userFilterVisible = !$scope.userFilterVisible;
+            $scope.realmFilterVisible = $scope.userFilterVisible;
+        };
+
+        // Load realms for the user/realm filter dropdowns (admin only)
+        if ($scope.loggedInUser.role === "admin") {
+            ConfigFactory.getRealms(function (data) {
+                $scope.realms = data.result.value;
+                // Do not preselect any realm — leave userRealmFilter empty so
+                // "— all —" is the effective default and all tokens are shown.
+            });
+        }
 
         // Change the pagination
         $scope.pageChanged = function () {
@@ -63,6 +81,20 @@ myApp.controller("tokenController", ['TokenFactory', 'ConfigFactory', '$scope',
                 $scope.params.type = "*" + ($scope.typeFilter || "") + "*";
                 $scope.params.description = "*" + ($scope.descriptionFilter || "") + "*";
                 $scope.params.rollout_state = "*" + ($scope.rolloutStateFilter || "") + "*";
+                // "user" is resolved against the user store by exact name, so no wildcard wrapping.
+                $scope.params.user = $scope.usernameFilter || "";
+                // realm for user lookup — always pass when set, independently of the username filter.
+                // We delete it explicitly here so the ** cleanup loop below doesn't need to know about it.
+                delete $scope.params.realm;
+                if ($scope.userRealmFilter) {
+                    $scope.params.realm = $scope.userRealmFilter;
+                } else if ($scope.usernameFilter) {
+                    // No realm selected but a username is given: the server will use the default realm.
+                    inform.add(
+                        gettextCatalog.getString("Searching for a user in all realms is not possible, using default realm."),
+                        {type: "info", ttl: 5000}
+                    );
+                }
                 $scope.params.userid = "*" + ($scope.userIdFilter || "") + "*";
                 $scope.params.resolver = "*" + ($scope.resolverFilter || "") + "*";
                 $scope.params.pagesize = $scope.token_page_size;
@@ -73,7 +105,7 @@ myApp.controller("tokenController", ['TokenFactory', 'ConfigFactory', '$scope',
                     $scope.params.sortdir = "asc";
                 }
                 Object.keys($scope.params).forEach(function (key) {
-                    if ($scope.params[key] === "**") {
+                    if ($scope.params[key] === "**" || $scope.params[key] === "") {
                         delete $scope.params[key];
                     }
                 });
