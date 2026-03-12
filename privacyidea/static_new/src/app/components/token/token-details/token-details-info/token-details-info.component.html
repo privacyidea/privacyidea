@@ -45,7 +45,9 @@
                 <div class="flex-row">
                   <mat-list-item class="height-auto">
                     <div class="flex-row">
-                      <mat-form-field class="width-192">
+                      <mat-form-field
+                        class="width-192"
+                        subscriptSizing="dynamic">
                         <mat-label>{{ key }}</mat-label>
                         <textarea
                           [(ngModel)]="element.value[key]"
@@ -77,14 +79,18 @@
               <mat-divider class="margin-8" />
               <mat-list-item class="height-auto">
                 <div class="flex-column">
-                  <mat-form-field class="width-192">
+                  <mat-form-field
+                    class="width-192"
+                    subscriptSizing="dynamic">
                     <input
                       [(ngModel)]="newInfo().key"
                       i18n-placeholder
                       matInput
                       placeholder="Add new key" />
                   </mat-form-field>
-                  <mat-form-field class="width-192">
+                  <mat-form-field
+                    class="width-192"
+                    subscriptSizing="dynamic">
                   <textarea
                     [(ngModel)]="newInfo().value"
                     i18n-placeholder

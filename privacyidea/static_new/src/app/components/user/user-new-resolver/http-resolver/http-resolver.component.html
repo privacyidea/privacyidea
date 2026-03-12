@@ -45,7 +45,7 @@
 
   @if (!isAdvanced && basicSettings()) {
     <div class="flex-column">
-      <div class="flex-row just-space-between">
+      <div class="flex-row gap-16">
         <mat-form-field class="input-width-s">
           <mat-label i18n>Method</mat-label>
           <mat-select
@@ -152,7 +152,7 @@
     }
 
     <div class="flex-column">
-      <mat-form-field class="input-width-l">
+      <mat-form-field class="width-66">
         <mat-label i18n>Base URL</mat-label>
         <app-clearable-input
           (onClick)="baseUrlControl.setValue('')"
@@ -185,14 +185,17 @@
         <th
           *matHeaderCellDef
           i18n
-          mat-header-cell>PrivacyIDEA Attribute
+          mat-header-cell>
+          PrivacyIDEA Attribute
         </th>
         <td
           *matCellDef="let row; let i = index"
+          class="input-width-l"
           mat-cell>
           @if (!row.isCustom) {
             <mat-form-field
-              class="input-width-l">
+              class="input-width-l height-57"
+              subscriptSizing="dynamic">
               <mat-select
                 (selectionChange)="onPrivacyIdeaAttrChanged(i, $event.value)"
                 [value]="row.privacyideaAttr"
@@ -215,7 +218,8 @@
 
           @if (row.isCustom) {
             <mat-form-field
-              class="input-width-l">
+              class="input-width-l"
+              subscriptSizing="dynamic">
               <app-clearable-input
                 (onClick)="setCustomAttr(i, '')"
                 [showClearButton]="!!row.privacyideaAttr">
@@ -239,9 +243,11 @@
         </th>
         <td
           *matCellDef="let row; let i = index"
+          class="input-width-l"
           mat-cell>
           <mat-form-field
-            class="input-width-l">
+            class="input-width-l"
+            subscriptSizing="dynamic">
             <app-clearable-input
               (onClick)="row.userStoreAttr = ''; onMappingChanged()"
               [showClearButton]="!!row.userStoreAttr">
@@ -310,7 +316,7 @@
         <mat-hint i18n>If no custom headers are defined this header is used for all endpoints.</mat-hint>
       </mat-form-field>
 
-      <div class="flex-row gap-16">
+      <div class="flex-row gap-16 margin-top-16">
         <div class="flex-column">
           <mat-checkbox
             [formControl]="editableControl"
@@ -318,7 +324,7 @@
             Edit User Store
           </mat-checkbox>
           <span
-            class="hint"
+            class="hint margin-bottom-16 margin-top-16"
             i18n>The user data in this user store can be modified from within privacyIDEA.</span>
         </div>
 
@@ -331,7 +337,7 @@
         </div>
       </div>
 
-      <div class="flex-row just-space-between">
+      <div class="flex-row just-space-between margin-bottom-16">
         @if (verifyTlsControl.value) {
           <mat-form-field class="input-width-l">
             <mat-label i18n>CA Certificate</mat-label>
@@ -349,7 +355,7 @@
           </mat-form-field>
         }
 
-        <mat-form-field class="input-width-s">
+        <mat-form-field class="input-width-m">
           <mat-label i18n>Timeout (seconds)</mat-label>
           <input
             [formControl]="timeoutControl"
@@ -359,7 +365,8 @@
         </mat-form-field>
       </div>
     </div>
-    <div class="margin-top-16">
+
+    <div class="margin-top-16 margin-bottom-16">
       <mat-accordion>
         <mat-expansion-panel [expanded]="isAuthorizationExpanded">
           <mat-expansion-panel-header>
@@ -372,13 +379,11 @@
                 class="auth-description"
                 i18n>
                 This section allows to configure an endpoint to which the privacyIDEA server must authenticate in order
-                to receive an access token.
-                This token can then be used to access the user store API.
-                You can find most of these settings in the app registration in the Entra Admin Center or you also have
-                to add them there.
+                to receive an access token. This token can then be used to access the user store API. You can find most
+                of these settings in the app registration in the Entra Admin Center or you also have to add them there.
               </p>
               <div class="flex-column">
-                <mat-form-field class="input-width-l">
+                <mat-form-field class="width-66">
                   <mat-label i18n>Authority</mat-label>
                   <app-clearable-input
                     (onClick)="authorityControl.setValue('')"
@@ -390,7 +395,7 @@
                   </app-clearable-input>
                 </mat-form-field>
 
-                <div class="flex-row just-space-between">
+                <div class="flex-row gap-16">
                   <mat-form-field class="input-width-l">
                     <mat-label i18n>Tenant ID</mat-label>
                     <app-clearable-input
@@ -424,32 +429,35 @@
                   </mat-form-field>
                 </div>
 
-                <mat-form-field class="input-width-l">
-                  <mat-label i18n>Client Credential Type</mat-label>
-                  <mat-select
-                    [formControl]="clientCredentialTypeControl">
-                    <mat-option value="secret">Secret</mat-option>
-                    <mat-option value="certificate">Certificate</mat-option>
-                  </mat-select>
-                </mat-form-field>
-
-                @if (clientCredentialTypeControl.value === 'secret') {
+                <div class="flex-row gap-16">
                   <mat-form-field class="input-width-l">
-                    <mat-label i18n>Client Secret</mat-label>
-                    <app-clearable-input
-                      (onClick)="clientSecretControl.setValue('')"
-                      [showClearButton]="!!clientSecretControl.value">
-                      <input
-                        [formControl]="clientSecretControl"
-                        matInput
-                        required
-                        type="password" />
-                    </app-clearable-input>
-                    @if (clientSecretControl.hasError('required') && clientSecretControl.touched) {
-                      <mat-error i18n>Client secret is <strong>required</strong>.</mat-error>
-                    }
+                    <mat-label i18n>Client Credential Type</mat-label>
+                    <mat-select
+                      [formControl]="clientCredentialTypeControl">
+                      <mat-option value="secret">Secret</mat-option>
+                      <mat-option value="certificate">Certificate</mat-option>
+                    </mat-select>
                   </mat-form-field>
-                } @else if (clientCredentialTypeControl.value === 'certificate') {
+
+                  @if (clientCredentialTypeControl.value === 'secret') {
+                    <mat-form-field class="input-width-l">
+                      <mat-label i18n>Client Secret</mat-label>
+                      <app-clearable-input
+                        (onClick)="clientSecretControl.setValue('')"
+                        [showClearButton]="!!clientSecretControl.value">
+                        <input
+                          [formControl]="clientSecretControl"
+                          matInput
+                          required
+                          type="password" />
+                      </app-clearable-input>
+                      @if (clientSecretControl.hasError('required') && clientSecretControl.touched) {
+                        <mat-error i18n>Client secret is <strong>required</strong>.</mat-error>
+                      }
+                    </mat-form-field>
+                  }
+                </div>
+                @if (clientCredentialTypeControl.value === 'certificate') {
                   <p
                     class="auth-description"
                     i18n>
@@ -509,11 +517,10 @@
                 class="auth-description"
                 i18n>
                 This section allows to configure an endpoint to which the privacyIDEA server must authenticate in order
-                to receive an access token.
-                This token can then be used to access the user store API.
+                to receive an access token. This token can then be used to access the user store API.
               </p>
 
-              <div class="flex-row just-space-between">
+              <div class="flex-row gap-16">
                 <mat-form-field class="input-width-l">
                   <mat-label i18n>Username</mat-label>
                   <app-clearable-input

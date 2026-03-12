@@ -66,7 +66,9 @@
               @switch (element.keyMap.key) {
                 @case ("container_serial") {
                   @if (element.isEditing()) {
-                    <mat-form-field class="input-width-m height-52">
+                    <mat-form-field
+                      class="input-width-m height-52"
+                      subscriptSizing="dynamic">
                       <mat-label i18n>Enter Container</mat-label>
                       <app-clearable-input
                         (onClick)="containerService.selectedContainer.set(null)"
@@ -95,7 +97,9 @@
                 }
                 @case ("realms") {
                   @if (element.isEditing()) {
-                    <mat-form-field class="input-width-m height-77">
+                    <mat-form-field
+                      class="input-width-m height-77"
+                      subscriptSizing="dynamic">
                       <mat-label i18n>Select Realms</mat-label>
                       <mat-select
                         [(ngModel)]="realmService.selectedRealms"
@@ -128,7 +132,9 @@
                 }
                 @case ("tokengroup") {
                   @if (element.isEditing()) {
-                    <mat-form-field class="input-width-m height-77">
+                    <mat-form-field
+                      class="input-width-m height-77"
+                      subscriptSizing="dynamic">
                       <mat-label i18n>Select Token Group</mat-label>
                       <mat-select
                         [(ngModel)]="selectedTokengroup"
@@ -163,7 +169,9 @@
                 }
                 @case ("description") {
                   @if (element.isEditing()) {
-                    <mat-form-field class="input-width-m description height-126">
+                    <mat-form-field
+                      class="input-width-m description height-126"
+                      subscriptSizing="dynamic">
                       <textarea
                         [(ngModel)]="element.value"
                         [maxlength]="80"
@@ -182,14 +190,18 @@
                 }
                 @default {
                   @if (element.isEditing() && isNumberElement(element.keyMap.key)) {
-                    <mat-form-field class="input-width-m height-52">
+                    <mat-form-field
+                      class="input-width-m height-52"
+                      subscriptSizing="dynamic">
                       <input
                         [(ngModel)]="element.value"
                         matInput
                         type="number" />
                     </mat-form-field>
                   } @else if (element.isEditing()) {
-                    <mat-form-field class="input-width-m">
+                    <mat-form-field
+                      class="input-width-m"
+                      subscriptSizing="dynamic">
                       <textarea
                         [(ngModel)]="element.value"
                         matInput

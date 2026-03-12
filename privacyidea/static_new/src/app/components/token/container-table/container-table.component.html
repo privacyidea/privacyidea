@@ -24,6 +24,7 @@
   @if (authService.actionAllowed("container_list")) {
     <div class="filter-paginator-container">
       <mat-form-field
+        subscriptSizing="dynamic"
         class="container-table-filter">
         <mat-label i18n>Filter Containers...</mat-label>
         <app-clearable-input

@@ -23,7 +23,6 @@ $focus-outline: 3px solid var(--mat-sys-primary-light);
 
 .user-pin-button {
   display: flex;
-  margin-top: 8px;
   flex-direction: column;
   align-items: center;
   gap: 8px;
@@ -72,6 +71,6 @@ $focus-outline: 3px solid var(--mat-sys-primary-light);
   min-width: 300px;
 }
 
-::ng-deep mat-form-field:has(input):not(.sticky-header *) {
+::ng-deep mat-form-field:has(input):not(.sticky-header *):not(.filter-paginator-container *):not(td *) {
   height: 76.5px;
 }

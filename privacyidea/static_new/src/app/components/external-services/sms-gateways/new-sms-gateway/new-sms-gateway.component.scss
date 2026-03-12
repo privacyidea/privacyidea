@@ -56,10 +56,6 @@ h3 {
   overflow: auto;
   border: 1px solid var(--mat-sys-outline-variant);
   background-color: var(--mat-sys-surface-container);
-
-  ::ng-deep .mat-mdc-form-field-subscript-wrapper {
-    height: 8px;
-  }
 }
 
 .actions-cell {

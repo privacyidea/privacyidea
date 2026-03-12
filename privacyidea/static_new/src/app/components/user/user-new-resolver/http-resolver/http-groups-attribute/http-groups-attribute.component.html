@@ -20,7 +20,7 @@
 <div
   [formGroup]="userGroupsControl"
   class="flex-column margin-top-16">
-  <div class="flex-row gap-16 align-baseline">
+  <div class="flex-row gap-16 ali-center margin-bottom-16">
     <mat-slide-toggle
       [formControlName]="'active'"
       [matTooltip]="slideToggleTooltipSignal()"></mat-slide-toggle>
@@ -40,10 +40,8 @@
         <mat-hint i18n>Key of the group's name in the user store response.</mat-hint>
       }
     </mat-form-field>
-  </div>
 
   @if (resolverType !== "entraidresolver") {
-    <div class="flex-row just-space-between align-baseline">
       <mat-form-field class="input-width-s">
         <mat-label i18n>Method</mat-label>
         <mat-select
@@ -71,19 +69,20 @@
           }
         </mat-hint>
       </mat-form-field>
-    </div>
   }
+  </div>
 </div>
+
 @if (resolverType === "entraidresolver") {
   <div
-    class="hint margin-top-8 margin-bottom-16"
+    class="hint margin-top-16 margin-bottom-16"
     i18n>
     Receive the users groups via the <code>memberOf</code> attribute and store them under the privacyIDEA attribute
     <code>groups</code>.
   </div>
 } @else {
   <div
-    class="hint margin-top-8 margin-bottom-16"
+    class="hint margin-top-16 margin-bottom-16"
     i18n>User groups are received in a separate request and stored under the privacyIDEA attribute <code>groups</code>.
   </div>
 }

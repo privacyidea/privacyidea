@@ -29,6 +29,7 @@
     <div class="flex-row filter-paginator-container">
       @if (dataSource.data.length > 1) {
         <mat-form-field
+          subscriptSizing="dynamic"
           class="container-details-token-table-filter width-50">
           <mat-label i18n>Filter Token...</mat-label>
           <app-clearable-input
