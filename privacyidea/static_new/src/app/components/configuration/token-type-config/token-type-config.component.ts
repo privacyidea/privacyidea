@@ -80,6 +80,7 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit {
   readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly http = inject(HttpClient);
   private route = inject(ActivatedRoute);
+  private destroyRef = inject(DestroyRef);
 
   formData = signal<Record<string, any>>({});
   nextQuestion = signal(0);
@@ -129,7 +130,7 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit {
   ngOnInit() {
     // allow opening a specific panel via URL fragment, e.g. /configuration/token-types#yubico
     this.route.fragment
-        .pipe(takeUntilDestroyed(inject(DestroyRef)))
+        .pipe(takeUntilDestroyed(this.destroyRef))
         .subscribe(fragment => {
       if (fragment) {
         this.expandedPanel = fragment;
