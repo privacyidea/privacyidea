@@ -54,15 +54,52 @@ describe("EnrollTotpComponent", () => {
     expect(component.otpKeyFormControl.disabled).toBe(true);
   });
 
+  it("should disable/enable all controls according to disable input", () => {
+    fixture.componentRef.setInput("disabled", true);
+    fixture.detectChanges();
+
+    expect(component.generateOnServerFormControl.disabled).toBe(true);
+    expect(component.otpKeyFormControl.disabled).toBe(true);
+    expect(component.otpLengthFormControl.disabled).toBe(true);
+    expect(component.hashAlgorithmControl.disabled).toBe(true);
+    expect(component.timeStepControl.disabled).toBe(true);
+
+    fixture.componentRef.setInput("disabled", false);
+    fixture.detectChanges();
+
+    expect(component.generateOnServerFormControl.disabled).toBe(false);
+    expect(component.otpKeyFormControl.disabled).toBe(true);
+    component.otpKeyFormControl.markAsTouched();
+    expect(component.otpKeyFormControl.invalid).toBe(false);
+    expect(component.otpLengthFormControl.disabled).toBe(false);
+    expect(component.hashAlgorithmControl.disabled).toBe(false);
+    expect(component.timeStepControl.disabled).toBe(false);
+  });
+
   it("disables generateOnServer when policy forces server-side key generation", () => {
     authService.checkForceServerGenerateOTPKey.mockReturnValue(true);
     fixture = TestBed.createComponent(EnrollTotpComponent);
     component = fixture.componentInstance;
     component.ngOnInit();
 
+    expect(component.generateOnServerFormControl.value).toBe(true);
     expect(component.generateOnServerFormControl.disabled).toBe(true);
 
     component.generateOnServerFormControl.setValue(false);
+    expect(component.otpKeyFormControl.disabled).toBe(true);
+    component.generateOnServerFormControl.setValue(true);
+
+    // Should stay disabled regardless of the disabled input
+    fixture.componentRef.setInput("disabled", true);
+    fixture.detectChanges();
+    expect(component.generateOnServerFormControl.value).toBe(true);
+    expect(component.generateOnServerFormControl.disabled).toBe(true);
+    expect(component.otpKeyFormControl.disabled).toBe(true);
+
+    fixture.componentRef.setInput("disabled", false);
+    fixture.detectChanges();
+    expect(component.generateOnServerFormControl.value).toBe(true);
+    expect(component.generateOnServerFormControl.disabled).toBe(true);
     expect(component.otpKeyFormControl.disabled).toBe(true);
   });
 
@@ -81,6 +118,20 @@ describe("EnrollTotpComponent", () => {
     component.otpKeyFormControl.markAsTouched();
     expect(component.otpKeyFormControl.invalid).toBe(true);
 
+    // disable - enable all controls should restore same state
+    fixture.componentRef.setInput("disabled", true);
+    fixture.detectChanges();
+    expect(component.generateOnServerFormControl.value).toBe(false);
+    expect(component.generateOnServerFormControl.disabled).toBe(true);
+    expect(component.otpKeyFormControl.disabled).toBe(true);
+
+    fixture.componentRef.setInput("disabled", false);
+    fixture.detectChanges();
+    expect(component.generateOnServerFormControl.value).toBe(false);
+    expect(component.generateOnServerFormControl.disabled).toBe(false);
+    expect(component.otpKeyFormControl.disabled).toBe(false);
+
+    // Set back to generate on server should disable otp key again
     component.generateOnServerFormControl.setValue(true);
     expect(component.otpKeyFormControl.disabled).toBe(true);
   });
@@ -100,6 +151,23 @@ describe("EnrollTotpComponent", () => {
     expect(component.generateOnServerFormControl.value).toBe(true);
     expect(component.generateOnServerFormControl.disabled).toBe(true);
     expect(component.otpKeyFormControl.value).toEqual("");
+    expect(component.otpKeyFormControl.disabled).toBe(true);
+
+    // should stay disabled regardless of the disabled input
+    fixture.componentRef.setInput("disabled", true);
+    fixture.detectChanges();
+    expect(component.twoStepControl.value).toBe(true);
+    expect(component.twoStepControl.disabled).toBe(true);
+    expect(component.generateOnServerFormControl.value).toBe(true);
+    expect(component.generateOnServerFormControl.disabled).toBe(true);
+    expect(component.otpKeyFormControl.disabled).toBe(true);
+
+    fixture.componentRef.setInput("disabled", false);
+    fixture.detectChanges();
+    expect(component.twoStepControl.value).toBe(true);
+    expect(component.twoStepControl.disabled).toBe(true);
+    expect(component.generateOnServerFormControl.value).toBe(true);
+    expect(component.generateOnServerFormControl.disabled).toBe(true);
     expect(component.otpKeyFormControl.disabled).toBe(true);
   });
 
@@ -146,6 +214,23 @@ describe("EnrollTotpComponent", () => {
     expect(component.generateOnServerFormControl.value).toBe(true);
     expect(component.generateOnServerFormControl.enabled).toBe(false);
     expect(component.otpKeyFormControl.value).toEqual("");
+    expect(component.otpKeyFormControl.disabled).toBe(true);
+
+    // disable - enable all controls should restore same state
+    fixture.componentRef.setInput("disabled", true);
+    fixture.detectChanges();
+    expect(component.twoStepControl.value).toBe(true);
+    expect(component.twoStepControl.disabled).toBe(true);
+    expect(component.generateOnServerFormControl.value).toBe(true);
+    expect(component.generateOnServerFormControl.disabled).toBe(true);
+    expect(component.otpKeyFormControl.disabled).toBe(true);
+
+    fixture.componentRef.setInput("disabled", false);
+    fixture.detectChanges();
+    expect(component.twoStepControl.value).toBe(true);
+    expect(component.twoStepControl.disabled).toBe(false);
+    expect(component.generateOnServerFormControl.value).toBe(true);
+    expect(component.generateOnServerFormControl.disabled).toBe(true);
     expect(component.otpKeyFormControl.disabled).toBe(true);
   });
 

@@ -101,7 +101,8 @@ export class EnrollTotpComponent implements OnInit {
     otpLength: this.otpLengthFormControl,
     otpKey: this.otpKeyFormControl,
     hashAlgorithm: this.hashAlgorithmControl,
-    timeStep: this.timeStepControl
+    timeStep: this.timeStepControl,
+    twoStep: this.twoStepControl
   });
 
   disabled = input<boolean>(false);
@@ -138,8 +139,7 @@ export class EnrollTotpComponent implements OnInit {
       this.twoStepControl.setValue(true, { emitEvent: false });
       this.twoStepControl.disable({ emitEvent: false });
       this.generateOnServerFormControl.disable({ emitEvent: false });
-    }
-    else if (this.twoStep() === "allow") {
+    } else if (this.twoStep() === "allow") {
       this.twoStepControl.valueChanges.subscribe((twoStepEnabled) => {
         if (twoStepEnabled) {
           this.generateOnServerFormControl.disable({ emitEvent: false });
@@ -153,16 +153,8 @@ export class EnrollTotpComponent implements OnInit {
     if (this.authService.checkForceServerGenerateOTPKey("totp")) {
       this.generateOnServerFormControl.disable({ emitEvent: false });
     } else {
-      this.generateOnServerFormControl.valueChanges.subscribe((generate) => {
-        if (!generate) {
-          this.otpKeyFormControl.enable({ emitEvent: false });
-          this.otpKeyFormControl.setValidators([Validators.required, Validators.minLength(16)]);
-        } else {
-          this.otpKeyFormControl.disable({ emitEvent: false });
-          this.otpKeyFormControl.clearValidators();
-          this.otpKeyFormControl.setValue("");
-        }
-        this.otpKeyFormControl.updateValueAndValidity();
+      this.generateOnServerFormControl.valueChanges.subscribe(() => {
+        this._enableDisableOtpKeyControl(false);
       });
     }
   }
@@ -200,14 +192,25 @@ export class EnrollTotpComponent implements OnInit {
     };
   };
 
+  private _enableDisableOtpKeyControl(emitEvent: boolean = true): void {
+    if (!this.generateOnServerFormControl.value) {
+      this.otpKeyFormControl.enable({ emitEvent });
+      this.otpKeyFormControl.setValidators([Validators.required, Validators.minLength(16)]);
+    } else {
+      this.otpKeyFormControl.disable({ emitEvent });
+      this.otpKeyFormControl.clearValidators();
+      this.otpKeyFormControl.setValue("");
+    }
+    this.otpKeyFormControl.updateValueAndValidity();
+  }
+
   private _enableFormControls(): void {
     this.generateOnServerFormControl.enable();
     this.otpLengthFormControl.enable();
-    if (!this.generateOnServerFormControl.value) {
-      this.otpKeyFormControl.enable();
-    }
+    this._enableDisableOtpKeyControl();
     this.hashAlgorithmControl.enable();
     this.timeStepControl.enable();
+    this.twoStepControl.enable();
     this._applyPolicies();
   }
 }
