@@ -7,8 +7,8 @@
     class="realm-table-container">
     <div class="filter-paginator-container">
       <mat-form-field
-        subscriptSizing="dynamic"
-        class="token-table-filter">
+        class="token-table-filter"
+        subscriptSizing="dynamic">
         <mat-label i18n>Filter Realms...</mat-label>
         <app-clearable-input
           (onClick)="resetFilter()"
@@ -33,8 +33,8 @@
 
     <div class="flex-row margin-bottom-16">
       <mat-form-field
-        subscriptSizing="dynamic"
-        class="button-width-l">
+        class="input-width-m"
+        subscriptSizing="dynamic">
         <mat-label i18n>Node</mat-label>
 
         <mat-select
@@ -131,7 +131,7 @@
                               [value]="getEditNodeResolverNames(group.id)"
                               multiple>
                               @for (res of resolverOptions(); track res.name) {
-                                <mat-option [value]="res.name"> {{ res.name }} ({{ res.type }}) </mat-option>
+                                <mat-option [value]="res.name"> {{ res.name }} ({{ res.type }})</mat-option>
                               }
                             </mat-select>
                             <div class="resolver-priority-list">
@@ -258,7 +258,8 @@
                 @switch (column.key) {
                   @case ("name") {
                     <mat-form-field
-                      class="new-realm-name-field">
+                      class="input-width-l"
+                      subscriptSizing="dynamic">
                       <mat-label i18n>Realm Name</mat-label>
                       <input
                         (input)="newRealmName.set($any($event.target).value)"
@@ -280,14 +281,15 @@
                           </div>
 
                           <mat-form-field
-                            class="node-resolvers-select">
+                            class="input-width-l"
+                            subscriptSizing="dynamic">
                             <mat-label i18n>Resolvers</mat-label>
                             <mat-select
                               (selectionChange)="onNewRealmNodeResolversChange(group.id, $event.value)"
                               [value]="getCreateNodeResolverNames(group.id)"
                               multiple>
                               @for (res of resolverOptions(); track res.name) {
-                                <mat-option [value]="res.name"> {{ res.name }} ({{ res.type }}) </mat-option>
+                                <mat-option [value]="res.name"> {{ res.name }} ({{ res.type }})</mat-option>
                               }
                             </mat-select>
                           </mat-form-field>
