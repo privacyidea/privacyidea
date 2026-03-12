@@ -153,10 +153,17 @@ export class ContainerTemplatesComponent {
       const valueA = a[sort.active as keyof ContainerTemplate];
       const valueB = b[sort.active as keyof ContainerTemplate];
 
-      if (typeof valueA === "string" && typeof valueB === "string") {
-        return valueA.localeCompare(valueB) * (isAsc ? 1 : -1);
+      if (valueA === valueB) {
+        return 0;
       }
-      return (valueA < valueB ? -1 : 1) * (isAsc ? 1 : -1);
+
+      const modifier = isAsc ? 1 : -1;
+
+      if (typeof valueA === "string" && typeof valueB === "string") {
+        return valueA.localeCompare(valueB) * modifier;
+      }
+
+      return (valueA < valueB ? -1 : 1) * modifier;
     });
   });
 
