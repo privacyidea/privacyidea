@@ -113,6 +113,7 @@ export class PoliciesTableComponent {
       const isAsc = sort.direction === "asc";
       const valA = a[sort.active as keyof PolicyDetail] ?? "";
       const valB = b[sort.active as keyof PolicyDetail] ?? "";
+      if (valA === valB) return 0;
       return (valA < valB ? -1 : 1) * (isAsc ? 1 : -1);
     });
   });
