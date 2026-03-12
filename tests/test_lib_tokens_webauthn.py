@@ -539,7 +539,7 @@ class WebAuthnTokenTestCase(MyTestCase):
     def test_11b_uv_required_via_fido2_challenge_flow(self):
         """
         Challenges created by older code stored the UV requirement under the raw string key "user_verification".
-        Now, everything uses PolicyAction.USER_VERIFICATION_REQUIREMENT.
+        Now, everything uses FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT.
         This test inserts challenge rows using the old "user_verification" key and goes through
         verify_fido2_challenge() to confirm it can still be loaded correctly.
         """
