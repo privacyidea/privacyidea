@@ -483,7 +483,7 @@ class WebAuthn(MyApiTestCase):
             self.assertTrue(res.json.get("result").get("value"))
             self.assertEqual("ACCEPT", res.json.get("result").get("authentication"))
 
-    def _change_challenge_nonce(self, transaction_id, new_nonce, serial = None):
+    def _change_challenge_nonce(self, transaction_id, new_nonce, serial=None):
         from privacyidea.lib.challenge import get_challenges
         challenge = get_challenges(serial=serial, transaction_id=transaction_id)[0]
         if not challenge:
@@ -712,6 +712,88 @@ class WebAuthn(MyApiTestCase):
 
         delete_policies(["wan1", "wan2", "uv_req"])
         remove_token(webauthn_serial)
+
+    def test_33_enroll_wrong_uv(self):
+        """
+        Test that enrollment fails if UV is required but not provided in authenticator data.
+        This tests the same attack vector as test_32 but during the enrollment phase.
+        """
+        delete_policies(["wan1", "wan2", "wan3", "uv_req"])
+        set_policy("wan1", scope=SCOPE.ENROLL, action="webauthn_relying_party_id=fritz.box")
+        set_policy("wan2", scope=SCOPE.ENROLL, action="webauthn_relying_party_name=fritz box")
+        set_policy("uv_req", scope=SCOPE.ENROLL, action="webauthn_user_verification_requirement=required")
+
+        headers = {"authorization": self.at,
+                   "Host": "pi.fritz.box:5000",
+                   "Origin": "https://pi.fritz.box:5000"}
+
+        # Enroll WebAuthn via the API - First step
+        data = {
+            "2stepinit": False,
+            "genkey": True,
+            "realm": self.realm1,
+            "timeStep": 30,
+            "type": "webauthn",
+            "user": "hans",
+            "pin": "12"
+        }
+        with patch('privacyidea.lib.tokens.webauthntoken.WebAuthnTokenClass._get_nonce') as mock_nonce:
+            mock_nonce.return_value = webauthn_b64_decode("RjCK6QlzmOpWN4BwE6xD5tx5P0czKCFemfqMBnAhch0")
+            with self.app.test_request_context('/token/init',
+                                               method='POST',
+                                               data=data,
+                                               headers=headers):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res)
+                data = res.json
+                webauthn_request = data.get("detail").get("webAuthnRegisterRequest")
+                transaction_id = webauthn_request.get("transaction_id")
+                webauthn_serial = data.get("detail").get("serial")
+
+                # Check that userVerification is set to "required" in the registration request
+                self.assertEqual("required", webauthn_request.get("authenticatorSelection", {}).get("userVerification"))
+
+        # 2nd enrollment step - Submit regdata WITHOUT UV flag set in authenticator data
+        data = {"user": "hans",
+                "realm": self.realm1,
+                "serial": webauthn_serial,
+                "type": "webauthn",
+                "transaction_id": transaction_id,
+                "clientdata": "eyJ0eXBlIjoid2ViYXV0aG4uY3JlYXRlIiwiY2hhbGxlbmdlIjoiUmpDSzZRbHptT3BXTjRCd0U2eEQ1dHg1UDBj"
+                              "ektDRmVtZnFNQm5BaGNoMCIsIm9yaWdpbiI6Imh0dHBzOi8vcGkuZnJpdHouYm94OjUwMDAifQ",
+                # Modified regdata with UV flag cleared (0x45 -> 0x41 in the flags byte)
+                "regdata": "o2NmbXRmcGFja2VkZ2F0dFN0bXSjY2FsZyZjc2lnWEcwRQIga75EjPA16t5Tck2dwpAE-PoalJVtpqVCauYvZz_FU3c"
+                           "CIQCrR-KSlaLQhuuAVkmx0KYkoQIgHDYeZX4Dxi98BW4itGN4NWOBWQLdMIIC2TCCAcGgAwIBAgIJAPDqu31oBEyKMA"
+                           "0GCSqGSIb3DQEBCwUAMC4xLDAqBgNVBAMTI1l1YmljbyBVMkYgUm9vdCBDQSBTZXJpYWwgNDU3MjAwNjMxMCAXDTE0M"
+                           "DgwMTAwMDAwMFoYDzIwNTAwOTA0MDAwMDAwWjBvMQswCQYDVQQGEwJTRTESMBAGA1UECgwJWXViaWNvIEFCMSIwIAYD"
+                           "VQQLDBlBdXRoZW50aWNhdG9yIEF0dGVzdGF0aW9uMSgwJgYDVQQDDB9ZdWJpY28gVTJGIEVFIFNlcmlhbCAyMTA5ND"
+                           "Y3Mzc2MFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAE5mfTO7qcRZuAnvzLaguuLFz8S9eB1XNIPZb96SUfZCzN5sIGV"
+                           "RTzM4JGrJlSgAAq0jivvANxttf6w7_LnnnSMKOBgTB_MBMGCisGAQQBgsQKDQEEBQQDBQQDMCIGCSsGAQQBgsQKAgQV"
+                           "MS4zLjYuMS40LjEuNDE0ODIuMS43MBMGCysGAQQBguUcAgEBBAQDAgQwMCEGCysGAQQBguUcAQEEBBIEEC_AV5-BE0f"
+                           "qsRa7Wo25ICowDAYDVR0TAQH_BAIwADANBgkqhkiG9w0BAQsFAAOCAQEAtjGoKNeTOK0pAIoNf3mjoD3PLgybH2L6z7"
+                           "SKnlWVd6dRbJWbZCsY8AxMdyKNGfnUQiJcEmi9IxigjGoXcwZPApnJm7JDike7Z7HQ2yUrlJZ-EgFamivp5C3UVCaIk"
+                           "GH-HyJW_vh23XOZMkaDcRqwbeq8b0Voavnu4YF5bCM7PtnsPcCsvfL5DahPGSfpc9YyANG49OQBOZolNF3MBKKrspOA"
+                           "I7RfW0JSQY0NUnWFYx9hxFbNuYsKFN4NblJ_Zz9tMk1YYSkTJ6VfxHTo5tfIcaLfZ1dIrMeY12-WevjMufFW_qB4Er"
+                           "Y5Gjft3cbiZBELmbQ9QLUyLX78lHiLC9pJImhhdXRoRGF0YVjE1kwVsywYDmugu2qhEi7LiS8tgyaE5XqILRqvKXkZ-"
+                           "1pBAAAABC_AV5-BE0fqsRa7Wo25ICoAQIwkrRnq993po4HbKnUzQuq90bg6wFf8w0ulx8kSxw_5osFUpDm5Ct4B4JeL"
+                           "F1B4rpd3Cy4iAZT0msTxhwXVrAalAQIDJiABIVggwD4LMXnu6jGwvc-PwbT46HLfUFAp6flASQh4CuEsACIiWCDKyZP"
+                           "LKFfXGZa--6Gjbp0dmq_fDIYWYVapphWk6WodBA"}
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data=data,
+                                           headers=headers):
+            res = self.app.full_dispatch_request()
+            # Enrollment should fail because UV flag is not set but policy requires it
+            self.assertEqual(400, res.status_code, res)
+            j = res.json
+            # The error should indicate enrollment failure
+            self.assertIn("Could not enroll", j.get("result").get("error").get("message"))
+
+        delete_policies(["wan1", "wan2", "uv_req"])
+        try:
+            remove_token(webauthn_serial)
+        except:
+            pass
 
 
 class WebAuthnOfflineTestCase(MyApiTestCase):
