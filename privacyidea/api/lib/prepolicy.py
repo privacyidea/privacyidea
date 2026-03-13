@@ -763,24 +763,38 @@ def verify_enrollment(request=None, action=None):
     :return:
     """
     serial = getParam(request.all_data, "serial", optional)
+    # Early exit: no serial provided
+    if not serial:
+        return
+
+    # Lookup the token
+    token_list = get_tokens(serial=serial)
+    if len(token_list) != 1:
+        return
+
+    token = token_list[0]
+    # Early exit: token not in verify_pending state
+    if token.rollout_state != RolloutState.VERIFY_PENDING:
+        return
+
+    # Check if verify parameter is present
     verify = getParam(request.all_data, "verify", optional)
-    if verify and serial:
-        # Only now, we check if we need to verify
-        tokenobj_list = get_tokens(serial=serial)
-        if len(tokenobj_list) == 1:
-            tokenobj = tokenobj_list[0]
-            if tokenobj.rollout_state == RolloutState.VERIFY_PENDING:
-                log.debug("Verifying the token enrollment for token {0!s}.".format(serial))
-                r = tokenobj.verify_enrollment(verify)
-                log.info("Result of enrollment verification for token {0!s}: {1!s}".format(serial, r))
-                if r:
-                    # TODO: we need to add the tokentype here or the second init_token() call fails
-                    request.all_data.update(type=tokenobj.get_tokentype())
-                    tokenobj.token.rollout_state = RolloutState.ENROLLED
-                    tokenobj.token.save() # todo evaluate
-                else:
-                    from privacyidea.lib.error import ParameterError
-                    raise ParameterError("Verification of the new token failed.")
+    if not verify:
+        from privacyidea.lib.error import ParameterError
+        raise ParameterError("Token is in verify_pending state but 'verify' parameter is missing.")
+
+    # Verify the token enrollment
+    log.debug("Verifying the token enrollment for token {0!s}.".format(serial))
+    r = token.verify_enrollment(verify)
+    log.info("Result of enrollment verification for token {0!s}: {1!s}".format(serial, r))
+    if r:
+        # TODO: we need to add the tokentype here or the second init_token() call fails
+        request.all_data.update(type=token.get_tokentype())
+        token.token.rollout_state = RolloutState.ENROLLED
+        token.token.save()  # todo evaluate
+    else:
+        from privacyidea.lib.error import ParameterError
+        raise ParameterError("Verification of the new token failed.")
 
 
 def check_max_token_user(request=None, action=None, token_type=None):
