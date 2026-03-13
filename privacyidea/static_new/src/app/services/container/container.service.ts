@@ -24,7 +24,7 @@ import { NotificationService, NotificationServiceInterface } from "../notificati
 import { catchError, forkJoin, Observable, of, Subject, throwError } from "rxjs";
 import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
-import { EnrollmentUrl } from "../../mappers/token-api-payload/_token-api-payload.mapper";
+import { EnrollmentUrl, TokenEnrollmentPayload } from "../../mappers/token-api-payload/_token-api-payload.mapper";
 import { FilterValue } from "../../core/models/filter_value/filter_value";
 import { Sort } from "@angular/material/sort";
 import { TokenService, TokenServiceInterface } from "../token/token.service";
@@ -119,7 +119,7 @@ export interface ContainerTemplate {
   default: boolean;
   name: string;
   template_options: {
-    tokens: Array<Object>;
+    tokens: Array<TokenEnrollmentPayload>;
   };
 }
 

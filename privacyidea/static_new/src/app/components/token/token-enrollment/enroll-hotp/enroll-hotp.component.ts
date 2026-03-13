@@ -74,7 +74,7 @@ export class EnrollHotpComponent implements OnInit {
     { value: "sha256", viewValue: "SHA256" },
     { value: "sha512", viewValue: "SHA512" }
   ];
-  enrollmentData = input<HotpEnrollmentData>();
+  enrollmentData = input<HotpEnrollmentData | null>();
   @Input() wizard: boolean = false;
   @Output() enrollmentArgsGetterChange = new EventEmitter<
     (basicOptions: TokenEnrollmentData) => {
@@ -123,8 +123,7 @@ export class EnrollHotpComponent implements OnInit {
       this.twoStepControl.setValue(true, { emitEvent: false });
       this.twoStepControl.disable({ emitEvent: false });
       this.generateOnServerFormControl.disable({ emitEvent: false });
-    }
-    else if (this.twoStep() === "allow") {
+    } else if (this.twoStep() === "allow") {
       this.twoStepControl.valueChanges.subscribe((twoStepEnabled) => {
         if (twoStepEnabled) {
           this.generateOnServerFormControl.disable({ emitEvent: false });
@@ -152,7 +151,9 @@ export class EnrollHotpComponent implements OnInit {
     }
   }
 
-  enrollmentArgsGetter = (basicOptions: TokenEnrollmentData): {
+  enrollmentArgsGetter = (
+    basicOptions: TokenEnrollmentData
+  ): {
     data: HotpEnrollmentData;
     mapper: TokenApiPayloadMapper<HotpEnrollmentData>;
   } | null => {

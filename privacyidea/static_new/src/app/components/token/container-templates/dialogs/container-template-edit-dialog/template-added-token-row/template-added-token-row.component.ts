@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, effect, inject, input, output, signal, DestroyRef } from "@angular/core";
+import { Component, computed, effect, inject, input, output, signal, DestroyRef, linkedSignal } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { MatIconModule } from "@angular/material/icon";
@@ -44,6 +44,13 @@ import { EnrollPushComponent } from "../../../../token-enrollment/enroll-push/en
 import { EnrollRegistrationComponent } from "../../../../token-enrollment/enroll-registration/enroll-registration.component";
 import { EnrollTanComponent } from "../../../../token-enrollment/enroll-tan/enroll-tan.component";
 import { EnrollTiqrComponent } from "../../../../token-enrollment/enroll-tiqr/enroll-tiqr.component";
+import { enrollmentArgsGetterFn } from "@components/token/token-enrollment/token-enrollment.component";
+import {
+  TokenApiPayloadMapper,
+  TokenEnrollmentData,
+  TokenEnrollmentPayload
+} from "src/app/mappers/token-api-payload/_token-api-payload.mapper";
+import { getTokenApiPayloadMapper } from "src/app/mappers/token-api-payload/token-api-payload-mapper-registry";
 
 @Component({
   selector: "app-template-added-token-row",
@@ -80,23 +87,52 @@ export class TemplateAddedTokenRowComponent {
   private readonly destroyRef = inject(DestroyRef);
 
   // Inputs & Outputs
-  readonly token = input.required<any>();
+  readonly tokenEnrollmentPayload = input.required<TokenEnrollmentPayload>();
+
+  // readonly tokenEnrollmentData = computed(() => {
+  //   const payload = this.tokenEnrollmentPayload();
+  //   if (!payload) return null;
+
+  //   // if (!enrollmentArgs) return null;
+  //   const enrollmentData = getTokenApiPayloadMapper(this.tokenEnrollmentPayload().type)!.fromApiPayload(payload);
+  //   const enrollmentArgs = this.enrollmentArgsGetterSignal()?.(enrollmentData);
+  //   if (!enrollmentArgs) return null;
+  //   const mapper = enrollmentArgs.mapper;
+  //   const data = enrollmentArgs.data;
+  //   const mappedData = mapper.fromApiPayload(data);
+  //   return mappedData;
+  // });
   readonly index = input.required<number>();
-  readonly onEditToken = output<any>();
+  readonly onEditToken = output<Partial<TokenEnrollmentPayload>>();
   readonly onRemoveToken = output<number>();
 
   // State Signals
   readonly formControls = signal<{ [key: string]: FormControl<any> }>({});
   readonly childHadNoForm = computed(() => Object.keys(this.formControls()).length === 0);
 
+  readonly enrollmentArgsGetterSignal = signal<enrollmentArgsGetterFn | null>(null);
+
+  readonly tokenEnrollmentData = linkedSignal<any, Partial<TokenEnrollmentData> | null>({
+    source: () => ({
+      payload: this.tokenEnrollmentPayload(),
+      enrollmentArgsGetter: this.enrollmentArgsGetterSignal()
+    }),
+    computation: (source) => {
+      const mapper1 = getTokenApiPayloadMapper(source.payload?.type);
+      if (!mapper1) return null;
+      const enrollmentData = mapper1.fromApiPayload(source.payload);
+      return enrollmentData;
+    }
+  });
+
   constructor() {
     // Sync external token changes back into the form controls
     effect(() => {
       const controls = this.formControls();
-      const currentToken = this.token();
+      const currentToken = this.tokenEnrollmentPayload();
 
       Object.entries(controls).forEach(([key, control]) => {
-        const tokenValue = currentToken[key];
+        const tokenValue = (currentToken as any)[key];
         if (tokenValue !== undefined && tokenValue !== null && control.value !== tokenValue) {
           control.setValue(tokenValue, { emitEvent: false });
         }
@@ -104,19 +140,27 @@ export class TemplateAddedTokenRowComponent {
     });
   }
 
+  updateEnrollmentArgsGetter(
+    enrollmentArgsGetter: (
+      basicOptions: TokenEnrollmentData
+    ) => { data: TokenEnrollmentData; mapper: TokenApiPayloadMapper<TokenEnrollmentData> } | null
+  ) {
+    this.enrollmentArgsGetterSignal.set(enrollmentArgsGetter);
+  }
+
   // Token Management Methods
-  updateAdditionalFormFields(fields: { [key: string]: FormControl<any> }) {
+  updateAdditionalFormFields(fields: { [key: string]: FormControl<Partial<TokenEnrollmentData>> }) {
     this.formControls.set(fields);
-    const initialPatch: { [key: string]: any } = {};
+    const initialPatch: { [key: string]: Partial<TokenEnrollmentData> } = {};
 
     Object.entries(fields).forEach(([key, control]) => {
       if (control) {
         initialPatch[key] = control.value;
 
         // Listen for user input changes
-        control.valueChanges
-          .pipe(takeUntilDestroyed(this.destroyRef))
-          .subscribe((newValue) => this.updateToken({ [key]: newValue }));
+        control.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((enrollmentData) => {
+          this.updateToken(enrollmentData);
+        });
       }
     });
 
@@ -129,16 +173,29 @@ export class TemplateAddedTokenRowComponent {
     }
   }
 
-  private updateToken(patch: { [key: string]: any }) {
-    this.onEditToken.emit({ ...patch });
+  private updateToken(enrollmentData: Partial<TokenEnrollmentData>) {
+    const updatedEnrollmentData = { ...this.tokenEnrollmentData(), ...enrollmentData };
+
+    this.tokenEnrollmentData.set(updatedEnrollmentData);
+    const args = this.enrollmentArgsGetterSignal()?.({
+      type: this.tokenEnrollmentPayload().type,
+      ...updatedEnrollmentData
+    });
+
+    if (args) {
+      const mappedData = args.mapper.toApiPayload(args.data);
+      this.onEditToken.emit(mappedData);
+    } else {
+      this.onEditToken.emit(enrollmentData);
+    }
   }
 
-  private _initialTokenFill(patch: { [key: string]: any }) {
-    const currentToken = this.token();
-    const updatedFields: { [key: string]: any } = {};
+  private _initialTokenFill(patch: { [key: string]: Partial<TokenEnrollmentData> }) {
+    const currentToken = this.tokenEnrollmentPayload();
+    const updatedFields: { [key: string]: Partial<TokenEnrollmentData> } = {};
 
     Object.keys(patch).forEach((key) => {
-      if (currentToken[key] === undefined || currentToken[key] === null) {
+      if ((currentToken as any)[key] === undefined || (currentToken as any)[key] === null) {
         updatedFields[key] = patch[key];
       }
     });

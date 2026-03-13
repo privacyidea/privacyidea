@@ -18,12 +18,12 @@
  **/
 
 import { Injectable } from "@angular/core";
-import { TokenDetails } from "../../services/token/token.service";
+import { TokenDetails, TokenTypeKey } from "../../services/token/token.service";
 
 export interface EnrollmentResponse<D extends EnrollmentResponseDetail = EnrollmentResponseDetail> {
   type: string;
   detail: D;
-  result: {status: boolean}
+  result: { status: boolean };
 
   [key: string]: any;
 }
@@ -40,7 +40,7 @@ export interface EnrollmentResponseDetail {
   otpkey?: EnrollmentUrl;
   motpurl?: EnrollmentUrl;
   tiqrenroll?: EnrollmentUrl;
-  verify?: {message: string};
+  verify?: { message: string };
 
   [key: string]: any;
 }
@@ -53,7 +53,7 @@ export interface EnrollmentUrl {
 }
 
 export type TokenEnrollmentData = {
-  type: string;
+  type: TokenTypeKey;
   description?: string;
   containerSerial?: string;
   validityPeriodStart?: string;
@@ -69,7 +69,7 @@ export type TokenEnrollmentData = {
 };
 
 export interface TokenEnrollmentPayload {
-  type: string;
+  type: TokenTypeKey;
   description?: string;
   container_serial?: string;
   validity_period_start?: string;

@@ -75,7 +75,7 @@
     <div class="added-tokens-list">
       @for (token of tokens(); track $index) {
         <app-template-added-token-row
-          [token]="token"
+          [tokenEnrollmentPayload]="token"
           [index]="$index"
           (onEditToken)="onEditToken($event, $index)"
           (onRemoveToken)="onDeleteToken($index)">

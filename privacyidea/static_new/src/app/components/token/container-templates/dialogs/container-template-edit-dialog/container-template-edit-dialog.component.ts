@@ -40,6 +40,8 @@ import { DialogAction } from "src/app/models/dialog";
 import { ContainerTemplateAddTokenComponent } from "./container-template-add-token-chips/container-template-add-token.component";
 import { TemplateAddedTokenRowComponent } from "./template-added-token-row/template-added-token-row.component";
 import { PendingChangesDialogComponent } from "@components/shared/dialog/abstract-dialog/pending-changes-dialog.component";
+import { TokenEnrollmentPayload } from "src/app/mappers/token-api-payload/_token-api-payload.mapper";
+import { TokenTypeKey } from "src/app/services/token/token.service";
 
 @Component({
   selector: "app-container-template-edit-dialog",
@@ -154,11 +156,11 @@ export class ContainerTemplateEditDialogComponent extends PendingChangesDialogCo
   }
 
   onAddToken(tokenType: string) {
-    const updatedTokens = [...this.tokens(), { type: tokenType }];
+    const updatedTokens = [...this.tokens(), { type: tokenType as TokenTypeKey }];
     this.updateTokens(updatedTokens);
   }
 
-  onEditToken(patch: Partial<any>, index: number) {
+  onEditToken(patch: Partial<TokenEnrollmentPayload>, index: number) {
     const updatedTokens = this.tokens().map((token, i) => (i === index ? { ...token, ...patch } : token));
     this.updateTokens(updatedTokens);
   }
@@ -168,7 +170,7 @@ export class ContainerTemplateEditDialogComponent extends PendingChangesDialogCo
   }
 
   // --- Private Helper Methods ---
-  private updateTokens(tokens: any[]) {
+  private updateTokens(tokens: TokenEnrollmentPayload[]) {
     this.editTemplate({
       template_options: {
         ...this.template().template_options,
