@@ -54,6 +54,7 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+from flask_babel import _
 from flask import (Blueprint, request, g, current_app)
 
 from ..lib.container import find_container_by_serial, add_token_to_container, add_not_authorized_tokens_result
@@ -62,7 +63,7 @@ from .lib.utils import optional, send_result, send_csv_result, required, getPara
 from ..lib.tokenclass import RolloutState
 from ..lib.tokens.passkeytoken import PasskeyTokenClass
 from ..lib.tokens.webauthntoken import WebAuthnTokenClass
-from ..lib.user import get_user_from_param
+from ..lib.user import get_user_from_param, User
 from ..lib.token import (init_token, get_tokens_paginate, assign_token,
                          unassign_token, remove_token, enable_token,
                          revoke_token,
@@ -79,7 +80,7 @@ from ..lib.token import (init_token, get_tokens_paginate, assign_token,
 from ..lib.fido2.util import get_credential_ids_for_user
 from werkzeug.datastructures import FileStorage
 from privacyidea.lib.error import (ParameterError, TokenAdminError,
-                                   ResourceNotFoundError, PolicyError, ERROR)
+                                   ResourceNotFoundError, PolicyError, Error)
 from privacyidea.lib.importotp import (parseOATHcsv, parseSafeNetXML,
                                        parseYubicoCSV, parsePSKCdata, GPGImport)
 import logging
@@ -319,7 +320,7 @@ def init():
             init_details = token.get_init_detail(param, user)
             response_details.update(init_details)
         except ParameterError as e:
-            if e.id is ERROR.PARAMETER_USER_MISSING:
+            if e.id == Error.PARAMETER_USER_MISSING:
                 remove_token(serial=token.get_serial())
             raise e
 
@@ -439,7 +440,13 @@ def list_api():
     :query type: Display only token of type. You can do a not strict matching by
         specifying a tokentype like "*otp*", to find hotp and totp tokens.
     :query type_list: Comma separated list of token types. Display only tokens of the types in the list.
-    :query user: display tokens of this user
+    :query user: **Admin only.** Filter by this username. Can include the realm as ``user@realm``. When
+        combined with the ``realm`` parameter the realm from ``realm`` takes
+        precedence. This parameter is ignored for callers with the ``user`` role —
+        they always see only their own tokens.
+    :query realm: **Admin only.** Realm of the user given in the ``user`` parameter. When provided
+        without a ``user`` parameter, returns tokens assigned to any user in that realm.
+        Ignored for callers with the ``user`` role.
     :query tokenrealm: takes a realm, only the tokens in this realm will be
         displayed
     :query basestring description: Display token with this kind of description
@@ -465,7 +472,6 @@ def list_api():
     :rtype: json
     """
     param = request.all_data
-    user = request.User
     serial = getParam(param, "serial", optional)
     page = int(getParam(param, "page", optional, default=1))
     tokentype = getParam(param, "type", optional)
@@ -479,6 +485,21 @@ def list_api():
     realm = getParam(param, "tokenrealm", optional)
     userid = getParam(param, "userid", optional)
     resolver = getParam(param, "resolver", optional)
+
+    # Only admins may use the "user" and "realm" query parameters to query
+    # tokens of arbitrary users or realms. For callers with role "user" we
+    # always use request.User (which resolve_logged_in_user already forced to
+    # their own identity) so that a regular user can never see other users'
+    # tokens via these params.
+    is_admin = g.logged_in_user.get("role") == "admin"
+    user_param = getParam(param, "user", optional)
+    realm_param = getParam(param, "realm", optional)
+    if is_admin and user_param:
+        user = get_user_from_param(param)
+    elif is_admin and realm_param:
+        user = User(login="", realm=realm_param)
+    else:
+        user = request.User
     output_format = getParam(param, "outform", optional)
     assigned = getParam(param, "assigned", optional)
     active = getParam(param, "active", optional)
@@ -1091,8 +1112,8 @@ def loadtokens_api(filename=None):
     aes_psk = getParam(request.all_data, "psk")
     aes_password = getParam(request.all_data, "password")
     if aes_psk and len(aes_psk) != 32:
-        raise TokenAdminError("The Pre Shared Key must be 128 Bit hex "
-                              "encoded. It must be 32 characters long!")
+        raise TokenAdminError(_("The Pre Shared Key must be 128 Bit hex "
+                                "encoded. It must be 32 characters long!"))
     trealms = getParam(request.all_data, "tokenrealms") or ""
     tokenrealms = []
     if trealms:
@@ -1112,17 +1133,19 @@ def loadtokens_api(filename=None):
             file_contents = file_contents.decode()
     except UnicodeDecodeError as e:
         log.error(f"Unable to convert contents of file '{filename}' to unicode: {e}")
-        raise ParameterError("Unable to convert file contents. Binary data is not supported")
+        raise ParameterError(_("Unable to convert file contents. Binary data is not supported"))
 
     if file_contents == "":
         log.error(f"Error loading/importing token file. File {filename} is empty!")
-        raise ParameterError("Error loading token file. File empty!")
+        raise ParameterError(_("Error loading token file. File empty!"))
 
     if file_type not in known_types:
         log.error(f"Unknown file type: '{file_type}'. Supported types are: "
                   f"{', '.join(known_types)}")
-        raise TokenAdminError(f"Unknown file type: '{file_type}'. Supported "
-                              f"types are: {', '.join(known_types)}")
+        raise TokenAdminError(
+            _("Unknown file type: '{file_type}'. Supported file types are: {known_types}")
+            .format(file_type=file_type, known_types=', '.join(known_types))
+        )
 
     # Decrypt file, if necessary
     if file_contents.startswith("-----BEGIN PGP MESSAGE-----"):
@@ -1232,7 +1255,7 @@ def lost_api(serial=None):
     if userobj:
         toks = get_tokens(serial=serial, user=userobj)
         if not toks:
-            raise TokenAdminError("The user {0!r} does not own the token {1!s}".format(
+            raise TokenAdminError(_("The user {0!r} does not own the token {1!s}").format(
                 userobj, serial))
 
     options = {"g": g,

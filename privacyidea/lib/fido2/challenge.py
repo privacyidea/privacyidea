@@ -12,6 +12,7 @@ from privacyidea.lib.config import get_from_config
 from privacyidea.lib.crypto import geturandom
 from privacyidea.lib.error import ResourceNotFoundError, AuthError
 from privacyidea.lib.fido2.config import FIDO2ConfigOptions
+from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
@@ -60,7 +61,9 @@ def create_fido2_challenge(rp_id: str, user_verification: str = "preferred", tra
         log.warning(f"Invalid user_verification value {user_verification}. Using 'preferred' instead.")
         user_verification = "preferred"
 
-    data = {"user_verification": user_verification}
+    # Use the canonical policy-action constant as the key so verify_fido2_challenge can read it
+    # uniformly without knowing about the raw "user_verification" string.
+    data = {FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT: user_verification}
 
     db_challenge = Challenge(serial or "", transaction_id=transaction_id, challenge=nonce,
                              data=json.dumps(data), validitytime=validity)
@@ -71,6 +74,7 @@ def create_fido2_challenge(rp_id: str, user_verification: str = "preferred", tra
         "challenge": nonce,
         "message": message,
         "rpId": rp_id,
+        # "user_verification" is the browser-facing field name
         "user_verification": user_verification
     }
 
@@ -112,17 +116,20 @@ def verify_fido2_challenge(transaction_id: str, token: TokenClass, params: dict)
         log.error(f"Challenge with transaction_id {transaction_id} has timed out.")
         raise AuthError(f"The challenge {transaction_id} has timed out.")
 
-    # Get the user_verification requirement from the challenge data
+    # New challenges store the value under FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT.
+    # Challenges created by older code used the raw "user_verification" string instead.
+    # The translation happens here so token classes can always read the constant without a fallback.
     data = challenge.get_data()
-    if not isinstance(data, dict) or "user_verification" not in data:
-        log.error(f"Invalid user_verification data in challenge with transaction_id {transaction_id}.")
-        raise AuthError(f"Invalid user_verification data in challenge {transaction_id}.")
-    user_verification = data["user_verification"]
+    if not isinstance(data, dict):
+        log.error(f"Invalid challenge data for transaction_id {transaction_id}.")
+        raise AuthError(f"Invalid challenge data for transaction_id {transaction_id}.")
+    user_verification = (data.get(FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT)
+                         or data.get("user_verification"))
     if user_verification not in ["required", "preferred", "discouraged"]:
         log.error(
-            f"Invalid user_verification value {user_verification} in challenge with transaction_id {transaction_id}."
+            f"Invalid user_verification value {user_verification!r} in challenge {transaction_id}."
         )
-        raise AuthError(f"Invalid user_verification value {user_verification} in challenge {transaction_id}.")
+        raise AuthError(f"Invalid user_verification value in challenge {transaction_id}.")
 
     options = {
         "challenge": challenge.challenge,
@@ -131,7 +138,7 @@ def verify_fido2_challenge(transaction_id: str, token: TokenClass, params: dict)
         "signature": get_required_one_of(params, ["signature", "signaturedata"]),
         "userHandle": get_optional_one_of(params, ["userHandle", "userhandle"]),
         "HTTP_ORIGIN": get_required(params, "HTTP_ORIGIN"),
-        "user_verification": user_verification
+        FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT: user_verification
     }
     # These parameters are required for compatibility with the old WebAuthnToken class
     if token.type == "webauthn":

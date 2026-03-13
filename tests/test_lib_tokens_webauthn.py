@@ -536,6 +536,87 @@ class WebAuthnTokenTestCase(MyTestCase):
         # Returns the sign count on success which is 79
         self.assertEqual(res, 79)
 
+    def test_11b_uv_required_via_fido2_challenge_flow(self):
+        """
+        Challenges created by older code stored the UV requirement under the raw string key "user_verification".
+        Now, everything uses FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT.
+        This test inserts challenge rows using the old "user_verification" key and goes through
+        verify_fido2_challenge() to confirm it can still be loaded correctly.
+        """
+        import json
+        from privacyidea.lib.fido2.challenge import verify_fido2_challenge
+        from privacyidea.models import Challenge
+
+        self._setup_token()
+        self.token.add_tokeninfo(FIDO2TokenInfo.PUB_KEY, "a50102032620012158202eb296d6dfafe813d096743f8d1ba75b37af2"
+                                                         "e1e0e6356df112a57bc29c7200c22582022f057ded7de836a23a04be4cef4a"
+                                                         "5a1bd6d263a1554ea4107b74e3e12844c60")
+        self.token.set_otpkey(hexlify_and_unicode(webauthn_b64_decode("dvFzp44mRo8Wgu5926p-WawbCPWiwVHmFfldMDPL1tUMOpf5"
+                                                                      "eSRyg2phkH0Ar88ic2ck4Cy9Yrti5CpBkrvsCA")))
+        self.token.add_tokeninfo(FIDO2TokenInfo.RELYING_PARTY_ID, "cool.nils")
+
+        # The WebAuthn token stores the challenge as the hex-encoded raw nonce bytes.
+        # These values match the clientdata used by the two assertions below.
+        challenge_no_uv = hexlify_and_unicode(webauthn_b64_decode("1BnSt4TYHSsNmQLnQKJr1afBBbJbwIvwPjIEx3fmx-8"))
+        challenge_with_uv = hexlify_and_unicode(webauthn_b64_decode("jQcrMyYAcLCc3AnuyiuiF78CPaXH1KEEsGEknGwhrXo"))
+
+        # Store the UV requirement under the old "user_verification" key to simulate a challenge that
+        # was written by code that predates the change. verify_fido2_challenge() must still pick it up.
+        old_key_data = json.dumps({"user_verification": "required"})
+
+        # UV not set + policy "required" -> fail
+        failing_db_challenge = Challenge(
+            serial=self.token.get_serial(),
+            challenge=challenge_no_uv,
+            data=old_key_data,
+            validitytime=120
+        )
+        failing_db_challenge.save()
+        failing_transaction_id = failing_db_challenge.transaction_id
+
+        result = verify_fido2_challenge(
+            transaction_id=failing_transaction_id,
+            token=self.token,
+            params={
+                "credential_id": "dvFzp44mRo8Wgu5926p-WawbCPWiwVHmFfldMDPL1tUMOpf5eSRyg2phkH0Ar88ic2ck4Cy9Yrti5CpBkrvsCA",
+                "authenticatordata": "tPp8c-wXo6hFUbdedkHcOP1s-xkwOrHsxfvNfhI7wVcBAAAATQ",
+                "clientdata": "eyJ0eXBlIjoid2ViYXV0aG4uZ2V0IiwiY2hhbGxlbmdlIjoiMUJuU3Q0VFlIU3NObVFMblFLSnIxYWZCQmJKYndJdndQ"
+                              "aklFeDNmbXgtOCIsIm9yaWdpbiI6Imh0dHBzOi8vY29vbC5uaWxzOjUwMDAiLCJjcm9zc09yaWdpbiI6ZmFsc2V9",
+                "signaturedata": "MEYCIQC_kKwpVlWx7LQ5UXPjt0etsC45-EQHjvxq7oOHrdH_swIhAMSBzfY8JXJkP0zQMSQ39g2z-lLE1iAvZPM6"
+                                 "0iWyPNtX",
+                "HTTP_ORIGIN": "https://cool.nils:5000",
+            }
+        )
+        self.assertFalse(result.success > 0,
+                         "UV bypass: assertion without UV must be rejected when policy is 'required'")
+
+        # UV set + policy "required" -> success
+        working_db_challenge = Challenge(
+            serial=self.token.get_serial(),
+            challenge=challenge_with_uv,
+            data=old_key_data,
+            validitytime=120
+        )
+        working_db_challenge.save()
+        working_transaction_id = working_db_challenge.transaction_id
+
+        result = verify_fido2_challenge(
+            transaction_id=working_transaction_id,
+            token=self.token,
+            params={
+                "credential_id": "dvFzp44mRo8Wgu5926p-WawbCPWiwVHmFfldMDPL1tUMOpf5eSRyg2phkH0Ar88ic2ck4Cy9Yrti5CpBkrvsCA",
+                "authenticatordata": "tPp8c-wXo6hFUbdedkHcOP1s-xkwOrHsxfvNfhI7wVcFAAAATw",
+                "clientdata": "eyJ0eXBlIjoid2ViYXV0aG4uZ2V0IiwiY2hhbGxlbmdlIjoialFjck15WUFjTENjM0FudXlpdWlGNzhDUGFYSDFLRUVz"
+                              "R0Vrbkd3aHJYbyIsIm9yaWdpbiI6Imh0dHBzOi8vY29vbC5uaWxzOjUwMDAiLCJjcm9zc09yaWdpbiI6ZmFsc2V9",
+                "signaturedata": "MEUCIAMH6YDQCT4mA0GAgCJ53EA2mOOk1vB-pghsmREk-0aOAiEAtG5T-2M_sFC9KBQS9ybJdPSTZvfofZmR9GbHT"
+                                 "-mBQrM",
+                "HTTP_ORIGIN": "https://cool.nils:5000",
+            }
+        )
+        # sign count is 79 on success
+        self.assertEqual(79, result.success,
+                         "Assertion with UV set must be accepted when policy is 'required'")
+
     def test_12_webauthn_token_export(self):
         # Set up the webauthn token for testing
         self._setup_token()

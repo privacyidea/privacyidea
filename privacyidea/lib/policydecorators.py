@@ -50,7 +50,7 @@ import re
 from dateutil.tz import tzlocal
 
 from privacyidea.lib.authcache import verify_in_cache, add_to_cache
-from privacyidea.lib.error import PolicyError, UserError, AuthError, ERROR
+from privacyidea.lib.error import PolicyError, UserError, AuthError, Error
 from privacyidea.lib.policies.helper import check_max_auth_fail, check_max_auth_success
 from privacyidea.lib.policy import SCOPE, ACTIONVALUE, LOGINMODE
 from privacyidea.lib.policies.actions import PolicyAction
@@ -257,7 +257,7 @@ def auth_user_does_not_exist(wrapped_function, user_object, passw, options=None)
             hide_message = Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE,
                                       user_object=user_object).any()
             if hide_message:
-                raise AuthError("", id=ERROR.AUTHENTICATE_WRONG_CREDENTIALS)
+                raise AuthError("", id=Error.AUTHENTICATE_WRONG_CREDENTIALS)
             else:
                 raise UserError(f"User {user_object} does not exist.")
 

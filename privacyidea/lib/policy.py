@@ -188,7 +188,7 @@ from privacyidea.lib.config import (get_token_classes, get_token_types,
                                     get_multichallenge_enrollable_types,
                                     get_email_validators, get_privacyidea_nodes, get_enrollable_token_types)
 from privacyidea.lib.error import ParameterError, PolicyError, ResourceNotFoundError, ServerError
-from privacyidea.lib.error import privacyIDEAError
+from privacyidea.lib.error import PrivacyIDEAError
 from privacyidea.lib.radiusserver import get_radiusservers
 from privacyidea.lib.realm import get_realms
 from privacyidea.lib.resolver import get_resolver_list
@@ -1393,7 +1393,7 @@ def set_policy(name: Optional[str] = None, scope: Optional[str] = None, action: 
         try:
             check_ip_in_policy("127.0.0.1", [c.strip() for c in client.split(",")])
         except AddrFormatError:
-            raise privacyIDEAError(_("Invalid client definition!"), id=302)
+            raise PrivacyIDEAError(_("Invalid client definition!"), id=302)
     if isinstance(pinode, list):
         pinode = ", ".join(pinode)
     if isinstance(user_agents, list):

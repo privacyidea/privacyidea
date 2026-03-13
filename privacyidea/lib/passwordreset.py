@@ -25,7 +25,7 @@ from sqlalchemy import select, delete
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.crypto import (hash_with_pepper, verify_with_pepper,
                                     generate_password)
-from privacyidea.lib.error import UserError, privacyIDEAError, ConfigAdminError
+from privacyidea.lib.error import UserError, PrivacyIDEAError, ConfigAdminError
 from privacyidea.lib.log import log_with
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import SCOPE, Match
@@ -92,7 +92,7 @@ def create_recoverycode(user, email=None, expiration_seconds=3600,
                                               user.login, user.realm,
                                               recoverycode))
         if not r:
-            raise privacyIDEAError("Failed to send email. {0!s}".format(r))
+            raise PrivacyIDEAError("Failed to send email. {0!s}".format(r))
     else:
         raise ConfigAdminError("Missing configuration "
                                "recovery.identifier.")

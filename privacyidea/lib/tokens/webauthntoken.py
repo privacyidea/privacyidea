@@ -33,7 +33,7 @@ from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.crypto import geturandom
 from privacyidea.lib.decorators import check_token_locked
-from privacyidea.lib.error import ParameterError, EnrollmentError, PolicyError, ERROR
+from privacyidea.lib.error import ParameterError, EnrollmentError, PolicyError, Error
 from privacyidea.lib.fido2.config import FIDO2ConfigOptions
 from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction
 from privacyidea.lib.fido2.token_info import FIDO2TokenInfo
@@ -931,7 +931,7 @@ class WebAuthnTokenClass(TokenClass):
                 raise ValueError("Creating a WebAuthn token requires params to be provided")
             if not user:
                 raise ParameterError("User must be provided for WebAuthn enrollment!",
-                                     id=ERROR.PARAMETER_USER_MISSING)
+                                     id=Error.PARAMETER_USER_MISSING)
 
             user_verification = get_required(params, FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT)
             timeout = get_required(params, FIDO2PolicyAction.TIMEOUT)
@@ -943,7 +943,7 @@ class WebAuthnTokenClass(TokenClass):
             response_detail['rollout_state'] = self.token.rollout_state
             # To aid with unit testing a fixed nonce may be passed in.
             nonce = self._get_nonce()
-            data = {"user_verification": user_verification}
+            data = {FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT: user_verification}
             # Create the challenge in the database
             challenge = Challenge(serial=self.token.serial,
                                   transaction_id=get_optional(params, "transaction_id"),
@@ -1099,7 +1099,7 @@ class WebAuthnTokenClass(TokenClass):
             nonce = binascii.unhexlify(challenge)
 
         user_verification = get_required(options, FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT)
-        data = {"user_verification": user_verification}
+        data = {FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT: user_verification}
         # Create the challenge in the database
         db_challenge = Challenge(serial=self.token.serial,
                                  transaction_id=transactionid,
@@ -1188,7 +1188,7 @@ class WebAuthnTokenClass(TokenClass):
             except ParameterError:
                 raise ValueError("When performing WebAuthn authorization, options must contain user")
 
-            uv_req = get_optional(options, FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT)
+            uv_req = get_optional(options, FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT, "preferred")
             # Check if challenge is base64 encoded to be able to use login via passkey with webauthn
             challenge = get_required(options, "challenge").rstrip("=")
             challenge_decoded = None

@@ -3537,7 +3537,101 @@ class APITokenTestCase(MyApiTestCase):
         remove_token(token.get_serial())
         delete_policy("helpdesk")
 
-    def test_62_init_token_with_force_genkey(self):
+    def test_62_list_tokens_realm_only_filter(self):
+        """GET /token/?realm=X without a user param must return tokens assigned
+        to users in that realm and must not raise ERR904."""
+        self.setUp_user_realms()
+        self.setUp_user_realm2()
+
+        tok_realm1 = init_token({"genkey": 1},
+                                user=User(login="cornelius", realm=self.realm1,
+                                          resolver=self.resolvername1))
+        tok_realm2 = init_token({"genkey": 1},
+                                user=User(login="hans", realm=self.realm2,
+                                          resolver=self.resolvername1))
+
+        # realm filter without user param — must succeed and only return realm1 tokens
+        with self.app.test_request_context("/token/",
+                                           method="GET",
+                                           query_string=urlencode({"realm": self.realm1}),
+                                           headers={"Authorization": self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res.json)
+            value = res.json["result"]["value"]
+            serials = [t["serial"] for t in value["tokens"]]
+            self.assertIn(tok_realm1.get_serial(), serials)
+            self.assertNotIn(tok_realm2.get_serial(), serials)
+
+        remove_token(tok_realm1.get_serial())
+        remove_token(tok_realm2.get_serial())
+
+    def test_63_list_tokens_user_role_cannot_escalate(self):
+        """A caller with role 'user' must not be able to list tokens of other
+        users by passing user= or realm= query parameters."""
+        self.setUp_user_realms()
+        # authenticate as 'selfservice' (user role)
+        self.authenticate_selfservice_user()
+
+        # token assigned to a different user
+        other_token = init_token({"genkey": 1},
+                                 user=User(login="cornelius", realm=self.realm1,
+                                           resolver=self.resolvername1))
+        # token assigned to selfservice (the logged-in user)
+        own_token = init_token({"genkey": 1},
+                               user=User(login="selfservice", realm=self.realm1,
+                                         resolver=self.resolvername1))
+
+        try:
+            # Attempt 1: user role tries ?user=cornelius — must only see own tokens
+            with self.app.test_request_context("/token/",
+                                               method="GET",
+                                               query_string=urlencode({
+                                                   "user": "cornelius",
+                                                   "realm": self.realm1}),
+                                               headers={"Authorization": self.at_user}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res.json)
+                value = res.json["result"]["value"]
+                serials = [t["serial"] for t in value["tokens"]]
+                # must not see cornelius' token
+                self.assertNotIn(other_token.get_serial(), serials,
+                                 "user role must not see another user's token via user= param")
+                # must only see own token
+                self.assertIn(own_token.get_serial(), serials,
+                              "user role must still see their own token")
+
+            # Attempt 2: user role tries ?realm=realm1 without user — must only see own tokens
+            with self.app.test_request_context("/token/",
+                                               method="GET",
+                                               query_string=urlencode({"realm": self.realm1}),
+                                               headers={"Authorization": self.at_user}):
+                res = self.app.full_dispatch_request()
+                self.assertEqual(200, res.status_code, res.json)
+                value = res.json["result"]["value"]
+                serials = [t["serial"] for t in value["tokens"]]
+                self.assertNotIn(other_token.get_serial(), serials,
+                                 "user role must not see another user's token via realm= param")
+                self.assertIn(own_token.get_serial(), serials,
+                              "user role must still see their own token")
+        finally:
+            remove_token(other_token.get_serial())
+            remove_token(own_token.get_serial())
+
+    def test_64_list_tokens_unresolvable_user_raises_err904(self):
+        """GET /token/?user=nonexistent&realm=X must return ERR904 when the
+        user does not exist in any resolver of that realm.
+        that behavior is not great, but it is what it is."""
+        self.setUp_user_realms()
+
+        with self.app.test_request_context("/token/",
+                                           method="GET",
+                                           query_string=urlencode({
+                                               "user": "no_such_user_xyz",
+                                               "realm": self.realm1}),
+                                           headers={"Authorization": self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(400, res.status_code, res.json)
+            self.assertEqual(904, res.json["result"]["error"]["code"])
         set_policy("enroll", scope=SCOPE.ADMIN, action="enrollHOTP, enrollTOTP, enrollMOTP, enrollAPPLSPEC")
         # No policy set: but if genkey and otpkey are not provided, genkey is also set to true
         with self.app.test_request_context('/token/init',
@@ -3624,7 +3718,7 @@ class APITokenTestCase(MyApiTestCase):
         delete_policy("applspec_genkey")
         delete_policy("enroll")
 
-    def test_63_bulk_unassign(self):
+    def test_65_bulk_unassign(self):
         set_policy(name="policy", scope=SCOPE.ADMIN, action=PolicyAction.UNASSIGN, realm=self.realm1)
 
         # create tokens
@@ -3656,7 +3750,7 @@ class APITokenTestCase(MyApiTestCase):
 
         delete_policy("policy")
 
-    def test_64_change_pin_every(self):
+    def test_66_change_pin_every(self):
         self.setUp_user_realms()
         self.authenticate_selfservice_user()
         set_policy("change_pin", scope=SCOPE.ENROLL, action=f"{PolicyAction.CHANGE_PIN_EVERY}=1d")
@@ -3788,7 +3882,7 @@ class APITokenTestCase(MyApiTestCase):
         delete_policy("change_pin")
         delete_policy("loginmode")
 
-    def test_65_enroll_pin_not_allowed(self):
+    def test_67_enroll_pin_not_allowed(self):
         # We need to set a policy in the admin scope so that policies_at_all is not empty.
         # We allow enrollment of SPASS tokens, but we do NOT allow setting a PIN (enrollpin).
         set_policy(name="admin_policy", scope=SCOPE.ADMIN, action="enrollSPASS")
@@ -3807,7 +3901,7 @@ class APITokenTestCase(MyApiTestCase):
 
         delete_policy("admin_policy")
 
-    def test_66_enroll_pin_allowed(self):
+    def test_68_enroll_pin_allowed(self):
         # We allow enrollment of SPASS tokens AND setting a PIN (enrollpin).
         set_policy(name="admin_policy", scope=SCOPE.ADMIN,
                    action=["enrollSPASS", PolicyAction.ENROLLPIN])

@@ -13,7 +13,7 @@ from privacyidea.lib.policy import set_policy, delete_policy, SCOPE
 from privacyidea.lib.tokens.u2ftoken import U2FAction
 from privacyidea.models import Challenge
 from privacyidea.lib.utils import hexlify_and_unicode, to_bytes
-from privacyidea.lib.error import ERROR
+from privacyidea.lib.error import Error
 
 
 PWFILE = "tests/testdata/passwords"
@@ -421,7 +421,7 @@ class APIU2fTestCase(MyApiTestCase):
             self.assertEqual(res.status_code, 403)
             result = res.json.get("result")
             self.assertEqual(result.get("status"), False)
-            self.assertEqual(result.get("error").get("code"), ERROR.POLICY)
+            self.assertEqual(result.get("error").get("code"), Error.POLICY)
             self.assertEqual(result.get("error").get("message"),
                              'The U2F device is not allowed to authenticate '
                              'due to policy restriction.')

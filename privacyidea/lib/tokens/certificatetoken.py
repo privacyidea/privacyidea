@@ -57,7 +57,7 @@ from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib import _
 from privacyidea.lib.policy import SCOPE, GROUP, Match
 from privacyidea.lib.policies.actions import PolicyAction as BASE_ACTION
-from privacyidea.lib.error import privacyIDEAError, CSRError, CSRPending, CAError
+from privacyidea.lib.error import PrivacyIDEAError, CSRError, CSRPending, CAError
 
 optional = True
 required = False
@@ -155,7 +155,7 @@ def verify_certificate(certificate: Certificate, chain: list):
     :return: raises an exception
     """
     if not chain:
-        raise privacyIDEAError("Can not verify certificate against an empty chain.")  # pragma: no cover
+        raise PrivacyIDEAError("Can not verify certificate against an empty chain.")  # pragma: no cover
     # first reverse the list, since it can be popped better
     chain = list(reversed(chain))
     chain = [load_pem_x509_certificate(c.encode()) for c in chain]
@@ -468,7 +468,7 @@ class CertificateTokenClass(TokenClass):
                 # Restore the request string with newlines
                 request = request_csr.public_bytes(encoding=serialization.Encoding.PEM).decode('utf-8')
                 if not request_csr.is_signature_valid:
-                    raise privacyIDEAError("request has invalid signature.")
+                    raise PrivacyIDEAError("request has invalid signature.")
                 # If a request is sent, we can have an attestation certificate
                 attestation = getParam(param, "attestation", optional)
                 verify_attestation = getParam(param, "verify_attestation", optional)
@@ -478,7 +478,7 @@ class CertificateTokenClass(TokenClass):
                     attestation_numbers = attestation_cert.public_key().public_numbers()
                     if request_numbers != attestation_numbers:
                         log.warning("certificate request does not match attestation certificate.")
-                        raise privacyIDEAError("certificate request does not match attestation certificate.")
+                        raise PrivacyIDEAError("certificate request does not match attestation certificate.")
 
                     try:
                         verified = verify_certificate_path(attestation_cert,
@@ -492,7 +492,7 @@ class CertificateTokenClass(TokenClass):
                     if not verified:
                         log.warning("Failed to verify certificate chain of attestation certificate.")
                         if verify_attestation:
-                            raise privacyIDEAError("Failed to verify certificate chain of attestation certificate.")
+                            raise PrivacyIDEAError("Failed to verify certificate chain of attestation certificate.")
 
             # During the initialization process, we need to create the certificate
             # TODO: We should check for a pending CSR from the MSCA connector

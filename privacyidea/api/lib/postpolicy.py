@@ -44,6 +44,7 @@ Wrapping the functions in a decorator class enables easy modular testing.
 
 The functions of this module are tested in tests/test_api_lib_policy.py
 """
+from flask_babel import _, lazy_gettext
 import copy
 import datetime
 import functools
@@ -57,7 +58,6 @@ from flask import g, current_app, make_response, Request
 
 from privacyidea.api.lib.utils import get_all_params
 from privacyidea.config import ConfigKey
-from privacyidea.lib import _, lazy_gettext
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.config import get_multichallenge_enrollable_types, get_token_class, get_privacyidea_node
 from privacyidea.lib.crypto import Sign
@@ -364,9 +364,9 @@ def preferred_client_mode(request, response):
     """
     This policy function is used to add the preferred client mode.
     The admin can set the list of client modes in the policy in the
-    same order as  he preferred them. The faction will pick the first
+    same order as he preferred them. The function will pick the first
     client mode from the list, that is also in the multichallenge and
-    set it as preferred client mode
+    set it as preferred_client_mode
 
     :param request:
     :param response:
@@ -390,7 +390,7 @@ def preferred_client_mode(request, response):
                                           user_object=user).allowed()
     last_used_token_type = None
     if client_mode_per_user_pol:
-        user_agent, _, _ = get_plugin_info_from_useragent(request.user_agent.string)
+        user_agent, __, __ = get_plugin_info_from_useragent(request.user_agent.string)
         user_attributes = user.attributes
         last_used_token_type = user_attributes.get(f"{InternalCustomUserAttributes.LAST_USED_TOKEN}_{user_agent}")
 
@@ -399,7 +399,7 @@ def preferred_client_mode(request, response):
         if detail.get("multi_challenge"):
             multi_challenge = detail.get("multi_challenge")
 
-            # First try to use the users preferred token type
+            # First, try to use the users' preferred token type
             preferred = None
             if last_used_token_type:
                 for challenge in multi_challenge:
@@ -409,7 +409,7 @@ def preferred_client_mode(request, response):
                         break
 
             if not preferred:
-                # User preferred client mode not found, check the policy
+                # User preferred_client_mode not found, check the policy
                 client_modes = [x.get('client_mode') for x in multi_challenge]
                 try:
                     preferred = [x for x in preferred_client_mode_list if x in client_modes][0]
@@ -974,7 +974,7 @@ def hide_specific_error_message(request, response):
         if hide_message:
             content = response.json
             threadid = content.get("detail", {}).get("threadid")
-            detail = {"message": _("Authentication failed.")}
+            detail = {"message": str(_("Authentication failed."))}
             if threadid:
                 detail["threadid"] = threadid
             # Overwrite the whole detail object so that it always has the same content
