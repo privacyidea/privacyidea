@@ -5,7 +5,7 @@
 # Felix E <felix@eckhofer.com>, 2024.
 # pablo-knight <julio.storch@netknights.it>, 2024.
 # Jelina Unger <jelina.unger@netknights.it>, 2024.
-# Nils Behlen <nils.behlen@netknights.it>, 2024, 2025.
+# Nils Behlen <nils.behlen@netknights.it>, 2024, 2025, 2026.
 # Moonwalk4797 <moonwalk4797@users.noreply.hosted.weblate.org>, 2024.
 # Lucas Scholz <lucas.scholz@netknights.it>, 2026.
 msgid ""
@@ -13,8 +13,8 @@ msgstr ""
 "Project-Id-Version: \n"
 "Report-Msgid-Bugs-To: translations@privacyidea.org\n"
 "POT-Creation-Date: \n"
-"PO-Revision-Date: 2026-02-28 09:09+0000\n"
-"Last-Translator: Lucas Scholz <lucas.scholz@netknights.it>\n"
+"PO-Revision-Date: 2026-03-14 15:09+0000\n"
+"Last-Translator: Nils Behlen <nils.behlen@netknights.it>\n"
 "Language-Team: German <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-webui/de/>\n"
 "Language: de\n"
@@ -22,7 +22,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
-"X-Generator: Weblate 5.16.1-dev\n"
+"X-Generator: Weblate 5.17-dev\n"
 
 # This is the level in the subscriptions
 #. level of subscription
@@ -1505,7 +1505,7 @@ msgstr "Domänen-CA"
 
 #: privacyidea/static/components/config/views/config.smtp.edit.html:163
 msgid "Don't send on signing error"
-msgstr ""
+msgstr "Nicht senden wenn signieren fehlschlägt"
 
 #: privacyidea/static/components/directives/views/directive.csvdownload.html:3
 msgid "Download"
@@ -1781,6 +1781,8 @@ msgid ""
 "                                in the same base DN as defined for the users "
 "above."
 msgstr ""
+"Basis-DN für Benutzergruppen eingeben. Feld leer lassen, falls die Gruppen "
+"in der oben definierten Basis-DN der Benutzer liegen."
 
 #: privacyidea/static/components/token/views/token.enroll.daypassword.html:31
 msgid "Enter the secret..."
@@ -3171,6 +3173,7 @@ msgstr ""
 #: privacyidea/static/components/config/views/config.policies.details.html:358
 msgid "Please select a Scope in the top section first to configure actions."
 msgstr ""
+"Zuerst Scope im oberen Abschnitt auswählen, um Aktionen zu konfigurieren."
 
 #: privacyidea/static/components/login/views/login.html:49
 msgid "Please sign in"
@@ -3423,6 +3426,8 @@ msgid ""
 "store them under the\n"
 "                            privacyIDEA attribute <code>groups</code>."
 msgstr ""
+"Benutzergruppen über das Attribut <code>memberOf</code> empfangen und unter "
+"dem privacyIDEA-Attribut <code>groups</code> speichern."
 
 #: privacyidea/static/components/token/views/token.challenges.html:56
 msgid "Received"
@@ -3695,11 +3700,11 @@ msgstr "Suche starten"
 
 #: privacyidea/static/components/config/views/config.smtp.edit.html:116
 msgid "S/MIME"
-msgstr ""
+msgstr "S/MIME"
 
 #: privacyidea/static/components/config/views/config.smtp.edit.html:155
 msgid "S/MIME signing"
-msgstr ""
+msgstr "S/MIME Signatur"
 
 #: privacyidea/static/components/config/views/config.token.sms.html:13
 msgid "SMS Gateway configuration"
@@ -3890,7 +3895,7 @@ msgstr "Suchfilter für Benutzergruppen"
 #: privacyidea/static/components/token/controllers/tokenControllers.js:94
 msgid ""
 "Searching for a user in all realms is not possible, using default realm."
-msgstr ""
+msgstr "Suche über alle Realms nicht möglich. Standard-Realm wird verwendet."
 
 #: privacyidea/static/components/token/views/token.getserial.html:89
 msgid "Searching token..."
@@ -4916,7 +4921,7 @@ msgstr ""
 
 #: privacyidea/static/components/token/controllers/containerControllers.js:915
 msgid "The following tokens failed to delete:"
-msgstr ""
+msgstr "Die folgenden Token könnten nicht gelöscht werden:"
 
 #: privacyidea/static/components/token/views/token.containercreate.html:192
 msgid ""
@@ -5693,12 +5698,12 @@ msgstr ""
 #: privacyidea/static/components/directives/views/directive.filter.table.html:7
 #: privacyidea/static/components/directives/views/directive.filter.table.html:8
 msgid "Toggle filter"
-msgstr ""
+msgstr "Filter ein-/ausblenden"
 
 #: privacyidea/static/components/token/views/token.list.html:117
 #: privacyidea/static/components/token/views/token.list.html:118
 msgid "Toggle realm filter"
-msgstr ""
+msgstr "Realm-Filter ein-/ausblenden"
 
 #: privacyidea/static/components/token/views/token.list.html:85
 #: privacyidea/static/components/token/views/token.list.html:86
@@ -6025,6 +6030,8 @@ msgid ""
 "privacyIDEA attribute\n"
 "                            <code>groups</code>."
 msgstr ""
+"Abruf der Benutzergruppen erfolgt über eine separate Anfrage; Speicherung im "
+"privacyIDEA-Attribut <code>groups</code>."
 
 #: privacyidea/static/components/user/controllers/userControllers.js:248
 msgid "User updated successfully."
@@ -6590,7 +6597,7 @@ msgstr "Richtlinien"
 
 #: privacyidea/static/components/token/views/token.list.html:92
 msgid "press enter to search"
-msgstr ""
+msgstr "Enter zum Suchen drücken"
 
 #: privacyidea/static/components/config/views/config.periodictasks.details.html:75
 #: privacyidea/static/components/config/views/config.periodictasks.list.html:11
@@ -6803,7 +6810,7 @@ msgstr "Es wurden {{ auditdata.count }} Einträge gefunden."
 
 #: privacyidea/static/components/token/views/token.list.html:124
 msgid "— all —"
-msgstr ""
+msgstr "— alle —"
 
 #~ msgid "Choose a realm..."
 #~ msgstr "Realm auswählen..."
