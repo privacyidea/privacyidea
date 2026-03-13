@@ -22,7 +22,7 @@
     <button
       (click)="save()"
       [disabled]="!authService.actionAllowed('configwrite')"
-      class="action-button-1 width-238"
+      class="action-button-primary button-width-m"
       mat-stroked-button>
       <mat-icon>save</mat-icon>
       <span i18n>Save Configuration</span>
@@ -48,7 +48,8 @@
     <app-tiqr-config [formData]="formData()"></app-tiqr-config>
     <app-email-config
       [formData]="formData()"
-      [smtpServers]="smtpServerIdentifiers()"></app-email-config>
+      [smtpServers]="smtpServerIdentifiers()"
+      [expanded]="expandEmail()"></app-email-config>
     <app-questionnaire-config
       (onAddQuestion)="addQuestion($event)"
       (onDeleteEntry)="deleteQuestion($event)"

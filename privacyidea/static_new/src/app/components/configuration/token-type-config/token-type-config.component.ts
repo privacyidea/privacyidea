@@ -17,6 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, computed, effect, inject, signal, untracked } from "@angular/core";
+import { toSignal } from "@angular/core/rxjs-interop";
 import { CommonModule } from "@angular/common";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MatButtonModule } from "@angular/material/button";
@@ -29,6 +30,7 @@ import { NotificationService, NotificationServiceInterface } from "../../../serv
 import { HttpClient } from "@angular/common/http";
 import { environment } from "../../../../environments/environment";
 import { forkJoin, lastValueFrom } from "rxjs";
+import { ActivatedRoute } from "@angular/router";
 import { PiResponse } from "../../../app.component";
 import { HotpConfigComponent } from "./token-types/hotp-config/hotp-config.component";
 import { TotpConfigComponent } from "./token-types/totp-config/totp-config.component";
@@ -76,6 +78,10 @@ export class TokenTypeConfigComponent {
   readonly authService: AuthServiceInterface = inject(AuthService);
   readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly http = inject(HttpClient);
+  private readonly route = inject(ActivatedRoute);
+
+  queryParams = toSignal(this.route.queryParams);
+  expandEmail = computed(() => this.queryParams()?.["expanded"] === "email");
 
   formData = signal<Record<string, any>>({});
   nextQuestion = signal(0);

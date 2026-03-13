@@ -1,8 +1,26 @@
-<h2
-  i18n
-  mat-dialog-title>
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<h3
+  class="margin-8 external-service-dialog-title"
+  i18n>
   {{ isEditMode ? 'Edit RADIUS Server' : 'Create RADIUS Server' }}
-</h2>
+</h3>
 
 <mat-dialog-content class="radius-dialog-content">
   <form
@@ -10,12 +28,16 @@
     class="radius-form">
     <mat-form-field
       appearance="fill"
-      class="width-100 margin-bottom-16">
+      class="input-width-l margin-bottom-16">
       <mat-label i18n>Identifier</mat-label>
-      <input
-        formControlName="identifier"
-        matInput
-        placeholder="myRadiusServer" />
+      <app-clearable-input
+        (onClick)="radiusForm.get('identifier')?.setValue('')"
+        [showClearButton]="!isEditMode && !!radiusForm.get('identifier')?.value">
+        <input
+          formControlName="identifier"
+          matInput
+          placeholder="myRadiusServer" />
+      </app-clearable-input>
       <mat-hint i18n>The unique identifying name of the RADIUS server definition.</mat-hint>
       @if (radiusForm.get('identifier')?.hasError('required')) {
         <mat-error
@@ -24,15 +46,19 @@
       }
     </mat-form-field>
 
-    <div class="row">
+    <div class="flex-row gap-16">
       <mat-form-field
         appearance="fill"
-        class="col-8">
+        class="input-width-l">
         <mat-label i18n>IP or FQDN</mat-label>
-        <input
-          formControlName="server"
-          matInput
-          placeholder="1.2.3.4" />
+        <app-clearable-input
+          (onClick)="radiusForm.get('server')?.setValue('')"
+          [showClearButton]="!!radiusForm.get('server')?.value">
+          <input
+            formControlName="server"
+            matInput
+            placeholder="1.2.3.4" />
+        </app-clearable-input>
         @if (radiusForm.get('server')?.hasError('required')) {
           <mat-error
             i18n>Server is required
@@ -42,7 +68,7 @@
 
       <mat-form-field
         appearance="fill"
-        class="col-4">
+        class="input-width-s">
         <mat-label i18n>Port</mat-label>
         <input
           formControlName="port"
@@ -52,10 +78,10 @@
       </mat-form-field>
     </div>
 
-    <div class="row">
+    <div class="flex-row just-space-between">
       <mat-form-field
         appearance="fill"
-        class="col-6">
+        class="input-width-s">
         <mat-label i18n>Timeout</mat-label>
         <input
           formControlName="timeout"
@@ -66,7 +92,28 @@
 
       <mat-form-field
         appearance="fill"
-        class="col-6">
+        class="input-width-l">
+        <mat-label i18n>Secret</mat-label>
+        <app-clearable-input
+          (onClick)="radiusForm.get('secret')?.setValue('')"
+          [showClearButton]="!!radiusForm.get('secret')?.value">
+          <input
+            formControlName="secret"
+            matInput
+            type="password" />
+        </app-clearable-input>
+        @if (radiusForm.get('secret')?.hasError('required')) {
+          <mat-error
+            i18n>Secret is required
+          </mat-error>
+        }
+      </mat-form-field>
+    </div>
+
+    <div class="flex-row just-space-between">
+      <mat-form-field
+        appearance="fill"
+        class="input-width-s">
         <mat-label i18n>Retries</mat-label>
         <input
           formControlName="retries"
@@ -74,41 +121,34 @@
           placeholder="3"
           type="number" />
       </mat-form-field>
+
+      <mat-form-field
+        appearance="fill"
+        class="input-width-l">
+        <mat-label i18n>RADIUS Dictionary</mat-label>
+        <app-clearable-input
+          (onClick)="radiusForm.get('dictionary')?.setValue('')"
+          [showClearButton]="!!radiusForm.get('dictionary')?.value">
+          <input
+            formControlName="dictionary"
+            matInput
+            placeholder="/etc/privacyidea/dictionary" />
+        </app-clearable-input>
+      </mat-form-field>
     </div>
 
     <mat-form-field
       appearance="fill"
       class="width-100">
-      <mat-label i18n>Secret</mat-label>
-      <input
-        formControlName="secret"
-        matInput
-        type="password" />
-      @if (radiusForm.get('secret')?.hasError('required')) {
-        <mat-error
-          i18n>Secret is required
-        </mat-error>
-      }
-    </mat-form-field>
-
-    <mat-form-field
-      appearance="fill"
-      class="width-100">
-      <mat-label i18n>RADIUS Dictionary</mat-label>
-      <input
-        formControlName="dictionary"
-        matInput
-        placeholder="/etc/privacyidea/dictionary" />
-    </mat-form-field>
-
-    <mat-form-field
-      appearance="fill"
-      class="width-100">
       <mat-label i18n>Description</mat-label>
-      <input
-        formControlName="description"
-        matInput
-        placeholder="some wise words" />
+      <app-clearable-input
+        (onClick)="radiusForm.get('description')?.setValue('')"
+        [showClearButton]="!!radiusForm.get('description')?.value">
+        <input
+          formControlName="description"
+          matInput
+          placeholder="some wise words" />
+      </app-clearable-input>
     </mat-form-field>
 
     <div class="checkbox-group">
@@ -118,36 +158,44 @@
       </mat-checkbox>
     </div>
 
-    <div class="test-section">
-      <h3 i18n>Test RADIUS Server</h3>
-      <div class="row">
-        <mat-form-field
-          appearance="fill"
-          class="col-5">
-          <mat-label i18n>Username</mat-label>
+    <h4 i18n>Test RADIUS Server</h4>
+
+    <div class="flex-row gap-16">
+      <mat-form-field
+        appearance="fill"
+        class="input-width-m">
+        <mat-label i18n>Username</mat-label>
+        <app-clearable-input
+          (onClick)="radiusForm.get('username')?.setValue('')"
+          [showClearButton]="!!radiusForm.get('username')?.value">
           <input
             formControlName="username"
             matInput />
-        </mat-form-field>
-        <mat-form-field
-          appearance="fill"
-          class="col-5">
-          <mat-label i18n>Password</mat-label>
+        </app-clearable-input>
+      </mat-form-field>
+      <mat-form-field
+        appearance="fill"
+        class="input-width-m">
+        <mat-label i18n>Password</mat-label>
+        <app-clearable-input
+          (onClick)="radiusForm.get('password')?.setValue('')"
+          [showClearButton]="!!radiusForm.get('password')?.value">
           <input
             formControlName="password"
             matInput
             type="password" />
-        </mat-form-field>
-        <div class="col-2 flex ali-center">
-          <button
-            (click)="test()"
-            [disabled]="isTesting()"
-            i18n-matTooltip
-            mat-icon-button
-            matTooltip="Send RADIUS test request">
-            <mat-icon>send</mat-icon>
-          </button>
-        </div>
+        </app-clearable-input>
+      </mat-form-field>
+      <div class="col-2 flex ali-center">
+        <button
+          (click)="test()"
+          class="margin-bottom-16"
+          [disabled]="isTesting()"
+          i18n-matTooltip
+          mat-icon-button
+          matTooltip="Send RADIUS test request">
+          <mat-icon>send</mat-icon>
+        </button>
       </div>
     </div>
   </form>
@@ -156,13 +204,15 @@
 <mat-dialog-actions align="end">
   <button
     (click)="onCancel()"
+    class="action-button-secondary button-width-s"
     i18n
-    mat-button>Cancel
+    mat-stroked-button>
+    Cancel
   </button>
   <button
     (click)="save()"
     [disabled]="radiusForm.invalid"
-    class="action-button-1 width-238"
+    class="action-button-primary button-width-s"
     i18n
     mat-stroked-button>
     <mat-icon>save</mat-icon>

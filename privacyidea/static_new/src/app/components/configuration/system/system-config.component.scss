@@ -19,7 +19,6 @@
   border-radius: var(--border-radius);
   display: grid;
   gap: 16px;
-  grid-template-columns: auto auto;
 
   h4 {
     margin-top: 0;
@@ -41,13 +40,6 @@
     flex-shrink: 0;
     align-self: flex-end;
   }
-}
-
-form {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 0 2rem;
-  align-items: start;
 }
 
 .full-width-grid-column {
@@ -72,6 +64,6 @@ form {
 .save-buttons {
   display: flex;
   align-items: center;
-  margin: 12px 0 16px;
+  margin: 12px 16px 16px auto;
   gap: 16px;
 }

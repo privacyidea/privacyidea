@@ -88,7 +88,7 @@ export class ScrollToTopDirective implements OnDestroy {
   }
 
   private showButton() {
-    this.renderer.setStyle(this.button, "display", "block");
+    this.renderer.setStyle(this.button, "display", "flex");
     this.isButtonVisible = true;
   }
 

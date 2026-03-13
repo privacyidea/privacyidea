@@ -20,6 +20,8 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { UserNewResolverComponent } from "./user-new-resolver.component";
 import { ResolverService } from "../../../services/resolver/resolver.service";
 import { NotificationService } from "../../../services/notification/notification.service";
+import { DialogService } from "../../../services/dialog/dialog.service";
+import { SaveAndExitDialogComponent } from "../../shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { ActivatedRoute, Router } from "@angular/router";
 import { of } from "rxjs";
 import { provideHttpClient } from "@angular/common/http";
@@ -529,5 +531,23 @@ describe("UserNewResolverComponent", () => {
     expect(componentDialog.resolverType).toBe("ldapresolver");
     expect(componentDialog.formData["LDAPURI"]).toBe("ldap://localhost");
     expect(componentDialog.isEditMode).toBeTruthy();
+  });
+
+  it("should open SaveAndExitDialogComponent on cancel when there are changes", async () => {
+    const dialogService = TestBed.inject(DialogService);
+    const openDialogSpy = jest.spyOn(dialogService, "openDialog").mockReturnValue({
+      afterClosed: () => of("discard")
+    } as any);
+
+    component.resolverName = "changed";
+    await detectChangesStable();
+
+    component.onCancel();
+
+    expect(openDialogSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        component: SaveAndExitDialogComponent
+      })
+    );
   });
 });

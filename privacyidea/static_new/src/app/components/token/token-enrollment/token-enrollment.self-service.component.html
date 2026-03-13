@@ -21,7 +21,7 @@
   appScrollToTop
   aria-label="Token Enrollment"
   class="token-enrollment-container">
-  <h3 class="margin-left-1">Enroll a New Token</h3>
+  <h3 class="margin-left-16">Enroll a New Token</h3>
   <form
     (ngSubmit)="enrollToken()"
     [formGroup]="formGroupSignal()">
@@ -32,8 +32,7 @@
       <div class="sticky-controls ali-center">
         <div class="select-token-type-container">
           <mat-form-field
-            class="width-100"
-            subscriptSizing="dynamic">
+            class="width-100">
             <mat-select
               [(ngModel)]="tokenService.selectedTokenType"
               [ngModelOptions]="{ standalone: true }"
@@ -41,9 +40,9 @@
               [value]="tokenService.selectedTokenType()">
               @for (type of tokenService.tokenTypeOptions(); track type) {
                 <mat-option
-                  class="select-option"
+                  [matTooltip]="type.info.split(':')[1]"
                   [value]="type"
-                  [matTooltip]="type.info.split(':')[1]">
+                  class="select-option">
                   {{ type.info.split(":")[0] }}
                 </mat-option>
               }
@@ -53,7 +52,7 @@
         <div class="enroll-button-container">
           <button
             [disabled]="!tokenService.selectedTokenType()"
-            class="action-button-1 width-238"
+            class="action-button-secondary button-width-l"
             mat-stroked-button
             type="submit">
             <mat-icon>add</mat-icon>
@@ -70,7 +69,7 @@
         </div>
       </div>
     </div>
-    <div class="token-type-paragraph">
+    <div class="width-950">
       <p>{{ tokenTypeDescription() }}</p>
     </div>
     @switch (tokenService.selectedTokenType().key) {
@@ -207,7 +206,7 @@
           (reopenDialogChange)="updateReopenDialog($event)" />
       }
     }
-    <mat-form-field class="description-form">
+    <mat-form-field class="input-width-l">
       <mat-label>Description</mat-label>
       <textarea
         [formControl]="descriptionControl"
@@ -218,31 +217,29 @@
     </mat-form-field>
 
     @if (tokenService.selectedTokenType().key !== "passkey") {
-      <div class="flex-column user-pin-container margin-bottom-16">
-        <h4 class="enroll-h4">Set PIN</h4>
+      <div class="flex-column margin-bottom-16">
+        <h4 i18n>Set PIN</h4>
         <input
           class="hidden-input"
           type="text" />
         <input
           class="hidden-input"
           type="password" />
-        <div class="user-pin-input">
+        <div class="flex-column">
           <input
             [formControl]="setPinControl"
             [type]="'password'"
-            class="input"
+            class="input input-width-l"
             placeholder="PIN" />
 
           <input
             [formControl]="repeatPinControl"
             [type]="'password'"
-            class="input"
+            class="input input-width-l"
             placeholder="Repeat PIN" />
         </div>
-        @if (
-          formGroupSignal().hasError("pinMismatch") &&
-          (formGroupSignal().get("setPin")?.touched || formGroupSignal().get("repeatPin")?.touched)
-        ) {
+        @if (formGroupSignal().hasError("pinMismatch") &&
+        (formGroupSignal().get("setPin")?.touched || formGroupSignal().get("repeatPin")?.touched)) {
           <mat-error class="pin-error">PINs do not match.</mat-error>
         }
       </div>
@@ -251,8 +248,8 @@
     <div class="flex-row gap-16">
       @if (authService.actionAllowed("container_list")) {
         <div class="flex-column width-100">
-          <h4 class="enroll-h4">Add Token to a Container</h4>
-          <mat-form-field class="width-47 input-height">
+          <h4>Add Token to a Container</h4>
+          <mat-form-field class="input-width-l">
             <mat-label>Enter Container</mat-label>
             <app-clearable-input
               (onClick)="selectedContainerControl.setValue(null)"

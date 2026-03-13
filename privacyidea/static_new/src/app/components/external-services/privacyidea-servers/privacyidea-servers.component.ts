@@ -93,7 +93,8 @@ export class PrivacyideaServersComponent {
   openEditDialog(server?: PrivacyideaServer): void {
     this.dialog.open(NewPrivacyideaServerComponent, {
       data: server ? { ...server } : null,
-      width: "800px"
+      width: "auto",
+      maxWidth: "100vw"
     });
   }
 

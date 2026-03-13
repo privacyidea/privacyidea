@@ -173,16 +173,16 @@ describe("TokenEnrollmentComponent", () => {
 
   it("isUserRequired depends on selected token type", () => {
     tokenService.selectedTokenType.set({ key: "hotp", name: "HOTP", info: "", text: "HOTP" });
-    expect(component.isUserRequired).toBe(false);
+    expect(component.isUserRequired()).toBe(false);
 
     tokenService.selectedTokenType.set({ key: "webauthn", name: "Webauthn", info: "", text: "WebAuthn" });
-    expect(component.isUserRequired).toBe(true);
+    expect(component.isUserRequired()).toBe(true);
 
     tokenService.selectedTokenType.set({ key: "passkey", name: "Passkey", info: "", text: "Passkey" });
-    expect(component.isUserRequired).toBe(true);
+    expect(component.isUserRequired()).toBe(true);
 
     tokenService.selectedTokenType.set({ key: "certificate", name: "Certificate", info: "", text: "Cert" });
-    expect(component.isUserRequired).toBe(true);
+    expect(component.isUserRequired()).toBe(true);
   });
 
   it("userExistsValidator flags unknown usernames and accepts existing ones", () => {

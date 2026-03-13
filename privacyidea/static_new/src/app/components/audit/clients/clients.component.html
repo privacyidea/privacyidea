@@ -1,5 +1,5 @@
 <!--
- (c) NetKnights GmbH 2025,  https://netknights.it
+ (c) NetKnights GmbH 2026,  https://netknights.it
 
  This code is free software; you can redistribute it and/or
  modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -28,80 +28,77 @@
     This is a list of clients that have used the <i>/validate/check</i> endpoint for authentication.
   </div>
 
-  <div class="margin-bottom-16">
-    <mat-form-field
-      class="width-100"
-      subscriptSizing="dynamic">
-      <mat-label i18n>Filter Clients ...</mat-label>
-      <app-clearable-input
-        (onClick)="clearFilter()"
-        [showClearButton]="filterValue !== ''">
-        <input
-          (input)="handleFilterInput($event)"
-          [value]="filterValue"
-          i18n-aria-label
-          aria-label="Filter Input"
-          matInput
-          i18n-placeholder
-          placeholder="Filter across all columns." />
-      </app-clearable-input>
-    </mat-form-field>
-  </div>
+  <mat-form-field
+    class="width-100">
+    <mat-label i18n>Filter Clients ...</mat-label>
+    <app-clearable-input
+      (onClick)="clearFilter()"
+      [showClearButton]="filterValue !== ''">
+      <input
+        (input)="handleFilterInput($event)"
+        [value]="filterValue"
+        aria-label="Filter Input"
+        i18n-aria-label
+        i18n-placeholder
+        matInput
+        placeholder="Filter across all columns." />
+    </app-clearable-input>
+  </mat-form-field>
 
   <table
-    mat-table
-    matSort
     (matSortChange)="onSortChange($event)"
     [dataSource]="clientDataSource()"
-    aria-label="Client Data Table">
+    class="clients-table"
+    aria-label="Client Data Table"
+    mat-table
+    matSort>
     @for (column of columnKeysMap; let colIdx = $index; track column) {
       <ng-container [matColumnDef]="column.key">
         <th
           *matHeaderCellDef
+          [ngClass]="{'col-even': colIdx % 2 === 0, 'col-odd': colIdx % 2 !== 0}"
           attr.aria-label="{{ column.label }} Header"
           mat-header-cell
-          mat-sort-header
-          [ngClass]="{'col-even': colIdx % 2 === 0, 'col-odd': colIdx % 2 !== 0}">
+          mat-sort-header>
           {{ column.label }}
         </th>
-          <ng-container *matCellDef="let client">
-            @if (!useApplicationRowSpan(column.key) || client.isFirst) {
-                <td
-                  mat-cell
-                  [attr.rowspan]="useApplicationRowSpan(column.key) ? client.rowspan : 1"
-                  [ngClass]="colIdx % 2 === 0 ? 'col-even' : 'col-odd'">
-                  <div class="data-table-cell">
-                      @if (column.key === 'lastseen') {
-                        <!-- Format lastseen as date/time -->
-                        {{ client.lastseen ? (client.lastseen | date:'yyyy-MM-dd HH:mm:ss z':'UTC') : '' }}
-                      } @else {
-                        {{ client[column.key] }}
-                      }
-                      @if (['ip', 'application'].includes(column.key)) {
-                        <app-copy-button [copyText]="client[column.key]" />
-                        @if (authService.actionAllowed("auditlog")) {
-                          <button
-                            (click)="showInAuditLog(column.key, client[column.key])"
-                            [routerLink]="[ROUTE_PATHS.AUDIT]"
-                            class="ml-4 small-icon-button"
-                            mat-icon-button
-                            matTooltip="Show in audit log">
-                            <mat-icon>receipt_long</mat-icon>
-                          </button>
-                        }
-                      }
-                  </div>
-                </td>
-            }
-          </ng-container>
+        <ng-container *matCellDef="let client">
+          @if (!useApplicationRowSpan(column.key) || client.isFirst) {
+            <td
+              [attr.rowspan]="useApplicationRowSpan(column.key) ? client.rowspan : 1"
+              [ngClass]="colIdx % 2 === 0 ? 'col-even' : 'col-odd'"
+              mat-cell>
+              <div class="data-table-cell">
+                @if (column.key === 'lastseen') {
+                  <!-- Format lastseen as date/time -->{{ client.lastseen ? (client.lastseen | date:'yyyy-MM-dd HH:mm:ss z':'UTC') : '' }}
+                } @else {
+                  {{ client[column.key] }}
+                }
+                @if (['ip', 'application'].includes(column.key)) {
+                  <app-copy-button [copyText]="client[column.key]" />
+                  @if (authService.actionAllowed("auditlog")) {
+                    <button
+                      (click)="showInAuditLog(column.key, client[column.key])"
+                      [routerLink]="[ROUTE_PATHS.AUDIT]"
+                      class="ml-4 small-icon-button"
+                      mat-icon-button
+                      matTooltip="Show in audit log">
+                      <mat-icon>receipt_long</mat-icon>
+                    </button>
+                  }
+                }
+              </div>
+            </td>
+          }
+        </ng-container>
       </ng-container>
     }
     <tr
-      mat-header-row
-      *matHeaderRowDef="columnKeys"></tr>
+      *matHeaderRowDef="columnKeys"
+      mat-header-row></tr>
     <tr
-      mat-row
-      *matRowDef="let row; columns: columnKeys;"></tr>
+      *matRowDef="let row; columns: columnKeys;"
+      mat-row></tr>
 
     <tr
       *matNoDataRow

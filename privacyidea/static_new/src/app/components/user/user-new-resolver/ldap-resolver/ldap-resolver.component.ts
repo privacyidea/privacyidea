@@ -16,6 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { Component, computed, effect, inject, input } from "@angular/core";
 import { AbstractControl, FormControl, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
@@ -28,6 +29,8 @@ import { LDAPResolverData, ResolverService } from "../../../../services/resolver
 import { ClearableInputComponent } from "../../../shared/clearable-input/clearable-input.component";
 import { parseBooleanValue } from "../../../../utils/parse-boolean-value";
 import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
+import { merge } from "rxjs";
+import { startWith } from "rxjs/operators";
 
 @Component({
   selector: "app-ldap-resolver",
@@ -171,7 +174,32 @@ export class LdapResolverComponent {
       if (initial.group_attribute_mapping_key !== undefined) this.groupAttributeMappingKeyControl.setValue(initial.group_attribute_mapping_key, { emitEvent: false });
       if (initial.NOREFERRALS !== undefined) this.noReferralsControl.setValue(parseBooleanValue(initial.NOREFERRALS), { emitEvent: false });
       if (initial.NOSCHEMAS !== undefined) this.noSchemasControl.setValue(parseBooleanValue(initial.NOSCHEMAS), { emitEvent: false });
+
+      this.updateDisabledStates();
     });
+
+    merge(this.startTlsControl.valueChanges, this.tlsVerifyControl.valueChanges)
+      .pipe(takeUntilDestroyed())
+      .subscribe(() => this.updateDisabledStates());
+  }
+
+  private updateDisabledStates(): void {
+    const startTls = this.startTlsControl.value;
+    const tlsVerify = this.tlsVerifyControl.value;
+
+    if (!startTls) {
+      this.tlsVersionControl.disable({ emitEvent: false });
+      this.tlsVerifyControl.disable({ emitEvent: false });
+    } else {
+      this.tlsVersionControl.enable({ emitEvent: false });
+      this.tlsVerifyControl.enable({ emitEvent: false });
+    }
+
+    if (!startTls || !tlsVerify) {
+      this.tlsCaFileControl.disable({ emitEvent: false });
+    } else {
+      this.tlsCaFileControl.enable({ emitEvent: false });
+    }
   }
 
   applyLdapPreset(preset: any): void {

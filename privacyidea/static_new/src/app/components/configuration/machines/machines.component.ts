@@ -88,7 +88,8 @@ export class MachinesComponent {
   openDetailsDialog(machine: Machine): void {
     this.dialog.open(MachineDetailsDialogComponent, {
       data: { ...machine },
-      width: "800px"
+      width: "auto",
+      maxWidth: "100vw"
     });
   }
 

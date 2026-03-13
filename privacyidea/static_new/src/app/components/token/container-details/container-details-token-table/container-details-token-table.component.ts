@@ -65,6 +65,7 @@ import {
 } from "../../../../services/notification/notification.service";
 import { DialogService, DialogServiceInterface } from "../../../../services/dialog/dialog.service";
 import { Sort } from "@angular/material/sort";
+import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 
 @Component({
   selector: "app-container-details-token-table",
@@ -85,7 +86,8 @@ import { Sort } from "@angular/material/sort";
     NgClass,
     MatIconModule,
     MatTooltipModule,
-    MatInput
+    MatInput,
+    ClearableInputComponent
   ],
   templateUrl: "./container-details-token-table.component.html",
   styleUrl: "./container-details-token-table.component.scss"
@@ -103,7 +105,7 @@ export class ContainerDetailsTokenTableComponent {
   readonly columnsKeyMap = this.tableUtilsService.pickColumns("serial", "tokentype", "active", "username");
   readonly columnKeys = [...this.tableUtilsService.getColumnKeys(this.columnsKeyMap)];
   displayedColumns: string[] = [...this.columnsKeyMap.map((column) => column.key)];
-  pageSize = 10;
+  pageSize = 5;
   pageSizeOptions = this.tableUtilsService.pageSizeOptions;
   pageIndex = this.tokenService.pageIndex;
   @Input() containerTokenData!: WritableSignal<MatTableDataSource<ContainerDetailToken, MatPaginator>>;
@@ -192,6 +194,15 @@ export class ContainerDetailsTokenTableComponent {
 
     if (this.containerTokenData) {
       this.containerTokenData().filter = normalised;
+    }
+  }
+
+  clearFilter(): void {
+    this.filterValue.set("");
+    this.dataSource.filter = "";
+
+    if (this.containerTokenData) {
+      this.containerTokenData().filter = "";
     }
   }
 

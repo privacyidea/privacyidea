@@ -54,7 +54,8 @@ export class UserDetailsPinDialogComponent extends AbstractDialogComponent<any, 
         label: "Confirm",
         value: "confirm",
         type: "confirm",
-        disabled: !this.pinsMatch()
+        disabled: !this.pinsMatch(),
+        primary: true
       }
     ];
   });

@@ -38,6 +38,7 @@ import { ContentService, ContentServiceInterface } from "../../../../services/co
 import { PendingChangesService } from "../../../../services/pending-changes/pending-changes.service";
 import { MatSelectModule } from "@angular/material/select";
 import { DialogServiceInterface, DialogService } from "../../../../services/dialog/dialog.service";
+import { ClearableInputComponent } from "../../../shared/clearable-input/clearable-input.component";
 
 @Component({
   selector: "app-ca-connector-edit-dialog",
@@ -52,7 +53,8 @@ import { DialogServiceInterface, DialogService } from "../../../../services/dial
     MatButtonModule,
     MatIconModule,
     MatProgressSpinnerModule,
-    MatSelectModule
+    MatSelectModule,
+    ClearableInputComponent
   ],
   templateUrl: "./new-ca-connector.component.html",
   styleUrl: "./new-ca-connector.component.scss"

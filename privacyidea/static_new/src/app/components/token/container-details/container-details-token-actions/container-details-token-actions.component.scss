@@ -1,2 +1,9 @@
 @use "styles";
 @use "table";
+
+.actions-otp-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 16px;
+}

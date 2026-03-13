@@ -27,7 +27,8 @@
     </p>
 
     <mat-form-field
-      appearance="fill">
+      appearance="fill"
+      class="input-width-s">
       <mat-label i18n>Number of Answers</mat-label>
       <input
         [(ngModel)]="formData()['question.num_answers']"
@@ -35,8 +36,9 @@
         placeholder="5"
         required
         type="number">
-      <mat-hint i18n>This is the number of answers a user needs to define to enroll a token.</mat-hint>
     </mat-form-field>
+
+    <span class="hint" i18n>This is the number of answers a user needs to define to enroll a token.</span>
 
     <h4 i18n>Questionnaire</h4>
     <p i18n>These are the possible questions, a user may define answers to.</p>
@@ -67,9 +69,10 @@
         }
       </tbody>
     </table>
-    <div class="new-question-row">
+    <div class="new-question-row margin-top-16">
       <mat-form-field
-        appearance="fill">
+        appearance="fill"
+        class="width-100">
         <mat-label i18n>Question</mat-label>
         <input
           [(ngModel)]="newQuestionText"
@@ -78,7 +81,7 @@
       </mat-form-field>
       <button
         (click)="addQuestion()"
-        class="action-button-1 width-238 margin-bottom-16"
+        class="action-button-secondary button-width-m margin-bottom-16"
         mat-stroked-button>
         <mat-icon>add</mat-icon>
         <span i18n>Add new question</span>

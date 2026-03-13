@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -28,6 +28,8 @@ import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.
 import { SubscriptionService } from "../../../services/subscription/subscription.service";
 import { NotificationService } from "../../../services/notification/notification.service";
 import { AuthService } from "../../../services/auth/auth.service";
+import { DialogService } from "../../../services/dialog/dialog.service";
+import { SimpleConfirmationDialogComponent } from "../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
 
 @Component({
   selector: "app-subscription",
@@ -48,6 +50,7 @@ import { AuthService } from "../../../services/auth/auth.service";
 export class SubscriptionComponent {
   private subscriptionService = inject(SubscriptionService);
   private notificationService = inject(NotificationService);
+  private dialogService = inject(DialogService);
   subscriptionsResource = this.subscriptionService.subscriptionsResource;
   subscriptions = computed(() => {
     const value = this.subscriptionsResource.value()?.result?.value;
@@ -67,9 +70,21 @@ export class SubscriptionComponent {
   }
 
   deleteSubscription(application: string): void {
-    this.subscriptionService.deleteSubscription(application).subscribe(() => {
-      this.notificationService.openSnackBar("Subscription deleted successfully.");
-      this.subscriptionService.reload();
+    this.dialogService.openDialog({
+      component: SimpleConfirmationDialogComponent,
+      data: {
+        title: "Delete Subscription",
+        items: [application],
+        itemType: "subscription",
+        confirmAction: { label: "Delete", value: true, type: "destruct" }
+      }
+    }).afterClosed().subscribe(result => {
+      if (result) {
+        this.subscriptionService.deleteSubscription(application).subscribe(() => {
+          this.notificationService.openSnackBar("Subscription deleted successfully.");
+          this.subscriptionService.reload();
+        });
+      }
     });
   }
 }

@@ -93,7 +93,8 @@ export class SmsGatewaysComponent {
   openEditDialog(gateway?: SmsGateway): void {
     this.dialog.open(NewSmsGatewayComponent, {
       data: gateway ? { ...gateway } : null,
-      width: "800px"
+      width: "auto",
+      maxWidth: "100vw"
     });
   }
 

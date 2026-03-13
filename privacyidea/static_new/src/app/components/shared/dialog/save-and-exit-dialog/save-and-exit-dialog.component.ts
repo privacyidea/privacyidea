@@ -26,13 +26,18 @@ export class SaveAndExitDialogComponent extends AbstractDialogComponent<
   SaveAndExitDialogResult
 > {
   actions = computed<DialogAction<SaveAndExitDialogResult>[]>(() => [
-    { label: this.data.discardButtonText || ("Discard" as any), value: "discard", type: "destruct" },
     {
-      label: this.data.saveButtonText || ("Save & Exit" as any),
+      label: this.data.saveButtonText || $localize`Save & Exit`,
       value: "save-exit",
       type: "confirm",
       disabled: this.data.saveExitDisabled,
-      hidden: !this.data.allowSaveExit
+      hidden: !this.data.allowSaveExit,
+    },
+    {
+      label: this.data.discardButtonText || $localize`Discard`,
+      value: "discard",
+      type: "destruct",
+      primary: true
     }
   ]);
 

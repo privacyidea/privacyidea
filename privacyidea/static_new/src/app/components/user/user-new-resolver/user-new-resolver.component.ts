@@ -59,7 +59,7 @@ import { ContentService } from "../../../services/content/content.service";
 import { PendingChangesService } from "../../../services/pending-changes/pending-changes.service";
 import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
 import { DialogService, DialogServiceInterface } from "../../../services/dialog/dialog.service";
-import { SimpleConfirmationDialogComponent } from "../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { SaveAndExitDialogComponent } from "../../shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 
 @Component({
   selector: "app-user-new-resolver",
@@ -397,23 +397,22 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
     if (this.hasChanges) {
       this.dialogService
         .openDialog({
-          component: SimpleConfirmationDialogComponent,
+          component: SaveAndExitDialogComponent,
           data: {
             title: $localize`Discard changes`,
-            confirmAction: { label: "Save and exit", type: "confirm", value: true },
-            items: [this.resolverName || "New Resolver"],
-            itemType: "resolver"
+            allowSaveExit: this.canSave,
+            saveExitDisabled: !this.canSave
           }
         })
         .afterClosed()
         .subscribe((result) => {
-          if (result === true) {
+          if (result === "save-exit") {
             if (!this.canSave) return;
             Promise.resolve(this.pendingChangesService.save()).then(() => {
               this.pendingChangesService.unregisterHasChanges();
               this.closeCurrent();
             });
-          } else if (result === false) {
+          } else if (result === "discard") {
             this.pendingChangesService.unregisterHasChanges();
             this.closeCurrent();
           }

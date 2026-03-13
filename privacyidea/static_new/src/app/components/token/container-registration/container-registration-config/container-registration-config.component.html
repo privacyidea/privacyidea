@@ -17,40 +17,40 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <mat-checkbox
-  class="width-100 margin-bottom-16"
+  (change)="onUserStorePassphraseChange()"
   [(ngModel)]="userStorePassphrase"
   [disabled]="!containerHasOwner"
-  (change)="onUserStorePassphraseChange()">
+  class="margin-bottom-16 width-100">
   <span>Validate the passphrase against the user store.</span>
 </mat-checkbox>
-<mat-form-field class="width-100">
+<mat-form-field class="width-66">
   <mat-label i18n>Passphrase Prompt</mat-label>
   <textarea
     [(ngModel)]="passphrasePrompt"
     matInput
     rows="2"></textarea>
   <mat-hint
-    align="start"
     [class.red]="promptRequired() && !passphrasePrompt()"
+    align="start"
     i18n>
     Enter a passphrase prompt that will be displayed to the user. This should indicate which passphrase the user should
     enter.
   </mat-hint>
 </mat-form-field>
-<mat-form-field class="width-100 margin-top-2 margin-bottom-16">
+<mat-form-field class="width-66 margin-top-32 margin-bottom-16">
   <mat-label i18n> Passphrase Response</mat-label>
   <input
     [(ngModel)]="passphraseResponse"
-    matInput
+    [disabled]="userStorePassphrase()"
     [type]="showPassphrase ? 'text' : 'password'"
-    [disabled]="userStorePassphrase()">
+    matInput>
   <button
-    mat-icon-button
-    matSuffix
-    type="button"
     (click)="toggleShowPassphrase()"
     [attr.aria-label]="'Toggle passphrase visibility'"
-    [disabled]="userStorePassphrase()">
+    [disabled]="userStorePassphrase()"
+    mat-icon-button
+    matSuffix
+    type="button">
     <mat-icon>{{ showPassphrase ? 'visibility_off' : 'visibility' }}</mat-icon>
   </button>
   <mat-hint
@@ -58,20 +58,20 @@
     This is the correct answer to the passphrase prompt the user has to enter to successfully register the container.
   </mat-hint>
 </mat-form-field>
-<mat-form-field class="width-100 margin-bottom-16">
+<mat-form-field class="width-66">
   <mat-label i18n> Repeat Passphrase Response</mat-label>
   <input
     [(ngModel)]="repeatPassphraseResponse"
-    matInput
+    [disabled]="userStorePassphrase()"
     [type]="showRepeatPassphrase ? 'text' : 'password'"
-    [disabled]="userStorePassphrase()">
+    matInput>
   <button
-    mat-icon-button
-    matSuffix
-    type="button"
     (click)="showRepeatPassphrase = !showRepeatPassphrase"
     [attr.aria-label]="'Toggle passphrase visibility'"
-    [disabled]="userStorePassphrase()">
+    [disabled]="userStorePassphrase()"
+    mat-icon-button
+    matSuffix
+    type="button">
     <mat-icon>{{ showRepeatPassphrase ? 'visibility_off' : 'visibility' }}</mat-icon>
   </button>
   @if (passphraseMismatch) {

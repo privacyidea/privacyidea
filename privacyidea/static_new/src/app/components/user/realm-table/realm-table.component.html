@@ -28,12 +28,12 @@
         [length]="totalLength()"
         [pageSizeOptions]="pageSizeOptions()"
         [pageSize]="pageSizeOptions()[0]"
-        showFirstLastButtons/>
+        showFirstLastButtons />
     </div>
 
     <div class="flex-row margin-bottom-16">
       <mat-form-field
-        class="width-238"
+        class="input-width-m"
         subscriptSizing="dynamic">
         <mat-label i18n>Node</mat-label>
 
@@ -65,7 +65,7 @@
                 [ngClass]="{ 'just-center': column.key === 'actions' }"
                 class="flex ali-center">
                 {{ column.label }}
-                <div class="margin-left-1 flex">
+                <div class="margin-left-16 flex">
                   @if (!["actions", "resolvers"].includes(column.key)) {
                     <button
                       (click)="tableUtilsService.onSortButtonClick(column.key, sort)"
@@ -124,15 +124,14 @@
                           </div>
 
                           <mat-form-field
-                            class="node-resolvers-select"
-                            subscriptSizing="dynamic">
+                            class="node-resolvers-select">
                             <mat-label i18n>Resolvers</mat-label>
                             <mat-select
                               (selectionChange)="onEditNodeResolversChange(group.id, $event.value)"
                               [value]="getEditNodeResolverNames(group.id)"
                               multiple>
                               @for (res of resolverOptions(); track res.name) {
-                                <mat-option [value]="res.name"> {{ res.name }} ({{ res.type }}) </mat-option>
+                                <mat-option [value]="res.name"> {{ res.name }} ({{ res.type }})</mat-option>
                               }
                             </mat-select>
                             <div class="resolver-priority-list">
@@ -259,7 +258,7 @@
                 @switch (column.key) {
                   @case ("name") {
                     <mat-form-field
-                      class="new-realm-name-field"
+                      class="input-width-l"
                       subscriptSizing="dynamic">
                       <mat-label i18n>Realm Name</mat-label>
                       <input
@@ -282,7 +281,7 @@
                           </div>
 
                           <mat-form-field
-                            class="node-resolvers-select"
+                            class="input-width-l"
                             subscriptSizing="dynamic">
                             <mat-label i18n>Resolvers</mat-label>
                             <mat-select
@@ -290,7 +289,7 @@
                               [value]="getCreateNodeResolverNames(group.id)"
                               multiple>
                               @for (res of resolverOptions(); track res.name) {
-                                <mat-option [value]="res.name"> {{ res.name }} ({{ res.type }}) </mat-option>
+                                <mat-option [value]="res.name"> {{ res.name }} ({{ res.type }})</mat-option>
                               }
                             </mat-select>
                           </mat-form-field>
@@ -314,11 +313,11 @@
                     </div>
                   }
                   @case ("actions") {
-                    <div class="actions-buttons">
+                    <div class="actions-buttons flex-column">
                       <button
                         (click)="onCreateRealm()"
                         [disabled]="!canSubmitNewRealm()"
-                        class="action-button-1 width-238"
+                        class="action-button-primary button-width-s"
                         mat-stroked-button
                         type="button">
                         <mat-icon>add</mat-icon>
@@ -327,7 +326,8 @@
                       <button
                         (click)="resetCreateForm()"
                         [disabled]="isCreatingRealm()"
-                        mat-button
+                        class="action-button-secondary button-width-s"
+                        mat-stroked-button
                         matTooltip="Reset form"
                         type="button">
                         <span i18n>Reset</span>

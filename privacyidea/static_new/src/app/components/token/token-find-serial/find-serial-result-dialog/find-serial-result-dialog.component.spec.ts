@@ -19,18 +19,18 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 
-import { GetSerialResultDialogComponent, GetSerialResultDialogData } from "./get-serial-result-dialog.component";
+import { FindSerialResultDialogComponent, GetSerialResultDialogData } from "./find-serial-result-dialog.component";
 
 describe("GetSerialResultDialogComponent", () => {
-  let component: GetSerialResultDialogComponent;
-  let fixture: ComponentFixture<GetSerialResultDialogComponent>;
+  let component: FindSerialResultDialogComponent;
+  let fixture: ComponentFixture<FindSerialResultDialogComponent>;
 
   const mockDialogRef = { close: jest.fn() };
 
   beforeEach(async () => {
     TestBed.resetTestingModule();
     await TestBed.configureTestingModule({
-      imports: [GetSerialResultDialogComponent],
+      imports: [FindSerialResultDialogComponent],
       providers: [
         {
           provide: MAT_DIALOG_DATA,
@@ -45,7 +45,7 @@ describe("GetSerialResultDialogComponent", () => {
       ]
     }).compileComponents();
 
-    fixture = TestBed.createComponent(GetSerialResultDialogComponent);
+    fixture = TestBed.createComponent(FindSerialResultDialogComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

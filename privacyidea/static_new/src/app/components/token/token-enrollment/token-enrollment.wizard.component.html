@@ -35,7 +35,7 @@
     <div class="enroll-button-container margin-bottom-16">
       <button
         [disabled]="formGroupSignal().invalid"
-        class="action-button-1 width-238"
+        class="action-button-secondary button-width-l"
         mat-stroked-button
         type="submit">
         <mat-icon>add</mat-icon>
@@ -53,27 +53,27 @@
     @switch (authService.defaultTokentype() || "hotp") {
       @case ("hotp") {
         <app-enroll-hotp
-          [wizard]="wizard"
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
+          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)"
+          [wizard]="wizard" />
       }
       @case ("totp") {
         <app-enroll-totp
-          [wizard]="wizard"
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
+          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)"
+          [wizard]="wizard" />
       }
       @case ("spass") {
         <app-enroll-spass
-          [wizard]="wizard"
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
+          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)"
+          [wizard]="wizard" />
       }
       @case ("motp") {
         <app-enroll-motp
-          [wizard]="wizard"
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
+          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)"
+          [wizard]="wizard" />
       }
       @case ("sshkey") {
         <app-enroll-sshkey
@@ -97,15 +97,15 @@
       }
       @case ("radius") {
         <app-enroll-radius
-          [wizard]="wizard"
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
+          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)"
+          [wizard]="wizard" />
       }
       @case ("sms") {
         <app-enroll-sms
-          [wizard]="wizard"
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
+          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)"
+          [wizard]="wizard" />
       }
       @case ("4eyes") {
         <app-enroll-foureyes
@@ -114,15 +114,15 @@
       }
       @case ("applspec") {
         <app-enroll-applspec
-          [wizard]="wizard"
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
+          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)"
+          [wizard]="wizard" />
       }
       @case ("daypassword") {
         <app-enroll-daypassword
-          [wizard]="wizard"
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
+          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)"
+          [wizard]="wizard" />
       }
       @case ("certificate") {
         <app-enroll-certificate
@@ -141,16 +141,16 @@
       }
       @case ("paper") {
         <app-enroll-paper
-          [wizard]="wizard"
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
+          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)"
+          [wizard]="wizard" />
       }
       @case ("push") {
         <app-enroll-push
-          [wizard]="wizard"
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
           (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)"
-          (reopenDialogChange)="updateReopenDialog($event)" />
+          (reopenDialogChange)="updateReopenDialog($event)"
+          [wizard]="wizard" />
       }
       @case ("question") {
         <app-enroll-question
@@ -164,15 +164,15 @@
       }
       @case ("tan") {
         <app-enroll-tan
-          [wizard]="wizard"
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
+          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)"
+          [wizard]="wizard" />
       }
       @case ("tiqr") {
         <app-enroll-tiqr
-          [wizard]="wizard"
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
+          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)"
+          [wizard]="wizard" />
       }
       @case ("u2f") {
         <app-enroll-u2f
@@ -186,20 +186,20 @@
       }
       @case ("webauthn") {
         <app-enroll-webauthn
-          [wizard]="wizard"
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
+          (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)"
+          [wizard]="wizard" />
       }
       @case ("passkey") {
         <app-enroll-passkey
-          [wizard]="wizard"
           (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
           (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)"
-          (reopenDialogChange)="updateReopenDialog($event)" />
+          (reopenDialogChange)="updateReopenDialog($event)"
+          [wizard]="wizard" />
       }
     }
     @if (authService.requireDescription().includes(tokenType().key)) {
-      <mat-form-field class="description-form">
+      <mat-form-field class="input-width-l">
         <mat-label>Description</mat-label>
         <textarea
           [formControl]="descriptionControl"

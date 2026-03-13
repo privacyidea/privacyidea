@@ -31,8 +31,12 @@ import { MatIconButton } from "@angular/material/button";
 export class ClearableInputComponent {
   @Output() onClick = new EventEmitter<void>();
   @Input() showClearButton: boolean = true;
+  @Input() disabled: boolean = false;
 
   clearInput(): void {
+    if (this.disabled) {
+      return;
+    }
     this.onClick.emit();
   }
 }

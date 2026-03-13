@@ -25,6 +25,7 @@ import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } 
 import { MatInput } from "@angular/material/input";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { toSignal } from "@angular/core/rxjs-interop";
+import { NgClass } from "@angular/common";
 
 @Component({
   selector: "app-event-action-tab",
@@ -39,7 +40,8 @@ import { toSignal } from "@angular/core/rxjs-interop";
     MatInput,
     MatCheckbox,
     ReactiveFormsModule,
-    MatError
+    MatError,
+    NgClass
   ],
   templateUrl: "./event-action-tab.component.html",
   styleUrl: "./event-action-tab.component.scss"

@@ -33,10 +33,10 @@ import { ContentService } from "../../../services/content/content.service";
 import { NotificationService } from "../../../services/notification/notification.service";
 import { TokenService } from "../../../services/token/token.service";
 import {
-  GetSerialResultDialogComponent,
+  FindSerialResultDialogComponent,
   GetSerialResultDialogReturn
-} from "./get-serial-result-dialog/get-serial-result-dialog.component";
-import { TokenGetSerialComponent } from "./token-get-serial.component";
+} from "@components/token/token-find-serial/find-serial-result-dialog/find-serial-result-dialog.component";
+import { TokenFindSerialComponent } from "./token-find-serial.component";
 import { SearchTokenDialogComponent } from "./search-token-dialog/search-token-dialog";
 import { DialogService } from "../../../services/dialog/dialog.service";
 
@@ -52,8 +52,8 @@ const routerMock = {
 } as unknown as jest.Mocked<Router>;
 
 describe("TokenGetSerialComponent", () => {
-  let fixture: ComponentFixture<TokenGetSerialComponent>;
-  let component: TokenGetSerialComponent;
+  let fixture: ComponentFixture<TokenFindSerialComponent>;
+  let component: TokenFindSerialComponent;
   let tokenServiceMock: MockTokenService;
   let notificationServiceMock: MockNotificationService;
   let dialogServiceMock: MockDialogService;
@@ -64,7 +64,7 @@ describe("TokenGetSerialComponent", () => {
     lastResultDialogData = undefined;
 
     await TestBed.configureTestingModule({
-      imports: [TokenGetSerialComponent, BrowserAnimationsModule],
+      imports: [TokenFindSerialComponent, BrowserAnimationsModule],
       providers: [
         provideHttpClient(),
         { provide: TokenService, useClass: MockTokenService },
@@ -75,7 +75,7 @@ describe("TokenGetSerialComponent", () => {
       ]
     }).compileComponents();
 
-    fixture = TestBed.createComponent(TokenGetSerialComponent);
+    fixture = TestBed.createComponent(TokenFindSerialComponent);
     component = fixture.componentInstance;
 
     tokenServiceMock = TestBed.inject(TokenService) as unknown as MockTokenService;
@@ -142,7 +142,7 @@ describe("TokenGetSerialComponent", () => {
     expect(component.currentStep()).toBe("found");
     expect(component.foundSerial()).toBe("SER-1");
     expect(dialogServiceMock.openDialog).toHaveBeenCalledWith({
-      component: GetSerialResultDialogComponent,
+      component: FindSerialResultDialogComponent,
       data: {
         foundSerial: "SER-1",
         otpValue: "000000"
@@ -164,7 +164,7 @@ describe("TokenGetSerialComponent", () => {
     expect(dialogServiceMock.openDialog).toHaveBeenCalledWith({ component: SearchTokenDialogComponent, data: "150" });
     confirmClosed$.next(true);
     expect(dialogServiceMock.openDialog).toHaveBeenCalledWith({
-      component: GetSerialResultDialogComponent,
+      component: FindSerialResultDialogComponent,
       data: {
         foundSerial: "BIG-1",
         otpValue: "000000"
@@ -201,7 +201,7 @@ describe("TokenGetSerialComponent", () => {
     (tokenServiceMock.getSerial as jest.Mock).mockReturnValue(of(makeSerialResp("J-007")));
     component.findSerial();
     expect(dialogServiceMock.openDialog).toHaveBeenCalledWith({
-      component: GetSerialResultDialogComponent,
+      component: FindSerialResultDialogComponent,
       data: { foundSerial: "J-007", otpValue: "" }
     });
     expect(component.foundSerial()).toBe("J-007");

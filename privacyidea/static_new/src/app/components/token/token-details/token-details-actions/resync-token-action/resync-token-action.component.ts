@@ -21,10 +21,11 @@ import { FormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 import { TokenService, TokenServiceInterface } from "../../../../../services/token/token.service";
+import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
 
 @Component({
   selector: "app-resync-token-action",
-  imports: [FormsModule, MatIcon, MatButtonModule],
+  imports: [FormsModule, MatIcon, MatButtonModule, MatFormField, MatInput, MatLabel],
   templateUrl: "./resync-token-action.component.html",
   styleUrl: "./resync-token-action.component.scss"
 })

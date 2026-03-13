@@ -22,31 +22,37 @@
   i18n-aria-label>
   <div class="flex-column">
     <h3
-      class="margin-left-1"
+      class="margin-left-16 margin-top-0"
       i18n>
-      Token in Container </h3>
-    @if (dataSource.data.length > 1) {
-      <mat-form-field
-        class="container-details-token-table-filter"
-        subscriptSizing="dynamic">
-        <mat-label i18n>Filter Token...</mat-label>
-        <input
-          #filterInput
-          (keyup)="handleFilterInput($event)"
-          i18n-aria-label
-          aria-label="Filter Input"
-          matInput
-          i18n-placeholder
-          placeholder="Filter across all columns."/>
-      </mat-form-field>
-    }
-    @if (dataSource.data.length > 5) {
-      <mat-paginator
-        [pageSizeOptions]="pageSizeOptions()"
-        [pageSize]="pageSize"
-        class="flex-just-start"
-        showFirstLastButtons></mat-paginator>
-    }
+      Tokens in Container
+    </h3>
+    <div class="flex-row filter-paginator-container">
+      @if (dataSource.data.length > 1) {
+        <mat-form-field
+          subscriptSizing="dynamic"
+          class="container-details-token-table-filter width-50">
+          <mat-label i18n>Filter Token...</mat-label>
+          <app-clearable-input
+            (onClick)="clearFilter()"
+            [showClearButton]="filterInput.value !== ''">
+            <input
+              #filterInput
+              (keyup)="handleFilterInput($event)"
+              i18n-aria-label
+              aria-label="Filter Input"
+              matInput
+              i18n-placeholder
+              placeholder="Filter across all columns." />
+          </app-clearable-input>
+        </mat-form-field>
+      }
+      @if (dataSource.data.length > 5) {
+        <mat-paginator
+          [pageSizeOptions]="pageSizeOptions()"
+          [pageSize]="pageSize"
+          showFirstLastButtons />
+      }
+    </div>
   </div>
   <div [ngClass]="[overflowService.isWidthOverflowing('body', 1580) ? 'flex-column' : 'flex-row']">
     <table
@@ -63,7 +69,7 @@
             mat-header-cell>
             <div class="flex ali-center">
               {{ column.label }}
-              <div class="margin-left-1 flex">
+              <div class="margin-left-16 flex">
                 <button
                   (click)="tableUtilsService.onSortButtonClick(column.key, sort)"
                   class="sort-button"

@@ -12,10 +12,6 @@
   margin-bottom: 16px;
 }
 
-.enroll-h4 {
-  margin: 0 0 16px 8px;
-}
-
 .inline-hint {
   margin-bottom: 16px;
   background: var(--inline-hint-bg);
@@ -28,4 +24,8 @@
   background: var(--inline-warning-bg);
   padding: 8px;
   border-radius: var(--border-radius);
+}
+
+.width-950 {
+  width: 950px;
 }

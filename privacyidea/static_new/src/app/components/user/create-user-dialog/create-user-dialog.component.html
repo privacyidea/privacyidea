@@ -24,10 +24,9 @@
   [title]="title"
   [actions]="dialogActions()">
 
-  <div class="margin-bottom-16">
+  <div class="flex-column margin-top-16">
     <mat-form-field
-      class="width-100 margin-bottom-16"
-      subscriptSizing="dynamic">
+      class="input-width-l margin-bottom-16">
       <mat-label i18n>Resolver</mat-label>
       <mat-select
         [formControl]="resolverControl">
@@ -42,8 +41,7 @@
     </mat-form-field>
 
     <mat-form-field
-      class="width-100"
-      subscriptSizing="dynamic">
+      class="input-width-l">
       <mat-label i18n>Username</mat-label>
       <input
         [formControl]="username"

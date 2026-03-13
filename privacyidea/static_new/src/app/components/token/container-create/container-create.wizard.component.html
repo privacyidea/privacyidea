@@ -27,17 +27,15 @@
       [innerHTML]="preTopHtml?.sanitized"
       class="margin-top-16"></div>
   } @else {
-    <h3
-      class="margin-left-1"
-      i18n>
+    <h2 i18n>
       Create {{ this.containerService.selectedContainerType()?.containerType | titlecase }} Container
-    </h3>
+    </h2>
   }
 
   <div class="enroll-button-container">
     <button
       (click)="createContainer()"
-      class="action-button-1 width-238"
+      class="action-button-secondary button-width-l"
       mat-stroked-button>
       <mat-icon>add</mat-icon>
       Create

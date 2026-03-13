@@ -58,7 +58,6 @@
             <td>
               <button
                 (click)="deleteEntry(key)"
-                color="warn"
                 mat-icon-button>
                 <mat-icon>delete</mat-icon>
               </button>
@@ -71,7 +70,7 @@
   <div class="new-api-key-row">
     <mat-form-field
       appearance="fill"
-      class="width-33">
+      class="input-width-m">
       <mat-label i18n>Client ID</mat-label>
       <input
         (ngModelChange)="newYubikeyApiId.set($event)"
@@ -82,7 +81,7 @@
     </mat-form-field>
     <mat-form-field
       appearance="fill"
-      class="width-33">
+      class="input-width-l">
       <mat-label i18n>API Key</mat-label>
       <input
         (ngModelChange)="newYubikeyApiKey.set($event)"
@@ -93,7 +92,7 @@
     </mat-form-field>
     <button
       (click)="createNewKey()"
-      class="action-button-1 width-238 margin-bottom-16"
+      class="action-button-secondary button-width-l margin-bottom-16"
       mat-stroked-button>
       <mat-icon>add</mat-icon>
       <span i18n>Create new API key</span>

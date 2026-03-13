@@ -65,7 +65,7 @@
               @switch (element.keyMap.key) {
                 @case ("container_serial") {
                   @if (element.isEditing()) {
-                    <mat-form-field class="width-288px">
+                    <mat-form-field class="width-288">
                       <mat-label i18n>Enter Container</mat-label>
                       <app-clearable-input
                         (onClick)="containerService.selectedContainer.set(null)"
@@ -124,7 +124,7 @@
                 }
                 @case ("description") {
                   @if (element.isEditing()) {
-                    <mat-form-field class="width-288px description">
+                    <mat-form-field class="width-288 description">
                       <textarea
                         matInput
                         rows="4"

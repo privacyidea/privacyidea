@@ -23,8 +23,8 @@
   <input
     class="hidden-input"
     type="password" />
-  <mat-form-field class="width-100">
-    <mat-label i18n>OTP or Pin</mat-label>
+  <mat-form-field class="input-width-s">
+    <mat-label i18n>PIN and/or OTP</mat-label>
     <input
       [(ngModel)]="otpOrPinToTest"
       [type]="hide ? 'password' : 'text'"
@@ -44,17 +44,17 @@
 <div class="actions-pin-button">
   <button
     (click)="testToken()"
-    class="action-button-1 width-238"
-    mat-stroked-button
-    i18n>
+    class="action-button-secondary button-width-m"
+    i18n
+    mat-stroked-button>
     <mat-icon>help_outline</mat-icon>
     Test Token
   </button>
   <button
     (click)="verifyOTPValue()"
-    class="action-button-1 width-238"
-    mat-stroked-button
-    i18n>
+    class="action-button-secondary button-width-m"
+    i18n
+    mat-stroked-button>
     <mat-icon>help_outline</mat-icon>
     Verify OTP Value
   </button>

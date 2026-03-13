@@ -11,10 +11,6 @@ $focus-outline: 3px solid var(--mat-sys-primary-light);
   }
 }
 
-.input-height {
-  height: 76.5px;
-}
-
 .hint-spacer {
   margin-bottom: 1.2em;
 }
@@ -25,15 +21,10 @@ $focus-outline: 3px solid var(--mat-sys-primary-light);
   gap: 8px;
 }
 
-.user-pin-input {
-  display: flex;
-  gap: 8px;
-}
-
 .user-pin-button {
   display: flex;
-  margin-top: 8px;
   flex-direction: column;
+  align-items: center;
   gap: 8px;
 }
 
@@ -52,15 +43,22 @@ $focus-outline: 3px solid var(--mat-sys-primary-light);
     outline: none;
   }
 }
-.checkbox-hint {
-  display: block;
-  font-family: var(--mat-form-field-subscript-text-font, var(--mat-sys-body-small-font));
-  font-size: var(--mat-form-field-subscript-text-size, var(--mat-sys-body-small-size));
-  font-weight: var(--mat-form-field-subscript-text-weight, var(--mat-sys-body-small-weight));
-  color: var(--mat-sys-primary);
-  padding-left: 16px;
-  padding-right: 16px;
-  padding-top: 4px;
-  line-height: var(--mat-form-field-subscript-text-line-height, var(--mat-sys-body-small-line-height));
-  letter-spacing: var(--mat-form-field-subscript-text-tracking, var(--mat-sys-body-small-tracking));
+
+.input-width-s {
+  width: 180px;
+  min-width: 180px;
+}
+
+.input-width-m {
+  width: 240px;
+  min-width: 240px;
+}
+
+.input-width-l {
+  width: 300px;
+  min-width: 300px;
+}
+
+::ng-deep mat-form-field:has(input):not(.sticky-header *):not(.filter-paginator-container *):not(td *) {
+  height: 76.5px;
 }

@@ -74,11 +74,6 @@
   background-color: rgba(0, 0, 0, 0.02);
 }
 
-.new-realm-name-field {
-  width: 100%;
-  min-width: 238px;
-}
-
 .node-resolvers-groups {
   display: flex;
   flex-direction: column;
@@ -88,10 +83,6 @@
 .node-resolvers-group {
   display: flex;
   flex-direction: column;
-}
-
-.node-resolvers-select {
-  width: 100%;
 }
 
 .resolver-priority-list {
@@ -124,7 +115,7 @@
 
 .actions-buttons {
   display: flex;
-  gap: 0.25rem;
+  gap: 8px;
   justify-content: center;
   align-items: center;
 }

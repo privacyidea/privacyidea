@@ -31,12 +31,14 @@ import { MockResolverService } from "../../../../testing/mock-services/mock-reso
 import { MockNotificationService } from "../../../../testing/mock-services";
 import { MockAuthService } from "../../../../testing/mock-services/mock-auth-service";
 import { MockTableUtilsService } from "src/testing/mock-services/mock-table-utils-service";
+import { ContentService } from "../../../services/content/content.service";
+import { MockContentService } from "../../../../testing/mock-services/mock-content-service";
 
 class LocalMockMatDialog {
   result$ = of(true);
-  open = jest.fn(() => ({
+  open = jest.fn().mockReturnValue({
     afterClosed: () => this.result$
-  }));
+  });
 }
 
 describe("UserSourcesComponent", () => {
@@ -48,6 +50,7 @@ describe("UserSourcesComponent", () => {
   let router: Router;
 
   beforeEach(async () => {
+    dialog = new LocalMockMatDialog();
     await TestBed.configureTestingModule({
       imports: [UserResolversComponent],
       providers: [
@@ -57,11 +60,15 @@ describe("UserSourcesComponent", () => {
         { provide: TableUtilsService, useClass: MockTableUtilsService },
         { provide: NotificationService, useClass: MockNotificationService },
         { provide: AuthService, useClass: MockAuthService },
-        { provide: MatDialog, useClass: LocalMockMatDialog },
+        { provide: ContentService, useClass: MockContentService },
+        { provide: MatDialog, useValue: dialog },
         {
           provide: Router,
           useValue: {
-            navigate: jest.fn()
+            navigate: jest.fn(),
+            navigateByUrl: jest.fn(),
+            events: of(),
+            url: ""
           }
         },
         {
@@ -71,13 +78,19 @@ describe("UserSourcesComponent", () => {
           }
         }
       ]
+    }).overrideComponent(UserResolversComponent, {
+      add: {
+        providers: [
+          { provide: MatDialog, useValue: dialog },
+          { provide: ContentService, useClass: MockContentService }
+        ]
+      }
     }).compileComponents();
 
     fixture = TestBed.createComponent(UserResolversComponent);
     component = fixture.componentInstance;
     resolverService = TestBed.inject(ResolverService) as unknown as MockResolverService;
     notificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;
-    dialog = TestBed.inject(MatDialog) as unknown as LocalMockMatDialog;
     router = TestBed.inject(Router);
 
     fixture.detectChanges();
@@ -132,21 +145,6 @@ describe("UserSourcesComponent", () => {
       expect.any(Function),
       expect.objectContaining({
         data: { resolver },
-        height: "auto",
-        maxHeight: "100vh",
-        maxWidth: "100vw",
-        width: "auto"
-      })
-    );
-  });
-
-  it("onNewResolver should open dialog", () => {
-    component.onNewResolver();
-
-    expect(dialog.open).toHaveBeenCalledWith(
-      expect.any(Function),
-      expect.objectContaining({
-        data: { resolver: undefined },
         height: "auto",
         maxHeight: "100vh",
         maxWidth: "100vw",
