@@ -130,37 +130,6 @@ msgstr ""
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:45
 #, fuzzy
-#| msgid ""
-#| "<p>\n"
-#| "                    You are reading books, which do not belong to you "
-#| "anymore. Your ebook reader\n"
-#| "                    only provides them for the time of reading. You are "
-#| "using software as a service\n"
-#| "                    and you do not have any control, when the software "
-#| "will be updated,\n"
-#| "                    which features will be added or removed or if the "
-#| "service might even be stopped.\n"
-#| "                    You only get a legal right of time limited use.\n"
-#| "                </p>\n"
-#| "                <p>\n"
-#| "                    You could install proprietary software on your own "
-#| "server, but you also have only\n"
-#| "                    limited rights in regards to this installation. You "
-#| "are not allowed to modify or pass along\n"
-#| "                    this proprietary software.\n"
-#| "                </p>\n"
-#| "                <p>\n"
-#| "                    The open source software privacyIDEA now is <b>your "
-#| "property</b>! No one can take away this software\n"
-#| "                    or this installation. According to the license AGPLv3 "
-#| "you can modify or distribute this software.\n"
-#| "                    You do not have to worry about end-of-life.\n"
-#| "                </p>\n"
-#| "                <p>\n"
-#| "                    <b>Using open source is not about spending no money, "
-#| "but is is about full control you get over\n"
-#| "                        your own system! Forever!</b>\n"
-#| "                </p>"
 msgid ""
 "<p>\n"
 "                    You are reading books, which do not belong to you "
@@ -338,7 +307,7 @@ msgstr "Clé d'API"
 msgid "API client ID"
 msgstr "Identifiant client d'API"
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:818
+#: privacyidea/static/components/token/controllers/tokenControllers.js:850
 msgid "Abort operation on unverifiable token"
 msgstr "Opération abandonnée, jeton invérifiable"
 
@@ -360,8 +329,8 @@ msgstr ""
 #: privacyidea/static/components/config/views/config.events.details.html:249
 #: privacyidea/static/components/config/views/config.events.details.html:251
 #: privacyidea/static/components/config/views/config.events.list.html:27
-#: privacyidea/static/components/config/views/config.policies.details.html:153
-#: privacyidea/static/components/config/views/config.policies.details.html:353
+#: privacyidea/static/components/config/views/config.policies.details.html:158
+#: privacyidea/static/components/config/views/config.policies.details.html:355
 #: privacyidea/static/components/config/views/config.policies.list.html:20
 #: privacyidea/static/components/dashboard/views/dashboard.html:91
 msgid "Action"
@@ -371,7 +340,7 @@ msgstr "Action"
 #: privacyidea/static/components/config/views/config.periodictasks.list.html:6
 #: privacyidea/static/components/config/views/config.policies.list.html:9
 #: privacyidea/static/components/directives/views/directive.policyconditions.html:5
-#: privacyidea/static/components/token/views/token.containerdetails.html:428
+#: privacyidea/static/components/token/views/token.containerdetails.html:429
 #: privacyidea/static/components/token/views/token.details.html:33
 #: privacyidea/static/components/user/views/user.details.html:149
 #: privacyidea/static/components/user/views/user.details.html:236
@@ -386,8 +355,8 @@ msgstr "Événements actifs"
 msgid "Active Policies"
 msgstr "Politiques actives"
 
-#: privacyidea/static/components/config/views/config.policies.details.html:325
-#: privacyidea/static/components/token/views/token.containerdetails.html:759
+#: privacyidea/static/components/config/views/config.policies.details.html:327
+#: privacyidea/static/components/token/views/token.containerdetails.html:760
 msgid "Add"
 msgstr "Ajouter"
 
@@ -400,7 +369,7 @@ msgstr "Ajouter un jeton"
 msgid "Add Tokens"
 msgstr "Ajouter des jetons"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:581
+#: privacyidea/static/components/token/views/token.containerdetails.html:582
 #: privacyidea/static/components/user/views/user.details.html:281
 msgid "Add Tokens to Container"
 msgstr "Ajouter des jetons au conteneur"
@@ -421,7 +390,7 @@ msgstr "Ajouter un attribut personnalisé"
 msgid "Add new question"
 msgstr "Ajouter une nouvelle question"
 
-#: privacyidea/static/components/token/views/token.details.html:630
+#: privacyidea/static/components/token/views/token.details.html:631
 msgid "Add to Container"
 msgstr "Ajouter au conteneur"
 
@@ -433,15 +402,15 @@ msgstr "Ajouter un utilisateur"
 msgid "Additional"
 msgstr "Additionnel"
 
-#: privacyidea/static/components/config/views/config.policies.details.html:336
+#: privacyidea/static/components/config/views/config.policies.details.html:338
 msgid "Additional conditions"
 msgstr "Conditions supplémentaires"
 
-#: privacyidea/static/components/config/views/config.policies.details.html:180
+#: privacyidea/static/components/config/views/config.policies.details.html:185
 msgid "Admin"
 msgstr "Administrateur"
 
-#: privacyidea/static/components/config/views/config.policies.details.html:163
+#: privacyidea/static/components/config/views/config.policies.details.html:168
 msgid "Admin-Realm"
 msgstr "Administrateur du domaine"
 
@@ -455,7 +424,6 @@ msgstr "Administrateur"
 
 #: privacyidea/static/components/config/views/config.resolvers.http.html:10
 #, fuzzy
-#| msgid "Hide Settings"
 msgid "Advanced Settings"
 msgstr "Cacher les Paramètres"
 
@@ -507,11 +475,11 @@ msgstr "Tous les jetons"
 msgid "All users"
 msgstr "Tous les utilisateurs"
 
-#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:163
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:181
 msgid "An Attribute or the DN to identify the machine"
 msgstr "Un attribut ou le nom de domaine pour identifier la machine"
 
-#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:197
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:215
 msgid "An Attribute that contains the IP address."
 msgstr "Un attribut qui contient l'adresse IP."
 
@@ -522,8 +490,8 @@ msgstr "Un courriel de réinitialisation du mot de passe vous a été envoyé."
 #: privacyidea/static/components/machine/views/machine.details.html:127
 #: privacyidea/static/components/machine/views/machine.details.html:51
 #: privacyidea/static/components/token/views/token.applications.html:2
-#: privacyidea/static/components/token/views/token.details.html:669
-#: privacyidea/static/components/token/views/token.details.html:748
+#: privacyidea/static/components/token/views/token.details.html:670
+#: privacyidea/static/components/token/views/token.details.html:749
 msgid "Application"
 msgstr "Application"
 
@@ -543,7 +511,7 @@ msgstr ""
 "Comme la valeur a été chiffrée en AES128-CBC, vous devez fournir une\n"
 "              chaîne hexadécimale de 32 caractères."
 
-#: privacyidea/static/components/token/views/token.details.html:605
+#: privacyidea/static/components/token/views/token.details.html:606
 msgid "Assign Container"
 msgstr "Assigner le conteneur"
 
@@ -554,9 +522,9 @@ msgid "Assign Token"
 msgstr "Assigner le jeton"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:393
-#: privacyidea/static/components/token/views/token.containerdetails.html:411
+#: privacyidea/static/components/token/views/token.containerdetails.html:412
 #: privacyidea/static/components/token/views/token.details.html:585
-#: privacyidea/static/components/token/views/token.details.html:598
+#: privacyidea/static/components/token/views/token.details.html:599
 msgid "Assign User"
 msgstr "Assigner l'utilisateur"
 
@@ -578,7 +546,6 @@ msgstr "Assigner le conteneur à un utilisateur"
 
 #: privacyidea/static/components/directives/views/directive.registerContainer.html:39
 #, fuzzy
-#| msgid "Assign the Container to a User"
 msgid "Assign the container to a user to enable this option."
 msgstr "Assigner le conteneur à un utilisateur"
 
@@ -590,7 +557,7 @@ msgstr ""
 "Assigner le nouveau conteneur à {{ userName }} du\n"
 "                domaine {{ userRealm }}"
 
-#: privacyidea/static/components/token/views/token.enroll.html:78
+#: privacyidea/static/components/token/views/token.enroll.html:80
 msgid "Assign the token to a container"
 msgstr "Assigner le jeton à un conteneur"
 
@@ -611,7 +578,7 @@ msgstr "Utilisateur assigné"
 msgid "Assignment State"
 msgstr "État d'affectation"
 
-#: privacyidea/static/components/token/views/token.details.html:784
+#: privacyidea/static/components/token/views/token.details.html:793
 msgid "Attach Machine"
 msgstr "Rattacher la machine"
 
@@ -619,13 +586,12 @@ msgstr "Rattacher la machine"
 msgid "Attach Token"
 msgstr "Rattacher le jeton"
 
-#: privacyidea/static/components/token/views/token.details.html:742
+#: privacyidea/static/components/token/views/token.details.html:743
 msgid "Attach to a new Machine"
 msgstr "Rattacher à une nouvelle machine"
 
 #: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:44
 #, fuzzy
-#| msgid "Attribute mapping"
 msgid "Attribute Mapping"
 msgstr "Mappage d'attribut"
 
@@ -641,7 +607,7 @@ msgstr "Audit"
 msgid "Authentication Server URI"
 msgstr "URI d'authentification au serveur"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:398
+#: privacyidea/static/components/login/controllers/loginControllers.js:409
 msgid "Authentication failed."
 msgstr "Échec de l'authentification."
 
@@ -653,7 +619,7 @@ msgstr "Authentifications"
 msgid "Authentications in the last 24 hours"
 msgstr "Authentifications dans les dernières 24 heures"
 
-#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:166
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:248
 msgid "Authority"
 msgstr "Autorité"
 
@@ -674,34 +640,37 @@ msgstr "Mauvaise requête U2F"
 msgid "Base Config"
 msgstr "Configuration de base"
 
-#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:82
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:100
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:116
 msgid "Base DN"
 msgstr "Nom de domaine de base"
 
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:350
+#, fuzzy
+msgid "Base DN of User Groups"
+msgstr "Filtre de recherche"
+
 #: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:20
 #, fuzzy
-#| msgid "Base DN"
 msgid "Base URL"
 msgstr "Nom de domaine de base"
 
 #: privacyidea/static/components/config/views/config.resolvers.http.html:13
 #, fuzzy
-#| msgid "Edit Settings"
 msgid "Basic Settings"
 msgstr "Modifier les Paramètres"
 
-#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:92
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:110
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:151
 msgid "Bind DN"
 msgstr "Lier le nom de domaine"
 
-#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:102
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:120
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:161
 msgid "Bind Password"
 msgstr "Lier le mot de passe"
 
-#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:113
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:131
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:138
 msgid "Bind Type"
 msgstr "Lier le type"
@@ -759,20 +728,25 @@ msgstr "Délai du cache (en secondes)"
 #: privacyidea/static/components/directives/views/directive.tokendata.html:23
 #: privacyidea/static/components/machine/views/machine.details.html:110
 #: privacyidea/static/components/token/views/token.containerdetails.html:138
-#: privacyidea/static/components/token/views/token.containerdetails.html:473
+#: privacyidea/static/components/token/views/token.containerdetails.html:474
 #: privacyidea/static/components/token/views/token.containerdetails.html:55
-#: privacyidea/static/components/token/views/token.containerdetails.html:566
+#: privacyidea/static/components/token/views/token.containerdetails.html:567
 #: privacyidea/static/components/token/views/token.details.html:218
 #: privacyidea/static/components/token/views/token.details.html:319
 #: privacyidea/static/components/token/views/token.details.html:363
 #: privacyidea/static/components/token/views/token.details.html:408
-#: privacyidea/static/components/token/views/token.details.html:732
+#: privacyidea/static/components/token/views/token.details.html:733
 #: privacyidea/static/components/token/views/token.getserial.html:83
 #: privacyidea/static/components/user/views/user.details.html:220
 #: privacyidea/static/components/user/views/user.details.html:295
 #: privacyidea/static/components/user/views/user.details.html:56
 msgid "Cancel"
 msgstr "Annuler"
+
+#: privacyidea/static/components/config/views/config.smtp.edit.html:118
+#, fuzzy
+msgid "Certificate"
+msgstr "certificat"
 
 #: privacyidea/static/components/token/views/token.enroll.certificate.html:45
 msgid "Certificate (PEM)"
@@ -806,11 +780,11 @@ msgstr "Modèle de certificat"
 msgid "Certificates Templates file"
 msgstr "Fichiers de modèle des certificats"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:297
+#: privacyidea/static/components/login/controllers/loginControllers.js:308
 msgid "Challenge Response Authentication."
 msgstr "Authentification Challenge Réponse."
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:376
+#: privacyidea/static/components/login/controllers/loginControllers.js:387
 msgid "Challenge Response Authentication. Your response was not valid!"
 msgstr "Authentification Challenge Réponse. Votre réponse n'était pas valide !"
 
@@ -823,10 +797,10 @@ msgstr "Modifier le code PIN"
 msgid "Check OTP only."
 msgstr "Vérifier l'OTP seulement."
 
-#: privacyidea/static/components/config/views/config.policies.details.html:228
+#: privacyidea/static/components/config/views/config.policies.details.html:234
+#, fuzzy
 msgid ""
-"Check all possible resolvers of a user to match the resolver\n"
-"                        in this policy."
+"Check all possible resolvers of a user to match the resolver in this policy."
 msgstr ""
 "Vérifier tous les interpréteurs possibles d'un utilisateur pour\n"
 "correspondre à l'interpréteur dans cette politique."
@@ -840,10 +814,6 @@ msgstr "Vérifier le code PIN localement"
 msgid "Check with OTP PIN."
 msgstr "Vérifier avec le PIN OTP."
 
-#: privacyidea/static/components/login/views/login.html:68
-msgid "Choose a realm..."
-msgstr "Sélectionner un domaine…"
-
 #: privacyidea/static/components/config/views/config.realms.list.html:147
 msgid "Clear Default Realm"
 msgstr "Effacer le Domaine par Défaut"
@@ -855,6 +825,14 @@ msgid ""
 msgstr ""
 "Réinitialiser le compteur\n"
 "d'échecs après X minutes"
+
+#: privacyidea/static/components/directives/views/directive.filter.table.html:21
+#: privacyidea/static/components/directives/views/directive.filter.table.html:22
+#: privacyidea/static/components/token/views/token.list.html:96
+#: privacyidea/static/components/token/views/token.list.html:97
+#, fuzzy
+msgid "Clear filter"
+msgstr "Filtre de recherche"
 
 #: privacyidea/static/components/token/views/token.enrolled.daypassword.html:27
 #: privacyidea/static/components/token/views/token.enrolled.hotp.html:27
@@ -893,7 +871,7 @@ msgstr ""
 "TiQR."
 
 #: privacyidea/static/components/components/views/component.clienttype.html:8
-#: privacyidea/static/components/config/views/config.policies.details.html:290
+#: privacyidea/static/components/config/views/config.policies.details.html:295
 #: privacyidea/static/components/config/views/config.policies.list.html:26
 #: privacyidea/static/components/config/views/config.resolvers.scim.html:51
 msgid "Client"
@@ -907,13 +885,12 @@ msgstr "Type d'application client"
 msgid "Client Configuration is not supported."
 msgstr "La configuration du client n'est pas prise en charge."
 
-#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:189
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:271
 #, fuzzy
-#| msgid "Login with credentials"
 msgid "Client Credential"
 msgstr "Se connecter avec les identifiants"
 
-#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:181
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:263
 #: privacyidea/static/components/config/views/config.token.yubikey.html:20
 #: privacyidea/static/components/config/views/config.token.yubikey.html:39
 msgid "Client ID"
@@ -946,7 +923,7 @@ msgid "Close all containers"
 msgstr "Fermer tous les conteneurs"
 
 #: privacyidea/static/components/config/views/config.events.details.html:146
-#: privacyidea/static/components/config/views/config.policies.details.html:377
+#: privacyidea/static/components/config/views/config.policies.details.html:389
 msgid "Close all groups"
 msgstr "Fermer tous les groupes"
 
@@ -969,8 +946,8 @@ msgstr "Composants"
 
 #: privacyidea/static/components/config/views/config.events.details.html:110
 #: privacyidea/static/components/config/views/config.events.details.html:122
-#: privacyidea/static/components/config/views/config.policies.details.html:149
-#: privacyidea/static/components/config/views/config.policies.details.html:161
+#: privacyidea/static/components/config/views/config.policies.details.html:154
+#: privacyidea/static/components/config/views/config.policies.details.html:166
 msgid "Condition"
 msgstr "Condition"
 
@@ -982,13 +959,13 @@ msgstr "Conditions"
 msgid "Config"
 msgstr "Configuration"
 
-#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:300
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:383
 msgid ""
 "Configure the endpoint to authenticate the user with its username/userid and "
 "password."
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:320
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:403
 msgid ""
 "Configure the endpoint to create a new user in the user store. The above "
 "defined attributes can be\n"
@@ -998,15 +975,14 @@ msgid ""
 "<code>\"{password}\"</code>."
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:332
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:415
 #, fuzzy
-#| msgid "Do you really want to delete the user in the user store?"
 msgid "Configure the endpoint to delete an existing user from the user store."
 msgstr ""
 "Êtes-vous sûr de vouloir supprimer l'utilisateur de la base des "
 "utilisateurs ?"
 
-#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:326
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:409
 msgid ""
 "Configure the endpoint to edit an existing user in the user store. The above "
 "defined attributes can\n"
@@ -1015,7 +991,7 @@ msgid ""
 "                parameters in the request mapping."
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:304
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:387
 msgid ""
 "Configure the endpoint to retrieve a list of users from the user store. The "
 "above defined attributes\n"
@@ -1023,7 +999,7 @@ msgid ""
 "available in the request."
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:309
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:392
 msgid ""
 "Configure the endpoint to retrieve a single user for the UID. For example, "
 "privacyIDEA only stores\n"
@@ -1031,7 +1007,7 @@ msgid ""
 "this endpoint is used."
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:314
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:397
 msgid ""
 "Configure the endpoint to retrieve a single user for the username. For "
 "example, when a user tries to\n"
@@ -1053,7 +1029,7 @@ msgstr "Nom du connecteur"
 msgid "Contained Tokens:"
 msgstr "Jetons Conteneurisés :"
 
-#: privacyidea/static/components/token/views/token.containercreate.html:160
+#: privacyidea/static/components/token/views/token.containercreate.html:161
 msgid "Container Created"
 msgstr "Conteneur créé"
 
@@ -1103,9 +1079,8 @@ msgstr "Conteneurs pour l'utilisateur {{ username }}"
 msgid "Could not delete expired challenges."
 msgstr ""
 
-#: privacyidea/static/components/config/controllers/configControllers.js:811
+#: privacyidea/static/components/config/controllers/configControllers.js:822
 #, fuzzy
-#| msgid "Failed to delete user."
 msgid "Could not delete user cache."
 msgstr "Échec de la suppression de l'utilisateur."
 
@@ -1127,7 +1102,7 @@ msgstr ""
 "Fenêtre de comptage\n"
 "des jetons nouvellement enrôlés"
 
-#: privacyidea/static/components/token/views/token.containercreate.html:142
+#: privacyidea/static/components/token/views/token.containercreate.html:143
 msgid "Create"
 msgstr "Créer"
 
@@ -1207,7 +1182,7 @@ msgstr "Créer un nouvel interpréteur SCIM"
 msgid "Create a new SMS gateway"
 msgstr "Créer une nouvelle passerelle SMS"
 
-#: privacyidea/static/components/config/views/config.smtp.edit.html:5
+#: privacyidea/static/components/config/views/config.smtp.edit.html:4
 msgid "Create a new SMTP server {{ params.identifier }}"
 msgstr "Créer un nouveau serveur SMTP {{ params.identifier }}"
 
@@ -1267,7 +1242,7 @@ msgstr "Créer une nouvelle politique"
 msgid "Create new SMS Gateway definition"
 msgstr "Créer la définition d'une nouvelle passerelle SMS"
 
-#: privacyidea/static/components/token/views/token.enroll.html:228
+#: privacyidea/static/components/token/views/token.enroll.html:230
 msgid "Create new container"
 msgstr "Créer un nouveau conteneur"
 
@@ -1337,7 +1312,7 @@ msgstr "Fenêtre de temps par défaut"
 #: privacyidea/static/components/config/views/config.mresolvers.list.html:28
 #: privacyidea/static/components/config/views/config.periodictasks.details.html:20
 #: privacyidea/static/components/config/views/config.periodictasks.list.html:55
-#: privacyidea/static/components/config/views/config.policies.details.html:142
+#: privacyidea/static/components/config/views/config.policies.details.html:147
 #: privacyidea/static/components/config/views/config.policies.list.html:79
 #: privacyidea/static/components/config/views/config.privacyideaserver.list.html:32
 #: privacyidea/static/components/config/views/config.radius.list.html:32
@@ -1352,8 +1327,8 @@ msgstr "Fenêtre de temps par défaut"
 #: privacyidea/static/components/config/views/dialog.confirm_delete.html:28
 #: privacyidea/static/components/directives/views/directive.policyconditions.html:81
 #: privacyidea/static/components/token/views/token.containerdetails.html:33
-#: privacyidea/static/components/token/views/token.containerdetails.html:469
-#: privacyidea/static/components/token/views/token.containerdetails.html:556
+#: privacyidea/static/components/token/views/token.containerdetails.html:470
+#: privacyidea/static/components/token/views/token.containerdetails.html:557
 #: privacyidea/static/components/token/views/token.containertemplates.list.html:69
 #: privacyidea/static/components/token/views/token.details.html:20
 #: privacyidea/static/components/token/views/token.details.html:217
@@ -1361,7 +1336,7 @@ msgstr "Fenêtre de temps par défaut"
 msgid "Delete"
 msgstr "Supprimer"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:463
+#: privacyidea/static/components/token/views/token.containerdetails.html:464
 msgid "Delete All"
 msgstr "Supprimer tout"
 
@@ -1379,13 +1354,12 @@ msgstr "Effacer le conteneur et les jetons"
 
 #: privacyidea/static/components/token/views/token.challenges.html:5
 #, fuzzy
-#| msgid "Delete all tokens?"
 msgid "Delete Expired Challenges"
 msgstr "Supprimer tous les jetons ?"
 
 #: privacyidea/static/components/token/views/dialog.ask_token_delete.html:11
 #: privacyidea/static/components/token/views/dialog.ask_token_delete.html:31
-#: privacyidea/static/components/token/views/token.containerdetails.html:562
+#: privacyidea/static/components/token/views/token.containerdetails.html:563
 #: privacyidea/static/components/user/views/user.details.html:216
 msgid "Delete Token"
 msgstr "Supprimer le jeton"
@@ -1397,11 +1371,10 @@ msgstr "Supprimer l'utilisateur"
 
 #: privacyidea/static/components/config/views/config.system.edit.html:99
 #, fuzzy
-#| msgid "Delete User"
 msgid "Delete User Cache"
 msgstr "Supprimer l'utilisateur"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:465
+#: privacyidea/static/components/token/views/token.containerdetails.html:466
 msgid "Delete all tokens?"
 msgstr "Supprimer tous les jetons ?"
 
@@ -1422,12 +1395,12 @@ msgstr "Supprimer l'utilisateur"
 #: privacyidea/static/components/config/views/config.serviceid.list.html:10
 #: privacyidea/static/components/config/views/config.smsgateway.edit.html:39
 #: privacyidea/static/components/config/views/config.smsgateway.list.html:6
-#: privacyidea/static/components/config/views/config.smtp.edit.html:96
+#: privacyidea/static/components/config/views/config.smtp.edit.html:95
 #: privacyidea/static/components/config/views/config.smtp.list.html:9
 #: privacyidea/static/components/config/views/config.tokengroup.edit.html:28
 #: privacyidea/static/components/config/views/config.tokengroup.list.html:7
 #: privacyidea/static/components/token/views/token.containercreate.html:44
-#: privacyidea/static/components/token/views/token.containerdetails.html:443
+#: privacyidea/static/components/token/views/token.containerdetails.html:444
 #: privacyidea/static/components/token/views/token.containerdetails.html:90
 #: privacyidea/static/components/token/views/token.containerlist.html:77
 #: privacyidea/static/components/token/views/token.containertemplates.edit.html:87
@@ -1447,7 +1420,7 @@ msgid "Description of the container"
 msgstr "Description du conteneur"
 
 #: privacyidea/static/components/machine/views/machine.details.html:99
-#: privacyidea/static/components/token/views/token.details.html:721
+#: privacyidea/static/components/token/views/token.details.html:722
 msgid "Detach"
 msgstr "Détacher"
 
@@ -1477,12 +1450,12 @@ msgstr "Différences avec le modèle"
 
 #: privacyidea/static/components/config/views/config.events.details.html:6
 #: privacyidea/static/components/config/views/config.periodictasks.details.html:6
-#: privacyidea/static/components/config/views/config.policies.details.html:128
+#: privacyidea/static/components/config/views/config.policies.details.html:130
 #: privacyidea/static/components/token/views/token.details.html:49
 msgid "Disable"
 msgstr "Désactiver"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:435
+#: privacyidea/static/components/token/views/token.containerdetails.html:436
 msgid "Disable All"
 msgstr "Désactiver tout"
 
@@ -1490,8 +1463,8 @@ msgstr "Désactiver tout"
 msgid "Disable All Tokens"
 msgstr "Désactiver Tous les Jetons"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:703
-#: privacyidea/static/components/token/views/token.list.html:99
+#: privacyidea/static/components/token/views/token.containerdetails.html:704
+#: privacyidea/static/components/token/views/token.list.html:153
 #: privacyidea/static/components/user/views/user.details.html:167
 msgid "Disable token"
 msgstr "Désactiver le jeton"
@@ -1504,7 +1477,7 @@ msgstr "Foncez !"
 msgid "Do not use an authentication counter per token."
 msgstr "Ne pas utiliser de compteur d'authentifications par jeton."
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:816
+#: privacyidea/static/components/token/controllers/tokenControllers.js:848
 msgid "Do not verify the authenticity"
 msgstr "Ne pas vérifier l'authenticité"
 
@@ -1535,7 +1508,7 @@ msgstr "Êtes-vous sûr de vouloir supprimer cet événement ?"
 msgid "Do you really want to delete this machine resolver?"
 msgstr "Êtes-vous sûr de vouloir supprimer cet interpréteur de machines ?"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:107
+#: privacyidea/static/components/login/controllers/loginControllers.js:114
 msgid "Do you really want to delete this object?"
 msgstr "Êtes-vous sûr de vouloir supprimer cet objet ?"
 
@@ -1544,7 +1517,7 @@ msgstr "Êtes-vous sûr de vouloir supprimer cet objet ?"
 msgid "Do you really want to delete this periodic task?"
 msgstr "Êtes-vous sûr de vouloir supprimer cette tâche périodique ?"
 
-#: privacyidea/static/components/config/views/config.policies.details.html:139
+#: privacyidea/static/components/config/views/config.policies.details.html:144
 #: privacyidea/static/components/config/views/config.policies.list.html:76
 msgid "Do you really want to delete this policy?"
 msgstr "Êtes-vous sûr de vouloir supprimer cette politique ?"
@@ -1555,13 +1528,16 @@ msgstr "Êtes-vous sûr de vouloir supprimer cet interpréteur ?"
 
 #: privacyidea/static/components/config/views/config.serviceid.list.html:29
 #, fuzzy
-#| msgid "Do you really want to delete this event?"
 msgid "Do you really want to delete this service ID?"
 msgstr "Êtes-vous sûr de vouloir supprimer cet événement ?"
 
 #: privacyidea/static/components/config/views/config.caconnectors.microsoft.html:148
 msgid "Domain CA"
 msgstr "CA Domaine"
+
+#: privacyidea/static/components/config/views/config.smtp.edit.html:163
+msgid "Don't send on signing error"
+msgstr ""
 
 #: privacyidea/static/components/directives/views/directive.csvdownload.html:3
 msgid "Download"
@@ -1591,7 +1567,7 @@ msgstr "Paramètres Jeton Courriel"
 #: privacyidea/static/components/directives/views/directive.containertemplate.details.html:41
 #: privacyidea/static/components/directives/views/directive.policyconditions.html:72
 #: privacyidea/static/components/directives/views/directive.tokendata.html:28
-#: privacyidea/static/components/token/views/token.containercreate.html:82
+#: privacyidea/static/components/token/views/token.containercreate.html:83
 #: privacyidea/static/components/token/views/token.containerdetails.html:125
 #: privacyidea/static/components/token/views/token.details.html:306
 #: privacyidea/static/components/token/views/token.details.html:350
@@ -1640,7 +1616,7 @@ msgstr ""
 "Microsoft {{ connectorname }}"
 
 #: privacyidea/static/components/machine/views/machine.details.html:95
-#: privacyidea/static/components/token/views/token.details.html:717
+#: privacyidea/static/components/token/views/token.details.html:718
 msgid "Edit Options"
 msgstr "Modifier les options"
 
@@ -1677,7 +1653,7 @@ msgstr "Modifier l'interpréteur SCIM {{ resolvername }}"
 msgid "Edit SMS gateway {{ form.name }}"
 msgstr "Modifier la passerelle SMS {{ form.name }}"
 
-#: privacyidea/static/components/config/views/config.smtp.edit.html:2
+#: privacyidea/static/components/config/views/config.smtp.edit.html:1
 msgid "Edit SMTP server {{ identifier }}"
 msgstr "Modifier le serveur SMTP {{ identifier }}"
 
@@ -1689,7 +1665,7 @@ msgstr "Modifier l'interpréteur SQL {{ resolvername }}"
 msgid "Edit Service ID {{ servicename }}"
 msgstr "Modifier l'ID de service {{ servicename }}"
 
-#: privacyidea/static/components/token/views/token.containercreate.html:119
+#: privacyidea/static/components/token/views/token.containercreate.html:120
 msgid "Edit Settings"
 msgstr "Modifier les Paramètres"
 
@@ -1717,7 +1693,7 @@ msgstr "Modifier les domaines"
 msgid "Edit user"
 msgstr "Modifier l'utilisateur"
 
-#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:100
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:182
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:247
 #: privacyidea/static/components/config/views/config.resolvers.sql.html:90
 msgid "Edit user store"
@@ -1737,17 +1713,17 @@ msgstr "Adresse courriel"
 
 #: privacyidea/static/components/config/views/config.events.details.html:11
 #: privacyidea/static/components/config/views/config.periodictasks.details.html:11
-#: privacyidea/static/components/config/views/config.policies.details.html:133
+#: privacyidea/static/components/config/views/config.policies.details.html:136
 #: privacyidea/static/components/token/views/token.details.html:57
 msgid "Enable"
 msgstr "Activer"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:429
+#: privacyidea/static/components/token/views/token.containerdetails.html:430
 msgid "Enable All"
 msgstr "Activer tout"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:708
-#: privacyidea/static/components/token/views/token.list.html:104
+#: privacyidea/static/components/token/views/token.containerdetails.html:709
+#: privacyidea/static/components/token/views/token.list.html:158
 #: privacyidea/static/components/user/views/user.details.html:172
 msgid "Enable token"
 msgstr "Activer le jeton"
@@ -1758,7 +1734,6 @@ msgstr "La date de fin est située avant la date de début !"
 
 #: privacyidea/static/components/directives/views/directive.httpResolverEndpointConfig.html:29
 #, fuzzy
-#| msgid "Endpoint (URL)"
 msgid "Endpoint"
 msgstr "Point de sortie (URL)"
 
@@ -1766,12 +1741,16 @@ msgstr "Point de sortie (URL)"
 msgid "Endpoint (URL)"
 msgstr "Point de sortie (URL)"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:575
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:149
+msgid "Endpoint with possible tags:"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.containerdetails.html:576
 #: privacyidea/static/components/user/views/user.details.html:274
 msgid "Enroll New Token"
 msgstr "Inscrire un nouveau jeton"
 
-#: privacyidea/static/components/token/views/token.enroll.html:161
+#: privacyidea/static/components/token/views/token.enroll.html:163
 #: privacyidea/static/components/token/views/token.enrolled.daypassword.html:57
 #: privacyidea/static/components/token/views/token.enrolled.hotp.html:56
 #: privacyidea/static/components/token/views/token.enrolled.totp.html:57
@@ -1779,10 +1758,10 @@ msgstr "Inscrire un nouveau jeton"
 msgid "Enroll Token"
 msgstr "Inscrire le jeton"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:118
-#: privacyidea/static/components/token/controllers/tokenControllers.js:151
+#: privacyidea/static/components/login/controllers/loginControllers.js:125
+#: privacyidea/static/components/token/controllers/tokenControllers.js:183
 #: privacyidea/static/components/token/views/token.enroll.html:1
-#: privacyidea/static/components/token/views/token.enroll.html:224
+#: privacyidea/static/components/token/views/token.enroll.html:226
 msgid "Enroll a new token"
 msgstr "Inscrire un nouveau jeton"
 
@@ -1836,6 +1815,14 @@ msgstr "Veuillez entrer la première valeur OTP"
 msgid "Enter second OTP value"
 msgstr "Veuillez entrer la seconde valeur OTP"
 
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:356
+msgid ""
+"Enter the base DN for the user groups. Leave this field empty if the groups "
+"are located\n"
+"                                in the same base DN as defined for the users "
+"above."
+msgstr ""
+
 #: privacyidea/static/components/token/views/token.enroll.daypassword.html:31
 msgid "Enter the secret..."
 msgstr "Veuillez entrer le secret..."
@@ -1884,7 +1871,7 @@ msgstr "Exemples"
 msgid "Expiration"
 msgstr "Expiration"
 
-#: privacyidea/static/components/token/views/token.enroll.html:95
+#: privacyidea/static/components/token/views/token.enroll.html:97
 msgid "Extended Attributes"
 msgstr "Attributs étendus"
 
@@ -1892,12 +1879,12 @@ msgstr "Attributs étendus"
 msgid "Fail counter"
 msgstr "Compteur d'échecs"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:444
+#: privacyidea/static/components/token/views/token.containerdetails.html:445
 #: privacyidea/static/components/user/views/user.details.html:151
 msgid "Failcounter"
 msgstr "Compteur d'échecs"
 
-#: privacyidea/static/components/user/controllers/userControllers.js:280
+#: privacyidea/static/components/user/controllers/userControllers.js:283
 msgid "Failed to delete user."
 msgstr "Échec de la suppression de l'utilisateur."
 
@@ -1916,7 +1903,7 @@ msgstr "Échec de la réinitialisation de votre mot de passe."
 msgid "Failed to set PIN."
 msgstr "Échec de la définition du code PIN."
 
-#: privacyidea/static/components/user/controllers/userControllers.js:261
+#: privacyidea/static/components/user/controllers/userControllers.js:264
 msgid "Failed to update user."
 msgstr "Échec de la mise à jour de l'utilisateur."
 
@@ -1925,12 +1912,17 @@ msgstr "Échec de la mise à jour de l'utilisateur."
 msgid "File name"
 msgstr "Nom du fichier"
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:358
+#: privacyidea/static/components/token/views/token.list.html:123
+#, fuzzy
+msgid "Filter by realm"
+msgstr "Modifier les domaines"
+
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:371
 msgid ""
 "Filter to get the groups of a single user. Possible tags: <code>{base_dn}</"
-"code>,\n"
-"                                <code>{username}</code>, and all attribute "
-"mapping keys."
+"code> (from\n"
+"                                the users), <code>{username}</code>, and all "
+"attribute mapping keys."
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.import.html:121
@@ -1943,11 +1935,11 @@ msgstr "Empreinte"
 #: privacyidea/static/components/token/views/token.applications.offline.html:14
 #: privacyidea/static/components/token/views/token.applications.ssh.html:20
 #: privacyidea/static/components/token/views/token.challenges.html:18
-#: privacyidea/static/components/token/views/token.containerdetails.html:611
+#: privacyidea/static/components/token/views/token.containerdetails.html:612
 #: privacyidea/static/components/token/views/token.containerlist.html:24
 #: privacyidea/static/components/token/views/token.containertemplates.edit.html:71
 #: privacyidea/static/components/token/views/token.containertemplates.list.html:26
-#: privacyidea/static/components/token/views/token.details.html:656
+#: privacyidea/static/components/token/views/token.details.html:657
 #: privacyidea/static/components/token/views/token.list.html:6
 #: privacyidea/static/components/user/views/user.details.html:138
 #: privacyidea/static/components/user/views/user.details.html:328
@@ -2025,7 +2017,7 @@ msgstr "Générer la clé OTP sur le serveur"
 msgid "Generate Request"
 msgstr "Générer la demande"
 
-#: privacyidea/static/components/token/views/token.containercreate.html:116
+#: privacyidea/static/components/token/views/token.containercreate.html:117
 msgid ""
 "Generate a QR code to register the container on a\n"
 "                smartphone."
@@ -2061,15 +2053,15 @@ msgstr "Obtenir la documentation du système"
 msgid "Get available CAs"
 msgstr "Obtenir les CAs disponibles"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:480
+#: privacyidea/static/components/login/controllers/loginControllers.js:491
 msgid "Get the Authenticator App for Android."
 msgstr "Obtenir l'application d'authentification pour Android."
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:487
+#: privacyidea/static/components/login/controllers/loginControllers.js:498
 msgid "Get the Authenticator App for iOS."
 msgstr "Obtenir l'application d'authentification pour iOS."
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:494
+#: privacyidea/static/components/login/controllers/loginControllers.js:505
 msgid "Get the Authenticator App."
 msgstr "Obtenir l'application d'authentification."
 
@@ -2079,9 +2071,13 @@ msgstr "Obtenir l'application d'authentification."
 msgid "Given name"
 msgstr "Nom donné"
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:365
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:132
 #, fuzzy
-#| msgid "Hostname Attribute"
+msgid "Group Attribute in EntraID"
+msgstr "Attribut Nom d'hôte"
+
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:378
+#, fuzzy
 msgid "Group Name Attribute"
 msgstr "Attribut Nom d'hôte"
 
@@ -2094,6 +2090,11 @@ msgid "HOTP tokens can be attached with offline to e.g. notebooks."
 msgstr ""
 "Les jetons HOTP peuvent être rattachés à des ordinateurs portables hors "
 "lignes."
+
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:142
+#, fuzzy
+msgid "HTTP Method"
+msgstr "Méthode"
 
 #: privacyidea/static/components/directives/views/directive.policyconditions.html:10
 msgid "Handle Missing Data"
@@ -2118,7 +2119,7 @@ msgstr "Algorithme de hachage"
 msgid "Headers"
 msgstr "Entêtes"
 
-#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:89
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:171
 #: privacyidea/static/components/config/views/config.resolvers.http.basic.html:47
 #: privacyidea/static/components/directives/views/directive.httpResolverEndpointConfig.html:40
 msgid "Headers (JSON format)"
@@ -2299,13 +2300,13 @@ msgstr ""
 msgid "Here you may register a new user account"
 msgstr "Ici vous pouvez créer un nouveau compte utilisateur"
 
-#: privacyidea/static/components/token/views/token.containercreate.html:88
+#: privacyidea/static/components/token/views/token.containercreate.html:89
 #: privacyidea/static/components/token/views/token.containerdetails.html:170
 #: privacyidea/static/components/token/views/token.containertemplates.edit.html:51
 msgid "Hide"
 msgstr "Cacher"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:589
+#: privacyidea/static/components/token/views/token.containerdetails.html:590
 msgid "Hide Add Token List"
 msgstr "Cacher la liste d'ajout de jetons"
 
@@ -2317,16 +2318,16 @@ msgstr "Cacher Détails"
 msgid "Hide Policy templates"
 msgstr "Masquer les modèles de politique"
 
-#: privacyidea/static/components/token/views/token.containercreate.html:125
+#: privacyidea/static/components/token/views/token.containercreate.html:126
 msgid "Hide Settings"
 msgstr "Cacher les Paramètres"
 
 #: privacyidea/static/components/machine/views/machine.details.html:9
-#: privacyidea/static/components/token/views/token.details.html:667
+#: privacyidea/static/components/token/views/token.details.html:668
 msgid "Hostname"
 msgstr "Nom d'hôte"
 
-#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:178
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:196
 msgid "Hostname Attribute"
 msgstr "Attribut Nom d'hôte"
 
@@ -2335,12 +2336,12 @@ msgstr "Attribut Nom d'hôte"
 msgid "IP Address"
 msgstr "Adresse IP"
 
-#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:190
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:208
 msgid "IP Address Attribute"
 msgstr "Attribut Adresse IP"
 
 #: privacyidea/static/components/config/views/config.radius.edit.html:27
-#: privacyidea/static/components/config/views/config.smtp.edit.html:27
+#: privacyidea/static/components/config/views/config.smtp.edit.html:26
 msgid "IP or FQDN"
 msgstr "IP ou FQDN"
 
@@ -2360,17 +2361,17 @@ msgstr "Id"
 #: privacyidea/static/components/config/views/config.radius.edit.html:13
 #: privacyidea/static/components/config/views/config.radius.list.html:5
 #: privacyidea/static/components/config/views/config.serviceid.edit.html:13
-#: privacyidea/static/components/config/views/config.smtp.edit.html:13
+#: privacyidea/static/components/config/views/config.smtp.edit.html:12
 #: privacyidea/static/components/config/views/config.smtp.list.html:5
 #: privacyidea/static/components/config/views/config.tokengroup.edit.html:13
 msgid "Identifier"
 msgstr "Identifiant"
 
-#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:93
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:175
 msgid "If no custom headers are defined this header is used for all endpoints."
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.smtp.edit.html:79
+#: privacyidea/static/components/config/views/config.smtp.edit.html:78
 msgid ""
 "If the SMTP server requires authentication you need to\n"
 "                specify the user."
@@ -2511,11 +2512,11 @@ msgstr "Chemin du fichier clé"
 #: privacyidea/static/components/token/views/token.applications.offline.html:13
 #: privacyidea/static/components/token/views/token.applications.ssh.html:19
 #: privacyidea/static/components/token/views/token.challenges.html:17
-#: privacyidea/static/components/token/views/token.containerdetails.html:610
+#: privacyidea/static/components/token/views/token.containerdetails.html:611
 #: privacyidea/static/components/token/views/token.containerlist.html:23
 #: privacyidea/static/components/token/views/token.containertemplates.edit.html:70
 #: privacyidea/static/components/token/views/token.containertemplates.list.html:25
-#: privacyidea/static/components/token/views/token.details.html:655
+#: privacyidea/static/components/token/views/token.details.html:656
 #: privacyidea/static/components/token/views/token.list.html:5
 #: privacyidea/static/components/user/views/user.details.html:137
 #: privacyidea/static/components/user/views/user.details.html:327
@@ -2583,7 +2584,7 @@ msgstr ""
 "Lister les définitions du serveur\n"
 "                        privacyIDEA"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:126
+#: privacyidea/static/components/login/controllers/loginControllers.js:133
 msgid "List tokens"
 msgstr "Lister les jetons"
 
@@ -2596,7 +2597,7 @@ msgstr "Chargement des machines…"
 msgid "Loading serials..."
 msgstr "Chargement des numéros de série…"
 
-#: privacyidea/static/components/directives/views/directive.assignuser.html:30
+#: privacyidea/static/components/directives/views/directive.assignuser.html:55
 msgid "Loading users..."
 msgstr "Chargement des utilisateurs…"
 
@@ -2611,11 +2612,11 @@ msgstr "Journal"
 #: privacyidea/static/components/dialogs/views/dialog.lock.html:27
 #: privacyidea/static/components/login/views/enter-response.html:27
 #: privacyidea/static/components/login/views/login.html:20
-#: privacyidea/static/components/login/views/login.html:77
+#: privacyidea/static/components/login/views/login.html:83
 msgid "Log In"
 msgstr "Se connecter"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:133
+#: privacyidea/static/components/login/controllers/loginControllers.js:140
 msgid "Log out"
 msgstr "Se déconnecter"
 
@@ -2635,8 +2636,8 @@ msgstr ""
 msgid "Login with credentials"
 msgstr "Se connecter avec les identifiants"
 
-#: privacyidea/static/components/token/views/token.containercreate.html:243
-#: privacyidea/static/components/token/views/token.enroll.html:232
+#: privacyidea/static/components/token/views/token.containercreate.html:244
+#: privacyidea/static/components/token/views/token.enroll.html:234
 #: privacyidea/static/templates/menu.html:160
 msgid "Logout"
 msgstr "Se déconnecter"
@@ -2650,11 +2651,11 @@ msgid "Machine"
 msgstr "Machine"
 
 #: privacyidea/static/components/machine/views/machine.details.html:14
-#: privacyidea/static/components/token/views/token.details.html:666
+#: privacyidea/static/components/token/views/token.details.html:667
 msgid "Machine ID"
 msgstr "Identifiant de la machine"
 
-#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:155
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:173
 msgid "Machine ID Attribute"
 msgstr "Attribut de l'ID de la machine"
 
@@ -2668,7 +2669,7 @@ msgstr "Interpréteur de la machine"
 msgid "Machines"
 msgstr "Machines"
 
-#: privacyidea/static/components/token/views/token.details.html:649
+#: privacyidea/static/components/token/views/token.details.html:650
 msgid "Machines this token is attached to"
 msgstr "Machines auxquelles est rattaché ce jeton"
 
@@ -2688,7 +2689,7 @@ msgstr ""
 "Nombre maximum\n"
 "d'échecs des nouveaux jetons enrôlés"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:445
+#: privacyidea/static/components/token/views/token.containerdetails.html:446
 #: privacyidea/static/components/token/views/token.details.html:87
 #: privacyidea/static/components/user/views/user.details.html:152
 msgid "Maxfail"
@@ -2806,11 +2807,11 @@ msgstr "Nouvelles"
 #: privacyidea/static/components/token/views/token.applications.offline.html:12
 #: privacyidea/static/components/token/views/token.applications.ssh.html:18
 #: privacyidea/static/components/token/views/token.challenges.html:16
-#: privacyidea/static/components/token/views/token.containerdetails.html:609
+#: privacyidea/static/components/token/views/token.containerdetails.html:610
 #: privacyidea/static/components/token/views/token.containerlist.html:22
 #: privacyidea/static/components/token/views/token.containertemplates.edit.html:69
 #: privacyidea/static/components/token/views/token.containertemplates.list.html:24
-#: privacyidea/static/components/token/views/token.details.html:654
+#: privacyidea/static/components/token/views/token.details.html:655
 #: privacyidea/static/components/token/views/token.list.html:4
 #: privacyidea/static/components/user/views/user.details.html:136
 #: privacyidea/static/components/user/views/user.details.html:326
@@ -2828,8 +2829,8 @@ msgstr "Non"
 msgid "No Serial number could be found for OTP value {{ otp }}."
 msgstr "Aucun numéro de série n'a été trouvé pour le token {{ otp }}."
 
-#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:152
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:399
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:170
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:412
 msgid "No anonymous referral chasing"
 msgstr "Pas de recherche anonyme de références"
 
@@ -2841,7 +2842,7 @@ msgstr ""
 msgid "No machine found"
 msgstr "Aucune machine trouvée"
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:406
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:419
 msgid "No retrieval of schema information"
 msgstr "Pas de récupération des informations de schéma"
 
@@ -2850,11 +2851,11 @@ msgstr "Pas de récupération des informations de schéma"
 msgid "No serial found"
 msgstr "Aucun numéro de série trouvé"
 
-#: privacyidea/static/components/config/controllers/configControllers.js:806
+#: privacyidea/static/components/config/controllers/configControllers.js:817
 msgid "No user cache entries were deleted."
 msgstr ""
 
-#: privacyidea/static/components/directives/views/directive.assignuser.html:33
+#: privacyidea/static/components/directives/views/directive.assignuser.html:58
 msgid "No user found"
 msgstr "Aucun utilisateur trouvé"
 
@@ -2862,7 +2863,7 @@ msgstr "Aucun utilisateur trouvé"
 msgid "Node-specific Resolver Configuration"
 msgstr "Configuration de l'interpréteur spécifique au nœud"
 
-#: privacyidea/static/components/token/views/token.containercreate.html:104
+#: privacyidea/static/components/token/views/token.containercreate.html:105
 msgid ""
 "Note: Changes will only be applied to this container and not to the template."
 msgstr ""
@@ -2917,7 +2918,7 @@ msgstr "Clé OTP"
 msgid "OTP Length"
 msgstr "Longueur OTP"
 
-#: privacyidea/static/components/token/views/token.enroll.html:55
+#: privacyidea/static/components/token/views/token.enroll.html:57
 msgid "OTP PINs do not match!"
 msgstr "Les codes PIN OTP ne correspondent pas !"
 
@@ -2989,11 +2990,11 @@ msgstr "OK"
 msgid "Online Documentation"
 msgstr "Documentation en ligne"
 
-#: privacyidea/static/components/directives/views/directive.assignuser.html:13
+#: privacyidea/static/components/directives/views/directive.assignuser.html:10
 msgid "Only add to the realm (no user assignment)"
 msgstr "Ajouter seulement au domaine (pas d'assignation d'utilisateur)"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:600
+#: privacyidea/static/components/token/views/token.containerdetails.html:601
 msgid "Only show tokens that are not in a container."
 msgstr "Montrer seulement les jetons qui ne sont pas dans un conteneur."
 
@@ -3002,7 +3003,7 @@ msgid "Open all containers"
 msgstr "Ouvrir tous les conteneurs"
 
 #: privacyidea/static/components/config/views/config.events.details.html:141
-#: privacyidea/static/components/config/views/config.policies.details.html:372
+#: privacyidea/static/components/config/views/config.policies.details.html:383
 msgid "Open all groups"
 msgstr "Ouvrir tous les groupes"
 
@@ -3016,7 +3017,7 @@ msgstr "Fichier de configuration OpenSSL"
 #: privacyidea/static/components/config/views/config.periodictasks.list.html:12
 #: privacyidea/static/components/config/views/config.smsgateway.edit.html:95
 #: privacyidea/static/components/machine/views/machine.details.html:52
-#: privacyidea/static/components/token/views/token.details.html:670
+#: privacyidea/static/components/token/views/token.details.html:671
 msgid "Options"
 msgstr "Options"
 
@@ -3031,7 +3032,7 @@ msgstr "Priorité"
 msgid "Other Error"
 msgstr "Autre erreur"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:446
+#: privacyidea/static/components/token/views/token.containerdetails.html:447
 msgid "Otplen"
 msgstr "Long. OTP"
 
@@ -3047,7 +3048,7 @@ msgstr "Outrepasser l'Autorisation des Clients"
 msgid "PGP Key"
 msgstr "Clé PGP"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:720
+#: privacyidea/static/components/login/controllers/loginControllers.js:736
 msgid "PIN changed successfully."
 msgstr "Code PIN modifié avec succès."
 
@@ -3057,8 +3058,8 @@ msgid "PIN set successfully."
 msgstr "Code PIN défini avec succès."
 
 #: privacyidea/static/components/directives/views/directive.assigntoken.html:29
-#: privacyidea/static/components/directives/views/directive.assignuser.html:41
-#: privacyidea/static/components/token/views/token.enroll.html:63
+#: privacyidea/static/components/directives/views/directive.assignuser.html:63
+#: privacyidea/static/components/token/views/token.enroll.html:65
 msgid "PIN/Password"
 msgstr "PIN/Mot de passe"
 
@@ -3066,7 +3067,7 @@ msgstr "PIN/Mot de passe"
 msgid "PKCS12"
 msgstr "PKCS12"
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:786
+#: privacyidea/static/components/token/controllers/tokenControllers.js:818
 msgid "PKCS12 Password copied to clipboard"
 msgstr "Mot de passe PKCS12 copié dans le presse papier"
 
@@ -3074,7 +3075,7 @@ msgstr "Mot de passe PKCS12 copié dans le presse papier"
 msgid "Parameters"
 msgstr "Paramètres"
 
-#: privacyidea/static/components/login/views/login.html:81
+#: privacyidea/static/components/login/views/login.html:86
 msgid "Passkey Log In"
 msgstr "Se connecter avec clé d'accès"
 
@@ -3099,13 +3100,13 @@ msgstr ""
 #: privacyidea/static/components/config/views/config.privacyideaserver.edit.html:74
 #: privacyidea/static/components/config/views/config.radius.edit.html:114
 #: privacyidea/static/components/config/views/config.radius.edit.html:118
-#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:273
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:356
 #: privacyidea/static/components/config/views/config.resolvers.sql.html:79
-#: privacyidea/static/components/config/views/config.smtp.edit.html:86
+#: privacyidea/static/components/config/views/config.smtp.edit.html:85
 #: privacyidea/static/components/dialogs/views/dialog.lock.html:19
 #: privacyidea/static/components/dialogs/views/dialog.lock.html:24
-#: privacyidea/static/components/login/views/login.html:70
-#: privacyidea/static/components/login/views/login.html:74
+#: privacyidea/static/components/login/views/login.html:76
+#: privacyidea/static/components/login/views/login.html:80
 #: privacyidea/static/components/recovery/views/recovery.reset.html:9
 #: privacyidea/static/components/register/views/register.html:74
 #: privacyidea/static/components/register/views/register.html:80
@@ -3119,9 +3120,9 @@ msgstr "Mot de passe"
 msgid "Password Hash for editable users"
 msgstr "Hachage du mot de passe pour les utilisateurs modifiables"
 
-#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:242
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:325
+#: privacyidea/static/components/config/views/config.smtp.edit.html:136
 #, fuzzy
-#| msgid "Password of encrypted client private key"
 msgid "Password for the private key"
 msgstr "Mot de passe de clé privée chiffrée du client"
 
@@ -3129,7 +3130,7 @@ msgstr "Mot de passe de clé privée chiffrée du client"
 msgid "Password of encrypted client private key"
 msgstr "Mot de passe de clé privée chiffrée du client"
 
-#: privacyidea/static/components/user/controllers/userControllers.js:92
+#: privacyidea/static/components/user/controllers/userControllers.js:95
 msgid "Password set successfully."
 msgstr "Mot de passe défini avec succès."
 
@@ -3137,9 +3138,8 @@ msgstr "Mot de passe défini avec succès."
 msgid "Paste the ssh PUBLIC key"
 msgstr "Coller la clé SSH publique"
 
-#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:231
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:314
 #, fuzzy
-#| msgid "Client private key (filename)"
 msgid "Path to the private key file"
 msgstr "Clé privée client (nom de fichier)"
 
@@ -3167,7 +3167,7 @@ msgstr ""
 "Veuillez répondre au moins à {{ num_answers }} réponses des questions "
 "suivantes."
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:307
+#: privacyidea/static/components/login/controllers/loginControllers.js:318
 msgid "Please confirm with one of these tokens:"
 msgstr "Veuillez confirmer avec un de ces jetons :"
 
@@ -3191,7 +3191,7 @@ msgstr ""
 msgid "Please provide the base URL of the privacyIDEA server."
 msgstr "Veuillez indiquer l'URL de base du serveur privacyIDEA."
 
-#: privacyidea/static/components/token/views/token.containercreate.html:177
+#: privacyidea/static/components/token/views/token.containercreate.html:178
 #: privacyidea/static/components/token/views/token.containerdetails.html:276
 msgid ""
 "Please scan the QR code with the privacyIDEA Authenticator App\n"
@@ -3230,6 +3230,10 @@ msgstr ""
 "Veuillez scanner le code QR avec l'application privacyIDEA Authenticator et "
 "saisissez\n"
 "            le code généré ci-dessous."
+
+#: privacyidea/static/components/config/views/config.policies.details.html:358
+msgid "Please select a Scope in the top section first to configure actions."
+msgstr ""
 
 #: privacyidea/static/components/login/views/login.html:49
 msgid "Please sign in"
@@ -3276,7 +3280,7 @@ msgstr "Stratégie de groupement"
 
 #: privacyidea/static/components/config/views/config.radius.edit.html:36
 #: privacyidea/static/components/config/views/config.resolvers.sql.html:48
-#: privacyidea/static/components/config/views/config.smtp.edit.html:37
+#: privacyidea/static/components/config/views/config.smtp.edit.html:36
 msgid "Port"
 msgstr "Port"
 
@@ -3302,7 +3306,7 @@ msgstr ""
 "Préfixer le code PIN devant la valeur OTP.\n"
 "Sinon il sera demandé dans un second temps."
 
-#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:145
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:163
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:282
 msgid "Preset Active Directory"
 msgstr "Préréglage Active Directory"
@@ -3317,11 +3321,11 @@ msgstr "Préréglage OpenLDAP"
 #: privacyidea/static/components/token/views/token.applications.offline.html:11
 #: privacyidea/static/components/token/views/token.applications.ssh.html:17
 #: privacyidea/static/components/token/views/token.challenges.html:15
-#: privacyidea/static/components/token/views/token.containerdetails.html:608
+#: privacyidea/static/components/token/views/token.containerdetails.html:609
 #: privacyidea/static/components/token/views/token.containerlist.html:21
 #: privacyidea/static/components/token/views/token.containertemplates.edit.html:68
 #: privacyidea/static/components/token/views/token.containertemplates.list.html:23
-#: privacyidea/static/components/token/views/token.details.html:653
+#: privacyidea/static/components/token/views/token.details.html:654
 #: privacyidea/static/components/token/views/token.list.html:3
 #: privacyidea/static/components/user/views/user.details.html:135
 #: privacyidea/static/components/user/views/user.details.html:325
@@ -3344,11 +3348,15 @@ msgstr "Priorité"
 msgid "Privacy Statement"
 msgstr "Déclaration de confidentialité"
 
-#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:50
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:51
 #, fuzzy
-#| msgid "Machine ID Attribute"
 msgid "PrivacyIDEA Attribute"
 msgstr "Attribut de l'ID de la machine"
+
+#: privacyidea/static/components/config/views/config.smtp.edit.html:127
+#, fuzzy
+msgid "Private Key"
+msgstr "Clé partagée"
 
 #: privacyidea/static/components/token/views/token.import.html:136
 msgid "Progress"
@@ -3382,7 +3390,7 @@ msgstr "Questionnaire"
 msgid "Questionnaire Token settings"
 msgstr "Paramètres du jeton de questionnaire"
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:412
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:425
 msgid "Quick Resolver Test"
 msgstr "Test rapide de l'interpréteur"
 
@@ -3397,7 +3405,6 @@ msgstr "Configuration RADIUS enregistrée."
 
 #: privacyidea/static/components/config/views/config.radius.edit.html:84
 #, fuzzy
-#| msgid "Dictionary"
 msgid "RADIUS Dictionary"
 msgstr "Dictionnaire"
 
@@ -3452,10 +3459,10 @@ msgstr ""
 
 #: privacyidea/static/components/config/views/config.policies.list.html:23
 #: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:33
-#: privacyidea/static/components/directives/views/directive.assignuser.html:5
-#: privacyidea/static/components/login/views/login.html:59
+#: privacyidea/static/components/directives/views/directive.assignuser.html:2
+#: privacyidea/static/components/login/views/login.html:62
 #: privacyidea/static/components/token/views/token.containerdetails.html:358
-#: privacyidea/static/components/token/views/token.containerdetails.html:448
+#: privacyidea/static/components/token/views/token.containerdetails.html:449
 #: privacyidea/static/components/token/views/token.containerlist.html:89
 #: privacyidea/static/components/token/views/token.containertemplates.edit.html:93
 #: privacyidea/static/components/token/views/token.details.html:558
@@ -3467,7 +3474,7 @@ msgstr "Domaine"
 msgid "Realm Name"
 msgstr "Nom du Domaine"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:684
+#: privacyidea/static/components/login/controllers/loginControllers.js:696
 msgid "Realm defrealm created."
 msgstr "Définition du domaine créée."
 
@@ -3476,11 +3483,18 @@ msgstr "Définition du domaine créée."
 msgid "Realms"
 msgstr "Domaines"
 
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:161
+msgid ""
+"Receive the users groups via the <code>memberOf</code> user attribute and "
+"store them under the\n"
+"                            privacyIDEA attribute <code>groups</code>."
+msgstr ""
+
 #: privacyidea/static/components/token/views/token.challenges.html:56
 msgid "Received"
 msgstr "Reçu"
 
-#: privacyidea/static/components/config/views/config.smtp.edit.html:129
+#: privacyidea/static/components/config/views/config.smtp.edit.html:182
 msgid "Recipient for testing"
 msgstr "Destinataire du test"
 
@@ -3517,8 +3531,8 @@ msgstr "S'inscrire"
 msgid "Register Container on Device"
 msgstr "Enregistrer le conteneur sur le périphérique"
 
-#: privacyidea/static/components/token/views/token.containercreate.html:112
-#: privacyidea/static/components/token/views/token.containercreate.html:169
+#: privacyidea/static/components/token/views/token.containercreate.html:113
+#: privacyidea/static/components/token/views/token.containercreate.html:170
 msgid "Registration"
 msgstr "Enregistrement"
 
@@ -3530,7 +3544,7 @@ msgstr "Code d'inscription"
 msgid "Registration Configuration"
 msgstr "Configuration d'enregistrement"
 
-#: privacyidea/static/components/token/views/token.containercreate.html:239
+#: privacyidea/static/components/token/views/token.containercreate.html:240
 msgid "Registration completed successfully"
 msgstr "Enregistrement effectué avec succès"
 
@@ -3558,11 +3572,11 @@ msgstr "Paramètres des jetons distants"
 msgid "Remote User"
 msgstr "Utilisateur distant"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:550
+#: privacyidea/static/components/token/views/token.containerdetails.html:551
 msgid "Remove"
 msgstr "Enlever"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:457
+#: privacyidea/static/components/token/views/token.containerdetails.html:458
 msgid "Remove All"
 msgstr "Enlever tout"
 
@@ -3570,19 +3584,18 @@ msgstr "Enlever tout"
 msgid "Remove Token"
 msgstr "Enlever le jeton"
 
-#: privacyidea/static/components/token/views/token.details.html:637
+#: privacyidea/static/components/token/views/token.details.html:638
 msgid "Remove from Container"
 msgstr "Enlever du conteneur"
 
-#: privacyidea/static/components/config/views/config.policies.details.html:125
+#: privacyidea/static/components/config/views/config.policies.details.html:127
 #, fuzzy
-#| msgid "Save Policy"
 msgid "Rename Policy"
 msgstr "Créer une politique"
 
 #: privacyidea/static/components/directives/views/directive.assigntoken.html:39
-#: privacyidea/static/components/directives/views/directive.assignuser.html:51
-#: privacyidea/static/components/token/views/token.enroll.html:71
+#: privacyidea/static/components/directives/views/directive.assignuser.html:73
+#: privacyidea/static/components/token/views/token.enroll.html:73
 msgid "Repeat PIN or password"
 msgstr "Répéter le PIN ou mot de passe"
 
@@ -3598,7 +3611,6 @@ msgstr "Répéter le mot de passe"
 
 #: privacyidea/static/components/config/views/config.resolvers.http.basic.html:38
 #, fuzzy
-#| msgid "Request Mapping (JSON format)"
 msgid ""
 "Request Mapping (JSON\n"
 "                format)"
@@ -3606,7 +3618,6 @@ msgstr "Cartographie de la requête (format JSON)"
 
 #: privacyidea/static/components/directives/views/directive.httpResolverEndpointConfig.html:48
 #, fuzzy
-#| msgid "Request Mapping (JSON format)"
 msgid ""
 "Request Mapping (JSON\n"
 "            format)"
@@ -3619,7 +3630,6 @@ msgstr ""
 
 #: privacyidea/static/components/config/views/config.radius.edit.html:75
 #, fuzzy
-#| msgid "Challenge Response Authentication."
 msgid "Require Message-Authenticator"
 msgstr "Authentification Challenge Réponse."
 
@@ -3627,13 +3637,13 @@ msgstr "Authentification Challenge Réponse."
 msgid "Required Realms"
 msgstr "Domaines requis"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:716
-#: privacyidea/static/components/token/views/token.list.html:112
+#: privacyidea/static/components/token/views/token.containerdetails.html:717
+#: privacyidea/static/components/token/views/token.list.html:166
 #: privacyidea/static/components/user/views/user.details.html:179
 msgid "Reset Failcounter"
 msgstr "Réinitialiser le compteur d'échecs"
 
-#: privacyidea/static/components/login/views/login.html:87
+#: privacyidea/static/components/login/views/login.html:93
 #: privacyidea/static/components/recovery/views/recovery.html:14
 #: privacyidea/static/components/recovery/views/recovery.reset.html:23
 msgid "Reset Password"
@@ -3649,10 +3659,10 @@ msgstr "Réinitialisez votre mot de passe"
 
 #: privacyidea/static/components/config/views/config.policies.list.html:25
 #: privacyidea/static/components/token/views/token.containerdetails.html:381
-#: privacyidea/static/components/token/views/token.containerdetails.html:688
+#: privacyidea/static/components/token/views/token.containerdetails.html:689
 #: privacyidea/static/components/token/views/token.details.html:563
-#: privacyidea/static/components/token/views/token.details.html:668
-#: privacyidea/static/components/token/views/token.list.html:84
+#: privacyidea/static/components/token/views/token.details.html:669
+#: privacyidea/static/components/token/views/token.list.html:138
 #: privacyidea/static/components/user/views/user.add.html:9
 msgid "Resolver"
 msgstr "Interpréteur"
@@ -3693,9 +3703,6 @@ msgstr ""
 
 #: privacyidea/static/components/directives/views/directive.httpResolverEndpointConfig.html:60
 #, fuzzy
-#| msgid ""
-#| "Response Mapping\n"
-#| "                (JSON format)"
 msgid ""
 "Response Mapping\n"
 "            (JSON format)"
@@ -3705,7 +3712,6 @@ msgstr ""
 
 #: privacyidea/static/components/config/views/config.resolvers.http.basic.html:72
 #, fuzzy
-#| msgid "Response contains (JSON format):"
 msgid ""
 "Response contains (JSON\n"
 "                format):"
@@ -3713,7 +3719,6 @@ msgstr "La réponse contient (format JSON) :"
 
 #: privacyidea/static/components/directives/views/directive.httpResolverEndpointConfig.html:77
 #, fuzzy
-#| msgid "Response contains (JSON format):"
 msgid ""
 "Response contains (JSON\n"
 "            format):"
@@ -3735,7 +3740,7 @@ msgstr "Ressayer en cas d'échec"
 msgid "Revoke"
 msgstr "Révoquer"
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:160
+#: privacyidea/static/components/token/controllers/tokenControllers.js:192
 msgid "Roll the token"
 msgstr "Enrôler le jeton"
 
@@ -3748,7 +3753,7 @@ msgstr "Etat de l'enrôlement"
 msgid "Rollover"
 msgstr "Renouvellement"
 
-#: privacyidea/static/components/token/views/token.enroll.html:162
+#: privacyidea/static/components/token/views/token.enroll.html:164
 msgid "Rollover Token"
 msgstr "Enrôlement du jeton"
 
@@ -3763,6 +3768,14 @@ msgstr "Passes"
 #: privacyidea/static/components/token/views/token.getserial.html:79
 msgid "Run search"
 msgstr "Lancer la recherche"
+
+#: privacyidea/static/components/config/views/config.smtp.edit.html:116
+msgid "S/MIME"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.smtp.edit.html:155
+msgid "S/MIME signing"
+msgstr ""
 
 #: privacyidea/static/components/config/views/config.token.sms.html:13
 msgid "SMS Gateway configuration"
@@ -3780,7 +3793,7 @@ msgstr "Fournisseur de SMS"
 msgid "SMS Token settings"
 msgstr "Paramètres du jeton SMS"
 
-#: privacyidea/static/components/config/controllers/smtpServerController.js:89
+#: privacyidea/static/components/config/controllers/smtpServerController.js:98
 msgid "SMTP Config saved."
 msgstr "Configuration SMTP enregistrée."
 
@@ -3851,11 +3864,11 @@ msgid "Save Event Handler Definition"
 msgstr "Créer la définition d'un gestionnaire d'évènement"
 
 #: privacyidea/static/components/machine/views/machine.details.html:105
-#: privacyidea/static/components/token/views/token.details.html:727
+#: privacyidea/static/components/token/views/token.details.html:728
 msgid "Save Options"
 msgstr "Enregistrer les options"
 
-#: privacyidea/static/components/config/views/config.policies.details.html:522
+#: privacyidea/static/components/config/views/config.policies.details.html:534
 msgid "Save Policy"
 msgstr "Créer une politique"
 
@@ -3876,7 +3889,7 @@ msgstr "Enregistrer l'interpréteur"
 msgid "Save SMS gateway"
 msgstr "Enregistrer la passerelle SMS"
 
-#: privacyidea/static/components/config/views/config.smtp.edit.html:146
+#: privacyidea/static/components/config/views/config.smtp.edit.html:199
 msgid "Save SMTP server"
 msgstr "Enregistrer le serveur SMTP"
 
@@ -3914,9 +3927,9 @@ msgid "Save realms"
 msgstr "Enregistrer les domaines"
 
 #: privacyidea/static/components/config/views/config.mresolvers.hosts.html:40
-#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:208
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:226
 #: privacyidea/static/components/config/views/config.resolvers.http.html:69
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:424
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:437
 #: privacyidea/static/components/config/views/config.resolvers.passwd.html:39
 #: privacyidea/static/components/config/views/config.resolvers.scim.html:88
 msgid "Save resolver"
@@ -3932,23 +3945,35 @@ msgstr "Enregistrer l'utilisateur"
 msgid "Scope"
 msgstr "Portée"
 
-#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:167
+#: privacyidea/static/components/directives/views/directive.filter.table.html:16
+#: privacyidea/static/components/directives/views/directive.filter.table.html:17
+#: privacyidea/static/components/token/views/token.list.html:102
+#: privacyidea/static/components/token/views/token.list.html:103
+#, fuzzy
+msgid "Search"
+msgstr "Filtre de recherche"
+
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:185
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:298
 msgid "Search Filter"
 msgstr "Filtre de recherche"
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:350
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:363
 #, fuzzy
-#| msgid "Search Filter"
 msgid "Search Filter for User Groups"
 msgstr "Filtre de recherche"
+
+#: privacyidea/static/components/token/controllers/tokenControllers.js:94
+msgid ""
+"Searching for a user in all realms is not possible, using default realm."
+msgstr ""
 
 #: privacyidea/static/components/token/views/token.getserial.html:89
 msgid "Searching token..."
 msgstr "Recherche du jeton…"
 
 #: privacyidea/static/components/config/views/config.radius.edit.html:64
-#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:205
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:287
 #: privacyidea/static/components/config/views/config.resolvers.scim.html:62
 #: privacyidea/static/components/token/views/token.enroll.indexedsecret.html:11
 msgid "Secret"
@@ -3958,9 +3983,8 @@ msgstr "Mot de passe"
 msgid "Section"
 msgstr "Section"
 
-#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:73
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:79
 #, fuzzy
-#| msgid "Save privacyIDEA server"
 msgid "Select PrivacyIDEA Attribute"
 msgstr "Enregistrer le serveur privacyIDEA"
 
@@ -4024,7 +4048,6 @@ msgstr "Sélection"
 
 #: privacyidea/static/components/config/views/config.radius.edit.html:121
 #, fuzzy
-#| msgid "Send test RADIUS request"
 msgid "Send RADIUS test request"
 msgstr "Envoyer une requête RADIUS de test"
 
@@ -4032,11 +4055,11 @@ msgstr "Envoyer une requête RADIUS de test"
 msgid "Send Reset Code"
 msgstr "Envoyer code de réinitialisation"
 
-#: privacyidea/static/components/config/views/config.smtp.edit.html:136
+#: privacyidea/static/components/config/views/config.smtp.edit.html:189
 msgid "Send Test Email"
 msgstr "Envoyer un courriel de test"
 
-#: privacyidea/static/components/config/views/config.smtp.edit.html:124
+#: privacyidea/static/components/config/views/config.smtp.edit.html:177
 msgid "Send mail from job queue"
 msgstr "Envoyer des courriels depuis la file d'attente des travaux"
 
@@ -4048,7 +4071,7 @@ msgstr "Envoyer une requête de test au serveur privacyIDEA"
 msgid "Sender"
 msgstr "Expéditeur"
 
-#: privacyidea/static/components/config/views/config.smtp.edit.html:57
+#: privacyidea/static/components/config/views/config.smtp.edit.html:56
 msgid "Sender Email"
 msgstr "Expéditeur du courriel"
 
@@ -4156,11 +4179,11 @@ msgstr "Montrer"
 msgid "Show PKCS12 password"
 msgstr "Afficher le mot de passe PKCS12"
 
-#: privacyidea/static/components/config/views/config.policies.details.html:33
+#: privacyidea/static/components/config/views/config.policies.details.html:32
 msgid "Show Policy templates"
 msgstr "Afficher les modèles de politique"
 
-#: privacyidea/static/components/config/views/config.policies.details.html:365
+#: privacyidea/static/components/config/views/config.policies.details.html:375
 msgid "Show all actions"
 msgstr "Afficher toutes les actions"
 
@@ -4172,7 +4195,7 @@ msgstr "Afficher toutes les conditions"
 msgid "Show password"
 msgstr "Afficher le mot de passe"
 
-#: privacyidea/static/components/config/views/config.policies.details.html:360
+#: privacyidea/static/components/config/views/config.policies.details.html:369
 msgid "Show selected actions only"
 msgstr "Afficher les actions sélectionnées uniquement"
 
@@ -4180,12 +4203,12 @@ msgstr "Afficher les actions sélectionnées uniquement"
 msgid "Show selected conditions only"
 msgstr "Afficher les conditions sélectionnées uniquement"
 
-#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:134
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:152
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:206
 msgid "Size Limit"
 msgstr "Limite de taille"
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:817
+#: privacyidea/static/components/token/controllers/tokenControllers.js:849
 msgid "Skip tokens that can not be verified"
 msgstr "Passer les jetons qui ne peuvent pas être vérifiés"
 
@@ -4219,13 +4242,7 @@ msgstr ""
 msgid "Some nice words..."
 msgstr "En quelques mots…"
 
-#: privacyidea/static/components/token/controllers/containerControllers.js:919
-#, fuzzy
-#| msgid "Skip tokens that can not be verified"
-msgid "Some tokens could not be deleted:"
-msgstr "Passer les jetons qui ne peuvent pas être vérifiés"
-
-#: privacyidea/static/components/login/controllers/loginControllers.js:364
+#: privacyidea/static/components/login/controllers/loginControllers.js:375
 msgid "Something went wrong!"
 msgstr "Une erreur est survenue !"
 
@@ -4239,9 +4256,6 @@ msgstr ""
 
 #: privacyidea/static/components/directives/views/directive.httpResolverEndpointConfig.html:69
 #, fuzzy
-#| msgid ""
-#| "Special Error\n"
-#| "                Handling"
 msgid ""
 "Special Error\n"
 "            Handling"
@@ -4249,14 +4263,15 @@ msgstr ""
 "Gestion des\n"
 "                erreurs spécifiques"
 
-#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:223
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:305
 msgid ""
 "Specify the path to the private key file of the servers certificate. If you "
-"use an\n"
-"                                        encrypted key, add the password "
-"here, otherwise leave the field empty. The server\n"
-"                                        certificate must be uploaded in "
-"Entra's app registration as client credential."
+"use\n"
+"                                        an encrypted key, add the password "
+"here, otherwise leave the field empty. The\n"
+"                                        server certificate must be uploaded "
+"in Entra's app registration as client\n"
+"                                        credential."
 msgstr ""
 
 #: privacyidea/static/components/directives/views/directive.assigntoken.html:8
@@ -4338,15 +4353,16 @@ msgstr "Système"
 msgid "System Config"
 msgstr "Configuration du système"
 
-#: privacyidea/static/components/config/controllers/configControllers.js:616
-#: privacyidea/static/components/config/controllers/configControllers.js:762
+#: privacyidea/static/components/config/controllers/configControllers.js:640
+#: privacyidea/static/components/config/controllers/configControllers.js:773
 msgid "System Config saved."
 msgstr "Configuration du système enregistrée."
 
-#: privacyidea/static/components/config/controllers/configControllers.js:625
+#: privacyidea/static/components/config/controllers/configControllers.js:649
 msgid "System entry deleted."
 msgstr "Entrée du système supprimée."
 
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:56
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:70
 msgid "TLS Version"
 msgstr "Version du protocole TLS"
@@ -4376,7 +4392,7 @@ msgstr "Module des tâches"
 msgid "Template"
 msgstr "Modèle"
 
-#: privacyidea/static/components/token/views/token.containercreate.html:72
+#: privacyidea/static/components/token/views/token.containercreate.html:73
 msgid "Template Name and Contained Token Types"
 msgstr "Nom du Modèle et Types de jetons contenus"
 
@@ -4388,11 +4404,11 @@ msgstr "Modèle {{ template.name }}"
 msgid "Templates"
 msgstr "Modèles"
 
-#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:174
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:256
 msgid "Tenant"
 msgstr ""
 
-#: privacyidea/static/components/config/controllers/smtpServerController.js:79
+#: privacyidea/static/components/config/controllers/smtpServerController.js:88
 msgid "Test Email sent successfully."
 msgstr "Le courriel de test a bien été envoyé."
 
@@ -4400,8 +4416,8 @@ msgstr "Le courriel de test a bien été envoyé."
 msgid "Test HTTP Resolver"
 msgstr "Tester l'interpréteur HTTP"
 
-#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:204
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:419
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:222
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:432
 msgid "Test LDAP Resolver"
 msgstr "Tester l'interpréteur LDAP"
 
@@ -4415,7 +4431,6 @@ msgstr "Tester la clé d'accès."
 
 #: privacyidea/static/components/config/views/config.radius.edit.html:103
 #, fuzzy
-#| msgid "New RADIUS server"
 msgid "Test RADIUS Server"
 msgstr "Nouveau serveur RADIUS"
 
@@ -4437,13 +4452,11 @@ msgstr "Tester le jeton"
 
 #: privacyidea/static/components/config/views/config.resolvers.http.html:46
 #, fuzzy
-#| msgid "Delete user"
 msgid "Test user ID"
 msgstr "Supprimer l'utilisateur"
 
 #: privacyidea/static/components/config/views/config.resolvers.http.html:45
 #, fuzzy
-#| msgid "username"
 msgid "Test username"
 msgstr "nom d'utilisateur"
 
@@ -4574,7 +4587,7 @@ msgstr ""
 "certaines peuvent avoir des limitations dans les algorithmes supportés ou "
 "dans d'autres paramètres."
 
-#: privacyidea/static/components/login/views/login.html:96
+#: privacyidea/static/components/login/views/login.html:102
 msgid ""
 "The HSM is not ready. privacyIDEA can not work properly. Please start\n"
 "        the HSM and reload this page."
@@ -5001,11 +5014,9 @@ msgstr ""
 msgid "The container contains the following offline tokens:"
 msgstr "Le conteneur contient les jetons hors lignes suivants :"
 
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:85
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:102
 #, fuzzy
-#| msgid ""
-#| "The file containing the CA certificate which signed the\n"
-#| "                    LDAP TLS certificate."
 msgid ""
 "The file containing the CA certificate which signed the\n"
 "                        LDAP TLS certificate."
@@ -5013,19 +5024,8 @@ msgstr ""
 "Le fichier contenant le certificat CA qui a signé le\n"
 "certificat TLS LDAP."
 
-#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:68
-msgid ""
-"The file containing the CA certificate which signed the\n"
-"                    LDAP TLS certificate."
-msgstr ""
-"Le fichier contenant le certificat CA qui a signé le\n"
-"certificat TLS LDAP."
-
-#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:120
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:202
 #, fuzzy
-#| msgid ""
-#| "The file containing the CA certificate which signed the\n"
-#| "                    LDAP TLS certificate."
 msgid ""
 "The file containing the CA certificate which signed the TLS certificate of "
 "the server."
@@ -5033,7 +5033,11 @@ msgstr ""
 "Le fichier contenant le certificat CA qui a signé le\n"
 "certificat TLS LDAP."
 
-#: privacyidea/static/components/token/views/token.containercreate.html:191
+#: privacyidea/static/components/token/controllers/containerControllers.js:915
+msgid "The following tokens failed to delete:"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.containercreate.html:192
 msgid ""
 "The following tokens were successfully enrolled in the container using the "
 "template"
@@ -5041,7 +5045,7 @@ msgstr ""
 "Les jetons suivants ont été enrôlés avec succès dans le conteneur en "
 "utilisant le modèle"
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:373
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:386
 msgid ""
 "The group attribute defining the group's name, which should be stored in the "
 "user info."
@@ -5069,15 +5073,15 @@ msgstr ""
 "aléatoires\n"
 "de son secret partagé."
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:387
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:400
 msgid "The key to store the groups in the user info (attribute mapping key)."
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:81
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:107
 msgid ""
 "The left column defines the user attributes used in privacyIDEA and the "
 "right column the equivalent\n"
-"                attribute in the user store."
+"                    attribute in the user store."
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.enroll.motp.html:35
@@ -5174,7 +5178,7 @@ msgstr ""
 "target=\"github\">service\n"
 "backend</a>."
 
-#: privacyidea/static/app.js:156
+#: privacyidea/static/app.js:160
 msgid "The privacyIDEA system seems to be offline. The API is not reachable!"
 msgstr ""
 "Le système de privacyIDEA semble être hors-ligne. L'API n'est pas joignable !"
@@ -5312,7 +5316,7 @@ msgstr ""
 msgid "The server will create the static password."
 msgstr "Le serveur créera le mot de passe statique."
 
-#: privacyidea/static/components/token/views/token.enroll.html:144
+#: privacyidea/static/components/token/views/token.enroll.html:146
 msgid ""
 "The start time and the end time of the validity period\n"
 "                    should be entered in the format\n"
@@ -5337,7 +5341,7 @@ msgstr ""
 "La durée pendant laquelle le mot de passe peut être utilisé. Par exemple "
 "'1d' or '12h'."
 
-#: privacyidea/static/components/token/views/token.enroll.html:192
+#: privacyidea/static/components/token/views/token.enroll.html:194
 msgid ""
 "The token has been enrolled in the container\n"
 "            <a ui-sref=\"token.containerdetails({containerSerial: "
@@ -5351,7 +5355,7 @@ msgstr ""
 "                {{ enrolledToken.container_serial }}\n"
 "            </a>."
 
-#: privacyidea/static/components/token/views/token.details.html:606
+#: privacyidea/static/components/token/views/token.details.html:607
 msgid ""
 "The token is currently assigned to container\n"
 "    <a ui-sref=\"token.containerdetails({containerSerial: "
@@ -5370,7 +5374,7 @@ msgstr ""
 "<span ng-hide=\"checkRight('container_list')\">{{ containerSerial }}</span>\n"
 "."
 
-#: privacyidea/static/components/token/views/token.details.html:614
+#: privacyidea/static/components/token/views/token.details.html:615
 msgid "The token is currently in no container."
 msgstr "Le jeton n'est actuellement dans aucun conteneur."
 
@@ -5394,7 +5398,7 @@ msgstr ""
 msgid "The token was marked lost successfully."
 msgstr "Le jeton a été marqué perdu avec succès."
 
-#: privacyidea/static/components/token/views/token.enroll.html:177
+#: privacyidea/static/components/token/views/token.enroll.html:179
 msgid ""
 "The token was successfully enrolled with serial number\n"
 "            <a ui-sref=\"token.details({tokenSerial:enrolledToken."
@@ -5414,7 +5418,7 @@ msgstr ""
 "newUser.realm})\">{{ newUser.user }}</a> dans le royaume\n"
 "            {{ newUser.realm }}."
 
-#: privacyidea/static/components/token/views/token.enroll.html:186
+#: privacyidea/static/components/token/views/token.enroll.html:188
 msgid ""
 "The token was successfully enrolled with serial number\n"
 "            <a ui-sref=\"token.details({tokenSerial:enrolledToken."
@@ -5443,11 +5447,8 @@ msgstr ""
 "Les données de l'utilisateur peuvent être modifiées à partir de\n"
 "privacyIDEA."
 
-#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:104
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:186
 #, fuzzy
-#| msgid ""
-#| "The user data in this database can be modified from within\n"
-#| "                privacyIDEA."
 msgid ""
 "The user data in this user store can be modified from within privacyIDEA."
 msgstr ""
@@ -5511,7 +5512,7 @@ msgstr ""
 "Ces adresses IP ou sous réseaux de clients sont\n"
 "autorisés à se faire passer pour un autre client."
 
-#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:220
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:302
 msgid "This credential type does not support to check the user's password."
 msgstr ""
 
@@ -5621,7 +5622,7 @@ msgstr "Ceci est le dossier où les certificats sont créés."
 msgid "This is the display name of your service in the TiQR app."
 msgstr "Ceci est le nom de votre service affiché dans l'application TiQR."
 
-#: privacyidea/static/components/config/views/config.smtp.edit.html:64
+#: privacyidea/static/components/config/views/config.smtp.edit.html:63
 msgid ""
 "This is the email address of the\n"
 "                sender. Usually this should be an email address identifying\n"
@@ -5669,7 +5670,7 @@ msgstr ""
 "Nom d'identification unique\n"
 "pour cette définition de serveur RADIUS."
 
-#: privacyidea/static/components/config/views/config.smtp.edit.html:22
+#: privacyidea/static/components/config/views/config.smtp.edit.html:21
 msgid ""
 "This is the unique identifying name\n"
 "                of the SMTP server definition."
@@ -5716,7 +5717,7 @@ msgstr ""
 msgid "This prompt will be displayed to the user."
 msgstr "Cet invite sera affiché à l'utilisateur."
 
-#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:155
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:237
 msgid ""
 "This section allows to configure an endpoint to which the privacyIDEA server "
 "must authenticate in order\n"
@@ -5747,9 +5748,8 @@ msgstr ""
 "correctement\n"
 "les authentificateurs pendant l'enrôlement."
 
-#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:251
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:334
 #, fuzzy
-#| msgid "Verify the certificate"
 msgid "Thumbprint of the certificate"
 msgstr "Vérifier le certificat"
 
@@ -5785,17 +5785,17 @@ msgstr "Nom d'affichage du service TiQR"
 msgid "TiQR Token settings"
 msgstr "Paramètres jeton TiQR"
 
-#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:135
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:217
 msgid "Time in seconds privacyIDEA tries to reach the user store server."
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.radius.edit.html:46
-#: privacyidea/static/components/config/views/config.smtp.edit.html:47
+#: privacyidea/static/components/config/views/config.smtp.edit.html:46
 msgid "Timeout"
 msgstr "Délai d'expiration"
 
-#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:125
-#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:131
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:143
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:213
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:186
 msgid "Timeout (seconds)"
 msgstr "Délai d'expiration (secondes)"
@@ -5833,11 +5833,26 @@ msgstr ""
 "<a ui-sref=\"config.tokens({tokentype:'radius'})\">Configuration jeton "
 "RADIUS</a>."
 
+#: privacyidea/static/components/directives/views/directive.filter.table.html:7
+#: privacyidea/static/components/directives/views/directive.filter.table.html:8
+msgid "Toggle filter"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.list.html:117
+#: privacyidea/static/components/token/views/token.list.html:118
+msgid "Toggle realm filter"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.list.html:85
+#: privacyidea/static/components/token/views/token.list.html:86
+msgid "Toggle user filter"
+msgstr ""
+
 #: privacyidea/static/components/token/views/token.html:114
 msgid "Token Applications"
 msgstr "Applications du jeton"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:449
+#: privacyidea/static/components/token/views/token.containerdetails.html:450
 msgid "Token Realms"
 msgstr "Domaines du jeton"
 
@@ -5885,8 +5900,8 @@ msgstr ""
 msgid "Token of {{username}} without a container"
 msgstr "Jeton de {{username}} sans conteneur"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:679
-#: privacyidea/static/components/token/views/token.list.html:76
+#: privacyidea/static/components/token/views/token.containerdetails.html:680
+#: privacyidea/static/components/token/views/token.list.html:130
 msgid "Token realms"
 msgstr "Domaines du jeton"
 
@@ -5898,8 +5913,8 @@ msgstr "Echec de resynchronisation du jeton."
 msgid "Token resync successful."
 msgstr "Resynchronisation du jeton réussie."
 
-#: privacyidea/static/components/directives/controllers/directives.js:936
-#: privacyidea/static/components/token/controllers/tokenControllers.js:647
+#: privacyidea/static/components/directives/controllers/directives.js:1024
+#: privacyidea/static/components/token/controllers/tokenControllers.js:679
 msgid "Token successfully verified"
 msgstr "Jeton vérifié avec succès"
 
@@ -5920,7 +5935,7 @@ msgstr "Groupes de jetons"
 #: privacyidea/static/components/dashboard/views/dashboard.html:10
 #: privacyidea/static/components/directives/views/directive.containerTemplateDiff.html:18
 #: privacyidea/static/components/directives/views/directive.containertemplate.details.html:26
-#: privacyidea/static/components/token/views/token.containercreate.html:189
+#: privacyidea/static/components/token/views/token.containercreate.html:190
 #: privacyidea/static/components/token/views/token.html:25
 #: privacyidea/static/templates/menu.html:46
 msgid "Tokens"
@@ -5934,7 +5949,7 @@ msgstr "Jetons et Applications pour la machine {{ machineid }}"
 msgid "Tokens for user {{ username }}"
 msgstr "Jetons pour l'utilisateur {{ username }}"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:419
+#: privacyidea/static/components/token/views/token.containerdetails.html:420
 msgid "Tokens in the Container"
 msgstr "Jetons dans le conteneur"
 
@@ -5960,11 +5975,10 @@ msgstr "Modèles totaux : {{ templatedata.count }}"
 
 #: privacyidea/static/components/token/controllers/tokenChallengesController.js:46
 #, fuzzy
-#| msgid "Total Challenges:"
 msgid "Total expired challenges deleted:"
 msgstr "Challenges totaux :"
 
-#: privacyidea/static/components/config/controllers/configControllers.js:802
+#: privacyidea/static/components/config/controllers/configControllers.js:813
 msgid "Total user cache entries deleted:"
 msgstr ""
 
@@ -5972,7 +5986,7 @@ msgstr ""
 msgid "Transaction ID"
 msgstr "ID transaction"
 
-#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:192
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:274
 #: privacyidea/static/components/token/views/token.containerdetails.html:25
 #: privacyidea/static/components/token/views/token.containerlist.html:67
 #: privacyidea/static/components/token/views/token.containertemplates.list.html:45
@@ -5984,8 +5998,8 @@ msgid "Type"
 msgstr "Type"
 
 #: privacyidea/static/components/directives/views/directive.assigntoken.html:34
-#: privacyidea/static/components/directives/views/directive.assignuser.html:46
-#: privacyidea/static/components/token/views/token.enroll.html:67
+#: privacyidea/static/components/directives/views/directive.assignuser.html:68
+#: privacyidea/static/components/token/views/token.enroll.html:69
 msgid "Type a PIN or password"
 msgstr "Saisir un PIN ou un mot de passe"
 
@@ -5994,6 +6008,11 @@ msgstr "Saisir un PIN ou un mot de passe"
 #: privacyidea/static/components/user/views/user.password.html:55
 msgid "Type a password"
 msgstr "Saisissez un mot de passe"
+
+#: privacyidea/static/components/directives/views/directive.assignuser.html:34
+#, fuzzy
+msgid "Type username and press Enter"
+msgstr "Le nom d'utilisateur sur le serveur distant"
 
 #: privacyidea/static/components/config/views/config.token.u2f.html:1
 msgid "U2F Token settings"
@@ -6078,16 +6097,17 @@ msgstr "Utiliser SSL"
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:48
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:62
-msgid "Use STARTTLS on a plain LDAP connection usually on port 389."
+#, fuzzy
+msgid "Use STARTTLS on a plain LDAP connection, usually on port 389."
 msgstr ""
 "Utiliser STARTTLS sur une connexion LDAP simple habituellement sur le port "
 "389."
 
-#: privacyidea/static/components/config/views/config.smtp.edit.html:113
+#: privacyidea/static/components/config/views/config.smtp.edit.html:112
 msgid "Use StartTLS"
 msgstr "Utiliser StartTLS"
 
-#: privacyidea/static/components/token/views/token.containercreate.html:70
+#: privacyidea/static/components/token/views/token.containercreate.html:71
 msgid "Use a Template"
 msgstr "Utiliser un Modèle"
 
@@ -6098,19 +6118,18 @@ msgstr ""
 "Utiliser l'enrôlement en 2 étapes avec l'application privacyIDEA "
 "Authenticator"
 
-#: privacyidea/static/components/config/views/config.policies.details.html:236
+#: privacyidea/static/components/config/views/config.policies.details.html:243
 #: privacyidea/static/components/config/views/config.policies.list.html:24
 #: privacyidea/static/components/config/views/config.privacyideaserver.edit.html:67
-#: privacyidea/static/components/token/views/token.containerdetails.html:447
+#: privacyidea/static/components/token/views/token.containerdetails.html:448
 #: privacyidea/static/components/token/views/token.containerlist.html:86
 #: privacyidea/static/components/token/views/token.containertemplates.edit.html:90
 #: privacyidea/static/templates/menu.html:62
 msgid "User"
 msgstr "Utilisateur"
 
-#: privacyidea/static/components/config/views/config.policies.details.html:303
+#: privacyidea/static/components/config/views/config.policies.details.html:308
 #, fuzzy
-#| msgid "user agent"
 msgid "User Agent"
 msgstr "agent utilisateur"
 
@@ -6122,20 +6141,24 @@ msgstr ""
 "Expiration du\n"
 "cache utilisateur en secondes"
 
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:120
+#, fuzzy
+msgid "User Groups"
+msgstr "Utilisateurs"
+
 #: privacyidea/static/components/token/views/token.containerdetails.html:386
 #: privacyidea/static/components/token/views/token.details.html:568
 msgid "User Id"
 msgstr "ID utilisateur"
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:379
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:392
 #, fuzzy
-#| msgid "User Id"
 msgid "User Info Key"
 msgstr "ID utilisateur"
 
-#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:51
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:131
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:52
 #, fuzzy
-#| msgid "Hostname Attribute"
 msgid "User Store Attribute"
 msgstr "Attribut Nom d'hôte"
 
@@ -6143,38 +6166,45 @@ msgstr "Attribut Nom d'hôte"
 msgid "User account created. An Email has been sent to you."
 msgstr "Compte utilisateur créé. Un courriel vous a été envoyé."
 
-#: privacyidea/static/components/user/controllers/userControllers.js:58
+#: privacyidea/static/components/user/controllers/userControllers.js:61
 msgid "User created."
 msgstr "Utilisateur créé."
 
-#: privacyidea/static/components/user/controllers/userControllers.js:274
+#: privacyidea/static/components/user/controllers/userControllers.js:277
 msgid "User deleted successfully."
 msgstr "Utilisateur supprimé avec succès."
 
-#: privacyidea/static/components/user/controllers/userControllers.js:245
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:157
+msgid ""
+"User groups are received in a separate request and stored under the "
+"privacyIDEA attribute\n"
+"                            <code>groups</code>."
+msgstr ""
+
+#: privacyidea/static/components/user/controllers/userControllers.js:248
 msgid "User updated successfully."
 msgstr "Utilisateur mis à jour avec succès."
 
-#: privacyidea/static/components/config/views/config.policies.details.html:195
+#: privacyidea/static/components/config/views/config.policies.details.html:200
 msgid "User-Realm"
 msgstr "Domaine-Utilisateur"
 
-#: privacyidea/static/components/config/views/config.policies.details.html:212
+#: privacyidea/static/components/config/views/config.policies.details.html:217
 msgid "User-Resolver"
 msgstr "Interpréteur-Utilisateur"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:685
-#: privacyidea/static/components/token/views/token.list.html:82
+#: privacyidea/static/components/token/views/token.containerdetails.html:686
+#: privacyidea/static/components/token/views/token.list.html:136
 msgid "UserId"
 msgstr "IdUtilisateur"
 
 #: privacyidea/static/components/config/views/config.radius.edit.html:108
 #: privacyidea/static/components/config/views/config.radius.edit.html:111
-#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:266
-#: privacyidea/static/components/config/views/config.smtp.edit.html:72
-#: privacyidea/static/components/directives/views/directive.assignuser.html:18
-#: privacyidea/static/components/login/views/login.html:53
-#: privacyidea/static/components/login/views/login.html:57
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:349
+#: privacyidea/static/components/config/views/config.smtp.edit.html:71
+#: privacyidea/static/components/directives/views/directive.assignuser.html:15
+#: privacyidea/static/components/login/views/login.html:54
+#: privacyidea/static/components/login/views/login.html:58
 #: privacyidea/static/components/recovery/views/recovery.html:18
 #: privacyidea/static/components/recovery/views/recovery.html:22
 #: privacyidea/static/components/register/views/register.html:18
@@ -6185,8 +6215,9 @@ msgstr "IdUtilisateur"
 msgid "Username"
 msgstr "Nom d'utilisateur"
 
-#: privacyidea/static/components/config/views/config.policies.details.html:250
-msgid "Username case-insensitive."
+#: privacyidea/static/components/config/views/config.policies.details.html:254
+#, fuzzy
+msgid "Username case-insensitive"
 msgstr "Nom d'utilisateur non sensible à la casse."
 
 #: privacyidea/static/components/components/views/component.subscriptions.html:30
@@ -6203,19 +6234,18 @@ msgstr "Blob jeton VASCO"
 msgid "Valid subscription"
 msgstr "Abonnement valide"
 
-#: privacyidea/static/components/config/views/config.policies.details.html:277
+#: privacyidea/static/components/config/views/config.policies.details.html:282
 msgid "Valid time"
 msgstr "Durée de validité"
 
 #: privacyidea/static/components/directives/views/directive.registerContainer.html:30
 #: privacyidea/static/components/directives/views/directive.registerContainer.html:34
 #, fuzzy
-#| msgid "Use the passphrase of the user from the AD."
 msgid "Validate the passphrase against the user store."
 msgstr "Utiliser la phrase secrète de l'utilisateur à partir de l'AD."
 
 #: privacyidea/static/components/token/views/token.details.html:280
-#: privacyidea/static/components/token/views/token.enroll.html:124
+#: privacyidea/static/components/token/views/token.enroll.html:126
 msgid "Validity End"
 msgstr "Fin de validité"
 
@@ -6224,7 +6254,7 @@ msgid "Validity Period"
 msgstr "Période de validité"
 
 #: privacyidea/static/components/token/views/token.details.html:254
-#: privacyidea/static/components/token/views/token.enroll.html:103
+#: privacyidea/static/components/token/views/token.enroll.html:105
 msgid "Validity Start"
 msgstr "Début de validité"
 
@@ -6236,9 +6266,9 @@ msgstr "Valeur"
 msgid "Verify SSL certificate"
 msgstr "Vérifier le certificat SSL"
 
-#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:56
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:73
 #: privacyidea/static/components/config/views/config.privacyideaserver.list.html:7
-#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:111
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:193
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:90
 msgid "Verify TLS"
 msgstr "Vérifier TLS"
@@ -6248,14 +6278,10 @@ msgstr "Vérifier TLS"
 msgid "Verify Token"
 msgstr "Vérifier le jeton"
 
-#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:64
-msgid "Verify the TLS cerificate of the server."
-msgstr "Vérifier le certificat TLS du serveur."
-
-#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:115
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:81
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:197
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:98
 #, fuzzy
-#| msgid "Verify the TLS cerificate of the server."
 msgid "Verify the TLS certificate of the server."
 msgstr "Vérifier le certificat TLS du serveur."
 
@@ -6294,7 +6320,7 @@ msgstr "Bienvenue"
 msgid "Where statement"
 msgstr "Où la déclaration"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:442
+#: privacyidea/static/components/token/views/token.containerdetails.html:443
 msgid "Window"
 msgstr "Fenêtre"
 
@@ -6349,7 +6375,12 @@ msgstr ""
 msgid "You are not allowed to enroll this token type! It will be skipped!"
 msgstr "Vous n'êtes pas autorisé à enrôler ce type de jeton ! Il sera sauté !"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:580
+#: privacyidea/static/components/token/controllers/containerControllers.js:918
+#, fuzzy
+msgid "You are not authorized to delete the following tokens:"
+msgstr "Le conteneur contient les jetons hors lignes suivants :"
+
+#: privacyidea/static/components/login/controllers/loginControllers.js:591
 msgid ""
 "You are using a certain amount of Push tokens. Note, that you need a valid "
 "subscription, to use Push tokens in push mode. Otherwise Push tokens will "
@@ -6375,7 +6406,7 @@ msgstr ""
 "Vous pouvez choisir comment l'authenticité des jetons à importer doit être "
 "vérifiée."
 
-#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:161
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:243
 msgid ""
 "You can find most of these settings in the app registration in the Entra "
 "Admin Center or you also\n"
@@ -6455,7 +6486,7 @@ msgstr "Vous serez déconnecté dans {{ myCountdown }} seconde(s)."
 msgid "Your CSR to the certificate authority failed."
 msgstr "Votre demande CSR à l'autorité de certification à échouée."
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:453
+#: privacyidea/static/components/login/controllers/loginControllers.js:464
 msgid "Your OTP pin expires on"
 msgstr "Votre PIN OTP expire dans"
 
@@ -6471,7 +6502,7 @@ msgstr ""
 "Votre demande de certificat a été soumise et est en attente\n"
 "d'approbation administrative."
 
-#: privacyidea/static/components/token/views/token.containercreate.html:162
+#: privacyidea/static/components/token/views/token.containercreate.html:163
 msgid "Your container was successfully created with the serial:"
 msgstr "Votre conteneur a été correctement créé avec le numéro de série :"
 
@@ -6498,7 +6529,7 @@ msgstr ""
 msgid "Your secret phrase."
 msgstr "Votre phrase secrète."
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:587
+#: privacyidea/static/components/login/controllers/loginControllers.js:598
 msgid "Your subscription for the privacyIDEA Authenticator has expired."
 msgstr "Votre abonnement pour le privacyIDEA Authenticator a expiré."
 
@@ -6555,12 +6586,12 @@ msgstr "action"
 msgid "action detail"
 msgstr "Détail de l'action"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:492
-#: privacyidea/static/components/token/views/token.containerdetails.html:641
-#: privacyidea/static/components/token/views/token.containerdetails.html:701
+#: privacyidea/static/components/token/views/token.containerdetails.html:493
+#: privacyidea/static/components/token/views/token.containerdetails.html:642
+#: privacyidea/static/components/token/views/token.containerdetails.html:702
 #: privacyidea/static/components/token/views/token.details.html:35
+#: privacyidea/static/components/token/views/token.list.html:151
 #: privacyidea/static/components/token/views/token.list.html:39
-#: privacyidea/static/components/token/views/token.list.html:97
 #: privacyidea/static/components/user/views/user.details.html:165
 msgid "active"
 msgstr "actif"
@@ -6597,16 +6628,16 @@ msgstr "autorisation"
 msgid "client"
 msgstr "client"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:648
+#: privacyidea/static/components/token/views/token.containerdetails.html:649
 #: privacyidea/static/components/token/views/token.list.html:46
 #: privacyidea/static/components/user/views/user.list.html:41
 msgid "description"
 msgstr "description"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:498
-#: privacyidea/static/components/token/views/token.containerdetails.html:706
+#: privacyidea/static/components/token/views/token.containerdetails.html:499
+#: privacyidea/static/components/token/views/token.containerdetails.html:707
 #: privacyidea/static/components/token/views/token.details.html:38
-#: privacyidea/static/components/token/views/token.list.html:102
+#: privacyidea/static/components/token/views/token.list.html:156
 #: privacyidea/static/components/user/views/user.details.html:170
 msgid "disabled"
 msgstr "désactivé"
@@ -6631,7 +6662,7 @@ msgstr "date de fin"
 msgid "enter some OTP value"
 msgstr "entrez une valeur à usage unique"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:659
+#: privacyidea/static/components/token/views/token.containerdetails.html:660
 #: privacyidea/static/components/token/views/token.list.html:57
 msgid "failcounter"
 msgstr "compteur d'échecs"
@@ -6644,7 +6675,7 @@ msgstr "échec"
 msgid "failed users / tokens"
 msgstr "utilisateurs / jetons en échec"
 
-#: privacyidea/static/components/config/views/config.policies.details.html:386
+#: privacyidea/static/components/config/views/config.policies.details.html:398
 msgid "filter action..."
 msgstr "filtre d'action…"
 
@@ -6703,7 +6734,7 @@ msgstr ""
 "lignes."
 
 #. Translation in dynamic user creation
-#: privacyidea/static/components/user/controllers/userControllers.js:36
+#: privacyidea/static/components/user/controllers/userControllers.js:39
 msgid "password"
 msgstr "mot de passe"
 
@@ -6719,9 +6750,13 @@ msgstr "téléphone"
 msgid "policies"
 msgstr "politiques"
 
+#: privacyidea/static/components/token/views/token.list.html:92
+msgid "press enter to search"
+msgstr ""
+
 #: privacyidea/static/components/config/views/config.periodictasks.details.html:75
 #: privacyidea/static/components/config/views/config.periodictasks.list.html:11
-#: privacyidea/static/components/config/views/config.policies.details.html:263
+#: privacyidea/static/components/config/views/config.policies.details.html:268
 #: privacyidea/static/components/config/views/config.realms.create.html:43
 msgid "privacyIDEA Nodes"
 msgstr "Nœuds privacyIDEA"
@@ -6783,8 +6818,8 @@ msgid "privacyidea server"
 msgstr "serveur privacyidea"
 
 #: privacyidea/static/components/audit/views/audit.log.html:107
-#: privacyidea/static/components/token/views/token.containerdetails.html:677
-#: privacyidea/static/components/token/views/token.list.html:75
+#: privacyidea/static/components/token/views/token.containerdetails.html:678
+#: privacyidea/static/components/token/views/token.list.html:111
 msgid "realm"
 msgstr "domaine"
 
@@ -6796,7 +6831,7 @@ msgstr "interpréteur"
 msgid "revoked"
 msgstr "révoqué"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:666
+#: privacyidea/static/components/token/views/token.containerdetails.html:667
 #: privacyidea/static/components/token/views/token.list.html:64
 msgid "rollout state"
 msgstr "Etat du déploiement"
@@ -6805,8 +6840,8 @@ msgstr "Etat du déploiement"
 #: privacyidea/static/components/token/views/token.applications.offline.html:25
 #: privacyidea/static/components/token/views/token.applications.ssh.html:31
 #: privacyidea/static/components/token/views/token.challenges.html:34
-#: privacyidea/static/components/token/views/token.containerdetails.html:425
-#: privacyidea/static/components/token/views/token.containerdetails.html:621
+#: privacyidea/static/components/token/views/token.containerdetails.html:426
+#: privacyidea/static/components/token/views/token.containerdetails.html:622
 #: privacyidea/static/components/token/views/token.list.html:19
 msgid "serial"
 msgstr "nr de série"
@@ -6835,7 +6870,7 @@ msgstr "commencer par saisir une machine."
 msgid "start typing a serial number of a token."
 msgstr "Saisir le numéro de série d'un jeton."
 
-#: privacyidea/static/components/directives/views/directive.assignuser.html:21
+#: privacyidea/static/components/directives/views/directive.assignuser.html:20
 msgid "start typing a username"
 msgstr "commencez à saisir un nom d'utilisateur"
 
@@ -6890,8 +6925,8 @@ msgstr "rep_ancre_confiance"
 #: privacyidea/static/components/config/views/config.caconnectors.list.html:6
 #: privacyidea/static/components/config/views/config.mresolvers.list.html:6
 #: privacyidea/static/components/config/views/config.resolvers.list.html:6
-#: privacyidea/static/components/token/views/token.containerdetails.html:426
-#: privacyidea/static/components/token/views/token.containerdetails.html:631
+#: privacyidea/static/components/token/views/token.containerdetails.html:427
+#: privacyidea/static/components/token/views/token.containerdetails.html:632
 #: privacyidea/static/components/token/views/token.list.html:29
 msgid "type"
 msgstr "type"
@@ -6909,8 +6944,8 @@ msgid "use VASCO Serial"
 msgstr "Utiliser un numéro de série VASCO"
 
 #: privacyidea/static/components/audit/views/audit.log.html:101
-#: privacyidea/static/components/token/views/token.containerdetails.html:676
-#: privacyidea/static/components/token/views/token.list.html:74
+#: privacyidea/static/components/token/views/token.containerdetails.html:677
+#: privacyidea/static/components/token/views/token.list.html:75
 msgid "user"
 msgstr "utilisateur"
 
@@ -6929,6 +6964,28 @@ msgstr "nom d'utilisateur"
 #: privacyidea/static/components/audit/views/audit.log.html:18
 msgid "{{ auditdata.count }} entries found."
 msgstr "{{ auditdata.count }} entrées trouvées."
+
+#: privacyidea/static/components/token/views/token.list.html:124
+msgid "— all —"
+msgstr ""
+
+#~ msgid "Choose a realm..."
+#~ msgstr "Sélectionner un domaine…"
+
+#, fuzzy
+#~| msgid "Skip tokens that can not be verified"
+#~ msgid "Some tokens could not be deleted:"
+#~ msgstr "Passer les jetons qui ne peuvent pas être vérifiés"
+
+#~ msgid ""
+#~ "The file containing the CA certificate which signed the\n"
+#~ "                    LDAP TLS certificate."
+#~ msgstr ""
+#~ "Le fichier contenant le certificat CA qui a signé le\n"
+#~ "certificat TLS LDAP."
+
+#~ msgid "Verify the TLS cerificate of the server."
+#~ msgstr "Vérifier le certificat TLS du serveur."
 
 #~ msgid "Create a new HTTP Resolver"
 #~ msgstr "Créer un nouvel interpréteur HTTP"

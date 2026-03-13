@@ -124,37 +124,6 @@ msgstr ""
 
 #: privacyidea/static/components/dialogs/views/dialog.welcome.html:45
 #, fuzzy
-#| msgid ""
-#| "<p>\n"
-#| "                    You are reading books, which do not belong to you "
-#| "anymore. Your ebook reader\n"
-#| "                    only provides them for the time of reading. You are "
-#| "using software as a service\n"
-#| "                    and you do not have any control, when the software "
-#| "will be updated,\n"
-#| "                    which features will be added or removed or if the "
-#| "service might even be stopped.\n"
-#| "                    You only get a legal right of time limited use.\n"
-#| "                </p>\n"
-#| "                <p>\n"
-#| "                    You could install proprietary software on your own "
-#| "server, but you also have only\n"
-#| "                    limited rights in regards to this installation. You "
-#| "are not allowed to modify or pass along\n"
-#| "                    this proprietary software.\n"
-#| "                </p>\n"
-#| "                <p>\n"
-#| "                    The open source software privacyIDEA now is <b>your "
-#| "property</b>! No one can take away this software\n"
-#| "                    or this installation. According to the license AGPLv3 "
-#| "you can modify or distribute this software.\n"
-#| "                    You do not have to worry about end-of-life.\n"
-#| "                </p>\n"
-#| "                <p>\n"
-#| "                    <b>Using open source is not about spending no money, "
-#| "but is is about full control you get over\n"
-#| "                        your own system! Forever!</b>\n"
-#| "                </p>"
 msgid ""
 "<p>\n"
 "                    You are reading books, which do not belong to you "
@@ -327,7 +296,7 @@ msgstr "API anahtarı"
 msgid "API client ID"
 msgstr "API Client ID"
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:818
+#: privacyidea/static/components/token/controllers/tokenControllers.js:850
 msgid "Abort operation on unverifiable token"
 msgstr ""
 
@@ -349,8 +318,8 @@ msgstr ""
 #: privacyidea/static/components/config/views/config.events.details.html:249
 #: privacyidea/static/components/config/views/config.events.details.html:251
 #: privacyidea/static/components/config/views/config.events.list.html:27
-#: privacyidea/static/components/config/views/config.policies.details.html:153
-#: privacyidea/static/components/config/views/config.policies.details.html:353
+#: privacyidea/static/components/config/views/config.policies.details.html:158
+#: privacyidea/static/components/config/views/config.policies.details.html:355
 #: privacyidea/static/components/config/views/config.policies.list.html:20
 #: privacyidea/static/components/dashboard/views/dashboard.html:91
 msgid "Action"
@@ -360,7 +329,7 @@ msgstr "Aksiyon"
 #: privacyidea/static/components/config/views/config.periodictasks.list.html:6
 #: privacyidea/static/components/config/views/config.policies.list.html:9
 #: privacyidea/static/components/directives/views/directive.policyconditions.html:5
-#: privacyidea/static/components/token/views/token.containerdetails.html:428
+#: privacyidea/static/components/token/views/token.containerdetails.html:429
 #: privacyidea/static/components/token/views/token.details.html:33
 #: privacyidea/static/components/user/views/user.details.html:149
 #: privacyidea/static/components/user/views/user.details.html:236
@@ -375,25 +344,23 @@ msgstr "Aktif olaylar"
 msgid "Active Policies"
 msgstr "Aktif Politikalar"
 
-#: privacyidea/static/components/config/views/config.policies.details.html:325
-#: privacyidea/static/components/token/views/token.containerdetails.html:759
+#: privacyidea/static/components/config/views/config.policies.details.html:327
+#: privacyidea/static/components/token/views/token.containerdetails.html:760
 msgid "Add"
 msgstr ""
 
 #: privacyidea/static/components/directives/views/directive.containertemplate.details.html:61
 #: privacyidea/static/components/directives/views/directive.containertemplate.details.html:88
 #, fuzzy
-#| msgid "Tokens"
 msgid "Add Token"
 msgstr "Jetonlar"
 
 #: privacyidea/static/components/user/views/user.details.html:289
 #, fuzzy
-#| msgid "Tokens"
 msgid "Add Tokens"
 msgstr "Jetonlar"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:581
+#: privacyidea/static/components/token/views/token.containerdetails.html:582
 #: privacyidea/static/components/user/views/user.details.html:281
 msgid "Add Tokens to Container"
 msgstr ""
@@ -414,9 +381,8 @@ msgstr "Özel nitelik ekle"
 msgid "Add new question"
 msgstr "Yeni soru ekle"
 
-#: privacyidea/static/components/token/views/token.details.html:630
+#: privacyidea/static/components/token/views/token.details.html:631
 #, fuzzy
-#| msgid "Add a condition"
 msgid "Add to Container"
 msgstr "Bir durum ekle"
 
@@ -426,19 +392,18 @@ msgstr "Kullanıcı Ekle"
 
 #: privacyidea/static/components/directives/views/directive.containerTemplateDiff.html:38
 #, fuzzy
-#| msgid "Additional conditions"
 msgid "Additional"
 msgstr "Ek koşullar"
 
-#: privacyidea/static/components/config/views/config.policies.details.html:336
+#: privacyidea/static/components/config/views/config.policies.details.html:338
 msgid "Additional conditions"
 msgstr "Ek koşullar"
 
-#: privacyidea/static/components/config/views/config.policies.details.html:180
+#: privacyidea/static/components/config/views/config.policies.details.html:185
 msgid "Admin"
 msgstr "Yönetici"
 
-#: privacyidea/static/components/config/views/config.policies.details.html:163
+#: privacyidea/static/components/config/views/config.policies.details.html:168
 msgid "Admin-Realm"
 msgstr "Admin realm"
 
@@ -452,7 +417,6 @@ msgstr "Yönetici"
 
 #: privacyidea/static/components/config/views/config.resolvers.http.html:10
 #, fuzzy
-#| msgid "HOTP Token settings"
 msgid "Advanced Settings"
 msgstr "Hotp Token Ayarları"
 
@@ -474,7 +438,6 @@ msgstr "Tüm makineler"
 
 #: privacyidea/static/components/config/controllers/realmController.js:11
 #, fuzzy
-#| msgid "All tokens"
 msgid "All Nodes"
 msgstr "Tüm Jetonlar"
 
@@ -506,11 +469,11 @@ msgstr "Tüm Jetonlar"
 msgid "All users"
 msgstr "Tüm kullanıcılar"
 
-#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:163
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:181
 msgid "An Attribute or the DN to identify the machine"
 msgstr "Makineyi tanımlamak için bir özellik veya DN"
 
-#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:197
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:215
 msgid "An Attribute that contains the IP address."
 msgstr "IP adresini içeren bir özellik."
 
@@ -521,8 +484,8 @@ msgstr "Şifreyi sıfırlamak için bir e-posta size gönderildi."
 #: privacyidea/static/components/machine/views/machine.details.html:127
 #: privacyidea/static/components/machine/views/machine.details.html:51
 #: privacyidea/static/components/token/views/token.applications.html:2
-#: privacyidea/static/components/token/views/token.details.html:669
-#: privacyidea/static/components/token/views/token.details.html:748
+#: privacyidea/static/components/token/views/token.details.html:670
+#: privacyidea/static/components/token/views/token.details.html:749
 msgid "Application"
 msgstr "Başvuru"
 
@@ -543,9 +506,8 @@ msgstr ""
 "Değerler AES128-CBC ile şifrelenirken, vermeniz gerekir.\n"
 "            32 karakter uzun altı hex dize."
 
-#: privacyidea/static/components/token/views/token.details.html:605
+#: privacyidea/static/components/token/views/token.details.html:606
 #, fuzzy
-#| msgid "Assign User"
 msgid "Assign Container"
 msgstr "Kullanıcı atama"
 
@@ -556,15 +518,14 @@ msgid "Assign Token"
 msgstr "Jeton atama"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:393
-#: privacyidea/static/components/token/views/token.containerdetails.html:411
+#: privacyidea/static/components/token/views/token.containerdetails.html:412
 #: privacyidea/static/components/token/views/token.details.html:585
-#: privacyidea/static/components/token/views/token.details.html:598
+#: privacyidea/static/components/token/views/token.details.html:599
 msgid "Assign User"
 msgstr "Kullanıcı atama"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:368
 #, fuzzy
-#| msgid "Assign Token"
 msgid "Assign User To All Tokens"
 msgstr "Jeton atama"
 
@@ -578,13 +539,11 @@ msgstr "Yeni bir jeton atayın {{ newTokenObject.serial }}"
 
 #: privacyidea/static/components/token/views/token.containercreate.html:54
 #, fuzzy
-#| msgid "Assign token to user"
 msgid "Assign the Container to a User"
 msgstr "Kullanıcıya jeton atama"
 
 #: privacyidea/static/components/directives/views/directive.registerContainer.html:39
 #, fuzzy
-#| msgid "Assign token to user"
 msgid "Assign the container to a user to enable this option."
 msgstr "Kullanıcıya jeton atama"
 
@@ -594,15 +553,13 @@ msgid ""
 "                realm {{ userRealm }}"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enroll.html:78
+#: privacyidea/static/components/token/views/token.enroll.html:80
 #, fuzzy
-#| msgid "Assign token to user"
 msgid "Assign the token to a container"
 msgstr "Kullanıcıya jeton atama"
 
 #: privacyidea/static/components/directives/views/directive.containertemplate.details.html:73
 #, fuzzy
-#| msgid "Assign token to user"
 msgid "Assign the token to the container owner and/or realm."
 msgstr "Kullanıcıya jeton atama"
 
@@ -619,7 +576,7 @@ msgstr "Atanan kullanıcı"
 msgid "Assignment State"
 msgstr "Atama durumu"
 
-#: privacyidea/static/components/token/views/token.details.html:784
+#: privacyidea/static/components/token/views/token.details.html:793
 msgid "Attach Machine"
 msgstr "Takma makinesi"
 
@@ -627,13 +584,12 @@ msgstr "Takma makinesi"
 msgid "Attach Token"
 msgstr "Jeton Ekleme"
 
-#: privacyidea/static/components/token/views/token.details.html:742
+#: privacyidea/static/components/token/views/token.details.html:743
 msgid "Attach to a new Machine"
 msgstr "Yeni bir makineye ekleyin"
 
 #: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:44
 #, fuzzy
-#| msgid "Attribute mapping"
 msgid "Attribute Mapping"
 msgstr "Özellik Haritalama"
 
@@ -649,7 +605,7 @@ msgstr "Denetim"
 msgid "Authentication Server URI"
 msgstr "Kimlik Doğrulama Sunucusu Uri"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:398
+#: privacyidea/static/components/login/controllers/loginControllers.js:409
 msgid "Authentication failed."
 msgstr "Kimlik doğrulama başarısız oldu."
 
@@ -661,7 +617,7 @@ msgstr "Kimlik doğrulama"
 msgid "Authentications in the last 24 hours"
 msgstr "Son 24 saatte kimlik doğrulamaları"
 
-#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:166
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:248
 msgid "Authority"
 msgstr ""
 
@@ -682,34 +638,37 @@ msgstr "Kötü U2F isteği"
 msgid "Base Config"
 msgstr "Temel yapılandırma"
 
-#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:82
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:100
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:116
 msgid "Base DN"
 msgstr "Taban dn"
 
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:350
+#, fuzzy
+msgid "Base DN of User Groups"
+msgstr "Arama filtresi"
+
 #: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:20
 #, fuzzy
-#| msgid "Base DN"
 msgid "Base URL"
 msgstr "Taban dn"
 
 #: privacyidea/static/components/config/views/config.resolvers.http.html:13
 #, fuzzy
-#| msgid "Edit Options"
 msgid "Basic Settings"
 msgstr "Seçenekleri Düzenle"
 
-#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:92
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:110
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:151
 msgid "Bind DN"
 msgstr "Dn bağlamak"
 
-#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:102
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:120
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:161
 msgid "Bind Password"
 msgstr "Bağlama şifresi"
 
-#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:113
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:131
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:138
 msgid "Bind Type"
 msgstr "Bağlama türü"
@@ -767,20 +726,25 @@ msgstr "Önbellek zaman aşımı (saniye)"
 #: privacyidea/static/components/directives/views/directive.tokendata.html:23
 #: privacyidea/static/components/machine/views/machine.details.html:110
 #: privacyidea/static/components/token/views/token.containerdetails.html:138
-#: privacyidea/static/components/token/views/token.containerdetails.html:473
+#: privacyidea/static/components/token/views/token.containerdetails.html:474
 #: privacyidea/static/components/token/views/token.containerdetails.html:55
-#: privacyidea/static/components/token/views/token.containerdetails.html:566
+#: privacyidea/static/components/token/views/token.containerdetails.html:567
 #: privacyidea/static/components/token/views/token.details.html:218
 #: privacyidea/static/components/token/views/token.details.html:319
 #: privacyidea/static/components/token/views/token.details.html:363
 #: privacyidea/static/components/token/views/token.details.html:408
-#: privacyidea/static/components/token/views/token.details.html:732
+#: privacyidea/static/components/token/views/token.details.html:733
 #: privacyidea/static/components/token/views/token.getserial.html:83
 #: privacyidea/static/components/user/views/user.details.html:220
 #: privacyidea/static/components/user/views/user.details.html:295
 #: privacyidea/static/components/user/views/user.details.html:56
 msgid "Cancel"
 msgstr "İptal"
+
+#: privacyidea/static/components/config/views/config.smtp.edit.html:118
+#, fuzzy
+msgid "Certificate"
+msgstr "sertifika"
 
 #: privacyidea/static/components/token/views/token.enroll.certificate.html:45
 msgid "Certificate (PEM)"
@@ -814,13 +778,12 @@ msgstr "Sertifika şablonu"
 msgid "Certificates Templates file"
 msgstr "Sertifikalar Şablonlar Dosyası"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:297
+#: privacyidea/static/components/login/controllers/loginControllers.js:308
 #, fuzzy
-#| msgid "Challenge Response Authentication. Your response was not valid!"
 msgid "Challenge Response Authentication."
 msgstr "Mücadele müdahale kimlik doğrulaması. Cevabınız geçerli değildi!"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:376
+#: privacyidea/static/components/login/controllers/loginControllers.js:387
 msgid "Challenge Response Authentication. Your response was not valid!"
 msgstr "Mücadele müdahale kimlik doğrulaması. Cevabınız geçerli değildi!"
 
@@ -833,14 +796,10 @@ msgstr "Pin'i değiştir"
 msgid "Check OTP only."
 msgstr "Sadece OTP'yi kontrol edin."
 
-#: privacyidea/static/components/config/views/config.policies.details.html:228
+#: privacyidea/static/components/config/views/config.policies.details.html:234
 #, fuzzy
-#| msgid ""
-#| "Check all possible resolvers of a user to match the resolver\n"
-#| "                in this policy."
 msgid ""
-"Check all possible resolvers of a user to match the resolver\n"
-"                        in this policy."
+"Check all possible resolvers of a user to match the resolver in this policy."
 msgstr ""
 "Çözücü ile eşleşmesi için bir kullanıcının tüm olası çözümlerini kontrol "
 "edin\n"
@@ -855,13 +814,8 @@ msgstr "Pimi yerel olarak kontrol edin"
 msgid "Check with OTP PIN."
 msgstr "OTP PIN ile kontrol edin."
 
-#: privacyidea/static/components/login/views/login.html:68
-msgid "Choose a realm..."
-msgstr "Bir alem seçin ..."
-
 #: privacyidea/static/components/config/views/config.realms.list.html:147
 #, fuzzy
-#| msgid "Clear default realm"
 msgid "Clear Default Realm"
 msgstr "Varsayılan realmi temizle"
 
@@ -873,6 +827,14 @@ msgid ""
 msgstr ""
 "ClearCounter Temizle\n"
 "                dakika sonra"
+
+#: privacyidea/static/components/directives/views/directive.filter.table.html:21
+#: privacyidea/static/components/directives/views/directive.filter.table.html:22
+#: privacyidea/static/components/token/views/token.list.html:96
+#: privacyidea/static/components/token/views/token.list.html:97
+#, fuzzy
+msgid "Clear filter"
+msgstr "Arama filtresi"
 
 #: privacyidea/static/components/token/views/token.enrolled.daypassword.html:27
 #: privacyidea/static/components/token/views/token.enrolled.hotp.html:27
@@ -911,7 +873,7 @@ msgstr ""
 "            Timen'i Tiqr uygulamanıza eklemek istiyorum."
 
 #: privacyidea/static/components/components/views/component.clienttype.html:8
-#: privacyidea/static/components/config/views/config.policies.details.html:290
+#: privacyidea/static/components/config/views/config.policies.details.html:295
 #: privacyidea/static/components/config/views/config.policies.list.html:26
 #: privacyidea/static/components/config/views/config.resolvers.scim.html:51
 msgid "Client"
@@ -925,13 +887,12 @@ msgstr "İstemci Uygulama Türü"
 msgid "Client Configuration is not supported."
 msgstr "İstemci yapılandırması desteklenmiyor."
 
-#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:189
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:271
 #, fuzzy
-#| msgid "Login with credentials"
 msgid "Client Credential"
 msgstr "Kimlik bilgileriyle giriş yapın"
 
-#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:181
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:263
 #: privacyidea/static/components/config/views/config.token.yubikey.html:20
 #: privacyidea/static/components/config/views/config.token.yubikey.html:39
 msgid "Client ID"
@@ -961,12 +922,11 @@ msgstr "Kapat"
 
 #: privacyidea/static/components/token/views/token.containerlist.html:42
 #, fuzzy
-#| msgid "Close all groups"
 msgid "Close all containers"
 msgstr "Tüm grupları kapatın"
 
 #: privacyidea/static/components/config/views/config.events.details.html:146
-#: privacyidea/static/components/config/views/config.policies.details.html:377
+#: privacyidea/static/components/config/views/config.policies.details.html:389
 msgid "Close all groups"
 msgstr "Tüm grupları kapatın"
 
@@ -981,7 +941,6 @@ msgstr "Karşılaştırıcı"
 #: privacyidea/static/components/token/views/token.containerdetails.html:162
 #: privacyidea/static/components/token/views/token.containertemplates.edit.html:57
 #, fuzzy
-#| msgid "Comparator"
 msgid "Compare"
 msgstr "Karşılaştırıcı"
 
@@ -991,8 +950,8 @@ msgstr "Bileşenler"
 
 #: privacyidea/static/components/config/views/config.events.details.html:110
 #: privacyidea/static/components/config/views/config.events.details.html:122
-#: privacyidea/static/components/config/views/config.policies.details.html:149
-#: privacyidea/static/components/config/views/config.policies.details.html:161
+#: privacyidea/static/components/config/views/config.policies.details.html:154
+#: privacyidea/static/components/config/views/config.policies.details.html:166
 msgid "Condition"
 msgstr "Koşul"
 
@@ -1004,13 +963,13 @@ msgstr "Koşullar"
 msgid "Config"
 msgstr "Ayarlar"
 
-#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:300
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:383
 msgid ""
 "Configure the endpoint to authenticate the user with its username/userid and "
 "password."
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:320
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:403
 msgid ""
 "Configure the endpoint to create a new user in the user store. The above "
 "defined attributes can be\n"
@@ -1020,13 +979,12 @@ msgid ""
 "<code>\"{password}\"</code>."
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:332
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:415
 #, fuzzy
-#| msgid "Do you really want to delete the user in the user store?"
 msgid "Configure the endpoint to delete an existing user from the user store."
 msgstr "Kullanıcıyı kullanıcı mağazasında gerçekten silmek istiyor musunuz?"
 
-#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:326
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:409
 msgid ""
 "Configure the endpoint to edit an existing user in the user store. The above "
 "defined attributes can\n"
@@ -1035,7 +993,7 @@ msgid ""
 "                parameters in the request mapping."
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:304
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:387
 msgid ""
 "Configure the endpoint to retrieve a list of users from the user store. The "
 "above defined attributes\n"
@@ -1043,7 +1001,7 @@ msgid ""
 "available in the request."
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:309
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:392
 msgid ""
 "Configure the endpoint to retrieve a single user for the UID. For example, "
 "privacyIDEA only stores\n"
@@ -1051,7 +1009,7 @@ msgid ""
 "this endpoint is used."
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:314
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:397
 msgid ""
 "Configure the endpoint to retrieve a single user for the username. For "
 "example, when a user tries to\n"
@@ -1071,25 +1029,21 @@ msgstr "Bağlayıcı adı"
 
 #: privacyidea/static/components/token/views/token.containerlist.html:148
 #, fuzzy
-#| msgid "Uploaded Tokens"
 msgid "Contained Tokens:"
 msgstr "Yüklenen belirteçler"
 
-#: privacyidea/static/components/token/views/token.containercreate.html:160
+#: privacyidea/static/components/token/views/token.containercreate.html:161
 #, fuzzy
-#| msgid "Remote Realm"
 msgid "Container Created"
 msgstr "Uzak alan"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:20
 #, fuzzy
-#| msgid "Container details for {{ containerSerial }}"
 msgid "Container Details for {{ containerSerial }}"
 msgstr "{{ containerSerial }} için jeton detayları"
 
 #: privacyidea/static/components/token/views/token.containertemplates.edit.html:96
 #, fuzzy
-#| msgid "Remote Realm"
 msgid "Container Realms"
 msgstr "Uzak alan"
 
@@ -1102,13 +1056,11 @@ msgstr ""
 
 #: privacyidea/static/components/audit/views/audit.log.html:82
 #, fuzzy
-#| msgid "Remote Serial"
 msgid "Container Serial"
 msgstr "Uzaktan seri"
 
 #: privacyidea/static/components/token/views/token.containertemplates.list.html:19
 #, fuzzy
-#| msgid "Bind Type"
 msgid "Container Templates"
 msgstr "Bağlama türü"
 
@@ -1117,7 +1069,6 @@ msgstr "Bağlama türü"
 #: privacyidea/static/components/token/views/token.containertemplates.create.html:36
 #: privacyidea/static/components/token/views/token.containertemplates.edit.html:22
 #, fuzzy
-#| msgid "Bind Type"
 msgid "Container Type"
 msgstr "Bağlama türü"
 
@@ -1131,7 +1082,6 @@ msgstr ""
 
 #: privacyidea/static/components/user/views/user.details.html:321
 #, fuzzy
-#| msgid "Tokens for user {{ username }}"
 msgid "Containers for user {{ username }}"
 msgstr "Kullanıcı için jetonlar {{username}}"
 
@@ -1139,9 +1089,8 @@ msgstr "Kullanıcı için jetonlar {{username}}"
 msgid "Could not delete expired challenges."
 msgstr ""
 
-#: privacyidea/static/components/config/controllers/configControllers.js:811
+#: privacyidea/static/components/config/controllers/configControllers.js:822
 #, fuzzy
-#| msgid "Failed to delete user."
 msgid "Could not delete user cache."
 msgstr "Kullanıcı silinemedi."
 
@@ -1164,22 +1113,19 @@ msgstr ""
 "Penceresini sayısı \n"
 "                    Yeni kayıtlı jetonlar"
 
-#: privacyidea/static/components/token/views/token.containercreate.html:142
+#: privacyidea/static/components/token/views/token.containercreate.html:143
 #, fuzzy
-#| msgid "Create realm"
 msgid "Create"
 msgstr "Alem oluşturmak"
 
 #: privacyidea/static/components/directives/views/directive.selectorcreatecontainer.html:63
 #: privacyidea/static/components/token/views/token.html:187
 #, fuzzy
-#| msgid "Create new Event Handler"
 msgid "Create Container"
 msgstr "Yeni olay işleyicisi oluştur"
 
 #: privacyidea/static/components/token/views/token.html:218
 #, fuzzy
-#| msgid "Certificate Template"
 msgid "Create New Template"
 msgstr "Sertifika şablonu"
 
@@ -1192,7 +1138,6 @@ msgstr "Periyodik görev tanımı oluşturun"
 #: privacyidea/static/components/config/views/config.realms.list.html:129
 #: privacyidea/static/components/dialogs/views/dialog.autocreate_realm.html:21
 #, fuzzy
-#| msgid "Create realm"
 msgid "Create Realm"
 msgstr "Alem oluşturmak"
 
@@ -1202,19 +1147,16 @@ msgstr ""
 
 #: privacyidea/static/components/token/views/token.containertemplates.create.html:61
 #, fuzzy
-#| msgid "Certificate Template"
 msgid "Create Template"
 msgstr "Sertifika şablonu"
 
 #: privacyidea/static/components/token/views/token.containercreate.html:25
 #, fuzzy
-#| msgid "Create new Event Handler"
 msgid "Create a New Container"
 msgstr "Yeni olay işleyicisi oluştur"
 
 #: privacyidea/static/components/token/views/token.containertemplates.create.html:19
 #, fuzzy
-#| msgid "Create new Event Handler"
 msgid "Create a New Container Template"
 msgstr "Yeni olay işleyicisi oluştur"
 
@@ -1258,7 +1200,7 @@ msgstr "Yeni bir SCIM çözümleyici oluşturun"
 msgid "Create a new SMS gateway"
 msgstr "Yeni SMS Ağ Geçidi Oluştur"
 
-#: privacyidea/static/components/config/views/config.smtp.edit.html:5
+#: privacyidea/static/components/config/views/config.smtp.edit.html:4
 msgid "Create a new SMTP server {{ params.identifier }}"
 msgstr "Yeni bir SMTP sunucusu oluşturun {{ params.identifier }}"
 
@@ -1292,7 +1234,6 @@ msgstr "Yeni bir PRIVACYIDEA sunucusu oluşturun {{ params.identifier }}"
 
 #: privacyidea/static/components/config/views/config.resolvers.http.html:7
 #, fuzzy
-#| msgid "Create a new SMTP server {{ params.identifier }}"
 msgid "Create a new {{ typeMapping[params.type] }}"
 msgstr "Yeni bir SMTP sunucusu oluşturun {{ params.identifier }}"
 
@@ -1320,9 +1261,8 @@ msgstr "Yeni politika oluştur"
 msgid "Create new SMS Gateway definition"
 msgstr "Yeni SMS Ağ Geçidi Tanımı oluşturun"
 
-#: privacyidea/static/components/token/views/token.enroll.html:228
+#: privacyidea/static/components/token/views/token.enroll.html:230
 #, fuzzy
-#| msgid "Create new Event Handler"
 msgid "Create new container"
 msgstr "Yeni olay işleyicisi oluştur"
 
@@ -1393,7 +1333,7 @@ msgstr "Varsayılan Zaman Penceresi"
 #: privacyidea/static/components/config/views/config.mresolvers.list.html:28
 #: privacyidea/static/components/config/views/config.periodictasks.details.html:20
 #: privacyidea/static/components/config/views/config.periodictasks.list.html:55
-#: privacyidea/static/components/config/views/config.policies.details.html:142
+#: privacyidea/static/components/config/views/config.policies.details.html:147
 #: privacyidea/static/components/config/views/config.policies.list.html:79
 #: privacyidea/static/components/config/views/config.privacyideaserver.list.html:32
 #: privacyidea/static/components/config/views/config.radius.list.html:32
@@ -1408,8 +1348,8 @@ msgstr "Varsayılan Zaman Penceresi"
 #: privacyidea/static/components/config/views/dialog.confirm_delete.html:28
 #: privacyidea/static/components/directives/views/directive.policyconditions.html:81
 #: privacyidea/static/components/token/views/token.containerdetails.html:33
-#: privacyidea/static/components/token/views/token.containerdetails.html:469
-#: privacyidea/static/components/token/views/token.containerdetails.html:556
+#: privacyidea/static/components/token/views/token.containerdetails.html:470
+#: privacyidea/static/components/token/views/token.containerdetails.html:557
 #: privacyidea/static/components/token/views/token.containertemplates.list.html:69
 #: privacyidea/static/components/token/views/token.details.html:20
 #: privacyidea/static/components/token/views/token.details.html:217
@@ -1417,9 +1357,8 @@ msgstr "Varsayılan Zaman Penceresi"
 msgid "Delete"
 msgstr "Sil"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:463
+#: privacyidea/static/components/token/views/token.containerdetails.html:464
 #, fuzzy
-#| msgid "Delete"
 msgid "Delete All"
 msgstr "Sil"
 
@@ -1440,13 +1379,12 @@ msgstr "CRL yapılandırması"
 
 #: privacyidea/static/components/token/views/token.challenges.html:5
 #, fuzzy
-#| msgid "Delete Token"
 msgid "Delete Expired Challenges"
 msgstr "Jeton sil"
 
 #: privacyidea/static/components/token/views/dialog.ask_token_delete.html:11
 #: privacyidea/static/components/token/views/dialog.ask_token_delete.html:31
-#: privacyidea/static/components/token/views/token.containerdetails.html:562
+#: privacyidea/static/components/token/views/token.containerdetails.html:563
 #: privacyidea/static/components/user/views/user.details.html:216
 msgid "Delete Token"
 msgstr "Jeton sil"
@@ -1458,13 +1396,11 @@ msgstr "Kullanıcıyı sil"
 
 #: privacyidea/static/components/config/views/config.system.edit.html:99
 #, fuzzy
-#| msgid "Delete User"
 msgid "Delete User Cache"
 msgstr "Kullanıcıyı sil"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:465
+#: privacyidea/static/components/token/views/token.containerdetails.html:466
 #, fuzzy
-#| msgid "Delete Token"
 msgid "Delete all tokens?"
 msgstr "Jeton sil"
 
@@ -1485,12 +1421,12 @@ msgstr "Kullanıcıyı sil"
 #: privacyidea/static/components/config/views/config.serviceid.list.html:10
 #: privacyidea/static/components/config/views/config.smsgateway.edit.html:39
 #: privacyidea/static/components/config/views/config.smsgateway.list.html:6
-#: privacyidea/static/components/config/views/config.smtp.edit.html:96
+#: privacyidea/static/components/config/views/config.smtp.edit.html:95
 #: privacyidea/static/components/config/views/config.smtp.list.html:9
 #: privacyidea/static/components/config/views/config.tokengroup.edit.html:28
 #: privacyidea/static/components/config/views/config.tokengroup.list.html:7
 #: privacyidea/static/components/token/views/token.containercreate.html:44
-#: privacyidea/static/components/token/views/token.containerdetails.html:443
+#: privacyidea/static/components/token/views/token.containerdetails.html:444
 #: privacyidea/static/components/token/views/token.containerdetails.html:90
 #: privacyidea/static/components/token/views/token.containerlist.html:77
 #: privacyidea/static/components/token/views/token.containertemplates.edit.html:87
@@ -1510,7 +1446,7 @@ msgid "Description of the container"
 msgstr ""
 
 #: privacyidea/static/components/machine/views/machine.details.html:99
-#: privacyidea/static/components/token/views/token.details.html:721
+#: privacyidea/static/components/token/views/token.details.html:722
 msgid "Detach"
 msgstr "Ayırmak"
 
@@ -1539,25 +1475,23 @@ msgstr ""
 
 #: privacyidea/static/components/config/views/config.events.details.html:6
 #: privacyidea/static/components/config/views/config.periodictasks.details.html:6
-#: privacyidea/static/components/config/views/config.policies.details.html:128
+#: privacyidea/static/components/config/views/config.policies.details.html:130
 #: privacyidea/static/components/token/views/token.details.html:49
 msgid "Disable"
 msgstr "Devre dışı bırakmak"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:435
+#: privacyidea/static/components/token/views/token.containerdetails.html:436
 #, fuzzy
-#| msgid "Disable"
 msgid "Disable All"
 msgstr "Devre dışı bırakmak"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:316
 #, fuzzy
-#| msgid "Disable token"
 msgid "Disable All Tokens"
 msgstr "Jetonu devre dışı bırakmak"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:703
-#: privacyidea/static/components/token/views/token.list.html:99
+#: privacyidea/static/components/token/views/token.containerdetails.html:704
+#: privacyidea/static/components/token/views/token.list.html:153
 #: privacyidea/static/components/user/views/user.details.html:167
 msgid "Disable token"
 msgstr "Jetonu devre dışı bırakmak"
@@ -1570,7 +1504,7 @@ msgstr "Dalış!"
 msgid "Do not use an authentication counter per token."
 msgstr "Tokken başına bir kimlik doğrulama sayacını kullanmayın."
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:816
+#: privacyidea/static/components/token/controllers/tokenControllers.js:848
 msgid "Do not verify the authenticity"
 msgstr ""
 
@@ -1601,7 +1535,7 @@ msgstr "Kullanıcıyı kullanıcı mağazasında gerçekten silmek istiyor musun
 msgid "Do you really want to delete this machine resolver?"
 msgstr "Kullanıcıyı kullanıcı mağazasında gerçekten silmek istiyor musunuz?"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:107
+#: privacyidea/static/components/login/controllers/loginControllers.js:114
 #, fuzzy
 msgid "Do you really want to delete this object?"
 msgstr "Kullanıcıyı kullanıcı mağazasında gerçekten silmek istiyor musunuz?"
@@ -1612,7 +1546,7 @@ msgstr "Kullanıcıyı kullanıcı mağazasında gerçekten silmek istiyor musun
 msgid "Do you really want to delete this periodic task?"
 msgstr "Kullanıcıyı kullanıcı mağazasında gerçekten silmek istiyor musunuz?"
 
-#: privacyidea/static/components/config/views/config.policies.details.html:139
+#: privacyidea/static/components/config/views/config.policies.details.html:144
 #: privacyidea/static/components/config/views/config.policies.list.html:76
 #, fuzzy
 msgid "Do you really want to delete this policy?"
@@ -1630,6 +1564,10 @@ msgstr "Kullanıcıyı kullanıcı mağazasında gerçekten silmek istiyor musun
 
 #: privacyidea/static/components/config/views/config.caconnectors.microsoft.html:148
 msgid "Domain CA"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.smtp.edit.html:163
+msgid "Don't send on signing error"
 msgstr ""
 
 #: privacyidea/static/components/directives/views/directive.csvdownload.html:3
@@ -1660,7 +1598,7 @@ msgstr "E-posta Token Ayarları"
 #: privacyidea/static/components/directives/views/directive.containertemplate.details.html:41
 #: privacyidea/static/components/directives/views/directive.policyconditions.html:72
 #: privacyidea/static/components/directives/views/directive.tokendata.html:28
-#: privacyidea/static/components/token/views/token.containercreate.html:82
+#: privacyidea/static/components/token/views/token.containercreate.html:83
 #: privacyidea/static/components/token/views/token.containerdetails.html:125
 #: privacyidea/static/components/token/views/token.details.html:306
 #: privacyidea/static/components/token/views/token.details.html:350
@@ -1707,7 +1645,7 @@ msgid ""
 msgstr ""
 
 #: privacyidea/static/components/machine/views/machine.details.html:95
-#: privacyidea/static/components/token/views/token.details.html:717
+#: privacyidea/static/components/token/views/token.details.html:718
 msgid "Edit Options"
 msgstr "Seçenekleri Düzenle"
 
@@ -1744,7 +1682,7 @@ msgstr "SCIM Çözücü Düzenle {{ resolvername }}"
 msgid "Edit SMS gateway {{ form.name }}"
 msgstr "SMS Gateway'ı düzenleyin {{ form.name }}"
 
-#: privacyidea/static/components/config/views/config.smtp.edit.html:2
+#: privacyidea/static/components/config/views/config.smtp.edit.html:1
 msgid "Edit SMTP server {{ identifier }}"
 msgstr "SMTP Sunucusu'nu düzenleyin {{ identifier }}"
 
@@ -1756,9 +1694,8 @@ msgstr "SQL Resolver'ı düzenleyin {{ resolvername }}"
 msgid "Edit Service ID {{ servicename }}"
 msgstr "Çözücü Düzenle {{ servicename }}"
 
-#: privacyidea/static/components/token/views/token.containercreate.html:119
+#: privacyidea/static/components/token/views/token.containercreate.html:120
 #, fuzzy
-#| msgid "Edit Options"
 msgid "Edit Settings"
 msgstr "Seçenekleri Düzenle"
 
@@ -1784,7 +1721,7 @@ msgstr "Alemleri düzenle"
 msgid "Edit user"
 msgstr "Kullanıcıyı düzenle"
 
-#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:100
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:182
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:247
 #: privacyidea/static/components/config/views/config.resolvers.sql.html:90
 msgid "Edit user store"
@@ -1804,19 +1741,18 @@ msgstr "E"
 
 #: privacyidea/static/components/config/views/config.events.details.html:11
 #: privacyidea/static/components/config/views/config.periodictasks.details.html:11
-#: privacyidea/static/components/config/views/config.policies.details.html:133
+#: privacyidea/static/components/config/views/config.policies.details.html:136
 #: privacyidea/static/components/token/views/token.details.html:57
 msgid "Enable"
 msgstr "Olanak vermek"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:429
+#: privacyidea/static/components/token/views/token.containerdetails.html:430
 #, fuzzy
-#| msgid "Enable"
 msgid "Enable All"
 msgstr "Olanak vermek"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:708
-#: privacyidea/static/components/token/views/token.list.html:104
+#: privacyidea/static/components/token/views/token.containerdetails.html:709
+#: privacyidea/static/components/token/views/token.list.html:158
 #: privacyidea/static/components/user/views/user.details.html:172
 msgid "Enable token"
 msgstr "Jetonu etkinleştirmek"
@@ -1827,7 +1763,6 @@ msgstr "Başlangıç tarihinden önce bitiş tarihi!"
 
 #: privacyidea/static/components/directives/views/directive.httpResolverEndpointConfig.html:29
 #, fuzzy
-#| msgid "Endpoint (URL)"
 msgid "Endpoint"
 msgstr "Son nokta (URL)"
 
@@ -1835,12 +1770,16 @@ msgstr "Son nokta (URL)"
 msgid "Endpoint (URL)"
 msgstr "Son nokta (URL)"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:575
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:149
+msgid "Endpoint with possible tags:"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.containerdetails.html:576
 #: privacyidea/static/components/user/views/user.details.html:274
 msgid "Enroll New Token"
 msgstr "Yeni jeton kayıt"
 
-#: privacyidea/static/components/token/views/token.enroll.html:161
+#: privacyidea/static/components/token/views/token.enroll.html:163
 #: privacyidea/static/components/token/views/token.enrolled.daypassword.html:57
 #: privacyidea/static/components/token/views/token.enrolled.hotp.html:56
 #: privacyidea/static/components/token/views/token.enrolled.totp.html:57
@@ -1848,10 +1787,10 @@ msgstr "Yeni jeton kayıt"
 msgid "Enroll Token"
 msgstr "Jeton Ekle"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:118
-#: privacyidea/static/components/token/controllers/tokenControllers.js:151
+#: privacyidea/static/components/login/controllers/loginControllers.js:125
+#: privacyidea/static/components/token/controllers/tokenControllers.js:183
 #: privacyidea/static/components/token/views/token.enroll.html:1
-#: privacyidea/static/components/token/views/token.enroll.html:224
+#: privacyidea/static/components/token/views/token.enroll.html:226
 msgid "Enroll a new token"
 msgstr "Yeni bir jeton kaydet"
 
@@ -1903,6 +1842,14 @@ msgstr "İlk OTP değerini girin"
 msgid "Enter second OTP value"
 msgstr "İkinci OTP değerini girin"
 
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:356
+msgid ""
+"Enter the base DN for the user groups. Leave this field empty if the groups "
+"are located\n"
+"                                in the same base DN as defined for the users "
+"above."
+msgstr ""
+
 #: privacyidea/static/components/token/views/token.enroll.daypassword.html:31
 #, fuzzy
 msgid "Enter the secret..."
@@ -1950,7 +1897,7 @@ msgstr "Örnekler"
 msgid "Expiration"
 msgstr "Son"
 
-#: privacyidea/static/components/token/views/token.enroll.html:95
+#: privacyidea/static/components/token/views/token.enroll.html:97
 #, fuzzy
 msgid "Extended Attributes"
 msgstr "Genişletilmiş özellikler"
@@ -1959,14 +1906,13 @@ msgstr "Genişletilmiş özellikler"
 msgid "Fail counter"
 msgstr "Başarısız sayaç"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:444
+#: privacyidea/static/components/token/views/token.containerdetails.html:445
 #: privacyidea/static/components/user/views/user.details.html:151
 #, fuzzy
-#| msgid "Fail counter"
 msgid "Failcounter"
 msgstr "Başarısız sayaç"
 
-#: privacyidea/static/components/user/controllers/userControllers.js:280
+#: privacyidea/static/components/user/controllers/userControllers.js:283
 msgid "Failed to delete user."
 msgstr "Kullanıcı silinemedi."
 
@@ -1983,7 +1929,7 @@ msgstr "Şifrenizi sıfırlayamadı."
 msgid "Failed to set PIN."
 msgstr "PIN ayarlanamadı."
 
-#: privacyidea/static/components/user/controllers/userControllers.js:261
+#: privacyidea/static/components/user/controllers/userControllers.js:264
 msgid "Failed to update user."
 msgstr "Kullanıcı güncellenemedi."
 
@@ -1992,12 +1938,17 @@ msgstr "Kullanıcı güncellenemedi."
 msgid "File name"
 msgstr "Dosya adı"
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:358
+#: privacyidea/static/components/token/views/token.list.html:123
+#, fuzzy
+msgid "Filter by realm"
+msgstr "Alemleri düzenle"
+
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:371
 msgid ""
 "Filter to get the groups of a single user. Possible tags: <code>{base_dn}</"
-"code>,\n"
-"                                <code>{username}</code>, and all attribute "
-"mapping keys."
+"code> (from\n"
+"                                the users), <code>{username}</code>, and all "
+"attribute mapping keys."
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.import.html:121
@@ -2010,11 +1961,11 @@ msgstr "Parmak izi"
 #: privacyidea/static/components/token/views/token.applications.offline.html:14
 #: privacyidea/static/components/token/views/token.applications.ssh.html:20
 #: privacyidea/static/components/token/views/token.challenges.html:18
-#: privacyidea/static/components/token/views/token.containerdetails.html:611
+#: privacyidea/static/components/token/views/token.containerdetails.html:612
 #: privacyidea/static/components/token/views/token.containerlist.html:24
 #: privacyidea/static/components/token/views/token.containertemplates.edit.html:71
 #: privacyidea/static/components/token/views/token.containertemplates.list.html:26
-#: privacyidea/static/components/token/views/token.details.html:656
+#: privacyidea/static/components/token/views/token.details.html:657
 #: privacyidea/static/components/token/views/token.list.html:6
 #: privacyidea/static/components/user/views/user.details.html:138
 #: privacyidea/static/components/user/views/user.details.html:328
@@ -2088,7 +2039,7 @@ msgstr "Sunucu OTP anahtarını otomatik oluştursun(önerilir)"
 msgid "Generate Request"
 msgstr "İstek oluşturmak"
 
-#: privacyidea/static/components/token/views/token.containercreate.html:116
+#: privacyidea/static/components/token/views/token.containercreate.html:117
 msgid ""
 "Generate a QR code to register the container on a\n"
 "                smartphone."
@@ -2124,15 +2075,15 @@ msgstr "Sistem belgelerini alın"
 msgid "Get available CAs"
 msgstr ""
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:480
+#: privacyidea/static/components/login/controllers/loginControllers.js:491
 msgid "Get the Authenticator App for Android."
 msgstr "Android için doğrulama uygulamasını edinin."
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:487
+#: privacyidea/static/components/login/controllers/loginControllers.js:498
 msgid "Get the Authenticator App for iOS."
 msgstr "İOS için doğrulama uygulamasını edinin."
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:494
+#: privacyidea/static/components/login/controllers/loginControllers.js:505
 msgid "Get the Authenticator App."
 msgstr "Authenticator uygulamasını edinin."
 
@@ -2142,9 +2093,13 @@ msgstr "Authenticator uygulamasını edinin."
 msgid "Given name"
 msgstr "İsim"
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:365
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:132
 #, fuzzy
-#| msgid "Hostname Attribute"
+msgid "Group Attribute in EntraID"
+msgstr "HostName özniteliği"
+
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:378
+#, fuzzy
 msgid "Group Name Attribute"
 msgstr "HostName özniteliği"
 
@@ -2155,6 +2110,11 @@ msgstr "Hotp Token Ayarları"
 #: privacyidea/static/components/token/views/token.applications.offline.html:6
 msgid "HOTP tokens can be attached with offline to e.g. notebooks."
 msgstr ""
+
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:142
+#, fuzzy
+msgid "HTTP Method"
+msgstr "Yöntem"
 
 #: privacyidea/static/components/directives/views/directive.policyconditions.html:10
 msgid "Handle Missing Data"
@@ -2179,7 +2139,7 @@ msgstr "Hash algoritması"
 msgid "Headers"
 msgstr "Başlıklar"
 
-#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:89
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:171
 #: privacyidea/static/components/config/views/config.resolvers.http.basic.html:47
 #: privacyidea/static/components/directives/views/directive.httpResolverEndpointConfig.html:40
 msgid "Headers (JSON format)"
@@ -2187,7 +2147,6 @@ msgstr "Başlıklar (JSON Format)"
 
 #: privacyidea/static/components/token/views/token.html:242
 #, fuzzy
-#| msgid "Remote Realm"
 msgid "Help about Container Details"
 msgstr "Uzak alan"
 
@@ -2197,13 +2156,11 @@ msgstr ""
 
 #: privacyidea/static/components/token/views/token.html:228
 #, fuzzy
-#| msgid "Create new Event Handler"
 msgid "Help about Containers"
 msgstr "Yeni olay işleyicisi oluştur"
 
 #: privacyidea/static/components/token/views/token.html:235
 #, fuzzy
-#| msgid "Create new Event Handler"
 msgid "Help about Creating a Container"
 msgstr "Yeni olay işleyicisi oluştur"
 
@@ -2300,9 +2257,6 @@ msgstr ""
 
 #: privacyidea/static/components/config/views/config.token.hotp.html:7
 #, fuzzy
-#| msgid ""
-#| "Here you can define settings, that will be set as default values, when\n"
-#| "    enrolling a HOTP token."
 msgid ""
 "Here you can define settings, that will be set as default values, when\n"
 "    enrolling a HOTP token. Note that the user/admin policy "
@@ -2358,21 +2312,19 @@ msgstr ""
 msgid "Here you may register a new user account"
 msgstr "Burada yeni bir kullanıcı hesabı kaydedebilirsiniz"
 
-#: privacyidea/static/components/token/views/token.containercreate.html:88
+#: privacyidea/static/components/token/views/token.containercreate.html:89
 #: privacyidea/static/components/token/views/token.containerdetails.html:170
 #: privacyidea/static/components/token/views/token.containertemplates.edit.html:51
 msgid "Hide"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:589
+#: privacyidea/static/components/token/views/token.containerdetails.html:590
 #, fuzzy
-#| msgid "Skipped Tokens"
 msgid "Hide Add Token List"
 msgstr "Atlanan belirteçler"
 
 #: privacyidea/static/components/directives/views/directive.containertemplate.details.html:47
 #, fuzzy
-#| msgid "Detail"
 msgid "Hide Details"
 msgstr "Detay"
 
@@ -2380,18 +2332,17 @@ msgstr "Detay"
 msgid "Hide Policy templates"
 msgstr "Politika şablonlarını gizle"
 
-#: privacyidea/static/components/token/views/token.containercreate.html:125
+#: privacyidea/static/components/token/views/token.containercreate.html:126
 #, fuzzy
-#| msgid "HOTP Token settings"
 msgid "Hide Settings"
 msgstr "Hotp Token Ayarları"
 
 #: privacyidea/static/components/machine/views/machine.details.html:9
-#: privacyidea/static/components/token/views/token.details.html:667
+#: privacyidea/static/components/token/views/token.details.html:668
 msgid "Hostname"
 msgstr "Ana bilgisayar adı"
 
-#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:178
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:196
 msgid "Hostname Attribute"
 msgstr "HostName özniteliği"
 
@@ -2400,12 +2351,12 @@ msgstr "HostName özniteliği"
 msgid "IP Address"
 msgstr "IP adresi"
 
-#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:190
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:208
 msgid "IP Address Attribute"
 msgstr "IP Adresi özniteliği"
 
 #: privacyidea/static/components/config/views/config.radius.edit.html:27
-#: privacyidea/static/components/config/views/config.smtp.edit.html:27
+#: privacyidea/static/components/config/views/config.smtp.edit.html:26
 msgid "IP or FQDN"
 msgstr "IP veya FQDN"
 
@@ -2425,17 +2376,17 @@ msgstr "İD"
 #: privacyidea/static/components/config/views/config.radius.edit.html:13
 #: privacyidea/static/components/config/views/config.radius.list.html:5
 #: privacyidea/static/components/config/views/config.serviceid.edit.html:13
-#: privacyidea/static/components/config/views/config.smtp.edit.html:13
+#: privacyidea/static/components/config/views/config.smtp.edit.html:12
 #: privacyidea/static/components/config/views/config.smtp.list.html:5
 #: privacyidea/static/components/config/views/config.tokengroup.edit.html:13
 msgid "Identifier"
 msgstr "Tanımlayıcı"
 
-#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:93
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:175
 msgid "If no custom headers are defined this header is used for all endpoints."
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.smtp.edit.html:79
+#: privacyidea/static/components/config/views/config.smtp.edit.html:78
 msgid ""
 "If the SMTP server requires authentication you need to\n"
 "                specify the user."
@@ -2571,11 +2522,11 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.applications.offline.html:13
 #: privacyidea/static/components/token/views/token.applications.ssh.html:19
 #: privacyidea/static/components/token/views/token.challenges.html:17
-#: privacyidea/static/components/token/views/token.containerdetails.html:610
+#: privacyidea/static/components/token/views/token.containerdetails.html:611
 #: privacyidea/static/components/token/views/token.containerlist.html:23
 #: privacyidea/static/components/token/views/token.containertemplates.edit.html:70
 #: privacyidea/static/components/token/views/token.containertemplates.list.html:25
-#: privacyidea/static/components/token/views/token.details.html:655
+#: privacyidea/static/components/token/views/token.details.html:656
 #: privacyidea/static/components/token/views/token.list.html:5
 #: privacyidea/static/components/user/views/user.details.html:137
 #: privacyidea/static/components/user/views/user.details.html:327
@@ -2585,7 +2536,6 @@ msgstr "Son"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:203
 #, fuzzy
-#| msgid "Authentications"
 msgid "Last Authentication"
 msgstr "Kimlik doğrulama"
 
@@ -2615,7 +2565,6 @@ msgstr "Giriş Listesi"
 
 #: privacyidea/static/components/token/views/token.html:174
 #, fuzzy
-#| msgid "List Challenges"
 msgid "List Containers"
 msgstr "Giriş Listesi"
 
@@ -2634,7 +2583,6 @@ msgstr "SMTP Sunucusu tanımlarını listele"
 
 #: privacyidea/static/components/token/views/token.html:205
 #, fuzzy
-#| msgid "Policy Templates"
 msgid "List Templates"
 msgstr "Politika Şablonları"
 
@@ -2651,7 +2599,7 @@ msgstr ""
 "PrivaciDea sunucusunu listele\n"
 "                        tanımlar"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:126
+#: privacyidea/static/components/login/controllers/loginControllers.js:133
 msgid "List tokens"
 msgstr "Jeton listesi"
 
@@ -2664,7 +2612,7 @@ msgstr "Yükleme makineleri ..."
 msgid "Loading serials..."
 msgstr "Seri yükleme ..."
 
-#: privacyidea/static/components/directives/views/directive.assignuser.html:30
+#: privacyidea/static/components/directives/views/directive.assignuser.html:55
 msgid "Loading users..."
 msgstr "Kullanıcıları Yükleme ..."
 
@@ -2679,11 +2627,11 @@ msgstr "Kayıt"
 #: privacyidea/static/components/dialogs/views/dialog.lock.html:27
 #: privacyidea/static/components/login/views/enter-response.html:27
 #: privacyidea/static/components/login/views/login.html:20
-#: privacyidea/static/components/login/views/login.html:77
+#: privacyidea/static/components/login/views/login.html:83
 msgid "Log In"
 msgstr "Giriş"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:133
+#: privacyidea/static/components/login/controllers/loginControllers.js:140
 msgid "Log out"
 msgstr "Çıkış Yap"
 
@@ -2701,8 +2649,8 @@ msgstr "Oturum açmak {{ remoteUser }}"
 msgid "Login with credentials"
 msgstr "Kimlik bilgileriyle giriş yapın"
 
-#: privacyidea/static/components/token/views/token.containercreate.html:243
-#: privacyidea/static/components/token/views/token.enroll.html:232
+#: privacyidea/static/components/token/views/token.containercreate.html:244
+#: privacyidea/static/components/token/views/token.enroll.html:234
 #: privacyidea/static/templates/menu.html:160
 msgid "Logout"
 msgstr "Çıkış Yap"
@@ -2716,11 +2664,11 @@ msgid "Machine"
 msgstr "Makine"
 
 #: privacyidea/static/components/machine/views/machine.details.html:14
-#: privacyidea/static/components/token/views/token.details.html:666
+#: privacyidea/static/components/token/views/token.details.html:667
 msgid "Machine ID"
 msgstr "makine kimliği"
 
-#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:155
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:173
 msgid "Machine ID Attribute"
 msgstr "Makine kimliği niteliği"
 
@@ -2734,7 +2682,7 @@ msgstr "Makine çözücü"
 msgid "Machines"
 msgstr "Makineler"
 
-#: privacyidea/static/components/token/views/token.details.html:649
+#: privacyidea/static/components/token/views/token.details.html:650
 msgid "Machines this token is attached to"
 msgstr "Makineler Bu belirteç ekli"
 
@@ -2755,7 +2703,7 @@ msgstr ""
 "Max başarısız\n"
 "                    Yeni kayıtlı jetonlar"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:445
+#: privacyidea/static/components/token/views/token.containerdetails.html:446
 #: privacyidea/static/components/token/views/token.details.html:87
 #: privacyidea/static/components/user/views/user.details.html:152
 msgid "Maxfail"
@@ -2784,7 +2732,6 @@ msgstr ""
 
 #: privacyidea/static/components/directives/views/directive.containerTemplateDiff.html:27
 #, fuzzy
-#| msgid "missing_line"
 msgid "Missing"
 msgstr "kayıp_line"
 
@@ -2823,7 +2770,6 @@ msgstr "Yeni Yarıçap Sunucusu"
 
 #: privacyidea/static/components/config/views/config.realms.list.html:108
 #, fuzzy
-#| msgid "new realm"
 msgid "New Realm..."
 msgstr "yeni alan"
 
@@ -2878,11 +2824,11 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.applications.offline.html:12
 #: privacyidea/static/components/token/views/token.applications.ssh.html:18
 #: privacyidea/static/components/token/views/token.challenges.html:16
-#: privacyidea/static/components/token/views/token.containerdetails.html:609
+#: privacyidea/static/components/token/views/token.containerdetails.html:610
 #: privacyidea/static/components/token/views/token.containerlist.html:22
 #: privacyidea/static/components/token/views/token.containertemplates.edit.html:69
 #: privacyidea/static/components/token/views/token.containertemplates.list.html:24
-#: privacyidea/static/components/token/views/token.details.html:654
+#: privacyidea/static/components/token/views/token.details.html:655
 #: privacyidea/static/components/token/views/token.list.html:4
 #: privacyidea/static/components/user/views/user.details.html:136
 #: privacyidea/static/components/user/views/user.details.html:326
@@ -2900,8 +2846,8 @@ msgstr "Numara"
 msgid "No Serial number could be found for OTP value {{ otp }}."
 msgstr "OTP değeri {{ otp }} için hiçbir seri numarası bulunamadı."
 
-#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:152
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:399
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:170
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:412
 msgid "No anonymous referral chasing"
 msgstr "Anonim yönlendirme takibi yok"
 
@@ -2913,7 +2859,7 @@ msgstr ""
 msgid "No machine found"
 msgstr "Makine bulunamadı"
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:406
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:419
 msgid "No retrieval of schema information"
 msgstr "Şema bilgisinin alınması yok"
 
@@ -2922,11 +2868,11 @@ msgstr "Şema bilgisinin alınması yok"
 msgid "No serial found"
 msgstr "Seri bulunamadı"
 
-#: privacyidea/static/components/config/controllers/configControllers.js:806
+#: privacyidea/static/components/config/controllers/configControllers.js:817
 msgid "No user cache entries were deleted."
 msgstr ""
 
-#: privacyidea/static/components/directives/views/directive.assignuser.html:33
+#: privacyidea/static/components/directives/views/directive.assignuser.html:58
 msgid "No user found"
 msgstr "Kullanıcı bulunamadı"
 
@@ -2935,7 +2881,7 @@ msgstr "Kullanıcı bulunamadı"
 msgid "Node-specific Resolver Configuration"
 msgstr "CRL yapılandırması"
 
-#: privacyidea/static/components/token/views/token.containercreate.html:104
+#: privacyidea/static/components/token/views/token.containercreate.html:105
 msgid ""
 "Note: Changes will only be applied to this container and not to the template."
 msgstr ""
@@ -2988,7 +2934,7 @@ msgstr "OTP anahtar"
 msgid "OTP Length"
 msgstr "OTP uzunluğu"
 
-#: privacyidea/static/components/token/views/token.enroll.html:55
+#: privacyidea/static/components/token/views/token.enroll.html:57
 msgid "OTP PINs do not match!"
 msgstr "OTP pimleri eşleşmiyor!"
 
@@ -3058,22 +3004,21 @@ msgstr "Peki"
 msgid "Online Documentation"
 msgstr "Çevrimiçi belgeler"
 
-#: privacyidea/static/components/directives/views/directive.assignuser.html:13
+#: privacyidea/static/components/directives/views/directive.assignuser.html:10
 msgid "Only add to the realm (no user assignment)"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:600
+#: privacyidea/static/components/token/views/token.containerdetails.html:601
 msgid "Only show tokens that are not in a container."
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.containerlist.html:34
 #, fuzzy
-#| msgid "Open all groups"
 msgid "Open all containers"
 msgstr "Tüm grupları aç"
 
 #: privacyidea/static/components/config/views/config.events.details.html:141
-#: privacyidea/static/components/config/views/config.policies.details.html:372
+#: privacyidea/static/components/config/views/config.policies.details.html:383
 msgid "Open all groups"
 msgstr "Tüm grupları aç"
 
@@ -3087,7 +3032,7 @@ msgstr "OpenSSL config dosyası"
 #: privacyidea/static/components/config/views/config.periodictasks.list.html:12
 #: privacyidea/static/components/config/views/config.smsgateway.edit.html:95
 #: privacyidea/static/components/machine/views/machine.details.html:52
-#: privacyidea/static/components/token/views/token.details.html:670
+#: privacyidea/static/components/token/views/token.details.html:671
 msgid "Options"
 msgstr "Seçenekler"
 
@@ -3102,9 +3047,8 @@ msgstr "Sipariş"
 msgid "Other Error"
 msgstr "Diğer hata"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:446
+#: privacyidea/static/components/token/views/token.containerdetails.html:447
 #, fuzzy
-#| msgid "otplen"
 msgid "Otplen"
 msgstr "otplen"
 
@@ -3120,7 +3064,7 @@ msgstr "Yetkilendirme istemcilerini geçersiz kıl"
 msgid "PGP Key"
 msgstr "PGP tuşu"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:720
+#: privacyidea/static/components/login/controllers/loginControllers.js:736
 msgid "PIN changed successfully."
 msgstr "Pin başarıyla değiştirildi."
 
@@ -3130,8 +3074,8 @@ msgid "PIN set successfully."
 msgstr "Pin başarıyla ayarlandı."
 
 #: privacyidea/static/components/directives/views/directive.assigntoken.html:29
-#: privacyidea/static/components/directives/views/directive.assignuser.html:41
-#: privacyidea/static/components/token/views/token.enroll.html:63
+#: privacyidea/static/components/directives/views/directive.assignuser.html:63
+#: privacyidea/static/components/token/views/token.enroll.html:65
 #, fuzzy
 msgid "PIN/Password"
 msgstr "Şifre"
@@ -3140,7 +3084,7 @@ msgstr "Şifre"
 msgid "PKCS12"
 msgstr "Pkcs12"
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:786
+#: privacyidea/static/components/token/controllers/tokenControllers.js:818
 msgid "PKCS12 Password copied to clipboard"
 msgstr ""
 
@@ -3148,9 +3092,8 @@ msgstr ""
 msgid "Parameters"
 msgstr "Parametreler"
 
-#: privacyidea/static/components/login/views/login.html:81
+#: privacyidea/static/components/login/views/login.html:86
 #, fuzzy
-#| msgid "Log In"
 msgid "Passkey Log In"
 msgstr "Giriş"
 
@@ -3173,13 +3116,13 @@ msgstr ""
 #: privacyidea/static/components/config/views/config.privacyideaserver.edit.html:74
 #: privacyidea/static/components/config/views/config.radius.edit.html:114
 #: privacyidea/static/components/config/views/config.radius.edit.html:118
-#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:273
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:356
 #: privacyidea/static/components/config/views/config.resolvers.sql.html:79
-#: privacyidea/static/components/config/views/config.smtp.edit.html:86
+#: privacyidea/static/components/config/views/config.smtp.edit.html:85
 #: privacyidea/static/components/dialogs/views/dialog.lock.html:19
 #: privacyidea/static/components/dialogs/views/dialog.lock.html:24
-#: privacyidea/static/components/login/views/login.html:70
-#: privacyidea/static/components/login/views/login.html:74
+#: privacyidea/static/components/login/views/login.html:76
+#: privacyidea/static/components/login/views/login.html:80
 #: privacyidea/static/components/recovery/views/recovery.reset.html:9
 #: privacyidea/static/components/register/views/register.html:74
 #: privacyidea/static/components/register/views/register.html:80
@@ -3193,9 +3136,9 @@ msgstr "Şifre"
 msgid "Password Hash for editable users"
 msgstr "Düzenlenebilir kullanıcılar için şifre hash"
 
-#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:242
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:325
+#: privacyidea/static/components/config/views/config.smtp.edit.html:136
 #, fuzzy
-#| msgid "Password Hash for editable users"
 msgid "Password for the private key"
 msgstr "Düzenlenebilir kullanıcılar için şifre hash"
 
@@ -3203,7 +3146,7 @@ msgstr "Düzenlenebilir kullanıcılar için şifre hash"
 msgid "Password of encrypted client private key"
 msgstr ""
 
-#: privacyidea/static/components/user/controllers/userControllers.js:92
+#: privacyidea/static/components/user/controllers/userControllers.js:95
 msgid "Password set successfully."
 msgstr "Şifre başarıyla ayarlandı."
 
@@ -3211,7 +3154,7 @@ msgstr "Şifre başarıyla ayarlandı."
 msgid "Paste the ssh PUBLIC key"
 msgstr "SSH ortak anahtarını yapıştırın"
 
-#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:231
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:314
 msgid "Path to the private key file"
 msgstr ""
 
@@ -3238,7 +3181,7 @@ msgid "Please answer at least {{ num_answers }} of the following questions."
 msgstr ""
 "Lütfen aşağıdaki soruların en azından {{ num_answers }} cevabını verin."
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:307
+#: privacyidea/static/components/login/controllers/loginControllers.js:318
 msgid "Please confirm with one of these tokens:"
 msgstr "Lütfen bu belirteçlerden biriyle onaylayın:"
 
@@ -3262,7 +3205,7 @@ msgstr ""
 msgid "Please provide the base URL of the privacyIDEA server."
 msgstr "Lütfen PrivacyIDEA sunucusunun temel URL'sini sağlayın."
 
-#: privacyidea/static/components/token/views/token.containercreate.html:177
+#: privacyidea/static/components/token/views/token.containercreate.html:178
 #: privacyidea/static/components/token/views/token.containerdetails.html:276
 msgid ""
 "Please scan the QR code with the privacyIDEA Authenticator App\n"
@@ -3300,6 +3243,10 @@ msgid ""
 msgstr ""
 "Lütfen QR kodunu PrivacyIDEA Authenticator uygulamasıyla tarayın ve girin\n"
 "            Aşağıdaki oluşturulan kod."
+
+#: privacyidea/static/components/config/views/config.policies.details.html:358
+msgid "Please select a Scope in the top section first to configure actions."
+msgstr ""
 
 #: privacyidea/static/components/login/views/login.html:49
 msgid "Please sign in"
@@ -3346,7 +3293,7 @@ msgstr ""
 
 #: privacyidea/static/components/config/views/config.radius.edit.html:36
 #: privacyidea/static/components/config/views/config.resolvers.sql.html:48
-#: privacyidea/static/components/config/views/config.smtp.edit.html:37
+#: privacyidea/static/components/config/views/config.smtp.edit.html:36
 msgid "Port"
 msgstr "Liman"
 
@@ -3373,7 +3320,7 @@ msgstr ""
 "Pimi OTP değerinin önüne getirin\n"
 "                . Aksi takdirde, sonrası beklemede olacaktır."
 
-#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:145
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:163
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:282
 msgid "Preset Active Directory"
 msgstr "Önceden ayarlanmış Active Directory"
@@ -3388,11 +3335,11 @@ msgstr "Preset OpenLddap"
 #: privacyidea/static/components/token/views/token.applications.offline.html:11
 #: privacyidea/static/components/token/views/token.applications.ssh.html:17
 #: privacyidea/static/components/token/views/token.challenges.html:15
-#: privacyidea/static/components/token/views/token.containerdetails.html:608
+#: privacyidea/static/components/token/views/token.containerdetails.html:609
 #: privacyidea/static/components/token/views/token.containerlist.html:21
 #: privacyidea/static/components/token/views/token.containertemplates.edit.html:68
 #: privacyidea/static/components/token/views/token.containertemplates.list.html:23
-#: privacyidea/static/components/token/views/token.details.html:653
+#: privacyidea/static/components/token/views/token.details.html:654
 #: privacyidea/static/components/token/views/token.list.html:3
 #: privacyidea/static/components/user/views/user.details.html:135
 #: privacyidea/static/components/user/views/user.details.html:325
@@ -3415,11 +3362,15 @@ msgstr "Öncelik"
 msgid "Privacy Statement"
 msgstr "Gizlilik bildirimi"
 
-#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:50
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:51
 #, fuzzy
-#| msgid "Machine ID Attribute"
 msgid "PrivacyIDEA Attribute"
 msgstr "Makine kimliği niteliği"
+
+#: privacyidea/static/components/config/views/config.smtp.edit.html:127
+#, fuzzy
+msgid "Private Key"
+msgstr "Ön Paylaşımlı Anahtar"
 
 #: privacyidea/static/components/token/views/token.import.html:136
 msgid "Progress"
@@ -3453,7 +3404,7 @@ msgstr "Anket"
 msgid "Questionnaire Token settings"
 msgstr "Anket Token Ayarları"
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:412
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:425
 msgid "Quick Resolver Test"
 msgstr "Hızlı Çözüm Testi"
 
@@ -3468,7 +3419,6 @@ msgstr "RADIUS CONFIG kaydedildi."
 
 #: privacyidea/static/components/config/views/config.radius.edit.html:84
 #, fuzzy
-#| msgid "Dictionary"
 msgid "RADIUS Dictionary"
 msgstr "Sözlük"
 
@@ -3523,10 +3473,10 @@ msgstr ""
 
 #: privacyidea/static/components/config/views/config.policies.list.html:23
 #: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:33
-#: privacyidea/static/components/directives/views/directive.assignuser.html:5
-#: privacyidea/static/components/login/views/login.html:59
+#: privacyidea/static/components/directives/views/directive.assignuser.html:2
+#: privacyidea/static/components/login/views/login.html:62
 #: privacyidea/static/components/token/views/token.containerdetails.html:358
-#: privacyidea/static/components/token/views/token.containerdetails.html:448
+#: privacyidea/static/components/token/views/token.containerdetails.html:449
 #: privacyidea/static/components/token/views/token.containerlist.html:89
 #: privacyidea/static/components/token/views/token.containertemplates.edit.html:93
 #: privacyidea/static/components/token/views/token.details.html:558
@@ -3536,11 +3486,10 @@ msgstr "Diyar"
 #: privacyidea/static/components/config/views/config.realms.create.html:10
 #: privacyidea/static/components/config/views/config.realms.list.html:20
 #, fuzzy
-#| msgid "Realm name"
 msgid "Realm Name"
 msgstr "Realm adı"
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:684
+#: privacyidea/static/components/login/controllers/loginControllers.js:696
 msgid "Realm defrealm created."
 msgstr "Realm defrealm oluşturuldu."
 
@@ -3549,11 +3498,18 @@ msgstr "Realm defrealm oluşturuldu."
 msgid "Realms"
 msgstr "Alem"
 
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:161
+msgid ""
+"Receive the users groups via the <code>memberOf</code> user attribute and "
+"store them under the\n"
+"                            privacyIDEA attribute <code>groups</code>."
+msgstr ""
+
 #: privacyidea/static/components/token/views/token.challenges.html:56
 msgid "Received"
 msgstr "Alınan"
 
-#: privacyidea/static/components/config/views/config.smtp.edit.html:129
+#: privacyidea/static/components/config/views/config.smtp.edit.html:182
 msgid "Recipient for testing"
 msgstr "Test için alıcı"
 
@@ -3591,10 +3547,9 @@ msgstr "Kayıt ol"
 msgid "Register Container on Device"
 msgstr "CRL yapılandırması"
 
-#: privacyidea/static/components/token/views/token.containercreate.html:112
-#: privacyidea/static/components/token/views/token.containercreate.html:169
+#: privacyidea/static/components/token/views/token.containercreate.html:113
+#: privacyidea/static/components/token/views/token.containercreate.html:170
 #, fuzzy
-#| msgid "Registration Code"
 msgid "Registration"
 msgstr "Tescil kodu"
 
@@ -3604,13 +3559,11 @@ msgstr "Tescil kodu"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:232
 #, fuzzy
-#| msgid "Registration Code"
 msgid "Registration Configuration"
 msgstr "Tescil kodu"
 
-#: privacyidea/static/components/token/views/token.containercreate.html:239
+#: privacyidea/static/components/token/views/token.containercreate.html:240
 #, fuzzy
-#| msgid "User deleted successfully."
 msgid "Registration completed successfully"
 msgstr "Kullanıcı başarıyla silindi."
 
@@ -3638,37 +3591,33 @@ msgstr "Uzak Token Ayarları"
 msgid "Remote User"
 msgstr "Uzak kullanıcı"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:550
+#: privacyidea/static/components/token/views/token.containerdetails.html:551
 #, fuzzy
-#| msgid "Remote Server"
 msgid "Remove"
 msgstr "Uzak sunucu"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:457
+#: privacyidea/static/components/token/views/token.containerdetails.html:458
 #, fuzzy
-#| msgid "Remote Realm"
 msgid "Remove All"
 msgstr "Uzak alan"
 
 #: privacyidea/static/components/directives/views/directive.containertemplate.details.html:54
 #, fuzzy
-#| msgid "Rollover Token"
 msgid "Remove Token"
 msgstr "Rollover belirteci"
 
-#: privacyidea/static/components/token/views/token.details.html:637
+#: privacyidea/static/components/token/views/token.details.html:638
 msgid "Remove from Container"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.policies.details.html:125
+#: privacyidea/static/components/config/views/config.policies.details.html:127
 #, fuzzy
-#| msgid "Save Policy"
 msgid "Rename Policy"
 msgstr "Politikadan Kaydet"
 
 #: privacyidea/static/components/directives/views/directive.assigntoken.html:39
-#: privacyidea/static/components/directives/views/directive.assignuser.html:51
-#: privacyidea/static/components/token/views/token.enroll.html:71
+#: privacyidea/static/components/directives/views/directive.assignuser.html:73
+#: privacyidea/static/components/token/views/token.enroll.html:73
 #, fuzzy
 msgid "Repeat PIN or password"
 msgstr "Şifreyi tekrar girin"
@@ -3685,7 +3634,6 @@ msgstr "Şifreyi tekrar girin"
 
 #: privacyidea/static/components/config/views/config.resolvers.http.basic.html:38
 #, fuzzy
-#| msgid "Request Mapping (JSON format)"
 msgid ""
 "Request Mapping (JSON\n"
 "                format)"
@@ -3693,7 +3641,6 @@ msgstr "Eşleme İsteği (JSON Format)"
 
 #: privacyidea/static/components/directives/views/directive.httpResolverEndpointConfig.html:48
 #, fuzzy
-#| msgid "Request Mapping (JSON format)"
 msgid ""
 "Request Mapping (JSON\n"
 "            format)"
@@ -3705,7 +3652,6 @@ msgstr "Remote PrivaciDea sunucusunun başarılı olduğunu isteyin."
 
 #: privacyidea/static/components/config/views/config.radius.edit.html:75
 #, fuzzy
-#| msgid "Challenge Response Authentication. Your response was not valid!"
 msgid "Require Message-Authenticator"
 msgstr "Mücadele müdahale kimlik doğrulaması. Cevabınız geçerli değildi!"
 
@@ -3713,13 +3659,13 @@ msgstr "Mücadele müdahale kimlik doğrulaması. Cevabınız geçerli değildi!
 msgid "Required Realms"
 msgstr "Gerekli alemler"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:716
-#: privacyidea/static/components/token/views/token.list.html:112
+#: privacyidea/static/components/token/views/token.containerdetails.html:717
+#: privacyidea/static/components/token/views/token.list.html:166
 #: privacyidea/static/components/user/views/user.details.html:179
 msgid "Reset Failcounter"
 msgstr "Başarısızları Sıfırla"
 
-#: privacyidea/static/components/login/views/login.html:87
+#: privacyidea/static/components/login/views/login.html:93
 #: privacyidea/static/components/recovery/views/recovery.html:14
 #: privacyidea/static/components/recovery/views/recovery.reset.html:23
 msgid "Reset Password"
@@ -3735,10 +3681,10 @@ msgstr "Şifrenizi sıfırlayın"
 
 #: privacyidea/static/components/config/views/config.policies.list.html:25
 #: privacyidea/static/components/token/views/token.containerdetails.html:381
-#: privacyidea/static/components/token/views/token.containerdetails.html:688
+#: privacyidea/static/components/token/views/token.containerdetails.html:689
 #: privacyidea/static/components/token/views/token.details.html:563
-#: privacyidea/static/components/token/views/token.details.html:668
-#: privacyidea/static/components/token/views/token.list.html:84
+#: privacyidea/static/components/token/views/token.details.html:669
+#: privacyidea/static/components/token/views/token.list.html:138
 #: privacyidea/static/components/user/views/user.add.html:9
 msgid "Resolver"
 msgstr "Çözücü"
@@ -3758,7 +3704,6 @@ msgstr "Çözümleyici adı"
 #: privacyidea/static/components/config/views/config.realms.create.html:25
 #: privacyidea/static/components/config/views/config.realms.list.html:21
 #, fuzzy
-#| msgid "Resolver"
 msgid "Resolvers"
 msgstr "Çözücü"
 
@@ -3781,9 +3726,6 @@ msgstr ""
 
 #: privacyidea/static/components/directives/views/directive.httpResolverEndpointConfig.html:60
 #, fuzzy
-#| msgid ""
-#| "Response Mapping\n"
-#| "                (JSON format)"
 msgid ""
 "Response Mapping\n"
 "            (JSON format)"
@@ -3793,7 +3735,6 @@ msgstr ""
 
 #: privacyidea/static/components/config/views/config.resolvers.http.basic.html:72
 #, fuzzy
-#| msgid "Response contains (JSON format):"
 msgid ""
 "Response contains (JSON\n"
 "                format):"
@@ -3801,7 +3742,6 @@ msgstr "Yanıt (JSON Biçimi) içerir:"
 
 #: privacyidea/static/components/directives/views/directive.httpResolverEndpointConfig.html:77
 #, fuzzy
-#| msgid "Response contains (JSON format):"
 msgid ""
 "Response contains (JSON\n"
 "            format):"
@@ -3823,7 +3763,7 @@ msgstr "Başarısız olursa tekrar deneyin"
 msgid "Revoke"
 msgstr "İptal Et"
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:160
+#: privacyidea/static/components/token/controllers/tokenControllers.js:192
 msgid "Roll the token"
 msgstr "Belirteç atmak"
 
@@ -3836,7 +3776,7 @@ msgstr "Retrout durumu"
 msgid "Rollover"
 msgstr "Yuvarlanmak"
 
-#: privacyidea/static/components/token/views/token.enroll.html:162
+#: privacyidea/static/components/token/views/token.enroll.html:164
 msgid "Rollover Token"
 msgstr "Rollover belirteci"
 
@@ -3851,6 +3791,14 @@ msgstr ""
 #: privacyidea/static/components/token/views/token.getserial.html:79
 msgid "Run search"
 msgstr "Arama yapmak"
+
+#: privacyidea/static/components/config/views/config.smtp.edit.html:116
+msgid "S/MIME"
+msgstr ""
+
+#: privacyidea/static/components/config/views/config.smtp.edit.html:155
+msgid "S/MIME signing"
+msgstr ""
 
 #: privacyidea/static/components/config/views/config.token.sms.html:13
 msgid "SMS Gateway configuration"
@@ -3868,7 +3816,7 @@ msgstr "SMS sağlayıcı"
 msgid "SMS Token settings"
 msgstr "SMS Token Ayarları"
 
-#: privacyidea/static/components/config/controllers/smtpServerController.js:89
+#: privacyidea/static/components/config/controllers/smtpServerController.js:98
 msgid "SMTP Config saved."
 msgstr "SMTP yapılandırma kaydedildi."
 
@@ -3936,11 +3884,11 @@ msgid "Save Event Handler Definition"
 msgstr "Etkinlik işleyici tanımını kaydet"
 
 #: privacyidea/static/components/machine/views/machine.details.html:105
-#: privacyidea/static/components/token/views/token.details.html:727
+#: privacyidea/static/components/token/views/token.details.html:728
 msgid "Save Options"
 msgstr "Seçenekleri Kaydet"
 
-#: privacyidea/static/components/config/views/config.policies.details.html:522
+#: privacyidea/static/components/config/views/config.policies.details.html:534
 msgid "Save Policy"
 msgstr "Politikadan Kaydet"
 
@@ -3950,7 +3898,6 @@ msgstr "RADIUS Sunucusu Kaydet"
 
 #: privacyidea/static/components/config/views/config.realms.create.html:97
 #, fuzzy
-#| msgid "Save realms"
 msgid "Save Realm"
 msgstr "Alemleri kurtarmak"
 
@@ -3963,7 +3910,7 @@ msgstr "Çözümden Kaydet"
 msgid "Save SMS gateway"
 msgstr "SMS Gateway'i Kaydet"
 
-#: privacyidea/static/components/config/views/config.smtp.edit.html:146
+#: privacyidea/static/components/config/views/config.smtp.edit.html:199
 msgid "Save SMTP server"
 msgstr "SMTP Sunucusu Kaydet"
 
@@ -3974,7 +3921,6 @@ msgstr "SMTP Sunucusu Kaydet"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:82
 #, fuzzy
-#| msgid "Save SMS gateway"
 msgid "Save States"
 msgstr "SMS Gateway'i Kaydet"
 
@@ -4004,9 +3950,9 @@ msgid "Save realms"
 msgstr "Alemleri kurtarmak"
 
 #: privacyidea/static/components/config/views/config.mresolvers.hosts.html:40
-#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:208
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:226
 #: privacyidea/static/components/config/views/config.resolvers.http.html:69
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:424
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:437
 #: privacyidea/static/components/config/views/config.resolvers.passwd.html:39
 #: privacyidea/static/components/config/views/config.resolvers.scim.html:88
 msgid "Save resolver"
@@ -4022,23 +3968,35 @@ msgstr "Kullanıcıyı Kaydet"
 msgid "Scope"
 msgstr "Kapsam"
 
-#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:167
+#: privacyidea/static/components/directives/views/directive.filter.table.html:16
+#: privacyidea/static/components/directives/views/directive.filter.table.html:17
+#: privacyidea/static/components/token/views/token.list.html:102
+#: privacyidea/static/components/token/views/token.list.html:103
+#, fuzzy
+msgid "Search"
+msgstr "Arama filtresi"
+
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:185
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:298
 msgid "Search Filter"
 msgstr "Arama filtresi"
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:350
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:363
 #, fuzzy
-#| msgid "Search Filter"
 msgid "Search Filter for User Groups"
 msgstr "Arama filtresi"
+
+#: privacyidea/static/components/token/controllers/tokenControllers.js:94
+msgid ""
+"Searching for a user in all realms is not possible, using default realm."
+msgstr ""
 
 #: privacyidea/static/components/token/views/token.getserial.html:89
 msgid "Searching token..."
 msgstr "Tokekar Arama ..."
 
 #: privacyidea/static/components/config/views/config.radius.edit.html:64
-#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:205
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:287
 #: privacyidea/static/components/config/views/config.resolvers.scim.html:62
 #: privacyidea/static/components/token/views/token.enroll.indexedsecret.html:11
 msgid "Secret"
@@ -4048,9 +4006,8 @@ msgstr "Gizli"
 msgid "Section"
 msgstr "Bölüm"
 
-#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:73
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:79
 #, fuzzy
-#| msgid "Save privacyIDEA server"
 msgid "Select PrivacyIDEA Attribute"
 msgstr "PrivacyIDEA sunucusunu kaydet"
 
@@ -4112,13 +4069,11 @@ msgstr "Dosya ve İçe Aktar'ı seçin"
 
 #: privacyidea/static/components/user/views/user.details.html:233
 #, fuzzy
-#| msgid "Section"
 msgid "Selection"
 msgstr "Bölüm"
 
 #: privacyidea/static/components/config/views/config.radius.edit.html:121
 #, fuzzy
-#| msgid "Send test RADIUS request"
 msgid "Send RADIUS test request"
 msgstr "Test yarıçapı isteği gönder"
 
@@ -4126,11 +4081,11 @@ msgstr "Test yarıçapı isteği gönder"
 msgid "Send Reset Code"
 msgstr "Sıfırlama kodunu gönder"
 
-#: privacyidea/static/components/config/views/config.smtp.edit.html:136
+#: privacyidea/static/components/config/views/config.smtp.edit.html:189
 msgid "Send Test Email"
 msgstr "Test E-postası Gönder"
 
-#: privacyidea/static/components/config/views/config.smtp.edit.html:124
+#: privacyidea/static/components/config/views/config.smtp.edit.html:177
 msgid "Send mail from job queue"
 msgstr "İş kuyruğundan posta gönder"
 
@@ -4142,7 +4097,7 @@ msgstr "PrivaciDea sunucusuna test isteği gönderin"
 msgid "Sender"
 msgstr "Gönderen"
 
-#: privacyidea/static/components/config/views/config.smtp.edit.html:57
+#: privacyidea/static/components/config/views/config.smtp.edit.html:56
 msgid "Sender Email"
 msgstr "Gönderen e-posta"
 
@@ -4207,7 +4162,6 @@ msgstr ""
 
 #: privacyidea/static/components/config/views/config.realms.list.html:31
 #, fuzzy
-#| msgid "set Default"
 msgid "Set Default"
 msgstr "Varsayılana ayarla"
 
@@ -4217,7 +4171,6 @@ msgstr "Pin Ayarla"
 
 #: privacyidea/static/components/directives/views/directive.containertemplate.details.html:23
 #, fuzzy
-#| msgid "Create default realm"
 msgid "Set as default template"
 msgstr "Varsayılan bölge oluştur"
 
@@ -4250,15 +4203,14 @@ msgstr ""
 
 #: privacyidea/static/components/token/views/token.enrolled.certificate.html:32
 #, fuzzy
-#| msgid "Show password"
 msgid "Show PKCS12 password"
 msgstr "Şifreyi göster"
 
-#: privacyidea/static/components/config/views/config.policies.details.html:33
+#: privacyidea/static/components/config/views/config.policies.details.html:32
 msgid "Show Policy templates"
 msgstr "Politika şablonlarını göster"
 
-#: privacyidea/static/components/config/views/config.policies.details.html:365
+#: privacyidea/static/components/config/views/config.policies.details.html:375
 msgid "Show all actions"
 msgstr "Tüm eylemleri göster"
 
@@ -4270,7 +4222,7 @@ msgstr "Tüm koşulları göster"
 msgid "Show password"
 msgstr "Şifreyi göster"
 
-#: privacyidea/static/components/config/views/config.policies.details.html:360
+#: privacyidea/static/components/config/views/config.policies.details.html:369
 msgid "Show selected actions only"
 msgstr "Yalnızca seçilen eylemleri göster"
 
@@ -4278,12 +4230,12 @@ msgstr "Yalnızca seçilen eylemleri göster"
 msgid "Show selected conditions only"
 msgstr "Yalnızca seçilen koşulları göster"
 
-#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:134
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:152
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:206
 msgid "Size Limit"
 msgstr "Boyut sınırı"
 
-#: privacyidea/static/components/token/controllers/tokenControllers.js:817
+#: privacyidea/static/components/token/controllers/tokenControllers.js:849
 msgid "Skip tokens that can not be verified"
 msgstr ""
 
@@ -4315,11 +4267,7 @@ msgstr "Google Authenticator yalnızca SHA1 algoritmasını destekler."
 msgid "Some nice words..."
 msgstr "Akılda kalıcı tanımlar.."
 
-#: privacyidea/static/components/token/controllers/containerControllers.js:919
-msgid "Some tokens could not be deleted:"
-msgstr ""
-
-#: privacyidea/static/components/login/controllers/loginControllers.js:364
+#: privacyidea/static/components/login/controllers/loginControllers.js:375
 msgid "Something went wrong!"
 msgstr ""
 
@@ -4333,9 +4281,6 @@ msgstr ""
 
 #: privacyidea/static/components/directives/views/directive.httpResolverEndpointConfig.html:69
 #, fuzzy
-#| msgid ""
-#| "Special Error\n"
-#| "                Handling"
 msgid ""
 "Special Error\n"
 "            Handling"
@@ -4343,19 +4288,19 @@ msgstr ""
 "Özel hata\n"
 "                Taşıma"
 
-#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:223
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:305
 msgid ""
 "Specify the path to the private key file of the servers certificate. If you "
-"use an\n"
-"                                        encrypted key, add the password "
-"here, otherwise leave the field empty. The server\n"
-"                                        certificate must be uploaded in "
-"Entra's app registration as client credential."
+"use\n"
+"                                        an encrypted key, add the password "
+"here, otherwise leave the field empty. The\n"
+"                                        server certificate must be uploaded "
+"in Entra's app registration as client\n"
+"                                        credential."
 msgstr ""
 
 #: privacyidea/static/components/directives/views/directive.assigntoken.html:8
 #, fuzzy
-#| msgid "start typing a serial number of a token that is notassigned, yet."
 msgid "Start typing a serial number of a token that is not yet assigned"
 msgstr "Notlandırılmayan bir belirleyici sayısını yazmaya başlayın."
 
@@ -4402,7 +4347,6 @@ msgstr "Destek"
 #: privacyidea/static/components/token/views/token.containertemplates.create.html:44
 #: privacyidea/static/components/token/views/token.containertemplates.edit.html:25
 #, fuzzy
-#| msgid "Skipped Tokens"
 msgid "Supported Token Types"
 msgstr "Atlanan belirteçler"
 
@@ -4437,15 +4381,16 @@ msgstr "Sistem"
 msgid "System Config"
 msgstr "Sistem Yapılandırması"
 
-#: privacyidea/static/components/config/controllers/configControllers.js:616
-#: privacyidea/static/components/config/controllers/configControllers.js:762
+#: privacyidea/static/components/config/controllers/configControllers.js:640
+#: privacyidea/static/components/config/controllers/configControllers.js:773
 msgid "System Config saved."
 msgstr "Sistem Konfigürasyonu kaydedildi."
 
-#: privacyidea/static/components/config/controllers/configControllers.js:625
+#: privacyidea/static/components/config/controllers/configControllers.js:649
 msgid "System entry deleted."
 msgstr "Sistem girişi silindi."
 
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:56
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:70
 msgid "TLS Version"
 msgstr "TLS versiyonu"
@@ -4473,11 +4418,10 @@ msgstr "Görev şekli"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:148
 #, fuzzy
-#| msgid "Policy Templates"
 msgid "Template"
 msgstr "Politika Şablonları"
 
-#: privacyidea/static/components/token/views/token.containercreate.html:72
+#: privacyidea/static/components/token/views/token.containercreate.html:73
 #, fuzzy
 msgid "Template Name and Contained Token Types"
 msgstr "CRL yapılandırması"
@@ -4488,15 +4432,14 @@ msgstr ""
 
 #: privacyidea/static/components/token/views/token.html:195
 #, fuzzy
-#| msgid "Policy Templates"
 msgid "Templates"
 msgstr "Politika Şablonları"
 
-#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:174
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:256
 msgid "Tenant"
 msgstr ""
 
-#: privacyidea/static/components/config/controllers/smtpServerController.js:79
+#: privacyidea/static/components/config/controllers/smtpServerController.js:88
 msgid "Test Email sent successfully."
 msgstr "Test E-postası başarıyla gönderildi."
 
@@ -4504,8 +4447,8 @@ msgstr "Test E-postası başarıyla gönderildi."
 msgid "Test HTTP Resolver"
 msgstr "Http çözücü test"
 
-#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:204
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:419
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:222
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:432
 msgid "Test LDAP Resolver"
 msgstr "Test ldap çözücü"
 
@@ -4515,13 +4458,11 @@ msgstr "SADECE TEST OTP"
 
 #: privacyidea/static/components/token/views/token.details.html:519
 #, fuzzy
-#| msgid "Test Yubikey"
 msgid "Test Passkey."
 msgstr "Yubikey testi"
 
 #: privacyidea/static/components/config/views/config.radius.edit.html:103
 #, fuzzy
-#| msgid "New RADIUS server"
 msgid "Test RADIUS Server"
 msgstr "Yeni Yarıçap Sunucusu"
 
@@ -4543,13 +4484,11 @@ msgstr "Test belirteci"
 
 #: privacyidea/static/components/config/views/config.resolvers.http.html:46
 #, fuzzy
-#| msgid "Delete user"
 msgid "Test user ID"
 msgstr "Kullanıcıyı sil"
 
 #: privacyidea/static/components/config/views/config.resolvers.http.html:45
 #, fuzzy
-#| msgid "username"
 msgid "Test username"
 msgstr "Kullanıcı adı"
 
@@ -4643,11 +4582,6 @@ msgstr "Kayıt URL'si"
 
 #: privacyidea/static/components/config/views/config.token.hotp.html:2
 #, fuzzy
-#| msgid ""
-#| "The HOTP Token is a event based one time password token.\n"
-#| "    It is described in <a href=\"https://tools.ietf.org/html/"
-#| "rfc4226\">RFC\n"
-#| "    4226</a>."
 msgid ""
 "The HOTP Token is an event based one time password token.\n"
 "    It is described in <a href=\"https://tools.ietf.org/html/rfc4226\">RFC\n"
@@ -4675,7 +4609,7 @@ msgstr ""
 "tarayın\n"
 "    Google Authenticator yazılımı ile bu jetonu kullanabilirsiniz."
 
-#: privacyidea/static/components/login/views/login.html:96
+#: privacyidea/static/components/login/views/login.html:102
 msgid ""
 "The HSM is not ready. privacyIDEA can not work properly. Please start\n"
 "        the HSM and reload this page."
@@ -5088,15 +5022,12 @@ msgstr "İstemci cihazı bu tür bir istek için kullanılamaz."
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:287
 #, fuzzy
-#| msgid "The URL that contains the logo of the service."
 msgid "The container contains the following offline tokens:"
 msgstr "Hizmetin logosunu içeren URL."
 
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:85
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:102
 #, fuzzy
-#| msgid ""
-#| "The file containing the CA certificate which signed the\n"
-#| "                    LDAP TLS certificate."
 msgid ""
 "The file containing the CA certificate which signed the\n"
 "                        LDAP TLS certificate."
@@ -5104,19 +5035,8 @@ msgstr ""
 "İmzalayan CA sertifikasını içeren dosya\n"
 "                    LDAP TLS sertifikası."
 
-#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:68
-msgid ""
-"The file containing the CA certificate which signed the\n"
-"                    LDAP TLS certificate."
-msgstr ""
-"İmzalayan CA sertifikasını içeren dosya\n"
-"                    LDAP TLS sertifikası."
-
-#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:120
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:202
 #, fuzzy
-#| msgid ""
-#| "The file containing the CA certificate which signed the\n"
-#| "                    LDAP TLS certificate."
 msgid ""
 "The file containing the CA certificate which signed the TLS certificate of "
 "the server."
@@ -5124,13 +5044,17 @@ msgstr ""
 "İmzalayan CA sertifikasını içeren dosya\n"
 "                    LDAP TLS sertifikası."
 
-#: privacyidea/static/components/token/views/token.containercreate.html:191
+#: privacyidea/static/components/token/controllers/containerControllers.js:915
+msgid "The following tokens failed to delete:"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.containercreate.html:192
 msgid ""
 "The following tokens were successfully enrolled in the container using the "
 "template"
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:373
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:386
 msgid ""
 "The group attribute defining the group's name, which should be stored in the "
 "user info."
@@ -5160,15 +5084,15 @@ msgstr ""
 "konumlar istenir.\n"
 "    gizli."
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:387
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:400
 msgid "The key to store the groups in the user info (attribute mapping key)."
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:81
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:107
 msgid ""
 "The left column defines the user attributes used in privacyIDEA and the "
 "right column the equivalent\n"
-"                attribute in the user store."
+"                    attribute in the user store."
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.enroll.motp.html:35
@@ -5257,7 +5181,7 @@ msgstr ""
 "target=\"github\">Backend\n"
 "                        Servisin kendisi </a>."
 
-#: privacyidea/static/app.js:156
+#: privacyidea/static/app.js:160
 msgid "The privacyIDEA system seems to be offline. The API is not reachable!"
 msgstr "PrivacyIDEA sistemi çevrimdışı görünüyor. API erişilebilir değil!"
 
@@ -5361,9 +5285,6 @@ msgstr ""
 
 #: privacyidea/static/components/token/views/token.enroll.certificate.html:73
 #, fuzzy
-#| msgid ""
-#| "The server will create the private RSA key and store it in\n"
-#| "                    the database. You can later download the PKCS#12 file."
 msgid ""
 "The server will create the private RSA key and return it with\n"
 "                    the certificate in an encrypted PKCS#12 container."
@@ -5399,7 +5320,7 @@ msgstr ""
 msgid "The server will create the static password."
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enroll.html:144
+#: privacyidea/static/components/token/views/token.enroll.html:146
 msgid ""
 "The start time and the end time of the validity period\n"
 "                    should be entered in the format\n"
@@ -5422,7 +5343,7 @@ msgstr ""
 msgid "The time in which the password can be used. For example '1d' or '12h'."
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.enroll.html:192
+#: privacyidea/static/components/token/views/token.enroll.html:194
 msgid ""
 "The token has been enrolled in the container\n"
 "            <a ui-sref=\"token.containerdetails({containerSerial: "
@@ -5434,7 +5355,7 @@ msgstr ""
 "<a ui-sref=\"token.containerdetails({containerSerial: enrolledToken."
 "container_serial})\">{{ enrolledToken.container_serial }}</a>"
 
-#: privacyidea/static/components/token/views/token.details.html:606
+#: privacyidea/static/components/token/views/token.details.html:607
 msgid ""
 "The token is currently assigned to container\n"
 "    <a ui-sref=\"token.containerdetails({containerSerial: "
@@ -5446,7 +5367,7 @@ msgid ""
 "    ."
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.details.html:614
+#: privacyidea/static/components/token/views/token.details.html:615
 msgid "The token is currently in no container."
 msgstr ""
 
@@ -5470,7 +5391,7 @@ msgstr ""
 msgid "The token was marked lost successfully."
 msgstr "Token başarıyla kaybolan işaretlendi."
 
-#: privacyidea/static/components/token/views/token.enroll.html:177
+#: privacyidea/static/components/token/views/token.enroll.html:179
 msgid ""
 "The token was successfully enrolled with serial number\n"
 "            <a ui-sref=\"token.details({tokenSerial:enrolledToken."
@@ -5489,7 +5410,7 @@ msgstr ""
 "newUser.realm})\">{{ newUser.user }}</a> realm\n"
 "            {{ newUser.realm }}."
 
-#: privacyidea/static/components/token/views/token.enroll.html:186
+#: privacyidea/static/components/token/views/token.enroll.html:188
 msgid ""
 "The token was successfully enrolled with serial number\n"
 "            <a ui-sref=\"token.details({tokenSerial:enrolledToken."
@@ -5516,11 +5437,8 @@ msgstr ""
 "Bu veritabanındaki kullanıcı verileri içinden değiştirilebilir\n"
 "                    privacyidea."
 
-#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:104
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:186
 #, fuzzy
-#| msgid ""
-#| "The user data in this database can be modified from within\n"
-#| "                privacyIDEA."
 msgid ""
 "The user data in this user store can be modified from within privacyIDEA."
 msgstr ""
@@ -5583,7 +5501,7 @@ msgstr ""
 "Bu istemci IP adresleri veya alt ağları\n"
 "                    başka bir müşteri olarak maskeli yapmasına izin verildi."
 
-#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:220
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:302
 msgid "This credential type does not support to check the user's password."
 msgstr ""
 
@@ -5695,7 +5613,7 @@ msgstr "Bu, sertifikaların yazıldığı dizindir."
 msgid "This is the display name of your service in the TiQR app."
 msgstr "Bu, Tiqr uygulamasında hizmetinizin ekran adıdır."
 
-#: privacyidea/static/components/config/views/config.smtp.edit.html:64
+#: privacyidea/static/components/config/views/config.smtp.edit.html:63
 msgid ""
 "This is the email address of the\n"
 "                sender. Usually this should be an email address identifying\n"
@@ -5743,7 +5661,7 @@ msgstr ""
 "Bu, benzersiz tanımlayıcı ismidir.\n"
 "                RADIUS sunucusu tanımı."
 
-#: privacyidea/static/components/config/views/config.smtp.edit.html:22
+#: privacyidea/static/components/config/views/config.smtp.edit.html:21
 msgid ""
 "This is the unique identifying name\n"
 "                of the SMTP server definition."
@@ -5790,7 +5708,7 @@ msgstr ""
 msgid "This prompt will be displayed to the user."
 msgstr ""
 
-#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:155
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:237
 msgid ""
 "This section allows to configure an endpoint to which the privacyIDEA server "
 "must authenticate in order\n"
@@ -5820,9 +5738,8 @@ msgstr ""
 "olacaktır.\n"
 "        kayıt sırasında kimlik doğrulamaları."
 
-#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:251
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:334
 #, fuzzy
-#| msgid "Verify the certificate"
 msgid "Thumbprint of the certificate"
 msgstr "Sertifikayı doğrula"
 
@@ -5858,17 +5775,17 @@ msgstr "Tiqr Service DisplayName"
 msgid "TiQR Token settings"
 msgstr "Tiqr Token Ayarları"
 
-#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:135
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:217
 msgid "Time in seconds privacyIDEA tries to reach the user store server."
 msgstr ""
 
 #: privacyidea/static/components/config/views/config.radius.edit.html:46
-#: privacyidea/static/components/config/views/config.smtp.edit.html:47
+#: privacyidea/static/components/config/views/config.smtp.edit.html:46
 msgid "Timeout"
 msgstr "Zaman aşımı"
 
-#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:125
-#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:131
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:143
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:213
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:186
 msgid "Timeout (seconds)"
 msgstr "Zaman aşımı (saniye)"
@@ -5906,14 +5823,28 @@ msgstr ""
 "    <a ui-sref=\"config.tokens({tokentype:'radius'})\"> radius belirteci "
 "config </a>."
 
+#: privacyidea/static/components/directives/views/directive.filter.table.html:7
+#: privacyidea/static/components/directives/views/directive.filter.table.html:8
+msgid "Toggle filter"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.list.html:117
+#: privacyidea/static/components/token/views/token.list.html:118
+msgid "Toggle realm filter"
+msgstr ""
+
+#: privacyidea/static/components/token/views/token.list.html:85
+#: privacyidea/static/components/token/views/token.list.html:86
+msgid "Toggle user filter"
+msgstr ""
+
 #: privacyidea/static/components/token/views/token.html:114
 #, fuzzy
 msgid "Token Applications"
 msgstr "Başvuru"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:449
+#: privacyidea/static/components/token/views/token.containerdetails.html:450
 #, fuzzy
-#| msgid "Token realms"
 msgid "Token Realms"
 msgstr "Belirteç alemleri"
 
@@ -5961,8 +5892,8 @@ msgstr ""
 msgid "Token of {{username}} without a container"
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:679
-#: privacyidea/static/components/token/views/token.list.html:76
+#: privacyidea/static/components/token/views/token.containerdetails.html:680
+#: privacyidea/static/components/token/views/token.list.html:130
 msgid "Token realms"
 msgstr "Belirteç alemleri"
 
@@ -5974,10 +5905,9 @@ msgstr "Token Resync başarısız oldu."
 msgid "Token resync successful."
 msgstr "Token resync başarılı."
 
-#: privacyidea/static/components/directives/controllers/directives.js:936
-#: privacyidea/static/components/token/controllers/tokenControllers.js:647
+#: privacyidea/static/components/directives/controllers/directives.js:1024
+#: privacyidea/static/components/token/controllers/tokenControllers.js:679
 #, fuzzy
-#| msgid "Enrollment successfully verified."
 msgid "Token successfully verified"
 msgstr "Kayıt başarıyla doğrulandı."
 
@@ -5998,7 +5928,7 @@ msgstr ""
 #: privacyidea/static/components/dashboard/views/dashboard.html:10
 #: privacyidea/static/components/directives/views/directive.containerTemplateDiff.html:18
 #: privacyidea/static/components/directives/views/directive.containertemplate.details.html:26
-#: privacyidea/static/components/token/views/token.containercreate.html:189
+#: privacyidea/static/components/token/views/token.containercreate.html:190
 #: privacyidea/static/components/token/views/token.html:25
 #: privacyidea/static/templates/menu.html:46
 msgid "Tokens"
@@ -6012,7 +5942,7 @@ msgstr "Jeton ve makine uygulamaları {{ machineid }}"
 msgid "Tokens for user {{ username }}"
 msgstr "Kullanıcı için jetonlar {{username}}"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:419
+#: privacyidea/static/components/token/views/token.containerdetails.html:420
 msgid "Tokens in the Container"
 msgstr ""
 
@@ -6038,11 +5968,10 @@ msgstr "Toplam şablonlar: {{ templatedata.count }}"
 
 #: privacyidea/static/components/token/controllers/tokenChallengesController.js:46
 #, fuzzy
-#| msgid "Total Challenges:"
 msgid "Total expired challenges deleted:"
 msgstr "Toplam Zorluklar:"
 
-#: privacyidea/static/components/config/controllers/configControllers.js:802
+#: privacyidea/static/components/config/controllers/configControllers.js:813
 msgid "Total user cache entries deleted:"
 msgstr ""
 
@@ -6050,7 +5979,7 @@ msgstr ""
 msgid "Transaction ID"
 msgstr "İşlem Kimliği"
 
-#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:192
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:274
 #: privacyidea/static/components/token/views/token.containerdetails.html:25
 #: privacyidea/static/components/token/views/token.containerlist.html:67
 #: privacyidea/static/components/token/views/token.containertemplates.list.html:45
@@ -6062,8 +5991,8 @@ msgid "Type"
 msgstr "Tip"
 
 #: privacyidea/static/components/directives/views/directive.assigntoken.html:34
-#: privacyidea/static/components/directives/views/directive.assignuser.html:46
-#: privacyidea/static/components/token/views/token.enroll.html:67
+#: privacyidea/static/components/directives/views/directive.assignuser.html:68
+#: privacyidea/static/components/token/views/token.enroll.html:69
 #, fuzzy
 msgid "Type a PIN or password"
 msgstr "Bir şifre girin"
@@ -6073,6 +6002,11 @@ msgstr "Bir şifre girin"
 #: privacyidea/static/components/user/views/user.password.html:55
 msgid "Type a password"
 msgstr "Bir şifre girin"
+
+#: privacyidea/static/components/directives/views/directive.assignuser.html:34
+#, fuzzy
+msgid "Type username and press Enter"
+msgstr "Uzak sunucudaki kullanıcı adı"
 
 #: privacyidea/static/components/config/views/config.token.u2f.html:1
 msgid "U2F Token settings"
@@ -6092,7 +6026,6 @@ msgstr "PrivacyIDEA sunucusunun URL'si"
 
 #: privacyidea/static/components/user/views/user.details.html:204
 #, fuzzy
-#| msgid "Unassign User"
 msgid "Unassign"
 msgstr "Unassign kullanıcısı"
 
@@ -6107,7 +6040,6 @@ msgstr "Unassign kullanıcısı"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:376
 #, fuzzy
-#| msgid "Unassign Token"
 msgid "Unassign User From All Tokens"
 msgstr "Nöbet belirteci"
 
@@ -6121,7 +6053,6 @@ msgstr "Atanmamış Yazılım"
 
 #: privacyidea/static/components/token/views/token.containerdetails.html:309
 #, fuzzy
-#| msgid "Create new Event Handler"
 msgid "Unregister Container"
 msgstr "Yeni olay işleyicisi oluştur"
 
@@ -6164,18 +6095,18 @@ msgstr ""
 
 #: privacyidea/static/components/config/views/config.mresolvers.ldap.html:48
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:62
-msgid "Use STARTTLS on a plain LDAP connection usually on port 389."
+#, fuzzy
+msgid "Use STARTTLS on a plain LDAP connection, usually on port 389."
 msgstr ""
 "Genellikle 389 numaralı bağlantı noktasında düz bir LDAP bağlantısında "
 "StartTL'ler kullanın."
 
-#: privacyidea/static/components/config/views/config.smtp.edit.html:113
+#: privacyidea/static/components/config/views/config.smtp.edit.html:112
 msgid "Use StartTLS"
 msgstr "Starttls kullanın"
 
-#: privacyidea/static/components/token/views/token.containercreate.html:70
+#: privacyidea/static/components/token/views/token.containercreate.html:71
 #, fuzzy
-#| msgid "Certificate Template"
 msgid "Use a Template"
 msgstr "Sertifika şablonu"
 
@@ -6184,19 +6115,18 @@ msgstr "Sertifika şablonu"
 msgid "Use two-step enrollment with the privacyIDEA Authenticator App"
 msgstr "PrivacyIDEA Authenticator uygulamasıyla iki adımlı kayıt kullanın"
 
-#: privacyidea/static/components/config/views/config.policies.details.html:236
+#: privacyidea/static/components/config/views/config.policies.details.html:243
 #: privacyidea/static/components/config/views/config.policies.list.html:24
 #: privacyidea/static/components/config/views/config.privacyideaserver.edit.html:67
-#: privacyidea/static/components/token/views/token.containerdetails.html:447
+#: privacyidea/static/components/token/views/token.containerdetails.html:448
 #: privacyidea/static/components/token/views/token.containerlist.html:86
 #: privacyidea/static/components/token/views/token.containertemplates.edit.html:90
 #: privacyidea/static/templates/menu.html:62
 msgid "User"
 msgstr "Kullanıcı"
 
-#: privacyidea/static/components/config/views/config.policies.details.html:303
+#: privacyidea/static/components/config/views/config.policies.details.html:308
 #, fuzzy
-#| msgid "username"
 msgid "User Agent"
 msgstr "Kullanıcı adı"
 
@@ -6209,20 +6139,24 @@ msgstr ""
 "Kullanıcı önbelleği\n"
 "                Saniyede sona erme"
 
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:120
+#, fuzzy
+msgid "User Groups"
+msgstr "Kullanıcılar"
+
 #: privacyidea/static/components/token/views/token.containerdetails.html:386
 #: privacyidea/static/components/token/views/token.details.html:568
 msgid "User Id"
 msgstr "Kullanıcı kimliği"
 
-#: privacyidea/static/components/config/views/config.resolvers.ldap.html:379
+#: privacyidea/static/components/config/views/config.resolvers.ldap.html:392
 #, fuzzy
-#| msgid "User Id"
 msgid "User Info Key"
 msgstr "Kullanıcı kimliği"
 
-#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:51
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:131
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:52
 #, fuzzy
-#| msgid "Hostname Attribute"
 msgid "User Store Attribute"
 msgstr "HostName özniteliği"
 
@@ -6230,38 +6164,45 @@ msgstr "HostName özniteliği"
 msgid "User account created. An Email has been sent to you."
 msgstr "Kullanıcı hesabı oluşturuldu. Size bir e-posta gönderildi."
 
-#: privacyidea/static/components/user/controllers/userControllers.js:58
+#: privacyidea/static/components/user/controllers/userControllers.js:61
 msgid "User created."
 msgstr "Kullanıcı oluşturuldu."
 
-#: privacyidea/static/components/user/controllers/userControllers.js:274
+#: privacyidea/static/components/user/controllers/userControllers.js:277
 msgid "User deleted successfully."
 msgstr "Kullanıcı başarıyla silindi."
 
-#: privacyidea/static/components/user/controllers/userControllers.js:245
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:157
+msgid ""
+"User groups are received in a separate request and stored under the "
+"privacyIDEA attribute\n"
+"                            <code>groups</code>."
+msgstr ""
+
+#: privacyidea/static/components/user/controllers/userControllers.js:248
 msgid "User updated successfully."
 msgstr "Kullanıcı başarıyla güncellendi."
 
-#: privacyidea/static/components/config/views/config.policies.details.html:195
+#: privacyidea/static/components/config/views/config.policies.details.html:200
 msgid "User-Realm"
 msgstr "Kullanıcı-bölge"
 
-#: privacyidea/static/components/config/views/config.policies.details.html:212
+#: privacyidea/static/components/config/views/config.policies.details.html:217
 msgid "User-Resolver"
 msgstr "Kullanıcı çözücü"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:685
-#: privacyidea/static/components/token/views/token.list.html:82
+#: privacyidea/static/components/token/views/token.containerdetails.html:686
+#: privacyidea/static/components/token/views/token.list.html:136
 msgid "UserId"
 msgstr "Kullanıcı kimliği"
 
 #: privacyidea/static/components/config/views/config.radius.edit.html:108
 #: privacyidea/static/components/config/views/config.radius.edit.html:111
-#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:266
-#: privacyidea/static/components/config/views/config.smtp.edit.html:72
-#: privacyidea/static/components/directives/views/directive.assignuser.html:18
-#: privacyidea/static/components/login/views/login.html:53
-#: privacyidea/static/components/login/views/login.html:57
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:349
+#: privacyidea/static/components/config/views/config.smtp.edit.html:71
+#: privacyidea/static/components/directives/views/directive.assignuser.html:15
+#: privacyidea/static/components/login/views/login.html:54
+#: privacyidea/static/components/login/views/login.html:58
 #: privacyidea/static/components/recovery/views/recovery.html:18
 #: privacyidea/static/components/recovery/views/recovery.html:22
 #: privacyidea/static/components/register/views/register.html:18
@@ -6272,8 +6213,8 @@ msgstr "Kullanıcı kimliği"
 msgid "Username"
 msgstr "Kullanıcı adı"
 
-#: privacyidea/static/components/config/views/config.policies.details.html:250
-msgid "Username case-insensitive."
+#: privacyidea/static/components/config/views/config.policies.details.html:254
+msgid "Username case-insensitive"
 msgstr ""
 
 #: privacyidea/static/components/components/views/component.subscriptions.html:30
@@ -6290,7 +6231,7 @@ msgstr "Vasco Token Blob"
 msgid "Valid subscription"
 msgstr "Geçerli abonelik"
 
-#: privacyidea/static/components/config/views/config.policies.details.html:277
+#: privacyidea/static/components/config/views/config.policies.details.html:282
 msgid "Valid time"
 msgstr "Geçerli zaman"
 
@@ -6300,7 +6241,7 @@ msgid "Validate the passphrase against the user store."
 msgstr ""
 
 #: privacyidea/static/components/token/views/token.details.html:280
-#: privacyidea/static/components/token/views/token.enroll.html:124
+#: privacyidea/static/components/token/views/token.enroll.html:126
 msgid "Validity End"
 msgstr "Geçerlilik sonu"
 
@@ -6309,7 +6250,7 @@ msgid "Validity Period"
 msgstr "Geçerlilik süresi"
 
 #: privacyidea/static/components/token/views/token.details.html:254
-#: privacyidea/static/components/token/views/token.enroll.html:103
+#: privacyidea/static/components/token/views/token.enroll.html:105
 msgid "Validity Start"
 msgstr "Geçerlilik başlangıcı"
 
@@ -6321,9 +6262,9 @@ msgstr "Değer"
 msgid "Verify SSL certificate"
 msgstr "SSL sertifikasını doğrula"
 
-#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:56
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:73
 #: privacyidea/static/components/config/views/config.privacyideaserver.list.html:7
-#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:111
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:193
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:90
 msgid "Verify TLS"
 msgstr "TL'leri doğrula"
@@ -6333,14 +6274,10 @@ msgstr "TL'leri doğrula"
 msgid "Verify Token"
 msgstr "Belirteci doğrulamak"
 
-#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:64
-msgid "Verify the TLS cerificate of the server."
-msgstr "Sunucunun TLS serisini doğrulayın."
-
-#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:115
+#: privacyidea/static/components/config/views/config.mresolvers.ldap.html:81
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:197
 #: privacyidea/static/components/config/views/config.resolvers.ldap.html:98
 #, fuzzy
-#| msgid "Verify the TLS cerificate of the server."
 msgid "Verify the TLS certificate of the server."
 msgstr "Sunucunun TLS serisini doğrulayın."
 
@@ -6379,9 +6316,8 @@ msgstr "Hoş geldin"
 msgid "Where statement"
 msgstr "Nerede ifade"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:442
+#: privacyidea/static/components/token/views/token.containerdetails.html:443
 #, fuzzy
-#| msgid "window"
 msgid "Window"
 msgstr "pencere"
 
@@ -6404,10 +6340,6 @@ msgstr "Çalışma dizini"
 
 #: privacyidea/static/components/token/views/token.enroll.html:3
 #, fuzzy
-#| msgid ""
-#| "You are about to rollover your token! This will invalidate your existing "
-#| "token\n"
-#| "        and create a new token with a new secret key!"
 msgid ""
 "You are about to rollover your token! This will invalidate\n"
 "        your existing token\n"
@@ -6418,12 +6350,6 @@ msgstr ""
 
 #: privacyidea/static/components/login/views/login.html:12
 #, fuzzy
-#| msgid ""
-#| "You are authenticated by the web server as user\n"
-#| "                <b>{{ remoteUser }}</b>.\n"
-#| "                You may login as this user to privacyIDEA without any "
-#| "further\n"
-#| "                credentials."
 msgid ""
 "You are authenticated by the web server as user\n"
 "                <b>{{ remoteUser }}</b>.\n"
@@ -6449,7 +6375,12 @@ msgstr ""
 msgid "You are not allowed to enroll this token type! It will be skipped!"
 msgstr ""
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:580
+#: privacyidea/static/components/token/controllers/containerControllers.js:918
+#, fuzzy
+msgid "You are not authorized to delete the following tokens:"
+msgstr "Hizmetin logosunu içeren URL."
+
+#: privacyidea/static/components/login/controllers/loginControllers.js:591
 msgid ""
 "You are using a certain amount of Push tokens. Note, that you need a valid "
 "subscription, to use Push tokens in push mode. Otherwise Push tokens will "
@@ -6475,7 +6406,7 @@ msgstr ""
 "İthal edilecek belirteçlerin orijinalliğinin nasıl doğrulanacağını "
 "seçebilirsiniz."
 
-#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:161
+#: privacyidea/static/components/config/views/config.resolvers.http.advanced.html:243
 msgid ""
 "You can find most of these settings in the app registration in the Entra "
 "Admin Center or you also\n"
@@ -6558,7 +6489,7 @@ msgstr "{{ myCountdown }} ikinci (ler) de oturum açacaksınız."
 msgid "Your CSR to the certificate authority failed."
 msgstr ""
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:453
+#: privacyidea/static/components/login/controllers/loginControllers.js:464
 msgid "Your OTP pin expires on"
 msgstr "OTP PIN'iniz sona eriyor"
 
@@ -6573,7 +6504,7 @@ msgid ""
 "    administrative approval."
 msgstr ""
 
-#: privacyidea/static/components/token/views/token.containercreate.html:162
+#: privacyidea/static/components/token/views/token.containercreate.html:163
 msgid "Your container was successfully created with the serial:"
 msgstr ""
 
@@ -6601,7 +6532,7 @@ msgstr ""
 msgid "Your secret phrase."
 msgstr "Gizli ifaden."
 
-#: privacyidea/static/components/login/controllers/loginControllers.js:587
+#: privacyidea/static/components/login/controllers/loginControllers.js:598
 msgid "Your subscription for the privacyIDEA Authenticator has expired."
 msgstr "PrivacyIDEA doğrulayıcısının aboneliğiniz sona ermiştir."
 
@@ -6655,12 +6586,12 @@ msgstr "eylem"
 msgid "action detail"
 msgstr "eylem detayı"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:492
-#: privacyidea/static/components/token/views/token.containerdetails.html:641
-#: privacyidea/static/components/token/views/token.containerdetails.html:701
+#: privacyidea/static/components/token/views/token.containerdetails.html:493
+#: privacyidea/static/components/token/views/token.containerdetails.html:642
+#: privacyidea/static/components/token/views/token.containerdetails.html:702
 #: privacyidea/static/components/token/views/token.details.html:35
+#: privacyidea/static/components/token/views/token.list.html:151
 #: privacyidea/static/components/token/views/token.list.html:39
-#: privacyidea/static/components/token/views/token.list.html:97
 #: privacyidea/static/components/user/views/user.details.html:165
 msgid "active"
 msgstr "aktif"
@@ -6683,7 +6614,6 @@ msgstr "applid"
 
 #: privacyidea/static/components/audit/views/audit.log.html:57
 #, fuzzy
-#| msgid "Authentications"
 msgid "authentication"
 msgstr "Kimlik doğrulama"
 
@@ -6699,16 +6629,16 @@ msgstr "Boşluk"
 msgid "client"
 msgstr "müşteri"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:648
+#: privacyidea/static/components/token/views/token.containerdetails.html:649
 #: privacyidea/static/components/token/views/token.list.html:46
 #: privacyidea/static/components/user/views/user.list.html:41
 msgid "description"
 msgstr "tanım"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:498
-#: privacyidea/static/components/token/views/token.containerdetails.html:706
+#: privacyidea/static/components/token/views/token.containerdetails.html:499
+#: privacyidea/static/components/token/views/token.containerdetails.html:707
 #: privacyidea/static/components/token/views/token.details.html:38
-#: privacyidea/static/components/token/views/token.list.html:102
+#: privacyidea/static/components/token/views/token.list.html:156
 #: privacyidea/static/components/user/views/user.details.html:170
 msgid "disabled"
 msgstr "engelli"
@@ -6733,7 +6663,7 @@ msgstr "bitiş tarihi"
 msgid "enter some OTP value"
 msgstr "Biraz OTP değeri girin"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:659
+#: privacyidea/static/components/token/views/token.containerdetails.html:660
 #: privacyidea/static/components/token/views/token.list.html:57
 msgid "failcounter"
 msgstr "başarısızlık"
@@ -6746,7 +6676,7 @@ msgstr "arızalı"
 msgid "failed users / tokens"
 msgstr "Başarısız Kullanıcılar / Jetonlar"
 
-#: privacyidea/static/components/config/views/config.policies.details.html:386
+#: privacyidea/static/components/config/views/config.policies.details.html:398
 msgid "filter action..."
 msgstr "Filtre hareketi ..."
 
@@ -6803,7 +6733,7 @@ msgid "offline: Use HOTP token for offline login to notebooks."
 msgstr ""
 
 #. Translation in dynamic user creation
-#: privacyidea/static/components/user/controllers/userControllers.js:36
+#: privacyidea/static/components/user/controllers/userControllers.js:39
 msgid "password"
 msgstr "şifre"
 
@@ -6820,12 +6750,15 @@ msgstr "telefon"
 msgid "policies"
 msgstr "politikalar"
 
+#: privacyidea/static/components/token/views/token.list.html:92
+msgid "press enter to search"
+msgstr ""
+
 #: privacyidea/static/components/config/views/config.periodictasks.details.html:75
 #: privacyidea/static/components/config/views/config.periodictasks.list.html:11
-#: privacyidea/static/components/config/views/config.policies.details.html:263
+#: privacyidea/static/components/config/views/config.policies.details.html:268
 #: privacyidea/static/components/config/views/config.realms.create.html:43
 #, fuzzy
-#| msgid "privacyIDEA Node"
 msgid "privacyIDEA Nodes"
 msgstr "privacyidea düğümü"
 
@@ -6882,8 +6815,8 @@ msgid "privacyidea server"
 msgstr "privacyidea sunucusu"
 
 #: privacyidea/static/components/audit/views/audit.log.html:107
-#: privacyidea/static/components/token/views/token.containerdetails.html:677
-#: privacyidea/static/components/token/views/token.list.html:75
+#: privacyidea/static/components/token/views/token.containerdetails.html:678
+#: privacyidea/static/components/token/views/token.list.html:111
 msgid "realm"
 msgstr "Diyar"
 
@@ -6895,7 +6828,7 @@ msgstr "çözücü"
 msgid "revoked"
 msgstr "iptal edildi"
 
-#: privacyidea/static/components/token/views/token.containerdetails.html:666
+#: privacyidea/static/components/token/views/token.containerdetails.html:667
 #: privacyidea/static/components/token/views/token.list.html:64
 #, fuzzy
 msgid "rollout state"
@@ -6905,8 +6838,8 @@ msgstr "Retrout durumu"
 #: privacyidea/static/components/token/views/token.applications.offline.html:25
 #: privacyidea/static/components/token/views/token.applications.ssh.html:31
 #: privacyidea/static/components/token/views/token.challenges.html:34
-#: privacyidea/static/components/token/views/token.containerdetails.html:425
-#: privacyidea/static/components/token/views/token.containerdetails.html:621
+#: privacyidea/static/components/token/views/token.containerdetails.html:426
+#: privacyidea/static/components/token/views/token.containerdetails.html:622
 #: privacyidea/static/components/token/views/token.list.html:19
 msgid "serial"
 msgstr "seri"
@@ -6935,7 +6868,7 @@ msgstr "Bir makine yazmaya başlayın."
 msgid "start typing a serial number of a token."
 msgstr "Bir Seri Numarayı Yazmaya Başlayın."
 
-#: privacyidea/static/components/directives/views/directive.assignuser.html:21
+#: privacyidea/static/components/directives/views/directive.assignuser.html:20
 msgid "start typing a username"
 msgstr "Bir kullanıcı adı yazmaya başlayın"
 
@@ -6970,7 +6903,6 @@ msgstr "Toplam belirteçler: {{ tokendata.count }}"
 
 #: privacyidea/static/components/user/views/user.html:53
 #, fuzzy
-#| msgid "All users"
 msgid "total users:"
 msgstr "Tüm kullanıcılar"
 
@@ -6992,8 +6924,8 @@ msgstr "Trust_anchor_dir"
 #: privacyidea/static/components/config/views/config.caconnectors.list.html:6
 #: privacyidea/static/components/config/views/config.mresolvers.list.html:6
 #: privacyidea/static/components/config/views/config.resolvers.list.html:6
-#: privacyidea/static/components/token/views/token.containerdetails.html:426
-#: privacyidea/static/components/token/views/token.containerdetails.html:631
+#: privacyidea/static/components/token/views/token.containerdetails.html:427
+#: privacyidea/static/components/token/views/token.containerdetails.html:632
 #: privacyidea/static/components/token/views/token.list.html:29
 msgid "type"
 msgstr "tip"
@@ -7011,14 +6943,13 @@ msgid "use VASCO Serial"
 msgstr "Vasco Seri Kullanım"
 
 #: privacyidea/static/components/audit/views/audit.log.html:101
-#: privacyidea/static/components/token/views/token.containerdetails.html:676
-#: privacyidea/static/components/token/views/token.list.html:74
+#: privacyidea/static/components/token/views/token.containerdetails.html:677
+#: privacyidea/static/components/token/views/token.list.html:75
 msgid "user"
 msgstr "kullanıcı"
 
 #: privacyidea/static/components/audit/views/audit.log.html:131
 #, fuzzy
-#| msgid "username"
 msgid "user agent"
 msgstr "Kullanıcı adı"
 
@@ -7033,6 +6964,23 @@ msgstr "Kullanıcı adı"
 #: privacyidea/static/components/audit/views/audit.log.html:18
 msgid "{{ auditdata.count }} entries found."
 msgstr "{{auditdata.count}} girişleri bulundu."
+
+#: privacyidea/static/components/token/views/token.list.html:124
+msgid "— all —"
+msgstr ""
+
+#~ msgid "Choose a realm..."
+#~ msgstr "Bir alem seçin ..."
+
+#~ msgid ""
+#~ "The file containing the CA certificate which signed the\n"
+#~ "                    LDAP TLS certificate."
+#~ msgstr ""
+#~ "İmzalayan CA sertifikasını içeren dosya\n"
+#~ "                    LDAP TLS sertifikası."
+
+#~ msgid "Verify the TLS cerificate of the server."
+#~ msgstr "Sunucunun TLS serisini doğrulayın."
 
 #~ msgid "Create a new HTTP Resolver"
 #~ msgstr "Yeni bir http çözücü oluştur"
