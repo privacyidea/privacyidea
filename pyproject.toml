@@ -123,7 +123,7 @@ requires = ["setuptools", "setuptools-scm"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools]
-include-package-data = false
+include-package-data = true
 
 # The standalone script files which should be made available in the virtual env
 script-files = [
@@ -159,7 +159,7 @@ where = ["."]
 include = ["privacyidea*"]
 
 [tool.setuptools.package-data]
-"privacyidea" = ["static/**", "static_new/dist/**", "migrations/**"]
+"privacyidea" = ["static/", "static_new/dist/", "migrations/", "translations/"]
 
 [tool.setuptools.exclude-package-data]
 "privacyidea" = ["static/node_modules/**", "static_new/node_modules/**"]
