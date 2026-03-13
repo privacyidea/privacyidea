@@ -4,14 +4,14 @@
 # FIRST AUTHOR <EMAIL@ADDRESS>, 2017.
 # Paul Lettich <paul.lettich@netknights.it>, 2023, 2024, 2025.
 # Jelina Unger <jelina.unger@netknights.it>, 2024.
-# Nils Behlen <nils.behlen@netknights.it>, 2024, 2025.
+# Nils Behlen <nils.behlen@netknights.it>, 2024, 2025, 2026.
 # samir-at-netknights <samir.nasher_taher@netknights.it>, 2024.
 msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
-"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"Report-Msgid-Bugs-To: translations@privacyidea.org\n"
 "POT-Creation-Date: 2026-03-13 11:14+0100\n"
-"PO-Revision-Date: 2025-09-08 12:00+0000\n"
+"PO-Revision-Date: 2026-03-14 15:09+0000\n"
 "Last-Translator: Nils Behlen <nils.behlen@netknights.it>\n"
 "Language-Team: German <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/de/>\n"
@@ -20,6 +20,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
+"X-Generator: Weblate 5.17-dev\n"
 "Generated-By: Babel 2.17.0\n"
 
 #: api/auth.py:260
@@ -66,21 +67,20 @@ msgid "Authentication failure. Wrong credentials"
 msgstr "Authentifizierungsfehler. Falsche Login-Daten"
 
 #: api/before_after.py:518 api/lib/postpolicy.py:977 api/validate.py:606
-#, fuzzy
 msgid "Authentication failed."
-msgstr "OTP-Überprüfung fehlgeschlagen."
+msgstr "Authentisierung fehlgeschlagen."
 
 #: api/container.py:203
 msgid "Missing parameter 'realm', 'resolver', and/or 'user_id'"
-msgstr ""
+msgstr "Die Parameter 'realm', 'resolver' und/oder 'user_id' fehlen"
 
 #: api/container.py:1148
 msgid "'template_options' must be a dictionary!"
-msgstr ""
+msgstr "'template_options' muss ein dictionary sein!"
 
 #: api/periodictask.py:152
 msgid "nodes: expected at least one node"
-msgstr ""
+msgstr "nodes: mindestens eine node notwendig"
 
 #: api/periodictask.py:155
 #, python-brace-format
@@ -95,10 +95,12 @@ msgstr ""
 #: api/policy.py:438 api/token.py:1136
 msgid "Unable to convert file contents. Binary data is not supported"
 msgstr ""
+"Dateiinhalt kann nicht konvertiert werden. Binärdaten werden nicht "
+"unterstützt"
 
 #: api/policy.py:443
 msgid "Error loading policy. File empty!"
-msgstr ""
+msgstr "Fehler beim Laden der Richtlinie. Die Datei ist leer!"
 
 #: api/realm.py:530
 msgid "The given node does not exist!"
@@ -109,52 +111,52 @@ msgid "Could not verify data in request!"
 msgstr "Die Daten in der Anfrage können nicht verifiziert werden!"
 
 #: api/register.py:124
-#, fuzzy
 msgid "No SMTP server configuration specified!"
-msgstr "Benutze eine spezifische SMTP Server Konfiguration für diesen Token."
+msgstr "Keine SMTP-Server-Konfiguration angegeben!"
 
 #: api/register.py:138
 msgid "No resolver specified to register in!"
-msgstr ""
+msgstr "Kein resolver für die Registrierung angegeben!"
 
 #: api/register.py:145
 msgid "The username is already registered!"
-msgstr ""
+msgstr "Dieser Benutzername ist bereits registriert!"
 
 #: api/register.py:176
 msgid "Failed to send email!"
-msgstr ""
+msgstr "Das Senden der Email ist fehlgeschlagen!"
 
 #: api/system.py:325
 #, python-brace-format
 msgid "Usage: {0!s}"
-msgstr ""
+msgstr "Verwendung: {0!s}"
 
 #: api/system.py:343
-#, fuzzy
 msgid "You need to provide the config key to delete."
-msgstr "Sie müssen wenigstens %s Antworten angeben."
+msgstr "Sie müssen den zu löschenden Konfigurationsschlüssel angeben."
 
 #: api/token.py:1115
 msgid ""
 "The Pre Shared Key must be 128 Bit hex encoded. It must be 32 characters "
 "long!"
 msgstr ""
+"Der Pre-Shared Key muss 128-Bit hex-kodiert sein. Er muss genau 32 Zeichen "
+"lang sein!"
 
 #: api/token.py:1140
 msgid "Error loading token file. File empty!"
-msgstr ""
+msgstr "Fehler beim Laden der Token-Datei: Datei leer!"
 
 #: api/token.py:1146
 #, python-brace-format
 msgid ""
 "Unknown file type: '{file_type}'. Supported file types are: {known_types}"
-msgstr ""
+msgstr "Dateityp '{file_type}' unbekannt. Erlaubte Typen: {known_types}"
 
 #: api/token.py:1258
 #, python-brace-format
 msgid "The user {0!r} does not own the token {1!s}"
-msgstr ""
+msgstr "Der Benutzer {0!r} ist nicht Eigentümer des Tokens {1!s}."
 
 #: api/user.py:154
 #, python-brace-format
@@ -162,24 +164,24 @@ msgid ""
 "Invalid attribute name! The name shall not start with {prefix}. This is an "
 "internally used prefix."
 msgstr ""
+"Attributname ungültig! Namen dürfen nicht mit dem internen Präfix {prefix} "
+"beginnen."
 
 #: api/validate.py:219
-#, fuzzy
 msgid "The token does not exist"
-msgstr "Die Token-Gruppe existiert nicht."
+msgstr "Der Token existiert nicht."
 
 #: api/validate.py:226
-#, fuzzy
 msgid "The token is not valid."
-msgstr "Die Token-Gruppe existiert nicht."
+msgstr "Der Token ist ungültig."
 
 #: api/validate.py:239
 msgid "Machine can not be identified by user agent!"
-msgstr ""
+msgstr "Die Maschine kann nicht anhand des User-Agents identifiziert werden!"
 
 #: api/validate.py:255
 msgid "Token is not an offline token or refill token is incorrect"
-msgstr ""
+msgstr "Der Token ist kein Offline-Token oder der Refill-Token ist inkorrekt"
 
 #: api/validate.py:495
 msgid "Cancelled enrollment via multichallenge"
@@ -200,9 +202,8 @@ msgstr ""
 "transaction_id "
 
 #: api/validate.py:536 api/validate.py:996
-#, fuzzy
 msgid "The authentication method is not available."
-msgstr "Authentisierung mit Passkey ist deaktiviert."
+msgstr "Die Authentisierungsmethode ist nicht verfügbar."
 
 #: api/validate.py:577
 #, python-brace-format
@@ -217,13 +218,15 @@ msgstr "Passende Challenge gefunden"
 
 #: api/validate.py:622 api/validate.py:624
 msgid "Given serial does not belong to given user!"
-msgstr ""
+msgstr "Angegebene Seriennummer ist dem Benutzer nicht zugeordnet!"
 
 #: api/validate.py:1013
 #, python-brace-format
 msgid ""
 "Unsupported token type '{token_type}' for authentication initialization!"
 msgstr ""
+"Tokentyp '{token_type}' wird für die Initialisierung der Authentisierung "
+"nicht unterstützt!"
 
 #: api/lib/postpolicy.py:98
 #, python-brace-format
@@ -253,7 +256,7 @@ msgstr "Bitte scannen Sie den QR Code um den Container zu registrieren."
 #: api/lib/prepolicy.py:2608 api/lib/prepolicy.py:2644
 #, python-brace-format
 msgid "Description required for {type_value} token."
-msgstr ""
+msgstr "Eine Beschreibung für den {type_value}-Token wird benötigt."
 
 #: api/lib/prepolicy.py:2877
 msgid ""
@@ -400,6 +403,7 @@ msgstr ""
 #: lib/policy.py:1670
 msgid "Enable to return an unspecific error message for failed registrations."
 msgstr ""
+"Generische Fehlermeldung für fehlgeschlagene Registrierungen aktivieren."
 
 #: lib/policy.py:1676
 msgid "Admin is allowed to enable tokens."
@@ -1332,6 +1336,9 @@ msgid ""
 "action for passkeys will directly mark the token for offline use and send "
 "the offline data."
 msgstr ""
+"Wenn aktiviert, werden Token bei erfolgreicher Passkey-Registrierung via "
+"enroll_via_multichallenge sofort für die Offline-Nutzung markiert und die "
+"Offline-Daten übertragen."
 
 #: lib/policy.py:2590
 msgid ""
@@ -1384,6 +1391,8 @@ msgid ""
 "In authentication requests, sets or overwrites the realm parameter. It takes "
 "precedence over the mangle and setrealm policies."
 msgstr ""
+"Setzt/überschreibt den Realm-Parameter bei Authentisierungsanfragen; hat "
+"Vorrang vor den mangle- und setrealm-Policies."
 
 #: lib/policy.py:2627
 msgid ""
@@ -1446,6 +1455,7 @@ msgstr ""
 msgid ""
 "Enable to return an unspecific error message for failed authentications."
 msgstr ""
+"Unspezifische Fehlermeldung bei fehlgeschlagenen Authentisierungen ausgeben."
 
 #: lib/policy.py:2667
 #, python-brace-format
@@ -1573,6 +1583,9 @@ msgid ""
 "If set, the /healthz/resolversz endpoint requires a valid admin "
 "authentication token to include the status of each resolver individually."
 msgstr ""
+"Falls gesetzt, erfordert der /healthz/resolversz-Endpunkt einen gültigen "
+"Admin-Authentisierungs-Token, um den Status jedes Resolvers einzeln "
+"aufzuführen."
 
 #: lib/policy.py:2775
 msgid ""
@@ -1676,7 +1689,6 @@ msgid ""
 msgstr "Die Benutzer ID und den Benutzer-Resolver in der Tokenliste anzeigen."
 
 #: lib/policy.py:2854
-#, fuzzy
 msgid ""
 "The URL of a repository, where the policy templates can be found.  (Default /"
 "static/policy-templates/"
@@ -1852,7 +1864,7 @@ msgstr ""
 
 #: lib/policy.py:2978
 msgid "Show or hide the passkey login button on the login screen."
-msgstr ""
+msgstr "Passkey-Login-Button auf dem Login-Bildschirm ein- oder ausblenden."
 
 #: lib/policy.py:2984
 msgid ""
@@ -1925,6 +1937,8 @@ msgid ""
 "Enable to return an unspecific error message for failures in the "
 "authentication-free container endpoints."
 msgstr ""
+"Unspezifische Fehlermeldung für Fehler in authentisierungsfreien Container-"
+"Endpunkten ausgeben."
 
 #: lib/policy.py:3042
 msgid ""
@@ -1939,12 +1953,16 @@ msgid ""
 "Enable to return an unspecific error message for failures in the special "
 "token endpoints /ttype/*."
 msgstr ""
+"Unspezifische Fehlermeldung bei Fehlern in den speziellen Token-Endpunkten /"
+"ttype/* ausgeben."
 
 #: lib/policy.py:3055
 msgid ""
 "Enable to return an unspecific error message for failed offline token "
 "refills."
 msgstr ""
+"Unspezifische Fehlermeldung bei fehlgeschlagenen Offline-Token-Refills "
+"ausgeben."
 
 #: lib/policy.py:3101
 msgid ""
@@ -2017,7 +2035,7 @@ msgid "My subscription has expired."
 msgstr "Meine Subskription ist abgelaufen."
 
 #: lib/token.py:166
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid "create_tokenclass_object failed: {0!r}"
 msgstr "create_tokenclass_object fehlgeschlagen: {0!r}"
 
@@ -2934,6 +2952,8 @@ msgid ""
 "You can enter a user attribute here to use an email address other than the "
 "default."
 msgstr ""
+"Benutzerattribut hier eingeben, um eine von der Standardadresse abweichende "
+"E-Mail-Adresse zu nutzen."
 
 #: lib/eventhandler/usernotification.py:207
 #, python-brace-format
@@ -3022,6 +3042,8 @@ msgid ""
 "The MIME type (Content-Type) used for the WebHook payload, for example "
 "application/json or application/x-www-form-urlencoded"
 msgstr ""
+"MIME-Typ (Content-Type) der WebHook-Payload, beispielsweise application/json "
+"oder application/x-www-form-urlencoded"
 
 #: lib/eventhandler/webhookeventhandler.py:107
 #, python-brace-format
@@ -3039,7 +3061,7 @@ msgid "The data posted in the WebHook"
 msgstr "Die an den WebHook gesendeten Daten"
 
 #: lib/machines/ldap.py:371
-#, fuzzy, python-brace-format
+#, python-brace-format
 msgid ""
 "Your LDAP machine resolver configuration seems to be OK, {0!s} machine "
 "objects found in {1:.4f}s."
@@ -3373,6 +3395,8 @@ msgid ""
 "with pin or biometric. This needs the privacyIDEA Authenticator app 4.6.1 or "
 "higher."
 msgstr ""
+"Erzwingt Token-Entsperrung per PIN oder Biometrie in der privacyIDEA "
+"Authenticator App. Erfordert Version 4.6.1 oder höher der App."
 
 #: lib/tokens/daypasswordtoken.py:134
 msgid ""
@@ -3744,7 +3768,7 @@ msgstr "Wollen Sie die Anmeldung bestätigen?"
 
 #: lib/tokens/pushtoken.py:82
 msgid "Enter the code to log in"
-msgstr ""
+msgstr "Geben Sie den Code ein, um sich anzumelden"
 
 #: lib/tokens/pushtoken.py:369
 msgid "PUSH Token"
@@ -3838,11 +3862,12 @@ msgid ""
 "smartphone app. push_require_presence has precedence over this. It is not "
 "compatible with push_wait."
 msgstr ""
+"Benutzer muss die Anmeldung mit einem OTP aus der Smartphone-App bestätigen. "
+"push_require_presence hat Vorrang; nicht kompatibel mit push_wait."
 
 #: lib/tokens/pushtoken.py:466
-#, fuzzy
 msgid "The message that is shown above the code on the smartphone."
-msgstr "Der Benutzer darf seine Token nicht vom Smartphone löschen."
+msgstr "Die Nachricht, die auf dem Smartphone über dem Code angezeigt wird."
 
 #: lib/tokens/pushtoken.py:471
 #, python-brace-format
@@ -3897,7 +3922,7 @@ msgstr "URL des privacyIDEA Push Tokens"
 
 #: lib/tokens/pushtoken.py:1156
 msgid "Please enter the code displayed on your smartphone."
-msgstr ""
+msgstr "Bitte geben Sie den Code ein, der auf Ihrem Smartphone angezeigt wird."
 
 #: lib/tokens/pushtoken.py:1394
 msgid "Please scan the QR code!"
