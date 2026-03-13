@@ -41,7 +41,7 @@ from privacyidea.lib import _, fido2
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.decorators import check_token_locked
-from privacyidea.lib.error import EnrollmentError, ParameterError, ERROR
+from privacyidea.lib.error import EnrollmentError, ParameterError, Error
 from privacyidea.lib.fido2.config import FIDO2ConfigOptions
 from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction, PasskeyAction
 from privacyidea.lib.fido2.token_info import FIDO2TokenInfo
@@ -144,7 +144,7 @@ class PasskeyTokenClass(TokenClass):
             token_user = self.user or user
             if not token_user:
                 raise ParameterError("User must be provided for passkey enrollment!",
-                                     id=ERROR.PARAMETER_USER_MISSING)
+                                     id=Error.PARAMETER_USER_MISSING)
 
             rp_id = get_required(params, FIDO2PolicyAction.RELYING_PARTY_ID)
             rp_name = get_required(params, FIDO2PolicyAction.RELYING_PARTY_NAME)

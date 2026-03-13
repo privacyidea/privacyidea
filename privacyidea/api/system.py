@@ -42,6 +42,7 @@ This is the REST API for system calls to create and read system configuration.
 The code of this module is tested in tests/test_api_system.py
 """
 
+from flask_babel import _
 import datetime
 import logging
 import re
@@ -321,7 +322,7 @@ def set_default():
         log.warning("Failed saving config. Could not find any "
                     "known parameter. %s"
                     % description)
-        raise ParameterError("Usage: {0!s}".format(description), id=77)
+        raise ParameterError(_("Usage: {0!s}").format(description), id=77)
 
     return send_result(result)
 
@@ -339,7 +340,7 @@ def delete_config(key=None):
 
     """
     if not key:
-        raise ParameterError("You need to provide the config key to delete.")
+        raise ParameterError(_("You need to provide the config key to delete."))
     res = delete_privacyidea_config(key)
     g.audit_object.log({'success': res,
                         'info': key})

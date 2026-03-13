@@ -32,7 +32,7 @@ from privacyidea.lib.container import (init_container, add_token_to_container,
                                        find_container_by_serial)
 from privacyidea.lib.error import PolicyError, UserError
 from privacyidea.lib.error import (TokenAdminError, ParameterError,
-                                   privacyIDEAError, ResourceNotFoundError)
+                                   PrivacyIDEAError, ResourceNotFoundError)
 from privacyidea.lib.framework import get_app_config
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import (set_policy, SCOPE, PolicyClass,
@@ -202,7 +202,7 @@ class TokenTestCase(MyTestCase):
         remove_token("yk1")
 
         # Tokeninfo with more than one entry is not supported
-        self.assertRaises(privacyIDEAError, get_tokens,
+        self.assertRaises(PrivacyIDEAError, get_tokens,
                           tokeninfo={"key1": "value1",
                                      "key2": "value2"})
 
@@ -2621,7 +2621,7 @@ class TokenGroupTestCase(MyTestCase):
         self.assertEqual(len(tok2.token.tokengroup_list), 0)
 
         # Check that deleting a tokengroup with tokens still assigned results in an error
-        self.assertRaises(privacyIDEAError, delete_tokengroup, name='g2')
+        self.assertRaises(PrivacyIDEAError, delete_tokengroup, name='g2')
 
         # Remove all tokengroups from token "s1"
         tok1.delete_tokengroup()

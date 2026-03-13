@@ -26,6 +26,7 @@ register.
 
 The methods are tested in the file tests/test_api_register.py
 """
+from flask_babel import _
 from flask import (Blueprint, request, g)
 from .lib.utils import getParam, map_error_to_code, send_error, send_result
 from .lib.utils import required
@@ -37,7 +38,7 @@ from privacyidea.lib.user import User
 from privacyidea.lib.token import init_token
 from privacyidea.lib.policy import Match
 from privacyidea.lib.realm import get_default_realm
-from privacyidea.lib.error import RegistrationError, ERROR
+from privacyidea.lib.error import RegistrationError, Error
 from privacyidea.api.lib.prepolicy import required_email, prepolicy
 from privacyidea.lib.smtpserver import send_email_identifier
 
@@ -120,7 +121,7 @@ def register_post():
     smtpconfig = Match.action_only(g, scope=SCOPE.REGISTER, action=PolicyAction.EMAILCONFIG)\
         .action_values(unique=True)
     if not smtpconfig:
-        raise RegistrationError("No SMTP server configuration specified!")
+        raise RegistrationError(_("No SMTP server configuration specified!"))
 
     # 1. determine, in which resolver/realm the user should be created
     realm = Match.action_only(g, scope=SCOPE.REGISTER, action=PolicyAction.REALM)\
@@ -134,14 +135,14 @@ def register_post():
     resolvername = Match.action_only(g, scope=SCOPE.REGISTER, action=PolicyAction.RESOLVER)\
         .action_values(unique=True)
     if not resolvername:
-        raise RegistrationError("No resolver specified to register in!")
+        raise RegistrationError(_("No resolver specified to register in!"))
     resolvername = list(resolvername)[0]
 
     try:
         # Check if the user exists
         user = User(username, realm=realm, resolver=resolvername)
         if user.exist():
-            raise RegistrationError("The username is already registered!")
+            raise RegistrationError(_("The username is already registered!"))
         # Create user
         uid = create_user(resolvername, {"username": username,
                                          "email": email,
@@ -172,7 +173,7 @@ def register_post():
             token.delete_token()
             # delete user
             user.delete()
-            raise RegistrationError("Failed to send email!")
+            raise RegistrationError(_("Failed to send email!"))
 
         log.debug("Registration email sent to {0!r}".format(email))
 
@@ -186,5 +187,5 @@ def register_post():
             action=PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE,
             realm=realm,
         ).any():
-            return send_error("Failed registering new user", error_code=ERROR.REGISTRATION), map_error_to_code(e)
+            return send_error("Failed registering new user", error_code=Error.REGISTRATION), map_error_to_code(e)
         raise

@@ -31,6 +31,7 @@
 __doc__ = """
 The code of this module is tested in tests/test_api_system.py
 """
+from flask_babel import _
 from flask import Blueprint, request, current_app
 from .lib.utils import (getParam,
                         getLowerParams,
@@ -434,12 +435,12 @@ def import_policy_api(filename=None):
             file_contents = file_contents.decode()
     except UnicodeDecodeError as e:
         log.error(f"Unable to convert contents of file '{filename}' to unicode: {e}")
-        raise ParameterError("Unable to convert file contents. Binary data is not supported")
+        raise ParameterError(_("Unable to convert file contents. Binary data is not supported"))
 
     if file_contents == "":
         log.error("Error loading/importing policy file. file {0!s} empty!".format(
                   filename))
-        raise ParameterError("Error loading policy. File empty!")
+        raise ParameterError(_("Error loading policy. File empty!"))
 
     policy_num = import_policies(file_contents=file_contents)
     g.audit_object.log({"success": True,

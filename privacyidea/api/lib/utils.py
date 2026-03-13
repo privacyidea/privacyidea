@@ -22,6 +22,7 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+from flask_babel import _
 import json
 import logging
 import re
@@ -35,11 +36,10 @@ import jwt
 from flask import (jsonify,
                    current_app, Response)
 
-from privacyidea.lib import _
 from privacyidea.lib.utils import (prepare_result, get_version, to_unicode,
                                    get_plugin_info_from_useragent)
 from ...lib.error import (ParameterError, PolicyError, ResourceNotFoundError,
-                          privacyIDEAError, AuthError, ERROR)
+                          PrivacyIDEAError, AuthError, Error)
 from ...lib.log import log_with
 
 log = logging.getLogger(__name__)
@@ -398,13 +398,13 @@ def verify_auth_token(auth_token, required_role=None):
     if required_role is None:
         required_role = ["admin", "user"]
     if auth_token is None:
-        raise AuthError(_("Authentication failure. Missing Authorization header."), id=ERROR.AUTHENTICATE_AUTH_HEADER)
+        raise AuthError(_("Authentication failure. Missing Authorization header."), id=Error.AUTHENTICATE_AUTH_HEADER)
 
     try:
         headers = jwt.get_unverified_header(auth_token)
     except jwt.DecodeError as err:
         raise AuthError(_("Authentication failure. Error decoding the Authorization token:") + f" {err!s}",
-                        id=ERROR.AUTHENTICATE_DECODING_ERROR)
+                        id=Error.AUTHENTICATE_DECODING_ERROR)
     algorithm = headers.get("alg")
     wrong_username = None
     if algorithm in TRUSTED_JWT_ALGOS:
@@ -428,17 +428,17 @@ def verify_auth_token(auth_token, required_role=None):
             except jwt.ExpiredSignatureError as err:
                 # We have the correct token. It expired, so we raise an error
                 raise AuthError(_("Authentication failure. Your token has expired:") + f" {err!s}",
-                                id=ERROR.AUTHENTICATE_TOKEN_EXPIRED)
+                                id=Error.AUTHENTICATE_TOKEN_EXPIRED)
 
     if not r:
         try:
             r = jwt.decode(auth_token, current_app.secret_key, algorithms=['HS256'])
         except jwt.DecodeError as err:
             raise AuthError(_("Authentication failure. Error decoding the Authorization token:") + f" {err!s}",
-                            id=ERROR.AUTHENTICATE_DECODING_ERROR)
+                            id=Error.AUTHENTICATE_DECODING_ERROR)
         except jwt.ExpiredSignatureError as err:
             raise AuthError(_("Authentication failure. Your token has expired:") + f" {err!s}",
-                            id=ERROR.AUTHENTICATE_TOKEN_EXPIRED)
+                            id=Error.AUTHENTICATE_TOKEN_EXPIRED)
     if wrong_username:
         raise AuthError(_("Authentication failure. The username {wrong_username} "
                           "is not allowed to impersonate via JWT.").format(wrong_username=wrong_username))
@@ -447,7 +447,7 @@ def verify_auth_token(auth_token, required_role=None):
         # not match
         raise AuthError(_("Authentication failure. You do not have the necessary "
                           "role ({required_role}) to access this resource!").format(required_role=required_role),
-                        id=ERROR.AUTHENTICATE_MISSING_RIGHT)
+                        id=Error.AUTHENTICATE_MISSING_RIGHT)
     return r
 
 
@@ -526,7 +526,7 @@ def is_fqdn(x):
 
 def map_error_to_code(error: Exception, default: int = 500) -> int:
     error_mapping: dict[type[Exception], int] = {
-        privacyIDEAError: 400,
+        PrivacyIDEAError: 400,
         AuthError: 401,
         PolicyError: 403,
         ResourceNotFoundError: 404,

@@ -12,7 +12,7 @@ getTokens4UserOrSerial
 gettokensoftype
 getToken....
 """
-from privacyidea.lib.error import privacyIDEAError
+from privacyidea.lib.error import PrivacyIDEAError
 from privacyidea.lib.token import init_token, assign_tokengroup, unassign_tokengroup
 from privacyidea.lib.tokengroup import set_tokengroup, delete_tokengroup, get_tokengroups
 from privacyidea.models import Tokengroup
@@ -46,17 +46,17 @@ class TokenTestCase(MyTestCase):
         self.group2_id = set_tokengroup("group2", "my second group")
 
         # Try to delete non-existing token group (invalid id)
-        with self.assertRaises(privacyIDEAError) as exception:
+        with self.assertRaises(PrivacyIDEAError) as exception:
             delete_tokengroup(tokengroup_id=100)
         self.assertEqual("Token group with ID '100' does not exist.", exception.exception.message)
 
         # Try to delete non-existing token group (invalid name)
-        with self.assertRaises(privacyIDEAError) as exception:
+        with self.assertRaises(PrivacyIDEAError) as exception:
             delete_tokengroup(name="nonexistinggroup")
         self.assertEqual("Token group with name 'nonexistinggroup' does not exist.", exception.exception.message)
 
         # Try to delete non-existing token group (valid name, but different id)
-        with self.assertRaises(privacyIDEAError) as exception:
+        with self.assertRaises(PrivacyIDEAError) as exception:
             delete_tokengroup(name="group1", tokengroup_id=self.group2_id)
         self.assertEqual(f"Token group with name 'group1' with ID '{self.group2_id}' does not exist.",
                          exception.exception.message)
@@ -64,14 +64,14 @@ class TokenTestCase(MyTestCase):
         # Try to delete group if token is still assigned
         token = init_token({"type": "hotp"})
         assign_tokengroup(token.get_serial(), "group1")
-        with self.assertRaises(privacyIDEAError) as exception:
+        with self.assertRaises(PrivacyIDEAError) as exception:
             delete_tokengroup(name="group1")
         self.assertEqual("The token group with name 'group1' still has 1 tokens assigned.", exception.exception.message)
         # Remove token from group
         unassign_tokengroup(token.get_serial(), "group1")
 
         # Try to delete without name and ID
-        with self.assertRaises(privacyIDEAError) as exception:
+        with self.assertRaises(PrivacyIDEAError) as exception:
             delete_tokengroup()
         self.assertEqual("You need to specify either a tokengroup ID or a name.", exception.exception.message)
 

@@ -6,7 +6,7 @@ from .base import MyApiTestCase
 from privacyidea.lib.caconnector import get_caconnector_list
 from privacyidea.lib.policy import set_policy, SCOPE
 from privacyidea.lib.policies.actions import PolicyAction
-from privacyidea.lib.error import ERROR
+from privacyidea.lib.error import Error
 
 
 class CAConnectorTestCase(MyApiTestCase):
@@ -160,7 +160,7 @@ class CAConnectorTestCase(MyApiTestCase):
             self.assertEqual(res.status_code, 401)
             result = res.json.get("result")
             self.assertFalse(result['status'])
-            self.assertEqual(result['error']['code'], ERROR.AUTHENTICATE_MISSING_RIGHT)
+            self.assertEqual(result['error']['code'], Error.AUTHENTICATE_MISSING_RIGHT)
             self.assertIn("You do not have the necessary role (['admin']) to access this resource",
                           result['error']['message'])
 
@@ -174,7 +174,7 @@ class CAConnectorTestCase(MyApiTestCase):
             self.assertEqual(res.status_code, 401)
             result = res.json.get("result")
             self.assertFalse(result['status'])
-            self.assertEqual(result['error']['code'], ERROR.AUTHENTICATE_MISSING_RIGHT)
+            self.assertEqual(result['error']['code'], Error.AUTHENTICATE_MISSING_RIGHT)
             self.assertIn("You do not have the necessary role (['admin']) to access this resource",
                           result['error']['message'])
 

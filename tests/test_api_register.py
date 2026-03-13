@@ -9,7 +9,7 @@ from . import smtpmock
 from privacyidea.lib.config import set_privacyidea_config
 from privacyidea.lib.passwordreset import create_recoverycode
 from privacyidea.lib.user import User
-from privacyidea.lib.error import ERROR
+from privacyidea.lib.error import Error
 
 
 class RegisterTestCase(MyApiTestCase):
@@ -40,7 +40,7 @@ class RegisterTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, status_code, res)
             data = res.json
-            self.assertEqual(data["result"]["error"]["code"], ERROR.REGISTRATION)
+            self.assertEqual(data["result"]["error"]["code"], Error.REGISTRATION)
             self.assertEqual(data["result"]["error"]["message"], "Failed registering new user")
         finally:
             delete_policy("hide_specific_error_message")
@@ -96,7 +96,7 @@ class RegisterTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 400, res)
             data = res.json
-            self.assertEqual(data.get("result").get("error").get("code"), ERROR.REGISTRATION)
+            self.assertEqual(data.get("result").get("error").get("code"), Error.REGISTRATION)
             self.assertEqual(data.get("result").get("error").get("message"),
                          'ERR402: No SMTP server configuration specified!')
 

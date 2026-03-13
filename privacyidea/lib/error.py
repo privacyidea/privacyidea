@@ -28,10 +28,12 @@ contains Errors and Exceptions
 
 import logging
 
+from flask_babel import LazyString
+
 log = logging.getLogger(__name__)
 
 
-class ERROR:
+class Error:
     SUBSCRIPTION = 101
     TOKENADMIN = 301
     CONFIGADMIN = 302
@@ -66,35 +68,35 @@ class ERROR:
     CONTAINER_ROLLOVER = 3003
 
 
-class privacyIDEAError(Exception):
+class PrivacyIDEAError(Exception):
 
     def __init__(self, description="privacyIDEAError!", id=10):
         self.id = id
         self.message = description
         Exception.__init__(self, description)
 
-    def getId(self):
+    def get_id(self):
         return self.id
 
-    def getDescription(self):
+    def get_description(self):
         return self.message
 
     def __str__(self):
-        if isinstance(self.message, str):
+        if isinstance(self.message, str) or isinstance(self.message, LazyString):
             return f"ERR{self.id}: {self.message}"
-
         return f"ERR{self.id}: {self.message!r}"
+
 
     def __repr__(self):
         return f"{type(self).__name__}(description={self.message!r}, id={self.id:d})"
 
 
-class SubscriptionError(privacyIDEAError):
-    def __init__(self, description=None, application=None, id=ERROR.SUBSCRIPTION):
+class SubscriptionError(PrivacyIDEAError):
+    def __init__(self, description=None, application=None, id=Error.SUBSCRIPTION):
         self.id = id
         self.message = description
         self.application = application
-        privacyIDEAError.__init__(self, description, id=self.id)
+        PrivacyIDEAError.__init__(self, description, id=self.id)
 
     def __str__(self):
         return self.__repr__()
@@ -105,122 +107,122 @@ class SubscriptionError(privacyIDEAError):
         return ret
 
 
-class TokenImportException(privacyIDEAError):
-    def __init__(self, description, id=ERROR.IMPORTADMIN):
-        privacyIDEAError.__init__(self, description=description, id=id)
+class TokenImportException(PrivacyIDEAError):
+    def __init__(self, description, id=Error.IMPORTADMIN):
+        PrivacyIDEAError.__init__(self, description=description, id=id)
 
 
-class AuthError(privacyIDEAError):
-    def __init__(self, description, id=ERROR.AUTHENTICATE, details=None):
+class AuthError(PrivacyIDEAError):
+    def __init__(self, description, id=Error.AUTHENTICATE, details=None):
         self.details = details
-        privacyIDEAError.__init__(self, description=description, id=id)
+        PrivacyIDEAError.__init__(self, description=description, id=id)
 
 
-class ResourceNotFoundError(privacyIDEAError):
-    def __init__(self, description, id=ERROR.RESOURCE_NOT_FOUND):
-        privacyIDEAError.__init__(self, description=description, id=id)
+class ResourceNotFoundError(PrivacyIDEAError):
+    def __init__(self, description, id=Error.RESOURCE_NOT_FOUND):
+        PrivacyIDEAError.__init__(self, description=description, id=id)
 
 
-class PolicyError(privacyIDEAError):
-    def __init__(self, description, id=ERROR.POLICY):
-        privacyIDEAError.__init__(self, description=description, id=id)
+class PolicyError(PrivacyIDEAError):
+    def __init__(self, description, id=Error.POLICY):
+        PrivacyIDEAError.__init__(self, description=description, id=id)
 
 
-class ValidateError(privacyIDEAError):
-    def __init__(self, description="validation error!", id=ERROR.VALIDATE):
-        privacyIDEAError.__init__(self, description=description, id=id)
+class ValidateError(PrivacyIDEAError):
+    def __init__(self, description="validation error!", id=Error.VALIDATE):
+        PrivacyIDEAError.__init__(self, description=description, id=id)
 
 
-class RegistrationError(privacyIDEAError):
-    def __init__(self, description="registration error!", id=ERROR.REGISTRATION):
-        privacyIDEAError.__init__(self, description=description, id=id)
+class RegistrationError(PrivacyIDEAError):
+    def __init__(self, description="registration error!", id=Error.REGISTRATION):
+        PrivacyIDEAError.__init__(self, description=description, id=id)
 
 
-class EnrollmentError(privacyIDEAError):
-    def __init__(self, description="enrollment error!", id=ERROR.ENROLLMENT):
-        privacyIDEAError.__init__(self, description=description, id=id)
+class EnrollmentError(PrivacyIDEAError):
+    def __init__(self, description="enrollment error!", id=Error.ENROLLMENT):
+        PrivacyIDEAError.__init__(self, description=description, id=id)
 
 
-class TokenAdminError(privacyIDEAError):
-    def __init__(self, description="token admin error!", id=ERROR.TOKENADMIN):
-        privacyIDEAError.__init__(self, description=description, id=id)
+class TokenAdminError(PrivacyIDEAError):
+    def __init__(self, description="token admin error!", id=Error.TOKENADMIN):
+        PrivacyIDEAError.__init__(self, description=description, id=id)
 
 
-class ConfigAdminError(privacyIDEAError):
-    def __init__(self, description="config admin error!", id=ERROR.CONFIGADMIN):
-        privacyIDEAError.__init__(self, description=description, id=id)
+class ConfigAdminError(PrivacyIDEAError):
+    def __init__(self, description="config admin error!", id=Error.CONFIGADMIN):
+        PrivacyIDEAError.__init__(self, description=description, id=id)
 
 
-class CAError(privacyIDEAError):
-    def __init__(self, description="CA error!", id=ERROR.CA):
-        privacyIDEAError.__init__(self, description=description, id=id)
+class CAError(PrivacyIDEAError):
+    def __init__(self, description="CA error!", id=Error.CA):
+        PrivacyIDEAError.__init__(self, description=description, id=id)
 
 
 class CSRError(CAError):
-    def __init__(self, description="CSR invalid", id=ERROR.CA_CSR_INVALID):
-        privacyIDEAError.__init__(self, description=description, id=id)
+    def __init__(self, description="CSR invalid", id=Error.CA_CSR_INVALID):
+        PrivacyIDEAError.__init__(self, description=description, id=id)
 
 
 class CSRPending(CAError):
-    def __init__(self, description="CSR pending", id=ERROR.CA_CSR_PENDING, requestId=None):
-        privacyIDEAError.__init__(self, description=description, id=id)
+    def __init__(self, description="CSR pending", id=Error.CA_CSR_PENDING, requestId=None):
+        PrivacyIDEAError.__init__(self, description=description, id=id)
         self.requestId = requestId
 
 
-class UserError(privacyIDEAError):
-    def __init__(self, description="user error!", id=ERROR.USER):
-        privacyIDEAError.__init__(self, description=description, id=id)
+class UserError(PrivacyIDEAError):
+    def __init__(self, description="user error!", id=Error.USER):
+        PrivacyIDEAError.__init__(self, description=description, id=id)
 
 
-class ServerError(privacyIDEAError):
-    def __init__(self, description="server error!", id=ERROR.SERVER):
-        privacyIDEAError.__init__(self, description=description, id=id)
+class ServerError(PrivacyIDEAError):
+    def __init__(self, description="server error!", id=Error.SERVER):
+        PrivacyIDEAError.__init__(self, description=description, id=id)
 
 
-class HSMException(privacyIDEAError):
-    def __init__(self, description="hsm error!", id=ERROR.HSM):
-        privacyIDEAError.__init__(self, description=description, id=id)
+class HSMException(PrivacyIDEAError):
+    def __init__(self, description="hsm error!", id=Error.HSM):
+        PrivacyIDEAError.__init__(self, description=description, id=id)
 
 
-class SelfserviceException(privacyIDEAError):
-    def __init__(self, description="selfservice error!", id=ERROR.SELFSERVICE):
-        privacyIDEAError.__init__(self, description=description, id=id)
+class SelfserviceException(PrivacyIDEAError):
+    def __init__(self, description="selfservice error!", id=Error.SELFSERVICE):
+        PrivacyIDEAError.__init__(self, description=description, id=id)
 
 
-class ParameterError(privacyIDEAError):
+class ParameterError(PrivacyIDEAError):
 
-    def __init__(self, description="unspecified parameter error!", id=ERROR.PARAMETER):
-        privacyIDEAError.__init__(self, description=description, id=id)
+    def __init__(self, description="unspecified parameter error!", id=Error.PARAMETER):
+        PrivacyIDEAError.__init__(self, description=description, id=id)
 
 
-class DatabaseError(privacyIDEAError):
+class DatabaseError(PrivacyIDEAError):
     """Error in the database layer"""
 
-    def __init__(self, description="database error!", eid=ERROR.DATABASE):
-        privacyIDEAError.__init__(self, description=description, id=eid)
+    def __init__(self, description="database error!", eid=Error.DATABASE):
+        PrivacyIDEAError.__init__(self, description=description, id=eid)
 
 
-class ResolverError(privacyIDEAError):
+class ResolverError(PrivacyIDEAError):
     """Error in user resolver"""
-    def __init__(self, description="resolver error!", eid=ERROR.RESOLVER):
-        privacyIDEAError.__init__(self, description=description, id=eid)
+    def __init__(self, description="resolver error!", eid=Error.RESOLVER):
+        PrivacyIDEAError.__init__(self, description=description, id=eid)
 
 
-class ContainerError(privacyIDEAError):
-    def __init__(self, description="container error!", eid=ERROR.CONTAINER):
-        privacyIDEAError.__init__(self, description=description, id=eid)
+class ContainerError(PrivacyIDEAError):
+    def __init__(self, description="container error!", eid=Error.CONTAINER):
+        PrivacyIDEAError.__init__(self, description=description, id=eid)
 
 
 class ContainerNotRegistered(ContainerError):
-    def __init__(self, description="container is not registered error!", eid=ERROR.CONTAINER_NOT_REGISTERED):
+    def __init__(self, description="container is not registered error!", eid=Error.CONTAINER_NOT_REGISTERED):
         ContainerError.__init__(self, description=description, eid=eid)
 
 
 class ContainerInvalidChallenge(ContainerError):
-    def __init__(self, description="container challenge error!", eid=ERROR.CONTAINER_INVALID_CHALLENGE):
+    def __init__(self, description="container challenge error!", eid=Error.CONTAINER_INVALID_CHALLENGE):
         ContainerError.__init__(self, description=description, eid=eid)
 
 
 class ContainerRollover(ContainerError):
-    def __init__(self, description="container rollover error", eid=ERROR.CONTAINER_ROLLOVER):
+    def __init__(self, description="container rollover error", eid=Error.CONTAINER_ROLLOVER):
         ContainerError.__init__(self, description=description, eid=eid)

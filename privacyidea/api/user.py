@@ -26,6 +26,7 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+from flask_babel import _
 import logging
 
 from flask import g, Blueprint, request
@@ -150,8 +151,8 @@ def set_user_attribute():
     internal_prefixes = InternalCustomUserAttributes.get_internal_prefixes()
     for prefix in internal_prefixes:
         if attrkey.startswith(prefix):
-            raise ParameterError(f"Invalid attribute name! The name shall not start with {prefix}. "
-                                 "This is an internally used prefix.")
+            raise ParameterError(_("Invalid attribute name! The name shall not start with {prefix}. "
+                                   "This is an internally used prefix.").format(prefix=prefix))
 
     r = request.User.set_attribute(attrkey, attrvalue, attrtype)
     g.audit_object.log({"success": True,

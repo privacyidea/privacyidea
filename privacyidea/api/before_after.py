@@ -30,7 +30,7 @@ It also contains the error handlers.
 
 import copy
 
-from flask_babel import gettext
+from flask_babel import _
 
 from .lib.utils import (get_all_params, get_optional, map_error_to_code, send_error, verify_auth_token)
 from .container import container_blueprint
@@ -78,7 +78,7 @@ from .serviceid import serviceid_blueprint
 from .healthcheck import healthz_blueprint
 from .info import info_blueprint
 from privacyidea.api.lib.postpolicy import postrequest, sign_response
-from ..lib.error import (privacyIDEAError,
+from ..lib.error import (PrivacyIDEAError,
                          AuthError, UserError,
                          PolicyError, ResourceNotFoundError)
 from privacyidea.lib.utils import get_client_ip, get_plugin_info_from_useragent
@@ -515,7 +515,7 @@ def auth_error(error):
             hide_message = Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE,
                                       user_object=request.User if hasattr(request, 'User') else None).any()
             if hide_message:
-                error.message = gettext("Authentication failed.")
+                error.message = _("Authentication failed.")
                 error.details["message"] = error.message
                 error.details.pop("loginmode", None)
 
@@ -579,26 +579,26 @@ def resource_not_found_error(error):
     return send_error(error.message, error_code=error.id), map_error_to_code(error)
 
 
-@system_blueprint.app_errorhandler(privacyIDEAError)
-@realm_blueprint.app_errorhandler(privacyIDEAError)
-@defaultrealm_blueprint.app_errorhandler(privacyIDEAError)
-@resolver_blueprint.app_errorhandler(privacyIDEAError)
-@policy_blueprint.app_errorhandler(privacyIDEAError)
-@user_blueprint.app_errorhandler(privacyIDEAError)
-@token_blueprint.app_errorhandler(privacyIDEAError)
-@audit_blueprint.app_errorhandler(privacyIDEAError)
-@application_blueprint.app_errorhandler(privacyIDEAError)
-@smtpserver_blueprint.app_errorhandler(privacyIDEAError)
-@eventhandling_blueprint.app_errorhandler(privacyIDEAError)
-@register_blueprint.app_errorhandler(privacyIDEAError)
-@recover_blueprint.app_errorhandler(privacyIDEAError)
-@subscriptions_blueprint.app_errorhandler(privacyIDEAError)
-@monitoring_blueprint.app_errorhandler(privacyIDEAError)
-@ttype_blueprint.app_errorhandler(privacyIDEAError)
-@tokengroup_blueprint.app_errorhandler(privacyIDEAError)
-@serviceid_blueprint.app_errorhandler(privacyIDEAError)
-@container_blueprint.app_errorhandler(privacyIDEAError)
-@info_blueprint.app_errorhandler(privacyIDEAError)
+@system_blueprint.app_errorhandler(PrivacyIDEAError)
+@realm_blueprint.app_errorhandler(PrivacyIDEAError)
+@defaultrealm_blueprint.app_errorhandler(PrivacyIDEAError)
+@resolver_blueprint.app_errorhandler(PrivacyIDEAError)
+@policy_blueprint.app_errorhandler(PrivacyIDEAError)
+@user_blueprint.app_errorhandler(PrivacyIDEAError)
+@token_blueprint.app_errorhandler(PrivacyIDEAError)
+@audit_blueprint.app_errorhandler(PrivacyIDEAError)
+@application_blueprint.app_errorhandler(PrivacyIDEAError)
+@smtpserver_blueprint.app_errorhandler(PrivacyIDEAError)
+@eventhandling_blueprint.app_errorhandler(PrivacyIDEAError)
+@register_blueprint.app_errorhandler(PrivacyIDEAError)
+@recover_blueprint.app_errorhandler(PrivacyIDEAError)
+@subscriptions_blueprint.app_errorhandler(PrivacyIDEAError)
+@monitoring_blueprint.app_errorhandler(PrivacyIDEAError)
+@ttype_blueprint.app_errorhandler(PrivacyIDEAError)
+@tokengroup_blueprint.app_errorhandler(PrivacyIDEAError)
+@serviceid_blueprint.app_errorhandler(PrivacyIDEAError)
+@container_blueprint.app_errorhandler(PrivacyIDEAError)
+@info_blueprint.app_errorhandler(PrivacyIDEAError)
 def privacyidea_error(error):
     """
     This function is called when an privacyIDEAError occurs.

@@ -39,6 +39,7 @@ You will only be able to see and use user object, that are contained in a realm.
 
 The code of this module is tested in tests/test_api_system.py
 """
+from flask_babel import _
 from flask import Blueprint, request, current_app, g
 from .lib.utils import (getParam,
                         required,
@@ -52,7 +53,6 @@ from ..lib.realm import (set_default_realm,
                          delete_realm)
 from ..api.lib.prepolicy import prepolicy, check_base_action
 from ..lib.utils import reduce_realms
-from privacyidea.lib import _
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.config import check_node_uuid_exists
 from privacyidea.lib.error import ParameterError

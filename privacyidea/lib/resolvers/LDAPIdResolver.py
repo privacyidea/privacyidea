@@ -48,7 +48,7 @@ from ldap3.utils.conv import escape_bytes
 from passlib.hash import ldap_salted_sha1
 
 from privacyidea.lib import _
-from privacyidea.lib.error import privacyIDEAError, ResolverError, ParameterError
+from privacyidea.lib.error import PrivacyIDEAError, ResolverError, ParameterError
 from privacyidea.lib.framework import get_app_local_store, get_app_config_value
 from privacyidea.lib.log import log_with
 from privacyidea.lib.utils import (is_true, to_bytes, to_unicode,
@@ -1331,12 +1331,12 @@ class IdResolver(UserIdResolver):
         except Exception as e:
             log.warning("Error accessing LDAP server: {0!r}".format(e))
             log.debug("{0}".format(traceback.format_exc()))
-            raise privacyIDEAError(e)
+            raise PrivacyIDEAError(e)
 
         if self.connection.result.get("result") != 0:
             log.warning(f"Error during adding of user {dn}: "
                         f"{self.connection.result.get('description')} ({self.connection.result.get('result')})")
-            raise privacyIDEAError(self.connection.result.get('message'))
+            raise PrivacyIDEAError(self.connection.result.get('message'))
 
         return self.getUserId(attributes.get("username"))
 

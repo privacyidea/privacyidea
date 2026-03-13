@@ -30,26 +30,26 @@ The TiQR Token uses this API to implement its special functionalities. See
 :ref:`code_tiqr_token`.
 """
 import copy
+import json
+import logging
 import threading
 
 from flask import (Blueprint,
                    request)
-from .lib.utils import getParam
-from ..lib.framework import get_app_config_value
-from ..lib.log import log_with
 from flask import g, jsonify, current_app
-import logging
+
 from privacyidea.api.lib.utils import get_all_params, map_error_to_code, send_error
-from privacyidea.lib.error import ParameterError
-from privacyidea.lib.policy import PolicyClass, PolicyAction, SCOPE, Match
 from privacyidea.lib.audit import getAudit
 from privacyidea.lib.config import (get_token_class, get_from_config,
                                     SYSCONF, ensure_no_config_object, get_privacyidea_node)
+from privacyidea.lib.error import ParameterError
+from privacyidea.lib.event import EventConfiguration, event
+from privacyidea.lib.policy import PolicyClass, PolicyAction, SCOPE, Match
 from privacyidea.lib.user import get_user_from_param
 from privacyidea.lib.utils import get_client_ip, get_plugin_info_from_useragent
-from privacyidea.lib.event import EventConfiguration, event
-import json
-
+from .lib.utils import getParam
+from ..lib.framework import get_app_config_value
+from ..lib.log import log_with
 from ..lib.tokens.push_types import PushAction
 
 log = logging.getLogger(__name__)
@@ -112,8 +112,8 @@ def token(ttype=None):
         # TODO this is probably not perfect, but we can not evaluate policies in the token class itself
         code_to_phone_message = None
         policies = Match.user(g, scope=SCOPE.AUTH, action=PushAction.PUSH_CODE_TO_PHONE_MESSAGE,
-                           user_object=None).action_values(unique=True, allow_white_space_in_action=True,
-                                                                  write_to_audit_log=False)
+                              user_object=None).action_values(unique=True, allow_white_space_in_action=True,
+                                                              write_to_audit_log=False)
         if len(policies) >= 1:
             code_to_phone_message = list(policies)[0]
         request.all_data[PushAction.PUSH_CODE_TO_PHONE_MESSAGE] = code_to_phone_message

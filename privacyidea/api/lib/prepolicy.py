@@ -63,6 +63,7 @@ Wrapping the functions in a decorator class enables easy modular testing.
 The functions of this module are tested in tests/test_api_lib_policy.py
 """
 
+from flask_babel import _
 import functools
 import importlib
 import logging
@@ -80,7 +81,6 @@ from privacyidea.api.lib.policyhelper import (get_init_tokenlabel_parameters,
                                               UserAttributes,
                                               get_container_user_attributes)
 from privacyidea.api.lib.utils import getParam, attestation_certificate_allowed, is_fqdn, get_optional
-from privacyidea.lib import _
 from privacyidea.lib.auth import ROLE
 from privacyidea.lib.clientapplication import save_clientapplication
 from privacyidea.lib.config import get_token_class
@@ -2604,7 +2604,8 @@ def require_description(request=None, action=None):
         # only if no token exists, yet, we need to check the description
         if not token and not request.all_data.get("description"):
             log.error(f"Missing description for {type_value} token.")
-            raise PolicyError(_(f"Description required for {type_value} token."))
+            raise PolicyError(
+                _("Description required for {type_value} token.").format(type_value=type_value))
 
 
 def require_description_on_edit(request=None, action=None):
@@ -2639,7 +2640,11 @@ def require_description_on_edit(request=None, action=None):
         description = request.all_data.get("description", "").strip()
         if not description:
             log.error(f"Missing description for {type_value} token.")
-            raise PolicyError(_(f"Description required for {type_value} token."))
+            raise PolicyError(
+                _("Description required for {type_value} token.").format(
+                    type_value=type_value
+                )
+            )
 
 
 def jwt_validity(request, action):

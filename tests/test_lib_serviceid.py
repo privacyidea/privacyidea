@@ -4,7 +4,7 @@ This test file tests the lib.serviceid methods.
 This tests the token functions on an interface level
 """
 from .base import MyTestCase
-from privacyidea.lib.error import privacyIDEAError, ResourceNotFoundError
+from privacyidea.lib.error import PrivacyIDEAError, ResourceNotFoundError
 
 from privacyidea.lib.serviceid import set_serviceid, delete_serviceid, get_serviceids
 from privacyidea.models import Serviceid
@@ -39,7 +39,7 @@ class TokenTestCase(MyTestCase):
         r = set_serviceid("webserver", "other machines")
         self.assertGreaterEqual(r, 1)
 
-        self.assertRaises(privacyIDEAError,
+        self.assertRaises(PrivacyIDEAError,
                           delete_serviceid, sid=(r + 1), name=WEBSERVER)
 
         delete_serviceid(sid=r)
