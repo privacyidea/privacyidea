@@ -514,7 +514,8 @@ class WebAuthnTokenTestCase(MyTestCase):
             "user": self.user,
             "challenge": hexlify_and_unicode(webauthn_b64_decode("1BnSt4TYHSsNmQLnQKJr1afBBbJbwIvwPjIEx3fmx-8")),
             "HTTP_ORIGIN": "https://cool.nils:5000",
-            FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT: "required"
+            # use the key from fido.challenge verify_fido2_challenge
+            "user_verification": "required"
         })
         self.assertEqual(res, -1)
 
