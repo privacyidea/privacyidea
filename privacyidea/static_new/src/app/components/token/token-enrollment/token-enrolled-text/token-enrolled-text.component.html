@@ -18,39 +18,40 @@
 -->
 
 @if (!rollover()) {
- <div class="margin-bottom-16">
+  <div class="margin-bottom-16">
  <span i18n>
  The token was successfully enrolled with serial number
  <a (click)="tokenSelected()"> {{ serial() }} </a>.
  </span>
- @if (containerSerial()) {
- <div i18n>
- It has been enrolled in the container
- <a (click)="containerSelected()">
- {{ containerSerial() }}
- </a>
- .
- </div>
- }
- @if (username() && userRealm() != "" && !onlyAddToRealm()) {
- <div i18n>The user
- <span>{{ username() }}</span>
- in the realm
- <span>{{ userRealm() }}</span>
- was assigned to the token.
- </div>
- } @else if (userRealm() && onlyAddToRealm()) {
- <div i18n>The token was assigned to the realm
- <span>{{ userRealm() }}</span>.
- </div>
- }
- </div>
- } @else {
- <div class="margin-bottom-16">
+    @if (containerSerial()) {
+      <div i18n>
+        It has been enrolled in the container
+        <a (click)="containerSelected()">
+          {{ containerSerial() }}
+        </a>
+        .
+      </div>
+    }
+    @if (username() && userRealm() != "" && !onlyAddToRealm()) {
+      <div i18n>The user
+        <span>{{ username() }}</span>
+                in the realm
+        <span>{{ userRealm() }}</span>
+                was assigned to the token.
+      </div>
+    } @else if (userRealm() && onlyAddToRealm()) {
+      <div i18n>The token was assigned to the realm
+        <span>{{ userRealm() }}</span>
+                .
+      </div>
+    }
+  </div>
+} @else {
+  <div class="margin-bottom-16">
  <span i18n>
  The token with serial number
  <a (click)="tokenSelected()"> {{ serial() }} </a>
  was successfully rolled over.
  </span>
- </div>
- }
+  </div>
+}
