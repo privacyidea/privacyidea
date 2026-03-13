@@ -36,8 +36,8 @@ export interface HotpEnrollmentData extends TokenEnrollmentData {
 }
 
 export interface HotpEnrollmentPayload extends TokenEnrollmentPayload {
-  otpkey: string | null;
   genkey: 0 | 1;
+  otpkey?: string;
   otplen?: number;
   hashlib?: string;
   serial?: string | null;
@@ -51,7 +51,7 @@ export class HotpApiPayloadMapper extends BaseApiPayloadMapper implements TokenA
     const basePayload = super.toApiPayload(data);
     const payload: HotpEnrollmentPayload = {
       ...basePayload,
-      otpkey: data.generateOnServer ? null : (data.otpKey ?? null),
+      ...(data.otpKey !== undefined && { otpkey: data.otpKey }),
       genkey: data.generateOnServer ? 1 : 0,
       ...(data.otpLength !== undefined && { otplen: Number(data.otpLength) }),
       ...(data.hashAlgorithm !== undefined && { hashlib: data.hashAlgorithm }),
@@ -67,9 +67,18 @@ export class HotpApiPayloadMapper extends BaseApiPayloadMapper implements TokenA
     return payload;
   }
 
-  override fromApiPayload(payload: any): HotpEnrollmentData {
-    // Placeholder: Implement transformation from API payload. We will replace this later.
-    return payload as HotpEnrollmentData;
+  override fromApiPayload(payload: HotpEnrollmentPayload): HotpEnrollmentData {
+    const baseData = super.fromApiPayload(payload);
+    return {
+      ...baseData,
+      type: "hotp",
+      generateOnServer: payload.genkey === 1,
+      otpKey: payload.otpkey ?? undefined,
+      otpLength: payload.otplen !== undefined ? Number(payload.otplen) : undefined,
+      hashAlgorithm: payload.hashlib ?? undefined,
+      twoStepInit: payload["2stepinit"] ?? undefined,
+      otpKeyFormat: payload.otpkeyformat ?? undefined
+    };
   }
 
   override fromTokenDetailsToEnrollmentData(details: TokenDetails): HotpEnrollmentData {

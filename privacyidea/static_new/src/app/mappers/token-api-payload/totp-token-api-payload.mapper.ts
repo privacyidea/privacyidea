@@ -68,9 +68,15 @@ export class TotpApiPayloadMapper extends BaseApiPayloadMapper implements TokenA
     return payload;
   }
 
-  override fromApiPayload(payload: any): TotpEnrollmentData {
-    // Placeholder: Implement transformation from API payload. We will replace this later.
-    return payload as TotpEnrollmentData;
+  override fromApiPayload(payload: TotpEnrollmentPayload): TotpEnrollmentData {
+    const baseData = super.fromApiPayload(payload);
+    return {
+      ...baseData,
+      type: "totp",
+      otpLength: payload.otplen ? Number(payload.otplen) : undefined,
+      hashAlgorithm: payload.hashlib ?? undefined,
+      timeStep: payload.timeStep !== undefined ? Number(payload.timeStep) : undefined
+    };
   }
 
   override fromTokenDetailsToEnrollmentData(details: TokenDetails): TotpEnrollmentData {

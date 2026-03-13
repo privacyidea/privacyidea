@@ -102,7 +102,6 @@ export class EnrollFoureyesComponent implements OnInit {
   }
 
   private _setInitialFormValues(args: { enrollmentData?: FourEyesEnrollmentData; eventEmit?: boolean }): void {
-    // const enrollmentData = this.enrollmentData();
     const { enrollmentData, eventEmit } = args;
     if (enrollmentData) {
       this.separatorControl.setValue(this.enrollmentData()?.separator ?? "|", { emitEvent: eventEmit });

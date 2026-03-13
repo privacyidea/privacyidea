@@ -164,11 +164,14 @@ export class TemplateAddedTokenRowComponent {
     const updatedEnrollmentData = { ...this.tokenEnrollmentData(), ...enrollmentData };
 
     this.tokenEnrollmentData.set(updatedEnrollmentData);
-    const args = this.enrollmentArgsGetterSignal()?.({
+    const getter = this.enrollmentArgsGetterSignal();
+    if (!getter) {
+      return;
+    }
+    const args = getter({
       type: this.tokenEnrollmentPayload().type,
       ...updatedEnrollmentData
     });
-
     if (args) {
       const mappedData = args.mapper.toApiPayload(args.data);
       this.onEditToken.emit(mappedData);

@@ -156,20 +156,21 @@ export class ContainerTemplateEditDialogComponent extends PendingChangesDialogCo
   }
 
   onAddToken(tokenType: string) {
-    const basicOptions: TokenEnrollmentPayload = {
-      type: tokenType as TokenTypeKey,
-      genkey: true,
-      hashlib: "sha1",
-      otplen: 6,
-      timeStep: 30,
-      user: true
-    };
-    const updatedTokens = [...this.tokens(), basicOptions];
+    const updatedTokens = [...this.tokens(), { type: tokenType as TokenTypeKey }];
     this.updateTokens(updatedTokens);
   }
 
   onEditToken(patch: Partial<TokenEnrollmentPayload>, index: number) {
-    const updatedTokens = this.tokens().map((token, i) => (i === index ? { ...token, ...patch } : token));
+    const updatedTokens = this.tokens().map((token, i) => {
+      if (i !== index) return token;
+      const updatedToken = { ...token, ...patch };
+      Object.keys(updatedToken).forEach((key) => {
+        if (updatedToken[key] === "" || updatedToken[key] === null || updatedToken[key] === undefined) {
+          delete updatedToken[key];
+        }
+      });
+      return updatedToken;
+    });
     this.updateTokens(updatedTokens);
   }
 
