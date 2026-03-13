@@ -40,7 +40,7 @@
       @if (authService.actionsAllowed(["updateuser", "resolverread"])) {
         <button
           (click)="editUser()"
-          class="action-button-1"
+          class="action-button-secondary button-width-s"
           mat-stroked-button>
           <mat-icon> edit</mat-icon>
           <span i18n>Edit</span>
@@ -49,7 +49,7 @@
       @if (authService.actionAllowed("deleteuser")) {
         <button
           (click)="deleteUser()"
-          class="action-button-delete"
+          class="action-button-delete-secondary button-width-s"
           mat-stroked-button>
           <mat-icon> delete</mat-icon>
           <span i18n>Delete</span>
