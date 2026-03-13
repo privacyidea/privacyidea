@@ -1,10 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" version="1.2">
-  <file source-language="en" datatype="plaintext" original="ng2.template">
+  <file source-language="en" datatype="plaintext" original="ng2.template" target-language="sk">
     <body>
-      <trans-unit id="809951388512606676" datatype="html" xml:space="preserve">
+      <trans-unit id="809951388512606676" datatype="html">
         <source>Content Layout</source>
-        <target state="needs-translation">Couche de contenu</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/audit/audit.component.html</context>
           <context context-type="linenumber">1</context>
@@ -14,9 +13,8 @@
           <context context-type="linenumber">3,4</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="5446098614993570765" datatype="html" xml:space="preserve">
+      <trans-unit id="5446098614993570765" datatype="html">
         <source>Enter Filter</source>
-        <target state="translated">Entrer Filtre</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/audit/audit.component.html</context>
           <context context-type="linenumber">5</context>
@@ -54,9 +52,8 @@
           <context context-type="linenumber">5</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="2031608336292822758" datatype="html" xml:space="preserve">
+      <trans-unit id="2031608336292822758" datatype="html">
         <source>Filter Input</source>
-        <target state="translated">Entrée du Filtre</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/audit/audit.component.html</context>
           <context context-type="linenumber">11,12</context>
@@ -92,7 +89,7 @@
       </trans-unit>
       <trans-unit id="4021416118056639248" datatype="html" xml:space="preserve">
         <source>Example query: 'type: hotp userid: 1000'</source>
-        <target state="translated">Exemple de requête : 'type: hotp userid: 1000'</target>
+        <target state="translated">Príklad dotazu: 'type: hotp userid: 1000'</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/audit/audit.component.html</context>
           <context context-type="linenumber">14,15</context>
@@ -108,7 +105,7 @@
       </trans-unit>
       <trans-unit id="2201237987005516275" datatype="html" xml:space="preserve">
         <source>Audit Data Table</source>
-        <target state="needs-translation">Audit de la Table des Données</target>
+        <target state="translated">Tabuľka auditných záznamov</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/audit/audit.component.html</context>
           <context context-type="linenumber">33</context>
@@ -116,7 +113,7 @@
       </trans-unit>
       <trans-unit id="4194127101054948199" datatype="html" xml:space="preserve">
         <source>Header Row</source>
-        <target state="translated">Ligne d'Entête</target>
+        <target state="translated">Hlavička riadku</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/audit/audit.component.html</context>
           <context context-type="linenumber">124</context>
@@ -154,9 +151,8 @@
           <context context-type="linenumber">71</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="8741120830345377534" datatype="html" xml:space="preserve">
+      <trans-unit id="8741120830345377534" datatype="html">
         <source>Data Row</source>
-        <target state="translated">Ligne de Données</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/audit/audit.component.html</context>
           <context context-type="linenumber">125</context>
@@ -194,9 +190,8 @@
           <context context-type="linenumber">72</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="2699373604417213855" datatype="html" xml:space="preserve">
+      <trans-unit id="2699373604417213855" datatype="html">
         <source>No Data Row</source>
-        <target state="translated">Aucune Ligne de Données</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/audit/audit.component.html</context>
           <context context-type="linenumber">126,127</context>
@@ -234,9 +229,8 @@
           <context context-type="linenumber">73,74</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="1988522679591271344" datatype="html" xml:space="preserve">
+      <trans-unit id="1988522679591271344" datatype="html">
         <source>No Data Cell</source>
-        <target state="translated">Aucune Cellule de Données</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/audit/audit.component.html</context>
           <context context-type="linenumber">127,128</context>
@@ -276,7 +270,7 @@
       </trans-unit>
       <trans-unit id="60339518069223848" datatype="html" xml:space="preserve">
         <source>No data matching the filter.</source>
-        <target state="translated">Aucune donnée correspondant au filtre.</target>
+        <target state="translated">Žiadne dáta pre zadaný filter.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/audit/audit.component.html</context>
           <context context-type="linenumber">128,129</context>
@@ -352,7 +346,7 @@
       </trans-unit>
       <trans-unit id="4548722462586549001" datatype="html" xml:space="preserve">
         <source>Tokens</source>
-        <target state="translated">Jetons</target>
+        <target state="translated">Tokeny</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/layout/header/header.component.html</context>
           <context context-type="linenumber">24,25</context>
@@ -362,9 +356,8 @@
           <context context-type="linenumber">48</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="6935250775030622228" datatype="html" xml:space="preserve">
+      <trans-unit id="6935250775030622228" datatype="html">
         <source>Machines</source>
-        <target state="translated">Machines</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/layout/header/header.component.html</context>
           <context context-type="linenumber">40,41</context>
@@ -372,7 +365,7 @@
       </trans-unit>
       <trans-unit id="3008420115644088420" datatype="html" xml:space="preserve">
         <source>Configuration</source>
-        <target state="translated">Configuration</target>
+        <target state="translated">Konfigurácia</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/layout/header/header.component.html</context>
           <context context-type="linenumber">48,49</context>
@@ -388,7 +381,7 @@
       </trans-unit>
       <trans-unit id="1831139682192909712" datatype="html" xml:space="preserve">
         <source>Components</source>
-        <target state="translated">Composants</target>
+        <target state="translated">Komponenty</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/layout/header/header.component.html</context>
           <context context-type="linenumber">64,65</context>
@@ -396,7 +389,7 @@
       </trans-unit>
       <trans-unit id="5740206434555920246" datatype="html" xml:space="preserve">
         <source>Preview</source>
-        <target state="translated">Aperçu</target>
+        <target state="translated">Náhľad</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/layout/header/header.component.html</context>
           <context context-type="linenumber">77,78</context>
@@ -404,7 +397,7 @@
       </trans-unit>
       <trans-unit id="2288513108450439427" datatype="html" xml:space="preserve">
         <source>Support</source>
-        <target state="translated">Support</target>
+        <target state="translated">Podpora</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/layout/header/header.component.html</context>
           <context context-type="linenumber">102</context>
@@ -424,7 +417,7 @@
       </trans-unit>
       <trans-unit id="3797778920049399855" datatype="html" xml:space="preserve">
         <source>Logout</source>
-        <target state="translated">Déconnexion</target>
+        <target state="translated">Odhlásiť</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/layout/header/header.component.html</context>
           <context context-type="linenumber">123</context>
@@ -436,15 +429,14 @@
       </trans-unit>
       <trans-unit id="3482067797996829475" datatype="html" xml:space="preserve">
         <source>Preview</source>
-        <target state="translated">Aperçu</target>
+        <target state="translated">Náhľad</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/layout/header/header.self-service.component.html</context>
           <context context-type="linenumber">44,45</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="5474901734608805094" datatype="html" xml:space="preserve">
+      <trans-unit id="5474901734608805094" datatype="html">
         <source>Layout</source>
-        <target state="translated">Mise en page</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/layout/layout.component.html</context>
           <context context-type="linenumber">5</context>
@@ -452,7 +444,7 @@
       </trans-unit>
       <trans-unit id="3597932961286677186" datatype="html" xml:space="preserve">
         <source>Header</source>
-        <target state="translated">Entête</target>
+        <target state="translated">Hlavička</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/layout/layout.component.html</context>
           <context context-type="linenumber">6</context>
@@ -474,7 +466,7 @@
       </trans-unit>
       <trans-unit id="6920697388428342571" datatype="html" xml:space="preserve">
         <source>logo-text</source>
-        <target state="translated">texte-logo</target>
+        <target state="translated">logo-text</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/login/login.component.html</context>
           <context context-type="linenumber">20,21</context>
@@ -482,7 +474,7 @@
       </trans-unit>
       <trans-unit id="3862954316850984559" datatype="html" xml:space="preserve">
         <source>Logo Text</source>
-        <target state="translated">Texte Logo</target>
+        <target state="translated">Logo text</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/login/login.component.html</context>
           <context context-type="linenumber">22,23</context>
@@ -490,7 +482,7 @@
       </trans-unit>
       <trans-unit id="9216296136044355574" datatype="html" xml:space="preserve">
         <source>Login Form</source>
-        <target state="translated">Formulaire de Connexion</target>
+        <target state="translated">Prihlasovací formulár</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/login/login.component.html</context>
           <context context-type="linenumber">33,34</context>
@@ -498,7 +490,7 @@
       </trans-unit>
       <trans-unit id="5248717555542428023" datatype="html" xml:space="preserve">
         <source>Username</source>
-        <target state="translated">Nom d'utilisateur</target>
+        <target state="translated">Meno</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/login/login.component.html</context>
           <context context-type="linenumber">50,52</context>
@@ -511,15 +503,16 @@
       </trans-unit>
       <trans-unit id="1431416938026210429" datatype="html" xml:space="preserve">
         <source>Password</source>
-        <target state="translated">Mot de passe</target>
+        <target state="translated">Heslo</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/login/login.component.html</context>
           <context context-type="linenumber">63,65</context>
         </context-group>
         <note priority="1" from="description">Login password label</note>
       </trans-unit>
-      <trans-unit id="348324077381402312" datatype="html">
+      <trans-unit id="348324077381402312" datatype="html" xml:space="preserve">
         <source>One-Time-Password</source>
+        <target state="translated">Jednorázové heslo</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/login/login.component.html</context>
           <context context-type="linenumber">76,77</context>
@@ -528,7 +521,7 @@
       </trans-unit>
       <trans-unit id="6441574972166776812" datatype="html" xml:space="preserve">
         <source>Login Button</source>
-        <target state="translated">Bouton de Connexion</target>
+        <target state="translated">Prihlasovacie tlačidlo</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/login/login.component.html</context>
           <context context-type="linenumber">93,94</context>
@@ -536,22 +529,24 @@
       </trans-unit>
       <trans-unit id="8520023152129279437" datatype="html" xml:space="preserve">
         <source>Log In</source>
-        <target state="translated">Se Connecter</target>
+        <target state="translated">Prihlásiť sa</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/login/login.component.html</context>
           <context context-type="linenumber">98,99</context>
         </context-group>
         <note priority="1" from="description">Login button text</note>
       </trans-unit>
-      <trans-unit id="2740831890339580810" datatype="html">
+      <trans-unit id="2740831890339580810" datatype="html" xml:space="preserve">
         <source>Start Over</source>
+        <target state="translated">Začať znova</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/login/login.component.html</context>
           <context context-type="linenumber">106,107</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="7808756054397155068" datatype="html">
+      <trans-unit id="7808756054397155068" datatype="html" xml:space="preserve">
         <source>Reset</source>
+        <target state="translated">Reset</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/login/login.component.html</context>
           <context context-type="linenumber">111,112</context>
@@ -560,7 +555,7 @@
       </trans-unit>
       <trans-unit id="6127422089109094880" datatype="html" xml:space="preserve">
         <source>WebAuthn Button</source>
-        <target state="translated">Bouton WebAuthn</target>
+        <target state="translated">WebAuthn tlačidlo</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/login/login.component.html</context>
           <context context-type="linenumber">121,122</context>
@@ -577,7 +572,7 @@
       </trans-unit>
       <trans-unit id="5977040414046639252" datatype="html" xml:space="preserve">
         <source>Passkey Button</source>
-        <target state="translated">Bouton Passkey</target>
+        <target state="translated">Passkey tlačidlo</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/login/login.component.html</context>
           <context context-type="linenumber">136,137</context>
@@ -585,7 +580,7 @@
       </trans-unit>
       <trans-unit id="7763910745363666950" datatype="html" xml:space="preserve">
         <source>Log In With Passkey</source>
-        <target state="translated">Se Connecter avec Passkey</target>
+        <target state="translated">Prihlásiť sa cez Passkey</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/login/login.component.html</context>
           <context context-type="linenumber">141,142</context>
@@ -599,9 +594,8 @@
           <context context-type="linenumber">6,14</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="6173918664588341725" datatype="html" xml:space="preserve">
+      <trans-unit id="6173918664588341725" datatype="html">
         <source>This search request will check <x id="INTERPOLATION" equiv-text="{{ data.numberOfTokens }}"></x> tokens in the system for the given OTP value. <x id="LINE_BREAK" ctype="lb" equiv-text="&lt;br /&gt;"></x>This could take a lot of time and could even time out. </source>
-        <target state="translated">Cette requête vérifiera <x id="INTERPOLATION" equiv-text="{{ data.numberOfTokens }}"></x> jetons dans le système pour la valeur OTP donnée. <x id="LINE_BREAK" ctype="lb" equiv-text="&lt;br /&gt;"></x>Celle-ci peut prendre beaucoup de temps et même expirer. </target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/shared/confirmation-dialog/confirmation-dialog.component.html</context>
           <context context-type="linenumber">20,22</context>
@@ -609,7 +603,7 @@
       </trans-unit>
       <trans-unit id="2159130950882492111" datatype="html" xml:space="preserve">
         <source>Cancel</source>
-        <target state="translated">Annuler</target>
+        <target state="translated">Zrušiť</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/shared/confirmation-dialog/confirmation-dialog.component.html</context>
           <context context-type="linenumber">27,28</context>
@@ -623,9 +617,8 @@
           <context context-type="linenumber">62,63</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="6097289123418131155" datatype="html" xml:space="preserve">
+      <trans-unit id="6097289123418131155" datatype="html">
         <source>Filter by:</source>
-        <target state="translated">Filtrer par :</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/shared/keyword-filter/keyword-filter.component.html</context>
           <context context-type="linenumber">5</context>
@@ -638,9 +631,8 @@
           <context context-type="linenumber">1</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="5611789394889455858" datatype="html" xml:space="preserve">
+      <trans-unit id="5611789394889455858" datatype="html">
         <source>Assign Token</source>
-        <target state="translated">Assigner Jeton</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/assign-token-self-service/assign-token-self-service.component.html</context>
           <context context-type="linenumber">2,3</context>
@@ -657,49 +649,43 @@
           <context context-type="linenumber">4,6</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="7718776613508850583" datatype="html" xml:space="preserve">
+      <trans-unit id="7718776613508850583" datatype="html">
         <source>Enter Serial</source>
-        <target state="translated">Entrer Numéro de Série</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/assign-token-self-service/assign-token-self-service.component.html</context>
           <context context-type="linenumber">9</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="2841006058202716029" datatype="html" xml:space="preserve">
+      <trans-unit id="2841006058202716029" datatype="html">
         <source>Serial is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"></x>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"></x></source>
-        <target state="translated">Le numéro de série est <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"></x>requis<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"></x></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/assign-token-self-service/assign-token-self-service.component.html</context>
           <context context-type="linenumber">11,12</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="3111139149453166188" datatype="html" xml:space="preserve">
+      <trans-unit id="3111139149453166188" datatype="html">
         <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x>person_add<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Assign Token </source>
-        <target state="translated"><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x>person_add<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Assigner Jeton </target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/assign-token-self-service/assign-token-self-service.component.html</context>
           <context context-type="linenumber">14,17</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="5211449697094133618" datatype="html" xml:space="preserve">
+      <trans-unit id="5211449697094133618" datatype="html">
         <source>Set PIN</source>
-        <target state="translated">Définir le PIN</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/assign-token-self-service/assign-token-self-service.component.html</context>
           <context context-type="linenumber">22,23</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="2935871829967083793" datatype="html" xml:space="preserve">
+      <trans-unit id="2935871829967083793" datatype="html">
         <source>PIN</source>
-        <target state="translated">PIN</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/assign-token-self-service/assign-token-self-service.component.html</context>
           <context context-type="linenumber">26</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="9079362511218564896" datatype="html" xml:space="preserve">
+      <trans-unit id="9079362511218564896" datatype="html">
         <source>Repeat PIN</source>
-        <target state="translated">Répéter PIN</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/assign-token-self-service/assign-token-self-service.component.html</context>
           <context context-type="linenumber">26,27</context>
@@ -716,9 +702,8 @@
           <context context-type="linenumber">2,3</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="8749959208899788820" datatype="html" xml:space="preserve">
+      <trans-unit id="8749959208899788820" datatype="html">
         <source>Example query: 'transaction_id: 00000000000000000001'</source>
-        <target state="translated">Exemple de requête : 'transaction_id: 00000000000000000001'</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/challenges-table/challenges-table.component.html</context>
           <context context-type="linenumber">15,16</context>
@@ -731,9 +716,8 @@
           <context context-type="linenumber">39,40</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="6130492960706757099" datatype="html" xml:space="preserve">
+      <trans-unit id="6130492960706757099" datatype="html">
         <source>Create Container</source>
-        <target state="translated">Créer Conteneur</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/container-create/container-create.component.html</context>
           <context context-type="linenumber">1</context>
@@ -751,25 +735,22 @@
           <context context-type="linenumber">29,30</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="566076195429788086" datatype="html" xml:space="preserve">
+      <trans-unit id="566076195429788086" datatype="html">
         <source>Create a New Container</source>
-        <target state="translated">Créer un Nouveau Conteneur</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/container-create/container-create.component.html</context>
           <context context-type="linenumber">2,3</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="3343249112057889089" datatype="html" xml:space="preserve">
+      <trans-unit id="3343249112057889089" datatype="html">
         <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x>add<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Create </source>
-        <target state="translated"><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x>add<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Créer </target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/container-create/container-create.component.html</context>
           <context context-type="linenumber">22,24</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="510952130578378200" datatype="html" xml:space="preserve">
+      <trans-unit id="510952130578378200" datatype="html">
         <source>Supported Token Types: <x id="START_BLOCK_IF" equiv-text="@if (containerService.selectedContainerType().token_types.length &gt;= tokenService.tokenTypeOptions().length) {"></x> All <x id="CLOSE_BLOCK_IF" equiv-text="}"></x><x id="START_BLOCK_ELSE_IF" equiv-text="@else if (containerService.selectedContainerType().token_types.length &gt; 1) {"></x> <x id="INTERPOLATION" equiv-text="{{ containerService.selectedContainerType().token_types.join(&quot;, &quot;) }}"></x> <x id="CLOSE_BLOCK_ELSE_IF" equiv-text="}"></x><x id="START_BLOCK_ELSE" equiv-text="@else {"></x> <x id="INTERPOLATION_1" equiv-text="{{ containerService.selectedContainerType().token_types[0] }}"></x> <x id="CLOSE_BLOCK_ELSE" equiv-text="}"></x></source>
-        <target state="translated">Types de Jetons Supportés : <x id="START_BLOCK_IF" equiv-text="@if (containerService.selectedContainerType().token_types.length &gt;= tokenService.tokenTypeOptions().length) {"></x> All <x id="CLOSE_BLOCK_IF" equiv-text="}"></x><x id="START_BLOCK_ELSE_IF" equiv-text="@else if (containerService.selectedContainerType().token_types.length &gt; 1) {"></x> <x id="INTERPOLATION" equiv-text="{{ containerService.selectedContainerType().token_types.join(&quot;, &quot;) }}"></x> <x id="CLOSE_BLOCK_ELSE_IF" equiv-text="}"></x><x id="START_BLOCK_ELSE" equiv-text="@else {"></x> <x id="INTERPOLATION_1" equiv-text="{{ containerService.selectedContainerType().token_types[0] }}"></x> <x id="CLOSE_BLOCK_ELSE" equiv-text="}"></x></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/container-create/container-create.component.html</context>
           <context context-type="linenumber">39,49</context>
@@ -779,9 +760,8 @@
           <context context-type="linenumber">40,50</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="4902817035128594900" datatype="html" xml:space="preserve">
+      <trans-unit id="4902817035128594900" datatype="html">
         <source>Description</source>
-        <target state="translated">Description</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/container-create/container-create.component.html</context>
           <context context-type="linenumber">50</context>
@@ -795,9 +775,8 @@
           <context context-type="linenumber">24,25</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="5551874320378862200" datatype="html" xml:space="preserve">
+      <trans-unit id="5551874320378862200" datatype="html">
         <source>Enter description</source>
-        <target state="translated">Entrer une description</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/container-create/container-create.component.html</context>
           <context context-type="linenumber">57,58</context>
@@ -819,9 +798,8 @@
           <context context-type="linenumber">91,92</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="3459762882517974577" datatype="html" xml:space="preserve">
+      <trans-unit id="3459762882517974577" datatype="html">
         <source>Use a Template</source>
-        <target state="translated">Utiliser un modèle</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/container-create/container-create.component.html</context>
           <context context-type="linenumber">64,65</context>
@@ -831,9 +809,8 @@
           <context context-type="linenumber">64,65</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="5610425955750546094" datatype="html" xml:space="preserve">
+      <trans-unit id="5610425955750546094" datatype="html">
         <source>Template</source>
-        <target state="translated">Modèle</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/container-create/container-create.component.html</context>
           <context context-type="linenumber">66</context>
@@ -843,17 +820,15 @@
           <context context-type="linenumber">66</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="1596233195541106654" datatype="html" xml:space="preserve">
+      <trans-unit id="1596233195541106654" datatype="html">
         <source>Assign the Container to a User</source>
-        <target state="translated">Assigner le Conteneur à un Utilisateur</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/container-create/container-create.component.html</context>
           <context context-type="linenumber">74,75</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="6314428198708410534" datatype="html" xml:space="preserve">
+      <trans-unit id="6314428198708410534" datatype="html">
         <source>Select Realm of User</source>
-        <target state="translated">Sélectionner le Domaine de l'Utilisateur</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/container-create/container-create.component.html</context>
           <context context-type="linenumber">77</context>
@@ -875,9 +850,8 @@
           <context context-type="linenumber">46</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="8454304938675214648" datatype="html" xml:space="preserve">
+      <trans-unit id="8454304938675214648" datatype="html">
         <source>Enter User</source>
-        <target state="translated">Entrez l'Utilisateur</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/container-create/container-create.component.html</context>
           <context context-type="linenumber">85</context>
@@ -895,9 +869,8 @@
           <context context-type="linenumber">26</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="4347420552626362384" datatype="html" xml:space="preserve">
+      <trans-unit id="4347420552626362384" datatype="html">
         <source>User is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"></x>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"></x></source>
-        <target state="translated">L'utilisateur est <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"></x>requis<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"></x></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/container-create/container-create.component.html</context>
           <context context-type="linenumber">97,98</context>
@@ -914,9 +887,8 @@
           <context context-type="linenumber">105,107</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="8298333184054476827" datatype="html" xml:space="preserve">
+      <trans-unit id="8298333184054476827" datatype="html">
         <source>Registration</source>
-        <target state="translated">Enregistrement</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/container-create/container-create.component.html</context>
           <context context-type="linenumber">112,113</context>
@@ -926,9 +898,8 @@
           <context context-type="linenumber">76,77</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="1249664452256234518" datatype="html" xml:space="preserve">
+      <trans-unit id="1249664452256234518" datatype="html">
         <source>Optional Settings</source>
-        <target state="translated">Paramètres Optionnels</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/container-create/container-create.component.html</context>
           <context context-type="linenumber">119</context>
@@ -949,9 +920,8 @@
           <context context-type="linenumber">86</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="1945076905642207207" datatype="html" xml:space="preserve">
+      <trans-unit id="1945076905642207207" datatype="html">
         <source>This prompt will be displayed to the user.</source>
-        <target state="translated">Ce message sera affiché à l'utilisateur.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/container-create/container-create.component.html</context>
           <context context-type="linenumber">127,128</context>
@@ -1005,33 +975,29 @@
           <context context-type="linenumber">109,110</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="8809573063492791214" datatype="html" xml:space="preserve">
+      <trans-unit id="8809573063492791214" datatype="html">
         <source>Generate a QR code to register the container on a smartphone.</source>
-        <target state="translated">Générer un code QR pour enregistrer le conteneur sur un smartphone.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/container-create/container-create.self-service.component.html</context>
           <context context-type="linenumber">78,79</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="6644387696802130681" datatype="html" xml:space="preserve">
+      <trans-unit id="6644387696802130681" datatype="html">
         <source>Container Successfully Created</source>
-        <target state="translated">Conteneur Créé avec Succès</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/container-create/container-registration-dialog/container-registration-dialog.component.html</context>
           <context context-type="linenumber">1,2</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="5118998797401417244" datatype="html" xml:space="preserve">
+      <trans-unit id="5118998797401417244" datatype="html">
         <source>The container was successfully created with serial number <x id="START_LINK" ctype="x-a" equiv-text="&lt;a (click)=&quot;containerSelected(data.containerSerial())&quot;&gt;"></x> <x id="INTERPOLATION" equiv-text="{{ data.containerSerial() }}"></x> <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"></x>.</source>
-        <target state="translated">Le conteneur a été correctement créé avec le numéro de série <x id="START_LINK" ctype="x-a" equiv-text="&lt;a (click)=&quot;containerSelected(data.containerSerial())&quot;&gt;"></x> <x id="INTERPOLATION" equiv-text="{{ data.containerSerial() }}"></x> <x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"></x>.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/container-create/container-registration-dialog/container-registration-dialog.component.html</context>
           <context context-type="linenumber">4,7</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="8586310578890129763" datatype="html" xml:space="preserve">
+      <trans-unit id="8586310578890129763" datatype="html">
         <source>QR Code</source>
-        <target state="translated">Code QR</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/container-create/container-registration-dialog/container-registration-dialog.component.html</context>
           <context context-type="linenumber">12</context>
@@ -1048,9 +1014,8 @@
           <context context-type="linenumber">19,30</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="5037437391296624618" datatype="html" xml:space="preserve">
+      <trans-unit id="5037437391296624618" datatype="html">
         <source>Information</source>
-        <target state="translated">Information</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/container-details/container-details-info/container-details-info.component.html</context>
           <context context-type="linenumber">2,3</context>
@@ -1067,9 +1032,8 @@
           <context context-type="linenumber">6,7</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="1909408253449637154" datatype="html" xml:space="preserve">
+      <trans-unit id="1909408253449637154" datatype="html">
         <source>Add new key</source>
-        <target state="translated">Ajouter nouvelle clé</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/container-details/container-details-info/container-details-info.component.html</context>
           <context context-type="linenumber">55,56</context>
@@ -1079,9 +1043,8 @@
           <context context-type="linenumber">60,61</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="1216605105092972143" datatype="html" xml:space="preserve">
+      <trans-unit id="1216605105092972143" datatype="html">
         <source>Add new info</source>
-        <target state="translated">Ajouter nouvelle info</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/container-details/container-details-info/container-details-info.component.html</context>
           <context context-type="linenumber">65</context>
@@ -1102,9 +1065,8 @@
           <context context-type="linenumber">3,4</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="7158562206173633107" datatype="html" xml:space="preserve">
+      <trans-unit id="7158562206173633107" datatype="html">
         <source>Token in Container</source>
-        <target state="translated">Jeton dans le Conteneur</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/container-details/container-details-token-table/container-details-token-table.component.html</context>
           <context context-type="linenumber">6,7</context>
@@ -1147,9 +1109,8 @@
           <context context-type="linenumber">104,105</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="8212177249756365917" datatype="html" xml:space="preserve">
+      <trans-unit id="8212177249756365917" datatype="html">
         <source>Remove</source>
-        <target state="translated">Enlever</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/container-details/container-details-token-table/container-details-token-table.component.html</context>
           <context context-type="linenumber">110,111</context>
@@ -1170,9 +1131,8 @@
           <context context-type="linenumber">112,113</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="2579643993906157062" datatype="html" xml:space="preserve">
+      <trans-unit id="2579643993906157062" datatype="html">
         <source>Remove Token from Container</source>
-        <target state="translated">Enlever le jeton du Conteneur</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/container-details/container-details-token-table/container-details-token-table.component.html</context>
           <context context-type="linenumber">122,123</context>
@@ -1182,9 +1142,8 @@
           <context context-type="linenumber">121,122</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="2462585818119115344" datatype="html" xml:space="preserve">
+      <trans-unit id="2462585818119115344" datatype="html">
         <source>Delete Column Header</source>
-        <target state="translated">Effacer Entête de Colonne</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/container-details/container-details-token-table/container-details-token-table.component.html</context>
           <context context-type="linenumber">132,133</context>
@@ -1194,9 +1153,8 @@
           <context context-type="linenumber">132,133</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="6660925946511264619" datatype="html" xml:space="preserve">
+      <trans-unit id="6660925946511264619" datatype="html">
         <source>Delete</source>
-        <target state="translated">Effacer</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/container-details/container-details-token-table/container-details-token-table.component.html</context>
           <context context-type="linenumber">135,136</context>
@@ -1217,9 +1175,8 @@
           <context context-type="linenumber">140,141</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="5587910315770919945" datatype="html" xml:space="preserve">
+      <trans-unit id="5587910315770919945" datatype="html">
         <source>Delete Token</source>
-        <target state="translated">Effacer Jeton</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/container-details/container-details-token-table/container-details-token-table.component.html</context>
           <context context-type="linenumber">147,148</context>
@@ -1254,17 +1211,15 @@
           <context context-type="linenumber">209,212</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="5501182211372431272" datatype="html" xml:space="preserve">
+      <trans-unit id="5501182211372431272" datatype="html">
         <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon class=&quot;mdi--list-lock&quot;/&gt;"></x><x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon class=&quot;mdi--list-lock&quot;/&gt;"></x> <x id="INTERPOLATION" equiv-text="{{ &quot;Deactivate All Tokens&quot; }}"></x> </source>
-        <target state="translated"><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon class=&quot;mdi--list-lock&quot;/&gt;"></x><x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon class=&quot;mdi--list-lock&quot;/&gt;"></x> <x id="INTERPOLATION" equiv-text="{{ &quot;Deactivate All Tokens&quot; }}"></x> </target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/container-details/container-details-token-table/container-details-token-table.component.html</context>
           <context context-type="linenumber">217,220</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="1871409347384160597" datatype="html" xml:space="preserve">
+      <trans-unit id="1871409347384160597" datatype="html">
         <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x> playlist_remove<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> <x id="INTERPOLATION" equiv-text="{{ &quot;Remove All Tokens&quot; }}"></x> </source>
-        <target state="translated"><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x> playlist_remove<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> <x id="INTERPOLATION" equiv-text="{{ &quot;Remove All Tokens&quot; }}"></x> </target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/container-details/container-details-token-table/container-details-token-table.component.html</context>
           <context context-type="linenumber">225,228</context>
@@ -1291,41 +1246,36 @@
           <context context-type="linenumber">203,204</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="3643183242581479138" datatype="html" xml:space="preserve">
+      <trans-unit id="3643183242581479138" datatype="html">
         <source>Activate All Tokens</source>
-        <target state="translated">Activer Tous les Jetons</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/container-details/container-details-token-table/container-details-token-table.self-service.component.html</context>
           <context context-type="linenumber">210,211</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="289024994795966078" datatype="html" xml:space="preserve">
+      <trans-unit id="289024994795966078" datatype="html">
         <source>Deactivate All Tokens</source>
-        <target state="translated">Désactiver Tous les Jetons</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/container-details/container-details-token-table/container-details-token-table.self-service.component.html</context>
           <context context-type="linenumber">217,218</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="6549478783629262568" datatype="html" xml:space="preserve">
+      <trans-unit id="6549478783629262568" datatype="html">
         <source>Remove All Tokens</source>
-        <target state="translated">Enlever Tous les Jetons</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/container-details/container-details-token-table/container-details-token-table.self-service.component.html</context>
           <context context-type="linenumber">224,225</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="8424549858739179395" datatype="html" xml:space="preserve">
+      <trans-unit id="8424549858739179395" datatype="html">
         <source>Delete All Tokens</source>
-        <target state="translated">Effacer Tous les Jetons</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/container-details/container-details-token-table/container-details-token-table.self-service.component.html</context>
           <context context-type="linenumber">231,232</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="5028777105388019087" datatype="html" xml:space="preserve">
+      <trans-unit id="5028777105388019087" datatype="html">
         <source>Details</source>
-        <target state="translated">Détails</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/container-details/container-details.component.html</context>
           <context context-type="linenumber">1</context>
@@ -1339,9 +1289,8 @@
           <context context-type="linenumber">1</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="7545610215495018726" datatype="html" xml:space="preserve">
+      <trans-unit id="7545610215495018726" datatype="html">
         <source>Details for Container:</source>
-        <target state="translated">Détails du Conteneur :</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/container-details/container-details.component.html</context>
           <context context-type="linenumber">4,5</context>
@@ -1354,9 +1303,8 @@
           <context context-type="linenumber">16,17</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="5100986355704918210" datatype="html" xml:space="preserve">
+      <trans-unit id="5100986355704918210" datatype="html">
         <source>Select Realms</source>
-        <target state="translated">Sélectionner les Domaines</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/container-details/container-details.component.html</context>
           <context context-type="linenumber">43</context>
@@ -1406,9 +1354,8 @@
           <context context-type="linenumber">211,212</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="8168940929086601021" datatype="html" xml:space="preserve">
+      <trans-unit id="8168940929086601021" datatype="html">
         <source>Add Token to Container</source>
-        <target state="translated">Ajouter Jeton au Conteneur</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/container-details/container-details.component.html</context>
           <context context-type="linenumber">224</context>
@@ -1421,9 +1368,8 @@
           <context context-type="linenumber">232,233</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="7708270344948043036" datatype="html" xml:space="preserve">
+      <trans-unit id="7708270344948043036" datatype="html">
         <source><x id="INTERPOLATION" equiv-text="{{ option[&quot;active&quot;] ? &quot;active&quot; : &quot;deactivated&quot; }}"></x> </source>
-        <target state="translated"><x id="INTERPOLATION" equiv-text="{{ option[&quot;active&quot;] ? &quot;active&quot; : &quot;deactivated&quot; }}"></x> </target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/container-details/container-details.component.html</context>
           <context context-type="linenumber">246,247</context>
@@ -1436,9 +1382,8 @@
           <context context-type="linenumber">1,2</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="5768535290425478632" datatype="html" xml:space="preserve">
+      <trans-unit id="5768535290425478632" datatype="html">
         <source>PIN (optional)</source>
-        <target state="translated">PIN (optionnel)</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/container-details/user-assignment-dialog/user-assignment-dialog.component.html</context>
           <context context-type="linenumber">6</context>
@@ -1448,9 +1393,8 @@
           <context context-type="linenumber">48</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="5322732766972335355" datatype="html" xml:space="preserve">
+      <trans-unit id="5322732766972335355" datatype="html">
         <source>PIN (repeat)</source>
-        <target state="translated">PIN (répéter)</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/container-details/user-assignment-dialog/user-assignment-dialog.component.html</context>
           <context context-type="linenumber">26</context>
@@ -1460,9 +1404,8 @@
           <context context-type="linenumber">69</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="6119478045831148336" datatype="html" xml:space="preserve">
+      <trans-unit id="6119478045831148336" datatype="html">
         <source>PINs do not match</source>
-        <target state="translated">Les PIN ne correspondent pas</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/container-details/user-assignment-dialog/user-assignment-dialog.component.html</context>
           <context context-type="linenumber">43</context>
@@ -1472,9 +1415,8 @@
           <context context-type="linenumber">89</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="7453395888030210040" datatype="html" xml:space="preserve">
+      <trans-unit id="7453395888030210040" datatype="html">
         <source>Cancel</source>
-        <target state="translated">Annuler</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/container-details/user-assignment-dialog/user-assignment-dialog.component.html</context>
           <context context-type="linenumber">52</context>
@@ -1516,9 +1458,8 @@
           <context context-type="linenumber">18,19</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="8303939895719307398" datatype="html" xml:space="preserve">
+      <trans-unit id="8303939895719307398" datatype="html">
         <source>Container has no tokens.</source>
-        <target state="translated">Le conteneur n'a pas de jeton.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/container-table/container-table.component.html</context>
           <context context-type="linenumber">127,128</context>
@@ -1531,9 +1472,8 @@
           <context context-type="linenumber">147,148</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="187187500641108332" datatype="html" xml:space="preserve">
+      <trans-unit id="187187500641108332" datatype="html">
         <source><x id="INTERPOLATION" equiv-text="{{ token.tokentype }}"></x></source>
-        <target state="translated"><x id="INTERPOLATION" equiv-text="{{ token.tokentype }}"></x></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/container-table/container-table.self-service.component.html</context>
           <context context-type="linenumber">132,133</context>
@@ -1643,33 +1583,29 @@
           <context context-type="linenumber">3,5</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="6095926835494383051" datatype="html" xml:space="preserve">
+      <trans-unit id="6095926835494383051" datatype="html">
         <source>Container has no tokens.</source>
-        <target state="translated">Le conteneur n'a pas de jeton.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/container-table/container-table.self-service.component.html</context>
           <context context-type="linenumber">138</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="8338492171024711150" datatype="html" xml:space="preserve">
+      <trans-unit id="8338492171024711150" datatype="html">
         <source>Token Overview</source>
-        <target state="translated">Aperçu Jeton</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/navigation-self-service/navigation-self-service.component.html</context>
           <context context-type="linenumber">8,9</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="3865541873750804730" datatype="html" xml:space="preserve">
+      <trans-unit id="3865541873750804730" datatype="html">
         <source>Token Enrollment</source>
-        <target state="translated">Enrôlement Jeton</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/navigation-self-service/navigation-self-service.component.html</context>
           <context context-type="linenumber">13,14</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="8773147931222030221" datatype="html" xml:space="preserve">
+      <trans-unit id="8773147931222030221" datatype="html">
         <source>Container Overview</source>
-        <target state="translated">Aperçu Conteneur</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/navigation-self-service/navigation-self-service.component.html</context>
           <context context-type="linenumber">24,25</context>
@@ -1771,9 +1707,8 @@
           <context context-type="linenumber">7</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="2438626271288895820" datatype="html" xml:space="preserve">
+      <trans-unit id="2438626271288895820" datatype="html">
         <source>Application Type Not Found</source>
-        <target state="translated">Type d'Application Non Trouvé</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-applications/token-applications.component.html</context>
           <context context-type="linenumber">20,21</context>
@@ -1807,9 +1742,8 @@
           <context context-type="linenumber">116,118</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="3646961671015351592" datatype="html" xml:space="preserve">
+      <trans-unit id="3646961671015351592" datatype="html">
         <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x>info_outline<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Help </source>
-        <target state="translated"><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x>info_outline<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Aide </target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-card/container-tab/container-tab.component.html</context>
           <context context-type="linenumber">127,129</context>
@@ -1827,9 +1761,8 @@
           <context context-type="linenumber">144,146</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="2619296568714352272" datatype="html" xml:space="preserve">
+      <trans-unit id="2619296568714352272" datatype="html">
         <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x> delete_sweep<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Delete Selected </source>
-        <target state="translated"><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x> delete_sweep<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Effacer la Sélection </target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-card/container-tab/container-tab.component.html</context>
           <context context-type="linenumber">142,144</context>
@@ -1839,17 +1772,15 @@
           <context context-type="linenumber">88,90</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="5985810158347863038" datatype="html" xml:space="preserve">
+      <trans-unit id="5985810158347863038" datatype="html">
         <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x>health_and_safety<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Container Details </source>
-        <target state="translated"><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x>health_and_safety<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Détails Conteneur </target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-card/container-tab/container-tab.component.html</context>
           <context context-type="linenumber">154,156</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="3701782776627563786" datatype="html" xml:space="preserve">
+      <trans-unit id="3701782776627563786" datatype="html">
         <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x>add_moderator<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Enroll Token </source>
-        <target state="translated"><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x>add_moderator<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Enroler Jeton </target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-card/container-tab/container-tab.component.html</context>
           <context context-type="linenumber">164,166</context>
@@ -1862,25 +1793,22 @@
           <context context-type="linenumber">176,178</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="2734542674067583369" datatype="html" xml:space="preserve">
+      <trans-unit id="2734542674067583369" datatype="html">
         <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x>broken_image<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Damaged Container </source>
-        <target state="translated"><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x>broken_image<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Conteneur Endommagé </target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-card/container-tab/container-tab.component.html</context>
           <context context-type="linenumber">187,189</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="8707651709744595760" datatype="html" xml:space="preserve">
+      <trans-unit id="8707651709744595760" datatype="html">
         <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x><x id="INTERPOLATION" equiv-text="{{ states().includes(&quot;active&quot;) ? &quot;lock&quot; : &quot;play_circle&quot; }}"></x> <x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> <x id="INTERPOLATION_1" equiv-text="{{ states().includes(&quot;active&quot;) ? &quot;Deactivate&quot; : &quot;Activate&quot; }}"></x> </source>
-        <target state="translated"><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x><x id="INTERPOLATION" equiv-text="{{ states().includes(&quot;active&quot;) ? &quot;lock&quot; : &quot;play_circle&quot; }}"></x> <x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> <x id="INTERPOLATION_1" equiv-text="{{ states().includes(&quot;active&quot;) ? &quot;Deactivate&quot; : &quot;Activate&quot; }}"></x> </target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-card/container-tab/container-tab.component.html</context>
           <context context-type="linenumber">211,214</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="2172831471327393523" datatype="html" xml:space="preserve">
+      <trans-unit id="2172831471327393523" datatype="html">
         <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x> delete<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Delete </source>
-        <target state="translated"><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x> delete<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Effacer </target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-card/container-tab/container-tab.component.html</context>
           <context context-type="linenumber">222,224</context>
@@ -1890,9 +1818,8 @@
           <context context-type="linenumber">167,169</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="2206569732824957363" datatype="html" xml:space="preserve">
+      <trans-unit id="2206569732824957363" datatype="html">
         <source>Assign Selected Token to User</source>
-        <target state="translated">Assigner le Jeton Sélectionné à l'Utilisateur</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-card/selected-user-attach-dialog/selected-user-attach-dialog.component.html</context>
           <context context-type="linenumber">1,2</context>
@@ -1905,9 +1832,8 @@
           <context context-type="linenumber">5,7</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="7333239510105550281" datatype="html" xml:space="preserve">
+      <trans-unit id="7333239510105550281" datatype="html">
         <source>User Realm is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"></x>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"></x></source>
-        <target state="translated">Le Domaine de l'Utilisateur est <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"></x>requis<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"></x></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-card/selected-user-attach-dialog/selected-user-attach-dialog.component.html</context>
           <context context-type="linenumber">32,33</context>
@@ -1920,9 +1846,8 @@
           <context context-type="linenumber">38</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="6531442622039246049" datatype="html" xml:space="preserve">
+      <trans-unit id="6531442622039246049" datatype="html">
         <source>User does not exist in the selected realm.</source>
-        <target state="translated">L'utilisateur n'existe pas dans le domaine sélectionné.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-card/selected-user-attach-dialog/selected-user-attach-dialog.component.html</context>
           <context context-type="linenumber">41</context>
@@ -1935,25 +1860,22 @@
           <context context-type="linenumber">102,103</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="3039940756451018621" datatype="html" xml:space="preserve">
+      <trans-unit id="3039940756451018621" datatype="html">
         <source>Token</source>
-        <target state="translated">Jeton</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-card/token-card.component.html</context>
           <context context-type="linenumber">16,17</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="4279197087356830609" datatype="html" xml:space="preserve">
+      <trans-unit id="4279197087356830609" datatype="html">
         <source>Container</source>
-        <target state="translated">Conteneur</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-card/token-card.component.html</context>
           <context context-type="linenumber">25,26</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="5562411145607892836" datatype="html" xml:space="preserve">
+      <trans-unit id="5562411145607892836" datatype="html">
         <source>Token <x id="INTERPOLATION" equiv-text="{{ data.tokenSerial() }}"></x> is lost?</source>
-        <target state="translated">Jeton <x id="INTERPOLATION" equiv-text="{{ data.tokenSerial() }}"></x> perdu ?</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-card/token-tab/lost-token/lost-token.component.html</context>
           <context context-type="linenumber">1,2</context>
@@ -1980,17 +1902,15 @@
           <context context-type="linenumber">8,9</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="1839347343820573248" datatype="html" xml:space="preserve">
+      <trans-unit id="1839347343820573248" datatype="html">
         <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon class=&quot;question-icon&quot;&gt;"></x>question_mark<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Mark Token as Lost </source>
-        <target state="translated"><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon class=&quot;question-icon&quot;&gt;"></x>question_mark<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Marquer Jeton comme Perdu </target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-card/token-tab/lost-token/lost-token.component.html</context>
           <context context-type="linenumber">12,14</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="7819314041543176992" datatype="html" xml:space="preserve">
+      <trans-unit id="7819314041543176992" datatype="html">
         <source>Close</source>
-        <target state="translated">Fermer</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-card/token-tab/lost-token/lost-token.component.html</context>
           <context context-type="linenumber">15,16</context>
@@ -2004,9 +1924,8 @@
           <context context-type="linenumber">41,42</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="4318870659585740547" datatype="html" xml:space="preserve">
+      <trans-unit id="4318870659585740547" datatype="html">
         <source>Token was marked as lost successfully.</source>
-        <target state="translated">Jeton marqué perdu avec succès.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-card/token-tab/lost-token/lost-token.component.html</context>
           <context context-type="linenumber">19</context>
@@ -2026,25 +1945,22 @@
           <context context-type="linenumber">33,35</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="2311963022491291139" datatype="html" xml:space="preserve">
+      <trans-unit id="2311963022491291139" datatype="html">
         <source>The token is valid until <x id="INTERPOLATION" equiv-text="{{ lostTokenData?.end_date | date: &quot;longDate&quot; }}"></x> at <x id="INTERPOLATION_1" equiv-text="{{ lostTokenData?.end_date | date: &quot;shortTime&quot; }}"></x>. </source>
-        <target state="translated">Le jeton est valide jusqu'au <x id="INTERPOLATION" equiv-text="{{ lostTokenData?.end_date | date: &quot;longDate&quot; }}"></x> à <x id="INTERPOLATION_1" equiv-text="{{ lostTokenData?.end_date | date: &quot;shortTime&quot; }}"></x>. </target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-card/token-tab/lost-token/lost-token.component.html</context>
           <context context-type="linenumber">36,40</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="6645343925165807505" datatype="html" xml:space="preserve">
+      <trans-unit id="6645343925165807505" datatype="html">
         <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x>policy<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Overview </source>
-        <target state="translated"><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x>politique<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Aperçu </target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-card/token-tab/token-tab.component.html</context>
           <context context-type="linenumber">12,14</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="3702446644125012203" datatype="html" xml:space="preserve">
+      <trans-unit id="3702446644125012203" datatype="html">
         <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x>add_moderator<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Enrollment </source>
-        <target state="translated"><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x>add_moderator<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Enrôlement </target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-card/token-tab/token-tab.component.html</context>
           <context context-type="linenumber">26,28</context>
@@ -2057,9 +1973,8 @@
           <context context-type="linenumber">37,39</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="911780984757175935" datatype="html" xml:space="preserve">
+      <trans-unit id="911780984757175935" datatype="html">
         <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x>now_widgets<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Applications </source>
-        <target state="translated"><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x>now_widgets<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Applications </target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-card/token-tab/token-tab.component.html</context>
           <context context-type="linenumber">49,51</context>
@@ -2072,17 +1987,15 @@
           <context context-type="linenumber">63,65</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="7142234886859751756" datatype="html" xml:space="preserve">
+      <trans-unit id="7142234886859751756" datatype="html">
         <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x> person_add<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Assign Selected </source>
-        <target state="translated"><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x> person_add<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Assigner Sélectionné </target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-card/token-tab/token-tab.component.html</context>
           <context context-type="linenumber">100,102</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="5681245043274745123" datatype="html" xml:space="preserve">
+      <trans-unit id="5681245043274745123" datatype="html">
         <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x>health_and_safety<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Token Details </source>
-        <target state="translated"><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x>health_and_safety<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Détails Jeton </target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-card/token-tab/token-tab.component.html</context>
           <context context-type="linenumber">112,114</context>
@@ -2095,41 +2008,36 @@
           <context context-type="linenumber">123,125</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="2927917677031196086" datatype="html" xml:space="preserve">
+      <trans-unit id="2927917677031196086" datatype="html">
         <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x>remove_red_eye<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Lost Token </source>
-        <target state="translated"><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x>remove_red_eye<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Jeton Perdu </target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-card/token-tab/token-tab.component.html</context>
           <context context-type="linenumber">134,136</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="4071377376054753380" datatype="html" xml:space="preserve">
+      <trans-unit id="4071377376054753380" datatype="html">
         <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x><x id="INTERPOLATION" equiv-text="{{ tokenIsActive() ? &quot;lock&quot; : &quot;play_circle&quot; }}"></x><x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> <x id="INTERPOLATION_1" equiv-text="{{ tokenIsActive() ? &quot;Deactivate&quot; : &quot;Activate&quot; }}"></x> </source>
-        <target state="translated"><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x><x id="INTERPOLATION" equiv-text="{{ tokenIsActive() ? &quot;lock&quot; : &quot;play_circle&quot; }}"></x><x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> <x id="INTERPOLATION_1" equiv-text="{{ tokenIsActive() ? &quot;Deactivate&quot; : &quot;Activate&quot; }}"></x> </target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-card/token-tab/token-tab.component.html</context>
           <context context-type="linenumber">157,159</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="7082517667331881763" datatype="html" xml:space="preserve">
+      <trans-unit id="7082517667331881763" datatype="html">
         <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x>undo<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Revoke </source>
-        <target state="translated"><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x>undo<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Révoquer </target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-card/token-tab/token-tab.component.html</context>
           <context context-type="linenumber">178,180</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="305600215334405883" datatype="html" xml:space="preserve">
+      <trans-unit id="305600215334405883" datatype="html">
         <source>First OTP</source>
-        <target state="translated">Premier OTP</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details-actions/resync-token-action/resync-token-action.component.html</context>
           <context context-type="linenumber">2,3</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="81685331481886770" datatype="html" xml:space="preserve">
+      <trans-unit id="81685331481886770" datatype="html">
         <source>Second OTP</source>
-        <target state="translated">Second OTP</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details-actions/resync-token-action/resync-token-action.component.html</context>
           <context context-type="linenumber">3,4</context>
@@ -2142,17 +2050,15 @@
           <context context-type="linenumber">7,10</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="1959033156749607487" datatype="html" xml:space="preserve">
+      <trans-unit id="1959033156749607487" datatype="html">
         <source>Token PIN</source>
-        <target state="translated">PIN Jeton</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details-actions/set-pin-action/set-pin-action.component.html</context>
           <context context-type="linenumber">4,5</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="5089069083331724122" datatype="html" xml:space="preserve">
+      <trans-unit id="5089069083331724122" datatype="html">
         <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon class=&quot;detail-button-icon&quot;&gt;"></x>password<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Set PIN </source>
-        <target state="translated"><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon class=&quot;detail-button-icon&quot;&gt;"></x>password<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Définir PIN </target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details-actions/set-pin-action/set-pin-action.component.html</context>
           <context context-type="linenumber">9,12</context>
@@ -2165,25 +2071,22 @@
           <context context-type="linenumber">14,17</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="5332207811740162183" datatype="html" xml:space="preserve">
+      <trans-unit id="5332207811740162183" datatype="html">
         <source>OTP or Pin</source>
-        <target state="translated">OTP ou PIN</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details-actions/test-otp-pin-action/test-otp-pin-action.component.html</context>
           <context context-type="linenumber">5</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="3680194310459289797" datatype="html" xml:space="preserve">
+      <trans-unit id="3680194310459289797" datatype="html">
         <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon class=&quot;detail-button-icon&quot;&gt;"></x>help_outline<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Test Token </source>
-        <target state="translated"><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon class=&quot;detail-button-icon&quot;&gt;"></x>help_outline<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Tester Jeton </target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details-actions/test-otp-pin-action/test-otp-pin-action.component.html</context>
           <context context-type="linenumber">21,24</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="7851122111198854253" datatype="html" xml:space="preserve">
+      <trans-unit id="7851122111198854253" datatype="html">
         <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon class=&quot;detail-button-icon&quot;&gt;"></x>help_outline<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Verify OTP Value </source>
-        <target state="translated"><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon class=&quot;detail-button-icon&quot;&gt;"></x>help_outline<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Vérifier Valeur OTP </target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details-actions/test-otp-pin-action/test-otp-pin-action.component.html</context>
           <context context-type="linenumber">25,28</context>
@@ -2218,9 +2121,8 @@
           <context context-type="linenumber">16,17</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="9022967674048183421" datatype="html" xml:space="preserve">
+      <trans-unit id="9022967674048183421" datatype="html">
         <source>Details for Token:</source>
-        <target state="translated">Détails du Jeton :</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details.component.html</context>
           <context context-type="linenumber">7,8</context>
@@ -2237,17 +2139,15 @@
           <context context-type="linenumber">29</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="5485506078448093226" datatype="html" xml:space="preserve">
+      <trans-unit id="5485506078448093226" datatype="html">
         <source>Select Token Group</source>
-        <target state="translated">Sélectionner Groupe de Jetons</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details.component.html</context>
           <context context-type="linenumber">100</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="1251389885550267733" datatype="html" xml:space="preserve">
+      <trans-unit id="1251389885550267733" datatype="html">
         <source>Details for Token:</source>
-        <target state="translated">Détails du Jeton :</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details.self-service.component.html</context>
           <context context-type="linenumber">4,5</context>
@@ -2260,41 +2160,36 @@
           <context context-type="linenumber">1,2</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="5710550455494461439" datatype="html" xml:space="preserve">
+      <trans-unit id="5710550455494461439" datatype="html">
         <source>Application</source>
-        <target state="translated">Application</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-ssh-machine-attach-dialog/token-ssh-machine-attach-dialog.component.html</context>
           <context context-type="linenumber">5</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="71645768467290546" datatype="html" xml:space="preserve">
+      <trans-unit id="71645768467290546" datatype="html">
         <source>Application is required.</source>
-        <target state="translated">Application requise.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-ssh-machine-attach-dialog/token-ssh-machine-attach-dialog.component.html</context>
           <context context-type="linenumber">12</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="1088161574006703857" datatype="html" xml:space="preserve">
+      <trans-unit id="1088161574006703857" datatype="html">
         <source>Machine</source>
-        <target state="translated">Machine</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-ssh-machine-attach-dialog/token-ssh-machine-attach-dialog.component.html</context>
           <context context-type="linenumber">18</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="1723648290832093758" datatype="html" xml:space="preserve">
+      <trans-unit id="1723648290832093758" datatype="html">
         <source>Machine is required.</source>
-        <target state="translated">Machine requise.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-ssh-machine-attach-dialog/token-ssh-machine-attach-dialog.component.html</context>
           <context context-type="linenumber">26</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="3742956320137802168" datatype="html" xml:space="preserve">
+      <trans-unit id="3742956320137802168" datatype="html">
         <source>Service ID</source>
-        <target state="translated">ID Service</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-ssh-machine-attach-dialog/token-ssh-machine-attach-dialog.component.html</context>
           <context context-type="linenumber">32</context>
@@ -2304,41 +2199,36 @@
           <context context-type="linenumber">22</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="4368953418142732639" datatype="html" xml:space="preserve">
+      <trans-unit id="4368953418142732639" datatype="html">
         <source>Service ID is required.</source>
-        <target state="translated">ID Service requis.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-ssh-machine-attach-dialog/token-ssh-machine-attach-dialog.component.html</context>
           <context context-type="linenumber">39</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="2392488717875840729" datatype="html" xml:space="preserve">
+      <trans-unit id="2392488717875840729" datatype="html">
         <source>User</source>
-        <target state="translated">Utilisateur</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-ssh-machine-attach-dialog/token-ssh-machine-attach-dialog.component.html</context>
           <context context-type="linenumber">44</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="4572028267157383474" datatype="html" xml:space="preserve">
+      <trans-unit id="4572028267157383474" datatype="html">
         <source>User is required.</source>
-        <target state="translated">Utilisateur requis.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-ssh-machine-attach-dialog/token-ssh-machine-attach-dialog.component.html</context>
           <context context-type="linenumber">52</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="584754872792429089" datatype="html" xml:space="preserve">
+      <trans-unit id="584754872792429089" datatype="html">
         <source>Assign</source>
-        <target state="translated">Assigner</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-ssh-machine-attach-dialog/token-ssh-machine-attach-dialog.component.html</context>
           <context context-type="linenumber">61,62</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="6983064509752280831" datatype="html" xml:space="preserve">
+      <trans-unit id="6983064509752280831" datatype="html">
         <source>Token Configuration</source>
-        <target state="translated">Configuration Jeton</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-asp/enroll-applspec.component.html</context>
           <context context-type="linenumber">5,6</context>
@@ -2443,9 +2333,8 @@
           <context context-type="linenumber">10,18</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="938247594016488127" datatype="html" xml:space="preserve">
+      <trans-unit id="938247594016488127" datatype="html">
         <source>Service ID is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"></x>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"></x></source>
-        <target state="translated">ID Service est <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"></x>requis<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"></x></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-asp/enroll-applspec.component.html</context>
           <context context-type="linenumber">32,33</context>
@@ -2458,9 +2347,8 @@
           <context context-type="linenumber">37</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="1880584984400130871" datatype="html" xml:space="preserve">
+      <trans-unit id="1880584984400130871" datatype="html">
         <source>Enter static password</source>
-        <target state="translated">Entrer mot de passe statique</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-asp/enroll-applspec.component.html</context>
           <context context-type="linenumber">42,43</context>
@@ -2480,33 +2368,29 @@
           <context context-type="linenumber">12</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="6051022595341391526" datatype="html" xml:space="preserve">
+      <trans-unit id="6051022595341391526" datatype="html">
         <source>Upload Certificate</source>
-        <target state="translated">Téléverser Certificat</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-certificate/enroll-certificate.component.html</context>
           <context context-type="linenumber">13</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="4235825394233126457" datatype="html" xml:space="preserve">
+      <trans-unit id="4235825394233126457" datatype="html">
         <source>CA Connector</source>
-        <target state="translated">Connecteur CA</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-certificate/enroll-certificate.component.html</context>
           <context context-type="linenumber">18</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="4897529474530277655" datatype="html" xml:space="preserve">
+      <trans-unit id="4897529474530277655" datatype="html">
         <source>CA Connector is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"></x>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"></x></source>
-        <target state="translated">Connecteur CA est <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"></x>requis<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"></x></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-certificate/enroll-certificate.component.html</context>
           <context context-type="linenumber">29,30</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="2199514451640801346" datatype="html" xml:space="preserve">
+      <trans-unit id="2199514451640801346" datatype="html">
         <source>Certificate Template</source>
-        <target state="translated">Modèle de Certificat</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-certificate/enroll-certificate.component.html</context>
           <context context-type="linenumber">33</context>
@@ -2533,17 +2417,15 @@
           <context context-type="linenumber">58,59</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="2049043702695636550" datatype="html" xml:space="preserve">
+      <trans-unit id="2049043702695636550" datatype="html">
         <source>Certificate (PEM)</source>
-        <target state="translated">Certificat (PEM)</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-certificate/enroll-certificate.component.html</context>
           <context context-type="linenumber">65</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="2752886311842932663" datatype="html" xml:space="preserve">
+      <trans-unit id="2752886311842932663" datatype="html">
         <source>Paste the Certificate here</source>
-        <target state="translated">Collez le Certificat ici</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-certificate/enroll-certificate.component.html</context>
           <context context-type="linenumber">70,71</context>
@@ -2564,9 +2446,8 @@
           <context context-type="linenumber">10,19</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="2796647695134586681" datatype="html" xml:space="preserve">
+      <trans-unit id="2796647695134586681" datatype="html">
         <source>OTP length</source>
-        <target state="translated">Longueur OTP</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-daypassword/enroll-daypassword.component.html</context>
           <context context-type="linenumber">18</context>
@@ -2605,9 +2486,8 @@
           <context context-type="linenumber">33</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="5067435321030126663" datatype="html" xml:space="preserve">
+      <trans-unit id="5067435321030126663" datatype="html">
         <source>OTP Key</source>
-        <target state="translated">Clé OTP</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-daypassword/enroll-daypassword.component.html</context>
           <context context-type="linenumber">37</context>
@@ -2625,9 +2505,8 @@
           <context context-type="linenumber">18</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="2806590107813923159" datatype="html" xml:space="preserve">
+      <trans-unit id="2806590107813923159" datatype="html">
         <source>Enter OTP key</source>
-        <target state="translated">Entrez Clé OTP</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-daypassword/enroll-daypassword.component.html</context>
           <context context-type="linenumber">38</context>
@@ -2645,9 +2524,8 @@
           <context context-type="linenumber">19</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="7237555509066603135" datatype="html" xml:space="preserve">
+      <trans-unit id="7237555509066603135" datatype="html">
         <source>OTP key is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"></x>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"></x> (min 16 chars) </source>
-        <target state="translated">La clé OTP est <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"></x>requise<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"></x> (min 16 chars) </target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-daypassword/enroll-daypassword.component.html</context>
           <context context-type="linenumber">39,40</context>
@@ -2695,49 +2573,43 @@
           <context context-type="linenumber">11,12</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="4879517228803151475" datatype="html" xml:space="preserve">
+      <trans-unit id="4879517228803151475" datatype="html">
         <source>Email Address</source>
-        <target state="translated">Adresse Email</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-email/enroll-email.component.html</context>
           <context context-type="linenumber">16</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="8959382721861584260" datatype="html" xml:space="preserve">
+      <trans-unit id="8959382721861584260" datatype="html">
         <source>Email Address is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"></x>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"></x></source>
-        <target state="translated">L'Adresse Email est <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"></x>requise<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"></x></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-email/enroll-email.component.html</context>
           <context context-type="linenumber">21,22</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="7001672491998511416" datatype="html" xml:space="preserve">
+      <trans-unit id="7001672491998511416" datatype="html">
         <source>Separator</source>
-        <target state="translated">Séparateur</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-foureyes/enroll-foureyes.component.html</context>
           <context context-type="linenumber">8</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="1900124949477430217" datatype="html" xml:space="preserve">
+      <trans-unit id="1900124949477430217" datatype="html">
         <source>|</source>
-        <target state="translated">|</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-foureyes/enroll-foureyes.component.html</context>
           <context context-type="linenumber">15</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="1390321444935349203" datatype="html" xml:space="preserve">
+      <trans-unit id="1390321444935349203" datatype="html">
         <source>The separator that is used to separate the passwords of the different tokens.</source>
-        <target state="translated">Le séparateur utilisé pour séparer les mots de passe des différents jetons.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-foureyes/enroll-foureyes.component.html</context>
           <context context-type="linenumber">16,17</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="1776372972576202803" datatype="html" xml:space="preserve">
+      <trans-unit id="1776372972576202803" datatype="html">
         <source>Required Realms</source>
-        <target state="translated">Domaines Requis</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-foureyes/enroll-foureyes.component.html</context>
           <context context-type="linenumber">19,20</context>
@@ -2750,9 +2622,8 @@
           <context context-type="linenumber">20,21</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="304502981070626271" datatype="html" xml:space="preserve">
+      <trans-unit id="304502981070626271" datatype="html">
         <source>At least one realm is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"></x>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"></x></source>
-        <target state="translated">Au moins un domaine est <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"></x>requis<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"></x></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-foureyes/enroll-foureyes.component.html</context>
           <context context-type="linenumber">53,54</context>
@@ -2779,49 +2650,43 @@
           <context context-type="linenumber">36</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="5053050183011279766" datatype="html" xml:space="preserve">
+      <trans-unit id="5053050183011279766" datatype="html">
         <source>OTP key is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"></x>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"></x></source>
-        <target state="translated">La clé OTP est <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"></x>requise<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"></x></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-hotp/enroll-hotp.component.html</context>
           <context context-type="linenumber">44,45</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="6224720051650368921" datatype="html" xml:space="preserve">
+      <trans-unit id="6224720051650368921" datatype="html">
         <source>Token configuration</source>
-        <target state="translated">Configuration jeton</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-indexsecret/enroll-indexedsecret.component.html</context>
           <context context-type="linenumber">5,6</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="7896650584449704588" datatype="html" xml:space="preserve">
+      <trans-unit id="7896650584449704588" datatype="html">
         <source>Secret</source>
-        <target state="translated">Secret</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-indexsecret/enroll-indexedsecret.component.html</context>
           <context context-type="linenumber">7</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="7337485507195823421" datatype="html" xml:space="preserve">
+      <trans-unit id="7337485507195823421" datatype="html">
         <source>Your secret phrase.</source>
-        <target state="translated">Votre phrase secrète.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-indexsecret/enroll-indexedsecret.component.html</context>
           <context context-type="linenumber">12,13</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="3363898281636977323" datatype="html" xml:space="preserve">
+      <trans-unit id="3363898281636977323" datatype="html">
         <source>Secret is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"></x>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"></x> (min 16 chars)</source>
-        <target state="translated">Le secret est <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"></x>requis<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"></x> (min 16 chars)</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-indexsecret/enroll-indexedsecret.component.html</context>
           <context context-type="linenumber">15,16</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="8542316028362646328" datatype="html" xml:space="preserve">
+      <trans-unit id="8542316028362646328" datatype="html">
         <source>OTP key is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"></x>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"></x></source>
-        <target state="translated">La clé OTP est <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"></x>requise<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"></x></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-motp/enroll-motp.component.html</context>
           <context context-type="linenumber">30,31</context>
@@ -2831,33 +2696,29 @@
           <context context-type="linenumber">20,21</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="4689840680253268454" datatype="html" xml:space="preserve">
+      <trans-unit id="4689840680253268454" datatype="html">
         <source>mOTP PIN</source>
-        <target state="translated">PIN mOTP</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-motp/enroll-motp.component.html</context>
           <context context-type="linenumber">43,44</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="8513110547901020716" datatype="html" xml:space="preserve">
+      <trans-unit id="8513110547901020716" datatype="html">
         <source>The mOTP PIN is the PIN that needs to be entered on the mobile device.</source>
-        <target state="translated">Le PIN mOTP est le PIN qui doit être entré sur l'appareil mobile.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-motp/enroll-motp.component.html</context>
           <context context-type="linenumber">44,45</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="8191371354890763172" datatype="html" xml:space="preserve">
+      <trans-unit id="8191371354890763172" datatype="html">
         <source>Enter Password</source>
-        <target state="translated">Entrer Mot de passe</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-motp/enroll-motp.component.html</context>
           <context context-type="linenumber">48</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="2323435677844786277" datatype="html" xml:space="preserve">
+      <trans-unit id="2323435677844786277" datatype="html">
         <source>Password is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"></x>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"></x></source>
-        <target state="translated">Le mot de passe est <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"></x>requis<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"></x></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-motp/enroll-motp.component.html</context>
           <context context-type="linenumber">55,56</context>
@@ -2870,9 +2731,8 @@
           <context context-type="linenumber">59</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="4541118533130714111" datatype="html" xml:space="preserve">
+      <trans-unit id="4541118533130714111" datatype="html">
         <source>Repeat Password</source>
-        <target state="translated">Répéter Mot de passe</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-motp/enroll-motp.component.html</context>
           <context context-type="linenumber">63</context>
@@ -2882,25 +2742,22 @@
           <context context-type="linenumber">69,70</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="6726797168550750311" datatype="html" xml:space="preserve">
+      <trans-unit id="6726797168550750311" datatype="html">
         <source>mOTP PINs do not match.</source>
-        <target state="translated">Les PIN mOTP ne correspondent pas.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-motp/enroll-motp.component.html</context>
           <context context-type="linenumber">72</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="5528550488469757123" datatype="html" xml:space="preserve">
+      <trans-unit id="5528550488469757123" datatype="html">
         <source>Please answer at least <x id="INTERPOLATION" equiv-text="{{ configMinNumberOfAnswers() }}"></x> of the following questions. </source>
-        <target state="translated">Veuillez au moins répondre <x id="INTERPOLATION" equiv-text="{{ configMinNumberOfAnswers() }}"></x> aux questions suivantes. </target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-questionnaire/enroll-question.component.html</context>
           <context context-type="linenumber">7,10</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="8569075671093664555" datatype="html" xml:space="preserve">
+      <trans-unit id="8569075671093664555" datatype="html">
         <source>At least <x id="INTERPOLATION" equiv-text="{{ configMinNumberOfAnswers() }}"></x> answers are <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"></x>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"></x>. </source>
-        <target state="translated">Au moins <x id="INTERPOLATION" equiv-text="{{ configMinNumberOfAnswers() }}"></x> réponses sont <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"></x>requises<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"></x>. </target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-questionnaire/enroll-question.component.html</context>
           <context context-type="linenumber">29,31</context>
@@ -2924,9 +2781,8 @@
           <context context-type="linenumber">7,8</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="4480349781757335545" datatype="html" xml:space="preserve">
+      <trans-unit id="4480349781757335545" datatype="html">
         <source>RADIUS server configuration</source>
-        <target state="translated">Configuration serveur RADIUS</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-radius/enroll-radius.component.html</context>
           <context context-type="linenumber">15</context>
@@ -2939,41 +2795,36 @@
           <context context-type="linenumber">17,20</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="4457633062065575608" datatype="html" xml:space="preserve">
+      <trans-unit id="4457633062065575608" datatype="html">
         <source>RADIUS Server is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"></x>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"></x></source>
-        <target state="translated">Le Serveur RADIUS est <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"></x>requis<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"></x></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-radius/enroll-radius.component.html</context>
           <context context-type="linenumber">29,30</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="2596971547360004424" datatype="html" xml:space="preserve">
+      <trans-unit id="2596971547360004424" datatype="html">
         <source>RADIUS User</source>
-        <target state="translated">Utilisateur RADIUS</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-radius/enroll-radius.component.html</context>
           <context context-type="linenumber">32</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="5751812222870698373" datatype="html" xml:space="preserve">
+      <trans-unit id="5751812222870698373" datatype="html">
         <source>RADIUS User is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"></x>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"></x></source>
-        <target state="translated">L'Utilisateur RADIUS est <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"></x>requis<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"></x></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-radius/enroll-radius.component.html</context>
           <context context-type="linenumber">36,37</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="6515354809184677397" datatype="html" xml:space="preserve">
+      <trans-unit id="6515354809184677397" datatype="html">
         <source>Remote Server</source>
-        <target state="translated">Serveur Distant</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-remote/enroll-remote.component.html</context>
           <context context-type="linenumber">11</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="3814339674388872571" datatype="html" xml:space="preserve">
+      <trans-unit id="3814339674388872571" datatype="html">
         <source>Remote Server is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"></x>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"></x></source>
-        <target state="translated">Le Serveur Distant est <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"></x>requis<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"></x></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-remote/enroll-remote.component.html</context>
           <context context-type="linenumber">22,24</context>
@@ -2993,25 +2844,22 @@
           <context context-type="linenumber">31,32</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="6480192176198127196" datatype="html" xml:space="preserve">
+      <trans-unit id="6480192176198127196" datatype="html">
         <source>Remote User</source>
-        <target state="translated">Utilisateur Distant</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-remote/enroll-remote.component.html</context>
           <context context-type="linenumber">36</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="3744932931265614096" datatype="html" xml:space="preserve">
+      <trans-unit id="3744932931265614096" datatype="html">
         <source>Remote User is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"></x>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"></x></source>
-        <target state="translated">L'Utilisateur Distant est <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"></x>requis<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"></x></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-remote/enroll-remote.component.html</context>
           <context context-type="linenumber">41,42</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="4301358864230819636" datatype="html" xml:space="preserve">
+      <trans-unit id="4301358864230819636" datatype="html">
         <source>Remote Realm</source>
-        <target state="translated">Domaine Distant</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-remote/enroll-remote.component.html</context>
           <context context-type="linenumber">44</context>
@@ -3045,17 +2893,15 @@
           <context context-type="linenumber">12,13</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="8121141462865337916" datatype="html" xml:space="preserve">
+      <trans-unit id="8121141462865337916" datatype="html">
         <source>Phone number</source>
-        <target state="translated">Numéro de téléphone</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-sms/enroll-sms.component.html</context>
           <context context-type="linenumber">17</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="6752764347343034796" datatype="html" xml:space="preserve">
+      <trans-unit id="6752764347343034796" datatype="html">
         <source>Phone number is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"></x>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"></x></source>
-        <target state="translated">Le numéro de téléphone est <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"></x>requis<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"></x></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-sms/enroll-sms.component.html</context>
           <context context-type="linenumber">19,20</context>
@@ -3075,25 +2921,22 @@
           <context context-type="linenumber">27,29</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="4016096783107505561" datatype="html" xml:space="preserve">
+      <trans-unit id="4016096783107505561" datatype="html">
         <source>SSH public key</source>
-        <target state="translated">Clé publique SSH</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-sshkey/enroll-sshkey.component.html</context>
           <context context-type="linenumber">7</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="6992506569518629967" datatype="html" xml:space="preserve">
+      <trans-unit id="6992506569518629967" datatype="html">
         <source>Paste the PUBLIC ssh key here</source>
-        <target state="translated">Collez la clé PUBLIQUE ssh ici</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-sshkey/enroll-sshkey.component.html</context>
           <context context-type="linenumber">12,13</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="9122120727984393074" datatype="html" xml:space="preserve">
+      <trans-unit id="9122120727984393074" datatype="html">
         <source>SSH public key is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"></x>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"></x></source>
-        <target state="translated">La clé publique SSH est <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"></x>requise<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"></x></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-sshkey/enroll-sshkey.component.html</context>
           <context context-type="linenumber">15,16</context>
@@ -3141,9 +2984,8 @@
           <context context-type="linenumber">29,30</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="3174143460361252257" datatype="html" xml:space="preserve">
+      <trans-unit id="3174143460361252257" datatype="html">
         <source>Vasco Serial</source>
-        <target state="translated">Numéro de série VASCO</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-vasco/enroll-vasco.component.html</context>
           <context context-type="linenumber">32</context>
@@ -3163,9 +3005,8 @@
           <context context-type="linenumber">7,8</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="8892265377586504904" datatype="html" xml:space="preserve">
+      <trans-unit id="8892265377586504904" datatype="html">
         <source>Yubikey Identifier</source>
-        <target state="translated">Identifiant Yubikey</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-yubico/enroll-yubico.component.html</context>
           <context context-type="linenumber">12</context>
@@ -3185,9 +3026,8 @@
           <context context-type="linenumber">20,21</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="7679808748970815728" datatype="html" xml:space="preserve">
+      <trans-unit id="7679808748970815728" datatype="html">
         <source>Test Yubikey</source>
-        <target state="translated">Tester Yubikey</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-yubikey/enroll-yubikey.component.html</context>
           <context context-type="linenumber">8</context>
@@ -3242,9 +3082,8 @@
           <context context-type="linenumber">1,2</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="3012117831936869463" datatype="html" xml:space="preserve">
+      <trans-unit id="3012117831936869463" datatype="html">
         <source>The Serial number for the OTP value <x id="INTERPOLATION" equiv-text="{{ data.otpValue }}"></x> is <x id="START_LINK" ctype="x-a" equiv-text="&lt;a           class=&quot;link&quot;           attr.aria-label=&quot;{{ data.foundSerial }} Link&quot;           (click)=&quot;data.onClickSerial()&quot;&gt;"></x> <x id="INTERPOLATION_1" equiv-text="{{ data.foundSerial }}"></x><x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"></x> . </source>
-        <target state="translated">Le numéro de Série pour la valeur OTP <x id="INTERPOLATION" equiv-text="{{ data.otpValue }}"></x> est <x id="START_LINK" ctype="x-a" equiv-text="&lt;a           class=&quot;link&quot;           attr.aria-label=&quot;{{ data.foundSerial }} Link&quot;           (click)=&quot;data.onClickSerial()&quot;&gt;"></x> <x id="INTERPOLATION_1" equiv-text="{{ data.foundSerial }}"></x><x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"></x> . </target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-get-serial/get-serial-result-dialog/get-serial-result-dialog.component.html</context>
           <context context-type="linenumber">6,13</context>
@@ -3257,9 +3096,8 @@
           <context context-type="linenumber">18,20</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="5184373289520493569" datatype="html" xml:space="preserve">
+      <trans-unit id="5184373289520493569" datatype="html">
         <source>OK</source>
-        <target state="translated">OK</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-get-serial/get-serial-result-dialog/get-serial-result-dialog.component.html</context>
           <context context-type="linenumber">33</context>
@@ -3286,9 +3124,8 @@
           <context context-type="linenumber">4,6</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="1153803616213064409" datatype="html" xml:space="preserve">
+      <trans-unit id="1153803616213064409" datatype="html">
         <source>OTP Value</source>
-        <target state="translated">Valeur OTP</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-get-serial/token-get-serial.component.html</context>
           <context context-type="linenumber">10</context>
@@ -3301,17 +3138,15 @@
           <context context-type="linenumber">19,20</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="8076273911076258796" datatype="html" xml:space="preserve">
+      <trans-unit id="8076273911076258796" datatype="html">
         <source>OTP value is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"></x>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"></x></source>
-        <target state="translated">La valeur OTP est <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"></x>requise<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"></x></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-get-serial/token-get-serial.component.html</context>
           <context context-type="linenumber">22,23</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="5927398364887792350" datatype="html" xml:space="preserve">
+      <trans-unit id="5927398364887792350" datatype="html">
         <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x><x id="INTERPOLATION" equiv-text="{{ currentStep() !== &quot;searching&quot; ? &quot;play_arrow&quot; : &quot;stop&quot; }}"></x><x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> <x id="INTERPOLATION_1" equiv-text="{{ currentStep() !== &quot;searching&quot; ? &quot;Run&quot; : &quot;Stop&quot; }}"></x> <x id="START_TAG_SPAN" ctype="x-span" equiv-text="&lt;span&gt;"></x>Search<x id="CLOSE_TAG_SPAN" ctype="x-span" equiv-text="&lt;/span&gt;"></x></source>
-        <target state="translated"><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x><x id="INTERPOLATION" equiv-text="{{ currentStep() !== &quot;searching&quot; ? &quot;play_arrow&quot; : &quot;stop&quot; }}"></x><x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> <x id="INTERPOLATION_1" equiv-text="{{ currentStep() !== &quot;searching&quot; ? &quot;Run&quot; : &quot;Stop&quot; }}"></x> <x id="START_TAG_SPAN" ctype="x-span" equiv-text="&lt;span&gt;"></x>Rechercher<x id="CLOSE_TAG_SPAN" ctype="x-span" equiv-text="&lt;/span&gt;"></x></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-get-serial/token-get-serial.component.html</context>
           <context context-type="linenumber">32,35</context>
@@ -3324,25 +3159,22 @@
           <context context-type="linenumber">36,37</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="3778053135785054820" datatype="html" xml:space="preserve">
+      <trans-unit id="3778053135785054820" datatype="html">
         <source>Token Type</source>
-        <target state="translated">Type Jeton</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-get-serial/token-get-serial.component.html</context>
           <context context-type="linenumber">38</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="7852237977890639579" datatype="html" xml:space="preserve">
+      <trans-unit id="7852237977890639579" datatype="html">
         <source>Select token type</source>
-        <target state="translated">Sélectionner type de jeton</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-get-serial/token-get-serial.component.html</context>
           <context context-type="linenumber">39,40</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="981959707836119514" datatype="html" xml:space="preserve">
+      <trans-unit id="981959707836119514" datatype="html">
         <source>Assignment State</source>
-        <target state="translated">Etat d'Assignement</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-get-serial/token-get-serial.component.html</context>
           <context context-type="linenumber">46</context>
@@ -3397,9 +3229,8 @@
           <context context-type="linenumber">84</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="4844805141981048868" datatype="html" xml:space="preserve">
+      <trans-unit id="4844805141981048868" datatype="html">
         <source>Token Table</source>
-        <target state="translated">Table Jeton</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-table/token-table.component.html</context>
           <context context-type="linenumber">1</context>
@@ -3420,17 +3251,15 @@
           <context context-type="linenumber">25,26</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="585350281116283767" datatype="html" xml:space="preserve">
+      <trans-unit id="585350281116283767" datatype="html">
         <source>Your Tokens</source>
-        <target state="translated">Vos Jetons</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-table/token-table.self-service.component.html</context>
           <context context-type="linenumber">10,11</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="5393976395746413655" datatype="html" xml:space="preserve">
+      <trans-unit id="5393976395746413655" datatype="html">
         <source>Revoke Token</source>
-        <target state="translated">Révoquer Jeton</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-table/token-table.self-service.component.html</context>
           <context context-type="linenumber">94,95</context>
@@ -3472,25 +3301,22 @@
           <context context-type="linenumber">50,51</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="7226684209936743036" datatype="html" xml:space="preserve">
+      <trans-unit id="7226684209936743036" datatype="html">
         <source>Your Details</source>
-        <target state="translated">Vos Détails</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user.self-service.component.html</context>
           <context context-type="linenumber">9</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="4045680080746516690" datatype="html" xml:space="preserve">
+      <trans-unit id="4045680080746516690" datatype="html">
         <source>Given name</source>
-        <target state="translated">Nom donné</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user.self-service.component.html</context>
           <context context-type="linenumber">18,19</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="2045112409653231798" datatype="html" xml:space="preserve">
+      <trans-unit id="2045112409653231798" datatype="html">
         <source>Surname</source>
-        <target state="translated">Surnom</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user.self-service.component.html</context>
           <context context-type="linenumber">21,22</context>
@@ -3503,9 +3329,8 @@
           <context context-type="linenumber">29,30</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="3262236020277300799" datatype="html" xml:space="preserve">
+      <trans-unit id="3262236020277300799" datatype="html">
         <source>Phone</source>
-        <target state="translated">Téléphone</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/user/user.self-service.component.html</context>
           <context context-type="linenumber">32,33</context>
