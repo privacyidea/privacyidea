@@ -406,11 +406,11 @@ class TestPiTokenJanitorFind:
         assert "HOTP0001" in result.output
         assert "TOTP0001" not in result.output
 
-    def test_find_orphaned(self, app, tokens, orphaned_tokens):
+    def test_find_orphaned(self, app, tokens, orphaned_token):
         """
         Tests filtering orphaned tokens. An orphaned token is one that has a user
         assigned in the database, but the user no longer exists in the user store.
-        Uses the orphaned_tokens fixture which creates an orphaned token and the
+        Uses the orphaned_token fixture which creates an orphaned token and the
         tokens fixture which provides valid (non-orphaned) tokens.
         """
         runner = app.test_cli_runner()
@@ -433,11 +433,11 @@ class TestPiTokenJanitorFind:
         assert "HOTP0001" in result.output
         assert "ORPHAN0001" not in result.output
 
-    def test_find_orphaned_on_error(self, app, tokens, orphaned_tokens):
+    def test_find_orphaned_on_error(self, app, tokens, orphaned_token):
         """
         Tests the --orphaned-on-error flag with three tokens:
         1. Tokens from the tokens fixture (non-orphaned, e.g. HOTP0001)
-        2. A token from the orphaned_tokens fixture (orphaned, ORPHAN0001)
+        2. A token from the orphaned_token fixture (orphaned, ORPHAN0001)
         3. A token assigned via an HTTP resolver that raises an error when resolving.
            With --orphaned-on-error, the error token is treated as orphaned.
            Without --orphaned-on-error, the error token is treated as not orphaned.
