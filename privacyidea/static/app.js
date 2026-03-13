@@ -190,7 +190,7 @@ escapeRegexp = function (queryToEscape) {
 };
 
 isTrue = function (value) {
-    return ["1", "true", true, "True"].indexOf(value) > -1;
+    return ["1", "true", true, "True", 1].indexOf(value) > -1;
 };
 
 // this is for the translation of the constants (see
