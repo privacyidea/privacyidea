@@ -484,7 +484,7 @@ You can use several options to filter the tokens.
 
     Search for all tokens which have the tokeninfo-key ``import_time``.
 
-``--tokenower``
+``--tokenowner``
     Find tokens from a specific token owner(user). You can use user attributes
     like the username, the realm or the resolver.
     This option can be used multiple times.
@@ -548,7 +548,7 @@ Example::
 
 .. note:: This command is the default command if no action is specified.
 
-``-u``, ``--show-user-attributes``
+``-u``, ``--show-user-attribute``
     You can use this option to extend the output with user attributes.
     This option can be used multiple times.
 
@@ -565,14 +565,14 @@ Example::
 
         pi-tokenjanitor find --tokenattribute 'serial=OATH0004C934' list -t tokenkind
 
-``--sum``
+``--summarize``
     You can use this option to group the token output by user.
 
     Example::
 
-        pi-tokenjanitor find --tokenattribute 'serial=OATH0004C934' list --sum
+        pi-tokenjanitor find --tokenattribute 'serial=OATH0004C934' list --summarize
 
-    .. note:: The option ``--sum`` only works with the option ``--show-user-attributes``.
+    .. note:: The option ``--summarize`` only works with the option ``--show-user-attribute``.
 
 export
 ******

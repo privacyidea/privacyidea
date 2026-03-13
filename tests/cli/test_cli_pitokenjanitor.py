@@ -32,6 +32,7 @@ from privacyidea.lib.resolver import save_resolver
 from privacyidea.lib.token import init_token, get_one_token
 from privacyidea.lib.user import User
 from privacyidea.models import db
+from privacyidea.models.token import TokenOwner
 
 
 @pytest.fixture(scope="function")
@@ -184,6 +185,25 @@ def containers(app, tokens, users, realms, container_template):
 
         db.session.commit()
         yield [c1, c2, c3, c4]
+
+
+@pytest.fixture(scope="function")
+def orphaned_token(app):
+    """
+    Creates an orphaned token: a token that has a user assigned in the database,
+    but the user no longer exists in the user store.
+    """
+    with app.app_context():
+        t_orphaned = init_token(
+            param={"serial": "ORPHAN0001", "type": "hotp"}
+        )
+        t_orphaned.save()
+        TokenOwner(token_id=t_orphaned.token.id,
+                   user_id="999999", resolver="testresolver",
+                   realmname="realm1").save()
+        t_orphaned.set_realms(["realm1"])
+        db.session.commit()
+        yield t_orphaned
 
 
 class TestPiTokenJanitorFind:
@@ -385,6 +405,98 @@ class TestPiTokenJanitorFind:
         assert result.exit_code == 0
         assert "HOTP0001" in result.output
         assert "TOTP0001" not in result.output
+
+    def test_find_orphaned(self, app, tokens, orphaned_token):
+        """
+        Tests filtering orphaned tokens. An orphaned token is one that has a user
+        assigned in the database, but the user no longer exists in the user store.
+        Uses the orphaned_token fixture which creates an orphaned token and the
+        tokens fixture which provides valid (non-orphaned) tokens.
+        """
+        runner = app.test_cli_runner()
+
+        # Find all tokens
+        result = runner.invoke(cli, ["find", "list"])
+        assert result.exit_code == 0
+        assert "ORPHAN0001" in result.output
+        assert "HOTP0001" in result.output
+
+        # Find only orphaned tokens
+        result = runner.invoke(cli, ["find", "--orphaned", "True", "list"])
+        assert result.exit_code == 0
+        assert "ORPHAN0001" in result.output
+        assert "HOTP0001" not in result.output
+
+        # Find only non-orphaned tokens
+        result = runner.invoke(cli, ["find", "--orphaned", "False", "list"])
+        assert result.exit_code == 0
+        assert "HOTP0001" in result.output
+        assert "ORPHAN0001" not in result.output
+
+    def test_find_orphaned_on_error(self, app, tokens, orphaned_token):
+        """
+        Tests the --orphaned-on-error flag with three tokens:
+        1. Tokens from the tokens fixture (non-orphaned, e.g. HOTP0001)
+        2. A token from the orphaned_token fixture (orphaned, ORPHAN0001)
+        3. A token assigned via an HTTP resolver that raises an error when resolving.
+           With --orphaned-on-error, the error token is treated as orphaned.
+           Without --orphaned-on-error, the error token is treated as not orphaned.
+        """
+        # Create an HTTP resolver that will raise an error when resolving users
+        rid = save_resolver({
+            "resolver": "httperrorresolver",
+            "type": "httpresolver",
+            "endpoint": "http://localhost:12345/nonexistent",
+            "method": "GET",
+            "requestMapping": '{"id": "{userid}"}',
+            "responseMapping": '{"username": "{data.the_username}"}',
+            "hasSpecialErrorHandler": False,
+        })
+        assert rid > 0
+        (added, failed) = set_realm("httperrorrealm", [{"name": "httperrorresolver"}])
+        assert len(failed) == 0
+        assert len(added) == 1
+
+        # Token assigned via the error-prone HTTP resolver
+        t_error = init_token(
+            param={"serial": "ERROR0001", "type": "hotp"}
+        )
+        t_error.save()
+        TokenOwner(token_id=t_error.token.id,
+                   user_id="999999", resolver="httperrorresolver",
+                   realmname="httperrorrealm").save()
+        t_error.set_realms(["httperrorrealm"])
+        db.session.commit()
+
+        runner = app.test_cli_runner()
+
+        # With --orphaned-on-error: error token IS treated as orphaned
+        result = runner.invoke(cli, ["find", "--orphaned", "True", "--orphaned-on-error", "list"])
+        assert result.exit_code == 0
+        assert "ORPHAN0001" in result.output
+        assert "ERROR0001" in result.output
+        assert "HOTP0001" not in result.output
+
+        # Without --orphaned-on-error: error token is NOT treated as orphaned
+        result = runner.invoke(cli, ["find", "--orphaned", "True", "list"])
+        assert result.exit_code == 0
+        assert "ORPHAN0001" in result.output
+        assert "ERROR0001" not in result.output
+        assert "HOTP0001" not in result.output
+
+        # Non-orphaned with --orphaned-on-error: error token is excluded (it's orphaned)
+        result = runner.invoke(cli, ["find", "--orphaned", "False", "--orphaned-on-error", "list"])
+        assert result.exit_code == 0
+        assert "HOTP0001" in result.output
+        assert "ORPHAN0001" not in result.output
+        assert "ERROR0001" not in result.output
+
+        # Non-orphaned without --orphaned-on-error: error token is included (not treated as orphaned)
+        result = runner.invoke(cli, ["find", "--orphaned", "False", "list"])
+        assert result.exit_code == 0
+        assert "HOTP0001" in result.output
+        assert "ERROR0001" in result.output
+        assert "ORPHAN0001" not in result.output
 
 
 class TestPiTokenJanitorActions:
