@@ -15,19 +15,20 @@ SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 
 <!-- Verify Token enrollment -->
-<div ng-show="enrolledToken.rollout_state === 'verify'">
-    <p translate>The token was enrolled, but you still need to verify it before you can use it!</p>
+<form ng-submit="sendVerifyResponse()">
     <div class="form-group">
         <label for="verifyResponse">{{ enrolledToken.verify.message }}</label>
         <input type="text" ng-model="verifyResponse"
                id="verifyResponse"
                autofocus
+               required
                class="form-control"
                name="verifyResponse">
     </div>
     <div class="text-center">
-        <button type="button" ng-click="sendVerifyResponse()"
+        <button type="submit"
+                ng-disabled="!verifyResponse || verifyResponse.length === 0"
                 class="btn btn-primary" translate>Verify Token
         </button>
     </div>
-</div>
+</form>
