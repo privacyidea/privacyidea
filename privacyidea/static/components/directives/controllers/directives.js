@@ -80,6 +80,10 @@ myApp.directive("piFilter", ["instanceUrl", "versioningSuffixProvider", function
                     scope.onSubmit();
                 }
             };
+            scope.toggleFilter = function () {
+                scope.filterVisible = !scope.filterVisible;
+                scope.focusInput = true;
+            };
             ctrl.$viewChangeListeners.push(function () {
                 if (scope.ngChange) {
                     scope.ngChange();
