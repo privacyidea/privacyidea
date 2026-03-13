@@ -848,7 +848,11 @@ myApp.directive("containerTemplateDetails", ["instanceUrl", "versioningSuffixPro
                             scope.form.hashlib = scope.systemDefault['hotp.hashlib'] || 'sha1';
                         } else if (tokenType === "totp") {
                             scope.form.hashlib = scope.systemDefault['totp.hashlib'] || 'sha1';
-                            scope.form.timeStep = parseInt(scope.systemDefault['totp.timeStep'] || '30');
+                            let defaultTimeStep = parseInt(scope.systemDefault['totp.timeStep'] || '30', 10);
+                            if (isNaN(defaultTimeStep)) {
+                                defaultTimeStep = 30;
+                            }
+                            scope.form.timeStep = defaultTimeStep;
                         } else if (tokenType === "daypassword") {
                             scope.form.hashlib = scope.systemDefault['daypassword.hashlib'] || 'sha1';
                             scope.form.timeStep = scope.systemDefault['daypassword.timeStep'] || '24h';
