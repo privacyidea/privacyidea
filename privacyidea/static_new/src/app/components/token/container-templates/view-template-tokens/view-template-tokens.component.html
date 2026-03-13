@@ -1,0 +1,83 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+@if (templateTokens() && templateTokens()!.length > 0) {
+  <div class="template-tokens-container">
+    @for (token of templateTokens(); track token) {
+      <div class="token-container">
+        @if (token.type) {
+          <span class="token-item"> <strong i18n>Type:</strong>&nbsp;{{ token.type }} </span>
+        }
+
+        @for (entry of token | keyvalue; track entry.key) {
+          @if (entry.key !== "type" && isValidValue(entry.value)) {
+            @if (entry.key === token.type) {
+              <ng-container *ngTemplateOutlet="renderValueStrong; context: { $implicit: entry.value }"></ng-container>
+            } @else {
+              <span class="token-item">
+                <strong>{{ entry.key }}:</strong>&nbsp;
+                <ng-container *ngTemplateOutlet="renderValueSmall; context: { $implicit: entry.value }"></ng-container>
+              </span>
+            }
+          }
+        }
+      </div>
+    }
+  </div>
+}
+
+<ng-template
+  #renderValueSmall
+  let-val>
+  @if (isObject(val)) {
+    <span class="nested-group">
+      <span class="bracket">(</span>
+      @for (entry of asObject(val) | keyvalue; track entry.key) {
+        @if (isValidValue(entry.value)) {
+          <span class="nested-item">
+            <small>{{ entry.key }}:</small>&nbsp;
+            <ng-container *ngTemplateOutlet="renderValueSmall; context: { $implicit: entry.value }"></ng-container>
+            @if (!$last) {
+              <span class="separator">,</span>
+            }
+          </span>
+        }
+      }
+      <span class="bracket">)</span>
+    </span>
+  } @else {
+    {{ val }}
+  }
+</ng-template>
+
+<ng-template
+  #renderValueStrong
+  let-val>
+  @if (isObject(val)) {
+    @for (entry of asObject(val) | keyvalue; track entry.key) {
+      @if (isValidValue(entry.value)) {
+        <span class="token-item">
+          <strong>{{ entry.key }}:</strong>&nbsp;
+          <ng-container *ngTemplateOutlet="renderValueSmall; context: { $implicit: entry.value }"></ng-container>
+        </span>
+      }
+    }
+  } @else {
+    <span class="token-item">{{ val }}</span>
+  }
+</ng-template>

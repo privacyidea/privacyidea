@@ -37,24 +37,23 @@ export interface TotpEnrollmentData extends TokenEnrollmentData {
 }
 
 export interface TotpEnrollmentPayload extends TokenEnrollmentPayload {
-  otpkey: string | null;
+  otpkey: string;
   genkey: 0 | 1;
   otplen?: number;
   hashlib?: string;
-  timeStep?: number;
-  serial?: string | null;
+  timeStep?: number | string;
+  serial?: string;
   "2stepinit"?: boolean;
   otpkeyformat?: string;
 }
 
 @Injectable({ providedIn: "root" })
 export class TotpApiPayloadMapper extends BaseApiPayloadMapper implements TokenApiPayloadMapper<TotpEnrollmentData> {
-
   override toApiPayload(data: TotpEnrollmentData): TotpEnrollmentPayload {
     const basePayload = super.toApiPayload(data);
     const payload: TotpEnrollmentPayload = {
       ...basePayload,
-      otpkey: data.generateOnServer ? null : (data.otpKey ?? null),
+      otpkey: data.generateOnServer === true ? "" : (data.otpKey ?? ""),
       genkey: data.generateOnServer ? 1 : 0,
       ...(data.otpLength !== undefined && { otplen: Number(data.otpLength) }),
       ...(data.hashAlgorithm !== undefined && { hashlib: data.hashAlgorithm }),
@@ -64,14 +63,20 @@ export class TotpApiPayloadMapper extends BaseApiPayloadMapper implements TokenA
     };
     if (data.onlyAddToRealm) {
       payload.realm = data.realm;
-      payload.user = null;
+      delete payload.user;
     }
     return payload;
   }
 
-  override fromApiPayload(payload: any): TotpEnrollmentData {
-    // Placeholder: Implement transformation from API payload. We will replace this later.
-    return payload as TotpEnrollmentData;
+  override fromApiPayload(payload: TotpEnrollmentPayload): TotpEnrollmentData {
+    const baseData = super.fromApiPayload(payload);
+    return {
+      ...baseData,
+      type: "totp",
+      otpLength: payload.otplen ? Number(payload.otplen) : undefined,
+      hashAlgorithm: payload.hashlib ?? undefined,
+      timeStep: payload.timeStep !== undefined ? Number(payload.timeStep) : undefined
+    };
   }
 
   override fromTokenDetailsToEnrollmentData(details: TokenDetails): TotpEnrollmentData {

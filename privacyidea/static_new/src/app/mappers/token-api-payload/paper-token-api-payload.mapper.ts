@@ -34,12 +34,11 @@ export interface PaperEnrollmentData extends TokenEnrollmentData {
 export interface PaperEnrollmentPayload extends TokenEnrollmentPayload {
   otplen?: number;
   otpcount?: number;
-  serial?: string | null;
+  serial?: string;
 }
 
 @Injectable({ providedIn: "root" })
 export class PaperApiPayloadMapper extends BaseApiPayloadMapper implements TokenApiPayloadMapper<PaperEnrollmentData> {
-
   override toApiPayload(data: PaperEnrollmentData): PaperEnrollmentPayload {
     const basePayload = super.toApiPayload(data);
     const payload: PaperEnrollmentPayload = {
@@ -49,7 +48,7 @@ export class PaperApiPayloadMapper extends BaseApiPayloadMapper implements Token
     };
     if (data.onlyAddToRealm) {
       payload.realm = data.realm;
-      payload.user = null;
+      delete payload.user;
     }
     return payload;
   }

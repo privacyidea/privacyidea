@@ -153,7 +153,7 @@ describe("FourEyesApiPayloadMapper", () => {
     const data = base();
     data.onlyAddToRealm = true;
     const payload = mapper.toApiPayload(data);
-    expect(payload.user).toBeNull();
+    expect(payload.user).toBeUndefined();
     expect(payload.realm).toBe("realm1");
   });
 
@@ -248,7 +248,7 @@ describe("ApplspecApiPayloadMapper", () => {
     const d = base();
     d.onlyAddToRealm = true;
     const p = mapper.toApiPayload(d);
-    expect(p.user).toBeNull();
+    expect(p.user).toBeUndefined();
     expect(p.realm).toBe("realm1");
   });
 
@@ -613,7 +613,7 @@ describe("MotpApiPayloadMapper", () => {
   it("maps generateOnServer", () => {
     const d = { ...base(), generateOnServer: true };
     const p = mapper.toApiPayload(d);
-    expect(p.otpkey).toBeNull();
+    expect(p.otpkey).toBe("");
     expect(p.genkey).toBe(1);
   });
 
@@ -716,7 +716,7 @@ describe("PasskeyApiPayloadMapper", () => {
   it("respects onlyAddToRealm", () => {
     const d = { ...base(), onlyAddToRealm: true };
     const p = mapper.toApiPayload(d);
-    expect(p.user).toBeNull();
+    expect(p.user).toBeUndefined();
     expect(p.realm).toBe("realm1");
   });
 
@@ -1214,10 +1214,10 @@ describe("TotpApiPayloadMapper", () => {
     expect(p["2stepinit"]).toBe(false);
   });
 
-  it("generateOnServer nulls otpkey and sets genkey", () => {
+  it("generateOnServer empty otpkey and sets genkey", () => {
     const d = { ...base(), generateOnServer: true };
     const p = mapper.toApiPayload(d);
-    expect(p.otpkey).toBeNull();
+    expect(p.otpkey).toBe("");
     expect(p.genkey).toBe(1);
   });
 
@@ -1464,10 +1464,11 @@ describe("YubikeyApiPayloadMapper", () => {
     expect(p.otplen).toBe(44);
   });
 
-  it("keeps nulls", () => {
-    const p = mapper.toApiPayload({ ...base(), otpKey: null, otpLength: null });
-    expect(p.otpkey).toBeNull();
-    expect(p.otplen).toBeNull();
+  it("preserves empty string and zero values", () => {
+    const p = mapper.toApiPayload({ ...base(), otpKey: "", otpLength: 0 });
+
+    expect(p.otpkey).toBe("");
+    expect(p.otplen).toBe(0);
   });
 
   it("fromTokenDetailsToEnrollmentData maps TokenDetails to YubikeyEnrollmentData", () => {
@@ -1500,7 +1501,6 @@ describe("YubikeyApiPayloadMapper", () => {
     const result = mapper.fromTokenDetailsToEnrollmentData(details as any);
     expect(result.type).toBe("yubikey");
     expect(result.serial).toBe("S1");
-    expect(result.otpLength).toBeNull();
+    expect(result.otpLength).toBe(0);
   });
 });
-

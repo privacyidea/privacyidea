@@ -24,7 +24,7 @@ import {
   TokenEnrollmentPayload
 } from "./_token-api-payload.mapper";
 import { TokenDetails } from "../../services/token/token.service";
-import { parseBooleanValue } from "../../utils/parse-boolean-value";
+import { parseBooleanValue } from "src/app/utils/parse-boolean-value";
 
 export interface EmailEnrollmentData extends TokenEnrollmentData {
   type: "email";
@@ -34,12 +34,11 @@ export interface EmailEnrollmentData extends TokenEnrollmentData {
 
 export interface EmailEnrollmentPayload extends TokenEnrollmentPayload {
   email?: string;
-  dynamic_email: boolean;
+  dynamic_email?: boolean;
 }
 
 @Injectable({ providedIn: "root" })
 export class EmailApiPayloadMapper extends BaseApiPayloadMapper implements TokenApiPayloadMapper<EmailEnrollmentData> {
-
   override toApiPayload(data: EmailEnrollmentData): EmailEnrollmentPayload {
     const basePayload = super.toApiPayload(data);
     const payload: EmailEnrollmentPayload = {
@@ -49,7 +48,7 @@ export class EmailApiPayloadMapper extends BaseApiPayloadMapper implements Token
     };
     if (data.onlyAddToRealm) {
       payload.realm = data.realm;
-      payload.user = null;
+      delete payload.user;
     }
     if (payload.email === undefined) {
       delete payload.email;
@@ -57,9 +56,14 @@ export class EmailApiPayloadMapper extends BaseApiPayloadMapper implements Token
     return payload;
   }
 
-  override fromApiPayload(payload: any): EmailEnrollmentData {
-    // Placeholder: Implement transformation from API payload. We will replace this later.
-    return payload as EmailEnrollmentData;
+  override fromApiPayload(payload: EmailEnrollmentPayload): EmailEnrollmentData {
+    const baseData = super.fromApiPayload(payload);
+    return {
+      ...baseData,
+      type: "email",
+      emailAddress: payload.email,
+      readEmailDynamically: parseBooleanValue(payload.dynamic_email ?? false)
+    };
   }
 
   override fromTokenDetailsToEnrollmentData(details: TokenDetails): EmailEnrollmentData {

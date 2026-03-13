@@ -1,5 +1,5 @@
 <!--
- (c) NetKnights GmbH 2025,  https://netknights.it
+ (c) NetKnights GmbH 2026,  https://netknights.it
 
  This code is free software; you can redistribute it and/or
  modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -17,13 +17,13 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <mat-card class="add-token-chips-card">
-  <mat-card-title i18n>Add new Token</mat-card-title>
+  <mat-card-title i18n>Add New Token</mat-card-title>
   <mat-card-content>
     <mat-chip-listbox [multiple]="false">
-      @for (type of tokenTypes; track type) {
+      @for (type of tokenTypes(); track type) {
         <mat-chip (click)="addToken(type)">
-          {{ type }}
-          <mat-icon>add</mat-icon>
+          {{ _toTitleCase(type) }}
+          <mat-icon matChipTrailingIcon>add</mat-icon>
         </mat-chip>
       }
     </mat-chip-listbox>

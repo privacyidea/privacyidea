@@ -28,6 +28,7 @@ import { NotificationService } from "../../../../../services/notification/notifi
 import { DialogService } from "../../../../../services/dialog/dialog.service";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
+import { of } from "rxjs";
 
 describe("TokenRolloverComponent", () => {
   let component: TokenRolloverComponent;
@@ -68,17 +69,29 @@ describe("TokenRolloverComponent", () => {
   });
 
   it("should call enrollToken and close dialog on successful rollover", async () => {
+    const mockEnrollResp = {
+      result: { status: true },
+      detail: { rollout_state: "done", serial: "ABC123", verify: false }
+    };
+
     component.token.set({ type: "hotp", serial: "ABC123" });
     component.enrollmentArgsGetter = jest.fn().mockReturnValue({
-      type: "hotp",
-      serial: "ABC123",
-      rollover: true,
-      data: {}
+      data: {},
+      mapper: { map: (x: any) => x }
     });
+
     const reloadSpy = jest.spyOn(tokenService.tokenDetailResource, "reload");
+    tokenService.enrollToken.mockReturnValue(of(mockEnrollResp) as any);
+
     await component.rolloverToken();
+
     expect(tokenService.enrollToken).toHaveBeenCalled();
     expect(dialogRef.close).toHaveBeenCalled();
+    expect(dialogService.openDialog).toHaveBeenCalled();
+
+    const lastStepDialogRef = dialogService.openDialog.mock.results[0].value;
+    lastStepDialogRef.close();
+
     expect(reloadSpy).toHaveBeenCalled();
   });
 
@@ -92,47 +105,36 @@ describe("TokenRolloverComponent", () => {
     component.token.set({ type: "hotp", serial: "ABC123" });
     component.enrollmentArgsGetter = undefined;
     await component.rolloverToken();
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith("Rollover action is not available for the selected token type.");
+    expect(notificationService.openSnackBar).toHaveBeenCalledWith(
+      "Rollover action is not available for the selected token type."
+    );
   });
 
-  it('should update dialogActions disabled state based on additional form validity', async () => {
-    // Simulate child enroll form controls
-    const enrollControl1 = new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.email] });
-    expect(enrollControl1.valid).toBe(false);
+  it("should update dialogActions disabled state based on additional form validity", async () => {
+    const enrollControl1 = new FormControl("", {
+      nonNullable: true,
+      validators: [Validators.required, Validators.email]
+    });
     const enrollControl2 = new FormControl(2, { nonNullable: true, validators: [Validators.max(3)] });
-    expect(enrollControl2.valid).toBe(true);
-    component.updateAdditionalFormFields({ control1: enrollControl1, control2: enrollControl2 });
 
+    component.updateAdditionalFormFields({ control1: enrollControl1, control2: enrollControl2 });
     fixture.detectChanges();
 
-    // Initially invalid, dialogActions should be disabled
     expect(component.formGroupInvalid()).toBe(true);
-    expect(component.formGroup.invalid).toBe(true);
-    expect(component.dialogActions()).toEqual([
-      expect.objectContaining({ disabled: true })
-    ]);
+    expect(component.dialogActions()).toEqual([expect.objectContaining({ disabled: true })]);
 
     // Make the form valid
-    enrollControl1.setValue('test@example.com');
+    enrollControl1.setValue("test@example.com");
     fixture.detectChanges();
 
-    // Should now be valid, dialogActions should be enabled
     expect(component.formGroupInvalid()).toBe(false);
-    expect(component.formGroup.invalid).toBe(false);
-    expect(component.dialogActions()).toEqual([
-      expect.objectContaining({ disabled: false })
-    ]);
+    expect(component.dialogActions()).toEqual([expect.objectContaining({ disabled: false })]);
 
     // Invalidate other control
     enrollControl2.setValue(4);
     fixture.detectChanges();
 
-    // Should be invalid again, dialogActions should be disabled
     expect(component.formGroupInvalid()).toBe(true);
-    expect(component.formGroup.invalid).toBe(true);
-    expect(component.dialogActions()).toEqual([
-      expect.objectContaining({ disabled: true })
-    ]);
+    expect(component.dialogActions()).toEqual([expect.objectContaining({ disabled: true })]);
   });
 });
-

@@ -1,25 +1,35 @@
 /**
  * (c) NetKnights GmbH 2026,  https://netknights.it
+ *
+ * This code is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ * as published by the Free Software Foundation; either
+ * version 3 of the License, or any later version.
+ *
+ * This code is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public
+ * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { CommonModule } from "@angular/common";
-import { Component, inject, viewChild, signal, linkedSignal, computed, input } from "@angular/core";
+import { CommonModule, KeyValuePipe } from "@angular/common";
+import { Component, inject, viewChild, signal, linkedSignal, computed } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCheckboxModule, MatCheckboxChange } from "@angular/material/checkbox";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
-import { MatPaginatorModule } from "@angular/material/paginator";
+import { MatPaginatorModule, PageEvent } from "@angular/material/paginator";
 import { MatSlideToggleModule } from "@angular/material/slide-toggle";
 import { MatSortModule, Sort } from "@angular/material/sort";
 import { MatTableModule } from "@angular/material/table";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { lastValueFrom } from "rxjs";
 
-import {
-  SimpleConfirmationDialogData,
-  SimpleConfirmationDialogComponent
-} from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { FilterValueGeneric } from "src/app/core/models/filter_value_generic/filter-value-generic";
 import { FilterOption } from "src/app/core/models/filter_value_generic/filter-option";
 import { AuthServiceInterface, AuthService } from "src/app/services/auth/auth.service";
@@ -32,21 +42,12 @@ import { PolicyFilterComponent } from "./policy-filter/policy-filter.component";
 import { ViewConditionsColumnComponent } from "./view-conditions-column/view-conditions-column.component";
 import { ViewActionColumnComponent } from "./view-action-column/view-action-column.component";
 
-const columnKeysMap = [
-  { key: "select", label: "" },
-  { key: "priority", label: $localize`Priority` },
-  { key: "name", label: $localize`Name` },
-  { key: "scope", label: $localize`Scope` },
-  { key: "description", label: $localize`Description` },
-  { key: "actions", label: $localize`Actions` },
-  { key: "conditions", label: $localize`Conditions` },
-  { key: "active", label: $localize`Active` }
-];
 @Component({
   selector: "app-policies-table",
   standalone: true,
   imports: [
     CommonModule,
+    KeyValuePipe,
     MatTableModule,
     MatSortModule,
     MatIconModule,
@@ -65,94 +66,132 @@ const columnKeysMap = [
   styleUrl: "./policies-table.component.scss"
 })
 export class PoliciesTableComponent {
-  readonly displayedColumns: string[] = columnKeysMap.map((c) => c.key);
-  readonly columnKeysMap = columnKeysMap;
-
   readonly policyService: PolicyServiceInterface = inject(PolicyService);
   readonly dialogService: DialogServiceInterface = inject(DialogService);
   readonly authService: AuthServiceInterface = inject(AuthService);
   readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
 
-  readonly filterComponent = viewChild.required<PolicyFilterComponent>("filterComponent");
-  readonly sort = signal<Sort>({ active: "", direction: "" });
+  readonly filterComponent = viewChild<PolicyFilterComponent>("filterComponent");
 
-  readonly isFiltered = input.required<boolean>();
+  readonly columns = {
+    priority: { label: $localize`Priority`, filterable: true, sortable: true },
+    name: { label: $localize`Name`, filterable: true, sortable: true },
+    scope: { label: $localize`Scope`, filterable: true, sortable: true },
+    description: { label: $localize`Description`, filterable: true, sortable: true },
+    actions: { label: $localize`Actions`, filterable: true, sortable: false },
+    conditions: { label: $localize`Conditions`, filterable: true, sortable: false },
+    active: { label: $localize`Active`, filterable: true, sortable: true }
+  } as const;
+
+  readonly columnKeys = computed(() => ["select", ...Object.keys(this.columns)]);
+
+  readonly pageIndex = signal(0);
+  readonly pageSize = signal(10);
+  readonly pageSizeOptions = signal([5, 10, 25, 100]);
+  readonly sort = signal<Sort>({ active: "priority", direction: "asc" });
   readonly filter = signal<FilterValueGeneric<PolicyDetail>>(
     new FilterValueGeneric({ availableFilters: policyFilterOptions })
   );
 
-  readonly policiesListFiltered = linkedSignal<
-    { filter: FilterValueGeneric<PolicyDetail>; allPolicies: PolicyDetail[] },
-    PolicyDetail[]
-  >({
-    source: () => ({ filter: this.filter(), allPolicies: this.policyService.allPolicies() }),
-    computation: (source) => source.filter.filterItems(source.allPolicies)
+  readonly emptyResource = linkedSignal({
+    source: this.pageSize,
+    computation: (ps) => Array.from({ length: ps }, () => ({ name: "" }) as PolicyDetail)
+  });
+
+  readonly policiesListFiltered = computed(() => {
+    const all = this.policyService.allPolicies();
+    if (all.length === 0) return this.emptyResource();
+    return this.filter().filterItems(all);
   });
 
   readonly sortedFilteredPolicies = computed(() => {
     const policies = this.policiesListFiltered();
     const sort = this.sort();
-    if (!sort.active || sort.direction === "") return policies;
+    if (!sort.active || sort.direction === "" || this.policyService.allPolicies().length === 0) return policies;
 
     return [...policies].sort((a, b) => {
       const isAsc = sort.direction === "asc";
-      switch (sort.active) {
-        case "priority":
-          return this.compare(a.priority, b.priority, isAsc);
-        case "name":
-          return this.compare(a.name, b.name, isAsc);
-        case "scope":
-          return this.compare(a.scope, b.scope, isAsc);
-        case "description":
-          return this.compare(a.description ?? "", b.description ?? "", isAsc);
-        case "active":
-          return this.compare(a.active, b.active, isAsc);
-        default:
-          return 0;
-      }
+      const valA = a[sort.active as keyof PolicyDetail] ?? "";
+      const valB = b[sort.active as keyof PolicyDetail] ?? "";
+      if (valA === valB) return 0;
+      return (valA < valB ? -1 : 1) * (isAsc ? 1 : -1);
     });
   });
+
+  readonly pagedPolicies = computed(() => {
+    const data = this.sortedFilteredPolicies();
+    if (this.policyService.allPolicies().length === 0) return data;
+    const start = this.pageIndex() * this.pageSize();
+    return data.slice(start, start + this.pageSize());
+  });
+
+  readonly totalLength = computed(() =>
+    this.policyService.allPolicies().length > 0 ? this.policiesListFiltered().length : 0
+  );
 
   readonly selectedPolicies = linkedSignal<PolicyDetail[], Set<string>>({
     source: () => this.policiesListFiltered(),
     computation: (source, previous) => {
       const selected = previous?.value ?? new Set<string>();
+      if (this.policyService.allPolicies().length === 0) return new Set();
+      const currentNames = new Set(source.map((p) => p.name));
       for (const name of selected) {
-        if (!source.some((p) => p.name === name)) selected.delete(name);
+        if (!currentNames.has(name)) selected.delete(name);
       }
       return selected;
     }
   });
 
-  public onSortChange(sort: Sort): void {
+  readonly keepOrder = () => 0;
+
+  onSortChange(sort: Sort): void {
     this.sort.set(sort);
   }
 
-  private compare(a: number | string | boolean, b: number | string | boolean, isAsc: boolean): number {
-    return (a < b ? -1 : 1) * (isAsc ? 1 : -1);
+  onPageEvent(event: PageEvent): void {
+    this.pageSize.set(event.pageSize);
+    this.pageIndex.set(event.pageIndex);
   }
 
-  public onFilterUpdate(newFilter: FilterValueGeneric<PolicyDetail>): void {
+  onFilterUpdate(newFilter: FilterValueGeneric<PolicyDetail>): void {
     this.filter.set(newFilter);
+    this.pageIndex.set(0);
   }
 
-  public onFilterClick(columnKey: string): void {
-    this.toggleFilter(columnKey);
-    this.filterComponent()?.focusInput();
-  }
-
-  public toggleFilter(columnKey: string): void {
+  onFilterClick(columnKey: string): void {
     const option = policyFilterOptions.find((o) => o.key === columnKey);
     if (!option) return;
-
     const nextFilter = option.toggle ? option.toggle(this.filter()) : this.filter().toggleKey(option.key);
-
-    this.filter.set(nextFilter);
+    this.onFilterUpdate(nextFilter);
     this.filterComponent()?.updateFilterManually(nextFilter);
   }
 
-  public getFilterIconName(columnKey: string): string {
-    const actionType = policyFilterOptions.find((o) => o.key === columnKey)?.getActionType?.(this.filter()) ?? "none";
+  updateSelection($event: MatCheckboxChange, policyName: string): void {
+    if (!policyName) return;
+    const selected = new Set(this.selectedPolicies());
+    $event.checked ? selected.add(policyName) : selected.delete(policyName);
+    this.selectedPolicies.set(selected);
+  }
+
+  isAllSelected(): boolean {
+    const displayed = this.pagedPolicies().filter((p) => !!p.name);
+    if (displayed.length === 0) return false;
+    return displayed.every((p) => this.selectedPolicies().has(p.name));
+  }
+
+  masterToggle(): void {
+    const selected = new Set(this.selectedPolicies());
+    const displayed = this.pagedPolicies().filter((p) => !!p.name);
+    if (this.isAllSelected()) {
+      displayed.forEach((p) => selected.delete(p.name));
+    } else {
+      displayed.forEach((p) => selected.add(p.name));
+    }
+    this.selectedPolicies.set(selected);
+  }
+
+  getFilterIconName(columnKey: string): string {
+    const actionType = policyFilterOptions.find((o) => o.key === columnKey)?.getActionType?.(this.filter()) ?? "add";
     switch (actionType) {
       case "add":
         return "filter_alt";
@@ -160,58 +199,26 @@ export class PoliciesTableComponent {
         return "filter_alt_off";
       case "change":
         return "screen_rotation_alt";
-      case "none":
-        return "";
       default:
         return "filter_alt";
     }
   }
 
-  public getFilterTooltipText(columnKey: string): string {
+  getFilterTooltipText(columnKey: string): string {
     return policyFilterOptions.find((o) => o.key === columnKey)?.hint ?? "";
   }
 
-  public isFilterable(columnKey: string): boolean {
+  isFilterable(columnKey: string): boolean {
     return policyFilterOptions.some((o) => o.key === columnKey);
   }
 
-  public isSelected(policyName: string): boolean {
-    return this.selectedPolicies().has(policyName);
-  }
-
-  public updateSelection($event: MatCheckboxChange, policyName: string): void {
-    const selected = new Set(this.selectedPolicies());
-    $event.checked ? selected.add(policyName) : selected.delete(policyName);
-    this.selectedPolicies.set(selected);
-  }
-
-  public isAllSelected(): boolean {
-    const filtered = this.policiesListFiltered();
-    if (filtered.length === 0) return false;
-    const selected = this.selectedPolicies();
-    return selected.size === filtered.length && filtered.every((p) => selected.has(p.name));
-  }
-
-  public masterToggle(): void {
-    if (this.isAllSelected()) {
-      this.selectedPolicies.set(new Set<string>());
-    } else {
-      this.selectedPolicies.set(new Set(this.policiesListFiltered().map((p) => p.name)));
-    }
-  }
-
-  async deletePolicy(policyName: string): Promise<void> {
-    const confirmed = await this._confirm({
-      title: "Confirm Deletion",
-      confirmAction: { type: "destruct", label: "Delete", value: true },
-      items: [policyName],
-      itemType: "policy"
-    });
-    if (confirmed) this.policyService.deletePolicy(policyName);
+  togglePolicyActive(policy: PolicyDetail): void {
+    if (!policy.name) return;
+    this.policyService.togglePolicyActive(policy);
   }
 
   async editPolicy(policy: PolicyDetail): Promise<void> {
-    const originalPolicyName = policy.name;
+    if (!policy.name) return;
     const result = await lastValueFrom(
       this.dialogService
         .openDialog({
@@ -220,28 +227,16 @@ export class PoliciesTableComponent {
         })
         .afterClosed()
     );
-    if (result) {
-      this.policyService.savePolicyEdits(originalPolicyName, { ...policy, ...result });
-    }
-  }
-
-  private async _confirm(data: SimpleConfirmationDialogData): Promise<boolean> {
-    const res = await lastValueFrom(
-      this.dialogService.openDialog({ component: SimpleConfirmationDialogComponent, data }).afterClosed()
-    );
-    return res === true;
+    if (result) this.policyService.savePolicyEdits(policy.name, { ...policy, ...result });
   }
 }
 
-/**
- * Filter-Optionen mit korrektem Key 'iconName' für den Konstruktor.
- */
-const policyFilterOptions = [
+const policyFilterOptions: FilterOption<PolicyDetail>[] = [
   new FilterOption<PolicyDetail>({
     key: "priority",
     label: $localize`Priority`,
     matches: (item, filter) => {
-      const val = filter.getValueOfKey("priority");
+      const val = filter.getFilterOfKey("priority");
       if (!val) return true;
       const priority = item.priority;
       try {
@@ -251,10 +246,6 @@ const policyFilterOptions = [
         if (val.startsWith("<")) return priority < parseInt(val.substring(1), 10);
         if (val.startsWith("!=")) return priority !== parseInt(val.substring(2), 10);
         if (val.startsWith("=")) return priority === parseInt(val.substring(1), 10);
-        if (val.includes("-")) {
-          const [min, max] = val.split("-").map((v) => parseInt(v, 10));
-          return priority >= min && priority <= max;
-        }
         return priority === parseInt(val, 10);
       } catch {
         return false;
@@ -265,17 +256,17 @@ const policyFilterOptions = [
     key: "active",
     label: $localize`Active`,
     toggle: (filter) => {
-      const v = filter.getValueOfKey("active")?.toLowerCase();
+      const v = filter.getFilterOfKey("active")?.toLowerCase();
       if (v === "true") return filter.setValueOfKey("active", "false");
       if (v === "false") return filter.removeKey("active");
       return filter.setValueOfKey("active", "true");
     },
     getActionType: (filter) => {
-      const v = filter.getValueOfKey("active")?.toLowerCase();
+      const v = filter.getFilterOfKey("active")?.toLowerCase();
       return v === "true" ? "change" : v === "false" ? "remove" : "add";
     },
     matches: (item, filter) => {
-      const v = filter.getValueOfKey("active")?.toLowerCase();
+      const v = filter.getFilterOfKey("active")?.toLowerCase();
       return v === "true" ? item.active === true : v === "false" ? item.active === false : true;
     }
   }),
@@ -283,7 +274,7 @@ const policyFilterOptions = [
     key: "name",
     label: $localize`Policy Name`,
     matches: (item, filter) => {
-      const val = filter.getValueOfKey("name");
+      const val = filter.getFilterOfKey("name");
       return !val || item.name.toLowerCase().includes(val.toLowerCase());
     }
   }),
@@ -291,7 +282,7 @@ const policyFilterOptions = [
     key: "scope",
     label: $localize`Scope`,
     matches: (item, filter) => {
-      const val = filter.getValueOfKey("scope");
+      const val = filter.getFilterOfKey("scope");
       return !val || item.scope.toLowerCase().includes(val.toLowerCase());
     }
   }),
@@ -299,7 +290,7 @@ const policyFilterOptions = [
     key: "actions",
     label: $localize`Actions`,
     matches: (item, filter) => {
-      const val = filter.getValueOfKey("actions")?.toLowerCase();
+      const val = filter.getFilterOfKey("actions")?.toLowerCase();
       if (!val || !item.action) return true;
       return Object.entries(item.action).some(
         ([n, v]) => n.toLowerCase().includes(val) || String(v).toLowerCase().includes(val)
@@ -310,7 +301,7 @@ const policyFilterOptions = [
     key: "conditions",
     label: $localize`Conditions`,
     matches: (item, filter) => {
-      const val = filter.getValueOfKey("conditions")?.toLowerCase();
+      const val = filter.getFilterOfKey("conditions")?.toLowerCase();
       if (!val) return true;
       const fields = [
         item.adminrealm,
@@ -321,10 +312,10 @@ const policyFilterOptions = [
         item.client,
         item.user_agents
       ];
-      if (fields.some((l) => l.some((e) => e.toLowerCase().includes(val)))) return true;
+      if (fields.some((l) => l?.some((e) => e.toLowerCase().includes(val)))) return true;
       return (
-        item.time.toLowerCase().includes(val) ||
-        item.conditions.some((cond) => cond.some((c) => String(c).toLowerCase().includes(val)))
+        item.time?.toLowerCase().includes(val) ||
+        item.conditions?.some((cond) => cond.some((c) => String(c).toLowerCase().includes(val)))
       );
     }
   })

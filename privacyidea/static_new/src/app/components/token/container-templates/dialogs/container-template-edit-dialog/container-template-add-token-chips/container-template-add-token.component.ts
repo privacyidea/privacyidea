@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,34 +16,30 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, EventEmitter, inject, Input, Output, ViewEncapsulation } from "@angular/core";
+
+import { Component, input, output } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { MatCardModule } from "@angular/material/card";
 import { MatChipListbox, MatChipsModule } from "@angular/material/chips";
-import {
-  ContainerTemplateService,
-  ContainerTemplateServiceInterface
-} from "../../../../services/container-template/container-template.service";
+
 import { MatIcon } from "@angular/material/icon";
 
 @Component({
-  selector: "app-container-template-add-token-chips",
+  selector: "app-container-template-add-token",
   standalone: true,
   imports: [CommonModule, MatCardModule, MatChipsModule, MatChipListbox, MatIcon],
-  templateUrl: "./container-template-add-token-chips.component.html",
-  styleUrls: ["./container-template-add-token-chips.component.scss"]
+  templateUrl: "./container-template-add-token.component.html",
+  styleUrls: ["./container-template-add-token.component.scss"]
 })
-export class ContainerTemplateAddTokenChipsComponent {
-  @Input({ required: true }) containerType: string = "";
-  @Output() onAddToken = new EventEmitter<string>();
-
-  containerTemplateService: ContainerTemplateServiceInterface = inject(ContainerTemplateService);
-
-  get tokenTypes(): string[] {
-    return this.containerTemplateService.getTokenTypesForContainerType(this.containerType);
-  }
+export class ContainerTemplateAddTokenComponent {
+  readonly tokenTypes = input.required<string[]>();
+  readonly onAddToken = output<string>();
 
   addToken(tokenType: string) {
     this.onAddToken.emit(tokenType);
+  }
+
+  protected _toTitleCase(str: string): string {
+    return str.charAt(0).toUpperCase() + str.slice(1);
   }
 }

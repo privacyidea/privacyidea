@@ -28,7 +28,7 @@ import { MockTokenService } from "../../../../../testing/mock-services";
 import { Tokens, TokenService } from "../../../../services/token/token.service";
 import { DialogService } from "../../../../services/dialog/dialog.service";
 import { PushApiPayloadMapper } from "../../../../mappers/token-api-payload/push-token-api-payload.mapper";
-import { lastValueFrom, of, throwError } from "rxjs";
+import { lastValueFrom, of } from "rxjs";
 import { ReopenDialogFn } from "../token-enrollment.component";
 import { MockDialogService } from "../../../../../testing/mock-services/mock-dialog-service";
 
@@ -102,31 +102,47 @@ describe("EnrollPushComponent", () => {
 
   it("enrolls, opens dialog, polls to done, closes dialog and returns initResp", async () => {
     const initResp = makeInitResp("S-1");
-    const pollResp = makePollResp("done");
+    const pollResp = makePollResp("enrolled");
 
     tokenSvc.enrollToken.mockReturnValue(of(initResp) as any);
     tokenSvc.pollTokenRolloutState.mockReturnValue(of(pollResp) as any);
 
     const enrollmentArgs = component.enrollmentArgsGetter({} as any);
-    const initResponse = await lastValueFrom(tokenSvc.enrollToken(enrollmentArgs));
-    await component.onEnrollmentResponse(initResponse as EnrollmentResponse);
+    const initResponse = await lastValueFrom(tokenSvc.enrollToken(enrollmentArgs!));
+
+    const finalResponsePromise = component.onEnrollmentResponse(initResponse as EnrollmentResponse);
+
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    const finalResponse = await finalResponsePromise;
+
+    expect(finalResponse).toEqual({
+      detail: { rollout_state: "enrolled", serial: "S-1" },
+      result: { status: true, value: true },
+      type: "push"
+    });
 
     expect(tokenSvc.enrollToken).toHaveBeenCalledTimes(1);
     expect(dialogSvc.openDialog).toHaveBeenCalledTimes(1);
     expect(tokenSvc.pollTokenRolloutState).toHaveBeenCalledTimes(1);
-    expect(component.pollResponse()).toEqual(pollResp);
+
+    expect(component.pollResponse()).toBeUndefined();
   });
 
   it("keeps dialog open when rollout_state is clientwait", async () => {
+    const pollResp = makePollResp("clientwait");
     tokenSvc.enrollToken.mockReturnValue(of(makeInitResp()) as any);
-    tokenSvc.pollTokenRolloutState.mockReturnValue(of(makePollResp("clientwait")) as any);
+    tokenSvc.pollTokenRolloutState.mockReturnValue(of(pollResp) as any);
 
     const enrollmentArgs = component.enrollmentArgsGetter({} as any);
-    const initResponse = await lastValueFrom(tokenSvc.enrollToken(enrollmentArgs));
-    await component.onEnrollmentResponse(initResponse as EnrollmentResponse);
+    const initResponse = await lastValueFrom(tokenSvc.enrollToken(enrollmentArgs!));
 
-    expect(initResponse).not.toBeNull();
+    await component.onEnrollmentResponse(initResponse as EnrollmentResponse);
+    fixture.detectChanges();
+
     expect(dialogSvc.openDialog).toHaveBeenCalled();
+    expect(component.pollResponse()).toEqual(pollResp);
   });
 
   it("reopenDialogChange provides a Promise callback that re-triggers polling when dialog is not open", async () => {
@@ -139,17 +155,20 @@ describe("EnrollPushComponent", () => {
     component.reopenDialogChange.subscribe((fn) => (reopenFn = fn));
 
     const enrollmentArgs = component.enrollmentArgsGetter({} as any);
-    const initResponse = await lastValueFrom(tokenSvc.enrollToken(enrollmentArgs));
+    const initResponse = await lastValueFrom(tokenSvc.enrollToken(enrollmentArgs!));
+
     await component.onEnrollmentResponse(initResponse as EnrollmentResponse);
-
+    fixture.detectChanges();
     expect(typeof reopenFn!).toBe("function");
-
+    dialogSvc.closeAllDialogs();
+    fixture.detectChanges();
     const r2 = await reopenFn!();
+
     expect(r2).toEqual({
       ...initResp,
       detail: {
         ...initResp.detail,
-        rollout_state: pollResp.result?.value?.tokens[0].rollout_state ?? initResp.detail.rollout_state
+        rollout_state: "done"
       }
     });
     expect(tokenSvc.pollTokenRolloutState).toHaveBeenCalledTimes(2);
@@ -162,8 +181,11 @@ describe("EnrollPushComponent", () => {
     tokenSvc.pollTokenRolloutState.mockReturnValue(of(pollResp) as any);
 
     const enrollmentArgs = component.enrollmentArgsGetter({} as any);
-    const initResponse = await lastValueFrom(tokenSvc.enrollToken(enrollmentArgs));
+    const initResponse = await lastValueFrom(tokenSvc.enrollToken(enrollmentArgs!));
+
     await component.onEnrollmentResponse(initResponse as EnrollmentResponse);
+    fixture.detectChanges();
+    await fixture.whenStable();
 
     expect(tokenSvc.stopPolling).toHaveBeenCalled();
   });

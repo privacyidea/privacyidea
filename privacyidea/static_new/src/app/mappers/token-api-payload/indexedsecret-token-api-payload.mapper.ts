@@ -36,8 +36,10 @@ export interface IndexedSecretEnrollmentPayload extends TokenEnrollmentPayload {
 }
 
 @Injectable({ providedIn: "root" })
-export class IndexedSecretApiPayloadMapper extends BaseApiPayloadMapper implements TokenApiPayloadMapper<IndexedSecretEnrollmentData> {
-
+export class IndexedSecretApiPayloadMapper
+  extends BaseApiPayloadMapper
+  implements TokenApiPayloadMapper<IndexedSecretEnrollmentData>
+{
   override toApiPayload(data: IndexedSecretEnrollmentData): IndexedSecretEnrollmentPayload {
     const payload: IndexedSecretEnrollmentPayload = {
       ...super.toApiPayload(data),
@@ -46,7 +48,7 @@ export class IndexedSecretApiPayloadMapper extends BaseApiPayloadMapper implemen
 
     if (data.onlyAddToRealm) {
       payload.realm = data.realm;
-      payload.user = null;
+      delete payload.user;
     }
     return payload;
   }

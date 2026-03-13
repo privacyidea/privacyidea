@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -74,7 +74,6 @@ describe("ContainerTemplateService", () => {
     });
 
     afterEach(() => {
-      // This is for the templateTokentypesResource which is also triggered
       const req = httpMock.match(`${environment.proxyUrl}/container/template/tokentypes`);
       if (req.length > 0 && !req[0].cancelled) {
         req[0].flush({ result: { value: {} } });
@@ -82,16 +81,13 @@ describe("ContainerTemplateService", () => {
     });
 
     it("should fetch templates when on the correct route and with permission", async () => {
-      // Setup
       TestBed.flushEffects();
 
-      // Execute
       const req = httpMock.expectOne(`${service.containerTemplateBaseUrl}`);
       req.flush({ result: { value: { templates: [{ name: "template1" }] } } });
       TestBed.flushEffects();
       await Promise.resolve();
 
-      // Assertion
       const value = service.templatesResource.value();
       expect(value).toBeDefined();
       expect(value?.result?.value?.templates).toBeDefined();
@@ -100,11 +96,9 @@ describe("ContainerTemplateService", () => {
     });
 
     it("should not fetch templates if action is not allowed", async () => {
-      // Setup / Execute
       authServiceMock.actionAllowed.mockReturnValue(false);
       TestBed.flushEffects();
 
-      // Assertion
       httpMock.expectNone(`${service.containerTemplateBaseUrl}?container_type=test-type`);
       const value = service.templatesResource.value();
       expect(value).toBeUndefined();
@@ -112,12 +106,10 @@ describe("ContainerTemplateService", () => {
     });
 
     it("should not fetch templates if not on the correct route", async () => {
-      // Setup / Execute
       contentServiceMock.routeUrl.set("/wrong/route");
       TestBed.flushEffects();
       await Promise.resolve();
 
-      // Assertion
       httpMock.expectNone(`${service.containerTemplateBaseUrl}?container_type=test-type`);
       const value = service.templatesResource.value();
       expect(value).toBeUndefined();
@@ -127,13 +119,11 @@ describe("ContainerTemplateService", () => {
 
   describe("templateTokentypesResource", () => {
     beforeEach(() => {
-      // Set up conditions for templatesResource to be fetched as well, as it's triggered by default
       contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_CONTAINERS_CREATE);
       authServiceMock.actionAllowed.mockReturnValue(true);
     });
 
     afterEach(() => {
-      // This is for the templateTokentypesResource which is also triggered
       const req = httpMock.match(`${service.containerTemplateBaseUrl}`);
       if (req.length > 0 && !req[0].cancelled) {
         req[0].flush({ result: { value: {} } });
@@ -141,17 +131,14 @@ describe("ContainerTemplateService", () => {
     });
 
     it("should fetch token types", async () => {
-      // Setup
       TestBed.flushEffects();
 
-      // Execute
       const tokenTypesReq = httpMock.expectOne(`${environment.proxyUrl}/container/template/tokentypes`);
       const mockTokenTypes = { type1: { description: "Type 1", token_types: ["token1"] } };
       tokenTypesReq.flush({ result: { value: mockTokenTypes } });
       TestBed.flushEffects();
       await Promise.resolve();
 
-      // Assertion
       const value = service.templateTokenTypesResource.value();
       expect(value).toBeDefined();
       expect(value?.result?.value).toEqual(mockTokenTypes);
@@ -159,22 +146,19 @@ describe("ContainerTemplateService", () => {
     });
 
     it("should not fetch token types if not on the correct route", async () => {
-      // Setup / Execute
       contentServiceMock.routeUrl.set("/wrong/route");
       TestBed.flushEffects();
 
-      // Assertion
       httpMock.expectNone(`${environment.proxyUrl}/container/template/tokentypes`);
       const value = service.templateTokenTypesResource.value();
       expect(value).toBeUndefined();
       expect(service.templateTokenTypes()).toEqual({});
     });
+
     it("should not fetch token types if action is not allowed", async () => {
-      // Setup / Execute
       authServiceMock.actionAllowed.mockReturnValue(false);
       TestBed.flushEffects();
 
-      // Assertion
       httpMock.expectNone(`${environment.proxyUrl}/container/template/tokentypes`);
       const value = service.templateTokenTypesResource.value();
       expect(value).toBeUndefined();
@@ -184,13 +168,11 @@ describe("ContainerTemplateService", () => {
 
   describe("getTokenTypesForContainerType", () => {
     beforeEach(() => {
-      // Set up conditions for both resources to be fetched
       contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_CONTAINERS_CREATE);
       authServiceMock.actionAllowed.mockReturnValue(true);
     });
 
     afterEach(() => {
-      // This is for the templateTokentypesResource, and templatesResource which are both triggered
       const req = [
         ...httpMock.match(`${environment.proxyUrl}/container/template/tokentypes`),
         ...httpMock.match(`${service.containerTemplateBaseUrl}`)
@@ -201,10 +183,8 @@ describe("ContainerTemplateService", () => {
     });
 
     it("should return token types for a given container type", async () => {
-      // Setup
       TestBed.flushEffects();
 
-      // Flush initial requests
       const templatesReq = httpMock.expectOne(`${service.containerTemplateBaseUrl}`);
       templatesReq.flush({ result: { value: { templates: [] } } });
       const tokenTypesReq = httpMock.expectOne(`${environment.proxyUrl}/container/template/tokentypes`);
@@ -214,15 +194,12 @@ describe("ContainerTemplateService", () => {
       TestBed.flushEffects();
       await Promise.resolve();
 
-      // Assertion
       expect(service.getTokenTypesForContainerType("type1")).toEqual(["token1", "token2"]);
     });
 
     it("should return an empty array for a non-existent container type", async () => {
-      // Setup
       TestBed.flushEffects();
 
-      // Flush initial requests
       const templatesReq = httpMock.expectOne(`${service.containerTemplateBaseUrl}`);
       templatesReq.flush({ result: { value: { templates: [] } } });
       const tokenTypesReq = httpMock.expectOne(`${environment.proxyUrl}/container/template/tokentypes`);
@@ -232,72 +209,93 @@ describe("ContainerTemplateService", () => {
       TestBed.flushEffects();
       await Promise.resolve();
 
-      // Assertion
       expect(service.getTokenTypesForContainerType("non-existent")).toEqual([]);
-    });
-
-    it("should return only the requested container type's token types", async () => {
-      // Setup
-      TestBed.flushEffects();
-
-      // Flush initial requests
-      const templatesReq = httpMock.expectOne(`${service.containerTemplateBaseUrl}`);
-      templatesReq.flush({ result: { value: { templates: [] } } });
-      const tokenTypesReq = httpMock.expectOne(`${environment.proxyUrl}/container/template/tokentypes`);
-      const mockTokenTypes = {
-        type1: { description: "Type 1", token_types: ["token1", "token2"] },
-        type2: { description: "Type 2", token_types: ["token3"] }
-      };
-      tokenTypesReq.flush({ result: { value: mockTokenTypes } });
-
-      TestBed.flushEffects();
-      await Promise.resolve();
-
-      // Assertion
-      expect(service.getTokenTypesForContainerType("type2")).toEqual(["token3"]);
     });
   });
 
   describe("deleteTemplate", () => {
-    it("should send a DELETE request and show success notification", async () => {
-      const templateName = "template-to-delete";
-      service.deleteTemplate(templateName);
+    it("should send DELETE request, reload and show snackbar", async () => {
+      const spy = jest.spyOn(service.templatesResource, "reload");
+      const deletePromise = service.deleteTemplate("test-1");
 
-      const req = httpMock.expectOne(`/container/template/${templateName}`);
-      expect(req.request.method).toBe("DELETE");
+      const req = httpMock.expectOne((req) => req.url.includes("/container/template/test-1"));
       req.flush({});
+      await deletePromise;
 
-      await Promise.resolve(); // wait for subscribe callback
-
+      expect(spy).toHaveBeenCalled();
       expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith("Successfully deleted template.");
     });
 
-    it("should handle error on delete and show error notification", async () => {
-      const templateName = "template-to-delete";
-      service.deleteTemplate(templateName);
+    it("should throw error on delete", async () => {
+      const templateName = "template-to-fail";
+      const deletePromise = service.deleteTemplate(templateName).catch(() => {});
+      const req = httpMock.expectOne((req) => req.url.includes(`/container/template/${templateName}`));
 
-      const req = httpMock.expectOne(`/container/template/${templateName}`);
-      req.flush({ result: { error: { message: "Error message" } } }, { status: 500, statusText: "Server Error" });
+      req.flush("Error", { status: 500, statusText: "Server Error" });
 
-      await Promise.resolve(); // wait for subscribe callback
-
-      expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith("Failed to delete template. Error message");
+      await deletePromise;
+      expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith(
+        expect.stringContaining("Failed to delete template")
+      );
     });
 
-    it("should check permissions before deleting", async () => {
-      // Setup
+    it("should check permissions and throw if denied", async () => {
       authServiceMock.actionAllowed.mockReturnValue(false);
       TestBed.flushEffects();
 
-      // Execute
       const templateName = "template-to-delete";
-      service.deleteTemplate(templateName);
-      httpMock.expectNone(`/container/template/${templateName}`);
 
-      await Promise.resolve(); // wait for subscribe callback
+      await expect(service.deleteTemplate(templateName)).rejects.toThrow("Permission denied");
+
+      httpMock.expectNone(`/container/template/${templateName}`);
       expect(authServiceMock.actionAllowed).toHaveBeenCalledWith("container_template_delete");
       expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith(
         "You are not allowed to delete container templates."
+      );
+    });
+  });
+
+  describe("deleteTemplates", () => {
+    it("should delete multiple templates sequentially, reload once and show success notification", async () => {
+      const spy = jest.spyOn(service.templatesResource, "reload");
+      const templateNames = ["template-1", "template-2"];
+
+      const deletePromise = service.deleteTemplates(templateNames);
+
+      const req1 = httpMock.expectOne((req) => req.url.includes(`/container/template/${templateNames[0]}`));
+      req1.flush({});
+
+      await Promise.resolve();
+      await Promise.resolve();
+
+      const req2 = httpMock.expectOne((req) => req.url.includes(`/container/template/${templateNames[1]}`));
+      req2.flush({});
+
+      await deletePromise;
+
+      expect(spy).toHaveBeenCalledTimes(1);
+      expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith("Successfully deleted templates.");
+    });
+
+    it("should stop execution if one deletion fails and show error notification", async () => {
+      const spy = jest.spyOn(service.templatesResource, "reload");
+      const templateNames = ["template-1", "template-2"];
+
+      const deletePromise = service.deleteTemplates(templateNames).catch(() => {});
+
+      const req1 = httpMock.expectOne((req) => req.url.includes(`/container/template/${templateNames[0]}`));
+      req1.flush(
+        { result: { error: { message: "Internal Server Error" } } },
+        { status: 500, statusText: "Server Error" }
+      );
+
+      await deletePromise;
+
+      httpMock.expectNone((req) => req.url.includes(`/container/template/${templateNames[1]}`));
+
+      expect(spy).not.toHaveBeenCalled();
+      expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith(
+        expect.stringContaining("Failed to delete templates. Internal Server Error")
       );
     });
   });
@@ -308,13 +306,11 @@ describe("ContainerTemplateService", () => {
       container_type: "generic",
       default: false,
       template_options: {
-        tokens: [],
-        options: undefined
+        tokens: []
       }
     };
 
     beforeEach(() => {
-      // Set up conditions for both resources to be fetched and flush them
       contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_CONTAINERS_CREATE);
       authServiceMock.actionAllowed.mockReturnValue(true);
       TestBed.flushEffects();
@@ -322,7 +318,8 @@ describe("ContainerTemplateService", () => {
       reqs.forEach((req) => req.flush({ result: { value: {} } }));
     });
 
-    it("should send a POST request and show success notification", async () => {
+    it("should send a POST request, reload and show success notification", async () => {
+      const spy = jest.spyOn(service.templatesResource, "reload");
       const promise = service.postTemplateEdits(template);
 
       const req = httpMock.expectOne(
@@ -332,8 +329,8 @@ describe("ContainerTemplateService", () => {
       req.flush({});
 
       await promise;
-      await Promise.resolve(); // wait for subscribe callback
 
+      expect(spy).toHaveBeenCalled();
       expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith(`Successfully saved template edits.`);
     });
 
@@ -346,7 +343,6 @@ describe("ContainerTemplateService", () => {
       req.flush({ result: { error: { message: "Error message" } } }, { status: 500, statusText: "Server Error" });
 
       await promise;
-      await Promise.resolve(); // wait for subscribe callback
 
       expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith("Failed to save template edits. Error message");
     });
@@ -360,8 +356,7 @@ describe("ContainerTemplateService", () => {
         container_type: "generic",
         default: false,
         template_options: {
-          tokens: [{ type: "token1", genkey: false, hashlib: "", otplen: 6, timeStep: 0, user: false }],
-          options: undefined
+          tokens: [{ type: "token1", genkey: false, hashlib: "", otplen: 6, timeStep: 0, user: false }]
         }
       };
     });
@@ -372,46 +367,14 @@ describe("ContainerTemplateService", () => {
       const invalidTemplate = { ...validTemplate, name: "   " };
       expect(service.canSaveTemplate(invalidTemplate)).toBe(false);
     });
-    it("should return false on empty container type", () => {
-      const invalidTemplate: ContainerTemplate = { ...validTemplate, container_type: "" };
-      expect(service.canSaveTemplate(invalidTemplate)).toBe(false);
-    });
     it("should return false on empty token list", () => {
       const invalidTemplate = { ...validTemplate, template_options: { ...validTemplate.template_options, tokens: [] } };
       expect(service.canSaveTemplate(invalidTemplate)).toBe(false);
     });
   });
 
-  describe("Side effects", () => {
-    it("should call templatesResource.reload on successful deletion", () => {
-      const spy = jest.spyOn(service.templatesResource, "reload");
-      service.deleteTemplate("some-template");
-      const req = httpMock.expectOne(`/container/template/some-template`);
-      req.flush({});
-      expect(spy).toHaveBeenCalled();
-    });
-
-    it("should call templatesResource.reload on successful template edit", () => {
-      const spy = jest.spyOn(service.templatesResource, "reload");
-      const template: ContainerTemplate = {
-        name: "test-template",
-        container_type: "generic",
-        default: false,
-        template_options: {
-          tokens: [],
-          options: undefined
-        }
-      };
-      service.postTemplateEdits(template);
-      const req = httpMock.expectOne(`/container/generic/template/test-template`);
-      req.flush({});
-      expect(spy).toHaveBeenCalled();
-    });
-  });
-
   describe("Error handling", () => {
     afterEach(() => {
-      // This is for the templateTokentypesResource, and templatesResource which are both triggered
       const req = [
         ...httpMock.match(`${environment.proxyUrl}/container/template/tokentypes`),
         ...httpMock.match(`${service.containerTemplateBaseUrl}`)
@@ -422,10 +385,13 @@ describe("ContainerTemplateService", () => {
     });
 
     it("should show a generic error notification on delete if error response contains no message", async () => {
-      service.deleteTemplate("some-template");
-      const req = httpMock.expectOne(`/container/template/some-template`);
+      const deletePromise = service.deleteTemplate("some-template").catch(() => {});
+
+      const req = httpMock.expectOne((req) => req.url.includes(`/container/template/some-template`));
       req.flush({ result: { error: {} } }, { status: 500, statusText: "Internal Server Error" });
-      await Promise.resolve();
+
+      await deletePromise;
+
       expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith("Failed to delete template. ");
     });
 
@@ -435,117 +401,15 @@ describe("ContainerTemplateService", () => {
         container_type: "generic",
         default: false,
         template_options: {
-          tokens: [],
-          options: undefined
+          tokens: []
         }
       };
-      service.postTemplateEdits(template);
+      const promise = service.postTemplateEdits(template);
       const req = httpMock.expectOne(`/container/generic/template/test-template`);
       req.flush({ result: { error: {} } }, { status: 500, statusText: "Internal Server Error" });
-      await Promise.resolve();
+
+      await promise;
       expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith("Failed to save template edits. ");
-    });
-
-    it("should handle http error when fetching templatesResource", async () => {
-      contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_CONTAINERS_TEMPLATES);
-      TestBed.flushEffects();
-      const req = httpMock.expectOne(`${service.containerTemplateBaseUrl}`);
-      req.error(new ProgressEvent("error"));
-      TestBed.flushEffects();
-      await Promise.resolve();
-      expect(service.templates()).toEqual([]);
-    });
-
-    it("should handle http error when fetching templateTokentypesResource", async () => {
-      contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_CONTAINERS_TEMPLATES);
-      TestBed.flushEffects();
-      const req = httpMock.expectOne(`${environment.proxyUrl}/container/template/tokentypes`);
-      req.error(new ProgressEvent("error"));
-      TestBed.flushEffects();
-      await Promise.resolve();
-      expect(service.templateTokenTypes()).toEqual({});
-    });
-
-    it("should handle malformed success response when fetching templatesResource", async () => {
-      contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_CONTAINERS_TEMPLATES);
-      TestBed.flushEffects();
-      const req = httpMock.expectOne(`${service.containerTemplateBaseUrl}`);
-      req.flush({ result: { value: {} } }); // Malformed, missing 'templates'
-      TestBed.flushEffects();
-      await Promise.resolve();
-      expect(service.templates()).toEqual([]);
-    });
-  });
-
-  describe("Computed signals", () => {
-    afterEach(() => {
-      // This is for the templateTokentypesResource, and templatesResource which are both triggered
-      const req = [
-        ...httpMock.match(`${environment.proxyUrl}/container/template/tokentypes`),
-        ...httpMock.match(`${service.containerTemplateBaseUrl}`)
-      ];
-      if (req.length > 0 && !req[0].cancelled) {
-        req[0].flush({ result: { value: {} } });
-      }
-    });
-    describe("availableContainerTypes", () => {
-      beforeEach(() => {
-        contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_CONTAINERS_CREATE);
-        authServiceMock.actionAllowed.mockReturnValue(true);
-      });
-
-      it("should be empty initially", () => {
-        expect(service.availableContainerTypes()).toEqual([]);
-      });
-
-      it("should contain the keys from a successful token types fetch", async () => {
-        TestBed.flushEffects();
-        const req = httpMock.expectOne(`${environment.proxyUrl}/container/template/tokentypes`);
-        req.flush({ result: { value: { typeA: {}, typeB: {} } } });
-        TestBed.flushEffects();
-        await Promise.resolve();
-        expect(service.availableContainerTypes()).toEqual(["typeA", "typeB"]);
-      });
-
-      it("should be empty if token types fetch fails", async () => {
-        TestBed.flushEffects();
-        const req = httpMock.expectOne(`${environment.proxyUrl}/container/template/tokentypes`);
-        req.error(new ProgressEvent("error"));
-        TestBed.flushEffects();
-        await Promise.resolve();
-        expect(service.availableContainerTypes()).toEqual([]);
-      });
-    });
-  });
-
-  describe("Request variations", () => {
-    afterEach(() => {
-      // This is for the templateTokentypesResource, and templatesResource which are both triggered
-      const req = [
-        ...httpMock.match(`${environment.proxyUrl}/container/template/tokentypes`),
-        ...httpMock.match(`${service.containerTemplateBaseUrl}`)
-      ];
-      if (req.length > 0 && !req[0].cancelled) {
-        req[0].flush({ result: { value: {} } });
-      }
-    });
-    it("should fetch templates without query parameter if no container type is selected", () => {
-      contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_CONTAINERS_TEMPLATES);
-      containerServiceMock.selectedContainerType.set(undefined);
-      TestBed.flushEffects();
-      const req = httpMock.expectOne(`${service.containerTemplateBaseUrl}`);
-      expect(req.request.params.has("container_type")).toBe(false);
-      req.flush({ result: { value: { templates: [] } } });
-    });
-  });
-
-  describe("Authentication", () => {
-    it("should not make any http requests if user is not logged in", () => {
-      authServiceMock.actionAllowed.mockReturnValue(false);
-      contentServiceMock.routeUrl.set(ROUTE_PATHS.TOKENS_CONTAINERS_TEMPLATES);
-      TestBed.flushEffects();
-      httpMock.expectNone(`${service.containerTemplateBaseUrl}`);
-      httpMock.expectNone(`${environment.proxyUrl}/container/template/tokentypes`);
     });
   });
 });

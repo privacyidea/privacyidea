@@ -33,13 +33,12 @@ export interface SpassEnrollmentPayload extends TokenEnrollmentPayload {}
 
 @Injectable({ providedIn: "root" })
 export class SpassApiPayloadMapper extends BaseApiPayloadMapper implements TokenApiPayloadMapper<SpassEnrollmentData> {
-
   override toApiPayload(data: SpassEnrollmentData): SpassEnrollmentPayload {
     const payload: SpassEnrollmentPayload = super.toApiPayload(data);
 
     if (data.onlyAddToRealm) {
       payload.realm = data.realm;
-      payload.user = null;
+      delete payload.user;
     }
 
     return payload;

@@ -33,26 +33,25 @@ export interface MotpEnrollmentData extends TokenEnrollmentData {
 }
 
 export interface MotpEnrollmentPayload extends TokenEnrollmentPayload {
-  otpkey: string | null;
+  otpkey: string;
   genkey: 0 | 1;
   motppin?: string;
-  serial?: string | null;
+  serial?: string;
 }
 
 @Injectable({ providedIn: "root" })
 export class MotpApiPayloadMapper extends BaseApiPayloadMapper implements TokenApiPayloadMapper<MotpEnrollmentData> {
-
   override toApiPayload(data: MotpEnrollmentData): MotpEnrollmentPayload {
     const basePayload = super.toApiPayload(data);
     const payload: MotpEnrollmentPayload = {
       ...basePayload,
-      otpkey: data.generateOnServer ? null : (data.otpKey ?? null),
+      otpkey: data.generateOnServer === true ? "" : (data.otpKey ?? ""),
       genkey: data.generateOnServer ? 1 : 0,
       ...(data.motpPin !== undefined && { motppin: data.motpPin })
     };
     if (data.onlyAddToRealm) {
       payload.realm = data.realm;
-      payload.user = null;
+      delete payload.user;
     }
     return payload;
   }

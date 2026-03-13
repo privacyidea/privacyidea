@@ -24,8 +24,7 @@ import { NotificationService, NotificationServiceInterface } from "../notificati
 import { catchError, forkJoin, Observable, of, Subject, throwError } from "rxjs";
 import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
-import { ContainerTypeOption } from "../../components/token/container-create/container-create.component";
-import { EnrollmentUrl } from "../../mappers/token-api-payload/_token-api-payload.mapper";
+import { EnrollmentUrl, TokenEnrollmentPayload } from "../../mappers/token-api-payload/_token-api-payload.mapper";
 import { FilterValue } from "../../core/models/filter_value/filter_value";
 import { Sort } from "@angular/material/sort";
 import { TokenService, TokenServiceInterface } from "../token/token.service";
@@ -94,7 +93,7 @@ export interface ContainerDetailUser {
   user_id: string;
 }
 
-export type ContainerTypes = Map<ContainerTypeOption, _ContainerType>;
+export type ContainerTypes = Map<string, _ContainerType>;
 
 interface _ContainerType {
   description: string;
@@ -102,13 +101,13 @@ interface _ContainerType {
 }
 
 export interface ContainerType {
-  containerType: ContainerTypeOption;
+  containerType: string;
   description: string;
   token_types: string[];
 }
 
 export interface ContainerCreateData {
-  container_type: ContainerTypeOption;
+  container_type: string;
   description?: string;
   user?: string;
   realm?: string;
@@ -116,12 +115,11 @@ export interface ContainerCreateData {
 }
 
 export interface ContainerTemplate {
-  container_type: ContainerTypeOption | "";
+  container_type: string;
   default: boolean;
   name: string;
   template_options: {
-    options: any;
-    tokens: Array<any>;
+    tokens: Array<TokenEnrollmentPayload>;
   };
 }
 
@@ -364,7 +362,8 @@ export class ContainerService implements ContainerServiceInterface {
       ...(this.loadAllContainers() && {
         no_token: 1,
         ...(this.userService.selectedUser()?.username && { user: this.userService.selectedUser()?.username }),
-        ...(this.userService.selectedUser()?.username && this.userService.selectedUserRealm() && { realm: this.userService.selectedUserRealm() })
+        ...(this.userService.selectedUser()?.username &&
+          this.userService.selectedUserRealm() && { realm: this.userService.selectedUserRealm() })
       }),
       sortby: this.sort().active,
       sortdir: this.sort().direction,
@@ -441,7 +440,7 @@ export class ContainerService implements ContainerServiceInterface {
       return [];
     }
     return Array.from(Object.entries(value)).map(([key, containerType]) => ({
-      containerType: key as ContainerTypeOption,
+      containerType: key,
       description: containerType?.description ?? "",
       token_types: containerType?.token_types ?? []
     }));

@@ -40,8 +40,10 @@ export interface ApplspecEnrollmentPayload extends TokenEnrollmentPayload {
 }
 
 @Injectable({ providedIn: "root" })
-export class ApplspecApiPayloadMapper extends BaseApiPayloadMapper implements TokenApiPayloadMapper<ApplspecEnrollmentData> {
-
+export class ApplspecApiPayloadMapper
+  extends BaseApiPayloadMapper
+  implements TokenApiPayloadMapper<ApplspecEnrollmentData>
+{
   override toApiPayload(data: ApplspecEnrollmentData): ApplspecEnrollmentPayload {
     const payload: ApplspecEnrollmentPayload = {
       ...super.toApiPayload(data),
@@ -52,15 +54,21 @@ export class ApplspecApiPayloadMapper extends BaseApiPayloadMapper implements To
 
     if (data.onlyAddToRealm) {
       payload.realm = data.realm;
-      payload.user = null;
+      delete payload.user;
     }
 
     return payload;
   }
 
-  override fromApiPayload(payload: any): ApplspecEnrollmentData {
-    // Placeholder: Implement transformation from API payload. We will replace this later.
-    return payload as ApplspecEnrollmentData;
+  override fromApiPayload(payload: ApplspecEnrollmentPayload): ApplspecEnrollmentData {
+    const baseData = super.fromApiPayload(payload);
+    return {
+      ...baseData,
+      type: "applspec",
+      generateOnServer: payload.genkey === 1,
+      otpKey: payload.otpkey ?? undefined,
+      serviceId: payload.service_id ?? undefined
+    };
   }
 
   override fromTokenDetailsToEnrollmentData(details: TokenDetails): ApplspecEnrollmentData {

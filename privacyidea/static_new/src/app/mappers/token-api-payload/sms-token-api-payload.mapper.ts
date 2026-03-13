@@ -35,13 +35,12 @@ export interface SmsEnrollmentData extends TokenEnrollmentData {
 
 export interface SmsEnrollmentPayload extends TokenEnrollmentPayload {
   "sms.identifier"?: string;
-  phone: string | null;
+  phone?: string;
   dynamic_phone?: boolean;
 }
 
 @Injectable({ providedIn: "root" })
 export class SmsApiPayloadMapper extends BaseApiPayloadMapper implements TokenApiPayloadMapper<SmsEnrollmentData> {
-
   override toApiPayload(data: SmsEnrollmentData): SmsEnrollmentPayload {
     const payload: SmsEnrollmentPayload = {
       ...super.toApiPayload(data),
@@ -52,14 +51,20 @@ export class SmsApiPayloadMapper extends BaseApiPayloadMapper implements TokenAp
 
     if (data.onlyAddToRealm) {
       payload.realm = data.realm;
-      payload.user = null;
+      delete payload.user;
     }
     return payload;
   }
 
-  override fromApiPayload(payload: any): SmsEnrollmentData {
-    // Placeholder: Implement transformation from API payload. We will replace this later.
-    return payload as SmsEnrollmentData;
+  override fromApiPayload(payload: SmsEnrollmentPayload): SmsEnrollmentData {
+    const baseData = super.fromApiPayload(payload);
+    return {
+      ...baseData,
+      type: "sms",
+      ...(payload["sms.identifier"] !== undefined && { smsGateway: payload["sms.identifier"] }),
+      ...(payload.phone !== undefined && { phoneNumber: payload.phone }),
+      ...(payload.dynamic_phone !== undefined && { readNumberDynamically: parseBooleanValue(payload.dynamic_phone) })
+    };
   }
 
   override fromTokenDetailsToEnrollmentData(details: TokenDetails): SmsEnrollmentData {

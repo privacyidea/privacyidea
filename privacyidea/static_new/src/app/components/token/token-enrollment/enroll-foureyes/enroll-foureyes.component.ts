@@ -85,10 +85,15 @@ export class EnrollFoureyesComponent implements OnInit {
     effect(() =>
       this.disabled() ? this.foureyesForm.disable({ emitEvent: false }) : this.foureyesForm.enable({ emitEvent: false })
     );
+    effect(() => {
+      if (this.enrollmentData()) {
+        this._setInitialFormValues({ enrollmentData: this.enrollmentData(), eventEmit: false });
+      }
+    });
   }
 
   ngOnInit(): void {
-    this._setInitialFormValues();
+    this._setInitialFormValues({ enrollmentData: this.enrollmentData() });
     this.additionalFormFieldsChange.emit({
       separator: this.separatorControl,
       requiredTokensOfRealms: this.requiredTokensOfRealmsControl
@@ -96,13 +101,14 @@ export class EnrollFoureyesComponent implements OnInit {
     this.enrollmentArgsGetterChange.emit(this.enrollmentArgsGetter);
   }
 
-  private _setInitialFormValues() {
-    if (!!this.enrollmentData()) {
-      this.separatorControl.setValue(this.enrollmentData()?.separator ?? "|");
-      if (!!this.enrollmentData()?.requiredTokenOfRealms) {
-        const realms = this.enrollmentData()?.requiredTokenOfRealms.map((r) => r.realm);
-        if (realms) this.requiredTokensOfRealmsControl.setValue(realms);
-        for (const realmData of this.enrollmentData()?.requiredTokenOfRealms ?? []) {
+  private _setInitialFormValues(args: { enrollmentData?: FourEyesEnrollmentData; eventEmit?: boolean }): void {
+    const { enrollmentData, eventEmit } = args;
+    if (enrollmentData) {
+      this.separatorControl.setValue(this.enrollmentData()?.separator ?? "|", { emitEvent: eventEmit });
+      if (enrollmentData.requiredTokenOfRealms) {
+        const realms = enrollmentData.requiredTokenOfRealms.map((r) => r.realm);
+        if (realms) this.requiredTokensOfRealmsControl.setValue(realms, { emitEvent: eventEmit });
+        for (const realmData of enrollmentData.requiredTokenOfRealms ?? []) {
           this.tokensByRealm.set(realmData.realm, realmData.tokens);
         }
       }
@@ -114,8 +120,12 @@ export class EnrollFoureyesComponent implements OnInit {
   }
 
   setTokenCount(realm: string, tokens: number): void {
-    if (tokens <= 0) this.tokensByRealm.delete(realm);
-    else this.tokensByRealm.set(realm, tokens);
+    if (tokens <= 0) {
+      this.tokensByRealm.delete(realm);
+    } else {
+      this.tokensByRealm.set(realm, tokens);
+    }
+    this.requiredTokensOfRealmsControl.setValue(this.requiredTokensOfRealmsControl.value); // Workaround to trigger valueChanges
   }
 
   enrollmentArgsGetter = (
@@ -133,12 +143,14 @@ export class EnrollFoureyesComponent implements OnInit {
       realm,
       tokens: this.getTokenCount(realm)
     }));
+
     const enrollmentData: FourEyesEnrollmentOptions = {
       ...basicOptions,
       type: "4eyes",
       separator: this.separatorControl.value ?? ":",
       requiredTokenOfRealms
     };
+
     return {
       data: enrollmentData,
       mapper: this.enrollmentMapper

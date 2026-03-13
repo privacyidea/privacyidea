@@ -36,8 +36,10 @@ export interface QuestionEnrollmentPayload extends TokenEnrollmentPayload {
 }
 
 @Injectable({ providedIn: "root" })
-export class QuestionApiPayloadMapper extends BaseApiPayloadMapper implements TokenApiPayloadMapper<QuestionEnrollmentData> {
-
+export class QuestionApiPayloadMapper
+  extends BaseApiPayloadMapper
+  implements TokenApiPayloadMapper<QuestionEnrollmentData>
+{
   override toApiPayload(data: QuestionEnrollmentData): QuestionEnrollmentPayload {
     const payload: QuestionEnrollmentPayload = {
       ...super.toApiPayload(data),
@@ -46,7 +48,7 @@ export class QuestionApiPayloadMapper extends BaseApiPayloadMapper implements To
 
     if (data.onlyAddToRealm) {
       payload.realm = data.realm;
-      payload.user = null;
+      delete payload.user;
     }
     if (payload.questions === undefined) {
       delete payload.questions;

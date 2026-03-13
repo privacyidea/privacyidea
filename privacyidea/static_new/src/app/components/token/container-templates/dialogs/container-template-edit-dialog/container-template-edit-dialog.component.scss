@@ -1,0 +1,74 @@
+@use "styles";
+@use "table";
+@use "../../container-templates.component.scss";
+@use "@angular/material" as mat;
+
+.flex-column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--global-gap);
+  width: 1456px;
+  height: 64vh;
+  overflow-y: auto;
+}
+
+.default-template-card-row {
+  display: flex;
+  flex-direction: row;
+  padding: 0 var(--global-padding);
+  border-radius: var(--border-radius);
+
+  mat-form-field {
+    --mdc-filled-text-field-container-color: transparent;
+    flex: 1;
+  }
+
+  mat-card-content {
+    padding: 0 !important;
+    display: flex;
+    align-items: center;
+    flex: 0 0 auto;
+  }
+
+  mat-checkbox {
+    white-space: nowrap;
+  }
+}
+
+.template-type-select-container {
+  display: flex;
+  align-items: center;
+  width: 100%;
+
+  mat-select {
+    width: 100%;
+    max-width: 300px;
+  }
+}
+
+.template-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  button {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+  }
+}
+
+.flex-fix-size {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--global-gap);
+}
+
+.added-tokens-list {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--half-global-gap);
+  padding: var(--half-global-padding);
+}

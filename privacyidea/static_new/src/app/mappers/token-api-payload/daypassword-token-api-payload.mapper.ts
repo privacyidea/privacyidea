@@ -39,20 +39,19 @@ export interface DaypasswordEnrollmentPayload extends TokenEnrollmentPayload {
   otpkey?: string; // Set if generateOnServer is false
   otplen?: number;
   hashlib?: string;
-  timeStep?: string;
-  serial?: string | null;
+  timeStep?: string | number;
+  serial?: string;
 }
 
 @Injectable({ providedIn: "root" })
-export class DaypasswordApiPayloadMapper extends BaseApiPayloadMapper implements TokenApiPayloadMapper<DaypasswordEnrollmentData> {
-
+export class DaypasswordApiPayloadMapper
+  extends BaseApiPayloadMapper
+  implements TokenApiPayloadMapper<DaypasswordEnrollmentData>
+{
   override toApiPayload(data: DaypasswordEnrollmentData): DaypasswordEnrollmentPayload {
     const payload: DaypasswordEnrollmentPayload = {
       ...super.toApiPayload(data),
-      // otpKey is set based on component logic:
-      // if generateOnServer is true, data.otpKey is undefined.
-      // if generateOnServer is false, data.otpKey is the key.
-      ...(data.otpKey != null && { otpkey: data.otpKey }),
+      ...(data.otpKey != null && !data.generateOnServer && { otpkey: data.otpKey }),
       ...(data.otpLength != null && { otplen: Number(data.otpLength) }),
       ...(data.hashAlgorithm != null && { hashlib: data.hashAlgorithm }),
       ...(data.timeStep != null && { timeStep: data.timeStep })
@@ -60,14 +59,22 @@ export class DaypasswordApiPayloadMapper extends BaseApiPayloadMapper implements
 
     if (data.onlyAddToRealm) {
       payload.realm = data.realm;
-      payload.user = null;
+      delete payload.user; // Ensure user is not sent when onlyAddToRealm is true
     }
     return payload;
   }
 
-  override fromApiPayload(payload: any): DaypasswordEnrollmentData {
-    // Placeholder: Implement transformation from API payload. We will replace this later.
-    return payload as DaypasswordEnrollmentData;
+  override fromApiPayload(payload: DaypasswordEnrollmentPayload): DaypasswordEnrollmentData {
+    const baseData = super.fromApiPayload(payload);
+    return {
+      ...baseData,
+      type: "daypassword",
+      otpKey: payload.otpkey ?? undefined,
+      otpLength: payload.otplen !== undefined ? Number(payload.otplen) : undefined,
+      hashAlgorithm: payload.hashlib ?? undefined,
+      ...(payload.timeStep !== undefined && { timeStep: `${payload.timeStep}` }),
+      generateOnServer: payload.otpkey == null // If otpkey is not set, we assume it will be generated on the server
+    };
   }
 
   override fromTokenDetailsToEnrollmentData(details: TokenDetails): DaypasswordEnrollmentData {

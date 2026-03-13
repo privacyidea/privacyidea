@@ -29,18 +29,15 @@ describe("FilterValueGeneric", () => {
     realm: string;
     tags: string[];
     description: string;
+    "api-key": string; // Added for hyphen testing
   }
 
-  /**
-   * Factory using the actual class to ensure 'withValue' and other
-   * methods are correctly present on the prototype.
-   */
   const createMockOption = (key: string): FilterOption<PolicyMock> => {
     return new FilterOption<PolicyMock>({
       key,
       label: `Label ${key}`,
       matches: (item, f) => {
-        const val = f.getValueOfKey(key);
+        const val = f.getFilterOfKey(key);
         if (!val) return true;
         if (key === "active") return item.active.toString() === val;
         if (key === "priority") return item.priority.toString() === val;
@@ -60,7 +57,8 @@ describe("FilterValueGeneric", () => {
         createMockOption("priority"),
         createMockOption("realm"),
         createMockOption("tags"),
-        createMockOption("description")
+        createMockOption("description"),
+        createMockOption("api-key")
       ]
     });
   });
@@ -75,7 +73,7 @@ describe("FilterValueGeneric", () => {
 
     it("should correctly build the availableFilters map from an array", () => {
       expect(filter.availableFilters.has("name")).toBe(true);
-      expect(filter.availableFilters.size).toBe(7);
+      expect(filter.availableFilters.size).toBe(8);
     });
 
     it("should throw error when adding a hidden key that is not in availableFilters", () => {
@@ -93,8 +91,8 @@ describe("FilterValueGeneric", () => {
     it("should maintain separate references for sequential value updates", () => {
       const f1 = filter.setValueOfKey("name", "a");
       const f2 = f1.setValueOfKey("name", "b");
-      expect(f1.getValueOfKey("name")).toBe("a");
-      expect(f2.getValueOfKey("name")).toBe("b");
+      expect(f1.getFilterOfKey("name")).toBe("a");
+      expect(f2.getFilterOfKey("name")).toBe("b");
       expect(f1).not.toBe(f2);
     });
 
@@ -107,51 +105,74 @@ describe("FilterValueGeneric", () => {
   describe("3. Advanced Parsing (Regex & String Resilience)", () => {
     it("should parse standard colon-separated pairs", () => {
       const res = filter.setByString("scope:admin active:true");
-      expect(res.getValueOfKey("scope")).toBe("admin");
-      expect(res.getValueOfKey("active")).toBe("true");
+      expect(res.getFilterOfKey("scope")).toBe("admin");
+      expect(res.getFilterOfKey("active")).toBe("true");
+    });
+
+    it("should support hyphens in keys (RE_KEY fix verification)", () => {
+      const res = filter.setByString("api-key: secret-token-123");
+      expect(res.getFilterOfKey("api-key")).toBe("secret-token-123");
     });
 
     it("should handle multi-word values with double quotes (lowercase output)", () => {
       const res = filter.setByString('name:"Strict Security Policy" realm:internal');
-      expect(res.getValueOfKey("name")).toBe("strict security policy");
-      expect(res.getValueOfKey("realm")).toBe("internal");
+      expect(res.getFilterOfKey("name")).toBe("strict security policy");
+      expect(res.getFilterOfKey("realm")).toBe("internal");
     });
 
     it("should correctly ignore leading/trailing whitespace around colons", () => {
       const res = filter.setByString("name :  value  ");
-      expect(res.getValueOfKey("name")).toBe("value");
+      expect(res.getFilterOfKey("name")).toBe("value");
     });
 
     it("should handle values that look like keys but aren't (colons in values)", () => {
       const res = filter.setByString("name:scope:admin");
-      expect(res.getValueOfKey("name")).toBe("scope:admin");
+      expect(res.getFilterOfKey("name")).toBe("scope:admin");
     });
 
     it("should handle escaped quotes and backslashes", () => {
       const res = filter.setByString('name:"Policy \\"Beta\\"" realm:C:\\\\Windows');
-      expect(res.getValueOfKey("name")).toBe('policy "beta"');
-      expect(res.getValueOfKey("realm")).toBe("c:\\windows");
+      expect(res.getFilterOfKey("name")).toBe('policy "beta"');
+      expect(res.getFilterOfKey("realm")).toBe("c:\\windows");
     });
 
     it("should handle keys without values (trailing colons)", () => {
       const res = filter.setByString("name: priority:10");
       expect(res.hasKey("name")).toBe(true);
-      expect(res.getValueOfKey("name")).toBe("");
+      expect(res.getFilterOfKey("name")).toBe("");
     });
 
     it("should treat standalone words as Dummies with null values", () => {
       const res = filter.setByString("standalone search_term");
-      expect(res.getValueOfKey("standalone")).toBeNull();
-      expect(res.getValueOfKey("search_term")).toBeNull();
+      expect(res.getFilterOfKey("standalone")).toBeNull();
+      expect(res.getFilterOfKey("search_term")).toBeNull();
       expect(res.filterMap.get("standalone")).toBeDefined();
     });
   });
 
   describe("4. Filtering Logic & Item Processing", () => {
     const data: PolicyMock[] = [
-      { name: "P1", scope: "admin", priority: 1, active: true, realm: "r1", tags: [], description: "" },
-      { name: "P2", scope: "user", priority: 2, active: true, realm: "r2", tags: [], description: "" },
-      { name: "P3", scope: "admin", priority: 1, active: false, realm: "r1", tags: [], description: "" }
+      {
+        name: "P1",
+        scope: "admin",
+        priority: 1,
+        active: true,
+        realm: "r1",
+        tags: [],
+        description: "",
+        "api-key": "k1"
+      },
+      { name: "P2", scope: "user", priority: 2, active: true, realm: "r2", tags: [], description: "", "api-key": "k2" },
+      {
+        name: "P3",
+        scope: "admin",
+        priority: 1,
+        active: false,
+        realm: "r1",
+        tags: [],
+        description: "",
+        "api-key": "k3"
+      }
     ];
 
     it("should filter using AND logic for multiple active keys", () => {
@@ -177,7 +198,7 @@ describe("FilterValueGeneric", () => {
   describe("5. Hidden Filter Interaction & Shadowing", () => {
     it("should prioritize public values over hidden ones in getValueOfKey", () => {
       const f = filter.setValueOfKey("name", "public").addHiddenKey("name").setValueOfHiddenKey("name", "hidden");
-      expect(f.getValueOfKey("name")).toBe("public");
+      expect(f.getFilterOfKey("name")).toBe("public");
     });
 
     it("should correctly filter based on hidden criteria", () => {

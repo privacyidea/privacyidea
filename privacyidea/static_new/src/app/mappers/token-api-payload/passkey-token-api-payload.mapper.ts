@@ -48,19 +48,21 @@ export interface PasskeyFinalizationPayload extends TokenEnrollmentPayload {
   rawId: string;
   authenticatorAttachment: string | null;
   transaction_id: string;
-  serial: string | null;
+  serial: string;
   credProps?: any;
 }
 
 @Injectable({ providedIn: "root" })
-export class PasskeyApiPayloadMapper extends BaseApiPayloadMapper implements TokenApiPayloadMapper<PasskeyEnrollmentData> {
-
+export class PasskeyApiPayloadMapper
+  extends BaseApiPayloadMapper
+  implements TokenApiPayloadMapper<PasskeyEnrollmentData>
+{
   override toApiPayload(data: PasskeyEnrollmentData): TokenEnrollmentPayload {
     const payload: TokenEnrollmentPayload = super.toApiPayload(data);
 
     if (data.onlyAddToRealm) {
       payload.realm = data.realm;
-      payload.user = null;
+      delete payload.user;
     }
     return payload;
   }
@@ -80,7 +82,6 @@ export class PasskeyApiPayloadMapper extends BaseApiPayloadMapper implements Tok
 
 @Injectable({ providedIn: "root" })
 export class PasskeyFinalizeApiPayloadMapper implements TokenApiPayloadMapper<PasskeyFinalizeData> {
-
   toApiPayload(data: PasskeyFinalizeData): PasskeyFinalizationPayload {
     const payload: PasskeyFinalizationPayload = {
       type: data.type,

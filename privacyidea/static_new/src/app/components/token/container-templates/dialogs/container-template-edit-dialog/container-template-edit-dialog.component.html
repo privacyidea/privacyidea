@@ -1,0 +1,86 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+<app-dialog-wrapper
+  [title]="isNewTemplate() ? 'New Container Template' : 'Edit Container Template'"
+  i18n-title
+  [showCancelButton]="true"
+  [actions]="actions()"
+  (onAction)="onAction($event)">
+  <div class="flex-column">
+    <div class="flex-fix-size">
+      <mat-card class="default-template-card-row">
+        <mat-form-field subscriptSizing="dynamic">
+          <mat-label i18n>Template Name</mat-label>
+          <input
+            matInput
+            type="text"
+            placeholder="Template Name"
+            i18n-placeholder
+            aria-label="Template Name"
+            [ngModel]="template().name"
+            (ngModelChange)="editTemplate({ name: $event })"
+            (keydown)="$event.stopPropagation()"
+            [errorStateMatcher]="nameErrorMatcher" />
+          @if (nameConflict()) {
+            <mat-error i18n>Another template with this name already exists.</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-card-content>
+          <mat-checkbox
+            [checked]="template().default"
+            (change)="editTemplate({ default: $event.checked })"
+            (click)="$event.stopPropagation()"
+            matTooltip="Set as default template"
+            i18n-matTooltip="@@containerTemplate.setAsDefaultTooltip">
+            <span i18n>Set as default template</span>
+          </mat-checkbox>
+        </mat-card-content>
+      </mat-card>
+
+      <div>
+        <h3 i18n>Container Type</h3>
+        <app-selector-buttons
+          [values]="containerTypes()"
+          [labels]="containerTypesTitleCase()"
+          [initialValue]="template().container_type"
+          [allowDeselect]="true"
+          (onSelect)="editTemplate({ container_type: $event })"
+          [disabled]="hasToken()" />
+      </div>
+
+      @if (template().container_type) {
+        <app-container-template-add-token
+          [tokenTypes]="availableTokenTypes()"
+          (onAddToken)="onAddToken($event)" />
+      }
+    </div>
+
+    <div class="added-tokens-list">
+      @for (token of tokens(); track $index) {
+        <app-template-added-token-row
+          [tokenEnrollmentPayload]="token"
+          [index]="$index"
+          (onEditToken)="onEditToken($event, $index)"
+          (onRemoveToken)="onDeleteToken($index)">
+        </app-template-added-token-row>
+      }
+    </div>
+  </div>
+</app-dialog-wrapper>

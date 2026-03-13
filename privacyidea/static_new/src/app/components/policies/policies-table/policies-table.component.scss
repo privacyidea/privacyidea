@@ -24,8 +24,10 @@
   @include table.base-table-structure(".policies-table", ".policies-table-filter", ".table-scroll-container");
   min-width: calc(100% - var(--global-padding) * 2);
   max-width: calc(100% - var(--global-padding) * 2);
-  min-height: calc(100% - var(--global-padding) * 2);
   max-height: calc(100% - var(--global-padding) * 2);
+  display: flex;
+  flex-direction: column;
+  gap: var(--global-gap);
   overflow: auto;
 
   .policies-table {
@@ -115,19 +117,6 @@
 
     td.col-actions {
       padding: 0;
-      .added-actions-container {
-        display: flex;
-        flex-direction: column;
-        .action-row {
-          align-items: center;
-          display: flex;
-          justify-content: space-between;
-          padding: 4px 0;
-          &:not(:last-child) {
-            border-bottom: 1px solid rgba(0, 0, 0, 0.12);
-          }
-        }
-      }
     }
 
     td.col-conditions {
@@ -137,44 +126,20 @@
       white-space: normal;
       word-break: break-word;
     }
-  }
 
-  .detail-row {
-    height: 0;
-  }
+    .skeleton-row {
+      .column-max-height {
+        border-radius: 4px;
+        height: calc(var(--global-padding) * 2);
+      }
 
-  .expanded-row {
-    background-color: var(--mat-sys-surface-container-low);
-  }
-
-  .selfservice-paginator-container {
-    display: flex;
-    justify-content: end;
-  }
-
-  .realm-break {
-    margin-top: 3px;
-  }
-
-  .expanded-detail {
-    border-top-width: 0;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    td {
-      border-bottom-width: 0px !important;
-      border-top-width: 0px !important;
-    }
-  }
-
-  .minimal-icon-button {
-    align-items: center;
-    color: inherit;
-    display: inline-flex;
-    justify-content: center;
-    mat-icon {
-      height: 18px;
-      width: 18px;
+      &.col-select,
+      &.col-active {
+        .column-max-height {
+          width: 20px;
+          margin: 0 auto;
+        }
+      }
     }
   }
 
@@ -190,5 +155,12 @@
   mat-checkbox {
     margin: 0;
     overflow: clip;
+  }
+
+  .no-data-cell {
+    padding: var(--global-padding);
+    text-align: center;
+    font-style: italic;
+    color: var(--mat-sys-on-surface-variant);
   }
 }

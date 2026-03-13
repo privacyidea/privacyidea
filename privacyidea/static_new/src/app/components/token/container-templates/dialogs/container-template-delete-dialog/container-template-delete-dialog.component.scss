@@ -1,0 +1,32 @@
+@use "styles";
+
+.delete-confirmation-container {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--global-gap);
+  width: 450px;
+  padding: var(--global-padding) 0;
+
+  .warn-icon {
+    color: var(--mat-sys-error);
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+  }
+
+  .message-content {
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--global-gap) / 2);
+
+    p {
+      margin: 0;
+      line-height: 1.5;
+    }
+
+    .sub-message {
+      color: var(--mat-sys-on-surface-variant);
+      font-size: 0.9rem;
+    }
+  }
+}

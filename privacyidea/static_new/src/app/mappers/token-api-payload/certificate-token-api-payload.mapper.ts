@@ -42,8 +42,10 @@ export interface CertificateEnrollmentPayload extends TokenEnrollmentPayload {
 }
 
 @Injectable({ providedIn: "root" })
-export class CertificateApiPayloadMapper extends BaseApiPayloadMapper implements TokenApiPayloadMapper<CertificateEnrollmentData> {
-
+export class CertificateApiPayloadMapper
+  extends BaseApiPayloadMapper
+  implements TokenApiPayloadMapper<CertificateEnrollmentData>
+{
   override toApiPayload(data: CertificateEnrollmentData): CertificateEnrollmentPayload {
     const payload: CertificateEnrollmentPayload = {
       ...super.toApiPayload(data),
@@ -54,7 +56,7 @@ export class CertificateApiPayloadMapper extends BaseApiPayloadMapper implements
     };
     if (data.onlyAddToRealm) {
       payload.realm = data.realm;
-      payload.user = null;
+      delete payload.user;
     }
 
     return payload;

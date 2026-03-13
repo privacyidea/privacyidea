@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -17,35 +17,52 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { signal } from "@angular/core";
-import { PiResponse } from "../../app/app.component";
+import { HttpResourceRef } from "@angular/common/http";
+import { signal, WritableSignal, Signal } from "@angular/core";
+import { PiResponse } from "src/app/app.component";
 import {
   ContainerTemplateServiceInterface,
   TemplateTokenTypes
-} from "../../app/services/container-template/container-template.service";
-import { ContainerTemplate } from "../../app/services/container/container.service";
-import { MockHttpResourceRef } from "../mock-services";
+} from "src/app/services/container-template/container-template.service";
+import { ContainerTemplate } from "src/app/services/container/container.service";
+import { MockHttpResourceRef } from "./mock-utils";
 
 export class MockContainerTemplateService implements ContainerTemplateServiceInterface {
+  // --- Properties ---
   containerTemplateBaseUrl: string = "/mock/container/templates/";
+
   templatesResource = new MockHttpResourceRef<PiResponse<{ templates: ContainerTemplate[] }, unknown> | undefined>(
     undefined
-  );
-  templates = signal<ContainerTemplate[]>([]);
-  templateTokenTypesResource = new MockHttpResourceRef<PiResponse<TemplateTokenTypes, unknown> | undefined>(undefined);
-  templateTokenTypes = signal<TemplateTokenTypes>({});
-  availableContainerTypes = signal<string[]>([]);
-  getTokenTypesForContainerType = jest.fn(() => []);
+  ) as unknown as HttpResourceRef<PiResponse<{ templates: ContainerTemplate[] }, unknown> | undefined>;
+
+  templates = signal<ContainerTemplate[]>([]) as WritableSignal<ContainerTemplate[]>;
+
+  templateTokenTypesResource = new MockHttpResourceRef<PiResponse<TemplateTokenTypes, unknown> | undefined>(
+    undefined
+  ) as unknown as HttpResourceRef<PiResponse<TemplateTokenTypes, unknown> | undefined>;
+
+  templateTokenTypes = signal<TemplateTokenTypes>({}) as Signal<TemplateTokenTypes>;
+
+  availableContainerTypes = signal<string[]>([]) as Signal<string[]>;
+
   emptyContainerTemplate: ContainerTemplate = {
     name: "",
     container_type: "",
     default: false,
     template_options: {
-      options: undefined,
       tokens: []
     }
   };
-  deleteTemplate = jest.fn();
-  postTemplateEdits = jest.fn();
-  canSaveTemplate = jest.fn();
+
+  // --- Mocked Methods ---
+
+  getTokenTypesForContainerType = jest.fn((_type: string): string[] => []);
+
+  deleteTemplate = jest.fn((_name: string) => Promise.resolve());
+  deleteTemplates = jest.fn((_names: string[]) => Promise.resolve());
+
+  postTemplateEdits = jest.fn((_template: ContainerTemplate) => Promise.resolve(true));
+  copyTemplate = jest.fn((_template: ContainerTemplate, _newName: string) => Promise.resolve(true));
+
+  canSaveTemplate = jest.fn((_template: ContainerTemplate): boolean => true);
 }

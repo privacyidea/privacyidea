@@ -3,9 +3,8 @@
 
 .token-card {
   width: 100%;
-  margin-bottom: 1rem;
   border-radius: var(--border-radius);
-  background-color: var(--mat-sys-surface-container) !important;
+  background-color: var(--mat-sys-surface-container-low) !important;
   box-shadow:
     0 2px 4px -1px var(--mat-sys-shadow),
     0 4px 5px 0 var(--mat-sys-shadow),
@@ -30,18 +29,15 @@
 .token-details-form {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 1rem;
-  padding: 1rem 0;
+  gap: var(--half-global-gap);
+  padding: var(--half-global-padding) 0;
   mat-slide-toggle {
     align-content: center;
     grid-column: span 1;
-    margin-bottom: 16px;
+    margin-bottom: var(--global-padding);
   }
 
   mat-form-field {
     grid-column: span 2;
   }
-}
-.padding-right-16 {
-  padding-right: 16px;
 }

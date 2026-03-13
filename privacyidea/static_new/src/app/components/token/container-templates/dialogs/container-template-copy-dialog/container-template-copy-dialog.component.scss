@@ -1,0 +1,41 @@
+@use "styles";
+@use "table";
+
+.flex-column {
+  display: flex;
+  flex-direction: column;
+  gap: var(--global-gap);
+  width: 500px;
+  padding: var(--half-global-padding) 0;
+}
+
+mat-form-field {
+  width: 100%;
+  --mdc-filled-text-field-container-color: transparent;
+}
+
+.flex-fix-size {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--global-gap);
+}
+
+mat-card {
+  border-radius: var(--border-radius);
+  background-color: var(--mat-sys-surface-container-low);
+
+  mat-card-content {
+    padding: var(--global-padding) !important;
+
+    small {
+      color: var(--mat-sys-on-surface-variant);
+      display: block;
+      line-height: 1.5;
+    }
+  }
+}
+
+.margin-top-1 {
+  margin-top: var(--global-gap);
+}

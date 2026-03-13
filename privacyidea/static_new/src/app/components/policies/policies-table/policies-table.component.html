@@ -22,127 +22,138 @@
   aria-label="Policy Table"
   class="policies-table-layout"
   i18n-aria-label>
-  @if (authService.actionAllowed("policyread")) {
-    <app-policy-filter
-      #filterComponent
-      [initialFilter]="filter()"
-      [unfilteredPolicies]="policyService.allPolicies()"
-      (filterChange)="onFilterUpdate($event)">
-    </app-policy-filter>
-  }
+  <div class="filter-paginator-container">
+    @if (authService.actionAllowed("policyread")) {
+      <app-policy-filter
+        class="policies-table-filter"
+        #filterComponent
+        [initialFilter]="filter()"
+        [unfilteredPolicies]="policyService.allPolicies()"
+        (filterChange)="onFilterUpdate($event)">
+      </app-policy-filter>
+    }
+    <mat-paginator
+      (page)="onPageEvent($event)"
+      [length]="totalLength()"
+      [pageIndex]="pageIndex()"
+      [pageSizeOptions]="pageSizeOptions()"
+      [pageSize]="pageSize()"
+      showFirstLastButtons />
+  </div>
 
   <app-policies-table-actions [policySelection]="selectedPolicies()" />
 
   <table
     mat-table
-    [dataSource]="sortedFilteredPolicies()"
+    [dataSource]="pagedPolicies()"
     class="policies-table"
-    multiTemplateDataRows
     matSort
     matSortActive="priority"
     matSortDirection="asc"
     (matSortChange)="onSortChange($event)">
-    @for (column of columnKeysMap; track column.key) {
+    <ng-container matColumnDef="select">
+      <th
+        mat-header-cell
+        *matHeaderCellDef>
+        <mat-checkbox
+          (change)="masterToggle()"
+          [checked]="isAllSelected()"
+          [indeterminate]="selectedPolicies().size > 0 && !isAllSelected()"
+          [disabled]="policyService.allPolicies().length === 0"
+          aria-label="Select all policies"
+          i18n-aria-label>
+        </mat-checkbox>
+      </th>
+      <td
+        mat-cell
+        *matCellDef="let policy">
+        <mat-checkbox
+          (click)="$event.stopPropagation()"
+          (change)="updateSelection($event, policy.name)"
+          [checked]="selectedPolicies().has(policy.name)"
+          [disabled]="!policy.name"
+          aria-label="Select policy"
+          i18n-aria-label>
+        </mat-checkbox>
+      </td>
+    </ng-container>
+
+    @for (column of columns | keyvalue: keepOrder; track column.key) {
       <ng-container [matColumnDef]="column.key">
-        @if (column.key === "select") {
-          <th
-            *matHeaderCellDef
-            class="table-checkbox"
-            mat-header-cell>
-            <mat-checkbox
-              (change)="masterToggle()"
-              [checked]="isAllSelected()"
-              [indeterminate]="selectedPolicies().size > 0 && !isAllSelected()"
-              aria-label="Select All Policies"
-              i18n-aria-label>
-            </mat-checkbox>
-          </th>
-        } @else {
-          <th
-            *matHeaderCellDef
-            [class]="'col-' + column.key"
-            mat-header-cell
-            [mat-sort-header]="column.key"
-            [disabled]="['actions', 'conditions'].includes(column.key)">
-            <div class="table-header-container">
-              @if (column.label) {
-                <div>{{ column.label }}</div>
-              }
-              @if (isFilterable(column.key)) {
-                <div class="flex">
-                  <button
-                    (click)="$event.stopPropagation(); onFilterClick(column.key)"
-                    class="filter-button"
-                    [matTooltip]="getFilterTooltipText(column.key)"
-                    mat-icon-button>
-                    <mat-icon class="keyword-button-icon margin-left-0">
-                      {{ getFilterIconName(column.key) }}
-                    </mat-icon>
-                  </button>
-                </div>
-              }
-            </div>
-          </th>
-        }
+        <th
+          *matHeaderCellDef
+          mat-header-cell
+          mat-sort-header
+          [disabled]="!column.value.sortable || policyService.allPolicies().length === 0"
+          [class]="'col-' + column.key">
+          <div class="table-header-container">
+            @if (column.value.label) {
+              <div>{{ column.value.label }}</div>
+            }
+            @if (isFilterable(column.key)) {
+              <div class="flex">
+                <button
+                  (click)="$event.stopPropagation(); onFilterClick(column.key)"
+                  class="filter-button"
+                  [disabled]="policyService.allPolicies().length === 0"
+                  mat-icon-button>
+                  <mat-icon class="keyword-button-icon margin-left-0">
+                    {{ getFilterIconName(column.key) }}
+                  </mat-icon>
+                </button>
+              </div>
+            }
+          </div>
+        </th>
 
         <td
           [class]="'col-' + column.key"
           mat-cell
           *matCellDef="let policy">
           <div class="column-max-height">
-            @switch (column.key) {
-              @case ("select") {
-                <mat-checkbox
-                  (click)="$event.stopPropagation()"
-                  (change)="updateSelection($event, policy.name)"
-                  [checked]="isSelected(policy.name)"
-                  aria-label="Select Policy"
-                  i18n-aria-label>
-                </mat-checkbox>
-              }
-              @case ("priority") {
-                {{ policy.priority }}
-              }
-              @case ("name") {
-                <div class="name-wrapper">
-                  @if (authService.actionAllowed("policywrite")) {
-                    <div
-                      class="text-link-button"
-                      (click)="$event.stopPropagation(); editPolicy(policy)">
+            @if (policy.name) {
+              @switch (column.key) {
+                @case ("priority") {
+                  {{ policy.priority }}
+                }
+                @case ("name") {
+                  <div class="name-wrapper">
+                    @if (authService.actionAllowed("policywrite")) {
+                      <div
+                        class="text-link-button"
+                        (click)="$event.stopPropagation(); editPolicy(policy)">
+                        {{ policy.name }}
+                      </div>
+                    } @else {
                       {{ policy.name }}
-                    </div>
-                  } @else {
-                    <mat-icon
-                      [class.inactive-icon]="!policy.active"
-                      [class.active-icon]="policy.active">
-                      check_circle
-                    </mat-icon>
-                    {{ policy.name }}
+                    }
+                  </div>
+                }
+                @case ("scope") {
+                  {{ policy.scope?.toLocaleUpperCase() }}
+                }
+                @case ("description") {
+                  {{ policy.description }}
+                }
+                @case ("actions") {
+                  @if (policy.action) {
+                    <app-view-action-column [actions]="policy.action" />
                   }
-                </div>
-              }
-              @case ("scope") {
-                {{ policy.scope ? policy.scope.toLocaleUpperCase() : "No Scope" }}
-              }
-              @case ("description") {
-                {{ policy.description }}
-              }
-              @case ("actions") {
-                <app-view-action-column [actions]="policy.action" />
-              }
-              @case ("conditions") {
-                <app-view-conditions-column [policy]="policy" />
-              }
-              @case ("active") {
-                <mat-icon
-                  class="minimal-icon-button"
-                  [class.inactive-icon]="!policy.active"
-                  [class.active-icon]="policy.active"
-                  [matTooltip]="policy.active ? 'Deactivate policy' : 'Activate policy'"
-                  i18n-matTooltip
-                  (click)="$event.stopPropagation(); policyService.togglePolicyActive(policy)">
-                  check_circle
-                </mat-icon>
+                }
+                @case ("conditions") {
+                  <app-view-conditions-column [policy]="policy" />
+                }
+                @case ("active") {
+                  <mat-icon
+                    [class.inactive-icon]="!policy.active"
+                    [class.active-icon]="policy.active"
+                    (click)="$event.stopPropagation(); togglePolicyActive(policy)">
+                    check_circle
+                  </mat-icon>
+                }
+                @default {
+                  {{ policy[column.key] }}
+                }
               }
             }
           </div>
@@ -152,20 +163,24 @@
 
     <tr
       mat-header-row
-      *matHeaderRowDef="displayedColumns"></tr>
+      *matHeaderRowDef="columnKeys()"></tr>
     <tr
       mat-row
-      *matRowDef="let policy; columns: displayedColumns"
+      *matRowDef="let policy; columns: columnKeys()"
+      [class.skeleton-row]="!policy.name"
       class="policy-row"></tr>
 
     <tr
       *matNoDataRow
       aria-label="No Data Row"
-      i18n-aria-label>
+      i18n-aria-label
+      class="mat-mdc-no-data-row">
       <td
-        [attr.colspan]="displayedColumns.length"
-        i18n>
-        No policies found.
+        [attr.colspan]="columnKeys().length"
+        aria-label="No Data Cell"
+        i18n
+        i18n-aria-label>
+        No data matching the filter.
       </td>
     </tr>
   </table>

@@ -40,8 +40,10 @@ export interface FourEyesEnrollmentPayload extends TokenEnrollmentPayload {
 }
 
 @Injectable({ providedIn: "root" })
-export class FourEyesApiPayloadMapper extends BaseApiPayloadMapper implements TokenApiPayloadMapper<FourEyesEnrollmentData> {
-
+export class FourEyesApiPayloadMapper
+  extends BaseApiPayloadMapper
+  implements TokenApiPayloadMapper<FourEyesEnrollmentData>
+{
   override toApiPayload(data: FourEyesEnrollmentData): FourEyesEnrollmentPayload {
     const basePayload = super.toApiPayload(data);
     const payload: FourEyesEnrollmentPayload = {
@@ -58,27 +60,42 @@ export class FourEyesApiPayloadMapper extends BaseApiPayloadMapper implements To
 
     if (data.onlyAddToRealm) {
       payload.realm = data.realm;
-      payload.user = null;
+      delete payload.user;
     }
     return payload;
   }
 
-  override fromApiPayload(payload: any): FourEyesEnrollmentData {
-    // Placeholder: Implement transformation from API payload. We will replace this later.
-    return payload as FourEyesEnrollmentData;
+  override fromApiPayload(payload: FourEyesEnrollmentPayload): FourEyesEnrollmentData {
+    const requiredTokenOfRealms = Object.entries(payload["4eyes"] || {})
+      .filter(([_, value]) => value.selected)
+      .map(([realm, value]) => ({
+        realm,
+        tokens: value.count
+      }));
+
+    const enrollmentData: FourEyesEnrollmentData = {
+      ...super.fromApiPayload(payload),
+      type: "4eyes",
+      separator: payload.separator,
+      requiredTokenOfRealms
+    };
+    return enrollmentData;
   }
 
   override fromTokenDetailsToEnrollmentData(details: TokenDetails): FourEyesEnrollmentData {
     let requiredTokenOfRealms: { realm: string; tokens: number }[] = [];
     const fourEyesString = details.info?.["4eyes"];
     if (typeof fourEyesString === "string" && fourEyesString.trim() !== "") {
-      requiredTokenOfRealms = fourEyesString.split(",").map((entry) => {
-        const [realm, tokens] = entry.split(":");
-        return {
-          realm: realm?.trim() ?? "",
-          tokens: Number(tokens)
-        };
-      }).filter(item => item.realm && !isNaN(item.tokens));
+      requiredTokenOfRealms = fourEyesString
+        .split(",")
+        .map((entry) => {
+          const [realm, tokens] = entry.split(":");
+          return {
+            realm: realm?.trim() ?? "",
+            tokens: Number(tokens)
+          };
+        })
+        .filter((item) => item.realm && !isNaN(item.tokens));
     }
     return {
       ...super.fromTokenDetailsToEnrollmentData(details),

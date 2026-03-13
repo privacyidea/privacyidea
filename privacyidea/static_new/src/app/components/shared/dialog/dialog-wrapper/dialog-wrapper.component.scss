@@ -2,10 +2,10 @@
 @use "table";
 
 .pi-dialog {
-  background-color: var(--mat-sys-surface-container-low);
+  background-color: var(--mat-sys-surface-container-lowest);
   border-radius: var(--border-radius);
   overflow: auto;
-  --mat-dialog-content-padding: 0 var(--global-padding);
+  --mat-dialog-content-padding: 0 var(--global-padding) var(--half-global-padding) var(--global-padding);
 
   .pi-dialog-header {
     display: flex;

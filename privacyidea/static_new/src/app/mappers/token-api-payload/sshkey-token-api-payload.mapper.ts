@@ -35,8 +35,10 @@ export interface SshkeyEnrollmentPayload extends TokenEnrollmentPayload {
 }
 
 @Injectable({ providedIn: "root" })
-export class SshkeyApiPayloadMapper extends BaseApiPayloadMapper implements TokenApiPayloadMapper<SshkeyEnrollmentData> {
-
+export class SshkeyApiPayloadMapper
+  extends BaseApiPayloadMapper
+  implements TokenApiPayloadMapper<SshkeyEnrollmentData>
+{
   override toApiPayload(data: SshkeyEnrollmentData): SshkeyEnrollmentPayload {
     const basePayload = super.toApiPayload(data);
     const payload: SshkeyEnrollmentPayload = {
@@ -45,7 +47,7 @@ export class SshkeyApiPayloadMapper extends BaseApiPayloadMapper implements Toke
     };
     if (data.onlyAddToRealm) {
       payload.realm = data.realm;
-      payload.user = null;
+      delete payload.user;
     }
     return payload;
   }

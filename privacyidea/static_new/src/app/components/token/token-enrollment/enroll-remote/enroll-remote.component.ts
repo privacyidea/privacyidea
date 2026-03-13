@@ -134,18 +134,6 @@ export class EnrollRemoteComponent implements OnInit {
     data: RemoteEnrollmentData;
     mapper: TokenApiPayloadMapper<RemoteEnrollmentData>;
   } | null => {
-    if (
-      this.remoteServerControl.invalid ||
-      this.remoteSerialControl.invalid ||
-      this.remoteUserControl.invalid ||
-      this.remoteRealmControl.invalid ||
-      this.remoteResolverControl.invalid ||
-      this.checkPinLocallyControl.invalid
-    ) {
-      this.remoteForm.markAllAsTouched();
-      return null;
-    }
-
     const enrollmentData: RemoteEnrollmentData = {
       ...basicOptions,
       type: "remote",

@@ -21,11 +21,37 @@ import { DialogServiceInterface } from "../../app/services/dialog/dialog.service
 import { MockMatDialogRef } from "../mock-mat-dialog-ref";
 
 export class MockDialogService implements DialogServiceInterface {
-  closeDialog = jest.fn().mockReturnValue(true);
-  openDialog = jest.fn().mockReturnValue(new MockMatDialogRef());
-  closeLatestDialog = jest.fn();
-  closeAllDialogs = jest.fn();
-  isDialogOpen = jest.fn().mockReturnValue(false);
-  isAnyDialogOpen = jest.fn().mockReturnValue(false);
+  private lastDialogRef: any = null;
+
+  closeDialog = jest.fn().mockImplementation((dialogRef) => {
+    if (this.lastDialogRef === dialogRef) {
+      this.lastDialogRef = null;
+    }
+    return true;
+  });
+
+  openDialog = jest.fn().mockImplementation(() => {
+    this.lastDialogRef = new MockMatDialogRef();
+    return this.lastDialogRef;
+  });
+
+  openDialogAsync = jest.fn().mockResolvedValue(true);
+
+  closeLatestDialog = jest.fn().mockImplementation(() => {
+    this.lastDialogRef = null;
+  });
+
+  closeAllDialogs = jest.fn().mockImplementation(() => {
+    this.lastDialogRef = null;
+  });
+
+  isDialogOpen = jest.fn().mockImplementation((dialogRef) => {
+    return this.lastDialogRef === dialogRef && this.lastDialogRef !== null;
+  });
+
+  isAnyDialogOpen = jest.fn().mockImplementation(() => {
+    return this.lastDialogRef !== null;
+  });
+
   confirm = jest.fn().mockResolvedValue(true);
 }

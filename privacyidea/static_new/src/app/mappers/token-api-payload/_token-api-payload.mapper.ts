@@ -18,12 +18,12 @@
  **/
 
 import { Injectable } from "@angular/core";
-import { TokenDetails } from "../../services/token/token.service";
+import { TokenDetails, TokenTypeKey } from "../../services/token/token.service";
 
 export interface EnrollmentResponse<D extends EnrollmentResponseDetail = EnrollmentResponseDetail> {
   type: string;
   detail: D;
-  result: {status: boolean}
+  result: { status: boolean };
 
   [key: string]: any;
 }
@@ -40,7 +40,7 @@ export interface EnrollmentResponseDetail {
   otpkey?: EnrollmentUrl;
   motpurl?: EnrollmentUrl;
   tiqrenroll?: EnrollmentUrl;
-  verify?: {message: string};
+  verify?: { message: string };
 
   [key: string]: any;
 }
@@ -53,7 +53,7 @@ export interface EnrollmentUrl {
 }
 
 export type TokenEnrollmentData = {
-  type: string;
+  type: TokenTypeKey;
   description?: string;
   containerSerial?: string;
   validityPeriodStart?: string;
@@ -69,16 +69,21 @@ export type TokenEnrollmentData = {
 };
 
 export interface TokenEnrollmentPayload {
-  type: string;
+  type: TokenTypeKey;
   description?: string;
   container_serial?: string;
   validity_period_start?: string;
   validity_period_end?: string;
-  user?: string | null;
-  realm?: string | null;
+  user?: string | boolean;
+  realm?: string;
   pin?: string;
-  rollover?: boolean | null;
-  serial?: string | null;
+  rollover?: boolean;
+  serial?: string;
+  hashlib?: string;
+  otplen?: number;
+  timeStep?: string | number;
+  genkey?: boolean | number;
+  [key: string]: any; // TODO: remove this when all types are defined
 }
 
 export interface TokenApiPayloadMapper<T> {
@@ -105,8 +110,19 @@ export class BaseApiPayloadMapper implements TokenApiPayloadMapper<TokenEnrollme
     };
   }
 
-  fromApiPayload(data: any): TokenEnrollmentData {
-    return {} as TokenEnrollmentData;
+  fromApiPayload(data: TokenEnrollmentPayload): TokenEnrollmentData {
+    return {
+      type: data.type,
+      ...(data.description && { description: data.description }),
+      ...(data.container_serial && { containerSerial: data.container_serial }),
+      ...(data.validity_period_start && { validityPeriodStart: data.validity_period_start }),
+      ...(data.validity_period_end && { validityPeriodEnd: data.validity_period_end }),
+      ...(typeof data.user === "string" && { user: data.user }),
+      ...(data.realm && { realm: data.realm }),
+      ...(data.pin && { pin: data.pin }),
+      ...(data.serial && { serial: data.serial }),
+      ...(data.rollover != null && { rollover: data.rollover })
+    };
   }
 
   fromTokenDetailsToEnrollmentData(details: TokenDetails): TokenEnrollmentData {

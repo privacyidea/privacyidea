@@ -1,0 +1,52 @@
+@use "@angular/material" as mat;
+
+.add-token-chips-card {
+  background-color: var(--mat-sys-surface-container-low) !important;
+
+  mat-card-title {
+    font-size: 1.2em;
+    font-weight: 500;
+    padding: var(--half-global-padding);
+  }
+
+  mat-card {
+    --mdc-elevated-card-container-shape: var(--border-radius);
+    --mdc-elevated-card-container-color: var(--mat-sys-surface-container);
+    margin-bottom: 1rem;
+  }
+
+  mat-chip-listbox {
+    display: block;
+    overflow-x: auto;
+    width: 100%;
+    padding-bottom: var(--half-global-padding);
+
+    &::-webkit-scrollbar {
+      display: none;
+    }
+
+    ::ng-deep .mdc-evolution-chip-set__chips {
+      display: flex !important;
+      flex-wrap: nowrap !important;
+    }
+  }
+
+  mat-chip {
+    --mdc-chip-container-shape-radius: var(--border-radius);
+    white-space: nowrap;
+    cursor: pointer !important;
+    flex: 0 0 auto !important;
+  }
+
+  mat-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+  }
+
+  ::ng-deep {
+    .mdc-evolution-chip__action--presentational {
+      cursor: pointer !important;
+    }
+  }
+}

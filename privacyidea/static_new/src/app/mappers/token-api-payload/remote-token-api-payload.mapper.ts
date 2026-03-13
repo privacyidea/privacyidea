@@ -47,8 +47,10 @@ export interface RemoteEnrollmentPayload extends TokenEnrollmentPayload {
 }
 
 @Injectable({ providedIn: "root" })
-export class RemoteApiPayloadMapper extends BaseApiPayloadMapper implements TokenApiPayloadMapper<RemoteEnrollmentData> {
-
+export class RemoteApiPayloadMapper
+  extends BaseApiPayloadMapper
+  implements TokenApiPayloadMapper<RemoteEnrollmentData>
+{
   override toApiPayload(data: RemoteEnrollmentData): RemoteEnrollmentPayload {
     const payload: RemoteEnrollmentPayload = {
       ...super.toApiPayload(data),
@@ -62,22 +64,33 @@ export class RemoteApiPayloadMapper extends BaseApiPayloadMapper implements Toke
 
     if (data.onlyAddToRealm) {
       payload.realm = data.realm;
-      payload.user = null;
+      delete payload.user;
     }
 
     return payload;
   }
 
-  override fromApiPayload(payload: any): RemoteEnrollmentData {
-    // Placeholder: Implement transformation from API payload. We will replace this later.
-    return payload as RemoteEnrollmentData;
+  override fromApiPayload(payload: RemoteEnrollmentPayload): RemoteEnrollmentData {
+    const baseData = super.fromApiPayload(payload);
+    return {
+      ...baseData,
+      type: "remote",
+      remoteServer: payload["remote.server_id"] ? ({ id: payload["remote.server_id"] } as RemoteServer) : null,
+      remoteSerial: payload["remote.serial"] ?? "",
+      remoteUser: payload["remote.user"] ?? "",
+      remoteRealm: payload["remote.realm"] ?? "",
+      remoteResolver: payload["remote.resolver"] ?? "",
+      checkPinLocally: parseBooleanValue(payload["remote.local_checkpin"] ?? false)
+    };
   }
 
   override fromTokenDetailsToEnrollmentData(details: TokenDetails): RemoteEnrollmentData {
     const enrollData: RemoteEnrollmentData = {
       ...super.fromTokenDetailsToEnrollmentData(details),
       type: "remote",
-      remoteServer: details.info?.["remote.server_id"] ? {id: details.info?.["remote.server_id"]}  as RemoteServer : null,
+      remoteServer: details.info?.["remote.server_id"]
+        ? ({ id: details.info?.["remote.server_id"] } as RemoteServer)
+        : null,
       remoteSerial: details.info?.["remote.serial"] ?? "",
       remoteUser: details.info?.["remote.user"] ?? "",
       remoteRealm: details.info?.["remote.realm"] ?? "",

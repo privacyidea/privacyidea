@@ -37,8 +37,10 @@ export interface RadiusEnrollmentPayload extends TokenEnrollmentPayload {
 }
 
 @Injectable({ providedIn: "root" })
-export class RadiusApiPayloadMapper extends BaseApiPayloadMapper implements TokenApiPayloadMapper<RadiusEnrollmentData> {
-
+export class RadiusApiPayloadMapper
+  extends BaseApiPayloadMapper
+  implements TokenApiPayloadMapper<RadiusEnrollmentData>
+{
   override toApiPayload(data: RadiusEnrollmentData): RadiusEnrollmentPayload {
     const payload: RadiusEnrollmentPayload = {
       ...super.toApiPayload(data),
@@ -48,7 +50,7 @@ export class RadiusApiPayloadMapper extends BaseApiPayloadMapper implements Toke
 
     if (data.onlyAddToRealm) {
       payload.realm = data.realm;
-      payload.user = null;
+      delete payload.user;
     }
     return payload;
   }
