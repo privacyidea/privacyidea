@@ -215,7 +215,7 @@ def _build_smartphone_data(token: TokenClass, challenge: str, registration_url: 
                                                options) or "1"
     if sslverify not in ["0", "1"]:
         sslverify = "1"
-    default_message = DEFAULT_MOBILE_TEXT
+    default_message = str(DEFAULT_MOBILE_TEXT)
 
     message_on_mobile = get_action_values_from_options(SCOPE.AUTH,
                                                        PushAction.MOBILE_TEXT,
@@ -743,8 +743,8 @@ class PushTokenClass(TokenClass):
                         challenge.set_session(ChallengeSession.DECLINED)
                     else:
                         # Verify the presence_answer which is stored in the challenge data (json).
-                        # Legacy format: correct choice is stored as last entry in the data (str)separated by a comma.
-                        # Make sure that the presence_answer is given if it is set in the challenge, so that
+                        # Legacy format: the correct choice is stored as the last entry in the data (str)separated by
+                        # a comma. Make sure that the presence_answer is given if it is set in the challenge so that
                         # a response with a valid signature but no presence_answer does not pass!
                         challenge_data = challenge.get_data()
                         if (isinstance(challenge_data, dict) and
@@ -755,7 +755,7 @@ class PushTokenClass(TokenClass):
                                           "given presence answer (%s)!" % (challenge_data, presence_answer))
                                 result = False
                             else:
-                                # Presence answer matches, mark challenge as answered
+                                # Presence answer matches, mark the challenge as answered
                                 challenge.set_otp_status(True)
                         elif isinstance(challenge_data, str) and presence_answer:
                             # Legacy handling
@@ -765,7 +765,7 @@ class PushTokenClass(TokenClass):
                                 result = False
                             else:
                                 challenge.set_otp_status(True)
-                        # Check if presence_answer is missing but its required
+                        # Check if presence_answer is missing, but it is required
                         elif (isinstance(challenge_data, dict)
                               and challenge_data.get("mode") == PushMode.REQUIRE_PRESENCE
                               and not presence_answer):
@@ -797,7 +797,7 @@ class PushTokenClass(TokenClass):
         log.debug("Updating the firebase token of the smartphone.")
         timestamp = get_required(request_data, 'timestamp')
         signature = get_required(request_data, 'signature')
-        # First check if the timestamp is in the required span
+        # First, check if the timestamp is in the required span
         cls._check_timestamp_in_range(timestamp, UPDATE_FB_TOKEN_WINDOW)
         try:
             token = get_one_token(serial=serial, tokentype=cls.get_class_type())
@@ -807,7 +807,7 @@ class PushTokenClass(TokenClass):
                               sign_data.encode("utf8"),
                               padding.PKCS1v15(),
                               hashes.SHA256())
-            # If the timestamp and signature are valid we update the token
+            # If the timestamp and signature are valid, we update the token
             token.add_tokeninfo('firebase_token', request_data['new_fb_token'])
             return True, {}
         except (ResourceNotFoundError, ParameterError, TypeError,
@@ -1115,7 +1115,7 @@ class PushTokenClass(TokenClass):
         The return tuple builds up like this:
         ``bool`` if submit was successful;
         ``message`` which is displayed in the JSON response;
-        additional challenge ``reply_dict``, which are displayed in the JSON challenges response.
+        additional challenge ``reply_dict``, which is displayed in the JSON challenges response.
         """
         options = options or {}
         message = get_action_values_from_options(SCOPE.AUTH,
