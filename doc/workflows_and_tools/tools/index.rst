@@ -548,7 +548,7 @@ Example::
 
 .. note:: This command is the default command if no action is specified.
 
-``-u``, ``--show-user-attributes``
+``-u``, ``--show-user-attribute``
     You can use this option to extend the output with user attributes.
     This option can be used multiple times.
 
@@ -572,7 +572,7 @@ Example::
 
         pi-tokenjanitor find --tokenattribute 'serial=OATH0004C934' list --summarize
 
-    .. note:: The option ``--summarize`` only works with the option ``--show-user-attributes``.
+    .. note:: The option ``--summarize`` only works with the option ``--show-user-attribute``.
 
 export
 ******

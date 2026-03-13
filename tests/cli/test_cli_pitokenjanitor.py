@@ -188,7 +188,7 @@ def containers(app, tokens, users, realms, container_template):
 
 
 @pytest.fixture(scope="function")
-def orphaned_tokens(app):
+def orphaned_token(app):
     """
     Creates an orphaned token: a token that has a user assigned in the database,
     but the user no longer exists in the user store.
