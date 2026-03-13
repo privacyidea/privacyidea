@@ -136,121 +136,121 @@ myApp.directive("piSortBy", function () {
 
 myApp.directive('assignUser', ["$http", "$rootScope", "userUrl", "AuthFactory", "instanceUrl", "versioningSuffixProvider",
     function ($http, $rootScope, userUrl, AuthFactory, instanceUrl, versioningSuffixProvider) {
-    /*
-    This directive is used to select a user from a realm
-    */
-    return {
-        scope: {
-            newUserObject: '=',
-            realms: '=',
-            enableSetPin: '=',
-            enableRealmOnly: '=',
-            searchOnEnter: '='
-        },
-        templateUrl: instanceUrl + "/static/components/directives/views/directive.assignuser.html" + versioningSuffixProvider.$get(),
-        link: function (scope, element, attr) {
-            scope.$watch('realms', function (newVal, oldVal) {
-                if (newVal && !scope.newUserObject.user && !scope.newUserObject.realm) {
-                    scope.newUserObject.realm = Object.keys(newVal)[0];
-                }
-            }, true);
+        /*
+        This directive is used to select a user from a realm
+        */
+        return {
+            scope: {
+                newUserObject: '=',
+                realms: '=',
+                enableSetPin: '=',
+                enableRealmOnly: '=',
+                searchOnEnter: '='
+            },
+            templateUrl: instanceUrl + "/static/components/directives/views/directive.assignuser.html" + versioningSuffixProvider.$get(),
+            link: function (scope, element, attr) {
+                scope.$watch('realms', function (newVal, oldVal) {
+                    if (newVal && !scope.newUserObject.user && !scope.newUserObject.realm) {
+                        scope.newUserObject.realm = Object.keys(newVal)[0];
+                    }
+                }, true);
 
-            // Search on Enter
-            scope.selectUser = function(user) {
-                scope.newUserObject.user = user.username;
-                scope.newUserObject.loadedUsers = []; // hide dropdown
-            };
+                // Search on Enter
+                scope.selectUser = function (user) {
+                    scope.newUserObject.user = user.username;
+                    scope.newUserObject.loadedUsers = []; // hide dropdown
+                };
 
-            scope.triggerEnterSearch = function() {
-                const query = scope.newUserObject.user || "";
-                if (!query) {
-                    scope.newUserObject.loadedUsers = [];
+                scope.triggerEnterSearch = function () {
+                    const query = scope.newUserObject.user || "";
+                    if (!query) {
+                        scope.newUserObject.loadedUsers = [];
+                        scope.noResults = false;
+                        return;
+                    }
+
+                    scope.loadingUsers = true;
                     scope.noResults = false;
-                    return;
-                }
-
-                scope.loadingUsers = true;
-                scope.noResults = false;
-                scope.newUserObject.loadedUsers = [];
-
-                const auth_token = AuthFactory.getAuthToken();
-                $http({
-                    method: 'GET',
-                    url: userUrl + "/?username=*" + query + "*" + "&realm=" + scope.newUserObject.realm,
-                    headers: {'PI-Authorization': auth_token}
-                }).then(function ($response) {
-                    const users = $response.data.result.value.map(function (item) {
-                        return {
-                            display: "[" + item.userid + "] " + item.username + " (" + item.givenname + " " + item.surname + ")",
-                            userid: item.userid,
-                            username: item.username,
-                            givenname: item.givenname,
-                            surname: item.surname,
-                            email: item.email,
-                            mobile: item.mobile,
-                            phone: item.phone
-                        };
-                    });
-                    scope.newUserObject.loadedUsers = users;
-                    scope.loadingUsers = false;
-                    scope.noResults = users.length === 0;
-                }, function() {
-                    scope.loadingUsers = false;
-                    scope.noResults = true;
-                });
-            };
-
-            // Clear the custom dropdown if the user starts typing again
-            scope.$watch('newUserObject.user', function(newVal, oldVal) {
-                if (scope.searchOnEnter && newVal !== oldVal) {
                     scope.newUserObject.loadedUsers = [];
-                    scope.noResults = false;
-                }
-            });
 
-            // ==========================================
-            // LOGIC FOR INPUT A: Default Typeahead
-            // ==========================================
-            scope.loadUsers = function ($viewValue) {
-                scope.loadingUsers = true;
-                const query = $viewValue || "";
-
-                if (!query) {
-                    scope.loadingUsers = false;
-                    return [];
-                }
-
-                const auth_token = AuthFactory.getAuthToken();
-                const attributesParam = "&attributes=userid,username,givenname,surname,email,mobile,phone";
-                return $http({
-                    method: 'GET',
-                    url: userUrl + "/?username=*" + query + "*" + "&realm=" + scope.newUserObject.realm + attributesParam,
-                    headers: {'PI-Authorization': auth_token}
-                }).then(function ($response) {
-                    const users = $response.data.result.value.map(function (item) {
-                        return {
-                            display: "[" + item.userid + "] " + item.username + " (" + item.givenname + " " + item.surname + ")",
-                            userid: item.userid,
-                            username: item.username,
-                            givenname: item.givenname,
-                            surname: item.surname,
-                            email: item.email,
-                            mobile: item.mobile,
-                            phone: item.phone
-                        };
+                    const auth_token = AuthFactory.getAuthToken();
+                    $http({
+                        method: 'GET',
+                        url: userUrl + "/?username=*" + query + "*" + "&realm=" + scope.newUserObject.realm,
+                        headers: {'PI-Authorization': auth_token}
+                    }).then(function ($response) {
+                        const users = $response.data.result.value.map(function (item) {
+                            return {
+                                display: "[" + item.userid + "] " + item.username + " (" + item.givenname + " " + item.surname + ")",
+                                userid: item.userid,
+                                username: item.username,
+                                givenname: item.givenname,
+                                surname: item.surname,
+                                email: item.email,
+                                mobile: item.mobile,
+                                phone: item.phone
+                            };
+                        });
+                        scope.newUserObject.loadedUsers = users;
+                        scope.loadingUsers = false;
+                        scope.noResults = users.length === 0;
+                    }, function () {
+                        scope.loadingUsers = false;
+                        scope.noResults = true;
                     });
-                    scope.loadingUsers = false;
-                    scope.noResults = users.length === 0;
-                    return users;
-                }, function() {
-                    scope.loadingUsers = false;
-                    scope.noResults = true;
-                    return [];
+                };
+
+                // Clear the custom dropdown if the user starts typing again
+                scope.$watch('newUserObject.user', function (newVal, oldVal) {
+                    if (scope.searchOnEnter && newVal !== oldVal) {
+                        scope.newUserObject.loadedUsers = [];
+                        scope.noResults = false;
+                    }
                 });
-            };
-        }
-    };
-}]);
+
+                // ==========================================
+                // LOGIC FOR INPUT A: Default Typeahead
+                // ==========================================
+                scope.loadUsers = function ($viewValue) {
+                    scope.loadingUsers = true;
+                    const query = $viewValue || "";
+
+                    if (!query) {
+                        scope.loadingUsers = false;
+                        return [];
+                    }
+
+                    const auth_token = AuthFactory.getAuthToken();
+                    const attributesParam = "&attributes=userid,username,givenname,surname,email,mobile,phone";
+                    return $http({
+                        method: 'GET',
+                        url: userUrl + "/?username=*" + query + "*" + "&realm=" + scope.newUserObject.realm + attributesParam,
+                        headers: {'PI-Authorization': auth_token}
+                    }).then(function ($response) {
+                        const users = $response.data.result.value.map(function (item) {
+                            return {
+                                display: "[" + item.userid + "] " + item.username + " (" + item.givenname + " " + item.surname + ")",
+                                userid: item.userid,
+                                username: item.username,
+                                givenname: item.givenname,
+                                surname: item.surname,
+                                email: item.email,
+                                mobile: item.mobile,
+                                phone: item.phone
+                            };
+                        });
+                        scope.loadingUsers = false;
+                        scope.noResults = users.length === 0;
+                        return users;
+                    }, function () {
+                        scope.loadingUsers = false;
+                        scope.noResults = true;
+                        return [];
+                    });
+                };
+            }
+        };
+    }]);
 
 myApp.directive('assignToken', ["$http", "$rootScope", "tokenUrl", "AuthFactory", "instanceUrl", "versioningSuffixProvider", function ($http, $rootScope, tokenUrl, AuthFactory, instanceUrl, versioningSuffixProvider) {
     /*
@@ -817,12 +817,7 @@ myApp.directive("containerTemplateDetails", ["instanceUrl", "versioningSuffixPro
                 scope.num_questions = 5;
 
                 scope.form = {
-                    type: "hotp",
-                    timeStep: 30,
-                    otplen: 6,
-                    genkey: true,
-                    hashlib: "sha1",
-                    user: true
+                    type: "hotp"
                 };
 
                 scope.keyLength = function (obj) {
@@ -836,14 +831,49 @@ myApp.directive("containerTemplateDetails", ["instanceUrl", "versioningSuffixPro
                 scope.addToken = function (tokenType) {
                     scope.form = {
                         type: tokenType,
-                        timeStep: 30,
-                        otplen: 6,
-                        genkey: true,
-                        hashlib: "sha1",
                         user: true
                     };
                     if (scope.markAddRemove) {
                         scope.form.state = "add";
+                    }
+
+                    // Set default values
+                    if (["hotp", "totp", "daypassword", "applspec"].includes(tokenType)) {
+                        // Defaults for all otp based tokens
+                        scope.form.genkey = true;
+                        scope.form.otplen = 6;
+
+                        // Token type specific defaults
+                        if (tokenType === "hotp") {
+                            scope.form.hashlib = scope.systemDefault['hotp.hashlib'] || 'sha1';
+                        } else if (tokenType === "totp") {
+                            scope.form.hashlib = scope.systemDefault['totp.hashlib'] || 'sha1';
+                            let defaultTimeStep = parseInt(scope.systemDefault['totp.timeStep'] || '30', 10);
+                            if (isNaN(defaultTimeStep)) {
+                                defaultTimeStep = 30;
+                            }
+                            scope.form.timeStep = defaultTimeStep;
+                        } else if (tokenType === "daypassword") {
+                            scope.form.hashlib = scope.systemDefault['daypassword.hashlib'] || 'sha1';
+                            scope.form.timeStep = scope.systemDefault['daypassword.timeStep'] || '24h';
+                        }
+                    } else if (tokenType === "push") {
+                        scope.form.genkey = true;
+                    } else if (tokenType === "email") {
+                        scope.form.dynamic_email = true;
+                    } else if (tokenType === "sms") {
+                        scope.form.dynamic_phone = true;
+                        const defaultGateway = scope.systemDefault['sms.identifier'];
+                        if ( defaultGateway) {
+                            scope.form["sms.identifier"] = defaultGateway;
+                        }
+                    } else if (tokenType === "yubikey") {
+                        scope.form.otplen = 44;
+                    } else if (tokenType === "indexedsecret") {
+                        // in case of indexedsecret we do never generate a key from the UI
+                        scope.form.genkey = false;
+                    } else if (tokenType === "vasco") {
+                        scope.form.genkey = false;
                     }
                     scope.selection.tokens.push(scope.form);
                 };
@@ -880,51 +910,26 @@ myApp.directive("containerTemplateDetails", ["instanceUrl", "versioningSuffixPro
 
                     let tokenType = scope.selection.tokens[index].type;
                     scope.selection.tokens[index].edit = true;
-                    scope.form = {
-                        type: tokenType,
-                        timeStep: 30,
-                        otplen: 6,
-                        genkey: true,
-                        hashlib: "sha1",
-                        user: true
-                    };
+
+                    scope.form = {};
                     angular.forEach(scope.selection.tokens[index], function (value, key) {
                         if (key !== 'edit') {
+                            if (key === "genkey") {
+                              value = isTrue(value);
+                            }
                             scope.form[key] = value;
                         }
                     })
 
-                    // load token type specific stuff
+                    // load token type specific selections
                     scope.hidePin = ["sshkey", "certificate"].indexOf(tokenType) >= 0;
-                    if (tokenType === "hotp") {
-                        scope.form.hashlib = scope.systemDefault['hotp.hashlib'] || 'sha1';
-                    } else if (tokenType === "totp") {
-                        scope.form.hashlib = scope.systemDefault['totp.hashlib'] || 'sha1';
-                        scope.form.timeStep = parseInt(scope.systemDefault['totp.timeStep'] || '30');
-                    } else if (tokenType === "daypassword") {
-                        // preset DayPassword hashlib
-                        scope.form.hashlib = scope.systemDefault['daypassword.hashlib'] || 'sha1';
-                        scope.form.timeStep = parseInt(scope.systemDefault['daypassword.timeStep'] || '60');
-                    } else if (tokenType === "applspec") {
+                    if (tokenType === "applspec") {
                         if (Object.keys(scope.formInit.service_ids).length === 0) {
                             ConfigFactory.getServiceid("", function (data) {
                                 scope.formInit.service_ids = {};
                                 let serviceids = data.result.value;
                                 angular.forEach(serviceids, function (serviceid_data, name) {
                                     scope.formInit.service_ids[name] = name + ": " + serviceid_data.description;
-                                });
-                            });
-                        }
-                    } else if (tokenType === "certificate") {
-                        if (!scope.CAConnectors && !scope.CATemplates) {
-                            ConfigFactory.getCAConnectorNames(function (data) {
-                                const CAConnectors = data.result.value;
-                                scope.CAConnectors = [];
-                                scope.CATemplates = {};
-                                angular.forEach(CAConnectors, function (value, key) {
-                                    scope.CAConnectors.push(value.connectorname);
-                                    scope.form.ca = value.connectorname;
-                                    scope.CATemplates[value.connectorname] = value;
                                 });
                             });
                         }
@@ -942,13 +947,6 @@ myApp.directive("containerTemplateDetails", ["instanceUrl", "versioningSuffixPro
                                 scope.realms = data.result.value;
                             });
                         }
-                    } else if (tokenType === "yubikey") {
-                        scope.form.otplen = 44;
-                    } else if (tokenType === "indexedsecret") {
-                        // in case of indexedsecret we do never generate a key from the UI
-                        scope.form.genkey = false;
-                    } else if (tokenType === "vasco") {
-                        scope.form.genkey = false;
                     }
                 };
 
@@ -959,19 +957,8 @@ myApp.directive("containerTemplateDetails", ["instanceUrl", "versioningSuffixPro
                        are stored in systemDefault and $scope.form
                      */
                     scope.systemDefault = data.result.value;
-                    // TODO: The entries should be handled automatically.
-                    const entries = ["radius.server", "radius.secret", "remote.server",
-                        "radius.identifier", "email.mailserver",
-                        "email.mailfrom", "yubico.id", "tiqr.regServer"];
-                    entries.forEach(function (entry) {
-                        if (!scope.form[entry]) {
-                            // preset the UI
-                            scope.form[entry] = scope.systemDefault[entry];
-                        }
-                    });
-                    // Default HOTP hashlib
-                    scope.form.hashlib = scope.systemDefault["hotp.hashlib"] || 'sha1';
-                    // Now add the questions
+
+                    // Add the questions
                     angular.forEach(scope.systemDefault, function (value, key) {
                         if (key.indexOf("question.question.") === 0) {
                             scope.questions.push(value);
