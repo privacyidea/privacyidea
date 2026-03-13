@@ -74,11 +74,16 @@ export interface TokenEnrollmentPayload {
   container_serial?: string;
   validity_period_start?: string;
   validity_period_end?: string;
-  user?: string | null;
+  user?: string | boolean | null;
   realm?: string | null;
   pin?: string;
   rollover?: boolean | null;
   serial?: string | null;
+  hashlib?: string;
+  otplen?: number;
+  timeStep?: string | number;
+  genkey?: boolean | number;
+  [key: string]: any; // TODO: remove this when all types are defined
 }
 
 export interface TokenApiPayloadMapper<T> {

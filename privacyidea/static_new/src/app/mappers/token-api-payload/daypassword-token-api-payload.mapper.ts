@@ -39,13 +39,15 @@ export interface DaypasswordEnrollmentPayload extends TokenEnrollmentPayload {
   otpkey?: string; // Set if generateOnServer is false
   otplen?: number;
   hashlib?: string;
-  timeStep?: string;
+  timeStep?: string | number;
   serial?: string | null;
 }
 
 @Injectable({ providedIn: "root" })
-export class DaypasswordApiPayloadMapper extends BaseApiPayloadMapper implements TokenApiPayloadMapper<DaypasswordEnrollmentData> {
-
+export class DaypasswordApiPayloadMapper
+  extends BaseApiPayloadMapper
+  implements TokenApiPayloadMapper<DaypasswordEnrollmentData>
+{
   override toApiPayload(data: DaypasswordEnrollmentData): DaypasswordEnrollmentPayload {
     const payload: DaypasswordEnrollmentPayload = {
       ...super.toApiPayload(data),

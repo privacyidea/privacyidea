@@ -39,7 +39,6 @@ export interface PaperEnrollmentPayload extends TokenEnrollmentPayload {
 
 @Injectable({ providedIn: "root" })
 export class PaperApiPayloadMapper extends BaseApiPayloadMapper implements TokenApiPayloadMapper<PaperEnrollmentData> {
-
   override toApiPayload(data: PaperEnrollmentData): PaperEnrollmentPayload {
     const basePayload = super.toApiPayload(data);
     const payload: PaperEnrollmentPayload = {

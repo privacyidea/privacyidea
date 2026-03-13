@@ -41,7 +41,7 @@ export interface TotpEnrollmentPayload extends TokenEnrollmentPayload {
   genkey: 0 | 1;
   otplen?: number;
   hashlib?: string;
-  timeStep?: number;
+  timeStep?: number | string;
   serial?: string | null;
   "2stepinit"?: boolean;
   otpkeyformat?: string;
@@ -49,7 +49,6 @@ export interface TotpEnrollmentPayload extends TokenEnrollmentPayload {
 
 @Injectable({ providedIn: "root" })
 export class TotpApiPayloadMapper extends BaseApiPayloadMapper implements TokenApiPayloadMapper<TotpEnrollmentData> {
-
   override toApiPayload(data: TotpEnrollmentData): TotpEnrollmentPayload {
     const basePayload = super.toApiPayload(data);
     const payload: TotpEnrollmentPayload = {

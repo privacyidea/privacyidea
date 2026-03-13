@@ -89,19 +89,6 @@ export class TemplateAddedTokenRowComponent {
   // Inputs & Outputs
   readonly tokenEnrollmentPayload = input.required<TokenEnrollmentPayload>();
 
-  // readonly tokenEnrollmentData = computed(() => {
-  //   const payload = this.tokenEnrollmentPayload();
-  //   if (!payload) return null;
-
-  //   // if (!enrollmentArgs) return null;
-  //   const enrollmentData = getTokenApiPayloadMapper(this.tokenEnrollmentPayload().type)!.fromApiPayload(payload);
-  //   const enrollmentArgs = this.enrollmentArgsGetterSignal()?.(enrollmentData);
-  //   if (!enrollmentArgs) return null;
-  //   const mapper = enrollmentArgs.mapper;
-  //   const data = enrollmentArgs.data;
-  //   const mappedData = mapper.fromApiPayload(data);
-  //   return mappedData;
-  // });
   readonly index = input.required<number>();
   readonly onEditToken = output<Partial<TokenEnrollmentPayload>>();
   readonly onRemoveToken = output<number>();
@@ -185,8 +172,6 @@ export class TemplateAddedTokenRowComponent {
     if (args) {
       const mappedData = args.mapper.toApiPayload(args.data);
       this.onEditToken.emit(mappedData);
-    } else {
-      this.onEditToken.emit(enrollmentData);
     }
   }
 

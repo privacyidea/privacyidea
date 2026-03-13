@@ -47,7 +47,6 @@ export interface HotpEnrollmentPayload extends TokenEnrollmentPayload {
 
 @Injectable({ providedIn: "root" })
 export class HotpApiPayloadMapper extends BaseApiPayloadMapper implements TokenApiPayloadMapper<HotpEnrollmentData> {
-
   override toApiPayload(data: HotpEnrollmentData): HotpEnrollmentPayload {
     const basePayload = super.toApiPayload(data);
     const payload: HotpEnrollmentPayload = {

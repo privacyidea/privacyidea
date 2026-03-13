@@ -156,7 +156,15 @@ export class ContainerTemplateEditDialogComponent extends PendingChangesDialogCo
   }
 
   onAddToken(tokenType: string) {
-    const updatedTokens = [...this.tokens(), { type: tokenType as TokenTypeKey }];
+    const basicOptions: TokenEnrollmentPayload = {
+      type: tokenType as TokenTypeKey,
+      genkey: true,
+      hashlib: "sha1",
+      otplen: 6,
+      timeStep: 30,
+      user: true
+    };
+    const updatedTokens = [...this.tokens(), basicOptions];
     this.updateTokens(updatedTokens);
   }
 

@@ -33,17 +33,19 @@ export interface YubikeyEnrollmentData extends TokenEnrollmentData {
 
 export interface YubikeyEnrollmentPayload extends TokenEnrollmentPayload {
   otpkey: string | null;
-  otplen: number | null;
+  otplen?: number;
 }
 
 @Injectable({ providedIn: "root" })
-export class YubikeyApiPayloadMapper extends BaseApiPayloadMapper implements TokenApiPayloadMapper<YubikeyEnrollmentData> {
-
+export class YubikeyApiPayloadMapper
+  extends BaseApiPayloadMapper
+  implements TokenApiPayloadMapper<YubikeyEnrollmentData>
+{
   override toApiPayload(data: YubikeyEnrollmentData): YubikeyEnrollmentPayload {
     const basePayload = super.toApiPayload(data);
     const payload: YubikeyEnrollmentPayload = {
       ...basePayload,
-      otplen: data.otpLength,
+      otplen: data.otpLength ?? undefined,
       otpkey: data.otpKey
     };
     if (data.onlyAddToRealm) {
