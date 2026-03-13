@@ -1,4 +1,8 @@
-Version 3.12.2
+Version 3.12.3, 2026-03-13
+  Fixes:
+  * Fixed a bug that caused the user_verification to not be loaded correctly when authenticating with a WebAuthn token.
+
+Version 3.12.2, 2025-12-04
 
   Enhancements:
   * The WebUI Preview is updated to the current development version.
