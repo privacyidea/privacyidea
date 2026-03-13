@@ -5,8 +5,9 @@ from .base import MyApiTestCase
 
 from privacyidea.api.lib.utils import (getParam,
                                        check_policy_name,
-                                       verify_auth_token, is_fqdn, attestation_certificate_allowed,
-                                       get_priority_from_param)
+                                       verify_auth_token, is_fqdn,
+                                       attestation_certificate_allowed, get_priority_from_param,
+                                       get_required_one_of, get_optional_one_of, get_required, get_optional)
 from privacyidea.lib.policy import SCOPE, set_policy, delete_policy
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.user import User
@@ -372,3 +373,46 @@ class UtilsTestCase(MyApiTestCase):
         remove_token(serial='spass1d')
         delete_policy('otppin')
         # TODO: check if unquoting of url-params (view-args) should be considered as well
+
+
+    def test_10_get_required_one_of(self):
+        params = {"a": "1", "b": "2", "e": ""}
+        self.assertEqual(get_required_one_of(params, ["a", "b"]), "1")
+        self.assertEqual(get_required_one_of(params, ["b", "a"]), "2")
+        self.assertEqual(get_required_one_of(params, ["c", "b"]), "2")
+
+        self.assertRaises(ParameterError, get_required_one_of, params, ["c", "d"])
+
+        # e is empty, so it is skipped
+        self.assertEqual(get_required_one_of(params, ["e", "b"]), "2")
+        # e is empty, but allowed
+        self.assertEqual(get_required_one_of(params, ["e", "b"], allow_empty=True), "")
+        # e is empty, so it is skipped and no other key is found
+        self.assertRaises(ParameterError, get_required_one_of, params, ["e"])
+
+    def test_11_get_optional_one_of(self):
+        params = {"a": "1", "b": "2"}
+        self.assertEqual(get_optional_one_of(params, ["a", "b"]), "1")
+        self.assertEqual(get_optional_one_of(params, ["b", "a"]), "2")
+        self.assertEqual(get_optional_one_of(params, ["c", "b"]), "2")
+
+        self.assertIsNone(get_optional_one_of(params, ["c", "d"]))
+        self.assertEqual(get_optional_one_of(params, ["c", "d"], default="3"), "3")
+
+    def test_12_get_required(self):
+        params = {"a": "1", "b": ""}
+        # Works
+        self.assertEqual(get_required(params, "a"), "1")
+        # c is not in params raises
+        self.assertRaises(ParameterError, get_required, params, "c")
+        # Empty value of b also raises
+        self.assertRaises(ParameterError, get_required, params, "b")
+        # Empty value of b is allowed
+        self.assertEqual(get_required(params, "b", allow_empty=True), "")
+
+    def test_13_get_optional(self):
+        params = {"a": "1", "b": ""}
+        self.assertEqual(get_optional(params, "a"), "1")
+        self.assertEqual(get_optional(params, "b"), "")
+        self.assertIsNone(get_optional(params, "c"))
+        self.assertEqual(get_optional(params, "c", default="default_val"), "default_val")

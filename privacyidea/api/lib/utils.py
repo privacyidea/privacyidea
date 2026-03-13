@@ -74,26 +74,27 @@ def _get_param(dictionary, key, default=None):
     return ret
 
 
-def get_required(dictionary, key):
+def get_required(dictionary, key, allow_empty=False):
     """
     Get the required parameter from the dictionary. If the parameter is not present, raise a ParameterError.
-    If the parameter is present, but empty, the empty value will be returned.
-    This just checks for None.
+    If the parameter is present, but empty, raise a ParameterError.
     """
     ret = _get_param(dictionary, key, None)
-    if not ret:
+    if ret is None or not allow_empty and ret == "":
         raise ParameterError(f"Missing parameter: {key}", id=905)
     return ret
 
 
-def get_required_one_of(param, keys):
+def get_required_one_of(param, keys, allow_empty=False):
     """
-    Get the first parameter from the list of keys that is present in the param dictionary.
+    Get the first parameter from the list of keys that is present and has a value in the param dictionary.
     If none of the keys is present, raise a ParameterError.
     """
     for key in keys:
         ret = _get_param(param, key, None)
-        if ret:
+        if ret is not None:
+            if not allow_empty and ret == "":
+                continue
             return ret
     raise ParameterError(f"Missing one of the following parameters: {keys}", id=905)
 
@@ -111,7 +112,7 @@ def get_optional_one_of(param, keys, default=None):
     If none of the keys is present, return the default value or None.
     """
     for key in keys:
-        ret = _get_param(param, key, default)
+        ret = _get_param(param, key, None)
         if ret is not None:
             return ret
     return default
