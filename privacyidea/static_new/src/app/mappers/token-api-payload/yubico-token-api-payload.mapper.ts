@@ -35,8 +35,10 @@ export interface YubicoEnrollmentPayload extends TokenEnrollmentPayload {
 }
 
 @Injectable({ providedIn: "root" })
-export class YubicoApiPayloadMapper extends BaseApiPayloadMapper implements TokenApiPayloadMapper<YubicoEnrollmentData> {
-
+export class YubicoApiPayloadMapper
+  extends BaseApiPayloadMapper
+  implements TokenApiPayloadMapper<YubicoEnrollmentData>
+{
   override toApiPayload(data: YubicoEnrollmentData): YubicoEnrollmentPayload {
     const payload: YubicoEnrollmentPayload = {
       ...super.toApiPayload(data),
@@ -45,7 +47,7 @@ export class YubicoApiPayloadMapper extends BaseApiPayloadMapper implements Toke
 
     if (data.onlyAddToRealm) {
       payload.realm = data.realm;
-      payload.user = null;
+      delete payload.user;
     }
     return payload;
   }

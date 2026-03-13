@@ -79,8 +79,8 @@ export class EnrollYubikeyComponent implements OnInit {
     const enrollmentData: YubikeyEnrollmentData = {
       ...basicOptions,
       type: "yubikey",
-      otpKey: this.otpKeyControl.value,
-      otpLength: this.otpLengthControl.value
+      otpKey: this.otpKeyControl.value ?? "",
+      otpLength: this.otpLengthControl.value ?? 44
     };
 
     return {

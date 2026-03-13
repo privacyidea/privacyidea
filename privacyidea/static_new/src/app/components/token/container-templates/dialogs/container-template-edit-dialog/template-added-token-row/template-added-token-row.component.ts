@@ -136,17 +136,16 @@ export class TemplateAddedTokenRowComponent {
   }
 
   // Token Management Methods
-  updateAdditionalFormFields(fields: { [key: string]: FormControl<Partial<TokenEnrollmentData>> }) {
+  updateAdditionalFormFields(fields: { [key: string]: FormControl<any> }) {
     this.formControls.set(fields);
-    const initialPatch: { [key: string]: Partial<TokenEnrollmentData> } = {};
+    const initialPatch: { [key: string]: any } = {};
 
     Object.entries(fields).forEach(([key, control]) => {
       if (control) {
         initialPatch[key] = control.value;
 
-        // Listen for user input changes
-        control.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((enrollmentData) => {
-          this.updateToken(enrollmentData);
+        control.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((value) => {
+          this.updateToken({ [key]: value });
         });
       }
     });

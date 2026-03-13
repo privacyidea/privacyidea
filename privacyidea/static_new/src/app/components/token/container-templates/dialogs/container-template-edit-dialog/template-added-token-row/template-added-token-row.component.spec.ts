@@ -50,19 +50,19 @@ describe("TemplateAddedTokenRowComponent", () => {
 
     fixture = TestBed.createComponent(TemplateAddedTokenRowComponent);
     component = fixture.componentInstance;
+
+    // Set required inputs before any effect/signal runs
+    fixture.componentRef.setInput("tokenEnrollmentPayload", { type: "hotp" });
+    fixture.componentRef.setInput("index", 0);
   });
 
   describe("Core Functionality", () => {
     it("should create", () => {
-      fixture.componentRef.setInput("token", { type: "hotp" });
-      fixture.componentRef.setInput("index", 0);
       fixture.detectChanges();
       expect(component).toBeTruthy();
     });
 
     it("should render the correct child component based on token type", () => {
-      fixture.componentRef.setInput("token", { type: "hotp" });
-      fixture.componentRef.setInput("index", 0);
       fixture.detectChanges();
 
       const hotpChild = fixture.debugElement.query(By.css("app-enroll-hotp"));
@@ -70,8 +70,6 @@ describe("TemplateAddedTokenRowComponent", () => {
     });
 
     it("should disable expansion panel if child has no form fields", () => {
-      fixture.componentRef.setInput("token", { type: "hotp" });
-      fixture.componentRef.setInput("index", 0);
       fixture.detectChanges();
 
       expect(component.childHadNoForm()).toBe(true);
@@ -80,7 +78,6 @@ describe("TemplateAddedTokenRowComponent", () => {
     });
 
     it("should emit onRemoveToken when delete button is clicked", () => {
-      fixture.componentRef.setInput("token", { type: "hotp" });
       fixture.componentRef.setInput("index", 5);
       const spy = jest.spyOn(component.onRemoveToken, "emit");
       fixture.detectChanges();
@@ -92,35 +89,51 @@ describe("TemplateAddedTokenRowComponent", () => {
     });
 
     it("should sync form field changes to onEditToken", () => {
-      fixture.componentRef.setInput("token", { type: "hotp" });
-      fixture.componentRef.setInput("index", 0);
       const spy = jest.spyOn(component.onEditToken, "emit");
+
+      component.updateEnrollmentArgsGetter((data) => ({
+        data: data,
+        mapper: { toApiPayload: (d: any) => d } as any
+      }));
+
       fixture.detectChanges();
 
       const mockControl = new FormControl("initial");
       component.updateAdditionalFormFields({ testKey: mockControl });
 
       mockControl.setValue("updatedValue");
-      expect(spy).toHaveBeenCalledWith({ testKey: "updatedValue" });
+
+      expect(spy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          testKey: "updatedValue"
+        })
+      );
     });
   });
 
   describe("Token Data Synchronization", () => {
     it("should perform initial token fill for undefined fields", () => {
-      fixture.componentRef.setInput("token", { type: "hotp" });
-      fixture.componentRef.setInput("index", 0);
       const spy = jest.spyOn(component.onEditToken, "emit");
+
+      component.updateEnrollmentArgsGetter((data) => ({
+        data: data,
+        mapper: { toApiPayload: (d: any) => d } as any
+      }));
+
       fixture.detectChanges();
 
       const mockControl = new FormControl("default-value");
       component.updateAdditionalFormFields({ secret: mockControl });
 
-      expect(spy).toHaveBeenCalledWith({ secret: "default-value" });
+      expect(spy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          secret: "default-value"
+        })
+      );
     });
 
     it("should not overwrite existing token values during initial fill", () => {
-      fixture.componentRef.setInput("token", { type: "hotp", secret: "existing" });
-      fixture.componentRef.setInput("index", 0);
+      fixture.componentRef.setInput("tokenEnrollmentPayload", { type: "hotp", secret: "existing" });
       const spy = jest.spyOn(component.onEditToken, "emit");
       fixture.detectChanges();
 
@@ -131,14 +144,13 @@ describe("TemplateAddedTokenRowComponent", () => {
     });
 
     it("should sync external token changes to existing form controls via effect", async () => {
-      fixture.componentRef.setInput("token", { type: "hotp", description: "old" });
-      fixture.componentRef.setInput("index", 0);
+      fixture.componentRef.setInput("tokenEnrollmentPayload", { type: "hotp", description: "old" });
 
       const mockControl = new FormControl("old");
       component.updateAdditionalFormFields({ description: mockControl });
       fixture.detectChanges();
 
-      fixture.componentRef.setInput("token", { type: "hotp", description: "new" });
+      fixture.componentRef.setInput("tokenEnrollmentPayload", { type: "hotp", description: "new" });
 
       await fixture.whenStable();
       fixture.detectChanges();
@@ -149,8 +161,6 @@ describe("TemplateAddedTokenRowComponent", () => {
 
   describe("Lifecycle & UI Logic", () => {
     it("should update childHadNoForm to false when fields are added", () => {
-      fixture.componentRef.setInput("token", { type: "hotp" });
-      fixture.componentRef.setInput("index", 0);
       fixture.detectChanges();
 
       expect(component.childHadNoForm()).toBe(true);
@@ -162,9 +172,6 @@ describe("TemplateAddedTokenRowComponent", () => {
     });
 
     it("should replace old form controls when updateAdditionalFormFields is called again", () => {
-      fixture.componentRef.setInput("token", { type: "hotp" });
-      fixture.componentRef.setInput("index", 0);
-
       const firstControl = new FormControl("first");
       component.updateAdditionalFormFields({ key: firstControl });
 
@@ -175,8 +182,6 @@ describe("TemplateAddedTokenRowComponent", () => {
     });
 
     it("should stop propagation on delete button click", () => {
-      fixture.componentRef.setInput("token", { type: "hotp" });
-      fixture.componentRef.setInput("index", 0);
       fixture.detectChanges();
 
       const deleteBtn = fixture.debugElement.query(By.css("button[mat-icon-button]"));
@@ -189,7 +194,6 @@ describe("TemplateAddedTokenRowComponent", () => {
     });
 
     it("should handle invalid index by not emitting remove event", () => {
-      fixture.componentRef.setInput("token", { type: "hotp" });
       fixture.componentRef.setInput("index", -1);
       const spy = jest.spyOn(component.onRemoveToken, "emit");
       fixture.detectChanges();

@@ -35,7 +35,6 @@ export interface PushEnrollmentPayload extends TokenEnrollmentPayload {
 
 @Injectable({ providedIn: "root" })
 export class PushApiPayloadMapper extends BaseApiPayloadMapper implements TokenApiPayloadMapper<PushEnrollmentData> {
-
   override toApiPayload(data: PushEnrollmentData): PushEnrollmentPayload {
     const basePayload = super.toApiPayload(data);
     const payload: PushEnrollmentPayload = {
@@ -44,7 +43,7 @@ export class PushApiPayloadMapper extends BaseApiPayloadMapper implements TokenA
     };
     if (data.onlyAddToRealm) {
       payload.realm = data.realm;
-      payload.user = null;
+      delete payload.user;
     }
     return payload;
   }

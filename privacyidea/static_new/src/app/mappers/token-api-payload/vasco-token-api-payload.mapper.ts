@@ -38,7 +38,6 @@ export interface VascoEnrollmentPayload extends TokenEnrollmentPayload {
 
 @Injectable({ providedIn: "root" })
 export class VascoApiPayloadMapper extends BaseApiPayloadMapper implements TokenApiPayloadMapper<VascoEnrollmentData> {
-
   override toApiPayload(data: VascoEnrollmentData): VascoEnrollmentPayload {
     // Get base payload and remove serial if it is null
     const basePayload = super.toApiPayload(data);
@@ -50,7 +49,7 @@ export class VascoApiPayloadMapper extends BaseApiPayloadMapper implements Token
     };
     if (data.onlyAddToRealm) {
       payload.realm = data.realm;
-      payload.user = null;
+      delete payload.user;
     }
     return payload;
   }

@@ -40,7 +40,7 @@ export interface HotpEnrollmentPayload extends TokenEnrollmentPayload {
   otpkey?: string;
   otplen?: number;
   hashlib?: string;
-  serial?: string | null;
+  serial?: string;
   "2stepinit"?: boolean;
   otpkeyformat?: string;
 }
@@ -51,8 +51,8 @@ export class HotpApiPayloadMapper extends BaseApiPayloadMapper implements TokenA
     const basePayload = super.toApiPayload(data);
     const payload: HotpEnrollmentPayload = {
       ...basePayload,
-      ...(data.otpKey !== undefined && { otpkey: data.otpKey }),
       genkey: data.generateOnServer ? 1 : 0,
+      ...(data.generateOnServer ? { otpkey: null as any } : data.otpKey !== undefined && { otpkey: data.otpKey }),
       ...(data.otpLength !== undefined && { otplen: Number(data.otpLength) }),
       ...(data.hashAlgorithm !== undefined && { hashlib: data.hashAlgorithm }),
       ...(data.twoStepInit !== undefined && { "2stepinit": data.twoStepInit }),
@@ -61,7 +61,7 @@ export class HotpApiPayloadMapper extends BaseApiPayloadMapper implements TokenA
 
     if (data.onlyAddToRealm) {
       payload.realm = data.realm;
-      payload.user = null;
+      delete payload.user;
     }
 
     return payload;

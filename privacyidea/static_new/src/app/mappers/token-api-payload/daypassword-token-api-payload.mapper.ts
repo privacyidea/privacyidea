@@ -40,7 +40,7 @@ export interface DaypasswordEnrollmentPayload extends TokenEnrollmentPayload {
   otplen?: number;
   hashlib?: string;
   timeStep?: string | number;
-  serial?: string | null;
+  serial?: string;
 }
 
 @Injectable({ providedIn: "root" })
@@ -51,11 +51,7 @@ export class DaypasswordApiPayloadMapper
   override toApiPayload(data: DaypasswordEnrollmentData): DaypasswordEnrollmentPayload {
     const payload: DaypasswordEnrollmentPayload = {
       ...super.toApiPayload(data),
-      // otpKey is set based on component logic:
-      // if generateOnServer is true, data.otpKey is undefined.
-      // if generateOnServer is false, data.otpKey is the key.
-      ...(data.generateOnServer ? {} : { otpkey: data.otpKey }),
-      ...(data.otpKey != null && { otpkey: data.otpKey }),
+      ...(data.otpKey != null && !data.generateOnServer && { otpkey: data.otpKey }),
       ...(data.otpLength != null && { otplen: Number(data.otpLength) }),
       ...(data.hashAlgorithm != null && { hashlib: data.hashAlgorithm }),
       ...(data.timeStep != null && { timeStep: data.timeStep })
@@ -63,7 +59,7 @@ export class DaypasswordApiPayloadMapper
 
     if (data.onlyAddToRealm) {
       payload.realm = data.realm;
-      payload.user = null;
+      delete payload.user; // Ensure user is not sent when onlyAddToRealm is true
     }
     return payload;
   }

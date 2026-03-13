@@ -64,7 +64,7 @@ export class RemoteApiPayloadMapper
 
     if (data.onlyAddToRealm) {
       payload.realm = data.realm;
-      payload.user = null;
+      delete payload.user;
     }
 
     return payload;

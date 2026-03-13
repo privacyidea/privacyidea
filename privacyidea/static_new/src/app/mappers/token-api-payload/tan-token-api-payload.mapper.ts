@@ -34,12 +34,11 @@ export interface TanEnrollmentData extends TokenEnrollmentData {
 export interface TanEnrollmentPayload extends TokenEnrollmentPayload {
   tancount?: number;
   tanlength?: number;
-  serial?: string | null;
+  serial?: string;
 }
 
 @Injectable({ providedIn: "root" })
 export class TanApiPayloadMapper extends BaseApiPayloadMapper implements TokenApiPayloadMapper<TanEnrollmentData> {
-
   override toApiPayload(data: TanEnrollmentData): TanEnrollmentPayload {
     const payload: TanEnrollmentPayload = {
       ...super.toApiPayload(data),
@@ -48,7 +47,7 @@ export class TanApiPayloadMapper extends BaseApiPayloadMapper implements TokenAp
     };
     if (data.onlyAddToRealm) {
       payload.realm = data.realm;
-      payload.user = null;
+      delete payload.user;
     }
     return payload;
   }

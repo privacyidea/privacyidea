@@ -25,7 +25,7 @@
         }
 
         @for (entry of token | keyvalue; track entry.key) {
-          @if (entry.key !== "type") {
+          @if (entry.key !== "type" && isValidValue(entry.value)) {
             @if (entry.key === token.type) {
               <ng-container *ngTemplateOutlet="renderValueStrong; context: { $implicit: entry.value }"></ng-container>
             } @else {
@@ -48,13 +48,15 @@
     <span class="nested-group">
       <span class="bracket">(</span>
       @for (entry of asObject(val) | keyvalue; track entry.key) {
-        <span class="nested-item">
-          <small>{{ entry.key }}:</small>&nbsp;
-          <ng-container *ngTemplateOutlet="renderValueSmall; context: { $implicit: entry.value }"></ng-container>
-          @if (!$last) {
-            <span class="separator">,</span>
-          }
-        </span>
+        @if (isValidValue(entry.value)) {
+          <span class="nested-item">
+            <small>{{ entry.key }}:</small>&nbsp;
+            <ng-container *ngTemplateOutlet="renderValueSmall; context: { $implicit: entry.value }"></ng-container>
+            @if (!$last) {
+              <span class="separator">,</span>
+            }
+          </span>
+        }
       }
       <span class="bracket">)</span>
     </span>
@@ -68,10 +70,12 @@
   let-val>
   @if (isObject(val)) {
     @for (entry of asObject(val) | keyvalue; track entry.key) {
-      <span class="token-item">
-        <strong>{{ entry.key }}:</strong>&nbsp;
-        <ng-container *ngTemplateOutlet="renderValueSmall; context: { $implicit: entry.value }"></ng-container>
-      </span>
+      @if (isValidValue(entry.value)) {
+        <span class="token-item">
+          <strong>{{ entry.key }}:</strong>&nbsp;
+          <ng-container *ngTemplateOutlet="renderValueSmall; context: { $implicit: entry.value }"></ng-container>
+        </span>
+      }
     }
   } @else {
     <span class="token-item">{{ val }}</span>

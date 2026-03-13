@@ -38,4 +38,8 @@ export class ViewTemplateTokensComponent {
   asObject(value: any): Object {
     return value as Object;
   }
+
+  isValidValue(val: any): boolean {
+    return val !== null && val !== undefined && val !== "" && typeof val !== "function";
+  }
 }

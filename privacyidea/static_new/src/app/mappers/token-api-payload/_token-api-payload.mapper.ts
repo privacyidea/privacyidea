@@ -74,11 +74,11 @@ export interface TokenEnrollmentPayload {
   container_serial?: string;
   validity_period_start?: string;
   validity_period_end?: string;
-  user?: string | boolean | null;
-  realm?: string | null;
+  user?: string | boolean;
+  realm?: string;
   pin?: string;
-  rollover?: boolean | null;
-  serial?: string | null;
+  rollover?: boolean;
+  serial?: string;
   hashlib?: string;
   otplen?: number;
   timeStep?: string | number;
@@ -110,8 +110,19 @@ export class BaseApiPayloadMapper implements TokenApiPayloadMapper<TokenEnrollme
     };
   }
 
-  fromApiPayload(data: any): TokenEnrollmentData {
-    return {} as TokenEnrollmentData;
+  fromApiPayload(data: TokenEnrollmentPayload): TokenEnrollmentData {
+    return {
+      type: data.type,
+      ...(data.description && { description: data.description }),
+      ...(data.container_serial && { containerSerial: data.container_serial }),
+      ...(data.validity_period_start && { validityPeriodStart: data.validity_period_start }),
+      ...(data.validity_period_end && { validityPeriodEnd: data.validity_period_end }),
+      ...(typeof data.user === "string" && { user: data.user }),
+      ...(data.realm && { realm: data.realm }),
+      ...(data.pin && { pin: data.pin }),
+      ...(data.serial && { serial: data.serial }),
+      ...(data.rollover != null && { rollover: data.rollover })
+    };
   }
 
   fromTokenDetailsToEnrollmentData(details: TokenDetails): TokenEnrollmentData {

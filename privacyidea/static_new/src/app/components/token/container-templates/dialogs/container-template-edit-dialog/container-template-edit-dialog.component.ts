@@ -165,8 +165,8 @@ export class ContainerTemplateEditDialogComponent extends PendingChangesDialogCo
       if (i !== index) return token;
       const updatedToken = { ...token, ...patch };
       Object.keys(updatedToken).forEach((key) => {
-        if (updatedToken[key] === "" || updatedToken[key] === null || updatedToken[key] === undefined) {
-          delete updatedToken[key];
+        if (updatedToken[key] === undefined) {
+          delete updatedToken[key]; // Remove undefined fields to avoid sending them in the API payload
         }
       });
       return updatedToken;

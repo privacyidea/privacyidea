@@ -33,13 +33,12 @@ export interface U2fEnrollmentPayload extends TokenEnrollmentPayload {}
 
 @Injectable({ providedIn: "root" })
 export class U2fApiPayloadMapper extends BaseApiPayloadMapper implements TokenApiPayloadMapper<U2fEnrollmentData> {
-
   override toApiPayload(data: U2fEnrollmentData): U2fEnrollmentPayload {
     const payload: U2fEnrollmentPayload = super.toApiPayload(data);
 
     if (data.onlyAddToRealm) {
       payload.realm = data.realm;
-      payload.user = null;
+      delete payload.user;
     }
     return payload;
   }

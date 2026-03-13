@@ -31,19 +31,21 @@ export interface RegistrationEnrollmentData extends TokenEnrollmentData {
 }
 
 export interface RegistrationEnrollmentPayload extends TokenEnrollmentPayload {
-  serial?: string | null;
+  serial?: string;
 }
 
 @Injectable({ providedIn: "root" })
-export class RegistrationApiPayloadMapper extends BaseApiPayloadMapper implements TokenApiPayloadMapper<RegistrationEnrollmentData> {
-
+export class RegistrationApiPayloadMapper
+  extends BaseApiPayloadMapper
+  implements TokenApiPayloadMapper<RegistrationEnrollmentData>
+{
   override toApiPayload(data: RegistrationEnrollmentData): RegistrationEnrollmentPayload {
     // No type-specific fields in switch statement for 'registration'
     const payload: RegistrationEnrollmentPayload = super.toApiPayload(data);
 
     if (data.onlyAddToRealm) {
       payload.realm = data.realm;
-      payload.user = null;
+      delete payload.user;
     }
 
     return payload;

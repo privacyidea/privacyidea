@@ -48,7 +48,7 @@ export class EmailApiPayloadMapper extends BaseApiPayloadMapper implements Token
     };
     if (data.onlyAddToRealm) {
       payload.realm = data.realm;
-      payload.user = null;
+      delete payload.user;
     }
     if (payload.email === undefined) {
       delete payload.email;
