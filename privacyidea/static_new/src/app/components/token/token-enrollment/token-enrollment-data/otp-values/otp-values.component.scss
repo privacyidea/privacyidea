@@ -3,6 +3,10 @@
 .otpkey-expansion {
   margin-bottom: 16px;
   max-width: 576px;
+
+  mat-icon {
+    overflow: visible;
+  }
 }
 
 .otp-values {

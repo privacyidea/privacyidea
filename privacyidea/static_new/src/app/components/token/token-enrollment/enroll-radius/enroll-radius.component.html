@@ -16,12 +16,22 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<div class="flex-column">
+<div class="flex-column margin-bottom-16">
   <h4 class="enroll-h4">Token Configuration</h4>
   @if (!defaultRadiusServerIsSet() && authService.role() === "admin") {
     <span
       class="inline-hint"
-      i18n>To ease the enrolling of RADIUS tokens you can set default values in the <a href="#">RADIUS Token Config</a>.
+      i18n>To ease the enrollment of RADIUS tokens you can set default values in the
+      <a
+          role="button"
+          tabindex="0"
+          aria-label="Go to RADIUS token configuration"
+          i18n-aria-label
+          (click)="goToRadiusConfig()"
+          (keydown)="onRadiusConfigKeydown($event)"
+        >
+          RADIUS Token Configuration
+        </a>!
     </span>
   }
   <mat-checkbox
@@ -49,7 +59,7 @@
         <mat-error i18n>RADIUS Server is <strong>required</strong></mat-error>
       </mat-form-field>
     }
-    <mat-form-field class="input-height width-33">
+    <mat-form-field class="width-33">
       <mat-label i18n>RADIUS User</mat-label>
       <input
         [formControl]="radiusUserControl"

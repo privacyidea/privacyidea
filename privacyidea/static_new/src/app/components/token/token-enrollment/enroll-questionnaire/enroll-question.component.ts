@@ -51,6 +51,9 @@ import {
 import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
 import { Subscription } from "rxjs";
+import { ROUTE_PATHS } from "../../../../route_paths";
+import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
+import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
 export interface QuestionEnrollmentOptions extends TokenEnrollmentData {
   type: "question";
   answers: Record<string, string>;
@@ -68,10 +71,12 @@ export class EnrollQuestionComponent implements OnInit {
   protected readonly enrollmentMapper: QuestionApiPayloadMapper = inject(QuestionApiPayloadMapper);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly systemService: SystemServiceInterface = inject(SystemService);
+  protected readonly contentService: ContentServiceInterface = inject(ContentService);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
 
   readonly configMinNumberOfAnswers: Signal<number> = computed(() => {
     const cfg = this.systemService.systemConfigResource.value()?.result?.value;
-    return cfg && cfg["question.num_answers"] ? parseInt(cfg["question.num_answers"], 10) : 0;
+    return cfg && cfg["question.num_answers"] ? parseInt(cfg["question.num_answers"], 10) : 5;
   });
   private readonly guardControl = new FormControl<boolean>(false, { nonNullable: true });
   private valueSubscription?: Subscription;
@@ -164,5 +169,15 @@ export class EnrollQuestionComponent implements OnInit {
       const actual = this.answeredCount(form);
       return actual >= required ? null : { minAnswers: { required, actual } };
     };
+  }
+
+  goToQuestionConfig() {
+    this.contentService.router.navigate([ROUTE_PATHS.CONFIGURATION_TOKENTYPES], { fragment: 'questionnaire' });
+  }
+
+  onQuestionConfigKeydown(event: KeyboardEvent) {
+    if (event.key === 'Enter' || event.key === ' ') {
+      this.goToQuestionConfig();
+    }
   }
 }

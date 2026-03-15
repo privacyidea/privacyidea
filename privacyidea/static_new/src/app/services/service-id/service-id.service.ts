@@ -59,7 +59,7 @@ export class ServiceIdService implements ServiceIdServiceInterface {
   private readonly serviceIdBaseUrl = environment.proxyUrl + "/serviceid/";
 
   serviceIdResource = httpResource<PiResponse<ServiceIds>>(() => {
-    if (!this.contentService.onExternalServiceIds()) {
+    if (!this.contentService.onExternalServiceIds() && !this.contentService.onTokenEnrollmentLikely()) {
       return undefined;
     }
     return {

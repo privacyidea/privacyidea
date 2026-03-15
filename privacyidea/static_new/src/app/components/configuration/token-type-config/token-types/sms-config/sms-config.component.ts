@@ -45,6 +45,7 @@ export class SmsConfigComponent {
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
   formData = input.required<Record<string, any>>();
   smsGateways = input.required<string[]>();
+  expanded = input<boolean>(false);
   providerName = computed(() => {
     const provider = this.formData()["sms.Provider"];
     return provider ? provider.split(".").pop() : "";

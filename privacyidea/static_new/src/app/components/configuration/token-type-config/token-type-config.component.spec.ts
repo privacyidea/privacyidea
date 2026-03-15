@@ -9,17 +9,24 @@ import { SmtpService } from "../../../services/smtp/smtp.service";
 import { MockSystemService } from "../../../../testing/mock-services";
 import { signal } from "@angular/core";
 import { NotificationService } from "../../../services/notification/notification.service";
-import { provideRouter } from "@angular/router";
+import { ActivatedRoute } from "@angular/router";
+import { Observable, of } from "rxjs";
+
+class MockActivatedRoute {
+  fragment: Observable<string | undefined> = of();
+}
 
 describe("TokenTypeConfigComponent", () => {
   let component: TokenTypeConfigComponent;
   let fixture: ComponentFixture<TokenTypeConfigComponent>;
   let httpMock: HttpTestingController;
+  let activatedRoute: MockActivatedRoute;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [TokenTypeConfigComponent, NoopAnimationsModule],
       providers: [
+        { provide: ActivatedRoute, useClass: MockActivatedRoute },
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: SystemService, useClass: MockSystemService },
@@ -37,12 +44,14 @@ describe("TokenTypeConfigComponent", () => {
             smtpServerResource: { value: () => ({ result: { value: {} } }) }
           }
         },
-        { provide: NotificationService, useValue: { openSnackBar: jest.fn() } },
-        provideRouter([])
+        { provide: NotificationService, useValue: { openSnackBar: jest.fn() } }
       ]
     }).compileComponents();
 
     httpMock = TestBed.inject(HttpTestingController);
+    activatedRoute = TestBed.inject(ActivatedRoute) as unknown as MockActivatedRoute;
+    jest.spyOn(document, "getElementById").mockReturnValue({ scrollIntoView: jest.fn() } as any);
+
     fixture = TestBed.createComponent(TokenTypeConfigComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
@@ -147,5 +156,39 @@ describe("TokenTypeConfigComponent", () => {
     // But we can check that it has the values from MockSystemService (which has init data).
     expect(component.hashLibs()).toEqual(["sha1", "sha256", "sha512"]);
     expect(component.totpSteps()).toEqual(["30", "60"]);
+  });
+
+  describe("Fragment handling and panel expansion", () => {
+
+    it("expandedPanel should be null if no fragment is defined", () => {
+      expect(component.expandedPanel).toBeNull();
+    });
+
+    it("should not scroll if expandedPanel is null", () => {
+      const scrollSpy = jest.fn();
+      jest.spyOn(document, "getElementById").mockReturnValue({ scrollIntoView: scrollSpy } as any);
+      component.ngAfterViewInit();
+      expect(scrollSpy).not.toHaveBeenCalled();
+    });
+
+    describe("Fragment defined", () => {
+      beforeEach(async () => {
+        activatedRoute.fragment = of("yubico");
+        fixture = TestBed.createComponent(TokenTypeConfigComponent);
+        component = fixture.componentInstance;
+        fixture.detectChanges();
+      });
+
+      it("should set expandedPanel when fragment is defined", () => {
+        expect(component.expandedPanel).toBe("yubico");
+      });
+
+      it("should scroll to referenced panel when expandedPanel is defined", () => {
+        const scrollSpy = jest.fn();
+        jest.spyOn(document, "getElementById").mockReturnValue({ scrollIntoView: scrollSpy } as any);
+        component.ngAfterViewInit();
+        expect(scrollSpy).toHaveBeenCalledWith({ behavior: "smooth" });
+      });
+    });
   });
 });

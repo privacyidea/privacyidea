@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { computed, signal, Signal, WritableSignal } from "@angular/core";
+import { computed, linkedSignal, Signal, WritableSignal } from "@angular/core";
 import { Observable, of } from "rxjs";
 import { HttpResourceRef } from "@angular/common/http";
 import { PiNode, SystemServiceInterface } from "../../app/services/system/system.service";
@@ -60,7 +60,7 @@ export class MockSystemService implements SystemServiceInterface {
   systemConfigResource: HttpResourceRef<any>;
   radiusServerResource: HttpResourceRef<any>;
   nodesResource: HttpResourceRef<any>;
-  systemConfig: Signal<any>;
+  systemConfig: WritableSignal<any>;
   systemConfigInit: Signal<any>;
   nodes: Signal<PiNode[]>;
 
@@ -96,7 +96,7 @@ export class MockSystemService implements SystemServiceInterface {
         { name: "Node 2", uuid: "node-2" }
       ])
     );
-    this.systemConfig = computed(() => {
+    this.systemConfig = linkedSignal(() => {
       return this.systemConfigResource.value()?.result?.value ?? {};
     });
     this.systemConfigInit = computed(() => {
@@ -108,10 +108,11 @@ export class MockSystemService implements SystemServiceInterface {
   }
 
   caConnectorResource?: HttpResourceRef<any> | undefined;
-    caConnectors?: WritableSignal<CaConnectors> | undefined;
-    getDocumentation(): Observable<string> {
-        throw new Error("Method not implemented.");
-    }
+  caConnectors?: WritableSignal<CaConnectors> | undefined;
+
+  getDocumentation(): Observable<string> {
+    throw new Error("Method not implemented.");
+  }
 
   saveSystemConfig(config: any) {
     return of(MockPiResponse.fromValue({ status: true }));

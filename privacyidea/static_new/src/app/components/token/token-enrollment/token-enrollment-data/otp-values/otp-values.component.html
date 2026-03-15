@@ -17,15 +17,14 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <mat-accordion>
-  <mat-expansion-panel class="otpkey-expension">
+  <mat-expansion-panel class="otpkey-expansion">
     <mat-expansion-panel-header>
-      <mat-panel-title i18n>
-        OTP Values
+      <mat-panel-title class="gap-16">
+        <span i18n>OTP Values</span>
         @if (otpValues) {
           <button
-            (click)="printOtps()"
-            mat-icon-button
-            class="margin-left-1">
+            (click)="$event.stopPropagation(); printOtps()"
+            mat-icon-button>
             <mat-icon>print</mat-icon>
           </button>
         }

@@ -19,12 +19,28 @@
 <div class="flex-column">
   <h4 class="enroll-h4">Token Configuration</h4>
   @if (!defaultSmtpIsSet()) {
-    <span
-      i18n
-      class="inline-warning">
-      For Email tokens to work properly you need to set the <a href="#">Email Token Config</a>!
-    </span>
-    <!-- TODO: Link -->
+    @if (authService.role() === "admin") {
+      <span
+        i18n
+        class="inline-warning">
+        For E-Mail tokens to work properly you need to set the
+        <a
+          role="button"
+          tabindex="0"
+          aria-label="Go to Email token configuration"
+          i18n-aria-label
+          (click)="goToEmailConfig()"
+          (keydown)="onEmailConfigKeydown($event)">
+          Email Token Configuration
+        </a>!
+      </span>
+    } @else {
+      <span
+        i18n
+        class="inline-warning">
+        The E-Mail token enrollment is not completely configured. Please contact your administrator.
+      </span>
+    }
   }
   <mat-checkbox
     [formControl]="readEmailDynamicallyControl"

@@ -19,12 +19,29 @@
 <div class="flex-column">
   <h4 class="enroll-h4">Token Configuration</h4>
   @if (!yubicoIsConfigured()) {
-    <span
-      i18n
-      class="inline-warning">
-      For Yubico tokens to work properly you need to set the <a href="#">Yubico Token Config</a>!
-    </span>
-    <!-- TODO: Link -->
+    @if (authService.role() === "admin") {
+      <span
+        i18n
+        class="inline-warning">
+        For Yubico tokens to work properly you need to set the
+        <a
+          role="button"
+          tabindex="0"
+          aria-label="Go to Yubico token configuration"
+          i18n-aria-label
+          (click)="goToYubicoConfig()"
+          (keydown)="onYubicoConfigKeydown($event)"
+        >
+          Yubico Token Configuration
+        </a>!
+      </span>
+    } @else {
+      <span
+        i18n
+        class="inline-warning">
+        The Yubico token enrollment is not completely configured. Please contact your administrator.
+      </span>
+    }
   }
   <div class="flex-row gap-16">
     <mat-form-field class="input-height width-33">

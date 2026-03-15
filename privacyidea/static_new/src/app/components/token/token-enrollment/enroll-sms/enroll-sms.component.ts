@@ -34,6 +34,8 @@ import {
 import { SystemService, SystemServiceInterface } from "../../../../services/system/system.service";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
+import { ROUTE_PATHS } from "../../../../route_paths";
+import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
 
 export interface SmsEnrollmentOptions extends TokenEnrollmentData {
   type: "sms";
@@ -65,6 +67,7 @@ export class EnrollSmsComponent implements OnInit {
   protected readonly systemService: SystemServiceInterface = inject(SystemService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
+  protected readonly contentService: ContentServiceInterface = inject(ContentService);
 
   enrollmentData = input<SmsEnrollmentData>();
   @Input() wizard: boolean = false;
@@ -194,5 +197,15 @@ export class EnrollSmsComponent implements OnInit {
   private _enableFormControls(): void {
     this.smsForm.enable({ emitEvent: false });
     this._applyPolicies();
+  }
+
+  goToSmsConfig() {
+    this.contentService.router.navigate([ROUTE_PATHS.CONFIGURATION_TOKENTYPES], { fragment: 'sms' });
+  }
+
+  onSmsConfigKeydown(event: KeyboardEvent) {
+    if (event.key === 'Enter' || event.key === ' ') {
+      this.goToSmsConfig();
+    }
   }
 }

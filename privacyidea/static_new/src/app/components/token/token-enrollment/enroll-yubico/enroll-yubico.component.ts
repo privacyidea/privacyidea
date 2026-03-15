@@ -33,6 +33,9 @@ import {
   TokenApiPayloadMapper,
   TokenEnrollmentData
 } from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
+import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
+import { ROUTE_PATHS } from "../../../../route_paths";
+import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
 
 export interface YubicoEnrollmentOptions extends TokenEnrollmentData {
   type: "yubico";
@@ -57,6 +60,9 @@ export class EnrollYubicoComponent implements OnInit {
   protected readonly enrollmentMapper: YubicoApiPayloadMapper = inject(YubicoApiPayloadMapper);
   protected readonly systemService: SystemServiceInterface = inject(SystemService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+  protected readonly contentService: ContentServiceInterface = inject(ContentService);
+  protected readonly authService: AuthServiceInterface = inject(AuthService);
+
   disabled = input<boolean>(false);
 
   yubicoErrorStatematcher = new YubicoErrorStateMatcher();
@@ -121,4 +127,14 @@ export class EnrollYubicoComponent implements OnInit {
       mapper: this.enrollmentMapper
     };
   };
+
+  goToYubicoConfig() {
+    this.contentService.router.navigate([ROUTE_PATHS.CONFIGURATION_TOKENTYPES], { fragment: 'yubico' });
+  }
+
+  onYubicoConfigKeydown(event: KeyboardEvent) {
+    if (event.key === 'Enter' || event.key === ' ') {
+      this.goToYubicoConfig();
+    }
+  }
 }

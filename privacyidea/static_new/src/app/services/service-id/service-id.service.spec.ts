@@ -23,11 +23,16 @@ import { HttpTestingController, provideHttpClientTesting } from "@angular/common
 import { AuthService } from "../auth/auth.service";
 import { NotificationService } from "../notification/notification.service";
 import { environment } from "../../../environments/environment";
+import { MockContentService, MockPiResponse } from "../../../testing/mock-services";
+import { ContentService } from "../content/content.service";
+import { ROUTE_PATHS } from "../../route_paths";
+import { lastValueFrom, of } from "rxjs";
 
 describe("ServiceIdService", () => {
   let service: ServiceIdService;
   let httpMock: HttpTestingController;
   let notificationService: NotificationService;
+  let contentService: MockContentService;
 
   beforeEach(() => {
     const authServiceMock = {
@@ -36,18 +41,19 @@ describe("ServiceIdService", () => {
     const notificationServiceMock = {
       openSnackBar: jest.fn(),
     };
-
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: AuthService, useValue: authServiceMock },
         { provide: NotificationService, useValue: notificationServiceMock },
+        { provide: ContentService, useClass: MockContentService }
       ]
     });
     service = TestBed.inject(ServiceIdService);
     httpMock = TestBed.inject(HttpTestingController);
     notificationService = TestBed.inject(NotificationService);
+    contentService = TestBed.inject(ContentService) as unknown as MockContentService;
   });
 
   afterEach(() => {
@@ -79,5 +85,38 @@ describe("ServiceIdService", () => {
 
     await promise;
     expect(notificationService.openSnackBar).toHaveBeenCalledWith("Successfully deleted service ID: test.");
+  });
+
+  it("serviceIdResource should not do request and return undefined on unexpected route", () => {
+    contentService.routeUrl.set(ROUTE_PATHS.EVENTS);
+    const resource = service.serviceIdResource.value();
+    expect(resource).toBeUndefined();
+    // No HTTP request should be made
+    const requests = httpMock.match(() => true);
+    expect(requests.length).toBe(0);
+  });
+
+  it("serviceIdResource should make a request if on allowed route and return response", async () => {
+    async function testLoadResource() {
+      const serviceIdResponse = { service1: {}, service2: {} };
+      const mockResponse = MockPiResponse.fromValue(serviceIdResponse);
+      TestBed.flushEffects();
+      const req = httpMock.expectOne(`${environment.proxyUrl}/serviceid/`);
+      expect(req.request.method).toBe("GET");
+      req.flush(mockResponse);
+      await lastValueFrom(of({})); // Wait for async updates
+
+      const response = service.serviceIdResource.value();
+      expect(response).toBeDefined();
+      expect(response).toEqual(mockResponse);
+      expect(response?.result?.value).toEqual(serviceIdResponse);
+    }
+
+    contentService.routeUrl.set(ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS);
+    await testLoadResource();
+
+    contentService.routeUrl.set(ROUTE_PATHS.TOKENS_ENROLLMENT);
+    contentService.onTokenEnrollmentLikely.set(true);
+    await testLoadResource();
   });
 });

@@ -18,8 +18,32 @@
 -->
 <div class="flex-column">
   <h4 class="enroll-h4">Token Configuration</h4>
-  @if (configMinNumberOfAnswers() > 0) {
-    <span> Please answer at least {{ configMinNumberOfAnswers() }} of the following questions. </span>
+  @if (configQuestions().length === 0) {
+    @if (authService.role() === "admin") {
+      <span
+        i18n
+        class="inline-warning">
+        To enable questionnaire token enrollment, you need to set up the
+        <a
+          role="button"
+          tabindex="0"
+          aria-label="Go to Questionnaire token configuration"
+          i18n-aria-label
+          (click)="goToQuestionConfig()"
+          (keydown)="onQuestionConfigKeydown($event)"
+        >
+          Questionnaire Token Configuration
+        </a>!
+      </span>
+    } @else {
+      <span
+        i18n
+        class="inline-warning">
+        The questionnaire token enrollment is not completely configured. Please contact your administrator.
+      </span>
+    }
+  } @else {
+    <span i18n> Please answer at least {{ configMinNumberOfAnswers() }} of the following questions: </span>
   }
   <div
     [formGroup]="questionForm()"

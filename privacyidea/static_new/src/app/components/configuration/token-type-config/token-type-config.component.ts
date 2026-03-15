@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, effect, inject, signal, untracked } from "@angular/core";
+import { Component, computed, effect, inject, signal, untracked, AfterViewInit, OnInit } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MatButtonModule } from "@angular/material/button";
@@ -43,6 +43,9 @@ import { QuestionnaireConfigComponent } from "./token-types/questionnaire-config
 import { YubicoConfigComponent } from "./token-types/yubico-config/yubico-config.component";
 import { YubikeyConfigComponent } from "./token-types/yubikey-config/yubikey-config.component";
 import { DaypasswordConfigComponent } from "./token-types/daypassword-config/daypassword-config.component";
+import { ActivatedRoute } from "@angular/router";
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { DestroyRef } from '@angular/core';
 
 @Component({
   selector: "app-token-type-config",
@@ -69,13 +72,15 @@ import { DaypasswordConfigComponent } from "./token-types/daypassword-config/day
   templateUrl: "./token-type-config.component.html",
   styleUrl: "./token-type-config.component.scss"
 })
-export class TokenTypeConfigComponent {
+export class TokenTypeConfigComponent implements OnInit, AfterViewInit {
   readonly systemService: SystemServiceInterface = inject(SystemService);
   readonly smsGatewayService: SmsGatewayServiceInterface = inject(SmsGatewayService);
   readonly smtpService: SmtpServiceInterface = inject(SmtpService);
   readonly authService: AuthServiceInterface = inject(AuthService);
   readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly http = inject(HttpClient);
+  private route = inject(ActivatedRoute);
+  private destroyRef = inject(DestroyRef);
 
   formData = signal<Record<string, any>>({});
   nextQuestion = signal(0);
@@ -95,6 +100,8 @@ export class TokenTypeConfigComponent {
     const steps = this.systemConfigInit()?.totpSteps ?? [30, 60];
     return (Array.isArray(steps) ? steps : [steps]).map((s: any) => String(s));
   });
+
+  expandedPanel: string | null = null;
 
   constructor() {
     effect(() => {
@@ -118,6 +125,27 @@ export class TokenTypeConfigComponent {
         });
       }
     });
+  }
+
+  ngOnInit() {
+    // allow opening a specific panel via URL fragment, e.g. /configuration/token-types#yubico
+    this.route.fragment
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe(fragment => {
+      if (fragment) {
+        this.expandedPanel = fragment;
+      }
+    });
+  }
+
+  ngAfterViewInit() {
+    if (this.expandedPanel) {
+      // scroll to the initially referenced panel
+      const panel = document.getElementById(this.expandedPanel);
+      if (panel) {
+        panel.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
   }
 
   get questionKeys() {

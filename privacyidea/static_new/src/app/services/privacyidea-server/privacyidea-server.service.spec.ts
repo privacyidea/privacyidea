@@ -23,11 +23,16 @@ import { HttpTestingController, provideHttpClientTesting } from "@angular/common
 import { AuthService } from "../auth/auth.service";
 import { NotificationService } from "../notification/notification.service";
 import { environment } from "../../../environments/environment";
+import { ROUTE_PATHS } from "../../route_paths";
+import { MockContentService, MockPiResponse } from "../../../testing/mock-services";
+import { lastValueFrom, of } from "rxjs";
+import { ContentService, ContentServiceInterface } from "../content/content.service";
 
 describe("PrivacyideaServerService", () => {
   let service: PrivacyideaServerService;
   let httpMock: HttpTestingController;
   let notificationService: NotificationService;
+  let contentService: MockContentService;
 
   beforeEach(() => {
     const authServiceMock = {
@@ -43,11 +48,13 @@ describe("PrivacyideaServerService", () => {
         provideHttpClientTesting(),
         { provide: AuthService, useValue: authServiceMock },
         { provide: NotificationService, useValue: notificationServiceMock },
+        { provide: ContentService, useClass: MockContentService }
       ]
     });
     service = TestBed.inject(PrivacyideaServerService);
     httpMock = TestBed.inject(HttpTestingController);
     notificationService = TestBed.inject(NotificationService);
+    contentService = TestBed.inject(ContentService) as unknown as MockContentService;
   });
 
   afterEach(() => {
@@ -92,5 +99,38 @@ describe("PrivacyideaServerService", () => {
     const result = await promise;
     expect(result).toBe(true);
     expect(notificationService.openSnackBar).toHaveBeenCalledWith("Test request successful.");
+  });
+
+  it("privacyideaServerResource should not do request and return undefined on unexpected route", () => {
+    contentService.routeUrl.set(ROUTE_PATHS.TOKENS);
+    const resource = service.privacyideaServerResource.value();
+    expect(resource).toBeUndefined();
+    // No HTTP request should be made
+    const requests = httpMock.match(() => true);
+    expect(requests.length).toBe(0);
+  });
+
+  it("privacyideaServerResource should make a request if on allowed route and return response", async () => {
+    async function testLoadResource() {
+      const piServerResponse = { pi1: {}, pi2: {} };
+      const mockResponse = MockPiResponse.fromValue(piServerResponse);
+      TestBed.flushEffects();
+      const req = httpMock.expectOne(service.privacyideaServerBaseUrl);
+      expect(req.request.method).toBe("GET");
+      req.flush(mockResponse);
+      await lastValueFrom(of({})); // Wait for async updates
+
+      const response = service.privacyideaServerResource.value();
+      expect(response).toBeDefined();
+      expect(response).toEqual(mockResponse);
+      expect(response?.result?.value).toEqual(piServerResponse);
+    }
+
+    contentService.routeUrl.set(ROUTE_PATHS.EXTERNAL_SERVICES_PRIVACYIDEA);
+    await testLoadResource();
+
+    contentService.routeUrl.set(ROUTE_PATHS.TOKENS_ENROLLMENT);
+    contentService.onTokenEnrollmentLikely.set(true);
+    await testLoadResource();
   });
 });

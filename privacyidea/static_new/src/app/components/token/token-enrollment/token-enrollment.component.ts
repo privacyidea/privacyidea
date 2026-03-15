@@ -322,11 +322,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
   selectedEndTimeControl = new FormControl<string>("23:59", {
     nonNullable: false
   });
-  _lastTokenEnrollmentLastStepDialogData: WritableSignal<TokenEnrollmentLastStepDialogData | null> = linkedSignal({
-    source: this.tokenService.selectedTokenType,
-    computation: () => null
-  });
-  canReopenEnrollmentDialog = computed(() => !!this.reopenDialog() || !!this._lastTokenEnrollmentLastStepDialogData());
+  canReopenEnrollmentDialog = computed(() => !!this.reopenDialog() || !!this.enrolledDialogData());
 
   selectedUserRealmControl = new FormControl<string>("", { nonNullable: true });
   userFilterControl = new FormControl<string | UserData | null>("", { nonNullable: true });
@@ -365,15 +361,19 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     this.onEnrollmentResponse.set(event);
   }
 
+  setDescriptionValidators(): void {
+    const isRequired = this.descriptionRequired();
+    const currentValidators = [Validators.maxLength(80)];
+    if (isRequired) {
+      currentValidators.push(Validators.required);
+    }
+    this.descriptionControl.setValidators(currentValidators);
+    this.descriptionControl.updateValueAndValidity();
+  }
+
   constructor() {
     effect(() => {
-      const isRequired = this.descriptionRequired();
-      const currentValidators = [Validators.maxLength(80)];
-      if (isRequired) {
-        currentValidators.push(Validators.required);
-      }
-      this.descriptionControl.setValidators(currentValidators);
-      this.descriptionControl.updateValueAndValidity();
+      this.setDescriptionValidators();
     });
   }
 
@@ -449,10 +449,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
       return;
     }
     if (this.enrolledDialogData()) {
-      this.dialogService.openDialog({
-        component: TokenEnrollmentLastStepDialogComponent,
-        data: this.enrolledDialogData()
-      });
+      this.handleCompleteEnrollment(this.enrolledDialogData()?.response || null);
     }
   }
 

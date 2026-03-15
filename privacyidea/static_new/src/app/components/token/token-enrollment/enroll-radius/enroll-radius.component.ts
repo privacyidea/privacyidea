@@ -35,6 +35,8 @@ import {
   TokenApiPayloadMapper,
   TokenEnrollmentData
 } from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
+import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
+import { ROUTE_PATHS } from "../../../../route_paths";
 
 export interface RadiusEnrollmentOptions extends TokenEnrollmentData {
   type: "radius";
@@ -66,6 +68,7 @@ export class EnrollRadiusComponent implements OnInit {
   protected readonly systemService: SystemServiceInterface = inject(SystemService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
+  protected readonly contentService: ContentServiceInterface = inject(ContentService);
 
   enrollmentData = input<RadiusEnrollmentData>();
   @Input() wizard: boolean = false;
@@ -154,4 +157,14 @@ export class EnrollRadiusComponent implements OnInit {
       mapper: this.enrollmentMapper
     };
   };
+
+  goToRadiusConfig() {
+    this.contentService.router.navigate([ROUTE_PATHS.CONFIGURATION_TOKENTYPES], { fragment: 'radius' });
+  }
+
+  onRadiusConfigKeydown(event: KeyboardEvent) {
+    if (event.key === 'Enter' || event.key === ' ') {
+      this.goToRadiusConfig();
+    }
+  }
 }

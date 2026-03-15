@@ -78,6 +78,22 @@ describe("ContentService", () => {
     expect(service.routeUrl()).toBe("/second");
   });
 
+  it("onTokenEnrollmentLikely is true for enrollment related routes", () => {
+    expect(service.onTokenEnrollmentLikely()).toBe(false);
+
+    emitNav(ROUTE_PATHS.TOKENS_ENROLLMENT);
+    expect(service.onTokenEnrollmentLikely()).toBe(true);
+
+    emitNav(ROUTE_PATHS.TOKENS_WIZARD);
+    expect(service.onTokenEnrollmentLikely()).toBe(true);
+
+    emitNav(ROUTE_PATHS.TOKENS_DETAILS + "/SER1");
+    expect(service.onTokenEnrollmentLikely()).toBe(true);
+
+    emitNav(ROUTE_PATHS.TOKENS);
+    expect(service.onTokenEnrollmentLikely()).toBe(false);
+  });
+
   describe("tokenSelected()", () => {
     it("navigates to token details and sets serial", async () => {
       emitNav("/tokens/containers");

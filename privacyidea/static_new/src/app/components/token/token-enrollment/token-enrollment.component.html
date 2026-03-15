@@ -43,7 +43,9 @@
                 <mat-option
                   class="select-option"
                   [value]="type"
-                  [matTooltip]="type.info.split(':')[1]">
+                  [matTooltip]="type.info.split(':')[1]"
+                  #tooltip="matTooltip"
+                  (click)="tooltip.hide()">
                   {{ type.info.split(":")[0] }}
                 </mat-option>
               }
@@ -281,7 +283,7 @@
             [matAutocomplete]="containerAuto"
             matInput />
         </app-clearable-input>
-        <mat-label>Enter Container</mat-label>
+        <mat-label i18n>Container Serial</mat-label>
         <mat-autocomplete #containerAuto="matAutocomplete">
           @for (option of containerService.filteredContainerOptions(); track option) {
             <mat-option [value]="option">{{ option }}</mat-option>

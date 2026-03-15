@@ -18,11 +18,20 @@
 -->
 <div class="flex-column">
   <h4 class="enroll-h4">Token Configuration</h4>
-  @if (!defaultSMSGatewayIsSet()) {
+  @if (!defaultSMSGatewayIsSet() && authService.role() === "admin") {
     <span
       i18n
       class="inline-hint">
-      For SMS tokens to work properly you need to set the <a href="#">SMS Token Config</a>!
+      To ease the enrollment you can set default values in the
+      <a
+        role="button"
+        tabindex="0"
+        aria-label="Go to SMS token configuration"
+        i18n-aria-label
+        (click)="goToSmsConfig()"
+        (keydown)="onSmsConfigKeydown($event)">
+          SMS Token Configuration
+        </a>!
     </span>
   }
   <mat-checkbox
