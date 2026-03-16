@@ -26,7 +26,7 @@ from privacyidea.lib.policy import (set_policy, delete_policy, delete_policies,
                                     get_action_values_from_options, Match, MatchingError,
                                     get_allowed_custom_attributes, convert_action_dict_to_python_dict,
                                     set_policy_conditions, validate_actions, get_policies)
-from privacyidea.lib.realm import (set_realm, delete_realm, get_realms)
+from privacyidea.lib.realm import (set_realm, delete_realm, get_realms, get_ordered_resolvers)
 from privacyidea.lib.resolver import (save_resolver, get_resolver_list,
                                       delete_resolver)
 from privacyidea.lib.token import init_token
@@ -1030,7 +1030,7 @@ class PolicyTestCase(MyTestCase):
         self.assertEqual("<cornelius.reso1@test_realm>", user_str)
         # But the user "cornelius" is also contained in other resolves in
         # this realm
-        r = user.get_ordered_resolvers()
+        r = get_ordered_resolvers(user.realm)
         self.assertEqual(r, ["reso1", "resoX", "resoA"])
         self.assertFalse(user.is_empty())
         self.assertTrue(User().is_empty())

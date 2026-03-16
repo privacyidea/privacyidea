@@ -59,6 +59,7 @@ from .framework import get_app_config_value
 from .log import log_with
 from .realm import (get_realms, realm_is_defined,
                     get_default_realm,
+                    get_ordered_resolvers,
                     get_realm, get_realm_id)
 from .resolver import (get_resolver_object,
                        get_resolver_type)
@@ -201,34 +202,6 @@ class User:
 
     __nonzero__ = __bool__
 
-    @log_with(log)
-    def get_ordered_resolvers(self) -> list[str]:
-        """
-        returns a list of resolver names ordered by priority.
-        The resolver with the lowest priority is the first.
-        If resolvers have the same priority, they are ordered alphabetically.
-
-        :return: list of resolver names
-        :rtype: list
-        """
-        resolver_tuples = []
-        realm_config = get_realms(self.realm)
-        resolvers_in_realm = realm_config.get(self.realm, {}).get("resolver", [])
-        for resolver in resolvers_in_realm:
-            # append a tuple
-            resolver_tuples.append((resolver.get("name"),
-                                    resolver.get("priority") or 1000,
-                                    resolver.get("node")))
-
-        # sort the resolvers by the 2nd entry in the tuple, the priority
-        sorted_resolvers = sorted(resolver_tuples, key=lambda res: res[1])
-        # if the resolver contains a node setting, we only add it if it is on the correct node
-        local_node_uuid = get_app_config_value("PI_NODE_UUID")
-        resolvers = [r[0] for r in sorted_resolvers if not r[2] or r[2] == local_node_uuid]
-        # remove duplicate resolver names but keeping the order
-        seen = set()
-        return [x for x in resolvers if not (x in seen or seen.add(x))]
-
     def _get_resolvers(self, all_resolvers=False) -> list[str]:
         """
         This returns the list of the resolvernames of the user.
@@ -248,7 +221,7 @@ class User:
             return [self.resolver]
 
         resolvers = []
-        for resolver_name in self.get_ordered_resolvers():
+        for resolver_name in get_ordered_resolvers(self.realm):
             # test, if the user is contained in this resolver
             if self._locate_user_in_resolver(resolver_name):
                 break
@@ -652,7 +625,6 @@ class User:
             "uid": self.uid,
             "custom_attributes": self.attributes
         }
-
 
 @log_with(log, hide_kwargs=["password"])
 def create_user(resolvername: str, attributes: dict, password: str = None) -> int or str:
