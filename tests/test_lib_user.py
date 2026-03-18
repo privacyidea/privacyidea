@@ -30,6 +30,7 @@ from .test_lib_resolver_httpresolver import ConfidentialClientApplicationMock
 
 PWFILE = "tests/testdata/passwd"
 PWFILE2 = "tests/testdata/passwords"
+PWFILE3 = "tests/testdata/passwd-mask-user"
 
 
 class UserTestCase(MyTestCase):
@@ -781,6 +782,31 @@ class UserTestCase(MyTestCase):
         delete_realm(self.realm1)
         delete_resolver(self.resolvername1)
 
+    def test_30_masking_users_in_ordered_resolvers(self):
+        realmname = "masked_realm"
+        save_resolver({"resolver": self.resolvername1,
+                       "type": "passwdresolver",
+                       "fileName": PWFILE3})
+        save_resolver({"resolver": self.resolvername2,
+                       "type": "passwdresolver",
+                       "fileName": PWFILE})
+
+        (added, failed) = set_realm(realmname,
+                                    [
+                                        {'name': self.resolvername1, 'priority': 1},
+                                        {'name': self.resolvername2, 'priority': 2}])
+        self.assertEqual(len(failed), 0)
+        self.assertEqual(len(added), 2)
+
+        r = get_user_list({"realm": realmname, "username": "cornelius"})
+        # User cornelius should only be contained once.
+        self.assertEqual(1, len(r))
+        # And it should be the correct one, from PWFILE3
+        print(r)
+
+        delete_realm(realmname)
+        delete_resolver(self.resolvername1)
+        delete_resolver(self.resolvername2)
 
     def test_50_user_attributes(self):
         save_resolver({"resolver": self.resolvername1, "type": "passwdresolver",

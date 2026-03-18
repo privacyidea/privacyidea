@@ -779,6 +779,7 @@ def get_user_list(param: dict = None, user: User = None, include_custom_attribut
     for pu_realm in [param_realm, user_realm]:
         if pu_realm:
             realm_config = get_realm(pu_realm)
+            # Fixme: Use get_ordered resolvers
             for r in realm_config.get("resolver", {}):
                 if r.get("name"):
                     if not r.get("node") or r["node"] == local_node_uuid:
@@ -789,6 +790,7 @@ def get_user_list(param: dict = None, user: User = None, include_custom_attribut
         # in all realms
         all_realms = get_realms()
         for _name, res_list in all_realms.items():
+            # Fixme: From each realm we need to get the ordered resolvers
             for resolver_entry in res_list.get("resolver"):
                 if not resolver_entry.get("node") or resolver_entry["node"] == local_node_uuid:
                     resolvers.append(resolver_entry.get("name"))
@@ -823,6 +825,7 @@ def get_user_list(param: dict = None, user: User = None, include_custom_attribut
                     # Remove the userid if it is not requested, as it is only needed for the custom attributes
                     user_info.pop("userid", None)
             log.debug("Found this userlist: {0!r}".format(user_list))
+            # Fixme: Add the user one by one and only, if it does not exist in the list, yet.
             users.extend(user_list)
 
         except (ResolverError, ParameterError) as ex:
