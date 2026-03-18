@@ -18,7 +18,7 @@
  **/
 import { AuditData, AuditService, AuditServiceInterface } from "../../services/audit/audit.service";
 import { AuthService, AuthServiceInterface } from "../../services/auth/auth.service";
-import { Component, ElementRef, inject, linkedSignal, ViewChild, WritableSignal } from "@angular/core";
+import { Component, computed, ElementRef, inject, linkedSignal, ViewChild, WritableSignal } from "@angular/core";
 import { ContentService, ContentServiceInterface } from "../../services/content/content.service";
 import {
   MatCell,
@@ -147,7 +147,17 @@ export class AuditComponent {
       return previous?.value ?? new MatTableDataSource(this.emptyResource());
     }
   });
-  pageSizeOptions = this.tableUtilsService.pageSizeOptions;
+  basePageSizeOptions = [...this.tableUtilsService.pageSizeOptions()];
+  pageSizeOptions = computed(() => {
+    if (!this.basePageSizeOptions) {
+      this.basePageSizeOptions = [...this.tableUtilsService.pageSizeOptions()];
+    }
+    if (!this.basePageSizeOptions.includes(this.auditService.pageSize())) {
+      this.basePageSizeOptions.push(this.auditService.pageSize());
+      this.basePageSizeOptions.sort((a, b) => a - b);
+    }
+    return this.basePageSizeOptions;
+  });
 
   onPageEvent(event: PageEvent) {
     this.auditService.pageSize.set(event.pageSize);

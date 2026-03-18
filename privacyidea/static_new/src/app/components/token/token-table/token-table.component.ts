@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, ElementRef, inject, linkedSignal, ViewChild, WritableSignal } from "@angular/core";
+import { Component, computed, ElementRef, inject, linkedSignal, ViewChild, WritableSignal } from "@angular/core";
 import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
 import { DialogService, DialogServiceInterface } from "../../../services/dialog/dialog.service";
 import { MatPaginatorModule, PageEvent } from "@angular/material/paginator";
@@ -130,7 +130,18 @@ export class TokenTableComponent {
     }
   });
 
-  pageSizeOptions = this.tableUtilsService.pageSizeOptions;
+  private basePageSizeOptions = [...this.tableUtilsService.pageSizeOptions()];
+
+  pageSizeOptions = computed(() => {
+    if (!this.basePageSizeOptions) {
+      this.basePageSizeOptions = [...this.tableUtilsService.pageSizeOptions()];
+    }
+    if (!this.basePageSizeOptions.includes(this.pageSize())) {
+      this.basePageSizeOptions.push(this.pageSize());
+      this.basePageSizeOptions.sort((a, b) => a - b);
+    }
+    return this.basePageSizeOptions;
+  });
 
   isAllSelected() {
     return this.tokenSelection().length === this.tokenDataSource().data.length;

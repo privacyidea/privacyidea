@@ -16,7 +16,16 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, ElementRef, ViewChild, WritableSignal, inject, linkedSignal, signal } from "@angular/core";
+import {
+  Component,
+  ElementRef,
+  ViewChild,
+  WritableSignal,
+  inject,
+  linkedSignal,
+  signal,
+  computed
+} from "@angular/core";
 import {
   MatCell,
   MatCellDef,
@@ -105,7 +114,18 @@ export class UserTableComponent {
   @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: ElementRef<HTMLInputElement>;
   sort = signal({ active: "", direction: "" } as Sort);
   readonly apiFilter = this.userService.apiFilterOptions;
-  pageSizeOptions = this.tableUtilsService.pageSizeOptions;
+
+  private basePageSizeOptions = [...this.tableUtilsService.pageSizeOptions()];
+  pageSizeOptions = computed(() => {
+    if (!this.basePageSizeOptions) {
+      this.basePageSizeOptions = [...this.tableUtilsService.pageSizeOptions()];
+    }
+    if (!this.basePageSizeOptions.includes(this.userService.pageSize())) {
+      this.basePageSizeOptions.push(this.userService.pageSize());
+      this.basePageSizeOptions.sort((a, b) => a - b);
+    }
+    return this.basePageSizeOptions;
+  });
 
   totalLength: WritableSignal<number> = linkedSignal({
     source: this.userService.usersResource.value,

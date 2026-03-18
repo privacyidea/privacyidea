@@ -60,6 +60,7 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
   let authServiceMock: MockAuthService;
   let dialogServiceMock: MockDialogService;
   let dialogMock: MatDialogMock;
+  let tableUtilsService: MockTableUtilsService;
 
   beforeAll(() => {
     Object.defineProperty(window, "matchMedia", {
@@ -127,6 +128,7 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
     authServiceMock = TestBed.inject(AuthService) as unknown as MockAuthService;
     dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
     dialogMock = TestBed.inject(MatDialog) as unknown as MatDialogMock;
+    tableUtilsService = TestBed.inject(TableUtilsService) as unknown as MockTableUtilsService;
 
     tokenService.toggleActive.mockReturnValue(of({}));
     tokenService.resetFailCount.mockReturnValue(of(null));
@@ -310,5 +312,21 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
       expect.arrayContaining(["serial", "tokentype", "description", "container_serial", "active", "failcount"])
     );
     expect(c2.columnKeysSelfService).not.toEqual(expect.arrayContaining(["revoke", "delete"]));
+  });
+
+  it("pageSizeOptions should add custom page size if not included in default options", () => {
+    const defaultOptions = [5, 10, 25, 50];
+    tableUtilsService.pageSizeOptions.set(defaultOptions);
+    expect(component.pageSizeOptions()).toEqual(defaultOptions);
+
+    // Check custom page size is added but not mutates the options from the service
+    const customOptions = [5, 10, 15, 25, 50];
+    component.pageSize.set(15);
+    expect(component.pageSizeOptions()).toEqual(customOptions);
+    expect(tableUtilsService.pageSizeOptions()).toEqual(defaultOptions);
+
+    // custom page size should still be included if selected pageSize changes
+    component.pageSize.set(10);
+    expect(component.pageSizeOptions()).toEqual(customOptions);
   });
 });

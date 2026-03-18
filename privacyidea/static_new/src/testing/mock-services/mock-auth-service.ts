@@ -50,7 +50,7 @@ export class MockAuthService implements AuthServiceInterface {
   readonly username = linkedSignal(() => this.authData()?.username ?? "");
   readonly auditPageSize = computed(() => this.authData()?.audit_page_size ?? 10);
   readonly tokenPageSize = computed(() => this.authData()?.token_page_size ?? 10);
-  readonly userPageSize = computed(() => this.authData()?.user_page_size ?? 10);
+  readonly userPageSize = linkedSignal(() => this.authData()?.user_page_size ?? 10);
   readonly policyTemplateUrl = computed(() => this.authData()?.policy_template_url ?? "");
   readonly defaultTokentype = computed(() => this.authData()?.default_tokentype ?? "hotp");
   readonly defaultContainerType = computed(() => this.authData()?.default_container_type ?? "generic");

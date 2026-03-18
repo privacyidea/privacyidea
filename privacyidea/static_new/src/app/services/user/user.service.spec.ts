@@ -143,6 +143,18 @@ describe("UserService", () => {
     expect(userService.displayUser("plainString")).toBe("plainString");
   });
 
+  describe("pageSize", () => {
+    it("pageSize should be initialized with policy value", () => {
+      authServiceMock.userPageSize.set(20);
+      expect(userService.pageSize()).toBe(20);
+    });
+
+    it("pageSize should be 10 if policy value is invalid", () => {
+      authServiceMock.userPageSize.set(0);
+      expect(userService.pageSize()).toBe(10);
+    });
+  });
+
   describe("user filtering", () => {
     it("selectedUser returns null when userNameFilter is empty", () => {
       expect(userService.selectedUser()).toBeNull();
