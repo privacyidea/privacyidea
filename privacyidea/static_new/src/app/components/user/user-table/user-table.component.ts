@@ -117,9 +117,6 @@ export class UserTableComponent {
 
   private basePageSizeOptions = [...this.tableUtilsService.pageSizeOptions()];
   pageSizeOptions = computed(() => {
-    if (!this.basePageSizeOptions) {
-      this.basePageSizeOptions = [...this.tableUtilsService.pageSizeOptions()];
-    }
     if (!this.basePageSizeOptions.includes(this.userService.pageSize())) {
       this.basePageSizeOptions.push(this.userService.pageSize());
       this.basePageSizeOptions.sort((a, b) => a - b);

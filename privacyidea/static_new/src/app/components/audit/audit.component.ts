@@ -149,9 +149,6 @@ export class AuditComponent {
   });
   basePageSizeOptions = [...this.tableUtilsService.pageSizeOptions()];
   pageSizeOptions = computed(() => {
-    if (!this.basePageSizeOptions) {
-      this.basePageSizeOptions = [...this.tableUtilsService.pageSizeOptions()];
-    }
     if (!this.basePageSizeOptions.includes(this.auditService.pageSize())) {
       this.basePageSizeOptions.push(this.auditService.pageSize());
       this.basePageSizeOptions.sort((a, b) => a - b);

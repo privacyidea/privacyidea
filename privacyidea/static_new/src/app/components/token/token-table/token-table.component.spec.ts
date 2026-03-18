@@ -319,7 +319,7 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
     tableUtilsService.pageSizeOptions.set(defaultOptions);
     expect(component.pageSizeOptions()).toEqual(defaultOptions);
 
-    // Check custom page size is added but not mutates the options from the service
+    // Check custom page size is added but does not mutate the options from the service
     const customOptions = [5, 10, 15, 25, 50];
     component.pageSize.set(15);
     expect(component.pageSizeOptions()).toEqual(customOptions);
