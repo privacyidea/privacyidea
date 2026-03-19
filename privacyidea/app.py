@@ -88,7 +88,7 @@ from privacyidea.models import db, NodeName
 from privacyidea.webui.certificate import cert_blueprint
 from privacyidea.webui.login import login_blueprint, get_accepted_language
 
-ENV_KEY = "PRIVACYIDEA_CONFIGFILE"
+CONFIG_FILE = "PRIVACYIDEA_CONFIGFILE"
 
 CSP = {
     'default-src': [
@@ -279,11 +279,11 @@ def create_app(config_name="development",
                config_file=DefaultConfigValues.CFG_PATH,
                silent=False, initialize_hsm=False) -> Flask:
     """
-    First the configuration from the config.py is loaded depending on the
+    First, the configuration from the config.py is loaded depending on the
     config type like "production" or "development" or "testing".
 
     Then the environment variable PRIVACYIDEA_CONFIGFILE is checked for a
-    config file, that contains additional settings, that will overwrite the
+    config file that contains additional settings that will overwrite the
     default settings from config.py
 
     :param config_name: The config name like "production" or "testing"
@@ -324,8 +324,24 @@ def create_app(config_name="development",
     # Load configuration from environment variables prefixed with PRIVACYIDEA_
     app.config.from_prefixed_env("PRIVACYIDEA")
 
-    if ENV_KEY in os.environ:
-        config_file = os.environ[ENV_KEY]
+    # Bridge flat environment variables into SQLAlchemy 3.x engine options
+    engine_options = app.config.get('SQLALCHEMY_ENGINE_OPTIONS', {})
+
+    # Pool Recycle: Prevent proxy disconnects by recycling connections before the timeout
+    pool_recycle = app.config.get('SQLALCHEMY_POOL_RECYCLE')
+    if pool_recycle is not None:
+        try:
+            engine_options['pool_recycle'] = int(pool_recycle)
+            if app.debug:
+                sys.stderr.write(f"Setting database pool_recycle to {engine_options['pool_recycle']} seconds\n")
+        except ValueError:
+            sys.stderr.write(f"WARNING: Invalid SQLALCHEMY_POOL_RECYCLE value: {pool_recycle}. Must be an integer.\n")
+
+    # Write the modified dictionary back to the Flask config
+    app.config['SQLALCHEMY_ENGINE_OPTIONS'] = engine_options
+
+    if CONFIG_FILE in os.environ:
+        config_file = os.environ[CONFIG_FILE]
     if app.config.get(ConfigKey.VERBOSE):
         print("Additional configuration will be read from the file {0!s}".format(config_file))
 
@@ -333,7 +349,7 @@ def create_app(config_name="development",
         # Try to load the given config_file.
         app.config.from_pyfile(config_file, silent=False)
     except IOError as e:
-        if config_name != "docker" or ENV_KEY in os.environ:
+        if config_name != "docker" or CONFIG_FILE in os.environ:
             sys.stderr.write("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n")
             sys.stderr.write("  WARNING: Unable to load additional configuration\n")
             sys.stderr.write(f"  from {config_file}!\n")
@@ -360,7 +376,7 @@ def create_app(config_name="development",
             DEFAULT_LOGGING_CONFIG["handlers"]["file"]["filename"] = app.config.get(ConfigKey.LOGFILE)
         _setup_logging(app, DEFAULT_LOGGING_CONFIG)
 
-    # We allow to set different static folders
+    # We allow setting different static folders
     app.static_folder = app.config.get(ConfigKey.STATIC_FOLDER, DefaultConfigValues.STATIC_FOLDER)
     app.template_folder = app.config.get(ConfigKey.TEMPLATE_FOLDER, DefaultConfigValues.TEMPLATE_FOLDER)
 

@@ -1,0 +1,103 @@
+services:
+  # --- TIER 1: Web Load Balancer ---
+  pi-proxy:
+    image: haproxy:2.8-alpine
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./haproxy-web.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    depends_on:
+      - pi-1
+      - pi-2
+
+  # --- TIER 2: privacyIDEA Application Nodes ---
+  pi-1:
+    build:
+      context: ../../../
+      dockerfile: deploy/docker/Dockerfile
+      network: host
+    secrets:
+      - enckey
+    ports:
+      - "8001:8000"
+    environment:
+      - SQLALCHEMY_DATABASE_URI=mysql+pymysql://pi:test123pass@db-proxy:3306/pi
+      - SECRET_KEY=test-secret-key-123
+      - PI_PEPPER=test-pepper-123
+      - PI_ENCFILE=/run/secrets/enckey
+      - PI_WORKERS=1
+      #- PI_RUN_MIGRATIONS=true
+      - PI_STARTUP_DELAY=10
+      - PI_CREATE_TABLES=true
+      # Keep connections alive
+      - PRIVACYIDEA_SQLALCHEMY_POOL_RECYCLE=250
+    depends_on:
+      db-proxy:
+        condition: service_started
+      db-1:
+        condition: service_healthy
+
+  pi-2:
+    build:
+      context: ../../../
+      dockerfile: deploy/docker/Dockerfile
+      network: host
+    secrets:
+      - enckey
+    environment:
+      - SQLALCHEMY_DATABASE_URI=mysql+pymysql://pi:test123pass@db-proxy:3306/pi
+      - SECRET_KEY=test-secret-key-123
+      - PI_PEPPER=test-pepper-123
+      - PI_ENCFILE=/run/secrets/enckey
+      - PI_WORKERS=2
+      - PI_STARTUP_DELAY=10
+      # Keep connections alive
+      - PRIVACYIDEA_SQLALCHEMY_POOL_RECYCLE=250
+    depends_on:
+      db-proxy:
+        condition: service_started
+      db-1:
+        condition: service_healthy
+
+  # --- TIER 3: Database Routing & Storage ---
+  db-proxy:
+    image: haproxy:2.8-alpine
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./haproxy-db.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    depends_on:
+      - db-1
+      - db-2
+
+  db-1:
+    image: mariadb:11
+    command: --max-connect-errors=999999999 --skip-name-resolve
+    environment:
+      MARIADB_USER: pi
+      MARIADB_PASSWORD: test123pass
+      MARIADB_DATABASE: pi
+      MARIADB_ROOT_PASSWORD: rootpass
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      retries: 5
+      start_period: 30s
+
+  db-2:
+    image: mariadb:11
+    command: --max-connect-errors=999999999 --skip-name-resolve
+    environment:
+      MARIADB_USER: pi
+      MARIADB_PASSWORD: test123pass
+      MARIADB_DATABASE: pi
+      MARIADB_ROOT_PASSWORD: rootpass
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      retries: 5
+      start_period: 30s
+
+secrets:
+  enckey:
+    file: ./encKey
