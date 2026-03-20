@@ -1,103 +1,242 @@
 services:
-  # --- TIER 1: Web Load Balancer ---
+  # LOAD BALANCER WEB
   pi-proxy:
     image: haproxy:2.8-alpine
+    restart: unless-stopped
     ports:
       - "8000:8000"
+    networks:
+      - pi-network
     volumes:
       - ./haproxy-web.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
     depends_on:
-      - pi-1
-      - pi-2
+      - pi
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 64M
+    healthcheck:
+      # Check if HAProxy is listening on port 8000
+      test: [ "CMD-SHELL", "nc -z 127.0.0.1 8000 || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
-  # --- TIER 2: privacyIDEA Application Nodes ---
-  pi-1:
+  # PRIVACYIDEA NODES. ONE INIT NODE FOR INIT/MIGRATE + WORKER NODES THAT ARE SCALABLE
+  pi-init:
     build:
       context: ../../../
       dockerfile: deploy/docker/Dockerfile
       network: host
     secrets:
       - enckey
-    ports:
-      - "8001:8000"
+      - secret_key
+      - pi_pepper
+      - mariadb_password
+      - bootstrap_admin_password
+    networks:
+      - pi-network
     environment:
-      - SQLALCHEMY_DATABASE_URI=mysql+pymysql://pi:test123pass@db-proxy:3306/pi
-      - SECRET_KEY=test-secret-key-123
-      - PI_PEPPER=test-pepper-123
+      # DB connection is constructed in entrypoint from DB_* vars + mariadb_password secret
+      - DB_USER=pi
+      - DB_HOST=db-proxy
+      - DB_NAME=pi
+      # Keep connections alive
+      - PRIVACYIDEA_SQLALCHEMY_POOL_RECYCLE=${SQLALCHEMY_POOL_RECYCLE:-250}
       - PI_ENCFILE=/run/secrets/enckey
-      - PI_WORKERS=1
-      #- PI_RUN_MIGRATIONS=true
-      - PI_STARTUP_DELAY=10
+      # This container is used to initialize the database and run migrations.
+      - PI_INIT_ONLY=true
+      - PI_RUN_MIGRATIONS=true
       - PI_CREATE_TABLES=true
-      # Keep connections alive
-      - PRIVACYIDEA_SQLALCHEMY_POOL_RECYCLE=250
+      - PI_STARTUP_DELAY=10
+      - PI_BOOTSTRAP_ADMIN=${BOOTSTRAP_ADMIN:-admin}
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
     depends_on:
-      db-proxy:
-        condition: service_started
       db-1:
         condition: service_healthy
 
-  pi-2:
+  pi:
     build:
       context: ../../../
       dockerfile: deploy/docker/Dockerfile
       network: host
+    restart: unless-stopped
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 256M
     secrets:
       - enckey
+      - secret_key
+      - pi_pepper
+      - mariadb_password
+    networks:
+      - pi-network
     environment:
-      - SQLALCHEMY_DATABASE_URI=mysql+pymysql://pi:test123pass@db-proxy:3306/pi
-      - SECRET_KEY=test-secret-key-123
-      - PI_PEPPER=test-pepper-123
+      # DB connection is constructed in entrypoint from DB_* vars + mariadb_password secret
+      - DB_USER=pi
+      - DB_HOST=db-proxy
+      - DB_NAME=pi
       - PI_ENCFILE=/run/secrets/enckey
-      - PI_WORKERS=2
-      - PI_STARTUP_DELAY=10
+      - PI_WORKERS=${PI_WORKERS:-2}
+      - PI_RUN_MIGRATIONS=false
+      - PI_CREATE_TABLES=false
       # Keep connections alive
-      - PRIVACYIDEA_SQLALCHEMY_POOL_RECYCLE=250
+      - PRIVACYIDEA_SQLALCHEMY_POOL_RECYCLE=${SQLALCHEMY_POOL_RECYCLE:-250}
     depends_on:
-      db-proxy:
-        condition: service_started
-      db-1:
-        condition: service_healthy
+      pi-init:
+        # This completely prevents the race condition. Workers wait for the init job to finish.
+        condition: service_completed_successfully
+    healthcheck:
+      # Use Python urllib since curl is not installed in minimal Chainguard image
+      test: [ "CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/healthz/readyz', timeout=3)" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
 
-  # --- TIER 3: Database Routing & Storage ---
+  # DATABASE
   db-proxy:
-    image: haproxy:2.8-alpine
+    image: proxysql/proxysql:2.5.5
+    restart: unless-stopped
     ports:
       - "3306:3306"
+      # Admin interface not exposed externally for security
+      # Access via: docker exec -it ha-db-proxy-1 mysql -h127.0.0.1 -P6032 -uadmin -p
+    secrets:
+      - mariadb_password
+      - mariadb_root_password
+      - proxysql_admin_password
     volumes:
-      - ./haproxy-db.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+      - ./proxysql-entrypoint.sh:/usr/local/bin/proxysql-entrypoint.sh:ro
+      - proxysql-data:/var/lib/proxysql
+    command: ["/bin/sh", "/usr/local/bin/proxysql-entrypoint.sh"]
+    networks:
+      - pi-network
     depends_on:
       - db-1
       - db-2
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+    healthcheck:
+      test: [ "CMD-SHELL", "mysqladmin ping -h127.0.0.1 -uadmin -p$(cat /run/secrets/proxysql_admin_password) -P6032 --silent" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
   db-1:
-    image: mariadb:11
-    command: --max-connect-errors=999999999 --skip-name-resolve
+    image: mariadb:11.4
+    restart: unless-stopped
+    networks:
+      - pi-network
     environment:
       MARIADB_USER: pi
-      MARIADB_PASSWORD: test123pass
+      MARIADB_PASSWORD_FILE: /run/secrets/mariadb_password
+      MARIADB_ROOT_PASSWORD_FILE: /run/secrets/mariadb_root_password
       MARIADB_DATABASE: pi
-      MARIADB_ROOT_PASSWORD: rootpass
+      # Injection for the entrypoint
+      NODE_NAME: db-1
+      CLUSTER_NODES: db-1,db-2
+      BOOTSTRAP_NODE: db-1
+    secrets:
+      - mariadb_password
+      - mariadb_root_password
+    volumes:
+      - db-1-data:/var/lib/mysql
+      - ./galera-entrypoint.sh:/usr/local/bin/galera-entrypoint.sh:ro
+    command: [ "/bin/bash", "/usr/local/bin/galera-entrypoint.sh" ]
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
     healthcheck:
-      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
-      interval: 5s
+      # Dynamically inject the root password from the secret file during the check
+      test: [ "CMD-SHELL", "mariadb -h 127.0.0.1 -uroot -p$$(cat /run/secrets/mariadb_root_password) --silent -e \"SELECT VARIABLE_VALUE FROM information_schema.GLOBAL_STATUS WHERE VARIABLE_NAME='wsrep_local_state';\" | grep -q 4 || exit 1" ]
+      interval: 10s
       retries: 5
-      start_period: 30s
+      start_period: 60s
 
   db-2:
-    image: mariadb:11
-    command: --max-connect-errors=999999999 --skip-name-resolve
+    image: mariadb:11.4
+    restart: unless-stopped
+    networks:
+      - pi-network
     environment:
       MARIADB_USER: pi
-      MARIADB_PASSWORD: test123pass
+      MARIADB_PASSWORD_FILE: /run/secrets/mariadb_password
+      MARIADB_ROOT_PASSWORD_FILE: /run/secrets/mariadb_root_password
       MARIADB_DATABASE: pi
-      MARIADB_ROOT_PASSWORD: rootpass
+      # Injection for the entrypoint
+      NODE_NAME: db-2
+      CLUSTER_NODES: db-1,db-2
+      BOOTSTRAP_NODE: db-1
+    secrets:
+      - mariadb_password
+      - mariadb_root_password
+    volumes:
+      - db-2-data:/var/lib/mysql
+      - ./galera-entrypoint.sh:/usr/local/bin/galera-entrypoint.sh:ro
+    command: [ "/bin/bash", "/usr/local/bin/galera-entrypoint.sh" ]
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
     healthcheck:
-      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
-      interval: 5s
+      # Dynamically inject the root password from the secret file during the check
+      test: [ "CMD-SHELL", "mariadb -h 127.0.0.1 -uroot -p$$(cat /run/secrets/mariadb_root_password) --silent -e \"SELECT VARIABLE_VALUE FROM information_schema.GLOBAL_STATUS WHERE VARIABLE_NAME='wsrep_local_state';\" | grep -q 4 || exit 1" ]
+      interval: 10s
       retries: 5
-      start_period: 30s
+      start_period: 60s
 
 secrets:
   enckey:
-    file: ./encKey
+    file: ./secrets/enckey
+  secret_key:
+    file: ./secrets/secret_key
+  pi_pepper:
+    file: ./secrets/pi_pepper
+  mariadb_password:
+    file: ./secrets/mariadb_password
+  mariadb_root_password:
+    file: ./secrets/mariadb_root_password
+  proxysql_admin_password:
+    file: ./secrets/proxysql_admin_password
+  bootstrap_admin_password:
+    file: ./secrets/bootstrap_admin_password
+volumes:
+  db-1-data:
+  db-2-data:
+  proxysql-data:
+networks:
+  pi-network:
+    driver: bridge

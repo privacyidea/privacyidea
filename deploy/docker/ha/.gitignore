@@ -1,0 +1,22 @@
+# Environment configuration (contains secrets)
+.env
+
+# Secret files (passwords, keys, certificates)
+secrets/*
+!secrets/README.md
+!secrets/.gitkeep
+
+# Logs
+*.log
+
+# Docker volumes data (if accidentally created locally)
+*-data/
+
+# Temporary files
+*.tmp
+*.swp
+*~
+
+# OS-specific
+.DS_Store
+Thumbs.db

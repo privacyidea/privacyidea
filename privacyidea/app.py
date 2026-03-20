@@ -325,20 +325,23 @@ def create_app(config_name="development",
     app.config.from_prefixed_env("PRIVACYIDEA")
 
     # Bridge flat environment variables into SQLAlchemy 3.x engine options
-    engine_options = app.config.get('SQLALCHEMY_ENGINE_OPTIONS', {})
+    engine_options = app.config.get("SQLALCHEMY_ENGINE_OPTIONS", {})
 
     # Pool Recycle: Prevent proxy disconnects by recycling connections before the timeout
-    pool_recycle = app.config.get('SQLALCHEMY_POOL_RECYCLE')
+    pool_recycle = app.config.get("SQLALCHEMY_POOL_RECYCLE")
     if pool_recycle is not None:
         try:
-            engine_options['pool_recycle'] = int(pool_recycle)
+            engine_options["pool_recycle"] = int(pool_recycle)
             if app.debug:
                 sys.stderr.write(f"Setting database pool_recycle to {engine_options['pool_recycle']} seconds\n")
         except ValueError:
             sys.stderr.write(f"WARNING: Invalid SQLALCHEMY_POOL_RECYCLE value: {pool_recycle}. Must be an integer.\n")
 
+    # Enable Pessimistic Disconnect Handling
+    engine_options["pool_pre_ping"] = True
+
     # Write the modified dictionary back to the Flask config
-    app.config['SQLALCHEMY_ENGINE_OPTIONS'] = engine_options
+    app.config["SQLALCHEMY_ENGINE_OPTIONS"] = engine_options
 
     if CONFIG_FILE in os.environ:
         config_file = os.environ[CONFIG_FILE]
