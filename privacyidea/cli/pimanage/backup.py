@@ -17,23 +17,23 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program. If not, see <http://www.gnu.org/licenses/>.
 """Create/Restore database backup"""
-import os
-import sys
-import shutil
-import shlex
-import pathlib
 import configparser
+import os
+import pathlib
+import re
+import shlex
+import shutil
 import subprocess
+import sys
 import tarfile
 from datetime import datetime
-import re
+from urllib.parse import urlparse
 
 import click
 from dateutil.tz import tzlocal
-from urllib.parse import urlparse
 from flask import current_app
-from flask.config import Config
 from flask.cli import AppGroup
+from flask.config import Config
 
 MYSQL_DIALECTS = ["mysql", "pymysql", "mysql+pymysql", "mariadb+pymysql"]
 
@@ -147,7 +147,6 @@ def backup_create(backup_dir, config_dir, radius_dir, enckey):
                    "instead of overwriting it with the one stored in the backup.")
 def backup_restore(backup_file, keep_db_uri):
     """Restore a previously made backup from the BACKUP_FILE"""
-    # TODO: Use tarfile package
     # TODO: Also allow to specify a target directory, otherwise it will always
     #  extract to the base /
     # TODO: extracting the SQLite file does not work if there are other SQLite
@@ -157,18 +156,18 @@ def backup_restore(backup_file, keep_db_uri):
     sqlfile = None
     enckey_contained = False
 
-    p = subprocess.run(["tar", "-ztf", backup_file], capture_output=True,
-                       text=True)
-    if p.returncode != 0:
+    try:
+        with tarfile.open(backup_file, "r:gz") as tf:
+            for member in tf.getnames():
+                if re.search(r"/pi.cfg$", member):
+                    config_file = "/{0!s}".format(member.strip())
+                elif re.search(r"dbdump-\d{8}-\d{4}\.sql", member):
+                    sqlfile = "/{0!s}".format(member.strip())
+                elif re.search(r"/enc[kK]ey", member):
+                    enckey_contained = True
+    except (tarfile.TarError, OSError):
         click.secho(f"Unable to open backup file {backup_file}", fg="red")
         sys.exit(2)
-    for line in p.stdout.split("\n"):
-        if re.search(r"/pi.cfg$", line):
-            config_file = "/{0!s}".format(line.strip())
-        elif re.search(r"dbdump-\d{8}-\d{4}\.sql", line):
-            sqlfile = "/{0!s}".format(line.strip())
-        elif re.search(r"/enc[kK]ey", line):
-            enckey_contained = True
 
     if not config_file:
         click.secho("Missing config file pi.cfg in backup file.", fg="red")
@@ -207,7 +206,8 @@ def backup_restore(backup_file, keep_db_uri):
                     fg="yellow",
                 )
 
-    subprocess.run(["tar", "-zxf", backup_file, "-C", "/"])
+    with tarfile.open(backup_file, "r:gz") as tf:
+        tf.extractall(path="/", filter="data")
     click.echo(60 * "=")
 
     # use Flask config to read in the config file (now restored from backup)
