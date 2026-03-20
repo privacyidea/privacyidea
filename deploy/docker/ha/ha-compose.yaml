@@ -27,6 +27,12 @@ services:
       retries: 3
 
   # PRIVACYIDEA NODES. ONE INIT NODE FOR INIT/MIGRATE + WORKER NODES THAT ARE SCALABLE
+  #
+  # NOTE: The 'build:' blocks below exist because there is no published image yet.
+  # Once an image is available in a registry, replace both 'build:' sections with:
+  #   image: privacyidea/privacyidea:<tag>
+  # At that point this directory is fully self-contained and can be deployed by
+  # copying it to any host — no access to the source repository required.
   pi-init:
     build:
       context: ../../../
@@ -233,10 +239,12 @@ secrets:
     file: ./secrets/proxysql_admin_password
   bootstrap_admin_password:
     file: ./secrets/bootstrap_admin_password
+
 volumes:
   db-1-data:
   db-2-data:
   proxysql-data:
+
 networks:
   pi-network:
     driver: bridge

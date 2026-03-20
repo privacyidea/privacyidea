@@ -6,6 +6,9 @@ secrets/*
 !secrets/README.md
 !secrets/.gitkeep
 
+# Backup archives
+backups/
+
 # Logs
 *.log
 
