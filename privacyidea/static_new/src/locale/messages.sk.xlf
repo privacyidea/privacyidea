@@ -1881,15 +1881,17 @@
           <context context-type="linenumber">1,2</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="1133744955335614801" datatype="html">
+      <trans-unit id="1133744955335614801" datatype="html" xml:space="preserve">
         <source>If the token is lost, you can enroll a temporary password based token and give the password to the user. The OTP PIN of the old token is still the same.</source>
+        <target state="translated">Ak sa token stratí, môžete si zaregistrovať dočasný token založený na hesle a poskytnúť heslo používateľovi. PIN kód OTP starého tokenu je stále rovnaký.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-card/token-tab/lost-token/lost-token.component.html</context>
           <context context-type="linenumber">4,6</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="5899683480234165239" datatype="html">
+      <trans-unit id="5899683480234165239" datatype="html" xml:space="preserve">
         <source>The user will have to authenticate with the old OTP PIN he knows and this newly generated password.</source>
+        <target state="translated">Používateľ sa bude musieť autentifikovať pomocou starého OTP PIN kódu, ktorý pozná, a tohto novovygenerovaného hesla.</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-card/token-tab/lost-token/lost-token.component.html</context>
           <context context-type="linenumber">7,8</context>
@@ -1931,15 +1933,17 @@
           <context context-type="linenumber">19</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="674438606532897003" datatype="html">
+      <trans-unit id="674438606532897003" datatype="html" xml:space="preserve">
         <source>The serial of the new token is <x id="START_LINK" ctype="x-a" equiv-text="&lt;a (click)=&quot;tokenSelected(lostTokenData?.serial)&quot;&gt;"></x> <x id="INTERPOLATION" equiv-text="{{ lostTokenData?.serial ?? &quot;&quot; }}"></x><x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"></x><x id="LINE_BREAK" ctype="lb" equiv-text="&lt;br /&gt;"></x> The password that needs to be combined with the OTP PIN: </source>
+        <target state="translated">Sériové číslo nového tokenu je <x id="START_LINK" ctype="x-a" equiv-text="&lt;a (click)=&quot;tokenSelected(lostTokenData?.serial)&quot;&gt;"></x> <x id="INTERPOLATION" equiv-text="{{ lostTokenData?.serial ?? &quot;&quot; }}"></x><x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"></x><x id="LINE_BREAK" ctype="lb" equiv-text="&lt;br /&gt;"></x> Heslo, ktoré je potrebné skombinovať s OTP PINom: </target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-card/token-tab/lost-token/lost-token.component.html</context>
           <context context-type="linenumber">23,27</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="6888510625057124827" datatype="html">
+      <trans-unit id="6888510625057124827" datatype="html" xml:space="preserve">
         <source>The password can not be shown again later!</source>
+        <target state="translated">Heslo sa neskôr už viac nezobrazí!</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-card/token-tab/lost-token/lost-token.component.html</context>
           <context context-type="linenumber">33,35</context>
@@ -2057,8 +2061,9 @@
           <context context-type="linenumber">4,5</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="5089069083331724122" datatype="html">
+      <trans-unit id="5089069083331724122" datatype="html" xml:space="preserve">
         <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon class=&quot;detail-button-icon&quot;&gt;"></x>password<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Set PIN </source>
+        <target state="translated"><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon class=&quot;detail-button-icon&quot;&gt;"></x>heslo<x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> Nastaviť PIN </target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-details/token-details-actions/set-pin-action/set-pin-action.component.html</context>
           <context context-type="linenumber">9,12</context>
@@ -2710,29 +2715,33 @@
           <context context-type="linenumber">44,45</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="8191371354890763172" datatype="html">
+      <trans-unit id="8191371354890763172" datatype="html" xml:space="preserve">
         <source>Enter Password</source>
+        <target state="translated">Zadajte heslo</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-motp/enroll-motp.component.html</context>
           <context context-type="linenumber">48</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="2323435677844786277" datatype="html">
+      <trans-unit id="2323435677844786277" datatype="html" xml:space="preserve">
         <source>Password is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"></x>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"></x></source>
+        <target state="translated">Heslo je <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"></x>požadované<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"></x></target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-motp/enroll-motp.component.html</context>
           <context context-type="linenumber">55,56</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="8603578753795562003" datatype="html">
+      <trans-unit id="8603578753795562003" datatype="html" xml:space="preserve">
         <source>Password must be at least 4 characters long</source>
+        <target state="translated">Heslo musí byť najmenej 4 znaky dlhé</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-motp/enroll-motp.component.html</context>
           <context context-type="linenumber">59</context>
         </context-group>
       </trans-unit>
-      <trans-unit id="4541118533130714111" datatype="html">
+      <trans-unit id="4541118533130714111" datatype="html" xml:space="preserve">
         <source>Repeat Password</source>
+        <target state="translated">Zopakujte heslo</target>
         <context-group purpose="location">
           <context context-type="sourcefile">src/app/components/token/token-enrollment/enroll-motp/enroll-motp.component.html</context>
           <context context-type="linenumber">63</context>
