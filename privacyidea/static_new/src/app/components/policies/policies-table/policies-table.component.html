@@ -38,7 +38,7 @@
 
   <table
     mat-table
-    [dataSource]="pagedPolicies()"
+    [dataSource]="sortedFilteredPolicies()"
     class="policies-table"
     matSort
     matSortActive="priority"

@@ -92,8 +92,7 @@ export class PoliciesTableComponent {
 
   readonly emptyResource = linkedSignal({
     source: () => this.policyService.allPolicies(),
-    computation: () =>
-      Array.from({ length: this.skeletonRowCount }, () => ({ name: "" }) as PolicyDetail)
+    computation: () => Array.from({ length: this.skeletonRowCount }, () => ({ name: "" }) as PolicyDetail)
   });
 
   readonly policiesListFiltered = computed(() => {
@@ -116,14 +115,10 @@ export class PoliciesTableComponent {
     });
   });
 
-  readonly pagedPolicies = computed(() => {
-    return this.sortedFilteredPolicies();
-  });
-
   readonly selectedPolicies = linkedSignal<PolicyDetail[], Set<string>>({
     source: () => this.policiesListFiltered(),
     computation: (source, previous) => {
-      const selected = new Set(previous?.value ?? [])
+      const selected = new Set(previous?.value ?? []);
       if (this.policyService.allPolicies().length === 0) return new Set();
       const currentNames = new Set(source.map((p) => p.name));
       for (const name of selected) {
@@ -159,14 +154,14 @@ export class PoliciesTableComponent {
   }
 
   isAllSelected(): boolean {
-    const displayed = this.pagedPolicies().filter((p) => !!p.name);
+    const displayed = this.sortedFilteredPolicies().filter((p) => !!p.name);
     if (displayed.length === 0) return false;
     return displayed.every((p) => this.selectedPolicies().has(p.name));
   }
 
   masterToggle(): void {
     const selected = new Set(this.selectedPolicies());
-    const displayed = this.pagedPolicies().filter((p) => !!p.name);
+    const displayed = this.sortedFilteredPolicies().filter((p) => !!p.name);
     if (this.isAllSelected()) {
       displayed.forEach((p) => selected.delete(p.name));
     } else {

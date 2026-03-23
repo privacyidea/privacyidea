@@ -107,7 +107,7 @@ describe("PoliciesTableComponent", () => {
 
     const displayedRows = fixture.debugElement.queryAll(By.css("tr[mat-row], mat-row, .mat-mdc-row"));
     expect(displayedRows.length).toBe(3);
-    expect(component.pagedPolicies().length).toBe(3);
+    expect(component.sortedFilteredPolicies().length).toBe(3);
   });
 
   it("should select all displayed rows when masterToggle is called", () => {
@@ -179,7 +179,7 @@ describe("PoliciesTableComponent", () => {
     component.onSortChange({ active: "priority", direction: "asc" });
     fixture.detectChanges();
 
-    const data = component.pagedPolicies();
+    const data = component.sortedFilteredPolicies();
     expect(data[0].name).toBe("Policy-A");
     expect(data[1].name).toBe("Policy-B");
     expect(data[2].name).toBe("Policy-C");
@@ -189,7 +189,7 @@ describe("PoliciesTableComponent", () => {
     component.onSortChange({ active: "priority", direction: "desc" });
     fixture.detectChanges();
 
-    const data = component.pagedPolicies();
+    const data = component.sortedFilteredPolicies();
     expect(data[0].name).toBe("Policy-C");
     expect(data[1].name).toBe("Policy-B");
     expect(data[2].name).toBe("Policy-A");
@@ -199,7 +199,7 @@ describe("PoliciesTableComponent", () => {
     component.onSortChange({ active: "priority", direction: "" });
     fixture.detectChanges();
 
-    const data = component.pagedPolicies();
+    const data = component.sortedFilteredPolicies();
     // Default initial order from mock
     expect(data[0].name).toBe("Policy-C");
   });
