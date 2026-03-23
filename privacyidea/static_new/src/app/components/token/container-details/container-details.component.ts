@@ -24,6 +24,7 @@ import {
   ElementRef,
   inject,
   linkedSignal,
+  OnDestroy,
   signal,
   ViewChild,
   WritableSignal
@@ -133,7 +134,7 @@ interface TokenOption {
   templateUrl: "./container-details.component.html",
   styleUrls: ["./container-details.component.scss"]
 })
-export class ContainerDetailsComponent {
+export class ContainerDetailsComponent implements OnDestroy {
   protected readonly overflowService: OverflowServiceInterface = inject(OverflowService);
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
@@ -145,6 +146,7 @@ export class ContainerDetailsComponent {
   private readonly auditService: AuditServiceInterface = inject(AuditService);
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
   protected readonly notificationService = inject(NotificationService);
+  private previousPageSize = 10;
   private router = inject(Router);
   states = this.containerService.states;
   isEditingUser = signal(false);
@@ -173,11 +175,6 @@ export class ContainerDetailsComponent {
       return previous?.value ?? 0;
     }
   });
-
-  containerType = computed(() => {
-    return this.containerDetails()?.type ?? "";
-  });
-
   containerDetailResource = this.containerService.containerDetailResource;
   containerDetails: WritableSignal<ContainerDetailData> = linkedSignal({
     source: this.containerDetailResource.value,
@@ -209,6 +206,9 @@ export class ContainerDetailsComponent {
       };
       return emptyContainerDetails;
     }
+  });
+  containerType = computed(() => {
+    return this.containerDetails()?.type ?? "";
   });
   containerDetailData = linkedSignal({
     source: this.containerDetails,
@@ -302,6 +302,9 @@ export class ContainerDetailsComponent {
   tokenAutoTrigger!: MatAutocompleteTrigger;
 
   constructor() {
+    this.previousPageSize = this.tokenService.pageSize();
+    this.tokenService.pageSize.set(5);
+
     effect(() => {
       this.showOnlyTokenNotInContainer();
       // do not focus if showOnlyTokenNotInContainer is deselected to ensure the hint is visible
@@ -428,6 +431,10 @@ export class ContainerDetailsComponent {
         this.containerDetailResource.reload();
       }
     });
+  }
+
+  ngOnDestroy(): void {
+    this.tokenService.pageSize.set(this.previousPageSize);
   }
 
   protected showContainerAuditLog() {

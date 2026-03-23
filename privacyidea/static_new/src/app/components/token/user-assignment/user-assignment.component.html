@@ -17,18 +17,24 @@
   SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div class="assign-user-container">
-  <mat-form-field class="width-50 input-height">
+  <mat-form-field
+    class="input-width-l">
     <mat-label>Select Realm of User</mat-label>
     <mat-select
+      (selectionChange)="onSelectedRealmChange($event.value)"
       [formControl]="selectedUserRealmCtrl"
-      [value]="userService.selectedUserRealm()"
-      (selectionChange)="onSelectedRealmChange($event.value)">
+      [required]="required()"
+      [value]="userService.selectedUserRealm()">
       @for (option of realmService.realmOptions(); track option) {
         <mat-option [value]="option">{{ option }}</mat-option>
       }
     </mat-select>
+    @if (selectedUserRealmCtrl.hasError("required")) {
+      <mat-error i18n>User Realm is <strong>required</strong></mat-error>
+    }
   </mat-form-field>
-  <mat-form-field class="width-50 input-height">
+  <mat-form-field
+    class="input-width-l">
     <mat-label>Enter User</mat-label>
     <app-clearable-input
       (onClick)="userFilterCtrl.setValue('')"
@@ -36,6 +42,7 @@
       <input
         [formControl]="userFilterCtrl"
         [matAutocomplete]="userAuto"
+        [required]="required()"
         matInput />
     </app-clearable-input>
     <mat-autocomplete
@@ -45,9 +52,6 @@
         <mat-option [value]="user">{{ user.username }}</mat-option>
       }
     </mat-autocomplete>
-    @if (selectedUserRealmCtrl.hasError("required")) {
-      <mat-error>User Realm is <strong>required</strong></mat-error>
-    }
     @if (!selectedUserRealmCtrl.value && !onlyAddToRealm) {
       <mat-hint> Select a realm first to enable user selection.</mat-hint>
     }

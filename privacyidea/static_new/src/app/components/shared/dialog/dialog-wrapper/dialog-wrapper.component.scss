@@ -9,20 +9,23 @@
 
   .pi-dialog-header {
     display: flex;
-    justify-content: center;
+    justify-content: start;
     align-items: center;
-    padding: var(--half-global-padding) var(--global-padding);
+    padding: 16px;
   }
 
-  .pi-dialog-header h2 {
-    margin: 0;
+  .pi-dialog-header h3 {
+    margin-bottom: 0;
   }
 
   .pi-dialog-footer {
     display: flex;
     justify-content: flex-end;
-    padding: var(--half-global-padding) var(--global-padding);
+    padding: 16px;
+    gap: 8px
+  }
 
-    gap: var(--half-global-gap);
+  .pi-dialog-body {
+    margin-left: 16px;
   }
 }

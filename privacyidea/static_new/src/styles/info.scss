@@ -1,5 +1,5 @@
 $border-color: var(--mat-sys-outline-variant);
-$odd-row-bg: var(--mat-sys-surface-container-low);
+$odd-row-bg: var(--mat-sys-surface-variant);
 $even-row-bg: var(--mat-sys-surface-container-lowest);
 $table-cell-font-size: 0.875rem;
 
@@ -76,7 +76,6 @@ $table-cell-font-size: 0.875rem;
   }
 
   .info-divider {
-    width: 16rem;
     margin: 3px 0 4px -8px;
   }
 
@@ -89,17 +88,12 @@ $table-cell-font-size: 0.875rem;
       padding: 0;
     }
 
-    .mat-mdc-form-field-subscript-wrapper {
-      height: 4px;
-    }
-
     .mat-mdc-text-field-wrapper {
       padding-left: 5px;
     }
 
     .mat-mdc-form-field {
       font-size: 14px;
-      width: 16rem;
     }
 
     .mat-mdc-form-field-infix {

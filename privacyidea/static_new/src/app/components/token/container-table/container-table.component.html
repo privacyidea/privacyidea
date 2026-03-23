@@ -24,8 +24,8 @@
   @if (authService.actionAllowed("container_list")) {
     <div class="filter-paginator-container">
       <mat-form-field
-        class="container-table-filter"
-        subscriptSizing="dynamic">
+        subscriptSizing="dynamic"
+        class="container-table-filter">
         <mat-label i18n>Filter Containers...</mat-label>
         <app-clearable-input
           (onClick)="containerService.clearFilter()"
@@ -79,8 +79,8 @@
                 mat-header-cell>
                 <div class="flex ali-center">
                   {{ column.label }}
-                  <div class="margin-left-1 flex">
-                    @if (apiFilterKeyMap[column.key] && containerService.apiFilter.includes(column.key)) {
+                  <div class="margin-left-16 flex">
+                    @if (apiFilterKeyMap[column.key] && containerService.apiFilter.includes(apiFilterKeyMap[column.key])) {
                       <button
                         (click)="onKeywordClick(apiFilterKeyMap[column.key])"
                         class="filter-button"
@@ -105,7 +105,7 @@
             <td
               *matCellDef="let element; let row"
               [ngClass]="{
-                'width-18rem': column.key === 'description',
+                'input-width-l': column.key === 'description',
                 'table-checkbox': column.key === 'select'
               }"
               attr.aria-label="{{ column.label }} Cell"
@@ -183,6 +183,7 @@
                 @for (token of element.tokens; track token) {
                   <div class="token-item">
                     <a (click)="contentService.tokenSelected(token.serial)"> {{ token.serial }}</a>
+                    <app-copy-button [copyText]="token.serial"></app-copy-button>
                     [{{ token.tokentype }}]
                   </div>
                 }

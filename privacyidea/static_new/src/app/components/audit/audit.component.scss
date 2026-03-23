@@ -34,10 +34,10 @@
   border: solid 2px var(--mat-sys-surface-container-highest);
 }
 
-.audit-filter-paginator-container {
-  width: 76vw;
-}
-
 .selfservice-audit-filter-paginator-container {
   width: 90vw;
+}
+
+.filter-max-width {
+  max-width: 1466px;
 }

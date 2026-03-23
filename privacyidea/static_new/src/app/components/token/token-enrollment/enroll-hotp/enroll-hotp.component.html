@@ -18,7 +18,6 @@
 -->
 @if (!wizard) {
   <div class="flex-column">
-    <h4 class="enroll-h4">Token Configuration</h4>
     @if (twoStep() !== "disabled") {
       <mat-checkbox
         [formControl]="twoStepControl"
@@ -33,14 +32,14 @@
       i18n>
       Generate the OTP key on the server and show a QR code to scan.
     </mat-checkbox>
-    <div class="otp-inputs-container">
+    <div class="flex-row gap-16 margin-bottom-16">
       @if (!this.authService.checkForceServerGenerateOTPKey("hotp")) {
-        <mat-form-field class="input-height width-33">
+        <mat-form-field class="input-width-l">
           <mat-label i18n>OTP Key</mat-label>
           <input
-            matInput
             [formControl]="otpKeyFormControl"
             i18n-placeholder
+            matInput
             placeholder="Enter OTP key" />
           @if (otpKeyFormControl.hasError("required")) {
             <mat-error i18n> OTP key is <strong>required</strong></mat-error>
@@ -48,27 +47,33 @@
         </mat-form-field>
       }
 
-      <mat-form-field class="input-height width-33 hint-spacer">
+      <mat-form-field
+        class="input-width-l ">
         <mat-label i18n>OTP length</mat-label>
         <mat-select
           [formControl]="otpLengthFormControl"
-          [value]="otpLengthFormControl.value">
+          [value]="otpLengthFormControl.value"
+          required>
           @for (len of otpLengthOptions; track len) {
             <mat-option [value]="len">{{ len }}</mat-option>
           }
         </mat-select>
+        <mat-error i18n>OTP length is <strong>required</strong></mat-error>
         <mat-hint i18n> Some Authenticator Apps only support an OTP length of 6.</mat-hint>
       </mat-form-field>
 
-      <mat-form-field class="input-height width-33 hint-spacer">
+      <mat-form-field
+        class="input-width-l ">
         <mat-label i18n>Hash algorithm</mat-label>
         <mat-select
           [formControl]="hashAlgorithmFormControl"
-          [value]="hashAlgorithmFormControl.value">
+          [value]="hashAlgorithmFormControl.value"
+          required>
           @for (alg of hashAlgorithmOptions; track alg.value) {
             <mat-option [value]="alg.value">{{ alg.viewValue }}</mat-option>
           }
         </mat-select>
+        <mat-error i18n>Hash algorithm is <strong>required</strong></mat-error>
         <mat-hint i18n> Some Authenticator Apps only support the SHA1 algorithm.</mat-hint>
       </mat-form-field>
     </div>

@@ -19,7 +19,7 @@
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
 import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
-import { computed, inject, Injectable, linkedSignal, Signal, signal, WritableSignal } from "@angular/core";
+import { computed, effect, inject, Injectable, linkedSignal, Signal, signal, WritableSignal } from "@angular/core";
 import { RealmService, RealmServiceInterface } from "../realm/realm.service";
 import { TokenService, TokenServiceInterface } from "../token/token.service";
 
@@ -130,6 +130,14 @@ export class UserService implements UserServiceInterface {
   private readonly notificationService = inject(NotificationService);
   private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
+
+  constructor() {
+    effect(() => {
+      // Ensure the users are loaded for the autocomplete on allowed routes.
+      this.selectionFilteredUsernames();
+    });
+  }
+
   readonly apiFilter = apiFilter;
   readonly advancedApiFilter = advancedApiFilter;
   private baseUrl = environment.proxyUrl + "/user/";

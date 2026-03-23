@@ -22,30 +22,34 @@
   i18n-aria-label>
   <div class="flex-column">
     <h3
-      class="margin-left-1 margin-top-0"
+      class="margin-8"
       i18n>
       Tokens in Container
     </h3>
-    @if (dataSource.data.length > 1) {
-      <mat-form-field
-        class="container-details-token-table-filter"
-        subscriptSizing="dynamic">
-        <mat-label i18n>Filter Token...</mat-label>
-        <input
-          #filterInput
-          (keyup)="handleFilterInput($event)"
-          i18n-aria-label
-          aria-label="Filter Input"
-          matInput
-          i18n-placeholder
-          placeholder="Filter across all columns." />
-      </mat-form-field>
-    }
+    <div class="flex-row filter-paginator-container">
+      @if (dataSource.data.length > 1) {
+        <mat-form-field
+          class="container-details-token-table-filter width-50"
+          subscriptSizing="dynamic">
+          <mat-label i18n>Filter Token...</mat-label>
+          <app-clearable-input
+            (onClick)="clearFilter()"
+            [showClearButton]="filterInput.value !== ''">
+            <input
+              #filterInput
+              (keyup)="handleFilterInput($event)"
+              aria-label="Filter Input"
+              i18n-aria-label
+              i18n-placeholder
+              matInput
+              placeholder="Filter across all columns." />
+          </app-clearable-input>
+        </mat-form-field>
+      }
       <mat-paginator
-        [pageSizeOptions]="pageSizeOptions()"
-        [pageSize]="pageSize"
-        class="flex-just-start"
-        showFirstLastButtons/>
+        [hidePageSize]="true"
+        [pageSize]="pageSize" />
+    </div>
   </div>
   <div [ngClass]="[overflowService.isWidthOverflowing('body', 1580) ? 'flex-column' : 'flex-row']">
     <table
@@ -62,7 +66,7 @@
             mat-header-cell>
             <div class="flex ali-center">
               {{ column.label }}
-              <div class="margin-left-1 flex">
+              <div class="margin-left-16 flex">
                 <button
                   (click)="tableUtilsService.onSortButtonClick(column.key, sort)"
                   class="sort-button"
@@ -83,8 +87,8 @@
                   @case ("serial") {
                     @if (element.username === authService.username() || authService.role() === "admin") {
                       <a
-                        attr.aria-label="{{ column.label }} Link"
-                        (click)="contentService.tokenSelected(element.serial)">
+                        (click)="contentService.tokenSelected(element.serial)"
+                        attr.aria-label="{{ column.label }} Link">
                         {{ element[column.key] }}
                       </a>
                     } @else {
@@ -124,49 +128,33 @@
           </td>
         </ng-container>
       }
-      @if (authService.actionAllowed("container_remove_token")) {
-        <ng-container matColumnDef="remove">
-          <th
-            *matHeaderCellDef
-            aria-label="Remove Column Header"
-            i18n
-            i18n-aria-label
-            mat-header-cell>
-            Remove
-          </th>
-          <td
-            *matCellDef="let element"
-            aria-label="Remove Button Cell"
-            i18n-aria-label
-            mat-cell>
-            <div class="flex just-center">
+      <ng-container matColumnDef="actions">
+        <th
+          *matHeaderCellDef
+          aria-label="Actions Column Header"
+          i18n
+          i18n-aria-label
+          mat-header-cell>
+          <div class="flex just-center">
+            Actions
+          </div>
+        </th>
+        <td
+          *matCellDef="let element"
+          aria-label="Actions Button Cell"
+          i18n-aria-label
+          mat-cell>
+          <div class="flex-row just-center">
+            @if (authService.actionAllowed("container_remove_token")) {
               <button
                 (click)="removeTokenFromContainer(containerSerial(), element.serial)"
                 i18n-matTooltip
                 mat-icon-button
                 matTooltip="Remove Token from Container">
-                <mat-icon> highlight_remove</mat-icon>
+                <mat-icon> remove_circle_outline</mat-icon>
               </button>
-            </div>
-          </td>
-        </ng-container>
-      }
-      @if (authService.actionAllowed("delete")) {
-        <ng-container matColumnDef="delete">
-          <th
-            *matHeaderCellDef
-            aria-label="Delete Column Header"
-            i18n
-            i18n-aria-label
-            mat-header-cell>
-            Delete
-          </th>
-          <td
-            *matCellDef="let element"
-            aria-label="Delete Button Cell"
-            i18n-aria-label
-            mat-cell>
-            <div class="flex just-center">
+            }
+            @if (authService.actionAllowed("delete")) {
               <button
                 (click)="deleteTokenFromContainer(element.serial)"
                 i18n-matTooltip
@@ -174,10 +162,10 @@
                 matTooltip="Delete Token">
                 <mat-icon> delete</mat-icon>
               </button>
-            </div>
-          </td>
-        </ng-container>
-      }
+            }
+          </div>
+        </td>
+      </ng-container>
       <tr
         *matHeaderRowDef="displayedColumns"
         aria-label="Header Row"

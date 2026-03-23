@@ -227,6 +227,7 @@ export interface TokenServiceInterface {
   sort: WritableSignal<Sort>;
   pageIndex: WritableSignal<number>;
   tokenResource: HttpResourceRef<PiResponse<Tokens> | undefined>;
+  tokenSerialResource: HttpResourceRef<PiResponse<Tokens> | undefined>;
   tokenSelection: WritableSignal<TokenDetails[]>;
   selectedToken: WritableSignal<string | null>;
   tokenOptions: Signal<string[]>;

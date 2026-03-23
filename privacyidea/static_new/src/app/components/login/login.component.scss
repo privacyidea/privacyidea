@@ -47,11 +47,6 @@ $border-radius: var(--border-radius);
     flex-direction: column;
     margin-top: 32px;
     width: 300px;
-
-    mat-form-field {
-      width: 100%;
-      margin-bottom: 16px;
-    }
   }
 
   .passkey-form {

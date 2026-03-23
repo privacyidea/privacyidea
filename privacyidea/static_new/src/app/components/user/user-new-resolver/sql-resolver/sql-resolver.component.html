@@ -1,5 +1,5 @@
 <!--
- (c) NetKnights GmbH 2025,  https://netknights.it
+ (c) NetKnights GmbH 2026,  https://netknights.it
 
  This code is free software; you can redistribute it and/or
  modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -17,90 +17,96 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div class="type-sections-container">
-  <div class="type-section">
-    <h3 i18n>Database Connection</h3>
-    <div class="form-grid">
-      <mat-form-field class="field-lg">
-        <mat-label i18n>Driver</mat-label>
-        <app-clearable-input
-          (onClick)="driverControl.setValue('')"
-          [showClearButton]="!!driverControl.value">
-          <input
-            [formControl]="driverControl"
-            matInput
-            placeholder="mysql+pymysql"
-            required />
-        </app-clearable-input>
-        @if (driverControl.hasError('required') && driverControl.touched) {
-          <mat-error i18n>Driver is <strong>required</strong>.</mat-error>
-        }
-      </mat-form-field>
+  <div class="margin-left-16">
+    <h4 i18n>Database Connection</h4>
+    <div class="flex-column">
+      <div class="flex-row gap-16 margin-bottom-16">
+        <mat-form-field class="input-width-l">
+          <mat-label i18n>Driver</mat-label>
+          <app-clearable-input
+            (onClick)="driverControl.setValue('')"
+            [showClearButton]="!!driverControl.value">
+            <input
+              [formControl]="driverControl"
+              matInput
+              placeholder="mysql+pymysql"
+              required />
+          </app-clearable-input>
+          @if (driverControl.hasError('required') && driverControl.touched) {
+            <mat-error i18n>Driver is <strong>required</strong>.</mat-error>
+          }
+        </mat-form-field>
 
-      <mat-form-field class="field-lg">
-        <mat-label i18n>Database</mat-label>
-        <app-clearable-input
-          (onClick)="databaseControl.setValue('')"
-          [showClearButton]="!!databaseControl.value">
-          <input
-            [formControl]="databaseControl"
-            matInput
-            placeholder="YourDatabase" />
-        </app-clearable-input>
-      </mat-form-field>
+        <mat-form-field class="input-width-l">
+          <mat-label i18n>Database</mat-label>
+          <app-clearable-input
+            (onClick)="databaseControl.setValue('')"
+            [showClearButton]="!!databaseControl.value">
+            <input
+              [formControl]="databaseControl"
+              matInput
+              placeholder="YourDatabase" />
+          </app-clearable-input>
+        </mat-form-field>
+      </div>
 
-      <mat-form-field>
-        <mat-label i18n>Server</mat-label>
-        <app-clearable-input
-          (onClick)="serverControl.setValue('')"
-          [showClearButton]="!!serverControl.value">
-          <input
-            [formControl]="serverControl"
-            matInput
-            placeholder="127.0.0.1"
-            required />
-        </app-clearable-input>
-        @if (serverControl.hasError('required') && serverControl.touched) {
-          <mat-error i18n>Server is <strong>required</strong>.</mat-error>
-        }
-      </mat-form-field>
+      <div class="flex-row gap-16">
+        <mat-form-field class="input-width-l">
+          <mat-label i18n>Server</mat-label>
+          <app-clearable-input
+            (onClick)="serverControl.setValue('')"
+            [showClearButton]="!!serverControl.value">
+            <input
+              [formControl]="serverControl"
+              matInput
+              placeholder="127.0.0.1"
+              required />
+          </app-clearable-input>
+          @if (serverControl.hasError('required') && serverControl.touched) {
+            <mat-error i18n>Server is <strong>required</strong>.</mat-error>
+          }
+        </mat-form-field>
 
-      <mat-form-field>
-        <mat-label i18n>Port</mat-label>
-        <input
-          [formControl]="portControl"
-          matInput
-          placeholder="3306" />
-      </mat-form-field>
+        <mat-form-field class="input-width-s">
+          <mat-label i18n>Port</mat-label>
+          <input
+            [formControl]="portControl"
+            matInput
+            placeholder="3306" />
+        </mat-form-field>
+      </div>
     </div>
   </div>
 
-  <div class="type-section">
-    <h3 i18n>Authentication & Params</h3>
-    <div class="form-grid">
-      <mat-form-field>
-        <mat-label i18n>User</mat-label>
-        <app-clearable-input
-          (onClick)="userControl.setValue('')"
-          [showClearButton]="!!userControl.value">
-          <input
-            [formControl]="userControl"
-            matInput
-            placeholder="user" />
-        </app-clearable-input>
-      </mat-form-field>
+  <div class="margin-left-16">
+    <h4 i18n>Authentication & Params</h4>
+    <div class="flex-column">
+      <div class="flex-row gap-16">
+        <mat-form-field class="input-width-l">
+          <mat-label i18n>User</mat-label>
+          <app-clearable-input
+            (onClick)="userControl.setValue('')"
+            [showClearButton]="!!userControl.value">
+            <input
+              [formControl]="userControl"
+              matInput
+              placeholder="user" />
+          </app-clearable-input>
+        </mat-form-field>
 
-      <mat-form-field>
-        <mat-label i18n>Password</mat-label>
-        <app-clearable-input
-          (onClick)="passwordControl.setValue('')"
-          [showClearButton]="!!passwordControl.value">
-          <input
-            [formControl]="passwordControl"
-            matInput
-            placeholder="topsecret"
-            type="password" />
-        </app-clearable-input>
-      </mat-form-field>
+        <mat-form-field class="input-width-l">
+          <mat-label i18n>Password</mat-label>
+          <app-clearable-input
+            (onClick)="passwordControl.setValue('')"
+            [showClearButton]="!!passwordControl.value">
+            <input
+              [formControl]="passwordControl"
+              matInput
+              placeholder="topsecret"
+              type="password" />
+          </app-clearable-input>
+        </mat-form-field>
+      </div>
 
       <div class="flex-column">
         <mat-checkbox
@@ -109,68 +115,73 @@
           Edit user store
         </mat-checkbox>
         <span
-          class="hint"
-          i18n>The user data in this database can be modified from within privacyIDEA.</span>
-      </div>
+          class="hint margin-bottom-16"
+          i18n>
+          The user data in this database can be modified from within privacyIDEA.
+        </span>
 
-      @if (editableControl.value) {
-        <mat-form-field class="field-lg">
-          <mat-label i18n>Password Hash for Editable Users</mat-label>
-          <mat-select
-            [formControl]="passwordHashTypeControl"
-            placeholder="">
-            <mat-option
-              i18n
-              value="PHPASS">PHPASS
-            </mat-option>
-            <mat-option
-              i18n
-              value="SHA">SHA
-            </mat-option>
-            <mat-option
-              i18n
-              value="SSHA">SSHA
-            </mat-option>
-            <mat-option
-              i18n
-              value="SSHA256">SSHA256
-            </mat-option>
-            <mat-option
-              i18n
-              value="SSHA512">SSHA512
-            </mat-option>
-            <mat-option
-              i18n
-              value="OTRS">OTRS
-            </mat-option>
-            <mat-option
-              i18n
-              value="SHA512CRYPT">SHA512CRYPT
-            </mat-option>
-            <mat-option
-              i18n
-              value="MD5CRYPT">MD5CRYPT
-            </mat-option>
-          </mat-select>
-          <mat-hint i18n>
-            The hashing algorithm for the passwords of newly created users. Can be PHPASS, SHA, SSHA, SSHA256, SHA512,
-            OTRS.
-          </mat-hint>
-        </mat-form-field>
-      }
+        @if (editableControl.value) {
+          <mat-form-field class="input-width-xl margin-bottom-16">
+            <mat-label i18n>Password Hash for Editable Users</mat-label>
+            <mat-select
+              [formControl]="passwordHashTypeControl"
+              placeholder="">
+              <mat-option
+                i18n
+                value="PHPASS">PHPASS
+              </mat-option>
+              <mat-option
+                i18n
+                value="SHA">SHA
+              </mat-option>
+              <mat-option
+                i18n
+                value="SSHA">SSHA
+              </mat-option>
+              <mat-option
+                i18n
+                value="SSHA256">SSHA256
+              </mat-option>
+              <mat-option
+                i18n
+                value="SSHA512">SSHA512
+              </mat-option>
+              <mat-option
+                i18n
+                value="OTRS">OTRS
+              </mat-option>
+              <mat-option
+                i18n
+                value="SHA512CRYPT">SHA512CRYPT
+              </mat-option>
+              <mat-option
+                i18n
+                value="MD5CRYPT">MD5CRYPT
+              </mat-option>
+            </mat-select>
+            <mat-hint i18n>
+              The hashing algorithm for the passwords of newly created users. Can be PHPASS, SHA, SSHA, SSHA256, SHA512,
+              OTRS.
+            </mat-hint>
+          </mat-form-field>
+        }
+      </div>
     </div>
   </div>
 </div>
 
 @if (!isEditMode()) {
-  <div class="preset-buttons-container">
-    <span
-      class="preset-label"
-      i18n>Presets:</span>
+  <h4
+    class="margin-left-16"
+    i18n>
+    Presets:
+  </h4>
+  <div class="preset-buttons-container margin-bottom-16 margin-left-16">
     <div class="preset-buttons">
       @for (preset of sqlPresets; track preset.name) {
         <button
           (click)="applySqlPreset(preset)"
+          class="action-button-secondary button-width-s"
           mat-stroked-button
           type="button">
           {{ preset.name }}
@@ -181,39 +192,41 @@
 }
 
 <div class="type-sections-container">
-  <div class="type-section section-full">
-    <h3 i18n>Table, Mapping, Pool & Editable</h3>
-    <div class="form-grid">
-      <mat-form-field>
-        <mat-label i18n>Table</mat-label>
-        <app-clearable-input
-          (onClick)="tableControl.setValue('')"
-          [showClearButton]="!!tableControl.value">
+  <div class="margin-left-16">
+    <h4 i18n>Table, Mapping, Pool & Editable</h4>
+    <div class="flex-column">
+      <div class="flex-row gap-16 margin-bottom-16">
+        <mat-form-field class="input-width-l">
+          <mat-label i18n>Table</mat-label>
+          <app-clearable-input
+            (onClick)="tableControl.setValue('')"
+            [showClearButton]="!!tableControl.value">
+            <input
+              [formControl]="tableControl"
+              matInput
+              placeholder="Users"
+              required />
+          </app-clearable-input>
+          @if (tableControl.hasError('required') && tableControl.touched) {
+            <mat-error i18n>Table is <strong>required</strong>.</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field class="input-width-s">
+          <mat-label i18n>Limit</mat-label>
           <input
-            [formControl]="tableControl"
+            [formControl]="limitControl"
             matInput
-            placeholder="Users"
-            required />
-        </app-clearable-input>
-        @if (tableControl.hasError('required') && tableControl.touched) {
-          <mat-error i18n>Table is <strong>required</strong>.</mat-error>
-        }
-      </mat-form-field>
+            placeholder="500"
+            required
+            type="number" />
+          @if (limitControl.hasError('required') && limitControl.touched) {
+            <mat-error i18n>Limit is <strong>required</strong>.</mat-error>
+          }
+        </mat-form-field>
+      </div>
 
-      <mat-form-field>
-        <mat-label i18n>Limit</mat-label>
-        <input
-          [formControl]="limitControl"
-          matInput
-          placeholder="500"
-          required
-          type="number" />
-        @if (limitControl.hasError('required') && limitControl.touched) {
-          <mat-error i18n>Limit is <strong>required</strong>.</mat-error>
-        }
-      </mat-form-field>
-
-      <mat-form-field class="field-lg">
+      <mat-form-field class="input-width-xl margin-bottom-16">
         <mat-label i18n>Mapping</mat-label>
         <textarea
           [formControl]="mapControl"
@@ -225,29 +238,31 @@
         }
       </mat-form-field>
 
-      <mat-form-field>
-        <mat-label i18n>Connection Parameters</mat-label>
-        <app-clearable-input
-          (onClick)="conParamsControl.setValue('')"
-          [showClearButton]="!!conParamsControl.value">
-          <input
-            [formControl]="conParamsControl"
-            matInput />
-        </app-clearable-input>
-      </mat-form-field>
+      <div class="flex-row gap-16">
+        <mat-form-field class="input-width-l">
+          <mat-label i18n>Connection Parameters</mat-label>
+          <app-clearable-input
+            (onClick)="conParamsControl.setValue('')"
+            [showClearButton]="!!conParamsControl.value">
+            <input
+              [formControl]="conParamsControl"
+              matInput />
+          </app-clearable-input>
+        </mat-form-field>
 
-      <mat-form-field>
-        <mat-label i18n>Database Encoding</mat-label>
-        <app-clearable-input
-          (onClick)="encodingControl.setValue('')"
-          [showClearButton]="!!encodingControl.value">
-          <input
-            [formControl]="encodingControl"
-            matInput />
-        </app-clearable-input>
-      </mat-form-field>
+        <mat-form-field class="input-width-l">
+          <mat-label i18n>Database Encoding</mat-label>
+          <app-clearable-input
+            (onClick)="encodingControl.setValue('')"
+            [showClearButton]="!!encodingControl.value">
+            <input
+              [formControl]="encodingControl"
+              matInput />
+          </app-clearable-input>
+        </mat-form-field>
+      </div>
 
-      <mat-form-field class="field-lg">
+      <mat-form-field class="input-width-xl">
         <mat-label i18n>Where Statement</mat-label>
         <app-clearable-input
           (onClick)="whereControl.setValue('')"
@@ -258,29 +273,31 @@
         </app-clearable-input>
       </mat-form-field>
 
-      <mat-form-field>
-        <mat-label i18n>Pool Size</mat-label>
-        <input
-          [formControl]="poolSizeControl"
-          matInput
-          type="number" />
-      </mat-form-field>
+      <div class="flex-row gap-16">
+        <mat-form-field class="input-width-s">
+          <mat-label i18n>Pool Size</mat-label>
+          <input
+            [formControl]="poolSizeControl"
+            matInput
+            type="number" />
+        </mat-form-field>
 
-      <mat-form-field>
-        <mat-label i18n>Pool Timeout</mat-label>
-        <input
-          [formControl]="poolTimeoutControl"
-          matInput
-          type="number" />
-      </mat-form-field>
+        <mat-form-field class="input-width-s">
+          <mat-label i18n>Pool Timeout</mat-label>
+          <input
+            [formControl]="poolTimeoutControl"
+            matInput
+            type="number" />
+        </mat-form-field>
 
-      <mat-form-field>
-        <mat-label i18n>Pool Recycle Timeout</mat-label>
-        <input
-          [formControl]="poolRecycleControl"
-          matInput
-          type="number" />
-      </mat-form-field>
+        <mat-form-field class="input-width-s">
+          <mat-label i18n>Pool Recycle Timeout</mat-label>
+          <input
+            [formControl]="poolRecycleControl"
+            matInput
+            type="number" />
+        </mat-form-field>
+      </div>
     </div>
   </div>
 </div>

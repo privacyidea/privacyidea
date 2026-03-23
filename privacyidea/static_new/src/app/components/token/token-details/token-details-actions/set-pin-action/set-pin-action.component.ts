@@ -31,10 +31,11 @@ import { FormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 import { DialogService, DialogServiceInterface } from "../../../../../services/dialog/dialog.service";
+import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
 
 @Component({
   selector: "app-set-pin-action",
-  imports: [FormsModule, MatIcon, MatButtonModule],
+  imports: [FormsModule, MatIcon, MatButtonModule, MatFormField, MatLabel, MatInput],
   templateUrl: "./set-pin-action.component.html",
   styleUrl: "./set-pin-action.component.scss"
 })

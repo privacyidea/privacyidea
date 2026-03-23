@@ -36,6 +36,7 @@ import { AuthService } from "../../../services/auth/auth.service";
 import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { UserNewResolverComponent } from "../user-new-resolver/user-new-resolver.component";
+import { ResolverTableActionsComponent } from "./resolver-table-actions/resolver-table-actions.component";
 import { SimpleConfirmationDialogComponent } from "../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { DialogService, DialogServiceInterface } from "../../../services/dialog/dialog.service";
 
@@ -59,7 +60,8 @@ const columnKeysMap = [
     MatButtonModule,
     MatTooltipModule,
     ClearableInputComponent,
-    ScrollToTopDirective
+    ScrollToTopDirective,
+    ResolverTableActionsComponent
   ],
   templateUrl: "./user-resolvers.component.html",
   styleUrl: "./user-resolvers.component.scss"
@@ -120,10 +122,6 @@ export class UserResolversComponent {
     this.filterString.set("");
     const ds = this.resolversDataSource();
     ds.filter = "";
-  }
-
-  onNewResolver(): void {
-    this.openResolverDialog();
   }
 
   onEditResolver(resolver: Resolver): void {

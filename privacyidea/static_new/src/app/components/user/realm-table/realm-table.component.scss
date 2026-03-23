@@ -74,11 +74,6 @@
   background-color: rgba(0, 0, 0, 0.02);
 }
 
-.new-realm-name-field {
-  width: 100%;
-  min-width: 238px;
-}
-
 .node-resolvers-groups {
   display: flex;
   flex-direction: column;
@@ -88,10 +83,6 @@
 .node-resolvers-group {
   display: flex;
   flex-direction: column;
-}
-
-.node-resolvers-select {
-  width: 100%;
 }
 
 .resolver-priority-list {
@@ -113,18 +104,14 @@
 }
 
 .resolver-priority-input {
-  width: 80px;
+  width: 48px;
   padding: 0.1rem 0.25rem;
   font-size: 0.75rem;
 }
 
-.actions-cell {
-  max-width: unset !important;
-}
-
 .actions-buttons {
   display: flex;
-  gap: 0.25rem;
+  gap: 8px;
   justify-content: center;
   align-items: center;
 }

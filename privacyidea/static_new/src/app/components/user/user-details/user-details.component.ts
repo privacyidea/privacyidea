@@ -55,6 +55,7 @@ import { DialogService, DialogServiceInterface } from "../../../services/dialog/
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { EditUserDialogComponent } from "@components/user/edit-user-dialog/edit-user-dialog.component";
 import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
+import { TableUtilsService, TableUtilsServiceInterface } from "../../../services/table-utils/table-utils.service";
 
 @Component({
   selector: "app-user-details",
@@ -90,6 +91,7 @@ export class UserDetailsComponent {
   private readonly auditService: AuditServiceInterface = inject(AuditService);
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
+  protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   private router = inject(Router);
 
   readonly labels: Record<string, string> = {
@@ -113,6 +115,7 @@ export class UserDetailsComponent {
   tokenResource = this.tokenService.tokenResource;
   pageIndex = this.tokenService.pageIndex;
   pageSize = this.tokenService.pageSize;
+  pageSizeOptions = this.tableUtilsService.pageSizeOptions;
 
   total: WritableSignal<number> = linkedSignal({
     source: this.tokenResource.value,
@@ -195,6 +198,13 @@ export class UserDetailsComponent {
     const colCount = 3;
     const perCol = Math.ceil(entries.length / colCount);
     return Array.from({ length: colCount }, (_, i) => entries.slice(i * perCol, (i + 1) * perCol));
+  });
+
+  customAttributeColumns = computed(() => {
+    const attributes = this.userService.userAttributesList();
+    const colCount = 2;
+    const perCol = Math.ceil(attributes.length / colCount);
+    return Array.from({ length: colCount }, (_, i) => attributes.slice(i * perCol, (i + 1) * perCol));
   });
 
   switchToCustomKey() {

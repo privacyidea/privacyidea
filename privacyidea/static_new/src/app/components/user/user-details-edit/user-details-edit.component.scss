@@ -3,9 +3,5 @@
 .grid-container {
   display: grid;
   grid-template-columns: auto auto;
-  gap: 16px;
-}
-
-.input-width-400 {
-  width: 400px;
+  gap: 0 16px;
 }

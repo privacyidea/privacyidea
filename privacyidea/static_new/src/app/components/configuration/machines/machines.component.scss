@@ -8,10 +8,6 @@
   max-width: calc(100vw - var(--global-padding) * 5 - 48px);
   display: grid;
   overflow: auto;
-
-  .table-filter {
-    width: 29rem;
-  }
 }
 
 .machines-layout {
@@ -22,7 +18,6 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
 }
 
 ::ng-deep app-machine-details-dialog.mat-mdc-dialog-component-host mat-dialog-content.mat-mdc-dialog-content.mdc-dialog__content.machine-dialog-content {

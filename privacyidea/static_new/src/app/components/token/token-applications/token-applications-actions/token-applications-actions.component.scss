@@ -1,0 +1,6 @@
+@use "styles";
+@use "table";
+
+:host ::ng-deep .mat-mdc-menu-content {
+  background: var(--mat-sys-surface-container-low);
+}

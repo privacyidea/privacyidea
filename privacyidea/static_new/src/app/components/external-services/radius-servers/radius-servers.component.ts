@@ -89,7 +89,8 @@ export class RadiusServersComponent {
   openEditDialog(server?: RadiusServer): void {
     this.dialog.open(NewRadiusServerComponent, {
       data: server ? { ...server } : null,
-      width: "600px"
+      width: "auto",
+      maxWidth: "100vw"
     });
   }
 

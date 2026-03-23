@@ -17,6 +17,7 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div
+  #scrollContainer
   appScrollToTop
   aria-label="Token Table"
   class="token-table-layout"
@@ -24,8 +25,8 @@
   @if (authService.actionAllowed("tokenlist")) {
     <div class="filter-paginator-container">
       <mat-form-field
-        class="token-table-filter"
-        subscriptSizing="dynamic">
+        subscriptSizing="dynamic"
+        class="token-table-filter">
         <mat-label i18n>Filter Tokens...</mat-label>
         <app-clearable-input
           (onClick)="tokenService.clearFilter()"
@@ -50,7 +51,9 @@
         [pageSize]="pageSize()"
         showFirstLastButtons />
     </div>
-    <app-token-table-actions />
+    <div class="margin-bottom-16">
+      <app-token-table-actions />
+    </div>
     <div class="table-container">
       <table
         [dataSource]="tokenDataSource()"
@@ -78,14 +81,14 @@
                 mat-header-cell>
                 <div class="flex ali-center">
                   {{ column.label }}
-                  <div class="margin-left-1 flex">
-                    @if (apiFilterKeyMap[column.key] && tokenService.apiFilter.includes(column.key)) {
+                  <div class="margin-left-16 flex">
+                    @if (apiFilterKeyMap[column.key] && tokenService.apiFilter.includes(apiFilterKeyMap[column.key])) {
                       <button
                         (click)="onKeywordClick(apiFilterKeyMap[column.key])"
                         class="filter-button"
                         mat-icon-button>
                         <mat-icon class="keyword-button-icon margin-left-0">
-                          {{ getFilterIconName(column.key) }}
+                          {{ getFilterIconName(apiFilterKeyMap[column.key]) }}
                         </mat-icon>
                       </button>
                     }
@@ -103,7 +106,6 @@
             <td
               *matCellDef="let tokenDetails"
               [ngClass]="{
-                'width-18rem': column.key === 'description',
                 'table-checkbox': column.key === 'select'
               }"
               attr.aria-label="{{ column.label }} Cell"

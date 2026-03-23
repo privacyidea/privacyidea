@@ -22,14 +22,14 @@
   i18n-aria-label>
 
   <div class="details-header">
-    <h3 i18n>Containers of User</h3>
-    <h3 class="username-header">{{ userService.detailsUsername() }}</h3>
-    <h3 class="margin-left--8">:</h3>
+    <h4 i18n>Containers of User</h4>
+    <h4 class="username-header">{{ userService.detailsUsername() }}</h4>
+    <h4 class="margin-left--8">:</h4>
   </div>
   <div class="flex-row filter-paginator-container">
     <mat-form-field
-      class="width-50"
-      subscriptSizing="dynamic">
+      subscriptSizing="dynamic"
+      class="user-details-container-table-filter">
       <mat-label i18n>Filter Containers...</mat-label>
       <app-clearable-input
         (onClick)="filterValue=''; dataSource.filter=''; filterInput.value=''"
@@ -66,7 +66,7 @@
             mat-header-cell>
             <div class="flex ali-center">
               {{ column.label }}
-              <div class="margin-left-1 flex">
+              <div class="margin-left-16 flex">
                 <button
                   (click)="tableUtilsService.onSortButtonClick(column.key, sort)"
                   class="sort-button"
@@ -80,7 +80,6 @@
 
           <td
             *matCellDef="let element"
-            [ngClass]="{ 'width-18rem': column.key === 'description' }"
             attr.aria-label="{{ column.label }} Cell"
             mat-cell>
 

@@ -14,6 +14,7 @@ import { Observable, of } from "rxjs";
 
 class MockActivatedRoute {
   fragment: Observable<string | undefined> = of();
+  queryParams: Observable<Record<string, any>> = of({});
 }
 
 describe("TokenTypeConfigComponent", () => {

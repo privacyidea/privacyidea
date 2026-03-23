@@ -19,16 +19,11 @@
 <div
   appScrollToTop
   class="challenges-table-container">
-  <h3
-    class="margin-left-1"
-    i18n>
-    Challenges
-  </h3>
   <div class="filter-paginator-container">
     <mat-form-field
+      subscriptSizing="dynamic"
       appearance="fill"
-      class="challenges-table-filter"
-      subscriptSizing="dynamic">
+      class="challenges-table-filter">
       <mat-label i18n>Filter Challenges...</mat-label>
       <app-clearable-input
         (onClick)="challengesService.clearFilter()"
@@ -42,14 +37,6 @@
           placeholder="Example query: 'transaction_id: 00000000000000000001'" />
       </app-clearable-input>
     </mat-form-field>
-    <button
-      (click)="onDeleteExpiredChallenges()"
-      class="action-button-delete"
-      i18n
-      mat-stroked-button>
-      <mat-icon>delete_sweep</mat-icon>
-      Delete Expired
-    </button>
     <mat-paginator
       (page)="onPageEvent($event)"
       [length]="length()"
@@ -57,6 +44,9 @@
       [pageSizeOptions]="pageSizeOptions()"
       [pageSize]="pageSize()"
       showFirstLastButtons></mat-paginator>
+  </div>
+  <div class="margin-bottom-16">
+    <app-challenges-table-actions />
   </div>
   <table
     [dataSource]="challengesDataSource()"
@@ -72,7 +62,7 @@
           mat-header-cell>
           <div class="flex ali-center">
             {{ column.label }}
-            <div class="margin-left-1 flex">
+            <div class="margin-left-16 flex">
               @if (apiFilter.includes(column.key)) {
                 <button
                   (click)="onKeywordClick(column.key)"
@@ -103,8 +93,8 @@
               @case ("serial") {
                 <div class="flex-row">
                   <a
-                    class="flex ali-center"
-                    (click)="serialClicked(element)">
+                    (click)="serialClicked(element)"
+                    class="flex ali-center">
                     {{ element.serial }}
                   </a>
                   @if (element.serial) {
@@ -113,9 +103,11 @@
                 </div>
               }
               @case ("otp_received") {
-                <span [ngClass]="[element[column.key] ? 'highlight-true' : 'highlight-false']">
-                  {{ element[column.key] }}
-                </span>
+                <div class="flex just-center width-100">
+                  <span [ngClass]="[element[column.key] ? 'highlight-true' : 'highlight-false']">
+                    {{ element[column.key] }}
+                  </span>
+                </div>
               }
               @default {
                 <span>{{ element[column.key] }}</span>

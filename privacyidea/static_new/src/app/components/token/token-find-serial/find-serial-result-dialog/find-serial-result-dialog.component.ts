@@ -32,13 +32,13 @@ export type GetSerialResultDialogData = {
 export type GetSerialResultDialogReturn = "reset";
 
 @Component({
-  selector: "app-get-serial-result-dialog",
+  selector: "app-find-serial-result-dialog",
   imports: [DialogWrapperComponent],
-  templateUrl: "./get-serial-result-dialog.component.html",
-  styleUrl: "./get-serial-result-dialog.component.scss",
+  templateUrl: "./find-serial-result-dialog.component.html",
+  styleUrl: "./find-serial-result-dialog.component.scss",
   standalone: true
 })
-export class GetSerialResultDialogComponent extends AbstractDialogComponent<
+export class FindSerialResultDialogComponent extends AbstractDialogComponent<
   GetSerialResultDialogData,
   GetSerialResultDialogReturn
 > {

@@ -1,5 +1,5 @@
 <!--
- (c) NetKnights GmbH 2025,  https://netknights.it
+ (c) NetKnights GmbH 2026,  https://netknights.it
 
  This code is free software; you can redistribute it and/or
  modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -25,8 +25,8 @@
     class="audit-table-container">
     <div class="filter-paginator-container selfservice-audit-filter-paginator-container">
       <mat-form-field
-        class="token-table-filter"
-        subscriptSizing="dynamic">
+        subscriptSizing="dynamic"
+        class="token-table-filter">
         <mat-label i18n>Filter Audit...</mat-label>
         <app-clearable-input
           (onClick)="auditService.clearFilter()"
@@ -65,12 +65,10 @@
               mat-header-cell>
               <div class="flex ali-center">
                 {{ column.label }}
-                @if (
-                  !["number", "log_level", "clearance_level", "sig_check", "missing_line", "thread_id"].includes(
-                    column.key
-                  )
-                ) {
-                  <div class="margin-left-1">
+                @if (!["number", "log_level", "clearance_level", "sig_check", "missing_line", "thread_id"].includes(
+                  column.key
+                )) {
+                  <div class="margin-left-16">
                     <button
                       (click)="onKeywordClick(apiFilterKeyMap[column.key])"
                       class="filter-button"
@@ -86,7 +84,6 @@
             <td
               *matCellDef="let element; let row"
               [ngClass]="{
-                'width-18rem': column.key === 'description',
                 'table-checkbox': column.key === 'select'
               }"
               attr.aria-label="{{ column.label }} Cell"

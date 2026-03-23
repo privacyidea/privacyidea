@@ -3,21 +3,12 @@
 
 .container-create-container {
   @include table.table-container-styles;
-  width: 920px;
   max-height: var(--max-height);
-  max-width: calc(100vw - var(--global-padding) * 5 - 48px);
   display: grid;
   overflow: auto;
 }
 
 .container-type-hint {
   margin-top: 8px;
-  font-size: 16px;
-}
-
-.select-container-type {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  flex: 2;
+  font-size: 1rem;
 }

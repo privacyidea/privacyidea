@@ -19,6 +19,7 @@
   flex-direction: row;
   justify-content: space-between;
   align-items: center;
+  gap: 16px;
 }
 
 .action-buttons {
@@ -70,5 +71,5 @@
 }
 
 .tab-container {
-  margin: 16px 8px 32px 8px;
+  margin: 16px 8px 16px 8px;
 }

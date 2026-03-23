@@ -170,7 +170,8 @@ export interface PolicyServiceInterface {
   readonly allPolicyScopes: Signal<string[]>;
   readonly policyActionsByGroup: Signal<PolicyActionGroups>;
   readonly allPolicies: Signal<PolicyDetail[]>;
-  allPoliciesRecource: HttpResourceRef<PiResponse<PolicyDetail[], unknown> | undefined>;
+  allPoliciesResource: HttpResourceRef<PiResponse<PolicyDetail[], unknown> | undefined>;
+  policyActionResource: HttpResourceRef<PiResponse<ScopedPolicyActions> | undefined>;
 
   getEmptyPolicy(): PolicyDetail;
 
@@ -253,7 +254,7 @@ export class PolicyService implements PolicyServiceInterface {
     //   return this.filteredPolicyActionGroups(this.alreadyAddedActionNames(), this.actionFilter());
     // });
 
-  _allPolicies = computed(() => this.allPoliciesRecource.value()?.result?.value ?? []);
+  _allPolicies = computed(() => this.allPoliciesResource.value()?.result?.value ?? []);
 
   getEmptyPolicy(): PolicyDetail {
     return {
@@ -444,7 +445,7 @@ export class PolicyService implements PolicyServiceInterface {
     );
     // Reload policies to ensure state is correct
     if (result && !result.result?.error) {
-      this.allPoliciesRecource.reload();
+      this.allPoliciesResource.reload();
     } else {
       // Rollback optimistic update
       this.allPolicies.set(allPolicies);
@@ -539,7 +540,7 @@ export class PolicyService implements PolicyServiceInterface {
   saveNewPolicy(newPolicy: PolicyDetail): Promise<void> {
     const promise = this.createPolicy(newPolicy)
       .then((_) => {
-        this.allPoliciesRecource.reload();
+        this.allPoliciesResource.reload();
       })
       .catch((error) => {
         console.error("Error creating policy: ", error);
@@ -614,7 +615,7 @@ export class PolicyService implements PolicyServiceInterface {
     });
     // Reload policies to ensure state is correct (in case other properties changed)
     action.then(() => {
-      this.allPoliciesRecource.reload();
+      this.allPoliciesResource.reload();
     });
   }
 
@@ -638,13 +639,13 @@ export class PolicyService implements PolicyServiceInterface {
         );
       }
 
-      this.allPoliciesRecource.reload();
+      this.allPoliciesResource.reload();
     } catch (err) {
       this.allPolicies.set(lastStableState);
     }
   }
 
-  readonly allPoliciesRecource = httpResource<PiResponse<PolicyDetail[]>>(() => {
+  readonly allPoliciesResource = httpResource<PiResponse<PolicyDetail[]>>(() => {
     // Only load policies if the action is allowed.
     if (!this.authService.actionAllowed("policyread")) {
       return undefined;

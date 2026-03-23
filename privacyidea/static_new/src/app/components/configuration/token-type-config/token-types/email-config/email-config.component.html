@@ -18,42 +18,44 @@
 -->
 <mat-expansion-panel id="email" [expanded]="expanded()">
   <mat-expansion-panel-header>
-    <mat-panel-title i18n>E-Mail Token Settings</mat-panel-title>
+    <mat-panel-title i18n>E-Mail</mat-panel-title>
   </mat-expansion-panel-header>
-  <div class="panel-content">
+  <div class="panel-content expansion-well">
     <p i18n>The E-Mail token is a challenge response token that sends the OTP value to the given email address, when the
             correct OTP PIN was presented by the user.
     </p>
 
-    <mat-form-field
-      appearance="fill"
-      class="margin-bottom-16">
-      <mat-label i18n>SMTP Server Configuration</mat-label>
-      <mat-select [(ngModel)]="formData()['email.identifier']">
-        <mat-option
-          [value]="''"
-          i18n>None
-        </mat-option>
-        @for (server of smtpServers(); track server) {
-          <mat-option [value]="server">{{ server }}</mat-option>
-        }
-      </mat-select>
-      <mat-hint i18n>Select a predefined
-        <a
-          [routerLink]=[ROUTE_PATHS.EXTERNAL_SERVICES_SMTP]><strong>SMTP server configuration</strong>.
-        </a>
-      </mat-hint>
-    </mat-form-field>
+    <div class="flex-row gap-16 ali-center margin-bottom-16">
+      <mat-form-field
+        appearance="fill"
+        class="input-width-l">
+        <mat-label i18n>SMTP Server Configuration</mat-label>
+        <mat-select [(ngModel)]="formData()['email.identifier']">
+          <mat-option
+            [value]="''"
+            i18n>None
+          </mat-option>
+          @for (server of smtpServers(); track server) {
+            <mat-option [value]="server">{{ server }}</mat-option>
+          }
+        </mat-select>
+        <mat-hint i18n>Select a predefined
+          <a
+            [routerLink]=[ROUTE_PATHS.EXTERNAL_SERVICES_SMTP]><strong>SMTP server configuration</strong>.
+          </a>
+        </mat-hint>
+      </mat-form-field>
 
-    <mat-form-field
-      appearance="fill"
-      class="margin-bottom-16">
-      <mat-label i18n>OTP Validity Time</mat-label>
-      <input
-        [(ngModel)]="formData()['email.validtime']"
-        matInput
-        type="number">
-      <mat-hint i18n>The time in seconds for which the sent OTP value is valid for authentication.</mat-hint>
-    </mat-form-field>
+      <mat-form-field
+        appearance="fill"
+        class="input-width-l">
+        <mat-label i18n>OTP Validity Time</mat-label>
+        <input
+          [(ngModel)]="formData()['email.validtime']"
+          matInput
+          type="number">
+        <mat-hint i18n>The time in seconds for which the sent OTP value is valid for authentication.</mat-hint>
+      </mat-form-field>
+    </div>
   </div>
 </mat-expansion-panel>

@@ -37,10 +37,10 @@ describe("DialogWrapperComponent", () => {
     fixture.componentRef.setInput("showCancelButton", true);
     fixture.componentRef.setInput("title", "Test Title");
     fixture.componentRef.setInput("actions", [
-      { value: "confirm", label: "Confirm", type: "confirm" },
-      { value: "delete", label: "Delete", type: "destruct" },
+      { value: "confirm", label: "Confirm", type: "confirm", primary: true },
+      { value: "delete", label: "Delete", type: "destruct", primary: true },
       { value: "reject", label: "Reject", type: "cancel" },
-      { value: "help", label: "Help", type: "auxiliary" }
+      { value: "help", label: "Help", type: "auxiliary", primary: true }
     ]);
     fixture.detectChanges();
   });
@@ -50,7 +50,7 @@ describe("DialogWrapperComponent", () => {
   });
 
   it("should display the title", () => {
-    const titleEl = nativeElement.querySelector("h2");
+    const titleEl = nativeElement.querySelector("h3");
     expect(titleEl?.textContent).toContain("Test Title");
   });
 
@@ -88,16 +88,39 @@ describe("DialogWrapperComponent", () => {
   });
   it("should apply correct classes to action buttons", () => {
     const actionButtons = nativeElement.querySelectorAll(".pi-dialog-footer button");
-    expect(actionButtons[1].classList).toContain("action-button-1");
-    expect(actionButtons[2].classList).toContain("action-button-delete");
-    expect(actionButtons[3].classList).toContain("action-button-cancel");
-    expect(actionButtons[4].classList).toContain("action-button-1");
+    expect(actionButtons[1].classList).toContain("action-button-primary");
+    expect(actionButtons[2].classList).toContain("action-button-delete-primary");
+    expect(actionButtons[3].classList).toContain("action-button-secondary");
+    expect(actionButtons[4].classList).toContain("action-button-primary");
+  });
+  it("should apply action-button-primary class when primary is true regardless of type", () => {
+    fixture.componentRef.setInput("actions", [{ value: "p", label: "P", type: "cancel", primary: true }]);
+    fixture.detectChanges();
+    const btn = nativeElement.querySelector(".pi-dialog-footer button:last-child");
+    expect(btn?.classList).toContain("action-button-primary");
+  });
+  it("should apply cdkFocusInitial to primary action", () => {
+    fixture.componentRef.setInput("actions", [
+      { value: "1", label: "1", primary: false },
+      { value: "2", label: "2", primary: true }
+    ]);
+    fixture.detectChanges();
+    const buttons = nativeElement.querySelectorAll(".pi-dialog-footer button");
+    expect(buttons[0].hasAttribute("cdkfocusinitial")).toBe(false);
+    expect(buttons[1].hasAttribute("cdkfocusinitial")).toBe(false);
+    expect(buttons[2].hasAttribute("cdkfocusinitial")).toBe(true);
+  });
+  it("should apply cdkFocusInitial to cancel button when cancelButtonPrimary is true", () => {
+    fixture.componentRef.setInput("cancelButtonPrimary", true);
+    fixture.detectChanges();
+    const cancelButton = nativeElement.querySelector(".pi-dialog-footer button:first-child");
+    expect(cancelButton?.hasAttribute("cdkfocusinitial")).toBe(true);
   });
   it("should emit onAction event with correct value when an action button is clicked", () => {
     jest.spyOn(component, "onActionClick");
     const actionButtons = nativeElement.querySelectorAll<HTMLButtonElement>(".pi-dialog-footer button");
     actionButtons[1].click();
-    expect(component.onActionClick).toHaveBeenCalledWith({ value: "confirm", label: "Confirm", type: "confirm" });
+    expect(component.onActionClick).toHaveBeenCalledWith({ value: "confirm", label: "Confirm", type: "confirm", primary: true });
   });
 
   it("should throw an error if no actions and no close button", () => {

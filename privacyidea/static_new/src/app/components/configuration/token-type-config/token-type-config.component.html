@@ -17,12 +17,12 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div class="token-type-config-container">
-  <div class="flex-row just-space-between ali-center">
-    <h2 i18n>Token Type Configuration</h2>
+  <div class="flex-row just-space-between ali-center margin-bottom-16">
+    <h3 class="margin-8" i18n>Token Type Configuration</h3>
     <button
       (click)="save()"
       [disabled]="!authService.actionAllowed('configwrite')"
-      class="action-button-1 width-238"
+      class="action-button-primary button-width-m"
       mat-stroked-button>
       <mat-icon>save</mat-icon>
       <span i18n>Save Configuration</span>
@@ -51,7 +51,7 @@
     <app-email-config
       [formData]="formData()"
       [smtpServers]="smtpServerIdentifiers()"
-      [expanded]="expandedPanel === 'email'"></app-email-config>
+      [expanded]="expandEmail()"></app-email-config>
     <app-questionnaire-config
       (onAddQuestion)="addQuestion($event)"
       (onDeleteEntry)="deleteQuestion($event)"

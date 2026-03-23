@@ -43,6 +43,7 @@ import { MatOption, MatSelect, MatSelectModule } from "@angular/material/select"
 import { Router, ActivatedRoute } from "@angular/router";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { PiResponse } from "src/app/app.component";
 import { ROUTE_PATHS } from "src/app/route_paths";
@@ -315,8 +316,45 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
   }
 
   onCancel(): void {
-    if (!this.hasChanges) {
-      this._closeCurrent();
+    if (this.hasChanges) {
+      this._dialogService
+        .openDialog({
+          component: SaveAndExitDialogComponent,
+          data: {
+            title: $localize`Discard changes`,
+            allowSaveExit: this.canSave,
+            saveExitDisabled: !this.canSave
+          }
+        })
+        .afterClosed()
+        .subscribe((result) => {
+          if (result === "save-exit") {
+            if (!this.canSave) return;
+            Promise.resolve(this._pendingChangesService.save()).then(() => {
+              this._pendingChangesService.unregisterHasChanges();
+              this.closeCurrent();
+            });
+          } else if (result === "discard") {
+            this._pendingChangesService.unregisterHasChanges();
+            this.closeCurrent();
+          }
+        });
+    } else {
+      this.closeCurrent();
+    }
+  }
+
+  private closeCurrent(): void {
+    if (this.dialogRef) {
+      this.dialogRef.close();
+    } else {
+      this._router.navigateByUrl(ROUTE_PATHS.USERS_RESOLVERS);
+    }
+  }
+
+  private executeTest(quickTest = false): void {
+    if (!this.resolverType) {
+      this._notificationService.openSnackBar($localize`Please select a resolver type.`);
       return;
     }
 

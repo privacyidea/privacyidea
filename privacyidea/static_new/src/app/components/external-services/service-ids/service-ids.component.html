@@ -20,50 +20,51 @@
   <div
     appScrollToTop
     class="service-ids-container">
-    <div class="header-row">
-      <div class="filter-paginator-container margin-bottom-16">
-        <div class="flex-row ali-center">
-          <mat-form-field
-            class="table-filter"
-            subscriptSizing="dynamic">
-            <mat-label i18n>Filter Service IDs...</mat-label>
-            <app-clearable-input
-              (onClick)="resetFilter()"
-              [showClearButton]="filterString().length > 0">
-              <input
-                #filterHTMLInputElement
-                (input)="onFilterInput(filterHTMLInputElement.value)"
-                [value]="filterString()"
-                aria-label="Filter Input"
-                i18n-aria-label
-                i18n-placeholder
-                matInput
-                placeholder="Filter by name or description" />
-            </app-clearable-input>
-          </mat-form-field>
-          <button
-            (click)="openEditDialog()"
-            class="action-button-1 margin-left-1"
-            i18n
-            mat-stroked-button>
-            <mat-icon>add</mat-icon>
-            Create Service ID
-          </button>
-        </div>
-        <mat-paginator
-          [length]="totalLength()"
-          [pageSizeOptions]="pageSizeOptions()"
-          [pageSize]="pageSizeOptions()[1]"
-          showFirstLastButtons />
-      </div>
+    <div class="filter-paginator-container">
+      <mat-form-field
+        appearance="fill"
+        class="table-filter"
+        subscriptSizing="dynamic">
+        <mat-label i18n>Filter Service IDs...</mat-label>
+        <app-clearable-input
+          (onClick)="resetFilter()"
+          [showClearButton]="filterString().length > 0">
+          <input
+            #filterHTMLInputElement
+            (input)="onFilterInput(filterHTMLInputElement.value)"
+            [value]="filterString()"
+            aria-label="Filter Input"
+            i18n-aria-label
+            i18n-placeholder
+            matInput
+            placeholder="Filter by name or description" />
+        </app-clearable-input>
+      </mat-form-field>
+      <mat-paginator
+        [length]="totalLength()"
+        [pageSizeOptions]="pageSizeOptions()"
+        [pageSize]="pageSizeOptions()[1]"
+        showFirstLastButtons />
     </div>
+    <div class="actions-container margin-bottom-16">
+      <button
+        (click)="openEditDialog()"
+        class="action-button-primary button-width-l"
+        i18n
+        mat-stroked-button>
+        <mat-icon>add</mat-icon>
+        Create Service ID
+      </button>
 
-    <p
-      class="margin-bottom-16"
-      i18n>
-      Service IDs can be used to attach e.g. SSH keys to certain machines and services. To view attached tokens go to
-      <a [routerLink]="[ROUTE_PATHS.TOKENS_APPLICATIONS]">token applications.</a>
-    </p>
+      <p
+        class="margin-bottom-0 margin-top-0"
+        i18n>
+        Service IDs can be used to attach e.g. SSH keys to certain machines and services.
+        <br />
+        To view attached tokens go to
+        <a [routerLink]="[ROUTE_PATHS.TOKENS_APPLICATIONS]">token applications.</a>
+      </p>
+    </div>
 
     <table
       [dataSource]="serviceIdDataSource()"

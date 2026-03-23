@@ -40,6 +40,7 @@ import { PoliciesTableActionsComponent } from "./policies-table-actions/policies
 import { PolicyFilterComponent } from "./policy-filter/policy-filter.component";
 import { ViewConditionsColumnComponent } from "./view-conditions-column/view-conditions-column.component";
 import { ViewActionColumnComponent } from "./view-action-column/view-action-column.component";
+import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
 
 @Component({
   selector: "app-policies-table",
@@ -58,7 +59,8 @@ import { ViewActionColumnComponent } from "./view-action-column/view-action-colu
     ViewActionColumnComponent,
     MatTooltipModule,
     PolicyFilterComponent,
-    ViewConditionsColumnComponent
+    ViewConditionsColumnComponent,
+    CopyButtonComponent
   ],
   templateUrl: "./policies-table.component.html",
   styleUrl: "./policies-table.component.scss"

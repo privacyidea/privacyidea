@@ -1,13 +1,6 @@
 @use "../../../../../styles";
 @use "@angular/material" as mat;
 
-.radius-form {
-  padding-top: 10px;
-}
-
-.width-100 {
-  width: 100%;
-}
 
 .row {
   display: flex;
@@ -40,16 +33,4 @@
   flex-direction: column;
   gap: 8px;
   margin-bottom: 16px;
-}
-
-.test-section {
-  margin-top: 16px;
-  padding-top: 16px;
-  border-top: 1px solid var(--mat-sys-outline-variant);
-
-  h3 {
-    margin-bottom: 8px;
-    font-size: 1rem;
-    font-weight: 500;
-  }
 }

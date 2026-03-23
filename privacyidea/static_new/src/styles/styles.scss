@@ -251,14 +251,6 @@ body {
   flex: auto;
 }
 
-.width-238 {
-  width: 238px;
-}
-
-.min-width-238 {
-  min-width: 238px;
-}
-
 .width-288px {
   width: 288px;
 }
@@ -292,19 +284,23 @@ body {
   height: fit-content;
 }
 
-.margin-left-2 {
+.margin-left-32 {
   margin-left: 32px;
 }
 
-.margin-left-1 {
+.margin-left-16 {
   margin-left: 16px;
+}
+
+.margin-left-8 {
+  margin-left: 8px;
 }
 
 .margin-right-32 {
   margin-right: 32px;
 }
 
-.margin-right-1 {
+.margin-right-16 {
   margin-right: 16px;
 }
 
@@ -324,8 +320,16 @@ body {
   margin-top: 16px;
 }
 
-.margin-top-2 {
+.margin-top-32 {
   margin-top: 32px;
+}
+
+.margin-top--16 {
+  margin-top: -16px;
+}
+
+.margin-top--32 {
+  margin-top: -32px;
 }
 
 .margin-top-0 {
@@ -346,6 +350,10 @@ body {
 
 .margin-bottom-32 {
   margin-bottom: 32px;
+}
+
+.margin-bottom-64 {
+  margin-bottom: 64px;
 }
 
 .margin-0 {
@@ -388,6 +396,15 @@ body {
   width: 13rem;
 }
 
+.width-241 {
+  width: 241px;
+  max-width: 241px;
+}
+
+.height-53 {
+  height: 53px;
+}
+
 .height-auto {
   height: auto;
 }
@@ -420,8 +437,16 @@ body {
   margin-bottom: 0;
 }
 
+.margin-bottom-4 {
+  margin-bottom: 4px;
+}
+
 .overflow {
   overflow: auto;
+}
+
+.padding-0 {
+  padding: 0;
 }
 
 .padding-2 {
@@ -612,8 +637,8 @@ body {
   }
 
   .mat-mdc-option.mat-mdc-option-active {
-    background-color: var(--mat-sys-primary-container) !important;
-    color: var(--mat-sys-on-primary-container) !important;
+    background-color: var(--mat-sys-surface-container-low) !important;
+    color: var(--mat-sys-on-surface) !important;
   }
 
   .cdk-overlay-container {

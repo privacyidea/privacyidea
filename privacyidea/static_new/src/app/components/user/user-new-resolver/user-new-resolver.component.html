@@ -26,20 +26,21 @@
     class="user-new-resolver-container">
     @if (isEditMode) {
       <h3
-        class="margin-left-1"
+        class="margin-8"
         i18n>Edit User Source
       </h3>
     } @else {
       <h3
-        class="margin-left-1"
+        class="margin-8"
         i18n>Create User Source
       </h3>
     }
 
     <div
       #leftColumn
-      class="flex-row margin-bottom-0">
-      <mat-form-field subscriptSizing="dynamic" class="min-width-40">
+      class="flex-row margin-bottom-0 margin-left-16 margin-top-16">
+      <mat-form-field
+        class="input-width-l">
         <mat-label i18n>Resolver Name</mat-label>
         <mat-hint>
           @if (isEditMode) {
@@ -64,7 +65,8 @@
         }
       </mat-form-field>
 
-      <mat-form-field class="width-238 margin-left-1 type-selecting-height">
+      <mat-form-field
+        class="input-width-l margin-left-16">
         <mat-label i18n>Type</mat-label>
         <mat-select
           (ngModelChange)="onTypeChange($event)"
@@ -91,7 +93,7 @@
       <div class="sticky-controls ali-center">
         @if (resolverType !== 'passwdresolver') {
           @if (['entraidresolver', 'keycloakresolver', 'httpresolver'].includes(resolverType)) {
-            <mat-form-field>
+            <mat-form-field class="input-width-s">
               <mat-label i18n>Test Username</mat-label>
               <app-clearable-input
                 (onClick)="testUsername = ''"
@@ -103,7 +105,7 @@
               </app-clearable-input>
             </mat-form-field>
 
-            <mat-form-field>
+            <mat-form-field class="input-width-s">
               <mat-label i18n>Test User ID</mat-label>
               <app-clearable-input
                 (onClick)="testUserId = ''"
@@ -120,7 +122,7 @@
             <button
               (click)="onQuickTest()"
               [disabled]="isSaving() || isTesting() || !resolverType || !isAdditionalFieldsValid"
-              class="action-button-1 width-238"
+              class="action-button-secondary button-width-l"
               mat-stroked-button>
               <mat-icon>wifi</mat-icon>
               <span i18n>Quick Resolver Test</span>
@@ -130,27 +132,28 @@
           <button
             (click)="onTest()"
             [disabled]="isSaving() || isTesting() || !resolverType || !isAdditionalFieldsValid"
-            class="action-button-1 width-238"
+            class="action-button-secondary button-width-m"
             mat-stroked-button>
             <mat-icon>wifi</mat-icon>
             <span i18n>Test Connection</span>
           </button>
         }
+        <button
+          (click)="onCancel()"
+          class="action-button-secondary button-width-s"
+          mat-stroked-button>
+          <span i18n>Cancel</span>
+        </button>
 
         <button
           (click)="onSave()"
           [disabled]="!canSave"
-          class="action-button-1 width-238"
+          class="action-button-primary button-width-s"
           mat-stroked-button>
           <mat-icon>save</mat-icon>
           <span i18n>Save</span>
         </button>
 
-        <button
-          (click)="onCancel()"
-          mat-button>
-          <span i18n>Cancel</span>
-        </button>
       </div>
     </div>
 

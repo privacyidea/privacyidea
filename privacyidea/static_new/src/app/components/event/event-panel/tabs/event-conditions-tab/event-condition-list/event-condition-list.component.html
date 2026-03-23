@@ -26,25 +26,25 @@
           <span class="action-label">{{ conditionName }}</span>
           @if (showDescription[conditionName]) {
             <button
+              (click)="disableShowDescription(conditionName)"
               mat-icon-button
-              matTooltip="Hide Description"
-              (click)="disableShowDescription(conditionName)">
+              matTooltip="Hide Description">
               <mat-icon>info</mat-icon>
             </button>
           } @else {
             <button
+              (click)="enableShowDescription(conditionName)"
               mat-icon-button
-              matTooltip="Show Description"
-              (click)="enableShowDescription(conditionName)">
+              matTooltip="Show Description">
               <mat-icon>info_outline</mat-icon>
             </button>
           }
         </div>
         @if (showDescription[conditionName]) {
-            <!-- Display description as inner html to correctly render code tags -->
-            <div
-              class="description"
-              [innerHTML]="conditionDetails.desc"></div>
+          <!-- Display description as inner html to correctly render code tags -->
+          <div
+            [innerHTML]="conditionDetails.desc"
+            class="description"></div>
         }
       </div>
       <div class="condition-value-container">
@@ -56,16 +56,16 @@
           } @else if (conditionDetails?.type === "multi") {
             <mat-form-field
               appearance="fill"
-              class="full-width"
+              class="input-width-m"
               subscriptSizing="dynamic">
               <mat-select
                 #selectedConditionInput
-                [placeholder]="'Select values ...'"
-                [value]="multiValueConditions()[conditionName] || []"
-                [ngModel]="multiValueConditions()[conditionName] || []"
-                [multiple]="true"
                 (selectionChange)="onConditionValueChange(conditionName, $event.value)"
-                [required]="inputRequired()">
+                [multiple]="true"
+                [ngModel]="multiValueConditions()[conditionName] || []"
+                [placeholder]="'Select values ...'"
+                [required]="inputRequired()"
+                [value]="multiValueConditions()[conditionName] || []">
                 @for (option of availableConditionValues()[conditionName]; track option) {
                   <mat-option [value]="option">{{ option }}</mat-option>
                 }
@@ -78,15 +78,15 @@
             <!-- Needs to be a separate selection as multiple state can not be changed during runtime -->
             <mat-form-field
               appearance="fill"
-              class="full-width"
+              class="input-width-m"
               subscriptSizing="dynamic">
               <mat-select
                 #selectedConditionInput
-                placeholder="Select one option ..."
-                [value]="editConditions()[conditionName]"
-                [ngModel]="editConditions()[conditionName]"
                 (selectionChange)="onConditionValueChange(conditionName, $event.value)"
-                [required]="inputRequired()">
+                [ngModel]="editConditions()[conditionName]"
+                [required]="inputRequired()"
+                [value]="editConditions()[conditionName]"
+                placeholder="Select one option ...">
                 @for (option of availableConditionValues()[conditionName]; track option) {
                   <mat-option [value]="option">{{ option }}</mat-option>
                 }
@@ -99,35 +99,35 @@
         } @else {
           <mat-form-field
             appearance="fill"
-            class="full-width"
+            class="input-width-m height-56"
             subscriptSizing="dynamic">
             @switch (conditionDetails?.type) {
               @case ("int") {
                 <input
                   #selectedConditionInput
-                  matInput
-                  type="number"
-                  class="font-size-16"
-                  [name]="'conditionInput_' + conditionName"
-                  placeholder="Enter a Number ..."
-                  [ngModel]="editConditions()[conditionName]"
-                  (ngModelChange)="onConditionValueChange(conditionName, $event)"
                   (keydown.enter)="onActionButtonClicked(conditionName)"
-                  [required]="inputRequired()" />
+                  (ngModelChange)="onConditionValueChange(conditionName, $event)"
+                  [name]="'conditionInput_' + conditionName"
+                  [ngModel]="editConditions()[conditionName]"
+                  [required]="inputRequired()"
+                  class="font-size-16"
+                  matInput
+                  placeholder="Enter a Number ..."
+                  type="number" />
               }
               @default {
                 <!-- str, regex -->
                 <input
                   #selectedConditionInput
-                  matInput
-                  type="text"
-                  class="font-size-16"
-                  [name]="'conditionInput_' + conditionName"
-                  placeholder="Enter value ..."
-                  [ngModel]="editConditions()[conditionName] || ''"
-                  (ngModelChange)="onConditionValueChange(conditionName, $event)"
                   (keydown.enter)="onActionButtonClicked(conditionName)"
-                  [required]="inputRequired()" />
+                  (ngModelChange)="onConditionValueChange(conditionName, $event)"
+                  [name]="'conditionInput_' + conditionName"
+                  [ngModel]="editConditions()[conditionName] || ''"
+                  [required]="inputRequired()"
+                  class="font-size-16"
+                  matInput
+                  placeholder="Enter value ..."
+                  type="text" />
               }
             }
             <mat-error i18n>
@@ -136,10 +136,10 @@
           </mat-form-field>
         }
         <button
-          mat-icon-button
+          (click)="onActionButtonClicked(conditionName); $event.stopPropagation()"
           [matTooltip]="toolTipText()"
           class="action-button"
-          (click)="onActionButtonClicked(conditionName); $event.stopPropagation()">
+          mat-icon-button>
           <mat-icon>{{ action() }}</mat-icon>
         </button>
       </div>

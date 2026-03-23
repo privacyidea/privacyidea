@@ -16,9 +16,9 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<div class="actions-div">
+<div class="actions-div margin-bottom-16">
   <mat-form-field
-    class="width-238"
+    class="input-width-l"
     subscriptSizing="dynamic">
     <mat-label>Select Realm</mat-label>
     <mat-select
@@ -33,7 +33,7 @@
   @if (authService.actionAllowed("adduser") && anyEditableResolver()) {
     <button
       (click)="openCreateUserDialog()"
-      class="action-button-1"
+      class="action-button-primary button-width-m"
       mat-stroked-button>
       <mat-icon> add</mat-icon>
       <span i18n>Create User</span>

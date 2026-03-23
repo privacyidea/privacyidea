@@ -39,14 +39,16 @@ export class ContainerRegistrationInitDialogComponent extends AbstractDialogComp
         label: $localize`Rollover`,
         value: "rollover",
         type: "confirm",
-        disabled: !this.validInput
+        disabled: !this.validInput,
+        primary: true
       };
     } else {
       return {
         label: $localize`Register`,
         value: "register",
         type: "confirm",
-        disabled: !this.validInput
+        disabled: !this.validInput,
+        primary: true
       };
     }
   }

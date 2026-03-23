@@ -1,5 +1,5 @@
 <!--
- (c) NetKnights GmbH 2025,  https://netknights.it
+ (c) NetKnights GmbH 2026,  https://netknights.it
 
  This code is free software; you can redistribute it and/or
  modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -75,12 +75,12 @@
         </p>
 
         <button
+          (click)="remoteLogin()"
           aria-label="Remote Login Button"
           class="login-btn margin-bottom-8"
           extended
           i18n-aria-label
-          mat-fab
-          (click)="remoteLogin()">
+          mat-fab>
           <span i18n>Log In</span>
           <mat-icon iconPositionEnd>login</mat-icon>
         </button>
@@ -90,8 +90,8 @@
             (click)="useRemoteLogin.set(false)"
             aria-label="Login with credentials Button"
             class="passkey-btn"
-            i18n-aria-label
             extended
+            i18n-aria-label
             mat-fab>
             <span i18n>Login with Credentials</span>
           </button>
@@ -110,7 +110,7 @@
       <form
         (ngSubmit)="onSubmit()"
         aria-label="Login Form"
-        class="login-form"
+        class="login-form gap-16"
         i18n-aria-label>
         @if (authMessage().length > 0) {
           <div class="login-message">
@@ -138,14 +138,16 @@
             </mat-select>
             @if (realm() !== "") {
               <app-clear-button
-                matSuffix
-                (onClick)="clearRealmSelection($event)"></app-clear-button>
+                (onClick)="clearRealmSelection($event)"
+                matSuffix></app-clear-button>
             }
           </mat-form-field>
         }
 
         @if (!showOtpField()) {
-          <mat-form-field appearance="outline">
+          <mat-form-field
+            appearance="outline"
+            subscriptSizing="dynamic">
             <mat-label i18n="Login username label">Username</mat-label>
             <input
               [(ngModel)]="username"
@@ -158,7 +160,9 @@
         }
 
         @if (!showOtpField()) {
-          <mat-form-field appearance="outline">
+          <mat-form-field
+            appearance="outline"
+            subscriptSizing="dynamic">
             <mat-label i18n="Login password label">Password</mat-label>
             <input
               [(ngModel)]="password"
@@ -176,11 +180,11 @@
             <input
               #otpInput
               [(ngModel)]="otp"
+              autocomplete="one-time-code"
               id="otp"
               matInput
               name="otp"
               required
-              autocomplete="one-time-code"
               type="text" />
           </mat-form-field>
         }
@@ -201,10 +205,10 @@
           @if (showOtpField()) {
             <button
               (click)="resetLogin()"
-              i18n-aria-label
               aria-label="Start Over"
               class="reset-btn"
               extended
+              i18n-aria-label
               mat-fab
               type="button">
               <span i18n="Reset button text">Reset</span>
@@ -216,10 +220,10 @@
         @if (webAuthnTriggered()) {
           <button
             (click)="webAuthnLogin()"
-            i18n-aria-label
             aria-label="WebAuthn Button"
             class="reset-btn margin-top-16"
             extended
+            i18n-aria-label
             mat-fab
             type="button">
             <span i18n="WebAuthn button text">WebAuthn</span>
@@ -231,10 +235,10 @@
         <div class="passkey-form">
           <button
             (click)="passkeyLogin()"
-            i18n-aria-label
             aria-label="Passkey Button"
             class="passkey-btn margin-top-16"
             extended
+            i18n-aria-label
             mat-fab
             type="submit">
             <span i18n="Passkey button text">Log In With Passkey</span>

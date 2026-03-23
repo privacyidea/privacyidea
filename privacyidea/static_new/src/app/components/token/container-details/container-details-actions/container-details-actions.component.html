@@ -17,59 +17,61 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 @if (anyActionsAllowed()) {
-  <div class="flex-column gap-8">
-    <h4 class="margin-0">Container Actions</h4>
-    @if (authService.actionAllowed("container_delete")) {
+  <div class="actions-otp-container">
+    <h4 class="margin-8">Container Actions</h4>
+    <div class="flex-column ali-center gap-8">
+      @if (authService.actionAllowed("container_delete")) {
+        <button
+          (click)="deleteContainer()"
+          class="action-button-delete-secondary button-width-m"
+          i18n
+          mat-stroked-button>
+          <mat-icon>delete</mat-icon>
+          Delete
+        </button>
+      }
       <button
-        (click)="deleteContainer()"
-        class="action-button-delete width-238"
+        (click)="enrollTokenInContainer()"
+        class="action-button-primary button-width-m"
         i18n
         mat-stroked-button>
-        <mat-icon>delete</mat-icon>
-        Delete
+        <mat-icon>add_moderator</mat-icon>
+        Enroll Token
       </button>
-    }
-    <button
-      (click)="enrollTokenInContainer()"
-      class="action-button-1 width-238"
-      i18n
-      mat-stroked-button>
-      <mat-icon>add_moderator</mat-icon>
-      Enroll Token in Container
-    </button>
-    @if (containerType === "smartphone") {
-      @if (authService.actionAllowed("container_delete") && (registrationAllowed() || rolloverAllowed() || unregisterAllowed())) {
-        <mat-divider class="margin-top-8 margin-bottom-8"></mat-divider>
+      @if (containerType === "smartphone") {
+        @if (authService.actionAllowed("container_delete") && (registrationAllowed() || rolloverAllowed() || unregisterAllowed())) {
+          <mat-divider class="margin-top-8 margin-bottom-8"></mat-divider>
+        }
+        @if (registrationAllowed()) {
+          <button
+            (click)="openRegisterInitDialog(false)"
+            class="action-button-secondary button-width-m"
+            i18n
+            mat-stroked-button>
+            <mat-icon>phonelink</mat-icon>
+            Register
+          </button>
+        } @else if (rolloverAllowed()) {
+          <button
+            (click)="openRegisterInitDialog(true)"
+            class="action-button-secondary button-width-m"
+            i18n
+            mat-stroked-button>
+            <mat-icon>sync</mat-icon>
+            Rollover
+          </button>
+        }
+        @if (unregisterAllowed()) {
+          <button
+            (click)="unregisterContainer()"
+            class="action-button-secondary button-width-m"
+            i18n
+            mat-stroked-button>
+            <mat-icon>phonelink_off</mat-icon>
+            Unregister
+          </button>
+        }
       }
-      @if (registrationAllowed()) {
-        <button
-          (click)="openRegisterInitDialog(false)"
-          class="action-button-1 width-238"
-          i18n
-          mat-stroked-button>
-          <mat-icon>phonelink</mat-icon>
-          Register
-        </button>
-      } @else if (rolloverAllowed()) {
-        <button
-          (click)="openRegisterInitDialog(true)"
-          class="action-button-1 width-238"
-          i18n
-          mat-stroked-button>
-          <mat-icon>sync</mat-icon>
-          Rollover
-        </button>
-      }
-      @if (unregisterAllowed()) {
-        <button
-          (click)="unregisterContainer()"
-          class="action-button-1 width-238"
-          i18n
-          mat-stroked-button>
-          <mat-icon>phonelink_off</mat-icon>
-          Unregister
-        </button>
-      }
-    }
+    </div>
   </div>
 }

@@ -19,9 +19,9 @@
 import { Component, effect, EventEmitter, inject, input, OnInit, Output } from "@angular/core";
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { ErrorStateMatcher, MatOption } from "@angular/material/core";
-import { MatFormField, MatLabel } from "@angular/material/form-field";
+import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
-import { MatError, MatSelect } from "@angular/material/select";
+import { MatSelect } from "@angular/material/select";
 import {
   FourEyesApiPayloadMapper,
   FourEyesEnrollmentData
@@ -40,10 +40,9 @@ export interface FourEyesEnrollmentOptions extends TokenEnrollmentData {
   userRealm?: string;
 }
 
-export class RequiredRealmsErrorStateMatcher implements ErrorStateMatcher {
+export class FourEyesErrorStateMatcher implements ErrorStateMatcher {
   isErrorState(control: FormControl | null): boolean {
-    const invalid = control && control.value ? control.value.length === 0 : true;
-    return !!(control && invalid && (control.dirty || control.touched));
+    return !!(control && control.invalid && (control.dirty || control.touched));
   }
 }
 
@@ -69,8 +68,11 @@ export class EnrollFoureyesComponent implements OnInit {
   >();
   disabled = input<boolean>(false);
 
-  separatorControl = new FormControl<string>("|", [Validators.required]);
-  requiredTokensOfRealmsControl = new FormControl<string[]>([], [Validators.required, Validators.minLength(1)]);
+  separatorControl = new FormControl<string>("|", { nonNullable: true, validators: [Validators.required] });
+  requiredTokensOfRealmsControl = new FormControl<string[]>([], {
+    nonNullable: true,
+    validators: [Validators.required, Validators.minLength(1)]
+  });
 
   foureyesForm = new FormGroup({
     separator: this.separatorControl,
@@ -79,7 +81,7 @@ export class EnrollFoureyesComponent implements OnInit {
 
   realmOptions = this.realmService.realmOptions;
   tokensByRealm: Map<string, number> = new Map();
-  requiredRealmsErrorStateMatcher = new RequiredRealmsErrorStateMatcher();
+  foureyesErrorStateMatcher = new FourEyesErrorStateMatcher();
 
   constructor() {
     effect(() =>

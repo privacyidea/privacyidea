@@ -1,5 +1,5 @@
 <!--
- (c) NetKnights GmbH 2025,  https://netknights.it
+ (c) NetKnights GmbH 2026,  https://netknights.it
 
  This code is free software; you can redistribute it and/or
  modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -26,9 +26,10 @@
 
     <button
       (click)="fileInput.click()"
-      class="action-button-1"
+      class="action-button-primary button-width-l"
       i18n
-      mat-stroked-button>
+      mat-stroked-button
+      type="submit">
       <mat-icon>add</mat-icon>
       Select and Upload File
     </button>
@@ -43,14 +44,14 @@
     @for (subscription of subscriptions(); track subscription.application) {
       <div class="subscription-details">
 
-        <div class="margin-left-1 flex-row ali-center gap-16">
+        <div class="margin-left-16 flex-row ali-center gap-16">
           <h4>Application:</h4>
           <h4 class="application-color">{{ subscription.application }}</h4>
 
           @if (authService.actionAllowed('delete')) {
             <button
               (click)="deleteSubscription(subscription.application)"
-              class="action-button-delete"
+              class="action-button-delete-secondary button-width-s"
               i18n-matTooltip
               mat-stroked-button
               matTooltip="Delete Subscription">

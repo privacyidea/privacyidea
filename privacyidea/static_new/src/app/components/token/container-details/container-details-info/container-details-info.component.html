@@ -31,7 +31,8 @@
     <ng-container matColumnDef="value">
       <td
         *matCellDef="let element"
-        class="height-52 fix-width-20-padr-0"
+        [ngClass]="[isEditingInfo() ? 'padding-0' : '']"
+        class="height-52 width-241"
         mat-cell>
         <div class="info-value-container">
           <mat-list>
@@ -40,18 +41,20 @@
                 <div class="flex-row">
                   <mat-list-item class="height-auto">
                     <div class="flex-row">
-                      <mat-form-field>
+                      <mat-form-field
+                        class="input-width-s"
+                        subscriptSizing="dynamic">
                         <mat-label>{{ key }}</mat-label>
                         <textarea
-                          matInput
+                          [(ngModel)]="element.value[key]"
                           class="info-input"
-                          rows="1"
-                          [(ngModel)]="element.value[key]"></textarea>
+                          matInput
+                          rows="1"></textarea>
                       </mat-form-field>
                       <button
-                        mat-icon-button
+                        (click)="deleteInfo(key)"
                         class="delete-info-button"
-                        (click)="deleteInfo(key)">
+                        mat-icon-button>
                         <mat-icon>delete_outlined</mat-icon>
                       </button>
                     </div>
@@ -68,23 +71,29 @@
               }
             }
             @if (isEditingInfo()) {
+              <mat-divider class="margin-8" />
               <mat-list-item class="height-auto">
-                <mat-form-field class="new-key-input">
-                  <input
-                    matInput
-                    [(ngModel)]="newInfo().key"
-                    i18n-placeholder
-                    placeholder="Add new key" />
-                </mat-form-field>
-                :
-                <mat-form-field class="new-value-input">
-                  <textarea
-                    matInput
-                    rows="1"
-                    [(ngModel)]="newInfo().value"
-                    i18n-placeholder
-                    placeholder="Add new info"></textarea>
-                </mat-form-field>
+                <div class="flex-column">
+                  <mat-form-field
+                    class="input-width-s"
+                    subscriptSizing="dynamic">
+                    <input
+                      [(ngModel)]="newInfo().key"
+                      i18n-placeholder
+                      matInput
+                      placeholder="Add new key" />
+                  </mat-form-field>
+                  <mat-form-field
+                    class="input-width-s"
+                    subscriptSizing="dynamic">
+                    <textarea
+                      [(ngModel)]="newInfo().value"
+                      i18n-placeholder
+                      matInput
+                      placeholder="Add new info"
+                      rows="1"></textarea>
+                  </mat-form-field>
+                </div>
               </mat-list-item>
             }
           </mat-list>
@@ -104,7 +113,7 @@
             [isEditingUser]="isEditingUser"
             [saveEdit]="saveInfo.bind(this)"
             [shouldHideEdit]="isAnyEditingOrRevoked"
-            [toggleEdit]="toggleInfoEdit.bind(this)"/>
+            [toggleEdit]="toggleInfoEdit.bind(this)" />
         }
       </td>
     </ng-container>

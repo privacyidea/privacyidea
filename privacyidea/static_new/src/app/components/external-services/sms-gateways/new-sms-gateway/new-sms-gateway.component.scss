@@ -1,12 +1,12 @@
 @use "../../../../../styles";
 @use "@angular/material" as mat;
 
-.sms-form {
-  padding-top: 10px;
-}
-
 .parameters-form {
   margin-top: 16px;
+  display: flex;
+  flex-flow: row wrap;
+  gap: 16px;
+  max-width: 616px;
 }
 
 .custom-list {
@@ -44,22 +44,11 @@
   }
 }
 
-h3 {
-  margin-top: 24px;
-  margin-bottom: 16px;
-  border-bottom: 1px solid var(--mat-sys-outline-variant);
-  padding-bottom: 8px;
-}
-
 .table-wrapper {
   margin-top: 8px;
   overflow: auto;
   border: 1px solid var(--mat-sys-outline-variant);
   background-color: var(--mat-sys-surface-container);
-
-  ::ng-deep .mat-mdc-form-field-subscript-wrapper {
-    height: 8px;
-  }
 }
 
 .actions-cell {

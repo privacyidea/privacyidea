@@ -13,7 +13,6 @@
   border-bottom: 1px solid var(--mat-sys-outline-variant);
   border-radius: 0;
   box-sizing: border-box;
-  font-size: 1rem;
   margin: 2px;
   padding: var(--quarter-global-padding) 0;
   width: 100%;
@@ -27,8 +26,13 @@
   max-height: calc(100% - var(--global-padding) * 2);
   display: flex;
   flex-direction: column;
-  gap: var(--global-gap);
   overflow: auto;
+
+  .policies-table-filter {
+    max-width: 932px;
+    min-width: 300px;
+    width: 100%;
+  }
 
   .policies-table {
     border-collapse: collapse;
@@ -108,14 +112,6 @@
         align-items: center;
         display: flex;
         flex-direction: row;
-        gap: var(--half-global-gap);
-        font-size: 1.05rem;
-        font-weight: bold;
-      }
-
-      .text-link-button {
-        color: var(--mat-sys-primary);
-        text-decoration: underline;
       }
     }
 
@@ -167,6 +163,9 @@
   .active-icon {
     color: var(--mat-sys-primary-base);
     opacity: 1;
+  }
+  .clickable-icon {
+    cursor: pointer;
   }
 
   mat-checkbox {

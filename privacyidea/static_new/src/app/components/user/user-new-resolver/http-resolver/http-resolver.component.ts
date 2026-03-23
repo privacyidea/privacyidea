@@ -127,6 +127,8 @@ export class HttpResolverComponent {
   authorityControl = new FormControl<string>("", { nonNullable: true });
   clientCredentialTypeControl = new FormControl<string>("secret", { nonNullable: true });
   clientCredentialType = toSignal(this.clientCredentialTypeControl.valueChanges, { initialValue: this.clientCredentialTypeControl.value });
+  verifyTls = toSignal(this.verifyTlsControl.valueChanges, { initialValue: this.verifyTlsControl.value });
+  editable = toSignal(this.editableControl.valueChanges, { initialValue: this.editableControl.value });
 
   clientCertificateGroup = new FormGroup({
     private_key_file: new FormControl<string>("", { nonNullable: true }),
@@ -279,6 +281,14 @@ export class HttpResolverComponent {
         if (data.verify_tls === undefined) {
           this.verifyTlsControl.setValue(false);
         }
+      }
+    });
+
+    effect(() => {
+      if (this.verifyTls()) {
+        this.tlsCaPathControl.enable({ emitEvent: false });
+      } else {
+        this.tlsCaPathControl.disable({ emitEvent: false });
       }
     });
   }

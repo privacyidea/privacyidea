@@ -47,7 +47,7 @@ tr.example-detail-row td {
 
 .expanded-token-list {
   display: grid;
-  grid-template-columns: auto auto auto auto auto;
+  grid-template-columns: repeat(5, auto);
   gap: 8px;
   margin-bottom: 16px;
   margin-top: 16px;
@@ -70,10 +70,6 @@ tr.example-detail-row td {
   border: solid 1px var(--mat-sys-outline-variant);
   border-radius: var(--border-radius);
   background: var(--mat-sys-surface-container-low);
-}
-
-.table-container {
-  width: 1430px;
 }
 
 .selfservice-paginator-container {

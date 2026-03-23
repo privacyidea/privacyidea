@@ -39,6 +39,17 @@ import {
   DocumentationServiceInterface
 } from "../../../services/documentation/documentation.service";
 import { AuditService, AuditServiceInterface } from "../../../services/audit/audit.service";
+import { ClientsService, ClientsServiceInterface } from "../../../services/clients/clients.service";
+import { PolicyService, PolicyServiceInterface } from "../../../services/policies/policies.service";
+import { SubscriptionService } from "../../../services/subscription/subscription.service";
+import {
+  MachineResolverService,
+  MachineResolverServiceInterface
+} from "../../../services/machine-resolver/machine-resolver.service";
+import {
+  ContainerTemplateService,
+  ContainerTemplateServiceInterface
+} from "../../../services/container-template/container-template.service";
 import {
   SessionTimerService,
   SessionTimerServiceInterface
@@ -58,7 +69,6 @@ import { PeriodicTaskService } from "../../../services/periodic-task/periodic-ta
 import { EventService, EventServiceInterface } from "../../../services/event/event.service";
 import { SystemService, SystemServiceInterface } from "../../../services/system/system.service";
 import { ROUTE_PATHS } from "../../../route_paths";
-import { ConfigService, ConfigServiceInterface } from "../../../services/config/config.service";
 
 @Component({
   selector: "app-user-utils-panel",
@@ -77,6 +87,11 @@ export class UserUtilsPanelComponent {
   protected readonly documentationService: DocumentationServiceInterface = inject(DocumentationService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly auditService: AuditServiceInterface = inject(AuditService);
+  private readonly clientsService: ClientsServiceInterface = inject(ClientsService);
+  private readonly policyService: PolicyServiceInterface = inject(PolicyService);
+  private readonly subscriptionService = inject(SubscriptionService);
+  private readonly machineResolverService: MachineResolverServiceInterface = inject(MachineResolverService);
+  private readonly containerTemplateService: ContainerTemplateServiceInterface = inject(ContainerTemplateService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   protected readonly sessionTimerService: SessionTimerServiceInterface = inject(SessionTimerService);
@@ -132,6 +147,7 @@ export class UserUtilsPanelComponent {
     } else if (this.contentService.onTokensContainersDetails()) {
       this.containerService.containerDetailResource.reload();
       this.tokenService.tokenResource.reload();
+      this.userService.usersResource.reload();
       return;
     } else if (this.contentService.onUserDetails()) {
       this.userService.usersResource.reload();
@@ -158,11 +174,11 @@ export class UserUtilsPanelComponent {
         this.containerService.containerResource.reload();
         this.userService.usersResource.reload();
         break;
-      case ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS:
-        this.userService.usersResource.reload();
-        break;
       case ROUTE_PATHS.AUDIT:
         this.auditService.auditResource.reload();
+        break;
+      case ROUTE_PATHS.CLIENTS:
+        this.clientsService.clientsResource.reload();
         break;
       case ROUTE_PATHS.USERS:
         this.userService.usersResource.reload();
@@ -171,14 +187,28 @@ export class UserUtilsPanelComponent {
         this.realmService.realmResource.reload();
         this.resolverService.resolversResource.reload();
         break;
+      case ROUTE_PATHS.POLICIES:
+        this.policyService.allPoliciesResource.reload();
+        this.policyService.policyActionResource.reload();
+        break;
       case ROUTE_PATHS.CONFIGURATION_PERIODIC_TASKS:
         this.periodicTaskService.periodicTasksResource.reload();
         break;
       case ROUTE_PATHS.CONFIGURATION_SYSTEM:
+      case ROUTE_PATHS.CONFIGURATION_TOKENTYPES:
         this.systemService.systemConfigResource.reload();
+        break;
+      case ROUTE_PATHS.CONFIGURATION_MACHINES:
+        this.machineService.machinesResource.reload();
+        break;
+      case ROUTE_PATHS.SUBSCRIPTION:
+        this.subscriptionService.reload();
         break;
       case ROUTE_PATHS.USERS_RESOLVERS:
         this.resolverService.resolversResource.reload();
+        break;
+      case ROUTE_PATHS.MACHINE_RESOLVER:
+        this.machineResolverService.machineResolverResource.reload();
         break;
       case ROUTE_PATHS.EXTERNAL_SERVICES_SMTP:
         this.smtpService.smtpServerResource.reload();
@@ -204,8 +234,24 @@ export class UserUtilsPanelComponent {
       case ROUTE_PATHS.EVENTS:
         this.eventService.allEventsResource.reload();
         break;
-      case ROUTE_PATHS.CONFIGURATION_TOKENTYPES:
-        this.systemService.systemConfigResource.reload();
+      case ROUTE_PATHS.TOKENS_GET_SERIAL:
+        this.tokenService.tokenTypesResource.reload();
+        this.realmService.realmResource.reload();
+        break;
+      case ROUTE_PATHS.TOKENS_IMPORT:
+        this.realmService.realmResource.reload();
+        break;
+      case ROUTE_PATHS.TOKENS_ASSIGN_TOKEN:
+        this.tokenService.tokenSerialResource.reload();
+        break;
+      case ROUTE_PATHS.TOKENS_WIZARD:
+        // No additional resources required for the wizard currently.
+        break;
+      case ROUTE_PATHS.TOKENS_CONTAINERS_WIZARD:
+      case ROUTE_PATHS.TOKENS_CONTAINERS_TEMPLATES:
+      case ROUTE_PATHS.TOKENS_CONTAINERS_CREATE:
+        this.containerTemplateService.templatesResource.reload();
+        this.containerTemplateService.templateTokenTypesResource.reload();
         break;
     }
   }

@@ -3174,154 +3174,154 @@
       <trans-unit id="6908661963425943847" datatype="html">
         <source>Search for Token</source>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-get-serial/get-serial-result-dialog/get-serial-result-dialog.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-get-serial/get-serial-result-dialog/find-serial-result-dialog.component.html</context>
           <context context-type="linenumber">1,2</context>
         </context-group>
       </trans-unit>
       <trans-unit id="3012117831936869463" datatype="html">
         <source>The Serial number for the OTP value <x id="INTERPOLATION" equiv-text="{{ data.otpValue }}"></x> is <x id="START_LINK" ctype="x-a" equiv-text="&lt;a           class=&quot;link&quot;           attr.aria-label=&quot;{{ data.foundSerial }} Link&quot;           (click)=&quot;data.onClickSerial()&quot;&gt;"></x> <x id="INTERPOLATION_1" equiv-text="{{ data.foundSerial }}"></x><x id="CLOSE_LINK" ctype="x-a" equiv-text="&lt;/a&gt;"></x> . </source>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-get-serial/get-serial-result-dialog/get-serial-result-dialog.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-get-serial/get-serial-result-dialog/find-serial-result-dialog.component.html</context>
           <context context-type="linenumber">6,13</context>
         </context-group>
       </trans-unit>
       <trans-unit id="1670223394439165444" datatype="html">
         <source>No Serial number could be found for OTP value <x id="INTERPOLATION" equiv-text="{{ data.otpValue }}"></x>. </source>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-get-serial/get-serial-result-dialog/get-serial-result-dialog.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-get-serial/get-serial-result-dialog/find-serial-result-dialog.component.html</context>
           <context context-type="linenumber">18,20</context>
         </context-group>
       </trans-unit>
       <trans-unit id="5184373289520493569" datatype="html">
         <source>OK</source>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-get-serial/get-serial-result-dialog/get-serial-result-dialog.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-get-serial/get-serial-result-dialog/find-serial-result-dialog.component.html</context>
           <context context-type="linenumber">33</context>
         </context-group>
       </trans-unit>
       <trans-unit id="928223401450121023" datatype="html">
         <source>Token Get Serial</source>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-get-serial/token-get-serial.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-get-serial/token-find-serial.component.html</context>
           <context context-type="linenumber">1</context>
         </context-group>
       </trans-unit>
       <trans-unit id="5957059419908942363" datatype="html">
         <source>Get Serial Number</source>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-get-serial/token-get-serial.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-get-serial/token-find-serial.component.html</context>
           <context context-type="linenumber">2,3</context>
         </context-group>
       </trans-unit>
       <trans-unit id="2166204747375209188" datatype="html">
         <source>By entering an OTP value you can get the serial number of the token. You can also enter additional optional parameters, to narrow down the search for the token. So you can only search within certain token types or in assigned or unassigned tokens.</source>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-get-serial/token-get-serial.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-get-serial/token-find-serial.component.html</context>
           <context context-type="linenumber">4,6</context>
         </context-group>
       </trans-unit>
       <trans-unit id="1153803616213064409" datatype="html">
         <source>OTP Value</source>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-get-serial/token-get-serial.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-get-serial/token-find-serial.component.html</context>
           <context context-type="linenumber">10</context>
         </context-group>
       </trans-unit>
       <trans-unit id="3205220716879354136" datatype="html">
         <source>Enter some OTP value</source>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-get-serial/token-get-serial.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-get-serial/token-find-serial.component.html</context>
           <context context-type="linenumber">19,20</context>
         </context-group>
       </trans-unit>
       <trans-unit id="8076273911076258796" datatype="html">
         <source>OTP value is <x id="START_TAG_STRONG" ctype="x-strong" equiv-text="&lt;strong&gt;"></x>required<x id="CLOSE_TAG_STRONG" ctype="x-strong" equiv-text="&lt;/strong&gt;"></x></source>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-get-serial/token-get-serial.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-get-serial/token-find-serial.component.html</context>
           <context context-type="linenumber">22,23</context>
         </context-group>
       </trans-unit>
       <trans-unit id="5927398364887792350" datatype="html">
         <source><x id="START_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;mat-icon&gt;"></x><x id="INTERPOLATION" equiv-text="{{ currentStep() !== &quot;searching&quot; ? &quot;play_arrow&quot; : &quot;stop&quot; }}"></x><x id="CLOSE_TAG_MAT_ICON" ctype="x-mat_icon" equiv-text="&lt;/mat-icon&gt;"></x> <x id="INTERPOLATION_1" equiv-text="{{ currentStep() !== &quot;searching&quot; ? &quot;Run&quot; : &quot;Stop&quot; }}"></x> <x id="START_TAG_SPAN" ctype="x-span" equiv-text="&lt;span&gt;"></x>Search<x id="CLOSE_TAG_SPAN" ctype="x-span" equiv-text="&lt;/span&gt;"></x></source>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-get-serial/token-get-serial.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-get-serial/token-find-serial.component.html</context>
           <context context-type="linenumber">32,35</context>
         </context-group>
       </trans-unit>
       <trans-unit id="6767205545613597058" datatype="html">
         <source>Search Configuration</source>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-get-serial/token-get-serial.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-get-serial/token-find-serial.component.html</context>
           <context context-type="linenumber">36,37</context>
         </context-group>
       </trans-unit>
       <trans-unit id="3778053135785054820" datatype="html">
         <source>Token Type</source>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-get-serial/token-get-serial.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-get-serial/token-find-serial.component.html</context>
           <context context-type="linenumber">38</context>
         </context-group>
       </trans-unit>
       <trans-unit id="7852237977890639579" datatype="html">
         <source>Select token type</source>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-get-serial/token-get-serial.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-get-serial/token-find-serial.component.html</context>
           <context context-type="linenumber">39,40</context>
         </context-group>
       </trans-unit>
       <trans-unit id="981959707836119514" datatype="html">
         <source>Assignment State</source>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-get-serial/token-get-serial.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-get-serial/token-find-serial.component.html</context>
           <context context-type="linenumber">46</context>
         </context-group>
       </trans-unit>
       <trans-unit id="9173880639106076252" datatype="html">
         <source>Specify assignment state</source>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-get-serial/token-get-serial.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-get-serial/token-find-serial.component.html</context>
           <context context-type="linenumber">51,53</context>
         </context-group>
       </trans-unit>
       <trans-unit id="8323422358213440128" datatype="html">
         <source><x id="INTERPOLATION" equiv-text="{{ assignment.info }}"></x> </source>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-get-serial/token-get-serial.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-get-serial/token-find-serial.component.html</context>
           <context context-type="linenumber">54,55</context>
         </context-group>
       </trans-unit>
       <trans-unit id="5959504058797648467" datatype="html">
         <source>Serial Substring</source>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-get-serial/token-get-serial.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-get-serial/token-find-serial.component.html</context>
           <context context-type="linenumber">61</context>
         </context-group>
       </trans-unit>
       <trans-unit id="5630936943548482737" datatype="html">
         <source>Enter optional serial substring</source>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-get-serial/token-get-serial.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-get-serial/token-find-serial.component.html</context>
           <context context-type="linenumber">68,69</context>
         </context-group>
       </trans-unit>
       <trans-unit id="8783015349295684431" datatype="html">
         <source>Count Window</source>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-get-serial/token-get-serial.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-get-serial/token-find-serial.component.html</context>
           <context context-type="linenumber">74</context>
         </context-group>
       </trans-unit>
       <trans-unit id="1223094679925357812" datatype="html">
         <source>Lookahead OTP values</source>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-get-serial/token-get-serial.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-get-serial/token-find-serial.component.html</context>
           <context context-type="linenumber">81,82</context>
         </context-group>
       </trans-unit>
       <trans-unit id="7101458937781346341" datatype="html">
         <source>Set number of lookahead OTP values (default 10).</source>
         <context-group purpose="location">
-          <context context-type="sourcefile">src/app/components/token/token-get-serial/token-get-serial.component.html</context>
+          <context context-type="sourcefile">src/app/components/token/token-get-serial/token-find-serial.component.html</context>
           <context context-type="linenumber">84</context>
         </context-group>
       </trans-unit>

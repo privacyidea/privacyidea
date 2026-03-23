@@ -17,44 +17,63 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 @if (isEditMode) {
-  <h2
-    i18n
-    mat-dialog-title>
-    Edit privacyIDEA Server {{ data?.identifier }}
-  </h2>
+  <h3
+    class="margin-8 external-service-dialog-title"
+    i18n>
+    Edit privacyIDEA Server
+  </h3>
 } @else {
-  <h2
-    i18n
-    mat-dialog-title>
-    Create a New privacyIDEA Server
-  </h2>
+  <h3
+    class="margin-8 external-service-dialog-title"
+    i18n>
+    Create privacyIDEA Server
+  </h3>
 }
 
-<mat-dialog-content>
+<mat-dialog-content class="privacyidea-server-dialog-content">
   <form
     [formGroup]="privacyideaForm"
-    class="flex-column">
+    class="privacyidea-server-form">
 
-    <mat-form-field>
-      <mat-label i18n>Identifier</mat-label>
-      <input
-        formControlName="identifier"
-        matInput
-        placeholder="myRemotePrivacyIDEAServer"
-        required />
-      <mat-hint i18n>This is the unique identifying name of the privacyIDEA server definition.</mat-hint>
-    </mat-form-field>
+    <div class="flex-row gap-16 margin-bottom-16">
+      <mat-form-field
+        appearance="fill"
+        class="input-width-l">
+        <mat-label i18n>Identifier</mat-label>
+        <app-clearable-input
+          (onClick)="privacyideaForm.get('identifier')?.setValue('')"
+          [showClearButton]="!isEditMode && !!privacyideaForm.get('identifier')?.value">
+          <input
+            formControlName="identifier"
+            matInput
+            placeholder="myRemotePrivacyIDEAServer"
+            required />
+        </app-clearable-input>
+        @if (privacyideaForm.get('identifier')?.hasError('required')) {
+          <mat-error i18n>Identifier is <strong>required</strong></mat-error>
+        }
+        <mat-hint i18n>This is the unique identifying name of the privacyIDEA server definition.</mat-hint>
+      </mat-form-field>
 
-    <mat-form-field
-      class="margin-top-16">
-      <mat-label i18n>URL of the privacyIDEA Server</mat-label>
-      <input
-        formControlName="url"
-        matInput
-        placeholder="https://pi17.example.com/"
-        required />
-      <mat-hint i18n>Please provide the base URL of the privacyIDEA server.</mat-hint>
-    </mat-form-field>
+      <mat-form-field
+        appearance="fill"
+        class="input-width-l">
+        <mat-label i18n>URL of the privacyIDEA Server</mat-label>
+        <app-clearable-input
+          (onClick)="privacyideaForm.get('url')?.setValue('')"
+          [showClearButton]="!!privacyideaForm.get('url')?.value">
+          <input
+            formControlName="url"
+            matInput
+            placeholder="https://pi17.example.com/"
+            required />
+        </app-clearable-input>
+        @if (privacyideaForm.get('url')?.hasError('required')) {
+          <mat-error i18n>URL of the privacyIDEA Server is <strong>required</strong></mat-error>
+        }
+        <mat-hint i18n>Please provide the base URL of the privacyIDEA server.</mat-hint>
+      </mat-form-field>
+    </div>
 
     <div class="margin-top-16">
       <mat-checkbox formControlName="tls">
@@ -63,60 +82,81 @@
       <p
         class="mat-hint"
         i18n>
-        The certificate will be checked for a valid hostname and for a trusted certificate. Do not uncheck this in
-        productive use!
+        The certificate will be checked for a valid hostname and for a trusted certificate.
+        <br />
+        Do not uncheck this in productive use!
       </p>
     </div>
 
     <mat-form-field
-      class="margin-top-16">
+      appearance="fill"
+      class="input-width-xl margin-top-16">
       <mat-label i18n>Description</mat-label>
-      <input
-        formControlName="description"
-        matInput />
+      <app-clearable-input
+        (onClick)="privacyideaForm.get('description')?.setValue('')"
+        [showClearButton]="!!privacyideaForm.get('description')?.value">
+        <input
+          formControlName="description"
+          matInput />
+      </app-clearable-input>
     </mat-form-field>
 
-    <div class="flex-row gap-16 margin-top-16 ali-center">
-      <mat-form-field class="flex-grow-1">
-        <mat-label i18n>User</mat-label>
-        <input
-          formControlName="username"
-          matInput />
-      </mat-form-field>
+    <div class="flex-row ali-center gap-16 margin-bottom-16">
+      <div class="flex-column">
+        <mat-form-field
+          appearance="fill"
+          class="input-width-l">
+          <mat-label i18n>User</mat-label>
+          <app-clearable-input
+            (onClick)="privacyideaForm.get('username')?.setValue('')"
+            [showClearButton]="!!privacyideaForm.get('username')?.value">
+            <input
+              formControlName="username"
+              matInput />
+          </app-clearable-input>
+        </mat-form-field>
 
-      <mat-form-field class="flex-grow-1">
-        <mat-label i18n>Password</mat-label>
-        <input
-          autocomplete="new-password"
-          formControlName="password"
-          matInput
-          type="password" />
-      </mat-form-field>
+        <mat-form-field
+          appearance="fill"
+          class="input-width-l">
+          <mat-label i18n>Password</mat-label>
+          <app-clearable-input
+            (onClick)="privacyideaForm.get('password')?.setValue('')"
+            [showClearButton]="!!privacyideaForm.get('password')?.value">
+            <input
+              autocomplete="new-password"
+              formControlName="password"
+              matInput
+              type="password" />
+          </app-clearable-input>
+        </mat-form-field>
+      </div>
 
       <button
         (click)="test()"
         [disabled]="privacyideaForm.invalid || isTesting()"
-        class="action-button-1 margin-bottom-16"
+        class="action-button-secondary button-width-m margin-bottom-16"
         mat-stroked-button
         type="button">
         <mat-icon>send</mat-icon>
         <span i18n>Send Test Request</span>
       </button>
     </div>
-
   </form>
 </mat-dialog-content>
 
-<mat-dialog-actions align="center">
+<mat-dialog-actions align="end">
   <button
     (click)="onCancel()"
+    class="action-button-secondary button-width-s"
     i18n
-    mat-button>Cancel
+    mat-stroked-button>
+    Cancel
   </button>
   <button
     (click)="save()"
     [disabled]="privacyideaForm.invalid || privacyideaForm.pristine"
-    class="action-button-1 width-238"
+    class="action-button-primary button-width-s"
     i18n
     mat-stroked-button>
     <mat-icon>save</mat-icon>

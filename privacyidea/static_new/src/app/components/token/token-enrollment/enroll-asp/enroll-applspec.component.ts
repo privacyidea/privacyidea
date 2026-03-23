@@ -17,12 +17,13 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, computed, effect, EventEmitter, inject, input, Input, OnInit, Output } from "@angular/core";
+import { toSignal } from "@angular/core/rxjs-interop";
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { ErrorStateMatcher, MatOption } from "@angular/material/core";
-import { MatFormField, MatLabel } from "@angular/material/form-field";
+import { MatFormField, MatLabel, MatError } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
-import { MatError, MatSelect } from "@angular/material/select";
+import { MatSelect } from "@angular/material/select";
 import { ServiceIdService, ServiceIdServiceInterface } from "../../../../services/service-id/service-id.service";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 import {
@@ -82,22 +83,24 @@ export class EnrollApplspecComponent implements OnInit {
   >();
   disabled = input<boolean>(false);
 
-  serviceIdControl = new FormControl<string>("", [Validators.required]);
-  generateOnServerControl = new FormControl<boolean>(true, [Validators.required]);
-
-  otpKeyFormControl = new FormControl<string>({ value: "", disabled: true });
+  serviceIdControl = new FormControl<string>("", { nonNullable: true, validators: [Validators.required] });
+  generateOnServerControl = new FormControl<boolean>(true, { nonNullable: true, validators: [Validators.required] });
+  otpKeyFormControl = new FormControl<string>("", { nonNullable: true });
 
   applspecForm = new FormGroup({
     serviceId: this.serviceIdControl,
     generateOnServer: this.generateOnServerControl,
     otpKey: this.otpKeyFormControl
   });
+
+  generateOnServer = toSignal(this.generateOnServerControl.valueChanges, {
+    initialValue: this.generateOnServerControl.value ?? true
+  });
+  isGenerateOnServerDisabled = computed(() => this.disabled());
+  isOtpKeyDisabled = computed(() => this.disabled() || this.generateOnServer());
+
   serviceIdOptions = computed(() => this.serviceIdService.serviceIds().map((s) => s.servicename) || []);
   applspecErrorStateMatcher = new ApplspecErrorStateMatcher();
-
-  constructor() {
-    effect(() => (this.disabled() ? this._disableFormControls() : this._enableFormControls()));
-  }
 
   ngOnInit(): void {
     this._setInitialFormValues();
@@ -144,7 +147,7 @@ export class EnrollApplspecComponent implements OnInit {
     mapper: ApplspecApiPayloadMapper;
   } | null => {
     if (
-      (!this.generateOnServerControl.value && this.otpKeyFormControl.invalid) ||
+      (!this.generateOnServer() && this.otpKeyFormControl.invalid) ||
       this.generateOnServerControl.invalid ||
       this.serviceIdControl.invalid
     ) {
@@ -156,7 +159,7 @@ export class EnrollApplspecComponent implements OnInit {
       ...basicOptions,
       type: "applspec",
       serviceId: this.serviceIdControl.value ?? "",
-      generateOnServer: !!this.generateOnServerControl.value
+      generateOnServer: !!this.generateOnServer()
     };
     if (!enrollmentData.generateOnServer) {
       enrollmentData.otpKey = this.otpKeyFormControl.value ?? "";
@@ -166,13 +169,4 @@ export class EnrollApplspecComponent implements OnInit {
       mapper: this.enrollmentMapper
     };
   };
-
-  private _disableFormControls() {
-    this.applspecForm.disable({ emitEvent: false });
-  }
-
-  private _enableFormControls() {
-    this.applspecForm.enable({ emitEvent: false });
-    this._applyPolicies();
-  }
 }

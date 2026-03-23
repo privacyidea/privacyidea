@@ -17,23 +17,25 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div class="actions-pin-input">
-  <input
-    [(ngModel)]="fristOTPValue"
-    class="input"
-    i18n-placeholder
-    placeholder="First OTP" />
-  <input
-    [(ngModel)]="secondOTPValue"
-    class="input"
-    i18n-placeholder
-    placeholder="Second OTP" />
+  <mat-form-field class="input-width-s">
+    <mat-label>OTP</mat-label>
+    <input
+      [(ngModel)]="fristOTPValue"
+      matInput />
+  </mat-form-field>
+  <mat-form-field class="input-width-s">
+    <mat-label i18n>Repeat OTP</mat-label>
+    <input
+      [(ngModel)]="secondOTPValue"
+      matInput />
+  </mat-form-field>
 </div>
 <div class="actions-pin-input-button">
   <button
     (click)="resyncOTPToken()"
-    class="action-button-1 width-238"
-    mat-stroked-button
-    i18n>
+    class="action-button-secondary button-width-m"
+    i18n
+    mat-stroked-button>
     <mat-icon>sync</mat-icon>
     Resync Token
   </button>

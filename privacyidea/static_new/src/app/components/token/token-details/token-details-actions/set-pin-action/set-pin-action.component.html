@@ -17,32 +17,34 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 @if (authService.actionAllowed("setpin")) {
-  <div class="user-pin-input">
+  <div class="flex-column ali-center">
     <input
       class="hidden-input"
-      type="text"/>
+      type="text" />
     <input
       class="hidden-input"
-      type="password"/>
-    <input
-      [(ngModel)]="setPinValue"
-      [type]="'password'"
-      class="input"
-      i18n-placeholder
-      placeholder="Token PIN"/>
-    <input
-      [(ngModel)]="repeatPinValue"
-      [type]="'password'"
-      class="input"
-      i18n-placeholder
-      placeholder="Repeat PIN"/>
+      type="password" />
+    <mat-form-field class="input-width-s">
+      <mat-label i18n>PIN</mat-label>
+      <input
+        [(ngModel)]="setPinValue"
+        [type]="'password'"
+        matInput />
+    </mat-form-field>
+    <mat-form-field class="input-width-s">
+      <mat-label i18n>Repeat PIN</mat-label>
+      <input
+        [(ngModel)]="repeatPinValue"
+        [type]="'password'"
+        matInput />
+    </mat-form-field>
   </div>
 }
 <div class="user-pin-button">
   @if (authService.actionAllowed("setpin")) {
     <button
       (click)="setPin()"
-      class="action-button-1 width-238"
+      class="action-button-secondary button-width-m"
       i18n
       mat-stroked-button>
       <mat-icon>password</mat-icon>
@@ -52,9 +54,9 @@
   @if (authService.actionsAllowed(["setrandompin", "otp_pin_set_random"])) {
     <button
       (click)="setRandomPin()"
-      class="action-button-1 width-238"
-      mat-stroked-button
-      i18n>
+      class="action-button-secondary button-width-m"
+      i18n
+      mat-stroked-button>
       <mat-icon>casino</mat-icon>
       Random PIN
     </button>

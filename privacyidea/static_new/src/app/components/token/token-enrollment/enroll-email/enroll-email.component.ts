@@ -32,8 +32,8 @@ import {
 import { SystemService, SystemServiceInterface } from "../../../../services/system/system.service";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 import { ROUTE_PATHS } from "../../../../route_paths";
-import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
 import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
+import { Router } from "@angular/router";
 
 export interface EmailEnrollmentOptions extends TokenEnrollmentData {
   type: "email";
@@ -52,10 +52,12 @@ export class EnrollEmailComponent implements OnInit {
   protected readonly enrollmentMapper: EmailApiPayloadMapper = inject(EmailApiPayloadMapper);
   protected readonly systemService: SystemServiceInterface = inject(SystemService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
-  protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
+  protected readonly ROUTE_PATHS = ROUTE_PATHS;
+  private router = inject(Router);
 
   enrollmentData = input<EmailEnrollmentData>();
+
   @Output() additionalFormFieldsChange = new EventEmitter<{
     [key: string]: FormControl<any>;
   }>();
@@ -65,10 +67,13 @@ export class EnrollEmailComponent implements OnInit {
       mapper: TokenApiPayloadMapper<EmailEnrollmentData>;
     } | null
   >();
+
   disabled = input<boolean>(false);
 
   emailAddressControl = new FormControl<string>("");
+
   readEmailDynamicallyControl = new FormControl<boolean>(false);
+
   emailForm = new FormGroup({
     emailAddress: this.emailAddressControl,
     readEmailDynamically: this.readEmailDynamicallyControl
@@ -135,7 +140,8 @@ export class EnrollEmailComponent implements OnInit {
   };
 
   goToEmailConfig() {
-    this.contentService.router.navigate([ROUTE_PATHS.CONFIGURATION_TOKENTYPES], { fragment: 'email' });
+    this.router.navigate([ROUTE_PATHS.CONFIGURATION_TOKENTYPES], { queryParams: { expanded: "email" } });
+    return false;
   }
 
   onEmailConfigKeydown(event: KeyboardEvent) {

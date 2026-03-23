@@ -6,6 +6,7 @@ html {
   &.system {
     --mint-bg: light-dark(#e9f5e0, #243328);
     --rose-bg: light-dark(#faebef, #282426);
+    --rose-ripple: light-dark(#f4d7e0, #433d3e);
     --sky-bg: light-dark(#edf3f5, #283034);
 
     --mat-sys-light: light-dark(#ffffff, #242424);
@@ -72,6 +73,7 @@ html {
     color-scheme: light;
     --mint-bg: #e9f5e0;
     --rose-bg: #faebef;
+    --rose-ripple: #f4d7e0;
     --sky-bg: #edf3f5;
 
     --mat-sys-light: #ffffff;
@@ -137,6 +139,7 @@ html {
     color-scheme: dark;
     --mint-bg: #243328;
     --rose-bg: #282426;
+    --rose-ripple: #433d3e;
     --sky-bg: #283034;
 
     --mat-sys-light: #242424;

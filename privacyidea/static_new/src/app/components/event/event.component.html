@@ -18,12 +18,10 @@
 -->
 <div
   appScrollToTop
-  class="events-table-container"
   aria-label="Event Handlers"
+  class="events-table-container"
   i18n-aria-label>
-  <h3 i18n>Event Handlers</h3>
-
-  <div class="filter-paginator-container margin-bottom-16">
+  <div class="filter-paginator-container">
     <mat-form-field
       class="event-handler-table-filter"
       subscriptSizing="dynamic">
@@ -53,7 +51,7 @@
     @if (authService.actionAllowed("eventhandling_write")) {
       <button
         (click)="onCreateNewEventHandler()"
-        class="action-button-1"
+        class="action-button-primary button-width-l"
         i18n
         mat-stroked-button>
         <mat-icon>add</mat-icon>
@@ -61,25 +59,25 @@
       </button>
     }
     <mat-slide-toggle
-      [checked]="detailedView()"
-      (change)="toggleDetailedView()">Detailed View
+      (change)="toggleDetailedView()"
+      [checked]="detailedView()">Detailed View
     </mat-slide-toggle>
   </div>
 
   <table
+    [dataSource]="eventHandlerDataSource()"
     class="event-handler-table"
-    mat-table
-    [dataSource]="eventHandlerDataSource()">
+    mat-table>
     @for (column of Object.keys(columnKeysMap); track column) {
       @if (column !== "delete" || authService.actionAllowed("eventhandling_write")) {
         <ng-container [matColumnDef]="column">
           <th
-            mat-header-cell
-            *matHeaderCellDef>
+            *matHeaderCellDef
+            mat-header-cell>
             <div class="flex ali-center">
               {{ columnKeysMap[column] }}
               @if (column !== 'delete') {
-                <div class="margin-left-1 flex">
+                <div class="margin-left-16 flex">
                   <button
                     (click)="tableUtilsService.onSortButtonClick(column, sort)"
                     class="sort-button"
@@ -92,17 +90,17 @@
             </div>
           </th>
           <td
-            mat-cell
             *matCellDef="let element; let row"
-            [ngClass]="detailedView() ? 'detailed-cell' : 'compact-cell'">
+            [ngClass]="detailedView() ? 'detailed-cell' : 'compact-cell'"
+            mat-cell>
             @switch (column) {
               @case ("name") {
                 <div [ngClass]="detailedView() ? 'break-words' : 'text-overflow-ellipsis'">
                   @if (authService.actionAllowed("eventhandling_write")) {
                     <a
                       (click)="onEditEventHandler(element)"
-                      tabindex="0"
-                      [innerHTML]="element.name | highlight:filterString()"></a>
+                      [innerHTML]="element.name | highlight:filterString()"
+                      tabindex="0"></a>
                   } @else {
                     <span [innerHTML]="element.name | highlight:filterString()"></span>
                   }
@@ -146,17 +144,17 @@
               }
               @case ("active") {
                 <mat-slide-toggle
-                  matTooltip="Toggle Active Status"
-                  [checked]="element.active"
                   (click)="toggleActive(element); $event.stopPropagation()"
+                  [checked]="element.active"
+                  [disableRipple]="true"
                   [disabled]="!authService.actionAllowed('eventhandling_write')"
-                  [disableRipple]="true"></mat-slide-toggle>
+                  matTooltip="Toggle Active Status"></mat-slide-toggle>
               }
               @case ("delete") {
                 <button
+                  (click)="onDeleteEventHandler(element); $event.stopPropagation()"
                   mat-icon-button
-                  matTooltip="Delete Event Handler"
-                  (click)="onDeleteEventHandler(element); $event.stopPropagation()">
+                  matTooltip="Delete Event Handler">
                   <mat-icon>delete</mat-icon>
                 </button>
               }
@@ -165,8 +163,8 @@
               }
               @default {
                 <span
-                  [ngClass]="detailedView() ? 'break-words' : 'text-overflow-ellipsis'"
-                  [innerHTML]="element[column] | highlight:filterString()"></span>
+                  [innerHTML]="element[column] | highlight:filterString()"
+                  [ngClass]="detailedView() ? 'break-words' : 'text-overflow-ellipsis'"></span>
               }
             }
           </td>
@@ -175,12 +173,12 @@
     }
 
     <tr
-      mat-header-row
-      *matHeaderRowDef="columnKeys()"></tr>
+      *matHeaderRowDef="columnKeys()"
+      mat-header-row></tr>
     <tr
       *matRowDef="let row; columns: columnKeys()"
+      [ngClass]="detailedView() ? 'detailed-row' : 'compact-row'"
       class="example-element-row"
-      mat-row
-      [ngClass]="detailedView() ? 'detailed-row' : 'compact-row'"></tr>
+      mat-row></tr>
   </table>
 </div>

@@ -59,7 +59,7 @@
               mat-header-cell>
               <div class="flex ali-center">
                 {{ column.label }}
-                <div class="margin-left-1 flex">
+                <div class="margin-left-16 flex">
                   <button
                     (click)="tableUtilsService.onSortButtonClick(column.key, sort)"
                     class="sort-button"
@@ -76,7 +76,6 @@
             attr.aria-label="{{ column.label }} Cell"
             mat-cell
             [ngClass]="{
-            'width-18rem': column.key === 'description',
             'table-checkbox': column.key === 'select'
           }">
             <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">

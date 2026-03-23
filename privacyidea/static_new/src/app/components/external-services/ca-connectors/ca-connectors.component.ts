@@ -93,7 +93,8 @@ export class CaConnectorsComponent {
   openEditDialog(connector?: CaConnector): void {
     this.dialog.open(NewCaConnectorComponent, {
       data: connector ? { ...connector } : null,
-      width: "800px"
+      width: "auto",
+      maxWidth: "100vw"
     });
   }
 

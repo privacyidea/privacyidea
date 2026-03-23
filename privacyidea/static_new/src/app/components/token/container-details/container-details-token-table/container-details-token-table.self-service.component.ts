@@ -35,6 +35,7 @@ import { TokenService, TokenServiceInterface } from "../../../../services/token/
 import { CopyButtonComponent } from "../../../shared/copy-button/copy-button.component";
 import { ContainerDetailsTokenTableComponent } from "./container-details-token-table.component";
 import { DialogService, DialogServiceInterface } from "../../../../services/dialog/dialog.service";
+import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 
 @Component({
   selector: "app-container-details-token-table-self-service",
@@ -55,7 +56,8 @@ import { DialogService, DialogServiceInterface } from "../../../../services/dial
     CopyButtonComponent,
     ReactiveFormsModule,
     FormsModule,
-    MatTooltip
+    MatTooltip,
+    ClearableInputComponent
   ],
   templateUrl: "./container-details-token-table.self-service.component.html",
   styleUrl: "./container-details-token-table.component.scss"

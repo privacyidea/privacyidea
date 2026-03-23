@@ -17,13 +17,13 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
  -->
 @if (authService.oneActionAllowed(["policydelete", "policywrite"])) {
-  <div class="flex-row margin-bottom-1 margin-top-1 gap-8">
+  <div class="flex-row margin-bottom-16 gap-8">
     @if (authService.actionAllowed("policywrite")) {
       <button
         (click)="createNewPolicy()"
-        class="action-button-1"
+        class="action-button-primary button-width-m"
         mat-stroked-button>
-        <mat-icon>add_moderator</mat-icon>
+        <mat-icon>add</mat-icon>
         <span i18n>Create Policy</span>
       </button>
     }
@@ -32,7 +32,7 @@
       <button
         (click)="deleteSelectedPolicies()"
         [disabled]="policySelection().size < 1"
-        class="action-button-delete"
+        class="action-button-delete-secondary button-width-m"
         mat-stroked-button>
         <mat-icon>delete_sweep</mat-icon>
         <span i18n>Delete Selected</span>
@@ -43,7 +43,7 @@
       <button
         (click)="copySelectedPolicies()"
         [disabled]="policySelection().size < 1"
-        class="action-button-1"
+        class="action-button-secondary button-width-m"
         mat-stroked-button>
         <mat-icon>content_copy</mat-icon>
         <span i18n>Copy Selected</span>

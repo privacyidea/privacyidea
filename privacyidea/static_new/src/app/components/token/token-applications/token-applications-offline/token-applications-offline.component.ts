@@ -36,8 +36,7 @@ import { ClearableInputComponent } from "../../../shared/clearable-input/clearab
 import { CopyButtonComponent } from "../../../shared/copy-button/copy-button.component";
 import { MatIconModule } from "@angular/material/icon";
 import { MatButtonModule } from "@angular/material/button";
-import { MatMenuModule } from "@angular/material/menu";
-import { TokenApplicationsComponent } from "../token-applications.component";
+import { TokenApplicationsActionsComponent } from "../token-applications-actions/token-applications-actions.component";
 
 @Component({
   selector: "app-token-applications-offline",
@@ -51,11 +50,10 @@ import { TokenApplicationsComponent } from "../token-applications.component";
     MatLabel,
     NgClass,
     CopyButtonComponent,
-    FormsModule,
     ClearableInputComponent,
     MatIconModule,
     MatButtonModule,
-    MatMenuModule
+    TokenApplicationsActionsComponent
   ],
   templateUrl: "./token-applications-offline.component.html",
   styleUrls: ["./token-applications-offline.component.scss"]
@@ -65,7 +63,6 @@ export class TokenApplicationsOfflineComponent {
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
-  private readonly tokenApplicationsComponent: TokenApplicationsComponent = inject(TokenApplicationsComponent);
   readonly columnsKeyMap = this.tableUtilsService.pickColumns(
     "serial",
     "count",
@@ -92,14 +89,11 @@ export class TokenApplicationsOfflineComponent {
   }
 
   getFilterIconName(keyword: string): string {
-    return this.tokenApplicationsComponent.getFilterIconName(keyword);
+    return this.machineService.getFilterIconName(keyword);
   }
 
   onKeywordClick(filterKeyword: string): void {
-    this.tokenApplicationsComponent.onKeywordClick(filterKeyword);
-  }
-
-  onAdvancedFilterClick(filterKeyword: string): void {
-    this.tokenApplicationsComponent.onAdvancedFilterClick(filterKeyword);
+    this.machineService.toggleFilter(filterKeyword);
+    this.machineService.focusActiveInput();
   }
 }

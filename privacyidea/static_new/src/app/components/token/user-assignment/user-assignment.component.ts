@@ -55,6 +55,7 @@ export class UserAssignmentComponent {
   @Input() selectedUserRealmControl?: FormControl<string>;
   @Input() userFilterControl?: FormControl<string | UserData | null>;
   showOnlyAddToRealm = input<boolean>(false);
+  required = input<boolean>(false);
 
   // Internal defaults if not provided
   readonly internalSelectedUserRealmControl = new FormControl<string>(

@@ -22,34 +22,36 @@
 
 <div
   [formGroup]="formGroup"
-  class="auth-grid">
-  <mat-form-field class="width-238">
-    <mat-label i18n>Method</mat-label>
-    <mat-select formControlName="method">
-      <mat-option value="POST">POST</mat-option>
-      <mat-option value="GET">GET</mat-option>
-      <mat-option value="PUT">PUT</mat-option>
-      <mat-option value="PATCH">PATCH</mat-option>
-      <mat-option value="DELETE">DELETE</mat-option>
-    </mat-select>
-  </mat-form-field>
+  class="flex-column">
+  <div class="flex-row gap-16 margin-bottom-16">
+    <mat-form-field class="input-width-xl">
+      <mat-label i18n>Endpoint</mat-label>
+      <app-clearable-input
+        (onClick)="formGroup.get('endpoint')?.setValue('')"
+        [showClearButton]="!!formGroup.get('endpoint')?.value">
+        <input
+          formControlName="endpoint"
+          matInput
+          placeholder="/users" />
+      </app-clearable-input>
+      @if (endpointHint) {
+        <mat-hint>{{ endpointHint }}</mat-hint>
+      }
+    </mat-form-field>
 
-  <mat-form-field class="auth-endpoint">
-    <mat-label i18n>Endpoint</mat-label>
-    <app-clearable-input
-      (onClick)="formGroup.get('endpoint')?.setValue('')"
-      [showClearButton]="!!formGroup.get('endpoint')?.value">
-      <input
-        formControlName="endpoint"
-        matInput
-        placeholder="/users" />
-    </app-clearable-input>
-    @if (endpointHint) {
-      <mat-hint>{{ endpointHint }}</mat-hint>
-    }
-  </mat-form-field>
+    <mat-form-field class="input-width-s">
+      <mat-label i18n>Method</mat-label>
+      <mat-select formControlName="method">
+        <mat-option value="POST">POST</mat-option>
+        <mat-option value="GET">GET</mat-option>
+        <mat-option value="PUT">PUT</mat-option>
+        <mat-option value="PATCH">PATCH</mat-option>
+        <mat-option value="DELETE">DELETE</mat-option>
+      </mat-select>
+    </mat-form-field>
+  </div>
 
-  <mat-form-field class="auth-wide">
+  <mat-form-field class="input-width-xl margin-bottom-16">
     <mat-label i18n>Headers (JSON format)</mat-label>
     <textarea
       formControlName="headers"
@@ -57,7 +59,7 @@
       placeholder='{"Content-Type":"application/json; charset=UTF-8"}'></textarea>
   </mat-form-field>
 
-  <mat-form-field class="auth-wide">
+  <mat-form-field class="input-width-xl margin-bottom-16">
     <mat-label i18n>Request Mapping (JSON format)</mat-label>
     <textarea
       formControlName="requestMapping"
@@ -68,7 +70,7 @@
     }
   </mat-form-field>
 
-  <mat-form-field class="auth-wide">
+  <mat-form-field class="input-width-xl">
     <mat-label i18n>Response Mapping (JSON format)</mat-label>
     <textarea
       formControlName="responseMapping"
@@ -77,14 +79,14 @@
   </mat-form-field>
 
   <mat-checkbox
-    class="auth-wide checkbox-inline"
+    class="checkbox-inline"
     formControlName="hasSpecialErrorHandler"
     i18n>
     Special Error Handling
   </mat-checkbox>
 
   @if (formGroup.get('hasSpecialErrorHandler')?.value) {
-    <mat-form-field class="auth-wide">
+    <mat-form-field class="input-width-xl">
       <mat-label i18n>Response Contains (JSON format)</mat-label>
       <textarea
         formControlName="errorResponse"

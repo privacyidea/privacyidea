@@ -16,10 +16,10 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<div class="flex-row margin-bottom-16 margin-top-16 gap-8">
+<div class="flex-row gap-8">
   <button
     [routerLink]="[ROUTE_PATHS.TOKENS_ENROLLMENT]"
-    class="action-button-1"
+    class="action-button-primary button-width-m"
     mat-stroked-button>
     <mat-icon> add_moderator</mat-icon>
     Enroll Token
@@ -29,7 +29,7 @@
       <button
         (click)="deleteSelectedTokens()"
         [disabled]="tokenSelection().length === 0"
-        class="action-button-delete"
+        class="action-button-delete-secondary button-width-m"
         i18n
         mat-stroked-button>
         <mat-icon> delete_sweep</mat-icon>
@@ -40,7 +40,7 @@
       <button
         (click)="assignSelectedTokens()"
         [disabled]="tokenSelection().length === 0"
-        class="action-button-1"
+        class="action-button-secondary button-width-m"
         i18n
         mat-stroked-button>
         <mat-icon> person_add</mat-icon>
@@ -51,7 +51,7 @@
       <button
         (click)="unassignSelectedTokens()"
         [disabled]="tokenSelection().length === 0"
-        class="action-button-1"
+        class="action-button-secondary button-width-m"
         mat-stroked-button>
         <mat-icon> person_remove</mat-icon>
         Unassign Selected
@@ -59,7 +59,7 @@
     }
     <button
       [matMenuTriggerFor]="advancedFilterMenu"
-      class="action-button-1"
+      class="action-button-secondary button-width-m"
       mat-stroked-button>
       <mat-icon> filter_list</mat-icon>
       More Filter
@@ -69,7 +69,7 @@
         <button
           (click)="onAdvancedFilterClick(keyword)"
           mat-menu-item>
-          <mat-icon class="margin-right-1">{{ getFilterIconName(keyword) }}</mat-icon>
+          <mat-icon class="margin-right-16">{{ getFilterIconName(keyword) }}</mat-icon>
           {{ keyword }}
         </button>
       }

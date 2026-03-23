@@ -28,9 +28,9 @@ import {
 } from "@angular/forms";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatOption } from "@angular/material/core";
-import { MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
+import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
-import { MatError, MatSelect } from "@angular/material/select";
+import { MatSelect } from "@angular/material/select";
 import {
   TokenApiPayloadMapper,
   TokenEnrollmentData
@@ -42,6 +42,7 @@ import {
 import { SystemService, SystemServiceInterface } from "../../../../services/system/system.service";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
+import { SmsGatewayService, SmsGatewayServiceInterface } from "../../../../services/sms-gateway/sms-gateway.service";
 import { ROUTE_PATHS } from "../../../../route_paths";
 import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
 
@@ -95,6 +96,7 @@ export class EnrollSmsComponent implements OnInit {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
+  protected readonly smsGatewayService: SmsGatewayServiceInterface = inject(SmsGatewayService);
 
   enrollmentData = input<SmsEnrollmentData>();
   @Input() wizard: boolean = false;
@@ -108,9 +110,12 @@ export class EnrollSmsComponent implements OnInit {
     } | null
   >();
 
-  smsGatewayControl = new FormControl<string>("", [Validators.required]);
+  smsGatewayControl = new FormControl<string>("", { nonNullable: true, validators: [Validators.required] });
   phoneNumberControl = new FormControl<string>("", [phoneNumberValidator]);
-  readNumberDynamicallyControl = new FormControl<boolean>(false, [Validators.required]);
+  readNumberDynamicallyControl = new FormControl<boolean>(false, {
+    nonNullable: true,
+    validators: [Validators.required]
+  });
 
   smsForm = new FormGroup({
     smsGateway: this.smsGatewayControl,
@@ -121,13 +126,26 @@ export class EnrollSmsComponent implements OnInit {
   smsGatewayOptions = computed(() => {
     // Find the first right that starts with "sms_gateways="
     const right = this.authService.rights().find((r) => r.startsWith("sms_gateways="));
-    if (!right) return [];
-    const gateways = right.split("=")[1];
-    if (!gateways) return [];
-    return gateways
-      .split(" ")
-      .map((gw) => gw.trim())
-      .filter((gw) => gw.length > 0);
+    const defaultId = this.systemService.systemConfigResource.value()?.result?.value?.["sms.identifier"];
+    let gateways: string[] = [];
+
+    if (right) {
+      const gatewaysStr = right.split("=")[1];
+      if (gatewaysStr) {
+        gateways = gatewaysStr
+          .split(" ")
+          .map((gw) => gw.trim())
+          .filter((gw) => gw.length > 0);
+      }
+    } else {
+      gateways = this.smsGatewayService.smsGateways().map((gw) => gw.name);
+    }
+
+    if (defaultId && !gateways.includes(defaultId)) {
+      gateways.push(defaultId);
+    }
+
+    return gateways;
   });
 
   defaultSMSGatewayIsSet = computed(() => {
@@ -166,32 +184,34 @@ export class EnrollSmsComponent implements OnInit {
   }
 
   private _setInitialFormValues() {
-    if (!!this.enrollmentData()) {
+    const data = this.enrollmentData();
+    if (data) {
       this.smsGatewayControl.setValue(this.enrollmentData()?.smsGateway ?? "", { emitEvent: false });
       this.readNumberDynamicallyControl.setValue(this.enrollmentData()?.readNumberDynamically ?? false, {
         emitEvent: false
       });
       this.phoneNumberControl.setValue(this.enrollmentData()?.phoneNumber ?? "", { emitEvent: false });
 
-      if (this.enrollmentData()?.readNumberDynamically) {
-        this.phoneNumberControl.disable({ emitEvent: false });
-        this.phoneNumberControl.clearValidators();
-        this.phoneNumberControl.updateValueAndValidity({ emitEvent: false });
-      }
+      this._updatePhoneNumberControlState(this.readNumberDynamicallyControl.value);
     }
   }
 
   private _applyPolicies() {
     this.readNumberDynamicallyControl.valueChanges.subscribe((dynamic) => {
-      if (!dynamic) {
-        this.phoneNumberControl.enable({ emitEvent: false });
-        this.phoneNumberControl.setValidators([Validators.required]);
-      } else {
-        this.phoneNumberControl.disable({ emitEvent: false });
-        this.phoneNumberControl.clearValidators();
-      }
-      this.phoneNumberControl.updateValueAndValidity();
+      this._updatePhoneNumberControlState(dynamic);
     });
+    this._updatePhoneNumberControlState(this.readNumberDynamicallyControl.value);
+  }
+
+  private _updatePhoneNumberControlState(dynamic: boolean) {
+    if (!dynamic) {
+      this.phoneNumberControl.enable({ emitEvent: false });
+      this.phoneNumberControl.setValidators([Validators.required]);
+    } else {
+      this.phoneNumberControl.disable({ emitEvent: false });
+      this.phoneNumberControl.clearValidators();
+    }
+    this.phoneNumberControl.updateValueAndValidity();
   }
 
   enrollmentArgsGetter = (
@@ -219,7 +239,7 @@ export class EnrollSmsComponent implements OnInit {
 
   private _enableFormControls(): void {
     this.smsForm.enable({ emitEvent: false });
-    this._applyPolicies();
+    this._updatePhoneNumberControlState(this.readNumberDynamicallyControl.value);
   }
 
   goToSmsConfig() {

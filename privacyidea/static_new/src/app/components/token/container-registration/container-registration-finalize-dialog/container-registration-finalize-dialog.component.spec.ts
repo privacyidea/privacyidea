@@ -73,7 +73,7 @@ describe("ContainerRegistrationFinalizeDialogComponent", () => {
   });
 
   it("should render 'Register Container' title when not rollover", () => {
-    const title = fixture.nativeElement.querySelector("h2");
+    const title = fixture.nativeElement.querySelector("h3");
     expect(title.textContent).toContain("Register Container");
   });
 
@@ -92,7 +92,7 @@ describe("ContainerRegistrationFinalizeDialogComponent", () => {
     fixture = TestBed.createComponent(ContainerRegistrationFinalizeDialogComponent);
     component = fixture.componentInstance;
     await detectChangesStable(fixture);
-    const titles = fixture.nativeElement.querySelectorAll("h2");
+    const titles = fixture.nativeElement.querySelectorAll("h3");
     const titleText = Array.from(titles)
       .map((el: any) => el.textContent.trim())
       .join(" ");
@@ -117,7 +117,7 @@ describe("ContainerRegistrationFinalizeDialogComponent", () => {
   });
 
   it("should call regenerateQRCode when button is clicked", () => {
-    const button = fixture.debugElement.query(By.css("button.action-button-1"));
+    const button = fixture.debugElement.query(By.css("button.action-button-secondary"));
     button.triggerEventHandler("click");
     expect(mockRegisterContainer).toHaveBeenCalled();
   });

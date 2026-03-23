@@ -136,7 +136,7 @@ describe("ContainerDetailsTokenTableComponent", () => {
     const fx = TestBed.createComponent(ContainerDetailsTokenTableComponent);
     const cmp = fx.componentInstance;
 
-    expect(cmp.displayedColumns).toEqual(expect.arrayContaining(["remove", "delete"]));
+    expect(cmp.displayedColumns).toEqual(expect.arrayContaining(["actions"]));
   });
 
   it("sets paginator and sort on both internal and external data sources", () => {

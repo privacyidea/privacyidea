@@ -30,6 +30,7 @@ import { ContainerService, ContainerServiceInterface } from "../../../../service
 import { OverflowService, OverflowServiceInterface } from "../../../../services/overflow/overflow.service";
 import { EditButtonsComponent } from "../../../shared/edit-buttons/edit-buttons.component";
 import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
+import { NgClass } from "@angular/common";
 
 export interface ContainerInfoDetail<T = any> {
   value: T;
@@ -54,7 +55,8 @@ export interface ContainerInfoDetail<T = any> {
     MatIcon,
     MatDivider,
     MatRow,
-    EditButtonsComponent
+    EditButtonsComponent,
+    NgClass
   ],
   templateUrl: "./container-details-info.component.html",
   styleUrl: "./container-details-info.component.scss"

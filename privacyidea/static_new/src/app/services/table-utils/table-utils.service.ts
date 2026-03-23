@@ -47,7 +47,8 @@ export type ColumnKey =
   | "count"
   | "rounds"
   | "service_id"
-  | "user";
+  | "user"
+  | "actions";
 
 export type ColumnDef<K extends ColumnKey = ColumnKey> = Readonly<{
   key: K;
@@ -72,7 +73,8 @@ export const COLUMN_REGISTRY: Readonly<Record<ColumnKey, ColumnDef>> = {
   count: { key: "count", label: "Count" },
   rounds: { key: "rounds", label: "Rounds" },
   service_id: { key: "service_id", label: "Service ID" },
-  user: { key: "user", label: "SSH User" }
+  user: { key: "user", label: "SSH User" },
+  actions: { key: "actions", label: "Actions" },
 } as const;
 
 type ColumnsTuple<K extends readonly ColumnKey[]> = {
@@ -297,6 +299,7 @@ export class TableUtilsService implements TableUtilsServiceInterface {
       case "failcount":
       case "active":
       case "revoke":
+      case "maxfail":
       case "delete":
         return "flex-center";
       case "realms":
@@ -325,13 +328,13 @@ export class TableUtilsService implements TableUtilsServiceInterface {
   }
 
   getTdClassForKey(key: string) {
-    const classes = ["fix-width-20-padr-0"];
+    const classes = ["width-241"];
     if (key === "description") {
-      classes.push("height-104");
+      classes.push("height-127");
     } else if (["realms", "tokengroup"].includes(key)) {
       classes.push("height-78");
     } else {
-      classes.push("height-52");
+      classes.push("height-53");
     }
     return classes;
   }
