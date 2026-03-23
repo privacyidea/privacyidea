@@ -41,7 +41,7 @@ export class PendingChangesService {
     this._saveFn.set(fn);
   }
 
-  save(): Promise<void> | void {
+  async save(): Promise<void> {
     const fn = this._saveFn();
     return fn ? fn() : undefined;
   }

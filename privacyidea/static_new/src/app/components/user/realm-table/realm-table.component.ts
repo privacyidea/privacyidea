@@ -163,8 +163,8 @@ export class RealmTableComponent {
     return [
       { id: NO_NODE_ID, label: $localize`All nodes` },
       ...nodes.map((n: NodeInfo) => ({
-        id: n.uuid,
-        label: n.name
+        label: n.name,
+        id: n.uuid
       }))
     ];
   });
@@ -290,10 +290,6 @@ export class RealmTableComponent {
     }
   }
 
-  onNodeSelectionChange(value: string): void {
-    this.selectedNode.set(value);
-  }
-
   getCreateNodeResolvers(nodeId: string): ResolverWithPriority[] {
     return this.newRealmNodeResolvers()[nodeId] ?? [];
   }
@@ -314,6 +310,11 @@ export class RealmTableComponent {
     });
     current[nodeId] = updated;
     this.newRealmNodeResolvers.set(current);
+  }
+
+  setNewRealmName($event: Event) {
+    const input = $event.target as HTMLInputElement;
+    this.newRealmName.set(input.value);
   }
 
   setNewRealmResolverPriority(nodeId: string, resolverName: string, priority: any): void {

@@ -28,7 +28,7 @@
         [length]="totalLength()"
         [pageSizeOptions]="pageSizeOptions()"
         [pageSize]="pageSizeOptions()[0]"
-        showFirstLastButtons/>
+        showFirstLastButtons />
     </div>
 
     <div class="flex-row margin-bottom-16">
@@ -38,7 +38,7 @@
         <mat-label i18n>Node</mat-label>
 
         <mat-select
-          (selectionChange)="onNodeSelectionChange($event.value)"
+          (selectionChange)="selectedNode.set($event.value)"
           [value]="selectedNode()">
           @for (node of nodeOptions(); track node.value) {
             <mat-option [value]="node.value">
@@ -263,7 +263,7 @@
                       subscriptSizing="dynamic">
                       <mat-label i18n>Realm Name</mat-label>
                       <input
-                        (input)="newRealmName.set($any($event.target).value)"
+                        (input)="setNewRealmName($event)"
                         [value]="newRealmName()"
                         matInput />
                     </mat-form-field>

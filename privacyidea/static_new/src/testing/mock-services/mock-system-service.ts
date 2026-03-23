@@ -19,7 +19,7 @@
 import { computed, linkedSignal, Signal, WritableSignal } from "@angular/core";
 import { Observable, of } from "rxjs";
 import { HttpResourceRef } from "@angular/common/http";
-import { PiNode, SystemServiceInterface } from "../../app/services/system/system.service";
+import { NodeInfo, SystemServiceInterface } from "../../app/services/system/system.service";
 import { CaConnectors } from "../../app/services/ca-connector/ca-connector.service";
 import { MockHttpResourceRef, MockPiResponse } from "./mock-utils";
 
@@ -29,7 +29,7 @@ export class MockSystemService implements SystemServiceInterface {
   nodesResource: HttpResourceRef<any>;
   systemConfig: WritableSignal<any>;
   systemConfigInit: Signal<any>;
-  nodes: Signal<PiNode[]>;
+  nodes: Signal<NodeInfo[]>;
 
   constructor() {
     const mockConfig = {
@@ -51,14 +51,10 @@ export class MockSystemService implements SystemServiceInterface {
       smsProviders: ["provider1", "provider2"]
     };
 
-    this.systemConfigResource = new MockHttpResourceRef(
-      MockPiResponse.fromValue(mockConfig, {}, mockInit)
-    );
-    this.radiusServerResource = new MockHttpResourceRef(
-      MockPiResponse.fromValue([])
-    );
+    this.systemConfigResource = new MockHttpResourceRef(MockPiResponse.fromValue(mockConfig, {}, mockInit));
+    this.radiusServerResource = new MockHttpResourceRef(MockPiResponse.fromValue([]));
     this.nodesResource = new MockHttpResourceRef(
-      MockPiResponse.fromValue<PiNode[]>([
+      MockPiResponse.fromValue<NodeInfo[]>([
         { name: "Node 1", uuid: "node-1" },
         { name: "Node 2", uuid: "node-2" }
       ])
@@ -69,7 +65,7 @@ export class MockSystemService implements SystemServiceInterface {
     this.systemConfigInit = computed(() => {
       return this.systemConfigResource.value()?.result?.init ?? {};
     });
-    this.nodes = computed<PiNode[]>(() => {
+    this.nodes = computed<NodeInfo[]>(() => {
       return this.nodesResource.value()?.result?.value ?? [];
     });
   }
