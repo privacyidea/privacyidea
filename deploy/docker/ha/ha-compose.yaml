@@ -5,6 +5,8 @@ services:
     restart: unless-stopped
     ports:
       - "8000:8000"
+      # Stats dashboard — localhost only, not exposed to the network
+      - "127.0.0.1:8404:8404"
     networks:
       - pi-network
     volumes:
