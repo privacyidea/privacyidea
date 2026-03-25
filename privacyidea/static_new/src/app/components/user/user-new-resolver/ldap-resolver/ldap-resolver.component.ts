@@ -29,7 +29,6 @@ import { merge } from "rxjs";
 import { ResolverService, LDAPResolverData } from "src/app/services/resolver/resolver.service";
 import { parseBooleanValue } from "src/app/utils/parse-boolean-value";
 
-
 @Component({
   selector: "app-ldap-resolver",
   standalone: true,
@@ -57,14 +56,16 @@ export class LdapResolverComponent {
       name: "OpenLDAP",
       loginName: "uid",
       searchFilter: "(uid=*)(objectClass=inetOrgPerson)",
-      userInfo: "{ \"phone\" : \"telephoneNumber\", \"mobile\" : \"mobile\", \"email\" : \"mail\", \"surname\" : \"sn\", \"givenname\" : \"givenName\" }",
+      userInfo:
+        '{ "phone" : "telephoneNumber", "mobile" : "mobile", "email" : "mail", "surname" : "sn", "givenname" : "givenName" }',
       uidType: "entryUUID"
     },
     {
       name: "Active Directory",
       loginName: "sAMAccountName",
       searchFilter: "(sAMAccountName=*)(objectCategory=person)",
-      userInfo: "{ \"phone\" : \"telephoneNumber\", \"mobile\" : \"mobile\", \"email\" : \"mail\", \"surname\" : \"sn\", \"givenname\" : \"givenName\" }",
+      userInfo:
+        '{ "phone" : "telephoneNumber", "mobile" : "mobile", "email" : "mail", "surname" : "sn", "givenname" : "givenName" }',
       uidType: "objectGUID"
     }
   ];
@@ -186,11 +187,13 @@ export class LdapResolverComponent {
       // Server URI
       if (initial.LDAPURI !== undefined) this.ldapUriControl.setValue(initial.LDAPURI, { emitEvent: false });
       // STARTTLS
-      if (initial.START_TLS !== undefined) this.startTlsControl.setValue(parseBooleanValue(initial.START_TLS), { emitEvent: false });
+      if (initial.START_TLS !== undefined)
+        this.startTlsControl.setValue(parseBooleanValue(initial.START_TLS), { emitEvent: false });
       // TLS Version
       if (initial.TLS_VERSION !== undefined) this.tlsVersionControl.setValue(initial.TLS_VERSION, { emitEvent: false });
       // Verify TLS certificate of the server.
-      if (initial.TLS_VERIFY !== undefined) this.tlsVerifyControl.setValue(parseBooleanValue(initial.TLS_VERIFY), { emitEvent: false });
+      if (initial.TLS_VERIFY !== undefined)
+        this.tlsVerifyControl.setValue(parseBooleanValue(initial.TLS_VERIFY), { emitEvent: false });
       // CA Certificate
       if (initial.TLS_CA_FILE !== undefined) this.tlsCaFileControl.setValue(initial.TLS_CA_FILE, { emitEvent: false });
 
@@ -206,56 +209,84 @@ export class LdapResolverComponent {
       // Timeout
       if (initial.TIMEOUT !== undefined) this.timeoutControl.setValue(Number(initial.TIMEOUT), { emitEvent: false });
       // Cache Timeout
-      if (initial.CACHE_TIMEOUT !== undefined) this.cacheTimeoutControl.setValue(Number(initial.CACHE_TIMEOUT), { emitEvent: false });
+      if (initial.CACHE_TIMEOUT !== undefined)
+        this.cacheTimeoutControl.setValue(Number(initial.CACHE_TIMEOUT), { emitEvent: false });
       // Size Limit
-      if (initial.SIZELIMIT !== undefined) this.sizeLimitControl.setValue(Number(initial.SIZELIMIT), { emitEvent: false });
+      if (initial.SIZELIMIT !== undefined)
+        this.sizeLimitControl.setValue(Number(initial.SIZELIMIT), { emitEvent: false });
       // Server Pool Retry Rounds
-      if (initial.SERVERPOOL_ROUNDS !== undefined) this.serverPoolRoundsControl.setValue(Number(initial.SERVERPOOL_ROUNDS), { emitEvent: false });
+      if (initial.SERVERPOOL_ROUNDS !== undefined)
+        this.serverPoolRoundsControl.setValue(Number(initial.SERVERPOOL_ROUNDS), { emitEvent: false });
       // Server Pool Skip Timeout
-      if (initial.SERVERPOOL_SKIP !== undefined) this.serverPoolSkipControl.setValue(Number(initial.SERVERPOOL_SKIP), { emitEvent: false });
+      if (initial.SERVERPOOL_SKIP !== undefined)
+        this.serverPoolSkipControl.setValue(Number(initial.SERVERPOOL_SKIP), { emitEvent: false });
       // Per-Process Server Pool
-      if (initial.SERVERPOOL_PERSISTENT !== undefined) this.serverPoolPersistentControl.setValue(parseBooleanValue(initial.SERVERPOOL_PERSISTENT), { emitEvent: false });
+      if (initial.SERVERPOOL_PERSISTENT !== undefined)
+        this.serverPoolPersistentControl.setValue(parseBooleanValue(initial.SERVERPOOL_PERSISTENT), {
+          emitEvent: false
+        });
       // Edit User Store
-      if (initial.EDITABLE !== undefined) this.editableControl.setValue(parseBooleanValue(initial.EDITABLE), { emitEvent: false });
+      if (initial.EDITABLE !== undefined)
+        this.editableControl.setValue(parseBooleanValue(initial.EDITABLE), { emitEvent: false });
       // Object Classes of a New Created User Object
-      if (initial.OBJECT_CLASSES !== undefined) this.objectClassesControl.setValue(initial.OBJECT_CLASSES, { emitEvent: false });
+      if (initial.OBJECT_CLASSES !== undefined)
+        this.objectClassesControl.setValue(initial.OBJECT_CLASSES, { emitEvent: false });
       // DN of a New Created User Object
       if (initial.DN_TEMPLATE !== undefined) this.dnTemplateControl.setValue(initial.DN_TEMPLATE, { emitEvent: false });
 
       // --- Attributes & Mapping ---
       // Loginname Attribute
-      if (initial.LOGINNAMEATTRIBUTE !== undefined) this.loginNameAttributeControl.setValue(initial.LOGINNAMEATTRIBUTE, { emitEvent: false });
+      if (initial.LOGINNAMEATTRIBUTE !== undefined)
+        this.loginNameAttributeControl.setValue(initial.LOGINNAMEATTRIBUTE, { emitEvent: false });
       // UID Type
       if (initial.UIDTYPE !== undefined) this.uidTypeControl.setValue(initial.UIDTYPE, { emitEvent: false });
       // Search Filter
-      if (initial.LDAPSEARCHFILTER !== undefined) this.ldapSearchFilterControl.setValue(initial.LDAPSEARCHFILTER, { emitEvent: false });
+      if (initial.LDAPSEARCHFILTER !== undefined)
+        this.ldapSearchFilterControl.setValue(initial.LDAPSEARCHFILTER, { emitEvent: false });
       // Attribute Mapping
       if (initial.USERINFO !== undefined) this.userInfoControl.setValue(initial.USERINFO, { emitEvent: false });
       // Multivalue Attributes
-      if (initial.MULTIVALUEATTRIBUTES !== undefined) this.multivalueAttributesControl.setValue(initial.MULTIVALUEATTRIBUTES, { emitEvent: false });
+      if (initial.MULTIVALUEATTRIBUTES !== undefined)
+        this.multivalueAttributesControl.setValue(initial.MULTIVALUEATTRIBUTES, { emitEvent: false });
       // Recursive Search of User Groups
-      if (initial.recursive_group_search !== undefined) this.recursiveGroupSearchControl.setValue(parseBooleanValue(initial.recursive_group_search), { emitEvent: false });
+      if (initial.recursive_group_search !== undefined)
+        this.recursiveGroupSearchControl.setValue(parseBooleanValue(initial.recursive_group_search), {
+          emitEvent: false
+        });
       // Base DN of User Groups
-      if (initial.group_base_dn !== undefined) this.groupBaseDNControl.setValue(initial.group_base_dn, { emitEvent: false });
+      if (initial.group_base_dn !== undefined)
+        this.groupBaseDNControl.setValue(initial.group_base_dn, { emitEvent: false });
       // Search Filter for User Groups
-      if (initial.group_search_filter !== undefined) this.groupSearchFilterControl.setValue(initial.group_search_filter, { emitEvent: false });
+      if (initial.group_search_filter !== undefined)
+        this.groupSearchFilterControl.setValue(initial.group_search_filter, { emitEvent: false });
       // Group Name Attribute
-      if (initial.group_name_attribute !== undefined) this.groupNameAttributeControl.setValue(initial.group_name_attribute, { emitEvent: false });
+      if (initial.group_name_attribute !== undefined)
+        this.groupNameAttributeControl.setValue(initial.group_name_attribute, { emitEvent: false });
       // User Info Key
-      if (initial.group_attribute_mapping_key !== undefined) this.groupAttributeMappingKeyControl.setValue(initial.group_attribute_mapping_key, { emitEvent: false });
+      if (initial.group_attribute_mapping_key !== undefined)
+        this.groupAttributeMappingKeyControl.setValue(initial.group_attribute_mapping_key, { emitEvent: false });
       // No Anonymous Referral Chasing
-      if (initial.NOREFERRALS !== undefined) this.noReferralsControl.setValue(parseBooleanValue(initial.NOREFERRALS), { emitEvent: false });
+      if (initial.NOREFERRALS !== undefined)
+        this.noReferralsControl.setValue(parseBooleanValue(initial.NOREFERRALS), { emitEvent: false });
       // No Retrieval of Schema Information
-      if (initial.NOSCHEMAS !== undefined) this.noSchemasControl.setValue(parseBooleanValue(initial.NOSCHEMAS), { emitEvent: false });
-      this._updateDisabledStates();
+      if (initial.NOSCHEMAS !== undefined)
+        this.noSchemasControl.setValue(parseBooleanValue(initial.NOSCHEMAS), { emitEvent: false });
+      this._updateTlsLogic();
     });
 
-    merge(this.startTlsControl.valueChanges, this.tlsVerifyControl.valueChanges)
+    merge(this.startTlsControl.valueChanges, this.tlsVerifyControl.valueChanges, this.ldapUriControl.valueChanges)
       .pipe(takeUntilDestroyed())
-      .subscribe(() => this._updateDisabledStates());
+      .subscribe(() => this._updateTlsLogic());
   }
 
-  private _updateDisabledStates(): void {
+  private _updateTlsLogic(): void {
+    if (this._isLdaps) {
+      this.startTlsControl.setValue(true, { emitEvent: false });
+      this.startTlsControl.disable({ emitEvent: false });
+    } else {
+      this.startTlsControl.enable({ emitEvent: false });
+    }
+
     const startTls = this.startTlsControl.value;
     const tlsVerify = this.tlsVerifyControl.value;
 
@@ -272,8 +303,9 @@ export class LdapResolverComponent {
       this.tlsCaFileControl.clearValidators();
     } else {
       this.tlsCaFileControl.enable({ emitEvent: false });
+      this.tlsCaFileControl.setValidators([Validators.required]);
     }
-    
+
     this.tlsCaFileControl.updateValueAndValidity({ emitEvent: false });
   }
 
@@ -283,5 +315,21 @@ export class LdapResolverComponent {
     this.userInfoControl.setValue(preset.userInfo);
     this.uidTypeControl.setValue(preset.uidType);
     this.multivalueAttributesControl.setValue("");
+  }
+
+  get showTls(): boolean {
+    return this._isLdap || this._isLdaps;
+  }
+
+  get showTlsCheckbox(): boolean {
+    return this._isLdap;
+  }
+
+  private get _isLdap(): boolean {
+    return (this.ldapUriControl.value || "").startsWith("ldap:");
+  }
+
+  private get _isLdaps(): boolean {
+    return (this.ldapUriControl.value || "").startsWith("ldaps:");
   }
 }
