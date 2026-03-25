@@ -42,7 +42,7 @@ import { PrivacyideaServersComponent } from "./components/external-services/priv
 import { CaConnectorsComponent } from "./components/external-services/ca-connectors/ca-connectors.component";
 import { TokengroupsComponent } from "./components/external-services/tokengroups/tokengroups.component";
 import { ServiceIdsComponent } from "./components/external-services/service-ids/service-ids.component";
-import { UserResolversComponent } from "./components/user/user-sources/user-resolvers.component";
+import { UserResolversComponent } from "./components/user/user-resolvers/user-resolvers.component";
 import { pendingChangesGuard } from "./guards/pending-changes.guard";
 import { PoliciesTableComponent } from "./components/policies/policies-table/policies-table.component";
 import { SubscriptionComponent } from "./components/configuration/subscription/subscription.component";
