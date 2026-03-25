@@ -44,11 +44,6 @@
           </app-clearable-input>
         </mat-form-field>
       </div>
-      <mat-paginator
-        [length]="resolversDataSource().data.length"
-        [pageSizeOptions]="pageSizeOptions()"
-        [pageSize]="pageSizeOptions()[1]"
-        showFirstLastButtons></mat-paginator>
     </div>
     <app-resolver-table-actions />
     <table

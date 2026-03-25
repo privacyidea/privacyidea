@@ -76,13 +76,10 @@ export class UserResolversComponent {
   protected readonly dialog = inject(MatDialog);
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
   protected readonly authService = inject(AuthService);
-  private readonly router = inject(Router);
-  private readonly route = inject(ActivatedRoute);
 
   paginator = viewChild(MatPaginator);
   sort = viewChild(MatSort);
 
-  pageSizeOptions = this.tableUtilsService.pageSizeOptions;
   filterString = signal<string>("");
 
   resolversDataSource: WritableSignal<MatTableDataSource<Resolver>> = linkedSignal({

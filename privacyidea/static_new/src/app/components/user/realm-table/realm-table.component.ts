@@ -112,7 +112,6 @@ const columnKeysMap = [
     MatInput,
     MatLabel,
     MatNoDataRow,
-    MatPaginator,
     MatRow,
     MatRowDef,
     MatSelectModule,
@@ -143,7 +142,6 @@ export class RealmTableComponent {
   // Table Config
   protected readonly columnKeysMap = columnKeysMap;
   readonly columnKeys: string[] = this.columnKeysMap.map((column) => column.key);
-  pageSizeOptions = this.tableUtilsService.pageSizeOptions;
 
   // Table State Signals
   selectedNode = signal<string>(ALL_NODES_VALUE);
@@ -251,8 +249,6 @@ export class RealmTableComponent {
       ];
     });
   });
-
-  totalLength: WritableSignal<number> = computed(() => this.realmRows().length) as WritableSignal<number>;
 
   realmsDataSource: WritableSignal<MatTableDataSource<RealmRow>> = linkedSignal({
     source: () => ({
