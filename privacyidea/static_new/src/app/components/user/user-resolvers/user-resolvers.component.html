@@ -24,26 +24,24 @@
     appScrollToTop
     class="user-sources-table-container">
     <div class="filter-paginator-container">
-      <div class="flex-row ali-center">
-        <mat-form-field
-          subscriptSizing="dynamic"
-          class="table-filter">
-          <mat-label i18n>Filter Resolvers...</mat-label>
-          <app-clearable-input
-            (onClick)="resetFilter()"
-            [showClearButton]="filterString().length > 0">
-            <input
-              #filterHTMLInputElement
-              (input)="onFilterInput(filterHTMLInputElement.value)"
-              [value]="filterString()"
-              aria-label="Filter Input"
-              i18n-aria-label
-              i18n-placeholder
-              matInput
-              placeholder="Filter by name or type" />
-          </app-clearable-input>
-        </mat-form-field>
-      </div>
+      <mat-form-field
+        subscriptSizing="dynamic"
+        class="table-filter">
+        <mat-label i18n>Filter Resolvers...</mat-label>
+        <app-clearable-input
+          (onClick)="resetFilter()"
+          [showClearButton]="filterString().length > 0">
+          <input
+            #filterHTMLInputElement
+            (input)="onFilterInput(filterHTMLInputElement.value)"
+            [value]="filterString()"
+            aria-label="Filter Input"
+            i18n-aria-label
+            i18n-placeholder
+            matInput
+            placeholder="Filter by name or type" />
+        </app-clearable-input>
+      </mat-form-field>
     </div>
     <app-resolver-table-actions />
     <table
