@@ -90,6 +90,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 COPY --chown=nonroot:nonroot --from=python-builder /opt/privacyidea/ /opt/privacyidea/
 COPY --chown=nonroot:nonroot --chmod=755 deploy/docker/entrypoint.sh /opt/privacyidea/
+COPY --chown=nonroot:nonroot --chmod=755 deploy/docker/cron-runner.py /opt/privacyidea/
 
 ENTRYPOINT ["./entrypoint.sh"]
 

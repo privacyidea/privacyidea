@@ -50,6 +50,9 @@ mysql_galera_hostgroups = (
         max_writers=1
         writer_is_also_reader=1
         max_transactions_behind=100
+        # If HG 10 has no ONLINE writers, fall back to backup_writer_hostgroup (HG 20).
+        # Without this, a recovering primary that is still OFFLINE_SOFT causes a brief write gap.
+        active_failover=1
     }
 )
 

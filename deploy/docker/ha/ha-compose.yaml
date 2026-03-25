@@ -49,10 +49,12 @@ services:
     networks:
       - pi-network
     environment:
-      # DB connection is constructed in entrypoint from DB_* vars + mariadb_password secret
-      - DB_USER=pi
-      - DB_HOST=db-proxy
-      - DB_NAME=pi
+      # PI_DB_* matches ConfigKey names so DockerConfig constructs the URI directly.
+      # This also makes pi-manage work when exec'd into the container manually.
+      - PI_DB_USER=pi
+      - PI_DB_HOST=db-proxy
+      - PI_DB_NAME=pi
+      - PI_DB_PASSWORD_FILE=/run/secrets/mariadb_password
       # Keep connections alive
       - PRIVACYIDEA_SQLALCHEMY_POOL_RECYCLE=${SQLALCHEMY_POOL_RECYCLE:-250}
       - PI_ENCFILE=/run/secrets/enckey
@@ -97,10 +99,10 @@ services:
     networks:
       - pi-network
     environment:
-      # DB connection is constructed in entrypoint from DB_* vars + mariadb_password secret
-      - DB_USER=pi
-      - DB_HOST=db-proxy
-      - DB_NAME=pi
+      - PI_DB_USER=pi
+      - PI_DB_HOST=db-proxy
+      - PI_DB_NAME=pi
+      - PI_DB_PASSWORD_FILE=/run/secrets/mariadb_password
       - PI_ENCFILE=/run/secrets/enckey
       - PI_WORKERS=${PI_WORKERS:-2}
       - PI_RUN_MIGRATIONS=false
@@ -118,6 +120,64 @@ services:
       timeout: 5s
       retries: 3
       start_period: 15s
+
+  # MAINTENANCE / CRON
+  # Single replica that runs scheduled maintenance tasks:
+  #   - Every minute : pi-manage-cron run_scheduled (picks up UI-configured periodic tasks)
+  #   - Every hour   : pi-manage challenge cleanup
+  #   - Daily 02:00  : pi-manage audit rotate
+  #
+  # IMPORTANT: replicas must stay at 1. Running two instances simultaneously causes
+  # race conditions when both try to delete the same audit/challenge rows.
+  #
+  # Periodic tasks configured in the UI should use node name "pi-cron" to be picked
+  # up by this container. Tasks with no node restriction run on all nodes that call
+  # pi-manage-cron — in this setup, only pi-cron does that.
+  pi-cron:
+    build:
+      context: ../../../
+      dockerfile: deploy/docker/Dockerfile
+      network: host
+    restart: unless-stopped
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 64M
+    secrets:
+      - enckey
+      - secret_key
+      - pi_pepper
+      - mariadb_password
+    networks:
+      - pi-network
+    environment:
+      - PI_DB_USER=pi
+      - PI_DB_HOST=db-proxy
+      - PI_DB_NAME=pi
+      - PI_DB_PASSWORD_FILE=/run/secrets/mariadb_password
+      - PI_ENCFILE=/run/secrets/enckey
+      - PI_CRON_MODE=true
+      # Fixed node name so UI-configured periodic tasks can target this container.
+      - PRIVACYIDEA_PI_NODE=pi-cron
+      # Audit rotation — defaults shown. Use PI_CRON_AUDIT_AGE (days) instead of
+      # watermarks to switch to age-based rotation, e.g. PI_CRON_AUDIT_AGE=90.
+      #- PI_CRON_AUDIT_ROTATE=true
+      #- PI_CRON_AUDIT_HOUR=2
+      #- PI_CRON_AUDIT_HIGHWATERMARK=50000
+      #- PI_CRON_AUDIT_LOWWATERMARK=25000
+      #- PI_CRON_AUDIT_AGE=
+      #- PI_CRON_AUDIT_CHUNKSIZE=
+      # Individual task toggles
+      #- PI_CRON_CHALLENGE_CLEANUP=true
+      #- PI_CRON_PERIODIC_TASKS=true
+    depends_on:
+      pi-init:
+        condition: service_completed_successfully
 
   # DATABASE
   db-proxy:
