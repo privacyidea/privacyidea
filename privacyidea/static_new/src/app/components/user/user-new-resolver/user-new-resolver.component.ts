@@ -38,11 +38,10 @@ import { MatButtonModule } from "@angular/material/button";
 import { MatCardModule } from "@angular/material/card";
 import { MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from "@angular/material/dialog";
 import { MatIconModule } from "@angular/material/icon";
-import { MatError, MatFormField, MatInput, MatLabel } from "@angular/material/input";
-import { MatOption, MatSelect, MatSelectModule } from "@angular/material/select";
+import { MatInput, MatFormField, MatLabel, MatError } from "@angular/material/input";
+import { MatSelectModule, MatSelect, MatOption } from "@angular/material/select";
 import { Router, ActivatedRoute } from "@angular/router";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
-import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { PiResponse } from "src/app/app.component";
@@ -64,27 +63,27 @@ import { SqlResolverComponent } from "./sql-resolver/sql-resolver.component";
   selector: "app-user-new-resolver",
   standalone: true,
   imports: [
-    ClearableInputComponent,
-    EntraidResolverComponent,
     FormsModule,
-    HttpResolverComponent,
-    KeycloakResolverComponent,
-    LdapResolverComponent,
-    MatButtonModule,
-    MatCardModule,
-    MatDialogModule,
-    MatError,
     MatFormField,
-    MatIconModule,
-    MatInput,
     MatLabel,
-    MatOption,
-    MatSelect,
+    MatError,
+    MatInput,
     MatSelectModule,
+    MatSelect,
+    MatOption,
+    MatButtonModule,
+    MatIconModule,
+    MatCardModule,
     PasswdResolverComponent,
     ScrollToTopDirective,
+    LdapResolverComponent,
+    SqlResolverComponent,
     ScimResolverComponent,
-    SqlResolverComponent
+    HttpResolverComponent,
+    EntraidResolverComponent,
+    KeycloakResolverComponent,
+    MatDialogModule,
+    ClearableInputComponent
   ],
   templateUrl: "./user-new-resolver.component.html",
   styleUrl: "./user-new-resolver.component.scss"
@@ -108,7 +107,6 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
   @ViewChild("scrollContainer") scrollContainer!: ElementRef<HTMLElement>;
   @ViewChild("stickyHeader") stickyHeader!: ElementRef<HTMLElement>;
   @ViewChild("stickySentinel") stickySentinel!: ElementRef<HTMLElement>;
-  @ViewChild("leftColumn") leftColumn!: ElementRef<HTMLElement>;
 
   ldapResolver = viewChild(LdapResolverComponent);
   sqlResolver = viewChild(SqlResolverComponent);
@@ -136,32 +134,24 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
       this.entraidResolver() ||
       this.keycloakResolver() ||
       this.httpResolver();
-    return resolver?.controls() ?? {};
+
+    if (resolver) {
+      return resolver.controls();
+    }
+    return {};
   });
 
   constructor() {
     const dialogResolver = this.data?.resolver;
-    const dialogResolverName = this.data?.resolverName || dialogResolver?.resolvername;
-
     if (dialogResolver) {
       this.resolverName = dialogResolver.resolvername;
       this.resolverType = dialogResolver.type;
       this.formData = { ...(dialogResolver.data || {}) };
       this._editInitialized = true;
       this._resolverService.selectedResolverName.set(dialogResolver.resolvername);
-    } else if (dialogResolverName) {
-      this._resolverService.selectedResolverName.set(dialogResolverName);
     } else {
       this._route.paramMap.pipe(takeUntilDestroyed()).subscribe((params) => {
         this._resolverService.selectedResolverName.set(params.get("name") || "");
-      });
-    }
-
-    if (this.dialogRef) {
-      this.dialogRef.disableClose = true;
-      this.dialogRef.backdropClick().subscribe(() => this.onCancel());
-      this.dialogRef.keydownEvents().subscribe((event) => {
-        if (event.key === "Escape") this.onCancel();
       });
     }
 
@@ -169,41 +159,40 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
     this._pendingChangesService.registerSave(() => this.onSave());
 
     effect(() => {
-      if (!this._contentService.routeUrl().startsWith(ROUTE_PATHS.USERS)) {
-        this.dialogRef?.close(true);
-      }
-    });
-
-    effect(() => {
       const selectedName = this._resolverService.selectedResolverName();
+      const resourceRef = this._resolverService.selectedResolverResource;
 
       if (!selectedName) {
         if (this._editInitialized) {
-          this.resolverName = "";
-          this.resolverType = "passwdresolver";
-          this.formData = { fileName: "/etc/passwd" };
+          this._resetForm();
           this._editInitialized = false;
         }
         return;
       }
 
-      const resourceRef = this._resolverService.selectedResolverResource;
       const status = resourceRef.status();
-
       if (status === ResourceStatus.Loading || status === ResourceStatus.Reloading) {
-        if (status === ResourceStatus.Reloading) this._editInitialized = false;
+        if (status === ResourceStatus.Reloading) {
+          this._editInitialized = false;
+        }
         return;
       }
 
       const resource = resourceRef.value();
-      if (!resource?.result?.value || this._editInitialized) return;
+      if (resource?.result?.value && !this._editInitialized) {
+        const resolver = resource.result.value[selectedName];
+        if (resolver) {
+          this.resolverName = resolver.resolvername || selectedName;
+          this.resolverType = resolver.type;
+          this.formData = { ...(resolver.data || {}) };
+          this._editInitialized = true;
+        }
+      }
+    });
 
-      const resolver = resource.result.value[selectedName];
-      if (resolver) {
-        this.resolverName = resolver.resolvername || selectedName;
-        this.resolverType = resolver.type;
-        this.formData = { ...(resolver.data || {}) };
-        this._editInitialized = true;
+    effect(() => {
+      if (!this._contentService.routeUrl().startsWith(ROUTE_PATHS.USERS)) {
+        this.dialogRef?.close(true);
       }
     });
   }
@@ -212,39 +201,55 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
     return !!this._resolverService.selectedResolverName();
   }
 
-  get isAdditionalFieldsValid(): boolean {
+  // Reverse logic: A field is only "invalid" if it explicitly has the status 'INVALID'.
+  // Deactivated (DISABLED) fields are not 'INVALID' and therefore do not block saving.
+  get isAdditionalFieldsInvalid(): boolean {
     const fields = Object.values(this.additionalFormFields());
-    return fields.length > 0 && fields.every((control) => control.valid);
+    if (fields.length === 0) {
+      return false;
+    }
+    return fields.some((control) => control.invalid);
   }
 
   get canSave(): boolean {
-    return (
-      this.resolverName.trim().length > 0 && !!this.resolverType && this.isAdditionalFieldsValid && !this.isSaving()
-    );
+    const nameValid = this.resolverName.trim().length > 0;
+    return nameValid && !!this.resolverType && !this.isAdditionalFieldsInvalid && !this.isSaving();
   }
 
   get hasChanges(): boolean {
     const fieldsDirty = Object.values(this.additionalFormFields()).some((control) => control.dirty);
-    if (fieldsDirty) return true;
-
-    const testDirty = this.testUsername !== "" || this.testUserId !== "";
-    if (this.isEditMode) return testDirty;
-
-    return this.resolverName !== "" || this.resolverType !== "passwdresolver" || testDirty;
+    if (fieldsDirty) {
+      return true;
+    }
+    if (this.isEditMode) {
+      return this.testUsername !== "" || this.testUserId !== "";
+    }
+    return (
+      this.resolverName !== "" ||
+      this.resolverType !== "passwdresolver" ||
+      this.testUsername !== "" ||
+      this.testUserId !== ""
+    );
   }
 
   ngAfterViewInit(): void {
-    if (!this.scrollContainer || !this.stickyHeader || !this.stickySentinel || !this.leftColumn) return;
-
+    if (!this.scrollContainer || !this.stickyHeader || !this.stickySentinel) {
+      return;
+    }
     this._observer = new IntersectionObserver(
       ([entry]) => {
-        if (!entry.rootBounds) return;
+        if (!entry.rootBounds) {
+          return;
+        }
         const shouldFloat = entry.boundingClientRect.top < entry.rootBounds.top;
-        this.renderer[shouldFloat ? "addClass" : "removeClass"](this.stickyHeader.nativeElement, "is-sticky");
+        if (shouldFloat) {
+          this.renderer.addClass(this.stickyHeader.nativeElement, "is-sticky");
+        } else {
+          this.renderer.removeClass(this.stickyHeader.nativeElement, "is-sticky");
+        }
       },
       { root: this.scrollContainer.nativeElement, threshold: [0, 1] }
     );
-
     this._observer.observe(this.stickySentinel.nativeElement);
   }
 
@@ -255,9 +260,10 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
   }
 
   onTypeChange(type: ResolverType): void {
-    if (this.isEditMode) return;
+    if (this.isEditMode) {
+      return;
+    }
 
-    this.formData = {};
     if (type === "passwdresolver") {
       this.formData = { fileName: "/etc/passwd" };
     } else if (type === "ldapresolver") {
@@ -273,46 +279,58 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
         SERVERPOOL_SKIP: 30,
         UIDTYPE: "DN"
       };
+    } else {
+      this.formData = {};
     }
   }
 
-  async onSave(): Promise<void> {
+  onSave(): void {
     const name = this.resolverName.trim();
-    if (!name || !this.resolverType || !this.isAdditionalFieldsValid) {
-      this._notificationService.openSnackBar($localize`Please check the required fields.`);
+    if (!name) {
+      this._notificationService.openSnackBar($localize`Please enter a resolver name.`);
+      return;
+    }
+    if (!this.resolverType) {
+      this._notificationService.openSnackBar($localize`Please select a resolver type.`);
+      return;
+    }
+    if (this.isAdditionalFieldsInvalid) {
+      this._notificationService.openSnackBar($localize`Please fill in all required fields.`);
       return;
     }
 
-    const additionalData = Object.entries(this.additionalFormFields()).reduce(
-      (acc, [key, control]) => {
-        if (control) acc[key] = control.value;
-        return acc;
-      },
-      {} as Record<string, any>
-    );
-
-    const payload = { type: this.resolverType, ...this.formData, ...additionalData };
     this.isSaving.set(true);
+    const payload = {
+      type: this.resolverType,
+      ...this.formData,
+      ...this._getAdditionalData()
+    };
 
     this._resolverService.postResolver(name, payload).subscribe({
-      next: (res: PiResponse<any, any>) => {
+      next: (res) => {
         if (res.result?.status === true && (res.result.value ?? 0) >= 0) {
-          this._handleSaveSuccess(name);
+          let msg = $localize`Resolver "${name}" created.`;
+          if (this.isEditMode) {
+            msg = $localize`Resolver "${name}" updated.`;
+          }
+          this._notificationService.openSnackBar(msg);
+          this._resolverService.resolversResource.reload?.();
+          this._closeOrReset();
         } else {
-          this._handleSaveError(res.detail?.description || res.result?.error?.message || $localize`Unknown error.`);
+          this._notifyError($localize`Failed to save resolver.`, res);
         }
       },
-      error: (err: HttpErrorResponse) => this._handleSaveError(err.error?.result?.error?.message || err.message),
-      complete: () => this.isSaving.set(false)
+      error: (err) => this._notifyError($localize`Failed to save resolver.`, err),
+      complete: () => setTimeout(() => this.isSaving.set(false))
     });
   }
 
   onTest(): void {
-    this._executeTest();
+    this._runTest(false);
   }
 
   onQuickTest(): void {
-    this._executeTest(true);
+    this._runTest(true);
   }
 
   onCancel(): void {
@@ -329,66 +347,104 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
         .afterClosed()
         .subscribe((result) => {
           if (result === "save-exit") {
-            if (!this.canSave) return;
-            Promise.resolve(this._pendingChangesService.save()).then(() => {
-              this._pendingChangesService.unregisterHasChanges();
-              this.closeCurrent();
-            });
+            if (this.canSave) {
+              Promise.resolve(this._pendingChangesService.save()).then(() => this._closeCurrent());
+            }
           } else if (result === "discard") {
-            this._pendingChangesService.unregisterHasChanges();
-            this.closeCurrent();
+            this._closeCurrent();
           }
         });
     } else {
-      this.closeCurrent();
+      this._closeCurrent();
     }
   }
 
-  private closeCurrent(): void {
-    if (this.dialogRef) {
-      this.dialogRef.close();
-    } else {
-      this._router.navigateByUrl(ROUTE_PATHS.USERS_RESOLVERS);
-    }
+  private _getAdditionalData(): Record<string, any> {
+    return Object.entries(this.additionalFormFields()).reduce(
+      (acc, [key, ctrl]) => {
+        if (ctrl) {
+          acc[key] = ctrl.value;
+        }
+        return acc;
+      },
+      {} as Record<string, any>
+    );
   }
 
-  private executeTest(quickTest = false): void {
+  private _runTest(quick: boolean): void {
     if (!this.resolverType) {
       this._notificationService.openSnackBar($localize`Please select a resolver type.`);
       return;
     }
 
-    this._dialogService
-      .openDialog({
-        component: SimpleConfirmationDialogComponent,
-        data: {
-          title: $localize`Discard changes`,
-          confirmAction: { label: "Save and exit", type: "confirm", value: true },
-          items: [this.resolverName || "New Resolver"],
-          itemType: "resolver"
+    if (this.isAdditionalFieldsInvalid) {
+      this._notificationService.openSnackBar($localize`Please fill in all required fields.`);
+      return;
+    }
+
+    this.isTesting.set(true);
+
+    const payload: any = {
+      type: this.resolverType,
+      ...this.formData,
+      test_username: this.testUsername,
+      test_userid: this.testUserId,
+      ...this._getAdditionalData()
+    };
+
+    if (quick) {
+      payload.SIZELIMIT = 1;
+    }
+
+    if (this.isEditMode) {
+      payload.resolver = this.resolverName;
+    }
+
+    this._resolverService.postResolverTest(payload).subscribe({
+      next: (res) => {
+        if (res.result?.status === true && (res.result.value ?? 0) >= 0) {
+          const detail = res.detail?.description || "";
+          this._notificationService.openSnackBar($localize`Resolver test executed: ${detail}`, 20000);
+        } else {
+          this._notifyError($localize`Failed to test resolver.`, res, "Connection test failed.");
         }
-      })
-      .afterClosed()
-      .subscribe((result) => {
-        if (result === true) {
-          if (!this.canSave) return;
-          this._pendingChangesService.save().then(() => {
-            this._pendingChangesService.unregisterHasChanges();
-            this._closeCurrent();
-          });
-        } else if (result === false) {
-          this._pendingChangesService.unregisterHasChanges();
-          this._closeCurrent();
-        }
-      });
+      },
+      error: (err) => this._notifyError($localize`Failed to test resolver.`, err, "Network error"),
+      complete: () => setTimeout(() => this.isTesting.set(false))
+    });
   }
 
-  private _handleSaveSuccess(name: string): void {
-    this._notificationService.openSnackBar(
-      this.isEditMode ? $localize`Resolver "${name}" updated.` : $localize`Resolver "${name}" created.`
-    );
-    this._resolverService.resolversResource.reload?.();
+  private _notifyError(prefix: string, errorSource: any, testFallback?: string): void {
+    let detail = "";
+    if (errorSource instanceof HttpErrorResponse) {
+      detail = errorSource.error?.result?.error?.message || errorSource.error?.message || errorSource.message;
+    } else {
+      detail =
+        errorSource.error?.result?.error?.message ||
+        errorSource.detail?.description ||
+        errorSource.result?.error?.message ||
+        errorSource.message ||
+        $localize`Unknown server error.`;
+    }
 
+    if (testFallback && (detail.includes(testFallback) || testFallback === "Connection test failed.")) {
+      this._notificationService.openSnackBar(detail || testFallback);
+    } else if (detail.includes("Detailed error")) {
+      this._notificationService.openSnackBar(detail);
+    } else {
+      this._notificationService.openSnackBar(`${prefix} ${detail}`);
+    }
+  }
+
+  private _resetForm(): void {
+    this.resolverName = "";
+    this.resolverType = "passwdresolver";
+    this.formData = { fileName: "/etc/passwd" };
+    this.testUsername = "";
+    this.testUserId = "";
+  }
+
+  private _closeOrReset(): void {
     if (this.dialogRef) {
       this.dialogRef.close(true);
     } else if (!this.isEditMode) {
@@ -397,53 +453,12 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
     }
   }
 
-  private _handleSaveError(message: string): void {
-    this._notificationService.openSnackBar($localize`Failed to save resolver. ${message}`);
-  }
-
-  private _resetForm(): void {
-    this.resolverName = "";
-    this.formData = {};
-  }
-
   private _closeCurrent(): void {
+    this._pendingChangesService.unregisterHasChanges();
     if (this.dialogRef) {
       this.dialogRef.close();
     } else {
       this._router.navigateByUrl(ROUTE_PATHS.USERS_RESOLVERS);
     }
-  }
-
-  private _executeTest(quickTest = false): void {
-    if (!this.resolverType || !this.isAdditionalFieldsValid) {
-      this._notificationService.openSnackBar($localize`Please check required fields.`);
-      return;
-    }
-
-    this.isTesting.set(true);
-    const payload: any = {
-      type: this.resolverType,
-      ...this.formData,
-      test_username: this.testUsername,
-      test_userid: this.testUserId,
-      ...(quickTest ? { SIZELIMIT: 1 } : {}),
-      ...(this.isEditMode ? { resolver: this.resolverName } : {})
-    };
-
-    Object.entries(this.additionalFormFields()).forEach(([key, control]) => {
-      if (control) payload[key] = control.value;
-    });
-
-    this._resolverService.postResolverTest(payload).subscribe({
-      next: (res: PiResponse<any, any>) => {
-        const success = res.result?.status === true && (res.result.value ?? 0) >= 0;
-        const msg = success
-          ? $localize`Test executed: ${res.detail.description}`
-          : $localize`Test failed. ${res.detail?.description || res.result?.error?.message}`;
-        this._notificationService.openSnackBar(msg, success ? 20000 : 5000);
-      },
-      error: (err: HttpErrorResponse) => this._notificationService.openSnackBar($localize`Error: ${err.message}`),
-      complete: () => setTimeout(() => this.isTesting.set(false))
-    });
   }
 }
