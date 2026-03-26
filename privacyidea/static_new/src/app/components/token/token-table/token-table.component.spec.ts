@@ -265,6 +265,21 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
     expect(table.sort()).toEqual({ active: "description", direction: "desc" });
   });
 
+  it("onFilterInput should only update filter if user: and realm: are NOT in the input", () => {
+    const inputEvent = { target: { value: "type: hotp" } } as any;
+    table.onFilterInput(inputEvent);
+    expect(tokenService.handleFilterInput).toHaveBeenCalledWith(inputEvent);
+
+    jest.clearAllMocks();
+    const inputEventWithUser = { target: { value: "user: admin" } } as any;
+    table.onFilterInput(inputEventWithUser);
+    expect(tokenService.handleFilterInput).not.toHaveBeenCalled();
+
+    const inputEventWithRealm = { target: { value: "realm: default" } } as any;
+    table.onFilterInput(inputEventWithRealm);
+    expect(tokenService.handleFilterInput).not.toHaveBeenCalled();
+  });
+
   it("tokenDataSource/totalLength reflect tokenResource; fall back to empty skeleton when undefined", () => {
     const initial = table.tokenDataSource().data;
     expect(Array.isArray(initial)).toBe(true);

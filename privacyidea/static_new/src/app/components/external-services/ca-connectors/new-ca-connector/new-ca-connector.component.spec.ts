@@ -28,6 +28,7 @@ import { MockCaConnectorService } from "../../../../../testing/mock-services/moc
 import { ContentService } from "../../../../services/content/content.service";
 import { PendingChangesService } from "../../../../services/pending-changes/pending-changes.service";
 import { ROUTE_PATHS } from "../../../../route_paths";
+import { MockPendingChangesService } from "../../../../../testing/mock-services";
 
 describe("NewCaConnectorComponent", () => {
   let component: NewCaConnectorComponent;
@@ -52,13 +53,6 @@ describe("NewCaConnectorComponent", () => {
       routeUrl: () => ROUTE_PATHS.EXTERNAL_SERVICES_CA_CONNECTORS
     };
 
-    const pendingChangesServiceMock = {
-      registerHasChanges: jest.fn(),
-      registerSave: jest.fn(),
-      unregisterHasChanges: jest.fn(),
-      save: jest.fn()
-    };
-
     await TestBed.configureTestingModule({
       imports: [NewCaConnectorComponent, NoopAnimationsModule],
       providers: [
@@ -69,7 +63,7 @@ describe("NewCaConnectorComponent", () => {
         { provide: MatDialog, useValue: dialogMock },
         { provide: CaConnectorService, useClass: MockCaConnectorService },
         { provide: ContentService, useValue: contentServiceMock },
-        { provide: PendingChangesService, useValue: pendingChangesServiceMock }
+        { provide: PendingChangesService, useClass: MockPendingChangesService }
       ]
     }).compileComponents();
 
@@ -119,9 +113,29 @@ describe("NewCaConnectorComponent", () => {
       "openssl.cnf": "cnf"
     });
 
-    await component.save();
+    const success = await component.save();
 
+    expect(success).toBe(true);
     expect(caConnectorServiceMock.postCaConnector).toHaveBeenCalled();
     expect(dialogRefMock.close).toHaveBeenCalledWith(true);
+  });
+
+  it("save should return false on error", async () => {
+    component.caConnectorForm.patchValue({
+      connectorname: "test",
+      type: "local",
+      cacert: "cert",
+      cakey: "key",
+      "openssl.cnf": "cnf"
+    });
+    caConnectorServiceMock.postCaConnector = jest.fn().mockRejectedValue(new Error("Save failed"));
+    // Clear any previous calls to close from setup
+    dialogRefMock.close.mockClear();
+
+    const success = await component.save();
+
+    expect(success).toBe(false);
+    expect(caConnectorServiceMock.postCaConnector).toHaveBeenCalled();
+    expect(dialogRefMock.close).not.toHaveBeenCalled();
   });
 });

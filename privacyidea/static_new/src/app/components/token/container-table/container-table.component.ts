@@ -43,6 +43,9 @@ import { ContainerTableActionsComponent } from "./container-table-actions/contai
 import { MatIconModule } from "@angular/material/icon";
 import { MatButtonModule } from "@angular/material/button";
 import { FilterValue } from "../../../core/models/filter_value/filter_value";
+import { MatMenuModule } from "@angular/material/menu";
+import { MatDividerModule } from "@angular/material/divider";
+import { MatTooltipModule } from "@angular/material/tooltip";
 
 @Component({
   selector: "app-container-table",
@@ -60,7 +63,10 @@ import { FilterValue } from "../../../core/models/filter_value/filter_value";
     ClearableInputComponent,
     ContainerTableActionsComponent,
     MatIconModule,
-    MatButtonModule
+    MatButtonModule,
+    MatMenuModule,
+    MatDividerModule,
+    MatTooltipModule
   ],
   templateUrl: "./container-table.component.html",
   styleUrl: "./container-table.component.scss",
@@ -204,5 +210,13 @@ export class ContainerTableComponent {
   onKeywordClick(filterKeyword: string): void {
     this.toggleFilter(filterKeyword);
     this.filterInput?.nativeElement.focus();
+  }
+
+  onItemSelected(keyword: string, value: string | undefined): void {
+    if (!value) {
+      this.containerService.containerFilter.set(this.containerService.containerFilter().removeKey(keyword));
+    } else {
+      this.containerService.containerFilter.set(this.containerService.containerFilter().addEntry(keyword, value));
+    }
   }
 }

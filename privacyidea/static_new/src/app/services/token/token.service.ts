@@ -44,6 +44,7 @@ import { NotificationService, NotificationServiceInterface } from "../notificati
 import { tokenTypes } from "../../utils/token.utils";
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
+import { RealmService, RealmServiceInterface } from "../realm/realm.service";
 import { StringUtils } from "../../utils/string.utils";
 import { DialogService, DialogServiceInterface } from "../dialog/dialog.service";
 import { SimpleConfirmationDialogComponent } from "../../components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
@@ -77,7 +78,7 @@ export type TokenTypeKey =
   | "webauthn"
   | "passkey";
 
-const apiFilter = ["serial", "type", "active", "description", "rollout_state", "tokenrealm", "container_serial"];
+const apiFilter = ["serial", "type", "active", "user", "realm", "description", "rollout_state", "tokenrealm", "container_serial"];
 
 const advancedApiFilter = ["infokey & infovalue", "userid", "resolver", "assigned"];
 
@@ -89,6 +90,7 @@ const apiFilterKeyMap: Record<string, string> = {
   rollout_state: "rollout_state",
   username: "user",
   realms: "tokenrealm",
+  user_realm: "realm",
   container_serial: "container_serial"
 };
 
@@ -316,6 +318,7 @@ export class TokenService implements TokenServiceInterface {
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly dialogService: DialogServiceInterface = inject(DialogService);
+  private readonly realmService: RealmServiceInterface = inject(RealmService);
 
   readonly hiddenApiFilter = hiddenApiFilter;
   readonly apiFilterKeyMap = apiFilterKeyMap;
@@ -328,7 +331,7 @@ export class TokenService implements TokenServiceInterface {
   filterParams = computed<Record<string, string>>(() => {
     const allowed = [...this.apiFilter, ...this.advancedApiFilter, ...this.hiddenApiFilter, "infokey", "infovalue"];
 
-    const plainKeys = new Set(["user", "infokey", "infovalue", "active", "assigned", "container_serial"]);
+    const plainKeys = new Set(["user", "infokey", "infovalue", "active", "assigned", "container_serial", "realm"]);
 
     const entries = [
       ...Array.from(this.tokenFilter().filterMap.entries()),
@@ -358,15 +361,15 @@ export class TokenService implements TokenServiceInterface {
     effect(() => {
       if (this.tokenResource.error()) {
         const tokensResourceError = this.tokenResource.error() as HttpErrorResponse;
-        console.error("Failed to get token data.", tokensResourceError.message);
-        this.notificationService.openSnackBar(tokensResourceError.message);
+        console.error("Failed to get token data.", tokensResourceError.error.result.error.message);
+        this.notificationService.openSnackBar(tokensResourceError.error.result.error.message);
       }
     });
     effect(() => {
       if (this.tokenTypesResource.error()) {
         const tokenTypesResourceError = this.tokenTypesResource.error() as HttpErrorResponse;
-        console.error("Failed to get token type data.", tokenTypesResourceError.message);
-        this.notificationService.openSnackBar(tokenTypesResourceError.message);
+        console.error("Failed to get token type data.", tokenTypesResourceError.error.result.error.message);
+        this.notificationService.openSnackBar(tokenTypesResourceError.error.result.error.message);
       }
     });
   }
@@ -441,7 +444,15 @@ export class TokenService implements TokenServiceInterface {
 
   handleFilterInput($event: Event): void {
     const input = $event.target as HTMLInputElement;
-    const newFilter = this.tokenFilter().copyWith({ value: input.value.trim() });
+    let newFilter = this.tokenFilter().copyWith({ value: input.value.trim() });
+
+    if (newFilter.hasKey("user") && !newFilter.hasKey("realm")) {
+      const defaultRealm = this.realmService.defaultRealm();
+      if (defaultRealm) {
+        newFilter = newFilter.addEntry("realm", defaultRealm);
+      }
+    }
+
     this.tokenFilter.set(newFilter);
   }
 
@@ -462,9 +473,12 @@ export class TokenService implements TokenServiceInterface {
   tokenTypesResource = httpResource<PiResponse<{}>>(() => {
     // Only load token types on routes with a tokentype list or selection.
     const onAllowedRoute =
+      this.contentService.onTokens() ||
       this.contentService.onTokensEnrollment() ||
       this.contentService.onTokensGetSerial() ||
-      this.contentService.onTokensContainersCreate();
+      this.contentService.onTokensContainersCreate() ||
+      this.contentService.onTokensContainersDetails() ||
+      this.contentService.onUserDetails();
 
     if (!onAllowedRoute) {
       return undefined;

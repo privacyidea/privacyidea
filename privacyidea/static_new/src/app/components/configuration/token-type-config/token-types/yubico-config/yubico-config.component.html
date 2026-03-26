@@ -16,19 +16,19 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<mat-expansion-panel id="yubico" [expanded]="expanded()">
+<mat-expansion-panel
+  id="yubico"
+  [expanded]="expanded()">
   <mat-expansion-panel-header>
     <mat-panel-title i18n>Yubico</mat-panel-title>
   </mat-expansion-panel-header>
   <div class="panel-content expansion-well">
     <p i18n>The Yubico Token is a Yubikey that is registered with the YubiCloud service.</p>
     <p i18n>The Yubikey emits a 44 character one time password.</p>
-    <p i18n>The first 12 characters are a unique ID which is used to bind the device to the
-            user.
+    <p i18n>The first 12 characters are a unique ID which is used to bind the device to the user.
     </p>
     <p i18n>The authentication request is forwarded to the YubiCloud.</p>
-    <p i18n>For accessing the YubiCloud you need to enter an
-            API Client ID and an API Key, which you can request
+    <p i18n>For accessing the YubiCloud you need to enter an API Client ID and an API Key, which you can request
       <a
         href="https://upgrade.yubico.com/getapikey/"
         target="_blank">here
@@ -41,7 +41,8 @@
         class="input-width-l">
         <mat-label i18n>API Key</mat-label>
         <input
-          [(ngModel)]="formData()['yubico.secret']"
+          [ngModel]="formData()[YUBICO_SECRET]"
+          (ngModelChange)="updateFormData(YUBICO_SECRET, $event)"
           #apiKeyInput="ngModel"
           [ngModelOptions]="{ standalone: true }"
           matInput
@@ -57,7 +58,8 @@
         class="input-width-l">
         <mat-label i18n>API Client ID</mat-label>
         <input
-          [(ngModel)]="formData()['yubico.id']"
+          [ngModel]="formData()[YUBICO_ID]"
+          (ngModelChange)="updateFormData(YUBICO_ID, $event)"
           #clientIdInput="ngModel"
           [ngModelOptions]="{ standalone: true }"
           matInput
@@ -75,7 +77,8 @@
         class="input-width-xl">
         <mat-label i18n>Yubico URL</mat-label>
         <input
-          [(ngModel)]="formData()['yubico.url']"
+          [ngModel]="formData()[YUBICO_URL]"
+          (ngModelChange)="updateFormData(YUBICO_URL, $event)"
           #urlInput="ngModel"
           [ngModelOptions]="{ standalone: true }"
           matInput

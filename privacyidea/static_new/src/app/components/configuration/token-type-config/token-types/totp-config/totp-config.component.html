@@ -40,11 +40,16 @@
         appearance="fill"
         class="input-width-s">
         <mat-label i18n>Default Time Step</mat-label>
-        <mat-select [(ngModel)]="formData()['totp.timeStep']">
+        <mat-select
+          [ngModel]="formData()[TOTP_TIME_STEP]"
+          (ngModelChange)="updateFormData(TOTP_TIME_STEP, $event)">
           @for (step of totpSteps(); track step) {
             <mat-option [value]="step">{{ step }}</mat-option>
           }
         </mat-select>
+        <app-clear-button
+          matSuffix
+          (onClick)="clearField(TOTP_TIME_STEP); $event.stopPropagation()"></app-clear-button>
       </mat-form-field>
 
       <mat-form-field
@@ -52,7 +57,8 @@
         class="input-width-s">
         <mat-label i18n>Default Time Window</mat-label>
         <input
-          [(ngModel)]="formData()['totp.timeWindow']"
+          [ngModel]="formData()[TOTP_TIME_WINDOW]"
+          (ngModelChange)="updateFormData(TOTP_TIME_WINDOW, $event)"
           matInput
           placeholder="180"
           type="number">
@@ -64,11 +70,16 @@
         appearance="fill"
         class="input-width-s">
         <mat-label i18n>Default Hashlib</mat-label>
-        <mat-select [(ngModel)]="formData()['totp.hashlib']">
+        <mat-select
+          [ngModel]="formData()[TOTP_HASHLIB]"
+          (ngModelChange)="updateFormData(TOTP_HASHLIB, $event)">
           @for (hashlib of hashLibs(); track hashlib) {
             <mat-option [value]="hashlib">{{ hashlib }}</mat-option>
           }
         </mat-select>
+        <app-clear-button
+          matSuffix
+          (onClick)="clearField(TOTP_HASHLIB); $event.stopPropagation()"></app-clear-button>
       </mat-form-field>
 
       <mat-form-field
@@ -76,7 +87,8 @@
         class="input-width-s">
         <mat-label i18n>Default Time Shift</mat-label>
         <input
-          [(ngModel)]="formData()['totp.timeShift']"
+          [ngModel]="formData()[TOTP_TIME_SHIFT]"
+          (ngModelChange)="updateFormData(TOTP_TIME_SHIFT, $event)"
           matInput
           placeholder="0"
           type="number">

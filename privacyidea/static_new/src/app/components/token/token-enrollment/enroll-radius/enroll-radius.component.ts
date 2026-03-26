@@ -37,6 +37,7 @@ import {
 } from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
 import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
 import { ROUTE_PATHS } from "../../../../route_paths";
+import { RADIUS_SERVER } from "../../../../constants/token.constants";
 
 export interface RadiusEnrollmentOptions extends TokenEnrollmentData {
   type: "radius";
@@ -97,7 +98,7 @@ export class EnrollRadiusComponent implements OnInit {
 
   defaultRadiusServerIsSet = computed(() => {
     const cfg = this.systemService.systemConfigResource.value()?.result?.value;
-    return !!cfg?.["radius.identifier"];
+    return !!cfg?.[RADIUS_SERVER];
   });
 
   constructor() {
@@ -105,7 +106,7 @@ export class EnrollRadiusComponent implements OnInit {
       this.disabled() ? this.radiusForm.disable({ emitEvent: false }) : this.radiusForm.enable({ emitEvent: false })
     );
     effect(() => {
-      const id = this.systemService.systemConfigResource.value()?.result?.value?.["radius.identifier"];
+      const id = this.systemService.systemConfigResource.value()?.result?.value?.[RADIUS_SERVER];
       if (id && this.radiusServerConfigurationControl.pristine) {
         this.radiusServerConfigurationControl.setValue(id);
       }

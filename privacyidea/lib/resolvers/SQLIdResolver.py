@@ -354,7 +354,8 @@ class IdResolver (UserIdResolver):
     def _get_user_from_mapped_object(self, row: RowMapping, attributes: list[str] = None) -> dict:
         """
         :param row: row
-        :param attributes: list of attribute names to be returned for the user. If None, all attributes are returned.
+        :param attributes: list of attribute names to be returned for the user. If None or an empty list, all
+            attributes are returned.
         :return: user info as dictionary
         """
         user = {}
@@ -393,7 +394,7 @@ class IdResolver (UserIdResolver):
         :param search_dict: A dictionary with search parameters
         :type search_dict: dict
         :param attributes: list of attributes to be returned for each user (id and userid are always returned).
-            If None, all attributes are returned.
+            If None or an empty list, all attributes are returned.
         :return: list of users, where each user is a dictionary
         :raises ParameterError: when the search key does not exist in the
           mapping or database

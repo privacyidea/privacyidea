@@ -16,12 +16,14 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, input } from "@angular/core";
+import { Component, input, output } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { FormsModule } from "@angular/forms";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatSelectModule } from "@angular/material/select";
+import { ClearButtonComponent } from "@components/shared/clear-button/clear-button.component";
+import { HOTP_HASHLIB, HOTP_OTP_LENGTH } from "../../../../../constants/token.constants";
 
 @Component({
   selector: "app-hotp-config",
@@ -31,7 +33,8 @@ import { MatSelectModule } from "@angular/material/select";
     FormsModule,
     MatExpansionModule,
     MatFormFieldModule,
-    MatSelectModule
+    MatSelectModule,
+    ClearButtonComponent
   ],
   templateUrl: "./hotp-config.component.html",
   styleUrl: "./hotp-config.component.scss"
@@ -39,4 +42,17 @@ import { MatSelectModule } from "@angular/material/select";
 export class HotpConfigComponent {
   formData = input.required<Record<string, any>>();
   hashLibs = input.required<string[]>();
+  formDataChange = output<Record<string, any>>();
+
+  updateFormData(fieldName: string, value: any): void {
+    const newValue = { ...this.formData(), [fieldName]: value };
+    this.formDataChange.emit(newValue);
+  }
+
+  clearField(fieldName: string): void {
+    this.updateFormData(fieldName, "");
+  }
+
+  protected readonly HOTP_HASHLIB = HOTP_HASHLIB;
+  protected readonly HOTP_OTP_LENGTH = HOTP_OTP_LENGTH;
 }

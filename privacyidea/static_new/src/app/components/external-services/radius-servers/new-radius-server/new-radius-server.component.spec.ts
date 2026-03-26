@@ -25,6 +25,13 @@ import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from "@angular/material/dial
 import { of } from "rxjs";
 import { RadiusService } from "../../../../services/radius/radius.service";
 import { MockRadiusService } from "../../../../../testing/mock-services/mock-radius-service";
+import { SaveAndExitDialogComponent } from "../../../shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
+import { PendingChangesService } from "../../../../services/pending-changes/pending-changes.service";
+import { MockPendingChangesService } from "../../../../../testing/mock-services/mock-pending-changes-service";
+import { DialogService } from "../../../../services/dialog/dialog.service";
+import { MockDialogService } from "../../../../../testing/mock-services";
+import { MockAuthService } from "../../../../../testing/mock-services/mock-auth-service";
+import { AuthService } from "../../../../services/auth/auth.service";
 
 describe("NewRadiusServerComponent", () => {
   let component: NewRadiusServerComponent;
@@ -32,6 +39,9 @@ describe("NewRadiusServerComponent", () => {
   let radiusServiceMock: any;
   let dialogRefMock: any;
   let dialogMock: any;
+  let pendingChangesService: MockPendingChangesService;
+  let dialogService: MockDialogService;
+  let authService: MockAuthService;
 
   beforeEach(async () => {
     dialogRefMock = {
@@ -42,7 +52,7 @@ describe("NewRadiusServerComponent", () => {
     };
 
     dialogMock = {
-      open: jest.fn().mockReturnValue({ afterClosed: () => of(true) }),
+      open: jest.fn().mockReturnValue({ afterClosed: () => of(true) })
     };
 
     await TestBed.configureTestingModule({
@@ -53,6 +63,9 @@ describe("NewRadiusServerComponent", () => {
         { provide: MAT_DIALOG_DATA, useValue: null },
         { provide: MatDialogRef, useValue: dialogRefMock },
         { provide: RadiusService, useClass: MockRadiusService },
+        { provide: PendingChangesService, useClass: MockPendingChangesService },
+        { provide: DialogService, useClass: MockDialogService },
+        { provide: AuthService, useClass: MockAuthService }
       ]
     }).overrideComponent(NewRadiusServerComponent, {
       add: {
@@ -63,6 +76,9 @@ describe("NewRadiusServerComponent", () => {
     }).compileComponents();
 
     radiusServiceMock = TestBed.inject(RadiusService);
+    pendingChangesService = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
+    dialogService = TestBed.inject(DialogService) as unknown as MockDialogService;
+    authService = TestBed.inject(AuthService) as unknown as MockAuthService;
 
     fixture = TestBed.createComponent(NewRadiusServerComponent);
     component = fixture.componentInstance;
@@ -87,9 +103,32 @@ describe("NewRadiusServerComponent", () => {
       timeout: 5,
       retries: 3
     });
-    await component.save();
+
+    const success = await component.save();
+
+    expect(success).toBe(true);
     expect(radiusServiceMock.postRadiusServer).toHaveBeenCalled();
     expect(dialogRefMock.close).toHaveBeenCalledWith(true);
+  });
+
+  it("should handle error on save", async () => {
+    component.radiusForm.patchValue({
+      identifier: "test",
+      server: "1.2.3.4",
+      secret: "secret",
+      port: 1812,
+      timeout: 5,
+      retries: 3
+    });
+    radiusServiceMock.postRadiusServer.mockRejectedValue(new Error("Save failed"));
+    // Clear any previous calls to close from setup
+    dialogRefMock.close.mockClear();
+
+    const success = await component.save();
+
+    expect(success).toBe(false);
+    expect(radiusServiceMock.postRadiusServer).toHaveBeenCalled();
+    expect(dialogRefMock.close).not.toHaveBeenCalled();
   });
 
   it("should call test when form is valid", async () => {
@@ -103,5 +142,146 @@ describe("NewRadiusServerComponent", () => {
     });
     await component.test();
     expect(radiusServiceMock.testRadiusServer).toHaveBeenCalled();
+  });
+
+  describe("onCancel", () => {
+    let mockSaveExitDialogRef: any;
+
+    beforeEach(() => {
+      mockSaveExitDialogRef = {
+        afterClosed: jest.fn()
+      };
+      dialogService.openDialog.mockReturnValue(mockSaveExitDialogRef);
+      authService.actionAllowed = jest.fn().mockReturnValue(true);
+    });
+
+    it("should close directly when there are no changes", () => {
+      dialogRefMock.close.mockClear();
+
+      component.onCancel();
+
+      expect(dialogService.openDialog).not.toHaveBeenCalled();
+      expect(dialogRefMock.close).toHaveBeenCalled();
+    });
+
+    it("should open SaveAndExitDialog when there are changes", () => {
+      mockSaveExitDialogRef.afterClosed.mockReturnValue(of("discard"));
+      component.radiusForm.patchValue({
+        identifier: "test",
+        server: "1.2.3.4",
+        secret: "secret",
+        port: 1812
+      });
+      component.radiusForm.markAsDirty();
+
+      component.onCancel();
+
+      expect(dialogService.openDialog).toHaveBeenCalledWith(
+        expect.objectContaining({
+          component: SaveAndExitDialogComponent,
+          data: expect.objectContaining({
+            allowSaveExit: true
+          })
+        })
+      );
+    });
+
+    it("should close when user selects 'discard' in cancel dialog", async () => {
+      mockSaveExitDialogRef.afterClosed.mockReturnValue(of("discard"));
+      component.radiusForm.patchValue({
+        identifier: "test",
+        server: "1.2.3.4",
+        secret: "secret",
+        port: 1812
+      });
+      component.radiusForm.markAsDirty();
+      dialogRefMock.close.mockClear();
+
+      component.onCancel();
+
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
+      expect(dialogRefMock.close).toHaveBeenCalled();
+    });
+
+    it("should close when user selects 'save-exit' and save succeeds", async () => {
+      component.radiusForm.patchValue({
+        identifier: "test",
+        server: "1.2.3.4",
+        secret: "secret",
+        port: 1812
+      });
+      component.radiusForm.markAsDirty();
+      mockSaveExitDialogRef.afterClosed.mockReturnValue(of("save-exit"));
+      pendingChangesService.save.mockReturnValue(Promise.resolve(true));
+
+      dialogRefMock.close.mockClear();
+
+      component.onCancel();
+
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
+      expect(dialogRefMock.close).toHaveBeenCalled();
+    });
+
+    it("should NOT close when user selects 'save-exit' but save fails", async () => {
+      component.radiusForm.patchValue({
+        identifier: "test",
+        server: "1.2.3.4",
+        secret: "secret",
+        port: 1812
+      });
+      component.radiusForm.markAsDirty();
+      radiusServiceMock.postRadiusServer.mockRejectedValue(new Error("Save failed"));
+      mockSaveExitDialogRef.afterClosed.mockReturnValue(of("save-exit"));
+      pendingChangesService.save.mockReturnValue(Promise.resolve(false));
+
+      dialogRefMock.close.mockClear();
+
+      component.onCancel();
+
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      expect(pendingChangesService.clearAllRegistrations).not.toHaveBeenCalled();
+      expect(dialogRefMock.close).not.toHaveBeenCalled();
+    });
+
+    it("should do nothing when user selects 'save-exit' but canSave is false", async () => {
+      component.radiusForm.patchValue({ identifier: "" });
+      component.radiusForm.markAsDirty();
+      mockSaveExitDialogRef.afterClosed.mockReturnValue(of("save-exit"));
+
+      dialogRefMock.close.mockClear();
+
+      component.onCancel();
+
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      expect(pendingChangesService.save).not.toHaveBeenCalled();
+      expect(pendingChangesService.clearAllRegistrations).not.toHaveBeenCalled();
+      expect(dialogRefMock.close).not.toHaveBeenCalled();
+    });
+
+    it("should do nothing when user closes dialog without selecting an option", async () => {
+      mockSaveExitDialogRef.afterClosed.mockReturnValue(of(undefined));
+      component.radiusForm.patchValue({
+        identifier: "test",
+        server: "1.2.3.4",
+        secret: "secret",
+        port: 1812
+      });
+      component.radiusForm.markAsDirty();
+
+      dialogRefMock.close.mockClear();
+
+      component.onCancel();
+
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      expect(pendingChangesService.clearAllRegistrations).not.toHaveBeenCalled();
+      expect(dialogRefMock.close).not.toHaveBeenCalled();
+    });
   });
 });

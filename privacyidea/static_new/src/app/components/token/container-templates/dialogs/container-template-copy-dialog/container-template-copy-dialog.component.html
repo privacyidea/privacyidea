@@ -21,6 +21,8 @@
   title="Copy Container Template"
   i18n-title
   [showCancelButton]="true"
+  [handleCloseExternally]="true"
+  (close)="close()"
   [actions]="actions()"
   (onAction)="onAction($event)">
   <div class="flex-column">

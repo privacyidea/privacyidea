@@ -1,22 +1,3 @@
-/**
- * (c) NetKnights GmbH 2026,  https://netknights.it
- *
- * This code is free software; you can redistribute it and/or
- * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
- * as published by the Free Software Foundation; either
- * version 3 of the License, or any later version.
- *
- * This code is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
- *
- * You should have received a copy of the GNU Affero General Public
- * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
- *
- * SPDX-License-Identifier: AGPL-3.0-or-later
- **/
-
 import { HttpErrorResponse } from "@angular/common/http";
 import {
   Component,
@@ -24,6 +5,7 @@ import {
   OnDestroy,
   inject,
   Renderer2,
+  DestroyRef,
   ViewChild,
   ElementRef,
   viewChild,
@@ -38,13 +20,13 @@ import { MatButtonModule } from "@angular/material/button";
 import { MatCardModule } from "@angular/material/card";
 import { MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from "@angular/material/dialog";
 import { MatIconModule } from "@angular/material/icon";
-import { MatInput, MatFormField, MatLabel, MatError } from "@angular/material/input";
+import { MatFormField, MatLabel, MatError, MatInput } from "@angular/material/input";
 import { MatSelectModule, MatSelect, MatOption } from "@angular/material/select";
 import { Router, ActivatedRoute } from "@angular/router";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
-import { PiResponse } from "src/app/app.component";
+import { NAVIGATION_ACCESSIBLE_DIALOG_CLASS } from "src/app/constants/global.constants";
 import { ROUTE_PATHS } from "src/app/route_paths";
 import { ContentService } from "src/app/services/content/content.service";
 import { DialogServiceInterface, DialogService } from "src/app/services/dialog/dialog.service";
@@ -62,6 +44,9 @@ import { SqlResolverComponent } from "./sql-resolver/sql-resolver.component";
 @Component({
   selector: "app-user-new-resolver",
   standalone: true,
+  host: {
+    class: NAVIGATION_ACCESSIBLE_DIALOG_CLASS
+  },
   imports: [
     FormsModule,
     MatFormField,
@@ -96,13 +81,15 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
   private readonly _contentService = inject(ContentService);
   private readonly _dialogService: DialogServiceInterface = inject(DialogService);
   private readonly _pendingChangesService = inject(PendingChangesService);
+  private readonly _destroyRef = inject(DestroyRef);
+  protected readonly _renderer: Renderer2 = inject(Renderer2);
 
-  protected readonly renderer: Renderer2 = inject(Renderer2);
   public readonly dialogRef = inject(MatDialogRef<UserNewResolverComponent>, { optional: true });
   public readonly data = inject(MAT_DIALOG_DATA, { optional: true });
 
   private _observer!: IntersectionObserver;
   private _editInitialized = false;
+  private _initialRoute = this._contentService.routeUrl();
 
   @ViewChild("scrollContainer") scrollContainer!: ElementRef<HTMLElement>;
   @ViewChild("stickyHeader") stickyHeader!: ElementRef<HTMLElement>;
@@ -135,10 +122,7 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
       this.keycloakResolver() ||
       this.httpResolver();
 
-    if (resolver) {
-      return resolver.controls();
-    }
-    return {};
+    return resolver ? resolver.controls() : {};
   });
 
   constructor() {
@@ -155,8 +139,33 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
       });
     }
 
+    if (this.dialogRef) {
+      this.dialogRef.disableClose = true;
+      this.dialogRef
+        .backdropClick()
+        .pipe(takeUntilDestroyed(this._destroyRef))
+        .subscribe(() => {
+          this.onCancel();
+        });
+      this.dialogRef
+        .keydownEvents()
+        .pipe(takeUntilDestroyed(this._destroyRef))
+        .subscribe((event) => {
+          if (event.key === "Escape") {
+            this.onCancel();
+          }
+        });
+    }
+
     this._pendingChangesService.registerHasChanges(() => this.hasChanges);
     this._pendingChangesService.registerSave(() => this.onSave());
+    this._pendingChangesService.registerValidChanges(() => this.canSave);
+
+    effect(() => {
+      if (this._contentService.routeUrl() !== this._initialRoute) {
+        this.dialogRef?.close(true);
+      }
+    });
 
     effect(() => {
       const selectedName = this._resolverService.selectedResolverName();
@@ -201,14 +210,9 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
     return !!this._resolverService.selectedResolverName();
   }
 
-  // Reverse logic: A field is only "invalid" if it explicitly has the status 'INVALID'.
-  // Deactivated (DISABLED) fields are not 'INVALID' and therefore do not block saving.
   get isAdditionalFieldsInvalid(): boolean {
     const fields = Object.values(this.additionalFormFields());
-    if (fields.length === 0) {
-      return false;
-    }
-    return fields.some((control) => control.invalid);
+    return fields.length > 0 && fields.some((control) => control.invalid);
   }
 
   get canSave(): boolean {
@@ -243,9 +247,9 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
         }
         const shouldFloat = entry.boundingClientRect.top < entry.rootBounds.top;
         if (shouldFloat) {
-          this.renderer.addClass(this.stickyHeader.nativeElement, "is-sticky");
+          this._renderer.addClass(this.stickyHeader.nativeElement, "is-sticky");
         } else {
-          this.renderer.removeClass(this.stickyHeader.nativeElement, "is-sticky");
+          this._renderer.removeClass(this.stickyHeader.nativeElement, "is-sticky");
         }
       },
       { root: this.scrollContainer.nativeElement, threshold: [0, 1] }
@@ -255,7 +259,7 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
 
   ngOnDestroy(): void {
     this._resolverService.selectedResolverName.set("");
-    this._pendingChangesService.unregisterHasChanges();
+    this._pendingChangesService.clearAllRegistrations();
     this._observer?.disconnect();
   }
 
@@ -284,19 +288,19 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
     }
   }
 
-  onSave(): void {
+  async onSave(): Promise<boolean> {
     const name = this.resolverName.trim();
     if (!name) {
       this._notificationService.openSnackBar($localize`Please enter a resolver name.`);
-      return;
+      return false;
     }
     if (!this.resolverType) {
       this._notificationService.openSnackBar($localize`Please select a resolver type.`);
-      return;
+      return false;
     }
     if (this.isAdditionalFieldsInvalid) {
       this._notificationService.openSnackBar($localize`Please fill in all required fields.`);
-      return;
+      return false;
     }
 
     this.isSaving.set(true);
@@ -306,22 +310,27 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
       ...this._getAdditionalData()
     };
 
-    this._resolverService.postResolver(name, payload).subscribe({
-      next: (res) => {
-        if (res.result?.status === true && (res.result.value ?? 0) >= 0) {
-          let msg = $localize`Resolver "${name}" created.`;
-          if (this.isEditMode) {
-            msg = $localize`Resolver "${name}" updated.`;
+    return new Promise<boolean>((resolve) => {
+      this._resolverService.postResolver(name, payload).subscribe({
+        next: (res) => {
+          if (res.result?.status === true && (res.result.value ?? 0) >= 0) {
+            this._notificationService.openSnackBar(
+              this.isEditMode ? $localize`Resolver "${name}" updated.` : $localize`Resolver "${name}" created.`
+            );
+            this._resolverService.resolversResource.reload?.();
+            this._closeOrReset();
+            resolve(true);
+          } else {
+            this._notifyError($localize`Failed to save resolver.`, res);
+            resolve(false);
           }
-          this._notificationService.openSnackBar(msg);
-          this._resolverService.resolversResource.reload?.();
-          this._closeOrReset();
-        } else {
-          this._notifyError($localize`Failed to save resolver.`, res);
-        }
-      },
-      error: (err) => this._notifyError($localize`Failed to save resolver.`, err),
-      complete: () => setTimeout(() => this.isSaving.set(false))
+        },
+        error: (err) => {
+          this._notifyError($localize`Failed to save resolver.`, err);
+          resolve(false);
+        },
+        complete: () => setTimeout(() => this.isSaving.set(false))
+      });
     });
   }
 
@@ -347,9 +356,12 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
         .afterClosed()
         .subscribe((result) => {
           if (result === "save-exit") {
-            if (this.canSave) {
-              Promise.resolve(this._pendingChangesService.save()).then(() => this._closeCurrent());
-            }
+            if (!this.canSave) return;
+            Promise.resolve(this._pendingChangesService.save()).then((success) => {
+              if (success) {
+                this._closeCurrent();
+              }
+            });
           } else if (result === "discard") {
             this._closeCurrent();
           }
@@ -454,7 +466,7 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
   }
 
   private _closeCurrent(): void {
-    this._pendingChangesService.unregisterHasChanges();
+    this._pendingChangesService.clearAllRegistrations();
     if (this.dialogRef) {
       this.dialogRef.close();
     } else {

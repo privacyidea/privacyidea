@@ -29,6 +29,7 @@ import {
   TokenApiPayloadMapper,
   TokenEnrollmentData
 } from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
+import { TIQR_INFO_URL, TIQR_LOGO_URL, TIQR_REG_SERVER } from "../../../../constants/token.constants";
 
 export interface TiqrEnrollmentOptions extends TokenEnrollmentData {
   type: "tiqr";
@@ -60,7 +61,7 @@ export class EnrollTiqrComponent implements OnInit {
   disabled = input<boolean>(false);
   defaultTiQRIsSet = computed(() => {
     const cfg = this.systemService.systemConfigResource.value()?.result?.value;
-    return !!(cfg?.["tiqr.infoUrl"] && cfg?.["tiqr.logoUrl"] && cfg?.["tiqr.regServer"]);
+    return !!(cfg?.[TIQR_INFO_URL] && cfg?.[TIQR_LOGO_URL] && cfg?.[TIQR_REG_SERVER]);
   });
 
   ngOnInit(): void {

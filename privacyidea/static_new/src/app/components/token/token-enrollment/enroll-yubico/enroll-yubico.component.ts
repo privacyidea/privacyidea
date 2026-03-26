@@ -35,6 +35,7 @@ import {
 import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
 import { ROUTE_PATHS } from "../../../../route_paths";
 import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
+import { YUBICO_ID, YUBICO_SECRET, YUBICO_URL } from "../../../../constants/token.constants";
 
 export interface YubicoEnrollmentOptions extends TokenEnrollmentData {
   type: "yubico";
@@ -88,7 +89,7 @@ export class EnrollYubicoComponent implements OnInit {
 
   yubicoIsConfigured = computed(() => {
     const cfg = this.systemService.systemConfigResource.value()?.result?.value;
-    return !!(cfg?.["yubico.id"] && cfg?.["yubico.url"] && cfg?.["yubico.secret"]);
+    return !!(cfg?.[YUBICO_ID] && cfg?.[YUBICO_URL] && cfg?.[YUBICO_SECRET]);
   });
 
   constructor() {

@@ -25,6 +25,11 @@ import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from "@angular/material/dial
 import { of } from "rxjs";
 import { TokengroupService } from "../../../../services/tokengroup/tokengroup.service";
 import { MockTokengroupService } from "../../../../../testing/mock-services/mock-tokengroup-service";
+import { SaveAndExitDialogComponent } from "../../../shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
+import { PendingChangesService } from "../../../../services/pending-changes/pending-changes.service";
+import { MockPendingChangesService } from "../../../../../testing/mock-services/mock-pending-changes-service";
+import { DialogService } from "../../../../services/dialog/dialog.service";
+import { MockDialogService } from "../../../../../testing/mock-services";
 
 describe("NewTokengroupComponent", () => {
   let component: NewTokengroupComponent;
@@ -32,6 +37,8 @@ describe("NewTokengroupComponent", () => {
   let tokengroupServiceMock: any;
   let dialogRefMock: any;
   let dialogMock: any;
+  let pendingChangesService: MockPendingChangesService;
+  let dialogService: MockDialogService;
 
   beforeEach(async () => {
     dialogRefMock = {
@@ -53,6 +60,8 @@ describe("NewTokengroupComponent", () => {
         { provide: MAT_DIALOG_DATA, useValue: null },
         { provide: MatDialogRef, useValue: dialogRefMock },
         { provide: TokengroupService, useClass: MockTokengroupService },
+        { provide: PendingChangesService, useClass: MockPendingChangesService },
+        { provide: DialogService, useClass: MockDialogService },
       ]
     }).overrideComponent(NewTokengroupComponent, {
       add: {
@@ -63,6 +72,8 @@ describe("NewTokengroupComponent", () => {
     }).compileComponents();
 
     tokengroupServiceMock = TestBed.inject(TokengroupService);
+    pendingChangesService = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
+    dialogService = TestBed.inject(DialogService) as unknown as MockDialogService;
 
     fixture = TestBed.createComponent(NewTokengroupComponent);
     component = fixture.componentInstance;
@@ -83,8 +94,157 @@ describe("NewTokengroupComponent", () => {
       groupname: "test",
       description: "desc"
     });
-    await component.save();
+
+    const success = await component.save();
+
+    expect(success).toBe(true);
     expect(tokengroupServiceMock.postTokengroup).toHaveBeenCalled();
     expect(dialogRefMock.close).toHaveBeenCalledWith(true);
+  });
+
+  it("should handle error on save", async () => {
+    component.tokengroupForm.patchValue({
+      groupname: "test",
+      description: "desc"
+    });
+    tokengroupServiceMock.postTokengroup = jest.fn().mockRejectedValue(new Error("Save failed"));
+    // Clear any previous calls to close from setup
+    dialogRefMock.close.mockClear();
+
+    const success = await component.save();
+
+    expect(success).toBe(false);
+    expect(tokengroupServiceMock.postTokengroup).toHaveBeenCalled();
+    expect(dialogRefMock.close).not.toHaveBeenCalled();
+  });
+
+  describe("onCancel", () => {
+    let mockSaveExitDialogRef: any;
+
+    beforeEach(() => {
+      mockSaveExitDialogRef = {
+        afterClosed: jest.fn()
+      };
+      dialogService.openDialog.mockReturnValue(mockSaveExitDialogRef);
+    });
+
+    it("should close directly when there are no changes", () => {
+      dialogRefMock.close.mockClear();
+
+      component.onCancel();
+
+      expect(dialogService.openDialog).not.toHaveBeenCalled();
+      expect(dialogRefMock.close).toHaveBeenCalled();
+    });
+
+    it("should open SaveAndExitDialog when there are changes", () => {
+      mockSaveExitDialogRef.afterClosed.mockReturnValue(of("discard"));
+      component.tokengroupForm.patchValue({
+        groupname: "test",
+        description: "desc"
+      });
+      component.tokengroupForm.markAsDirty();
+
+      component.onCancel();
+
+      expect(dialogService.openDialog).toHaveBeenCalledWith(
+        expect.objectContaining({
+          component: SaveAndExitDialogComponent,
+          data: expect.objectContaining({
+            allowSaveExit: true
+          })
+        })
+      );
+    });
+
+    it("should close when user selects 'discard' in cancel dialog", async () => {
+      mockSaveExitDialogRef.afterClosed.mockReturnValue(of("discard"));
+      component.tokengroupForm.patchValue({
+        groupname: "test",
+        description: "desc"
+      });
+      component.tokengroupForm.markAsDirty();
+      dialogRefMock.close.mockClear();
+
+      component.onCancel();
+
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
+      expect(dialogRefMock.close).toHaveBeenCalled();
+    });
+
+    it("should close when user selects 'save-exit' and save succeeds", async () => {
+      component.tokengroupForm.patchValue({
+        groupname: "test",
+        description: "desc"
+      });
+      component.tokengroupForm.markAsDirty();
+      mockSaveExitDialogRef.afterClosed.mockReturnValue(of("save-exit"));
+      pendingChangesService.save.mockReturnValue(Promise.resolve(true));
+
+      dialogRefMock.close.mockClear();
+
+      component.onCancel();
+
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
+      expect(dialogRefMock.close).toHaveBeenCalled();
+    });
+
+    it("should NOT close when user selects 'save-exit' but save fails", async () => {
+      component.tokengroupForm.patchValue({
+        groupname: "test",
+        description: "desc"
+      });
+      component.tokengroupForm.markAsDirty();
+      tokengroupServiceMock.postTokengroup = jest.fn().mockRejectedValue(new Error("Save failed"));
+      mockSaveExitDialogRef.afterClosed.mockReturnValue(of("save-exit"));
+      pendingChangesService.save.mockReturnValue(Promise.resolve(false));
+
+      dialogRefMock.close.mockClear();
+
+      component.onCancel();
+
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      expect(pendingChangesService.clearAllRegistrations).not.toHaveBeenCalled();
+      expect(dialogRefMock.close).not.toHaveBeenCalled();
+    });
+
+    it("should do nothing when user selects 'save-exit' but canSave is false", async () => {
+      component.tokengroupForm.patchValue({ groupname: "" });
+      component.tokengroupForm.markAsDirty();
+      mockSaveExitDialogRef.afterClosed.mockReturnValue(of("save-exit"));
+
+      dialogRefMock.close.mockClear();
+
+      component.onCancel();
+
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      expect(pendingChangesService.save).not.toHaveBeenCalled();
+      expect(pendingChangesService.clearAllRegistrations).not.toHaveBeenCalled();
+      expect(dialogRefMock.close).not.toHaveBeenCalled();
+    });
+
+    it("should do nothing when user closes dialog without selecting an option", async () => {
+      mockSaveExitDialogRef.afterClosed.mockReturnValue(of(undefined));
+      component.tokengroupForm.patchValue({
+        groupname: "test",
+        description: "desc"
+      });
+      component.tokengroupForm.markAsDirty();
+
+      dialogRefMock.close.mockClear();
+
+      component.onCancel();
+
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      expect(pendingChangesService.clearAllRegistrations).not.toHaveBeenCalled();
+      expect(dialogRefMock.close).not.toHaveBeenCalled();
+    });
   });
 });

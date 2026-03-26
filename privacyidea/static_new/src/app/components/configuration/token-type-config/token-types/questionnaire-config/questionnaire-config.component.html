@@ -16,7 +16,9 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<mat-expansion-panel id="questionnaire" [expanded]="expanded()">
+<mat-expansion-panel
+  id="questionnaire"
+  [expanded]="expanded()">
   <mat-expansion-panel-header>
     <mat-panel-title i18n>Questionnaire</mat-panel-title>
   </mat-expansion-panel-header>
@@ -32,7 +34,8 @@
         class="input-width-s">
         <mat-label i18n>Number of Answers</mat-label>
         <input
-          [(ngModel)]="formData()['question.num_answers']"
+          [ngModel]="formData()[QUESTION_NUMBER_OF_ANSWERS]"
+          (ngModelChange)="updateFormData(QUESTION_NUMBER_OF_ANSWERS, $event)"
           #numAnswersInput="ngModel"
           [ngModelOptions]="{ standalone: true }"
           matInput

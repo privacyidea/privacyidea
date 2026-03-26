@@ -18,7 +18,7 @@
         <button
           [attr.cdkFocusInitial]="cancelButtonPrimary() || null"
           class="action-button-secondary button-width-s"
-          mat-dialog-close
+          (click)="onCancelClick()"
           mat-stroked-button>
           @if (cancelButtonLabel()) {
             {{ cancelButtonLabel() }}

@@ -20,6 +20,7 @@ import { Component, inject } from "@angular/core";
 import { DOCUMENT } from "@angular/common";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
+import { MatTooltipModule } from "@angular/material/tooltip";
 import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
 import { BulkResult, TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 import { SimpleConfirmationDialogComponent } from "../../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
@@ -48,7 +49,7 @@ import { TableUtilsService, TableUtilsServiceInterface } from "../../../../servi
 
 @Component({
   selector: "app-token-table-actions",
-  imports: [MatButtonModule, MatIcon, RouterLink, MatMenuModule],
+  imports: [MatButtonModule, MatIcon, RouterLink, MatMenuModule, MatTooltipModule],
   templateUrl: "./token-table-actions.component.html",
   styleUrl: "./token-table-actions.component.scss"
 })

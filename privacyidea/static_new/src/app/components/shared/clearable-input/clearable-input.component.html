@@ -22,8 +22,10 @@
     <button
       (click)="clearInput()"
       [disabled]="disabled"
-      type="button"
-      mat-icon-button>
+      i18n-matTooltip
+      mat-icon-button
+      matTooltip="Clear Input"
+      type="button">
       <mat-icon>add_circle</mat-icon>
     </button>
   }

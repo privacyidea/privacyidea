@@ -219,7 +219,8 @@ class IdResolver (UserIdResolver):
         as we only have the loginId, we have to traverse the dict for the value
 
         :param user_id: the to be searched user
-        :param attributes: list of attribute names to be returned for the user. If None, all attributes are returned.
+        :param attributes: list of attribute names to be returned for the user. If None or an empty list, all
+            attributes are returned.
         :param no_passwd: return no password
         :return: dict of user info
         """
@@ -229,21 +230,21 @@ class IdResolver (UserIdResolver):
             fields = self.description_dict.get(user_id, [])
 
             for key in self.search_field_indices:
-                if (no_passwd and key == "cryptpass") or (attributes is not None and key not in attributes):
+                if (no_passwd and key == "cryptpass") or (attributes and key not in attributes):
                     continue
                 index = self.search_field_indices[key]
                 if index < len(fields):
                     ret[key] = fields[index]
 
-            if attributes is None or "givenname" in attributes:
+            if not attributes or "givenname" in attributes:
                 ret['givenname'] = self.given_name_dict.get(user_id)
-            if attributes is None or "surname" in attributes:
+            if not attributes or "surname" in attributes:
                 ret['surname'] = self.surname_dict.get(user_id)
-            if attributes is None or "phone" in attributes:
+            if not attributes or "phone" in attributes:
                 ret['phone'] = self.home_phone_dict.get(user_id)
-            if attributes is None or "mobile" in attributes:
+            if not attributes or "mobile" in attributes:
                 ret['mobile'] = self.office_phone_dict.get(user_id)
-            if attributes is None or "email" in attributes:
+            if not attributes or "email" in attributes:
                 ret['email'] = self.email_dict.get(user_id)
         else:
             log.debug("User with user ID %s could not be found.", user_id)

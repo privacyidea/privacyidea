@@ -54,9 +54,7 @@ import { Subscription } from "rxjs";
 import { ROUTE_PATHS } from "../../../../route_paths";
 import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
 import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
-
-export const QUESTION_NUMBER_OF_ANSWERS = "question.num_answers";
-export const QUESTION_CONFIG_PREFIX = "question.question.";
+import { QUESTION_CONFIG_PREFIX, QUESTION_NUMBER_OF_ANSWERS } from "../../../../constants/token.constants";
 
 export interface QuestionEnrollmentOptions extends TokenEnrollmentData {
   type: "question";

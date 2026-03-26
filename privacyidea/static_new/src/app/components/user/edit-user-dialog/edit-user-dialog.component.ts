@@ -17,15 +17,22 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, inject, linkedSignal, WritableSignal } from "@angular/core";
-import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
+import { Component, computed, effect, inject, linkedSignal, signal, WritableSignal } from "@angular/core";
 import { EditUserData, UserData, UserService } from "../../../services/user/user.service";
 import { DialogAction } from "../../../models/dialog";
 import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
 import { UserDetailsEditComponent } from "@components/user/user-details-edit/user-details-edit.component";
+import { PendingChangesDialogComponent } from "@components/shared/dialog/abstract-dialog/pending-changes-dialog.component";
+import { ROUTE_PATHS } from "../../../route_paths";
+import { ContentService } from "../../../services/content/content.service";
+import { NAVIGATION_ACCESSIBLE_DIALOG_CLASS } from "../../../constants/global.constants";
 
 @Component({
   selector: "app-edit-user-dialog",
+  standalone: true,
+  host: {
+    class: NAVIGATION_ACCESSIBLE_DIALOG_CLASS
+  },
   imports: [
     DialogWrapperComponent,
     UserDetailsEditComponent
@@ -33,8 +40,9 @@ import { UserDetailsEditComponent } from "@components/user/user-details-edit/use
   templateUrl: "./edit-user-dialog.component.html",
   styleUrl: "./edit-user-dialog.component.scss"
 })
-export class EditUserDialogComponent extends AbstractDialogComponent<UserData, boolean> {
+export class EditUserDialogComponent extends PendingChangesDialogComponent<UserData, boolean> {
   protected readonly userService = inject(UserService);
+  protected readonly contentService = inject(ContentService);
 
   username = computed(() => this.data.username);
   title = computed(() => $localize`Edit User` + (this.username() ? ": " + this.username() : ""));
@@ -52,8 +60,38 @@ export class EditUserDialogComponent extends AbstractDialogComponent<UserData, b
     return { username: this.username() || "" };
   });
 
+  canSave = signal(true);
+  isDirty = computed(() => this.editedUserData() !== this.data);
+
+  constructor() {
+    super();
+
+    effect(() => {
+      if (this.contentService.routeUrl() !== (ROUTE_PATHS.USERS_DETAILS + "/" + this.username())) {
+        this.dialogRef?.close(true);
+      }
+    });
+  }
+
   onUpdateUserData(newData: EditUserData): void {
     this.editedUserData.set(newData);
+  }
+
+  override async onSave(): Promise<boolean> {
+    this.editedUserData().username = this.username();
+    return new Promise((resolve) => {
+      this.userService.editUser(this.data.resolver, this.editedUserData()).subscribe({
+        next: (success) => {
+          if (success) {
+            this.userService.userResource.reload();
+            resolve(true);
+          } else {
+            resolve(false);
+          }
+        },
+        error: () => resolve(false)
+      });
+    });
   }
 
   save() {

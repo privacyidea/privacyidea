@@ -33,7 +33,8 @@
           [showClearButton]="tokenService.tokenFilter().isNotEmpty">
           <input
             #filterHTMLInputElement
-            (input)="tokenService.handleFilterInput($event)"
+            (input)="onFilterInput($event)"
+            (keyup.enter)="tokenService.handleFilterInput($event)"
             [value]="tokenService.tokenFilter().filterString"
             aria-label="Filter Input"
             i18n-aria-label
@@ -42,6 +43,9 @@
             matInput
             placeholder="Example query: 'type: hotp userid: 1000'" />
         </app-clearable-input>
+        @if (showFilterHint()) {
+          <mat-hint i18n>Press enter to apply the filter</mat-hint>
+        }
       </mat-form-field>
       <mat-paginator
         (page)="onPageEvent($event)"
@@ -83,19 +87,49 @@
                   {{ column.label }}
                   <div class="margin-left-16 flex">
                     @if (apiFilterKeyMap[column.key] && tokenService.apiFilter.includes(apiFilterKeyMap[column.key])) {
-                      <button
-                        (click)="onKeywordClick(apiFilterKeyMap[column.key])"
-                        class="filter-button"
-                        mat-icon-button>
-                        <mat-icon class="keyword-button-icon margin-left-0">
-                          {{ getFilterIconName(apiFilterKeyMap[column.key]) }}
-                        </mat-icon>
-                      </button>
+                      @if (apiFilterKeyMap[column.key] === 'realm' || apiFilterKeyMap[column.key] === 'tokenrealm') {
+                        <button
+                          [matMenuTriggerFor]="realmMenu"
+                          [matMenuTriggerData]="{ keyword: apiFilterKeyMap[column.key] }"
+                          class="filter-button"
+                          i18n-matTooltip
+                          mat-icon-button
+                          matTooltip="Filter by {{ column.label }}">
+                          <mat-icon class="keyword-button-icon margin-left-0">
+                            filter_list
+                          </mat-icon>
+                        </button>
+                      } @else if (apiFilterKeyMap[column.key] === 'type') {
+                        <button
+                          [matMenuTriggerFor]="typeMenu"
+                          [matMenuTriggerData]="{ keyword: apiFilterKeyMap[column.key] }"
+                          class="filter-button"
+                          i18n-matTooltip
+                          mat-icon-button
+                          matTooltip="Filter by {{ column.label }}">
+                          <mat-icon class="keyword-button-icon margin-left-0">
+                            filter_list
+                          </mat-icon>
+                        </button>
+                      } @else {
+                        <button
+                          (click)="onKeywordClick(apiFilterKeyMap[column.key])"
+                          class="filter-button"
+                          i18n-matTooltip
+                          mat-icon-button
+                          matTooltip="Filter by {{ column.label }}">
+                          <mat-icon class="keyword-button-icon margin-left-0">
+                            {{ getFilterIconName(apiFilterKeyMap[column.key]) }}
+                          </mat-icon>
+                        </button>
+                      }
                     }
                     <button
                       (click)="tableUtilsService.onSortButtonClick(column.key, sort)"
                       class="sort-button"
+                      i18n-matTooltip
                       mat-icon-button
+                      matTooltip="Sort by {{ column.label }}"
                       type="button">
                       <mat-icon>{{ tableUtilsService.getSortIcon(column.key, sort()) }}</mat-icon>
                     </button>
@@ -223,3 +257,49 @@
     <div i18n>You do not have the permission to view the token list.</div>
   }
 </div>
+
+<mat-menu
+  #realmMenu="matMenu"
+  class="token-table-filter-menu">
+  <ng-template
+    let-keyword="keyword"
+    matMenuContent>
+    <button
+      (click)="onItemSelected(keyword, '')"
+      mat-menu-item>
+      <mat-icon>filter_alt_off</mat-icon>
+      <span i18n>Clear Filter</span>
+    </button>
+    <mat-divider />
+    @for (realm of realmService.realmOptions(); track realm) {
+      <button
+        (click)="onItemSelected(keyword, realm)"
+        mat-menu-item>
+        {{ realm }}
+      </button>
+    }
+  </ng-template>
+</mat-menu>
+
+<mat-menu
+  #typeMenu="matMenu"
+  class="token-table-filter-menu">
+  <ng-template
+    let-keyword="keyword"
+    matMenuContent>
+    <button
+      (click)="onItemSelected(keyword, '')"
+      mat-menu-item>
+      <mat-icon>filter_alt_off</mat-icon>
+      <span i18n>Clear Filter</span>
+    </button>
+    <mat-divider />
+    @for (typeOption of tokenService.tokenTypeOptions(); track typeOption.key) {
+      <button
+        (click)="onItemSelected(keyword, typeOption.key)"
+        mat-menu-item>
+        {{ typeOption.key }}
+      </button>
+    }
+  </ng-template>
+</mat-menu>

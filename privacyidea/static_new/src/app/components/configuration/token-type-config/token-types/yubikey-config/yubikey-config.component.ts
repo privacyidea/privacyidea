@@ -25,6 +25,13 @@ import { MatInputModule } from "@angular/material/input";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
 import { MatDivider } from "@angular/material/list";
+import { MatCheckbox } from "@angular/material/checkbox";
+
+export type ApiKeyData = {
+  apiId: string;
+  apiKey: string;
+  generateKey: boolean;
+};
 
 @Component({
   selector: "app-yubikey-config",
@@ -37,7 +44,8 @@ import { MatDivider } from "@angular/material/list";
     MatInputModule,
     MatButtonModule,
     MatIconModule,
-    MatDivider
+    MatDivider,
+    MatCheckbox
   ],
   templateUrl: "./yubikey-config.component.html",
   styleUrl: "./yubikey-config.component.scss"
@@ -46,15 +54,21 @@ export class YubikeyConfigComponent {
   formData = input.required<Record<string, any>>();
   yubikeyApiIds = input.required<string[]>();
 
-  onYubikeyCreateNewKey = output<string>();
+  onYubikeyCreateNewKey = output<ApiKeyData>();
   onDeleteEntry = output<string>();
 
   newYubikeyApiId = signal("");
   newYubikeyApiKey = signal("");
+  newYubikeyGenKey = signal(true);
 
   createNewKey() {
     if (this.newYubikeyApiId()) {
-      this.onYubikeyCreateNewKey.emit(this.newYubikeyApiId());
+      const newKeyData = {
+        apiId: this.newYubikeyApiId(),
+        apiKey: this.newYubikeyApiKey(),
+        generateKey: this.newYubikeyGenKey()
+      };
+      this.onYubikeyCreateNewKey.emit(newKeyData);
       this.newYubikeyApiId.set("");
       this.newYubikeyApiKey.set("");
     }

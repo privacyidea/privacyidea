@@ -35,10 +35,11 @@ import {
   NotificationServiceInterface
 } from "../../../../services/notification/notification.service";
 import { SystemService, SystemServiceInterface } from "../../../../services/system/system.service";
-
-export const DAYPASSWORD_HASHLIB = "daypassword.hashlib";
-export const DAYPASSWORD_OTP_LENGTH = "daypassword.otplen";
-export const DAYPASSWORD_TIME_STEP = "daypassword.timeStep";
+import {
+  DAYPASSWORD_HASHLIB,
+  DAYPASSWORD_OTP_LENGTH,
+  DAYPASSWORD_TIME_STEP
+} from "../../../../constants/token.constants";
 
 export interface DaypasswordEnrollmentOptions extends TokenEnrollmentData {
   type: "daypassword";
@@ -93,9 +94,9 @@ export class EnrollDaypasswordComponent implements OnInit {
   disabled = input<boolean>(false);
 
   otpKeyFormControl = new FormControl<string>({ value: "", disabled: true });
-  defaultHashlib = computed(() => this.systemService.systemConfig()[DAYPASSWORD_HASHLIB] ?? "sha1");
+  defaultHashlib = computed(() => this.systemService.systemConfig()[DAYPASSWORD_HASHLIB] || "sha1");
   hashAlgorithmControl = new FormControl<string>(this.defaultHashlib(), [Validators.required]);
-  defaultTimeStep = computed(() => this.systemService.systemConfig()[DAYPASSWORD_TIME_STEP] ?? "24h");
+  defaultTimeStep = computed(() => this.systemService.systemConfig()[DAYPASSWORD_TIME_STEP] || "24h");
   timeStepControl = new FormControl<string>(this.defaultTimeStep(), [Validators.required]);
   generateOnServerControl = new FormControl(true);
   otpLengthControl = new FormControl<number>(6, [Validators.required]);

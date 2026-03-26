@@ -25,7 +25,8 @@
 
     <div class="flex-row gap-16 ali-center">
       <mat-checkbox
-        [(ngModel)]="formData()['remote.verify_ssl_certificate']"
+        [ngModel]="verifySSL()"
+        (ngModelChange)="updateFormData(REMOTE_VERIFY_SSL, $event)"
         i18n>Verify SSL certificate
       </mat-checkbox>
     </div>
@@ -36,7 +37,8 @@
         class="input-width-l">
         <mat-label i18n>Default Remote Server</mat-label>
         <input
-          [(ngModel)]="formData()['remote.server']"
+          [ngModel]="formData()[REMOTE_SERVER]"
+          (ngModelChange)="updateFormData(REMOTE_SERVER, $event)"
           #remoteServerInput="ngModel"
           [ngModelOptions]="{ standalone: true }"
           matInput

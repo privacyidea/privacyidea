@@ -22,8 +22,7 @@
   </mat-expansion-panel-header>
   <div class="panel-content expansion-well">
     <p i18n>This is a Yubikey in the Yubico Mode authenticated against privacyIDEA.</p>
-    <p i18n>The Yubikey emits a 44 character on
-            time password.
+    <p i18n>The Yubikey emits a 44 character on time password.
     </p>
     <p i18n>The authentication request can be handled by the default privacyIDEA
       <a
@@ -94,20 +93,25 @@
           [ngModel]="newYubikeyApiKey()"
           #apiKeyInput="ngModel"
           [ngModelOptions]="{ standalone: true }"
+          [disabled]="newYubikeyGenKey()"
           matInput
-          placeholder="API Key"
-          required>
-        @if (apiKeyInput.errors?.['required']) {
-          <mat-error i18n>API Key is <strong>required</strong></mat-error>
-        }
+          placeholder="API Key">
       </mat-form-field>
+
+      <mat-checkbox
+        (ngModelChange)="newYubikeyGenKey.set($event)"
+        [ngModel]="newYubikeyGenKey()"
+        class="genkey-spacing"
+        i18n>
+        Generate API Key
+      </mat-checkbox>
 
       <button
         (click)="createNewKey()"
-        class="action-button-secondary button-width-l margin-bottom-16"
+        class="action-button-secondary button-width-s margin-bottom-16"
         mat-stroked-button>
         <mat-icon>add</mat-icon>
-        <span i18n>Create new API key</span>
+        <span i18n>Add</span>
       </button>
     </div>
   </div>

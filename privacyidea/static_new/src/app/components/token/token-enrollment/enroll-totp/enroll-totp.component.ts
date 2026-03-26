@@ -38,10 +38,7 @@ import {
   NotificationServiceInterface
 } from "../../../../services/notification/notification.service";
 import { SystemService, SystemServiceInterface } from "../../../../services/system/system.service";
-
-export const TOTP_HASHLIB = "totp.hashlib";
-export const TOTP_OTP_LENGTH = "totp.otplen";
-export const TOTP_TIME_STEP = "totp.timestep";
+import { TOTP_HASHLIB, TOTP_OTP_LENGTH, TOTP_TIME_STEP } from "../../../../constants/token.constants";
 
 export interface TotpEnrollmentOptions extends TokenEnrollmentData {
   type: "totp";
@@ -100,7 +97,7 @@ export class EnrollTotpComponent implements OnInit {
   generateOnServerFormControl = new FormControl<boolean>(true, [Validators.required]);
   otpLengthFormControl = new FormControl<number>(6, [Validators.required]);
   otpKeyFormControl = new FormControl<string>({ value: "", disabled: true });
-  defaultHashlib = computed(() => this.systemService.systemConfig()[TOTP_HASHLIB] ?? "sha1");
+  defaultHashlib = computed(() => this.systemService.systemConfig()[TOTP_HASHLIB] || "sha1");
   hashAlgorithmControl = new FormControl<string>(this.defaultHashlib(), [Validators.required]);
   defaultTimeStep = computed(() => {
     let timeStep = 30;

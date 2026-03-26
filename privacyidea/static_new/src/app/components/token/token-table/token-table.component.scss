@@ -27,3 +27,7 @@
 .sticky-header {
   z-index: 120;
 }
+
+::ng-deep .token-table-filter-menu {
+  max-height: 400px;
+}

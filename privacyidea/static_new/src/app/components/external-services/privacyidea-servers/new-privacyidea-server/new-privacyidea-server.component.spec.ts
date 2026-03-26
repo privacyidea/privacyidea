@@ -109,11 +109,24 @@ describe("NewPrivacyideaServerComponent", () => {
 
   it("should call save when form is valid", async () => {
     component.privacyideaForm.patchValue({ identifier: "test", url: "http://test" });
-    component.save();
+    const success = await component.save();
+    expect(success).toBe(true);
     expect(privacyideaServerServiceMock.postPrivacyideaServer).toHaveBeenCalled();
     confirmClosed.next("save-exit");
     confirmClosed.complete();
     expect(dialogRefMock.close).toHaveBeenCalledWith(true);
+  });
+
+  it("save should keep dialog open on error", async () => {
+    component.privacyideaForm.patchValue({ identifier: "test", url: "http://test" });
+    privacyideaServerServiceMock.postPrivacyideaServer = jest.fn().mockRejectedValue(new Error("post-failed"));
+    // Clear any previous calls to close from setup
+    dialogRefMock.close.mockClear();
+
+    const success = await component.save();
+    expect(success).toBe(false);
+    expect(privacyideaServerServiceMock.postPrivacyideaServer).toHaveBeenCalled();
+    expect(dialogRefMock.close).not.toHaveBeenCalled();
   });
 
   it("should call test when form is valid", async () => {

@@ -20,11 +20,12 @@ import { Component, EventEmitter, Input, Output } from "@angular/core";
 import { ReactiveFormsModule } from "@angular/forms";
 import { MatIconModule } from "@angular/material/icon";
 import { MatIconButton } from "@angular/material/button";
+import { MatTooltipModule } from "@angular/material/tooltip";
 
 @Component({
   selector: "app-clearable-input",
   standalone: true,
-  imports: [ReactiveFormsModule, MatIconModule, MatIconButton],
+  imports: [ReactiveFormsModule, MatIconModule, MatIconButton, MatTooltipModule],
   templateUrl: "./clearable-input.component.html",
   styleUrl: "./clearable-input.component.scss"
 })

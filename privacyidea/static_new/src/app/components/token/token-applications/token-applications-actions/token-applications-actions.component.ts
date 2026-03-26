@@ -21,12 +21,13 @@ import { Component, inject } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
 import { MatMenuModule } from "@angular/material/menu";
+import { MatTooltipModule } from "@angular/material/tooltip";
 import { MachineService, MachineServiceInterface } from "../../../../services/machine/machine.service";
 
 @Component({
   selector: "app-token-applications-actions",
   standalone: true,
-  imports: [MatButtonModule, MatIconModule, MatMenuModule],
+  imports: [MatButtonModule, MatIconModule, MatMenuModule, MatTooltipModule],
   templateUrl: "./token-applications-actions.component.html",
   styleUrls: ["./token-applications-actions.component.scss"]
 })

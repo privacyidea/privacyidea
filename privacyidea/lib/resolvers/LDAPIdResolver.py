@@ -831,7 +831,8 @@ class IdResolver(UserIdResolver):
     def getUserList(self, search_dict: dict = None, attributes: list[str] = None) -> list[dict]:
         """
         :param search_dict: A dictionary with search parameters
-        :param attributes: list of attributes to be returned for each user
+        :param attributes: list of attributes to be returned for each user. If None or an empty list, all attributes
+            are returned
         :return: list of users, where each user is a dictionary
         """
         user_list = []

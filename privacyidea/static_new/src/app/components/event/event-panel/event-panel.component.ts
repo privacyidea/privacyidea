@@ -21,7 +21,7 @@ import {
   AfterViewInit,
   ChangeDetectionStrategy,
   Component,
-  computed,
+  computed, DestroyRef,
   effect,
   ElementRef,
   inject,
@@ -58,6 +58,8 @@ import { MatTooltip } from "@angular/material/tooltip";
 import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
 import { DialogService, DialogServiceInterface } from "../../../services/dialog/dialog.service";
 import { SaveAndExitDialogComponent } from "../../shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
+import { NAVIGATION_ACCESSIBLE_DIALOG_CLASS } from "../../../constants/global.constants";
+import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 
 export type eventTab = "events" | "action" | "conditions";
 
@@ -93,6 +95,9 @@ export type eventTab = "events" | "action" | "conditions";
     CopyButtonComponent
   ],
   standalone: true,
+  host: {
+    class: NAVIGATION_ACCESSIBLE_DIALOG_CLASS
+  },
   templateUrl: "./event-panel.component.html",
   styleUrl: "./event-panel.component.scss",
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -107,6 +112,7 @@ export class EventPanelComponent implements AfterViewInit, OnDestroy {
   protected readonly renderer: Renderer2 = inject(Renderer2);
   private readonly contentService = inject(ContentService);
   public readonly dialogRef = inject(MatDialogRef<EventPanelComponent>, { optional: true });
+  private readonly destroyRef = inject(DestroyRef);
 
   private observer!: IntersectionObserver;
 
@@ -133,10 +139,10 @@ export class EventPanelComponent implements AfterViewInit, OnDestroy {
     // Avoid closing the dialog with pending changes (when clicking next to the dialog or pressing ESC)
     if (this.dialogRef) {
       this.dialogRef.disableClose = true;
-      this.dialogRef.backdropClick().subscribe(() => {
+      this.dialogRef.backdropClick().pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
         this.cancelEdit();
       });
-      this.dialogRef.keydownEvents().subscribe((event) => {
+      this.dialogRef.keydownEvents().pipe(takeUntilDestroyed(this.destroyRef)).subscribe((event) => {
         if (event.key === "Escape") {
           this.cancelEdit();
         }
@@ -144,6 +150,8 @@ export class EventPanelComponent implements AfterViewInit, OnDestroy {
     }
 
     this.pendingChangesService.registerHasChanges(() => this.hasChanges());
+    this.pendingChangesService.registerSave(this.saveEvent.bind(this));
+    this.pendingChangesService.registerValidChanges(this.canSave.bind(this));
 
     // Close the dialog when navigating away from the events route
     // However, changing the route is disabled via the pendingChangesGuard when there are unsaved changes. This effect
@@ -182,7 +190,7 @@ export class EventPanelComponent implements AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.pendingChangesService.unregisterHasChanges();
+    this.pendingChangesService.clearAllRegistrations();
     if (this.observer) {
       this.observer.disconnect();
     }
@@ -302,24 +310,32 @@ export class EventPanelComponent implements AfterViewInit, OnDestroy {
     return eventParams;
   }
 
-  saveEvent(): void {
-    let eventParams = this.getSaveParameters();
-    if (this.isNewEvent()) {
-      // new event handler do not yet have an ID
-      delete eventParams["id"];
-    }
-    this.eventService.saveEventHandler(eventParams).subscribe({
-      next: (response) => {
-        if (response?.result?.value !== undefined) {
-          this.eventService.allEventsResource.reload();
-          this.dialogRef?.close();
-          if (this.isNewEvent()) {
-            this.notificationService.openSnackBar("Event handler created successfully.");
-          } else {
-            this.notificationService.openSnackBar("Event handler updated successfully.");
-          }
-        }
+  saveEvent(): Promise<boolean> {
+    return new Promise((resolve) => {
+      let eventParams = this.getSaveParameters();
+      if (this.isNewEvent()) {
+        // new event handler do not yet have an ID
+        delete eventParams["id"];
       }
+      this.eventService.saveEventHandler(eventParams).subscribe({
+        next: (response) => {
+          if (response?.result?.value !== undefined) {
+            this.eventService.allEventsResource.reload();
+            this.dialogRef?.close();
+            if (this.isNewEvent()) {
+              this.notificationService.openSnackBar("Event handler created successfully.");
+            } else {
+              this.notificationService.openSnackBar("Event handler updated successfully.");
+            }
+            resolve(true);
+          } else {
+            resolve(false);
+          }
+        },
+        error: () => {
+          resolve(false);
+        }
+      });
     });
   }
 

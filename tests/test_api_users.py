@@ -680,7 +680,8 @@ class APIUsersTestCase(MyApiTestCase):
         # Request without realm does not return custom attributes
         with self.app.test_request_context('/user/',
                                            method='GET',
-                                           query_string=urlencode({"username": "cornelius", "resolver": self.resolvername1}),
+                                           query_string=urlencode(
+                                               {"username": "cornelius", "resolver": self.resolvername1}),
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
@@ -698,7 +699,8 @@ class APIUsersTestCase(MyApiTestCase):
             self.assertEqual("user@localhost.localdomain", user.get("email"))
             self.assertEqual("+491234566", user.get("phone"))
             self.assertEqual("+491111111", user.get("mobile"))
-            self.assertEqual("Cornelius,field2,+491111111,+491234566,user@localhost.localdomain", user.get("description"))
+            self.assertEqual("Cornelius,field2,+491111111,+491234566,user@localhost.localdomain",
+                             user.get("description"))
             self.assertEqual(self.resolvername1, user.get("resolver"))
             self.assertEqual(False, user.get("editable"))
 
@@ -735,7 +737,8 @@ class APIUsersTestCase(MyApiTestCase):
         with self.app.test_request_context('/user/',
                                            method='GET',
                                            query_string=urlencode(
-                                               {"username": "cornelius", "realm": self.realm1, "attributes": "username,email"}),
+                                               {"username": "cornelius", "realm": self.realm1,
+                                                "attributes": "username,email"}),
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
@@ -745,11 +748,12 @@ class APIUsersTestCase(MyApiTestCase):
             # should contain all attributes ( resolver and editable are added on lib layer not by the resolver itself)
             self.assertDictEqual({"username": "cornelius", "email": "user@localhost.localdomain"}, user)
 
-        # Request specific attributes with editable which is not set in the resolver itself
+        # Request specific attributes with editable and resolver which are not set in the user store itself
         with self.app.test_request_context('/user/',
                                            method='GET',
                                            query_string=urlencode(
-                                               {"username": "cornelius", "realm": self.realm1, "attributes": "username,email,editable"}),
+                                               {"username": "cornelius", "realm": self.realm1,
+                                                "attributes": "username,email,editable,resolver"}),
                                            headers={'Authorization': self.at}):
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == 200, res)
@@ -757,8 +761,8 @@ class APIUsersTestCase(MyApiTestCase):
             self.assertTrue(result.get("status"))
             user = result.get("value")[0]
             # should contain all attributes ( resolver and editable are added on lib layer not by the resolver itself)
-            self.assertDictEqual({"username": "cornelius", "email": "user@localhost.localdomain", "editable": False},
-                                 user)
+            self.assertDictEqual({"username": "cornelius", "email": "user@localhost.localdomain", "editable": False,
+                                  "resolver": self.resolvername1}, user)
 
         # Request specific attributes with custom attributes
         with self.app.test_request_context('/user/',
@@ -774,7 +778,7 @@ class APIUsersTestCase(MyApiTestCase):
             user = result.get("value")[0]
             # should contain all attributes ( resolver and editable are added on lib layer not by the resolver itself)
             expected_user = {"username": "cornelius", "email": "user@localhost.localdomain", "custom1": "value1",
-                 "custom2": "value2"}
+                             "custom2": "value2"}
             self.assertDictEqual(expected_user, user)
 
         # Clean up

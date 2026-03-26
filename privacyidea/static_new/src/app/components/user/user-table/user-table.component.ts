@@ -55,6 +55,7 @@ import { RouterLink } from "@angular/router";
 import { UserTableActionsComponent } from "./user-table-actions/user-table-actions.component";
 import { MatIcon } from "@angular/material/icon";
 import { MatIconButton } from "@angular/material/button";
+import { MatTooltipModule } from "@angular/material/tooltip";
 import { MatDialog } from "@angular/material/dialog";
 import { Resolver, ResolverService } from "../../../services/resolver/resolver.service";
 import { UserNewResolverComponent } from "../user-new-resolver/user-new-resolver.component";
@@ -97,7 +98,8 @@ const columnKeysMap = [
     ClearableInputComponent,
     RouterLink,
     MatIcon,
-    MatIconButton
+    MatIconButton,
+    MatTooltipModule
   ],
   templateUrl: "./user-table.component.html",
   styleUrl: "./user-table.component.scss"

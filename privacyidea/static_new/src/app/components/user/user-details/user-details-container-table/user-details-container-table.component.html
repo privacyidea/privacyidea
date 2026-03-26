@@ -80,6 +80,7 @@
 
           <td
             *matCellDef="let element"
+            [ngClass]="{ 'input-width-l': column.key === 'description' }"
             attr.aria-label="{{ column.label }} Cell"
             mat-cell>
 

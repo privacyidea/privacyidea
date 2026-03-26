@@ -847,6 +847,8 @@ class HTTPResolver(UserIdResolver):
         Maps the attributes from the user store to the attributes used in privacyidea.
 
         :param user: Dictionary containing user attributes from the user store
+        :param attributes: List of attributes to be included in the returned dictionary. If None or an empty list, all
+            attributes are included.
         :return: Dictionary containing user attributes mapped to privacyidea
         """
         pi_user = {}
@@ -861,12 +863,19 @@ class HTTPResolver(UserIdResolver):
         if not attributes:
             attributes = self.attribute_mapping_pi_to_user_store.keys()
 
-        for pi_attribute in attributes:
+        unknown_attributes = set(attributes).difference(set(self.get_available_info_keys()))
+        known_attributes = set(attributes) - unknown_attributes
+        if unknown_attributes:
+            unknown_attributes = ", ".join(unknown_attributes)
+            log.debug(
+                "No mapping for privacyidea attributes %s found. They are excluded from the user info dictionary.",
+                unknown_attributes)
+        for pi_attribute in known_attributes:
             user_store_attribute = self.attribute_mapping_pi_to_user_store.get(pi_attribute)
             if user_store_attribute:
                 pi_user[pi_attribute] = user.get(user_store_attribute, "")
             else:
-                log.debug(f"No mapping for privacyidea attribute '{pi_attribute}' found.")
+                log.debug("No mapping for privacyidea attribute '%s' found.", pi_attribute)
 
         return pi_user
 

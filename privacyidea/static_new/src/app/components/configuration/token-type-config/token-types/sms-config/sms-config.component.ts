@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, input } from "@angular/core";
+import { Component, input, output } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { FormsModule } from "@angular/forms";
 import { MatExpansionModule } from "@angular/material/expansion";
@@ -25,6 +25,8 @@ import { MatInputModule } from "@angular/material/input";
 import { MatSelectModule } from "@angular/material/select";
 import { RouterLink } from "@angular/router";
 import { ROUTE_PATHS } from "../../../../../route_paths";
+import { ClearButtonComponent } from "@components/shared/clear-button/clear-button.component";
+import { SMS_GATEWAY, SMS_PROVIDER_TIMEOUT } from "../../../../../constants/token.constants";
 
 @Component({
   selector: "app-sms-config",
@@ -36,18 +38,28 @@ import { ROUTE_PATHS } from "../../../../../route_paths";
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
-    RouterLink
+    RouterLink,
+    ClearButtonComponent
   ],
   templateUrl: "./sms-config.component.html",
   styleUrl: "./sms-config.component.scss"
 })
 export class SmsConfigComponent {
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
+  protected readonly SMS_GATEWAY = SMS_GATEWAY;
+  protected readonly SMS_PROVIDER_TIMEOUT = SMS_PROVIDER_TIMEOUT;
+
   formData = input.required<Record<string, any>>();
+  formDataChange = output<Record<string, any>>();
   smsGateways = input.required<string[]>();
   expanded = input<boolean>(false);
-  providerName = computed(() => {
-    const provider = this.formData()["sms.Provider"];
-    return provider ? provider.split(".").pop() : "";
-  });
+
+  updateFormData(fieldName: string, value: any): void {
+    const newValue = { ...this.formData(), [fieldName]: value };
+    this.formDataChange.emit(newValue);
+  }
+
+  clearField(fieldName: string): void {
+    this.updateFormData(fieldName, "");
+  }
 }

@@ -763,7 +763,7 @@ def get_user_list(param: dict = None, user: User = None, include_custom_attribut
     :param param: search parameters
     :param user:  a specific user object to return
     :param include_custom_attributes:  Set to True, if you want to receive custom attributes of external users.
-    :param requested_attributes: A list of attributes to return for each user. If None, all attributes are returned.
+    :param requested_attributes: A list of attributes to return for each user. If None or empty, all attributes are returned.
     :return: list of user info as dictionaries
     """
     users = []
@@ -834,13 +834,15 @@ def get_user_list(param: dict = None, user: User = None, include_custom_attribut
             if not resolver:
                 continue
             log.debug("With this search dictionary: %r", search_dict)
-            user_list = resolver.getUserList(search_dict, requested_attributes)
+            requested_pi_user_attributes = list({"resolver", "editable"}.intersection(requested_attributes or []))
+            requested_user_store_attributes = list(set(requested_attributes or []) - set(requested_pi_user_attributes))
+            user_list = resolver.getUserList(search_dict, requested_user_store_attributes)
             # Add resolvername to the list
             realm_id = get_realm_id(param_realm or user_realm)
             for user_info in user_list:
-                if not requested_attributes or "resolver" in requested_attributes:
+                if not requested_attributes or "resolver" in requested_pi_user_attributes:
                     user_info["resolver"] = resolver_name
-                if not requested_attributes or "editable" in requested_attributes:
+                if not requested_attributes or "editable" in requested_pi_user_attributes:
                     user_info["editable"] = resolver.editable
                 if include_custom_attributes and realm_id is not None:
                     # Add the custom attributes, by class method from User
@@ -920,3 +922,4 @@ def is_attribute_at_all() -> bool:
     Check if there are custom user attributes at all
     """
     return bool(CustomUserAttribute.query.count())
+

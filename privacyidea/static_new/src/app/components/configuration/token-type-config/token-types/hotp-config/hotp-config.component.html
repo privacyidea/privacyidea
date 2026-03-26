@@ -38,11 +38,16 @@
         appearance="fill"
         class="input-width-m">
         <mat-label i18n>Default Hashlib</mat-label>
-        <mat-select [(ngModel)]="formData()['hotp.hashlib']">
+        <mat-select
+          [ngModel]="formData()[HOTP_HASHLIB]"
+          (ngModelChange)="updateFormData(HOTP_HASHLIB, $event)">
           @for (hashlib of hashLibs(); track hashlib) {
             <mat-option [value]="hashlib">{{ hashlib }}</mat-option>
           }
         </mat-select>
+        <app-clear-button
+          matSuffix
+          (onClick)="clearField(HOTP_HASHLIB); $event.stopPropagation()"></app-clear-button>
       </mat-form-field>
     </div>
   </div>

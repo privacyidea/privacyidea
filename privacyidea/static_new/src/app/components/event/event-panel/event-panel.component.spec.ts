@@ -22,19 +22,28 @@ import { provideHttpClient } from "@angular/common/http";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MockEventService } from "../../../../testing/mock-services/mock-event-service";
 import { EMPTY_EVENT, EventService } from "../../../services/event/event.service";
-import { MockDialogService, MockNotificationService } from "../../../../testing/mock-services";
+import {
+  MockDialogService,
+  MockNotificationService,
+  MockPendingChangesService
+} from "../../../../testing/mock-services";
 import { NotificationService } from "../../../services/notification/notification.service";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { of, Subject } from "rxjs";
 import { MockMatDialogRef } from "../../../../testing/mock-mat-dialog-ref";
 import { DialogService } from "../../../services/dialog/dialog.service";
 import { SaveAndExitDialogResult } from "../../shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
+import { PendingChangesService } from "../../../services/pending-changes/pending-changes.service";
 
 global.IntersectionObserver = class IntersectionObserver {
   constructor() {}
+
   disconnect() {}
+
   observe() {}
+
   unobserve() {}
+
   takeRecords() {
     return [];
   }
@@ -55,10 +64,8 @@ describe("EventPanelComponent", () => {
         provideHttpClient(),
         { provide: EventService, useClass: MockEventService },
         { provide: NotificationService, useClass: MockNotificationService },
-        {
-          provide: DialogService,
-          useClass: MockDialogService
-        },
+        { provide: DialogService, useClass: MockDialogService },
+        { provide: PendingChangesService, useClass: MockPendingChangesService },
         {
           provide: MatDialogRef,
           useValue: {

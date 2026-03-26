@@ -37,9 +37,7 @@ import {
   NotificationServiceInterface
 } from "../../../../services/notification/notification.service";
 import { SystemService, SystemServiceInterface } from "../../../../services/system/system.service";
-
-export const HOTP_HASHLIB = "hotp.hashlib";
-export const HOTP_OTP_LENGTH = "hotp.otplen";
+import { HOTP_HASHLIB, HOTP_OTP_LENGTH } from "../../../../constants/token.constants";
 
 export interface HotpEnrollmentOptions extends TokenEnrollmentData {
   type: "hotp";
@@ -97,7 +95,7 @@ export class EnrollHotpComponent implements OnInit {
   generateOnServerFormControl = new FormControl<boolean>(true, [Validators.required]);
   otpLengthFormControl = new FormControl<number>(6, [Validators.required]);
   otpKeyFormControl = new FormControl<string>({ value: "", disabled: true });
-  defaultHashlib = computed(() => this.systemService.systemConfig()[HOTP_HASHLIB] ?? "sha1");
+  defaultHashlib = computed(() => this.systemService.systemConfig()[HOTP_HASHLIB] || "sha1");
   hashAlgorithmFormControl = new FormControl<string>(this.defaultHashlib(), [Validators.required]);
 
   constructor() {

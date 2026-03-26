@@ -17,11 +17,11 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, input, output } from "@angular/core";
+import { Component, inject, input, output } from "@angular/core";
 import { assert } from "../../../../utils/assert";
 import { DialogAction } from "../../../../models/dialog";
 import { CommonModule } from "@angular/common";
-import { MatDialogClose, MatDialogModule } from "@angular/material/dialog";
+import { MatDialogModule, MatDialogRef } from "@angular/material/dialog";
 import { MatIcon, MatIconModule } from "@angular/material/icon";
 import { MatButton } from "@angular/material/button";
 import { A11yModule } from "@angular/cdk/a11y";
@@ -30,21 +30,34 @@ import { A11yModule } from "@angular/cdk/a11y";
   selector: "app-dialog-wrapper",
   templateUrl: "./dialog-wrapper.component.html",
   standalone: true,
-  imports: [CommonModule, MatDialogModule, MatIconModule, MatButton, MatDialogClose, MatIcon, A11yModule],
+  imports: [CommonModule, MatDialogModule, MatIconModule, MatButton, MatIcon, A11yModule],
   styleUrls: ["./dialog-wrapper.component.scss"]
 })
 export class DialogWrapperComponent<R = any> {
+  private readonly dialogRef = inject(MatDialogRef);
+
   title = input.required<string>();
   icon = input<string>();
   showCancelButton = input<boolean>(false);
   cancelButtonLabel = input<string>("Cancel");
   cancelButtonPrimary = input<boolean>(false);
+  handleCloseExternally = input<boolean>(false);
   actions = input<DialogAction<R>[]>([]);
   onAction = output<R>();
   close = output<void>();
 
   onActionClick(action: DialogAction<R>): void {
     this.onAction.emit(action.value);
+  }
+
+  onCancelClick(): void {
+    if (this.handleCloseExternally()) {
+      // Emit the close event and let the parent handle it
+      this.close.emit();
+    } else {
+      // Close the dialog directly (default behavior)
+      this.dialogRef.close();
+    }
   }
 
   ngOnInit() {

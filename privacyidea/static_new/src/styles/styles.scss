@@ -642,35 +642,41 @@ body {
   }
 
   .cdk-overlay-container {
-    margin-left: 297px;
-    width: calc(100% - 297px);
-
-    .mat-mdc-select-panel {
-      margin-left: -297px;
-    }
-
-    .mat-mdc-autocomplete-panel {
-      margin-left: -297px;
-    }
-
-    .mat-mdc-menu-panel {
-      margin-left: -297px;
-    }
-
-    .mat-mdc-tooltip {
-      margin-left: -340px;
-    }
-
-    &:has(.welcome-dialog-panel),
-    &:has(.global-dialog-panel) {
+    // Handle special case: navigation blocking dialog wins over navigation accessible dialog, e.g. confirmation dialog
+    // over resolver edit
+    &:has(.nav-accessible-dialog):has(.nav-blocking-dialog) {
       margin-left: 0;
       width: 100%;
 
-      .mat-mdc-select-panel,
-      .mat-mdc-autocomplete-panel,
-      .mat-mdc-menu-panel,
+      // Keep shift for dialog position to avoid layout jumps
+      .mat-mdc-dialog-panel {
+        margin-left: 297px;
+      }
+    }
+
+    // Dialogs where navigation should remain accessible get shifted
+    &:has(.nav-accessible-dialog) {
+      margin-left: 297px;
+      width: calc(100% - 297px);
+    }
+
+    // Shift back components which could be contained in the dialog to be correctly aligned
+    &:has(.nav-accessible-dialog):has(.nav-blocking-dialog),
+    &:has(.nav-accessible-dialog) {
+      .mat-mdc-select-panel {
+        margin-left: -297px;
+      }
+
+      .mat-mdc-autocomplete-panel {
+        margin-left: -297px;
+      }
+
+      .mat-mdc-menu-panel {
+        margin-left: -297px;
+      }
+
       .mat-mdc-tooltip {
-        margin-left: 0;
+        margin-left: -340px;
       }
     }
   }

@@ -54,7 +54,9 @@
                 <button
                   (click)="tableUtilsService.onSortButtonClick(column.key, sort)"
                   class="sort-button"
+                  i18n-matTooltip
                   mat-icon-button
+                  matTooltip="Sort by {{ column.label }}"
                   type="button">
                   <mat-icon>{{ tableUtilsService.getSortIcon(column.key, sort()) }}</mat-icon>
                 </button>

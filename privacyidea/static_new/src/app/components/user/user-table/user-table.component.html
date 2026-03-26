@@ -67,7 +67,9 @@
                   <button
                     (click)="onFilterClick(column.key)"
                     class="filter-button"
+                    i18n-matTooltip
                     mat-icon-button
+                    matTooltip="Filter by {{ column.label }}"
                     type="button">
                     <mat-icon class="keyword-button-icon margin-left-0">
                       {{ getFilterIconName(column.key) }}
@@ -77,7 +79,9 @@
                 <button
                   (click)="tableUtilsService.onSortButtonClick(column.key, sort)"
                   class="sort-button"
+                  i18n-matTooltip
                   mat-icon-button
+                  matTooltip="Sort by {{ column.label }}"
                   type="button">
                   <mat-icon>{{ tableUtilsService.getSortIcon(column.key, sort()) }}</mat-icon>
                 </button>

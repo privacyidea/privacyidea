@@ -24,8 +24,8 @@
   @if (authService.actionAllowed("container_list")) {
     <div class="filter-paginator-container">
       <mat-form-field
-        subscriptSizing="dynamic"
-        class="container-table-filter">
+        class="container-table-filter"
+        subscriptSizing="dynamic">
         <mat-label i18n>Filter Containers...</mat-label>
         <app-clearable-input
           (onClick)="containerService.clearFilter()"
@@ -81,20 +81,37 @@
                   {{ column.label }}
                   <div class="margin-left-16 flex">
                     @if (apiFilterKeyMap[column.key] && containerService.apiFilter.includes(apiFilterKeyMap[column.key])) {
-                      <button
-                        (click)="onKeywordClick(apiFilterKeyMap[column.key])"
-                        class="filter-button"
-                        mat-icon-button
-                        type="button">
-                        <mat-icon class="keyword-button-icon margin-left-0">
-                          {{ getFilterIconName(apiFilterKeyMap[column.key]) }}
-                        </mat-icon>
-                      </button>
+                      @if (apiFilterKeyMap[column.key] === "type") {
+                        <button
+                          [matMenuTriggerData]="{ keyword: apiFilterKeyMap[column.key] }"
+                          [matMenuTriggerFor]="typeMenu"
+                          class="filter-button"
+                          i18n-matTooltip
+                          mat-icon-button
+                          matTooltip="Filter by type"
+                          type="button">
+                          <mat-icon class="keyword-button-icon margin-left-0"> filter_list</mat-icon>
+                        </button>
+                      } @else {
+                        <button
+                          (click)="onKeywordClick(apiFilterKeyMap[column.key])"
+                          class="filter-button"
+                          i18n-matTooltip
+                          mat-icon-button
+                          matTooltip="Toggle filter"
+                          type="button">
+                          <mat-icon class="keyword-button-icon margin-left-0">
+                            {{ getFilterIconName(apiFilterKeyMap[column.key]) }}
+                          </mat-icon>
+                        </button>
+                      }
                     }
                     <button
                       (click)="tableUtilsService.onSortButtonClick(column.key, sort)"
                       class="sort-button"
+                      i18n-matTooltip
                       mat-icon-button
+                      matTooltip="Sort by column"
                       type="button">
                       <mat-icon>{{ tableUtilsService.getSortIcon(column.key, sort()) }}</mat-icon>
                     </button>
@@ -227,3 +244,26 @@
     <div i18n>You do not have the permission to view the container list.</div>
   }
 </div>
+
+<mat-menu
+  #typeMenu="matMenu"
+  class="token-table-filter-menu">
+  <ng-template
+    let-keyword="keyword"
+    matMenuContent>
+    <button
+      (click)="onItemSelected(keyword, undefined)"
+      mat-menu-item>
+      <mat-icon>filter_alt_off</mat-icon>
+      <span i18n>Clear Filter</span>
+    </button>
+    <mat-divider />
+    @for (type of containerService.containerTypeOptions(); track type.containerType) {
+      <button
+        (click)="onItemSelected(keyword, type.containerType)"
+        mat-menu-item>
+        {{ type.containerType }}
+      </button>
+    }
+  </ng-template>
+</mat-menu>

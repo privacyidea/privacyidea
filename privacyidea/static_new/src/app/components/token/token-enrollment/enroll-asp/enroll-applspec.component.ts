@@ -16,12 +16,12 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, effect, EventEmitter, inject, input, Input, OnInit, Output } from "@angular/core";
+import { Component, computed, EventEmitter, inject, input, Input, OnInit, Output } from "@angular/core";
 import { toSignal } from "@angular/core/rxjs-interop";
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { ErrorStateMatcher, MatOption } from "@angular/material/core";
-import { MatFormField, MatLabel, MatError } from "@angular/material/form-field";
+import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
 import { MatSelect } from "@angular/material/select";
 import { ServiceIdService, ServiceIdServiceInterface } from "../../../../services/service-id/service-id.service";
@@ -85,7 +85,7 @@ export class EnrollApplspecComponent implements OnInit {
 
   serviceIdControl = new FormControl<string>("", { nonNullable: true, validators: [Validators.required] });
   generateOnServerControl = new FormControl<boolean>(true, { nonNullable: true, validators: [Validators.required] });
-  otpKeyFormControl = new FormControl<string>("", { nonNullable: true });
+  otpKeyFormControl = new FormControl<string>({ value: "", disabled: true }, { nonNullable: true });
 
   applspecForm = new FormGroup({
     serviceId: this.serviceIdControl,

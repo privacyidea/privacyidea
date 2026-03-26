@@ -60,11 +60,15 @@
     <button
       [matMenuTriggerFor]="advancedFilterMenu"
       class="action-button-secondary button-width-m"
-      mat-stroked-button>
+      i18n-matTooltip
+      mat-stroked-button
+      matTooltip="More Filter">
       <mat-icon> filter_list</mat-icon>
       More Filter
     </button>
-    <mat-menu #advancedFilterMenu="matMenu">
+    <mat-menu
+      #advancedFilterMenu="matMenu"
+      class="token-table-filter-menu">
       @for (keyword of advancedApiFilter; track keyword) {
         <button
           (click)="onAdvancedFilterClick(keyword)"

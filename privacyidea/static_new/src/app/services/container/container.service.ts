@@ -252,7 +252,7 @@ export class ContainerService implements ContainerServiceInterface {
 
   filterParams = computed<Record<string, string>>(() => {
     const allowed = [...this.apiFilter, ...this.advancedApiFilter];
-    const plainKeys = new Set(["user"]);
+    const plainKeys = new Set(["user", "type"]);
 
     const entries = Array.from(this.containerFilter().filterMap.entries())
       .filter(([key]) => allowed.includes(key))
@@ -418,6 +418,7 @@ export class ContainerService implements ContainerServiceInterface {
   containerTypesResource = httpResource<PiResponse<ContainerTypes>>(() => {
     // Only load container types on routes with a container type list or selection.
     const onAllowedRoute =
+      this.contentService.onTokensContainers() ||
       this.contentService.onTokensContainersCreate() ||
       this.contentService.onTokensContainersWizard() ||
       this.contentService.onTokensEnrollment() ||

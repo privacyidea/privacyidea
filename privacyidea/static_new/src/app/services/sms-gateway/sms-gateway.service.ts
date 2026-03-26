@@ -63,18 +63,18 @@ export interface SmsGatewayServiceInterface {
   providedIn: "root"
 })
 export class SmsGatewayService implements SmsGatewayServiceInterface {
-  private readonly baseUrl = environment.proxyUrl + "/smsgateway/";
+  private readonly baseUrl = environment.proxyUrl + "/smsgateway";
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly http: HttpClient = inject(HttpClient);
 
   readonly smsGatewayResource = httpResource<PiResponse<SmsGateway[]>>(() => {
-    if (!this.contentService.onExternalSms()) {
+    if (!this.contentService.onExternalSms() && !this.contentService.onConfigurationTokenTypes()) {
       return undefined;
     }
     return {
-      url: this.baseUrl,
+      url: this.baseUrl + "/",
       method: "GET",
       headers: this.authService.getHeaders()
     };
@@ -85,7 +85,7 @@ export class SmsGatewayService implements SmsGatewayServiceInterface {
       return undefined;
     }
     return {
-      url: this.baseUrl + "providers",
+      url: this.baseUrl + "/providers",
       method: "GET",
       headers: this.authService.getHeaders()
     };
@@ -110,7 +110,7 @@ export class SmsGatewayService implements SmsGatewayServiceInterface {
   }
 
   async deleteSmsGateway(name: string): Promise<void> {
-    const request = this.http.delete<PiResponse<any>>(`${this.baseUrl}${name}`, {
+    const request = this.http.delete<PiResponse<any>>(`${this.baseUrl}/${name}`, {
       headers: this.authService.getHeaders()
     });
     return lastValueFrom(request)

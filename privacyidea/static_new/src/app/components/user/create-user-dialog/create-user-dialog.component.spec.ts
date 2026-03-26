@@ -33,6 +33,7 @@ import {
 import { MockResolverService } from "../../../../testing/mock-services/mock-resolver-service";
 import { DialogService } from "../../../services/dialog/dialog.service";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
+import { MockMatDialogRef } from "../../../../testing/mock-mat-dialog-ref";
 
 describe("CreateUserDialogComponent", () => {
   let component: CreateUserDialogComponent;
@@ -41,12 +42,10 @@ describe("CreateUserDialogComponent", () => {
   let mockRealmService: MockRealmService;
   let mockResolverService: MockResolverService;
   let mockNotificationService: MockNotificationService;
-  let dialogRef: { close: jest.Mock };
 
   const mockData = { realm: "realmA" };
 
   beforeEach(async () => {
-    dialogRef = { close: jest.fn() };
     await TestBed.configureTestingModule({
       imports: [CreateUserDialogComponent],
       providers: [
@@ -56,7 +55,7 @@ describe("CreateUserDialogComponent", () => {
         { provide: NotificationService, useClass: MockNotificationService },
         { provide: DialogService, useClass: MockDialogService },
         { provide: MAT_DIALOG_DATA, useValue: mockData },
-        { provide: MatDialogRef, useValue: dialogRef }
+        { provide: MatDialogRef, useClass: MockMatDialogRef }
       ]
     })
       .compileComponents();
@@ -168,4 +167,14 @@ describe("CreateUserDialogComponent", () => {
     expect(component.correspondingRealms()).toContain("realmA");
     expect(component.correspondingRealms()).not.toContain("realmB");
   });
+
+  it("editUserDataIsEmpty should be true when it is completely empty only", () => {
+    expect(component.editUserDataIsEmpty()).toBe(true);
+
+    component.editedUserData.set({username: "test", email: ""})
+    expect(component.editUserDataIsEmpty()).toBe(false);
+
+    component.editedUserData.set({username: "", email: ""})
+    expect(component.editUserDataIsEmpty()).toBe(true);
+  })
 });

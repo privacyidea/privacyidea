@@ -144,7 +144,11 @@ class PasswdResolverTest(MyTestCase):
         self.assertFalse(self.resolver.check_attribute(line, "", "unknownattribute"))
 
     def test_10_get_user_info(self):
+        all_attributes = {"username", "userid", "description", "email", "givenname", "surname", "phone", "mobile",
+                          "cryptpass"}
+
         user_info = self.resolver.get_user_info("1001")
+        self.assertSetEqual(all_attributes, set(user_info.keys()))
         self.assertEqual("shadow", user_info.get("username"))
         self.assertEqual("1001", user_info.get("userid"))
         self.assertEqual("x", user_info.get("cryptpass"))
@@ -154,6 +158,10 @@ class PasswdResolverTest(MyTestCase):
         self.assertEqual("", user_info.get("surname"))
         self.assertEqual("", user_info.get("phone"))
         self.assertEqual("", user_info.get("mobile"))
+
+        # Empty attributes list should return all attributes
+        user_info = self.resolver.get_user_info("1001", attributes=[])
+        self.assertSetEqual(all_attributes, set(user_info.keys()))
 
         # Get unknown user
         user_info = self.resolver.get_user_info("9999")
@@ -168,5 +176,6 @@ class PasswdResolverTest(MyTestCase):
 
     def test_12_get_available_info_keys(self):
         available_attributes = self.resolver.get_available_info_keys()
-        self.assertSetEqual({"username", "userid", "description", "email", "givenname", "surname", "phone", "mobile", "cryptpass"},
-                            set(available_attributes))
+        self.assertSetEqual(
+            {"username", "userid", "description", "email", "givenname", "surname", "phone", "mobile", "cryptpass"},
+            set(available_attributes))

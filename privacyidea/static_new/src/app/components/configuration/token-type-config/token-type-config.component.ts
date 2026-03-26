@@ -51,7 +51,7 @@ import { TiqrConfigComponent } from "./token-types/tiqr-config/tiqr-config.compo
 import { EmailConfigComponent } from "./token-types/email-config/email-config.component";
 import { QuestionnaireConfigComponent } from "./token-types/questionnaire-config/questionnaire-config.component";
 import { YubicoConfigComponent } from "./token-types/yubico-config/yubico-config.component";
-import { YubikeyConfigComponent } from "./token-types/yubikey-config/yubikey-config.component";
+import { ApiKeyData, YubikeyConfigComponent } from "./token-types/yubikey-config/yubikey-config.component";
 import { DaypasswordConfigComponent } from "./token-types/daypassword-config/daypassword-config.component";
 import { takeUntilDestroyed, toSignal } from "@angular/core/rxjs-interop";
 import { ActivatedRoute } from "@angular/router";
@@ -205,7 +205,12 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit {
       next: (response) => {
         if (response?.result?.status) {
           this.notificationService.openSnackBar($localize`System entry deleted.`);
-          this.systemService.systemConfigResource.reload();
+          // Update entries in the formData but not reload the whole config to prevent losing unsaved changes
+          this.formData.update(f => {
+            const next = { ...f } as Record<string, any>;
+            delete next[key];
+            return next;
+          });
         } else {
           this.notificationService.openSnackBar($localize`Failed to delete system entry.`);
         }
@@ -216,26 +221,38 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit {
     });
   }
 
-  async yubikeyCreateNewKey(apiId: string) {
+  async yubikeyAddNewKey(apiKeyData: ApiKeyData) {
+    const apiId = apiKeyData.apiId;
+    const apiKey = apiKeyData.apiKey;
+    const generateKey = apiKeyData.generateKey;
+
     if (!apiId) {
       this.notificationService.openSnackBar($localize`Please enter a Client ID.`);
       return;
     }
-    try {
-      const response = await lastValueFrom(
-        this.http.get<PiResponse<string>>(
-          environment.proxyUrl + "/system/random?len=20&encode=b64",
-          { headers: this.authService.getHeaders() }
-        )
-      );
-      if (response?.result?.value) {
-        this.formData.update(f => ({
-          ...f,
-          [`yubikey.apiid.${apiId}`]: response.result?.value
-        }));
+
+    if (generateKey) {
+      try {
+        const response = await lastValueFrom(
+          this.http.get<PiResponse<string>>(
+            environment.proxyUrl + "/system/random?len=20&encode=b64",
+            { headers: this.authService.getHeaders() }
+          )
+        );
+        if (response?.result?.value) {
+          this.formData.update(f => ({
+            ...f,
+            [`yubikey.apiid.${apiId}`]: response.result?.value
+          }));
+        }
+      } catch (e) {
+        this.notificationService.openSnackBar($localize`Failed to generate API key.`);
       }
-    } catch (e) {
-      this.notificationService.openSnackBar($localize`Failed to generate API key.`);
+    } else {
+      this.formData.update(f => ({
+        ...f,
+        [`yubikey.apiid.${apiId}`]: apiKey
+      }));
     }
   }
 
