@@ -23,7 +23,7 @@ import { NotificationService } from "../../../services/notification/notification
 import { DialogService } from "../../../services/dialog/dialog.service";
 import { SaveAndExitDialogComponent } from "../../shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { ActivatedRoute, Router } from "@angular/router";
-import { of } from "rxjs";
+import { of, throwError } from "rxjs";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { MockResolverService } from "../../../../testing/mock-services/mock-resolver-service";
@@ -335,13 +335,13 @@ describe("UserNewResolverComponent", () => {
     component.resolverName = "err-res";
     component.resolverType = "passwdresolver";
     fixture.detectChanges();
-    const errorResponse = { message: "Network error", error: { result: { error: { message: "Detailed error" } } } };
-    resolverService.postResolver.mockReturnValue({
-      subscribe: (obs: any) => {
-        obs.error(errorResponse);
-        return { add: jest.fn() };
-      }
-    } as any);
+
+    const errorResponse = {
+      message: "Network error",
+      error: { result: { error: { message: "Detailed error" } } }
+    };
+    resolverService.postResolver.mockReturnValue(throwError(() => errorResponse));
+
     const notificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;
 
     const success = await component.onSave();
@@ -416,16 +416,15 @@ describe("UserNewResolverComponent", () => {
   it("should show error on test when subscription fails", async () => {
     component.resolverType = "passwdresolver";
     fixture.detectChanges();
+
     const errorResponse = { message: "Network error" };
-    resolverService.postResolverTest.mockReturnValue({
-      subscribe: (obs: any) => {
-        obs.error(errorResponse);
-        return { add: jest.fn() };
-      }
-    } as any);
+
+    resolverService.postResolverTest.mockReturnValue(throwError(() => errorResponse));
+
     const notificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;
 
     component.onTest();
+
     expect(notificationService.openSnackBar).toHaveBeenCalledWith(expect.stringContaining("Network error"));
   });
 
