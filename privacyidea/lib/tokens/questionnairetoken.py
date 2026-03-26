@@ -30,8 +30,8 @@ from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.log import log_with
 from privacyidea.lib.error import TokenAdminError
 import logging
-from privacyidea.models import Challenge
 from privacyidea.lib.challenge import get_challenges
+from privacyidea.lib.token import create_challenge
 from privacyidea.lib import _
 from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib.policy import SCOPE, GROUP, get_action_values_from_options
@@ -239,13 +239,12 @@ class QuestionnaireTokenClass(TokenClass):
         validity = int(get_from_config(lookup_for, validity))
 
         # Create the challenge in the database
-        db_challenge = Challenge(self.token.serial,
-                                 transaction_id=transactionid,
-                                 data=used_questions,
-                                 session=options.get("session"),
-                                 challenge=message,
-                                 validitytime=validity)
-        db_challenge.save()
+        db_challenge = create_challenge(self.token.serial,
+                                        transaction_id=transactionid,
+                                        data=used_questions,
+                                        session=options.get("session"),
+                                        challenge=message,
+                                        validitytime=validity)
         expiry_date = datetime.datetime.now() + \
                       datetime.timedelta(seconds=validity)
         reply_dict = {'attributes': {'valid_until': "{0!s}".format(expiry_date)}}

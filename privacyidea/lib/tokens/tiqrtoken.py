@@ -87,9 +87,8 @@ from privacyidea.lib.log import log_with
 from privacyidea.lib.crypto import generate_otpkey
 from privacyidea.lib.utils import create_img
 import logging
-from privacyidea.lib.token import get_one_token
+from privacyidea.lib.token import get_one_token, create_challenge
 from privacyidea.lib.error import ParameterError
-from privacyidea.models import Challenge
 from privacyidea.lib.tokens.ocra import OCRASuite
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.models import cleanup_challenges
@@ -415,13 +414,11 @@ class TiqrTokenClass(OcraTokenClass):
         challenge = os.create_challenge()
 
         # Create the challenge in the database
-        db_challenge = Challenge(self.token.serial,
-                                 transaction_id=transactionid,
-                                 challenge=challenge,
-                                 data=None,
-                                 session=options.get("session"),
-                                 validitytime=validity)
-        db_challenge.save()
+        db_challenge = create_challenge(self.token.serial,
+                                        transaction_id=transactionid,
+                                        challenge=challenge,
+                                        session=options.get("session"),
+                                        validitytime=validity)
 
         # Encode the user to UTF-8 and quote the result
         encoded_user_identifier = quote_plus(user_identifier.encode('utf-8'))

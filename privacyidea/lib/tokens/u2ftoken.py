@@ -40,14 +40,13 @@ from privacyidea.lib.log import log_with
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import (SCOPE, GROUP, comma_escape_text,
                                     get_action_values_from_options, Match)
-from privacyidea.lib.token import get_tokens
+from privacyidea.lib.token import get_tokens, create_challenge
 from privacyidea.lib.tokenclass import TokenClass, ClientMode, RolloutState
 from privacyidea.lib.tokens.u2f import (check_registration_data, url_decode,
                                         parse_registration_data, url_encode,
                                         parse_response_data, check_response,
                                         x509name_to_string)
 from privacyidea.lib.utils import is_true, hexlify_and_unicode, to_unicode, convert_imagefile_to_dataimage
-from privacyidea.models import Challenge
 
 __doc__ = """
 U2F is the "Universal 2nd Factor" specified by the FIDO Alliance.
@@ -470,13 +469,11 @@ class U2fTokenClass(TokenClass):
             nonce = binascii.unhexlify(challenge)
 
         # Create the challenge in the database
-        db_challenge = Challenge(self.token.serial,
-                                 transaction_id=transactionid,
-                                 challenge=challenge,
-                                 data=None,
-                                 session=options.get("session"),
-                                 validitytime=validity)
-        db_challenge.save()
+        db_challenge = create_challenge(self.token.serial,
+                                        transaction_id=transactionid,
+                                        challenge=challenge,
+                                        session=options.get("session"),
+                                        validitytime=validity)
         sec_object = self.token.get_otpkey()
         key_handle_hex = sec_object.getKey()
         key_handle_bin = binascii.unhexlify(key_handle_hex)

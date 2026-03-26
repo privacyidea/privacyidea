@@ -1,3 +1,11 @@
+from privacyidea.lib.cache.redis import (  # noqa: F401
+    get_redis,
+    cache_challenge,
+    evict_challenge,
+    get_challenges_from_cache,
+    ChallengeDTO,
+)
+
 POLICY_CACHE = None
 CONFIG_CACHE = None
 

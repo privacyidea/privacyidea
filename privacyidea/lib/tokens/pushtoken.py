@@ -62,7 +62,7 @@ from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import (SCOPE, GROUP, Match,
                                     get_action_values_from_options)
 from privacyidea.lib.smsprovider.SMSProvider import get_smsgateway, create_sms_instance
-from privacyidea.lib.token import get_one_token, init_token
+from privacyidea.lib.token import get_one_token, init_token, create_challenge
 from privacyidea.lib.tokenclass import (TokenClass, AuthenticationMode, ClientMode,
                                         RolloutState, ChallengeSession)
 from privacyidea.lib.tokens.push_types import (PushMode, PushPresenceOptions,
@@ -71,7 +71,7 @@ from privacyidea.lib.tokens.push_types import (PushMode, PushPresenceOptions,
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import create_img, b32encode_and_unicode
 from privacyidea.lib.utils import prepare_result, to_bytes, is_true, create_tag_dict
-from privacyidea.models import Challenge, Token, db
+from privacyidea.models import Token, db
 
 log = logging.getLogger(__name__)
 
@@ -1189,13 +1189,12 @@ class PushTokenClass(TokenClass):
                 validity = int(get_from_config(lookup_for, validity))
 
                 # Create the challenge in the database
-                db_challenge = Challenge(self.token.serial,
-                                         transaction_id=transactionid,
-                                         challenge=challenge,
-                                         data=data,
-                                         session=options.get("session"),
-                                         validitytime=validity)
-                db_challenge.save()
+                db_challenge = create_challenge(self.token.serial,
+                                               transaction_id=transactionid,
+                                               challenge=challenge,
+                                               data=data,
+                                               session=options.get("session"),
+                                               validitytime=validity)
                 self.challenge_janitor()
                 transactionid = db_challenge.transaction_id
 

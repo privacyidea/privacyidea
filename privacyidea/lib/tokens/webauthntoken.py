@@ -41,7 +41,7 @@ from privacyidea.lib.fido2.util import hash_credential_id, save_credential_id_ha
 from privacyidea.lib.log import log_with
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import SCOPE, GROUP
-from privacyidea.lib.token import get_tokens
+from privacyidea.lib.token import get_tokens, create_challenge as create_challenge_in_db
 from privacyidea.lib.tokenclass import TokenClass, ClientMode, RolloutState
 from privacyidea.lib.tokens.u2ftoken import IMAGES
 from privacyidea.lib.tokens.webauthn import (CoseAlgorithm, webauthn_b64_encode, WebAuthnRegistrationResponse,
@@ -458,7 +458,7 @@ native encoding of the language (usually utf-16).
 
 """
 
-from privacyidea.models import Challenge, TokenCredentialIdHash, db
+from privacyidea.models import TokenCredentialIdHash, db
 
 IMAGES = IMAGES
 
@@ -945,13 +945,12 @@ class WebAuthnTokenClass(TokenClass):
             nonce = self._get_nonce()
             data = {FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT: user_verification}
             # Create the challenge in the database
-            challenge = Challenge(serial=self.token.serial,
-                                  transaction_id=get_optional(params, "transaction_id"),
-                                  challenge=hexlify_and_unicode(nonce),
-                                  data=json.dumps(data),
-                                  session=get_optional(params, "session"),
-                                  validitytime=self._get_challenge_validity_time())
-            challenge.save()
+            challenge = create_challenge_in_db(self.token.serial,
+                                               transaction_id=get_optional(params, "transaction_id"),
+                                               challenge=hexlify_and_unicode(nonce),
+                                               data=json.dumps(data),
+                                               session=get_optional(params, "session"),
+                                               validitytime=self._get_challenge_validity_time())
 
             exclude_credential_ids = []
             if is_true(get_optional(params, FIDO2PolicyAction.AVOID_DOUBLE_REGISTRATION)):
@@ -1101,13 +1100,12 @@ class WebAuthnTokenClass(TokenClass):
         user_verification = get_required(options, FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT)
         data = {FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT: user_verification}
         # Create the challenge in the database
-        db_challenge = Challenge(serial=self.token.serial,
-                                 transaction_id=transactionid,
-                                 challenge=challenge,
-                                 data=json.dumps(data),
-                                 session=get_optional(options, "session"),
-                                 validitytime=self._get_challenge_validity_time())
-        db_challenge.save()
+        db_challenge = create_challenge_in_db(self.token.serial,
+                                              transaction_id=transactionid,
+                                              challenge=challenge,
+                                              data=json.dumps(data),
+                                              session=get_optional(options, "session"),
+                                              validitytime=self._get_challenge_validity_time())
 
         public_key_credential_request_options = WebAuthnAssertionOptions(
             challenge=webauthn_b64_encode(nonce),

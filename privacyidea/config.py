@@ -70,6 +70,8 @@ class ConfigKey:
     DB_NAME = "PI_DB_NAME"
     DB_EXTRA_PARAMS = "PI_DB_EXTRA_PARAMS"
 
+    REDIS_URL = "PI_REDIS_URL"
+
     AUDIT_SQL_URI = "PI_AUDIT_SQL_URI"
     AUDIT_SQL_OPTIONS = "PI_AUDIT_SQL_OPTIONS"
     AUDIT_POOL_SIZE = "PI_AUDIT_POOL_SIZE"
@@ -146,6 +148,7 @@ class DevelopmentConfig(Config):
     SECRET_KEY = os.environ.get(ConfigKey.SECRET_KEY) or 't0p s3cr3t'
     SQLALCHEMY_DATABASE_URI = os.environ.get(ConfigKey.DEV_DATABASE_URL) or \
                               'sqlite:///' + os.path.join(basedir, 'data-dev.sqlite')
+    PI_REDIS_URL = os.environ.get(ConfigKey.REDIS_URL) or 'redis://127.0.0.1:6379/0'
     PI_LOGLEVEL = logging.DEBUG
     PI_TRANSLATION_WARNING = "[Missing]"
 
@@ -279,6 +282,11 @@ class DockerConfig:
     if audit_key_private := _get_secrets_paths_from_environment("audit_key_private",
                                                                 ConfigKey.AUDIT_KEY_PRIVATE):
         PI_AUDIT_KEY_PRIVATE = audit_key_private
+
+    # Optional Redis cache - supports direct URL or file-based secret
+    # Set PI_REDIS_URL=redis://host:6379/0  or  PI_REDIS_URL_FILE=/run/secrets/redis_url
+    if redis_url := _get_secrets_from_environment(ConfigKey.REDIS_URL):
+        PI_REDIS_URL = redis_url
 
     PI_AUDIT_MODULE = "privacyidea.lib.auditmodules.sqlaudit"
     PI_AUDIT_SQL_TRUNCATE = True

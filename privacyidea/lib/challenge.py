@@ -34,6 +34,7 @@ import sqlalchemy
 from sqlalchemy import select, delete
 from sqlalchemy.sql import Select
 
+from .cache import get_challenges_from_cache
 from .log import log_with
 from .policies.actions import PolicyAction
 from .sqlutils import delete_matching_rows
@@ -45,15 +46,25 @@ log = logging.getLogger(__name__)
 
 
 @log_with(log)
-def get_challenges(serial: str = None, transaction_id: str = None, challenge=None) -> list[Challenge]:
+def get_challenges(serial: str = None, transaction_id: str = None, challenge=None) -> list:
     """
-    This returns a list of database challenge objects.
+    Return a list of challenge objects matching the given filters.
+
+    Checks the Redis cache first when available; falls back to the database on
+    a cache miss.  Returned objects are either Challenge SQLAlchemy model
+    instances (DB path) or ChallengeDTO instances (cache path) — both expose
+    the same interface so callers are unaffected.
 
     :param serial: challenges for this very serial number
     :param transaction_id: challenges with this very transaction id
     :param challenge: The challenge to be found
-    :return: list of objects
+    :return: list of challenge objects
     """
+    cached = get_challenges_from_cache(serial=serial, transaction_id=transaction_id,
+                                       challenge=challenge)
+    if cached is not None:
+        return cached
+
     stmt = select(Challenge)
     if serial is not None:
         stmt = stmt.where(Challenge.serial == serial)
@@ -62,8 +73,7 @@ def get_challenges(serial: str = None, transaction_id: str = None, challenge=Non
     if challenge is not None:
         stmt = stmt.where(clob_to_varchar(Challenge.challenge) == challenge)
 
-    challenges = db.session.execute(stmt).scalars().all()
-    return challenges
+    return db.session.execute(stmt).scalars().all()
 
 
 @log_with(log)

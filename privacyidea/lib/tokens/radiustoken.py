@@ -55,8 +55,8 @@ from privacyidea.lib.log import log_with
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib.radiusserver import get_radius, get_temporary_radius_server
-from privacyidea.models import Challenge
 from privacyidea.lib.challenge import get_challenges
+from privacyidea.lib.token import create_challenge
 from privacyidea.lib.policydecorators import challenge_response_allowed
 
 import pyrad.packet
@@ -227,12 +227,11 @@ class RadiusTokenClass(RemoteTokenClass):
         reply_dict = {'attributes': {'state': transactionid}}
         validity = int(get_from_config('DefaultChallengeValidityTime', 120))
 
-        db_challenge = Challenge(self.token.serial,
-                                 transaction_id=transactionid,
-                                 data=state,
-                                 challenge=message,
-                                 validitytime=validity)
-        db_challenge.save()
+        db_challenge = create_challenge(self.token.serial,
+                                        transaction_id=transactionid,
+                                        data=state,
+                                        challenge=message,
+                                        validitytime=validity)
         self.challenge_janitor()
         return True, message, db_challenge.transaction_id, reply_dict
 

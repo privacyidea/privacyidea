@@ -1849,14 +1849,14 @@ class TokenClass:
         lookup_for = tokentype.capitalize() + 'ChallengeValidityTime'
         validity = int(get_from_config(lookup_for, validity))
 
-        # Create the challenge in the database
-        db_challenge = Challenge(self.token.serial,
-                                 transaction_id=transactionid,
-                                 challenge=options.get("challenge"),
-                                 data=data,
-                                 session=options.get("session"),
-                                 validitytime=validity)
-        db_challenge.save()
+        # Create the challenge (Redis if available, DB fallback)
+        from privacyidea.lib.token import create_challenge as _create_challenge
+        db_challenge = _create_challenge(self.token.serial,
+                                         transaction_id=transactionid,
+                                         challenge=options.get("challenge"),
+                                         data=data,
+                                         session=options.get("session"),
+                                         validitytime=validity)
         self.challenge_janitor()
         return True, message, db_challenge.transaction_id, reply_dict
 

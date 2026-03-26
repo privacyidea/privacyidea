@@ -40,12 +40,12 @@ from privacyidea.lib.config import get_from_config
 from privacyidea.lib.log import log_with
 from privacyidea.lib.tokenclass import TokenClass, Tokenkind
 from privacyidea.lib.error import ParameterError
-from privacyidea.lib.token import check_realm_pass
+from privacyidea.lib.token import check_realm_pass, create_challenge
 from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib import _
 from privacyidea.lib.policy import SCOPE, GROUP
 from privacyidea.lib.policies.actions import PolicyAction
-from privacyidea.lib.challenge import get_challenges, Challenge
+from privacyidea.lib.challenge import get_challenges
 import json
 import datetime
 
@@ -467,13 +467,12 @@ class FourEyesTokenClass(TokenClass):
         validity = int(get_from_config(lookup_for, validity))
 
         # Create the challenge in the database
-        db_challenge = Challenge(self.token.serial,
-                                 transaction_id=transactionid,
-                                 data=options.get("data"),
-                                 session=options.get("session"),
-                                 challenge=message,
-                                 validitytime=validity)
-        db_challenge.save()
+        db_challenge = create_challenge(self.token.serial,
+                                        transaction_id=transactionid,
+                                        data=options.get("data"),
+                                        session=options.get("session"),
+                                        challenge=message,
+                                        validitytime=validity)
         expiry_date = datetime.datetime.now() + \
                       datetime.timedelta(seconds=validity)
         reply_dict = {'attributes': {'valid_until': "{0!s}".format(expiry_date)}}

@@ -3115,3 +3115,48 @@ def import_tokens(tokens: list[dict], update_existing_tokens: bool = True,
             failed_tokens.append(serial)
     return TokenImportResult(successful_tokens=successful_tokens, updated_tokens=updated_tokens,
                              failed_tokens=failed_tokens)
+
+
+def create_challenge(serial: str, transaction_id: str = None, challenge: str = '',
+                     data=None, session: str = '', validitytime: int = 120) -> Challenge:
+    """
+    Create a new challenge, persist it to the database, and populate the cache.
+
+    This is the single entry point for challenge creation.  When a Redis cache
+    is configured (PI_REDIS_URL), the challenge is also written there so that
+    other nodes in an HA setup can read it without a DB round-trip.
+
+    :param serial: Serial number of the token this challenge belongs to
+    :param transaction_id: Transaction id of the challenge. A new one is generated if None.
+    :param challenge: The challenge string
+    :param data: Optional data to store with the challenge (str, dict, or None)
+    :param session: Session string
+    :param validitytime: Validity period in seconds (default: 120)
+    :return: The created and saved Challenge object
+    """
+    from privacyidea.lib.cache import cache_challenge, get_redis
+    db_challenge = Challenge(serial,
+                             transaction_id=transaction_id,
+                             challenge=challenge,
+                             data=data if data is not None else '',
+                             session=session if session is not None else '',
+                             validitytime=validitytime)
+    if get_redis() is not None:
+        # Redis available: cache only, skip the DB write.
+        # Redis TTL handles expiry; challenges are ephemeral by nature.
+        cache_challenge(
+            serial=db_challenge.serial,
+            transaction_id=db_challenge.transaction_id,
+            challenge=db_challenge.challenge,
+            data=db_challenge.data,
+            session=db_challenge.session,
+            timestamp=db_challenge.timestamp,
+            expiration=db_challenge.expiration,
+        )
+        # If cache_challenge() failed it called _disable_redis(), so get_redis()
+        # now returns None. Fall back to DB so the challenge is not lost.
+        if get_redis() is None:
+            db_challenge.save()
+    else:
+        db_challenge.save()
+    return db_challenge

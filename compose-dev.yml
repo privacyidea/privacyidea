@@ -33,3 +33,16 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+
+  redis:
+    # Cache URI: redis://127.0.0.1:6379/0
+    image: redis:7-alpine
+    container_name: pi-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      start_period: 5s
+      interval: 5s
+      timeout: 5s
+      retries: 10

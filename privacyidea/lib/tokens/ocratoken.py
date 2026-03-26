@@ -33,7 +33,7 @@ from privacyidea.lib.config import get_from_config
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.log import log_with
 from privacyidea.lib.utils import create_img, hexlify_and_unicode, to_bytes
-from privacyidea.models import Challenge
+from privacyidea.lib.token import create_challenge
 from privacyidea.lib.user import get_user_from_param
 from privacyidea.lib.tokens.ocra import OCRASuite, OCRA
 from privacyidea.lib import _
@@ -227,13 +227,10 @@ class OcraTokenClass(TokenClass):
                 challenge = hexlify_and_unicode(hashlib.sha1(to_bytes(challenge)).digest())  # nosec B324 # ocra definition
 
         # Create the challenge in the database
-        db_challenge = Challenge(self.token.serial,
-                                 transaction_id=None,
-                                 challenge=challenge,
-                                 data=None,
-                                 session=None,
-                                 validitytime=validity)
-        db_challenge.save()
+        db_challenge = create_challenge(self.token.serial,
+                                        transaction_id=None,
+                                        challenge=challenge,
+                                        validitytime=validity)
 
         attributes["challenge"] = challenge
         reply_dict = {"attributes": attributes}

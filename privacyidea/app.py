@@ -400,6 +400,18 @@ def create_app(config_name="development",
             engine.dialect._json_serializer = lambda obj: json.dumps(obj, ensure_ascii=False)
             engine.dialect._json_deserializer = lambda obj: json.loads(obj)
 
+    # Redis init, optional
+    if app.config.get(ConfigKey.REDIS_URL):
+        print(f"redis uri: {app.config.get(ConfigKey.REDIS_URL)}")
+        with app.app_context():
+            from privacyidea.lib.cache import get_redis
+            if get_redis() is None:
+                log.error("PI_REDIS_URL is set but Redis is not reachable at '%s' — "
+                          "falling back to DB-only mode.", app.config[ConfigKey.REDIS_URL])
+                print("redis is not reachable")
+            elif app.debug:
+                print("redis connection successful!")
+
     log.debug(f"Reading application from the static folder {app.static_folder} "
               f"and the template folder {app.template_folder}")
     app.config[ConfigKey.APP_READY] = True
@@ -485,6 +497,18 @@ def create_docker_app():
             log.debug("Database Connection successful!")
         except Exception as e:
             raise RuntimeError(f"Could not connect to database: {e}")
+
+    # Redis init, optional
+    if app.config.get(ConfigKey.REDIS_URL):
+        print(f"redis uri: {app.config.get(ConfigKey.REDIS_URL)}")
+        with app.app_context():
+            from privacyidea.lib.cache import get_redis
+            if get_redis() is None:
+                log.error("PI_REDIS_URL is set but Redis is not reachable at '%s' — "
+                          "falling back to DB-only mode.", app.config[ConfigKey.REDIS_URL])
+                print("redis is not reachable")
+            elif app.debug:
+                print("redis connection successful!")
 
     _setup_node_configuration(app)
 

@@ -79,7 +79,7 @@ from privacyidea.lib.policy import Match
 from privacyidea.lib.error import ValidateError
 from privacyidea.lib.log import log_with
 from privacyidea.lib import _
-from privacyidea.models import Challenge
+from privacyidea.lib.token import create_challenge
 from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib.smtpserver import send_email_data, send_email_identifier
 from privacyidea.lib.crypto import safe_compare
@@ -312,13 +312,12 @@ class EmailTokenClass(HotpTokenClass):
                 # Create the challenge in the database
                 if is_true(get_from_config("email.concurrent_challenges")):
                     data = self.get_otp()[2]
-                db_challenge = Challenge(self.token.serial,
-                                         transaction_id=transactionid,
-                                         challenge=options.get("challenge"),
-                                         data=data,
-                                         session=options.get("session"),
-                                         validitytime=validity)
-                db_challenge.save()
+                db_challenge = create_challenge(self.token.serial,
+                                               transaction_id=transactionid,
+                                               challenge=options.get("challenge"),
+                                               data=data,
+                                               session=options.get("session"),
+                                               validitytime=validity)
                 transactionid = transactionid or db_challenge.transaction_id
 
             except Exception as e:
