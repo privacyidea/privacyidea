@@ -87,7 +87,10 @@ describe("EditUserDialogComponent", () => {
       subscribe: ({ next }: any) => next(true)
     });
     component.save();
-    expect(mockUserService.editUser).toHaveBeenCalledWith("editresolver", expect.objectContaining({ username: "edituser" }));
+    expect(mockUserService.editUser).toHaveBeenCalledWith(
+      "editresolver",
+      expect.objectContaining({ username: "edituser" })
+    );
   });
 
   it("should call save always with input username", () => {
@@ -96,7 +99,10 @@ describe("EditUserDialogComponent", () => {
     });
     component.editedUserData.set({ ...component.editedUserData(), username: "" });
     component.save();
-    expect(mockUserService.editUser).toHaveBeenCalledWith("editresolver", expect.objectContaining({ username: "edituser" }));
+    expect(mockUserService.editUser).toHaveBeenCalledWith(
+      "editresolver",
+      expect.objectContaining({ username: "edituser" })
+    );
   });
 
   it("should reload userResource and close dialog on successful edit", () => {

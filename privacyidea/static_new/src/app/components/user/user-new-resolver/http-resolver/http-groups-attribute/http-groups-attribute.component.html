@@ -29,8 +29,7 @@
         [matTooltip]="slideToggleTooltipSignal()" />
     </div>
 
-    <mat-form-field
-      class="input-width-l">
+    <mat-form-field class="input-width-l">
       <mat-label i18n>privacyIDEA User Groups Key</mat-label>
       <input
         formControlName="pi_user_groups_key"
@@ -38,8 +37,7 @@
       <mat-hint i18n>Key to store the groups of the user in privacyIDEA.</mat-hint>
     </mat-form-field>
 
-    <mat-form-field
-      class="input-width-l">
+    <mat-form-field class="input-width-l">
       @if (resolverType === "entraidresolver") {
         <mat-label i18n>Group Identifier</mat-label>
       } @else {
@@ -60,8 +58,7 @@
     <div class="flex-row gap-16 margin-bottom-16">
       <mat-form-field class="input-width-s">
         <mat-label i18n>Method</mat-label>
-        <mat-select
-          formControlName="method">
+        <mat-select formControlName="method">
           <mat-option value="POST">POST</mat-option>
           <mat-option value="GET">GET</mat-option>
           <mat-option value="PUT">PUT</mat-option>
@@ -71,17 +68,16 @@
         <mat-hint i18n>HTTP method for the groups request.</mat-hint>
       </mat-form-field>
 
-      <mat-form-field
-        class="input-width-xl">
+      <mat-form-field class="input-width-xl">
         <mat-label i18n>Endpoint</mat-label>
         <input
           formControlName="endpoint"
           matInput />
         <mat-hint>
           <span i18n>Endpoint to receive the groups of a specific user. Possible tags:</span>
-          <code> &#123;userid&#125;</code>
-          @if (resolverType === 'keycloakresolver') {
-            <code> &#123;realm&#125;</code>
+          <code>&#123;userid&#125;</code>
+          @if (resolverType === "keycloakresolver") {
+            <code>&#123;realm&#125;</code>
           }
         </mat-hint>
       </mat-form-field>
@@ -93,11 +89,16 @@
   <div
     class="hint margin-top-16 margin-bottom-16"
     i18n>
-    Receive the users groups via the <code>memberOf</code> attribute.
+    Receive the users groups via the
+    <code>memberOf</code>
+    attribute.
   </div>
 } @else {
   <div
     class="hint margin-top-16 margin-bottom-16"
-    i18n>User groups are received in a separate request and stored under the privacyIDEA attribute <code>groups</code>.
+    i18n>
+    User groups are received in a separate request and stored under the privacyIDEA attribute
+    <code>groups</code>
+    .
   </div>
 }

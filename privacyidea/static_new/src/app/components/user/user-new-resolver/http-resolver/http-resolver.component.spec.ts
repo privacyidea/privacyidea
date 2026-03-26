@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -35,11 +35,8 @@ describe("HttpResolverComponent", () => {
     mockResolverService = new MockResolverService();
     await TestBed.configureTestingModule({
       imports: [HttpResolverComponent, NoopAnimationsModule],
-      providers: [
-        { provide: ResolverService, useValue: mockResolverService }
-      ]
-    })
-      .compileComponents();
+      providers: [{ provide: ResolverService, useValue: mockResolverService }]
+    }).compileComponents();
 
     fixture = TestBed.createComponent(HttpResolverComponent);
     component = fixture.componentInstance;
@@ -75,17 +72,19 @@ describe("HttpResolverComponent", () => {
 
   it("should expose controls via signal", () => {
     const controls = component.controls();
-    expect(controls).toEqual(expect.objectContaining({
-      endpoint: component.endpointControl,
-      method: component.methodControl
-    }));
+    expect(controls).toEqual(
+      expect.objectContaining({
+        endpoint: component.endpointControl,
+        method: component.methodControl
+      })
+    );
   });
 
   it("should update controls when data input changes", () => {
     componentRef.setInput("data", {
       endpoint: "http://test",
       method: "POST",
-      attribute_mapping: { "username": "user" }
+      attribute_mapping: { username: "user" }
     });
 
     fixture.detectChanges();
@@ -129,7 +128,6 @@ describe("HttpResolverComponent", () => {
     expect(component["mappingRows"]().length).toBe(initialCount);
   });
 
-
   it("should add a new empty row when the last row's attribute is set", () => {
     const rows = component["mappingRows"]();
     const lastIndex = rows.length - 1;
@@ -142,7 +140,6 @@ describe("HttpResolverComponent", () => {
     expect(newRows.length).toBe(rows.length + 1);
     expect(newRows[newRows.length - 1].privacyideaAttr).toBeNull();
   });
-
 
   it("should handle privacyidea custom attribute selection", () => {
     const rows = component["mappingRows"]();
@@ -164,7 +161,9 @@ describe("HttpResolverComponent", () => {
     // EntraID type
     componentRef.setInput("type", "entraidresolver");
     fixture.detectChanges();
-    expect(component.checkUserPasswordHint()).toBe("Possible tags: {userid} {username} {password} {client_id} {client_credential} {tenant}");
+    expect(component.checkUserPasswordHint()).toBe(
+      "Possible tags: {userid} {username} {password} {client_id} {client_credential} {tenant}"
+    );
 
     // Switch back
     componentRef.setInput("type", "httpresolver");
@@ -181,19 +180,18 @@ describe("HttpResolverComponent", () => {
     component["basicSettings"].set(false);
     fixture.detectChanges();
 
-    expect(component.responseMappingControl.value).toBe("{\"username\":\"{username}\", \"userid\":\"{userid}\"}");
+    expect(component.responseMappingControl.value).toBe('{"username":"{username}", "userid":"{userid}"}');
   });
 
   it("should NOT overwrite responseMapping when switching to Advanced mode if it is already set", () => {
     // Initially in Basic mode
     expect(component["basicSettings"]()).toBe(true);
-    component.responseMappingControl.setValue("{\"custom\":\"mapping\"}");
+    component.responseMappingControl.setValue('{"custom":"mapping"}');
 
     // Switch to Advanced mode
     component["basicSettings"].set(false);
     fixture.detectChanges();
 
-    expect(component.responseMappingControl.value).toBe("{\"custom\":\"mapping\"}");
+    expect(component.responseMappingControl.value).toBe('{"custom":"mapping"}');
   });
-
 });

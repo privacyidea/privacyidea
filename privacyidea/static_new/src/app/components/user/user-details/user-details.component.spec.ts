@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -281,7 +281,7 @@ describe("UserDetailsComponent", () => {
 
     // detailsEntries should not include custom1 or custom2
     const entries = component.detailsEntries();
-    const keys = entries.map(e => e.key);
+    const keys = entries.map((e) => e.key);
 
     expect(keys).not.toContain("custom1");
     expect(keys).not.toContain("custom2");

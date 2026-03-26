@@ -33,10 +33,7 @@ import { NAVIGATION_ACCESSIBLE_DIALOG_CLASS } from "../../../constants/global.co
   host: {
     class: NAVIGATION_ACCESSIBLE_DIALOG_CLASS
   },
-  imports: [
-    DialogWrapperComponent,
-    UserDetailsEditComponent
-  ],
+  imports: [DialogWrapperComponent, UserDetailsEditComponent],
   templateUrl: "./edit-user-dialog.component.html",
   styleUrl: "./edit-user-dialog.component.scss"
 })
@@ -47,11 +44,13 @@ export class EditUserDialogComponent extends PendingChangesDialogComponent<UserD
   username = computed(() => this.data.username);
   title = computed(() => $localize`Edit User` + (this.username() ? ": " + this.username() : ""));
   dialogActions = linkedSignal(() => {
-    return [{
-      type: "confirm",
-      label: $localize`Save`,
-      value: true
-    }] as DialogAction<boolean>[];
+    return [
+      {
+        type: "confirm",
+        label: $localize`Save`,
+        value: true
+      }
+    ] as DialogAction<boolean>[];
   });
   editedUserData: WritableSignal<EditUserData> = linkedSignal(() => {
     if (this.data) {
@@ -67,7 +66,7 @@ export class EditUserDialogComponent extends PendingChangesDialogComponent<UserD
     super();
 
     effect(() => {
-      if (this.contentService.routeUrl() !== (ROUTE_PATHS.USERS_DETAILS + "/" + this.username())) {
+      if (this.contentService.routeUrl() !== ROUTE_PATHS.USERS_DETAILS + "/" + this.username()) {
         this.dialogRef?.close(true);
       }
     });

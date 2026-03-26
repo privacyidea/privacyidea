@@ -1,5 +1,5 @@
 <!--
- (c) NetKnights GmbH 2025,  https://netknights.it
+ (c) NetKnights GmbH 2026,  https://netknights.it
 
  This code is free software; you can redistribute it and/or
  modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -91,8 +91,8 @@
           <td
             *matCellDef="let element; let row"
             [ngClass]="{
-                'table-checkbox': column.key === 'select'
-              }"
+              'table-checkbox': column.key === 'select'
+            }"
             attr.aria-label="{{ column.label }} Cell"
             mat-cell>
             <div>
@@ -115,8 +115,8 @@
                 }
                 @default {
                   <span>
-                      {{ element[column.key] }}
-                    </span>
+                    {{ element[column.key] }}
+                  </span>
                 }
               }
             </div>

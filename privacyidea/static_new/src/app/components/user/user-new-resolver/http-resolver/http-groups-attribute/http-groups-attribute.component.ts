@@ -48,9 +48,7 @@ export class HttpGroupsAttributeComponent implements OnInit, OnDestroy {
   readonly activeSignal = signal<boolean>(false);
   // Computed signal for the tooltip
   readonly slideToggleTooltipSignal = computed(() =>
-    this.activeSignal()
-      ? $localize`Disable user groups retrieval`
-      : $localize`Enable user groups retrieval`
+    this.activeSignal() ? $localize`Disable user groups retrieval` : $localize`Enable user groups retrieval`
   );
   private activeSubscription?: Subscription;
   private methodSubscription?: Subscription;
@@ -66,7 +64,7 @@ export class HttpGroupsAttributeComponent implements OnInit, OnDestroy {
 
         const updateControls = (active: boolean) => {
           this.activeSignal.set(active);
-          controls.forEach(ctrl => {
+          controls.forEach((ctrl) => {
             const control = this.userGroupsControl.get(ctrl);
             if (active) {
               control?.enable({ emitEvent: false });
@@ -82,7 +80,7 @@ export class HttpGroupsAttributeComponent implements OnInit, OnDestroy {
         const methodControl = this.userGroupsControl.get("method");
         if (methodControl) {
           this.methodSubscription?.unsubscribe();
-          this.methodSubscription = methodControl.valueChanges.subscribe(value => {
+          this.methodSubscription = methodControl.valueChanges.subscribe((value) => {
             if (value) {
               methodControl.setValue(value.toUpperCase(), { emitEvent: false });
             }

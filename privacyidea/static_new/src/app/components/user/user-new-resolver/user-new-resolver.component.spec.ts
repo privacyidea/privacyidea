@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -144,7 +144,7 @@ describe("UserNewResolverComponent", () => {
     expect(component.resolverType).toBe("passwdresolver");
     expect(component.formData["fileName"]).toBe("/tmp/test");
 
-    const inputElement = fixture.nativeElement.querySelector("input[placeholder=\"/etc/passwd\"]");
+    const inputElement = fixture.nativeElement.querySelector('input[placeholder="/etc/passwd"]');
     expect(inputElement?.value).toBe("/tmp/test");
   });
 
@@ -180,7 +180,7 @@ describe("UserNewResolverComponent", () => {
     expect(component.isEditMode).toBeTruthy();
     expect(component.resolverType).toBe("sqlresolver");
 
-    const dbInput = fixture.nativeElement.querySelector("input[placeholder=\"YourDatabase\"]");
+    const dbInput = fixture.nativeElement.querySelector('input[placeholder="YourDatabase"]');
     expect(dbInput?.value).toBe("testdb");
   });
 
@@ -601,7 +601,7 @@ describe("UserNewResolverComponent", () => {
 
     component.onCancel();
 
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise((resolve) => setTimeout(resolve, 100));
 
     expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
     expect(dialogRef.close).toHaveBeenCalled();
@@ -627,7 +627,7 @@ describe("UserNewResolverComponent", () => {
 
     component.onCancel();
 
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise((resolve) => setTimeout(resolve, 100));
 
     expect(pendingChangesService.clearAllRegistrations).not.toHaveBeenCalled();
     expect(closeSpy).not.toHaveBeenCalled();
@@ -648,7 +648,7 @@ describe("UserNewResolverComponent", () => {
 
     component.onCancel();
 
-    await new Promise(resolve => setTimeout(resolve, 100));
+    await new Promise((resolve) => setTimeout(resolve, 100));
 
     expect(pendingChangesService.save).not.toHaveBeenCalled();
     expect(pendingChangesService.clearAllRegistrations).not.toHaveBeenCalled();

@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -26,15 +26,7 @@ import { ClearableInputComponent } from "../../../shared/clearable-input/clearab
 @Component({
   selector: "app-passwd-resolver",
   standalone: true,
-  imports: [
-    FormsModule,
-    ReactiveFormsModule,
-    MatFormField,
-    MatLabel,
-    MatInput,
-    MatError,
-    ClearableInputComponent
-  ],
+  imports: [FormsModule, ReactiveFormsModule, MatFormField, MatLabel, MatInput, MatError, ClearableInputComponent],
   templateUrl: "./passwd-resolver.component.html",
   styleUrl: "./passwd-resolver.component.scss"
 })

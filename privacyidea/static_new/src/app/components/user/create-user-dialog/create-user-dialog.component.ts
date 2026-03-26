@@ -115,12 +115,14 @@ export class CreateUserDialogComponent extends PendingChangesDialogComponent<Cre
   title = $localize`Create New User`;
 
   dialogActions = linkedSignal(() => {
-    return [{
-      type: "confirm",
-      label: $localize`Create`,
-      value: true,
-      disabled: !this.canSave()
-    }] as DialogAction<boolean>[];
+    return [
+      {
+        type: "confirm",
+        label: $localize`Create`,
+        value: true,
+        disabled: !this.canSave()
+      }
+    ] as DialogAction<boolean>[];
   });
 
   editedUserData: WritableSignal<EditUserData> = linkedSignal(() => {
@@ -128,14 +130,14 @@ export class CreateUserDialogComponent extends PendingChangesDialogComponent<Cre
   });
 
   editUserDataIsEmpty = computed(() => {
-    return Object.values(this.editedUserData()).every(value => value === "" || value === undefined);
+    return Object.values(this.editedUserData()).every((value) => value === "" || value === undefined);
   });
 
   correspondingRealms: Signal<string[]> = computed(() => {
     const realms = this.realmService.realms();
     const result: string[] = [];
     for (const [realmName, realmObj] of Object.entries(realms)) {
-      if (realmObj.resolver.some(resolver => resolver.name === this.selectedResolver())) {
+      if (realmObj.resolver.some((resolver) => resolver.name === this.selectedResolver())) {
         result.push(realmName);
       }
     }
@@ -144,7 +146,7 @@ export class CreateUserDialogComponent extends PendingChangesDialogComponent<Cre
 
   override async onSave(): Promise<boolean> {
     this.editedUserData().username = this.username.value;
-    return new Promise(resolve => {
+    return new Promise((resolve) => {
       this.userService.createUser(this.resolverControl.value, this.editedUserData()).subscribe({
         next: (success) => {
           if (success) {
@@ -159,7 +161,6 @@ export class CreateUserDialogComponent extends PendingChangesDialogComponent<Cre
       });
     });
   }
-
 
   create() {
     if (this.inputGroup.invalid) {

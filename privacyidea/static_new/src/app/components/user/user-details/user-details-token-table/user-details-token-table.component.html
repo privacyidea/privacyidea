@@ -1,5 +1,5 @@
 <!--
- (c) NetKnights GmbH 2025,  https://netknights.it
+ (c) NetKnights GmbH 2026,  https://netknights.it
 
  This code is free software; you can redistribute it and/or
  modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -22,9 +22,7 @@
   i18n-aria-label>
   <div class="flex-column">
     <div class="details-header">
-      <h4 i18n>
-        Tokens of User
-      </h4>
+      <h4 i18n>Tokens of User</h4>
       <h4 class="username-header">{{ userService.detailsUsername() }}</h4>
       <h4 class="margin-left--8">:</h4>
     </div>
@@ -94,10 +92,10 @@
                       @if (authService.actionAllowed("enable") && authService.actionAllowed("disable")) {
                         <span
                           (click)="toggleActive(element)"
-                          [matTooltip]="tableUtilsService.getTooltipForColumn(column.key,element)"
+                          [matTooltip]="tableUtilsService.getTooltipForColumn(column.key, element)"
                           [ngClass]="tableUtilsService.getClassForColumn(column.key, element)">
-                      {{ tableUtilsService.getDisplayText(column.key, element) }}
-                    </span>
+                          {{ tableUtilsService.getDisplayText(column.key, element) }}
+                        </span>
                       } @else {
                         <span [ngClass]="tableUtilsService.getClassForColumn(column.key, element)">
                           {{ tableUtilsService.getDisplayText(column.key, element) }}
@@ -109,8 +107,8 @@
                         <span
                           (click)="resetFailCount(element)"
                           [ngClass]="tableUtilsService.getClassForColumn(column.key, element)">
-                      {{ tableUtilsService.getDisplayText(column.key, element) }}
-                    </span>
+                          {{ tableUtilsService.getDisplayText(column.key, element) }}
+                        </span>
                       } @else {
                         <span [ngClass]="tableUtilsService.getClassForColumn(column.key, element)">
                           {{ tableUtilsService.getDisplayText(column.key, element) }}
@@ -130,7 +128,7 @@
                       }
                     }
                     @default {
-                      <span> {{ element[column.key] }} </span>
+                      <span>{{ element[column.key] }}</span>
                     }
                   }
                 </div>
@@ -159,7 +157,7 @@
                   i18n-matTooltip
                   mat-icon-button
                   matTooltip="Remove Token from Container">
-                  <mat-icon> highlight_remove</mat-icon>
+                  <mat-icon>highlight_remove</mat-icon>
                 </button>
               </div>
             </td>
@@ -186,7 +184,7 @@
                   i18n-matTooltip
                   mat-icon-button
                   matTooltip="Delete Token">
-                  <mat-icon> delete</mat-icon>
+                  <mat-icon>delete</mat-icon>
                 </button>
               </div>
             </td>

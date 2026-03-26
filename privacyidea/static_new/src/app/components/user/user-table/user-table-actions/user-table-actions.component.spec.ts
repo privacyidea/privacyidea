@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -25,8 +25,6 @@ import { UserService } from "../../../../services/user/user.service";
 import { ResolverService } from "../../../../services/resolver/resolver.service";
 import { MockResolverService } from "../../../../../testing/mock-services/mock-resolver-service";
 import { MockDialogService, MockUserService } from "../../../../../testing/mock-services";
-
-
 
 describe("UserTableActionsComponent", () => {
   let component: UserTableActionsComponent;

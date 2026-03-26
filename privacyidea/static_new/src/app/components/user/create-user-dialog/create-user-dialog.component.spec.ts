@@ -57,8 +57,7 @@ describe("CreateUserDialogComponent", () => {
         { provide: MAT_DIALOG_DATA, useValue: mockData },
         { provide: MatDialogRef, useClass: MockMatDialogRef }
       ]
-    })
-      .compileComponents();
+    }).compileComponents();
 
     mockUserService = TestBed.inject(UserService) as unknown as MockUserService;
     mockRealmService = TestBed.inject(RealmService) as unknown as MockRealmService;
@@ -125,7 +124,9 @@ describe("CreateUserDialogComponent", () => {
     component.resolverControl.setValue("");
     fixture.detectChanges();
     component.create();
-    expect(mockNotificationService.openSnackBar).toHaveBeenCalledWith(expect.stringContaining("Please fill in all required fields"));
+    expect(mockNotificationService.openSnackBar).toHaveBeenCalledWith(
+      expect.stringContaining("Please fill in all required fields")
+    );
   });
 
   it("should call userService.createUser on valid form", () => {
@@ -136,7 +137,10 @@ describe("CreateUserDialogComponent", () => {
     });
     fixture.detectChanges();
     component.create();
-    expect(mockUserService.createUser).toHaveBeenCalledWith("testresolver", expect.objectContaining({ username: "testuser" }));
+    expect(mockUserService.createUser).toHaveBeenCalledWith(
+      "testresolver",
+      expect.objectContaining({ username: "testuser" })
+    );
   });
 
   it("should reload usersResource and close dialog on successful user creation", () => {
@@ -171,10 +175,10 @@ describe("CreateUserDialogComponent", () => {
   it("editUserDataIsEmpty should be true when it is completely empty only", () => {
     expect(component.editUserDataIsEmpty()).toBe(true);
 
-    component.editedUserData.set({username: "test", email: ""})
+    component.editedUserData.set({ username: "test", email: "" });
     expect(component.editUserDataIsEmpty()).toBe(false);
 
-    component.editedUserData.set({username: "", email: ""})
+    component.editedUserData.set({ username: "", email: "" });
     expect(component.editUserDataIsEmpty()).toBe(true);
-  })
+  });
 });

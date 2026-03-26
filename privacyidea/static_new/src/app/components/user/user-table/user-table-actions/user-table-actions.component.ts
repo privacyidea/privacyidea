@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -33,15 +33,7 @@ import { ResolverService, ResolverServiceInterface } from "../../../../services/
 
 @Component({
   selector: "app-user-table-actions",
-  imports: [
-    MatButtonModule,
-    MatFormField,
-    MatLabel,
-    MatOption,
-    MatSelect,
-    FormsModule,
-    MatIcon
-  ],
+  imports: [MatButtonModule, MatFormField, MatLabel, MatOption, MatSelect, FormsModule, MatIcon],
   templateUrl: "./user-table-actions.component.html",
   styleUrl: "./user-table-actions.component.scss"
 })

@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -31,11 +31,8 @@ describe("LdapResolverComponent", () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [LdapResolverComponent, NoopAnimationsModule],
-      providers: [
-        { provide: ResolverService, useClass: MockResolverService }
-      ]
-    })
-      .compileComponents();
+      providers: [{ provide: ResolverService, useClass: MockResolverService }]
+    }).compileComponents();
 
     fixture = TestBed.createComponent(LdapResolverComponent);
     component = fixture.componentInstance;
@@ -49,10 +46,12 @@ describe("LdapResolverComponent", () => {
 
   it("should expose controls via signal", () => {
     const controls = component.controls();
-    expect(controls).toEqual(expect.objectContaining({
-      LDAPURI: component.ldapUriControl,
-      LDAPBASE: component.ldapBaseControl
-    }));
+    expect(controls).toEqual(
+      expect.objectContaining({
+        LDAPURI: component.ldapUriControl,
+        LDAPBASE: component.ldapBaseControl
+      })
+    );
   });
 
   it("should update controls when data input changes", () => {
