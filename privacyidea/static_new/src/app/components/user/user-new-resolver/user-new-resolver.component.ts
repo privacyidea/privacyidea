@@ -40,6 +40,7 @@ import { LdapResolverComponent } from "./ldap-resolver/ldap-resolver.component";
 import { PasswdResolverComponent } from "./passwd-resolver/passwd-resolver.component";
 import { ScimResolverComponent } from "./scim-resolver/scim-resolver.component";
 import { SqlResolverComponent } from "./sql-resolver/sql-resolver.component";
+import { finalize } from "rxjs";
 
 @Component({
   selector: "app-user-new-resolver",
@@ -311,26 +312,29 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
     };
 
     return new Promise<boolean>((resolve) => {
-      this._resolverService.postResolver(name, payload).subscribe({
-        next: (res) => {
-          if (res.result?.status === true && (res.result.value ?? 0) >= 0) {
-            this._notificationService.openSnackBar(
-              this.isEditMode ? $localize`Resolver "${name}" updated.` : $localize`Resolver "${name}" created.`
-            );
-            this._resolverService.resolversResource.reload?.();
-            this._closeOrReset();
-            resolve(true);
-          } else {
-            this._notifyError($localize`Failed to save resolver.`, res);
+      this._resolverService
+        .postResolver(name, payload)
+        .pipe(finalize(() => setTimeout(() => this.isSaving.set(false))))
+        .subscribe({
+          next: (res) => {
+            if (res.result?.status === true && (res.result.value ?? 0) >= 0) {
+              this._notificationService.openSnackBar(
+                this.isEditMode ? $localize`Resolver "${name}" updated.` : $localize`Resolver "${name}" created.`
+              );
+              this._resolverService.resolversResource.reload?.();
+              this._closeOrReset();
+              resolve(true);
+            } else {
+              this._notifyError($localize`Failed to save resolver.`, res);
+              resolve(false);
+            }
+          },
+          error: (err) => {
+            this._notifyError($localize`Failed to save resolver.`, err);
             resolve(false);
-          }
-        },
-        error: (err) => {
-          this._notifyError($localize`Failed to save resolver.`, err);
-          resolve(false);
-        },
-        complete: () => setTimeout(() => this.isSaving.set(false))
-      });
+          },
+          complete: () => setTimeout(() => this.isSaving.set(false))
+        });
     });
   }
 
@@ -412,18 +416,20 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
       payload.resolver = this.resolverName;
     }
 
-    this._resolverService.postResolverTest(payload).subscribe({
-      next: (res) => {
-        if (res.result?.status === true && (res.result.value ?? 0) >= 0) {
-          const detail = res.detail?.description || "";
-          this._notificationService.openSnackBar($localize`Resolver test executed: ${detail}`, 20000);
-        } else {
-          this._notifyError($localize`Failed to test resolver.`, res, "Connection test failed.");
-        }
-      },
-      error: (err) => this._notifyError($localize`Failed to test resolver.`, err, "Network error"),
-      complete: () => setTimeout(() => this.isTesting.set(false))
-    });
+    this._resolverService
+      .postResolverTest(payload)
+      .pipe(finalize(() => setTimeout(() => this.isTesting.set(false))))
+      .subscribe({
+        next: (res) => {
+          if (res.result?.status === true && (res.result.value ?? 0) >= 0) {
+            const detail = res.detail?.description || "";
+            this._notificationService.openSnackBar($localize`Resolver test executed: ${detail}`, 20000);
+          } else {
+            this._notifyError($localize`Failed to test resolver.`, res, "Connection test failed.");
+          }
+        },
+        error: (err) => this._notifyError($localize`Failed to test resolver.`, err, "Network error")
+      });
   }
 
   private _notifyError(prefix: string, errorSource: any, testFallback?: string): void {

@@ -139,21 +139,7 @@ export class SystemService implements SystemServiceInterface {
     return this.systemConfigResource.value()?.result?.init ?? {};
   });
   nodes = computed<NodeInfo[]>(() => {
-    const nodes = this.nodesResource.value()?.result?.value ?? [];
-    // remove duplicate nodes based on uuid and Name :
-    console.log("Loaded nodes from backend:", nodes);
-    const uniqueNodesList = <NodeInfo[]>[];
-    const seen = new Set<string>();
-    for (const node of nodes) {
-      const identifier = `${node.uuid}-${node.name}`;
-      if (!seen.has(identifier)) {
-        seen.add(identifier);
-        uniqueNodesList.push(node);
-      }
-    }
-    console.log("Unique nodes:", uniqueNodesList);
-
-    return uniqueNodesList;
+    return this.nodesResource.value()?.result?.value ?? [];
   });
 
   saveSystemConfig(config: any): Observable<PiResponse<any>> {

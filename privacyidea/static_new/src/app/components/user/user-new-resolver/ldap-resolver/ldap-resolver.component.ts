@@ -26,16 +26,8 @@ import { MatFormField, MatLabel, MatInput, MatError } from "@angular/material/in
 import { MatSelectModule, MatSelect, MatOption } from "@angular/material/select";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { merge } from "rxjs";
-import { ResolverService, LDAPResolverData } from "src/app/services/resolver/resolver.service";
+import { ResolverService, LDAPResolverData, BindType, LdapPreset } from "src/app/services/resolver/resolver.service";
 import { parseBooleanValue } from "src/app/utils/parse-boolean-value";
-
-type LdapPreset = {
-  name: string;
-  loginName: string;
-  searchFilter: string;
-  userInfo: string;
-  uidType: string;
-};
 
 @Component({
   selector: "app-ldap-resolver",
@@ -98,7 +90,7 @@ export class LdapResolverComponent {
 
   // --- Credentials ---
   // Bind Type
-  authTypeControl = new FormControl<string>("simple", { nonNullable: true });
+  bindTypeControl = new FormControl<BindType>("Simple", { nonNullable: true });
   // Bind password / Keyfile Path
   bindPwControl = new FormControl<string>("", { nonNullable: true });
   // Bind DN
@@ -161,7 +153,7 @@ export class LdapResolverComponent {
     TLS_VERIFY: this.tlsVerifyControl,
     TLS_CA_FILE: this.tlsCaFileControl,
     SCOPE: this.scopeControl,
-    AUTHTYPE: this.authTypeControl,
+    AUTHTYPE: this.bindTypeControl,
     BINDDN: this.bindDnControl,
     BINDPW: this.bindPwControl,
     TIMEOUT: this.timeoutControl,
@@ -207,7 +199,7 @@ export class LdapResolverComponent {
 
       // --- Credentials ---
       // Bind Type
-      if (initial.AUTHTYPE !== undefined) this.authTypeControl.setValue(initial.AUTHTYPE, { emitEvent: false });
+      if (initial.AUTHTYPE !== undefined) this.bindTypeControl.setValue(initial.AUTHTYPE, { emitEvent: false });
       // Bind password / Keyfile Path
       if (initial.BINDPW !== undefined) this.bindPwControl.setValue(initial.BINDPW, { emitEvent: false });
       // Bind DN
