@@ -46,7 +46,7 @@ const columnKeysMap = [
 ];
 
 @Component({
-  selector: "app-user-resolvers",
+  selector: "app-user-resolver",
   standalone: true,
   imports: [
     FormsModule,
@@ -63,8 +63,8 @@ const columnKeysMap = [
     ScrollToTopDirective,
     ResolverTableActionsComponent
   ],
-  templateUrl: "./user-resolvers.component.html",
-  styleUrl: "./user-resolvers.component.scss"
+  templateUrl: "./user-resolver.component.html",
+  styleUrl: "./user-resolver.component.scss"
 })
 export class UserResolversComponent {
   protected readonly columnKeysMap = columnKeysMap;

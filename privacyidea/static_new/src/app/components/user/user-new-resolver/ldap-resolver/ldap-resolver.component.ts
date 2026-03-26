@@ -29,6 +29,14 @@ import { merge } from "rxjs";
 import { ResolverService, LDAPResolverData } from "src/app/services/resolver/resolver.service";
 import { parseBooleanValue } from "src/app/utils/parse-boolean-value";
 
+type LdapPreset = {
+  name: string;
+  loginName: string;
+  searchFilter: string;
+  userInfo: string;
+  uidType: string;
+};
+
 @Component({
   selector: "app-ldap-resolver",
   standalone: true,
@@ -51,7 +59,7 @@ import { parseBooleanValue } from "src/app/utils/parse-boolean-value";
 })
 export class LdapResolverComponent {
   private readonly resolverService = inject(ResolverService);
-  readonly ldapPresets = [
+  readonly ldapPresets: LdapPreset[] = [
     {
       name: "OpenLDAP",
       loginName: "uid",
@@ -309,7 +317,7 @@ export class LdapResolverComponent {
     this.tlsCaFileControl.updateValueAndValidity({ emitEvent: false });
   }
 
-  applyLdapPreset(preset: any): void {
+  applyLdapPreset(preset: LdapPreset): void {
     this.loginNameAttributeControl.setValue(preset.loginName);
     this.ldapSearchFilterControl.setValue(preset.searchFilter);
     this.userInfoControl.setValue(preset.userInfo);
@@ -319,10 +327,6 @@ export class LdapResolverComponent {
 
   get showTls(): boolean {
     return this._isLdap || this._isLdaps;
-  }
-
-  get showTlsCheckbox(): boolean {
-    return this._isLdap;
   }
 
   private get _isLdap(): boolean {

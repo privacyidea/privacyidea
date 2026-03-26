@@ -78,14 +78,12 @@
 
       @if (showTls) {
         <div class="flex-row gap-16">
-          @if (showTlsCheckbox) {
-            <mat-checkbox
-              [formControl]="startTlsControl"
-              class="checkbox-inline"
-              i18n>
-              STARTTLS
-            </mat-checkbox>
-          }
+          <mat-checkbox
+            [formControl]="startTlsControl"
+            class="checkbox-inline"
+            i18n>
+            STARTTLS
+          </mat-checkbox>
 
           <mat-form-field class="input-width-s">
             <mat-label i18n>TLS Version</mat-label>
