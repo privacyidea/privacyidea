@@ -144,7 +144,7 @@ export class LdapResolverComponent {
 
   controls = computed<Record<string, AbstractControl>>(() => ({
     LDAPURI: this.ldapUriControl,
-    STARTTLS: this.startTlsControl,
+    START_TLS: this.startTlsControl,
     LDAPBASE: this.ldapBaseControl,
     LOGINNAMEATTRIBUTE: this.loginNameAttributeControl,
     LDAPSEARCHFILTER: this.ldapSearchFilterControl,
