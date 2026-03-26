@@ -45,7 +45,7 @@ export type LdapPreset = {
   uidType: string;
 };
 
-export type BindType = "Anonymous" | "Simple" | "SASL DIGEST-MD5" | "NTLM" | "SASL KERBEROS";
+export type BindType = "" | "Simple" | "Anonymous" | "SASL Digest-MD5" | "NTLM" | "SASL Kerberos";
 
 export interface ResolverData {
   [key: string]: any;

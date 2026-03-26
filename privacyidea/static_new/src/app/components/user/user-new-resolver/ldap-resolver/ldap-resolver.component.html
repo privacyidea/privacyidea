@@ -160,7 +160,7 @@
           <mat-select [formControl]="bindTypeControl">
             <mat-option
               i18n
-              value="simple">
+              value="Simple">
               Simple
             </mat-option>
             <mat-option
@@ -189,7 +189,7 @@
         @if (bindTypeControl.value !== "Anonymous") {
           <mat-form-field class="input-width-l">
             <mat-label i18n>
-              {{ bindTypeControl.value === "SASL KERBEROS" ? "Keyfile Path" : "Bind password" }}
+              {{ bindTypeControl.value === "SASL Kerberos" ? "Keyfile Path" : "Bind password" }}
             </mat-label>
             <app-clearable-input
               (onClick)="bindPwControl.setValue('')"
