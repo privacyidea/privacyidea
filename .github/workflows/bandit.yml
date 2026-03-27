@@ -7,7 +7,7 @@
 
 name: Bandit
 on:
-  push:
+
   pull_request:
     branches:
       - "master"

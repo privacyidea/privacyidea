@@ -3,12 +3,6 @@
 #
 name: Run WebUI tests
 on:
-  # run on each push to every branch of the repository but only on
-  # pull requests to the 'master' and 'branch-*' branches
-  push:
-    paths:
-      # Only run when there are changes in the new WebUI directory
-      - 'privacyidea/static_new/**'
   pull_request:
     branches:
       - 'master'
