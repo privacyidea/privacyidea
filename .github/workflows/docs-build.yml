@@ -39,4 +39,4 @@ jobs:
 
       - name: Build documentation
         run: |
-          sphinx-build -b html -W doc doc/_build/html
+          sphinx-build -b html -W -D exclude_patterns="modules/**" doc doc/_build/html

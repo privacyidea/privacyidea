@@ -334,12 +334,9 @@ def create_app(config_name="development",
         app.config.from_pyfile(config_file, silent=False)
     except IOError as e:
         if config_name != "docker" or ENV_KEY in os.environ:
-            sys.stderr.write("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n")
-            sys.stderr.write("  WARNING: Unable to load additional configuration\n")
-            sys.stderr.write(f"  from {config_file}!\n")
+            sys.stderr.write("WARNING: Unable to load additional configuration from {config_file}!\n")
             if app.config.get(ConfigKey.VERBOSE):
-                sys.stderr.write(f"  ({e})\n")
-            sys.stderr.write("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n")
+                sys.stderr.write(f"Error: {e}\n")
 
     # CSP with Talisman
     if app.config.get(ConfigKey.ENABLE_CSP, False):
