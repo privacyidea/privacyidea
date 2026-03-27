@@ -18,20 +18,17 @@
 -->
 
 <div class="action-description-container">
-  <div
-    i18n
-    class="description-header">
-    Description
-  </div>
-  <textarea
-    matInput
-    class="description-textarea"
-    [ngModel]="description()"
-    (ngModelChange)="updatePolicyDescription($event)"
-    i18n-placeholder
-    placeholder="(optional) Enter a description for this policy..."
-    cdkTextareaAutosize
-    cdkAutosizeMinRows="3"
-    cdkAutosizeMaxRows="6">
-  </textarea>
+  <mat-form-field>
+    <mat-label i18n>Description</mat-label>
+    <textarea
+      matInput
+      cdkTextareaAutosize
+      [cdkAutosizeMinRows]="3"
+      [cdkAutosizeMaxRows]="6"
+      [ngModel]="description()"
+      (ngModelChange)="updatePolicyDescription($event)"
+      i18n-placeholder
+      placeholder="(optional) Enter a description for this policy...">
+    </textarea>
+  </mat-form-field>
 </div>

@@ -18,15 +18,12 @@
 -->
 
 <div class="action-priority-container">
-  <div
-    i18n
-    class="priority-header">
-    Priority
-  </div>
-  <input
-    matInput
-    type="number"
-    class="priority-input"
-    [ngModel]="priority()"
-    (ngModelChange)="priority.set($event)" />
+  <mat-form-field>
+    <mat-label i18n>Priority</mat-label>
+    <input
+      matInput
+      type="number"
+      [ngModel]="priority()"
+      (ngModelChange)="priority.set($event)" />
+  </mat-form-field>
 </div>

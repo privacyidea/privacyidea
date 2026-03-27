@@ -5,20 +5,4 @@
   flex-direction: column;
   gap: var(--half-global-gap);
   min-width: 0;
-
-  .description-header {
-    font-size: 1.17em;
-    font-weight: bold;
-    margin: 0;
-  }
-
-  .description-textarea {
-    @include inputs.action-tab-input;
-
-    &:focus-visible,
-    &:focus-within {
-      outline: inputs.$input-focus-outline;
-      outline-offset: 2px;
-    }
-  }
 }
