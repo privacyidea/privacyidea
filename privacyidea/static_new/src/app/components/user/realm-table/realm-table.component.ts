@@ -136,7 +136,6 @@ export class RealmTableComponent {
   private readonly _notificationService: NotificationServiceInterface = inject(NotificationService);
 
   // View Children
-  @ViewChild(MatPaginator) paginator!: MatPaginator;
   @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: ElementRef<HTMLInputElement>;
 
   // Table Config
@@ -258,7 +257,6 @@ export class RealmTableComponent {
     computation: (src) => {
       const sortedRows = this._clientsideSortRealmData([...(src.rows ?? [])], this.sort());
       const dataSource = new MatTableDataSource(sortedRows);
-      dataSource.paginator = this.paginator;
 
       dataSource.filterPredicate = (data: RealmRow, filter: string) => {
         const normalizedFilter = filter.trim().toLowerCase();

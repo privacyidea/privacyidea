@@ -22,11 +22,12 @@ import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { FormsModule, ReactiveFormsModule, FormControl, Validators, AbstractControl } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCheckboxModule } from "@angular/material/checkbox";
-import { MatFormField, MatLabel, MatInput, MatError } from "@angular/material/input";
+import { MatInput } from "@angular/material/input";
+import { MatFormField, MatLabel, MatError } from "@angular/material/form-field";
 import { MatSelectModule, MatSelect, MatOption } from "@angular/material/select";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { merge } from "rxjs";
-import { ResolverService, LDAPResolverData, BindType, LdapPreset } from "src/app/services/resolver/resolver.service";
+import { ResolverService, LdapPreset, LDAPResolverData, BindType } from "src/app/services/resolver/resolver.service";
 import { parseBooleanValue } from "src/app/utils/parse-boolean-value";
 
 @Component({
@@ -73,15 +74,12 @@ export class LdapResolverComponent {
   isEditMode = computed(() => !!this.resolverService.selectedResolverName());
 
   // --- Connection Details ---
-  // Scope
   scopeControl = new FormControl<string>("SUBTREE", { nonNullable: true });
   // Base DN
   ldapBaseControl = new FormControl<string>("", { nonNullable: true, validators: [Validators.required] });
   // Server URI
   ldapUriControl = new FormControl<string>("", { nonNullable: true, validators: [Validators.required] });
-  // STARTTLS
   startTlsControl = new FormControl<boolean>(true, { nonNullable: true });
-  // TLS Version
   tlsVersionControl = new FormControl<string>("TLSv1_3", { nonNullable: true });
   // Verify TLS certificate of the server.
   tlsVerifyControl = new FormControl<boolean>(true, { nonNullable: true });
@@ -89,19 +87,13 @@ export class LdapResolverComponent {
   tlsCaFileControl = new FormControl<string>("", { nonNullable: true });
 
   // --- Credentials ---
-  // Bind Type
   bindTypeControl = new FormControl<BindType>("Simple", { nonNullable: true });
-  // Bind password / Keyfile Path
   bindPwControl = new FormControl<string>("", { nonNullable: true });
-  // Bind DN
   bindDnControl = new FormControl<string>("", { nonNullable: true });
 
   // --- Settings ---
-  // Timeout
   timeoutControl = new FormControl<number>(5, { nonNullable: true });
-  // Cache Timeout
   cacheTimeoutControl = new FormControl<number>(120, { nonNullable: true });
-  // Size Limit
   sizeLimitControl = new FormControl<number>(500, { nonNullable: true });
   // Server Pool Retry Rounds
   serverPoolRoundsControl = new FormControl<number>(2, { nonNullable: true });
@@ -117,15 +109,12 @@ export class LdapResolverComponent {
   dnTemplateControl = new FormControl<string>("", { nonNullable: true });
 
   // --- Attributes & Mapping ---
-  // Loginname Attribute
   loginNameAttributeControl = new FormControl<string>("", { nonNullable: true, validators: [Validators.required] });
-  // UID Type
   uidTypeControl = new FormControl<string>("DN", { nonNullable: true });
   // Search Filter
   ldapSearchFilterControl = new FormControl<string>("", { nonNullable: true, validators: [Validators.required] });
   // Attribute Mapping
   userInfoControl = new FormControl<string>("", { nonNullable: true, validators: [Validators.required] });
-  // Multivalue Attributes
   multivalueAttributesControl = new FormControl<string>("", { nonNullable: true });
   // Recursive Search of User Groups
   recursiveGroupSearchControl = new FormControl<boolean>(false, { nonNullable: true });
@@ -133,7 +122,6 @@ export class LdapResolverComponent {
   groupBaseDNControl = new FormControl<string>("", { nonNullable: true });
   // Search Filter for User Groups
   groupSearchFilterControl = new FormControl<string>("", { nonNullable: true });
-  // Group Name Attribute
   groupNameAttributeControl = new FormControl<string>("", { nonNullable: true });
   // User Info Key
   groupAttributeMappingKeyControl = new FormControl<string>("", { nonNullable: true });
