@@ -2,6 +2,8 @@
 Welcome to privacyIDEA
 ######################
 
+privacyIDEA is a modular authentication system. :ref:`this_label_does_not_exist`
+
 privacyIDEA is a modular authentication system.
 Using privacyIDEA you can enhance your existing applications like
 :ref:`local login <pam_plugin>`,
