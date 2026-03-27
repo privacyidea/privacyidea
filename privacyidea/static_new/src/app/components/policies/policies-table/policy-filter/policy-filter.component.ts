@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, Input, output, viewChild, ElementRef, signal } from "@angular/core";
+import { Component, ElementRef, Input, output, signal, viewChild } from "@angular/core";
 import { MatInputModule } from "@angular/material/input";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { FilterValueGeneric } from "src/app/core/models/filter_value_generic/filter-value-generic";
@@ -66,6 +66,7 @@ export class PolicyFilterComponent {
       this.filter.set(newFilter);
       this.isEmpty.set(newFilter.rawValue.trim() === "");
       this.lastFilter = newFilter;
+      this.focusInput();
     }
   }
 
