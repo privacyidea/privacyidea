@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, ElementRef, Input, output, signal, viewChild } from "@angular/core";
+import { AfterViewInit, Component, ElementRef, Input, output, signal, viewChild } from "@angular/core";
 import { MatInputModule } from "@angular/material/input";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { FilterValueGeneric } from "src/app/core/models/filter_value_generic/filter-value-generic";
@@ -30,7 +30,7 @@ import { PolicyDetail } from "src/app/services/policies/policies.service";
   templateUrl: "./policy-filter.component.html",
   styleUrl: "./policy-filter.component.scss"
 })
-export class PolicyFilterComponent {
+export class PolicyFilterComponent implements AfterViewInit {
   /**
    * Classic @Input for initialization from parent.
    */
@@ -52,6 +52,8 @@ export class PolicyFilterComponent {
   // The raw string bound to the input [value]
   public lastFilter: FilterValueGeneric<PolicyDetail> | null = null;
 
+  private _viewInitialized = false;
+
   /**
    * Manually updates the filter state.
    * Uses a guard to prevent redundant signal updates and DOM jitter.
@@ -68,6 +70,10 @@ export class PolicyFilterComponent {
       this.lastFilter = newFilter;
       this.focusInput();
     }
+  }
+
+  ngAfterViewInit(): void {
+    this._viewInitialized = true;
   }
 
   /**
@@ -105,6 +111,8 @@ export class PolicyFilterComponent {
    * Restores focus to the native input element.
    */
   public focusInput(): void {
-    this.inputElement().nativeElement.focus();
+    if (this._viewInitialized) {
+      this.inputElement().nativeElement.focus();
+    }
   }
 }
