@@ -27,9 +27,13 @@
     <div class="panel-content">
       <div class="selectors-container">
         <div class="selector-row">
-          <p class="selector-label" i18n>Scope:</p>
+          <p
+            class="selector-label"
+            i18n>
+            Scope:
+          </p>
           <app-selector-buttons
-            class="scope-buttons"
+            class="flex-1"
             [values]="allPolicyScopes"
             [initialValue]="policy().scope"
             [allowDeselect]="true"
@@ -39,9 +43,13 @@
 
         @if (actionGroupNamesFiltered().length > 1) {
           <div class="selector-row">
-            <p class="selector-label" i18n>Group:</p>
+            <p
+              class="selector-label"
+              i18n>
+              Group:
+            </p>
             <app-selector-buttons
-              class="group-buttons"
+              class="flex-1"
               [values]="actionGroupNamesFiltered()"
               [initialValue]="selectedActionGroup()"
               (onSelect)="selectActionGroup($event)"
