@@ -29,8 +29,8 @@
     "uuid": "^11.1.0"
   },
   "devDependencies": {
-    "@angular-builders/jest": "^19.0.1",
-    "@angular-devkit/build-angular": "19.2.19",
+    "@angular-builders/jest": "^21.0.3",
+    "@angular-devkit/build-angular": "21.2.5",
     "@angular/cli": "21.2.5",
     "@angular/compiler-cli": "19.2.15",
     "@angular/localize": "19.2.15",
