@@ -21,5 +21,10 @@
 import { bootstrapApplication } from "@angular/platform-browser";
 import { AppComponent } from "./app/app.component";
 import { appConfig } from "./app/app.config";
+import { environment } from "./environments/environment";
+
+// Pick up the script root injected by Flask for subpath deployments (e.g. UWSGIScriptAlias /pi).
+// Must be set before bootstrapApplication so all services see the correct proxyUrl.
+environment.proxyUrl = (window as any).__PI_SCRIPT_ROOT__ ?? environment.proxyUrl;
 
 bootstrapApplication(AppComponent, appConfig).catch((err) => console.error(err));

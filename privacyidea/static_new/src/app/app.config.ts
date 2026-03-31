@@ -42,7 +42,7 @@ export const appConfig: ApplicationConfig = {
     provideExperimentalZonelessChangeDetection(),
     provideRouter(routes),
     provideAnimationsAsync(),
-    { provide: APP_BASE_HREF, useValue: "/app/v2/" },
+    { provide: APP_BASE_HREF, useValue: ((window as any).__PI_SCRIPT_ROOT__ ?? "") + "/app/v2/" },
     AuthService,
     provideHttpClient(withInterceptors([loadingInterceptor, userAgentInterceptor])),
     provideAppInitializer(() => {
