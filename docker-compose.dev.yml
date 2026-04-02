@@ -1,6 +1,6 @@
 services:
   mariadb-test:
-    # DB URI: mysql+pymysql://privacyidea:privacyidea@127.0.0.1:3306/privacyidea_test
+    # DB URI: TEST_DATABASE_URL=mysql+pymysql://privacyidea:privacyidea@127.0.0.1:3306/privacyidea_test
     image: mariadb:11
     container_name: pi-mariadb-test
     environment:
@@ -18,7 +18,7 @@ services:
       retries: 10
 
   postgres-test:
-    # DB URI: postgresql+psycopg2://privacyidea:privacyidea@127.0.0.1:5432/privacyidea_test
+    # DB URI: TEST_DATABASE_URL=postgresql+psycopg2://privacyidea:privacyidea@127.0.0.1:5432/privacyidea_test
     image: postgres:17
     container_name: privacyidea-postgres
     environment:

@@ -43,7 +43,7 @@ from privacyidea.lib.resolvers.HTTPResolver import (HEADERS, METHOD, ENDPOINT, E
 from privacyidea.lib.resolvers.LDAPIdResolver import IdResolver as LDAPResolver, LockingServerPool
 from privacyidea.lib.resolvers.LDAPIdResolver import (SERVERPOOL_ROUNDS, SERVERPOOL_SKIP)
 from privacyidea.lib.resolvers.SCIMIdResolver import IdResolver as SCIMResolver
-from privacyidea.lib.resolvers.SQLIdResolver import IdResolver as SQLResolver
+from privacyidea.lib.resolvers.SQLIdResolver import IdResolver as SQLResolver, hash_password
 from privacyidea.lib.resolvers.UserIdResolver import UserIdResolver
 from privacyidea.lib.utils import to_bytes, to_unicode
 from privacyidea.models import ResolverConfig, Resolver, db
@@ -161,7 +161,7 @@ class SQLResolverTestCase(MyTestCase):
     """
     Test the SQL Resolver
     """
-    num_users = 13
+    num_users = 16
     parameters = {'Driver': 'sqlite',
                   'Server': '/tests/testdata/',
                   'Database': "testuser.sqlite",
@@ -322,6 +322,63 @@ class SQLResolverTestCase(MyTestCase):
         self.assertFalse(resolver.checkPass('12', "dunno2"))
         # unknown password hash type
         self.assertFalse(resolver.checkPass('13', "dunno2"))
+
+        # Negative tests for non-bcrypt schemes
+        self.assertFalse(resolver.checkPass('1', "wrongpass"))   # SSHA512
+        self.assertFalse(resolver.checkPass('2', "wrongpass"))   # lowercase {sha}
+        self.assertFalse(resolver.checkPass('3', "wrongpass"))   # hex_sha256 (OTRS)
+        self.assertFalse(resolver.checkPass('4', "wrongpass"))   # SSHA256
+        self.assertFalse(resolver.checkPass('5', "wrongpass"))   # SSHA
+        self.assertFalse(resolver.checkPass('6', "wrongpass"))   # phpass ($P$)
+        self.assertFalse(resolver.checkPass('8', "wrongpass"))   # md5crypt
+        self.assertFalse(resolver.checkPass('9', "wrongpass"))   # sha512crypt
+
+        # phpass_drupal (Drupal-style $S$ hash, not the same as WordPress $P$)
+        self.assertTrue(resolver.checkPass('14', "dunno"))
+        self.assertFalse(resolver.checkPass('14', "wrongpass"))
+
+        # SSHA256 with 24-byte salt — exceeds passlib's default max_salt_size of 16,
+        # which is why ldap_salted_sha256_pi raises it to 32.
+        self.assertTrue(resolver.checkPass('15', "dunno"))
+        self.assertFalse(resolver.checkPass('15', "wrongpass"))
+
+        # bcrypt with long password: the monkey-patch truncates passwords > 72 bytes
+        # to match bcrypt's behaviour, so 72-char and 80-char versions of the same
+        # password must both verify against a hash of the 72-char prefix.
+        self.assertTrue(resolver.checkPass('16', 'a' * 72))
+        self.assertTrue(resolver.checkPass('16', 'a' * 80))
+        self.assertFalse(resolver.checkPass('16', 'b' * 72))
+
+    def test_02b_hash_password(self):
+        """Direct unit tests for hash_password() covering every supported scheme."""
+        from privacyidea.lib.resolvers.SQLIdResolver import pw_ctx as sql_pw_ctx
+
+        for hashtype, expected_prefix in [
+            ("PHPASS", "$P$"),
+            ("SHA", "{SHA}"),
+            ("SSHA", "{SSHA}"),
+            ("SSHA256", "{SSHA256}"),
+            ("SSHA512", "{SSHA512}"),
+            ("SHA256CRYPT", "$5$"),
+            ("SHA512CRYPT", "$6$"),
+            ("MD5CRYPT", "$1$"),
+        ]:
+            hashed = hash_password("testpassword", hashtype)
+            self.assertTrue(hashed.startswith(expected_prefix),
+                            "{} hash should start with {!r}: {}".format(hashtype, expected_prefix, hashed))
+            self.assertTrue(sql_pw_ctx.verify("testpassword", hashed),
+                            "{} hash should verify correctly".format(hashtype))
+            self.assertFalse(sql_pw_ctx.verify("wrongpassword", hashed),
+                             "{} hash should not verify wrong password".format(hashtype))
+
+        # OTRS produces a 64-character lowercase hex string (unsalted SHA256)
+        otrs_hash = hash_password("testpassword", "OTRS")
+        self.assertRegex(otrs_hash, r'^[0-9a-f]{64}$')
+        self.assertTrue(sql_pw_ctx.verify("testpassword", otrs_hash))
+        self.assertFalse(sql_pw_ctx.verify("wrongpassword", otrs_hash))
+
+        # Unknown hash type must raise an exception
+        self.assertRaises(Exception, hash_password, "testpassword", "UNKNOWNTYPE")
 
     def test_03_testconnection(self):
         resolver = SQLResolver()
@@ -528,16 +585,27 @@ class SQLResolverTestCase(MyTestCase):
         self.assertTrue(resolver.checkPass(uid, "test8"))
         self.assertFalse(resolver.checkPass(uid, "test"))
 
-        # TODO: check unknown hash type
+        # OTRS (hex_sha256): 64-character lowercase hex string, no prefix
+        parameters["Password_Hash_Type"] = "OTRS"
+        resolver.loadConfig(parameters)
+        self.assertTrue(resolver.update_user(uid, {"username": "achmed2",
+                                            "password": "test9"}))
+        stored_password = resolver.session.execute(
+            resolver.TABLE.select().where(resolver.TABLE.c.username == "achmed2")).first().password
+        self.assertRegex(stored_password, r'^[0-9a-f]{64}$')
+        self.assertTrue(resolver.checkPass(uid, "test9"))
+        self.assertFalse(resolver.checkPass(uid, "test"))
+
+        # check unknown hash type
         parameters["Password_Hash_Type"] = "UNKNOWN"
         resolver.loadConfig(parameters)
         with mock.patch("logging.Logger.error") as mock_log:
             self.assertFalse(resolver.update_user(uid, {"username": "achmed2",
-                                                 "password": "test9"}))
-            expected = "Error updating user attributes for user with uid 14: " \
+                                                 "password": "test10"}))
+            expected = "Error updating user attributes for user with uid {0!s}: " \
                        "Unsupported password hashtype 'UNKNOWN'. Use one of " \
                        "dict_keys(['PHPASS', 'SHA', 'SSHA', 'SSHA256', 'SSHA512', " \
-                       "'OTRS', 'SHA256CRYPT', 'SHA512CRYPT', 'MD5CRYPT'])."
+                       "'OTRS', 'SHA256CRYPT', 'SHA512CRYPT', 'MD5CRYPT']).".format(uid)
             mock_log.assert_called_once_with(expected)
 
         # set hash type to default

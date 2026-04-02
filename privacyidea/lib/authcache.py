@@ -22,7 +22,8 @@
 import datetime
 import logging
 
-from passlib.hash import argon2
+from argon2 import PasswordHasher
+from argon2.exceptions import InvalidHashError, VerificationError, VerifyMismatchError
 from sqlalchemy import update, select, delete
 
 from ..models import AuthCache, db
@@ -30,10 +31,11 @@ from ..models.utils import utc_now
 
 ROUNDS = 9
 log = logging.getLogger(__name__)
+_ph = PasswordHasher(time_cost=ROUNDS)
 
 
 def _hash_password(password):
-    return argon2.using(rounds=ROUNDS).hash(password)
+    return _ph.hash(password)
 
 
 def add_to_cache(username: str, realm: str, resolver: str, password: str) -> int:
@@ -80,18 +82,19 @@ def delete_from_cache(username: str, realm: str, resolver: str, password: str,
     for cached_auth in cached_auths:
         delete_entry = False
         # if the password matches or the entry is otherwise invalid, we deleted it.
-        try:
-            if max_auths > 0 and cached_auth.auth_count >= max_auths:
-                delete_entry = True
-            elif last_valid_cache_time and cached_auth.first_auth < last_valid_cache_time:
-                delete_entry = True
-            elif argon2.verify(password, cached_auth.authentication):
-                delete_entry = True
-
-        except ValueError:
-            log.debug("Old (non-argon2) authcache entry for user {0!s}@{1!s}.".format(username, realm))
-            # Also delete old entries
+        if max_auths > 0 and cached_auth.auth_count >= max_auths:
             delete_entry = True
+        elif last_valid_cache_time and cached_auth.first_auth < last_valid_cache_time:
+            delete_entry = True
+        else:
+            try:
+                _ph.verify(cached_auth.authentication, password)
+                delete_entry = True
+            except VerifyMismatchError:
+                pass
+            except (VerificationError, InvalidHashError):
+                log.debug("Old (non-argon2) authcache entry for user {0!s}@{1!s}.".format(username, realm))
+                delete_entry = True
         if delete_entry:
             r += 1
             db.session.delete(cached_auth)
@@ -147,8 +150,11 @@ def verify_in_cache(username, realm, resolver, password, first_auth=None, last_a
 
     for cached_auth in cached_auths:
         try:
-            result = argon2.verify(password, cached_auth.authentication)
-        except ValueError:
+            _ph.verify(cached_auth.authentication, password)
+            result = True
+        except VerifyMismatchError:
+            result = False
+        except (VerificationError, InvalidHashError):
             log.debug("Old (non-argon2) authcache entry for user {0!s}@{1!s}.".format(username, realm))
             result = False
 
