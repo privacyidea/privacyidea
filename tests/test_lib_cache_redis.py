@@ -52,7 +52,7 @@ from privacyidea.lib.cache.redis import (
     get_challenges_from_cache,
     get_redis,
 )
-from privacyidea.lib.challenge import get_challenges
+from privacyidea.lib.challenge import get_challenges, get_challenges_paginate
 from privacyidea.lib.framework import get_app_local_store
 from privacyidea.lib.token import create_challenge, init_token
 from privacyidea.models import Challenge, db
@@ -550,6 +550,45 @@ class TestCreateChallengeIntegration(MyTestCase):
         txn_ids = {c.transaction_id for c in result}
         self.assertIn(ch1.transaction_id, txn_ids)
         self.assertIn(ch2.transaction_id, txn_ids)
+
+    def test_get_challenges_paginate_by_serial_redis(self):
+        """get_challenges_paginate filtered by serial must be served from Redis."""
+        fake = FakeRedis()
+        with fake_redis_in_store(fake):
+            ch1 = create_challenge(self.serial, challenge='p1', validitytime=120)
+            ch2 = create_challenge(self.serial, challenge='p2', validitytime=120)
+
+            result = get_challenges_paginate(serial=self.serial)
+
+        self.assertEqual(result['count'], 2)
+        txn_ids = {c['transaction_id'] for c in result['challenges']}
+        self.assertIn(ch1.transaction_id, txn_ids)
+        self.assertIn(ch2.transaction_id, txn_ids)
+        # No DB rows — unfiltered DB query would return 0
+        self.assertEqual(Challenge.query.filter_by(serial=self.serial).count(), 0)
+
+    def test_get_challenges_paginate_by_txn_redis(self):
+        """get_challenges_paginate filtered by transaction_id must be served from Redis."""
+        fake = FakeRedis()
+        with fake_redis_in_store(fake):
+            ch = create_challenge(self.serial, challenge='p_txn', validitytime=120)
+            txn_id = ch.transaction_id
+
+            result = get_challenges_paginate(transaction_id=txn_id)
+
+        self.assertEqual(result['count'], 1)
+        self.assertEqual(result['challenges'][0]['transaction_id'], txn_id)
+
+    def test_get_challenges_paginate_unfiltered_empty_with_redis(self):
+        """Unfiltered paginate always queries the DB — empty when Redis is active."""
+        fake = FakeRedis()
+        with fake_redis_in_store(fake):
+            create_challenge(self.serial, challenge='p_nofilt', validitytime=120)
+            result = get_challenges_paginate()  # no serial, no txn_id
+
+        # DB has no rows, so result is empty
+        self.assertEqual(result['count'], 0)
+        self.assertEqual(result['challenges'], [])
 
 
 # Real-Redis integration tests — skipped when TEST_REDIS_URL is not set.

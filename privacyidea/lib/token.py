@@ -3120,11 +3120,12 @@ def import_tokens(tokens: list[dict], update_existing_tokens: bool = True,
 def create_challenge(serial: str, transaction_id: str = None, challenge: str = '',
                      data=None, session: str = '', validitytime: int = 120) -> Challenge:
     """
-    Create a new challenge, persist it to the database, and populate the cache.
+    Create a new challenge and persist it — to Redis if available, to the DB otherwise.
 
-    This is the single entry point for challenge creation.  When a Redis cache
-    is configured (PI_REDIS_URL), the challenge is also written there so that
-    other nodes in an HA setup can read it without a DB round-trip.
+    This is the single entry point for challenge creation. When Redis is
+    configured (PI_REDIS_URL), the challenge is written to Redis only and the
+    SQL INSERT is skipped.  If Redis is not configured or fails, the challenge
+    falls back to the database so it is never silently lost.
 
     :param serial: Serial number of the token this challenge belongs to
     :param transaction_id: Transaction id of the challenge. A new one is generated if None.
@@ -3132,7 +3133,7 @@ def create_challenge(serial: str, transaction_id: str = None, challenge: str = '
     :param data: Optional data to store with the challenge (str, dict, or None)
     :param session: Session string
     :param validitytime: Validity period in seconds (default: 120)
-    :return: The created and saved Challenge object
+    :return: The created Challenge object
     """
     from privacyidea.lib.cache import cache_challenge, get_redis
     db_challenge = Challenge(serial,

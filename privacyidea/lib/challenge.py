@@ -35,6 +35,7 @@ from sqlalchemy import select, delete
 from sqlalchemy.sql import Select
 
 from .cache import get_challenges_from_cache
+from .cache.redis import get_redis
 from .log import log_with
 from .policies.actions import PolicyAction
 from .sqlutils import delete_matching_rows
@@ -86,6 +87,11 @@ def get_challenges_paginate(serial=None, transaction_id=None,
     Each retrieved page will also contain a "next" and a "prev", indicating
     the next or previous page. If either does not exist, it is None.
 
+    When Redis is active and a serial or transaction_id filter is provided,
+    results are served from the cache.  Unfiltered requests always go to the
+    database (Redis has no concept of "list all"); when Redis is active those
+    results will be empty since challenges are not written to the DB.
+
     :param serial: The serial of the token
     :param transaction_id: The transaction_id of the challenge
     :param sortby: Sort by a Challenge DB field. The default is
@@ -100,6 +106,33 @@ def get_challenges_paginate(serial=None, transaction_id=None,
     :return: dict with challenges, prev, next and count
     :rtype: dict
     """
+    # When Redis is active and a specific filter is given, serve from cache.
+    # Pagination/sorting are applied in-memory since Redis has no native support.
+    if get_redis() is not None and (serial or transaction_id):
+        cached = get_challenges_from_cache(serial=serial, transaction_id=transaction_id)
+        if cached is not None:
+            # Apply in-memory sort
+            reverse = sortdir == "desc"
+            sort_key = sortby if isinstance(sortby, str) else sortby.key
+            try:
+                cached = sorted(cached, key=lambda c: getattr(c, sort_key, c.timestamp),
+                                reverse=reverse)
+            except Exception:
+                pass  # unsortable field — leave in natural order
+
+            total = len(cached)
+            start = (page - 1) * psize
+            end = start + psize
+            page_items = cached[start:end]
+
+            return {
+                "challenges": [c.get() for c in page_items],
+                "prev": page - 1 if start > 0 else None,
+                "next": page + 1 if end < total else None,
+                "current": page,
+                "count": total,
+            }
+
     stmt = _create_challenge_query(serial=serial, transaction_id=transaction_id)
 
     if isinstance(sortby, str):
