@@ -8,7 +8,7 @@ from datetime import datetime, timezone, timedelta
 
 from typing import Optional
 
-import passlib
+from .crypto_helper import pbkdf2_sha512_verify
 from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PublicKey
 
 from privacyidea.lib.applications.offline import MachineApplication, REFILLTOKEN_LENGTH
@@ -3436,9 +3436,9 @@ class APIContainerSynchronization(APIContainerTest):
         auth_item = MachineApplication.get_authentication_item("hotp", serial)
         refilltoken = auth_item.get("refilltoken")
         self.assertEqual(len(refilltoken), REFILLTOKEN_LENGTH * 2)
-        self.assertTrue(passlib.hash.pbkdf2_sha512.verify(otps[3],  # count = 3
+        self.assertTrue(pbkdf2_sha512_verify(otps[3],  # count = 3
                                                           auth_item.get("response").get(3)))
-        self.assertTrue(passlib.hash.pbkdf2_sha512.verify(otps[8],  # count = 8
+        self.assertTrue(pbkdf2_sha512_verify(otps[8],  # count = 8
                                                           auth_item.get("response").get(8)))
         # The token now contains the refill token information:
         self.assertEqual(refilltoken, token.get_tokeninfo("refilltoken"))

@@ -17,7 +17,7 @@ from privacyidea.lib.applications import (get_auth_item,
                                           get_application_types)
 from privacyidea.lib.token import init_token, get_tokens
 from privacyidea.lib.user import User
-import passlib.hash
+from .crypto_helper import pbkdf2_sha512_verify
 import mock
 
 
@@ -146,11 +146,9 @@ class OfflineApplicationTestCase(MyTestCase):
         auth_item = OfflineApplication.get_authentication_item("hotp", serial)
         refilltoken = auth_item.get("refilltoken")
         self.assertEqual(len(refilltoken), REFILLTOKEN_LENGTH * 2)
-        self.assertTrue(passlib.hash.\
-                        pbkdf2_sha512.verify("969429", # count = 3
+        self.assertTrue(pbkdf2_sha512_verify("969429",  # count = 3
                                              auth_item.get("response").get(3)))
-        self.assertTrue(passlib.hash.\
-                        pbkdf2_sha512.verify("399871", # count = 8
+        self.assertTrue(pbkdf2_sha512_verify("399871",  # count = 8
                                              auth_item.get("response").get(8)))
         # The token now contains the refill token information:
         self.assertEqual(refilltoken, tok.get_tokeninfo("refilltoken"))
@@ -161,8 +159,7 @@ class OfflineApplicationTestCase(MyTestCase):
         self.assertEqual(tok.token.count, 3 + 100)
         # Assert that we cannot authenticate with the last offline OTP we got
         self.assertEqual(len(auth_item.get("response")), 100)
-        self.assertTrue(passlib.hash.\
-                        pbkdf2_sha512.verify("629694", # count = 102
+        self.assertTrue(pbkdf2_sha512_verify("629694",  # count = 102
                                              auth_item.get("response").get(102)))
         res = tok.check_otp("629694") # count = 102
         self.assertEqual(res, -1)

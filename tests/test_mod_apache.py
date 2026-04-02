@@ -8,7 +8,7 @@ from authmodules.apache2.privacyidea_apache import (OK, UNAUTHORIZED,
 import responses
 import json
 from . import redismock
-import passlib.hash
+from .crypto_helper import pbkdf2_sha512_hash
 
 
 SUCCESS_BODY = {"detail": {"message": "matching 1 tokens",
@@ -34,7 +34,7 @@ FAIL_BODY = {"detail": {"message": "wrong otp value"},
 
 class ApacheTestCase(MyTestCase):
 
-    pw_dig = passlib.hash.pbkdf2_sha512.using(rounds=ROUNDS, salt_size=SALT_SIZE).hash("test100001")
+    pw_dig = pbkdf2_sha512_hash("test100001", ROUNDS, SALT_SIZE)
 
     @redismock.activate
     @responses.activate

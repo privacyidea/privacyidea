@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 import jwt
 from dateutil.tz import tzlocal
 from flask import Request, g, current_app, jsonify
-from passlib.hash import pbkdf2_sha512
+from .crypto_helper import pbkdf2_sha512_verify
 from testfixtures import log_capture, LogCapture
 from werkzeug.datastructures.headers import Headers
 from werkzeug.test import EnvironBuilder
@@ -5438,8 +5438,8 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         tokenobject = get_tokens(serial=serial)[0]
         self.assertEqual(tokenobject.token.count, 100)
         # check that we cannot authenticate with an offline value
-        self.assertTrue(pbkdf2_sha512.verify("offline287082", response.get('1')))
-        self.assertTrue(pbkdf2_sha512.verify("offline516516", response.get('99')))
+        self.assertTrue(pbkdf2_sha512_verify("offline287082", response.get('1')))
+        self.assertTrue(pbkdf2_sha512_verify("offline516516", response.get('99')))
         res = tokenobject.check_otp("516516")  # count = 99
         self.assertEqual(res, -1)
         # check that we can authenticate online with the correct value
@@ -5485,8 +5485,8 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         tokenobject = get_tokens(serial=serial)[0]
         self.assertEqual(tokenobject.token.count, 201)
         # check that we cannot authenticate with an offline value
-        self.assertTrue(pbkdf2_sha512.verify("629694offline", response.get('102')))
-        self.assertTrue(pbkdf2_sha512.verify("492354offline", response.get('199')))
+        self.assertTrue(pbkdf2_sha512_verify("629694offline", response.get('102')))
+        self.assertTrue(pbkdf2_sha512_verify("492354offline", response.get('199')))
         res = tokenobject.check_otp("492354")  # count = 199
         self.assertEqual(res, -1)
         # check that we can authenticate online with the correct value

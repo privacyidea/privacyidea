@@ -37,7 +37,10 @@ import redis
 import requests
 import syslog
 import traceback
-import passlib.hash
+import base64
+import hashlib as _hashlib
+import hmac as _hmac
+import os as _os
 import configparser
 
 OK = True
@@ -61,7 +64,7 @@ def check_password(environ, username, password):
     # check, if the user already exists in the database.
     key = _generate_key(username, environ)
     value = rd.get(key)
-    if value and passlib.hash.pbkdf2_sha512.verify(password, value):
+    if value and _pbkdf2_sha512_verify(password, value):
         # update the timeout
         rd.setex(key, value=_generate_digest(password), time=TIMEOUT)
         r_value = OK
@@ -94,10 +97,39 @@ def check_password(environ, username, password):
     return r_value
 
 
+def _ab64_encode(data):
+    return base64.b64encode(data).rstrip(b'=').replace(b'+', b'.').decode('ascii')
+
+
+def _ab64_decode(s):
+    s = s.replace('.', '+')
+    return base64.b64decode(s + '=' * ((4 - len(s) % 4) % 4))
+
+
+def _pbkdf2_sha512_verify(password, hash_str):
+    if isinstance(password, str):
+        password = password.encode('utf-8')
+    if isinstance(hash_str, bytes):
+        hash_str = hash_str.decode('utf-8')
+    try:
+        parts = hash_str.split('$')
+        rounds = int(parts[2])
+        salt = _ab64_decode(parts[3])
+        stored = _ab64_decode(parts[4])
+        computed = _hashlib.pbkdf2_hmac('sha512', password, salt, rounds)
+        return _hmac.compare_digest(computed, stored)
+    except Exception:
+        return False
+
+
 def _generate_digest(password):
-    pw_dig = passlib.hash.pbkdf2_sha512.using(rounds=ROUNDS,
-                                              salt_size=SALT_SIZE).hash(password)
-    return pw_dig
+    if isinstance(password, str):
+        password = password.encode('utf-8')
+    salt = _os.urandom(SALT_SIZE)
+    dk = _hashlib.pbkdf2_hmac('sha512', password, salt, ROUNDS)
+    return '$pbkdf2-sha512${r}${s}${h}'.format(
+        r=ROUNDS, s=_ab64_encode(salt), h=_ab64_encode(dk)
+    )
 
 
 def _generate_key(username, environ):
