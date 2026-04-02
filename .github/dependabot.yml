@@ -8,25 +8,14 @@ updates:
     cooldown:
       default-days: 7
 
-  - package-ecosystem: "pip"
-    # Check Python requirements daily for updates but only create PRs for security updates
-    directories:
-      - "/"
-      - "/doc"
-      - "/tests"
-    schedule:
-      interval: "daily"
-    # Don't create PRs for version updates
-    open-pull-requests-limit: 0
-    cooldown:
-      default-days: 7
+  # Python dependencies are fully pinned pip-compile lock files with hashes.
+  # Dependabot cannot regenerate them correctly (it patches individual pins without
+  # re-solving the graph). Vulnerability detection is handled by pip-audit manually.
 
   - package-ecosystem: "npm"
-    # Check JS packages daily for updates
-    directory: "/privacyidea/static"
+    # New Angular frontend — dependabot can update package.json ranges correctly
+    directory: "/privacyidea/static_new"
     schedule:
-      interval: "daily"
-    # Don't create PRs for version updates
-    open-pull-requests-limit: 0
+      interval: "weekly"
     cooldown:
       default-days: 7

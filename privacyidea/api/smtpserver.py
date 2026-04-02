@@ -62,6 +62,11 @@ def create(identifier=None):
     :param password: The password for authentication at the SMTP server
     :param tls: If the server should do TLS
     :param description: A description for the definition
+    :param smime: If the server should do S/MIME signing
+    :param dont_send_on_error: If the email should not be sent if there is an error in the S/MIME signing process
+    :param private_key: The private key for S/MIME signing
+    :param private_key_password: The password for the private key for S/MIME signing
+    :param certificate: The certificate for S/MIME signing
     """
     param = request.all_data
     server = getParam(param, "server", required)
@@ -76,7 +81,7 @@ def create(identifier=None):
     smime = is_true(getParam(param, "smime", default=False))
     dont_send_on_error = is_true(getParam(param, "dont_send_on_error", default=False))
     private_key = getParam(param, "private_key", default="")
-    private_key_password = getParam(param, "private_key_password", default="")
+    private_key_password = getParam(param, "private_key_password")
     certificate = getParam(param, "certificate", default="")
 
     r = add_smtpserver(identifier, server, port=port, username=username,

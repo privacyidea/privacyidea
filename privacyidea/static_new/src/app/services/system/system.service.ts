@@ -26,11 +26,6 @@ import { CaConnectors } from "../ca-connector/ca-connector.service";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
 import { Observable } from "rxjs";
 
-export type PiNode = {
-  name: string;
-  uuid: string;
-};
-
 export interface NodeInfo {
   name: string;
   uuid: string;
@@ -44,7 +39,7 @@ export interface SystemServiceInterface {
   nodesResource: HttpResourceRef<any>;
   systemConfig: Signal<any>;
   systemConfigInit: Signal<any>;
-  nodes: Signal<PiNode[]>;
+  nodes: Signal<NodeInfo[]>;
 
   saveSystemConfig(config: any): Observable<PiResponse<any>>;
 
@@ -67,8 +62,11 @@ export class SystemService implements SystemServiceInterface {
   private readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly http: HttpClient = inject(HttpClient);
   private onAllowedRoutes = computed(() => {
-    return this.contentService.onTokenEnrollmentLikely() ||
-      this.contentService.onConfigurationSystem() || this.contentService.onConfigurationTokenTypes();
+    return (
+      this.contentService.onTokenEnrollmentLikely() ||
+      this.contentService.onConfigurationSystem() ||
+      this.contentService.onConfigurationTokenTypes()
+    );
   });
 
   systemConfigResource = httpResource<any>(() => {
@@ -120,10 +118,11 @@ export class SystemService implements SystemServiceInterface {
     source: this.caConnectorResource?.value,
     computation: (source, previous) => source?.result?.value ?? previous?.value ?? []
   });
-  nodesResource = httpResource<PiResponse<PiNode[]>>(() => {
+  nodesResource = httpResource<PiResponse<NodeInfo[]>>(() => {
     if (
       !this.contentService.onConfigurationPeriodicTasks() &&
-      !this.contentService.onConfigurationSystem()
+      !this.contentService.onConfigurationSystem() &&
+      !this.contentService.onUserRealms()
     ) {
       return undefined;
     }
@@ -139,28 +138,30 @@ export class SystemService implements SystemServiceInterface {
   systemConfigInit = computed<any>(() => {
     return this.systemConfigResource.value()?.result?.init ?? {};
   });
-  nodes = computed<PiNode[]>(() => {
+  nodes = computed<NodeInfo[]>(() => {
     return this.nodesResource.value()?.result?.value ?? [];
   });
 
   saveSystemConfig(config: any): Observable<PiResponse<any>> {
-    return this.http.post<PiResponse<any>>(this.systemBaseUrl + "setConfig", config,
-      { headers: this.authService.getHeaders() });
+    return this.http.post<PiResponse<any>>(this.systemBaseUrl + "setConfig", config, {
+      headers: this.authService.getHeaders()
+    });
   }
 
   deleteSystemConfig(key: string): Observable<PiResponse<any>> {
-    return this.http.delete<PiResponse<any>>(`${this.systemBaseUrl}${key}`,
-      { headers: this.authService.getHeaders() });
+    return this.http.delete<PiResponse<any>>(`${this.systemBaseUrl}${key}`, { headers: this.authService.getHeaders() });
   }
 
   deleteUserCache(): Observable<PiResponse<any>> {
-    return this.http.delete<PiResponse<any>>(`${this.systemBaseUrl}user-cache`,
-      { headers: this.authService.getHeaders() });
+    return this.http.delete<PiResponse<any>>(`${this.systemBaseUrl}user-cache`, {
+      headers: this.authService.getHeaders()
+    });
   }
 
   loadSmtpIdentifiers(): Observable<PiResponse<any>> {
-    return this.http.get<PiResponse<any>>(`${this.systemBaseUrl}names/smtp`,
-      { headers: this.authService.getHeaders() });
+    return this.http.get<PiResponse<any>>(`${this.systemBaseUrl}names/smtp`, {
+      headers: this.authService.getHeaders()
+    });
   }
 
   getDocumentation(): Observable<string> {

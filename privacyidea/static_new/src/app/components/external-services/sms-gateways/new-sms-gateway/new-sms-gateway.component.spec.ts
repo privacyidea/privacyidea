@@ -25,6 +25,11 @@ import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from "@angular/material/dial
 import { of } from "rxjs";
 import { SmsGatewayService } from "../../../../services/sms-gateway/sms-gateway.service";
 import { MockSmsGatewayService } from "../../../../../testing/mock-services/mock-sms-gateway-service";
+import { SaveAndExitDialogComponent } from "../../../shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
+import { PendingChangesService } from "../../../../services/pending-changes/pending-changes.service";
+import { MockPendingChangesService } from "../../../../../testing/mock-services/mock-pending-changes-service";
+import { DialogService } from "../../../../services/dialog/dialog.service";
+import { MockDialogService } from "../../../../../testing/mock-services";
 
 describe("NewSmsGatewayComponent", () => {
   let component: NewSmsGatewayComponent;
@@ -32,6 +37,8 @@ describe("NewSmsGatewayComponent", () => {
   let smsGatewayServiceMock: any;
   let dialogRefMock: any;
   let dialogMock: any;
+  let pendingChangesService: MockPendingChangesService;
+  let dialogService: MockDialogService;
 
   beforeEach(async () => {
     dialogRefMock = {
@@ -53,6 +60,8 @@ describe("NewSmsGatewayComponent", () => {
         { provide: MAT_DIALOG_DATA, useValue: null },
         { provide: MatDialogRef, useValue: dialogRefMock },
         { provide: SmsGatewayService, useClass: MockSmsGatewayService },
+        { provide: PendingChangesService, useClass: MockPendingChangesService },
+        { provide: DialogService, useClass: MockDialogService },
       ]
     }).overrideComponent(NewSmsGatewayComponent, {
       add: {
@@ -63,6 +72,8 @@ describe("NewSmsGatewayComponent", () => {
     }).compileComponents();
 
     smsGatewayServiceMock = TestBed.inject(SmsGatewayService);
+    pendingChangesService = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
+    dialogService = TestBed.inject(DialogService) as unknown as MockDialogService;
     (smsGatewayServiceMock.smsProvidersResource as any).value.set({
       result: {
         value: {
@@ -98,8 +109,163 @@ describe("NewSmsGatewayComponent", () => {
       providermodule: "mod1"
     });
     component.smsForm.get("options")?.patchValue({ p1: "val1" });
-    await component.save();
+
+    const success = await component.save();
+
+    expect(success).toBe(true);
     expect(smsGatewayServiceMock.postSmsGateway).toHaveBeenCalled();
     expect(dialogRefMock.close).toHaveBeenCalledWith(true);
+  });
+
+  it("Save should handle error", async () => {
+    component.smsForm.patchValue({
+      name: "test",
+      providermodule: "mod1"
+    });
+    component.smsForm.get("options")?.patchValue({ p1: "val1" });
+    smsGatewayServiceMock.postSmsGateway = jest.fn().mockRejectedValue(new Error("Save failed"));
+    // Clear any previous calls to close from setup
+    dialogRefMock.close.mockClear();
+
+    const success = await component.save();
+
+    expect(success).toBe(false);
+    expect(smsGatewayServiceMock.postSmsGateway).toHaveBeenCalled();
+    expect(dialogRefMock.close).not.toHaveBeenCalled();
+  });
+
+  describe("onCancel", () => {
+    let mockSaveExitDialogRef: any;
+
+    beforeEach(() => {
+      mockSaveExitDialogRef = {
+        afterClosed: jest.fn()
+      };
+      dialogService.openDialog.mockReturnValue(mockSaveExitDialogRef);
+    });
+
+    it("should close directly when there are no changes", () => {
+      dialogRefMock.close.mockClear();
+
+      component.onCancel();
+
+      expect(dialogService.openDialog).not.toHaveBeenCalled();
+      expect(dialogRefMock.close).toHaveBeenCalled();
+    });
+
+    it("should open SaveAndExitDialog when there are changes", () => {
+      mockSaveExitDialogRef.afterClosed.mockReturnValue(of("discard"));
+      component.smsForm.patchValue({
+        name: "test",
+        providermodule: "mod1"
+      });
+      component.smsForm.get("options")?.patchValue({ p1: "val1" });
+      component.smsForm.markAsDirty();
+
+      component.onCancel();
+
+      expect(dialogService.openDialog).toHaveBeenCalledWith(
+        expect.objectContaining({
+          component: SaveAndExitDialogComponent,
+          data: expect.objectContaining({
+            allowSaveExit: true
+          })
+        })
+      );
+    });
+
+    it("should close when user selects 'discard' in cancel dialog", async () => {
+      mockSaveExitDialogRef.afterClosed.mockReturnValue(of("discard"));
+      component.smsForm.patchValue({
+        name: "test",
+        providermodule: "mod1"
+      });
+      component.smsForm.get("options")?.patchValue({ p1: "val1" });
+      component.smsForm.markAsDirty();
+      dialogRefMock.close.mockClear();
+
+      component.onCancel();
+
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
+      expect(dialogRefMock.close).toHaveBeenCalled();
+    });
+
+    it("should close when user selects 'save-exit' and save succeeds", async () => {
+      component.smsForm.patchValue({
+        name: "test",
+        providermodule: "mod1"
+      });
+      component.smsForm.get("options")?.patchValue({ p1: "val1" });
+      component.smsForm.markAsDirty();
+      mockSaveExitDialogRef.afterClosed.mockReturnValue(of("save-exit"));
+      pendingChangesService.save.mockReturnValue(Promise.resolve(true));
+
+      dialogRefMock.close.mockClear();
+
+      component.onCancel();
+
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
+      expect(dialogRefMock.close).toHaveBeenCalled();
+    });
+
+    it("should NOT close when user selects 'save-exit' but save fails", async () => {
+      component.smsForm.patchValue({
+        name: "test",
+        providermodule: "mod1"
+      });
+      component.smsForm.get("options")?.patchValue({ p1: "val1" });
+      component.smsForm.markAsDirty();
+      smsGatewayServiceMock.postSmsGateway = jest.fn().mockRejectedValue(new Error("Save failed"));
+      mockSaveExitDialogRef.afterClosed.mockReturnValue(of("save-exit"));
+      pendingChangesService.save.mockReturnValue(Promise.resolve(false));
+
+      dialogRefMock.close.mockClear();
+
+      component.onCancel();
+
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      expect(pendingChangesService.clearAllRegistrations).not.toHaveBeenCalled();
+      expect(dialogRefMock.close).not.toHaveBeenCalled();
+    });
+
+    it("should do nothing when user selects 'save-exit' but canSave is false", async () => {
+      component.smsForm.patchValue({ name: "" });
+      component.smsForm.markAsDirty();
+      mockSaveExitDialogRef.afterClosed.mockReturnValue(of("save-exit"));
+
+      dialogRefMock.close.mockClear();
+
+      component.onCancel();
+
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      expect(pendingChangesService.save).not.toHaveBeenCalled();
+      expect(pendingChangesService.clearAllRegistrations).not.toHaveBeenCalled();
+      expect(dialogRefMock.close).not.toHaveBeenCalled();
+    });
+
+    it("should do nothing when user closes dialog without selecting an option", async () => {
+      mockSaveExitDialogRef.afterClosed.mockReturnValue(of(undefined));
+      component.smsForm.patchValue({
+        name: "test",
+        providermodule: "mod1"
+      });
+      component.smsForm.get("options")?.patchValue({ p1: "val1" });
+      component.smsForm.markAsDirty();
+
+      dialogRefMock.close.mockClear();
+
+      component.onCancel();
+
+      await new Promise(resolve => setTimeout(resolve, 0));
+
+      expect(pendingChangesService.clearAllRegistrations).not.toHaveBeenCalled();
+      expect(dialogRefMock.close).not.toHaveBeenCalled();
+    });
   });
 });

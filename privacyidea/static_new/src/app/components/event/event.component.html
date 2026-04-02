@@ -91,11 +91,13 @@
           </th>
           <td
             *matCellDef="let element; let row"
-            [ngClass]="detailedView() ? 'detailed-cell' : 'compact-cell'"
+            class="column-max-width"
             mat-cell>
             @switch (column) {
               @case ("name") {
-                <div [ngClass]="detailedView() ? 'break-words' : 'text-overflow-ellipsis'">
+                <div
+                  [ngClass]="detailedView() ? 'break-words' : 'event-table-cell'"
+                  [attr.title]="element.name">
                   @if (authService.actionAllowed("eventhandling_write")) {
                     <a
                       (click)="onEditEventHandler(element)"
@@ -116,7 +118,9 @@
                     </ul>
                   </div>
                 } @else {
+                  <div class="event-table-cell">
                   <span [innerHTML]="(element.event?.join(', ')) | highlight:filterString()"></span>
+                  </div>
                 }
               }
               @case ("conditions") {
@@ -129,7 +133,9 @@
                     </ul>
                   </div>
                 } @else {
-                  <span [innerHTML]="formatConditions(element.conditions) | highlight:filterString()"></span>
+                  <div class="event-table-cell">
+                    <span [innerHTML]="formatConditions(element.conditions) | highlight:filterString()"></span>
+                  </div>
                 }
               }
               @case ("action") {

@@ -1201,7 +1201,9 @@ class PushAPITestCase(MyApiTestCase):
 
     def test_19_push_code_to_phone_with_require_presence(self):
         """
-        Test that if both code_to_phone and require_presence are enabled, require_presence takes precedence.
+        Test that if both code_to_phone and require_presence are enabled, require_presence takes
+        precedence: challenge mode is REQUIRE_PRESENCE, client_mode is POLL (not INTERACTIVE),
+        /polltransaction reports the correct status, and the full auth flow completes successfully.
         """
         self.setUp_user_realms()
         # Setup PUSH policies
@@ -1211,7 +1213,7 @@ class PushAPITestCase(MyApiTestCase):
         set_policy("push_mode_code_to_phone", scope=SCOPE.AUTH, action=f"{PushAction.PUSH_CODE_TO_PHONE}=1")
         set_policy("push_require_presence", scope=SCOPE.AUTH, action=f"{PushAction.REQUIRE_PRESENCE}=1")
 
-        # Create Token Init
+        # Enrollment step 1
         with self.app.test_request_context('/token/init',
                                            method='POST',
                                            data={"type": "push",
@@ -1225,7 +1227,7 @@ class PushAPITestCase(MyApiTestCase):
             detail = res.json.get("detail")
             enrollment_credential = detail.get("enrollment_credential")
 
-        # Complete Creation
+        # Enrollment step 2 (smartphone)
         with self.app.test_request_context('/ttype/push',
                                            method='POST',
                                            data={"enrollment_credential": enrollment_credential,
@@ -1235,7 +1237,7 @@ class PushAPITestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertEqual(200, res.status_code, res)
 
-        # Authentication
+        # Trigger challenge
         with self.app.test_request_context('/validate/check',
                                            method='POST',
                                            data={"user": "selfservice",
@@ -1245,14 +1247,85 @@ class PushAPITestCase(MyApiTestCase):
             detail = res.json.get("detail")
             transaction_id = detail.get("transaction_id")
             self.assertTrue(transaction_id)
-            # Check challenge data
+            self.assertEqual(AUTH_RESPONSE.CHALLENGE, res.json.get("result").get("authentication"), res.json)
+            # require_presence takes precedence: client_mode must be POLL, not INTERACTIVE
+            multi_challenge = detail.get("multi_challenge", [{}])
+            self.assertEqual(ClientMode.POLL, multi_challenge[0].get("client_mode"))
+            # Challenge data must be in REQUIRE_PRESENCE mode with no display_code
             challenge = get_challenges(serial=self.serial_push, transaction_id=transaction_id)[0]
             challenge_data = challenge.get_data()
             self.assertIsInstance(challenge_data, dict)
             self.assertEqual(challenge_data.get("type"), "push")
-            # REQUIRE_PRESENCE takes precedence
             self.assertEqual(challenge_data.get("mode"), PushMode.REQUIRE_PRESENCE)
             self.assertNotIn("display_code", challenge_data)
+            presence_answer = challenge_data.get("correct_answer")
+
+        # /polltransaction: challenge not yet answered
+        with self.app.test_request_context('/validate/polltransaction',
+                                           method='GET',
+                                           query_string={"transaction_id": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            self.assertFalse(res.json.get("result").get("value"), res.json)
+            self.assertEqual("pending", res.json.get("detail").get("challenge_status"), res.json)
+
+        # Smartphone polls for the challenge
+        timestamp = datetime.datetime.now(tz=datetime.timezone.utc).isoformat()
+        sign_string = f"{self.serial_push}|{timestamp}"
+        sig = self.smartphone_private_key.sign(sign_string.encode('utf8'),
+                                               padding.PKCS1v15(),
+                                               hashes.SHA256())
+        with self.app.test_request_context('/ttype/push',
+                                           method='GET',
+                                           query_string={"serial": self.serial_push,
+                                                         "timestamp": timestamp,
+                                                         "signature": b32encode(sig)}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            value = res.json.get("result").get("value")
+            self.assertTrue(len(value) > 0)
+            # Presence options must be present; no display_code (not code_to_phone mode)
+            self.assertIn("require_presence", value[0])
+            self.assertNotIn("display_code", value[0])
+            nonce = value[0].get("nonce")
+
+        # Smartphone answers with the correct presence_answer
+        sign_string = f"{nonce}|{self.serial_push}|{presence_answer}"
+        sig = self.smartphone_private_key.sign(sign_string.encode('utf8'),
+                                               padding.PKCS1v15(),
+                                               hashes.SHA256())
+        with self.app.test_request_context('/ttype/push',
+                                           method='POST',
+                                           query_string={"serial": self.serial_push,
+                                                         "timestamp": timestamp,
+                                                         "presence_answer": presence_answer,
+                                                         "signature": b32encode(sig)}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            self.assertTrue(res.json.get("result").get("value"), res.json)
+            # No display_code should be returned — this is require_presence, not code_to_phone
+            self.assertNotIn("display_code", res.json.get("detail") or {})
+
+        # /polltransaction: challenge is now answered
+        with self.app.test_request_context('/validate/polltransaction',
+                                           method='GET',
+                                           query_string={"transaction_id": transaction_id}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            self.assertTrue(res.json.get("result").get("value"), res.json)
+            self.assertEqual("accept", res.json.get("detail").get("challenge_status"), res.json)
+
+        # Finalize authentication
+        with self.app.test_request_context('/validate/check',
+                                           method='POST',
+                                           data={"user": "selfservice", "pass": "",
+                                                 "transaction_id": transaction_id},
+                                           headers={"user_agent": "privacyidea-cp/2.0"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            self.assertTrue(res.json.get("result").get("value"), res.json)
+            self.assertEqual(AUTH_RESPONSE.ACCEPT,
+                             res.json.get("result").get("authentication"), res.json)
 
         remove_token(self.serial_push)
         delete_policy("push_config")

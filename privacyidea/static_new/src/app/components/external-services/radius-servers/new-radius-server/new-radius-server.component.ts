@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, effect, inject, OnDestroy, OnInit, signal } from "@angular/core";
-import { MAT_DIALOG_DATA, MatDialog, MatDialogModule, MatDialogRef } from "@angular/material/dialog";
+import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from "@angular/material/dialog";
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
 import { RadiusServer, RadiusService, RadiusServiceInterface } from "../../../../services/radius/radius.service";
 import { MatFormFieldModule } from "@angular/material/form-field";
@@ -36,10 +36,14 @@ import { AuthService, AuthServiceInterface } from "../../../../services/auth/aut
 import { SaveAndExitDialogComponent } from "../../../shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { DialogService, DialogServiceInterface } from "../../../../services/dialog/dialog.service";
 import { ClearableInputComponent } from "../../../shared/clearable-input/clearable-input.component";
+import { NAVIGATION_ACCESSIBLE_DIALOG_CLASS } from "../../../../constants/global.constants";
 
 @Component({
   selector: "app-new-radius-server",
   standalone: true,
+  host: {
+    class: NAVIGATION_ACCESSIBLE_DIALOG_CLASS
+  },
   imports: [
     CommonModule,
     ReactiveFormsModule,
@@ -85,6 +89,7 @@ export class NewRadiusServerComponent implements OnInit, OnDestroy {
 
     this.pendingChangesService.registerHasChanges(() => this.hasChanges);
     this.pendingChangesService.registerSave(() => this.save());
+    this.pendingChangesService.registerValidChanges(() => this.canSave);
 
     effect(() => {
       if (!this.contentService.routeUrl().startsWith(ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS)) {
@@ -123,28 +128,33 @@ export class NewRadiusServerComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.pendingChangesService.unregisterHasChanges();
+    this.pendingChangesService.clearAllRegistrations();
   }
 
-  save(): Promise<void> | void {
-    if (this.radiusForm.valid) {
-      const formValue = this.radiusForm.getRawValue();
-      const server: RadiusServer = {
-        identifier: formValue.identifier,
-        server: formValue.server,
-        port: formValue.port,
-        timeout: formValue.timeout,
-        retries: formValue.retries,
-        secret: formValue.secret,
-        dictionary: formValue.dictionary,
-        description: formValue.description,
-        options: {
-          message_authenticator: formValue.message_authenticator
-        }
-      };
-      return this.radiusService.postRadiusServer(server).then(() => {
-        this.dialogRef.close(true);
-      });
+  async save(): Promise<boolean> {
+    if (this.radiusForm.invalid) {
+      return false;
+    }
+    const formValue = this.radiusForm.getRawValue();
+    const server: RadiusServer = {
+      identifier: formValue.identifier,
+      server: formValue.server,
+      port: formValue.port,
+      timeout: formValue.timeout,
+      retries: formValue.retries,
+      secret: formValue.secret,
+      dictionary: formValue.dictionary,
+      description: formValue.description,
+      options: {
+        message_authenticator: formValue.message_authenticator
+      }
+    };
+    try {
+      await this.radiusService.postRadiusServer(server);
+      this.dialogRef.close(true);
+      return true;
+    } catch (error) {
+      return false;
     }
   }
 
@@ -177,12 +187,13 @@ export class NewRadiusServerComponent implements OnInit, OnDestroy {
         .afterClosed()
         .subscribe((result) => {
           if (result === "discard") {
-            this.pendingChangesService.unregisterHasChanges();
+            this.pendingChangesService.clearAllRegistrations();
             this.closeCurrent();
           } else if (result === "save-exit") {
             if (!this.canSave) return;
-            Promise.resolve(this.pendingChangesService.save()).then(() => {
-              this.pendingChangesService.unregisterHasChanges();
+            Promise.resolve(this.pendingChangesService.save()).then((success) => {
+              if (!success) return;
+              this.pendingChangesService.clearAllRegistrations();
               this.closeCurrent();
             });
           }

@@ -45,9 +45,7 @@ describe("UserDetailsEditComponent", () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [UserDetailsEditComponent],
-      providers: [
-        { provide: ResolverService, useClass: MockResolverService }
-      ]
+      providers: [{ provide: ResolverService, useClass: MockResolverService }]
     }).compileComponents();
 
     mockResolverService = TestBed.inject(ResolverService) as unknown as MockResolverService;
@@ -77,7 +75,7 @@ describe("UserDetailsEditComponent", () => {
 
   it("should emit updateData and update newUserData on updateAttribute", () => {
     let emitted: EditUserData | undefined;
-    component.updateData.subscribe((data: EditUserData) => emitted = data);
+    component.updateData.subscribe((data: EditUserData) => (emitted = data));
     component.setNewUserData("email", "changed@example.com");
     expect(component["newUserData"]().email).toBe("changed@example.com");
     expect(emitted).toEqual(expect.objectContaining({ email: "changed@example.com" }));

@@ -5,20 +5,4 @@
   flex-direction: column;
   gap: var(--half-global-gap);
   min-width: 0;
-
-  .name-header {
-    font-size: 1.17em;
-    font-weight: bold;
-    margin: 0;
-    text-wrap: nowrap;
-  }
-
-  .name-input {
-    @include inputs.action-tab-input;
-
-    &:focus-visible {
-      outline: inputs.$input-focus-outline;
-      outline-offset: 2px;
-    }
-  }
 }

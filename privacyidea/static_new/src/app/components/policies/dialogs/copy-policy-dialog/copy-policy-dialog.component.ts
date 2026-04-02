@@ -34,6 +34,7 @@ import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { toSignal } from "@angular/core/rxjs-interop";
 import { map } from "rxjs";
+import { NAVIGATION_ACCESSIBLE_DIALOG_CLASS } from "../../../../constants/global.constants";
 
 export function mustBeDifferentValidator(originalValue: string | null): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null => {
@@ -47,6 +48,9 @@ export function mustBeDifferentValidator(originalValue: string | null): Validato
   templateUrl: "./copy-policy-dialog.component.html",
   styleUrls: ["./copy-policy-dialog.component.scss"],
   standalone: true,
+  host: {
+    class: NAVIGATION_ACCESSIBLE_DIALOG_CLASS
+  },
   imports: [DialogWrapperComponent, CommonModule, ReactiveFormsModule, MatFormFieldModule, MatInputModule]
 })
 export class CopyPolicyDialogComponent extends AbstractDialogComponent<string, string | null> {

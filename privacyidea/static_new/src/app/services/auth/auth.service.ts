@@ -29,6 +29,7 @@ import { tokenTypes } from "../../utils/token.utils";
 import { PolicyAction } from "./policy-actions";
 import { Router } from "@angular/router";
 import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
+import { MatDialog } from "@angular/material/dialog";
 
 export type AuthResponse = PiResponse<AuthData, AuthDetail>;
 
@@ -213,6 +214,7 @@ export class AuthService implements AuthServiceInterface {
   private readonly http: HttpClient = inject(HttpClient);
   private readonly versioningService: VersioningServiceInterface = inject(VersioningService);
   protected readonly localService: LocalServiceInterface = inject(LocalService);
+  private readonly dialog: MatDialog = inject(MatDialog);
 
   // Writable Signals
   readonly jwtData = signal<JwtData | null>(null);
@@ -332,6 +334,7 @@ export class AuthService implements AuthServiceInterface {
   }
 
   logout(): void {
+    this.dialog.closeAll();
     this.authData.set(null);
     this.jwtData.set(null);
     this.localService.removeData(BEARER_TOKEN_STORAGE_KEY);

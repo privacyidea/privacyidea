@@ -19,7 +19,7 @@
 <app-dialog-wrapper
   (close)="close()"
   (onAction)="onAction($event)"
-  [actions]="actions"
+  [actions]="actions()"
   i18n-title="@@tokenEnrolledTitle"
   title="Token Successfully Enrolled">
   <mat-dialog-content>
@@ -29,8 +29,6 @@
         [innerHTML]="postTopHtml?.sanitized"
         class="margin-top-16"></div>
     } @else {
-      <h2 i18n>Token Successfully Enrolled</h2>
-
       <app-token-enrolled-text
         (switchRoute)="onSwitchRoute()"
         [rollover]="data.rollover ?? false"

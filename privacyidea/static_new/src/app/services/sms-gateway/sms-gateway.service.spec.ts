@@ -62,7 +62,7 @@ describe("SmsGatewayService", () => {
     const gateway = { name: "test", providermodule: "mod" } as any;
     const promise = service.postSmsGateway(gateway);
 
-    const req = httpMock.expectOne(`${environment.proxyUrl}/smsgateway/`);
+    const req = httpMock.expectOne(`${environment.proxyUrl}/smsgateway`);
     expect(req.request.method).toBe("POST");
     req.flush({ result: { status: true } });
 

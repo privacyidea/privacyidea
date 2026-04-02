@@ -129,9 +129,30 @@ describe("UserService", () => {
   });
 
   it("selectedUserRealm should expose the current defaultRealm", () => {
+    realmService.realmOptions.set(["realm1", "realm2", "someRealm"]);
     expect(userService.selectedUserRealm()).toBe("realm1");
     realmService.setDefaultRealm("someRealm");
     expect(userService.selectedUserRealm()).toBe("someRealm");
+  });
+
+  it("selectedUserRealm should expose first realm if no default realm is set", () => {
+    realmService.realmOptions.set(["realm1", "realm2"]);
+    expect(userService.selectedUserRealm()).toBe("realm1");
+  });
+
+  it("selectedUserRealm should expose empty string if no realmOptions are available", () => {
+    realmService.realmOptions.set([]);
+    expect(userService.selectedUserRealm()).toBe("");
+
+    // even setting the default realm keeps an empty string as the realm is not in the options list
+    realmService.setDefaultRealm("realm1");
+    expect(userService.selectedUserRealm()).toBe("");
+  });
+
+  it("selectedUserRealm should expose first realm if no default realm is not in the realmOptions list", () => {
+    realmService.realmOptions.set(["realm1", "realm2"]);
+    realmService.setDefaultRealm("someRealm");
+    expect(userService.selectedUserRealm()).toBe("realm1");
   });
 
   it("allUsernames exposes every user.username", () => {
@@ -178,6 +199,7 @@ describe("UserService", () => {
 
   describe("attribute policy + attributes", () => {
     it("setUserAttribute issues POST /user/attribute with params", () => {
+      realmService.realmOptions.set(["realm1", "realm2"]);
       userService.setUserAttribute("department", "finance").subscribe();
 
       const req = httpMock.expectOne((r) => r.method === "POST" && r.url.endsWith("/user/attribute"));
@@ -190,6 +212,7 @@ describe("UserService", () => {
     });
 
     it("deleteUserAttribute issues DELETE /user/attribute/<key>/<user>/<realm> with proper encoding", () => {
+      realmService.realmOptions.set(["realm1", "r 1"]);
       userService.detailsUsername.set("Alice Smith");
       realmService.setDefaultRealm("r 1");
 
@@ -308,6 +331,8 @@ describe("UserService", () => {
 
       // tokenService.tokenDetailResource = new MockHttpResourceRef(undefined as any);
       userService.selectionFilter.set("");
+      userService.selectedUserRealm.set("realm1");
+      userService.usersResource = new MockHttpResourceRef(MockPiResponse.fromValue(users));
     });
 
     it("returns null when no token username, role != user, and selection filter empty", () => {
@@ -333,7 +358,7 @@ describe("UserService", () => {
       expect(userService.selectedUser()).toEqual(users[1]);
     });
 
-    it("when role is \"user\": returns the authenticated username", () => {
+    it("when role is 'user': returns the authenticated username", () => {
       authService.authData.set({ ...MockAuthService.MOCK_AUTH_DATA, role: "user", username: "Charlie" });
 
       userService.selectionFilter.set("");

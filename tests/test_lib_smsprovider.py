@@ -1,4 +1,3 @@
-
 __doc__ = """
 This test file tests the modules:
  lib.smsprovider.httpsmsprovider
@@ -8,16 +7,16 @@ This test file tests the modules:
  lib.smsprovider.scriptsmsprovider
 """
 
+import os
+
+import mock
+import responses
 from sqlalchemy import select
 
-from privacyidea.models import SMSGatewayOption, db
-from .base import MyTestCase
+from privacyidea.lib.error import ConfigAdminError
+from privacyidea.lib.smsprovider.FirebaseProvider import FirebaseConfig
 from privacyidea.lib.smsprovider.HttpSMSProvider import HttpSMSProvider
-from privacyidea.lib.smsprovider.SipgateSMSProvider import SipgateSMSProvider
-from privacyidea.lib.smsprovider.SipgateSMSProvider import URL
-from privacyidea.lib.smsprovider.SmtpSMSProvider import SmtpSMSProvider
-from privacyidea.lib.smsprovider.SmppSMSProvider import SmppSMSProvider
-from privacyidea.lib.smsprovider.ScriptSMSProvider import ScriptSMSProvider, SCRIPT_WAIT
+from privacyidea.lib.smsprovider.SMSProvider import ISMSProvider
 from privacyidea.lib.smsprovider.SMSProvider import (SMSError,
                                                      get_sms_provider_class,
                                                      set_smsgateway,
@@ -27,14 +26,16 @@ from privacyidea.lib.smsprovider.SMSProvider import (SMSError,
                                                      delete_smsgateway_header,
                                                      delete_smsgateway_key_generic,
                                                      create_sms_instance)
-from privacyidea.lib.smsprovider.SMSProvider import ISMSProvider
+from privacyidea.lib.smsprovider.ScriptSMSProvider import ScriptSMSProvider, SCRIPT_WAIT
+from privacyidea.lib.smsprovider.SipgateSMSProvider import SipgateSMSProvider
+from privacyidea.lib.smsprovider.SipgateSMSProvider import URL
+from privacyidea.lib.smsprovider.SmppSMSProvider import SmppSMSProvider
+from privacyidea.lib.smsprovider.SmtpSMSProvider import SmtpSMSProvider
 from privacyidea.lib.smtpserver import add_smtpserver
-import responses
-from responses import json_params_matcher
-import os
-from . import smtpmock
+from privacyidea.models import SMSGatewayOption, db
 from . import smppmock
-import mock
+from . import smtpmock
+from .base import MyTestCase
 
 
 class SMSTestCase(MyTestCase):
@@ -49,19 +50,19 @@ class SMSTestCase(MyTestCase):
         self.assertTrue(text == "Some Error", text)
 
     def test_01_get_provider_class(self):
-        _provider =get_sms_provider_class(
+        _provider = get_sms_provider_class(
             "privacyidea.lib.smsprovider.SipgateSMSProvider",
             "SipgateSMSProvider")
 
-        _provider =get_sms_provider_class(
+        _provider = get_sms_provider_class(
             "privacyidea.lib.smsprovider.HttpSMSProvider",
             "HttpSMSProvider")
 
-        _provider =get_sms_provider_class(
+        _provider = get_sms_provider_class(
             "privacyidea.lib.smsprovider.SmtpSMSProvider",
             "SmtpSMSProvider")
 
-        _provider =get_sms_provider_class(
+        _provider = get_sms_provider_class(
             "privacyidea.lib.smsprovider.SmppSMSProvider",
             "SmppSMSProvider")
 
@@ -213,7 +214,6 @@ class SMSTestCase(MyTestCase):
 
 
 class SmtpSMSTestCase(MyTestCase):
-
     missing_config = {"MAILSERVER": "localhost:25"}
 
     simple_config = {"MAILSERVER": "localhost:25",
@@ -334,7 +334,6 @@ class SmtpSMSTestCase(MyTestCase):
 
 
 class SipgateSMSTestCase(MyTestCase):
-
     url = URL
     config = {'USERNAME': "user",
               'PASSWORD': "password",
@@ -394,7 +393,6 @@ class SipgateSMSTestCase(MyTestCase):
 
 
 class ScriptSMSTestCase(MyTestCase):
-
     directory = "{0!s}/tests/testdata/scripts/".format(os.getcwd())
 
     def test_01_fail_no_script(self):
@@ -456,7 +454,6 @@ class ScriptSMSTestCase(MyTestCase):
 
 
 class HttpSMSTestCase(MyTestCase):
-
     post_url = "http://smsgateway.com/sms_send_api.cgi"
     config_post = {"URL": post_url,
                    "PARAMETER": {"from": "0170111111",
@@ -468,7 +465,7 @@ class HttpSMSTestCase(MyTestCase):
                    "HTTP_Method": "POST",
                    "PROXY": "http://username:password@your-proxy:8080",
                    "RETURN_SUCCESS": "ID"
-    }
+                   }
 
     config_regexp = {"URL": post_url,
                      "PARAMETER": {"from": "0170111111",
@@ -493,7 +490,7 @@ class HttpSMSTestCase(MyTestCase):
                   "HTTP_Method": "GET",
                   "PROXY": "http://user:pass@1.2.3.4:8080",
                   "RETURN_FAIL": "Failed"
-    }
+                  }
 
     simple_url = "http://some.other.service"
     config_simple = {"URL": simple_url,
@@ -502,7 +499,7 @@ class HttpSMSTestCase(MyTestCase):
                                    "api_id": "12980436"},
                      "SMS_TEXT_KEY": "text",
                      "SMS_PHONENUMBER_KEY": "to",
-    }
+                     }
 
     missing_url = "http://some.missing.url"
     config_missing = {"PARAMETER": {"user": "username",
@@ -510,7 +507,7 @@ class HttpSMSTestCase(MyTestCase):
                                     "api_id": "12980436"},
                       "SMS_TEXT_KEY": "text",
                       "SMS_PHONENUMBER_KEY": "to",
-    }
+                      }
 
     basic_url = "https://fitz:sosecret@secret.gateway/some/path"
     config_basicauth = {"URL": basic_url,
@@ -519,7 +516,7 @@ class HttpSMSTestCase(MyTestCase):
                                       "api_id": "12980436"},
                         "SMS_TEXT_KEY": "text",
                         "SMS_PHONENUMBER_KEY": "to",
-    }
+                        }
 
     success_body = "ID 12345"
     fail_body = "Sent SMS Failed"
@@ -701,7 +698,6 @@ class HttpSMSTestCase(MyTestCase):
 
 
 class SmppSMSTestCase(MyTestCase):
-
     config = {'SMSC_HOST': "192.168.1.1",
               'SMSC_PORT': "1234",
               'SYSTEM_ID': "privacyIDEA",
@@ -801,3 +797,48 @@ class SmppSMSTestCase(MyTestCase):
             log.assert_any_call("submitting message {0!r} to {1!s}".format("Hello", "4912345678"))
 
         delete_smsgateway(identifier_regexp)
+
+
+class FirebaseProviderTestCase(MyTestCase):
+
+    def test_set_configuration_success(self):
+        valid_file = "tests/testdata/firebase-test.json"
+        valid_config = {FirebaseConfig.JSON_CONFIG: valid_file}
+        fb_id = set_smsgateway("test",
+                           'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider',
+                           "", valid_config)
+        self.assertGreater(fb_id, 0)
+        delete_smsgateway("test")
+
+    def test_set_configuration_fail(self):
+
+        try:
+            # Invalid file path
+            invalid_config = {FirebaseConfig.JSON_CONFIG: "non-existing-file.json"}
+            with self.assertRaises(ConfigAdminError) as context:
+                set_smsgateway("test",
+                               'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider',
+                               "", invalid_config)
+            self.assertEqual("The JSON config file could not be found.", str(context.exception.message))
+
+            # json config completely missing
+            with self.assertRaises(ConfigAdminError) as context:
+                set_smsgateway("test",
+                               'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider',
+                               "", {})
+            self.assertEqual("No JSON config file provided.", str(context.exception.message))
+
+            # non-json file provided
+            invalid_config = {FirebaseConfig.JSON_CONFIG: "tests/testdata/passwd"}
+            with self.assertRaises(ConfigAdminError) as context:
+                set_smsgateway("test",
+                               'privacyidea.lib.smsprovider.FirebaseProvider.FirebaseProvider',
+                               "", invalid_config)
+            self.assertEqual("The config file has an invalid JSON format.", str(context.exception.message))
+        finally:
+            # Ensure no invalid gateway configuration with identifier "test" remains.
+            try:
+                delete_smsgateway("test")
+            except Exception:
+                # Ignore cleanup errors; gateway may not have been created.
+                pass

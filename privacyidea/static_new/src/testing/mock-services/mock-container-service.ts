@@ -110,9 +110,9 @@ export class MockContainerService implements ContainerServiceInterface {
   deleteContainer = jest.fn().mockReturnValue(of({}));
   deleteAllTokens = jest.fn().mockReturnValue(of(null));
 
-  registerContainer(_params: { container_serial: string; passphrase_prompt: string; passphrase_response: string }) {
-    throw new Error("Method not implemented.");
-  }
+  registerContainer = jest.fn(() =>
+    of(MockPiResponse.fromValue({})) as any
+  );
 
   readonly unregister = jest.fn().mockReturnValue(of({}));
   containerBelongsToUser = jest.fn().mockReturnValue(false);

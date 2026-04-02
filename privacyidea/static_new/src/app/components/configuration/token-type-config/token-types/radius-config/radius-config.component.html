@@ -33,10 +33,6 @@
         <mat-select
           [ngModel]="formData()[RADIUS_SERVER]"
           (ngModelChange)="updateFormData(RADIUS_SERVER, $event)">
-          <mat-option
-            [value]="''"
-            i18n>None
-          </mat-option>
           @for (id of radiusServers(); track id) {
             <mat-option [value]="id">{{ id }}</mat-option>
           }

@@ -37,10 +37,6 @@
         <mat-select
           [ngModel]="formData()[SMS_GATEWAY]"
           (ngModelChange)="updateFormData(SMS_GATEWAY, $event)">
-          <mat-option
-            [value]="''"
-            i18n>None
-          </mat-option>
           @for (gateway of smsGateways(); track gateway) {
             <mat-option [value]="gateway">{{ gateway }}</mat-option>
           }

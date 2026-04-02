@@ -22,15 +22,15 @@
   i18n-aria-label>
   <div class="flex-column">
     <h3
-      class="margin-left-16 margin-top-0"
+      class="margin-8"
       i18n>
       Tokens in Container
     </h3>
     <div class="flex-row filter-paginator-container">
       @if (dataSource.data.length > 1) {
         <mat-form-field
-          subscriptSizing="dynamic"
-          class="container-details-token-table-filter width-50">
+          class="container-details-token-table-filter width-50"
+          subscriptSizing="dynamic">
           <mat-label i18n>Filter Token...</mat-label>
           <app-clearable-input
             (onClick)="clearFilter()"
@@ -46,12 +46,9 @@
           </app-clearable-input>
         </mat-form-field>
       }
-      @if (dataSource.data.length > 5) {
-        <mat-paginator
-          [pageSizeOptions]="pageSizeOptions()"
-          [pageSize]="pageSize"
-          showFirstLastButtons />
-      }
+      <mat-paginator
+        [hidePageSize]="true"
+        [pageSize]="pageSize" />
     </div>
   </div>
   <div [ngClass]="[overflowService.isWidthOverflowing('body', 1580) ? 'flex-column' : 'flex-row']">

@@ -49,6 +49,24 @@ from privacyidea.lib.utils import (is_true, censor_connect_string,
                                    convert_column_to_unicode)
 from privacyidea.lib.error import ParameterError, ResolverError
 
+# TODO passlib has to be replaced before the next release, this is just a workaround that can not stay
+# passlib 1.7.4 compatibility with modern bcrypt. Two breaking changes:
+# 1. bcrypt 4.1.0 removed __about__.__version__ — passlib uses it for version detection.
+#    https://github.com/pyca/bcrypt/issues/684
+# 2. bcrypt 5.0.0 raises ValueError for passwords > 72 bytes instead of silently
+#    truncating. passlib's wrap-bug detection passes a long password to hashpw during
+#    backend initialization, which crashes and causes all bcrypt verification to silently
+#    return False.
+import bcrypt as _bcrypt
+if not hasattr(_bcrypt, '__about__'):
+    _bcrypt.__about__ = type('__about__', (), {'__version__': _bcrypt.__version__})()
+_orig_hashpw = _bcrypt.hashpw
+def _hashpw_compat(password, salt):
+    if isinstance(password, bytes) and len(password) > 72:
+        password = password[:72]
+    return _orig_hashpw(password, salt)
+_bcrypt.hashpw = _hashpw_compat
+
 from passlib.context import CryptContext
 from passlib.utils import h64
 from passlib.utils.compat import uascii_to_str

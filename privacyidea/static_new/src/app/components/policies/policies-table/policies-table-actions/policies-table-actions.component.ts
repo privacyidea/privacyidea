@@ -49,16 +49,6 @@ export class PoliciesTableActionsComponent {
         component: EditPolicyDialogComponent,
         data: { mode: "create", policyDetail: this.policyService.getEmptyPolicy() }
       })
-      .afterClosed()
-      .subscribe((result) => {
-        if (result) {
-          const policy: PolicyDetail = {
-            ...this.policyService.getEmptyPolicy(),
-            ...result
-          };
-          this.policyService.saveNewPolicy(policy);
-        }
-      });
   }
 
   async deleteSelectedPolicies(): Promise<void> {

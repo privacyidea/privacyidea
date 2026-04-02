@@ -24,6 +24,7 @@ import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
+import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
 
 export type ActionType = "bool" | "int" | "str" | "text";
 export type PolicyActionDetail<T extends string | number = string | number> = {
@@ -205,7 +206,7 @@ export interface PolicyServiceInterface {
 
   actionValueIsValid(action: PolicyActionDetail, value: string | number): boolean;
 
-  saveNewPolicy(newPolicy: PolicyDetail): Promise<void>;
+  saveNewPolicy(newPolicy: PolicyDetail): Promise<boolean>;
 
   policyHasConditions(policy: PolicyDetail): boolean;
 
@@ -223,7 +224,7 @@ export interface PolicyServiceInterface {
 
   togglePolicyActive(policy: PolicyDetail): void;
 
-  savePolicyEdits(originalPolicyName: string, updatedPolicy: PolicyDetail): void;
+  savePolicyEdits(originalPolicyName: string, updatedPolicy: PolicyDetail): Promise<boolean>;
 }
 
 @Injectable({
@@ -231,6 +232,7 @@ export interface PolicyServiceInterface {
 })
 export class PolicyService implements PolicyServiceInterface {
   private readonly contentService: ContentServiceInterface = inject(ContentService);
+  private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   readonly policyBaseUrl = environment.proxyUrl + "/policy/";
   private readonly http: HttpClient = inject(HttpClient);
   private readonly authService: AuthServiceInterface = inject(AuthService);
@@ -537,17 +539,26 @@ export class PolicyService implements PolicyServiceInterface {
     return false;
   }
 
-  saveNewPolicy(newPolicy: PolicyDetail): Promise<void> {
-    const promise = this.createPolicy(newPolicy)
-      .then((_) => {
+  async saveNewPolicy(newPolicy: PolicyDetail): Promise<boolean> {
+    return this.createPolicy(newPolicy)
+      .then((response) => {
         this.allPoliciesResource.reload();
+        if (response && response.result?.status) {
+          this.notificationService.openSnackBar($localize`Policy created successfully.`);
+          return true;
+        } else {
+          const error = response.result?.error?.message || "";
+          this.notificationService.openSnackBar($localize`Creating policy failed: ${error}`);
+          return false;
+        }
       })
       .catch((error) => {
         console.error("Error creating policy: ", error);
-        return Promise.reject();
+        const errorMessage = error.error?.result?.error?.message || "";
+        this.notificationService.openSnackBar($localize`Creating policy failed: ${errorMessage}`);
+        this.allPoliciesResource.reload();
+        return false;
       });
-
-    return promise;
   }
 
   policyHasConditions(policy: PolicyDetail): boolean {
@@ -619,7 +630,7 @@ export class PolicyService implements PolicyServiceInterface {
     });
   }
 
-  async savePolicyEdits(originalPolicyName: string, updatedPolicy: PolicyDetail): Promise<void> {
+  async savePolicyEdits(originalPolicyName: string, updatedPolicy: PolicyDetail): Promise<boolean> {
     let lastStableState = [...this.allPolicies()];
     const headers = this.authService.getHeaders();
     const hasNameChange = updatedPolicy.name && updatedPolicy.name !== originalPolicyName;
@@ -640,8 +651,14 @@ export class PolicyService implements PolicyServiceInterface {
       }
 
       this.allPoliciesResource.reload();
-    } catch (err) {
+      this.notificationService.openSnackBar($localize`Policy updated successfully`);
+      return true;
+    } catch (error: any) {
       this.allPolicies.set(lastStableState);
+      let errorMessage = error?.error?.result?.error?.message || "";
+      errorMessage = errorMessage ? `: ${errorMessage}` : "";
+      this.notificationService.openSnackBar($localize`Saving policy failed` + errorMessage);
+      return false;
     }
   }
 

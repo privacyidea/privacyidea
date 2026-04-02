@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -46,7 +46,7 @@ const columnKeysMap = [
 ];
 
 @Component({
-  selector: "app-user-resolvers",
+  selector: "app-user-resolver",
   standalone: true,
   imports: [
     FormsModule,
@@ -63,8 +63,8 @@ const columnKeysMap = [
     ScrollToTopDirective,
     ResolverTableActionsComponent
   ],
-  templateUrl: "./user-resolvers.component.html",
-  styleUrl: "./user-resolvers.component.scss"
+  templateUrl: "./user-resolver.component.html",
+  styleUrl: "./user-resolver.component.scss"
 })
 export class UserResolversComponent {
   protected readonly columnKeysMap = columnKeysMap;
@@ -76,13 +76,10 @@ export class UserResolversComponent {
   protected readonly dialog = inject(MatDialog);
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
   protected readonly authService = inject(AuthService);
-  private readonly router = inject(Router);
-  private readonly route = inject(ActivatedRoute);
 
   paginator = viewChild(MatPaginator);
   sort = viewChild(MatSort);
 
-  pageSizeOptions = this.tableUtilsService.pageSizeOptions;
   filterString = signal<string>("");
 
   resolversDataSource: WritableSignal<MatTableDataSource<Resolver>> = linkedSignal({

@@ -10,16 +10,6 @@
 name: Migration Tests
 
 on:
-  push:
-    paths:
-      - 'privacyidea/migrations/**'
-      - 'privacyidea/models/**'
-      - 'tests/test_migrations.py'
-      - 'tests/test_migration_*.py'
-      - 'tests/testdata/migrations/**'
-      - 'pyproject.toml'
-      - 'requirements.txt'
-      - '.github/workflows/migration-tests.yml'
   pull_request:
     types: [ opened, synchronize, reopened, ready_for_review ]
     branches:

@@ -94,7 +94,7 @@
         matIconSize="tile-icon-x-large"
         title="Container Overview" />
     }
-    @if (authService.rights().includes("container_create")) {
+    @if (authService.rights().includes("container_create") && authService.containerWizard().enabled) {
       <app-navigation-self-service-button
         i18n-title
         key="{{this.ROUTE_PATHS.TOKENS_CONTAINERS_CREATE}}"

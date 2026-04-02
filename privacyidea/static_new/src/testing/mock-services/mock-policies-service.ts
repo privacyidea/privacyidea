@@ -19,8 +19,8 @@
 import { Signal, signal, WritableSignal } from "@angular/core";
 import {
   PolicyActionDetail,
-  PolicyDetail,
   PolicyActionGroups,
+  PolicyDetail,
   PolicyServiceInterface,
   ScopedPolicyActions
 } from "../../app/services/policies/policies.service";
@@ -61,7 +61,6 @@ export class MockPolicyService implements PolicyServiceInterface {
   getDetailsOfAction = jest.fn().mockReturnValue(null);
   copyPolicy = jest.fn().mockResolvedValue(MockPiResponse.fromValue({}));
   createPolicy = jest.fn().mockResolvedValue(MockPiResponse.fromValue({}));
-  savePolicyEdits = jest.fn().mockResolvedValue(MockPiResponse.fromValue({}));
   deletePolicy = jest.fn().mockResolvedValue(MockPiResponse.fromValue(1));
   enablePolicy = jest.fn().mockResolvedValue(MockPiResponse.fromValue({}));
   disablePolicy = jest.fn().mockResolvedValue(MockPiResponse.fromValue({}));
@@ -69,13 +68,14 @@ export class MockPolicyService implements PolicyServiceInterface {
   getActionNamesOf = jest.fn().mockReturnValue([]);
   getActionsOf = jest.fn().mockReturnValue({});
   actionValueIsValid = jest.fn().mockReturnValue(true);
-  saveNewPolicy = jest.fn().mockResolvedValue(undefined);
+  saveNewPolicy = jest.fn().mockResolvedValue(true);
   policyHasConditions = jest.fn().mockReturnValue(true);
   policyHasAdminConditions = jest.fn().mockReturnValue(true);
   policyHasUserConditions = jest.fn().mockReturnValue(true);
   policyHasEnvironmentConditions = jest.fn().mockReturnValue(true);
   policyHasAdditionalConditions = jest.fn().mockReturnValue(true);
   policyHasActions = jest.fn().mockReturnValue(true);
+  savePolicyEdits = jest.fn().mockResolvedValue(true);
   isPolicyEdited = jest.fn().mockReturnValue(true);
   togglePolicyActive = jest.fn().mockReturnValue(undefined);
   allPoliciesResource = new MockHttpResourceRef(undefined);

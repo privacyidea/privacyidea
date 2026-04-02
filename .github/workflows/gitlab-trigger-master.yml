@@ -1,4 +1,4 @@
-name: GitLab on Push to master
+name: GitLab
 
 on:
   push:
@@ -14,7 +14,7 @@ jobs:
     environment: gitlab
     
     steps:
-      - name: GitLab pipeline
+      - name: On Push To Master Trigger Pipeline
         env:
           GITLAB_TRIGGER_URL: https://lucan.netknights.it/api/v4/projects/6/trigger/pipeline
           GITLAB_TRIGGER_TOKEN: ${{ secrets.GITLAB_TRIGGER_TOKEN_MASTER }}

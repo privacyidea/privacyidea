@@ -24,6 +24,7 @@ This provider is used for the push token and can be used for SMS tokens.
 import json
 import logging
 import time
+from json import JSONDecodeError
 
 from google.auth.transport import requests
 from google.auth.transport.requests import AuthorizedSession
@@ -176,9 +177,18 @@ class FirebaseProvider(ISMSProvider):
         :return:
         """
         file_path = self.smsgateway.option_dict.get(FirebaseConfig.JSON_CONFIG)
+        if not file_path:
+            raise ConfigAdminError(description="No JSON config file provided.")
         server_config = None
-        with open(file_path) as config_file:
-            server_config = json.load(config_file)
+        try:
+            with open(file_path) as config_file:
+                server_config = json.load(config_file)
+        except FileNotFoundError as error:
+            log.error("The JSON config file could not be found: %s", error)
+            raise ConfigAdminError(description="The JSON config file could not be found.") from error
+        except JSONDecodeError as error:
+            log.error("The config file has an invalid JSON format: %s", error)
+            raise ConfigAdminError(description="The config file has an invalid JSON format.") from error
         if server_config:
             if server_config.get("type") != "service_account":
                 raise ConfigAdminError(description="The JSON file is not a valid firebase credentials file.")

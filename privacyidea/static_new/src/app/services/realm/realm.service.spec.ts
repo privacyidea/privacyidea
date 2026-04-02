@@ -22,15 +22,9 @@ import { provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
 import { AuthService } from "../auth/auth.service";
 import { ContentService } from "../content/content.service";
-import { NotificationService } from "../notification/notification.service";
 import { environment } from "../../../environments/environment";
-import { ROUTE_PATHS } from "../../route_paths";
-import {
-  MockAuthService,
-  MockContentService,
-  MockLocalService,
-  MockNotificationService
-} from "../../../testing/mock-services";
+import { MockContentService, MockLocalService, MockNotificationService } from "../../../testing/mock-services";
+import { MockAuthService } from "../../../testing/mock-services/mock-auth-service";
 
 describe("RealmService", () => {
   let realmService: RealmService;

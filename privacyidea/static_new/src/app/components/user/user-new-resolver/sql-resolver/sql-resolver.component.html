@@ -32,8 +32,12 @@
               placeholder="mysql+pymysql"
               required />
           </app-clearable-input>
-          @if (driverControl.hasError('required') && driverControl.touched) {
-            <mat-error i18n>Driver is <strong>required</strong>.</mat-error>
+          @if (driverControl.hasError("required") && driverControl.touched) {
+            <mat-error i18n>
+              Driver is
+              <strong>required</strong>
+              .
+            </mat-error>
           }
         </mat-form-field>
 
@@ -62,8 +66,12 @@
               placeholder="127.0.0.1"
               required />
           </app-clearable-input>
-          @if (serverControl.hasError('required') && serverControl.touched) {
-            <mat-error i18n>Server is <strong>required</strong>.</mat-error>
+          @if (serverControl.hasError("required") && serverControl.touched) {
+            <mat-error i18n>
+              Server is
+              <strong>required</strong>
+              .
+            </mat-error>
           }
         </mat-form-field>
 
@@ -128,35 +136,43 @@
               placeholder="">
               <mat-option
                 i18n
-                value="PHPASS">PHPASS
+                value="PHPASS">
+                PHPASS
               </mat-option>
               <mat-option
                 i18n
-                value="SHA">SHA
+                value="SHA">
+                SHA
               </mat-option>
               <mat-option
                 i18n
-                value="SSHA">SSHA
+                value="SSHA">
+                SSHA
               </mat-option>
               <mat-option
                 i18n
-                value="SSHA256">SSHA256
+                value="SSHA256">
+                SSHA256
               </mat-option>
               <mat-option
                 i18n
-                value="SSHA512">SSHA512
+                value="SSHA512">
+                SSHA512
               </mat-option>
               <mat-option
                 i18n
-                value="OTRS">OTRS
+                value="OTRS">
+                OTRS
               </mat-option>
               <mat-option
                 i18n
-                value="SHA512CRYPT">SHA512CRYPT
+                value="SHA512CRYPT">
+                SHA512CRYPT
               </mat-option>
               <mat-option
                 i18n
-                value="MD5CRYPT">MD5CRYPT
+                value="MD5CRYPT">
+                MD5CRYPT
               </mat-option>
             </mat-select>
             <mat-hint i18n>
@@ -207,8 +223,12 @@
               placeholder="Users"
               required />
           </app-clearable-input>
-          @if (tableControl.hasError('required') && tableControl.touched) {
-            <mat-error i18n>Table is <strong>required</strong>.</mat-error>
+          @if (tableControl.hasError("required") && tableControl.touched) {
+            <mat-error i18n>
+              Table is
+              <strong>required</strong>
+              .
+            </mat-error>
           }
         </mat-form-field>
 
@@ -220,8 +240,12 @@
             placeholder="500"
             required
             type="number" />
-          @if (limitControl.hasError('required') && limitControl.touched) {
-            <mat-error i18n>Limit is <strong>required</strong>.</mat-error>
+          @if (limitControl.hasError("required") && limitControl.touched) {
+            <mat-error i18n>
+              Limit is
+              <strong>required</strong>
+              .
+            </mat-error>
           }
         </mat-form-field>
       </div>
@@ -233,8 +257,12 @@
           matInput
           placeholder='{"userid":"id","username":"user","phone":"telephoneNumber","mobile":"mobile","email":"mail","surname":"sn","givenname":"givenName","password":"password"}'
           required></textarea>
-        @if (mapControl.hasError('required') && mapControl.touched) {
-          <mat-error i18n>Mapping is <strong>required</strong>.</mat-error>
+        @if (mapControl.hasError("required") && mapControl.touched) {
+          <mat-error i18n>
+            Mapping is
+            <strong>required</strong>
+            .
+          </mat-error>
         }
       </mat-form-field>
 

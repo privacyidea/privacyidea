@@ -565,6 +565,40 @@ class SMSTokenTestCase(MyTestCase):
         # Clean up
         remove_token(smstoken.token.serial)
 
+    def test_24_update_dynamic_phone_replaces_static_phone(self):
+        """
+        Test that updating a token with dynamic_phone removes the static phone
+        number and vice versa.
+        """
+        # 1. Create a token with a static phone number
+        token = init_token(param={'serial': "PISM_DYN_TEST1", 'type': 'sms', 'otpkey': '12345',
+                                  "phone": "+49 111111111"})
+
+        # Verify the static phone is set and dynamic_phone is not
+        self.assertEqual("+49 111111111", token.get_tokeninfo("phone"))
+        self.assertIsNone(token.get_tokeninfo("dynamic_phone"))
+
+        # Now update the token to use dynamic_phone
+        token.update({"dynamic_phone": True})
+        token.save()
+
+        # Verify that the static phone number has been removed
+        # and dynamic_phone is set
+        self.assertTrue(is_true(token.get_tokeninfo("dynamic_phone")))
+        self.assertIsNone(token.get_tokeninfo("phone"))
+
+        # 2. Now update back to a static phone number
+        token.update({"phone": "+49 222222222"})
+        token.save()
+
+        # Verify that dynamic_phone has been removed
+        # and the static phone number is set
+        self.assertEqual("+49 222222222", token.get_tokeninfo("phone"))
+        self.assertIsNone(token.get_tokeninfo("dynamic_phone"))
+
+        # Clean up
+        remove_token("PISM_DYN_TEST1")
+
     def test_99_delete_token(self):
         db_token = Token.query.filter_by(serial=self.serial1).first()
         token = SmsTokenClass(db_token)

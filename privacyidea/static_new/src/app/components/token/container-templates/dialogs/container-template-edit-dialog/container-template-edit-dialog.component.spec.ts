@@ -27,13 +27,16 @@ import { MockContainerTemplateService } from "../../../../../../testing/mock-ser
 import { ContainerTemplateEditDialogComponent } from "./container-template-edit-dialog.component";
 import { DialogService } from "src/app/services/dialog/dialog.service";
 import { PendingChangesService } from "src/app/services/pending-changes/pending-changes.service";
-import { MockDialogService, MockPendingChangesService } from "src/testing/mock-services";
+import { MockContentService, MockDialogService, MockPendingChangesService } from "src/testing/mock-services";
 import { MockMatDialogRef } from "src/testing/mock-mat-dialog-ref";
+import { ContentService } from "../../../../../services/content/content.service";
+import { ROUTE_PATHS } from "../../../../../route_paths";
 
 describe("ContainerTemplateEditDialogComponent", () => {
   let component: ContainerTemplateEditDialogComponent;
   let fixture: ComponentFixture<ContainerTemplateEditDialogComponent>;
   let containerTemplateServiceMock: MockContainerTemplateService;
+  let contentService: MockContentService;
   let dialogRefMock: MockMatDialogRef<any>;
 
   beforeEach(async () => {
@@ -45,6 +48,7 @@ describe("ContainerTemplateEditDialogComponent", () => {
         { provide: ContainerTemplateService, useClass: MockContainerTemplateService },
         { provide: DialogService, useClass: MockDialogService },
         { provide: PendingChangesService, useClass: MockPendingChangesService },
+        { provide: ContentService, useClass: MockContentService },
         { provide: MatDialogRef, useClass: MockMatDialogRef },
         { provide: MAT_DIALOG_DATA, useValue: null }
       ]
@@ -52,6 +56,8 @@ describe("ContainerTemplateEditDialogComponent", () => {
 
     fixture = TestBed.createComponent(ContainerTemplateEditDialogComponent);
     containerTemplateServiceMock = TestBed.inject(ContainerTemplateService) as unknown as MockContainerTemplateService;
+    contentService = TestBed.inject(ContentService) as unknown as MockContentService;
+    contentService.routeUrl.set(ROUTE_PATHS.TOKENS_CONTAINERS_TEMPLATES);
     dialogRefMock = TestBed.inject(MatDialogRef) as unknown as MockMatDialogRef<any>;
     component = fixture.componentInstance;
 
@@ -127,6 +133,7 @@ describe("ContainerTemplateEditDialogComponent", () => {
   it("should not call close if saving the template fails", async () => {
     jest.spyOn(containerTemplateServiceMock, "canSaveTemplate").mockReturnValue(true);
     jest.spyOn(containerTemplateServiceMock, "postTemplateEdits").mockResolvedValue(false);
+    dialogRefMock.close.mockClear();
 
     await component.onAction("save");
 
@@ -148,7 +155,7 @@ describe("ContainerTemplateEditDialogComponent", () => {
 
     dialogRefMock.fireBackdropClick();
 
-    expect(dialogRefMock.close).not.toHaveBeenCalled();
     expect(openDialogSpy).toHaveBeenCalled();
+    expect(dialogRefMock.close).not.toHaveBeenCalled();
   });
 });

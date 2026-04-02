@@ -24,11 +24,6 @@
             placeholder="Filter across all columns." />
         </app-clearable-input>
       </mat-form-field>
-      <mat-paginator
-        [length]="totalLength()"
-        [pageSizeOptions]="pageSizeOptions()"
-        [pageSize]="pageSizeOptions()[0]"
-        showFirstLastButtons />
     </div>
 
     <div class="flex-row margin-bottom-16">
@@ -38,7 +33,7 @@
         <mat-label i18n>Node</mat-label>
 
         <mat-select
-          (selectionChange)="onNodeSelectionChange($event.value)"
+          (selectionChange)="selectedNode.set($event.value)"
           [value]="selectedNode()">
           @for (node of nodeOptions(); track node.value) {
             <mat-option [value]="node.value">
@@ -123,8 +118,7 @@
                             <span>{{ group.label }}</span>
                           </div>
 
-                          <mat-form-field
-                            class="node-resolvers-select">
+                          <mat-form-field class="node-resolvers-select">
                             <mat-label i18n>Resolvers</mat-label>
                             <mat-select
                               (selectionChange)="onEditNodeResolversChange(group.id, $event.value)"

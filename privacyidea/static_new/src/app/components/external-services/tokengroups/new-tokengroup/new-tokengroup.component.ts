@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, effect, inject, OnDestroy, OnInit } from "@angular/core";
-import { MAT_DIALOG_DATA, MatDialog, MatDialogModule, MatDialogRef } from "@angular/material/dialog";
+import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from "@angular/material/dialog";
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
 import {
   Tokengroup,
@@ -37,10 +37,14 @@ import { PendingChangesService } from "../../../../services/pending-changes/pend
 import { SaveAndExitDialogComponent } from "../../../shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { DialogService, DialogServiceInterface } from "../../../../services/dialog/dialog.service";
 import { ClearableInputComponent } from "../../../shared/clearable-input/clearable-input.component";
+import { NAVIGATION_ACCESSIBLE_DIALOG_CLASS } from "../../../../constants/global.constants";
 
 @Component({
   selector: "app-new-tokengroup",
   standalone: true,
+  host: {
+    class: NAVIGATION_ACCESSIBLE_DIALOG_CLASS
+  },
   imports: [
     CommonModule,
     ReactiveFormsModule,
@@ -82,6 +86,7 @@ export class NewTokengroupComponent implements OnInit, OnDestroy {
 
     this.pendingChangesService.registerHasChanges(() => this.hasChanges);
     this.pendingChangesService.registerSave(() => this.save());
+    this.pendingChangesService.registerValidChanges(() => this.canSave);
 
     effect(() => {
       if (!this.contentService.routeUrl().startsWith(ROUTE_PATHS.EXTERNAL_SERVICES_TOKENGROUPS)) {
@@ -111,17 +116,23 @@ export class NewTokengroupComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.pendingChangesService.unregisterHasChanges();
+    this.pendingChangesService.clearAllRegistrations();
   }
 
-  save(): Promise<void> | void {
-    if (this.tokengroupForm.valid) {
-      const group: Tokengroup = {
-        ...this.tokengroupForm.getRawValue()
-      };
-      return this.tokengroupService.postTokengroup(group).then(() => {
-        this.dialogRef.close(true);
-      });
+  async save(): Promise<boolean> {
+    if (this.tokengroupForm.invalid) {
+      return false;
+    }
+    const group: Tokengroup = {
+      ...this.tokengroupForm.getRawValue()
+    };
+
+    try {
+      await this.tokengroupService.postTokengroup(group);
+      this.dialogRef.close(true);
+      return true;
+    } catch (error) {
+      return false;
     }
   }
 
@@ -138,12 +149,13 @@ export class NewTokengroupComponent implements OnInit, OnDestroy {
         .afterClosed()
         .subscribe((result) => {
           if (result === "discard") {
-            this.pendingChangesService.unregisterHasChanges();
+            this.pendingChangesService.clearAllRegistrations();
             this.closeCurrent();
           } else if (result === "save-exit") {
             if (!this.canSave) return;
-            Promise.resolve(this.pendingChangesService.save()).then(() => {
-              this.pendingChangesService.unregisterHasChanges();
+            Promise.resolve(this.pendingChangesService.save()).then((success) => {
+              if (!success) return;
+              this.pendingChangesService.clearAllRegistrations();
               this.closeCurrent();
             });
           }

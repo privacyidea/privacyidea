@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -27,11 +27,7 @@ import { Resolver } from "../../../../services/resolver/resolver.service";
 @Component({
   selector: "app-resolver-table-actions",
   standalone: true,
-  imports: [
-    MatButtonModule,
-    MatIconModule,
-    MatDialogModule
-  ],
+  imports: [MatButtonModule, MatIconModule, MatDialogModule],
   templateUrl: "./resolver-table-actions.component.html",
   styleUrl: "./resolver-table-actions.component.scss"
 })

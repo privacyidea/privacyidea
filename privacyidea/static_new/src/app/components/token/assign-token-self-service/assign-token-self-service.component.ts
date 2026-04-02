@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, inject, signal } from "@angular/core";
+import { AfterViewInit, Component, ElementRef, inject, OnDestroy, Renderer2, signal, ViewChild } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { MatButton } from "@angular/material/button";
 import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
@@ -25,20 +25,50 @@ import { MatInput } from "@angular/material/input";
 import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "../../../route_paths";
 import { TokenService, TokenServiceInterface } from "../../../services/token/token.service";
+import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 
 @Component({
   selector: "app-attach-token-self-service",
-  imports: [MatError, MatFormField, MatFormField, MatLabel, MatInput, FormsModule, MatButton, MatIcon],
+  imports: [MatError, MatFormField, MatLabel, MatInput, FormsModule, MatButton, MatIcon, ScrollToTopDirective],
   templateUrl: "./assign-token-self-service.component.html",
   styleUrl: "./assign-token-self-service.component.scss"
 })
-export class AssignTokenSelfServiceComponent {
+export class AssignTokenSelfServiceComponent implements AfterViewInit, OnDestroy {
   private readonly tokenService: TokenServiceInterface = inject(TokenService);
+  private readonly renderer: Renderer2 = inject(Renderer2);
   private router = inject(Router);
   tokenSerial = this.tokenService.tokenSerial;
   selectedToken = signal("");
   setPinValue = signal("");
   repeatPinValue = signal("");
+
+  @ViewChild("scrollContainer") scrollContainer!: ElementRef<HTMLElement>;
+  @ViewChild("stickyHeader") stickyHeader!: ElementRef<HTMLElement>;
+  @ViewChild("stickySentinel") stickySentinel!: ElementRef<HTMLElement>;
+
+  private observer!: IntersectionObserver;
+
+  ngAfterViewInit(): void {
+    if (!this.scrollContainer || !this.stickyHeader || !this.stickySentinel) {
+      return;
+    }
+
+    this.observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) {
+        this.renderer.removeClass(this.stickyHeader.nativeElement, "is-sticky");
+      } else {
+        this.renderer.addClass(this.stickyHeader.nativeElement, "is-sticky");
+      }
+    });
+
+    this.observer.observe(this.stickySentinel.nativeElement);
+  }
+
+  ngOnDestroy(): void {
+    if (this.observer) {
+      this.observer.disconnect();
+    }
+  }
 
   assignUserToToken() {
     this.tokenService

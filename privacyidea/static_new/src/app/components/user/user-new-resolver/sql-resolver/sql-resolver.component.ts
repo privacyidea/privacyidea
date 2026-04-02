@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -58,32 +58,32 @@ export class SqlResolverComponent {
     {
       name: "Wordpress",
       table: "wp_users",
-      map: "{ \"userid\" : \"ID\", \"username\": \"user_login\", \"email\" : \"user_email\", \"givenname\" : \"display_name\", \"password\" : \"user_pass\" }"
+      map: '{ "userid" : "ID", "username": "user_login", "email" : "user_email", "givenname" : "display_name", "password" : "user_pass" }'
     },
     {
       name: "OTRS",
       table: "users",
-      map: "{ \"userid\" : \"id\", \"username\": \"login\", \"givenname\" : \"first_name\", \"surname\" : \"last_name\", \"password\" : \"pw\" }"
+      map: '{ "userid" : "id", "username": "login", "givenname" : "first_name", "surname" : "last_name", "password" : "pw" }'
     },
     {
       name: "TINE 2.0",
       table: "tine20_accounts",
-      map: "{ \"userid\" : \"id\", \"username\": \"login_name\", \"email\" : \"email\", \"givenname\" : \"first_name\", \"surname\" : \"last_name\", \"password\" : \"password\" }"
+      map: '{ "userid" : "id", "username": "login_name", "email" : "email", "givenname" : "first_name", "surname" : "last_name", "password" : "password" }'
     },
     {
       name: "Owncloud",
       table: "oc_users",
-      map: "{ \"userid\" : \"uid\", \"username\": \"uid\", \"givenname\" : \"displayname\", \"password\" : \"password\" }"
+      map: '{ "userid" : "uid", "username": "uid", "givenname" : "displayname", "password" : "password" }'
     },
     {
       name: "Typo3",
       table: "be_users",
-      map: "{ \"userid\" : \"uid\", \"username\": \"username\", \"givenname\" : \"realName\", \"password\" : \"password\", \"email\": \"email\" }"
+      map: '{ "userid" : "uid", "username": "username", "givenname" : "realName", "password" : "password", "email": "email" }'
     },
     {
       name: "Drupal",
       table: "user",
-      map: "{\"userid\": \"uid\", \"username\": \"name\", \"email\": \"mail\", \"password\": \"pass\" }"
+      map: '{"userid": "uid", "username": "name", "email": "mail", "password": "pass" }'
     }
   ];
 
@@ -147,11 +147,15 @@ export class SqlResolverComponent {
       if (initial.Port !== undefined) this.portControl.setValue(Number(initial.Port), { emitEvent: false });
       if (initial.User !== undefined) this.userControl.setValue(initial.User, { emitEvent: false });
       if (initial.Password !== undefined) this.passwordControl.setValue(initial.Password, { emitEvent: false });
-      if (initial.Password_Hash_Type !== undefined) this.passwordHashTypeControl.setValue(initial.Password_Hash_Type, { emitEvent: false });
+      if (initial.Password_Hash_Type !== undefined)
+        this.passwordHashTypeControl.setValue(initial.Password_Hash_Type, { emitEvent: false });
       if (initial.poolSize !== undefined) this.poolSizeControl.setValue(Number(initial.poolSize), { emitEvent: false });
-      if (initial.poolTimeout !== undefined) this.poolTimeoutControl.setValue(Number(initial.poolTimeout), { emitEvent: false });
-      if (initial.poolRecycle !== undefined) this.poolRecycleControl.setValue(Number(initial.poolRecycle), { emitEvent: false });
-      if (initial.Editable !== undefined) this.editableControl.setValue(parseBooleanValue(initial.Editable), { emitEvent: false });
+      if (initial.poolTimeout !== undefined)
+        this.poolTimeoutControl.setValue(Number(initial.poolTimeout), { emitEvent: false });
+      if (initial.poolRecycle !== undefined)
+        this.poolRecycleControl.setValue(Number(initial.poolRecycle), { emitEvent: false });
+      if (initial.Editable !== undefined)
+        this.editableControl.setValue(parseBooleanValue(initial.Editable), { emitEvent: false });
       if (initial.conParams !== undefined) this.conParamsControl.setValue(initial.conParams, { emitEvent: false });
       if (initial.Encoding !== undefined) this.encodingControl.setValue(initial.Encoding, { emitEvent: false });
       if (initial.Where !== undefined) this.whereControl.setValue(initial.Where, { emitEvent: false });

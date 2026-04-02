@@ -17,22 +17,39 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div
+  #scrollContainer
   appScrollToTop
   aria-label="Assign Token Self-Service"
   class="assign-token-self-service-container"
   i18n-aria-label>
-  <h3
-    class="margin-left-16"
-    i18n>
-    Assign Token
-  </h3>
-  <p i18n>
-    If you were handed a token device, you may connect this device to your account. Turn over the token, you may find a
-    serial number printed on the token. Please enter this serial number and make up a token pin.
-  </p>
-  <div class="flex-row gap-16">
-    <mat-form-field
-      class="width-50">
+  <div #stickySentinel></div>
+  <div
+    #stickyHeader
+    class="sticky-header">
+    <div class="sticky-controls ali-center">
+      <h3 class="margin-8" i18n>Assign Token</h3>
+
+      <div class="enroll-button-container margin-left-auto">
+        <button
+          (click)="assignUserToToken()"
+          class="action-button-primary button-width-m margin-left-auto"
+          i18n
+          mat-stroked-button>
+          <mat-icon>person_add</mat-icon>
+          Assign Token
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="margin-left-16">
+    <div class="width-880 margin-bottom-0">
+      <p i18n>
+        If you were handed a token device, you may connect this device to your account. Turn over the token, you may find a
+        serial number printed on the token. Please enter this serial number and make up a token pin.
+      </p>
+    </div>
+    <mat-form-field class="input-width-l">
       <mat-label i18n>Enter Serial</mat-label>
       <input
         [(ngModel)]="selectedToken"
@@ -40,40 +57,32 @@
         required />
       <mat-error i18n>Serial is <strong>required</strong></mat-error>
     </mat-form-field>
-    <button
-      (click)="assignUserToToken()"
-      class="card-button-1"
-      i18n
-      mat-stroked-button>
-      <mat-icon>person_add</mat-icon>
-      Assign Token
-    </button>
-  </div>
-  <input
-    class="hidden-input"
-    type="text" />
 
-  <input
-    class="hidden-input"
-    type="password" />
-  <div class="flex-column gap-8">
-    <h4 i18n>
-      Set PIN
-    </h4>
     <div class="flex-column gap-8">
+      <h4 i18n>Set PIN</h4>
       <input
-        [(ngModel)]="setPinValue"
-        [type]="'password'"
-        class="input"
-        i18n-placeholder
-        placeholder="PIN" />
+        class="hidden-input"
+        type="text" />
+      <input
+        class="hidden-input"
+        type="password" />
+      <div class="flex-column">
+        <mat-form-field class="input-width-s">
+          <mat-label i18n>PIN</mat-label>
+          <input
+            [(ngModel)]="setPinValue"
+            [type]="'password'"
+            matInput />
+        </mat-form-field>
 
-      <input
-        [(ngModel)]="repeatPinValue"
-        [type]="'password'"
-        class="input"
-        i18n-placeholder
-        placeholder="Repeat PIN" />
+        <mat-form-field class="input-width-s">
+          <mat-label i18n>Repeat PIN</mat-label>
+          <input
+            [(ngModel)]="repeatPinValue"
+            [type]="'password'"
+            matInput />
+        </mat-form-field>
+      </div>
     </div>
   </div>
 </div>

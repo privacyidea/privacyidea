@@ -18,17 +18,14 @@
 -->
 
 <div class="action-name-container">
-  <div
-    i18n
-    class="name-header">
-    Policy Name
-  </div>
+<mat-form-field>
+  <mat-label i18n>Policy Name</mat-label>
   <input
     matInput
     type="text"
-    class="name-input"
     [ngModel]="policyName()"
     (ngModelChange)="policyName.set($event)"
     i18n-placeholder
     placeholder="Enter policy name..." />
+</mat-form-field>
 </div>

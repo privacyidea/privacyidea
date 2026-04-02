@@ -60,20 +60,23 @@
           <ng-container matColumnDef="value">
             <td
               *matCellDef="let element"
-              [ngClass]="tableUtilsService.getTdClassForKey(element.keyMap.key)"
+              [ngClass]="tableUtilsService.getTdClassForKey(element.keyMap.key)
+              .concat(element.isEditing() ? ['padding-0'] : [])"
               mat-cell>
               @switch (element.keyMap.key) {
                 @case ("container_serial") {
                   @if (element.isEditing()) {
-                    <mat-form-field class="width-288">
+                    <mat-form-field
+                      class="input-width-m height-52"
+                      subscriptSizing="dynamic">
                       <mat-label i18n>Enter Container</mat-label>
                       <app-clearable-input
                         (onClick)="containerService.selectedContainer.set(null)"
                         [showClearButton]="containerService.selectedContainer() !== ''">
                         <input
-                          matInput
                           [(ngModel)]="containerService.selectedContainer"
-                          [matAutocomplete]="containerAuto" />
+                          [matAutocomplete]="containerAuto"
+                          matInput />
                       </app-clearable-input>
                       <mat-autocomplete #containerAuto="matAutocomplete">
                         @for (option of containerService.containersForTokenType(); track option) {
@@ -124,14 +127,16 @@
                 }
                 @case ("description") {
                   @if (element.isEditing()) {
-                    <mat-form-field class="width-288 description">
+                    <mat-form-field
+                      class="input-width-m description height-126"
+                      subscriptSizing="dynamic">
                       <textarea
-                        matInput
-                        rows="4"
-                        [maxlength]="80"
                         [(ngModel)]="element.value"
+                        [maxlength]="80"
                         i18n-placeholder
-                        placeholder="Enter description"></textarea>
+                        matInput
+                        placeholder="Enter description"
+                        rows="4"></textarea>
                     </mat-form-field>
                   } @else {
                     <div class="details-description-div">
@@ -143,18 +148,22 @@
                 }
                 @default {
                   @if (element.isEditing() && isNumberElement(element.keyMap.key)) {
-                    <mat-form-field>
+                    <mat-form-field
+                      class="input-width-m height-52"
+                      subscriptSizing="dynamic">
                       <input
-                        type="number"
+                        [(ngModel)]="element.value"
                         matInput
-                        [(ngModel)]="element.value" />
+                        type="number" />
                     </mat-form-field>
                   } @else if (element.isEditing()) {
-                    <mat-form-field>
+                    <mat-form-field
+                      class="input-width-m"
+                      subscriptSizing="dynamic">
                       <textarea
+                        [(ngModel)]="element.value"
                         matInput
-                        rows="1"
-                        [(ngModel)]="element.value"></textarea>
+                        rows="1"></textarea>
                     </mat-form-field>
                   } @else {
                     <div [ngClass]="[tableUtilsService.getDivClassForKey(element.keyMap.key)]">

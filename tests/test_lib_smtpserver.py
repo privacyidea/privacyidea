@@ -6,6 +6,7 @@ import email
 from email.mime.image import MIMEImage
 from smtplib import SMTPException
 
+from privacyidea.lib.crypto import encryptPassword, decryptPassword
 from privacyidea.lib.error import ResourceNotFoundError
 from privacyidea.lib.queue import get_job_queue
 from privacyidea.lib.smtpserver import (get_smtpservers, add_smtpserver,
@@ -87,10 +88,46 @@ class SMTPServerTestCase(MyTestCase):
         delete_smtpserver("myserver")
 
     def test_03_updateserver(self):
-        r = add_smtpserver(identifier="myserver", server="100.2.3.4")
-        self.assertTrue(r > 0)
+        # Initial create
+        smtp_id = add_smtpserver(identifier="myserver", server="100.2.3.4", smime=True, private_key="123",
+                           private_key_password="top_secret", certificate="cert")
+        self.assertGreater(smtp_id, 0)
         server_list = get_smtpservers(identifier="myserver")
-        self.assertTrue(server_list[0].config.server, "100.2.3.4")
+        server = server_list[0].config
+        self.assertEqual("100.2.3.4", server.server)
+        self.assertTrue(server.smime)
+        self.assertEqual("123", server.private_key)
+        # assume encryption
+        self.assertEqual(len(encryptPassword("top_secret")), len(server.private_key_password))
+        self.assertNotEqual("top_secret", server.private_key_password)
+        self.assertEqual("top_secret", decryptPassword(server.private_key_password))
+        self.assertEqual("cert", server.certificate)
+
+        # Update private key password
+        smtp_id = add_smtpserver(identifier="myserver", server="200.2.3.4", private_key_password="new_secret")
+        self.assertGreater(smtp_id, 0)
+        server_list = get_smtpservers(identifier="myserver")
+        server = server_list[0].config
+        # assume encryption
+        self.assertEqual(len(encryptPassword("new_secret")), len(server.private_key_password))
+        self.assertNotEqual("new_secret", server.private_key_password)
+        self.assertEqual("new_secret", decryptPassword(server.private_key_password))
+
+        # Update keeps unspecified private key password unchanged
+        smtp_id = add_smtpserver(identifier="myserver", server="200.2.3.4")
+        self.assertGreater(smtp_id, 0)
+        server_list = get_smtpservers(identifier="myserver")
+        server = server_list[0].config
+        self.assertEqual("200.2.3.4", server.server)
+        self.assertEqual("new_secret", decryptPassword(server.private_key_password))
+
+        # Can clear private key password
+        smtp_id = add_smtpserver(identifier="myserver", server="200.2.3.4", private_key_password="")
+        self.assertGreater(smtp_id, 0)
+        server_list = get_smtpservers(identifier="myserver")
+        server = server_list[0].config
+        self.assertEqual("", server.private_key_password)
+
 
     def test_04_missing_configuration(self):
         self.assertRaises(ResourceNotFoundError, get_smtpserver, "notExisting")

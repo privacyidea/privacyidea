@@ -18,9 +18,9 @@
  **/
 
 import { CommonModule, KeyValuePipe } from "@angular/common";
-import { Component, inject, viewChild, signal, linkedSignal, computed } from "@angular/core";
+import { Component, computed, inject, linkedSignal, signal, viewChild } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
-import { MatCheckboxModule, MatCheckboxChange } from "@angular/material/checkbox";
+import { MatCheckboxChange, MatCheckboxModule } from "@angular/material/checkbox";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
 import { MatSlideToggleModule } from "@angular/material/slide-toggle";
@@ -31,10 +31,10 @@ import { lastValueFrom } from "rxjs";
 
 import { FilterValueGeneric } from "src/app/core/models/filter_value_generic/filter-value-generic";
 import { FilterOption } from "src/app/core/models/filter_value_generic/filter-option";
-import { AuthServiceInterface, AuthService } from "src/app/services/auth/auth.service";
-import { DialogServiceInterface, DialogService } from "src/app/services/dialog/dialog.service";
-import { PolicyServiceInterface, PolicyService, PolicyDetail } from "src/app/services/policies/policies.service";
-import { TableUtilsServiceInterface, TableUtilsService } from "src/app/services/table-utils/table-utils.service";
+import { AuthService, AuthServiceInterface } from "src/app/services/auth/auth.service";
+import { DialogService, DialogServiceInterface } from "src/app/services/dialog/dialog.service";
+import { PolicyDetail, PolicyService, PolicyServiceInterface } from "src/app/services/policies/policies.service";
+import { TableUtilsService, TableUtilsServiceInterface } from "src/app/services/table-utils/table-utils.service";
 import { EditPolicyDialogComponent } from "../dialogs/edit-policy-dialog/edit-policy-dialog.component";
 import { PoliciesTableActionsComponent } from "./policies-table-actions/policies-table-actions.component";
 import { PolicyFilterComponent } from "./policy-filter/policy-filter.component";
@@ -201,7 +201,7 @@ export class PoliciesTableComponent {
 
   async editPolicy(policy: PolicyDetail): Promise<void> {
     if (!policy.name) return;
-    const result = await lastValueFrom(
+    const _ = await lastValueFrom(
       this.dialogService
         .openDialog({
           component: EditPolicyDialogComponent,
@@ -209,7 +209,6 @@ export class PoliciesTableComponent {
         })
         .afterClosed()
     );
-    if (result) this.policyService.savePolicyEdits(policy.name, { ...policy, ...result });
   }
 }
 

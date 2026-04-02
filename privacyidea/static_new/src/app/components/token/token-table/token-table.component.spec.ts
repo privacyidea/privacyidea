@@ -63,40 +63,6 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
   let tableUtilsService: MockTableUtilsService;
 
   beforeAll(() => {
-    Object.defineProperty(window, "matchMedia", {
-      writable: true,
-      value: (q: string) => ({
-        matches: false,
-        media: q,
-        onchange: null,
-        addListener: jest.fn(),
-        removeListener: jest.fn(),
-        addEventListener: jest.fn(),
-        removeEventListener: jest.fn(),
-        dispatchEvent: jest.fn()
-      })
-    });
-
-    class RO {
-      observe = jest.fn();
-      unobserve = jest.fn();
-      disconnect = jest.fn();
-    }
-
-    (globalThis as any).ResizeObserver = RO;
-
-    if (!(globalThis as any).MutationObserver) {
-      (globalThis as any).MutationObserver = class {
-        observe() {}
-
-        disconnect() {}
-
-        takeRecords() {
-          return [];
-        }
-      };
-    }
-
     jest.spyOn(console, "warn").mockImplementation(() => {});
   });
 

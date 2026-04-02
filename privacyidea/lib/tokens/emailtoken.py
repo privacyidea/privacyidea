@@ -64,26 +64,27 @@ policy: action: emailtext
 The code is tested in tests/test_lib_tokens_email
 """
 
+import datetime
 import logging
 import traceback
-import datetime
-from privacyidea.lib.tokens.smstoken import HotpTokenClass
-from privacyidea.lib.tokenclass import ChallengeSession, AuthenticationMode
-from privacyidea.lib.config import get_from_config, get_email_validators
+
 from privacyidea.api.lib.utils import getParam
-from privacyidea.lib.utils import is_true, create_tag_dict
-from privacyidea.lib.policy import (SCOPE, GROUP, comma_escape_text,
-                                    get_action_values_from_options)
-from privacyidea.lib.policies.actions import PolicyAction
-from privacyidea.lib.policy import Match
-from privacyidea.lib.error import ValidateError
-from privacyidea.lib.log import log_with
 from privacyidea.lib import _
 from privacyidea.lib.token import create_challenge
-from privacyidea.lib.decorators import check_token_locked
-from privacyidea.lib.smtpserver import send_email_data, send_email_identifier
+from privacyidea.lib.config import get_from_config, get_email_validators
 from privacyidea.lib.crypto import safe_compare
-
+from privacyidea.lib.decorators import check_token_locked
+from privacyidea.lib.error import ValidateError
+from privacyidea.lib.log import log_with
+from privacyidea.lib.policies.actions import PolicyAction
+from privacyidea.lib.policy import Match
+from privacyidea.lib.policy import (SCOPE, GROUP, comma_escape_text,
+                                    get_action_values_from_options)
+from privacyidea.lib.smtpserver import send_email_data, send_email_identifier
+from privacyidea.lib.tokenclass import ChallengeSession, AuthenticationMode
+from privacyidea.lib.tokens.smstoken import HotpTokenClass
+from privacyidea.lib.utils import is_true, create_tag_dict
+from privacyidea.models import Challenge
 
 log = logging.getLogger(__name__)
 TEST_SUCCESSFUL = "Successfully sent email. Please check your inbox."
@@ -102,6 +103,7 @@ class EmailTokenClass(HotpTokenClass):
     """
 
     EMAIL_ADDRESS_KEY = "email"
+    DYNAMIC_EMAIL_KEY = "dynamic_email"
     # The HOTP token provides means to verify the enrollment
     can_verify_enrollment = True
     mode = [AuthenticationMode.CHALLENGE]
@@ -115,7 +117,7 @@ class EmailTokenClass(HotpTokenClass):
 
     @property
     def _email_address(self):
-        if is_true(self.get_tokeninfo("dynamic_email")):
+        if is_true(self.get_tokeninfo(self.DYNAMIC_EMAIL_KEY)):
             email = self.user.get_specific_info([self.EMAIL_ADDRESS_KEY]).get(self.EMAIL_ADDRESS_KEY)
             if isinstance(email, list) and email:
                 # If there is a non-empty list, we use the first entry
@@ -226,13 +228,15 @@ class EmailTokenClass(HotpTokenClass):
         """
         verify = getParam(param, "verify", optional=True)
         if not verify:
-            if getParam(param, "dynamic_email", optional=True):
-                self.add_tokeninfo("dynamic_email", True)
+            if getParam(param, self.DYNAMIC_EMAIL_KEY, optional=True):
+                self.add_tokeninfo(self.DYNAMIC_EMAIL_KEY, True)
+                self.delete_tokeninfo(self.EMAIL_ADDRESS_KEY)
             else:
                 # specific - e-mail
                 self._email_address = getParam(param,
                                                self.EMAIL_ADDRESS_KEY,
                                                optional=False)
+                self.delete_tokeninfo(self.DYNAMIC_EMAIL_KEY)
 
             # in case of the e-mail token, only the server must know the otpkey
             # thus if none is provided, we let create one (in the TokenClass)
@@ -389,7 +393,7 @@ class EmailTokenClass(HotpTokenClass):
         g = options.get("g")
         user_object = options.get("user")
         if g:
-            messages = Match.user(g, scope=SCOPE.AUTH, action=action, user_object=user_object if user_object else None)\
+            messages = Match.user(g, scope=SCOPE.AUTH, action=action, user_object=user_object if user_object else None) \
                 .action_values(unique=True, allow_white_space_in_action=True)
             if len(messages) == 1:
                 message = list(messages)[0]
@@ -423,7 +427,8 @@ class EmailTokenClass(HotpTokenClass):
         g = options.get("g")
         user_object = options.get("user")
         if g:
-            autoemailpol = Match.user(g, scope=SCOPE.AUTH, action=EMAILACTION.EMAILAUTO, user_object=user_object).policies()
+            autoemailpol = Match.user(g, scope=SCOPE.AUTH, action=EMAILACTION.EMAILAUTO,
+                                      user_object=user_object).policies()
             autosms = len(autoemailpol) >= 1
 
         return autosms
@@ -544,7 +549,7 @@ class EmailTokenClass(HotpTokenClass):
         from privacyidea.lib.token import init_token
         from privacyidea.lib.tokenclass import ClientMode
         token_obj = init_token({"type": cls.get_class_type(),
-                                "dynamic_email": 1}, user=user_obj)
+                                cls.DYNAMIC_EMAIL_KEY: 1}, user=user_obj)
         content.get("result")["value"] = False
         content.get("result")["authentication"] = "CHALLENGE"
 
@@ -593,7 +598,7 @@ class EmailTokenClass(HotpTokenClass):
         validate_email = get_email_validators().get(validate_module)
         if validate_email(passw):
             # TODO: If anything special happens, we could leave it as a dynamic email
-            self.delete_tokeninfo("dynamic_email")
+            self.delete_tokeninfo(self.DYNAMIC_EMAIL_KEY)
             self.add_tokeninfo(self.EMAIL_ADDRESS_KEY, passw)
             # Dynamically we remember that we need to do another challenge
             self.currently_in_challenge = True

@@ -23,18 +23,16 @@ SPDX-License-Identifier: AGPL-3.0-or-later
             <div>
 
                 <div class="form-group">
-                    <div ng-show="users.length > 0">
-                        <input type="checkbox" id="passphrase_user"
-                               ng-model="passphrase.user"
-                               ng-disabled="users.length === 0"/>
-                        <label for="passphrase_user" translate>
-                            Validate the passphrase against the user store.
-                        </label>
-                    </div>
-                    <label ng-show="users.length === 0" class="text text-muted" for="passphrase_user" translate>
+                    <input type="checkbox" id="passphrase_user"
+                           ng-disabled="!users || users.length === 0"
+                           ng-model="passphrase.user"/>
+                    <label ng-show="users || users.length > 0" for="passphrase_user" translate>
                         Validate the passphrase against the user store.
                     </label>
-                    <div class="text text-muted" ng-show="users.length === 0">
+                    <label ng-show="!users || users.length === 0" class="text text-muted" for="passphrase_user" translate>
+                        Validate the passphrase against the user store.
+                    </label>
+                    <div class="text text-muted" ng-show="!users || users.length === 0">
                         <span class="glyphicon glyphicon-info-sign"></span>
                         <span translate>Assign the container to a user to enable this option.</span>
                     </div>

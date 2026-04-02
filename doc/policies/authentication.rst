@@ -360,9 +360,9 @@ be used during authentication. The list is separated by whitespaces like
 *"hotp totp"*.
 
 
-.. _policy_diable_token_types:
+.. _policy_diabled_token_types:
 
-disable_token_types
+disabled_token_types
 ~~~~~~~~~~~~~~~~~~~~
 
 type: ``string``
@@ -372,7 +372,7 @@ The list is separated by whitespaces like *"hotp totp"*.
 
 .. versionadded:: 3.12
 
-.. _policy_change_pin_via_validate:
+.. _policy_force_challenge_response:
 
 force_challenge_response
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -384,7 +384,7 @@ type: ``bool``
 When enabled, authentication attempts will be interpreted as either the PIN or the answer to a challenge.
 PIN concatenated with OTP can not be used anymore! Does only work when authenticating with a username.
 
-.. _policy_force_challenge_response:
+.. _policy_change_pin_via_validate:
 
 change_pin_via_validate
 ~~~~~~~~~~~~~~~~~~~~~~~

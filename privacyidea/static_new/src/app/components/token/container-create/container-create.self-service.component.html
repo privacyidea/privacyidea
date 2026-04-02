@@ -48,9 +48,9 @@
         <button
           (click)="createContainer()"
           [disabled]="!validInput"
-          class="action-button-secondary button-width-l margin-left-auto"
+          class="action-button-primary button-width-m margin-left-auto"
           mat-stroked-button>
-          <mat-icon>add</mat-icon>
+          <mat-icon>create_new_folder</mat-icon>
           Create
         </button>
         <button
@@ -79,7 +79,7 @@
       }
     </div>
 
-    <mat-form-field class="input-width-l margin-top-16">
+    <mat-form-field class="input-width-xl margin-top-16">
       <mat-label i18n>Description</mat-label>
       <textarea
         [(ngModel)]="description"
@@ -97,7 +97,7 @@
           Use a Template
         </h4>
         <mat-form-field
-          class="input-width-l">
+          class="input-width-xl">
           <mat-label i18n>Template</mat-label>
           <mat-select
             [(ngModel)]="selectedTemplate"

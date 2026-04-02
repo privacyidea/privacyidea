@@ -33,6 +33,7 @@ import {
 import { MockResolverService } from "../../../../testing/mock-services/mock-resolver-service";
 import { DialogService } from "../../../services/dialog/dialog.service";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
+import { MockMatDialogRef } from "../../../../testing/mock-mat-dialog-ref";
 
 describe("CreateUserDialogComponent", () => {
   let component: CreateUserDialogComponent;
@@ -41,12 +42,10 @@ describe("CreateUserDialogComponent", () => {
   let mockRealmService: MockRealmService;
   let mockResolverService: MockResolverService;
   let mockNotificationService: MockNotificationService;
-  let dialogRef: { close: jest.Mock };
 
   const mockData = { realm: "realmA" };
 
   beforeEach(async () => {
-    dialogRef = { close: jest.fn() };
     await TestBed.configureTestingModule({
       imports: [CreateUserDialogComponent],
       providers: [
@@ -56,10 +55,9 @@ describe("CreateUserDialogComponent", () => {
         { provide: NotificationService, useClass: MockNotificationService },
         { provide: DialogService, useClass: MockDialogService },
         { provide: MAT_DIALOG_DATA, useValue: mockData },
-        { provide: MatDialogRef, useValue: dialogRef }
+        { provide: MatDialogRef, useClass: MockMatDialogRef }
       ]
-    })
-      .compileComponents();
+    }).compileComponents();
 
     mockUserService = TestBed.inject(UserService) as unknown as MockUserService;
     mockRealmService = TestBed.inject(RealmService) as unknown as MockRealmService;
@@ -126,7 +124,9 @@ describe("CreateUserDialogComponent", () => {
     component.resolverControl.setValue("");
     fixture.detectChanges();
     component.create();
-    expect(mockNotificationService.openSnackBar).toHaveBeenCalledWith(expect.stringContaining("Please fill in all required fields"));
+    expect(mockNotificationService.openSnackBar).toHaveBeenCalledWith(
+      expect.stringContaining("Please fill in all required fields")
+    );
   });
 
   it("should call userService.createUser on valid form", () => {
@@ -137,7 +137,10 @@ describe("CreateUserDialogComponent", () => {
     });
     fixture.detectChanges();
     component.create();
-    expect(mockUserService.createUser).toHaveBeenCalledWith("testresolver", expect.objectContaining({ username: "testuser" }));
+    expect(mockUserService.createUser).toHaveBeenCalledWith(
+      "testresolver",
+      expect.objectContaining({ username: "testuser" })
+    );
   });
 
   it("should reload usersResource and close dialog on successful user creation", () => {
@@ -167,5 +170,15 @@ describe("CreateUserDialogComponent", () => {
     fixture.detectChanges();
     expect(component.correspondingRealms()).toContain("realmA");
     expect(component.correspondingRealms()).not.toContain("realmB");
+  });
+
+  it("editUserDataIsEmpty should be true when it is completely empty only", () => {
+    expect(component.editUserDataIsEmpty()).toBe(true);
+
+    component.editedUserData.set({ username: "test", email: "" });
+    expect(component.editUserDataIsEmpty()).toBe(false);
+
+    component.editedUserData.set({ username: "", email: "" });
+    expect(component.editUserDataIsEmpty()).toBe(true);
   });
 });

@@ -29,13 +29,23 @@ import { parseBooleanValue } from "../../utils/parse-boolean-value";
 import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
 
 export type ResolverType =
-  "ldapresolver"
+  | "ldapresolver"
   | "sqlresolver"
   | "passwdresolver"
   | "scimresolver"
   | "httpresolver"
   | "entraidresolver"
   | "keycloakresolver";
+
+export type LdapPreset = {
+  name: string;
+  loginName: string;
+  searchFilter: string;
+  userInfo: string;
+  uidType: string;
+};
+
+export type BindType = "" | "Simple" | "Anonymous" | "SASL Digest-MD5" | "NTLM" | "SASL Kerberos";
 
 export interface ResolverData {
   [key: string]: any;
@@ -53,7 +63,7 @@ export interface Resolver {
 export interface LDAPResolverData extends ResolverData {
   LDAPURI: string;
   LDAPBASE: string;
-  AUTHTYPE: string;
+  AUTHTYPE: BindType;
   BINDDN: string;
   BINDPW: string;
   TIMEOUT: number;
@@ -235,10 +245,12 @@ export class ResolverService implements ResolverServiceInterface {
   });
   resolvers = computed<Resolver[]>(() => {
     const resolvers = this.resolversResource.value()?.result?.value;
-    return resolvers ? Object.entries(resolvers).map(([name, data]) => ({
-      ...data,
-      resolvername: data.resolvername || name
-    })) : [];
+    return resolvers
+      ? Object.entries(resolvers).map(([name, data]) => ({
+          ...data,
+          resolvername: data.resolvername || name
+        }))
+      : [];
   });
   resolverOptions = computed(() => {
     const resolvers = this.resolversResource.value()?.result?.value;
@@ -250,7 +262,8 @@ export class ResolverService implements ResolverServiceInterface {
     if (!resolvers) return [];
     let editableResolverNames: string[] = [];
     for (const [name, resolver] of Object.entries(resolvers)) {
-      const editable = resolver.data?.["Editable"] || resolver.data?.["editable"] || resolver.data?.["EDITABLE"] || false;
+      const editable =
+        resolver.data?.["Editable"] || resolver.data?.["editable"] || resolver.data?.["EDITABLE"] || false;
       if (parseBooleanValue(editable)) {
         editableResolverNames.push(name);
       }
@@ -259,38 +272,48 @@ export class ResolverService implements ResolverServiceInterface {
   });
 
   postResolverTest(data: any = {}): Observable<PiResponse<any, any>> {
-    return this.http.post<PiResponse<any, any>>(this.resolverBaseUrl + "test", data, { headers: this.authService.getHeaders() }).pipe(
-      catchError((error) => {
-        console.error("Error during resolver test:", error);
-        return throwError(() => error);
-      })
-    );
+    return this.http
+      .post<PiResponse<any, any>>(this.resolverBaseUrl + "test", data, { headers: this.authService.getHeaders() })
+      .pipe(
+        catchError((error) => {
+          console.error("Error during resolver test:", error);
+          return throwError(() => error);
+        })
+      );
   }
 
   postResolver(resolverName: string, data: any): Observable<PiResponse<any, any>> {
-    return this.http.post<PiResponse<any, any>>(this.resolverBaseUrl + resolverName, data, { headers: this.authService.getHeaders() }).pipe(
-      catchError((error) => {
-        console.error(`Error during posting resolver ${resolverName}:`, error);
-        return throwError(() => error);
-      })
-    );
+    return this.http
+      .post<PiResponse<any, any>>(this.resolverBaseUrl + resolverName, data, { headers: this.authService.getHeaders() })
+      .pipe(
+        catchError((error) => {
+          console.error(`Error during posting resolver ${resolverName}:`, error);
+          return throwError(() => error);
+        })
+      );
   }
 
   deleteResolver(resolverName: string): Observable<PiResponse<any, any>> {
-    return this.http.delete<PiResponse<any, any>>(this.resolverBaseUrl + resolverName, { headers: this.authService.getHeaders() }).pipe(
-      catchError((error) => {
-        console.error(`Error during deleting resolver ${resolverName}:`, error);
-        return throwError(() => error);
-      })
-    );
+    return this.http
+      .delete<PiResponse<any, any>>(this.resolverBaseUrl + resolverName, { headers: this.authService.getHeaders() })
+      .pipe(
+        catchError((error) => {
+          console.error(`Error during deleting resolver ${resolverName}:`, error);
+          return throwError(() => error);
+        })
+      );
   }
 
   getDefaultResolverConfig(resolverType: string): Observable<PiResponse<any, any>> {
-    return this.http.get<PiResponse<any, any>>(this.resolverBaseUrl + resolverType + "/default", { headers: this.authService.getHeaders() }).pipe(
-      catchError((error) => {
-        console.error(`Error during getting default resolver config for ${resolverType}:`, error);
-        return throwError(() => error);
-      })
-    );
+    return this.http
+      .get<
+        PiResponse<any, any>
+      >(this.resolverBaseUrl + resolverType + "/default", { headers: this.authService.getHeaders() })
+      .pipe(
+        catchError((error) => {
+          console.error(`Error during getting default resolver config for ${resolverType}:`, error);
+          return throwError(() => error);
+        })
+      );
   }
 }

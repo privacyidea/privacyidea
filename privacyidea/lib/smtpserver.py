@@ -317,10 +317,10 @@ def list_smtpservers(identifier=None, server=None):
 
 
 @log_with(log)
-def add_smtpserver(identifier, server=None, port=25, username="", password="",
-                   sender="", description="", tls=False, timeout=TIMEOUT,
-                   enqueue_job=False, smime=False, dont_send_on_error=False,
-                   private_key="", private_key_password="", certificate=""):
+def add_smtpserver(identifier, server: str = None, port: int = 25, username: str = "", password: str = "",
+                   sender: str = "", description: str = "", tls: bool = False, timeout: int = TIMEOUT,
+                   enqueue_job: bool = False, smime: bool = False, dont_send_on_error: bool = False,
+                   private_key: str = "", private_key_password: str | None = None, certificate: str = ""):
     """
     This adds an smtp server to the smtp server database table.
 
@@ -335,7 +335,11 @@ def add_smtpserver(identifier, server=None, port=25, username="", password="",
     :return: The Id of the database object
     """
     encrypted_password = encryptPassword(password)
-    encrypted_private_key_password = encryptPassword(private_key_password)
+    # private_key_password could be empty string or None, which have a different effect later.
+    # here we only care if it has an actual value that we should encrypt, otherwise leave it at empty string or None
+    encrypted_private_key_password = private_key_password
+    if private_key_password:
+        encrypted_private_key_password = encryptPassword(private_key_password)
 
     stmt = select(SMTPServerDB).filter(SMTPServerDB.identifier == identifier)
     smtp_server = db.session.execute(stmt).scalar_one_or_none()
@@ -376,7 +380,7 @@ def add_smtpserver(identifier, server=None, port=25, username="", password="",
                                    password=encrypted_password, sender=sender, description=description, tls=tls,
                                    timeout=timeout, enqueue_job=enqueue_job, smime=smime,
                                    dont_send_on_error=dont_send_on_error, private_key=private_key,
-                                   private_key_password=private_key_password, certificate=certificate)
+                                   private_key_password=encrypted_private_key_password, certificate=certificate)
         db.session.add(smtp_server)
     db.session.commit()
     return smtp_server.id

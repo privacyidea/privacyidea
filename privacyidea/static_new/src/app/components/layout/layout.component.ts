@@ -16,7 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, effect, inject, signal } from "@angular/core";
+import { Component, effect, inject, Renderer2, signal } from "@angular/core";
+import { DOCUMENT } from "@angular/common";
 import { MatProgressBar } from "@angular/material/progress-bar";
 import { RouterOutlet } from "@angular/router";
 import { AuthService, AuthServiceInterface } from "../../services/auth/auth.service";
@@ -40,6 +41,8 @@ export class LayoutComponent {
   private readonly loadingService: LoadingServiceInterface = inject(LoadingService);
   protected readonly overflowService: OverflowServiceInterface = inject(OverflowService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
+  private readonly renderer = inject(Renderer2);
+  private readonly document = inject(DOCUMENT);
   showProgressBar = signal(false);
   loadingUrls = signal<{ key: string; url: string }[]>([]);
   isTokenDrawerOverflowing = signal(false);
@@ -48,7 +51,18 @@ export class LayoutComponent {
     effect(() => {
       this.contentService.routeUrl();
       this.updateOverflowState();
+      this.updateBodyClasses();
     });
+  }
+
+  updateBodyClasses() {
+    if (this.authService.role() === "admin") {
+      this.renderer.addClass(this.document.body, "admin-layout");
+      this.renderer.removeClass(this.document.body, "selfservice-layout");
+    } else {
+      this.renderer.addClass(this.document.body, "selfservice-layout");
+      this.renderer.removeClass(this.document.body, "admin-layout");
+    }
   }
 
   ngAfterViewInit() {
@@ -75,6 +89,8 @@ export class LayoutComponent {
   }
 
   ngOnDestroy(): void {
+    this.renderer.removeClass(this.document.body, "admin-layout");
+    this.renderer.removeClass(this.document.body, "selfservice-layout");
     this.loadingService.removeListener("layout");
     window.removeEventListener("resize", this.updateOverflowState);
   }

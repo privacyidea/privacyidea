@@ -1,5 +1,5 @@
 <!--
- (c) NetKnights GmbH 2025,  https://netknights.it
+ (c) NetKnights GmbH 2026,  https://netknights.it
 
  This code is free software; you can redistribute it and/or
  modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -20,7 +20,6 @@
   aria-label="User Details Container Table"
   class="user-details-container-table-layout"
   i18n-aria-label>
-
   <div class="details-header">
     <h4 i18n>Containers of User</h4>
     <h4 class="username-header">{{ userService.detailsUsername() }}</h4>
@@ -32,7 +31,7 @@
       class="user-details-container-table-filter">
       <mat-label i18n>Filter Containers...</mat-label>
       <app-clearable-input
-        (onClick)="filterValue=''; dataSource.filter=''; filterInput.value=''"
+        (onClick)="filterValue = ''; dataSource.filter = ''; filterInput.value = ''"
         [showClearButton]="filterValue.length > 0">
         <input
           #filterInput
@@ -44,11 +43,11 @@
           placeholder="Filter across all columns." />
       </app-clearable-input>
     </mat-form-field>
-  <mat-paginator
-    [pageSizeOptions]="pageSizeOptions()"
-    [pageSize]="pageSize"
-    class="flex-just-start"
-    showFirstLastButtons></mat-paginator>
+    <mat-paginator
+      [pageSizeOptions]="pageSizeOptions()"
+      [pageSize]="pageSize"
+      class="flex-just-start"
+      showFirstLastButtons></mat-paginator>
   </div>
   <div class="table-wrapper">
     <table
@@ -57,7 +56,6 @@
       class="user-details-container-table"
       i18n-aria-label
       mat-table>
-
       @for (column of columnsKeyMap; track column) {
         <ng-container [matColumnDef]="column.key">
           <th
@@ -83,7 +81,6 @@
             [ngClass]="{ 'input-width-l': column.key === 'description' }"
             attr.aria-label="{{ column.label }} Cell"
             mat-cell>
-
             <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
               @switch (column.key) {
                 @case ("serial") {
@@ -116,7 +113,6 @@
                 }
               }
             </div>
-
           </td>
         </ng-container>
       }

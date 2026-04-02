@@ -10,7 +10,7 @@
   @include styles.table-container-styles;
   @include styles.base-table-structure(".event-handler-table", ".event-handler-table-filter", ".table-scroll-container");
   max-height: var(--max-height);
-  max-width: calc(100vw - var(--global-padding) * 5 - 240px);
+  max-width: calc(100vw - var(--drawer-width) - 2 * var(--double-global-padding));
   overflow: auto;
   display: grid;
 }
@@ -61,4 +61,14 @@
 
 .no-indention {
   padding-left: 16px;
+}
+
+.column-max-width {
+  max-width: 280px;
+}
+
+.event-table-cell {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }

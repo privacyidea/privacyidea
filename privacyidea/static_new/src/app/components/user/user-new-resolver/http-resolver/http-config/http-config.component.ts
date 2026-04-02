@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -43,5 +43,4 @@ export class HttpConfigComponent {
   @Input({ required: true }) title!: string;
   @Input() description?: string;
   @Input() endpointHint?: string;
-
 }

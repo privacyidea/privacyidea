@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { UserResolversComponent } from "./user-resolvers.component";
+import { UserResolversComponent } from "./user-resolver.component";
 import { Resolver, ResolverService } from "../../../services/resolver/resolver.service";
 import { TableUtilsService } from "../../../services/table-utils/table-utils.service";
 import { NotificationService } from "../../../services/notification/notification.service";
@@ -78,14 +78,16 @@ describe("UserSourcesComponent", () => {
           }
         }
       ]
-    }).overrideComponent(UserResolversComponent, {
-      add: {
-        providers: [
-          { provide: MatDialog, useValue: dialog },
-          { provide: ContentService, useClass: MockContentService }
-        ]
-      }
-    }).compileComponents();
+    })
+      .overrideComponent(UserResolversComponent, {
+        add: {
+          providers: [
+            { provide: MatDialog, useValue: dialog },
+            { provide: ContentService, useClass: MockContentService }
+          ]
+        }
+      })
+      .compileComponents();
 
     fixture = TestBed.createComponent(UserResolversComponent);
     component = fixture.componentInstance;

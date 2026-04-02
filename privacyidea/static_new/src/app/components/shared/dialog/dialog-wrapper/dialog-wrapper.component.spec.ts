@@ -20,6 +20,8 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { DialogWrapperComponent } from "./dialog-wrapper.component";
 import { DialogAction } from "../../../../models/dialog";
+import { MockMatDialogRef } from "../../../../../testing/mock-mat-dialog-ref";
+import { MatDialogRef } from "@angular/material/dialog";
 
 describe("DialogWrapperComponent", () => {
   let component: DialogWrapperComponent;
@@ -28,7 +30,8 @@ describe("DialogWrapperComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [DialogWrapperComponent]
+      imports: [DialogWrapperComponent],
+      providers: [{ provide: MatDialogRef, useClass: MockMatDialogRef }]
     }).compileComponents();
 
     fixture = TestBed.createComponent(DialogWrapperComponent<DialogAction[]>);
@@ -120,7 +123,12 @@ describe("DialogWrapperComponent", () => {
     jest.spyOn(component, "onActionClick");
     const actionButtons = nativeElement.querySelectorAll<HTMLButtonElement>(".pi-dialog-footer button");
     actionButtons[1].click();
-    expect(component.onActionClick).toHaveBeenCalledWith({ value: "confirm", label: "Confirm", type: "confirm", primary: true });
+    expect(component.onActionClick).toHaveBeenCalledWith({
+      value: "confirm",
+      label: "Confirm",
+      type: "confirm",
+      primary: true
+    });
   });
 
   it("should throw an error if no actions and no close button", () => {
@@ -138,7 +146,8 @@ describe("DialogWrapperComponent", () => {
     fixture.detectChanges();
 
     const buttons = nativeElement.querySelectorAll(".pi-dialog-footer button");
-    const cancelButton = Array.from(buttons).find((btn) => btn.hasAttribute("mat-dialog-close"));
+    // The cancel button is always the first button when showCancelButton is true
+    const cancelButton = buttons[0];
 
     expect(cancelButton?.textContent?.trim()).toBe("Discard Changes");
   });

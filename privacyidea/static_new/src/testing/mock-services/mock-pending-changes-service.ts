@@ -16,32 +16,19 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { signal } from "@angular/core";
+import { PendingChangesServiceInterface } from "../../app/services/pending-changes/pending-changes.service";
 
-export class MockPendingChangesService {
-  private _hasChangesFn = signal<(() => boolean) | null>(null);
-  private _saveFn = signal<(() => Promise<void> | void) | null>(null);
+export class MockPendingChangesService implements PendingChangesServiceInterface {
+  hasChangesMockValue = false;
+  validChangesMockValue = true;
 
-  get hasChanges(): boolean {
-    const fn = this._hasChangesFn();
-    return fn ? fn() : false;
-  }
+  get hasChanges() {return this.hasChangesMockValue;};
 
-  registerHasChanges = jest.fn((fn: () => boolean): void => {
-    this._hasChangesFn.set(fn);
-  });
+  get validChanges() {return this.validChangesMockValue;};
 
-  unregisterHasChanges = jest.fn((): void => {
-    this._hasChangesFn.set(null);
-    this._saveFn.set(null);
-  });
-
-  registerSave = jest.fn((fn: () => Promise<void> | void): void => {
-    this._saveFn.set(fn);
-  });
-
-  save = jest.fn((): Promise<void> | void => {
-    const fn = this._saveFn();
-    return fn ? fn() : undefined;
-  });
+  registerHasChanges = jest.fn();
+  clearAllRegistrations = jest.fn();
+  registerSave = jest.fn();
+  save = jest.fn().mockReturnValue(true);
+  registerValidChanges = jest.fn();
 }

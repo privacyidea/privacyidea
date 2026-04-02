@@ -52,7 +52,7 @@
         <mat-option [value]="user">{{ user.username }}</mat-option>
       }
     </mat-autocomplete>
-    @if (!selectedUserRealmCtrl.value && !onlyAddToRealm) {
+    @if (!selectedUserRealmCtrl.value && !onlyAddToRealm()) {
       <mat-hint> Select a realm first to enable user selection.</mat-hint>
     }
     @if (userFilterCtrl.hasError("required")) {
@@ -70,7 +70,7 @@
       <mat-checkbox
         [checked]="onlyAddToRealm()"
         [disabled]="!!userFilterCtrl.value"
-        (change)="onOnlyAddToRealmChange($event)">
+        (change)="onOnlyAddToRealmChange($event.checked)">
         Only add to the realm (no user assignment)
       </mat-checkbox>
     </div>

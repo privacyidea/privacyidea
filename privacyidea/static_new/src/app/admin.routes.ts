@@ -42,7 +42,7 @@ import { PrivacyideaServersComponent } from "./components/external-services/priv
 import { CaConnectorsComponent } from "./components/external-services/ca-connectors/ca-connectors.component";
 import { TokengroupsComponent } from "./components/external-services/tokengroups/tokengroups.component";
 import { ServiceIdsComponent } from "./components/external-services/service-ids/service-ids.component";
-import { UserResolversComponent } from "./components/user/user-sources/user-resolvers.component";
+import { UserResolversComponent } from "./components/user/user-resolver/user-resolver.component";
 import { pendingChangesGuard } from "./guards/pending-changes.guard";
 import { PoliciesTableComponent } from "./components/policies/policies-table/policies-table.component";
 import { SubscriptionComponent } from "./components/configuration/subscription/subscription.component";
@@ -66,7 +66,7 @@ export const routes: Routes = [
           { path: "", component: ContainerTableComponent },
           { path: "create", component: ContainerCreateComponent },
           { path: "details/:serial", component: ContainerDetailsComponent },
-          { path: "templates", component: ContainerTemplatesComponent }
+          { path: "templates", component: ContainerTemplatesComponent, canDeactivate: [pendingChangesGuard] }
         ]
       },
       { path: "details/:serial", component: TokenDetailsComponent },
@@ -76,15 +76,15 @@ export const routes: Routes = [
   {
     path: "users",
     children: [
-      { path: "", component: UserTableComponent },
-      { path: "details/:username", component: UserDetailsComponent },
+      { path: "", component: UserTableComponent, canDeactivate: [pendingChangesGuard] },
+      { path: "details/:username", component: UserDetailsComponent, canDeactivate: [pendingChangesGuard] },
       { path: "realms", component: RealmTableComponent },
       { path: "resolvers", component: UserResolversComponent, canDeactivate: [pendingChangesGuard] }
     ]
   },
   {
     path: "policies",
-    children: [{ path: "", component: PoliciesTableComponent }]
+    children: [{ path: "", component: PoliciesTableComponent, canDeactivate: [pendingChangesGuard] }]
   },
   {
     path: "events",

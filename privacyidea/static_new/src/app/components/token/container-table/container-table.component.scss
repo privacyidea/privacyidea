@@ -11,12 +11,6 @@
   display: grid;
 }
 
-.filter-paginator-container-selfservice {
-  display: flex;
-  align-items: center;
-  justify-content: end;
-  gap: 16px;
-}
 
 tr.example-detail-row {
   background: var(--mat-sys-surface-container-lowest);
@@ -72,10 +66,6 @@ tr.example-detail-row td {
   background: var(--mat-sys-surface-container-low);
 }
 
-.selfservice-paginator-container {
-  justify-content: end;
-  display: flex;
-}
 
 .realm-break {
   margin-top: 3px;

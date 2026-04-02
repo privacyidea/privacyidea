@@ -21,7 +21,7 @@
   aria-label="Token Table"
   class="token-table-layout"
   i18n-aria-label>
-  <div class="selfservice-paginator-container">
+  <div class="filter-paginator-container">
     <h3
       class="selfservice-paginator-label"
       i18n>
@@ -31,11 +31,11 @@
       (page)="onPageEvent($event)"
       [length]="totalLength()"
       [pageIndex]="pageIndex()"
+      [pageSizeOptions]="pageSizeOptions()"
       [pageSize]="pageSize()"
-      hidePageSize
       showFirstLastButtons />
   </div>
-  <div class="self-service-table-container">
+  <div class="table-container">
     <table
       [dataSource]="tokenDataSource()"
       aria-label="Token Data Table"
@@ -64,6 +64,7 @@
             </div>
           </th>
           <td
+            class="max-width-300"
             *matCellDef="let element; let row"
             attr.aria-label="{{ column.label }} Cell"
             mat-cell>

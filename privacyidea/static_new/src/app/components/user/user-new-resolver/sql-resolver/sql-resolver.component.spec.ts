@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -31,11 +31,8 @@ describe("SqlResolverComponent", () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [SqlResolverComponent, NoopAnimationsModule],
-      providers: [
-        { provide: ResolverService, useClass: MockResolverService }
-      ]
-    })
-      .compileComponents();
+      providers: [{ provide: ResolverService, useClass: MockResolverService }]
+    }).compileComponents();
 
     fixture = TestBed.createComponent(SqlResolverComponent);
     component = fixture.componentInstance;
@@ -49,10 +46,12 @@ describe("SqlResolverComponent", () => {
 
   it("should expose controls via signal", () => {
     const controls = component.controls();
-    expect(controls).toEqual(expect.objectContaining({
-      Driver: component.driverControl,
-      Server: component.serverControl
-    }));
+    expect(controls).toEqual(
+      expect.objectContaining({
+        Driver: component.driverControl,
+        Server: component.serverControl
+      })
+    );
   });
 
   it("should update controls when data input changes", () => {

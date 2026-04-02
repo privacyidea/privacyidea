@@ -123,7 +123,7 @@
       </div>
     </div>
 
-    @if (containerService.selectedContainerType()?.containerType === "smartphone") {
+    @if (containerService.selectedContainerType()?.containerType === "smartphone" && authService.actionAllowed("container_register")) {
       <h4 i18n>
         Registration
       </h4>
