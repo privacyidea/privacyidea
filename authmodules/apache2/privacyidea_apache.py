@@ -33,14 +33,14 @@ To protect an Apache directory or Location add this to your apache config::
 
 The code is tested in test_mod_apache.py
 """
-import redis
-import requests
-import syslog
-import traceback
 import base64
 import hashlib as _hashlib
 import hmac as _hmac
 import os as _os
+import redis
+import requests
+import syslog
+import traceback
 import configparser
 
 OK = True
@@ -52,6 +52,31 @@ DEFAULT_REDIS = "localhost"
 DEFAULT_TIMEOUT = 300
 ROUNDS = 2342
 SALT_SIZE = 10
+
+
+def _ab64_encode(data):
+    """Passlib-compatible ab64: standard base64 with '.' instead of '+', no '=' padding."""
+    return base64.b64encode(data).decode('ascii').replace('+', '.').rstrip('=')
+
+
+def _ab64_decode(s):
+    return base64.b64decode(s.replace('.', '+') + '=' * (-len(s) % 4))
+
+
+def _pbkdf2_sha512_verify(password, hash_str):
+    """Verify a password against a $pbkdf2-sha512$ hash."""
+    if isinstance(password, str):
+        password = password.encode('utf-8')
+    if isinstance(hash_str, bytes):
+        hash_str = hash_str.decode('utf-8')
+    try:
+        _, scheme, rounds_str, salt_b64, hash_b64 = hash_str.split('$')
+        salt = _ab64_decode(salt_b64)
+        expected = _ab64_decode(hash_b64)
+        actual = _hashlib.pbkdf2_hmac('sha512', password, salt, int(rounds_str))
+        return _hmac.compare_digest(actual, expected)
+    except Exception:
+        return False
 
 
 def check_password(environ, username, password):

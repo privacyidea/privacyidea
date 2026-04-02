@@ -146,10 +146,8 @@ class OfflineApplicationTestCase(MyTestCase):
         auth_item = OfflineApplication.get_authentication_item("hotp", serial)
         refilltoken = auth_item.get("refilltoken")
         self.assertEqual(len(refilltoken), REFILLTOKEN_LENGTH * 2)
-        self.assertTrue(pbkdf2_sha512_verify("969429",  # count = 3
-                                             auth_item.get("response").get(3)))
-        self.assertTrue(pbkdf2_sha512_verify("399871",  # count = 8
-                                             auth_item.get("response").get(8)))
+        self.assertTrue(pbkdf2_sha512_verify("969429", auth_item.get("response").get(3)))  # count = 3
+        self.assertTrue(pbkdf2_sha512_verify("399871", auth_item.get("response").get(8)))  # count = 8
         # The token now contains the refill token information:
         self.assertEqual(refilltoken, tok.get_tokeninfo("refilltoken"))
 
@@ -159,8 +157,7 @@ class OfflineApplicationTestCase(MyTestCase):
         self.assertEqual(tok.token.count, 3 + 100)
         # Assert that we cannot authenticate with the last offline OTP we got
         self.assertEqual(len(auth_item.get("response")), 100)
-        self.assertTrue(pbkdf2_sha512_verify("629694",  # count = 102
-                                             auth_item.get("response").get(102)))
+        self.assertTrue(pbkdf2_sha512_verify("629694", auth_item.get("response").get(102)))  # count = 102
         res = tok.check_otp("629694") # count = 102
         self.assertEqual(res, -1)
         res = tok.check_otp("378717")  # count = 103

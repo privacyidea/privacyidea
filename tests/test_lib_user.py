@@ -550,7 +550,8 @@ class UserTestCase(MyTestCase):
         # Test on node 1
         get_app_config()["PI_NODE_UUID"] = nd1_uuid
         ul = get_user_list(param={"realm": "sort_node_realm"})
-        self.assertEqual(48, len(ul), ul)
+        # 3 more users have been added to the testdata, so this is 51 instead of 48 now
+        self.assertEqual(51, len(ul), ul)
         # Test on node 2
         get_app_config()["PI_NODE_UUID"] = nd2_uuid
         ul = get_user_list(param={"realm": "sort_node_realm"})

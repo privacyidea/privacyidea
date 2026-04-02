@@ -3436,10 +3436,8 @@ class APIContainerSynchronization(APIContainerTest):
         auth_item = MachineApplication.get_authentication_item("hotp", serial)
         refilltoken = auth_item.get("refilltoken")
         self.assertEqual(len(refilltoken), REFILLTOKEN_LENGTH * 2)
-        self.assertTrue(pbkdf2_sha512_verify(otps[3],  # count = 3
-                                                          auth_item.get("response").get(3)))
-        self.assertTrue(pbkdf2_sha512_verify(otps[8],  # count = 8
-                                                          auth_item.get("response").get(8)))
+        self.assertTrue(pbkdf2_sha512_verify(otps[3], auth_item.get("response").get(3)))  # count = 3
+        self.assertTrue(pbkdf2_sha512_verify(otps[8], auth_item.get("response").get(8)))  # count = 8
         # The token now contains the refill token information:
         self.assertEqual(refilltoken, token.get_tokeninfo("refilltoken"))
         self.assertEqual(103, token.token.count)

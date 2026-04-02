@@ -612,8 +612,7 @@ class APIMachinesTestCase(MyApiTestCase):
             response = offline_auth_item.get("response")
             self.assertEqual(len(response), 17)
             self.assertEqual(token_obj.token.count, 17)
-            self.assertTrue(pbkdf2_sha512_verify("755224",
-                                                 response.get('0')))
+            self.assertTrue(pbkdf2_sha512_verify("755224", response.get('0')))
 
         self.assertEqual(token_obj.check_otp('187581'), -1)  # count = 16
         with self.app.test_request_context(
@@ -632,10 +631,8 @@ class APIMachinesTestCase(MyApiTestCase):
             response = offline_auth_item.get("response")
             self.assertEqual(len(response), 17)
             self.assertEqual(token_obj.token.count, 35)  # 17 + 17 + 1, because we consumed 447589
-            self.assertTrue(pbkdf2_sha512_verify("test903435",  # count = 18
-                                                 response.get('18')))
-            self.assertTrue(pbkdf2_sha512_verify("test749439",  # count = 34
-                                                 response.get('34')))
+            self.assertTrue(pbkdf2_sha512_verify("test903435", response.get('18')))  # count = 18
+            self.assertTrue(pbkdf2_sha512_verify("test749439", response.get('34')))  # count = 34
         self.assertEqual(token_obj.check_otp('747439'), -1)  # count = 34
         self.assertEqual(token_obj.check_otp('037211'), 35)  # count = 35
 
