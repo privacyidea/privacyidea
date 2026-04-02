@@ -1,5 +1,23 @@
 # Update Notes
 
+## Update from 3.13 to 3.14
+* The `PI_HASH_ALGO_LIST` and `PI_HASH_ALGO_PARAMS` configuration options in `pi.cfg` have been removed.
+  Admin passwords and token PINs are now always hashed with **argon2id**. Existing hashes created with the
+  default settings (`argon2` and `pbkdf2_sha512`) continue to verify without any action required.
+
+  **!!! Action required if you set a custom `PI_HASH_ALGO_LIST`:** if your stored hashes use a scheme outside of
+  argon2 and pbkdf2_sha512 (e.g. you had `['sha256_crypt', ...]`), those hashes will no longer verify.
+  Before upgrading, re-hash affected credentials by having each admin log in once under the old version so a
+  fresh argon2 hash is written, or reset the credentials via `pi-manage admin change-password`.
+
+* **PasswdIdResolver on Python 3.13+:** The `sha256_crypt` (`$5$`) and `sha512_crypt` (`$6$`) password
+  formats are no longer supported when running on Python 3.13 or newer, because Python's `crypt` module
+  was removed in 3.13. **bcrypt** (`$2b$`) continues to work on all Python versions.
+
+  **Action required if you use PasswdIdResolver** with a passwd file containing `$5$` or `$6$` hashes
+  and are upgrading to Python 3.13: convert those entries to bcrypt before upgrading Python.
+  On Python 3.12 and earlier, nothing changes.
+
 ## Update from 3.12 to 3.13
 * `enrollpin` right enforcement has been made stricter. If you try to enroll a token with a PIN but do not have the
   the right, the enrollment will be denied with a PolicyError.

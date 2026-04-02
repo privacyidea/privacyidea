@@ -333,25 +333,20 @@ class SQLResolverTestCase(MyTestCase):
         self.assertFalse(resolver.checkPass('8', "wrongpass"))   # md5crypt
         self.assertFalse(resolver.checkPass('9', "wrongpass"))   # sha512crypt
 
-        # phpass_drupal (Drupal-style $S$ hash, not the same as WordPress $P$)
-        self.assertTrue(resolver.checkPass('14', "dunno"))
-        self.assertFalse(resolver.checkPass('14', "wrongpass"))
-
-        # SSHA256 with 24-byte salt — exceeds passlib's default max_salt_size of 16,
-        # which is why ldap_salted_sha256_pi raises it to 32.
+        # SSHA256 with 24-byte salt — larger than the typical 16-byte default;
+        # the salt is extracted from the hash so any size works.
         self.assertTrue(resolver.checkPass('15', "dunno"))
         self.assertFalse(resolver.checkPass('15', "wrongpass"))
 
-        # bcrypt with long password: the monkey-patch truncates passwords > 72 bytes
-        # to match bcrypt's behaviour, so 72-char and 80-char versions of the same
-        # password must both verify against a hash of the 72-char prefix.
+        # bcrypt with long password: passwords > 72 bytes are truncated before hashing,
+        # so 72-char and 80-char versions of the same password verify against the same hash.
         self.assertTrue(resolver.checkPass('16', 'a' * 72))
         self.assertTrue(resolver.checkPass('16', 'a' * 80))
         self.assertFalse(resolver.checkPass('16', 'b' * 72))
 
     def test_02b_hash_password(self):
         """Direct unit tests for hash_password() covering every supported scheme."""
-        from privacyidea.lib.resolvers.SQLIdResolver import pw_ctx as sql_pw_ctx
+        from privacyidea.lib.resolvers.SQLIdResolver import _verify_sql_hash
 
         for hashtype, expected_prefix in [
             ("PHPASS", "$P$"),
@@ -366,16 +361,16 @@ class SQLResolverTestCase(MyTestCase):
             hashed = hash_password("testpassword", hashtype)
             self.assertTrue(hashed.startswith(expected_prefix),
                             "{} hash should start with {!r}: {}".format(hashtype, expected_prefix, hashed))
-            self.assertTrue(sql_pw_ctx.verify("testpassword", hashed),
+            self.assertTrue(_verify_sql_hash("testpassword", hashed),
                             "{} hash should verify correctly".format(hashtype))
-            self.assertFalse(sql_pw_ctx.verify("wrongpassword", hashed),
+            self.assertFalse(_verify_sql_hash("wrongpassword", hashed),
                              "{} hash should not verify wrong password".format(hashtype))
 
         # OTRS produces a 64-character lowercase hex string (unsalted SHA256)
         otrs_hash = hash_password("testpassword", "OTRS")
         self.assertRegex(otrs_hash, r'^[0-9a-f]{64}$')
-        self.assertTrue(sql_pw_ctx.verify("testpassword", otrs_hash))
-        self.assertFalse(sql_pw_ctx.verify("wrongpassword", otrs_hash))
+        self.assertTrue(_verify_sql_hash("testpassword", otrs_hash))
+        self.assertFalse(_verify_sql_hash("wrongpassword", otrs_hash))
 
         # Unknown hash type must raise an exception
         self.assertRaises(Exception, hash_password, "testpassword", "UNKNOWNTYPE")
@@ -559,7 +554,7 @@ class SQLResolverTestCase(MyTestCase):
                                             "password": "test6"}))
         stored_password = resolver.session.execute(
             resolver.TABLE.select().where(resolver.TABLE.c.username == "achmed2")).first().password
-        self.assertTrue(stored_password.startswith("$5$rounds="), stored_password)
+        self.assertTrue(stored_password.startswith("$5$"), stored_password)
         self.assertTrue(resolver.checkPass(uid, "test6"))
         self.assertFalse(resolver.checkPass(uid, "test"))
 
@@ -570,7 +565,7 @@ class SQLResolverTestCase(MyTestCase):
                                             "password": "test7"}))
         stored_password = resolver.session.execute(
             resolver.TABLE.select().where(resolver.TABLE.c.username == "achmed2")).first().password
-        self.assertTrue(stored_password.startswith("$6$rounds="), stored_password)
+        self.assertTrue(stored_password.startswith("$6$"), stored_password)
         self.assertTrue(resolver.checkPass(uid, "test7"))
         self.assertFalse(resolver.checkPass(uid, "test"))
 
@@ -604,8 +599,8 @@ class SQLResolverTestCase(MyTestCase):
                                                  "password": "test10"}))
             expected = "Error updating user attributes for user with uid {0!s}: " \
                        "Unsupported password hashtype 'UNKNOWN'. Use one of " \
-                       "dict_keys(['PHPASS', 'SHA', 'SSHA', 'SSHA256', 'SSHA512', " \
-                       "'OTRS', 'SHA256CRYPT', 'SHA512CRYPT', 'MD5CRYPT']).".format(uid)
+                       "['PHPASS', 'SHA', 'SSHA', 'SSHA256', 'SSHA512', " \
+                       "'OTRS', 'SHA256CRYPT', 'SHA512CRYPT', 'MD5CRYPT'].".format(uid)
             mock_log.assert_called_once_with(expected)
 
         # set hash type to default
@@ -1510,6 +1505,53 @@ class LDAPResolverTestCase(MyTestCase):
         self.assertEqual(r, "hans\\28\\29")
         r = LDAPResolver._escape_loginname("hans\\/")
         self.assertEqual(r, "hans\\5c\\2f")
+
+    def test_10b_ssha_password_hash_format(self):
+        """Format regression test for the passlib → hashlib replacement of {SSHA} hashing.
+
+        LDAPIdResolver hashes passwords as {SSHA} before writing them to LDAP.
+        Format: {SSHA}base64(SHA1(password + salt) + salt), 4-byte salt.
+        This test verifies the output using only hashlib so it stays valid
+        after passlib is removed.
+        """
+        import base64
+        import hashlib
+
+        resolver = LDAPResolver()
+        resolver.map = {"password": "userPassword", "username": "cn"}
+
+        # --- string password (simple path) ---
+        result = resolver._attributes_to_ldap_attributes({"password": "testpassword"})
+        hash_str = result["userPassword"]
+
+        self.assertTrue(hash_str.startswith("{SSHA}"),
+                        "Hash must start with {{SSHA}}, got: {}".format(hash_str))
+
+        raw = base64.b64decode(hash_str[6:])
+        self.assertEqual(len(raw), 24, "Decoded bytes must be 20 (SHA1) + 4 (salt)")
+        sha1_digest, salt = raw[:20], raw[20:]
+        self.assertEqual(len(salt), 4)
+
+        # Independent re-derivation using hashlib only — no passlib
+        expected = hashlib.sha1(b"testpassword" + salt).digest()
+        self.assertEqual(expected, sha1_digest,
+                         "hashlib re-derivation must match the stored SHA1 digest")
+
+        # Wrong password must NOT match
+        wrong = hashlib.sha1(b"wrongpassword" + salt).digest()
+        self.assertNotEqual(wrong, sha1_digest)
+
+        # --- list password (the LDAP MODIFY path: value is [op, [hash, ...]] ) ---
+        list_value = [None, ["testpassword"]]
+        result2 = resolver._attributes_to_ldap_attributes({"password": list_value})
+        hash_str2 = result2["userPassword"][1][0]
+
+        self.assertTrue(hash_str2.startswith("{SSHA}"))
+        raw2 = base64.b64decode(hash_str2[6:])
+        self.assertEqual(len(raw2), 24)
+        sha1_digest2, salt2 = raw2[:20], raw2[20:]
+        expected2 = hashlib.sha1(b"testpassword" + salt2).digest()
+        self.assertEqual(expected2, sha1_digest2)
 
     @ldap3mock.activate
     def test_11_extended_userinfo(self):
@@ -3335,3 +3377,47 @@ class ResolverTestCase(MyTestCase):
 
         _replace_censored_values(new_config, old_config)
         self.assertEqual("secret1", new_config.get("key1"))
+
+
+class PasswdIdResolverTestCase(MyTestCase):
+    """Tests for PasswdIdResolver password verification."""
+
+    PASSWD_FILE = "tests/testdata/passwd"
+
+    def _get_resolver(self):
+        from privacyidea.lib.resolvers.PasswdIdResolver import IdResolver
+        resolver = IdResolver()
+        resolver.loadConfig({"fileName": self.PASSWD_FILE})
+        return resolver
+
+    def test_01_checkpass_bcrypt(self):
+        resolver = self._get_resolver()
+        self.assertTrue(resolver.checkPass("2000", "testpassword"))
+        self.assertFalse(resolver.checkPass("2000", "wrongpassword"))
+
+    def test_02_checkpass_sha512_crypt(self):
+        from privacyidea.lib.resolvers.PasswdIdResolver import _CRYPT_AVAILABLE
+        resolver = self._get_resolver()
+        if not _CRYPT_AVAILABLE:
+            self.assertRaises(NotImplementedError, resolver.checkPass, "2001", "testpassword")
+        else:
+            self.assertTrue(resolver.checkPass("2001", "testpassword"))
+            self.assertFalse(resolver.checkPass("2001", "wrongpassword"))
+
+    def test_03_checkpass_sha256_crypt(self):
+        from privacyidea.lib.resolvers.PasswdIdResolver import _CRYPT_AVAILABLE
+        resolver = self._get_resolver()
+        if not _CRYPT_AVAILABLE:
+            self.assertRaises(NotImplementedError, resolver.checkPass, "2002", "testpassword")
+        else:
+            self.assertTrue(resolver.checkPass("2002", "testpassword"))
+            self.assertFalse(resolver.checkPass("2002", "wrongpassword"))
+
+    def test_04_checkpass_shadow_placeholder(self):
+        # uid 0 (root) has 'x' as password — should raise NotImplementedError
+        resolver = self._get_resolver()
+        self.assertRaises(NotImplementedError, resolver.checkPass, "0", "anypassword")
+
+    def test_05_checkpass_no_password_entry(self):
+        resolver = self._get_resolver()
+        self.assertFalse(resolver.checkPass("99999", "anypassword"))

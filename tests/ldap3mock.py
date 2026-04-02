@@ -38,7 +38,8 @@ limitations under the License.
 """
 import datetime
 
-from passlib.hash import ldap_salted_sha1
+import base64
+import hashlib
 from ast import literal_eval
 import uuid
 from ldap3.utils.conv import escape_bytes
@@ -737,7 +738,12 @@ class Ldap3Mock(object):
                 if to_bytes(pw) == to_bytes(password):
                     correct_password = True
                 elif pw.startswith('{SSHA}'):
-                    correct_password = ldap_salted_sha1.verify(password, pw)
+                    try:
+                        raw = base64.b64decode(pw[6:])
+                        pw_bytes = password.encode('utf-8') if isinstance(password, str) else password
+                        correct_password = hashlib.sha1(pw_bytes + raw[20:]).digest() == raw[:20]
+                    except Exception:
+                        correct_password = False
                 else:
                     correct_password = False
         self.con_obj = Connection(self.directory)

@@ -61,7 +61,8 @@ from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePublicKey,
 from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PrivateKey, X25519PublicKey
 from cryptography.hazmat.primitives.hashes import HashAlgorithm
 from cryptography.hazmat.primitives.kdf.hkdf import HKDF
-from passlib.context import CryptContext
+from argon2 import PasswordHasher
+from argon2.exceptions import InvalidHashError, VerificationError, VerifyMismatchError
 from privacyidea.lib.log import log_with
 from privacyidea.lib.error import HSMException, ParameterError
 from privacyidea.lib.framework import (get_app_local_store, get_app_config_value,
@@ -83,14 +84,7 @@ def safe_compare(a, b):
 
 
 ROUNDS = 9
-
-# The CryptContext makes it easier to work with multiple password hash algorithms:
-# The first algorithm in the list is the default algorithm used for hashing.
-# When verifying a password hash, all algorithms in the context are checked
-# until one succeeds (or all fail).
-
-DEFAULT_HASH_ALGO_LIST = ['argon2', 'pbkdf2_sha512']
-DEFAULT_HASH_ALGO_PARAMS = {'argon2__rounds': ROUNDS}
+_ph = PasswordHasher(time_cost=ROUNDS)
 
 FAILED_TO_DECRYPT_PASSWORD = "FAILED TO DECRYPT PASSWORD!"  # nosec B105 # placeholder in case of error
 
@@ -189,25 +183,44 @@ def hash(val, seed, algo=None):
 @log_with(log, log_entry=False, log_exit=False)
 def pass_hash(password):
     """
-    Hash password with crypt context
+    Hash password using argon2id.
 
     :param password: The password to hash
     :type password: str
     :return: The hash string of the password
     """
-    DEFAULT_HASH_ALGO_PARAMS.update(get_app_config_value("PI_HASH_ALGO_PARAMS",
-                                                         default={}))
-    pass_ctx = CryptContext(get_app_config_value("PI_HASH_ALGO_LIST",
-                                                 default=DEFAULT_HASH_ALGO_LIST),
-                            **DEFAULT_HASH_ALGO_PARAMS)
-    pw_dig = pass_ctx.hash(password)
-    return pw_dig
+    return _ph.hash(password)
+
+
+def _verify_pbkdf2_sha512(password, hash_str):
+    """Verify a password against a legacy $pbkdf2-sha512$ hash (passlib format).
+
+    Format: $pbkdf2-sha512$<rounds>$<ab64-salt>$<ab64-hash>
+    ab64: standard base64 with '.' instead of '+' and no '=' padding.
+    """
+    try:
+        parts = hash_str.split('$')
+        rounds = int(parts[2])
+
+        def ab64_decode(s):
+            return base64.b64decode(s.replace('.', '+') + '=' * (-len(s) % 4))
+
+        salt = ab64_decode(parts[3])
+        expected = ab64_decode(parts[4])
+        pw_bytes = password.encode('utf-8') if isinstance(password, str) else password
+        import hashlib
+        derived = hashlib.pbkdf2_hmac('sha512', pw_bytes, salt, rounds)
+        return hmac.compare_digest(derived, expected)
+    except Exception:
+        return False
 
 
 @log_with(log, log_entry=False, log_exit=False)
 def verify_pass_hash(password, hvalue):
     """
-    Verify the hashed password value
+    Verify the hashed password value.
+
+    Supports argon2 (current) and pbkdf2_sha512 (legacy) hashes.
 
     :param password: The plaintext password to verify
     :type password: str
@@ -215,10 +228,20 @@ def verify_pass_hash(password, hvalue):
     :type hvalue: str
     :return: True if the password matches
     :rtype: bool
+    :raises ValueError: if the hash format is not recognised
     """
-    pass_ctx = CryptContext(get_app_config_value("PI_HASH_ALGO_LIST",
-                                                 default=DEFAULT_HASH_ALGO_LIST))
-    return pass_ctx.verify(password, hvalue)
+    if hvalue.startswith('$argon2'):
+        try:
+            _ph.verify(hvalue, password)
+            return True
+        except VerifyMismatchError:
+            return False
+        except (VerificationError, InvalidHashError):
+            return False
+    elif hvalue.startswith('$pbkdf2-sha512$'):
+        return _verify_pbkdf2_sha512(password, hvalue)
+    else:
+        raise ValueError("Unknown password hash format")
 
 
 def hash_with_pepper(password):

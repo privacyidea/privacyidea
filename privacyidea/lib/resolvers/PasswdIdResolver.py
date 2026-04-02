@@ -44,7 +44,13 @@ import logging
 import codecs
 from typing import List
 
-from passlib.context import CryptContext
+import bcrypt as _bcrypt
+
+try:
+    import crypt as _crypt
+    _CRYPT_AVAILABLE = True
+except ImportError:
+    _CRYPT_AVAILABLE = False
 
 from privacyidea.lib.utils import convert_column_to_unicode
 from .UserIdResolver import UserIdResolver
@@ -52,7 +58,31 @@ from .UserIdResolver import UserIdResolver
 log = logging.getLogger(__name__)
 ENCODING = "utf-8"
 
-crypt_ctx = CryptContext(schemes=["sha512_crypt", "sha256_crypt", "bcrypt"])
+
+def _verify_passwd_hash(password, hash_str):
+    """Verify a password against a passwd-file hash (bcrypt, sha512_crypt, sha256_crypt)."""
+    if isinstance(password, str):
+        password = password.encode('utf-8')
+    if hash_str.startswith(('$2a$', '$2b$', '$2x$', '$2y$')):
+        try:
+            return _bcrypt.checkpw(password, hash_str.encode('utf-8'))
+        except Exception:
+            return False
+    elif hash_str.startswith(('$5$', '$6$')):
+        if not _CRYPT_AVAILABLE:
+            raise NotImplementedError(
+                "sha256_crypt ($5$) and sha512_crypt ($6$) password verification requires "
+                "Python's 'crypt' module, which was removed in Python 3.13. "
+                "Convert passwd file entries to bcrypt ($2b$) to use Python 3.13+."
+            )
+        try:
+            pw_str = password.decode('utf-8')
+            return _crypt.crypt(pw_str, hash_str) == hash_str
+        except Exception:
+            return False
+    else:
+        log.warning("Unsupported password hash format in passwd file: %s", hash_str[:10])
+        return False
 
 
 def tokenise(r):
@@ -202,7 +232,7 @@ class IdResolver (UserIdResolver):
                 err = "Sorry, currently no support for shadow passwords"
                 log.error("{0!s}".format(err))
                 raise NotImplementedError(err)
-            if crypt_ctx.verify(password, cryptedpasswd):
+            if _verify_passwd_hash(password, cryptedpasswd):
                 log.info("successfully authenticated user uid {0!s}".format(uid))
                 return True
             else:
