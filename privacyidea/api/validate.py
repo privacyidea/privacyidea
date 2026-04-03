@@ -714,7 +714,7 @@ def _finalize_auth_response(context):
                 token = get_one_token(serial=serial, silent_fail=True)
                 if token:
                     user_agent, __, __ = get_plugin_info_from_useragent(request.user_agent.string)
-                    if user.exist():
+                    if user.is_resolved():
                         user.set_attribute(f"{InternalCustomUserAttributes.LAST_USED_TOKEN}_{user_agent}",
                                            token.get_tokentype(), INTERNAL_USAGE)
 

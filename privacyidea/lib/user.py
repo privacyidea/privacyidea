@@ -88,7 +88,7 @@ class User:
     # NOTE: Directly decorating the class ``User`` breaks ``isinstance`` checks,
     # which is why we have to decorate __init__
     @log_with(log)
-    def __init__(self, login="", realm="", resolver="", uid=None):
+    def __init__(self, login="", realm="", resolver="", uid=None, _resolved=False):
         self.login = login or ""
         self.used_login = self.login
         self.realm = (realm or "").lower()
@@ -108,8 +108,9 @@ class User:
         if not self.login and not self.resolver and uid is not None:
             raise UserError("Can not create a user object from a uid without a resolver!")
         # Enrich user object with information from the userstore or from the
-        # user cache
-        if login or uid is not None:
+        # user cache, unless _resolved=True signals that this is a cheap
+        # reference-only construction (no LDAP call desired).
+        if not _resolved and (login or uid is not None):
             self._get_user_from_userstore()
             # Just store the resolver type
             self.rtype = get_resolver_type(self.resolver)
@@ -144,6 +145,16 @@ class User:
             return True
         else:
             return False
+
+    def is_resolved(self) -> bool:
+        """
+        True if the user was successfully confirmed in an external store during
+        construction: a non-empty uid, a resolver, and a valid realm_id must all
+        be set.  Use this instead of ``exist()`` when you want to check whether
+        the user was found during construction rather than performing a new live
+        store lookup.
+        """
+        return bool(self.uid) and bool(self.resolver) and self.realm_id is not None
 
     def __eq__(self, other):
         """
@@ -301,12 +312,19 @@ class User:
 
     def exist(self) -> bool:
         """
-        Check if the user object exists in the user store
-        :return: True or False
+        Perform a live check against the resolver to verify the user is still
+        present in the external store.  For a cheap in-memory check (uid set
+        during construction) use :meth:`is_resolved` instead.
+
+        :return: True if the resolver confirms the user currently exists
         """
-        # TODO: really check if user exist (ask user store and maybe re-evaluate realm)
-        exist = self.uid and self.realm_id
-        return exist
+        if not self.is_resolved():
+            return False
+        resolver = get_resolver_object(self.resolver)
+        if resolver is None:
+            return False
+        uid = resolver.getUserId(self.login)
+        return uid not in ["", None]
 
     @property
     def info(self) -> dict:
@@ -324,7 +342,7 @@ class User:
 
         :return: a dict with the specified user information
         """
-        if self.is_empty() or not self.exist():
+        if self.is_empty() or not self.is_resolved():
             # An empty user has no info
             return {}
         (uid, _rtype, _resolver) = self.get_user_identifiers()
@@ -352,7 +370,7 @@ class User:
         :return: a list of possible keys for user information
         :rtype: list
         """
-        if self.is_empty() or not self.exist():
+        if self.is_empty() or not self.is_resolved():
             # An empty user has no info
             return []
         resolver = get_resolver_object(self.resolver)
@@ -651,6 +669,38 @@ class User:
             "uid": self.uid,
             "custom_attributes": self.attributes
         }
+
+
+def user_ref(login: str, realm: str, resolver: str = "") -> "User":
+    """
+    Construct a cheap, unresolved User reference — no LDAP or resolver call.
+
+    Valid for policy matching, audit logging, and realm/resolver scoping where
+    only ``login``, ``realm``, and ``resolver`` are needed.  ``uid`` and
+    ``rtype`` are not populated.  Use :func:`resolve_user` when you need a
+    fully resolved user.
+
+    :param login: The login name of the user
+    :param realm: The realm the user belongs to
+    :param resolver: Optional resolver name
+    :return: An unresolved User object
+    """
+    return User(login=login, realm=realm, resolver=resolver, _resolved=True)
+
+
+def resolve_user(login: str, realm: str, resolver: str = "") -> "User":
+    """
+    Construct a fully resolved User by traversing the resolver (LDAP call).
+
+    Equivalent to the plain ``User(login, realm, resolver)`` constructor but
+    communicates intent at the call site: the caller explicitly needs the uid.
+
+    :param login: The login name of the user
+    :param realm: The realm the user belongs to
+    :param resolver: Optional resolver name
+    :return: A resolved User object (uid populated if the user exists)
+    """
+    return User(login=login, realm=realm, resolver=resolver)
 
 
 @log_with(log, hide_kwargs=["password"])

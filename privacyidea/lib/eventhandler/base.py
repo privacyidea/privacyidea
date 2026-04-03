@@ -532,7 +532,7 @@ class BaseEventHandler(object):
                              "user does not exist anymore.".format(serial))
                     log.debug(exx)
             # If the user does not exist, we set an empty user
-            if not user.exist():
+            if not user.is_resolved():
                 user = User()
 
         return user

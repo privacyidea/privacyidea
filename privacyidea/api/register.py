@@ -141,7 +141,7 @@ def register_post():
     try:
         # Check if the user exists
         user = User(username, realm=realm, resolver=resolvername)
-        if user.exist():
+        if user.is_resolved():
             raise RegistrationError(_("The username is already registered!"))
         # Create user
         uid = create_user(resolvername, {"username": username,
