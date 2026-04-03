@@ -18,7 +18,14 @@
 import sys
 from getopt import getopt, GetoptError
 import getpass
-from passlib.hash import sha512_crypt
+
+try:
+    import crypt as _crypt
+    _CRYPT_AVAILABLE = True
+except ImportError:
+    _CRYPT_AVAILABLE = False
+
+import bcrypt as _bcrypt
 
 __version__ = '0.1'
 
@@ -63,9 +70,12 @@ def main():
     if password == "":
         password = getpass.getpass("Please enter a password: ")
 
-    # without salt, the strongest available hash function will be selected
-    # and a random salt is created
-    encrypted_pw = sha512_crypt.hash(password)
+    if _CRYPT_AVAILABLE:
+        encrypted_pw = _crypt.crypt(password, _crypt.mksalt(_crypt.METHOD_SHA512))
+    else:
+        # Python 3.13+ removed the crypt module; fall back to bcrypt ($2b$),
+        # which PasswdIdResolver also supports.
+        encrypted_pw = _bcrypt.hashpw(password.encode('utf-8'), _bcrypt.gensalt()).decode('utf-8')
 
     gid = uid
     home = ""
