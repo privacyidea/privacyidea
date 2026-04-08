@@ -782,7 +782,7 @@ class UserTestCase(MyTestCase):
         delete_realm(self.realm1)
         delete_resolver(self.resolvername1)
 
-    def test_30_masking_users_in_ordered_resolvers(self):
+    def test_90_masking_users_in_ordered_resolvers(self):
         realmname = "masked_realm"
         save_resolver({"resolver": self.resolvername1,
                        "type": "passwdresolver",
