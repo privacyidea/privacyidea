@@ -817,6 +817,7 @@ def get_user_list(param: dict = None, user: User = None, include_custom_attribut
                 resolver = get_resolver_object(resolver_name)
                 # Continue if we couldn't find a resolver with the given name
                 if not resolver:
+                    log.info(f"Can not find a resolver with the name '{resolver_name}'")
                     continue
                 log.debug("With this search dictionary: %r", search_dict)
                 user_list = resolver.getUserList(search_dict, requested_attributes)
