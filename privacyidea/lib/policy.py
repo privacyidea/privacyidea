@@ -194,6 +194,7 @@ from privacyidea.lib.realm import get_realms
 from privacyidea.lib.resolver import get_resolver_list
 from privacyidea.lib.smtpserver import get_smtpservers
 from privacyidea.lib.user import User
+from privacyidea.lib.userrepository import user_repository
 from privacyidea.lib.utils import (check_time_in_range, check_pin_contents,
                                    fetch_one_resource, is_true, check_ip_in_policy,
                                    determine_logged_in_userparams, parse_string_to_dict)
@@ -524,8 +525,7 @@ class PolicyClass(object):
                         # We have a realm and a user and can get all resolvers
                         # of this user in the realm
                         if not user_resolvers:
-                            user_resolvers = User(user,
-                                                  realm=realm).get_ordered_resolvers()
+                            user_resolvers = user_repository.get_ordered_resolvers(realm)
                         for reso in user_resolvers:
                             value_found, _v_ex = self._search_value(
                                 policy.get("resolver"), reso)

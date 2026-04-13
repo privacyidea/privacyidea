@@ -38,6 +38,7 @@ from ..lib.container import find_container_for_token, find_container_by_serial
 from ..lib.framework import get_app_config_value
 from ..lib.policies.actions import PolicyAction
 from ..lib.user import get_user_from_param
+from privacyidea.lib.userrepository import user_repository
 import logging
 from flask import request, g
 from privacyidea.lib.audit import getAudit
@@ -306,7 +307,7 @@ def resolve_logged_in_user():
         request.all_data["realm"] = g.logged_in_user.get("realm")
 
     try:
-        request.User = get_user_from_param(request.all_data)
+        request.User = user_repository.find_from_params(request.all_data)
         # overwrite or set the resolver parameter in case of a logged-in user
         if g.logged_in_user.get("role") == "user":
             request.all_data["resolver"] = request.User.resolver
