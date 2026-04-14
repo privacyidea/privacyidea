@@ -1085,9 +1085,9 @@ pyrad==2.5.4 \
     --hash=sha256:2c75e8a5642df262071d631e4552e08d9d5bed0c62699d83c24105c4fbfc2cff \
     --hash=sha256:e039c48a026c988d49276bd7c75795f55e0e4c2788f7ddf09419ce0e191a154d
     # via privacyIDEA (pyproject.toml)
-pytest==9.0.2 \
-    --hash=sha256:711ffd45bf766d5264d487b917733b453d917afd2b0ad65223959f59089f875b \
-    --hash=sha256:75186651a92bd89611d1d9fc20f0b4345fd827c41ccd5c299a868a05d70edf11
+pytest==9.0.3 \
+    --hash=sha256:2c5efc453d45394fdd706ade797c0a81091eccd1d6e4bccfcd476e2b8e0ab5d9 \
+    --hash=sha256:b86ada508af81d19edeb213c681b1d48246c1a91d304c6c81a427674c17eb91c
     # via
     #   privacyIDEA (pyproject.toml)
     #   pytest-cov
