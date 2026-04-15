@@ -127,4 +127,16 @@ describe("AuditService (signals & helpers)", () => {
     expect(params).not.toHaveProperty("serial");
     expect(params).not.toHaveProperty("container_serial");
   });
+
+  it("downloadCSV triggers a GET request with correct params and headers", () => {
+    const getHeadersMock = jest.spyOn(authService, "getHeaders").mockReturnValue({} as any);
+    auditService.auditFilter.set(new FilterValue({ value: "action: LOGIN" }));
+
+    auditService.downloadCSV();
+
+    const req = httpMock.expectOne((req) => req.url.endsWith("/audit/audit.csv"));
+    expect(req.request.method).toBe("GET");
+    expect(req.request.params.get("action")).toBe("*LOGIN*");
+    expect(getHeadersMock).toHaveBeenCalled();
+  });
 });

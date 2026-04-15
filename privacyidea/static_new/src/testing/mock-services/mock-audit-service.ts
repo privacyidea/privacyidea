@@ -45,4 +45,5 @@ export class MockAuditService implements AuditServiceInterface {
     const inputElement = $event.target as HTMLInputElement;
     this.auditFilter.set(new FilterValue({ value: inputElement.value }));
   });
+  downloadCSV = jest.fn();
 }

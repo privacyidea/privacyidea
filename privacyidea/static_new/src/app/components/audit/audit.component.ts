@@ -46,8 +46,8 @@ import { MatInput } from "@angular/material/input";
 import { NgClass } from "@angular/common";
 import { RouterLink } from "@angular/router";
 import { ScrollToTopDirective } from "../shared/directives/app-scroll-to-top.directive";
-import { MatIconButton } from "@angular/material/button";
-import { MatIcon } from "@angular/material/icon";
+import { MatButtonModule } from "@angular/material/button";
+import { MatIcon, MatIconModule } from "@angular/material/icon";
 import { FilterValue } from "../../core/models/filter_value/filter_value";
 
 const columnKeysMap = [
@@ -106,7 +106,8 @@ const columnKeysMap = [
     ClearableInputComponent,
     RouterLink,
     MatIcon,
-    MatIconButton
+    MatButtonModule,
+    MatIconModule
   ],
   templateUrl: "./audit.component.html",
   styleUrl: "./audit.component.scss"

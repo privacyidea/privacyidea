@@ -16,6 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { HttpClient, HttpParams } from "@angular/common/http";
 import { httpResource, HttpResourceRef } from "@angular/common/http";
 import { computed, inject, Injectable, linkedSignal, signal, WritableSignal } from "@angular/core";
 import { environment } from "../../../environments/environment";
@@ -128,6 +129,8 @@ export interface AuditServiceInterface {
   clearFilter(): void;
 
   handleFilterInput($event: Event): void;
+
+  downloadCSV(): void;
 }
 
 @Injectable({
@@ -136,6 +139,7 @@ export interface AuditServiceInterface {
 export class AuditService implements AuditServiceInterface {
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
+  private readonly http: HttpClient = inject(HttpClient);
   sort = signal({ active: "serial", direction: "asc" } as Sort);
 
   readonly apiFilter = apiFilter;
@@ -198,5 +202,22 @@ export class AuditService implements AuditServiceInterface {
   handleFilterInput($event: Event): void {
     const input = $event.target as HTMLInputElement;
     this.auditFilter.set(this.auditFilter().copyWith({ value: input.value }));
+  }
+
+  downloadCSV(): void {
+    const params = new HttpParams({ fromObject: this.filterParams() });
+    this.http.get(this.auditBaseUrl + "audit.csv", {
+      headers: this.authService.getHeaders(),
+      params,
+      responseType: "text"
+    }).subscribe(data => {
+      const blob = new Blob([data], { type: "text/csv" });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "audit.csv";
+      a.click();
+      window.URL.revokeObjectURL(url);
+    });
   }
 }
