@@ -1,0 +1,79 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+@if (authService.actionAllowed("container_add_token")) {
+  <div class="flex-column width-100">
+    <h4 class="margin-left-16 margin-bottom-0">Add Token</h4>
+    <div class="flex-row filter-paginator-container">
+      <section>
+        <mat-checkbox
+          [(ngModel)]="showOnlyTokenNotInContainer">
+          <span i18n> Only display tokens that are not in a container </span>
+        </mat-checkbox>
+      </section>
+      <mat-paginator
+        (page)="pageEvent.emit($event)"
+        [hidePageSize]="true"
+        [length]="total"
+        [pageIndex]="pageIndex"
+        [pageSize]="pageSize"></mat-paginator>
+    </div>
+    <mat-form-field [class]="inputClass">
+      <mat-label i18n>Add Token to Container</mat-label>
+      <app-clearable-input
+        (onClick)="clearFilter.emit()"
+        [showClearButton]="filterIsNotEmpty">
+        <input
+          #filterHTMLInputElement
+          #tokenAutoTrigger="matAutocompleteTrigger"
+          (input)="filterInput.emit($event)"
+          [matAutocomplete]="tokenAuto"
+          [value]="filterValue"
+          i18n-placeholder
+          matInput
+          placeholder="Example query: 'type: hotp serial: 123'" />
+      </app-clearable-input>
+      @if (!showOnlyTokenNotInContainer()) {
+        <mat-hint> Adding a token removes it from its previous container</mat-hint>
+      }
+      <mat-autocomplete #tokenAuto="matAutocomplete">
+        @for (option of tokenOptions; track option) {
+          <mat-option
+            (click)="addToken.emit(option)"
+            class="token-option">
+            <span class="token-option-span"> {{ option["serial"] }} </span>
+            <span class="token-option-span">
+              {{ option["tokentype"] }}
+            </span>
+            <span
+              [ngClass]="option['active'] ? 'highlight-true' : 'highlight-false'"
+              class="token-option-span"
+              i18n>
+              {{ option["active"] ? "active" : "deactivated" }}
+            </span>
+            <span class="token-option-span">
+              {{ option["username"] }}
+            </span>
+            <mat-icon>add</mat-icon>
+          </mat-option>
+        }
+      </mat-autocomplete>
+    </mat-form-field>
+  </div>
+}
+
