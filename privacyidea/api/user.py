@@ -40,6 +40,7 @@ from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import get_allowed_custom_attributes
 from privacyidea.lib.user import get_user_list, create_user, User, is_attribute_at_all
 from privacyidea.lib.users.custom_user_attributes import InternalCustomUserAttributes
+from privacyidea.lib.utils import is_true
 
 log = logging.getLogger(__name__)
 
@@ -64,6 +65,9 @@ def get_users():
     :query attributes: a comma separated list of attributes that should be returned for each user. If not given, all
         attributes are returned. If an attribute is not available in the user store, an empty value is returned for
         this attribute.
+    :query include_custom_attributes: If this parameter is set to true, the custom attributes of the user are included
+        in the result. Default is true. If this parameter is false, it overwrites custom attributes included in the
+        attributes parameter list, they will not be included in the result.
 
     :return: json result with "result": true and the userlist in "value".
 
@@ -106,12 +110,15 @@ def get_users():
     """
     realm = getParam(request.all_data, "realm")
     search_parameters = dict(request.all_data)
-    custom_attributes = is_attribute_at_all()
     requested_attributes = request.all_data.get("attributes")
     if requested_attributes:
         requested_attributes = [attr.strip() for attr in requested_attributes.split(",")]
         del search_parameters['attributes']
-    users = get_user_list(search_parameters, include_custom_attributes=custom_attributes,
+
+    include_custom_attributes = is_true(request.all_data.get("include_custom_attributes", True)) and is_attribute_at_all()
+    if "include_custom_attributes" in search_parameters:
+        del search_parameters["include_custom_attributes"]
+    users = get_user_list(search_parameters, include_custom_attributes=include_custom_attributes,
                           requested_attributes=requested_attributes)
 
     g.audit_object.log({'success': True,
