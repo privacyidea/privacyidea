@@ -148,7 +148,7 @@ export class PeriodicTaskService implements PeriodicTaskServiceInterface {
       this.http.post(this.periodicTaskBaseUrl + "enable/" + taskId, {}, { headers: headers }).pipe(
         catchError((error) => {
           this.periodicTasksResource.reload();
-          this.notificationService.openSnackBar("Failed to enable periodic task!");
+          this.notificationService.error("Failed to enable periodic task!");
           return of(undefined);
         })
       )
@@ -160,7 +160,7 @@ export class PeriodicTaskService implements PeriodicTaskServiceInterface {
     const response$ = this.http.post(this.periodicTaskBaseUrl + "disable/" + taskId, {}, { headers: headers }).pipe(
       catchError((error) => {
         this.periodicTasksResource.reload();
-        this.notificationService.openSnackBar("Failed to disable periodic task!");
+        this.notificationService.error("Failed to disable periodic task!");
         return of(undefined);
       })
     );
@@ -174,7 +174,7 @@ export class PeriodicTaskService implements PeriodicTaskServiceInterface {
       catchError((error) => {
         console.error("Failed to delete periodic task.", error);
         const message = error.result?.error?.message || "";
-        this.notificationService.openSnackBar("Failed to delete periodic task. " + message);
+        this.notificationService.error("Failed to delete periodic task. " + message);
         return throwError(() => error);
       })
     );
@@ -200,7 +200,7 @@ export class PeriodicTaskService implements PeriodicTaskServiceInterface {
     try {
       const response = await lastValueFrom(this.deletePeriodicTask(task.id));
       if (response?.result?.value !== undefined) {
-        this.notificationService.openSnackBar("Successfully deleted periodic task.");
+        this.notificationService.success("Successfully deleted periodic task.");
       }
       return response;
     } catch (error) {
@@ -236,7 +236,7 @@ export class PeriodicTaskService implements PeriodicTaskServiceInterface {
       catchError((error) => {
         console.error("Failed to save periodic task.", error.error);
         const message = error.error.result?.error?.message || "";
-        this.notificationService.openSnackBar("Failed to save periodic task. " + message);
+        this.notificationService.error("Failed to save periodic task. " + message);
         return of(undefined);
       })
     );
@@ -264,7 +264,7 @@ export class PeriodicTaskService implements PeriodicTaskServiceInterface {
         this.moduleOptions.set(optionsDict);
       },
       error: () => {
-        this.notificationService.openSnackBar("Failed to fetch module options.");
+        this.notificationService.error("Failed to fetch module options.");
       }
     });
   }

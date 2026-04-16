@@ -153,12 +153,12 @@ export class UserResolversComponent {
         }
         this.resolverService.deleteResolver(resolver.resolvername).subscribe({
           next: () => {
-            this.notificationService.openSnackBar($localize`Resolver "${resolver.resolvername}" deleted.`);
+            this.notificationService.success($localize`Resolver "${resolver.resolvername}" deleted.`);
             this.resolverService.resolversResource.reload?.();
           },
           error: (err) => {
             const message = err.error?.result?.error?.message || err.message;
-            this.notificationService.openSnackBar($localize`Failed to delete resolver. ${message}`);
+            this.notificationService.error($localize`Failed to delete resolver. ${message}`);
           }
         });
       });

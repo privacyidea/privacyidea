@@ -38,7 +38,7 @@ describe("SmsGatewayService", () => {
       getHeaders: jest.fn().mockReturnValue({})
     };
     const notificationServiceMock = {
-      openSnackBar: jest.fn()
+      success: jest.fn(), error: jest.fn(), warning: jest.fn()
     };
 
     TestBed.configureTestingModule({
@@ -73,7 +73,7 @@ describe("SmsGatewayService", () => {
     req.flush({ result: { status: true } });
 
     await promise;
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith("Successfully saved SMS gateway.");
+    expect(notificationService.success).toHaveBeenCalledWith("Successfully saved SMS gateway.");
   });
 
   it("should delete SMS gateway", async () => {
@@ -84,7 +84,7 @@ describe("SmsGatewayService", () => {
     req.flush({ result: { status: true } });
 
     await promise;
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith("Successfully deleted SMS gateway: test.");
+    expect(notificationService.success).toHaveBeenCalledWith("Successfully deleted SMS gateway: test.");
   });
 
   describe("smsGateways", () => {

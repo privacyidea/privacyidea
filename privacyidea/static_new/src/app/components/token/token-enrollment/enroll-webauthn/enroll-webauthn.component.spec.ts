@@ -91,7 +91,7 @@ describe("EnrollWebauthnComponent", () => {
 
   beforeEach(async () => {
     tokenService = { enrollToken: jest.fn() } as any;
-    notification = { openSnackBar: jest.fn() } as any;
+    notification = { success: jest.fn(), error: jest.fn(), warning: jest.fn() } as any;
     base64 = {
       base64URLToBytes: jest.fn().mockReturnValue(new Uint8Array([1])),
       bytesToBase64: jest.fn().mockReturnValue("b64")
@@ -145,7 +145,7 @@ describe("EnrollWebauthnComponent", () => {
     await detectChangesStable();
     const enrollemntData = component.enrollmentArgsGetter(BASIC);
     expect(enrollemntData).toBeNull();
-    expect(notification.openSnackBar).toHaveBeenCalledWith("WebAuthn is not supported by this browser.");
+    expect(notification.error).toHaveBeenCalledWith("WebAuthn is not supported by this browser.");
   });
 
   it("should notify when init response missing detail", async () => {
@@ -159,7 +159,7 @@ describe("EnrollWebauthnComponent", () => {
       enrollmentArgs!.data
     );
     expect(finalResponse).toBeNull();
-    expect(notification.openSnackBar).toHaveBeenCalledWith(
+    expect(notification.error).toHaveBeenCalledWith(
       "Failed to initiate WebAuthn registration: Invalid server response or missing details."
     );
   });
@@ -177,7 +177,7 @@ describe("EnrollWebauthnComponent", () => {
       enrollmentArgs!.data
     );
     expect(finalResponse).toBeNull();
-    expect(notification.openSnackBar).toHaveBeenCalledWith(
+    expect(notification.error).toHaveBeenCalledWith(
       "Failed to initiate WebAuthn registration: Missing WebAuthn registration request data."
     );
   });
@@ -198,7 +198,7 @@ describe("EnrollWebauthnComponent", () => {
       enrollmentArgs!.data
     );
     expect(finalResponse).toBeNull();
-    expect(notification.openSnackBar).toHaveBeenCalledWith(
+    expect(notification.warning).toHaveBeenCalledWith(
       "Invalid transaction ID or serial number in enrollment detail for finalization."
     );
   });
@@ -218,7 +218,7 @@ describe("EnrollWebauthnComponent", () => {
     );
     expect(dialogServiceMock.openDialog).toHaveBeenCalled();
     expect(finalResponse).toBeNull();
-    expect(notification.openSnackBar).toHaveBeenCalledWith("WebAuthn credential creation failed: blocked");
+    expect(notification.error).toHaveBeenCalledWith("WebAuthn credential creation failed: blocked");
   });
 
   it("should complete full happy path and return final response", async () => {
@@ -255,7 +255,7 @@ describe("EnrollWebauthnComponent", () => {
       enrollmentArgs!.data
     );
     expect(finalResponse).toBeNull();
-    expect(notification.openSnackBar).toHaveBeenCalledWith("WebAuthn finalization failed: finalize-fail");
+    expect(notification.error).toHaveBeenCalledWith("WebAuthn finalization failed: finalize-fail");
   });
 
   it("enrollmentArgsGetterChange should wrap enrollmentArgsGetter into an observable", async () => {

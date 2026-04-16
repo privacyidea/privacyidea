@@ -159,7 +159,7 @@ export class EventService implements EventServiceInterface {
       catchError((error) => {
         console.error("Failed to save event handler.", error.error);
         const message = error.error.result?.error?.message || "";
-        this.notificationService.openSnackBar("Failed to save event handler. " + message);
+        this.notificationService.error("Failed to save event handler. " + message);
         return of(undefined);
       })
     );
@@ -172,7 +172,7 @@ export class EventService implements EventServiceInterface {
         catchError((error) => {
           console.log("Failed to enable event handler:", error);
           this.allEventsResource.reload();
-          this.notificationService.openSnackBar("Failed to enable event handler!");
+          this.notificationService.error("Failed to enable event handler!");
           return of(undefined);
         })
       )
@@ -186,7 +186,7 @@ export class EventService implements EventServiceInterface {
         catchError((error) => {
           console.log("Failed to disable event handler:", error);
           this.allEventsResource.reload();
-          this.notificationService.openSnackBar("Failed to disable event handler!");
+          this.notificationService.error("Failed to disable event handler!");
           return of(undefined);
         })
       )
@@ -200,7 +200,7 @@ export class EventService implements EventServiceInterface {
       catchError((error) => {
         console.error("Failed to delete event handler.", error);
         const message = error.result?.error?.message || "";
-        this.notificationService.openSnackBar("Failed to delete event handler. " + message);
+        this.notificationService.error("Failed to delete event handler. " + message);
         return throwError(() => error);
       })
     );
@@ -226,7 +226,7 @@ export class EventService implements EventServiceInterface {
     try {
       const result = await lastValueFrom(this.deleteEvent(event.id));
 
-      this.notificationService.openSnackBar("Successfully deleted event handler.");
+      this.notificationService.success("Successfully deleted event handler.");
       return result;
     } catch (error) {
       // error already handled in deleteEvent

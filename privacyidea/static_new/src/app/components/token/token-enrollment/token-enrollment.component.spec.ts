@@ -234,7 +234,7 @@ describe("TokenEnrollmentComponent", () => {
 
       await (component as any).enrollToken();
 
-      expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith("Please select a token type.");
+      expect(notificationServiceMock.warning).toHaveBeenCalledWith("Please select a token type.");
     });
 
     it("snacks when user is required but missing", async () => {
@@ -248,7 +248,7 @@ describe("TokenEnrollmentComponent", () => {
 
       await (component as any).enrollToken();
 
-      expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith(
+      expect(notificationServiceMock.warning).toHaveBeenCalledWith(
         "Please fill in all required fields or correct invalid entries."
       );
     });
@@ -262,7 +262,7 @@ describe("TokenEnrollmentComponent", () => {
 
       await (component as any).enrollToken();
 
-      expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith(
+      expect(notificationServiceMock.warning).toHaveBeenCalledWith(
         "Please fill in all required fields or correct invalid entries."
       );
     });
@@ -277,7 +277,7 @@ describe("TokenEnrollmentComponent", () => {
 
       await component.enrollToken();
 
-      expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith(
+      expect(notificationServiceMock.warning).toHaveBeenCalledWith(
         "Enrollment action is not available for the selected token type."
       );
     });
@@ -289,7 +289,7 @@ describe("TokenEnrollmentComponent", () => {
         user: null
       });
 
-      expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith(
+      expect(notificationServiceMock.warning).toHaveBeenCalledWith(
         "User is required for this token type, but no user was provided."
       );
     });
@@ -400,7 +400,7 @@ describe("TokenEnrollmentComponent", () => {
 
         await component.enrollToken().catch(() => undefined);
 
-        expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith("Failed to enroll token: nope");
+        expect(notificationServiceMock.error).toHaveBeenCalledWith("Failed to enroll token: nope");
       });
 
       it("Two step enrollment: complete dialog -> last step dialog", async () => {
@@ -614,7 +614,7 @@ describe("TokenEnrollmentComponent", () => {
   describe("open/reopen dialog flows", () => {
     it("openLastStepDialog: snacks when response is null", () => {
       (component as any).openLastStepDialog(null);
-      expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith("No enrollment response available.");
+      expect(notificationServiceMock.warning).toHaveBeenCalledWith("No enrollment response available.");
     });
 
     it("openLastStepDialog: stores last-step data and opens dialog", () => {

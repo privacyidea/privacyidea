@@ -37,7 +37,7 @@ describe("RadiusServerService", () => {
 
   beforeEach(() => {
     const notificationServiceMock = {
-      openSnackBar: jest.fn()
+      success: jest.fn(), error: jest.fn(), warning: jest.fn()
     };
 
     TestBed.configureTestingModule({
@@ -73,7 +73,7 @@ describe("RadiusServerService", () => {
     req.flush({ result: { status: true } });
 
     await promise;
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith("Successfully saved RADIUS server.");
+    expect(notificationService.success).toHaveBeenCalledWith("Successfully saved RADIUS server.");
   });
 
   it("should delete RADIUS server", async () => {
@@ -84,7 +84,7 @@ describe("RadiusServerService", () => {
     req.flush({ result: { status: true } });
 
     await promise;
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith("Successfully deleted RADIUS server: test.");
+    expect(notificationService.success).toHaveBeenCalledWith("Successfully deleted RADIUS server: test.");
   });
 
   describe("radiusServerConfigurations", () => {

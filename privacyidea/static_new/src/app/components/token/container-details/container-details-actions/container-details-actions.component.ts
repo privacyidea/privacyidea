@@ -200,9 +200,9 @@ export class ContainerDetailsActionsComponent {
       .unregister(this.containerSerial)
       .subscribe((unregisterResponse: PiResponse<ContainerUnregisterData>) => {
         if (unregisterResponse?.result?.value?.success) {
-          this.notificationService.openSnackBar("Container unregistered successfully.");
+          this.notificationService.success("Container unregistered successfully.");
         } else {
-          this.notificationService.openSnackBar("Failed to unregister container.");
+          this.notificationService.error("Failed to unregister container.");
         }
         this.containerService.containerDetailResource.reload();
       });

@@ -87,12 +87,12 @@ export class CaConnectorService implements CaConnectorServiceInterface {
 
     return lastValueFrom(request)
       .then(() => {
-        this.notificationService.openSnackBar($localize`Successfully saved CA connector.`);
+        this.notificationService.success($localize`Successfully saved CA connector.`);
         this.caConnectorResource.reload();
       })
       .catch((error) => {
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.openSnackBar($localize`Failed to save CA connector. ` + message);
+        this.notificationService.error($localize`Failed to save CA connector. ` + message);
         throw new Error("post-failed");
       });
   }
@@ -103,12 +103,12 @@ export class CaConnectorService implements CaConnectorServiceInterface {
     });
     return lastValueFrom(request)
       .then(() => {
-        this.notificationService.openSnackBar($localize`Successfully deleted CA connector: ${connectorname}.`);
+        this.notificationService.success($localize`Successfully deleted CA connector: ${connectorname}.`);
         this.caConnectorResource.reload();
       })
       .catch((error) => {
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.openSnackBar($localize`Failed to delete CA connector. ` + message);
+        this.notificationService.error($localize`Failed to delete CA connector. ` + message);
         throw new Error("delete-failed");
       });
   }
@@ -124,7 +124,7 @@ export class CaConnectorService implements CaConnectorServiceInterface {
       })
       .catch((error) => {
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.openSnackBar($localize`Failed to fetch CA specific options. ` + message);
+        this.notificationService.error($localize`Failed to fetch CA specific options. ` + message);
         throw new Error("fetch-failed");
       });
   }

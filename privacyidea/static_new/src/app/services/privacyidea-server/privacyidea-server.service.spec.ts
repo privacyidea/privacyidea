@@ -39,7 +39,7 @@ describe("PrivacyideaServerService", () => {
       getHeaders: jest.fn().mockReturnValue({})
     };
     const notificationServiceMock = {
-      openSnackBar: jest.fn()
+      success: jest.fn(), error: jest.fn(), warning: jest.fn()
     };
 
     TestBed.configureTestingModule({
@@ -74,7 +74,7 @@ describe("PrivacyideaServerService", () => {
     req.flush({ result: { status: true } });
 
     await promise;
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith("Successfully saved privacyIDEA server.");
+    expect(notificationService.success).toHaveBeenCalledWith("Successfully saved privacyIDEA server.");
   });
 
   it("should delete privacyIDEA server", async () => {
@@ -85,7 +85,7 @@ describe("PrivacyideaServerService", () => {
     req.flush({ result: { status: true } });
 
     await promise;
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith("Successfully deleted privacyIDEA server: test.");
+    expect(notificationService.success).toHaveBeenCalledWith("Successfully deleted privacyIDEA server: test.");
   });
 
   it("should test privacyIDEA server", async () => {
@@ -98,7 +98,7 @@ describe("PrivacyideaServerService", () => {
 
     const result = await promise;
     expect(result).toBe(true);
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith("Test request successful.");
+    expect(notificationService.success).toHaveBeenCalledWith("Test request successful.");
   });
 
   it("privacyideaServerResource should not do request and return undefined on unexpected route", () => {

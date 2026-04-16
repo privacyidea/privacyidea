@@ -169,7 +169,7 @@ export class TokenEnrollmentWizardComponent extends TokenEnrollmentComponent {
 
   override openLastStepDialog(response: EnrollmentResponse | null): void {
     if (!response) {
-      this.notificationService.openSnackBar("No enrollment response available.");
+      this.notificationService.warning("No enrollment response available.");
       return;
     }
 

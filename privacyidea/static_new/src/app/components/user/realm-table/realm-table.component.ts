@@ -384,13 +384,13 @@ export class RealmTableComponent {
       .pipe(last())
       .subscribe({
         next: () => {
-          this._notificationService.openSnackBar($localize`Realm created.`);
+          this._notificationService.success($localize`Realm created.`);
           this.resetCreateForm();
           this.realmService.realmResource.reload?.();
         },
         error: (err: HttpErrorResponse) => {
           const message = err.error?.result?.error?.message || err.message;
-          this._notificationService.openSnackBar($localize`Failed to create realm. ${message}`);
+          this._notificationService.error($localize`Failed to create realm. ${message}`);
         }
       })
       .add(() => this.isCreatingRealm.set(false));
@@ -476,7 +476,7 @@ export class RealmTableComponent {
     const nodeEntries = Object.entries(current).filter(([nodeId]) => nodeId !== NO_NODE_ID);
 
     if (!hasGlobalGroup && nodeEntries.length === 0) {
-      this._notificationService.openSnackBar($localize`No resolvers configured.`);
+      this._notificationService.warning($localize`No resolvers configured.`);
       this.isSavingEditedRealm.set(false);
       return;
     }
@@ -503,13 +503,13 @@ export class RealmTableComponent {
       .pipe(last())
       .subscribe({
         next: () => {
-          this._notificationService.openSnackBar($localize`Realm "${realmName}" updated.`);
+          this._notificationService.success($localize`Realm "${realmName}" updated.`);
           this.cancelEditRealm();
           this.realmService.realmResource.reload?.();
         },
         error: (err: HttpErrorResponse) => {
           const message = err.error?.result?.error?.message || err.message;
-          this._notificationService.openSnackBar($localize`Failed to update realm. ${message}`);
+          this._notificationService.error($localize`Failed to update realm. ${message}`);
         }
       })
       .add(() => this.isSavingEditedRealm.set(false));
@@ -535,12 +535,12 @@ export class RealmTableComponent {
           if (!result) return;
           this.realmService.deleteRealm(row.name).subscribe({
             next: () => {
-              this._notificationService.openSnackBar($localize`Realm "${row.name}" deleted.`);
+              this._notificationService.success($localize`Realm "${row.name}" deleted.`);
               this.realmService.realmResource.reload?.();
             },
             error: (err: HttpErrorResponse) => {
               const message = err.error?.result?.error?.message || err.message;
-              this._notificationService.openSnackBar($localize`Failed to delete realm. ${message}`);
+              this._notificationService.error($localize`Failed to delete realm. ${message}`);
             }
           });
         }
@@ -555,13 +555,13 @@ export class RealmTableComponent {
       .pipe(take(1))
       .subscribe({
         next: () => {
-          this._notificationService.openSnackBar($localize`Realm "${row.name}" set as default.`);
+          this._notificationService.success($localize`Realm "${row.name}" set as default.`);
           this.realmService.realmResource.reload?.();
           this.realmService.defaultRealmResource.reload?.();
         },
         error: (err: HttpErrorResponse) => {
           const message = err.error?.result?.error?.message || err.message;
-          this._notificationService.openSnackBar($localize`Failed to set default realm. ${message}`);
+          this._notificationService.error($localize`Failed to set default realm. ${message}`);
         }
       });
   }

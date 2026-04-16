@@ -310,7 +310,7 @@ describe("EventPanelComponent", () => {
 
   it("should save event and reload events", () => {
     const reloadSpy = jest.spyOn(mockEventService.allEventsResource, "reload");
-    const snackBarSpy = jest.spyOn(mockNotificationService, "openSnackBar");
+    const snackBarSpy = jest.spyOn(mockNotificationService, "success");
     // ensure effect is triggered to set the selected handler module in the service
     fixture.detectChanges();
 
@@ -405,7 +405,7 @@ describe("CreateNewEventHandler", () => {
     component.updateEventHandler("position", "pre");
 
     const reloadSpy = jest.spyOn(mockEventService.allEventsResource, "reload");
-    const snackBarSpy = jest.spyOn(mockNotificationService, "openSnackBar");
+    const snackBarSpy = jest.spyOn(mockNotificationService, "success");
     component.saveEvent();
     const convertedParams = {
       name: "TestHandler",

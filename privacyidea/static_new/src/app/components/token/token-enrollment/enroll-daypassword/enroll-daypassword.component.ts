@@ -172,7 +172,7 @@ export class EnrollDaypasswordComponent implements OnInit {
   } | null => {
     if (this.daypasswordForm.invalid) {
       this.daypasswordForm.markAllAsTouched();
-      this.notificationService.openSnackBar($localize`Invalid enrollment data.`);
+      this.notificationService.warning($localize`Invalid enrollment data.`);
       return null;
     }
     const enrollmentData: DaypasswordEnrollmentOptions = {

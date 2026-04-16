@@ -87,7 +87,7 @@ describe("ContainerService", () => {
   it("assignContainer propagates error and shows snackbar", async () => {
     jest.spyOn(http, "post").mockReturnValue(throwError(() => ({ status: 400, error: {} })));
     await expect(lastValueFrom(containerService.addToken("tokX", "contX"))).rejects.toBeDefined();
-    expect(notificationServiceMock.openSnackBar).toHaveBeenCalled();
+    expect(notificationServiceMock.error).toHaveBeenCalled();
   });
 
   it("toggleActive switches active → disabled", async () => {
@@ -157,7 +157,7 @@ describe("ContainerService", () => {
   });
 
   it("toggleAll returns null when no token matches", async () => {
-    notificationServiceMock.openSnackBar.mockClear();
+    notificationServiceMock.warning.mockClear();
     const details: ContainerDetails = {
       count: 1,
       containers: [
@@ -174,7 +174,7 @@ describe("ContainerService", () => {
     containerService.containerDetail.set(details);
     const r = await lastValueFrom(containerService.toggleAll("activate"));
     expect(r).toBeNull();
-    expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith("No tokens for action.");
+    expect(notificationServiceMock.warning).toHaveBeenCalledWith("No tokens for action.");
   });
 
   it("removeAll posts combined serial list", async () => {
@@ -283,7 +283,7 @@ describe("ContainerService", () => {
       "registered"
     );
     expect(containerService.isPollingActive()).toBe(false);
-    expect(notificationServiceMock.openSnackBar).not.toHaveBeenCalled();
+    expect(notificationServiceMock.warning).not.toHaveBeenCalled();
   });
 
   it("poll container details completes when state == registered for container details", () => {
@@ -313,7 +313,7 @@ describe("ContainerService", () => {
       "registered"
     );
     expect(containerService.isPollingActive()).toBe(false);
-    expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith("Container registered successfully.");
+    expect(notificationServiceMock.success).toHaveBeenCalledWith("Container registered successfully.");
   });
 
   it("filterParams converts blank values and drops unknown keys", () => {
@@ -348,25 +348,25 @@ describe("ContainerService", () => {
   });
 
   it("removeAll returns null when no tokens array", async () => {
-    notificationServiceMock.openSnackBar.mockClear();
+    notificationServiceMock.warning.mockClear();
     containerService.containerDetail.set({
       count: 1,
       containers: [{} as any]
     });
     const r = await lastValueFrom(containerService.removeAll("cX"));
     expect(r).toBeNull();
-    expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith("No valid tokens array found in data.");
+    expect(notificationServiceMock.warning).toHaveBeenCalledWith("No valid tokens array found in data.");
   });
 
   it("toggleAll returns null when containerDetail invalid", async () => {
-    notificationServiceMock.openSnackBar.mockClear();
+    notificationServiceMock.warning.mockClear();
     containerService.containerDetail.set({
       count: 1,
       containers: [{} as any]
     });
     const r = await lastValueFrom(containerService.toggleAll("activate"));
     expect(r).toBeNull();
-    expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith("No valid tokens array found in data.");
+    expect(notificationServiceMock.warning).toHaveBeenCalledWith("No valid tokens array found in data.");
   });
 
   it("filterParams handles wildcards and converts blank values", () => {
@@ -407,7 +407,7 @@ describe("ContainerService", () => {
 
     jest.spyOn(http, "post").mockReturnValueOnce(throwError(() => ({ status: 500, error: {} })));
     await expect(lastValueFrom(containerService.removeToken("tokX", "contX"))).rejects.toBeDefined();
-    expect(notificationServiceMock.openSnackBar).toHaveBeenCalled();
+    expect(notificationServiceMock.error).toHaveBeenCalled();
   });
 
   it("setContainerRealm joins array, blank array ⇒ \"\"", async () => {
@@ -459,14 +459,14 @@ describe("ContainerService", () => {
   });
 
   it("removeAll early-returns when tokens array empty", async () => {
-    notificationServiceMock.openSnackBar.mockClear();
+    notificationServiceMock.warning.mockClear();
     containerService.containerDetail.set({
       count: 1,
       containers: [{ serial: "c9", tokens: [] } as any]
     });
     const res = await lastValueFrom(containerService.removeAll("c9"));
     expect(res).toBeNull();
-    expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith("No tokens to remove.");
+    expect(notificationServiceMock.warning).toHaveBeenCalledWith("No tokens to remove.");
   });
 
   it("filterParams wildcards non-ID fields", () => {
@@ -519,7 +519,7 @@ describe("ContainerService", () => {
     ).rejects.toBeDefined();
     await expect(lastValueFrom(containerService.unassignUser("c", "u", "r"))).rejects.toBeDefined();
 
-    expect(notificationServiceMock.openSnackBar).toHaveBeenCalledTimes(4);
+    expect(notificationServiceMock.warning).toHaveBeenCalledTimes(4);
   });
 
   it("deleteInfo / deleteAllTokens error paths surface snackbar", async () => {
@@ -531,7 +531,7 @@ describe("ContainerService", () => {
       lastValueFrom(containerService.deleteAllTokens({ containerSerial: "c", serialList: "a,b" }))
     ).rejects.toBeDefined();
 
-    expect(notificationServiceMock.openSnackBar).toHaveBeenCalledTimes(2);
+    expect(notificationServiceMock.warning).toHaveBeenCalledTimes(2);
   });
 
   it("registerContainer / toggleActive error paths surface snackbar", async () => {
@@ -553,7 +553,7 @@ describe("ContainerService", () => {
 
     await expect(lastValueFrom(containerService.toggleActive("c", ["active"]))).rejects.toBeDefined();
 
-    expect(notificationServiceMock.openSnackBar).toHaveBeenCalledTimes(2);
+    expect(notificationServiceMock.warning).toHaveBeenCalledTimes(2);
   });
 
   it("setContainerInfos: per-key error surfaces snackbar", async () => {
@@ -578,7 +578,7 @@ describe("ContainerService", () => {
       { value: "v2" },
       expect.objectContaining({ headers: expect.anything() })
     );
-    expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith(
+    expect(notificationServiceMock.error).toHaveBeenCalledWith(
       expect.stringContaining("Failed to save container infos.")
     );
   });
@@ -586,7 +586,7 @@ describe("ContainerService", () => {
   it("deleteContainer error surfaces snackbar", async () => {
     jest.spyOn(http, "delete").mockReturnValueOnce(throwError(() => new HttpErrorResponse({ status: 500 })));
     await expect(lastValueFrom(containerService.deleteContainer("cDelErr"))).rejects.toBeDefined();
-    expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith(
+    expect(notificationServiceMock.error).toHaveBeenCalledWith(
       expect.stringContaining("Failed to delete container.")
     );
   });
@@ -604,7 +604,7 @@ describe("ContainerService", () => {
   it("unregister error surfaces snackbar", async () => {
     jest.spyOn(http, "post").mockReturnValueOnce(throwError(() => new HttpErrorResponse({ status: 500 })));
     await expect(lastValueFrom(containerService.unregister("CONT1234"))).rejects.toBeDefined();
-    expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith(
+    expect(notificationServiceMock.error).toHaveBeenCalledWith(
       expect.stringContaining("Failed to unregister container.")
     );
   });

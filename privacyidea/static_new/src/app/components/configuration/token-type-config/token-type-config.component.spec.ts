@@ -45,7 +45,7 @@ describe("TokenTypeConfigComponent", () => {
             smtpServerResource: { value: () => ({ result: { value: {} } }) }
           }
         },
-        { provide: NotificationService, useValue: { openSnackBar: jest.fn() } }
+        { provide: NotificationService, useValue: { success: jest.fn(), error: jest.fn(), warning: jest.fn() } }
       ]
     }).compileComponents();
 
@@ -161,14 +161,14 @@ describe("TokenTypeConfigComponent", () => {
 
   it("should show error if yubikeyCreateNewKey called without apiId", () => {
     const notificationService = component.notificationService;
-    const snackBarSpy = jest.spyOn(notificationService, "openSnackBar");
+    const snackBarSpy = jest.spyOn(notificationService, "warning");
     component.yubikeyAddNewKey({ apiId: "", apiKey: "", generateKey: true });
     expect(snackBarSpy).toHaveBeenCalledWith(expect.stringContaining("Please enter a Client ID"));
   });
 
   it("should handle error in yubikeyCreateNewKey", async () => {
     const notificationService = component.notificationService;
-    const snackBarSpy = jest.spyOn(notificationService, "openSnackBar");
+    const snackBarSpy = jest.spyOn(notificationService, "error");
     const promise = component.yubikeyAddNewKey({ apiId: "myID", apiKey: "", generateKey: true });
 
     const req = httpMock.expectOne(req => req.url.endsWith("/system/random?len=20&encode=b64"));

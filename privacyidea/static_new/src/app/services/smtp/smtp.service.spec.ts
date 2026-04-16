@@ -39,7 +39,7 @@ describe("SmtpService", () => {
       getHeaders: jest.fn().mockReturnValue({})
     };
     const notificationServiceMock = {
-      openSnackBar: jest.fn()
+      success: jest.fn(), error: jest.fn(), warning: jest.fn()
     };
 
     TestBed.configureTestingModule({
@@ -74,7 +74,7 @@ describe("SmtpService", () => {
     req.flush({ result: { status: true } });
 
     await promise;
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith("Successfully saved SMTP server.");
+    expect(notificationService.success).toHaveBeenCalledWith("Successfully saved SMTP server.");
   });
 
   it("should delete SMTP server", async () => {
@@ -85,7 +85,7 @@ describe("SmtpService", () => {
     req.flush({ result: { status: true } });
 
     await promise;
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith("Successfully deleted SMTP server: test.");
+    expect(notificationService.success).toHaveBeenCalledWith("Successfully deleted SMTP server: test.");
   });
 
   it("should test SMTP server", async () => {
@@ -98,7 +98,7 @@ describe("SmtpService", () => {
 
     const result = await promise;
     expect(result).toBe(true);
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith("Test email sent successfully.");
+    expect(notificationService.success).toHaveBeenCalledWith("Test email sent successfully.");
   });
 
   describe("smtpServers", () => {

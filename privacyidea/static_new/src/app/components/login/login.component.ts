@@ -141,7 +141,7 @@ export class LoginComponent implements OnDestroy {
   constructor() {
     if (this.authService.isAuthenticated()) {
       console.warn("User is already logged in.");
-      this.notificationService.openSnackBar("User is already logged in.");
+      this.notificationService.warning("User is already logged in.");
     } else {
       this.showOtpField.set(false);
     }
@@ -181,7 +181,7 @@ export class LoginComponent implements OnDestroy {
 
   remoteLogin(): void {
     if (!this.remoteUser()) {
-      this.notificationService.openSnackBar($localize`Remote user not available. Remote Login not possible.`);
+      this.notificationService.warning($localize`Remote user not available. Remote Login not possible.`);
       return;
     }
     const params: any = { username: this.remoteUser() };
@@ -220,7 +220,7 @@ export class LoginComponent implements OnDestroy {
   logout(): void {
     this.authService.logout();
     this.localService.removeData("bearer_token");
-    this.router.navigate(["login"]).then(() => this.notificationService.openSnackBar("Logout successful."));
+    this.router.navigate(["login"]).then(() => this.notificationService.success("Logout successful."));
   }
 
   resetLogin(): void {

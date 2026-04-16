@@ -251,7 +251,7 @@ export class RealmService implements RealmServiceInterface {
         const realmError = this.realmResource.error() as HttpErrorResponse;
         console.error("Failed to get realms.", realmError.message);
         const message = realmError.error?.result?.error?.message || realmError.message;
-        this.notificationService.openSnackBar("Failed to get realms. " + message);
+        this.notificationService.error("Failed to get realms. " + message);
       }
     });
 
@@ -260,7 +260,7 @@ export class RealmService implements RealmServiceInterface {
         const defaultRealmError = this.defaultRealmResource.error() as HttpErrorResponse;
         console.error("Failed to get default realm.", defaultRealmError.message);
         const message = defaultRealmError.error?.result?.error?.message || defaultRealmError.message;
-        this.notificationService.openSnackBar("Failed to get default realm. " + message);
+        this.notificationService.error("Failed to get default realm. " + message);
       }
     });
   }

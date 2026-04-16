@@ -38,7 +38,7 @@ describe("TokengroupService", () => {
       getHeaders: jest.fn().mockReturnValue({})
     };
     const notificationServiceMock = {
-      openSnackBar: jest.fn()
+      success: jest.fn(), error: jest.fn(), warning: jest.fn()
     };
 
     TestBed.configureTestingModule({
@@ -73,7 +73,7 @@ describe("TokengroupService", () => {
     req.flush({ result: { status: true } });
 
     await promise;
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith("Successfully saved tokengroup.");
+    expect(notificationService.success).toHaveBeenCalledWith("Successfully saved tokengroup.");
   });
 
   it("should delete tokengroup", async () => {
@@ -84,7 +84,7 @@ describe("TokengroupService", () => {
     req.flush({ result: { status: true } });
 
     await promise;
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith("Successfully deleted tokengroup: test.");
+    expect(notificationService.success).toHaveBeenCalledWith("Successfully deleted tokengroup: test.");
   });
 
   describe("tokengroupResource / tokengroups", () => {

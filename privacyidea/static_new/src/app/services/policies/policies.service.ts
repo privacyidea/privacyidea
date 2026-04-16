@@ -546,18 +546,18 @@ export class PolicyService implements PolicyServiceInterface {
       .then((response) => {
         this.allPoliciesResource.reload();
         if (response && response.result?.status) {
-          this.notificationService.openSnackBar($localize`Policy created successfully.`);
+          this.notificationService.success($localize`Policy created successfully.`);
           return true;
         } else {
           const error = response.result?.error?.message || "";
-          this.notificationService.openSnackBar($localize`Creating policy failed: ${error}`);
+          this.notificationService.error($localize`Creating policy failed: ${error}`);
           return false;
         }
       })
       .catch((error) => {
         console.error("Error creating policy: ", error);
         const errorMessage = error.error?.result?.error?.message || "";
-        this.notificationService.openSnackBar($localize`Creating policy failed: ${errorMessage}`);
+        this.notificationService.error($localize`Creating policy failed: ${errorMessage}`);
         this.allPoliciesResource.reload();
         return false;
       });
@@ -653,13 +653,13 @@ export class PolicyService implements PolicyServiceInterface {
       }
 
       this.allPoliciesResource.reload();
-      this.notificationService.openSnackBar($localize`Policy updated successfully`);
+      this.notificationService.success($localize`Policy updated successfully`);
       return true;
     } catch (error: any) {
       this.allPolicies.set(lastStableState);
       let errorMessage = error?.error?.result?.error?.message || "";
       errorMessage = errorMessage ? `: ${errorMessage}` : "";
-      this.notificationService.openSnackBar($localize`Saving policy failed` + errorMessage);
+      this.notificationService.error($localize`Saving policy failed` + errorMessage);
       return false;
     }
   }

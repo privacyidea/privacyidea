@@ -90,7 +90,7 @@ export class TokenEnrollmentDataComponent {
 
   regenerateQRCode() {
     if (!this.enrollmentParameters()) {
-      this.notificationService.openSnackBar($localize`Enrollment parameters are missing. Cannot regenerate token.`);
+      this.notificationService.warning($localize`Enrollment parameters are missing. Cannot regenerate token.`);
       return;
     }
     const newEnrollmentData: TokenEnrollmentData = {

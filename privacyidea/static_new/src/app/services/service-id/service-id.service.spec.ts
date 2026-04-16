@@ -39,7 +39,7 @@ describe("ServiceIdService", () => {
       getHeaders: jest.fn().mockReturnValue({})
     };
     const notificationServiceMock = {
-      openSnackBar: jest.fn()
+      success: jest.fn(), error: jest.fn(), warning: jest.fn()
     };
     TestBed.configureTestingModule({
       providers: [
@@ -73,7 +73,7 @@ describe("ServiceIdService", () => {
     req.flush({ result: { status: true } });
 
     await promise;
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith("Successfully saved service ID.");
+    expect(notificationService.success).toHaveBeenCalledWith("Successfully saved service ID.");
   });
 
   it("should delete service ID", async () => {
@@ -84,7 +84,7 @@ describe("ServiceIdService", () => {
     req.flush({ result: { status: true } });
 
     await promise;
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith("Successfully deleted service ID: test.");
+    expect(notificationService.success).toHaveBeenCalledWith("Successfully deleted service ID: test.");
   });
 
   it("serviceIdResource should not do request and return undefined on unexpected route", () => {

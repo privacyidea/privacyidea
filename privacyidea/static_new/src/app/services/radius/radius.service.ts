@@ -96,12 +96,12 @@ export class RadiusService implements RadiusServiceInterface {
 
     return lastValueFrom(request)
       .then(() => {
-        this.notificationService.openSnackBar($localize`Successfully saved RADIUS server.`);
+        this.notificationService.success($localize`Successfully saved RADIUS server.`);
         this.radiusServerResource.reload();
       })
       .catch((error) => {
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.openSnackBar($localize`Failed to save RADIUS server. ` + message);
+        this.notificationService.error($localize`Failed to save RADIUS server. ` + message);
         throw new Error("post-failed");
       });
   }
@@ -112,16 +112,16 @@ export class RadiusService implements RadiusServiceInterface {
     return lastValueFrom(request)
       .then((res) => {
         if (res?.result?.value) {
-          this.notificationService.openSnackBar($localize`RADIUS request successful.`);
+          this.notificationService.success($localize`RADIUS request successful.`);
           return true;
         } else {
-          this.notificationService.openSnackBar($localize`RADIUS request failed!`);
+          this.notificationService.error($localize`RADIUS request failed!`);
           return false;
         }
       })
       .catch((error) => {
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.openSnackBar($localize`Failed to send RADIUS test request. ` + message);
+        this.notificationService.error($localize`Failed to send RADIUS test request. ` + message);
         return false;
       });
   }
@@ -132,12 +132,12 @@ export class RadiusService implements RadiusServiceInterface {
     });
     return lastValueFrom(request)
       .then(() => {
-        this.notificationService.openSnackBar($localize`Successfully deleted RADIUS server: ${identifier}.`);
+        this.notificationService.success($localize`Successfully deleted RADIUS server: ${identifier}.`);
         this.radiusServerResource.reload();
       })
       .catch((error) => {
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.openSnackBar($localize`Failed to delete RADIUS server. ` + message);
+        this.notificationService.error($localize`Failed to delete RADIUS server. ` + message);
         throw new Error("delete-failed");
       });
   }

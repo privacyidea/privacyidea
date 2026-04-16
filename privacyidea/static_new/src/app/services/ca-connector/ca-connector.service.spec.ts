@@ -38,7 +38,7 @@ describe("CaConnectorService", () => {
       getHeaders: jest.fn().mockReturnValue({}),
     };
     const notificationServiceMock = {
-      openSnackBar: jest.fn(),
+      success: jest.fn(), error: jest.fn(), warning: jest.fn(),
     };
 
     TestBed.configureTestingModule({
@@ -74,7 +74,7 @@ describe("CaConnectorService", () => {
     req.flush({ result: { status: true } });
 
     await promise;
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith("Successfully saved CA connector.");
+    expect(notificationService.success).toHaveBeenCalledWith("Successfully saved CA connector.");
   });
 
   it("should delete CA connector", async () => {
@@ -85,7 +85,7 @@ describe("CaConnectorService", () => {
     req.flush({ result: { status: true } });
 
     await promise;
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith("Successfully deleted CA connector: test.");
+    expect(notificationService.success).toHaveBeenCalledWith("Successfully deleted CA connector: test.");
   });
 
   it("should get CA specific options", async () => {

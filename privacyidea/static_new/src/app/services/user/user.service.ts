@@ -483,7 +483,7 @@ export class UserService implements UserServiceInterface {
       catchError((error) => {
         console.warn("Failed to create user", error);
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.openSnackBar($localize`Failed to create user ${userData.username}. ` + message);
+        this.notificationService.error($localize`Failed to create user ${userData.username}. ` + message);
         return of(false);
       })
     );
@@ -503,7 +503,7 @@ export class UserService implements UserServiceInterface {
         catchError((error) => {
           console.warn("Failed to update user", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.openSnackBar($localize`Failed to update user ${userData.username}. ` + message);
+          this.notificationService.error($localize`Failed to update user ${userData.username}. ` + message);
           return of(false);
         })
       );
@@ -517,7 +517,7 @@ export class UserService implements UserServiceInterface {
         catchError((error) => {
           console.warn("Failed to delete user", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.openSnackBar($localize`Failed to delete user ${username}. ` + message);
+          this.notificationService.error($localize`Failed to delete user ${username}. ` + message);
           return of(false);
         })
       );

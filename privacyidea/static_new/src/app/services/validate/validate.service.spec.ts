@@ -103,7 +103,7 @@ describe("ValidateService", () => {
         next: () => fail("expected error"),
         error: (err) => {
           expect(err.message).toMatch(/WebAuthn is not supported/i);
-          expect(notif.openSnackBar).toHaveBeenCalledWith("WebAuthn is not supported by this browser.");
+          expect(notif.error).toHaveBeenCalledWith("WebAuthn is not supported by this browser.");
         }
       });
 
@@ -180,7 +180,7 @@ describe("ValidateService", () => {
           next: () => done.fail("expected error"),
           error: (err) => {
             expect(consoleErrorSpy).toHaveBeenCalled();
-            expect((notif.openSnackBar as jest.Mock).mock.calls[0][0]).toContain("Failed to test token. Bad OTP");
+            expect((notif.error as jest.Mock).mock.calls[0][0]).toContain("Failed to test token. Bad OTP");
             expect(err).toBeTruthy();
             done();
           }
@@ -193,7 +193,7 @@ describe("ValidateService", () => {
         validateService.testToken("HOTP1", "000000").subscribe({
           next: () => done.fail("expected error"),
           error: () => {
-            expect((notif.openSnackBar as jest.Mock).mock.calls[0][0]).toContain("Failed to test token.");
+            expect((notif.error as jest.Mock).mock.calls[0][0]).toContain("Failed to test token.");
             done();
           }
         });
@@ -220,7 +220,7 @@ describe("ValidateService", () => {
           next: () => done.fail("expected error"),
           error: (err) => {
             expect(err.message).toBe("no init");
-            expect(notif.openSnackBar).toHaveBeenCalledWith("no init");
+            expect(notif.error).toHaveBeenCalledWith("no init");
             done();
           }
         });
@@ -249,7 +249,7 @@ describe("ValidateService", () => {
         });
 
         expect(caught.message).toBe("user dismissed");
-        expect(notif.openSnackBar).toHaveBeenCalledWith("user dismissed");
+        expect(notif.warning).toHaveBeenCalledWith("user dismissed");
       });
 
       it("when isTest=false uses authenticationService.authenticate instead of /check", async () => {
@@ -329,7 +329,7 @@ describe("ValidateService", () => {
             next: () => done.fail("expected error"),
             error: (err) => {
               expect(err.message).toBe("Invalid WebAuthn challenge data received from server.");
-              expect(notif.openSnackBar).toHaveBeenCalledWith("Invalid WebAuthn challenge data received from server.");
+              expect(notif.error).toHaveBeenCalledWith("Invalid WebAuthn challenge data received from server.");
               done();
             }
           });
@@ -445,7 +445,7 @@ describe("ValidateService", () => {
         });
 
         expect(caught.message).toBe("nope");
-        expect(notif.openSnackBar).toHaveBeenCalledWith("nope");
+        expect(notif.warning).toHaveBeenCalledWith("nope");
       });
 
       it("unsupported WebAuthn shows snack and throws", (done) => {
@@ -462,7 +462,7 @@ describe("ValidateService", () => {
             next: () => done.fail("expected error"),
             error: (err) => {
               expect(err.message).toMatch(/not supported/i);
-              expect(notif.openSnackBar).toHaveBeenCalled();
+              expect(notif.error).toHaveBeenCalled();
               done();
             }
           });
@@ -500,7 +500,7 @@ describe("ValidateService", () => {
           next: () => done.fail("expected error"),
           error: (err) => {
             expect(consoleErrorSpy).toHaveBeenCalled();
-            expect(notif.openSnackBar).toHaveBeenCalledWith("poll failed");
+            expect(notif.error).toHaveBeenCalledWith("poll failed");
             expect(err).toBeTruthy();
             done();
           }

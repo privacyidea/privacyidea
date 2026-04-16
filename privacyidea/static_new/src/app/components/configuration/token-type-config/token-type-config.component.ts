@@ -166,7 +166,7 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit {
 
   addQuestion(text: string) {
     if (!text) {
-      this.notificationService.openSnackBar($localize`Please enter a question.`);
+      this.notificationService.warning($localize`Please enter a question.`);
       return;
     }
     const index = this.nextQuestion();
@@ -201,7 +201,7 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit {
     this.systemService.deleteSystemConfig(key).subscribe({
       next: (response) => {
         if (response?.result?.status) {
-          this.notificationService.openSnackBar($localize`System entry deleted.`);
+          this.notificationService.success($localize`System entry deleted.`);
           // Update entries in the formData but not reload the whole config to prevent losing unsaved changes
           this.formData.update((f) => {
             const next = { ...f } as Record<string, any>;
@@ -209,11 +209,11 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit {
             return next;
           });
         } else {
-          this.notificationService.openSnackBar($localize`Failed to delete system entry.`);
+          this.notificationService.error($localize`Failed to delete system entry.`);
         }
       },
       error: () => {
-        this.notificationService.openSnackBar($localize`Failed to delete system entry.`);
+        this.notificationService.error($localize`Failed to delete system entry.`);
       }
     });
   }
@@ -224,7 +224,7 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit {
     const generateKey = apiKeyData.generateKey;
 
     if (!apiId) {
-      this.notificationService.openSnackBar($localize`Please enter a Client ID.`);
+      this.notificationService.warning($localize`Please enter a Client ID.`);
       return;
     }
 
@@ -242,7 +242,7 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit {
           }));
         }
       } catch (e) {
-        this.notificationService.openSnackBar($localize`Failed to generate API key.`);
+        this.notificationService.error($localize`Failed to generate API key.`);
       }
     } else {
       this.formData.update((f) => ({
@@ -262,27 +262,27 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit {
         next: () => {
           saveCall.subscribe({
             next: () => {
-              this.notificationService.openSnackBar($localize`Token configuration saved successfully.`);
+              this.notificationService.success($localize`Token configuration saved successfully.`);
               this.pendingQuestionDeletes.set(new Set());
               this.systemService.systemConfigResource.reload();
             },
             error: () => {
-              this.notificationService.openSnackBar($localize`Failed to save token configuration.`);
+              this.notificationService.error($localize`Failed to save token configuration.`);
             }
           });
         },
         error: () => {
-          this.notificationService.openSnackBar($localize`Failed to delete some questionnaire entries.`);
+          this.notificationService.error($localize`Failed to delete some questionnaire entries.`);
         }
       });
     } else {
       saveCall.subscribe({
         next: () => {
-          this.notificationService.openSnackBar($localize`Token configuration saved successfully.`);
+          this.notificationService.success($localize`Token configuration saved successfully.`);
           this.systemService.systemConfigResource.reload();
         },
         error: () => {
-          this.notificationService.openSnackBar($localize`Failed to save token configuration.`);
+          this.notificationService.error($localize`Failed to save token configuration.`);
         }
       });
     }

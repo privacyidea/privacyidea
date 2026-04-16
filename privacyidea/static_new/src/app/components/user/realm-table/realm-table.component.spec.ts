@@ -341,7 +341,7 @@ describe("RealmTableComponent", () => {
     expect(callNode[1]).toBe("node-1");
     expect(callNode[2]).toEqual([{ name: "res3", priority: 5 }, { name: "res4" }]);
 
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith("Realm created.");
+    expect(notificationService.success).toHaveBeenCalledWith("Realm created.");
     expect(component.newRealmName()).toBe("");
     expect(component.newRealmNodeResolvers()).toEqual({});
     expect(component.isCreatingRealm()).toBe(false);
@@ -430,7 +430,7 @@ describe("RealmTableComponent", () => {
 
     component.saveEditedRealm(row);
 
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith("No resolvers configured.");
+    expect(notificationService.warning).toHaveBeenCalledWith("No resolvers configured.");
     expect(realmService.createRealm).not.toHaveBeenCalled();
     expect(component.isSavingEditedRealm()).toBe(false);
   });
@@ -461,7 +461,7 @@ describe("RealmTableComponent", () => {
     expect(callNode[1]).toBe("node-1");
     expect(callNode[2]).toEqual([{ name: "res3", priority: 7 }]);
 
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith('Realm "realmA" updated.');
+    expect(notificationService.success).toHaveBeenCalledWith('Realm "realmA" updated.');
     expect(component.editingRealmName()).toBeNull();
     expect(component.isSavingEditedRealm()).toBe(false);
     expect(realmService.realmResource.reload).toHaveBeenCalled();
@@ -480,7 +480,7 @@ describe("RealmTableComponent", () => {
 
     expect(dialog.open).toHaveBeenCalled();
     expect(realmService.deleteRealm).toHaveBeenCalledWith("realmA");
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith('Realm "realmA" deleted.');
+    expect(notificationService.success).toHaveBeenCalledWith('Realm "realmA" deleted.');
     expect(realmService.realmResource.reload).toHaveBeenCalled();
   });
 
@@ -505,7 +505,7 @@ describe("RealmTableComponent", () => {
     component.onSetDefaultRealm(row);
 
     expect(realmService.setDefaultRealm).toHaveBeenCalledWith("realmA");
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith('Realm "realmA" set as default.');
+    expect(notificationService.success).toHaveBeenCalledWith('Realm "realmA" set as default.');
     expect(realmService.realmResource.reload).toHaveBeenCalled();
     expect(realmService.defaultRealmResource.reload).toHaveBeenCalled();
   });

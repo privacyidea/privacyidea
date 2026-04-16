@@ -78,8 +78,8 @@ describe("NotificationService", () => {
     jest.useRealTimers();
   });
 
-  it("openSnackBar calls MatSnackBar.open and starts a 5s timer", () => {
-    service.openSnackBar("Hello");
+  it("warning calls MatSnackBar.open and starts a 5s timer", () => {
+    service.warning("Hello");
 
     expect(snackBar.open).toHaveBeenCalledWith(
       "Hello",
@@ -95,7 +95,7 @@ describe("NotificationService", () => {
   });
 
   it("adds mouseenter/leave listeners after the snackbar opens", () => {
-    service.openSnackBar("Hello");
+    service.warning("Hello");
     expect(snackBar.ref.afterOpened).toHaveBeenCalledTimes(1);
 
     const addSpy = snackBar.ref.containerInstance._elementRef.nativeElement.addEventListener as jest.Mock;
@@ -108,7 +108,7 @@ describe("NotificationService", () => {
   });
 
   it("hover pauses the countdown and resume continues from remaining time", () => {
-    service.openSnackBar("Snack");
+    service.warning("Snack");
     snackBar.emitAfterOpened();
 
     jest.advanceTimersByTime(2000);
@@ -132,7 +132,7 @@ describe("NotificationService", () => {
   });
 
   it("multiple hovers keep pausing/resuming correctly", () => {
-    service.openSnackBar("Snack");
+    service.warning("Snack");
     snackBar.emitAfterOpened();
 
     jest.advanceTimersByTime(1000);
