@@ -88,7 +88,7 @@ class User:
     # NOTE: Directly decorating the class ``User`` breaks ``isinstance`` checks,
     # which is why we have to decorate __init__
     @log_with(log)
-    def __init__(self, login="", realm="", resolver="", uid=None, _skip_resolve=False):
+    def __init__(self, login="", realm="", resolver="", uid=None, *, _skip_resolve=False):
         self.login = login or ""
         self.used_login = self.login
         self.realm = (realm or "").lower()
@@ -325,8 +325,13 @@ class User:
             return False
         try:
             username = resolver.getUsername(self.uid)
-        except Exception:
+        except ResolverError as ex:
+            log.warning("Resolver lookup failed while checking existence of user %r: %r", self, ex)
             return False
+        except Exception as ex:
+            log.error("Unexpected error while checking existence of user %r: %r", self, ex)
+            log.debug("%s", traceback.format_exc())
+            raise
         return username not in ["", None]
 
     @property

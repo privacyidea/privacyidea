@@ -480,7 +480,7 @@ class UserTestCase(MyTestCase):
         resolved = resolve_user("root", realm=self.realm1, resolver=self.resolvername1)
         self.assertTrue(resolved.is_resolved())
         self.assertIsNotNone(resolved.uid)
-        delete_realm("realm1")
+        delete_realm(self.realm1)
 
     def test_16_ordered_resolver(self):
         save_resolver({"resolver": "resolver1",
