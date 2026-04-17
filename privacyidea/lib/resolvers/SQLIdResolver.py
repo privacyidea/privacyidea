@@ -76,7 +76,8 @@ def _h64_encode(data):
     i = 0
     n = len(data)
     while i < n:
-        b0 = data[i]; i += 1
+        b0 = data[i]
+        i += 1
         out.append(_ITOA64[b0 & 0x3f])
         b1 = data[i] if i < n else 0
         out.append(_ITOA64[((b0 >> 6) | (b1 << 2)) & 0x3f])
@@ -850,5 +851,5 @@ def hash_password(password, hashtype):
                   'MD5CRYPT': _crypt.METHOD_MD5}[hashtype]
         return _crypt.crypt(password_str, _crypt.mksalt(method))
     else:
-        raise Exception("Unsupported password hashtype '{0!s}'. "
-                        "Use one of {1!s}.".format(hashtype, _SUPPORTED_HASH_TYPES))
+        raise Exception(f"Unsupported password hashtype '{hashtype!s}'. "
+                        f"Use one of {_SUPPORTED_HASH_TYPES!s}.")

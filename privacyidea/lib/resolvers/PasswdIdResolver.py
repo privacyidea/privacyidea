@@ -231,7 +231,7 @@ class IdResolver (UserIdResolver):
                 log.error(f"{err!s}")
                 raise NotImplementedError(err)
             if _verify_passwd_hash(password, cryptedpasswd):
-                log.info("successfully authenticated user uid {0!s}".format(uid))
+                log.info(f"successfully authenticated user uid {uid!s}")
                 return True
             else:
                 log.warning(f"user uid {uid!s} failed to authenticate")
