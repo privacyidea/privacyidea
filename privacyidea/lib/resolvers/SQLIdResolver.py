@@ -54,43 +54,15 @@ from privacyidea.lib.error import ParameterError, ResolverError
 
 import bcrypt as _bcrypt
 
-try:
-    import crypt as _crypt
-    _CRYPT_AVAILABLE = True
-except ImportError:
-    _CRYPT_AVAILABLE = False
+from .unix_crypt import (verify_sha256_crypt, verify_sha512_crypt, verify_md5_crypt,
+                         generate_sha256_crypt, generate_sha512_crypt, generate_md5_crypt,
+                         _ITOA64, _h64_encode)
 
 log = logging.getLogger(__name__)
 
 # --- phpass ($P$) helpers ---
-# phpass uses a custom base64 with the Unix crypt alphabet (./0-9A-Za-z)
-# and little-endian bit ordering — different from standard base64.
-
-_ITOA64 = './0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
+# _ITOA64 and _h64_encode are imported from .unix_crypt
 _ATOI64 = {c: i for i, c in enumerate(_ITOA64)}
-
-
-def _h64_encode(data):
-    """Encode bytes with the Unix crypt / phpass base64 (little-endian, ./0-9A-Za-z alphabet)."""
-    out = []
-    i = 0
-    n = len(data)
-    while i < n:
-        b0 = data[i]
-        i += 1
-        out.append(_ITOA64[b0 & 0x3f])
-        b1 = data[i] if i < n else 0
-        out.append(_ITOA64[((b0 >> 6) | (b1 << 2)) & 0x3f])
-        if i >= n:
-            break
-        i += 1
-        b2 = data[i] if i < n else 0
-        out.append(_ITOA64[((b1 >> 4) | (b2 << 4)) & 0x3f])
-        if i >= n:
-            break
-        i += 1
-        out.append(_ITOA64[(b2 >> 2) & 0x3f])
-    return ''.join(out)
 
 
 def _phpass_calc(password_bytes, hash_str, checksum_size):
@@ -155,7 +127,6 @@ def _verify_sql_hash(password, hash_str):
       $P$                                  — phpass (WordPress)
       $2a$/$2b$/$2x$/$2y$                 — bcrypt (passwords truncated to 72 bytes)
       $1$/$5$/$6$                         — md5_crypt/sha256_crypt/sha512_crypt
-                                             (requires Python's 'crypt' module; unavailable on Python 3.13+)
       64 lowercase hex chars               — hex_sha256 (OTRS)
     """
     if isinstance(password, str):
@@ -183,15 +154,12 @@ def _verify_sql_hash(password, hash_str):
             return _bcrypt.checkpw(password_bytes[:72], hash_str.encode('utf-8'))
         except Exception:
             return False
-    elif hash_str.startswith(('$1$', '$5$', '$6$')):
-        if not _CRYPT_AVAILABLE:
-            log.warning("Cannot verify %s hash: Python's 'crypt' module is unavailable (removed in Python 3.13)",
-                        hash_str[:3])
-            return False
-        try:
-            return hmac.compare_digest(_crypt.crypt(password_str, hash_str), hash_str)
-        except Exception:
-            return False
+    elif hash_str.startswith('$6$'):
+        return verify_sha512_crypt(password_str, hash_str)
+    elif hash_str.startswith('$5$'):
+        return verify_sha256_crypt(password_str, hash_str)
+    elif hash_str.startswith('$1$'):
+        return verify_md5_crypt(password_str, hash_str)
     elif re.match(r'^[0-9a-f]{64}$', hash_str):
         return hmac.compare_digest(hashlib.sha256(password_bytes).hexdigest(), hash_str)
     else:
@@ -841,15 +809,12 @@ def hash_password(password, hashtype):
         return _ssha_generate(password_bytes, hashlib.sha512, '{SSHA512}', salt_size=16)
     elif hashtype == 'OTRS':
         return hashlib.sha256(password_bytes).hexdigest()
-    elif hashtype in ('SHA256CRYPT', 'SHA512CRYPT', 'MD5CRYPT'):
-        if not _CRYPT_AVAILABLE:
-            raise NotImplementedError(
-                f"{hashtype} requires Python's 'crypt' module, which was removed in Python 3.13."
-            )
-        method = {'SHA256CRYPT': _crypt.METHOD_SHA256,
-                  'SHA512CRYPT': _crypt.METHOD_SHA512,
-                  'MD5CRYPT': _crypt.METHOD_MD5}[hashtype]
-        return _crypt.crypt(password_str, _crypt.mksalt(method))
+    elif hashtype == 'SHA256CRYPT':
+        return generate_sha256_crypt(password_str)
+    elif hashtype == 'SHA512CRYPT':
+        return generate_sha512_crypt(password_str)
+    elif hashtype == 'MD5CRYPT':
+        return generate_md5_crypt(password_str)
     else:
         raise Exception(f"Unsupported password hashtype '{hashtype!s}'. "
                         f"Use one of {_SUPPORTED_HASH_TYPES!s}.")

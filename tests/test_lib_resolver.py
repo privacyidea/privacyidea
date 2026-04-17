@@ -3396,22 +3396,19 @@ class PasswdIdResolverTestCase(MyTestCase):
         self.assertFalse(resolver.checkPass("2000", "wrongpassword"))
 
     def test_02_checkpass_sha512_crypt(self):
-        from privacyidea.lib.resolvers.PasswdIdResolver import _CRYPT_AVAILABLE
         resolver = self._get_resolver()
-        if not _CRYPT_AVAILABLE:
-            self.assertRaises(NotImplementedError, resolver.checkPass, "2001", "testpassword")
-        else:
-            self.assertTrue(resolver.checkPass("2001", "testpassword"))
-            self.assertFalse(resolver.checkPass("2001", "wrongpassword"))
+        self.assertTrue(resolver.checkPass("2001", "testpassword"))
+        self.assertFalse(resolver.checkPass("2001", "wrongpassword"))
 
     def test_03_checkpass_sha256_crypt(self):
-        from privacyidea.lib.resolvers.PasswdIdResolver import _CRYPT_AVAILABLE
         resolver = self._get_resolver()
-        if not _CRYPT_AVAILABLE:
-            self.assertRaises(NotImplementedError, resolver.checkPass, "2002", "testpassword")
-        else:
-            self.assertTrue(resolver.checkPass("2002", "testpassword"))
-            self.assertFalse(resolver.checkPass("2002", "wrongpassword"))
+        self.assertTrue(resolver.checkPass("2002", "testpassword"))
+        self.assertFalse(resolver.checkPass("2002", "wrongpassword"))
+
+    def test_03b_checkpass_md5_crypt(self):
+        resolver = self._get_resolver()
+        self.assertTrue(resolver.checkPass("2003", "testpassword"))
+        self.assertFalse(resolver.checkPass("2003", "wrongpassword"))
 
     def test_04_checkpass_shadow_placeholder(self):
         # uid 0 (root) has 'x' as password — should raise NotImplementedError
