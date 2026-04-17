@@ -25,7 +25,7 @@ The code is tested in tests/test_lib_tokens_ssh
 
 import logging
 from privacyidea.lib import _
-from privacyidea.api.lib.utils import getParam
+from privacyidea.lib.params import get_required
 from privacyidea.lib.error import TokenAdminError
 from privacyidea.lib.log import log_with
 from privacyidea.lib.tokenclass import TokenClass, RolloutState, AuthenticationMode
@@ -35,8 +35,6 @@ from privacyidea.lib.policies.actions import PolicyAction
 log = logging.getLogger(__name__)
 
 
-optional = True
-required = False
 
 
 ##TODO: We should save a fingerprint of the SSH Key in the encrypted OTP
@@ -112,7 +110,7 @@ class SSHkeyTokenClass(TokenClass):
     def update(self, param):
         """
         The key holds the public ssh key and this is required
-        
+
         The key probably is of the form "ssh-rsa BASE64 comment"
         """
         # We need to save the token, so that we can later add the tokeninfo
@@ -120,7 +118,7 @@ class SSHkeyTokenClass(TokenClass):
         # be missing the token.id
         self.token.save()
 
-        getParam(param, "sshkey", required)
+        get_required(param, "sshkey")
 
         key_elem = param.get("sshkey").split(" ", 2)
         if key_elem[0] not in ["ssh-rsa", "ssh-ed25519", "ecdsa-sha2-nistp256",
@@ -140,7 +138,7 @@ class SSHkeyTokenClass(TokenClass):
             key_comment = key_elem[2]
         else:
             key_comment = ""
-        
+
         # convert key to hex
         self.add_tokeninfo("ssh_key", key, value_type="password")
         self.add_tokeninfo("ssh_type", key_type)
@@ -148,12 +146,12 @@ class SSHkeyTokenClass(TokenClass):
 
         # call the parents function
         TokenClass.update(self, param)
-        
+
     @log_with(log)
     def get_sshkey(self):
         """
         returns the public SSH key
-        
+
         :return: SSH pub key
         :rtype: string
         """
@@ -162,7 +160,7 @@ class SSHkeyTokenClass(TokenClass):
         key_comment = ti.get("ssh_comment")
         # get the ssh key directly, otherwise it will not be decrypted
         sshkey = self.get_tokeninfo("ssh_key")
-        r = "{0!s} {1!s}".format(key_type, sshkey)
+        r = f"{key_type!s} {sshkey!s}"
         if key_comment:
             r += " " + key_comment
         return r

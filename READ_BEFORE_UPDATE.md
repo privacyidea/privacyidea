@@ -1,4 +1,13 @@
 # Update Notes
+## Update from 3.13 to 3.14
+* The `u2f` token has been removed. It no longer functions. If you have any tokens of this type left,
+  the schema update will flip them to `tokentype='deprecated'` and disable them, preserving the
+  original type in `tokeninfo['original_tokentype']`. The migration logs a loud warning with the
+  count at upgrade time. Existing u2f tokens remain visible in the token list but can no longer be
+  used to authenticate. Clean them up when you are ready with:
+
+      pi-tokenjanitor deprecated delete u2f
+
 
 ## Update from 3.13 to 3.14
 * The `PI_HASH_ALGO_LIST` and `PI_HASH_ALGO_PARAMS` configuration options in `pi.cfg` have been removed.

@@ -1,0 +1,38 @@
+# osv-scanner scans the Angular frontend's npm dependencies for known vulnerabilities
+# using the OSV database (the same upstream that feeds pip-audit and GitHub's advisory DB).
+# Results are uploaded to the Security tab as SARIF and do not block merging.
+# Findings require manual triage — presence of a CVE does not imply reachability.
+#
+# Only the new Angular frontend at privacyidea/static_new/ is scanned. The legacy
+# frontend is unmaintained and intentionally excluded.
+#
+# https://github.com/google/osv-scanner
+
+name: osv-scanner
+
+on:
+  pull_request:
+    branches:
+      - "master"
+      - "branch-*"
+    paths:
+      - "privacyidea/static_new/package-lock.json"
+      - ".github/workflows/osv-scanner.yml"
+  schedule:
+    # Nightly at 22:53 UTC — offset from pip-audit (22:47) to avoid simultaneous load.
+    - cron: '53 22 * * *'
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  scan:
+    permissions:
+      contents: read
+      security-events: write  # upload SARIF to the Security tab
+      actions: read           # required by the reusable workflow for SARIF upload
+
+    uses: "google/osv-scanner-action/.github/workflows/osv-scanner-reusable.yml@c51854704019a247608d928f370c98740469d4b5" # v2.3.5
+    with:
+      scan-args: |-
+        --lockfile=privacyidea/static_new/package-lock.json

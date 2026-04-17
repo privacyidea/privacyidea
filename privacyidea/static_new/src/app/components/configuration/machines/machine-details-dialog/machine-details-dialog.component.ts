@@ -44,10 +44,14 @@ import { SimpleConfirmationDialogComponent } from "../../../shared/dialog/confir
 import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
 import { ROUTE_PATHS } from "../../../../route_paths";
 import { CopyButtonComponent } from "../../../shared/copy-button/copy-button.component";
+import { NAVIGATION_ACCESSIBLE_DIALOG_CLASS } from "../../../../constants/global.constants";
 
 @Component({
   selector: "app-machine-details-dialog",
   standalone: true,
+  host: {
+    class: NAVIGATION_ACCESSIBLE_DIALOG_CLASS
+  },
   imports: [
     CommonModule,
     MatDialogModule,

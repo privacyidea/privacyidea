@@ -32,7 +32,6 @@ import logging
 import re
 from dataclasses import dataclass
 from functools import wraps
-from typing import Union, Optional
 
 from dateutil.parser import parse, isoparse
 
@@ -68,12 +67,12 @@ def parse_comma_separated_string(input_string: str) -> list[str]:
     try:
         reader = csv.reader([input_string], strict=True, skipinitialspace=True, doublequote=False, escapechar="\\")
         rows = list(reader)
-    except csv.Error as exx:
-        raise CompareError("Malformed comma-separated value: {!r}".format(input_string, exx))
+    except csv.Error:
+        raise CompareError(f"Malformed comma-separated value: {input_string!r}")
     return rows[0]
 
 
-def _parse_int(value: Union[str, int]) -> int:
+def _parse_int(value: str | int) -> int:
     """
     Parse a value as an integer.
     If the value cannot be parsed as an integer, raise a CompareError.
@@ -97,7 +96,7 @@ def _compare_equality(left: any, right: any) -> bool:
     return left == right
 
 
-def _compare_smaller(left: Union[int, str], right: Union[int, str]) -> bool:
+def _compare_smaller(left: int | str, right: int | str) -> bool:
     """
     Return True if the left value as integer is smaller than the right integer
     """
@@ -113,7 +112,7 @@ def _compare_smaller_any(left: any, right: any) -> bool:
     return left < right
 
 
-def _compare_less_equal(left: Union[str, int], right: Union[str, int]) -> bool:
+def _compare_less_equal(left: str | int, right: str | int) -> bool:
     """
     Return True if the left value as integer is smaller or equal to the right integer
     """
@@ -122,7 +121,7 @@ def _compare_less_equal(left: Union[str, int], right: Union[str, int]) -> bool:
     return left <= right
 
 
-def _compare_bigger(left: Union[int, str], right: Union[int, str]) -> bool:
+def _compare_bigger(left: int | str, right: int | str) -> bool:
     """
     Return True if the left value as integer is bigger than the right integer
     """
@@ -138,7 +137,7 @@ def _compare_bigger_any(left: any, right: any) -> bool:
     return left > right
 
 
-def _compare_greater_equal(left: Union[str, int], right: Union[str, int]) -> bool:
+def _compare_greater_equal(left: str | int, right: str | int) -> bool:
     """
     Return True if the left value as integer is bigger or equal to the right integer
     """
@@ -181,7 +180,7 @@ def _compare_matches(left: str, right: str) -> bool:
             regex = r"^" + right + r"$"
         return re.match(regex, left) is not None
     except re.error as e:
-        raise CompareError("Error during matching: {!r}".format(e))
+        raise CompareError(f"Error during matching: {e!r}")
 
 
 def _compare_in(left: str, right: str) -> bool:
@@ -196,7 +195,7 @@ def _compare_in(left: str, right: str) -> bool:
     return left in parse_comma_separated_string(right)
 
 
-def _get_datetime(date_time: Union[str, datetime.datetime]) -> datetime.datetime:
+def _get_datetime(date_time: str | datetime.datetime) -> datetime.datetime:
     """
     Convert a string in ISO format to a datetime object. Low precision dates are not supported. The date string must
     at least have the format 'YYYY-MM-DD'.
@@ -223,7 +222,7 @@ def _get_datetime(date_time: Union[str, datetime.datetime]) -> datetime.datetime
     return date_time
 
 
-def _compare_date_before(left: Union[str, datetime.datetime], right: Union[str, datetime.datetime]) -> bool:
+def _compare_date_before(left: str | datetime.datetime, right: str | datetime.datetime) -> bool:
     """
     Checks if the left date and time is before the right date and time.
     If the left or the right value are given as strings, they are converted to datetime objects.
@@ -236,12 +235,12 @@ def _compare_date_before(left: Union[str, datetime.datetime], right: Union[str, 
     left = _get_datetime(left)
     right = _get_datetime(right)
     if (left.tzinfo is None) ^ (right.tzinfo is None):
-        log.error(f"Either both dates must have a timezone or neither of them.")
+        log.error("Either both dates must have a timezone or neither of them.")
         raise CompareError("Cannot compare timezone-naive and timezone-aware datetimes.")
     return left < right
 
 
-def _compare_date_after(left: Union[str, datetime.datetime], right: Union[str, datetime.datetime]) -> bool:
+def _compare_date_after(left: str | datetime.datetime, right: str | datetime.datetime) -> bool:
     """
     Checks if the left date and time is after the right date and time.
     If the left or the right value are given as strings, they are converted to datetime objects.
@@ -254,12 +253,12 @@ def _compare_date_after(left: Union[str, datetime.datetime], right: Union[str, d
     left = _get_datetime(left)
     right = _get_datetime(right)
     if (left.tzinfo is None) ^ (right.tzinfo is None):
-        log.error(f"Either both dates must have a timezone or neither of them.")
+        log.error("Either both dates must have a timezone or neither of them.")
         raise CompareError("Cannot compare timezone-naive and timezone-aware datetimes.")
     return left > right
 
 
-def _compare_date_within_last(date_to_check: Union[str, datetime.datetime], time_delta: str) -> bool:
+def _compare_date_within_last(date_to_check: str | datetime.datetime, time_delta: str) -> bool:
     """
     Checks if the date and time is within the past duration specified by the time_delta.
 
@@ -468,7 +467,7 @@ def compare_values(left, comparator_name: str, right) -> bool:
     return comparator.function(left, right)
 
 
-def compare_time(condition: str, time_value: Union[datetime.datetime, str]) -> bool:
+def compare_time(condition: str, time_value: datetime.datetime | str) -> bool:
     """
     Evaluates whether a passed timestamp is within a certain time frame in the past compared to now.
     In case of a CompareError, the error is logged and False is returned.
@@ -495,7 +494,7 @@ class Condition:
     right_value: str
 
 
-def parse_condition(condition: str, data_type: Optional[str] = None) -> Union[Condition, None]:
+def parse_condition(condition: str, data_type: str | None = None) -> Condition | None:
     """
     Extracts the comparator and the condition values from a condition string.
     The condition can have the following structures:
@@ -537,7 +536,7 @@ def parse_condition(condition: str, data_type: Optional[str] = None) -> Union[Co
     return Condition("", PrimaryComparators.EQUALS, condition.strip())
 
 
-def compare_ints(condition: str, value: Union[str, int]) -> bool:
+def compare_ints(condition: str, value: str | int) -> bool:
     """
     This function first extracts the comparator and the right-hand side value from the condition,
     and then performs the comparison. Both values are expected to be parsable as integers.

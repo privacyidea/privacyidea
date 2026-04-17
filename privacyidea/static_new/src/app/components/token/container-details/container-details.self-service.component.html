@@ -24,8 +24,10 @@
   <div class="details-flex-layout flex-column">
     <div class="details-header">
       <h3 i18n>Details for Container:</h3>
-      <h3 class="token-serial">{{ containerSerial() }}</h3>
-      <app-copy-button [copyText]="containerSerial()"></app-copy-button>
+      <div class="flex-row flex-nowrap ali-center">
+        <h3 class="token-serial">{{ containerSerial() }}</h3>
+        <app-copy-button [copyText]="containerSerial()"></app-copy-button>
+      </div>
       @if (authService.actionAllowed("auditlog")) {
         <button
           (click)="showContainerAuditLog()"
@@ -37,8 +39,7 @@
       }
     </div>
     <div
-      [ngClass]="[overflowService.isWidthOverflowing('body', 1310) ? 'flex-column' : 'flex-row']"
-      class="details-flex-layout">
+      class="details-flex-layout responsive-flex-row-1310">
       <div>
         <table
           [dataSource]="containerDetailData()"
@@ -243,13 +244,10 @@
           [isAnyEditingOrRevoked]="isAnyEditing"
           [isEditingInfo]="isEditingInfo"
           [isEditingUser]="isEditingUser" />
-        @if (overflowService.isWidthOverflowing("body", 1310)) {
-          <mat-divider class="margin-top-16 margin-bottom-16" />
-        }
+        <mat-divider class="responsive-divider-1310" />
       </div>
       <div
-        [ngClass]="[overflowService.isWidthOverflowing('body', 1310) ? '' : 'margin-left-16']"
-        class="flex-column">
+        class="flex-column responsive-margin-left-1310">
         <app-container-details-token-table [containerTokenData]="containerTokenData" />
         <div class="flex-row gap-32 margin-top-16">
           @if (authService.actionAllowed("container_add_token")) {
@@ -315,8 +313,7 @@
         </div>
       </div>
       <div
-        [ngClass]="[overflowService.isWidthOverflowing('body', 1310) ? '' : 'margin-left-16']"
-        class="flex-column gap-32 ali-center">
+        class="flex-column gap-32 ali-center responsive-margin-left-1310">
         <app-container-details-actions
           [containerSerial]="containerSerial()"
           [containerType]="containerType()"></app-container-details-actions>

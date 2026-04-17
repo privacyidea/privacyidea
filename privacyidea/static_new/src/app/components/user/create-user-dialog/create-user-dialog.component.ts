@@ -120,6 +120,7 @@ export class CreateUserDialogComponent extends PendingChangesDialogComponent<Cre
         type: "confirm",
         label: $localize`Create`,
         value: true,
+        primary: true,
         disabled: !this.canSave()
       }
     ] as DialogAction<boolean>[];

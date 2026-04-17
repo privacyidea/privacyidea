@@ -1,6 +1,14 @@
 @use "styles";
 @use "table";
 
+.flex-row {
+  flex-wrap: wrap;
+}
+
+:host {
+  display: block;
+}
+
 ::ng-deep .mat-mdc-menu-content {
   background: var(--mat-sys-surface-container-low);
 }

@@ -23,18 +23,22 @@ import { HttpTestingController, provideHttpClientTesting } from "@angular/common
 import { AuthService } from "../auth/auth.service";
 import { NotificationService } from "../notification/notification.service";
 import { environment } from "../../../environments/environment";
+import { signal } from "@angular/core";
+import { MockContentService, MockPiResponse } from "../../../testing/mock-services";
+import { ContentService } from "../content/content.service";
 
 describe("TokengroupService", () => {
   let service: TokengroupService;
   let httpMock: HttpTestingController;
   let notificationService: NotificationService;
+  let contentService: MockContentService;
 
   beforeEach(() => {
     const authServiceMock = {
-      getHeaders: jest.fn().mockReturnValue({}),
+      getHeaders: jest.fn().mockReturnValue({})
     };
     const notificationServiceMock = {
-      openSnackBar: jest.fn(),
+      openSnackBar: jest.fn()
     };
 
     TestBed.configureTestingModule({
@@ -43,11 +47,13 @@ describe("TokengroupService", () => {
         provideHttpClientTesting(),
         { provide: AuthService, useValue: authServiceMock },
         { provide: NotificationService, useValue: notificationServiceMock },
+        { provide: ContentService, useClass: MockContentService }
       ]
     });
     service = TestBed.inject(TokengroupService);
     httpMock = TestBed.inject(HttpTestingController);
     notificationService = TestBed.inject(NotificationService);
+    contentService = TestBed.inject(ContentService) as unknown as MockContentService;
   });
 
   afterEach(() => {
@@ -79,5 +85,39 @@ describe("TokengroupService", () => {
 
     await promise;
     expect(notificationService.openSnackBar).toHaveBeenCalledWith("Successfully deleted tokengroup: test.");
+  });
+
+  describe("tokengroupResource / tokengroups", () => {
+
+    it("tokengroups falls back to default when resource empty", () => {
+      expect(service.tokengroups()).toEqual([]);
+    });
+
+    it("should update smsGateways from smsGatewaysResource on successful response", async () => {
+      contentService.onExternalTokenGroups = signal(true);
+      TestBed.tick();
+
+      const req = httpMock.expectOne((r) => r.url === "/tokengroup/");
+      expect(req.request.method).toBe("GET");
+      const tokenGroups = {test: { description: "", id: 1 }};
+      req.flush(MockPiResponse.fromValue(tokenGroups));
+      await Promise.resolve();
+
+      expect(service.tokengroups()).toEqual([{groupname: "test", description: "", id: 1 }]);
+    });
+
+    it("should handle error state from smsGatewayResource", async () => {
+      contentService.onExternalTokenGroups = signal(true);
+      TestBed.tick();
+
+      const req = httpMock.expectOne((r) => r.url === "/tokengroup/");
+      expect(req.request.method).toBe("GET");
+      req.flush(MockPiResponse.fromError({ message: "Permission denied" }), {
+        status: 403, statusText: "Permission denied"
+      });
+      await Promise.resolve();
+
+      expect(service.tokengroups()).toEqual([]);
+    });
   });
 });

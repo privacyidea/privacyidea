@@ -3,12 +3,14 @@
 @use "@angular/material" as mat;
 
 .machine-resolver-layout {
-  @include table.table-container-styles;
+  @include styles.main-component-style;
   @include table.base-table-structure(".token-table", ".token-table-filter", ".table-scroll-container");
-  display: flex;
-  flex-direction: column;
-  max-height: var(--max-height);
-  width: 1000px;
+
+  & {
+    display: flex;
+    flex-direction: column;
+    width: 1000px;
+  }
 }
 
 .machine-resolver-list-layout {

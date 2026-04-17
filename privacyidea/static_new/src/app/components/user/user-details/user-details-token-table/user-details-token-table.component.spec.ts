@@ -33,7 +33,6 @@ import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 
 import { TableUtilsService } from "../../../../services/table-utils/table-utils.service";
-import { OverflowService } from "../../../../services/overflow/overflow.service";
 import { ContentService } from "../../../../services/content/content.service";
 import { AuthService } from "../../../../services/auth/auth.service";
 import { TokenService } from "../../../../services/token/token.service";
@@ -57,14 +56,6 @@ describe("UserDetailsTokenTableComponent", () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: TableUtilsService, useClass: MockTableUtilsService },
-        {
-          provide: OverflowService,
-          useValue: {
-            isWidthOverflowing: () => false,
-            isHeightOverflowing: () => false,
-            getOverflowThreshold: () => 1920
-          }
-        },
         { provide: ContentService, useClass: MockContentService },
         { provide: AuthService, useClass: MockAuthService },
         { provide: TokenService, useClass: MockTokenService },

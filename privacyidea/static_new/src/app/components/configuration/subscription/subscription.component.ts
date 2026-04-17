@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, computed, inject } from "@angular/core";
-import { CommonModule } from "@angular/common";
+
 import { MatButtonModule } from "@angular/material/button";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MatIconModule } from "@angular/material/icon";
@@ -35,7 +35,6 @@ import { SimpleConfirmationDialogComponent } from "../../shared/dialog/confirmat
   selector: "app-subscription",
   standalone: true,
   imports: [
-    CommonModule,
     MatButtonModule,
     MatExpansionModule,
     MatIconModule,
@@ -53,6 +52,7 @@ export class SubscriptionComponent {
   private dialogService = inject(DialogService);
   subscriptionsResource = this.subscriptionService.subscriptionsResource;
   subscriptions = computed(() => {
+    if (!this.subscriptionsResource.hasValue()) return [];
     const value = this.subscriptionsResource.value()?.result?.value;
     return value ? Object.values(value) : [];
   });
@@ -70,21 +70,24 @@ export class SubscriptionComponent {
   }
 
   deleteSubscription(application: string): void {
-    this.dialogService.openDialog({
-      component: SimpleConfirmationDialogComponent,
-      data: {
-        title: "Delete Subscription",
-        items: [application],
-        itemType: "subscription",
-        confirmAction: { label: "Delete", value: true, type: "destruct" }
-      }
-    }).afterClosed().subscribe(result => {
-      if (result) {
-        this.subscriptionService.deleteSubscription(application).subscribe(() => {
-          this.notificationService.openSnackBar("Subscription deleted successfully.");
-          this.subscriptionService.reload();
-        });
-      }
-    });
+    this.dialogService
+      .openDialog({
+        component: SimpleConfirmationDialogComponent,
+        data: {
+          title: "Delete Subscription",
+          items: [application],
+          itemType: "subscription",
+          confirmAction: { label: "Delete", value: true, type: "destruct" }
+        }
+      })
+      .afterClosed()
+      .subscribe((result) => {
+        if (result) {
+          this.subscriptionService.deleteSubscription(application).subscribe(() => {
+            this.notificationService.openSnackBar("Subscription deleted successfully.");
+            this.subscriptionService.reload();
+          });
+        }
+      });
   }
 }

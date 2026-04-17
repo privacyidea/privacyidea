@@ -175,7 +175,7 @@ def _register_blueprints(app):
 def _setup_logging(app, logging_config=DEFAULT_LOGGING_CONFIG):
     # Setup logging
     log_read_func = {
-        'yaml': lambda x: logging.config.dictConfig(yaml.safe_load(open(x, 'r').read())),
+        'yaml': lambda x: logging.config.dictConfig(yaml.safe_load(open(x).read())),
         'cfg': lambda x: logging.config.fileConfig(x)
     }
     have_config = False
@@ -254,7 +254,7 @@ def _setup_node_configuration(app: Flask):
                         with open(pi_uuid_file, 'w') as f:  # pragma: no cover
                             f.write(f"{str(pi_uuid)}\n")
                             log.info(f"Successfully wrote current UUID to file '{pi_uuid_file}'")
-                    except IOError as exx:
+                    except OSError as exx:
                         log.warning(f"Could not write UUID to file '{pi_uuid_file}': {exx}")
 
             app.config[ConfigKey.NODE_UUID] = str(pi_uuid)
@@ -318,7 +318,7 @@ def create_app(config_name="development",
     # Overwrite default config with environment setting
     config_name = os.environ.get(ConfigKey.CONFIG_NAME, config_name)
     if app.config.get(ConfigKey.VERBOSE):
-        print("The configuration name is: {0!s}".format(config_name))
+        print(f"The configuration name is: {config_name!s}")
     app.config.from_object(config[config_name])
 
     # Load configuration from environment variables prefixed with PRIVACYIDEA_
@@ -327,12 +327,12 @@ def create_app(config_name="development",
     if ENV_KEY in os.environ:
         config_file = os.environ[ENV_KEY]
     if app.config.get(ConfigKey.VERBOSE):
-        print("Additional configuration will be read from the file {0!s}".format(config_file))
+        print(f"Additional configuration will be read from the file {config_file!s}")
 
     try:
         # Try to load the given config_file.
         app.config.from_pyfile(config_file, silent=False)
-    except IOError as e:
+    except OSError as e:
         if config_name != "docker" or ENV_KEY in os.environ:
             sys.stderr.write("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n")
             sys.stderr.write("  WARNING: Unable to load additional configuration\n")
@@ -435,7 +435,7 @@ def create_docker_app():
         app.config.from_pyfile(DefaultConfigValues.CFG_PATH, silent=False)
         if app.debug:
             sys.stderr.write(f"Read configuration from file: '{DefaultConfigValues.CFG_PATH}'\n")
-    except IOError as _e:
+    except OSError as _e:
         pass
     # Then we update the configuration with stuff from the environment
     if app.debug:

@@ -201,7 +201,7 @@
       </h4>
       <mat-form-field
         appearance="fill"
-        class="input-width-xl">
+        class="input-width-xl margin-bottom-16">
         <mat-label i18n>Certificate Revocation List</mat-label>
         <app-clearable-input
           (onClick)="caConnectorForm.get('CRL')?.setValue('')"
@@ -384,7 +384,9 @@
   </form>
 </mat-dialog-content>
 
-<mat-dialog-actions align="end">
+<mat-dialog-actions
+  align="end"
+  class="margin-8 external-service-dialog-actions">
   <button
     (click)="onCancel()"
     class="action-button-secondary button-width-s"

@@ -36,10 +36,10 @@ describe("ServiceIdService", () => {
 
   beforeEach(() => {
     const authServiceMock = {
-      getHeaders: jest.fn().mockReturnValue({}),
+      getHeaders: jest.fn().mockReturnValue({})
     };
     const notificationServiceMock = {
-      openSnackBar: jest.fn(),
+      openSnackBar: jest.fn()
     };
     TestBed.configureTestingModule({
       providers: [
@@ -100,7 +100,7 @@ describe("ServiceIdService", () => {
     async function testLoadResource() {
       const serviceIdResponse = { service1: {}, service2: {} };
       const mockResponse = MockPiResponse.fromValue(serviceIdResponse);
-      TestBed.flushEffects();
+      TestBed.tick();
       const req = httpMock.expectOne(`${environment.proxyUrl}/serviceid/`);
       expect(req.request.method).toBe("GET");
       req.flush(mockResponse);
@@ -118,5 +118,21 @@ describe("ServiceIdService", () => {
     contentService.routeUrl.set(ROUTE_PATHS.TOKENS_ENROLLMENT);
     contentService.onTokenEnrollmentLikely.set(true);
     await testLoadResource();
+  });
+
+  it("Should handle http error of serviceIdResource", async () => {
+    contentService.routeUrl.set(ROUTE_PATHS.TOKENS_ENROLLMENT);
+    contentService.onTokenEnrollmentLikely.set(true);
+
+    TestBed.tick();
+    const req = httpMock.expectOne(`${environment.proxyUrl}/serviceid/`);
+    expect(req.request.method).toBe("GET");
+    req.flush(MockPiResponse.fromError({ message: "Permission denied" }), {
+        status: 403, statusText: "Permission denied"
+      });
+    await lastValueFrom(of({})); // Wait for async updates
+
+    expect(service.serviceIdResource.hasValue()).toEqual(false)
+    expect(service.serviceIds()).toEqual([]);
   });
 });

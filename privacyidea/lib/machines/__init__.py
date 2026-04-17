@@ -26,3 +26,5 @@ Machines can then be used to assign applications and tokens to those machines.
 '''
 from .base import BaseMachineResolver
 
+__all__ = ["BaseMachineResolver"]
+

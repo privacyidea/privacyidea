@@ -18,7 +18,7 @@
  **/
 
 import { Component, input, output } from "@angular/core";
-import { CommonModule } from "@angular/common";
+
 import { MatCardModule } from "@angular/material/card";
 import { MatChipListbox, MatChipsModule } from "@angular/material/chips";
 
@@ -27,7 +27,7 @@ import { MatIcon } from "@angular/material/icon";
 @Component({
   selector: "app-container-template-add-token",
   standalone: true,
-  imports: [CommonModule, MatCardModule, MatChipsModule, MatChipListbox, MatIcon],
+  imports: [MatCardModule, MatChipsModule, MatChipListbox, MatIcon],
   templateUrl: "./container-template-add-token.component.html",
   styleUrls: ["./container-template-add-token.component.scss"]
 })

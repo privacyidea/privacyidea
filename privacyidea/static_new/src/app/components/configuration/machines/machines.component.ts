@@ -26,7 +26,7 @@ import { MatButtonModule } from "@angular/material/button";
 import { MatDialog, MatDialogModule } from "@angular/material/dialog";
 import { MachineDetailsDialogComponent } from "./machine-details-dialog/machine-details-dialog.component";
 import { MatTooltipModule } from "@angular/material/tooltip";
-import { CommonModule } from "@angular/common";
+
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
@@ -41,7 +41,6 @@ import { TableUtilsService, TableUtilsServiceInterface } from "../../../services
   selector: "app-machines",
   standalone: true,
   imports: [
-    CommonModule,
     MatTableModule,
     MatPaginatorModule,
     MatSortModule,
@@ -89,7 +88,8 @@ export class MachinesComponent {
     this.dialog.open(MachineDetailsDialogComponent, {
       data: { ...machine },
       width: "auto",
-      maxWidth: "100vw"
+      maxWidth: "65vw",
+      maxHeight: "90vh"
     });
   }
 

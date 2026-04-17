@@ -18,7 +18,7 @@
  **/
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { provideExperimentalZonelessChangeDetection } from "@angular/core";
+import { provideZonelessChangeDetection } from "@angular/core";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { lastValueFrom, of, throwError } from "rxjs";
 import { EnrollWebauthnComponent } from "./enroll-webauthn.component";
@@ -101,7 +101,7 @@ describe("EnrollWebauthnComponent", () => {
       imports: [EnrollWebauthnComponent, NoopAnimationsModule],
       providers: [
         provideHttpClient(),
-        provideExperimentalZonelessChangeDetection(),
+        provideZonelessChangeDetection(),
         { provide: TokenService, useValue: tokenService },
         { provide: NotificationService, useValue: notification },
         { provide: Base64Service, useValue: base64 },

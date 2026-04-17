@@ -24,13 +24,11 @@ import { TokenDetailsInfoComponent } from "./token-details-info.component";
 import { EditableElement } from "../../../shared/edit-buttons/edit-buttons.component";
 
 import { TokenService } from "../../../../services/token/token.service";
-import { OverflowService } from "../../../../services/overflow/overflow.service";
 import { AuthService } from "../../../../services/auth/auth.service";
 
 import {
   MockLocalService,
   MockNotificationService,
-  MockOverflowService,
   MockTokenService
 } from "../../../../../testing/mock-services";
 import { provideHttpClient } from "@angular/common/http";
@@ -63,7 +61,6 @@ describe("TokenDetailsInfoComponent", () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: TokenService, useClass: MockTokenService },
-        { provide: OverflowService, useClass: MockOverflowService },
         { provide: AuthService, useClass: MockAuthService },
         MockLocalService,
         MockNotificationService

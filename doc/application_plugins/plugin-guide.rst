@@ -65,8 +65,7 @@ resulting response. This means you can just take the challenge, pass it to the W
 back to privacyIDEA.
 
 An authentication mode (see :ref:`authentication_modes`) defines what the UI should show and how the plugin should
-process the inputs. Currently there are 3(4) authentication modes: OTP, Push and WebAuthn
-(and U2F, which will be removed from browsers soon).
+process the inputs. Currently there are 3 authentication modes: OTP, Push and WebAuthn.
 We usually present a button for each mode that is available and the page will then switch to that mode.
 
 *OTP mode* offers an input field for the user to enter their OTP and optionally their PIN. The OTP can be the usual

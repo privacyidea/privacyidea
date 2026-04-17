@@ -18,7 +18,13 @@
   width: 100%;
   margin-bottom: 1rem;
 
-  th.mat-column-actions {
+  .mat-column-privacyideaAttr,
+  .mat-column-userStoreAttr {
+    width: 300px
+  }
+
+  .mat-column-actions {
+    width: 80px;
     text-align: center;
   }
 

@@ -19,7 +19,6 @@
 import json
 import logging
 from datetime import datetime, timedelta
-from typing import Optional
 
 from sqlalchemy import (
     Sequence,
@@ -48,15 +47,15 @@ class Challenge(MethodsMixin, db.Model):
     __tablename__ = "challenge"
     id: Mapped[int] = mapped_column(Integer, Sequence("challenge_seq"), primary_key=True, nullable=False)
     transaction_id: Mapped[str] = mapped_column(Unicode(64), nullable=False, index=True)
-    data: Mapped[Optional[str]] = mapped_column(Unicode(512), default='')
-    challenge: Mapped[Optional[str]] = mapped_column(Text, default='')
-    session: Mapped[Optional[str]] = mapped_column(Unicode(512), default='', quote=True, name="session")
+    data: Mapped[str | None] = mapped_column(Unicode(512), default='')
+    challenge: Mapped[str | None] = mapped_column(Text, default='')
+    session: Mapped[str | None] = mapped_column(Unicode(512), default='', quote=True, name="session")
     # The token serial number
-    serial: Mapped[Optional[str]] = mapped_column(Unicode(40), default='', index=True)
-    timestamp: Mapped[Optional[datetime]] = mapped_column(DateTime, default=utc_now(), index=True)
-    expiration: Mapped[Optional[datetime]] = mapped_column(DateTime, index=True)
-    received_count: Mapped[Optional[int]] = mapped_column(Integer, default=0)
-    otp_valid: Mapped[Optional[bool]] = mapped_column(Boolean, default=False)
+    serial: Mapped[str | None] = mapped_column(Unicode(40), default='', index=True)
+    timestamp: Mapped[datetime | None] = mapped_column(DateTime, default=utc_now(), index=True)
+    expiration: Mapped[datetime | None] = mapped_column(DateTime, index=True)
+    received_count: Mapped[int | None] = mapped_column(Integer, default=0)
+    otp_valid: Mapped[bool | None] = mapped_column(Boolean, default=False)
 
     @log_with(log)
     def __init__(self, serial, transaction_id=None,
@@ -170,7 +169,7 @@ class Challenge(MethodsMixin, db.Model):
 
     def __str__(self):
         descr = self.get()
-        return "{0!s}".format(descr)
+        return f"{descr!s}"
 
 
 def cleanup_challenges(serial):

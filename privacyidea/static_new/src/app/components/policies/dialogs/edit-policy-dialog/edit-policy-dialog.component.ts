@@ -18,7 +18,7 @@
  **/
 
 import { Component, computed, effect, inject, signal } from "@angular/core";
-import { CommonModule } from "@angular/common";
+
 import { ReactiveFormsModule } from "@angular/forms";
 import { DialogWrapperComponent } from "../../../shared/dialog/dialog-wrapper/dialog-wrapper.component";
 import { PolicyDetail, PolicyService, PolicyServiceInterface } from "../../../../services/policies/policies.service";
@@ -35,7 +35,7 @@ import { PendingChangesDialogComponent } from "@components/shared/dialog/abstrac
   host: {
     class: NAVIGATION_ACCESSIBLE_DIALOG_CLASS
   },
-  imports: [DialogWrapperComponent, CommonModule, ReactiveFormsModule, PolicyPanelEditComponent],
+  imports: [DialogWrapperComponent, ReactiveFormsModule, PolicyPanelEditComponent],
   templateUrl: "./edit-policy-dialog.component.html",
   styleUrl: "./edit-policy-dialog.component.scss"
 })
@@ -60,7 +60,7 @@ export class EditPolicyDialogComponent extends PendingChangesDialogComponent<
       type: "confirm",
       primary: true,
       disabled: !this.canSave(),
-      className: "button-width-s",
+      className: "button-width-s"
     }
   ]);
 
@@ -93,7 +93,10 @@ export class EditPolicyDialogComponent extends PendingChangesDialogComponent<
     if (this.mode === "create") {
       success = await this.policyService.saveNewPolicy({ ...this.policy(), ...this.policyEdits() });
     } else {
-      success = await this.policyService.savePolicyEdits(this.policy().name, { ...this.policy(), ...this.policyEdits() });
+      success = await this.policyService.savePolicyEdits(this.policy().name, {
+        ...this.policy(),
+        ...this.policyEdits()
+      });
     }
     if (success) {
       this.dialogRef.close();

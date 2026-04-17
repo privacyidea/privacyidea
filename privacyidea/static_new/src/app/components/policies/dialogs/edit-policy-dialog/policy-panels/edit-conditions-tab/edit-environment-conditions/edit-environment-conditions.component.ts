@@ -18,7 +18,7 @@
  **/
 
 import { Component, computed, inject, output, signal, ViewChild, input, OnInit } from "@angular/core";
-import { CommonModule } from "@angular/common";
+
 import { AbstractControl, FormControl, FormsModule, ValidationErrors, ReactiveFormsModule } from "@angular/forms";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
@@ -40,7 +40,6 @@ import { MatAutocompleteModule } from "@angular/material/autocomplete";
   selector: "app-edit-environment-conditions",
   standalone: true,
   imports: [
-    CommonModule,
     FormsModule,
     MatIconModule,
     MatInputModule,

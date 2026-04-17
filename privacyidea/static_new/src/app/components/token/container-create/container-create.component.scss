@@ -2,13 +2,21 @@
 @use "table";
 
 .container-create-container {
-  @include table.table-container-styles;
-  max-height: var(--max-height);
+  @include styles.main-component-style;
   display: grid;
-  overflow: auto;
 }
 
 .container-type-hint {
   margin-top: 8px;
   font-size: 1rem;
+}
+
+.type-select {
+  width: 616px;
+}
+
+@media (max-width: 1040px) {
+  .type-select {
+    width: 100%;
+  }
 }

@@ -92,6 +92,7 @@ export class SmsGatewayService implements SmsGatewayServiceInterface {
   });
 
   readonly smsGateways = computed<SmsGateway[]>(() => {
+    if (!this.smsGatewayResource.hasValue()) return [];
     return this.smsGatewayResource.value()?.result?.value ?? [];
   });
 

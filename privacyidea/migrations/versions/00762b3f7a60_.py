@@ -41,7 +41,7 @@ def upgrade():
     bind = op.get_bind()
     session = orm.Session(bind=bind)
 
-    regex = re.compile('^{0!s}'.format(old_policy_action))
+    regex = re.compile(f'^{old_policy_action!s}')
     try:
         for row in session.scalars(
                 sa.select(Policy).where(Policy.action.like(f"%{old_policy_action}%"))):
@@ -50,12 +50,12 @@ def upgrade():
             for pol_action in filter(regex.match, pol_actions):
                 cred_algs = cred_alg_map[pol_action.split('=')[1]]
                 pol_actions.remove(pol_action)
-                pol_actions.append('{0!s}={1!s}'.format(new_policy_action, cred_algs))
+                pol_actions.append(f'{new_policy_action!s}={cred_algs!s}')
             row.action = ', '.join(pol_actions)
         session.commit()
     except Exception as e:
         session.rollback()
-        print('Error updating the enrollment policy {0!s}: {1!s}'.format(old_policy_action, e))
+        print(f'Error updating the enrollment policy {old_policy_action!s}: {e!s}')
         raise
 
 
@@ -63,17 +63,17 @@ def downgrade():
     # for the downgrade we just use the "ecdsa_preferred" setting
     bind = op.get_bind()
     session = orm.Session(bind=bind)
-    regex = re.compile('^{0!s}'.format(new_policy_action))
+    regex = re.compile(f'^{new_policy_action!s}')
     try:
-        for row in session.query(Policy).filter(Policy.action.like('%{0!s}%'.format(new_policy_action))):
+        for row in session.query(Policy).filter(Policy.action.like(f'%{new_policy_action!s}%')):
             # get the current setting
             pol_actions = [x.strip() for x in row.action.split(',')]
             for pol_action in filter(regex.match, pol_actions):
                 pol_actions.remove(pol_action)
-                pol_actions.append('{0!s}={1!s}'.format(old_policy_action, 'ecdsa_preferred'))
+                pol_actions.append('{!s}={!s}'.format(old_policy_action, 'ecdsa_preferred'))
             row.action = ', '.join(pol_actions)
         session.commit()
     except Exception as e:
         session.rollback()
-        print('Error downgrading the enrollment policy {0!s}: {1!s}'.format(new_policy_action, e))
+        print(f'Error downgrading the enrollment policy {new_policy_action!s}: {e!s}')
         raise

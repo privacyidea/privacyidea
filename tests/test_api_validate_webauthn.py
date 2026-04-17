@@ -1,6 +1,7 @@
 from mock.mock import patch
 from webauthn.helpers import bytes_to_base64url
 
+from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction
 from privacyidea.lib.fido2.util import hash_credential_id
 from privacyidea.lib.machine import attach_token, detach_token
 from privacyidea.lib.policies.actions import PolicyAction
@@ -535,7 +536,7 @@ class WebAuthn(MyApiTestCase):
 
         user_handle = bytes_to_base64url(serial.encode())
         data = {
-            "authenticatordata": "1kwVsywYDmugu2qhEi7LiS8tgyaE5XqILRqvKXkZ-1odAAAAAA",
+            "authenticatordata": "1kwVsywYDmugu2qhEi7LiS8tgyaE5XqILRqvKXkZ+1odAAAAAA",
             "clientdata": "eyJ0eXBlIjoid2ViYXV0aG4uZ2V0IiwiY2hhbGxlbmdlIjoiVjluYlV4ekVBeVhrdDFLek1IWVF2NldreTc4Rk5F"
                           "OTkxMXhDbzNha2pVUSIsIm9yaWdpbiI6Imh0dHBzOi8va2MuZnJpdHouYm94Ojg0NDMiLCJjcm9zc09yaWdpbiI6"
                           "ZmFsc2V9",
@@ -604,6 +605,167 @@ class WebAuthn(MyApiTestCase):
 
         delete_policies(["wan1", "wan2", "wan3"])
         remove_token(serial=serial)
+
+    # Shared enrollment data used across policy tests
+    _policy_test_client_data = (
+        "eyJ0eXBlIjoid2ViYXV0aG4uY3JlYXRlIiwiY2hhbGxlbmdlIjoibmgwaUJ6MFNNbmRsVnNQUkdM"
+        "dk9DUWMtUHByUHhPSmYzMEtlWm1UWFk5NCIsIm9yaWdpbiI6Imh0dHBzOi8vcGkuZXhhbXBsZS5jb"
+        "20iLCJjcm9zc09yaWdpbiI6ZmFsc2V9"
+    )
+    _policy_test_regdata = (
+        "o2NmbXRmcGFja2VkZ2F0dFN0bXSjY2FsZyZjc2lnWEgwRgIhANAt-cBR3mZglj13PZPXA3srJYxX"
+        "J6v-LzxAhmxZM7AsAiEAxu4gi8AiKOfyhU68HcIBHuIwgjBWJUlt4cIETWFYdetjeDVjgVkCwDCC"
+        "ArwwggGkoAMCAQICBAOt8BIwDQYJKoZIhvcNAQELBQAwLjEsMCoGA1UEAxMjWXViaWNvIFUyRiBS"
+        "b290IENBIFNlcmlhbCA0NTcyMDA2MzEwIBcNMTQwODAxMDAwMDAwWhgPMjA1MDA5MDQwMDAwMDBa"
+        "MG0xCzAJBgNVBAYTAlNFMRIwEAYDVQQKDAlZdWJpY28gQUIxIjAgBgNVBAsMGUF1dGhlbnRpY2F0"
+        "b3IgQXR0ZXN0YXRpb24xJjAkBgNVBAMMHVl1YmljbyBVMkYgRUUgU2VyaWFsIDYxNzMwODM0MFkw"
+        "EwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEGZ6HnBYtt9w57kpCoEYWpbMJ_soJL3a-CUj5bW6VyuTM"
+        "Zc1UoFnPvcfJsxsrHWwYRHnCwGH0GKqVS1lqLBz6F6NsMGowIgYJKwYBBAGCxAoCBBUxLjMuNi4x"
+        "LjQuMS40MTQ4Mi4xLjcwEwYLKwYBBAGC5RwCAQEEBAMCBDAwIQYLKwYBBAGC5RwBAQQEEgQQ-iuZ"
+        "3J45QlePkkow0jxBGDAMBgNVHRMBAf8EAjAAMA0GCSqGSIb3DQEBCwUAA4IBAQAo67Nn_tHY8OKJ"
+        "68qf9tgHV8YOmuV8sXKMmxw4yru9hNkjfagxrCGUnw8t_Awxa_2xdbNuY6Iru1gOrcpSgNB5hA5a"
+        "HiVyYlo7-4dgM9v7IqlpyTi4nOFxNZQAoSUtlwKpEpPVRRnpYN0izoon6wXrfnm3UMAC_tkBa3Ee"
+        "ya10UBvZFMu-jtlXEoG3T0TrB3zmHssGq4WpclUmfujjmCv0PwyyGjgtI1655M5tspjEBUJQQCMr"
+        "K2HhDNcMYhW8A7fpQHG3DhLRxH-WZVou-Z1M5Vp_G0sf-RTuE22eYSBHFIhkaYiARDEWZTiJuGSG"
+        "2cnJ_7yThUU1abNFdEuMoLQ3aGF1dGhEYXRhWMSjeab27q-5pV43jBGANOJ1Hmgvq58tMKsT0hJV"
+        "hs4ZR0EAAAD4-iuZ3J45QlePkkow0jxBGABAkNhnmLSbmlUebUHbpXxU-zMfqtnIqT5y2E3sfQgW"
+        "wE1FlUGvPg_c4zNcIucBnQAN8qTHJ8clzq7v5oQnnJz7T6UBAgMmIAEhWCBARZY9ak9nT6EI-dwL"
+        "uj0TB5-XjlmAvivyWLi9WSI7pCJYIEJicw0LtP_hdy8yh6ANEUXBJsWtkGDci9DcN1rDG1tE"
+    )
+    # AAGUID extracted from the regdata above: fa2b99dc-9e39-4257-8f92-4a30d23c4118
+    _yubikey_aaguid = "fa2b99dc-9e39-4257-8f92-4a30d23c4118"
+
+    def _do_first_enrollment_step(self, serial):
+        """Helper: perform first enrollment step, patch nonce, return transaction_id."""
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"user": self.username,
+                                                 "pin": self.pin,
+                                                 "serial": serial,
+                                                 "type": "webauthn",
+                                                 "genkey": 1},
+                                           headers={"authorization": self.at,
+                                                    "Host": "pi.example.com",
+                                                    "Origin": "https://pi.example.com"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            data = res.json
+            webauthn_request = data.get("detail").get("webAuthnRegisterRequest")
+            transaction_id = webauthn_request.get("transaction_id")
+
+        # Patch the nonce to match the recorded client_data / regdata
+        recorded_nonce = "nh0iBz0SMndlVsPRGLvOCQc-PprPxOJf30KeZmTXY94"
+        recorded_nonce_hex = hexlify_and_unicode(webauthn_b64_decode(recorded_nonce))
+        from privacyidea.lib.challenge import get_challenges
+        chal = get_challenges(serial=serial, transaction_id=transaction_id)[0]
+        chal.challenge = recorded_nonce_hex
+        chal.save()
+        return transaction_id
+
+    def _do_second_enrollment_step(self, serial, transaction_id):
+        """Helper: perform second enrollment step, return (status_code, response_json)."""
+        with self.app.test_request_context('/token/init',
+                                           method='POST',
+                                           data={"user": self.username,
+                                                 "pin": self.pin,
+                                                 "serial": serial,
+                                                 "type": "webauthn",
+                                                 "transaction_id": transaction_id,
+                                                 "clientdata": self._policy_test_client_data,
+                                                 "regdata": self._policy_test_regdata},
+                                           headers={"authorization": self.at,
+                                                    "Host": "pi.example.com",
+                                                    "Origin": "https://pi.example.com"}):
+            res = self.app.full_dispatch_request()
+            return res.status_code, res.json
+
+    def test_40_webauthn_req_policy_allowed(self):
+        """
+        Test that enrollment succeeds when the WEBAUTHNACTION.REQ policy matches
+        the attestation certificate of the token being enrolled.
+        The Yubikey attestation cert issuer is CN=Yubico U2F Root CA Serial 457200631.
+        """
+        serial = "WAN_REQ_ALLOW"
+        set_policy("wan_req_allow",
+                   scope=SCOPE.ENROLL,
+                   action="{0!s}=issuer/.*Yubico.*/".format(FIDO2PolicyAction.REQ))
+        try:
+            transaction_id = self._do_first_enrollment_step(serial)
+            status_code, data = self._do_second_enrollment_step(serial, transaction_id)
+            self.assertEqual(200, status_code, data)
+            self.assertTrue(data.get("result").get("status"))
+            self.assertTrue(data.get("result").get("value"))
+            tokens = get_tokens(serial=serial)
+            self.assertEqual(1, len(tokens))
+        finally:
+            delete_policy("wan_req_allow")
+            remove_token(serial)
+
+    def test_41_webauthn_req_policy_blocked(self):
+        """
+        Test that enrollment is blocked when the WEBAUTHNACTION.REQ policy does NOT match
+        the attestation certificate of the token being enrolled.
+        """
+        serial = "WAN_REQ_BLOCK"
+        set_policy("wan_req_block",
+                   scope=SCOPE.ENROLL,
+                   action="{0!s}=issuer/.*NonExistentVendor.*/".format(FIDO2PolicyAction.REQ))
+        try:
+            transaction_id = self._do_first_enrollment_step(serial)
+            status_code, data = self._do_second_enrollment_step(serial, transaction_id)
+            self.assertEqual(403, status_code, data)
+            self.assertFalse(data.get("result").get("status"))
+            tokens = get_tokens(serial=serial)
+            for tok in tokens:
+                self.assertNotEqual(RolloutState.ENROLLED, tok.rollout_state)
+        finally:
+            delete_policy("wan_req_block")
+            remove_token(serial)
+
+    def test_42_webauthn_authenticator_selection_list_allowed(self):
+        """
+        Test that enrollment succeeds when the WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST
+        policy contains the AAGUID of the token being enrolled.
+        The AAGUID in the test regdata is fa2b99dc-9e39-4257-8f92-4a30d23c4118.
+        """
+        serial = "WAN_AAGUID_ALLOW"
+        set_policy("wan_aaguid_allow",
+                   scope=SCOPE.ENROLL,
+                   action="{0!s}={1!s}".format(FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST,
+                                               self._yubikey_aaguid))
+        try:
+            transaction_id = self._do_first_enrollment_step(serial)
+            status_code, data = self._do_second_enrollment_step(serial, transaction_id)
+            self.assertEqual(200, status_code, data)
+            self.assertTrue(data.get("result").get("status"))
+            self.assertTrue(data.get("result").get("value"))
+            tokens = get_tokens(serial=serial)
+            self.assertEqual(1, len(tokens))
+        finally:
+            delete_policy("wan_aaguid_allow")
+            remove_token(serial)
+
+    def test_43_webauthn_authenticator_selection_list_blocked(self):
+        """
+        Test that enrollment is blocked when the WEBAUTHNACTION.AUTHENTICATOR_SELECTION_LIST
+        policy does NOT contain the AAGUID of the token being enrolled.
+        """
+        serial = "WAN_AAGUID_BLOCK"
+        set_policy("wan_aaguid_block",
+                   scope=SCOPE.ENROLL,
+                   action="{0!s}=00000000-0000-0000-0000-000000000000".format(
+                       FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST))
+        try:
+            transaction_id = self._do_first_enrollment_step(serial)
+            status_code, data = self._do_second_enrollment_step(serial, transaction_id)
+            self.assertEqual(403, status_code, data)
+            self.assertFalse(data.get("result").get("status"))
+            tokens = get_tokens(serial=serial)
+            for tok in tokens:
+                self.assertNotEqual(RolloutState.ENROLLED, tok.rollout_state)
+        finally:
+            delete_policy("wan_aaguid_block")
+            remove_token(serial)
 
     def test_32_authenticate_wrong_uv(self):
         """

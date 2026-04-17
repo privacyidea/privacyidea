@@ -16,9 +16,8 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import logging
-from typing import Optional
 
-from sqlalchemy import Sequence, Unicode, Integer, ForeignKey, UniqueConstraint, and_, select, update, delete, \
+from sqlalchemy import Sequence, Unicode, Integer, ForeignKey, UniqueConstraint, delete, \
     UnicodeText
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -45,7 +44,7 @@ class SMSGateway(MethodsMixin, db.Model):
     __tablename__ = 'smsgateway'
     id: Mapped[int] = mapped_column(Integer, Sequence("smsgateway_seq"), primary_key=True)
     identifier: Mapped[str] = mapped_column(Unicode(255), nullable=False, unique=True)
-    description: Mapped[Optional[str]] = mapped_column(Unicode(1024), default="")
+    description: Mapped[str | None] = mapped_column(Unicode(1024), default="")
     providermodule: Mapped[str] = mapped_column(Unicode(1024), nullable=False)
     options: Mapped[list["SMSGatewayOption"]] = relationship(
         'SMSGatewayOption',
@@ -104,9 +103,9 @@ class SMSGatewayOption(MethodsMixin, db.Model):
     __tablename__ = 'smsgatewayoption'
     id: Mapped[int] = mapped_column(Integer, Sequence("smsgwoption_seq"), primary_key=True)
     Key: Mapped[str] = mapped_column(Unicode(255), nullable=False)
-    Value: Mapped[Optional[str]] = mapped_column(UnicodeText(), default='')
-    Type: Mapped[Optional[str]] = mapped_column(Unicode(100), default='option')
-    gateway_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey('smsgateway.id'), index=True)
+    Value: Mapped[str | None] = mapped_column(UnicodeText(), default='')
+    Type: Mapped[str | None] = mapped_column(Unicode(100), default='option')
+    gateway_id: Mapped[int | None] = mapped_column(Integer, ForeignKey('smsgateway.id'), index=True)
 
     smsgw = relationship("SMSGateway", back_populates="options")
 

@@ -5,6 +5,11 @@
   background-color: var(--mat-sys-surface-container-lowest);
   border-radius: var(--border-radius);
   overflow: auto;
+
+  // subtract double global padding to preserve margin around the component
+  max-width: calc(100vw - var(--overlay-margin) - 2 * var(--double-global-padding));
+  max-height: calc(100vh - 2 * var(--double-global-padding));
+
   --mat-dialog-content-padding: 0 var(--global-padding) var(--half-global-padding) var(--global-padding);
 
   .pi-dialog-header {

@@ -28,7 +28,7 @@ import { RadiusServer, RadiusService, RadiusServiceInterface } from "../../../se
 import { NewRadiusServerComponent } from "./new-radius-server/new-radius-server.component";
 import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
 import { MatTooltipModule } from "@angular/material/tooltip";
-import { CommonModule } from "@angular/common";
+
 import { DialogService, DialogServiceInterface } from "../../../services/dialog/dialog.service";
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
@@ -41,7 +41,6 @@ import { SimpleConfirmationDialogComponent } from "../../shared/dialog/confirmat
   selector: "app-radius-servers",
   standalone: true,
   imports: [
-    CommonModule,
     MatTableModule,
     MatPaginator,
     MatSortModule,
@@ -90,7 +89,8 @@ export class RadiusServersComponent {
     this.dialog.open(NewRadiusServerComponent, {
       data: server ? { ...server } : null,
       width: "auto",
-      maxWidth: "100vw"
+      maxWidth: "65vw",
+      maxHeight: "90vh"
     });
   }
 

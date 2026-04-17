@@ -2,16 +2,8 @@
 @use "@angular/material" as mat;
 
 .sms-gateways-container {
-  @include styles.table-container-styles;
+  @include styles.main-component-style;
   @include styles.base-table-structure(".sms-gateways-table", ".table-filter", ".table-scroll-container");
-  max-height: var(--max-height);
-  max-width: calc(100vw - var(--global-padding) * 5 - 48px);
-  display: grid;
-  overflow: auto;
-}
-
-.sms-gateways-layout {
-  padding: 24px;
 }
 
 .actions-container {

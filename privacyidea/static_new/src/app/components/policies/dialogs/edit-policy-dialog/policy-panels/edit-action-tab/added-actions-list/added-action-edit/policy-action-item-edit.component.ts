@@ -40,7 +40,6 @@ import { MultiSelectOnlyComponent } from "@components/shared/multi-select-only/m
   selector: "app-policy-action-item-edit",
   standalone: true,
   imports: [
-    CommonModule,
     MatIconModule,
     MatButtonModule,
     MatSlideToggleModule,

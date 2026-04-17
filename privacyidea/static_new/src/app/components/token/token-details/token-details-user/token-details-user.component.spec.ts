@@ -25,7 +25,6 @@ import { UserService } from "../../../../services/user/user.service";
 import {
   MockLocalService,
   MockNotificationService,
-  MockOverflowService,
   MockPiResponse,
   MockRealmService,
   MockTokenService,
@@ -33,7 +32,6 @@ import {
 } from "../../../../../testing/mock-services";
 import { RealmService } from "../../../../services/realm/realm.service";
 import { NotificationService } from "../../../../services/notification/notification.service";
-import { OverflowService } from "../../../../services/overflow/overflow.service";
 import { AuthService } from "../../../../services/auth/auth.service";
 import { TokenTypeOption } from "../../token.component";
 import { provideHttpClient } from "@angular/common/http";
@@ -110,7 +108,6 @@ describe("TokenDetailsUserComponent", () => {
         { provide: UserService, useClass: MockUserService },
         { provide: RealmService, useClass: MockRealmService },
         { provide: NotificationService, useClass: MockNotificationService },
-        { provide: OverflowService, useClass: MockOverflowService },
         { provide: AuthService, useClass: MockAuthService },
         MockLocalService,
         MockNotificationService

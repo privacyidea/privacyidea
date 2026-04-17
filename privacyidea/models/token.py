@@ -17,10 +17,14 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import binascii
 import logging
-from typing import Optional, List
+from typing import TYPE_CHECKING
 
 from sqlalchemy import Sequence, Unicode, Integer, Boolean, select, UnicodeText
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+if TYPE_CHECKING:
+    from privacyidea.models.machine import MachineToken
+    from privacyidea.models.tokengroup import Tokengroup
 
 from privacyidea.lib.crypto import (geturandom, encrypt, hexlify_and_unicode,
                                     pass_hash, encryptPin, decryptPin, hash,
@@ -67,50 +71,50 @@ class Token(MethodsMixin, db.Model):
     id: Mapped[int] = mapped_column(Integer, Sequence("token_seq"),
                                     primary_key=True,
                                     nullable=False)
-    description: Mapped[Optional[str]] = mapped_column(Unicode(80), default='')
+    description: Mapped[str | None] = mapped_column(Unicode(80), default='')
     serial: Mapped[str] = mapped_column(Unicode(40), default='',
                                         unique=True,
                                         nullable=False,
                                         index=True)
-    tokentype: Mapped[Optional[str]] = mapped_column(Unicode(30),
+    tokentype: Mapped[str | None] = mapped_column(Unicode(30),
                                                      default='HOTP',
                                                      index=True)
-    user_pin: Mapped[Optional[str]] = mapped_column(Unicode(512),
+    user_pin: Mapped[str | None] = mapped_column(Unicode(512),
                                                     default='')  # encrypt
-    user_pin_iv: Mapped[Optional[str]] = mapped_column(Unicode(32),
+    user_pin_iv: Mapped[str | None] = mapped_column(Unicode(32),
                                                        default='')  # encrypt
-    so_pin: Mapped[Optional[str]] = mapped_column(Unicode(512),
+    so_pin: Mapped[str | None] = mapped_column(Unicode(512),
                                                   default='')  # encrypt
-    so_pin_iv: Mapped[Optional[str]] = mapped_column(Unicode(32),
+    so_pin_iv: Mapped[str | None] = mapped_column(Unicode(32),
                                                      default='')  # encrypt
-    pin_seed: Mapped[Optional[str]] = mapped_column(Unicode(32),
+    pin_seed: Mapped[str | None] = mapped_column(Unicode(32),
                                                     default='')
-    otplen: Mapped[Optional[int]] = mapped_column(Integer,
+    otplen: Mapped[int | None] = mapped_column(Integer,
                                                   default=6)
-    pin_hash: Mapped[Optional[str]] = mapped_column(Unicode(512),
+    pin_hash: Mapped[str | None] = mapped_column(Unicode(512),
                                                     default='')  # hashed
-    key_enc: Mapped[Optional[str]] = mapped_column(Unicode(2800),
+    key_enc: Mapped[str | None] = mapped_column(Unicode(2800),
                                                    default='')  # encrypt
-    key_iv: Mapped[Optional[str]] = mapped_column(Unicode(32),
+    key_iv: Mapped[str | None] = mapped_column(Unicode(32),
                                                   default='')
-    maxfail: Mapped[Optional[int]] = mapped_column(Integer,
+    maxfail: Mapped[int | None] = mapped_column(Integer,
                                                    default=10)
     active: Mapped[bool] = mapped_column(Boolean,
                                          nullable=False,
                                          default=True)
-    revoked: Mapped[Optional[bool]] = mapped_column(Boolean,
+    revoked: Mapped[bool | None] = mapped_column(Boolean,
                                                     default=False)
-    locked: Mapped[Optional[bool]] = mapped_column(Boolean,
+    locked: Mapped[bool | None] = mapped_column(Boolean,
                                                    default=False)
-    failcount: Mapped[Optional[int]] = mapped_column(Integer,
+    failcount: Mapped[int | None] = mapped_column(Integer,
                                                      default=0)
-    count: Mapped[Optional[int]] = mapped_column(Integer,
+    count: Mapped[int | None] = mapped_column(Integer,
                                                  default=0)
-    count_window: Mapped[Optional[int]] = mapped_column(Integer,
+    count_window: Mapped[int | None] = mapped_column(Integer,
                                                         default=10)
-    sync_window: Mapped[Optional[int]] = mapped_column(Integer,
+    sync_window: Mapped[int | None] = mapped_column(Integer,
                                                        default=1000)
-    rollout_state: Mapped[Optional[str]] = mapped_column(Unicode(10),
+    rollout_state: Mapped[str | None] = mapped_column(Unicode(10),
                                                          default='')
     info_list = relationship('TokenInfo', lazy='select', back_populates='token', cascade="all, delete-orphan")
     owners = relationship('TokenOwner', lazy='dynamic', back_populates='token', cascade="all, delete-orphan")
@@ -123,16 +127,16 @@ class Token(MethodsMixin, db.Model):
     #  table TokenRealm (requires changes in the token query, etc.)
     realm_list = relationship('TokenRealm', lazy='joined', back_populates='token')
 
-    tokengroup_list: Mapped[List['TokenTokengroup']] = relationship('Tokengroup', secondary='tokentokengroup',
-                                                                    back_populates='tokens', single_parent=True)
-    machine_list: Mapped[List['MachineToken']] = relationship('MachineToken', back_populates='token',
+    tokengroup_list: Mapped[list['Tokengroup']] = relationship('Tokengroup', secondary='tokentokengroup',
+                                                               back_populates='tokens', single_parent=True)
+    machine_list: Mapped[list['MachineToken']] = relationship('MachineToken', back_populates='token',
                                                               cascade="all, delete-orphan")
 
     def __init__(self, serial, tokentype="",
                  isactive=True, otplen=6,
                  otpkey="",
                  **kwargs):
-        super(Token, self).__init__(**kwargs)
+        super().__init__(**kwargs)
         self.serial = '' + serial
         self.tokentype = tokentype
         self.count = 0
@@ -394,10 +398,10 @@ class Token(MethodsMixin, db.Model):
         """
         ldict = {}
         for attr in self.__dict__:
-            key = "{0!r}".format(attr)
-            val = "{0!r}".format(getattr(self, attr))
+            key = f"{attr!r}"
+            val = f"{getattr(self, attr)!r}"
             ldict[key] = val
-        res = "<{0!r} {1!r}>".format(self.__class__, ldict)
+        res = f"<{self.__class__!r} {ldict!r}>"
         return res
 
     def get_info(self):
@@ -457,10 +461,10 @@ class TokenInfo(MethodsMixin, db.Model):
     __tablename__ = 'tokeninfo'
     id: Mapped[int] = mapped_column(Integer, Sequence("tokeninfo_seq"), primary_key=True)
     Key: Mapped[str] = mapped_column(Unicode(255), nullable=False)
-    Value: Mapped[Optional[str]] = mapped_column(UnicodeText(), default='')
-    Type: Mapped[Optional[str]] = mapped_column(Unicode(100), default='')
-    Description: Mapped[Optional[str]] = mapped_column(Unicode(2000), default='')
-    token_id: Mapped[Optional[int]] = mapped_column(Integer, db.ForeignKey('token.id'), index=True)
+    Value: Mapped[str | None] = mapped_column(UnicodeText(), default='')
+    Type: Mapped[str | None] = mapped_column(Unicode(100), default='')
+    Description: Mapped[str | None] = mapped_column(Unicode(2000), default='')
+    token_id: Mapped[int | None] = mapped_column(Integer, db.ForeignKey('token.id'), index=True)
 
     token = relationship("Token", back_populates="info_list")
 
@@ -486,10 +490,10 @@ class TokenOwner(MethodsMixin, db.Model):
     """
     __tablename__ = 'tokenowner'
     id: Mapped[int] = mapped_column(Integer, Sequence("tokenowner_seq"), primary_key=True)
-    token_id: Mapped[Optional[int]] = mapped_column(Integer, db.ForeignKey('token.id'))
-    resolver: Mapped[Optional[str]] = mapped_column(Unicode(120), default='', index=True)
-    user_id: Mapped[Optional[str]] = mapped_column(Unicode(320), default='', index=True)
-    realm_id: Mapped[Optional[int]] = mapped_column(Integer, db.ForeignKey('realm.id'))
+    token_id: Mapped[int | None] = mapped_column(Integer, db.ForeignKey('token.id'))
+    resolver: Mapped[str | None] = mapped_column(Unicode(120), default='', index=True)
+    user_id: Mapped[str | None] = mapped_column(Unicode(320), default='', index=True)
+    realm_id: Mapped[int | None] = mapped_column(Integer, db.ForeignKey('realm.id'))
 
     token = relationship('Token', lazy='joined', back_populates='owners')
     realm = relationship('Realm', lazy='joined', back_populates='tokenowners')
@@ -534,9 +538,9 @@ class TokenRealm(MethodsMixin, db.Model):
     """
     __tablename__ = 'tokenrealm'
     id: Mapped[int] = mapped_column(Integer, Sequence("tokenrealm_seq"), primary_key=True)
-    token_id: Mapped[Optional[int]] = mapped_column(Integer,
+    token_id: Mapped[int | None] = mapped_column(Integer,
                                                     db.ForeignKey('token.id'))
-    realm_id: Mapped[Optional[int]] = mapped_column(Integer,
+    realm_id: Mapped[int | None] = mapped_column(Integer,
                                                     db.ForeignKey('realm.id'))
     # This creates an attribute "realm_list" in the Token object
     token = relationship('Token',

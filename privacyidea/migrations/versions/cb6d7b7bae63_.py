@@ -19,7 +19,7 @@ def upgrade():
         op.add_column('usercache', sa.Column('used_login', sa.Unicode(length=64), nullable=True))
         op.create_index(op.f('ix_usercache_used_login'), 'usercache', ['used_login'], unique=False)
     except Exception as exx:
-        print('Adding of column "used_login" in table usercache failed: {!r}'.format(exx))
+        print(f'Adding of column "used_login" in table usercache failed: {exx!r}')
         print('This is expected behavior if this column already exists.')
 
 

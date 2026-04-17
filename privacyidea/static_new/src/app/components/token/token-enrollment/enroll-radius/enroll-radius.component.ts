@@ -94,9 +94,10 @@ export class EnrollRadiusComponent implements OnInit {
     checkPinLocally: this.checkPinLocallyControl
   });
 
-  radiusServerConfigurationOptions = computed(() => this.systemService.radiusServerResource.value()?.result?.value);
+  radiusServerConfigurationOptions = computed(() => this.systemService.radiusServers());
 
   defaultRadiusServerIsSet = computed(() => {
+    if (!this.systemService.systemConfigResource.hasValue()) return false;
     const cfg = this.systemService.systemConfigResource.value()?.result?.value;
     return !!cfg?.[RADIUS_SERVER];
   });
@@ -106,6 +107,7 @@ export class EnrollRadiusComponent implements OnInit {
       this.disabled() ? this.radiusForm.disable({ emitEvent: false }) : this.radiusForm.enable({ emitEvent: false })
     );
     effect(() => {
+      if (!this.systemService.systemConfigResource.hasValue()) return;
       const id = this.systemService.systemConfigResource.value()?.result?.value?.[RADIUS_SERVER];
       if (id && this.radiusServerConfigurationControl.pristine) {
         this.radiusServerConfigurationControl.setValue(id);

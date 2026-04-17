@@ -60,28 +60,28 @@ $input-focus-outline: theme.$focus-outline;
 }
 
 .input-width-s {
-  width: 180px;
-  min-width: 180px;
+  width: 100%;
+  max-width: 180px;
 }
 
 .input-width-m {
-  width: 240px;
-  min-width: 240px;
+  width: 100%;
+  max-width: 240px;
 }
 
 .input-width-l {
-  width: 300px;
-  min-width: 300px;
+  width: 100%;
+  max-width: 300px;
 }
 
 .input-width-xl {
-  width: 616px;
-  min-width: 616px;
+  width: 100%;
+  max-width: 616px;
 }
 
 .input-width-xxl {
-  width: 932px;
-  min-width: 932px;
+  width: 100%;
+  max-width: 932px;
 }
 
 ::ng-deep mat-form-field:has(input):not(.sticky-header *):not(.filter-paginator-container *):not(td *):not(.condition-value-container *):not(.login-form *) {

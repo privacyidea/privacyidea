@@ -21,11 +21,16 @@ import { ContentService } from "../content/content.service";
 import { TestBed } from "@angular/core/testing";
 import { environment } from "../../../environments/environment";
 import { provideHttpClient } from "@angular/common/http";
-import { signal } from "@angular/core";
 import { AuthService } from "../auth/auth.service";
 import { FilterValue } from "../../core/models/filter_value/filter_value";
-import { MockContentService, MockLocalService, MockNotificationService } from "../../../testing/mock-services";
+import {
+  MockContentService,
+  MockLocalService,
+  MockNotificationService,
+  MockPiResponse
+} from "../../../testing/mock-services";
 import { MockAuthService } from "../../../testing/mock-services/mock-auth-service";
+import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
 
 environment.proxyUrl = "/api";
 
@@ -33,12 +38,14 @@ describe("AuditService (signals & helpers)", () => {
   let auditService: AuditService;
   let content: MockContentService;
   let authService: MockAuthService;
+  let httpMock: HttpTestingController;
 
   beforeEach(() => {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(),
+        provideHttpClientTesting(),
         { provide: AuthService, useClass: MockAuthService },
         { provide: ContentService, useClass: MockContentService },
         AuditService,
@@ -49,6 +56,7 @@ describe("AuditService (signals & helpers)", () => {
     auditService = TestBed.inject(AuditService);
     content = TestBed.inject(ContentService) as any;
     authService = TestBed.inject(AuthService) as any;
+    httpMock = TestBed.inject(HttpTestingController);
   });
 
   it("filterParams ignores unknown keys and wildcard‑wraps allowed ones", () => {
@@ -61,13 +69,27 @@ describe("AuditService (signals & helpers)", () => {
     });
   });
 
-  it("auditResource builds a request when route or tab is audit", () => {
+  it("auditResource builds a request when route or tab is audit", async () => {
     jest.clearAllMocks();
     const getHeadersMock = jest.spyOn(authService, "getHeaders");
 
     content.routeUrl.set("/audit");
     auditService.auditResource.reload();
     expect(getHeadersMock).toHaveBeenCalledTimes(1);
+
+    TestBed.tick();
+    const req = httpMock.expectOne((req) => req.url.includes("/audit"));
+    const response = MockPiResponse.fromValue({
+      auditcolumns: [],
+      auditdata: [{ action: "GET /token" }, { action: "GET /audit" }],
+      count: 2,
+      current: 1,
+      next: 1,
+      prev: 1
+    });
+    req.flush(response)
+    await Promise.resolve();
+    TestBed.tick();
   });
 
   it("auditResource becomes active and derived params update", () => {

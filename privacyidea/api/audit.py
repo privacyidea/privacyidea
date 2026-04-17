@@ -144,4 +144,5 @@ def download_csv(csvfile=None):
         del param["timelimit"]
     else:
         timelimit = None
-    return send_file(stream_with_context(audit.csv_generator(param=param, admin_params=admin_params, timelimit=timelimit)), csvfile)
+    return send_file(stream_with_context(
+        audit.csv_generator(param=param, admin_params=admin_params, timelimit=timelimit)), csvfile)

@@ -29,7 +29,6 @@ import { ContainerService } from "../../../services/container/container.service"
 import { ValidateService } from "../../../services/validate/validate.service";
 import { RealmService } from "../../../services/realm/realm.service";
 import { TableUtilsService } from "../../../services/table-utils/table-utils.service";
-import { OverflowService } from "../../../services/overflow/overflow.service";
 import { AuthService } from "../../../services/auth/auth.service";
 import { ContentService } from "../../../services/content/content.service";
 import { MachineService } from "../../../services/machine/machine.service";
@@ -39,7 +38,6 @@ import {
   MockLocalService,
   MockMachineService,
   MockNotificationService,
-  MockOverflowService,
   MockRealmService,
   MockTableUtilsService,
   MockTokenService,
@@ -82,7 +80,6 @@ describe("TokenDetailsComponent", () => {
         { provide: ValidateService, useClass: MockValidateService },
         { provide: RealmService, useClass: MockRealmService },
         { provide: TableUtilsService, useClass: MockTableUtilsService },
-        { provide: OverflowService, useClass: MockOverflowService },
         { provide: AuthService, useClass: MockAuthService },
         { provide: ContentService, useClass: MockContentService },
         { provide: MachineService, useClass: MockMachineService },
@@ -127,7 +124,7 @@ describe("TokenDetailsComponent", () => {
   });
 
   it("renders the token serial in the header", () => {
-    const header = fixture.nativeElement.querySelector(".details-header h3:nth-child(2)");
+    const header = fixture.nativeElement.querySelector(".details-header .token-serial");
     expect(header.textContent).toContain("Mock serial");
   });
 

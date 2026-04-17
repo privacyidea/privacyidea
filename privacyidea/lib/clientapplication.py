@@ -29,7 +29,6 @@ The code is tested in tests/test_lib_clientapplication.py.
 import logging
 import traceback
 from datetime import datetime
-from typing import Union
 
 from netaddr import IPAddress
 from sqlalchemy import func, select
@@ -43,7 +42,7 @@ log = logging.getLogger(__name__)
 
 
 @log_with(log)
-def save_clientapplication(ip: Union[IPAddress, str], clienttype: str):
+def save_clientapplication(ip: IPAddress | str, clienttype: str):
     """
     Save (or update) the IP and the clienttype to the database table.
 

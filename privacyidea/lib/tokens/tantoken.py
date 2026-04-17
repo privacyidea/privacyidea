@@ -151,8 +151,8 @@ class TanTokenClass(PaperTokenClass):
             salt = geturandom(SALT_LENGTH, hex=True)
             # Now we add all TANs to the tokeninfo of this token.
             hashed_tan = hash(tanvalue, salt)
-            self.add_tokeninfo("tan.tan{0!s}".format(tankey),
-                               "{0}:{1}".format(salt, hashed_tan))
+            self.add_tokeninfo(f"tan.tan{tankey!s}",
+                               f"{salt}:{hashed_tan}")
 
     @check_token_otp_length
     def check_otp(self, anOtpVal, counter=None, window=None, options=None):
@@ -182,23 +182,23 @@ class TanTokenClass(PaperTokenClass):
         return res
 
     @staticmethod
-    def get_import_csv(l):
+    def get_import_csv(row):
         """
         Read the list from a csv file and return a dictionary, that can be used
         to do a token_init.
 
-        :param l: The list of the line of a csv file
-        :type l: list
+        :param row: The list of the line of a csv file
+        :type row: list
         :return: A dictionary of init params
         """
-        params = TokenClass.get_import_csv(l)
+        params = TokenClass.get_import_csv(row)
         # Delete the otplen, if it exists. The fourth column is the TANs!
         if "otplen" in params:
             del params["otplen"]
 
         # tans
-        if len(l) >= 4:
-            params["tans"] = l[3]
+        if len(row) >= 4:
+            params["tans"] = row[3]
 
         return params
 

@@ -32,7 +32,7 @@ from privacyidea.lib.utils import is_true
 log = logging.getLogger(__name__)
 
 
-class ACTION_TYPE():
+class ACTION_TYPE:
     """
     Allowed actions
     """
@@ -60,14 +60,14 @@ class RequestManglerEventHandler(BaseEventHandler):
         """
         """
         Usually we would only modify the parameters in the PRE location, so that
-        the request is handled with the modified parameters. 
-        
+        the request is handled with the modified parameters.
+
         But we could also modify the parameters in the POST location, so that the request
         is handled with the original parameters, but *after* the request is handled,
         some parameters can be changed to that an event handler, that is called *After*
         the RequestMangler gets other input parameters.
-        
-        At the time of writing I can not make up a scenario, but technically it could 
+
+        At the time of writing I can not make up a scenario, but technically it could
         make sense.
         """
         return ["post", "pre"]
@@ -151,7 +151,7 @@ class RequestManglerEventHandler(BaseEventHandler):
                         """
                         Note: Beware user supplied format-string like "match_pattern", can
                         be dangerous: http://lucumr.pocoo.org/2016/12/29/careful-with-str-format/
-                        but in our case it is fine because no objects are involved, as m.groups() 
+                        but in our case it is fine because no objects are involved, as m.groups()
                         always returns a tuple of strings
                         """
                         m = re.match("^" + match_pattern + "$", request.all_data.get(match_parameter))

@@ -49,7 +49,6 @@ import { NAVIGATION_ACCESSIBLE_DIALOG_CLASS } from "../../../../constants/global
     class: NAVIGATION_ACCESSIBLE_DIALOG_CLASS
   },
   imports: [
-    CommonModule,
     ReactiveFormsModule,
     MatDialogModule,
     MatFormFieldModule,

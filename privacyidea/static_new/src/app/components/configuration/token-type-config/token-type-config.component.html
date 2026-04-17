@@ -46,7 +46,7 @@
     <app-radius-config
       (formDataChange)="formData.set($event)"
       [formData]="formData()"
-      [radiusServers]="systemService.radiusServerResource.value()?.result?.value ?? []"
+      [radiusServers]="systemService.radiusServers()"
       [expanded]="expandedPanel === 'radius'"></app-radius-config>
     <app-remote-config
       (formDataChange)="formData.set($event)"

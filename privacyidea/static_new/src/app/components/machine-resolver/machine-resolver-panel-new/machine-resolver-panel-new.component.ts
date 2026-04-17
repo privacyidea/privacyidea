@@ -29,7 +29,7 @@ import {
   MachineResolverService,
   MachineResolverServiceInterface
 } from "../../../services/machine-resolver/machine-resolver.service";
-import { CommonModule } from "@angular/common";
+
 import { FormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
 import { DialogService, DialogServiceInterface } from "../../../services/dialog/dialog.service";
@@ -43,7 +43,6 @@ import { lastValueFrom } from "rxjs";
   templateUrl: "./machine-resolver-panel-new.component.html",
   styleUrls: ["./machine-resolver-panel-new.component.scss"],
   imports: [
-    CommonModule,
     MatExpansionModule,
     MatIconModule,
     MatInputModule,

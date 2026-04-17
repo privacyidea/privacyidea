@@ -91,7 +91,7 @@
           <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
             @switch (column.key) {
               @case ("serial") {
-                <div class="flex-row">
+                <div class="flex-row flex-nowrap ali-center">
                   <a
                     (click)="serialClicked(element)"
                     class="flex ali-center">

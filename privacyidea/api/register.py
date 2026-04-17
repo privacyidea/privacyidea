@@ -28,8 +28,8 @@ The methods are tested in the file tests/test_api_register.py
 """
 from flask_babel import _
 from flask import (Blueprint, request, g)
-from .lib.utils import getParam, map_error_to_code, send_error, send_result
-from .lib.utils import required
+from .lib.utils import map_error_to_code, send_error, send_result
+from ..lib.params import get_optional, get_required
 import logging
 from privacyidea.lib.policy import SCOPE
 from ..lib.policies.actions import PolicyAction
@@ -102,13 +102,13 @@ def register_post():
 
     :return: a json result with a boolean "result": true
     """
-    username = getParam(request.all_data, "username", required)
-    surname = getParam(request.all_data, "surname", required)
-    givenname = getParam(request.all_data, "givenname", required)
-    email = getParam(request.all_data, "email", required)
-    password = getParam(request.all_data, "password", required)
-    mobile = getParam(request.all_data, "mobile")
-    phone = getParam(request.all_data, "phone")
+    username = get_required(request.all_data, "username")
+    surname = get_required(request.all_data, "surname")
+    givenname = get_required(request.all_data, "givenname")
+    email = get_required(request.all_data, "email")
+    password = get_required(request.all_data, "password")
+    mobile = get_optional(request.all_data, "mobile")
+    phone = get_optional(request.all_data, "phone")
     options = {"g": g,
                "clientip": g.client_ip}
     g.audit_object.log({"info": username})
@@ -168,14 +168,14 @@ def register_post():
             "Your privacyIDEA registration",
             body.format(regkey=registration_key))
         if not email_sent:
-            log.warning("Failed to send registration email to {0!r}".format(email))
+            log.warning(f"Failed to send registration email to {email!r}")
             # delete registration token
             token.delete_token()
             # delete user
             user.delete()
             raise RegistrationError(_("Failed to send email!"))
 
-        log.debug("Registration email sent to {0!r}".format(email))
+        log.debug(f"Registration email sent to {email!r}")
 
         g.audit_object.log({"success": email_sent})
         return send_result(email_sent)
@@ -185,7 +185,6 @@ def register_post():
             g,
             scope=SCOPE.REGISTER,
             action=PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE,
-            realm=realm,
-        ).any():
+            realm=realm).any():
             return send_error("Failed registering new user", error_code=Error.REGISTRATION), map_error_to_code(e)
         raise

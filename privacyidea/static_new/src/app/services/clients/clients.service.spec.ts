@@ -64,7 +64,7 @@ describe("ClientsService", () => {
   it("should return undefined if route is not CLIENTS", async () => {
     contentService.routeUrl.update(() => ROUTE_PATHS.TOKENS);
     const mockBackend = TestBed.inject(HttpTestingController);
-    TestBed.flushEffects();
+    TestBed.tick();
 
     // Expect and flush the HTTP request
     mockBackend.expectNone(environment.proxyUrl + "/client/");
@@ -76,7 +76,7 @@ describe("ClientsService", () => {
   it("should return correct resource if route is CLIENTS", async () => {
     contentService.routeUrl.update(() => ROUTE_PATHS.CLIENTS);
     const mockBackend = TestBed.inject(HttpTestingController);
-    TestBed.flushEffects();
+    TestBed.tick();
 
     // Expect and flush the HTTP request
     const req = mockBackend.expectOne(environment.proxyUrl + "/client/");

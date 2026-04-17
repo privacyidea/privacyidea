@@ -81,6 +81,7 @@ export class SmtpService implements SmtpServiceInterface {
   });
 
   readonly smtpServers = computed<SmtpServer[]>(() => {
+    if (!this.smtpServerResource.hasValue()) return [];
     const res = this.smtpServerResource.value();
     const values = res?.result?.value;
     if (values) {

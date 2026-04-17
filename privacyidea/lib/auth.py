@@ -21,7 +21,7 @@
 #
 import logging
 
-from sqlalchemy import select, update
+from sqlalchemy import select
 
 from privacyidea.lib.container import find_container_for_token
 from privacyidea.lib.crypto import hash_with_pepper, verify_with_pepper
@@ -34,7 +34,7 @@ from privacyidea.models import Admin, db
 log = logging.getLogger(__name__)
 
 
-class ROLE(object):
+class ROLE:
     ADMIN = "admin"
     USER = "user"
     VALIDATE = "validate"
@@ -97,7 +97,7 @@ def get_db_admin(username: str) -> Admin:
 
 
 def delete_db_admin(username):
-    print("Deleting admin {0!s}".format(username))
+    print(f"Deleting admin {username!s}")
     admin = fetch_one_resource(Admin, username=username)
     db.session.delete(admin)
     db.session.commit()
@@ -146,7 +146,7 @@ def check_webui_user(user, password, options=None, superuser_realms=None, check_
                     except Exception as e:
                         log.debug(f"Could not find container for token {details.get('serial')}: {e}")
         except Exception as e:
-            log.debug("Error authenticating user against privacyIDEA: {0!r}".format(e))
+            log.debug(f"Error authenticating user against privacyIDEA: {e!r}")
     else:
         # check the password of the user against the userstore
         if user.check_password(password):

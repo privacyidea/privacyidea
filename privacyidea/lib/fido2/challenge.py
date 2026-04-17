@@ -1,12 +1,11 @@
 import logging
 import json
 from datetime import datetime, timezone
-from typing import Union
 from dataclasses import dataclass
 from sqlalchemy import select
 from webauthn.helpers import bytes_to_base64url
 
-from privacyidea.api.lib.utils import get_required_one_of, get_optional_one_of, get_required
+from privacyidea.lib.params import get_required_one_of, get_optional_one_of, get_required
 from privacyidea.lib import fido2
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.crypto import geturandom
@@ -28,8 +27,8 @@ def get_fido2_nonce() -> str:
     return bytes_to_base64url(geturandom(32))
 
 
-def create_fido2_challenge(rp_id: str, user_verification: str = "preferred", transaction_id: Union[str, None] = None,
-                           serial: Union[str, None] = None, nonce: Union[str, None] = None) -> dict:
+def create_fido2_challenge(rp_id: str, user_verification: str = "preferred", transaction_id: str | None = None,
+                           serial: str | None = None, nonce: str | None = None) -> dict:
     """
     Returns a fido2 challenge. The challenge validity time is set to either WebauthnChallengeValidityTime,
     DefaultChallengeValidityTime or 120s in that order of evaluation.

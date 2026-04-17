@@ -1,4 +1,4 @@
-from typing import Generator
+from collections.abc import Generator
 
 import click
 from flask.cli import AppGroup
@@ -48,7 +48,8 @@ def _get_container_list(serial: str = None, ctype: str = None, token_serial: str
                             add = False
                 except ResolverError:
                     click.secho(
-                        f"ResolverError. Can't check for orphaned container. It will be ignored for container {container.serial}",
+                        f"ResolverError. Can't check for orphaned container. "
+                        f"It will be ignored for container {container.serial}",
                         fg="red", bold=True, nl=False)
 
             if add:

@@ -18,7 +18,7 @@
  **/
 
 import { Component, input, output, computed } from "@angular/core";
-import { CommonModule } from "@angular/common";
+
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatSelectModule, MatSelectChange } from "@angular/material/select";
 import { MatButtonModule } from "@angular/material/button";
@@ -28,7 +28,7 @@ import { MatIconModule } from "@angular/material/icon";
 @Component({
   selector: "app-multi-select-only",
   standalone: true,
-  imports: [CommonModule, MatFormFieldModule, MatSelectModule, MatButtonModule, MatTooltipModule, MatIconModule],
+  imports: [MatFormFieldModule, MatSelectModule, MatButtonModule, MatTooltipModule, MatIconModule],
   templateUrl: "./multi-select-only.component.html",
   styleUrls: ["./multi-select-only.component.scss"]
 })

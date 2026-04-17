@@ -118,8 +118,7 @@ from privacyidea.lib.user import log_used_user, User, split_user
 from privacyidea.lib.utils import get_client_ip, get_plugin_info_from_useragent, AUTH_RESPONSE
 from privacyidea.lib.utils import is_true, get_computer_name_from_user_agent
 from .lib.policyhelper import check_last_auth_policy, get_realm_for_authentication
-from .lib.utils import getParam, get_required, map_error_to_code, send_error, send_result
-from .lib.utils import required
+from .lib.utils import get_required, map_error_to_code, send_error, send_result
 from ..lib.decorators import (check_user_serial_or_cred_id_in_request)
 from ..lib.fido2.challenge import create_fido2_challenge, verify_fido2_challenge
 from ..lib.fido2.policy_action import FIDO2PolicyAction
@@ -160,7 +159,7 @@ def before_request():
     g.client_ip = get_client_ip(request, get_from_config(SYSCONF.OVERRIDECLIENT))
     # Save the HTTP header in the localproxy object
     g.request_headers = request.headers
-    g.serial = getParam(request.all_data, "serial", default=None)
+    g.serial = get_optional(request.all_data, "serial", default=None)
     ua_name, ua_version, _ua_comment = get_plugin_info_from_useragent(request.user_agent.string)
     g.user_agent = ua_name
 
@@ -182,8 +181,8 @@ def before_request():
                         "user_agent": ua_name,
                         "user_agent_version": ua_version,
                         "privacyidea_server": privacyidea_server,
-                        "action": "{0!s} {1!s}".format(request.method, request.url_rule),
-                        "thread_id": "{0!s}".format(threading.current_thread().ident),
+                        "action": f"{request.method!s} {request.url_rule!s}",
+                        "thread_id": f"{threading.current_thread().ident!s}",
                         "info": ""})
     # Add preliminary user to audit in case we fail with an error
     g.audit_object.log({
@@ -210,9 +209,9 @@ def offlinerefill():
     :return: Hashed OTP values (HOTP) or nothing (WebAuthn/Passkey). Returns an error in case the token has been
      unmarked for offline use or if the refilltoken is incorrect (out of sync).
     """
-    serial = getParam(request.all_data, "serial", required)
-    refilltoken_request = getParam(request.all_data, "refilltoken", required)
-    password = getParam(request.all_data, "pass", required)
+    serial = get_required(request.all_data, "serial")
+    refilltoken_request = get_required(request.all_data, "refilltoken")
+    password = get_required(request.all_data, "pass", allow_empty=True)
     try:
         tokens = get_tokens(serial=serial)
         if len(tokens) != 1:
@@ -259,8 +258,7 @@ def offlinerefill():
                 g,
                 scope=SCOPE.TOKEN,
                 action=PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE_FOR_OFFLINE_REFILL,
-                user_object=request.User if hasattr(request, "User") else None,
-        ).any():
+                user_object=request.User if hasattr(request, "User") else None).any():
             return send_error("Failed offline token refill", error_code=Error.VALIDATE), map_error_to_code(e)
         raise
 
@@ -864,8 +862,8 @@ def trigger_challenge():
 
     """
     user = request.User
-    serial = getParam(request.all_data, "serial")
-    token_type = getParam(request.all_data, "type")
+    serial = get_optional(request.all_data, "serial")
+    token_type = get_optional(request.all_data, "type")
     details = {"messages": [], "transaction_ids": []}
 
     # Add all params to the options
@@ -890,7 +888,7 @@ def trigger_challenge():
         "realm": user.realm,
         "success": result_obj > 0,
         "authentication": r.json.get("result").get("authentication"),
-        "info": log_used_user(user, "triggered {0!s} challenges".format(result_obj)),
+        "info": log_used_user(user, f"triggered {result_obj!s} challenges"),
         "serial": ",".join(challenge_serials),
     })
 
@@ -916,7 +914,7 @@ def poll_transaction(transaction_id=None):
     """
 
     if transaction_id is None:
-        transaction_id = getParam(request.all_data, "transaction_id", required)
+        transaction_id = get_required(request.all_data, "transaction_id")
     # Fetch a list of challenges that are not expired with the given transaction ID
     # and determine whether it contains at least one non-expired answered challenge.
     matching_challenges = [challenge for challenge in get_challenges(transaction_id=transaction_id)

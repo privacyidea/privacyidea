@@ -18,7 +18,7 @@ from sqlalchemy.exc import OperationalError, ProgrammingError, InternalError
 def upgrade():
     try:
         op.add_column('eventhandler', sa.Column('name', sa.Unicode(
-            length=64), default=u""))
+            length=64), default=""))
         op.add_column('eventhandler', sa.Column('active', sa.Boolean(), nullable=True))
     except (OperationalError, ProgrammingError, InternalError) as exx:
         if "duplicate column name" in str(exx.orig).lower():

@@ -1,6 +1,10 @@
 @use "../../../../../styles";
 @use "@angular/material" as mat;
 
+.smtp-dialog-content {
+  min-width: 664px
+}
+
 .checkbox-group {
   display: flex;
   flex-direction: column;

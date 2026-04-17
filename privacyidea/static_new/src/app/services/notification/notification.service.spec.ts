@@ -60,7 +60,7 @@ describe("NotificationService", () => {
 
   beforeEach(() => {
     jest.useFakeTimers();
-    jest.setSystemTime(new Date("2025-01-01T00:00:00.000Z"));
+    jest.setSystemTime(Date.parse("2025-01-01T00:00:00.000Z"));
 
     TestBed.configureTestingModule({
       providers: [

@@ -43,7 +43,7 @@ def cleanup_challenge(chunksize: int, age: int, dryrun: bool = False) -> int:
     if age:
         # Delete challenges created earlier than age minutes ago
         now = datetime.datetime.utcnow() - datetime.timedelta(minutes=age)
-        click.echo("Deleting challenges older than {0!s}".format(now))
+        click.echo(f"Deleting challenges older than {now!s}")
     else:
         # Delete expired challenges
         click.echo("Deleting expired challenges.")
@@ -52,8 +52,8 @@ def cleanup_challenge(chunksize: int, age: int, dryrun: bool = False) -> int:
 
     if dryrun:
         row_count = Challenge.query.filter(criterion).count()
-        click.echo("Would delete {0!s} challenge entries.".format(row_count))
+        click.echo(f"Would delete {row_count!s} challenge entries.")
     else:
         row_count = cleanup_expired_challenges(chunk_size=chunksize, age=age)
-        click.echo("{0!s} entries deleted.".format(row_count))
+        click.echo(f"{row_count!s} entries deleted.")
     return row_count

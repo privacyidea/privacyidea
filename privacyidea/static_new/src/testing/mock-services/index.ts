@@ -1,7 +1,6 @@
 export * from './mock-utils';
 export * from './mock-validate-service';
 export * from './mock-realm-service';
-export * from './mock-overflow-service';
 export * from './mock-table-utils-service';
 export * from './mock-audit-service';
 export * from './mock-local-service';

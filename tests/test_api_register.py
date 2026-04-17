@@ -82,7 +82,7 @@ class RegisterTestCase(MyApiTestCase):
             self.assertEqual(res.status_code, 400, res)
             self.assertEqual(res.json["result"]["error"]["code"], 905, res.json)
             self.assertEqual(res.json["result"]["error"]["message"],
-                             "ERR905: Missing parameter: 'givenname'", res.json)
+                             "ERR905: Missing parameter: givenname", res.json)
 
         # Register fails, missing SMTP config
         with self.app.test_request_context('/register',

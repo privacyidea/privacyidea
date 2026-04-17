@@ -1,6 +1,10 @@
 @use "../../../../../styles";
 @use "@angular/material" as mat;
 
+.sms-gateway-dialog-content {
+  width: 664px;
+}
+
 .parameters-form {
   margin-top: 16px;
   display: flex;

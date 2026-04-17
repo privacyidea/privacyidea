@@ -27,14 +27,14 @@ import { MatInputModule } from "@angular/material/input";
 import { FormsModule } from "@angular/forms";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatSelectModule } from "@angular/material/select";
-import { CommonModule } from "@angular/common";
+
 import { MatButton } from "@angular/material/button";
 
 @Component({
   selector: "app-machine-resolver-ldap-tab",
   templateUrl: "./machine-resolver-ldap-tab.component.html",
   styleUrls: ["./machine-resolver-ldap-tab.component.scss"],
-  imports: [FormsModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatCheckboxModule, CommonModule, MatButton],
+  imports: [FormsModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatCheckboxModule, MatButton],
   standalone: true,
   encapsulation: ViewEncapsulation.ShadowDom
 })

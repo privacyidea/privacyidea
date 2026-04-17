@@ -121,9 +121,9 @@ $button-low-contrast-variant: linear-gradient(
 
 .mat-mdc-outlined-button.card-button-1,
 .mat-mdc-outlined-button[class*="card-button-1"] {
-  --mat-outlined-button-state-layer-color: var(--mat-sys-surface-container-highest);
-  --mat-outlined-button-ripple-color: var(--mat-sys-surface-container-highest);
-  --mdc-ripple-color: var(--mat-sys-surface-container-high);
+  --mat-button-outlined-state-layer-color: var(--mat-sys-surface-container-highest);
+  --mat-button-outlined-ripple-color: var(--mat-sys-surface-container-highest);
+  --mat-ripple-color: var(--mat-sys-surface-container-high);
 
   &:hover {
     background-color: var(--mat-sys-surface-container-high) !important;
@@ -131,13 +131,13 @@ $button-low-contrast-variant: linear-gradient(
 }
 
 .mat-mdc-outlined-button[class*="card-button-active"] {
-  --mdc-ripple-color: var(--mat-sys-surface-container-lowest);
+  --mat-ripple-color: var(--mat-sys-surface-container-lowest);
 }
 
 .mat-mdc-outlined-button[class*="card-button-support"] {
-  --mat-outlined-button-state-layer-color: var(--mint-bg);
-  --mat-outlined-button-ripple-color: var(--mint-bg);
-  --mdc-ripple-color: var(--mat-sys-surface-container-lowest);
+  --mat-button-outlined-state-layer-color: var(--mint-bg);
+  --mat-button-outlined-ripple-color: var(--mint-bg);
+  --mat-ripple-color: var(--mat-sys-surface-container-lowest);
 
   &:hover {
     background-color: var(--mint-bg) !important;
@@ -251,6 +251,7 @@ $button-low-contrast-variant: linear-gradient(
 .enroll-button-container {
   display: flex;
   flex-direction: row;
+  flex-wrap: wrap;
   justify-content: left;
   gap: var(--global-gap);
 }
@@ -459,15 +460,15 @@ $button-low-contrast-variant: linear-gradient(
   background-color: $bg;
 
   @if $layer {
-    --mat-outlined-button-state-layer-color: #{$layer};
+    --mat-button-outlined-state-layer-color: #{$layer};
     --mat-stroked-button-state-layer-color: #{$layer};
   }
   @if $ripple {
-    --mat-outlined-button-ripple-color: #{$ripple};
+    --mat-button-outlined-ripple-color: #{$ripple};
     --mat-stroked-button-ripple-color: #{$ripple};
   }
   @if $ripple-mdc {
-    --mdc-ripple-color: #{$ripple-mdc};
+    --mat-ripple-color: #{$ripple-mdc};
   }
 
   @if not $border {

@@ -1,6 +1,9 @@
 @use "../../../../../styles";
 @use "@angular/material" as mat;
 
+.radius-dialog-content {
+  min-width: 664px
+}
 
 .row {
   display: flex;

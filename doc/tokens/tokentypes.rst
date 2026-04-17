@@ -59,8 +59,6 @@ Some token require prior configuration as described in :ref:`tokentypes_details`
   a QR code.
 * :ref:`totp_token` - time based One Time Password tokens based on
   `RFC6238 <https://tools.ietf.org/html/rfc6238>`_.
-* :ref:`u2f_token` - A U2F device as specified by the FIDO Alliance. This is a USB
-  device to be used for challenge response authentication.
 * :ref:`vasco_token` - The proprietary VASCO token.
 * :ref:`webauthn` - The WebAuthn or FIDO2 token which can use several different mechanisms like
   USB tokens or TPMs to authenticate via public key cryptography.

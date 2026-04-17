@@ -5,14 +5,8 @@
 $gap-small: 8px;
 
 .details-container {
+  @include styles.main-component-style;
   display: grid;
-  border-radius: var(--border-radius);
-  @include mat.elevation(5);
-  background-color: var(--table-color);
-  padding: var(--global-padding);
-  max-height: var(--max-height);
-  overflow-x: hidden;
-  overflow-y: auto;
 
   .mat-mdc-select-value-text {
     font-size: 14px;

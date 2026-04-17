@@ -158,8 +158,9 @@ describe("TokenGetSerialComponent", () => {
       })
       .mockImplementationOnce(() => of(makeSerialResp("BIG-1")));
     component.otpValue.set("000000");
+    TestBed.tick();
     component.countTokens();
-    TestBed.flushEffects();
+
     expect(component.currentStep()).toBe("countDone");
     expect(dialogServiceMock.openDialog).toHaveBeenCalledWith({ component: SearchTokenDialogComponent, data: "150" });
     confirmClosed$.next(true);

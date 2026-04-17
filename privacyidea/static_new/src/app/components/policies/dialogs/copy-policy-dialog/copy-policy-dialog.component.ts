@@ -19,7 +19,7 @@
 
 import { Component, computed } from "@angular/core";
 import { DialogWrapperComponent } from "../../../shared/dialog/dialog-wrapper/dialog-wrapper.component";
-import { CommonModule } from "@angular/common";
+
 import { DialogAction } from "../../../../models/dialog";
 import { AbstractDialogComponent } from "../../../shared/dialog/abstract-dialog/abstract-dialog.component";
 import {
@@ -51,7 +51,7 @@ export function mustBeDifferentValidator(originalValue: string | null): Validato
   host: {
     class: NAVIGATION_ACCESSIBLE_DIALOG_CLASS
   },
-  imports: [DialogWrapperComponent, CommonModule, ReactiveFormsModule, MatFormFieldModule, MatInputModule]
+  imports: [DialogWrapperComponent, ReactiveFormsModule, MatFormFieldModule, MatInputModule]
 })
 export class CopyPolicyDialogComponent extends AbstractDialogComponent<string, string | null> {
   readonly nameControl = new FormControl(this.data, [Validators.required, mustBeDifferentValidator(this.data)]);

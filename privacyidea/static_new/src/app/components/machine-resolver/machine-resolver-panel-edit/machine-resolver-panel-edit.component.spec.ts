@@ -205,7 +205,7 @@ describe("MachineResolverPanelEditComponent", () => {
 
   it("should cancel edit mode if not edited", () => {
     component.isEditMode.set(true);
-    TestBed.flushEffects();
+    TestBed.tick();
     component.cancelEditMode();
     expect(component.isEditMode()).toBeFalsy();
     expect(dialogServiceMock.openDialog).not.toHaveBeenCalled();
@@ -214,7 +214,7 @@ describe("MachineResolverPanelEditComponent", () => {
   it("should cancel edit mode if edited and dialog confirmed", async () => {
     component.isEditMode.set(true);
     component.editedMachineResolver.set({ ...machineResolver, type: "ldap" });
-    TestBed.flushEffects();
+    TestBed.tick();
     expect(component.isEdited()).toBeTruthy();
     const dialogRefMock = new MockMatDialogRef();
     dialogRefMock.afterClosed.mockReturnValue(of(true));
@@ -229,7 +229,7 @@ describe("MachineResolverPanelEditComponent", () => {
   it("should not cancel edit mode if edited and dialog cancelled", () => {
     component.isEditMode.set(true);
     component.editedMachineResolver.set({ ...machineResolver, type: "ldap" });
-    TestBed.flushEffects();
+    TestBed.tick();
     expect(component.isEdited()).toBeTruthy();
     const dialogRefMock = new MockMatDialogRef();
     dialogRefMock.afterClosed.mockReturnValue(of(false));
@@ -272,13 +272,13 @@ describe("MachineResolverPanelEditComponent", () => {
   describe("expansion logic", () => {
     it("should be expanded if contentService matches resolvername", () => {
       contentServiceMock.machineResolver.set("test");
-      TestBed.flushEffects();
+      TestBed.tick();
       expect(component.expanded()).toBeTruthy();
     });
 
     it("should not be expanded if contentService does not match resolvername", () => {
       contentServiceMock.machineResolver.set("other");
-      TestBed.flushEffects();
+      TestBed.tick();
       expect(component.expanded()).toBeFalsy();
     });
 

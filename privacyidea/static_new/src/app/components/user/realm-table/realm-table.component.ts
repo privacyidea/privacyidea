@@ -190,6 +190,7 @@ export class RealmTableComponent {
   });
 
   realmRows = computed<RealmRow[]>(() => {
+    if (!this.realmService.realmResource.hasValue()) return [];
     const realmResource = this.realmService.realmResource.value();
     const realms: Realms | undefined = realmResource?.result?.value as Realms | undefined;
     if (!realms) return [];

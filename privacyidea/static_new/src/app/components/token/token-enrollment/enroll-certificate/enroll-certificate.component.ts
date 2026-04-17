@@ -100,7 +100,9 @@ export class EnrollCertificateComponent implements OnInit {
 
   caConnectorOptions = computed(
     () =>
-      this.systemService.caConnectorResource?.value()?.result?.value.map((config: any) => config.connectorname) || []
+      (this.systemService.caConnectorResource?.hasValue()
+        ? this.systemService.caConnectorResource?.value()?.result?.value.map((config: any) => config.connectorname)
+        : []) || []
   );
 
   caConnectorValueSignal = toSignal(this.caConnectorControl.valueChanges, {

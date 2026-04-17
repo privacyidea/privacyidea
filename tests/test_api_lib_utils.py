@@ -3,8 +3,7 @@ This tests the file api.lib.utils
 """
 from .base import MyApiTestCase
 
-from privacyidea.api.lib.utils import (getParam,
-                                       check_policy_name,
+from privacyidea.api.lib.utils import (check_policy_name,
                                        verify_auth_token, is_fqdn,
                                        attestation_certificate_allowed, get_priority_from_param,
                                        get_required_one_of, get_optional_one_of, get_required, get_optional)
@@ -24,19 +23,23 @@ from privacyidea.lib.token import init_token, remove_token
 class UtilsTestCase(MyApiTestCase):
 
     def test_01_getParam(self):
-        s = getParam({"serial": ""}, "serial", optional=False, allow_empty=True)
+        # allow_empty=True: empty string is returned as-is for required params
+        s = get_required({"serial": ""}, "serial", allow_empty=True)
         self.assertEqual(s, "")
 
-        self.assertRaises(ParameterError, getParam, {"serial": ""}, "serial", optional=False, allow_empty=False)
+        # allow_empty=False (default): empty string raises ParameterError
+        self.assertRaises(ParameterError, get_required, {"serial": ""}, "serial")
 
-        # check for allowed values
-        v = getParam({"sslverify": "0"}, "sslverify", allowed_values=["0", "1"], default="1")
+        # check for allowed_values: value in list is returned
+        v = get_optional({"sslverify": "0"}, "sslverify", allowed_values=["0", "1"], default="1")
         self.assertEqual("0", v)
 
-        v = getParam({"sslverify": "rogue value"}, "sslverify", allowed_values=["0", "1"], default="1")
+        # check for allowed_values: rogue value falls back to default
+        v = get_optional({"sslverify": "rogue value"}, "sslverify", allowed_values=["0", "1"], default="1")
         self.assertEqual("1", v)
 
-        v = getParam({}, "sslverify", allowed_values=["0", "1"], default="1")
+        # check for allowed_values: missing key returns default
+        v = get_optional({}, "sslverify", allowed_values=["0", "1"], default="1")
         self.assertEqual("1", v)
 
     def test_02_check_policy_name(self):

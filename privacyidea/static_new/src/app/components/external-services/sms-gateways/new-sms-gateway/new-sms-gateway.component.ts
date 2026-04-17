@@ -52,7 +52,6 @@ type KeyValueRow = { key: string; value: string };
     class: NAVIGATION_ACCESSIBLE_DIALOG_CLASS
   },
   imports: [
-    CommonModule,
     ReactiveFormsModule,
     FormsModule,
     MatDialogModule,
@@ -102,6 +101,7 @@ export class NewSmsGatewayComponent implements OnInit, OnDestroy {
   headerFooterColumns: string[] = ["footerKey", "footerValue", "footerActions"];
 
   providers = computed<Record<string, SmsProvider>>(() => {
+    if (!this.smsGatewayService.smsProvidersResource.hasValue()) return {};
     return this.smsGatewayService.smsProvidersResource.value()?.result?.value ?? {};
   });
 

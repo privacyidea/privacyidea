@@ -2,16 +2,8 @@
 @use "@angular/material" as mat;
 
 .service-ids-container {
-  @include styles.table-container-styles;
+  @include styles.main-component-style;
   @include styles.base-table-structure(".service-ids-table", ".table-filter", ".table-scroll-container");
-  max-height: var(--max-height);
-  max-width: calc(100vw - var(--global-padding) * 5 - 48px);
-  display: grid;
-  overflow: auto;
-}
-
-.service-ids-layout {
-  padding: 24px;
 }
 
 .actions-container {

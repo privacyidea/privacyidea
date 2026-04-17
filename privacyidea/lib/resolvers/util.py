@@ -23,7 +23,8 @@ from privacyidea.lib.resolvers.HTTPResolver import RequestConfig, HTTPResolver
 
 log = logging.getLogger(__name__)
 
-def delete_user_error_handling_no_content(resolver: HTTPResolver, response: Response, config: RequestConfig, user_identifier: str) -> bool:
+def delete_user_error_handling_no_content(resolver: HTTPResolver, response: Response, config: RequestConfig,
+                                           user_identifier: str) -> bool:
     """
     Handles the error response from the HTTP Resolver user store when deleting a user.
     Does not raise an exception, as this is handled from the API function.

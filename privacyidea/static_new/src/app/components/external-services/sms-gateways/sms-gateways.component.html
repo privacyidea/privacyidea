@@ -16,137 +16,135 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<div class="sms-gateways-layout">
-  <div
-    appScrollToTop
-    class="sms-gateways-container">
-    <div class="filter-paginator-container">
-      <mat-form-field
-        appearance="fill"
-        class="table-filter"
-        subscriptSizing="dynamic">
-        <mat-label i18n>Filter SMS Gateways...</mat-label>
-        <app-clearable-input
-          (onClick)="resetFilter()"
-          [showClearButton]="filterString().length > 0">
-          <input
-            #filterHTMLInputElement
-            (input)="onFilterInput(filterHTMLInputElement.value)"
-            [value]="filterString()"
-            aria-label="Filter Input"
-            i18n-aria-label
-            i18n-placeholder
-            matInput
-            placeholder="Filter by name or provider" />
-        </app-clearable-input>
-      </mat-form-field>
-      <mat-paginator
-        [length]="totalLength()"
-        [pageSizeOptions]="pageSizeOptions()"
-        [pageSize]="pageSizeOptions()[1]"
-        showFirstLastButtons />
-    </div>
-    <div class="actions-container">
-      <button
-        (click)="openEditDialog()"
-        class="action-button-primary button-width-l"
-        i18n
-        mat-stroked-button>
-        <mat-icon>add</mat-icon>
-        Create SMS Gateway
-      </button>
-    </div>
-    <table
-      [dataSource]="smsDataSource()"
-      class="sms-gateways-table"
-      mat-table
-      matSort>
-
-      <ng-container matColumnDef="name">
-        <th
-          *matHeaderCellDef
-          i18n
-          mat-header-cell
-          mat-sort-header> Name
-        </th>
-        <td
-          *matCellDef="let gateway"
-          mat-cell>
-          <div class="flex-row">
-            <a
-              (click)="openEditDialog(gateway)"
-              class="flex ali-center">
-              {{ gateway.name }}
-            </a>
-            <app-copy-button [copyText]="gateway.name" />
-          </div>
-        </td>
-      </ng-container>
-
-      <ng-container matColumnDef="description">
-        <th
-          *matHeaderCellDef
-          i18n
-          mat-header-cell
-          mat-sort-header> Description
-        </th>
-        <td
-          *matCellDef="let gateway"
-          mat-cell> {{ gateway.description }}
-        </td>
-      </ng-container>
-
-      <ng-container matColumnDef="providermodule">
-        <th
-          *matHeaderCellDef
-          i18n
-          mat-header-cell
-          mat-sort-header> Provider Module
-        </th>
-        <td
-          *matCellDef="let gateway"
-          mat-cell> {{ gateway.providermodule.split('.').pop() }}
-        </td>
-      </ng-container>
-
-      <ng-container matColumnDef="actions">
-        <th
-          *matHeaderCellDef
-          i18n
-          mat-header-cell> Actions
-        </th>
-        <td
-          *matCellDef="let gateway"
-          mat-cell>
-          <div class="flex just-center">
-            <button
-              (click)="deleteGateway(gateway)"
-              color="warn"
-              i18n-matTooltip
-              mat-icon-button
-              matTooltip="Delete">
-              <mat-icon>delete</mat-icon>
-            </button>
-          </div>
-        </td>
-      </ng-container>
-
-      <tr
-        *matHeaderRowDef="displayedColumns"
-        mat-header-row></tr>
-      <tr
-        *matRowDef="let row; columns: displayedColumns;"
-        mat-row></tr>
-
-      <tr
-        *matNoDataRow
-        class="mat-row">
-        <td
-          class="mat-cell"
-          colspan="4"
-          i18n>No SMS gateways found.
-        </td>
-      </tr>
-    </table>
+<div
+  appScrollToTop
+  class="sms-gateways-container">
+  <div class="filter-paginator-container">
+    <mat-form-field
+      appearance="fill"
+      class="table-filter"
+      subscriptSizing="dynamic">
+      <mat-label i18n>Filter SMS Gateways...</mat-label>
+      <app-clearable-input
+        (onClick)="resetFilter()"
+        [showClearButton]="filterString().length > 0">
+        <input
+          #filterHTMLInputElement
+          (input)="onFilterInput(filterHTMLInputElement.value)"
+          [value]="filterString()"
+          aria-label="Filter Input"
+          i18n-aria-label
+          i18n-placeholder
+          matInput
+          placeholder="Filter by name or provider" />
+      </app-clearable-input>
+    </mat-form-field>
+    <mat-paginator
+      [length]="totalLength()"
+      [pageSizeOptions]="pageSizeOptions()"
+      [pageSize]="pageSizeOptions()[1]"
+      showFirstLastButtons />
   </div>
+  <div class="actions-container">
+    <button
+      (click)="openEditDialog()"
+      class="action-button-primary button-width-l"
+      i18n
+      mat-stroked-button>
+      <mat-icon>add</mat-icon>
+      Create SMS Gateway
+    </button>
+  </div>
+  <table
+    [dataSource]="smsDataSource()"
+    class="sms-gateways-table"
+    mat-table
+    matSort>
+
+    <ng-container matColumnDef="name">
+      <th
+        *matHeaderCellDef
+        i18n
+        mat-header-cell
+        mat-sort-header> Name
+      </th>
+      <td
+        *matCellDef="let gateway"
+        mat-cell>
+        <div class="flex-row flex-nowrap ali-center">
+          <a
+            (click)="openEditDialog(gateway)"
+            class="flex ali-center">
+            {{ gateway.name }}
+          </a>
+          <app-copy-button [copyText]="gateway.name" />
+        </div>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="description">
+      <th
+        *matHeaderCellDef
+        i18n
+        mat-header-cell
+        mat-sort-header> Description
+      </th>
+      <td
+        *matCellDef="let gateway"
+        mat-cell> {{ gateway.description }}
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="providermodule">
+      <th
+        *matHeaderCellDef
+        i18n
+        mat-header-cell
+        mat-sort-header> Provider Module
+      </th>
+      <td
+        *matCellDef="let gateway"
+        mat-cell> {{ gateway.providermodule.split('.').pop() }}
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="actions">
+      <th
+        *matHeaderCellDef
+        i18n
+        mat-header-cell> Actions
+      </th>
+      <td
+        *matCellDef="let gateway"
+        mat-cell>
+        <div class="flex just-center">
+          <button
+            (click)="deleteGateway(gateway)"
+            color="warn"
+            i18n-matTooltip
+            mat-icon-button
+            matTooltip="Delete">
+            <mat-icon>delete</mat-icon>
+          </button>
+        </div>
+      </td>
+    </ng-container>
+
+    <tr
+      *matHeaderRowDef="displayedColumns"
+      mat-header-row></tr>
+    <tr
+      *matRowDef="let row; columns: displayedColumns;"
+      mat-row></tr>
+
+    <tr
+      *matNoDataRow
+      class="mat-row">
+      <td
+        class="mat-cell"
+        colspan="4"
+        i18n>No SMS gateways found.
+      </td>
+    </tr>
+  </table>
 </div>

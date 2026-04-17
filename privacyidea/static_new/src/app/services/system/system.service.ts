@@ -40,6 +40,7 @@ export interface SystemServiceInterface {
   systemConfig: Signal<any>;
   systemConfigInit: Signal<any>;
   nodes: Signal<NodeInfo[]>;
+  radiusServers: Signal<string[]>;
 
   saveSystemConfig(config: any): Observable<PiResponse<any>>;
 
@@ -81,7 +82,7 @@ export class SystemService implements SystemServiceInterface {
       headers: this.authService.getHeaders()
     };
   });
-  radiusServerResource = httpResource<any>(() => {
+  radiusServerResource = httpResource<PiResponse<string[]>>(() => {
     // Do not load RADIUS server details if the action is not allowed.
     if (!this.authService.actionAllowed("enrollRADIUS")) {
       return undefined;
@@ -115,8 +116,11 @@ export class SystemService implements SystemServiceInterface {
   });
 
   caConnectors: WritableSignal<CaConnectors> = linkedSignal({
-    source: this.caConnectorResource?.value,
-    computation: (source, previous) => source?.result?.value ?? previous?.value ?? []
+    source: () => this.caConnectorResource.hasValue() ? this.caConnectorResource.value() : undefined,
+    computation: (caConnectorResource, previous) => {
+      const caConnectors = caConnectorResource?.result?.value;
+      return caConnectors ?? previous?.value ?? [];
+    }
   });
   nodesResource = httpResource<PiResponse<NodeInfo[]>>(() => {
     if (
@@ -133,13 +137,20 @@ export class SystemService implements SystemServiceInterface {
     };
   });
   systemConfig = computed<any>(() => {
+    if (!this.systemConfigResource.hasValue()) return {};
     return this.systemConfigResource.value()?.result?.value ?? {};
   });
   systemConfigInit = computed<any>(() => {
+    if (!this.systemConfigResource.hasValue()) return {};
     return this.systemConfigResource.value()?.result?.init ?? {};
   });
   nodes = computed<NodeInfo[]>(() => {
+    if (!this.nodesResource.hasValue()) return [];
     return this.nodesResource.value()?.result?.value ?? [];
+  });
+  radiusServers = computed(() => {
+    if (!this.radiusServerResource.hasValue()) return [];
+    return this.radiusServerResource.value()?.result?.value ?? [];
   });
 
   saveSystemConfig(config: any): Observable<PiResponse<any>> {

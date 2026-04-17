@@ -126,8 +126,9 @@ class DayPasswordTokenClass(TotpTokenClass):
                            'value': ["any",
                                      "biometric",
                                      "pin"],
-                           'desc': _('Enforces the privacyIDEA Authenticator App that the token has to be unlocked '
-                                     'with pin or biometric. This needs the privacyIDEA Authenticator app 4.6.1 or higher.')
+                           'desc': _('Enforces the privacyIDEA Authenticator App that the token has to be '
+                                     'unlocked with pin or biometric. This needs the privacyIDEA '
+                                     'Authenticator app 4.6.1 or higher.')
                        },
                        PolicyAction.MAXTOKENUSER: {
                            'type': 'int',
@@ -248,7 +249,7 @@ class DayPasswordTokenClass(TotpTokenClass):
                            otplen,
                            self.get_hashlib(self.hashlib))
         res = hmac2Otp.checkOtp(anOtpVal,
-                                int(1),
+                                1,
                                 symetric=False)
 
         if res != -1:
@@ -265,10 +266,10 @@ class DayPasswordTokenClass(TotpTokenClass):
             lastauth = self._counter2time(oCount, self.timestep)
             lastauthDt = datetime.datetime.fromtimestamp(lastauth / 1.0)
 
-            log.debug("last auth : {0!r}".format(lastauthDt))
-            log.debug("tokentime : {0!r}".format(tokenDt))
-            log.debug("now       : {0!r}".format(nowDt))
-            log.debug("delta     : {0!r}".format((tokentime - inow)))
+            log.debug(f"last auth : {lastauthDt!r}")
+            log.debug(f"tokentime : {tokenDt!r}")
+            log.debug(f"now       : {nowDt!r}")
+            log.debug(f"delta     : {tokentime - inow!r}")
 
         return res
 
@@ -306,9 +307,9 @@ class DayPasswordTokenClass(TotpTokenClass):
                                    challenge=challenge)
 
         pin = self.token.get_pin()
-        combined = "{0!s}{1!s}".format(otpval, pin)
+        combined = f"{otpval!s}{pin!s}"
         if get_from_config("PrependPin") == "True":
-            combined = "{0!s}{1!s}".format(pin, otpval)
+            combined = f"{pin!s}{otpval!s}"
 
         return 1, pin, otpval, combined
 
@@ -417,19 +418,19 @@ class DayPasswordTokenClass(TotpTokenClass):
         return ret
 
     @staticmethod
-    def get_import_csv(l):
+    def get_import_csv(row):
         """
         Read the list from a csv file and return a dictionary, that can be used
         to do a token_init.
 
-        :param l: The list of the line of a csv file
-        :type l: list
+        :param row: The list of the line of a csv file
+        :type row: list
         :return: A dictionary of init params
         """
-        params = TokenClass.get_import_csv(l)
+        params = TokenClass.get_import_csv(row)
         # timeStep
-        if len(l) >= 5:
-            params["timeStep"] = int(l[4].strip())
+        if len(row) >= 5:
+            params["timeStep"] = int(row[4].strip())
         else:
             params["timeStep"] = 30
 

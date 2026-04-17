@@ -270,7 +270,7 @@ describe("ContainerCreateComponent", () => {
     containerServiceMock.containerSerial.set("CONT-OK");
 
     fixture.detectChanges();
-    TestBed.flushEffects();
+    TestBed.tick();
 
     expect(closeSpy).toHaveBeenCalled();
     expect(stopPollingSpy).toHaveBeenCalled();
@@ -292,7 +292,7 @@ describe("ContainerCreateComponent", () => {
     containerServiceMock.containerSerial.set("CONT-WAIT");
 
     fixture.detectChanges();
-    TestBed.flushEffects();
+    TestBed.tick();
 
     expect(closeSpy).not.toHaveBeenCalled();
     expect(openSpy).not.toHaveBeenCalled();
@@ -346,7 +346,7 @@ describe("ContainerCreateComponent", () => {
     containerServiceMock.containerSerial.set("CONT-NO-REG");
 
     fixture.detectChanges();
-    TestBed.flushEffects();
+    TestBed.tick();
 
     expect(stopPollingSpy).toHaveBeenCalled();
     expect(registerSpy).not.toHaveBeenCalled();
@@ -372,7 +372,7 @@ describe("ContainerCreateComponent", () => {
     containerServiceMock.containerSerial.set("CONT-NO-RIGHT");
 
     fixture.detectChanges();
-    TestBed.flushEffects();
+    TestBed.tick();
 
     expect(stopPollingSpy).toHaveBeenCalled();
     expect(registerSpy).not.toHaveBeenCalled();
@@ -515,7 +515,7 @@ describe("ContainerCreateComponent", () => {
       containerServiceMock.containerSerial.set("CONT-GENERIC");
 
       wizardFixture.detectChanges();
-      TestBed.flushEffects();
+      TestBed.tick();
 
       expect(openSpy).toHaveBeenCalled();
       expect(openSpy.mock.calls[0][0]).toBe(ContainerCreatedDialogWizardComponent);
@@ -543,7 +543,7 @@ describe("ContainerCreateComponent", () => {
       containerServiceMock.containerSerial.set("CONT-WIZ-NO-REG");
 
       wizardFixture.detectChanges();
-      TestBed.flushEffects();
+      TestBed.tick();
 
       expect(openSpy).toHaveBeenCalled();
       expect(openSpy.mock.calls[0][0]).toBe(ContainerCreatedDialogWizardComponent);

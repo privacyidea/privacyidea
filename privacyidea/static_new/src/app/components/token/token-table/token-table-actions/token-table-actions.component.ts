@@ -16,8 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, inject } from "@angular/core";
-import { DOCUMENT } from "@angular/common";
+import { Component, inject, DOCUMENT } from "@angular/core";
+
 import { MatButtonModule } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 import { MatTooltipModule } from "@angular/material/tooltip";

@@ -16,7 +16,6 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import logging
-from typing import Optional
 
 from sqlalchemy import Sequence, Unicode, Integer, Boolean, CheckConstraint, JSON
 from sqlalchemy.orm import Mapped, mapped_column
@@ -38,8 +37,8 @@ class PrivacyIDEAServer(MethodsMixin, db.Model):
     identifier: Mapped[str] = mapped_column(Unicode(255), nullable=False, unique=True)
     # This is the FQDN or the IP address
     url: Mapped[str] = mapped_column(Unicode(255), nullable=False)
-    tls: Mapped[Optional[bool]] = mapped_column(Boolean, default=False)
-    description: Mapped[Optional[str]] = mapped_column(Unicode(2000), default='')
+    tls: Mapped[bool | None] = mapped_column(Boolean, default=False)
+    description: Mapped[str | None] = mapped_column(Unicode(2000), default='')
 
 
 class RADIUSServer(MethodsMixin, db.Model):
@@ -69,13 +68,13 @@ class RADIUSServer(MethodsMixin, db.Model):
     identifier: Mapped[str] = mapped_column(Unicode(255), nullable=False, unique=True)
     # This is the FQDN or the IP address
     server: Mapped[str] = mapped_column(Unicode(255), nullable=False)
-    port: Mapped[Optional[int]] = mapped_column(Integer, default=25)
-    secret: Mapped[Optional[str]] = mapped_column(Unicode(255), default="")
-    dictionary: Mapped[Optional[str]] = mapped_column(Unicode(255), default="/etc/privacyidea/dictionary")
-    description: Mapped[Optional[str]] = mapped_column(Unicode(2000), default='')
-    timeout: Mapped[Optional[int]] = mapped_column(Integer, default=5)
-    retries: Mapped[Optional[int]] = mapped_column(Integer, default=3)
-    options: Mapped[Optional[dict]] = mapped_column(JSON)
+    port: Mapped[int | None] = mapped_column(Integer, default=25)
+    secret: Mapped[str | None] = mapped_column(Unicode(255), default="")
+    dictionary: Mapped[str | None] = mapped_column(Unicode(255), default="/etc/privacyidea/dictionary")
+    description: Mapped[str | None] = mapped_column(Unicode(2000), default='')
+    timeout: Mapped[int | None] = mapped_column(Integer, default=5)
+    retries: Mapped[int | None] = mapped_column(Integer, default=3)
+    options: Mapped[dict | None] = mapped_column(JSON)
 
 
 class SMTPServer(MethodsMixin, db.Model):
@@ -93,19 +92,19 @@ class SMTPServer(MethodsMixin, db.Model):
     identifier: Mapped[str] = mapped_column(Unicode(255), nullable=False)
     # This is the FQDN or the IP address
     server: Mapped[str] = mapped_column(Unicode(255), nullable=False)
-    port: Mapped[Optional[int]] = mapped_column(Integer, default=25)
-    username: Mapped[Optional[str]] = mapped_column(Unicode(255), default="")
-    password: Mapped[Optional[str]] = mapped_column(Unicode(255), default="")
-    sender: Mapped[Optional[str]] = mapped_column(Unicode(255), default="")
-    tls: Mapped[Optional[bool]] = mapped_column(Boolean, default=False)
-    description: Mapped[Optional[str]] = mapped_column(Unicode(2000), default='')
-    timeout: Mapped[Optional[int]] = mapped_column(Integer, default=10)
+    port: Mapped[int | None] = mapped_column(Integer, default=25)
+    username: Mapped[str | None] = mapped_column(Unicode(255), default="")
+    password: Mapped[str | None] = mapped_column(Unicode(255), default="")
+    sender: Mapped[str | None] = mapped_column(Unicode(255), default="")
+    tls: Mapped[bool | None] = mapped_column(Boolean, default=False)
+    description: Mapped[str | None] = mapped_column(Unicode(2000), default='')
+    timeout: Mapped[int | None] = mapped_column(Integer, default=10)
     enqueue_job: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     smime: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     dont_send_on_error: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
-    private_key: Mapped[Optional[str]] = mapped_column(Unicode(255), default="")
-    private_key_password: Mapped[Optional[str]] = mapped_column(Unicode(255), default="")
-    certificate: Mapped[Optional[str]] = mapped_column(Unicode(255), default="")
+    private_key: Mapped[str | None] = mapped_column(Unicode(255), default="")
+    private_key_password: Mapped[str | None] = mapped_column(Unicode(255), default="")
+    certificate: Mapped[str | None] = mapped_column(Unicode(255), default="")
 
     def get(self):
         """

@@ -115,6 +115,9 @@ export class MachineResolverService implements MachineResolverServiceInterface {
   });
 
   readonly machineResolvers = computed<MachineResolver[]>(() => {
+    if (!this.machineResolverResource.hasValue()) {
+      return [];
+    }
     const res = this.machineResolverResource.value();
     return res?.result?.value ? Object.values(res.result.value) : [];
   });

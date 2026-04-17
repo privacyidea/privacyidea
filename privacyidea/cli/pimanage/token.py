@@ -41,6 +41,6 @@ def import_tokens(file, tokenrealm):
     i = 0
     for serial in tokens:
         i += 1
-        print(u"{0!s}/{1!s} Importing token {2!s}".format(i, len(tokens), serial))
+        print(f"{i!s}/{len(tokens)!s} Importing token {serial!s}")
 
         import_token(serial, tokens[serial], tokenrealms=tokenrealm)

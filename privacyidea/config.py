@@ -228,7 +228,7 @@ def _get_secrets_from_environment(name: str) -> str | None:
         try:
             with open(file_name) as f:
                 return f.read().strip()
-        except IOError as _e:
+        except OSError as _e:
             sys.stderr.write(f"Could not read secret from file defined in variable '{name}_FILE'\n")
     return os.getenv(name)
 
@@ -253,7 +253,7 @@ class DockerConfig:
         PI_DB_PASSWORD = db_password
 
         if all(x in os.environ for x in [ConfigKey.DB_USER, ConfigKey.DB_HOST]) and PI_DB_PASSWORD:
-            SQLALCHEMY_DATABASE_URI = "{0}://{1}:{2}@{3}{4}/{5}{6}".format(
+            SQLALCHEMY_DATABASE_URI = "{}://{}:{}@{}{}/{}{}".format(
                 os.getenv(ConfigKey.DB_DRIVER, 'mysql+pymysql'),
                 os.getenv(ConfigKey.DB_USER),
                 PI_DB_PASSWORD,

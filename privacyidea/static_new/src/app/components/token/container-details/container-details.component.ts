@@ -41,7 +41,6 @@ import { FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
 import { MatCell, MatColumnDef, MatTableDataSource, MatTableModule } from "@angular/material/table";
 import { MatPaginator, PageEvent } from "@angular/material/paginator";
-import { OverflowService, OverflowServiceInterface } from "../../../services/overflow/overflow.service";
 import { RealmService, RealmServiceInterface } from "../../../services/realm/realm.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "../../../services/table-utils/table-utils.service";
 import { TokenDetails, TokenService, TokenServiceInterface } from "../../../services/token/token.service";
@@ -135,7 +134,6 @@ interface TokenOption {
   styleUrls: ["./container-details.component.scss"]
 })
 export class ContainerDetailsComponent implements OnDestroy {
-  protected readonly overflowService: OverflowServiceInterface = inject(OverflowService);
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   protected readonly realmService: RealmServiceInterface = inject(RealmService);
@@ -158,19 +156,19 @@ export class ContainerDetailsComponent implements OnDestroy {
   pageIndex = this.tokenService.pageIndex;
   pageSize = this.tokenService.pageSize;
   tokenDataSource: WritableSignal<MatTableDataSource<TokenDetails>> = linkedSignal({
-    source: this.tokenResource.value,
-    computation: (tokenResource, previous) => {
-      if (tokenResource && tokenResource.result?.value) {
-        return new MatTableDataSource(tokenResource.result?.value.tokens);
+    source: this.tokenService.tokenResourceValue,
+    computation: (tokenResourceValue, previous) => {
+      if (tokenResourceValue) {
+        return new MatTableDataSource(tokenResourceValue.tokens);
       }
       return previous?.value ?? new MatTableDataSource();
     }
   });
   total: WritableSignal<number> = linkedSignal({
-    source: this.tokenResource.value,
-    computation: (tokenResource, previous) => {
-      if (tokenResource && tokenResource.result?.value) {
-        return tokenResource.result?.value.count;
+    source: this.tokenService.tokenResourceValue,
+    computation: (tokenResourceValue, previous) => {
+      if (tokenResourceValue) {
+        return tokenResourceValue.count;
       }
       return previous?.value ?? 0;
     }
@@ -313,6 +311,7 @@ export class ContainerDetailsComponent implements OnDestroy {
       }
     });
     effect(() => {
+      if (!this.containerDetailResource.hasValue()) return;
       const res = this.containerDetailResource.value();
       if (res && res?.result?.value?.containers.length === 0) {
         setTimeout(() => {

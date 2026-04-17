@@ -53,7 +53,6 @@ storage.
 
 import logging
 import traceback
-from typing import Union, Optional
 
 from privacyidea.lib.log import log_with
 import datetime
@@ -61,7 +60,7 @@ import datetime
 log = logging.getLogger(__name__)
 
 
-class Paginate(object):
+class Paginate:
     """
     This is a pagination object, that is used for searching audit trails.
     """
@@ -79,7 +78,7 @@ class Paginate(object):
         self.total = 0
 
 
-class Audit(object):  # pragma: no cover
+class Audit:  # pragma: no cover
 
     is_readable = False
 
@@ -110,7 +109,7 @@ class Audit(object):  # pragma: no cover
         :type count: int
         :return:
         """
-        self.audit_data['action_detail'] = "tokennum = {0!s}".format(str(count))
+        self.audit_data['action_detail'] = f"tokennum = {str(count)!s}"
 
     @log_with(log)
     def read_keys(self, pub, priv):
@@ -135,7 +134,7 @@ class Audit(object):  # pragma: no cover
             with open(pub, 'rb') as pubkey_file:
                 self.public = pubkey_file.read()
         except Exception as e:
-            log.error("Error reading key file: {0!r})".format(e))
+            log.error(f"Error reading key file: {e!r})")
             log.debug(traceback.format_exc())
             raise e
 
@@ -151,8 +150,8 @@ class Audit(object):  # pragma: no cover
                 'log_level', 'policies', 'clearance_level', 'sig_check',
                 'missing_line', 'resolver', 'thread_id', 'container_serial', 'container_type']
 
-    def get_total(self, param: dict, admin_params: Optional[dict] = None, AND: bool = True, display_error: bool = True,
-                  timelimit: Optional[datetime.timedelta] = None) -> int:
+    def get_total(self, param: dict, admin_params: dict | None = None, AND: bool = True, display_error: bool = True,
+                  timelimit: datetime.timedelta | None = None) -> int:
         """
         This method returns the total number of audit entries
         in the audit store
@@ -198,7 +197,7 @@ class Audit(object):  # pragma: no cover
                     self.audit_data[k] += ","
                 self.audit_data[k] += v
 
-    def add_policy(self, policy_names: Union[set, list, str]):
+    def add_policy(self, policy_names: set | list | str):
         """
         This method adds triggered policy names to the list of triggered policies.
 
@@ -237,8 +236,8 @@ class Audit(object):  # pragma: no cover
 #        """
 #        pass
 
-    def search(self, search_dict: dict, admin_params: Optional[dict] = None, page_size: int = 15, page: int = 1,
-               sortorder: str = "asc", timelimit: Optional[datetime.timedelta] = None):
+    def search(self, search_dict: dict, admin_params: dict | None = None, page_size: int = 15, page: int = 1,
+               sortorder: str = "asc", timelimit: datetime.timedelta | None = None):
         """
         This function is used to search audit events.
 
@@ -267,8 +266,8 @@ class Audit(object):  # pragma: no cover
         """
         return 0
 
-    def csv_generator(self, param: Optional[dict] = None, admin_params: Optional[dict] = None, user=None,
-                      timelimit: Optional[datetime.timedelta] = None):
+    def csv_generator(self, param: dict | None = None, admin_params: dict | None = None, user=None,
+                      timelimit: datetime.timedelta | None = None):
         """
         A generator that can be used to stream the audit log
 
@@ -277,8 +276,8 @@ class Audit(object):  # pragma: no cover
         """
         pass
 
-    def search_query(self, search_dict: dict, admin_params: Optional[dict] = None, page_size: int = 15, page: int = 1,
-                     sortorder: str = "asc", sortname: str = "number", timelimit: Optional[datetime.timedelta] = None):
+    def search_query(self, search_dict: dict, admin_params: dict | None = None, page_size: int = 15, page: int = 1,
+                     sortorder: str = "asc", sortname: str = "number", timelimit: datetime.timedelta | None = None):
         """
         This function returns the audit log as an iterator on the result
         """

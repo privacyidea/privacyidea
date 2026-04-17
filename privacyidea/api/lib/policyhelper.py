@@ -25,7 +25,6 @@ Like policies, that are supposed to read and pass parameters during enrollment o
 import logging
 from dataclasses import dataclass
 from datetime import timedelta, datetime, timezone
-from typing import Union
 
 from privacyidea.lib.container import find_container_for_token, find_container_by_serial
 from privacyidea.lib.error import PolicyError, ResourceNotFoundError
@@ -45,14 +44,14 @@ log = logging.getLogger(__name__)
 
 @dataclass
 class UserAttributes:
-    role: Union[str, None] = None
-    username: Union[str, None] = None
-    realm: Union[str, None] = None
-    resolver: Union[str, None] = None
-    adminuser: Union[str, None] = None
-    adminrealm: Union[str, None] = None
-    additional_realms: Union[list, None] = None
-    user: Union[User, None] = None
+    role: str | None = None
+    username: str | None = None
+    realm: str | None = None
+    resolver: str | None = None
+    adminuser: str | None = None
+    adminrealm: str | None = None
+    additional_realms: list | None = None
+    user: User | None = None
 
 
 @log_with(log)
@@ -84,7 +83,7 @@ def get_init_tokenlabel_parameters(g, params=None, token_type="hotp", user_objec
 
     # check the force_app_pin policy
     app_pin_pols = Match.user(g, scope=SCOPE.ENROLL,
-                              action='{0!s}_{1!s}'.format(token_type, PolicyAction.FORCE_APP_PIN),
+                              action=f'{token_type!s}_{PolicyAction.FORCE_APP_PIN!s}',
                               user_object=user_object).any()
 
     if app_pin_pols:
@@ -92,7 +91,7 @@ def get_init_tokenlabel_parameters(g, params=None, token_type="hotp", user_objec
         params[PolicyAction.APP_FORCE_UNLOCK] = "pin"
 
     app_force_unlock = Match.user(g, scope=SCOPE.ENROLL,
-                                  action='{0!s}_{1!s}'.format(token_type, PolicyAction.APP_FORCE_UNLOCK),
+                                  action=f'{token_type!s}_{PolicyAction.APP_FORCE_UNLOCK!s}',
                                   user_object=user_object).action_values(unique=True)
     if app_force_unlock:
         params[PolicyAction.APP_FORCE_UNLOCK] = list(app_force_unlock)[0]

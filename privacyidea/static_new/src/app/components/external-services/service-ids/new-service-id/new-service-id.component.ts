@@ -27,7 +27,7 @@ import {
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { MatButtonModule } from "@angular/material/button";
-import { CommonModule } from "@angular/common";
+
 import { MatIconModule } from "@angular/material/icon";
 
 import { ROUTE_PATHS } from "../../../../route_paths";
@@ -46,7 +46,6 @@ import { NAVIGATION_ACCESSIBLE_DIALOG_CLASS } from "../../../../constants/global
     class: NAVIGATION_ACCESSIBLE_DIALOG_CLASS
   },
   imports: [
-    CommonModule,
     ReactiveFormsModule,
     MatDialogModule,
     MatFormFieldModule,

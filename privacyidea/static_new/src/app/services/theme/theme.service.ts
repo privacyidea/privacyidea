@@ -17,8 +17,8 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 // src/app/services/theme/theme.service.ts
-import { DOCUMENT } from "@angular/common";
-import { inject, Injectable, Renderer2, RendererFactory2, signal } from "@angular/core";
+
+import { inject, Injectable, Renderer2, RendererFactory2, signal, DOCUMENT } from "@angular/core";
 import { APP_THEME_STORAGE_KEY } from "../../core/constants";
 
 export type ThemeMode = "light" | "dark" | "system";

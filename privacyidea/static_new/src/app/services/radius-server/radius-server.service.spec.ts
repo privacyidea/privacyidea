@@ -23,31 +23,37 @@ import { HttpTestingController, provideHttpClientTesting } from "@angular/common
 import { AuthService } from "../auth/auth.service";
 import { NotificationService } from "../notification/notification.service";
 import { environment } from "../../../environments/environment";
+import { MockAuthService } from "../../../testing/mock-services/mock-auth-service";
+import { MockContentService, MockPiResponse } from "../../../testing/mock-services";
+import { ContentService } from "../content/content.service";
+import { signal } from "@angular/core";
 
 describe("RadiusServerService", () => {
   let service: RadiusServerService;
   let httpMock: HttpTestingController;
   let notificationService: NotificationService;
+  let authServiceMock: MockAuthService;
+  let contentServiceMock: MockContentService;
 
   beforeEach(() => {
-    const authServiceMock = {
-      getHeaders: jest.fn().mockReturnValue({}),
-    };
     const notificationServiceMock = {
-      openSnackBar: jest.fn(),
+      openSnackBar: jest.fn()
     };
 
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
-        { provide: AuthService, useValue: authServiceMock },
+        { provide: AuthService, useClass: MockAuthService },
         { provide: NotificationService, useValue: notificationServiceMock },
+        { provide: ContentService, useClass: MockContentService }
       ]
     });
     service = TestBed.inject(RadiusServerService);
     httpMock = TestBed.inject(HttpTestingController);
     notificationService = TestBed.inject(NotificationService);
+    authServiceMock = TestBed.inject(AuthService) as unknown as MockAuthService;
+    contentServiceMock = TestBed.inject(ContentService) as any;
   });
 
   afterEach(() => {
@@ -79,5 +85,43 @@ describe("RadiusServerService", () => {
 
     await promise;
     expect(notificationService.openSnackBar).toHaveBeenCalledWith("Successfully deleted RADIUS server: test.");
+  });
+
+  describe("radiusServerConfigurations", () => {
+    it("should default to empty array if resource is empty", () => {
+      expect(service.radiusServerConfigurations()).toEqual([]);
+    });
+
+    it("should update radiusServerConfigurations from resource", async () => {
+      contentServiceMock.onExternalRadius = signal(true);
+      TestBed.tick();
+
+      const radiusServers = {
+        server1: { ip: "1.2.3.4", secret: "abc" },
+        server2: { ip: "5.6.7.8", secret: "def" }
+      };
+      const req = httpMock.expectOne(`${environment.proxyUrl}/radiusserver/`);
+      expect(req.request.method).toBe("GET");
+      req.flush(MockPiResponse.fromValue(radiusServers));
+      await Promise.resolve();
+
+      expect(service.radiusServerConfigurations()).toEqual([
+        { name: "server1", ip: "1.2.3.4", secret: "abc" },
+        { name: "server2", ip: "5.6.7.8", secret: "def" }
+      ]);
+    });
+
+    it("should fallback to empty array on error", async () => {
+      contentServiceMock.onExternalRadius = signal(true);
+      TestBed.tick();
+
+      let req = httpMock.expectOne(`${environment.proxyUrl}/radiusserver/`);
+      req.flush(MockPiResponse.fromError({ message: "Permission denied" }), {
+        status: 403, statusText: "Permission denied"
+      });
+      await Promise.resolve();
+
+      expect(service.radiusServerConfigurations()).toEqual([]);
+    });
   });
 });

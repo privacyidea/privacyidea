@@ -16,148 +16,146 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<div class="service-ids-layout">
-  <div
-    appScrollToTop
-    class="service-ids-container">
-    <div class="filter-paginator-container">
-      <mat-form-field
-        appearance="fill"
-        class="table-filter"
-        subscriptSizing="dynamic">
-        <mat-label i18n>Filter Service IDs...</mat-label>
-        <app-clearable-input
-          (onClick)="resetFilter()"
-          [showClearButton]="filterString().length > 0">
-          <input
-            #filterHTMLInputElement
-            (input)="onFilterInput(filterHTMLInputElement.value)"
-            [value]="filterString()"
-            aria-label="Filter Input"
-            i18n-aria-label
-            i18n-placeholder
-            matInput
-            placeholder="Filter by name or description" />
-        </app-clearable-input>
-      </mat-form-field>
-      <mat-paginator
-        [length]="totalLength()"
-        [pageSizeOptions]="pageSizeOptions()"
-        [pageSize]="pageSizeOptions()[1]"
-        showFirstLastButtons />
-    </div>
-    <div class="actions-container margin-bottom-16">
-      <button
-        (click)="openEditDialog()"
-        class="action-button-primary button-width-l"
-        i18n
-        mat-stroked-button>
-        <mat-icon>add</mat-icon>
-        Create Service ID
-      </button>
-
-      <p
-        class="margin-bottom-0 margin-top-0"
-        i18n>
-        Service IDs can be used to attach e.g. SSH keys to certain machines and services.
-        <br />
-        To view attached tokens go to
-        <a [routerLink]="[ROUTE_PATHS.TOKENS_APPLICATIONS]">token applications.</a>
-      </p>
-    </div>
-
-    <table
-      [dataSource]="serviceIdDataSource()"
-      class="service-ids-table"
-      mat-table
-      matSort>
-
-      <ng-container matColumnDef="id">
-        <th
-          *matHeaderCellDef
-          i18n
-          mat-header-cell
-          mat-sort-header> Id
-        </th>
-        <td
-          *matCellDef="let service"
-          mat-cell>
-          {{ service.id }}
-        </td>
-      </ng-container>
-
-      <ng-container matColumnDef="servicename">
-        <th
-          *matHeaderCellDef
-          i18n
-          mat-header-cell
-          mat-sort-header> Name
-        </th>
-        <td
-          *matCellDef="let service"
-          mat-cell>
-          <div class="flex-row">
-            <a
-              (click)="openEditDialog(service)"
-              class="flex ali-center">
-              {{ service.servicename }}
-            </a>
-            <app-copy-button [copyText]="service.servicename" />
-          </div>
-        </td>
-      </ng-container>
-
-      <ng-container matColumnDef="description">
-        <th
-          *matHeaderCellDef
-          i18n
-          mat-header-cell
-          mat-sort-header> Description
-        </th>
-        <td
-          *matCellDef="let service"
-          mat-cell> {{ service.description }}
-        </td>
-      </ng-container>
-
-      <ng-container matColumnDef="actions">
-        <th
-          *matHeaderCellDef
-          i18n
-          mat-header-cell> Actions
-        </th>
-        <td
-          *matCellDef="let service"
-          mat-cell>
-          <div class="flex just-center">
-            <button
-              (click)="deleteServiceId(service)"
-              color="warn"
-              i18n-matTooltip
-              mat-icon-button
-              matTooltip="Delete">
-              <mat-icon>delete</mat-icon>
-            </button>
-          </div>
-        </td>
-      </ng-container>
-
-      <tr
-        *matHeaderRowDef="displayedColumns"
-        mat-header-row></tr>
-      <tr
-        *matRowDef="let row; columns: displayedColumns;"
-        mat-row></tr>
-
-      <tr
-        *matNoDataRow
-        class="mat-row">
-        <td
-          class="mat-cell"
-          colspan="4"
-          i18n>No service IDs found.
-        </td>
-      </tr>
-    </table>
+<div
+  appScrollToTop
+  class="service-ids-container">
+  <div class="filter-paginator-container">
+    <mat-form-field
+      appearance="fill"
+      class="table-filter"
+      subscriptSizing="dynamic">
+      <mat-label i18n>Filter Service IDs...</mat-label>
+      <app-clearable-input
+        (onClick)="resetFilter()"
+        [showClearButton]="filterString().length > 0">
+        <input
+          #filterHTMLInputElement
+          (input)="onFilterInput(filterHTMLInputElement.value)"
+          [value]="filterString()"
+          aria-label="Filter Input"
+          i18n-aria-label
+          i18n-placeholder
+          matInput
+          placeholder="Filter by name or description" />
+      </app-clearable-input>
+    </mat-form-field>
+    <mat-paginator
+      [length]="totalLength()"
+      [pageSizeOptions]="pageSizeOptions()"
+      [pageSize]="pageSizeOptions()[1]"
+      showFirstLastButtons />
   </div>
+  <div class="actions-container margin-bottom-16">
+    <button
+      (click)="openEditDialog()"
+      class="action-button-primary button-width-l"
+      i18n
+      mat-stroked-button>
+      <mat-icon>add</mat-icon>
+      Create Service ID
+    </button>
+
+    <p
+      class="margin-bottom-0 margin-top-0"
+      i18n>
+      Service IDs can be used to attach e.g. SSH keys to certain machines and services.
+      <br />
+      To view attached tokens go to
+      <a [routerLink]="[ROUTE_PATHS.TOKENS_APPLICATIONS]">token applications.</a>
+    </p>
+  </div>
+
+  <table
+    [dataSource]="serviceIdDataSource()"
+    class="service-ids-table"
+    mat-table
+    matSort>
+
+    <ng-container matColumnDef="id">
+      <th
+        *matHeaderCellDef
+        i18n
+        mat-header-cell
+        mat-sort-header> Id
+      </th>
+      <td
+        *matCellDef="let service"
+        mat-cell>
+        {{ service.id }}
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="servicename">
+      <th
+        *matHeaderCellDef
+        i18n
+        mat-header-cell
+        mat-sort-header> Name
+      </th>
+      <td
+        *matCellDef="let service"
+        mat-cell>
+        <div class="flex-row flex-nowrap ali-center">
+          <a
+            (click)="openEditDialog(service)"
+            class="flex ali-center">
+            {{ service.servicename }}
+          </a>
+          <app-copy-button [copyText]="service.servicename" />
+        </div>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="description">
+      <th
+        *matHeaderCellDef
+        i18n
+        mat-header-cell
+        mat-sort-header> Description
+      </th>
+      <td
+        *matCellDef="let service"
+        mat-cell> {{ service.description }}
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="actions">
+      <th
+        *matHeaderCellDef
+        i18n
+        mat-header-cell> Actions
+      </th>
+      <td
+        *matCellDef="let service"
+        mat-cell>
+        <div class="flex just-center">
+          <button
+            (click)="deleteServiceId(service)"
+            color="warn"
+            i18n-matTooltip
+            mat-icon-button
+            matTooltip="Delete">
+            <mat-icon>delete</mat-icon>
+          </button>
+        </div>
+      </td>
+    </ng-container>
+
+    <tr
+      *matHeaderRowDef="displayedColumns"
+      mat-header-row></tr>
+    <tr
+      *matRowDef="let row; columns: displayedColumns;"
+      mat-row></tr>
+
+    <tr
+      *matNoDataRow
+      class="mat-row">
+      <td
+        class="mat-cell"
+        colspan="4"
+        i18n>No service IDs found.
+      </td>
+    </tr>
+  </table>
 </div>

@@ -21,7 +21,8 @@ import {
   AfterViewInit,
   ChangeDetectionStrategy,
   Component,
-  computed, DestroyRef,
+  computed,
+  DestroyRef,
   effect,
   ElementRef,
   inject,
@@ -46,7 +47,7 @@ import { deepCopy } from "../../../utils/deep-copy.utils";
 import { NotificationService } from "../../../services/notification/notification.service";
 import { MatChipsModule } from "@angular/material/chips";
 import { MatAutocompleteModule } from "@angular/material/autocomplete";
-import { CommonModule } from "@angular/common";
+
 import { EventSelectionComponent } from "./event-selection/event-selection.component";
 import { MatTab, MatTabGroup } from "@angular/material/tabs";
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
@@ -78,7 +79,6 @@ export type eventTab = "events" | "action" | "conditions";
     MatSelect,
     MatOption,
     MatAutocompleteModule,
-    CommonModule,
     MatFormFieldModule,
     MatChipsModule,
     MatSelectModule,
@@ -139,14 +139,20 @@ export class EventPanelComponent implements AfterViewInit, OnDestroy {
     // Avoid closing the dialog with pending changes (when clicking next to the dialog or pressing ESC)
     if (this.dialogRef) {
       this.dialogRef.disableClose = true;
-      this.dialogRef.backdropClick().pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
-        this.cancelEdit();
-      });
-      this.dialogRef.keydownEvents().pipe(takeUntilDestroyed(this.destroyRef)).subscribe((event) => {
-        if (event.key === "Escape") {
+      this.dialogRef
+        .backdropClick()
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe(() => {
           this.cancelEdit();
-        }
-      });
+        });
+      this.dialogRef
+        .keydownEvents()
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe((event) => {
+          if (event.key === "Escape") {
+            this.cancelEdit();
+          }
+        });
     }
 
     this.pendingChangesService.registerHasChanges(() => this.hasChanges());

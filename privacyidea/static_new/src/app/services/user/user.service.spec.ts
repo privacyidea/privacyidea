@@ -39,6 +39,7 @@ import { PiResponse } from "../../app.component";
 import { MockAuthService } from "../../../testing/mock-services/mock-auth-service";
 import { environment } from "../../../environments/environment";
 import { NotificationService } from "../notification/notification.service";
+import { signal } from "@angular/core";
 
 function buildUser(username: string): UserData {
   return {
@@ -289,6 +290,23 @@ describe("UserService", () => {
       expect(userService.userAttributesList()).toEqual([]);
     });
 
+    it("userAttributes handle http error of userAttributesResource", async () => {
+      contentServiceMock.onUserDetails = signal(true);
+      TestBed.tick();
+
+      const req = httpMock.expectOne((r) => r.url === "/user/attribute");
+      expect(req.request.method).toBe("GET");
+      req.flush(MockPiResponse.fromError({ message: "Permission denied" }), {
+        status: 403, statusText: "Permission denied"
+      });
+      await Promise.resolve();
+
+      expect(userService.userAttributes()).toEqual({});
+      expect(userService.userAttributesList()).toEqual([]);
+
+      httpMock.expectOne((r) => r.url.includes("/user/editable_attributes"));
+    });
+
     it("resetFilter replaces apiUserFilter with a fresh instance", () => {
       const before = userService.apiUserFilter();
       userService.resetFilter();
@@ -314,6 +332,46 @@ describe("UserService", () => {
     expect(params).not.toHaveProperty("givenname");
     expect(params).toHaveProperty("email", "*alice@test*");
     expect(params).not.toHaveProperty("surname");
+  });
+
+  describe("editableAttributesResource / attributePolicy", () => {
+
+    it("attributePolicy falls back to default when resource empty", () => {
+      expect(userService.attributePolicy()).toEqual({ delete: [], set: {} });
+    });
+
+    it("should update attributePolicy from editableAttributesResource on successful response", async () => {
+      contentServiceMock.onUserDetails = signal(true);
+      TestBed.tick();
+
+      const req = httpMock.expectOne((r) => r.url === "/user/editable_attributes/");
+      expect(req.request.method).toBe("GET");
+      const attributePolicy = { delete: ["test1", "test2"], set: { "test2": ["*"], "test3": ["opt1", "opt2"] } };
+      req.flush(MockPiResponse.fromValue(attributePolicy));
+      await Promise.resolve();
+
+      expect(userService.editableAttributesResource.hasValue()).toBe(true);
+      expect(userService.attributePolicy()).toEqual(attributePolicy);
+
+      httpMock.expectOne((r) => r.url.includes("/user/attribute"));
+    });
+
+    it("should handle error state from smsGatewayResource", async () => {
+      contentServiceMock.onUserDetails = signal(true);
+      TestBed.tick();
+
+      const req = httpMock.expectOne((r) => r.url === "/user/editable_attributes/");
+      expect(req.request.method).toBe("GET");
+      req.flush(MockPiResponse.fromError({ message: "Permission denied" }), {
+        status: 403, statusText: "Permission denied"
+      });
+      await Promise.resolve();
+
+      expect(userService.editableAttributesResource.hasValue()).toBe(false);
+      expect(userService.attributePolicy()).toEqual({ delete: [], set: {} });
+
+      httpMock.expectOne((r) => r.url.includes("/user/attribute"));
+    });
   });
 
   describe("selectedUser", () => {
@@ -374,7 +432,7 @@ describe("UserService", () => {
     it("should return undefined if route is not USER_DETAILS", async () => {
       contentServiceMock.routeUrl.update(() => ROUTE_PATHS.TOKENS);
       const mockBackend = TestBed.inject(HttpTestingController);
-      TestBed.flushEffects();
+      TestBed.tick();
 
       // Expect and flush the HTTP request
       mockBackend.expectNone(environment.proxyUrl + "/user/");
@@ -390,7 +448,7 @@ describe("UserService", () => {
       userService.detailsUsername.set(user);
       userService.selectedUserRealm.set(realm);
       const mockBackend = TestBed.inject(HttpTestingController);
-      TestBed.flushEffects();
+      TestBed.tick();
 
       // Expect and flush the main user details request
       const req = mockBackend.expectOne(environment.proxyUrl + "/user/?user=" + user + "&realm=" + realm);
@@ -404,6 +462,43 @@ describe("UserService", () => {
       expect(userService.userResource.value()).toBeDefined();
       expect(userService.usersResource.value()).toBeUndefined();
     });
+
+    it("should handle http errors", async () => {
+      const realm = "test-realm";
+      const user = "alice";
+      contentServiceMock.routeUrl.update(() => ROUTE_PATHS.USERS_DETAILS + "/" + user);
+      userService.detailsUsername.set(user);
+      userService.selectedUserRealm.set(realm);
+      const mockBackend = TestBed.inject(HttpTestingController);
+      TestBed.tick();
+
+      // Expect and flush an error response
+      const req = mockBackend.expectOne(environment.proxyUrl + "/user/?user=" + user + "&realm=" + realm);
+      req.flush(MockPiResponse.fromError({ message: "Permission denied" }), {
+        status: 403, statusText: "Permission denied"
+      });
+
+      // Ignore and flush all other open requests
+      httpMock.match(() => true).forEach(r => r.flush({ result: {} }));
+
+      await Promise.resolve();
+
+      expect(userService.userResource.hasValue()).toBe(false);
+      expect(userService.usersResource.hasValue()).toBe(false);
+      expect(userService.user()).toEqual({
+        description: "",
+        editable: false,
+        email: "",
+        givenname: "",
+        mobile: "",
+        phone: "",
+        resolver: "",
+        surname: "",
+        userid: "",
+        username: ""
+      });
+      expect(userService.users()).toEqual([]);
+    });
   });
 
   describe("users signal (list)", () => {
@@ -414,31 +509,31 @@ describe("UserService", () => {
     it("should clear users when changing realm even if request fails", async () => {
       contentServiceMock.routeUrl.set(ROUTE_PATHS.USERS);
       userService.selectedUserRealm.set("other");
-      TestBed.flushEffects();
+      TestBed.tick();
       httpMock.match(() => true).forEach(r => r.flush({ result: { value: [] } }));
 
       userService.selectedUserRealm.set("realm1");
       userService.users();
-      TestBed.flushEffects();
+      TestBed.tick();
 
       const req1 = httpMock.expectOne((req) => req.url.includes("/user") && req.params.get("realm") === "realm1");
       req1.flush(MockPiResponse.fromValue([buildUser("user1")]));
       await Promise.resolve();
-      TestBed.flushEffects();
+      TestBed.tick();
 
       expect(userService.users()).toHaveLength(1);
       expect(userService.users()[0].username).toBe("user1");
 
       userService.selectedUserRealm.set("realm2");
       userService.users();
-      TestBed.flushEffects();
+      TestBed.tick();
 
       expect(userService.users()).toHaveLength(0);
 
       const req2 = httpMock.expectOne((req) => req.url.includes("/user") && req.params.get("realm") === "realm2");
       req2.flush("Error", { status: 500, statusText: "Server Error" });
       await Promise.resolve();
-      TestBed.flushEffects();
+      TestBed.tick();
 
       expect(userService.users()).toHaveLength(0);
     });

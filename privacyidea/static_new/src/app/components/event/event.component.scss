@@ -7,16 +7,11 @@
 }
 
 .events-table-container {
-  @include styles.table-container-styles;
+  @include styles.main-component-style;
   @include styles.base-table-structure(".event-handler-table", ".event-handler-table-filter", ".table-scroll-container");
-  max-height: var(--max-height);
-  max-width: calc(100vw - var(--drawer-width) - 2 * var(--double-global-padding));
-  overflow: auto;
-  display: grid;
 }
 
 .event-handler-table {
-  td.mat-mdc-cell,
   td.mat-mdc-footer-cell {
     padding-top: 8px;
     padding-bottom: 8px;

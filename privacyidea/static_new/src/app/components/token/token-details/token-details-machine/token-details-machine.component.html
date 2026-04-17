@@ -18,10 +18,7 @@
 -->
 @for (machine of machineData(); track machine.id) {
   <div
-    [ngClass]="{
-      'pad-0': overflowService.isWidthOverflowing('body', 1310)
-    }"
-    class="info-container">
+    class="info-container responsive-pad-0-1310">
     <span
       class="info-title details-key-row"
       i18n>

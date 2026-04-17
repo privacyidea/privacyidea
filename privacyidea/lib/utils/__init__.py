@@ -40,7 +40,6 @@ from datetime import time as dt_time
 from datetime import timedelta, datetime
 from importlib import import_module
 from importlib import metadata
-from typing import Union
 
 import segno
 import sqlalchemy
@@ -63,7 +62,7 @@ CHARLIST_CONTENTPOLICY = {"c": string.ascii_letters,  # characters
                           "s": string.punctuation}  # special
 
 
-class AUTH_RESPONSE(object):
+class AUTH_RESPONSE:
     __doc__ = """The return value in "result->authentication".
     CHALLENGE indicates the start of a challenge and
     DECLINED indicates a declined challenge, which e.g. happens with PUSH tokens, if the user declines the
@@ -167,7 +166,7 @@ def to_utf8(password):
         except (UnicodeDecodeError, AttributeError) as _exx:
             # In case the password is already an encoded string, we fail to
             # encode it again...
-            log.debug("Failed to convert password: {0!s}".format(type(password)))
+            log.debug(f"Failed to convert password: {type(password)!s}")
     return password
 
 
@@ -392,7 +391,7 @@ def sanity_name_check(name, name_exp=r"^[A-Za-z0-9_\-\.]+$"):
     """
     if re.match(name_exp, name) is None:
         raise Exception("non conformant characters in the name"
-                        ": %r (not in %s)" % (name, name_exp))
+                        f": {name!r} (not in {name_exp})")
     return True
 
 
@@ -435,8 +434,8 @@ def get_data_from_params(params, exclude_params, config_description, module,
                 if k in config_description:
                     types[k] = config_description.get(k)
                 else:
-                    log.warning("the passed key '{0!s}' is not a parameter for "
-                                "the {1!s} type '{2!s}'".format(k, module, type))
+                    log.warning(f"the passed key '{k!s}' is not a parameter for "
+                                f"the {module!s} type '{type!s}'")
 
     # Check that there is no type or desc without the data itself.
     # i.e. if there is a type.BindPW=password, then there must be a
@@ -450,7 +449,7 @@ def get_data_from_params(params, exclude_params, config_description, module,
             _missing = True
     if _missing:
         raise Exception("type or description without necessary data!"
-                        " {0!s}".format(params))
+                        f" {params!s}")
 
     return data, types, desc
 
@@ -534,7 +533,7 @@ def parse_date(date_string):
         d = parse_date_string(date_string,
                               dayfirst=re.match(r"^\d\d[/.]", date_string))
     except ValueError:
-        log.debug("Dateformat {0!s} could not be parsed".format(date_string))
+        log.debug(f"Dateformat {date_string!s} could not be parsed")
 
     return d
 
@@ -606,9 +605,9 @@ def check_proxy(path_to_client, proxy_settings):
         proxy_dict = parse_proxy(proxy_settings)
     except AddrFormatError:
         log.error("Error parsing the OverrideAuthorizationClient setting: "
-                  "{0!s}! The IP addresses need to be comma separated. Fix "
-                  "this. The client IP will not be mapped!".format(proxy_settings))
-        log.debug("{0!s}".format(traceback.format_exc()))
+                  f"{proxy_settings!s}! The IP addresses need to be comma separated. Fix "
+                  "this. The client IP will not be mapped!")
+        log.debug(f"{traceback.format_exc()!s}")
         return path_to_client[0]
 
     # We extract the IP from ``path_to_client`` that should be considered the "real" client IP by privacyIDEA.
@@ -625,11 +624,10 @@ def check_proxy(path_to_client, proxy_settings):
     #   as the proxy path does not match completely because 10.2.3.4 is not allowed to map to 192.168.1.1.
     # After having processed all paths in the proxy settings, we return the "deepest" IP from ``path_to_client`` that
     # is allowed according to any proxy path of the proxy settings.
-    log.debug("Determining the mapped IP from {!r} given the proxy settings {!r} ...".format(
-        path_to_client, proxy_settings))
+    log.debug(f"Determining the mapped IP from {path_to_client!r} given the proxy settings {proxy_settings!r} ...")
     max_idx = 0
     for proxy_path in proxy_dict:
-        log.debug("Proxy path: {!r}".format(proxy_path))
+        log.debug(f"Proxy path: {proxy_path!r}")
         # If the proxy path contains more subnets than the path to the client, we already know that it cannot match.
         if len(proxy_path) > len(path_to_client):
             log.debug("... ignored because it is longer than the path to the client")
@@ -642,7 +640,7 @@ def check_proxy(path_to_client, proxy_settings):
             # We check if the network in the proxy path contains the IP from path_to_client.
             if client_path_ip not in proxy_path_ip:
                 # If not, the current proxy path does not match and we do not have to keep checking it.
-                log.debug("... ignored because {!r} is not in subnet {!r}".format(client_path_ip, proxy_path_ip))
+                log.debug(f"... ignored because {client_path_ip!r} is not in subnet {proxy_path_ip!r}")
                 break
             else:
                 current_max_idx = idx
@@ -650,10 +648,10 @@ def check_proxy(path_to_client, proxy_settings):
             # This branch is only executed if we did *not* break out of the loop. This means that the proxy path
             # completely matches the path to client, so the mapped client IP is a viable candidate.
             if current_max_idx >= max_idx:
-                log.debug("... setting new candidate for client IP: {!r}".format(path_to_client[current_max_idx]))
+                log.debug(f"... setting new candidate for client IP: {path_to_client[current_max_idx]!r}")
             max_idx = max(max_idx, current_max_idx)
 
-    log.debug("Determined mapped client IP: {!r}".format(path_to_client[max_idx]))
+    log.debug(f"Determined mapped client IP: {path_to_client[max_idx]!r}")
     return path_to_client[max_idx]
 
 
@@ -720,7 +718,7 @@ def check_ip_in_policy(client_ip, policy):
         if ipdef[0] in ['-', '!']:
             # exclude the client?
             if IPAddress(client_ip) in IPNetwork(ipdef[1:]):
-                log.debug("the client {0!s} is excluded by {1!s}".format(client_ip, ipdef))
+                log.debug(f"the client {client_ip!s} is excluded by {ipdef!s}")
                 client_excluded = True
         elif IPAddress(client_ip) in IPNetwork(ipdef):
             client_found = True
@@ -856,7 +854,7 @@ def parse_timedelta(s):
     days = 0
     m = re.match(r"\s*([+-]?)\s*(\d+)\s*([smhdy])\s*$", s)
     if not m:
-        log.warning("Unsupported timedelta: {0!r}".format(s))
+        log.warning(f"Unsupported timedelta: {s!r}")
         raise TypeError(f"Unsupported timedelta {s!r}")
     count = int(m.group(2))
     if m.group(1) == "-":
@@ -997,7 +995,7 @@ def fetch_one_resource(table, **query):
     try:
         return table.query.filter_by(**query).one()
     except sqlalchemy.orm.exc.NoResultFound:
-        raise ResourceNotFoundError("The requested {!s} could not be found.".format(table.__name__))
+        raise ResourceNotFoundError(f"The requested {table.__name__!s} could not be found.")
 
 
 def truncate_comma_list(data, max_len):
@@ -1017,7 +1015,7 @@ def truncate_comma_list(data, max_len):
     if len(data) >= max_len:
         r = ",".join(data)[:max_len]
         # Also mark this string
-        r = "{0!s}+".format(r[:-1])
+        r = f"{r[:-1]!s}+"
         return r
 
     while len(",".join(data)) > max_len:
@@ -1026,7 +1024,7 @@ def truncate_comma_list(data, max_len):
         for d in data:
             if d == longest:
                 # Shorten the longest and mark with "+"
-                d = "{0!s}+".format(d[:-2])
+                d = f"{d[:-2]!s}+"
             new_data.append(d)
         data = new_data
     return ",".join(data)
@@ -1111,7 +1109,7 @@ def check_pin_contents(pin, policy):
     for str in charlists_dict["requirements"]:
         if not re.search(re.compile('[' + re.escape(str) + ']'), pin):
             ret = False
-            comment.append("Missing character in PIN: {0!s}".format(str))
+            comment.append(f"Missing character in PIN: {str!s}")
 
     return ret, ",".join(comment)
 
@@ -1137,12 +1135,12 @@ def get_module_class(package_name, class_name, check_method=None):
     """
     mod = import_module(package_name)
     if not hasattr(mod, class_name):
-        raise ImportError("{0} has no attribute {1}".format(package_name, class_name))
+        raise ImportError(f"{package_name} has no attribute {class_name}")
     klass = getattr(mod, class_name)
-    log.debug("klass: {0!s}".format(klass))
+    log.debug(f"klass: {klass!s}")
     if check_method and not hasattr(klass, check_method):
-        raise NameError("Class AttributeError: {0}.{1} "
-                        "instance has no attribute '{2}'".format(package_name, class_name, check_method))
+        raise NameError(f"Class AttributeError: {package_name}.{class_name} "
+                        f"instance has no attribute '{check_method}'")
     return klass
 
 
@@ -1164,7 +1162,7 @@ def get_version():
     self-service portal.
     """
     version = get_version_number()
-    return "privacyIDEA {0!s}".format(version)
+    return f"privacyIDEA {version!s}"
 
 
 def prepare_result(obj, rid=1, details=None, **kwargs):
@@ -1333,7 +1331,7 @@ def check_serial_valid(serial):
     :return: True or Exception
     """
     if not re.match(ALLOWED_SERIAL, serial):
-        raise ParameterError("Invalid serial number. Must comply to {0!s}.".format(ALLOWED_SERIAL))
+        raise ParameterError(f"Invalid serial number. Must comply to {ALLOWED_SERIAL!s}.")
     return True
 
 
@@ -1366,7 +1364,7 @@ def determine_logged_in_userparams(logged_in_user, params):
     elif role == "user":
         pass
     else:
-        raise PolicyError("Unknown role: {}".format(role))
+        raise PolicyError(f"Unknown role: {role}")
 
     return role, username, realm, admin_user, admin_realm
 
@@ -1424,14 +1422,14 @@ def convert_imagefile_to_dataimage(imagepath):
     try:
         mime, _ = mimetypes.guess_type(imagepath)
         if not mime:
-            log.warning("Unknown file type in file {0!s}.".format(imagepath))
+            log.warning(f"Unknown file type in file {imagepath!s}.")
             return ""
         with open(imagepath, "rb") as f:
             data = f.read()
             data64 = base64.b64encode(data)
-        return "data:{0!s};base64,{1!s}".format(mime, to_unicode(data64))
+        return f"data:{mime!s};base64,{to_unicode(data64)!s}"
     except FileNotFoundError:
-        log.warning("The file {0!s} could not be found.".format(imagepath))
+        log.warning(f"The file {imagepath!s} could not be found.")
         return ""
 
 
@@ -1460,7 +1458,7 @@ def get_plugin_info_from_useragent(useragent):
         return "", None, None
 
 
-def get_computer_name_from_user_agent(user_agent: str) -> Union[str, None]:
+def get_computer_name_from_user_agent(user_agent: str) -> str | None:
     """
     Searches for entries in the user agent that could identify the machine.
     Example: ComputerName/Laptop-3324231
@@ -1485,7 +1483,7 @@ def get_computer_name_from_user_agent(user_agent: str) -> Union[str, None]:
         if key in user_agent:
             try:
                 return user_agent.split(key + "/")[1].split(" ")[0]
-            except Exception as ex:
+            except Exception:
                 # This exception is likely to happen, because words/parts like "Mac" are common
                 # log.debug(f"Could not extract computer name from user agent: {ex} with key {key}")
                 pass

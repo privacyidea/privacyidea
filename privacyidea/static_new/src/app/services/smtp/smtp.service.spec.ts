@@ -24,18 +24,22 @@ import { HttpTestingController, provideHttpClientTesting } from "@angular/common
 import { AuthService } from "../auth/auth.service";
 import { NotificationService } from "../notification/notification.service";
 import { environment } from "../../../environments/environment";
+import { signal } from "@angular/core";
+import { MockContentService, MockPiResponse } from "../../../testing/mock-services";
+import { ContentService } from "../content/content.service";
 
 describe("SmtpService", () => {
   let service: SmtpService;
   let httpMock: HttpTestingController;
   let notificationService: NotificationService;
+  let contentService: MockContentService;
 
   beforeEach(() => {
     const authServiceMock = {
-      getHeaders: jest.fn().mockReturnValue({}),
+      getHeaders: jest.fn().mockReturnValue({})
     };
     const notificationServiceMock = {
-      openSnackBar: jest.fn(),
+      openSnackBar: jest.fn()
     };
 
     TestBed.configureTestingModule({
@@ -44,11 +48,13 @@ describe("SmtpService", () => {
         provideHttpClientTesting(),
         { provide: AuthService, useValue: authServiceMock },
         { provide: NotificationService, useValue: notificationServiceMock },
+        { provide: ContentService, useClass: MockContentService }
       ]
     });
     service = TestBed.inject(SmtpService);
     httpMock = TestBed.inject(HttpTestingController);
     notificationService = TestBed.inject(NotificationService);
+    contentService = TestBed.inject(ContentService) as unknown as MockContentService;
   });
 
   afterEach(() => {
@@ -93,5 +99,51 @@ describe("SmtpService", () => {
     const result = await promise;
     expect(result).toBe(true);
     expect(notificationService.openSnackBar).toHaveBeenCalledWith("Test email sent successfully.");
+  });
+
+  describe("smtpServers", () => {
+
+    it("smsGateways falls back to default when resource empty", () => {
+      expect(service.smtpServers()).toEqual([]);
+    });
+
+    it("should update smtpServers from smtpServerResource on successful response", async () => {
+      contentService.onExternalSmtp = signal(true);
+      TestBed.tick();
+
+      const req = httpMock.expectOne((r) => r.url === "/smtpserver/");
+      expect(req.request.method).toBe("GET");
+      const smtpServers = {
+        "test": {
+          identifier: "test",
+          server: "",
+          port: 25,
+          timeout: 120,
+          sender: "",
+          tls: true,
+          enqueue_job: false,
+          smime: false,
+          dont_send_on_error: true
+        }
+      };
+      req.flush(MockPiResponse.fromValue(smtpServers));
+      await Promise.resolve();
+
+      expect(service.smtpServers()).toEqual([smtpServers.test]);
+    });
+
+    it("should handle error state from smtpServerResource", async () => {
+      contentService.onExternalSmtp = signal(true);
+      TestBed.tick();
+
+      const req = httpMock.expectOne((r) => r.url === "/smtpserver/");
+      expect(req.request.method).toBe("GET");
+      req.flush(MockPiResponse.fromError({ message: "Permission denied" }), {
+        status: 403, statusText: "Permission denied"
+      });
+      await Promise.resolve();
+
+      expect(service.smtpServers()).toEqual([]);
+    });
   });
 });

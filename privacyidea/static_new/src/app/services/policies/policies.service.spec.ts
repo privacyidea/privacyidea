@@ -27,11 +27,15 @@ import { NotificationService } from "../notification/notification.service";
 import { MockContentService, MockPiResponse } from "src/testing/mock-services";
 import { MockAuthService } from "src/testing/mock-services/mock-auth-service";
 import { MockNotificationService } from "src/testing/mock-services/mock-notification-service";
+import { signal } from "@angular/core";
 
 describe("PolicyService", () => {
   let service: PolicyService;
   let httpTestingController: HttpTestingController;
   let notificationService: MockNotificationService;
+  let authService: MockAuthService;
+  let contentService: MockContentService;
+
   beforeEach(() => {
     TestBed.configureTestingModule({
       providers: [
@@ -46,6 +50,8 @@ describe("PolicyService", () => {
     service = TestBed.inject(PolicyService);
     httpTestingController = TestBed.inject(HttpTestingController);
     notificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;
+    authService = TestBed.inject(AuthService) as unknown as MockAuthService;
+    contentService = TestBed.inject(ContentService) as unknown as MockContentService;
   });
   afterEach(() => {
     httpTestingController.verify();
@@ -392,7 +398,7 @@ describe("PolicyService", () => {
         await new Promise(resolve => process.nextTick(resolve));
 
         // Handle failed PATCH request
-        const patchReq = httpTestingController.expectOne(req => req.method === 'PATCH' && req.url === `${service.policyBaseUrl}${originalPolicy.name}`);
+        const patchReq = httpTestingController.expectOne(req => req.method === "PATCH" && req.url === `${service.policyBaseUrl}${originalPolicy.name}`);
         patchReq.flush({
           result: {
             error: {
@@ -439,6 +445,101 @@ describe("PolicyService", () => {
         expect(result).toBe(false);
         expect(notificationService.openSnackBar).toHaveBeenCalledWith("Saving policy failed");
       });
+    });
+  });
+
+  describe("allPolicies", () => {
+
+    it("Default should be an empty list", () => {
+      expect(service.allPolicies()).toEqual([]);
+    });
+
+    it("Should read policies from allPoliciesResource", async () => {
+      authService.actionAllowed = jest.fn().mockReturnValue(true);
+      contentService.onPolicies = signal(true);
+      TestBed.tick();
+
+      const req = httpTestingController.expectOne((r) => r.url === "/policy/");
+      expect(req.request.method).toBe("GET");
+      const policies = [{
+        action: {},
+        active: true,
+        adminrealm: [],
+        adminuser: [],
+        check_all_resolvers: false,
+        client: [],
+        conditions: [],
+        description: "Test description",
+        name: "Test",
+        pinode: [],
+        realm: [],
+        resolver: [],
+        scope: "user",
+        time: "",
+        user: [],
+        user_agents: [],
+        user_case_insensitive: false
+      }];
+      req.flush(MockPiResponse.fromValue(policies));
+      await Promise.resolve();
+
+      expect(service.allPolicies()).toEqual(policies);
+
+      httpTestingController.expectOne((r) => r.url === "/policy/defs");
+    });
+
+    it("Should handle http error from allPoliciesResource", async () => {
+      authService.actionAllowed = jest.fn().mockReturnValue(true);
+      contentService.onPolicies = signal(true);
+      TestBed.tick();
+
+      const req = httpTestingController.expectOne((r) => r.url === "/policy/");
+      expect(req.request.method).toBe("GET");
+      req.flush(MockPiResponse.fromError({ message: "Permission denied" }), {
+        status: 403, statusText: "Permission denied"
+      });
+      await Promise.resolve();
+
+      expect(service.allPolicies()).toEqual([]);
+
+      httpTestingController.expectOne((r) => r.url === "/policy/defs");
+    });
+  });
+
+  describe("policyActions", () => {
+
+    it("Default should be an empty dict", () => {
+      expect(service.policyActions()).toEqual({});
+    });
+
+    it("Should read policy actions from policyActionResource", async () => {
+      contentService.onPolicies = signal(true);
+      TestBed.tick();
+
+      const req = httpTestingController.expectOne((r) => r.url === "/policy/defs");
+      expect(req.request.method).toBe("GET");
+      const policyActions = {admin: {}, user: {}};
+      req.flush(MockPiResponse.fromValue(policyActions));
+      await Promise.resolve();
+
+      expect(service.policyActions()).toEqual(policyActions);
+    });
+
+    it("Should handle http error from policyActionResource", async () => {
+      contentService.onPolicies = signal(true);
+      TestBed.tick();
+
+      const req = httpTestingController.expectOne((r) => r.url === "/policy/defs");
+      expect(req.request.method).toBe("GET");
+      req.flush(MockPiResponse.fromError({ message: "Permission denied" }), {
+        status: 403, statusText: "Permission denied"
+      });
+      await Promise.resolve();
+
+      expect(service.policyActions()).toEqual({});
+      expect(service.allPolicyActionsFlat()).toEqual({});
+      expect(service.allPolicyScopes()).toEqual([]);
+      expect(service.policyActionsByGroup()).toEqual({});
     });
   });
 });

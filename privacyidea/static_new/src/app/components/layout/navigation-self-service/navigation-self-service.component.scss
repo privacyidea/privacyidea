@@ -19,7 +19,6 @@
 
 .user-details-container {
   width: 12rem;
-  max-width: 12vw;
   border-radius: var(--border-radius);
   background-color: var(--mat-sys-surface-container-low);
   @include mat.elevation(3);

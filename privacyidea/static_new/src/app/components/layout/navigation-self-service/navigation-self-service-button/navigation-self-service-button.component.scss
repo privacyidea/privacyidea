@@ -5,13 +5,11 @@
 
 .tile-size-scope {
   --tile-width: 12rem;
-  --tile-max-width: 12vw;
   --tile-height: calc(var(--tile-width) / 1.618); // Golden ratio
 }
 
 .tile-size-scope .tile-button {
   width: var(--tile-width);
-  max-width: var(--tile-max-width);
   height: var(--tile-height);
   border-radius: var(--border-radius);
   background-color: var(--mat-sys-surface-container-low);
@@ -25,7 +23,6 @@
 
 .tile-size-scope .tile-button-content {
   width: var(--tile-width);
-  max-width: var(--tile-max-width);
   height: var(--tile-height);
   display: flex;
   flex-direction: column;

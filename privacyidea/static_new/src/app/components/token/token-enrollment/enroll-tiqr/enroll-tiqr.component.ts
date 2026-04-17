@@ -60,6 +60,7 @@ export class EnrollTiqrComponent implements OnInit {
 
   disabled = input<boolean>(false);
   defaultTiQRIsSet = computed(() => {
+    if (!this.systemService.systemConfigResource.hasValue()) return false;
     const cfg = this.systemService.systemConfigResource.value()?.result?.value;
     return !!(cfg?.[TIQR_INFO_URL] && cfg?.[TIQR_LOGO_URL] && cfg?.[TIQR_REG_SERVER]);
   });

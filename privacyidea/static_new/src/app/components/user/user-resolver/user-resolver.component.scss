@@ -8,12 +8,9 @@
 }
 
 .user-sources-table-container {
-  @include table.table-container-styles;
+  @include styles.main-component-style;
   @include table.base-table-structure(".user-sources-table", ".table-filter", ".table-scroll-container");
-  max-height: var(--max-height);
-  max-width: calc(100vw - var(--global-padding) * 5 - 48px);
-  display: grid;
-  overflow: auto;
+  min-width: 616px;
 }
 
 .new-resolver-footer-row {
@@ -30,10 +27,10 @@
 .resolver-link {
   cursor: pointer;
   text-decoration: underline;
-  color: var(--mdc-theme-primary);
+  color: var(--mat-theme-primary);
 
   &:hover {
-    color: var(--mdc-theme-secondary);
+    color: var(--mat-theme-secondary);
   }
 }
 

@@ -58,13 +58,12 @@
     <div class="margin-bottom-16">
       <app-token-table-actions />
     </div>
-    <div class="table-container">
-      <table
-        [dataSource]="tokenDataSource()"
-        aria-label="Token Data Table"
-        class="token-table"
-        i18n-aria-label
-        mat-table>
+    <table
+      [dataSource]="tokenDataSource()"
+      aria-label="Token Data Table"
+      class="token-table"
+      i18n-aria-label
+      mat-table>
         @for (column of columnKeysMap; track column) {
           <ng-container [matColumnDef]="column.key">
             @if (column.key === "select") {
@@ -155,7 +154,7 @@
                       [disabled]="totalLength() === 0" />
                   }
                   @case ("serial") {
-                    <div class="flex-row">
+                    <div class="flex-row flex-nowrap ali-center">
                       <a
                         (click)="contentService.tokenSelected(tokenDetails.serial)"
                         attr.aria-label="{{ column.label }} Link"
@@ -194,14 +193,16 @@
                     </div>
                   }
                   @case ("container_serial") {
-                    <a
-                      (click)="contentService.containerSelected(tokenDetails.container_serial)"
-                      attr.aria-label="{{ column.label }} Link">
-                      {{ tokenDetails[column.key] }}
-                    </a>
-                    @if (tokenDetails.container_serial !== "") {
-                      <app-copy-button [copyText]="tokenDetails.container_serial" />
-                    }
+                    <div class="flex-row flex-nowrap ali-center">
+                      <a
+                        (click)="contentService.containerSelected(tokenDetails.container_serial)"
+                        attr.aria-label="{{ column.label }} Link">
+                        {{ tokenDetails[column.key] }}
+                      </a>
+                      @if (tokenDetails.container_serial !== "") {
+                        <app-copy-button [copyText]="tokenDetails.container_serial" />
+                      }
+                    </div>
                   }
                   @case ("username") {
                     <a
@@ -253,8 +254,7 @@
           </td>
         </tr>
       </table>
-    </div>
-  } @else {
+    } @else {
     <div i18n>You do not have the permission to view the token list.</div>
   }
 </div>

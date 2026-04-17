@@ -270,6 +270,15 @@ export class TableUtilsService implements TableUtilsServiceInterface {
       }
       return value === true ? "highlight-true" : "highlight-false";
     }
+    if (key === "authentication") {
+      if (value.toLowerCase() === "accept") {
+        return "highlight-true";
+      } else if (value.toLowerCase() === "challenge") {
+        return "highlight-warning";
+      } else if (value.toLowerCase() === "reject") {
+        return "highlight-false";
+      }
+    }
     if (key === "failcount") {
       if (value === "") {
         return "";

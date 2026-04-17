@@ -55,7 +55,6 @@ const PUSH_POLLING_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
   templateUrl: "./login.component.html",
   standalone: true,
   imports: [
-    CommonModule,
     FormsModule,
     MatFormField,
     MatInput,
@@ -84,7 +83,7 @@ export class LoginComponent implements OnDestroy {
   username = signal<string>("");
   password = signal<string>("");
   otp = signal<string>("");
-  authMessage = signal<string[]>([]);  // messages returned from the auth endpoint
+  authMessage = signal<string[]>([]); // messages returned from the auth endpoint
   errorMessage = signal<string>("");
 
   showOtpField = signal<boolean>(false);
@@ -101,7 +100,10 @@ export class LoginComponent implements OnDestroy {
   });
 
   realms = computed(() => {
-    return (this.configService.config()?.realms || "").split(",").map((r: string) => r.trim()).filter((r: string) => r);
+    return (this.configService.config()?.realms || "")
+      .split(",")
+      .map((r: string) => r.trim())
+      .filter((r: string) => r);
   });
 
   realm = linkedSignal({
@@ -302,7 +304,6 @@ export class LoginComponent implements OnDestroy {
       } else {
         this.router.navigateByUrl(ROUTE_PATHS.TOKENS).then();
       }
-
     } else if (challengesTriggered(response)) {
       // Setup depending on what kind of challenges were triggered
       if (response.detail.multi_challenge?.length) {

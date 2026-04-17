@@ -149,25 +149,25 @@ export class TokenTableComponent implements AfterViewInit, OnDestroy {
       })
   });
   tokenDataSource: WritableSignal<MatTableDataSource<TokenDetails>> = linkedSignal({
-    source: () => ({ value: this.tokenResource.value(), error: this.tokenResource.error() }),
+    source: () => ({ value: this.tokenService.tokenResourceValue(), error: this.tokenResource.error() }),
     computation: (src, previous) => {
       if (src.error) {
         return new MatTableDataSource<TokenDetails>([]);
       }
-      if (src.value && src.value.result?.value) {
-        return new MatTableDataSource(src.value.result.value.tokens);
+      if (src.value) {
+        return new MatTableDataSource(src.value.tokens);
       }
       return previous?.value ?? new MatTableDataSource(this.emptyResource());
     }
   });
   totalLength: WritableSignal<number> = linkedSignal({
-    source: () => ({ value: this.tokenResource.value(), error: this.tokenResource.error() }),
+    source: () => ({ value: this.tokenService.tokenResourceValue(), error: this.tokenResource.error() }),
     computation: (src, previous) => {
       if (src.error) {
         return 0;
       }
-      if (src.value && src.value.result?.value) {
-        return src.value.result.value.count;
+      if (src.value) {
+        return src.value.count;
       }
       return previous?.value ?? 0;
     }

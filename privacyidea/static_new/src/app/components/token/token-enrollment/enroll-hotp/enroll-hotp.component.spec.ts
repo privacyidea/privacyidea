@@ -158,7 +158,7 @@ describe("EnrollHotpComponent", () => {
     (TestBed.inject(AuthService) as unknown as MockAuthService).checkForceServerGenerateOTPKey.mockReturnValue(true);
     createAndInit();
     fixture.detectChanges();
-    TestBed.flushEffects();
+    TestBed.tick();
     fixture.detectChanges();
 
     expect(component.generateOnServerFormControl.disabled).toBe(true);
@@ -188,7 +188,7 @@ describe("EnrollHotpComponent", () => {
     (TestBed.inject(AuthService) as unknown as MockAuthService).check2Step.mockReturnValue("force");
     createAndInit();
     fixture.detectChanges();
-    TestBed.flushEffects();
+    TestBed.tick();
     fixture.detectChanges();
 
     // 2-step checkbox should be present
@@ -209,7 +209,7 @@ describe("EnrollHotpComponent", () => {
     (TestBed.inject(AuthService) as unknown as MockAuthService).check2Step.mockReturnValue("allow");
     createAndInit();
     fixture.detectChanges();
-    TestBed.flushEffects();
+    TestBed.tick();
     fixture.detectChanges();
 
     // 2-step checkbox should be present
@@ -230,7 +230,7 @@ describe("EnrollHotpComponent", () => {
     (TestBed.inject(AuthService) as unknown as MockAuthService).check2Step.mockReturnValue("allow");
     createAndInit();
     fixture.detectChanges();
-    TestBed.flushEffects();
+    TestBed.tick();
     fixture.detectChanges();
 
     // Set OTP Key
@@ -259,7 +259,7 @@ describe("EnrollHotpComponent", () => {
     (TestBed.inject(AuthService) as unknown as MockAuthService).check2Step.mockReturnValue("disabled");
     createAndInit();
     fixture.detectChanges();
-    TestBed.flushEffects();
+    TestBed.tick();
     fixture.detectChanges();
 
     // 2-step checkbox should NOT be present

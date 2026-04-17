@@ -51,6 +51,11 @@ $description-width: 18rem;
     max-width: 932px;
     min-width: 300px;
     width: 100%;
+    flex: 7 1 300px;
+
+    @media (max-width: 600px) {
+      min-width: 0;
+    }
   }
 
   #{$scroll-container} {
@@ -130,12 +135,30 @@ th:nth-child(even) {
   justify-content: space-between;
   gap: 16px;
   margin-bottom: 16px;
+  flex-wrap: wrap;
+
+  .selfservice-paginator-label {
+    margin: 0;
+    flex: 1 1 200px;
+  }
 
   .mat-mdc-paginator {
     background-color: $paginator-bg;
-    flex-shrink: 0;
+    flex: 1 1 max-content;
     min-width: max-content;
+
+    @media (max-width: 1100px) {
+      width: 100%;
+      justify-content: center;
+    }
   }
+}
+
+.table-container {
+  overflow-x: auto;
+  width: 100%;
+  // Ensure the container doesn't expand beyond its parent
+  display: block;
 }
 
 .highlight-true,

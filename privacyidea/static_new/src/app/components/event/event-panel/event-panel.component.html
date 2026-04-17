@@ -23,11 +23,11 @@
   class="edit-event-handler-container"
   i18n-aria-label>
 
-  <h3 class="margin-8">
+  <h3 class="margin-8 flex-row flex-nowrap ali-center">
     @if (isNewEvent()) {
       <span i18n>Create New Event Handler</span>
     } @else {
-      <span i18n>Edit Event Handler: </span>
+      <span i18n>Edit Event Handler:&nbsp;</span>
       <span class="event-name-color">{{ editEvent().name }}</span>
       <app-copy-button [copyText]="editEvent().name"></app-copy-button>
     }

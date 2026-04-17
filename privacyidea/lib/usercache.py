@@ -28,7 +28,7 @@ log = logging.getLogger(__name__)
 EXPIRATION_SECONDS = "UserCacheExpiration"
 
 
-class user_cache(object):
+class user_cache:
     """
     This is the decorator wrapper to call a specific resolver function to
     allow user caching.
@@ -73,7 +73,7 @@ def get_cache_time():
     try:
         seconds = int(get_from_config(EXPIRATION_SECONDS, '0'))
     except ValueError:
-        log.info("Non-Integer value stored in system config {0!s}".format(EXPIRATION_SECONDS))
+        log.info(f"Non-Integer value stored in system config {EXPIRATION_SECONDS!s}")
 
     return datetime.timedelta(seconds=seconds)
 
@@ -107,9 +107,9 @@ def delete_user_cache(resolver: str = None, username: str = None, expired: bool 
     result = db.session.execute(stmt)
     row_count = result.rowcount
     db.session.commit()
-    log.info('Deleted {} entries from the user cache (resolver={!r}, username={!r}, expired={!r})'.format(
-        row_count, resolver, username, expired
-    ))
+    log.info(f'Deleted {row_count} entries from the user cache '
+             f'(resolver={resolver!r}, username_provided={username is not None!r}, '
+             f'expired={expired!r})')
     return row_count
 
 
@@ -125,8 +125,7 @@ def add_to_cache(username, used_login, resolver, user_id):
     """
     if is_cache_enabled():
         timestamp = datetime.datetime.now()
-        log.debug('Adding record to cache: ({!r}, {!r}, {!r}, {!r}, {!r})'.format(
-            username, used_login, resolver, user_id, timestamp))
+        log.debug(f'Adding record to cache: ({username!r}, {used_login!r}, {resolver!r}, {user_id!r}, {timestamp!r})')
         record = UserCache(username, used_login, resolver, user_id, timestamp)
         record.save()
 
@@ -197,7 +196,7 @@ def cache_username(wrapped_function, userid, resolvername):
     result = retrieve_latest_entry(filter_conditions)
     if result:
         username = result.username
-        log.debug('Found username of {!r}/{!r} in cache: {!r}'.format(userid, resolvername, username))
+        log.debug(f'Found username of {userid!r}/{resolvername!r} in cache: {username!r}')
         return username
     else:
         # record was not found in the cache

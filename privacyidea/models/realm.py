@@ -16,10 +16,13 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import logging
-from typing import List, Optional
+from typing import TYPE_CHECKING
 
 from sqlalchemy import Sequence, Unicode, Integer, Boolean, ForeignKey, UniqueConstraint, select
 from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+if TYPE_CHECKING:
+    from privacyidea.models.token import TokenOwner, TokenRealm
 
 from privacyidea.lib.error import DatabaseError
 from privacyidea.lib.log import log_with
@@ -40,16 +43,16 @@ class Realm(TimestampMethodsMixin, db.Model):
     __tablename__ = 'realm'
     id: Mapped[int] = mapped_column(Integer, Sequence("realm_seq"), primary_key=True, nullable=False)
     name: Mapped[str] = mapped_column(Unicode(255), default='', unique=True, nullable=False)
-    default: Mapped[Optional[bool]] = mapped_column(Boolean(), default=False)
+    default: Mapped[bool | None] = mapped_column(Boolean(), default=False)
     resolver_list = relationship('ResolverRealm', lazy='select', back_populates='realm')
     container = relationship('TokenContainer', secondary='tokencontainerrealm', back_populates='realms')
 
-    tokenowners: Mapped[List['TokenOwner']] = relationship(
+    tokenowners: Mapped[list['TokenOwner']] = relationship(
         'TokenOwner',
         back_populates='realm'
     )
 
-    token_list: Mapped[List['TokenRealm']] = relationship(
+    token_list: Mapped[list['TokenRealm']] = relationship(
         'TokenRealm',
         back_populates='realm'
     )
@@ -66,13 +69,13 @@ class ResolverRealm(TimestampMethodsMixin, db.Model):
     """
     __tablename__ = 'resolverrealm'
     id: Mapped[int] = mapped_column(Integer, Sequence("resolverrealm_seq"), primary_key=True)
-    resolver_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("resolver.id"))
-    realm_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("realm.id"))
+    resolver_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("resolver.id"))
+    realm_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("realm.id"))
     # If there are several resolvers in a realm, the priority is used the
     # find a user first in a resolver with a higher priority (i.e. lower number)
-    priority: Mapped[Optional[int]] = mapped_column(Integer)
+    priority: Mapped[int | None] = mapped_column(Integer)
     # TODO: with SQLAlchemy 2.0 db.UUID will be generally available
-    node_uuid: Mapped[Optional[str]] = mapped_column(Unicode(36), default='')
+    node_uuid: Mapped[str | None] = mapped_column(Unicode(36), default='')
     resolver = relationship(Resolver,
                             lazy="joined",
                             back_populates="realm_list")

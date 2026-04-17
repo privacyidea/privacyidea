@@ -47,12 +47,10 @@ export class PeriodicTaskComponent {
   protected readonly authService = inject(AuthService);
 
   periodicTasks: WritableSignal<PeriodicTask[] | undefined> = linkedSignal({
-    source: this.periodicTaskService.periodicTasksResource.value,
-    computation: (taskResource) => {
-      if (taskResource) {
-        return taskResource?.result?.value;
-      }
-      return [] as unknown as PeriodicTask[];
+    source: () => this.periodicTaskService.periodicTasksResource.hasValue() ? this.periodicTaskService.periodicTasksResource.value() : undefined,
+    computation: (periodicTasksResource) => {
+      if (!periodicTasksResource) return [];
+      return periodicTasksResource.result?.value ?? [];
     }
   });
 

@@ -213,6 +213,7 @@ export class ResolverService implements ResolverServiceInterface {
     };
   });
   userAttributes = computed(() => {
+    if (!this.selectedResolverResource.hasValue()) return [];
     const resolverResource = this.selectedResolverResource.value()?.result?.value;
     if (!resolverResource) return [];
     const resolverConfig = resolverResource[this.selectedResolverName()];
@@ -243,8 +244,12 @@ export class ResolverService implements ResolverServiceInterface {
     }
     return Object.keys(userInfo);
   });
+  resolverResourceValue = computed(() => {
+    if (!this.resolversResource.hasValue()) return {};
+    return this.resolversResource.value()?.result?.value || {};
+  });
   resolvers = computed<Resolver[]>(() => {
-    const resolvers = this.resolversResource.value()?.result?.value;
+    const resolvers = this.resolverResourceValue();
     return resolvers
       ? Object.entries(resolvers).map(([name, data]) => ({
           ...data,
@@ -253,12 +258,12 @@ export class ResolverService implements ResolverServiceInterface {
       : [];
   });
   resolverOptions = computed(() => {
-    const resolvers = this.resolversResource.value()?.result?.value;
+    const resolvers = this.resolverResourceValue();
     return resolvers ? Object.keys(resolvers) : [];
   });
 
   editableResolvers = computed(() => {
-    const resolvers = this.resolversResource.value()?.result?.value;
+    const resolvers = this.resolverResourceValue();
     if (!resolvers) return [];
     let editableResolverNames: string[] = [];
     for (const [name, resolver] of Object.entries(resolvers)) {

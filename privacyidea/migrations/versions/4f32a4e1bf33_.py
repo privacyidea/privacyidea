@@ -26,8 +26,8 @@ Base = declarative_base()
 class Token_old(Base):
     __tablename__ = 'Token_old'
     privacyIDEATokenId = sa.Column(sa.Integer, primary_key=True, nullable=False)
-    privacyIDEATokenDesc = sa.Column(sa.Unicode(80), default=u'')
-    privacyIDEATokenSerialnumber = sa.Column(sa.Unicode(40), default=u'',
+    privacyIDEATokenDesc = sa.Column(sa.Unicode(80), default='')
+    privacyIDEATokenSerialnumber = sa.Column(sa.Unicode(40), default='',
                                  unique=True, nullable=False, index=True)
     privacyIDEATokenType = sa.Column(sa.Unicode(30))
     privacyIDEATokenInfo = sa.Column(sa.Unicode(2000))
@@ -59,31 +59,31 @@ class Token(Base):
     id = sa.Column(sa.Integer,
                    primary_key=True,
                    nullable=False)
-    description = sa.Column(sa.Unicode(80), default=u'')
-    serial = sa.Column(sa.Unicode(40), default=u'',
+    description = sa.Column(sa.Unicode(80), default='')
+    serial = sa.Column(sa.Unicode(40), default='',
                        unique=True,
                        nullable=False,
                        index=True)
-    tokentype = sa.Column(sa.Unicode(30), default=u'HOTP', index=True)
-    user_pin = sa.Column(sa.Unicode(512), default=u'')
-    user_pin_iv = sa.Column(sa.Unicode(32), default=u'')
-    so_pin = sa.Column(sa.Unicode(512), default=u'')
-    so_pin_iv = sa.Column(sa.Unicode(32), default=u'')
-    resolver = sa.Column(sa.Unicode(120), default=u'', index=True)
-    resolver_type = sa.Column(sa.Unicode(120), default=u'')
-    user_id = sa.Column(sa.Unicode(320), default=u'', index=True)
-    pin_seed = sa.Column(sa.Unicode(32), default=u'')
+    tokentype = sa.Column(sa.Unicode(30), default='HOTP', index=True)
+    user_pin = sa.Column(sa.Unicode(512), default='')
+    user_pin_iv = sa.Column(sa.Unicode(32), default='')
+    so_pin = sa.Column(sa.Unicode(512), default='')
+    so_pin_iv = sa.Column(sa.Unicode(32), default='')
+    resolver = sa.Column(sa.Unicode(120), default='', index=True)
+    resolver_type = sa.Column(sa.Unicode(120), default='')
+    user_id = sa.Column(sa.Unicode(320), default='', index=True)
+    pin_seed = sa.Column(sa.Unicode(32), default='')
     otplen = sa.Column(sa.Integer(), default=6)
-    pin_hash = sa.Column(sa.Unicode(512), default=u'')
-    key_enc = sa.Column(sa.Unicode(1024), default=u'')
-    key_iv = sa.Column(sa.Unicode(32), default=u'')
+    pin_hash = sa.Column(sa.Unicode(512), default='')
+    key_enc = sa.Column(sa.Unicode(1024), default='')
+    key_iv = sa.Column(sa.Unicode(32), default='')
     maxfail = sa.Column(sa.Integer(), default=10)
     active = sa.Column(sa.Boolean(), default=True)
     failcount = sa.Column(sa.Integer(), default=0)
     count = sa.Column(sa.Integer(), default=0)
     count_window = sa.Column(sa.Integer(), default=10)
     sync_window = sa.Column(sa.Integer(), default=1000)
-    rollout_state = sa.Column(sa.Unicode(10), default=u'')
+    rollout_state = sa.Column(sa.Unicode(10), default='')
     info = relationship('TokenInfo', lazy='dynamic', backref='info')
 
 
@@ -97,8 +97,8 @@ class TokenInfo(Base):
     id = sa.Column(sa.Integer, primary_key=True)
     Key = sa.Column(sa.Unicode(255),
                     nullable=False)
-    Value = sa.Column(sa.UnicodeText(), default=u'')
-    Description = sa.Column(sa.Unicode(2000), default=u'')
+    Value = sa.Column(sa.UnicodeText(), default='')
+    Description = sa.Column(sa.Unicode(2000), default='')
     token_id = sa.Column(sa.Integer(),
                          sa.ForeignKey('token.id'))
     token = relationship('Token', lazy='joined', backref='info_list')
@@ -137,26 +137,26 @@ class TokenRealm_old(Base):
 class Realm(Base):
     __tablename__ = 'realm'
     id = sa.Column(sa.Integer, primary_key=True, nullable=False)
-    name = sa.Column(sa.Unicode(255), default=u'',
+    name = sa.Column(sa.Unicode(255), default='',
                      unique=True, nullable=False)
     default = sa.Column(sa.Boolean(), default=False)
-    option = sa.Column(sa.Unicode(40), default=u'')
+    option = sa.Column(sa.Unicode(40), default='')
 
 class Realm_old(Base):
     __tablename__ = 'Realm_old'
     id = sa.Column(sa.Integer, primary_key=True, nullable=False)
-    name = sa.Column(sa.Unicode(255), default=u'',
+    name = sa.Column(sa.Unicode(255), default='',
                      unique=True, nullable=False)
     default = sa.Column(sa.Boolean(), default=False)
-    option = sa.Column(sa.Unicode(40), default=u'')
+    option = sa.Column(sa.Unicode(40), default='')
 
 
 class Resolver(Base):
     __tablename__ = 'resolver'
     id = sa.Column(sa.Integer, primary_key=True, nullable=False)
-    name = sa.Column(sa.Unicode(255), default=u"",
+    name = sa.Column(sa.Unicode(255), default="",
                      unique=True, nullable=False)
-    rtype = sa.Column(sa.Unicode(255), default=u"",
+    rtype = sa.Column(sa.Unicode(255), default="",
                       nullable=False)
     rconfig = relationship('ResolverConfig', lazy='dynamic', backref='resolver')
 
@@ -171,9 +171,9 @@ class ResolverConfig(Base):
     resolver_id = sa.Column(sa.Integer,
                             sa.ForeignKey('resolver.id'))
     Key = sa.Column(sa.Unicode(255), nullable=False)
-    Value = sa.Column(sa.Unicode(2000), default=u'')
-    Type = sa.Column(sa.Unicode(2000), default=u'')
-    Description = sa.Column(sa.Unicode(2000), default=u'')
+    Value = sa.Column(sa.Unicode(2000), default='')
+    Type = sa.Column(sa.Unicode(2000), default='')
+    Description = sa.Column(sa.Unicode(2000), default='')
     reso = relationship('Resolver',
                            lazy='joined',
                            backref='config_list')
@@ -187,9 +187,9 @@ class Config(Base):
     Key = sa.Column(sa.Unicode(255),
                     primary_key=True,
                     nullable=False)
-    Value = sa.Column(sa.Unicode(2000), default=u'')
-    Type = sa.Column(sa.Unicode(2000), default=u'')
-    Description = sa.Column(sa.Unicode(2000), default=u'')
+    Value = sa.Column(sa.Unicode(2000), default='')
+    Type = sa.Column(sa.Unicode(2000), default='')
+    Description = sa.Column(sa.Unicode(2000), default='')
 
 
 class Config_old(Base):
@@ -197,9 +197,9 @@ class Config_old(Base):
     Key = sa.Column(sa.Unicode(255),
                     primary_key=True,
                     nullable=False)
-    Value = sa.Column(sa.Unicode(2000), default=u'')
-    Type = sa.Column(sa.Unicode(2000), default=u'')
-    Description = sa.Column(sa.Unicode(2000), default=u'')
+    Value = sa.Column(sa.Unicode(2000), default='')
+    Type = sa.Column(sa.Unicode(2000), default='')
+    Description = sa.Column(sa.Unicode(2000), default='')
 
 
 class ResolverRealm(Base):
@@ -267,7 +267,7 @@ def create_update_token_table():
             elif reso[3] == "SQLIdResolver":
                 resolvertype = "sqlresolver"
             else:
-                print("Error: Unknown resolvertype: {0!s}".format(reso[3]))
+                print(f"Error: Unknown resolvertype: {reso[3]!s}")
                 resolvertype = "FIXME"
         if ot.privacyIDEATokenType.lower() == "hmac":
             tokentype = "hotp"
@@ -327,7 +327,7 @@ def create_resolver_config():
 
     # Read Passwd resolver like privacyidea.passwdresolver.*.name
     for resolvertype in ["passwdresolver", "ldapresolver", "sqlresolver"]:
-        print("processing {0!s}".format(resolvertype))
+        print(f"processing {resolvertype!s}")
         resolvers = {}
         configs = session.query(Config_old).filter(
             Config_old.Key.like("privacyidea." + resolvertype + ".%"))
@@ -409,7 +409,7 @@ def create_realms():
         realmname = realm.Key.split(".")[-1]
         print(realmname)
         resolver_list = [x.split(".")[-1] for x in realm.Value.split(",")]
-        print("   with resolvers: {0!s}".format(resolver_list))
+        print(f"   with resolvers: {resolver_list!s}")
         for resolvername in resolver_list:
             try:
                 res_id = session.query(Resolver).\

@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, input, output, signal } from "@angular/core";
-import { CommonModule } from "@angular/common";
+
 import { FormsModule } from "@angular/forms";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MatFormFieldModule } from "@angular/material/form-field";
@@ -37,7 +37,6 @@ export type ApiKeyData = {
   selector: "app-yubikey-config",
   standalone: true,
   imports: [
-    CommonModule,
     FormsModule,
     MatExpansionModule,
     MatFormFieldModule,

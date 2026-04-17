@@ -80,6 +80,7 @@ export class EnrollEmailComponent implements OnInit {
   });
 
   defaultSmtpIsSet = computed(() => {
+    if (!this.systemService.systemConfigResource.hasValue()) return false;
     const cfg = this.systemService.systemConfigResource.value()?.result?.value;
     return !!cfg?.["email.identifier"];
   });

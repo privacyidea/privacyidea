@@ -150,34 +150,33 @@ def rotate_audit(highwatermark, lowwatermark, age, config,
                                  LogEntry.id.in_(delete_list), chunksize)
     elif age:
         now = datetime.datetime.now() - datetime.timedelta(days=age)
-        click.echo("Deleting entries older than {0!s}".format(now))
+        click.echo(f"Deleting entries older than {now!s}")
         criterion = LogEntry.date < now
         if dryrun:
             r = LogEntry.query.filter(criterion).count()
-            click.echo("Would delete {0!s} entries.".format(r))
+            click.echo(f"Would delete {r!s} entries.")
         else:
             r = delete_matching_rows(session, LogEntry.__table__, criterion, chunksize)
-            click.echo("{0!s} entries deleted.".format(r))
+            click.echo(f"{r!s} entries deleted.")
     else:
         count = session.query(LogEntry.id).count()
         last_id = 0
-        for l in session.query(LogEntry.id).order_by(desc(LogEntry.id)).limit(1):
-            last_id = l[0]
-        click.echo("The log audit log has %i entries, the last one is %i" % (count,
-                                                                             last_id))
+        for row in session.query(LogEntry.id).order_by(desc(LogEntry.id)).limit(1):
+            last_id = row[0]
+        click.echo(f"The log audit log has {count} entries, the last one is {last_id}")
         # deleting old entries
         if count > highwatermark:
-            click.echo("More than %i entries, deleting..." % highwatermark)
+            click.echo(f"More than {highwatermark} entries, deleting...")
             cut_id = last_id - lowwatermark
             # delete all entries less than cut_id
-            click.echo("Deleting entries smaller than %i" % cut_id)
+            click.echo(f"Deleting entries smaller than {cut_id}")
             criterion = LogEntry.id < cut_id
             if dryrun:
                 r = LogEntry.query.filter(criterion).count()
-                click.echo("Would delete {0!s} entries.".format(r))
+                click.echo(f"Would delete {r!s} entries.")
             else:
                 r = delete_matching_rows(session, LogEntry.__table__, criterion, chunksize)
-                click.echo("{0!s} entries deleted.".format(r))
+                click.echo(f"{r!s} entries deleted.")
 
 
 def _validate_timelimit(_ctx, _param, value):

@@ -10,8 +10,8 @@
   }
 
   mat-card {
-    --mdc-elevated-card-container-shape: var(--border-radius);
-    --mdc-elevated-card-container-color: var(--mat-sys-surface-container);
+    --mat-card-elevated-container-shape: var(--border-radius);
+    --mat-card-elevated-container-color: var(--mat-sys-surface-container);
     margin-bottom: 1rem;
   }
 
@@ -32,7 +32,7 @@
   }
 
   mat-chip {
-    --mdc-chip-container-shape-radius: var(--border-radius);
+    --mat-chip-container-shape-radius: var(--border-radius);
     white-space: nowrap;
     cursor: pointer !important;
     flex: 0 0 auto !important;

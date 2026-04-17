@@ -184,24 +184,24 @@
             matInput />
         </app-clearable-input>
       </mat-form-field>
-      <mat-form-field
-        appearance="fill"
-        class="input-width-m">
-        <mat-label i18n>Password</mat-label>
-        <app-clearable-input
-          (onClick)="radiusForm.get('password')?.setValue('')"
-          [showClearButton]="!!radiusForm.get('password')?.value">
-          <input
-            formControlName="password"
-            matInput
-            type="password" />
-        </app-clearable-input>
-      </mat-form-field>
-      <div class="col-2 flex ali-center">
+      <div class="flex ali-center">
+        <mat-form-field
+          appearance="fill"
+          class="input-width-m">
+          <mat-label i18n>Password</mat-label>
+          <app-clearable-input
+            (onClick)="radiusForm.get('password')?.setValue('')"
+            [showClearButton]="!!radiusForm.get('password')?.value">
+            <input
+              formControlName="password"
+              matInput
+              type="password" />
+          </app-clearable-input>
+        </mat-form-field>
         <button
           (click)="test()"
           [disabled]="isTesting()"
-          class="margin-bottom-16"
+          class="margin-bottom-16 margin-left-16"
           i18n-matTooltip
           mat-icon-button
           matTooltip="Send RADIUS test request">
@@ -212,7 +212,9 @@
   </form>
 </mat-dialog-content>
 
-<mat-dialog-actions align="end">
+<mat-dialog-actions
+  align="end"
+  class="margin-8 external-service-dialog-actions">
   <button
     (click)="onCancel()"
     class="action-button-secondary button-width-s"

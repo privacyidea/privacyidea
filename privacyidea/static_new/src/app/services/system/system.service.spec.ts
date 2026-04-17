@@ -27,6 +27,7 @@ import { environment } from "../../../environments/environment";
 import { lastValueFrom, of } from "rxjs";
 import { ROUTE_PATHS } from "../../route_paths";
 import { ContentService } from "../content/content.service";
+import { signal } from "@angular/core";
 
 describe("SystemService", () => {
   let service: SystemService;
@@ -58,7 +59,7 @@ describe("SystemService", () => {
     async function testLoadResource() {
       const caConnectorResponse = { service1: {}, service2: {} };
       const mockResponse = MockPiResponse.fromValue(caConnectorResponse);
-      TestBed.flushEffects();
+      TestBed.tick();
       const req = httpMock.expectOne(`${environment.proxyUrl}/system/names/caconnector`);
       expect(req.request.method).toBe("GET");
       req.flush(mockResponse);
@@ -68,8 +69,10 @@ describe("SystemService", () => {
       expect(response).toBeDefined();
       expect(response).toEqual(mockResponse);
       expect(response?.result?.value).toEqual(caConnectorResponse);
+      expect(service.caConnectors()).toEqual(caConnectorResponse);
     }
-    authService.actionAllowed.mockImplementation((action) => action === "enrollCERTIFICATE")
+
+    authService.actionAllowed.mockImplementation((action) => action === "enrollCERTIFICATE");
 
     contentService.routeUrl.set(ROUTE_PATHS.CONFIGURATION_SYSTEM);
     await testLoadResource();
@@ -88,5 +91,138 @@ describe("SystemService", () => {
     contentService.routeUrl.set(ROUTE_PATHS.TOKENS_ENROLLMENT);
     contentService.onTokenEnrollmentLikely.set(true);
     await testLoadResource();
+  });
+
+  it("caConnectors should handle http error from caConnectorResource", async () => {
+    authService.actionAllowed.mockImplementation((action) => action === "enrollCERTIFICATE");
+    contentService.routeUrl.set(ROUTE_PATHS.TOKENS_ENROLLMENT);
+    contentService.onTokenEnrollmentLikely.set(true);
+
+    TestBed.tick();
+    const req = httpMock.expectOne(`${environment.proxyUrl}/system/names/caconnector`);
+    expect(req.request.method).toBe("GET");
+    req.flush(MockPiResponse.fromError({ message: "Permission denied" }), {
+      status: 403, statusText: "Permission denied"
+    });
+    await lastValueFrom(of({})); // Wait for async updates
+
+    expect(service.caConnectorResource.hasValue()).toEqual(false);
+    expect(service.caConnectors()).toEqual([]);
+  });
+
+  describe("systemConfigResource", () => {
+
+    it("systemConfig and systemConfigInit fall back to default when resource empty", () => {
+      expect(service.systemConfig()).toEqual({});
+      expect(service.systemConfigInit()).toEqual({});
+    });
+
+    it("should update signals based on systemConfigResource on successful response", async () => {
+      contentService.onConfigurationSystem = signal(true);
+      TestBed.tick();
+
+      const req = httpMock.expectOne((r) => r.url === "/system/");
+      expect(req.request.method).toBe("GET");
+      const systemConfig = [{ name: "test", providermodule: "TestProvider", options: {}, headers: {} }];
+      const systemConfigInit = { key1: "value1", key2: "value2" };
+      let response = MockPiResponse.fromValue(systemConfig, {}, systemConfigInit);
+      req.flush(response);
+      await Promise.resolve();
+
+      expect(service.systemConfig()).toEqual(systemConfig);
+      expect(service.systemConfigInit()).toEqual(systemConfigInit);
+    });
+
+    it("should handle error state from smsGatewayResource", async () => {
+      contentService.onConfigurationSystem = signal(true);
+      TestBed.tick();
+
+      const req = httpMock.expectOne((r) => r.url === "/system/");
+      expect(req.request.method).toBe("GET");
+      req.flush(MockPiResponse.fromError({ message: "Permission denied" }), {
+        status: 403, statusText: "Permission denied"
+      });
+      await Promise.resolve();
+
+      expect(service.systemConfigResource.hasValue()).toEqual(false);
+      expect(service.systemConfig()).toEqual({});
+      expect(service.systemConfigInit()).toEqual({});
+    });
+  });
+
+  describe("nodesResource", () => {
+
+    it("nodes falls back to default when resource is empty", () => {
+      expect(service.nodes()).toEqual([]);
+    });
+
+    it("should update nodes signal based on nodesResource on successful response", async () => {
+      contentService.onConfigurationSystem = signal(true);
+      TestBed.tick();
+
+      const req = httpMock.expectOne((r) => r.url === "/system/nodes");
+      expect(req.request.method).toBe("GET");
+      const nodes = [{ name: "test", uuid: "1234" }];
+      let response = MockPiResponse.fromValue(nodes);
+      req.flush(response);
+      await Promise.resolve();
+
+      expect(service.nodes()).toEqual(nodes);
+    });
+
+    it("should handle error state from nodesResource", async () => {
+      contentService.onConfigurationSystem = signal(true);
+      TestBed.tick();
+
+      const req = httpMock.expectOne((r) => r.url === "/system/nodes");
+      expect(req.request.method).toBe("GET");
+      req.flush(MockPiResponse.fromError({ message: "Permission denied" }), {
+        status: 403, statusText: "Permission denied"
+      });
+      await Promise.resolve();
+
+      expect(service.nodesResource.hasValue()).toEqual(false);
+      expect(service.nodes()).toEqual([]);
+    });
+  });
+
+  describe("radiusServers", () => {
+
+    beforeEach(() => {
+      authService.actionAllowed.mockImplementation((action) => action === "enrollRADIUS");
+    });
+
+    it("radiusServers falls back to default when resource is empty", () => {
+      expect(service.radiusServers()).toEqual([]);
+    });
+
+    it("should update radiusServers signal based on radiusServersResource on successful response", async () => {
+      contentService.onConfigurationSystem = signal(true);
+      TestBed.tick();
+
+      const req = httpMock.expectOne((r) => r.url === "/system/names/radius");
+      expect(req.request.method).toBe("GET");
+      const radiusServers = ["server1", "server2"];
+      let response = MockPiResponse.fromValue(radiusServers);
+      req.flush(response);
+      await Promise.resolve();
+
+      expect(service.radiusServers()).toEqual(radiusServers);
+    });
+
+    it("should handle error state from radiusServersResource", async () => {
+      contentService.onConfigurationSystem = signal(true);
+      TestBed.tick();
+
+      const req = httpMock.expectOne((r) => r.url === "/system/names/radius");
+      expect(req.request.method).toBe("GET");
+      req.flush(MockPiResponse.fromError({ message: "Permission denied" }), {
+        status: 403, statusText: "Permission denied"
+      });
+      await Promise.resolve();
+
+      expect(service.radiusServerResource.hasValue()).toEqual(false);
+      expect(service.radiusServers()).toEqual([]);
+    });
   });
 });

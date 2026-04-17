@@ -88,6 +88,7 @@ export class EnrollYubicoComponent implements OnInit {
   });
 
   yubicoIsConfigured = computed(() => {
+    if (!this.systemService.systemConfigResource.hasValue()) return false;
     const cfg = this.systemService.systemConfigResource.value()?.result?.value;
     return !!(cfg?.[YUBICO_ID] && cfg?.[YUBICO_URL] && cfg?.[YUBICO_SECRET]);
   });

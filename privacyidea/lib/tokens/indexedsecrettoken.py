@@ -52,7 +52,7 @@ DEFAULT_CHALLENGE_TEXT = lazy_gettext("Please enter the positions {0!s} from you
 DEFAULT_POSITION_COUNT = 2
 
 
-class PIIXACTION(object):
+class PIIXACTION:
     COUNT = "count"
     PRESET_ATTRIBUTE = "preset_attribute"
     FORCE_ATTRIBUTE = "force_attribute"
@@ -199,8 +199,7 @@ class IndexedSecretTokenClass(TokenClass):
         """
         options = options or {}
         return_message = get_action_values_from_options(SCOPE.AUTH,
-                                                        "{0!s}_{1!s}".format(self.get_class_type(),
-                                                                             PolicyAction.CHALLENGETEXT),
+                                                        f"{self.get_class_type()!s}_{PolicyAction.CHALLENGETEXT!s}",
                                                         options) or DEFAULT_CHALLENGE_TEXT
 
         return_message = return_message.replace(r'\,', ',')
@@ -210,8 +209,7 @@ class IndexedSecretTokenClass(TokenClass):
             position_count = 1
         else:
             position_count = int(get_action_values_from_options(SCOPE.AUTH,
-                                                                "{0!s}_{1!s}".format(self.get_class_type(),
-                                                                                     PIIXACTION.COUNT),
+                                                                f"{self.get_class_type()!s}_{PIIXACTION.COUNT!s}",
                                                                 options) or DEFAULT_POSITION_COUNT)
 
         attributes = {'state': transactionid}
@@ -224,7 +222,7 @@ class IndexedSecretTokenClass(TokenClass):
                 raise ValidateError("The indexedsecret token has an empty secret and "
                                     "can not be used for authentication.")
             random_positions = [urandom.randint(1, secret_length) for _x in range(0, position_count)]
-            position_str = ",".join(["{0!s}".format(x) for x in random_positions])
+            position_str = ",".join([f"{x!s}" for x in random_positions])
             attributes["random_positions"] = random_positions
 
             db_challenge = Challenge(self.token.serial,
@@ -238,7 +236,7 @@ class IndexedSecretTokenClass(TokenClass):
             return_message = return_message.format(position_str)
 
         expiry_date = datetime.datetime.now() + datetime.timedelta(seconds=validity)
-        attributes['valid_until'] = "{0!s}".format(expiry_date)
+        attributes['valid_until'] = f"{expiry_date!s}"
         reply_dict = {"attributes": attributes}
 
         return True, return_message, transactionid, reply_dict
@@ -335,12 +333,11 @@ class IndexedSecretTokenClass(TokenClass):
                                                   transaction_id=transaction_id)
 
             position_count = int(get_action_values_from_options(SCOPE.AUTH,
-                                                                "{0!s}_{1!s}".format(self.get_class_type(),
-                                                                                     PIIXACTION.COUNT),
+                                                                f"{self.get_class_type()!s}_{PIIXACTION.COUNT!s}",
                                                                 options) or DEFAULT_POSITION_COUNT)
             if len(challengeobject_list) == 1:
                 session = int(challengeobject_list[0].session or "0") + 1
-                options["session"] = "{0!s}".format(session)
+                options["session"] = f"{session!s}"
                 if session < position_count:
                     return True
 
@@ -378,5 +375,5 @@ class IndexedSecretTokenClass(TokenClass):
         transaction_id = chals[0].transaction_id
         r = self.check_challenge_response(passw=verify,
                                           options={"transaction_id": transaction_id})
-        log.debug("Enrollment verified: {0!s}".format(r))
+        log.debug(f"Enrollment verified: {r!s}")
         return r >= 0

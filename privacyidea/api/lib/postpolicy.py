@@ -86,8 +86,6 @@ from ...lib.users.custom_user_attributes import InternalCustomUserAttributes
 
 log = logging.getLogger(__name__)
 
-optional = True
-required = False
 DEFAULT_LOGOUT_TIME = 120
 DEFAULT_AUDIT_PAGE_SIZE = 10
 DEFAULT_PAGE_SIZE = 15
@@ -106,7 +104,7 @@ Subscriptions: {subscriptions}
 """)
 
 
-class postpolicy(object):
+class postpolicy:
     """
     Decorator that allows one to call a specific function after the decorated
     function.
@@ -142,7 +140,7 @@ class postpolicy(object):
         return policy_wrapper
 
 
-class postrequest(object):
+class postrequest:
     """
     Decorator that is supposed to be used with after_request.
     """
@@ -195,9 +193,9 @@ def sign_response(request, response):
         with open(private_key_file, 'rb') as file:
             private_key = file.read()
         sign_object = Sign(private_key, public_key=None, check_private_key=check_private_key)
-    except (IOError, ValueError, TypeError) as e:
+    except (OSError, ValueError, TypeError) as e:
         log.info('Could not load private key from '
-                 'file {0!s}: {1!r}!'.format(private_key_file, e))
+                 f'file {private_key_file!s}: {e!r}!')
         log.debug(traceback.format_exc())
         return response
 
@@ -317,15 +315,15 @@ def check_tokeninfo(request, response):
                         key, regex, _r = tokeninfo_pol.split("/")
                         value = token.get_tokeninfo(key, "")
                         if re.search(regex, value):
-                            log.debug("Regular expression {0!s} "
-                                      "matches the tokeninfo field {1!s}.".format(regex, key))
+                            log.debug(f"Regular expression {regex!s} "
+                                      f"matches the tokeninfo field {key!s}.")
                         else:
-                            log.info("Tokeninfo field {0!s} with contents {1!s} "
-                                     "does not match {2!s}".format(key, value, regex))
-                            raise PolicyError("Tokeninfo field {0!s} with contents does not"
-                                              " match regular expression.".format(key))
+                            log.info(f"Tokeninfo field {key!s} with contents {value!s} "
+                                     f"does not match {regex!s}")
+                            raise PolicyError(f"Tokeninfo field {key!s} with contents does not"
+                                              " match regular expression.")
                     except ValueError:
-                        log.warning("Invalid tokeninfo policy: {0!s}".format(tokeninfo_pol))
+                        log.warning(f"Invalid tokeninfo policy: {tokeninfo_pol!s}")
 
     return response
 
@@ -771,7 +769,7 @@ def get_webui_settings(request, response):
             if len(subscriptions) == 1:
                 subscription = subscriptions[0]
                 version = get_version()
-                subject = "Problem with {0!s}".format(version)
+                subject = f"Problem with {version!s}"
                 try:
                     check_subscription("privacyidea")
                 except SubscriptionError:
@@ -1166,7 +1164,7 @@ def mangle_challenge_response(request, response):
             messages = sorted(set(messages))
             if message[-4:].lower() in ["<ol>", "<ul>"]:
                 for m in messages:
-                    message += "<li>{0!s}</li>\n".format(m)
+                    message += f"<li>{m!s}</li>\n"
             else:
                 message += "\n"
                 message += ", ".join(messages)

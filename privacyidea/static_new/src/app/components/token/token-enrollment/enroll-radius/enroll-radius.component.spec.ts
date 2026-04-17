@@ -22,6 +22,8 @@ import { EnrollRadiusComponent } from "./enroll-radius.component";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
+import { SystemService } from "../../../../services/system/system.service";
+import { MockSystemService } from "../../../../../testing/mock-services";
 
 describe("EnrollRadiusComponent", () => {
   let component: EnrollRadiusComponent;
@@ -30,7 +32,8 @@ describe("EnrollRadiusComponent", () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [EnrollRadiusComponent, BrowserAnimationsModule],
-      providers: [provideHttpClient(), provideHttpClientTesting()]
+      providers: [provideHttpClient(), provideHttpClientTesting(),
+        {provide: SystemService, useClass: MockSystemService}]
     }).compileComponents();
 
     fixture = TestBed.createComponent(EnrollRadiusComponent);

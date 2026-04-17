@@ -17,14 +17,16 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
  -->
 
-<div class="flex ali-center gap-8 margin-left-16 margin-top-16">
+<div class="flex ali-center gap-8 external-service-dialog-title">
   <h3
-    class="margin-left-16"
+    class="margin-0"
     i18n>
     Details for Machine:
   </h3>
-  <h3 class="h3-color">{{ data.hostname }}</h3>
-  <app-copy-button [copyText]="data.hostname[0]" />
+  <div class="flex-row flex-nowrap ali-center">
+    <h3 class="h3-color margin-0">{{ data.hostname }}</h3>
+    <app-copy-button [copyText]="data.hostname[0]" />
+  </div>
 </div>
 
 <mat-dialog-content class="machine-dialog-content">
@@ -51,7 +53,7 @@
       <span
         class="label"
         i18n>Machine Resolver:</span>
-      <div class="flex-row ali-center">
+      <div class="flex-row flex-nowrap ali-center">
         <a
           (click)="onMachineResolverClick(data.resolver_name)"
           class="value">{{ data.resolver_name }}
@@ -86,7 +88,7 @@
         <td
           *matCellDef="let token"
           mat-cell>
-          <div class="flex-row ali-center">
+          <div class="flex-row flex-nowrap ali-center">
             <a
               (click)="onTokenClick(token.serial)"
               class="flex ali-center clickable">
@@ -258,7 +260,9 @@
   </form>
 </mat-dialog-content>
 
-<mat-dialog-actions align="end">
+<mat-dialog-actions
+  align="end"
+  class="margin-8 external-service-dialog-actions">
   <button
     (click)="close()"
     i18n

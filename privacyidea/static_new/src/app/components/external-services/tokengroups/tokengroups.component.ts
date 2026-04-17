@@ -31,7 +31,7 @@ import {
 import { NewTokengroupComponent } from "./new-tokengroup/new-tokengroup.component";
 import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
 import { MatTooltipModule } from "@angular/material/tooltip";
-import { CommonModule } from "@angular/common";
+
 import { DialogService, DialogServiceInterface } from "../../../services/dialog/dialog.service";
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
@@ -44,7 +44,6 @@ import { SimpleConfirmationDialogComponent } from "../../shared/dialog/confirmat
   selector: "app-tokengroups",
   standalone: true,
   imports: [
-    CommonModule,
     MatTableModule,
     MatPaginator,
     MatSortModule,
@@ -93,7 +92,8 @@ export class TokengroupsComponent {
     this.dialog.open(NewTokengroupComponent, {
       data: group ? { ...group } : null,
       width: "auto",
-      maxWidth: "100vw"
+      maxWidth: "65vw",
+      maxHeight: "90vh"
     });
   }
 

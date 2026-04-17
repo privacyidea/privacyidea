@@ -14,6 +14,7 @@
 @include meta.load-css("panel.scss");
 @include meta.load-css("list.scss");
 @include meta.load-css("actions.scss");
+@include meta.load-css("overflow.scss");
 
 html,
 body {
@@ -62,7 +63,7 @@ body {
   --background-green-brand: linear-gradient(145deg, var(--green-brand-light), var(--green-brand-base));
 
   --box-shadow: var(--shadow-distance) var(--shadow-distance) var(--blur) var(--mat-sys-shadow),
-    var(--light-distance) var(--light-distance) var(--blur) var(--mat-sys-light);
+  var(--light-distance) var(--light-distance) var(--blur) var(--mat-sys-light);
   --box-shadow-white: var(--shadow-distance) var(--shadow-distance) var(--blur) var(--mat-sys-shadow),
   var(--light-distance) var(--light-distance) var(--blur) var(--mat-sys-light);
   --box-shadow-inset: inset var(--shadow-distance) var(--shadow-distance) var(--blur) var(--mat-sys-shadow),
@@ -104,18 +105,33 @@ body {
   --box-dialog-shadow: 0px 4px 20px var(--mat-sys-shadow-color-high);
   --table-color: var(--mat-sys-surface-container-lowest);
 
-  --mdc-filled-text-field-container-color: var(surface-container-low);
-  --mdc-tab-indicator-active-indicator-color: var(--mat-sys-primary);
-  --mdc-filled-text-field-focus-active-indicator-color: var(--mat-sys-primary-light);
-  --mat-tab-header-active-focus-indicator-color: var(--mat-sys-primary);
-  --mat-tab-header-active-ripple-color: white;
-  --mat-tab-header-inactive-ripple-color: white;
+  --mat-form-field-filled-container-color: var(surface-container-low);
+  --mat-tab-active-indicator-color: var(--mat-sys-primary);
+  --mat-form-field-filled-focus-active-indicator-color: var(--mat-sys-primary-light);
+  --mat-tab-active-focus-indicator-color: var(--mat-sys-primary);
+  --mat-tab-active-ripple-color: white;
+  --mat-tab-inactive-ripple-color: white;
   --mat-select-focused-arrow-color: var(--mat-sys-primary-light);
   --mdc-outlined-text-field-focus-outline-color: var(--mat-sys-primary-light);
+
+  --drawer-width-admin: var(--overlay-margin);
+  --drawer-width-self-service: 256px;
 }
 
-body.selfservice-layout {
-  --overlay-margin: 256px;
+@mixin main-component-style {
+  padding: var(--global-padding);
+  border-radius: var(--border-radius);
+  @include mat.elevation(5);
+  background-color: var(--table-color);
+  // subtract double global padding to preserve margin around the component
+  // subtract single global padding which is the defined padding above to correctly get the displayed width of the component
+  max-width: calc(100vw - var(--drawer-width) - 2 * var(--double-global-padding) - 2 * var(--global-padding));
+  max-height: var(--max-height);
+  overflow: auto;
+}
+
+body.self-service-layout {
+  --overlay-margin: var(--drawer-width-self-service);
 }
 
 .shadow {
@@ -590,6 +606,7 @@ body.selfservice-layout {
 .sticky-controls {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: var(--global-gap);
 }
 
@@ -611,6 +628,11 @@ body.selfservice-layout {
 .flex-row {
   display: flex;
   flex-direction: row;
+  flex-wrap: wrap;
+}
+
+.flex-nowrap {
+  flex-wrap: nowrap !important;
 }
 
 .flex-grow-1 {
@@ -651,50 +673,34 @@ body.selfservice-layout {
   }
 
   .cdk-overlay-container {
+    // Navigation blocking dialog wins over navigation accessible dialog, e.g. confirmation dialog over resolver edit
     &:has(.nav-accessible-dialog):has(.nav-blocking-dialog) {
-      margin-left: 0;
-      width: 100%;
-
-      .mat-mdc-dialog-panel {
-        margin-left: var(--overlay-margin);
+      .cdk-overlay-backdrop {
+        margin-left: 0;
+        width: 100%;
       }
     }
 
-    margin-left: var(--overlay-margin);
-    width: calc(100% - var(--overlay-margin));
+    // Dialogs where navigation should remain accessible shift the overlay
+    &:has(.nav-accessible-dialog):not(:has(.nav-blocking-dialog)) {
+      .cdk-overlay-backdrop {
+        margin-left: var(--overlay-margin);
+        width: calc(100% - var(--overlay-margin));
+      }
+    }
 
+    // Navigation accessible dialogs are always shifted, to be centered in the remaining space
     &:has(.nav-accessible-dialog) {
-      margin-left: var(--overlay-margin);
-      width: calc(100% - var(--overlay-margin));
-    }
+      .cdk-overlay-pane {
+        margin-left: var(--overlay-margin);
+      }
 
-    .mat-mdc-select-panel {
-      margin-left: calc(-1 * var(--overlay-margin));
-    }
-
-    .mat-mdc-autocomplete-panel {
-      margin-left: calc(-1 * var(--overlay-margin));
-    }
-
-    .mat-mdc-menu-panel {
-      margin-left: calc(-1 * var(--overlay-margin));
-    }
-
-    .mat-mdc-tooltip {
-      margin-left: calc(-1 * (var(--overlay-margin) + 43px));
-    }
-
-    &:has(.welcome-dialog-panel),
-    &:has(.global-dialog-panel),
-    &:has(.nav-blocking-dialog):not(:has(.nav-accessible-dialog)) {
-      margin-left: 0;
-      width: 100%;
-
+      // Shift back components which could be contained in the dialog to be correctly aligned
       .mat-mdc-select-panel,
       .mat-mdc-autocomplete-panel,
       .mat-mdc-menu-panel,
       .mat-mdc-tooltip {
-        margin-left: 0 !important;
+        margin-left: calc(-1 * var(--overlay-margin));
       }
     }
   }

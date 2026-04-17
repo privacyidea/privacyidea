@@ -19,8 +19,8 @@
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
 import { HttpClient, HttpParams, httpResource, HttpResourceRef } from "@angular/common/http";
-import { computed, inject, Injectable, linkedSignal, Signal, WritableSignal } from "@angular/core";
-import { DOCUMENT } from "@angular/common";
+import { computed, inject, Injectable, linkedSignal, Signal, WritableSignal, DOCUMENT } from "@angular/core";
+
 import { TableUtilsService, TableUtilsServiceInterface } from "../table-utils/table-utils.service";
 import { FilterValue } from "../../core/models/filter_value/filter_value";
 import { Observable, shareReplay } from "rxjs";
@@ -162,18 +162,18 @@ export class MachineService implements MachineServiceInterface {
   pageSize = linkedSignal({
     source: () => ({
       selectedApplicationType: this.selectedApplicationType,
-      tokenApplicationResource: this.tokenService.tokenDetailResource.value
+      tokenApplicationResource: this.tokenService.tokenDetailResourceValue
     }),
     computation: () => 10
   });
 
   machineFilter: WritableSignal<FilterValue> = linkedSignal({
     source: () => ({
-      selectedApplicationType: this.selectedApplicationType,
-      tokenDetailResource: this.tokenService.tokenDetailResource.value
+      selectedApplicationType: this.selectedApplicationType(),
+      tokenDetailResource: this.tokenService.tokenDetailResource.hasValue() ? this.tokenService.tokenDetailResource.value() : undefined
     }),
     computation: (source) => {
-      const tokenSerial = source.tokenDetailResource()?.result?.value?.tokens[0]?.serial;
+      const tokenSerial = source.tokenDetailResource?.result?.value?.tokens[0]?.serial;
       if (!tokenSerial) {
         return new FilterValue();
       }
@@ -212,7 +212,7 @@ export class MachineService implements MachineServiceInterface {
       application: this.selectedApplicationType(),
       filter: this.machineFilter(),
       sort: this.sort(),
-      tokenApplicationResource: this.tokenService.tokenDetailResource.value
+      tokenApplicationResource: this.tokenService.tokenDetailResourceValue
     }),
     computation: () => 0
   });
@@ -272,13 +272,17 @@ export class MachineService implements MachineServiceInterface {
   });
 
   machines: WritableSignal<Machines | undefined> = linkedSignal({
-    source: this.machinesResource.value,
-    computation: (machinesResource, previous) => machinesResource?.result?.value ?? previous?.value
+    source: () => this.machinesResource.hasValue() ? this.machinesResource.value() : undefined,
+    computation: (machinesResource, previous) => {
+      return machinesResource?.result?.value ?? previous?.value;
+    }
   });
 
   tokenApplications: Signal<TokenApplications | undefined> = linkedSignal({
-    source: this.tokenApplicationResource.value,
-    computation: (tokenApplicationResource, previous) => tokenApplicationResource?.result?.value ?? previous?.value
+    source: () => this.tokenApplicationResource.hasValue() ? this.tokenApplicationResource.value() : undefined,
+    computation: (tokenApplicationResource, previous) => {
+      return tokenApplicationResource?.result?.value ?? previous?.value;
+    }
   });
 
   handleFilterInput($event: Event): void {

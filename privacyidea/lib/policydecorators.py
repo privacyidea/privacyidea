@@ -62,7 +62,7 @@ from privacyidea.lib.utils import parse_timedelta, split_pin_pass
 log = logging.getLogger(__name__)
 
 
-class libpolicy(object):
+class libpolicy:
     """
     This is the decorator wrapper to call a specific function before a
     library call in contrast to prepolicy and postpolicy, which are to be
@@ -302,12 +302,12 @@ def auth_user_passthru(wrapped_function, user_object, passw, options=None):
             else:
                 # We are doing RADIUS passthru
                 log.info("Forwarding the authentication request to the radius "
-                         "server %s" % pass_thru_action)
+                         f"server {pass_thru_action}")
                 radius = get_radius(pass_thru_action)
                 # TODO: Handle challenge-response from RADIUS server (#2587)
                 r = radius.request(user_object.login, passw)
                 if r is not None and r.code == pyrad.packet.AccessAccept:
-                    log.debug("Successful RADIUS authentication in passthru with server %r" % pass_thru_action)
+                    log.debug(f"Successful RADIUS authentication in passthru with server {pass_thru_action!r}")
                     passthru_assign = Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.PASSTHRU_ASSIGN,
                                                  user_object=user_object).action_values(unique=True)
                     messages = []
@@ -336,7 +336,7 @@ def auth_user_passthru(wrapped_function, user_object, passw, options=None):
                     messages.append(f"against RADIUS server {pass_thru_action} due to '{policy_name}'")
                     return True, {'message': ",".join(messages)}
                 else:
-                    log.debug("Passthru authentication failed with RADIUS server %r" % pass_thru_action)
+                    log.debug(f"Passthru authentication failed with RADIUS server {pass_thru_action!r}")
 
     # If nothing else returned, we return the wrapped function
     return wrapped_function(user_object, passw, options)
@@ -597,8 +597,7 @@ def reset_all_user_tokens(wrapped_function, *args, **kwds):
         reset_all = Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.RESETALLTOKENS,
                                user_object=token_owner if token_owner else None).policies()
         if reset_all:
-            log.debug("Reset failcounter of all tokens of {0!s}".format(
-                token_owner))
+            log.debug(f"Reset failcounter of all tokens of {token_owner!s}")
             for tok_obj_reset in available_tokens:
                 try:
                     tok_obj_reset.reset()

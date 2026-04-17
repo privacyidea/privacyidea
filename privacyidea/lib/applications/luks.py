@@ -77,8 +77,8 @@ class MachineApplication(MachineApplicationBase):
                                                         do_truncation=False)
                 ret["response"] = otp
         else:
-            log.info("Token %r, type %r is not supported by "
-                     "LUKS application module" % (serial, token_type))
+            log.info(f"Token {serial!r}, type {token_type!r} is not supported by "
+                     "LUKS application module")
 
         return ret
 

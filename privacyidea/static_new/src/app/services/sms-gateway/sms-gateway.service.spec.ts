@@ -23,18 +23,22 @@ import { HttpTestingController, provideHttpClientTesting } from "@angular/common
 import { AuthService } from "../auth/auth.service";
 import { NotificationService } from "../notification/notification.service";
 import { environment } from "../../../environments/environment";
+import { signal } from "@angular/core";
+import { MockContentService, MockPiResponse } from "../../../testing/mock-services";
+import { ContentService } from "../content/content.service";
 
 describe("SmsGatewayService", () => {
   let service: SmsGatewayService;
   let httpMock: HttpTestingController;
   let notificationService: NotificationService;
+  let contentServiceMock: MockContentService;
 
   beforeEach(() => {
     const authServiceMock = {
-      getHeaders: jest.fn().mockReturnValue({}),
+      getHeaders: jest.fn().mockReturnValue({})
     };
     const notificationServiceMock = {
-      openSnackBar: jest.fn(),
+      openSnackBar: jest.fn()
     };
 
     TestBed.configureTestingModule({
@@ -43,11 +47,13 @@ describe("SmsGatewayService", () => {
         provideHttpClientTesting(),
         { provide: AuthService, useValue: authServiceMock },
         { provide: NotificationService, useValue: notificationServiceMock },
+        { provide: ContentService, useClass: MockContentService }
       ]
     });
     service = TestBed.inject(SmsGatewayService);
     httpMock = TestBed.inject(HttpTestingController);
     notificationService = TestBed.inject(NotificationService);
+    contentServiceMock = TestBed.inject(ContentService) as unknown as MockContentService;
   });
 
   afterEach(() => {
@@ -79,5 +85,43 @@ describe("SmsGatewayService", () => {
 
     await promise;
     expect(notificationService.openSnackBar).toHaveBeenCalledWith("Successfully deleted SMS gateway: test.");
+  });
+
+  describe("smsGateways", () => {
+
+    it("smsGateways falls back to default when resource empty", () => {
+      expect(service.smsGateways()).toEqual([]);
+    });
+
+    it("should update smsGateways from smsGatewaysResource on successful response", async () => {
+      contentServiceMock.onExternalSms = signal(true);
+      TestBed.tick();
+
+      const req = httpMock.expectOne((r) => r.url === "/smsgateway/");
+      expect(req.request.method).toBe("GET");
+      const smsGateways = [{ name: "test", providermodule: "TestProvider", options: {}, headers: {} }];
+      req.flush(MockPiResponse.fromValue(smsGateways));
+      await Promise.resolve();
+
+      expect(service.smsGateways()).toEqual(smsGateways);
+
+      httpMock.expectOne((r) => r.url === "/smsgateway/providers");
+    });
+
+    it("should handle error state from smsGatewayResource", async () => {
+      contentServiceMock.onExternalSms = signal(true);
+      TestBed.tick();
+
+      const req = httpMock.expectOne((r) => r.url === "/smsgateway/");
+      expect(req.request.method).toBe("GET");
+      req.flush(MockPiResponse.fromError({ message: "Permission denied" }), {
+        status: 403, statusText: "Permission denied"
+      });
+      await Promise.resolve();
+
+      expect(service.smsGateways()).toEqual([]);
+
+      httpMock.expectOne((r) => r.url === "/smsgateway/providers");
+    });
   });
 });

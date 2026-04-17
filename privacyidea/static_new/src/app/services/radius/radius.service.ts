@@ -78,6 +78,7 @@ export class RadiusService implements RadiusServiceInterface {
   });
 
   readonly radiusServers = computed<RadiusServer[]>(() => {
+    if (!this.radiusServerResource.hasValue()) return [];
     const res = this.radiusServerResource.value();
     const values = res?.result?.value;
     if (values) {

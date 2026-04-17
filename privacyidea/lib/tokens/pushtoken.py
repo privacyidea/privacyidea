@@ -36,7 +36,7 @@ import traceback
 from base64 import b32decode
 from binascii import Error as BinasciiError
 from datetime import datetime, timedelta, timezone
-from typing import Optional, Union, Any
+from typing import Any
 from urllib.parse import quote
 
 from cryptography.exceptions import InvalidSignature
@@ -47,7 +47,7 @@ from cryptography.hazmat.primitives.asymmetric import padding
 from dateutil.parser import isoparse
 
 from privacyidea.api.lib.policyhelper import get_pushtoken_add_config, get_init_tokenlabel_parameters
-from privacyidea.api.lib.utils import get_optional, get_required
+from privacyidea.lib.params import get_optional, get_required
 from privacyidea.lib import _, lazy_gettext
 from privacyidea.lib.apps import _construct_extra_parameters
 from privacyidea.lib.challenge import get_challenges
@@ -115,9 +115,9 @@ def strip_pem_headers(key: str) -> str:
 
 
 @log_with(log)
-def create_push_token_url(url: Optional[str] = None, ttl: Union[int, str] = 10, issuer: str = "privacyIDEA",
-                          serial: str = "mylabel", tokenlabel: str = "<s>", user_obj: Optional[User] = None,
-                          extra_data: Optional[dict] = None, user: Optional[str] = None, realm: Optional[str] = None,
+def create_push_token_url(url: str | None = None, ttl: int | str = 10, issuer: str = "privacyIDEA",
+                          serial: str = "mylabel", tokenlabel: str = "<s>", user_obj: User | None = None,
+                          extra_data: dict | None = None, user: str | None = None, realm: str | None = None,
                           pia_scheme: bool = False) -> str:
     """
     :param url:
@@ -419,9 +419,9 @@ class PushTokenClass(TokenClass):
                                'value': ["any",
                                          "biometric",
                                          "pin"],
-                               'desc': _(
-                                   'Enforces the privacyIDEA Authenticator App that the token has to be unlocked '
-                                   'with pin or biometric. This needs the privacyIDEA Authenticator app 4.6.1 or higher.')
+                               'desc': _('Enforces the privacyIDEA Authenticator App that the token has to '
+                                         'be unlocked with pin or biometric. This needs the privacyIDEA '
+                                         'Authenticator app 4.6.1 or higher.')
                            },
                            PushAction.USE_PIA_SCHEME: {
                                'type': 'bool',
@@ -751,8 +751,8 @@ class PushTokenClass(TokenClass):
                                 challenge_data.get("mode") == PushMode.REQUIRE_PRESENCE and presence_answer):
                             correct_answer = challenge_data.get("correct_answer")
                             if presence_answer != correct_answer:
-                                log.debug("Challenge data (%s) does not match "
-                                          "given presence answer (%s)!" % (challenge_data, presence_answer))
+                                log.debug(f"Challenge data ({challenge_data}) does not match "
+                                          f"given presence answer ({presence_answer})!")
                                 result = False
                             else:
                                 # Presence answer matches, mark the challenge as answered
@@ -760,8 +760,8 @@ class PushTokenClass(TokenClass):
                         elif isinstance(challenge_data, str) and presence_answer:
                             # Legacy handling
                             if presence_answer != challenge_data.split(",").pop():
-                                log.debug("Challenge data (%s) does not match "
-                                          "given presence answer (%s)!" % (challenge_data, presence_answer))
+                                log.debug(f"Challenge data ({challenge_data}) does not match "
+                                          f"given presence answer ({presence_answer})!")
                                 result = False
                             else:
                                 challenge.set_otp_status(True)
@@ -839,7 +839,7 @@ class PushTokenClass(TokenClass):
         else:
             raise ParameterError("Missing parameters!")
 
-    def _get_existing_challenge_data(self, transaction_id: str, push_mode: PushMode) -> Union[dict, None]:
+    def _get_existing_challenge_data(self, transaction_id: str, push_mode: PushMode) -> dict | None:
         """
         Load challenge data either in the current format (json/dict) or in the legacy format, which was a string
         that was used for require_presence.
@@ -961,7 +961,6 @@ class PushTokenClass(TokenClass):
                     # change what we need to return to the smartphone.
                     challenge_data = challenge.get_data()
                     presence_options = None
-                    code_to_phone = None
                     if isinstance(challenge_data, dict):
                         if challenge_data.get("mode") == PushMode.REQUIRE_PRESENCE:
                             presence_options = challenge_data.get("options")
@@ -971,7 +970,6 @@ class PushTokenClass(TokenClass):
                                 continue
                             # code_to_phone step 1: present as standard challenge for the smartphone
                             # to confirm. No display_code is sent.
-                            code_to_phone = None
                     elif isinstance(challenge_data, str) and challenge_data:
                         # Legacy handling, when require_presence was a string of options with the correct one at the end
                         presence_options = challenge_data.split(",")[:-1]
@@ -1217,7 +1215,7 @@ class PushTokenClass(TokenClass):
         return True, message, transactionid, reply_dict
 
     @check_token_locked
-    def authenticate(self, passw: str, user: User = None, options: dict = None) -> tuple[bool, int, Union[dict, None]]:
+    def authenticate(self, passw: str, user: User = None, options: dict = None) -> tuple[bool, int, dict | None]:
         """
         High level interface which covers the check_pin and check_otp
         This is the method that verifies single shot authentication.

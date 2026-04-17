@@ -26,7 +26,7 @@ import { environment } from "../../../environments/environment";
 import { ROUTE_PATHS } from "../../route_paths";
 import { MockContentService, MockPiResponse } from "../../../testing/mock-services";
 import { lastValueFrom, of } from "rxjs";
-import { ContentService, ContentServiceInterface } from "../content/content.service";
+import { ContentService } from "../content/content.service";
 
 describe("PrivacyideaServerService", () => {
   let service: PrivacyideaServerService;
@@ -36,10 +36,10 @@ describe("PrivacyideaServerService", () => {
 
   beforeEach(() => {
     const authServiceMock = {
-      getHeaders: jest.fn().mockReturnValue({}),
+      getHeaders: jest.fn().mockReturnValue({})
     };
     const notificationServiceMock = {
-      openSnackBar: jest.fn(),
+      openSnackBar: jest.fn()
     };
 
     TestBed.configureTestingModule({
@@ -114,7 +114,7 @@ describe("PrivacyideaServerService", () => {
     async function testLoadResource() {
       const piServerResponse = { pi1: {}, pi2: {} };
       const mockResponse = MockPiResponse.fromValue(piServerResponse);
-      TestBed.flushEffects();
+      TestBed.tick();
       const req = httpMock.expectOne(service.privacyideaServerBaseUrl);
       expect(req.request.method).toBe("GET");
       req.flush(mockResponse);
@@ -132,5 +132,20 @@ describe("PrivacyideaServerService", () => {
     contentService.routeUrl.set(ROUTE_PATHS.TOKENS_ENROLLMENT);
     contentService.onTokenEnrollmentLikely.set(true);
     await testLoadResource();
+  });
+
+  it("privacyideaServerResource should handle http error", async () => {
+    contentService.routeUrl.set(ROUTE_PATHS.TOKENS_ENROLLMENT);
+    contentService.onTokenEnrollmentLikely.set(true);
+    TestBed.tick();
+
+    const req = httpMock.expectOne(service.privacyideaServerBaseUrl);
+    expect(req.request.method).toBe("GET");
+    req.flush(MockPiResponse.fromError({ message: "Permission denied" }), {
+        status: 403, statusText: "Permission denied"
+      });
+    await lastValueFrom(of({})); // Wait for async updates
+
+    expect(service.remoteServerOptions()).toEqual([]);
   });
 });

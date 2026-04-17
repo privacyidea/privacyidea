@@ -3,17 +3,17 @@
 @use "@angular/material" as mat;
 
 .container-templates-layout {
-  @include table.table-container-styles;
+  @include styles.main-component-style;
   @include table.base-table-structure(
-    ".container-templates-table",
-    ".container-templates-table-filter",
-    ".container-templates-scroll-container"
+          ".container-templates-table",
+          ".container-templates-table-filter",
+          ".container-templates-scroll-container"
   );
 
-  display: flex;
-  flex-direction: column;
-  max-height: var(--max-height);
-  overflow: auto;
+  & {
+    display: flex;
+    flex-direction: column;
+  }
 
   th,
   td {

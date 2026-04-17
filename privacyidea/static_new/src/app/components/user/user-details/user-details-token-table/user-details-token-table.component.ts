@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, effect, inject, linkedSignal, ViewChild, WritableSignal, ElementRef, signal } from "@angular/core";
+import { Component, effect, ElementRef, inject, linkedSignal, signal, ViewChild, WritableSignal } from "@angular/core";
 import { CopyButtonComponent } from "../../../shared/copy-button/copy-button.component";
 import {
   MatCell,
@@ -41,7 +41,6 @@ import { MatTooltip } from "@angular/material/tooltip";
 import { NgClass } from "@angular/common";
 import { ContainerDetailToken } from "../../../../services/container/container.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "../../../../services/table-utils/table-utils.service";
-import { OverflowService, OverflowServiceInterface } from "../../../../services/overflow/overflow.service";
 import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
 import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
 import { TokenDetails, TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
@@ -77,7 +76,6 @@ import { UserService, UserServiceInterface } from "../../../../services/user/use
 })
 export class UserDetailsTokenTableComponent {
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
-  protected readonly overflowService: OverflowServiceInterface = inject(OverflowService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
@@ -98,9 +96,9 @@ export class UserDetailsTokenTableComponent {
   @ViewChild(MatPaginator) paginator!: MatPaginator;
   sort = signal({ active: "serial", direction: "asc" } as Sort);
   apiFilter = this.tokenService.apiFilter;
-  @ViewChild('filterInput', { static: false }) filterInput!: ElementRef<HTMLInputElement>;
+  @ViewChild("filterInput", { static: false }) filterInput!: ElementRef<HTMLInputElement>;
   userTokenData: WritableSignal<MatTableDataSource<any, MatPaginator>> = linkedSignal({
-    source: this.tokenService.userTokenResource.value,
+    source: () => this.tokenService.userTokenResource.hasValue() ? this.tokenService.userTokenResource.value() : undefined,
     computation: (userTokenResource, previous) => {
       if (!userTokenResource) {
         return previous?.value ?? new MatTableDataSource<any, MatPaginator>([]);

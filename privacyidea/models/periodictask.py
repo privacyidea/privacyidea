@@ -16,8 +16,7 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import datetime
 
 from dateutil.tz import tzutc
 from sqlalchemy import Sequence, Integer, Unicode, Boolean, DateTime
@@ -110,9 +109,9 @@ class PeriodicTaskOption(db.Model):
     """
     __tablename__ = 'periodictaskoption'
     id: Mapped[int] = mapped_column(Integer, Sequence("periodictaskopt_seq"), primary_key=True)
-    periodictask_id: Mapped[Optional[int]] = mapped_column(Integer, db.ForeignKey('periodictask.id'))
+    periodictask_id: Mapped[int | None] = mapped_column(Integer, db.ForeignKey('periodictask.id'))
     key: Mapped[str] = mapped_column(Unicode(255), nullable=False)
-    value: Mapped[Optional[str]] = mapped_column(Unicode(2000), default='')
+    value: Mapped[str | None] = mapped_column(Unicode(2000), default='')
 
     __table_args__ = (db.UniqueConstraint('periodictask_id',
                                           'key',
@@ -130,7 +129,7 @@ class PeriodicTaskLastRun(db.Model):
     """
     __tablename__ = 'periodictasklastrun'
     id: Mapped[int] = mapped_column(Integer, Sequence("periodictasklastrun_seq"), primary_key=True)
-    periodictask_id: Mapped[Optional[int]] = mapped_column(Integer, db.ForeignKey('periodictask.id'))
+    periodictask_id: Mapped[int | None] = mapped_column(Integer, db.ForeignKey('periodictask.id'))
     node: Mapped[str] = mapped_column(Unicode(255), nullable=False)
     timestamp: Mapped[datetime] = mapped_column(DateTime(timezone=False), nullable=False)
 

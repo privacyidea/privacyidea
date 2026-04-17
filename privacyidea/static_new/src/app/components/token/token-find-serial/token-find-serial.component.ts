@@ -46,7 +46,6 @@ import { SearchTokenDialogComponent } from "./search-token-dialog/search-token-d
     MatFormField,
     MatInput,
     MatSelect,
-    CommonModule,
     MatIcon,
     MatButton,
     MatHint,

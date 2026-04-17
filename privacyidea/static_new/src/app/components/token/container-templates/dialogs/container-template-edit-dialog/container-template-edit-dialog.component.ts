@@ -18,7 +18,7 @@
  **/
 
 import { Component, inject, computed, linkedSignal, effect } from "@angular/core";
-import { CommonModule } from "@angular/common";
+
 import { FormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCardModule } from "@angular/material/card";
@@ -29,8 +29,8 @@ import { MatInputModule } from "@angular/material/input";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatListModule } from "@angular/material/list";
 import {
-  ContainerTemplateServiceInterface,
-  ContainerTemplateService
+  ContainerTemplateService,
+  ContainerTemplateServiceInterface
 } from "../../../../../services/container-template/container-template.service";
 import { ContainerTemplate } from "../../../../../services/container/container.service";
 import { deepCopy } from "../../../../../utils/deep-copy.utils";
@@ -44,12 +44,15 @@ import { TokenEnrollmentPayload } from "src/app/mappers/token-api-payload/_token
 import { TokenTypeKey } from "src/app/services/token/token.service";
 import { ROUTE_PATHS } from "../../../../../route_paths";
 import { ContentService, ContentServiceInterface } from "../../../../../services/content/content.service";
+import { NAVIGATION_ACCESSIBLE_DIALOG_CLASS } from "../../../../../constants/global.constants";
 
 @Component({
   selector: "app-container-template-edit-dialog",
   standalone: true,
+  host: {
+    class: NAVIGATION_ACCESSIBLE_DIALOG_CLASS
+  },
   imports: [
-    CommonModule,
     MatInputModule,
     MatCardModule,
     MatIconModule,

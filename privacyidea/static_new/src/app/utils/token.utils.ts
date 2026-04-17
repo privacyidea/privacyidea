@@ -97,7 +97,7 @@ export const tokenTypes: TokenType[] = [
     name: "SMS",
     info: "",
     text: "The SMS Token sends an OTP value to the mobile phone of the user.",
-    rollover: false
+    rollover: true
   } as TokenType,
   {
     key: "4eyes",

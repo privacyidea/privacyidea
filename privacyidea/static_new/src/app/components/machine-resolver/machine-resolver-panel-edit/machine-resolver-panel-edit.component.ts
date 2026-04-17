@@ -26,7 +26,7 @@ import {
   MachineResolverService,
   MachineResolverServiceInterface
 } from "../../../services/machine-resolver/machine-resolver.service";
-import { CommonModule } from "@angular/common";
+
 import { FormsModule } from "@angular/forms";
 import { MatAutocompleteModule } from "@angular/material/autocomplete";
 import { MatButtonModule } from "@angular/material/button";
@@ -47,7 +47,6 @@ import { lastValueFrom } from "rxjs";
   templateUrl: "./machine-resolver-panel-edit.component.html",
   styleUrls: ["./machine-resolver-panel-edit.component.scss"],
   imports: [
-    CommonModule,
     MatExpansionModule,
     MatIconModule,
     MatInputModule,
@@ -82,7 +81,9 @@ export class MachineResolverPanelEditComponent {
   readonly isEdited = computed(
     () => JSON.stringify(this.currentMachineResolver()) !== JSON.stringify(this.originalMachineResolver())
   );
-  readonly expanded = computed(() => this.contentService.machineResolver() === this.originalMachineResolver().resolvername);
+  readonly expanded = computed(
+    () => this.contentService.machineResolver() === this.originalMachineResolver().resolvername
+  );
   readonly canSaveMachineResolver = computed(() => {
     const current = this.currentMachineResolver();
     if (!current.resolvername.trim()) return false;

@@ -169,13 +169,17 @@ export class ContainerCreateComponent {
     });
 
     effect(() => {
-      const containerDetailResource = this.containerService.containerDetailResource.value();
       const serial = this.containerService.containerSerial();
 
       if (!serial) {
         return;
       }
 
+      if (!this.containerService.containerDetailResource.hasValue()) {
+        return;
+      }
+
+      const containerDetailResource = this.containerService.containerDetailResource.value();
       if (containerDetailResource?.result?.value) {
         const container = containerDetailResource.result.value.containers[0];
         const registrationState = container?.info?.registration_state;

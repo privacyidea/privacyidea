@@ -98,8 +98,21 @@
                   </span>
                 </div>
               }
+              @case ("authentication") {
+                <div class="flex just-center">
+                  <span
+                    [ngClass]="
+                      tableUtilsService.getSpanClassForKey({
+                        key: column.key,
+                        value: element[column.key]
+                      })
+                    ">
+                    {{ element[column.key] }}
+                  </span>
+                </div>
+              }
               @case ("serial") {
-                <div class="flex-row ali-center">
+                <div class="flex-row flex-nowrap ali-center">
                   <a
                     (click)="contentService.tokenSelected(element.serial)"
                     attr.aria-label="{{ column.label }} Link"
@@ -117,7 +130,7 @@
                 </span>
               }
               @case ("container_serial") {
-                <div class="flex-row ali-center">
+                <div class="flex-row flex-nowrap ali-center">
                   <a
                     (click)="contentService.containerSelected(element.container_serial)"
                     attr.aria-label="{{ column.label }} Link"

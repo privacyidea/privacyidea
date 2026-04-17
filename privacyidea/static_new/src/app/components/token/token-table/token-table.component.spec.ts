@@ -122,13 +122,11 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
 
   it("isAllSelected/toggleAllRows/toggleRow work as expected", () => {
     const tokens = [{ serial: "T-1" } as any, { serial: "T-2" } as any];
-    tokenService.tokenResource.set(
-      MockPiResponse.fromValue({
+    tokenService.tokenResourceValue.set({
         tokens,
         count: 2,
         current: 1
-      })
-    );
+      });
     tableFixture.detectChanges();
 
     expect(table.isAllSelected()).toBe(false);
@@ -252,7 +250,7 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
     expect(initial.length).toBe(table.pageSize());
 
     const tokens = [{ serial: "S-1" }, { serial: "S-2" }] as any;
-    tokenService.tokenResource.set(MockPiResponse.fromValue({ tokens, count: 2, current: 1 }));
+    tokenService.tokenResourceValue.set({ tokens, count: 2, current: 1 });
     tableFixture.detectChanges();
 
     expect(table.tokenDataSource().data).toEqual(tokens);

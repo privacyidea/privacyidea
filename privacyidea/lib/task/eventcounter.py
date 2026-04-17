@@ -23,7 +23,7 @@ from privacyidea.lib.utils import is_true
 from privacyidea.lib import _
 
 
-__doc__ = """This task module reads event counters and writes them to the 
+__doc__ = """This task module reads event counters and writes them to the
 MonitoringStats database table."""
 
 log = logging.getLogger(__name__)
@@ -66,8 +66,8 @@ class EventCounterTask(BaseTask):
 
         # now write the current value of the counter
         if counter_value is None:
-            log.warning("Trying to create statistics of a counter_value '{0}', "
-                        "that does not exist.".format(event_counter))
+            log.warning(f"Trying to create statistics of a counter_value '{event_counter}', "
+                        "that does not exist.")
         else:
             write_stats(stats_key, counter_value)
 
