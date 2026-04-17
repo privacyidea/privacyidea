@@ -226,7 +226,7 @@ def check_policy_name(name):
 
 DEFAULT_ANDROID_APP_URL = "https://play.google.com/store/apps/details?id=it.netknights.piauthenticator"
 DEFAULT_IOS_APP_URL = "https://apps.apple.com/us/app/privacyidea-authenticator/id1445401301"
-DEFAULT_PREFERRED_CLIENT_MODE_LIST = ['interactive', 'webauthn', 'poll', 'u2f']
+DEFAULT_PREFERRED_CLIENT_MODE_LIST = ['interactive', 'webauthn', 'poll']
 
 comma_escape_text = lazy_gettext("Note: If you use a comma in the message, you "
                                  "need to escape it with a backslash.")
@@ -2654,7 +2654,7 @@ def get_static_policy_definitions(scope=None):
             PolicyAction.PREFERREDCLIENTMODE: {
                 'type': 'str',
                 'desc': _('You can set the client modes in the order that you prefer. '
-                          'For example: "interactive webauthn poll u2f". Accepted '
+                          'For example: "interactive webauthn poll". Accepted '
                           'values are: <code>interactive webauthn poll u2f</code>')
             },
             PolicyAction.FORCE_CHALLENGE_RESPONSE: {

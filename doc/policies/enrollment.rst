@@ -341,34 +341,6 @@ type: ``integer``
 Defines how many OTP values should be generated (and printed) for the TAN token.
 
 
-u2f_req
-~~~~~~~
-
-type: ``string``
-
-Only the specified U2F devices are allowed to be registered.
-The action can be specified like this::
-
-    u2f_req=subject/.*Yubico.*/
-
-The keyword can be "subject", "issuer" or "serial", followed by a
-regular expression. During registration of the U2F device the information
-is fetched from the attestation certificate.
-Only if the attribute in the attestation certificate matches accordingly the
-token can be registered.
-
-.. _policy_u2f_no_verify_certificate:
-
-u2f_no_verify_certificate
-~~~~~~~~~~~~~~~~~~~~~~~~~
-
-type: ``bool``
-
-By default, the validity period of the attestation certificate of a U2F device gets
-verified during the registration process.
-If you do not want to verify the validity period, you can check this action.
-
-
 .. _2step_parameters:
 .. _hotp-2step-clientsize:
 .. _totp-2step-clientsize:

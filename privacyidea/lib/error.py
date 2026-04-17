@@ -208,6 +208,12 @@ class ResolverError(PrivacyIDEAError):
         PrivacyIDEAError.__init__(self, description=description, id=eid)
 
 
+class NoLongerSupportedError(PrivacyIDEAError):
+    """Raised when an operation targets a token type that is no longer supported."""
+    def __init__(self, description="This token is no longer supported!", id=Error.PARAMETER):
+        PrivacyIDEAError.__init__(self, description=description, id=id)
+
+
 class ContainerError(PrivacyIDEAError):
     def __init__(self, description="container error!", eid=Error.CONTAINER):
         PrivacyIDEAError.__init__(self, description=description, id=eid)

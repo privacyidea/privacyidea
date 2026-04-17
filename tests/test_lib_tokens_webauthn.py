@@ -55,9 +55,7 @@ This file tests the lib.tokens.webauthntoken, along with lib.tokens.webauthn.
 This depends on lib.tokenclass
 """
 import os
-import struct
 import unittest
-from copy import copy
 
 from mock import patch
 
@@ -70,17 +68,11 @@ from privacyidea.lib.fido2.token_info import FIDO2TokenInfo
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import set_policy, SCOPE, delete_policy
 from privacyidea.lib.token import init_token, check_user_pass, remove_token, import_tokens, get_tokens
-from privacyidea.lib.tokens.webauthn import (CoseAlgorithm, RegistrationRejectedException,
-                                             WebAuthnMakeCredentialOptions, AuthenticationRejectedException,
-                                             webauthn_b64_decode, webauthn_b64_encode,
-                                             WebAuthnRegistrationResponse, ATTESTATION_REQUIREMENT_LEVEL,
-                                             AttestationLevel, AuthenticatorDataFlags, WebAuthnAssertionResponse,
-                                             WebAuthnUser)
+from privacyidea.lib.tokens.webauthn import (CoseAlgorithm, webauthn_b64_decode, AttestationLevel)
 from privacyidea.lib.tokens.webauthntoken import (WebAuthnTokenClass, DEFAULT_AUTHENTICATOR_ATTESTATION_FORM,
                                                   DEFAULT_USER_VERIFICATION_REQUIREMENT)
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import hexlify_and_unicode
-from privacyidea.models import db
 from .base import MyTestCase
 
 TRUST_ANCHOR_DIR = "{}/testdata/trusted_attestation_roots".format(os.path.abspath(os.path.dirname(__file__)))
@@ -693,227 +685,8 @@ class WebAuthnTokenTestCase(MyTestCase):
 
 
 class WebAuthnTestCase(unittest.TestCase):
-    @staticmethod
-    def getWebAuthnCredential():
-        return WebAuthnRegistrationResponse(
-            rp_id=RP_ID,
-            origin=ORIGIN,
-            registration_response=copy(REGISTRATION_RESPONSE_TMPL),
-            challenge=REGISTRATION_CHALLENGE,
-            attestation_requirement_level=ATTESTATION_REQUIREMENT_LEVEL[AttestationLevel.NONE],
-            trust_anchor_dir=TRUST_ANCHOR_DIR,
-            uv_required=False,
-            expected_registration_client_extensions=EXPECTED_REGISTRATION_CLIENT_EXTENSIONS,
-        ).verify()
-
-    @staticmethod
-    def getAssertionResponse():
-        credential = WebAuthnTestCase.getWebAuthnCredential()
-        webauthn_user = WebAuthnUser(
-            user_id=USER_ID,
-            user_name=USER_NAME,
-            user_display_name=USER_DISPLAY_NAME,
-            icon_url=ICON_URL,
-            credential_id=credential.credential_id.decode(),
-            public_key=credential.public_key,
-            sign_count=credential.sign_count,
-            rp_id=credential.rp_id
-        )
-
-        webauthn_assertion_response = WebAuthnAssertionResponse(
-            webauthn_user=webauthn_user,
-            assertion_response=copy(ASSERTION_RESPONSE_TMPL),
-            challenge=ASSERTION_CHALLENGE,
-            origin=ORIGIN,
-            uv_required=False,
-        )
-
-        return webauthn_assertion_response
-
-    def setUp(self):
-        self.options = WebAuthnMakeCredentialOptions(
-            challenge=REGISTRATION_CHALLENGE,
-            rp_name=RP_NAME,
-            rp_id=RP_ID,
-            user_id=USER_ID,
-            user_name=USER_NAME,
-            user_display_name=USER_DISPLAY_NAME,
-            icon_url=ICON_URL,
-            timeout=TIMEOUT,
-            attestation=ATTESTATION_FORM,
-            user_verification=USER_VERIFICATION,
-            public_key_credential_algorithms=PUBLIC_KEY_CREDENTIAL_ALGORITHMS,
-            location=True,
-            credential_ids=[CRED_ID]
-        )
-
-    def test_00_create_options(self):
-        registration_dict = self.options.registration_dict
-        self.assertEqual(registration_dict['challenge'], REGISTRATION_CHALLENGE)
-        self.assertTrue(CRED_KEY in registration_dict['pubKeyCredParams'])
-
-    def test_01_validate_registration(self):
-        webauthn_credential = self.getWebAuthnCredential()
-        self.assertEqual(RP_ID, webauthn_credential.rp_id, webauthn_credential)
-        self.assertEqual(ORIGIN, webauthn_credential.origin, webauthn_credential)
-        self.assertTrue(webauthn_credential.has_signed_attestation, webauthn_credential)
-        self.assertTrue(webauthn_credential.has_trusted_attestation, webauthn_credential)
-        self.assertEqual(str(webauthn_credential),
-                         '{0!r} ({1!s}, {2!s}, {3!s})'.format(CREDENTIAL_ID,
-                                                              RP_ID, ORIGIN, 0),
-                         webauthn_credential)
-
-    def test_01b_validate_untrusted_registration(self):
-        webauthn_credential = WebAuthnRegistrationResponse(
-            rp_id=RP_ID,
-            origin=ORIGIN,
-            registration_response=copy(REGISTRATION_RESPONSE_TMPL),
-            challenge=REGISTRATION_CHALLENGE,
-            attestation_requirement_level=ATTESTATION_REQUIREMENT_LEVEL[AttestationLevel.NONE],
-            uv_required=False,
-            expected_registration_client_extensions=EXPECTED_REGISTRATION_CLIENT_EXTENSIONS,
-        ).verify()
-        self.assertEqual(RP_ID, webauthn_credential.rp_id, webauthn_credential)
-        self.assertEqual(ORIGIN, webauthn_credential.origin, webauthn_credential)
-        self.assertTrue(webauthn_credential.has_signed_attestation, webauthn_credential)
-        self.assertFalse(webauthn_credential.has_trusted_attestation, webauthn_credential)
-
-    def test_02_registration_invalid_user_verification(self):
-        registration_response = WebAuthnRegistrationResponse(
-            rp_id=RP_ID,
-            origin=ORIGIN,
-            registration_response=copy(REGISTRATION_RESPONSE_TMPL),
-            challenge=REGISTRATION_CHALLENGE,
-            attestation_requirement_level=ATTESTATION_REQUIREMENT_LEVEL[AttestationLevel.UNTRUSTED],
-            trust_anchor_dir=TRUST_ANCHOR_DIR,
-            uv_required=True,
-            expected_registration_client_extensions=EXPECTED_REGISTRATION_CLIENT_EXTENSIONS
-        )
-
-        with self.assertRaisesRegex(RegistrationRejectedException,
-                                    'Malformed request received.'):
-            registration_response.verify()
-
-    def test_03_validate_assertion(self):
-        webauthn_assertion_response = self.getAssertionResponse()
-        webauthn_user = webauthn_assertion_response.webauthn_user
-        self.assertEqual(str(webauthn_user),
-                         '{0!r} ({1!s}, {2!s}, {3!s})'.format(USER_ID, USER_NAME,
-                                                              USER_DISPLAY_NAME, 0),
-                         webauthn_user)
-        webauthn_assertion_response.verify()
-
-    def test_04_invalid_signature_fail_assertion(self):
-        def mess_up(response):
-            response = copy(response)
-            response['signature'] = b'00' + response['signature'][2:]
-            return response
-
-        webauthn_assertion_response = self.getAssertionResponse()
-        webauthn_assertion_response.assertion_response = mess_up(webauthn_assertion_response.assertion_response)
-
-        with self.assertRaises(AuthenticationRejectedException):
-            webauthn_assertion_response.verify()
-
-    def test_05_no_user_presence_fail_assertion(self):
-        webauthn_assertion_response = self.getAssertionResponse()
-        auth_data = webauthn_b64_decode(webauthn_assertion_response.assertion_response['authData'])
-        flags = struct.unpack('!B', auth_data[32:33])[0]
-        flags = flags & ~AuthenticatorDataFlags.USER_PRESENT
-        auth_data = auth_data[:32] + struct.pack('!B', flags) + auth_data[33:]
-        webauthn_assertion_response.assertion_response['authData'] = webauthn_b64_encode(auth_data)
-
-        # FIXME: This *should* fail because UP=0, but will fail anyway later on because the
-        #  signature is invalid.
-        # TODO: Build a mock Authenticator implementation, to be able to sign arbitrary
-        #  authenticator data statements.
-        # TODO: Sign an authenticator data statement with UP=0 and test against that so that the
-        #  signature is valid.
-        with self.assertRaises(AuthenticationRejectedException):
-            webauthn_assertion_response.verify()
-
-    def test_06_duplicate_authentication_fail_assertion(self):
-        webauthn_assertion_response = self.getAssertionResponse()
-        webauthn_assertion_response.webauthn_user.sign_count = ASSERTION_RESPONSE_SIGN_COUNT
-
-        with self.assertRaisesRegex(AuthenticationRejectedException,
-                                    'Duplicate authentication detected.'):
-            webauthn_assertion_response.verify()
-        # TODO: we should add a test for a missing sign_count (or 0) but we need
-        #  to change the auth data for that.
-
     def test_07_webauthn_b64_decode(self):
         self.assertEqual(webauthn_b64_decode(URL_DECODE_TEST_STRING), URL_DECODE_EXPECTED_RESULT)
-
-    def test_08_registration_invalid_requirement_level(self):
-        with self.assertRaisesRegex(ValueError,
-                                    'Illegal attestation_requirement_level.'):
-            WebAuthnRegistrationResponse(
-                rp_id=RP_ID,
-                origin=ORIGIN,
-                registration_response=copy(REGISTRATION_RESPONSE_TMPL),
-                challenge=REGISTRATION_CHALLENGE,
-                attestation_requirement_level={'unknown level': False},
-                trust_anchor_dir=TRUST_ANCHOR_DIR,
-                uv_required=True,
-                expected_registration_client_extensions=EXPECTED_REGISTRATION_CLIENT_EXTENSIONS
-            )
-
-    def test_09_registration_self_Attestation(self):
-        webauthn_credential = WebAuthnRegistrationResponse(
-            rp_id='localhost',
-            origin='http://localhost:3000',
-            registration_response=copy(SELF_ATTESTATION_REGISTRATION_RESPONSE_TMPL),
-            challenge='AXkXWXPP3gLx8OLlpkJ3aRRhFWntnSENggnjDpBql1ngKol7xWwevUYvrpBDP3LEvdr2EOStOFpGGxnMvXk-Vw',
-            attestation_requirement_level=ATTESTATION_REQUIREMENT_LEVEL[AttestationLevel.UNTRUSTED],
-            trust_anchor_dir=TRUST_ANCHOR_DIR,
-            expected_registration_client_extensions=EXPECTED_REGISTRATION_CLIENT_EXTENSIONS
-        ).verify()
-        self.assertEqual('localhost', webauthn_credential.rp_id, webauthn_credential)
-        self.assertEqual('http://localhost:3000', webauthn_credential.origin, webauthn_credential)
-        self.assertTrue(webauthn_credential.has_signed_attestation, webauthn_credential)
-        self.assertFalse(webauthn_credential.has_trusted_attestation, webauthn_credential)
-
-    def test_09b_registration_self_Attestation_bad_cose_alg(self):
-        self.assertRaises(
-            RegistrationRejectedException,
-            WebAuthnRegistrationResponse(
-                rp_id='localhost',
-                origin='http://localhost:3000',
-                registration_response=copy(SELF_ATTESTATION_REGISTRATION_RESPONSE_BAD_COSE_ALG),
-                challenge='AXkXWXPP3gLx8OLlpkJ3aRRhFWntnSENggnjDpBql1ngKol7xWwevUYvrpBDP3LEvdr2EOStOFpGGxnMvXk-Vw',
-                attestation_requirement_level=ATTESTATION_REQUIREMENT_LEVEL[AttestationLevel.UNTRUSTED],
-                trust_anchor_dir=TRUST_ANCHOR_DIR,
-                expected_registration_client_extensions=EXPECTED_REGISTRATION_CLIENT_EXTENSIONS
-            ).verify)
-
-    def test_09c_registration_self_Attestation_alg_mismatch(self):
-        self.assertRaisesRegex(
-            RegistrationRejectedException,
-            'does not match algorithm from attestation statement',
-            WebAuthnRegistrationResponse(
-                rp_id='localhost',
-                origin='http://localhost:3000',
-                registration_response=copy(SELF_ATTESTATION_REGISTRATION_RESPONSE_ALG_MISMATCH),
-                challenge='AXkXWXPP3gLx8OLlpkJ3aRRhFWntnSENggnjDpBql1ngKol7xWwevUYvrpBDP3LEvdr2EOStOFpGGxnMvXk-Vw',
-                attestation_requirement_level=ATTESTATION_REQUIREMENT_LEVEL[AttestationLevel.UNTRUSTED],
-                trust_anchor_dir=TRUST_ANCHOR_DIR,
-                expected_registration_client_extensions=EXPECTED_REGISTRATION_CLIENT_EXTENSIONS
-            ).verify)
-
-    def test_09d_registration_self_Attestation_broken_signature(self):
-        self.assertRaisesRegex(
-            RegistrationRejectedException,
-            'Invalid signature received.',
-            WebAuthnRegistrationResponse(
-                rp_id='localhost',
-                origin='http://localhost:3000',
-                registration_response=copy(SELF_ATTESTATION_REGISTRATION_RESPONSE_BROKEN_SIG),
-                challenge='AXkXWXPP3gLx8OLlpkJ3aRRhFWntnSENggnjDpBql1ngKol7xWwevUYvrpBDP3LEvdr2EOStOFpGGxnMvXk-Vw',
-                attestation_requirement_level=ATTESTATION_REQUIREMENT_LEVEL[AttestationLevel.UNTRUSTED],
-                trust_anchor_dir=TRUST_ANCHOR_DIR,
-                expected_registration_client_extensions=EXPECTED_REGISTRATION_CLIENT_EXTENSIONS
-            ).verify)
 
 
 class MultipleWebAuthnTokenTestCase(MyTestCase):

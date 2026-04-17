@@ -528,18 +528,25 @@ def get_enrollable_token_types() -> list[str]:
     """
     Returns a list of token types which can be enrolled.
 
-    This function removes deprecated token types from the complete token type list. In the pi.cfg file, deprecated
-    types can be re-enabled. These types will not be removed from the list.
+    A token type can be excluded from enrollment (but still allowed for existing
+    tokens) by adding its name to ``disabled_token_types`` below. That list can be
+    overridden via the ``PI_ENABLE_TOKEN_TYPE_ENROLLMENT`` pi.cfg setting.
+
+    As of v3.14 no token types use this mechanism: fully removed types are
+    migrated to ``tokentype='deprecated'`` by a schema migration instead. See
+    ``dev/token-deprecation-strategy.md``. The hook is kept for the partial-
+    deprecation use case where a type stays functional but can no longer be
+    freshly enrolled.
 
     :return: list of enrollable token types
     """
     token_types = get_token_types()
-    disabled_token_types = ['u2f']
+    disabled_token_types: list[str] = []
     enable_token_types = get_app_config_value("PI_ENABLE_TOKEN_TYPE_ENROLLMENT", [])
-    disabled_token_types = set(disabled_token_types) - set(enable_token_types)
+    effectively_disabled = set(disabled_token_types) - set(enable_token_types)
 
     # Remove the disabled token types
-    enrollable_token_types = list(set(token_types) - disabled_token_types)
+    enrollable_token_types = list(set(token_types) - effectively_disabled)
 
     return enrollable_token_types
 
@@ -791,7 +798,6 @@ def get_token_list():
     module_list.add("privacyidea.lib.tokens.foureyestoken")
     module_list.add("privacyidea.lib.tokens.tiqrtoken")
     module_list.add("privacyidea.lib.tokens.ocratoken")
-    module_list.add("privacyidea.lib.tokens.u2ftoken")
     module_list.add("privacyidea.lib.tokens.papertoken")
     module_list.add("privacyidea.lib.tokens.questionnairetoken")
     module_list.add("privacyidea.lib.tokens.vascotoken")
@@ -800,6 +806,7 @@ def get_token_list():
     module_list.add("privacyidea.lib.tokens.indexedsecrettoken")
     module_list.add("privacyidea.lib.tokens.webauthntoken")
     module_list.add("privacyidea.lib.tokens.passkeytoken")
+    module_list.add("privacyidea.lib.tokens.deprecated")
 
     # Dynamic token modules
     dynamic_token_modules = get_app_config_value("PI_TOKEN_MODULES")

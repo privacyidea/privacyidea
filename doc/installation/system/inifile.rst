@@ -349,13 +349,19 @@ Enable Enrollment of Deprecated Token Types
 
 .. versionadded:: 3.12
 
-The *u2f* token type is deprecated because it has been superseded by WebAuthn/FIDO2, which are more modern and secure authentication standards.
-No new tokens of this type can be enrolled. However, existing tokens of this type can still be used.
+privacyIDEA can mark a token type as *partially deprecated*: existing tokens of
+that type keep working, but no new tokens of that type can be enrolled. If an
+admin still wants to enroll new tokens of such a type, the type name can be
+added to the ``PI_ENABLE_TOKEN_TYPE_ENROLLMENT`` list in ``pi.cfg``::
 
-If you still want to enroll tokens of a deprecated type, add the type to the ``PI_ENABLE_TOKEN_TYPE_ENROLLMENT``
-parameter in the ``pi.cfg`` file::
+    PI_ENABLE_TOKEN_TYPE_ENROLLMENT = ['<tokentype>']
 
-    PI_ENABLE_TOKEN_TYPE_ENROLLMENT = ['u2f']
+.. note::
+
+   As of v3.14 no token types are in this state. Types that are *fully*
+   removed (e.g. ``u2f`` in v3.14) are migrated by the schema update to
+   ``tokentype='deprecated'`` and handled via ``pi-tokenjanitor deprecated``
+   — see the developer note ``dev/token-deprecation-strategy.md``.
 
 .. _picfg_email_validators:
 

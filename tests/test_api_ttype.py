@@ -1,34 +1,35 @@
 # SPDX-FileCopyrightText: 2015 NetKnights GmbH <https://netknights.it>
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
-from privacyidea.lib.challenge import get_challenges
-from privacyidea.lib.framework import get_app_local_store
-from privacyidea.lib.tokenclass import ChallengeSession
-from .base import MyApiTestCase
-from privacyidea.lib.user import (User)
-from privacyidea.lib.config import (set_privacyidea_config)
-from privacyidea.lib.token import (get_tokens, init_token, remove_token)
-from privacyidea.lib.policy import (SCOPE, PolicyAction, set_policy, delete_policy)
-from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway
-from privacyidea.lib.smsprovider.FirebaseProvider import FirebaseConfig
-from cryptography.hazmat.primitives import serialization, hashes
+import hmac
+import urllib
+from base64 import b32encode, b64encode, b64decode
+from datetime import datetime, timezone
+from hashlib import sha1
+from zoneinfo import ZoneInfo
+
+import mock
+import responses
 from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.primitives.asymmetric import padding, rsa
-from privacyidea.lib.utils import to_bytes, to_unicode
+
+from privacyidea.lib.challenge import get_challenges
+from privacyidea.lib.config import (set_privacyidea_config)
+from privacyidea.lib.framework import get_app_local_store
+from privacyidea.lib.policy import (SCOPE, PolicyAction, set_policy, delete_policy)
+from privacyidea.lib.smsprovider.FirebaseProvider import FirebaseConfig
+from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway
+from privacyidea.lib.token import (get_tokens, init_token, remove_token)
+from privacyidea.lib.tokenclass import ChallengeSession
 from privacyidea.lib.tokens.pushtoken import (PushAction,
                                               strip_pem_headers,
                                               PUBLIC_KEY_SMARTPHONE, PRIVATE_KEY_SERVER,
                                               PUBLIC_KEY_SERVER,
                                               POLL_ONLY)
-from privacyidea.lib.utils import b32encode_and_unicode
-from datetime import datetime, timezone
-from zoneinfo import ZoneInfo
-from base64 import b32encode, b64encode, b64decode
-from hashlib import sha1
-import hmac
-import mock
-import responses
-import urllib
+from privacyidea.lib.user import (User)
+from privacyidea.lib.utils import b32encode_and_unicode, to_bytes, to_unicode
+from .base import MyApiTestCase
 from .test_lib_tokens_push import _check_firebase_params, _create_credential_mock
 
 PWFILE = "tests/testdata/passwords"
@@ -64,28 +65,6 @@ class TtypeAPITestCase(MyApiTestCase):
             service = data.get("service")
             self.assertEqual(identity.get("displayName"), "Cornelius ")
             self.assertEqual(service.get("displayName"), "privacyIDEA")
-
-    def test_02_u2f(self):
-        set_privacyidea_config("u2f.appId", "https://puck.az.intern")
-        with self.app.test_request_context('/ttype/u2f',
-                                           method='GET'):
-            res = self.app.full_dispatch_request()
-            self.assertEqual(res.status_code, 200)
-            self.assertEqual(res.mimetype, 'application/fido.trusted-apps+json')
-            data = res.json
-            self.assertTrue("trustedFacets" in data)
-
-        # Check the audit log.
-        with self.app.test_request_context('/audit/?action=*GET /ttype/*',
-                                           method='GET',
-                                           headers={'Authorization': self.at}):
-            res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 200, res)
-            json_response = res.json
-            result = json_response.get("result")
-            auditdata = result.get("value").get("auditdata")
-            self.assertTrue(len(auditdata) > 0)
-            self.assertEqual(auditdata[0].get("token_type"), "u2f")
 
     def test_03_wrong(self):
         # Test the ttype endpoint for wrong ttype, here /ttype/wrong
@@ -195,7 +174,8 @@ class TtypePushAPITestCase(MyApiTestCase):
     serial_push = "PIPU001"
 
     def _resend_and_check_unspecific_error(self, status_code: int):
-        set_policy(name="hide_ttype_error_details", scope=SCOPE.TOKEN, action=f"{PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE_FOR_TTYPE}=true")
+        set_policy(name="hide_ttype_error_details", scope=SCOPE.TOKEN,
+                   action=f"{PolicyAction.HIDE_SPECIFIC_ERROR_MESSAGE_FOR_TTYPE}=true")
         try:
             res = self.app.full_dispatch_request()
             self.assertTrue(res.status_code == status_code, res)

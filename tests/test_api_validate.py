@@ -4438,7 +4438,7 @@ class MultiChallenge(MyApiTestCase):
                     "otpkey": "31323334353637383930313233343536373839AA",
                     "pin": pin}, user=User("selfservice", self.realm1))
         set_policy("test49", scope=SCOPE.AUTH,
-                   action="{0!s}=hotp totp, {1!s}=  poll   u2f   webauthn ".format(
+                   action="{0!s}=hotp totp, {1!s}=  poll   webauthn ".format(
                        PolicyAction.CHALLENGERESPONSE, PolicyAction.PREFERREDCLIENTMODE))
 
         # authenticate with PIN to trigger challenge-response

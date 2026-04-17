@@ -54,16 +54,49 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from flask_babel import _
-from flask import (Blueprint, request, g, current_app)
+import logging
 
-from ..lib.container import find_container_by_serial, add_token_to_container
-from ..lib.log import log_with
+from flask import (Blueprint, request, g, current_app)
+from flask_babel import _
+from werkzeug.datastructures import FileStorage
+
+from privacyidea.api.auth import admin_required
+from privacyidea.api.lib.postpolicy import (save_pin_change, check_verify_enrollment,
+                                            postpolicy)
+from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action, check_token_action,
+                                           check_token_init, check_token_upload,
+                                           check_max_token_user,
+                                           check_max_token_realm,
+                                           init_tokenlabel, init_random_pin,
+                                           init_token_length_contents,
+                                           set_random_pin,
+                                           encrypt_pin, check_otp_pin,
+                                           check_external, init_token_defaults,
+                                           enroll_pin, papertoken_count,
+                                           tantoken_count,
+                                           twostep_enrollment_activation,
+                                           twostep_enrollment_parameters,
+                                           sms_identifiers, pushtoken_add_config,
+                                           verify_enrollment,
+                                           indexedsecret_force_attribute,
+                                           check_admin_tokenlist, fido2_enroll, webauthntoken_allowed,
+                                           webauthntoken_request, required_piv_attestation,
+                                           hide_tokeninfo, init_ca_connector, init_ca_template,
+                                           init_subject_components, require_description_on_edit, require_description,
+                                           check_container_action, check_user_params,
+                                           force_server_generate_key)
+from privacyidea.lib.challenge import get_challenges_paginate, cleanup_expired_challenges
+from privacyidea.lib.error import (ParameterError, TokenAdminError,
+                                   ResourceNotFoundError, PolicyError, Error)
+from privacyidea.lib.event import event
+from privacyidea.lib.importotp import (parseOATHcsv, parseSafeNetXML,
+                                       parseYubicoCSV, parsePSKCdata, GPGImport)
+from privacyidea.lib.subscriptions import CheckSubscription
 from .lib.utils import send_result, send_csv_result, get_optional, get_required
-from ..lib.tokenclass import RolloutState
-from ..lib.tokens.passkeytoken import PasskeyTokenClass
-from ..lib.tokens.webauthntoken import WebAuthnTokenClass
-from ..lib.user import get_user_from_param, User
+from ..lib.container import find_container_by_serial, add_token_to_container
+from ..lib.fido2.util import get_credential_ids_for_user
+from ..lib.log import log_with
+from ..lib.policies.actions import PolicyAction
 from ..lib.token import (init_token, get_tokens_paginate, assign_token,
                          unassign_token, remove_token, enable_token,
                          revoke_token,
@@ -76,44 +109,10 @@ from ..lib.token import (init_token, get_tokens_paginate, assign_token,
                          set_validity_period_end, set_validity_period_start, add_tokeninfo,
                          delete_tokeninfo, import_token,
                          assign_tokengroup, unassign_tokengroup, set_tokengroups, get_one_token)
-
-from ..lib.fido2.util import get_credential_ids_for_user
-from werkzeug.datastructures import FileStorage
-from privacyidea.lib.error import (ParameterError, TokenAdminError,
-                                   ResourceNotFoundError, PolicyError, Error)
-from privacyidea.lib.importotp import (parseOATHcsv, parseSafeNetXML,
-                                       parseYubicoCSV, parsePSKCdata, GPGImport)
-import logging
-from ..lib.policies.actions import PolicyAction
-from privacyidea.lib.challenge import get_challenges_paginate, cleanup_expired_challenges
-from privacyidea.api.lib.prepolicy import (prepolicy, check_base_action, check_token_action,
-                                           check_token_init, check_token_upload,
-                                           check_max_token_user,
-                                           check_max_token_realm,
-                                           init_tokenlabel, init_random_pin,
-                                           init_token_length_contents,
-                                           set_random_pin,
-                                           encrypt_pin, check_otp_pin,
-                                           check_external, init_token_defaults,
-                                           enroll_pin, papertoken_count,
-                                           tantoken_count,
-                                           u2ftoken_allowed, u2ftoken_verify_cert,
-                                           twostep_enrollment_activation,
-                                           twostep_enrollment_parameters,
-                                           sms_identifiers, pushtoken_add_config,
-                                           verify_enrollment,
-                                           indexedsecret_force_attribute,
-                                           check_admin_tokenlist, fido2_enroll, webauthntoken_allowed,
-                                           webauthntoken_request, required_piv_attestation,
-                                           hide_tokeninfo, init_ca_connector, init_ca_template,
-                                           init_subject_components, require_description_on_edit, require_description,
-                                           check_container_action, check_user_params,
-                                           force_server_generate_key)
-from privacyidea.api.lib.postpolicy import (save_pin_change, check_verify_enrollment,
-                                            postpolicy)
-from privacyidea.lib.event import event
-from privacyidea.api.auth import admin_required
-from privacyidea.lib.subscriptions import CheckSubscription
+from ..lib.tokenclass import RolloutState
+from ..lib.tokens.passkeytoken import PasskeyTokenClass
+from ..lib.tokens.webauthntoken import WebAuthnTokenClass
+from ..lib.user import get_user_from_param, User
 
 token_blueprint = Blueprint('token_blueprint', __name__)
 log = logging.getLogger(__name__)
@@ -152,8 +151,6 @@ To see how to authenticate read :ref:`rest_auth`.
 @prepolicy(papertoken_count, request)
 @prepolicy(sms_identifiers, request)
 @prepolicy(tantoken_count, request)
-@prepolicy(u2ftoken_allowed, request)
-@prepolicy(u2ftoken_verify_cert, request)
 @prepolicy(pushtoken_add_config, request)
 @prepolicy(indexedsecret_force_attribute, request)
 @prepolicy(webauthntoken_allowed, request)
