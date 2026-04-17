@@ -354,6 +354,7 @@ export class UserService implements UserServiceInterface {
       params: {
         realm: selectedUserRealm,
         attributes: "username,userid,givenname,surname,email,phone,mobile,description,resolver,editable",
+        include_custom_attributes: false,
         ...this.filterParams()
       }
     };
