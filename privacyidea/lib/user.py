@@ -88,7 +88,7 @@ class User:
     # NOTE: Directly decorating the class ``User`` breaks ``isinstance`` checks,
     # which is why we have to decorate __init__
     @log_with(log)
-    def __init__(self, login="", realm="", resolver="", uid=None, _resolved=False):
+    def __init__(self, login="", realm="", resolver="", uid=None, _skip_resolve=False):
         self.login = login or ""
         self.used_login = self.login
         self.realm = (realm or "").lower()
@@ -108,9 +108,9 @@ class User:
         if not self.login and not self.resolver and uid is not None:
             raise UserError("Can not create a user object from a uid without a resolver!")
         # Enrich user object with information from the userstore or from the
-        # user cache, unless _resolved=True signals that this is a cheap
+        # user cache, unless _skip_resolve=True signals that this is a cheap
         # reference-only construction (no LDAP call desired).
-        if not _resolved and (login or uid is not None):
+        if not _skip_resolve and (login or uid is not None):
             self._get_user_from_userstore()
             # Just store the resolver type
             self.rtype = get_resolver_type(self.resolver)
@@ -323,8 +323,11 @@ class User:
         resolver = get_resolver_object(self.resolver)
         if resolver is None:
             return False
-        uid = resolver.getUserId(self.login)
-        return uid not in ["", None]
+        try:
+            username = resolver.getUsername(self.uid)
+        except Exception:
+            return False
+        return username not in ["", None]
 
     @property
     def info(self) -> dict:
@@ -685,7 +688,7 @@ def user_ref(login: str, realm: str, resolver: str = "") -> "User":
     :param resolver: Optional resolver name
     :return: An unresolved User object
     """
-    return User(login=login, realm=realm, resolver=resolver, _resolved=True)
+    return User(login=login, realm=realm, resolver=resolver, _skip_resolve=True)
 
 
 def resolve_user(login: str, realm: str, resolver: str = "") -> "User":
