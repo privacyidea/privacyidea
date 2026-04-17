@@ -159,7 +159,7 @@ describe("EnrollWebauthnComponent", () => {
       enrollmentArgs!.data
     );
     expect(finalResponse).toBeNull();
-    expect(notification.error).toHaveBeenCalledWith(
+    expect(notification.warning).toHaveBeenCalledWith(
       "Failed to initiate WebAuthn registration: Invalid server response or missing details."
     );
   });
@@ -177,7 +177,7 @@ describe("EnrollWebauthnComponent", () => {
       enrollmentArgs!.data
     );
     expect(finalResponse).toBeNull();
-    expect(notification.error).toHaveBeenCalledWith(
+    expect(notification.warning).toHaveBeenCalledWith(
       "Failed to initiate WebAuthn registration: Missing WebAuthn registration request data."
     );
   });

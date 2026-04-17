@@ -338,7 +338,7 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
         .subscribe({
           next: (res) => {
             if (res.result?.status === true && (res.result.value ?? 0) >= 0) {
-              this._notificationService.warning(
+              this._notificationService.success(
                 this.isEditMode ? $localize`Resolver "${name}" updated.` : $localize`Resolver "${name}" created.`
               );
               this._resolverService.resolversResource.reload?.();
@@ -443,7 +443,7 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
         next: (res) => {
           if (res.result?.status === true && (res.result.value ?? 0) >= 0) {
             const detail = res.detail?.description || "";
-            this._notificationService.success($localize`Resolver test executed: ${detail}`);
+            this._notificationService.success($localize`Resolver test executed: ${detail}`, { duration: 20000 });
           } else {
             this._notifyError($localize`Failed to test resolver.`, res, "Connection test failed.");
           }

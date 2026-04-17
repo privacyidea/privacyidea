@@ -249,7 +249,7 @@ describe("ValidateService", () => {
         });
 
         expect(caught.message).toBe("user dismissed");
-        expect(notif.warning).toHaveBeenCalledWith("user dismissed");
+        expect(notif.error).toHaveBeenCalledWith("user dismissed");
       });
 
       it("when isTest=false uses authenticationService.authenticate instead of /check", async () => {
@@ -445,7 +445,7 @@ describe("ValidateService", () => {
         });
 
         expect(caught.message).toBe("nope");
-        expect(notif.warning).toHaveBeenCalledWith("nope");
+        expect(notif.error).toHaveBeenCalledWith("nope");
       });
 
       it("unsupported WebAuthn shows snack and throws", (done) => {

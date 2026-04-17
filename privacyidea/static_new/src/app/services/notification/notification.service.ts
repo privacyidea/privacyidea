@@ -25,9 +25,9 @@ export interface NotificationServiceInterface {
   timerSub: Subscription;
   startTime: number;
 
-  success(message: string): void;
-  error(message: string): void;
-  warning(message: string): void;
+  success(message: string, options?: { duration?: number }): void;
+  error(message: string, options?: { duration?: number }): void;
+  warning(message: string, options?: { duration?: number }): void;
 }
 
 @Injectable({
@@ -35,24 +35,25 @@ export interface NotificationServiceInterface {
 })
 export class NotificationService implements NotificationServiceInterface {
   readonly snackBar = inject(MatSnackBar);
-  private _totalDuration: number = 500000000000;
+  private _totalDuration: number = 5000;
   remainingTime: number = this._totalDuration;
   timerSub: Subscription = new Subscription();
   startTime: number = 0;
 
-  success(message: string): void {
-    this._open(message, "success-snackbar");
+  success(message: string, options?: { duration?: number }): void {
+    this._open(message, "success-snackbar", options?.duration);
   }
 
-  error(message: string): void {
-    this._open(message, "error-snackbar");
+  error(message: string, options?: { duration?: number }): void {
+    this._open(message, "error-snackbar", options?.duration);
   }
 
-  warning(message: string): void {
-    this._open(message, "warning-snackbar");
+  warning(message: string, options?: { duration?: number }): void {
+    this._open(message, "warning-snackbar", options?.duration);
   }
 
-  private _open(message: string, panelClass: string): void {
+  private _open(message: string, panelClass: string, duration?: number): void {
+    const totalDuration = duration ?? this._totalDuration;
     const snackBarRef = this.snackBar.open(message, "🗙", {
       horizontalPosition: "center",
       verticalPosition: "bottom",
@@ -60,7 +61,7 @@ export class NotificationService implements NotificationServiceInterface {
       panelClass: [panelClass]
     });
 
-    this.remainingTime = this._totalDuration;
+    this.remainingTime = totalDuration;
     this.startTime = Date.now();
     this._startTimer(snackBarRef);
 
