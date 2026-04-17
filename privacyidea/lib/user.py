@@ -64,6 +64,7 @@ from .resolver import (get_resolver_object,
                        get_resolver_type)
 from .usercache import (user_cache, cache_username, user_init, delete_user_cache)
 from privacyidea.lib.params import get_optional, get_required
+from .userrepository import user_repository
 
 log = logging.getLogger(__name__)
 
@@ -214,30 +215,13 @@ class User:
     @log_with(log)
     def get_ordered_resolvers(self) -> list[str]:
         """
-        returns a list of resolver names ordered by priority.
-        The resolver with the lowest priority is the first.
-        If resolvers have the same priority, they are ordered alphabetically.
+        Returns resolver names for this user's realm in priority order.
+        Delegates to :func:`UserRepository.get_ordered_resolvers`.
 
         :return: list of resolver names
         :rtype: list
         """
-        resolver_tuples = []
-        realm_config = get_realms(self.realm)
-        resolvers_in_realm = realm_config.get(self.realm, {}).get("resolver", [])
-        for resolver in resolvers_in_realm:
-            # append a tuple
-            resolver_tuples.append((resolver.get("name"),
-                                    resolver.get("priority") or 1000,
-                                    resolver.get("node")))
-
-        # sort the resolvers by the 2nd entry in the tuple, the priority
-        sorted_resolvers = sorted(resolver_tuples, key=lambda res: res[1])
-        # if the resolver contains a node setting, we only add it if it is on the correct node
-        local_node_uuid = get_app_config_value("PI_NODE_UUID")
-        resolvers = [r[0] for r in sorted_resolvers if not r[2] or r[2] == local_node_uuid]
-        # remove duplicate resolver names but keeping the order
-        seen = set()
-        return [x for x in resolvers if not (x in seen or seen.add(x))]
+        return user_repository.get_ordered_resolvers(self.realm)
 
     def _get_resolvers(self, all_resolvers=False) -> list[str]:
         """
@@ -269,30 +253,18 @@ class User:
     def _locate_user_in_resolver(self, resolvername: str) -> bool:
         """
         Try to locate the user (by self.login) in the resolver with the given name.
-        In case of success, this sets `self.resolver` as well as `self.uid`
-        and returns True. If the resolver does not exist or the user does
-        not exist in the resolver, False is returned.
-        :param resolvername: string denoting the resolver name
-        :return: boolean
+        In case of success, sets ``self.resolver`` and ``self.uid`` and returns True.
+        Delegates the actual resolver query to :meth:`UserRepository.locate_login_in_resolver`.
+
+        :param resolvername: resolver name to search
+        :return: True if the user was found, False otherwise
         """
-        resolver = get_resolver_object(resolvername)
-        if resolver is None:  # pragma: no cover
-            log.info("Resolver {0!r} not found!".format(resolvername))
-            return False
-        else:
-            uid = resolver.getUserId(self.login)
-            if uid not in ["", None]:
-                log.info("user {0!r} found in resolver {1!r}".format(self.login,
-                                                                     resolvername))
-                log.info("userid resolved to {0!r} ".format(uid))
-                self.resolver = resolvername
-                self.uid = uid
-                # We do not need to search other resolvers!
-                return True
-            else:
-                log.debug("user {0!r} not found"
-                          " in resolver {1!r}".format(self.login, resolvername))
-                return False
+        uid = user_repository.locate_login_in_resolver(self.login, resolvername)
+        if uid is not None:
+            self.resolver = resolvername
+            self.uid = uid
+            return True
+        return False
 
     def get_user_identifiers(self) -> tuple[str or int, str, str]:
         """
@@ -780,39 +752,18 @@ def split_user(username: str) -> tuple[str, str]:
 @log_with(log, hide_args_keywords={0: ["pass", "password"]})
 def get_user_from_param(param: dict, optional_or_required: bool = True) -> User:
     """
-    Find the parameter user, realm and resolver and
-    create a user object from these parameters.
+    Find the parameter user, realm and resolver and create a user object.
 
-    An exception is raised, if a user in a realm is found in more
-    than one resolver.
+    Thin wrapper around :meth:`UserRepository.find_from_params` kept for
+    backward compatibility.  New code should call
+    ``user_repository.find_from_params(param, optional_or_required)`` directly.
 
     :param param: The dictionary of request parameters
     :param optional_or_required: ``True`` (default) if the user param is optional,
         ``False`` if it is required (raises ParameterError when absent).
     :return: User as found in the parameters
     """
-    realm = ""
-    if optional_or_required:
-        username = get_optional(param, "user")
-    else:
-        username = get_required(param, "user")
-
-    if username is None:
-        username = ""
-    else:
-        username, realm = split_user(username)
-
-    if "realm" in param:
-        realm = param["realm"]
-
-    if username != "":
-        if realm is None or realm == "":
-            realm = get_default_realm()
-
-    user_object = User(login=username, realm=realm,
-                       resolver=param.get("resolver"))
-
-    return user_object
+    return user_repository.find_from_params(param, optional_or_required)
 
 
 @log_with(log)
