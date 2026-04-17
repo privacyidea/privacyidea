@@ -54,7 +54,7 @@ def _pbkdf2_sha512_hash(password: str, rounds: int, salt_size: int = 10) -> str:
     def ab64_encode(b: bytes) -> str:
         return base64.b64encode(b).rstrip(b'=').replace(b'+', b'.').decode('ascii')
 
-    return '$pbkdf2-sha512${}${}${}'.format(rounds, ab64_encode(salt), ab64_encode(dk))
+    return f'$pbkdf2-sha512${rounds}${ab64_encode(salt)}${ab64_encode(dk)}'
 
 
 class MachineApplication(MachineApplicationBase):
