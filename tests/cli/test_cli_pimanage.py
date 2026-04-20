@@ -101,10 +101,10 @@ class PIManageBackupTestCase(CliTestCase):
         @contextlib.contextmanager
         def fake_tarfile_open(*args, **kwargs):
             tf = mock.MagicMock()
-            tf.__iter__ = mock.Mock(return_value=iter([
+            tf.__iter__.return_value = iter([
                 make_member(cfg_rel),
                 make_member(sql_rel),
-            ]))
+            ])
 
             def fake_extractall(path="/", **kw):
                 live_pi_cfg.write_text(
@@ -123,8 +123,8 @@ class PIManageBackupTestCase(CliTestCase):
         Invoke ``backup restore --keep-db-uri fake.tgz`` with all external
         calls mocked so the test is fully self-contained:
 
-        - ``subprocess.run`` is replaced by :meth:`_make_fake_run` which
-          fakes the two tar invocations (listing + extraction).
+        - ``tarfile.open`` is replaced by :meth:`_make_fake_tarfile` which
+          fakes archive listing (iteration) and extraction.
         - ``shutil.copyfile`` is patched out because for SQLite URIs the
           restore command would try to copy the dump to the database path
           which does not exist in the test environment.

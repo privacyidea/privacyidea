@@ -166,8 +166,8 @@ def backup_restore(backup_file, keep_db_uri):
                     sqlfile = f"/{member_name.strip()}"
                 elif re.search(r"/enc[kK]ey", member_name):
                     enckey_contained = True
-    except (tarfile.TarError, OSError):
-        click.secho(f"Unable to open backup file {backup_file}", fg="red")
+    except (tarfile.TarError, OSError) as e:
+        click.secho(f"Unable to open backup file {backup_file}: {e}", fg="red")
         sys.exit(2)
 
     if not config_file:
@@ -208,7 +208,7 @@ def backup_restore(backup_file, keep_db_uri):
                 )
 
     with tarfile.open(backup_file, "r:gz") as tf:
-        tf.extractall(path="/", filter="data")
+        tf.extractall(path="/")
     click.echo(60 * "=")
 
     # use Flask config to read in the config file (now restored from backup)
