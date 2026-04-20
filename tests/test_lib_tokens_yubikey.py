@@ -262,8 +262,8 @@ class YubikeyTokenTestCase(MyTestCase):
         a known private uid, usage counter, session counter and CRC. The
         expected counter returned by check_otp is
         (usage_counter << 8) | session_counter — the usage counter is stored
-        little-endian on the wire and reassembled big-endian by the decoder
-        (see yubikeytoken.py:330).
+        little-endian on the wire and reassembled big-endian by
+        YubikeyTokenClass.check_otp when assembling the counter value.
         """
         # (aes_key, expected_uid, expected_counter, otp)
         vectors = [
