@@ -46,18 +46,6 @@
       [pageSize]="auditService.pageSize()"
       showFirstLastButtons />
   </div>
-  <div class="margin-bottom-16">
-    @if (authService.actionAllowed("auditlog_download")) {
-      <button
-        (click)="auditService.downloadCSV()"
-        class="action-button-secondary button-width-m"
-        i18n
-        mat-stroked-button>
-        <mat-icon>download</mat-icon>
-        Download
-      </button>
-    }
-  </div>
   <table
     [dataSource]="auditDataSource()"
     aria-label="Audit Data Table"

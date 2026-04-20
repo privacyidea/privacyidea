@@ -22,6 +22,7 @@ import { TestBed } from "@angular/core/testing";
 import { environment } from "../../../environments/environment";
 import { provideHttpClient } from "@angular/common/http";
 import { AuthService } from "../auth/auth.service";
+import { NotificationService } from "../notification/notification.service";
 import { FilterValue } from "../../core/models/filter_value/filter_value";
 import {
   MockContentService,
@@ -48,9 +49,9 @@ describe("AuditService (signals & helpers)", () => {
         provideHttpClientTesting(),
         { provide: AuthService, useClass: MockAuthService },
         { provide: ContentService, useClass: MockContentService },
+        { provide: NotificationService, useClass: MockNotificationService },
         AuditService,
-        MockLocalService,
-        MockNotificationService
+        MockLocalService
       ]
     });
     auditService = TestBed.inject(AuditService);
@@ -138,5 +139,31 @@ describe("AuditService (signals & helpers)", () => {
     expect(req.request.method).toBe("GET");
     expect(req.request.params.get("action")).toBe("*LOGIN*");
     expect(getHeadersMock).toHaveBeenCalled();
+    req.flush("test data");
+  });
+
+  it("should set isDownloading to true while downloading and false after completion", () => {
+    auditService.downloadCSV();
+    expect(auditService.isDownloading()).toBe(true);
+    const req = httpMock.expectOne((req) => req.url.endsWith("/audit/audit.csv"));
+    req.flush("test data");
+    expect(auditService.isDownloading()).toBe(false);
+  });
+
+  it("should set isDownloading to false on error", () => {
+    auditService.downloadCSV();
+    expect(auditService.isDownloading()).toBe(true);
+    const req = httpMock.expectOne((req) => req.url.endsWith("/audit/audit.csv"));
+    req.error(new ErrorEvent("error"));
+    expect(auditService.isDownloading()).toBe(false);
+  });
+
+  it("should cancel download when cancelDownload is called", () => {
+    auditService.downloadCSV();
+    expect(auditService.isDownloading()).toBe(true);
+    const req = httpMock.expectOne((req) => req.url.endsWith("/audit/audit.csv"));
+    auditService.cancelDownload();
+    expect(auditService.isDownloading()).toBe(false);
+    expect(req.cancelled).toBe(true);
   });
 });

@@ -38,6 +38,7 @@ export class MockAuditService implements AuditServiceInterface {
     MockPiResponse.fromValue<Audit>({ auditcolumns: [], auditdata: [], count: 0, current: 0 })
   );
   sort: WritableSignal<Sort> = signal({ active: "time", direction: "desc" });
+  isDownloading: WritableSignal<boolean> = signal(false);
   clearFilter = jest.fn().mockImplementation(() => {
     this.auditFilter.set(new FilterValue());
   });
@@ -46,4 +47,5 @@ export class MockAuditService implements AuditServiceInterface {
     this.auditFilter.set(new FilterValue({ value: inputElement.value }));
   });
   downloadCSV = jest.fn();
+  cancelDownload = jest.fn();
 }

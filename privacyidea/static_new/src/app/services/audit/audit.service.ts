@@ -16,13 +16,14 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { HttpClient, HttpParams } from "@angular/common/http";
-import { httpResource, HttpResourceRef } from "@angular/common/http";
+import { HttpClient, HttpParams, httpResource, HttpResourceRef } from "@angular/common/http";
 import { computed, inject, Injectable, linkedSignal, signal, WritableSignal } from "@angular/core";
 import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
+import { finalize, Subscription } from "rxjs";
+import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
 
 import { FilterValue } from "../../core/models/filter_value/filter_value";
 import { StringUtils } from "../../utils/string.utils";
@@ -125,12 +126,15 @@ export interface AuditServiceInterface {
   pageIndex: WritableSignal<number>;
   auditResource: HttpResourceRef<PiResponse<Audit> | undefined>;
   sort: WritableSignal<Sort>;
+  isDownloading: WritableSignal<boolean>;
 
   clearFilter(): void;
 
   handleFilterInput($event: Event): void;
 
   downloadCSV(): void;
+
+  cancelDownload(): void;
 }
 
 @Injectable({
@@ -139,15 +143,12 @@ export interface AuditServiceInterface {
 export class AuditService implements AuditServiceInterface {
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
+  private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly http: HttpClient = inject(HttpClient);
-  sort = signal({ active: "serial", direction: "asc" } as Sort);
-
-  readonly apiFilter = apiFilter;
   readonly apiFilterKeyMap = apiFilterKeyMap;
+  readonly apiFilter = apiFilter;
   readonly advancedApiFilter = advancedApiFilter;
-
   auditFilter = signal(new FilterValue());
-
   filterParams = computed<Record<string, string>>(() => {
     const allowed = [...this.apiFilter, ...this.advancedApiFilter];
 
@@ -161,12 +162,10 @@ export class AuditService implements AuditServiceInterface {
 
     return Object.fromEntries(entries) as Record<string, string>;
   });
-
   pageSize = linkedSignal({
     source: () => this.authService.auditPageSize(),
     computation: (pageSize) => (pageSize > 0 ? pageSize : 10)
   });
-
   pageIndex = linkedSignal({
     source: () => ({
       filterValue: this.auditFilter(),
@@ -175,7 +174,7 @@ export class AuditService implements AuditServiceInterface {
     }),
     computation: () => 1
   });
-
+  private downloadSubscription?: Subscription;
   private auditBaseUrl = environment.proxyUrl + "/audit/";
   auditResource = httpResource<PiResponse<Audit>>(() => {
     // Only load audit logs on the audit route.
@@ -194,6 +193,8 @@ export class AuditService implements AuditServiceInterface {
       }
     };
   });
+  sort = signal({ active: "serial", direction: "asc" } as Sort);
+  isDownloading = signal(false);
 
   clearFilter(): void {
     this.auditFilter.set(this.auditFilter().copyWith({ value: "" }));
@@ -205,19 +206,37 @@ export class AuditService implements AuditServiceInterface {
   }
 
   downloadCSV(): void {
+    if (this.isDownloading()) {
+      return;
+    }
+    this.isDownloading.set(true);
     const params = new HttpParams({ fromObject: this.filterParams() });
-    this.http.get(this.auditBaseUrl + "audit.csv", {
+    this.downloadSubscription = this.http.get(this.auditBaseUrl + "audit.csv", {
       headers: this.authService.getHeaders(),
       params,
       responseType: "text"
-    }).subscribe(data => {
-      const blob = new Blob([data], { type: "text/csv" });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = "audit.csv";
-      a.click();
-      window.URL.revokeObjectURL(url);
+    }).pipe(
+      finalize(() => this.isDownloading.set(false))
+    ).subscribe({
+      next: (data) => {
+        const blob = new Blob([data], { type: "text/csv" });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "audit.csv";
+        a.click();
+        window.URL.revokeObjectURL(url);
+      },
+      error: (error) => {
+        this.notificationService.openSnackBar($localize`Failed to download audit log.`);
+      }
     });
+  }
+
+  cancelDownload(): void {
+    if (this.downloadSubscription) {
+      this.downloadSubscription.unsubscribe();
+      this.isDownloading.set(false);
+    }
   }
 }

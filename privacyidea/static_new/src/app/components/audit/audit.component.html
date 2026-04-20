@@ -50,12 +50,22 @@
     @if (authService.actionAllowed("auditlog_download")) {
       <button
         (click)="auditService.downloadCSV()"
+        [disabled]="auditService.isDownloading()"
         class="action-button-primary button-width-m"
         i18n
         mat-stroked-button>
         <mat-icon>download</mat-icon>
         Download
       </button>
+      @if (auditService.isDownloading()) {
+        <button
+          (click)="auditService.cancelDownload()"
+          class="action-button-delete-secondary margin-left-8"
+          i18n
+          mat-stroked-button>
+          Cancel
+        </button>
+      }
     }
   </div>
   <table
