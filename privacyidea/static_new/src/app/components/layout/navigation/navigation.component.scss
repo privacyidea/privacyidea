@@ -57,8 +57,6 @@
 }
 
 .nav-wrapper {
-  display: flex;
-  flex-direction: row;
   height: 100%;
 }
 
@@ -100,23 +98,35 @@
     }
   }
 
-  app-user-utils-panel {
-    display: none;
-  }
-
-  .nav-button {
-    justify-content: center;
-    padding: 0;
-    width: 48px;
-    min-width: 48px;
-
-    span, .nav-arrow {
+  ::ng-deep app-user-utils-panel {
+    .text-div,
+    .profile-text,
+    .utils,
+    i {
       display: none;
     }
 
+    .account-div {
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+  }
+
+  .nav-buttons button {
+    min-width: 48px;
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    border-radius: 50%;
+
     ::ng-deep .mdc-button__label {
-      gap: 0;
+      display: flex;
       justify-content: center;
+
+      span {
+        display: none;
+      }
     }
   }
 
@@ -126,6 +136,15 @@
 
     h4 {
       display: none;
+    }
+
+    a[mat-stroked-button] {
+      min-width: 48px;
+      width: 48px;
+      height: 48px;
+      padding: 0;
+      border-radius: 50%;
+      justify-content: center;
     }
   }
 }
@@ -137,61 +156,10 @@
   gap: 4px;
 }
 
-.nav-button {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  width: 100%;
-  height: 44px;
-  border-radius: var(--border-radius);
-  padding: 0 12px;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--mat-sys-on-surface);
-  transition: background-color 200ms ease;
-
-  ::ng-deep .mdc-button__label {
-    display: flex;
-    align-items: center;
-    width: 100%;
-    gap: 12px;
-  }
-
-  mat-icon:first-child {
-    margin-right: 0;
-  }
-
-  span {
-    flex: 1;
-    text-align: left;
-  }
-
-  .nav-arrow {
-    font-size: 18px;
-    width: 18px;
-    height: 18px;
-    color: var(--mat-sys-on-surface-variant);
-    transition: transform 200ms ease;
-  }
-
-  &:hover {
-    background-color: var(--mat-sys-surface-container);
-  }
-}
-
-.nav-button-active {
-  background-color: var(--mat-sys-secondary-container) !important;
-  color: var(--mat-sys-on-secondary-container);
-
-  .nav-arrow {
-    color: var(--mat-sys-on-secondary-container);
-  }
-}
-
 .sub-drawer {
-  width: 220px;
+  width: 260px;
   background: var(--mat-sys-surface-container);
-  padding: 8px;
+  padding: 12px;
   overflow-y: auto;
 }
 
@@ -243,7 +211,6 @@
   width: 100%;
   justify-content: flex-start;
 }
-
 
 .version-text {
   font-size: 12px;
