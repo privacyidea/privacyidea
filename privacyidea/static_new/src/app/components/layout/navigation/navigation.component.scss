@@ -60,6 +60,19 @@
   height: 100%;
 }
 
+:host ::ng-deep .mat-drawer-container {
+  background-color: transparent;
+}
+
+:host ::ng-deep .mat-drawer-content {
+  background-color: transparent;
+}
+
+:host ::ng-deep .mat-drawer.sub-drawer {
+  background-color: var(--mat-sys-surface-container-low);
+  border-left: 1px solid var(--mat-sys-outline-variant);
+}
+
 .nav-rail {
   display: flex;
   flex-direction: column;
@@ -158,7 +171,6 @@
 
 .sub-drawer {
   width: 260px;
-  background: var(--mat-sys-surface-container);
   padding: 12px;
   overflow-y: auto;
 }
