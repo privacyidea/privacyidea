@@ -41,7 +41,7 @@ import { ContainerDetailsActionsComponent } from "./container-details-actions/co
 import { ContainerDetailsTokenActionsComponent } from "./container-details-token-actions/container-details-token-actions.component";
 import { RouterLink } from "@angular/router";
 import { MatTooltip } from "@angular/material/tooltip";
-import { DetailsHeaderComponent } from "../../shared/details-shared/details-header.component";
+import { DetailsHeaderComponent } from "@components/shared/details-shared/details-header/details-header.component";
 import { ContainerAddTokenComponent } from "../../shared/container-add-token/container-add-token.component";
 
 @Component({

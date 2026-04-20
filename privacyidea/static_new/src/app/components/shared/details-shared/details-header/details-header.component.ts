@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, EventEmitter, Input, Output } from "@angular/core";
-import { CopyButtonComponent } from "../copy-button/copy-button.component";
+import { CopyButtonComponent } from "../../copy-button/copy-button.component";
 import { MatIcon } from "@angular/material/icon";
 import { MatIconButton } from "@angular/material/button";
 import { MatTooltip } from "@angular/material/tooltip";

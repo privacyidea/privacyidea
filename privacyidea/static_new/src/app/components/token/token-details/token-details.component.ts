@@ -48,7 +48,7 @@ import {
   TokenSshMachineAssignDialogComponent
 } from "./token-machine-attach-dialog/token-ssh-machine-attach-dialog/token-ssh-machine-attach-dialog";
 import { TokenDetailsMachineComponent } from "./token-details-machine/token-details-machine.component";
-import { DetailsHeaderComponent } from "../../shared/details-shared/details-header.component";
+import { DetailsHeaderComponent } from "@components/shared/details-shared/details-header/details-header.component";
 import { PolicyAction } from "../../../services/auth/policy-actions";
 import { MachineService, MachineServiceInterface } from "../../../services/machine/machine.service";
 import { FilterValue } from "../../../core/models/filter_value/filter_value";

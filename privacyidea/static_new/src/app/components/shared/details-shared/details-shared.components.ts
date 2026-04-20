@@ -22,12 +22,7 @@ import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
 import { MatListItem } from "@angular/material/list";
 import { NgClass } from "@angular/common";
-import { TableUtilsServiceInterface } from "../../../services/table-utils/table-utils.service";
 
-/**
- * Renders the read-only list display for realms or tokengroups.
- * Used in both admin and self-service token/container details views.
- */
 @Component({
   selector: "app-details-list-display",
   standalone: true,
@@ -47,10 +42,6 @@ export class DetailsListDisplayComponent {
   @Input({ required: true }) items: string[] = [];
 }
 
-/**
- * Renders the description field in details views (both editing and read-only).
- * Used in both admin and self-service token/container details.
- */
 @Component({
   selector: "app-details-description-cell",
   standalone: true,
@@ -58,8 +49,7 @@ export class DetailsListDisplayComponent {
   template: `
     @if (isEditing) {
       <mat-form-field
-        class="input-width-m description height-126"
-        subscriptSizing="dynamic">
+        class="input-width-m description height-126" subscriptSizing="dynamic">
         <textarea
           [(ngModel)]="value"
           [maxlength]="maxlength"
@@ -84,10 +74,6 @@ export class DetailsDescriptionCellComponent {
   @Input() rows = 4;
 }
 
-/**
- * Renders the default value cell with highlighting and display text logic.
- * Used in both admin and self-service token details.
- */
 @Component({
   selector: "app-details-default-value-cell",
   standalone: true,
@@ -95,21 +81,15 @@ export class DetailsDescriptionCellComponent {
   template: `
     @if (isEditing && isNumber) {
       <mat-form-field
-        class="input-width-m height-52"
-        subscriptSizing="dynamic">
+        class="input-width-m height-52" subscriptSizing="dynamic">
         <input
-          [(ngModel)]="value"
-          matInput
-          type="number" />
+          [(ngModel)]="value" matInput type="number" />
       </mat-form-field>
     } @else if (isEditing) {
       <mat-form-field
-        class="input-width-m"
-        subscriptSizing="dynamic">
+        class="input-width-m" subscriptSizing="dynamic">
         <textarea
-          [(ngModel)]="value"
-          matInput
-          rows="1"></textarea>
+          [(ngModel)]="value" matInput rows="1"></textarea>
       </mat-form-field>
     } @else {
       <div [ngClass]="[divClass]">

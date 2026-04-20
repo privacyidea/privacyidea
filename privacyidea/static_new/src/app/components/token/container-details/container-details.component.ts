@@ -69,7 +69,7 @@ import { ContainerDetailsActionsComponent } from "./container-details-actions/co
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { ContainerDetailsTokenActionsComponent } from "./container-details-token-actions/container-details-token-actions.component";
 import { FilterValue } from "../../../core/models/filter_value/filter_value";
-import { DetailsHeaderComponent } from "../../shared/details-shared/details-header.component";
+import { DetailsHeaderComponent } from "@components/shared/details-shared/details-header/details-header.component";
 import { ContainerAddTokenComponent } from "../../shared/container-add-token/container-add-token.component";
 
 export const containerDetailsKeyMap = [

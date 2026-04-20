@@ -72,7 +72,7 @@ import { AuditComponent } from "./audit.component";
     ScrollToTopDirective,
     ClearableInputComponent
   ],
-  templateUrl: "./audit.component.html",
+  templateUrl: "./audit.self-service.component.html",
   styleUrl: "./audit.component.scss"
 })
 export class AuditSelfServiceComponent extends AuditComponent {
