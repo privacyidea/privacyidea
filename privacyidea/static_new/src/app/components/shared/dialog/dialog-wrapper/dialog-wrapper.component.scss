@@ -5,24 +5,33 @@
   background-color: var(--mat-sys-surface-container-lowest);
   border-radius: var(--border-radius);
   overflow: auto;
+
+  // subtract double global padding to preserve margin around the component
+  max-width: calc(100vw - var(--overlay-margin) - 2 * var(--double-global-padding));
+  max-height: calc(100vh - 2 * var(--double-global-padding));
+
   --mat-dialog-content-padding: 0 var(--global-padding) var(--half-global-padding) var(--global-padding);
 
   .pi-dialog-header {
     display: flex;
-    justify-content: center;
+    justify-content: start;
     align-items: center;
-    padding: var(--half-global-padding) var(--global-padding);
+    padding: 16px;
   }
 
-  .pi-dialog-header h2 {
-    margin: 0;
+  .pi-dialog-header h3 {
+    margin-bottom: 0;
   }
 
   .pi-dialog-footer {
     display: flex;
     justify-content: flex-end;
-    padding: var(--half-global-padding) var(--global-padding);
+    flex-wrap: wrap;
+    padding: 16px;
+    gap: 8px
+  }
 
-    gap: var(--half-global-gap);
+  .pi-dialog-body {
+    margin-left: 16px;
   }
 }

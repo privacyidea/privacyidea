@@ -27,9 +27,9 @@ import { MatList, MatListItem } from "@angular/material/list";
 import { MatCell, MatColumnDef, MatRow, MatTableModule } from "@angular/material/table";
 import { forkJoin, Observable, switchMap } from "rxjs";
 import { ContainerService, ContainerServiceInterface } from "../../../../services/container/container.service";
-import { OverflowService, OverflowServiceInterface } from "../../../../services/overflow/overflow.service";
 import { EditButtonsComponent } from "../../../shared/edit-buttons/edit-buttons.component";
 import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
+import { NgClass } from "@angular/common";
 
 export interface ContainerInfoDetail<T = any> {
   value: T;
@@ -54,14 +54,14 @@ export interface ContainerInfoDetail<T = any> {
     MatIcon,
     MatDivider,
     MatRow,
-    EditButtonsComponent
+    EditButtonsComponent,
+    NgClass
   ],
   templateUrl: "./container-details-info.component.html",
   styleUrl: "./container-details-info.component.scss"
 })
 export class ContainerDetailsInfoComponent {
   private readonly containerService: ContainerServiceInterface = inject(ContainerService);
-  protected readonly overflowService: OverflowServiceInterface = inject(OverflowService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
 
   protected readonly Object = Object;

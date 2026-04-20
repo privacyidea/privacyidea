@@ -46,7 +46,6 @@ import datetime
 import logging
 import traceback
 from collections import OrderedDict
-from typing import Optional
 
 from sqlalchemy import asc, desc, and_, or_, select, delete
 from sqlalchemy import create_engine
@@ -77,21 +76,21 @@ class to_isodate(FunctionElement):
 
 @compiles(to_isodate, 'oracle')
 @compiles(to_isodate, 'postgresql')
-def fn_to_isodate(element, compiler, **kw):
-    return "to_char(%s, 'IYYY-MM-DD HH24:MI:SS')" % compiler.process(element.clauses, **kw)
+def fn_to_isodate_oracle_pg(element, compiler, **kw):
+    return f"to_char({compiler.process(element.clauses, **kw)}, 'IYYY-MM-DD HH24:MI:SS')"
 
 
 @compiles(to_isodate, 'sqlite')
-def fn_to_isodate(element, compiler, **kw):
+def fn_to_isodate_sqlite(element, compiler, **kw):
     # sqlite does not have a DateTime type, they are already in ISO format
-    return "%s" % compiler.process(element.clauses, **kw)
+    return f"{compiler.process(element.clauses, **kw)}"
 
 
 @compiles(to_isodate)
-def fn_to_isodate(element, compiler, **kw):
-    # The four percent signs are necessary for two format substitutions
-    return "date_format(%s, '%%%%Y-%%%%m-%%%%d %%%%H:%%%%i:%%%%s')" % compiler.process(
-        element.clauses, **kw)
+def fn_to_isodate_default(element, compiler, **kw):
+    # %% escapes a literal % past the DBAPI driver's pyformat paramstyle.
+    return "date_format({}, '%%Y-%%m-%%d %%H:%%i:%%s')".format(compiler.process(
+        element.clauses, **kw))
 
 
 def _now():
@@ -139,7 +138,7 @@ class Audit(AuditBase):
     is_readable = True
 
     def __init__(self, config=None, startdate=None):
-        super(Audit, self).__init__(config, startdate)
+        super().__init__(config, startdate)
         self.name = "sqlaudit"
         self.sign_data = not self.config.get(ConfigKey.AUDIT_NO_SIGN)
         self.sign_object = None
@@ -178,12 +177,12 @@ class Audit(AuditBase):
         # resources
         connect_string = self.config.get(ConfigKey.AUDIT_SQL_URI, self.config.get(
             ConfigKey.SQLALCHEMY_DATABASE_URI))
-        log.debug("using the connect string {0!s}".format(censor_connect_string(connect_string)))
+        log.debug(f"using the connect string {censor_connect_string(connect_string)!s}")
         # if no specific audit engine options are given, use the default from
         # SQLALCHEMY_ENGINE_OPTIONS or none
         sqa_options = self.config.get(ConfigKey.AUDIT_SQL_OPTIONS,
                                       self.config.get(ConfigKey.SQLALCHEMY_ENGINE_OPTIONS, {}))
-        log.debug("Using Audit SQLAlchemy engine options: {0!s}".format(sqa_options))
+        log.debug(f"Using Audit SQLAlchemy engine options: {sqa_options!s}")
         try:
             pool_size = self.config.get(ConfigKey.AUDIT_POOL_SIZE, 20)
             engine = create_engine(
@@ -191,7 +190,7 @@ class Audit(AuditBase):
                 pool_size=pool_size,
                 pool_recycle=self.config.get(ConfigKey.AUDIT_POOL_RECYCLE, 600),
                 **sqa_options)
-            log.debug("Using SQL pool size of {}".format(pool_size))
+            log.debug(f"Using SQL pool size of {pool_size}")
         except TypeError:
             # SQLite does not support pool_size
             engine = create_engine(connect_string, **sqa_options)
@@ -221,8 +220,8 @@ class Audit(AuditBase):
                 self.audit_data[column] = data
 
     @staticmethod
-    def _create_filter(param: dict, admin_params: Optional[dict] = None,
-                       timelimit: Optional[datetime.timedelta] = None):
+    def _create_filter(param: dict, admin_params: dict | None = None,
+                       timelimit: datetime.timedelta | None = None):
         """
         create a filter condition for the logentry
 
@@ -295,7 +294,7 @@ class Audit(AuditBase):
                 except Exception as exx:
                     # The search_key was no search key but some
                     # bullshit stuff in the param
-                    log.debug("Not a valid searchkey: {0!s}".format(exx))
+                    log.debug(f"Not a valid searchkey: {exx!s}")
 
         if timelimit:
             conditions.append(LogEntry.date >= datetime.datetime.now() -
@@ -309,8 +308,8 @@ class Audit(AuditBase):
             filter_condition = and_(filter_condition, filter_realm)
         return filter_condition
 
-    def get_total(self, param: dict, admin_params: Optional[dict] = None, AND: bool = True, display_error: bool = True,
-                  timelimit: Optional[datetime.timedelta] = None) -> int:
+    def get_total(self, param: dict, admin_params: dict | None = None, AND: bool = True, display_error: bool = True,
+                  timelimit: datetime.timedelta | None = None) -> int:
         """
         This method returns the total number of audit entries
         in the audit store
@@ -339,7 +338,7 @@ class Audit(AuditBase):
                 self._truncate_data()
             if "tokentype" in self.audit_data:
                 log.warning("We have a wrong 'tokentype' key. This should not happen. Fix it!. "
-                            "Error occurs in action: {0!r}.".format(self.audit_data.get("action")))
+                            "Error occurs in action: {!r}.".format(self.audit_data.get("action")))
                 if "token_type" not in self.audit_data:
                     self.audit_data["token_type"] = self.audit_data.get("tokentype")
             end_date = _now()
@@ -384,9 +383,9 @@ class Audit(AuditBase):
         except Exception as exx:  # pragma: no cover
             # in case of a Unicode Error in _log_to_string() we won't have
             # a signature, but the log entry is available
-            log.error("exception {0!r}".format(exx))
-            log.error("DATA: {0!s}".format(self.audit_data))
-            log.debug("{0!s}".format(traceback.format_exc()))
+            log.error(f"exception {exx!r}")
+            log.error(f"DATA: {self.audit_data!s}")
+            log.debug(f"{traceback.format_exc()!s}")
             self.session.rollback()
 
         finally:
@@ -418,8 +417,8 @@ class Audit(AuditBase):
             if id_bef and id_aft:
                 res = True
         except Exception as exx:  # pragma: no cover
-            log.error("exception {0!r}".format(exx))
-            log.debug("{0!s}".format(traceback.format_exc()))
+            log.error(f"exception {exx!r}")
+            log.debug(f"{traceback.format_exc()!s}")
             # self.session.rollback()
         finally:
             # self.session.close()
@@ -441,27 +440,14 @@ class Audit(AuditBase):
         :rtype str
         """
         # TODO: Add thread_id. We really should add a versioning to identify which audit data is signed.
-        s = "id=%s,date=%s,action=%s,succ=%s,serial=%s,t=%s,u=%s,r=%s,adm=%s," \
-            "ad=%s,i=%s,ps=%s,c=%s,l=%s,cl=%s" % (le.id,
-                                                  le.date,
-                                                  le.action,
-                                                  le.success,
-                                                  le.serial,
-                                                  le.token_type,
-                                                  le.user,
-                                                  le.realm,
-                                                  le.administrator,
-                                                  le.action_detail,
-                                                  le.info,
-                                                  le.privacyidea_server,
-                                                  le.client,
-                                                  le.loglevel,
-                                                  le.clearance_level)
+        s = f"id={le.id},date={le.date},action={le.action},succ={le.success},serial={le.serial}," \
+            f"t={le.token_type},u={le.user},r={le.realm},adm={le.administrator},ad={le.action_detail}," \
+            f"i={le.info},ps={le.privacyidea_server},c={le.client},l={le.loglevel},cl={le.clearance_level}"
         # If we have the new log entries, we also add them for signing and verification.
         if le.startdate:
-            s += ",{0!s}".format(le.startdate)
+            s += f",{le.startdate!s}"
         if le.duration:
-            s += ",{0!s}".format(le.duration)
+            s += f",{le.duration!s}"
         if le.container_serial:
             s += f",c_serial={le.container_serial}"
         if le.container_type:
@@ -496,8 +482,8 @@ class Audit(AuditBase):
                     'container_type': LogEntry.container_type}
         return sortname.get(key)
 
-    def csv_generator(self, param: Optional[dict] = None, admin_params: Optional[dict] = None, user=None,
-                      timelimit: Optional[datetime.timedelta] = None):
+    def csv_generator(self, param: dict | None = None, admin_params: dict | None = None, user=None,
+                      timelimit: datetime.timedelta | None = None):
         """
         Returns the audit log as csv file.
 
@@ -519,7 +505,7 @@ class Audit(AuditBase):
 
         for le in logentries:
             audit_dict = self.audit_entry_to_dict(le)
-            yield ",".join(["'{0!s}'".format(x) for x in audit_dict.values()]) + "\n"
+            yield ",".join([f"'{x!s}'" for x in audit_dict.values()]) + "\n"
 
     def get_count(self, search_dict, timedelta=None, success=None):
         # create filter condition
@@ -540,8 +526,8 @@ class Audit(AuditBase):
 
         return log_count
 
-    def search(self, search_dict: dict, admin_params: Optional[dict] = None, page_size: int = 15, page: int = 1,
-               sortorder: str = "asc", timelimit: Optional[datetime.timedelta] = None):
+    def search(self, search_dict: dict, admin_params: dict | None = None, page_size: int = 15, page: int = 1,
+               sortorder: str = "asc", timelimit: datetime.timedelta | None = None):
         """
         This function returns the audit log as a Pagination object.
 
@@ -586,12 +572,12 @@ class Audit(AuditBase):
                 #  or some meaningful error for the user.
                 log.warning('Could not read audit log entry! '
                             'Possible database encoding mismatch.')
-                log.debug("{0!s}".format(traceback.format_exc()))
+                log.debug(f"{traceback.format_exc()!s}")
 
         return paging_object
 
-    def search_query(self, search_dict: dict, admin_params: Optional[dict] = None, page_size: int = 15, page: int = 1,
-                     sortorder: str = "asc", sortname: str = "number", timelimit: Optional[datetime.timedelta] = None):
+    def search_query(self, search_dict: dict, admin_params: dict | None = None, page_size: int = 15, page: int = 1,
+                     sortorder: str = "asc", sortname: str = "number", timelimit: datetime.timedelta | None = None):
         """
         This function returns the audit log as an iterator on the result
 
@@ -630,8 +616,8 @@ class Audit(AuditBase):
             logentries = self.session.scalars(stmt).all()
 
         except Exception as exx:  # pragma: no cover
-            log.error("exception {0!r}".format(exx))
-            log.debug("{0!s}".format(traceback.format_exc()))
+            log.error(f"exception {exx!r}")
+            log.debug(f"{traceback.format_exc()!s}")
             self.session.rollback()
         finally:
             self.session.close()
@@ -663,7 +649,7 @@ class Audit(AuditBase):
                 #  audit_entry, we will get issues when packing the response.
                 log.warning('Could not verify log entry! We get invalid values '
                             'from the database, please check the encoding.')
-                log.debug('{0!s}'.format(traceback.format_exc()))
+                log.debug(f'{traceback.format_exc()!s}')
 
         is_not_missing = self._check_missing(int(audit_entry.id))
         # is_not_missing = True

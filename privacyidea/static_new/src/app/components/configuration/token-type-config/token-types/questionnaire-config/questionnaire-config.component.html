@@ -16,27 +16,41 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<mat-expansion-panel id="questionnaire" [expanded]="expanded()">
+<mat-expansion-panel
+  id="questionnaire"
+  [expanded]="expanded()">
   <mat-expansion-panel-header>
-    <mat-panel-title i18n>Questionnaire Token Settings</mat-panel-title>
+    <mat-panel-title i18n>Questionnaire</mat-panel-title>
   </mat-expansion-panel-header>
-  <div class="panel-content">
-    <p i18n>The questionnaire lets you define a set of questions. The questionnaire token needs to define answers to
-            these questions and the user will be presented with random questions and needs to provide his previously
-            defined answer.
+  <div class="panel-content expansion-well">
+    <p i18n>The questionnaire lets you define a set of questions.</p>
+    <p i18n>The questionnaire token needs to define answers to these questions and the user will be presented with
+            random questions and needs to provide his previously defined answer.
     </p>
 
-    <mat-form-field
-      appearance="fill">
-      <mat-label i18n>Number of Answers</mat-label>
-      <input
-        [(ngModel)]="formData()['question.num_answers']"
-        matInput
-        placeholder="5"
-        required
-        type="number">
-      <mat-hint i18n>This is the number of answers a user needs to define to enroll a token.</mat-hint>
-    </mat-form-field>
+    <div class="flex-row gap-16 ali-center">
+      <mat-form-field
+        appearance="fill"
+        class="input-width-s">
+        <mat-label i18n>Number of Answers</mat-label>
+        <input
+          [ngModel]="formData()[QUESTION_NUMBER_OF_ANSWERS]"
+          (ngModelChange)="updateFormData(QUESTION_NUMBER_OF_ANSWERS, $event)"
+          #numAnswersInput="ngModel"
+          [ngModelOptions]="{ standalone: true }"
+          matInput
+          placeholder="5"
+          required
+          type="number">
+        @if (numAnswersInput.errors?.['required']) {
+          <mat-error i18n>Number of Answers is <strong>required</strong></mat-error>
+        }
+      </mat-form-field>
+
+      <span
+        class="checkbox-hint"
+        i18n>This is the number of answers a user needs to define to enroll a token.</span>
+    </div>
 
     <h4 i18n>Questionnaire</h4>
     <p i18n>These are the possible questions, a user may define answers to.</p>
@@ -67,9 +81,10 @@
         }
       </tbody>
     </table>
-    <div class="new-question-row">
+    <div class="flex-row gap-16 ali-center margin-top-16">
       <mat-form-field
-        appearance="fill">
+        appearance="fill"
+        class="input-width-xl">
         <mat-label i18n>Question</mat-label>
         <input
           [(ngModel)]="newQuestionText"
@@ -78,7 +93,7 @@
       </mat-form-field>
       <button
         (click)="addQuestion()"
-        class="action-button-1 width-238 margin-bottom-16"
+        class="action-button-secondary button-width-m margin-bottom-16"
         mat-stroked-button>
         <mat-icon>add</mat-icon>
         <span i18n>Add new question</span>

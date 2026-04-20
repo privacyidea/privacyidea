@@ -21,12 +21,11 @@
   (close)="close()"
   (onAction)="save()"
   [showCancelButton]="true"
+  [handleCloseExternally]="true"
   [title]="title()"
   [actions]="dialogActions()">
-
   <app-user-details-edit
     [resolver]="data.resolver"
     [initialUserData]="data"
     (updateData)="onUpdateUserData($event)"></app-user-details-edit>
-
 </app-dialog-wrapper>

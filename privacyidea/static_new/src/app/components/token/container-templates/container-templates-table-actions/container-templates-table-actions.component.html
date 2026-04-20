@@ -17,30 +17,30 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 
-<div class="button-row">
+<div class="button-row margin-bottom-16">
   <button
-    mat-stroked-button
-    class="action-button-1"
-    (click)="openNewTemplateDialog()">
+    (click)="openNewTemplateDialog()"
+    class="action-button-primary button-width-m"
+    mat-stroked-button>
     <mat-icon>note_add</mat-icon>
-    <span i18n>Create</span>
+    <span i18n>Create Template</span>
   </button>
 
   <button
-    mat-stroked-button
-    class="action-button-1"
+    (click)="openCopyTemplateDialog()"
     [disabled]="selectedTemplates().length < 1"
-    (click)="openCopyTemplateDialog()">
+    class="action-button-secondary button-width-m"
+    mat-stroked-button>
     <mat-icon>content_copy</mat-icon>
-    <span i18n>Copy</span>
+    <span i18n>Copy Selected</span>
   </button>
 
   <button
-    mat-stroked-button
-    class="action-button-delete"
+    (click)="openDeleteTemplateDialog()"
     [disabled]="selectedTemplates().length < 1"
-    (click)="openDeleteTemplateDialog()">
+    class="action-button-delete-secondary button-width-m"
+    mat-stroked-button>
     <mat-icon>delete</mat-icon>
-    <span i18n>Delete</span>
+    <span i18n>Delete Selected</span>
   </button>
 </div>

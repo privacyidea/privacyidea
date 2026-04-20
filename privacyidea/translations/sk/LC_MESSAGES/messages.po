@@ -7,9 +7,9 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: privacyIDEA VERSION\n"
-"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"Report-Msgid-Bugs-To: translations@privacyidea.org\n"
 "POT-Creation-Date: 2026-03-13 11:14+0100\n"
-"PO-Revision-Date: 2026-03-06 04:09+0000\n"
+"PO-Revision-Date: 2026-03-24 22:09+0000\n"
 "Last-Translator: Tomasss <tomasss1024+weblate.org-privacyidea@gmail.com>\n"
 "Language-Team: Slovak <https://hosted.weblate.org/projects/privacyidea/"
 "privacyidea-server/sk/>\n"
@@ -18,6 +18,7 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=3; plural=((n==1) ? 0 : (n>=2 && n<=4) ? 1 : 2);\n"
+"X-Generator: Weblate 5.17-dev\n"
 "Generated-By: Babel 2.17.0\n"
 
 #: api/auth.py:260
@@ -115,7 +116,7 @@ msgstr ""
 
 #: api/register.py:145
 msgid "The username is already registered!"
-msgstr ""
+msgstr "Používateľské meno je už zaregistrované!"
 
 #: api/register.py:176
 msgid "Failed to send email!"
@@ -1234,6 +1235,9 @@ msgid ""
 "or the answer to a challenge. PIN concatenated with OTP can not be used "
 "anymore! Does only work when authenticating with a username."
 msgstr ""
+"Ak je táto možnosť povolená, pokusy o autentifikáciu budú interpretované buď "
+"ako PIN kód, alebo ako odpoveď na výzvu. PIN kód spojený s OTP kódom už nie "
+"je možné použiť! Funguje iba pri autentifikácii pomocou používateľského mena."
 
 #: lib/policy.py:2655
 msgid ""

@@ -31,7 +31,7 @@ export class VersioningService implements VersioningServiceInterface {
   rawVersion = signal("");
   version = computed(() => {
     // Extract major.minor.patch from rawVersion
-    const match = this.rawVersion().match(/^(\d+\.\d+\.\d+)/);
+    const match = this.rawVersion().match(/^(\d+\.\d+(?:\.\d+)?)/);
     return match ? match[1] : "";
   });
 

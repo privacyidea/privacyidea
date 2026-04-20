@@ -127,12 +127,13 @@ export class RealmService implements RealmServiceInterface {
   });
 
   realms = computed(() => {
+    if (!this.realmResource.hasValue()) return {};
     const data = this.realmResource.value();
     return data?.result?.value || {};
   });
 
   realmOptions = computed(() => {
-    const realms = this.realmResource.value()?.result?.value;
+    const realms = this.realms();
     return realms ? Object.keys(realms) : [];
   });
 
@@ -154,6 +155,7 @@ export class RealmService implements RealmServiceInterface {
     };
   });
   adminRealmOptions: Signal<string[]> = computed(() => {
+    if (!this.adminRealmResource.hasValue()) return [];
     const realms = this.adminRealmResource.value()?.result?.value;
     return realms ? realms : [];
   });
@@ -176,11 +178,14 @@ export class RealmService implements RealmServiceInterface {
   });
 
   defaultRealm = computed<string>(() => {
-    const data = this.defaultRealmResource.value();
-    if (data?.result?.value) {
-      return Object.keys(data.result?.value)[0] ?? "";
+    let defaultRealm = "";
+    if (this.defaultRealmResource.hasValue()) {
+      const data = this.defaultRealmResource.value();
+      if (data?.result?.value) {
+        defaultRealm = Object.keys(data.result?.value)[0] ?? "";
+      }
     }
-    return "";
+    return defaultRealm;
   });
 
   createRealm(

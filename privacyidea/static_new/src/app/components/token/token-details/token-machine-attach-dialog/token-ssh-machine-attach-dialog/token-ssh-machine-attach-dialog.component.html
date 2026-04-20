@@ -40,7 +40,7 @@
         }
       </mat-autocomplete>
       @if (selectedMachine.touched && selectedMachine.invalid) {
-        <mat-error i18n>Machine is required.</mat-error>
+        <mat-error i18n>Machine is <strong>required</strong>.</mat-error>
       }
     </mat-form-field>
 
@@ -55,7 +55,7 @@
         }
       </mat-select>
       @if (selectedServiceId.touched && selectedServiceId.invalid) {
-        <mat-error i18n> Service ID is required.</mat-error>
+        <mat-error i18n> Service ID is <strong>required</strong>.</mat-error>
       }
     </mat-form-field>
 
@@ -76,7 +76,7 @@
         }
       </mat-autocomplete>
       @if (selectedUser.touched && selectedUser.invalid) {
-        <mat-error i18n> User is required.</mat-error>
+        <mat-error i18n> User is <strong>required</strong>.</mat-error>
       }
     </mat-form-field>
   </form>

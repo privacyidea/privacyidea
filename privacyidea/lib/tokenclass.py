@@ -102,14 +102,12 @@ from .log import log_with
 from .policies.actions import PolicyAction
 from .policydecorators import libpolicy, auth_otppin, challenge_response_allowed
 from .user import (User)
-from ..api.lib.utils import getParam
+from privacyidea.lib.params import get_optional, get_required
 from ..models import (TokenOwner, TokenTokengroup, Challenge, cleanup_challenges, TokenInfo, db, TokenRealm, Realm,
-                      Tokengroup, TokenCredentialIdHash, Token)
+                      Tokengroup, TokenCredentialIdHash)
 
 DATE_FORMAT = '%Y-%m-%dT%H:%M%z'
 AUTH_DATE_FORMAT = "%Y-%m-%d %H:%M:%S.%f%z"
-optional = True
-required = False
 FAILCOUNTER_EXCEEDED = "failcounter_exceeded"
 FAILCOUNTER_CLEAR_TIMEOUT = "failcounter_clear_timeout"
 
@@ -143,7 +141,6 @@ class ClientMode:
     """
     INTERACTIVE = 'interactive'
     POLL = 'poll'
-    U2F = 'u2f'
     WEBAUTHN = 'webauthn'
 
 
@@ -248,8 +245,8 @@ class TokenClass:
                 # We remove the old user
                 self.remove_user()
             else:
-                log.warning("The token with serial {0!s} is already assigned "
-                            "to user {1!s}. Can not assign to {2!s}.".format(self.token.serial, self.user, user))
+                log.warning(f"The token with serial {self.token.serial!s} is already assigned "
+                            f"to user {self.user!s}. Can not assign to {user!s}.")
                 raise TokenAdminError("This token is already assigned to another user.")
 
     def add_tokengroup(self, tokengroup: str = None, tokengroup_id: int = None):
@@ -374,8 +371,8 @@ class TokenClass:
         """
         user = self.user
         user_info = user.get_specific_info(["givenname", "surname"])
-        user_identifier = "{0!s}_{1!s}".format(user.login, user.realm)
-        user_displayname = "{0!s} {1!s}".format(user_info.get("givenname", "."),
+        user_identifier = f"{user.login!s}_{user.realm!s}"
+        user_displayname = "{!s} {!s}".format(user_info.get("givenname", "."),
                                                 user_info.get("surname", "."))
         return user_identifier, user_displayname
 
@@ -609,7 +606,7 @@ class TokenClass:
         elif otpkeyformat == "base32check":
             return decode_base32check(otpkey)
         else:
-            raise ParameterError("Unknown OTP key format: {!r}".format(otpkeyformat))
+            raise ParameterError(f"Unknown OTP key format: {otpkeyformat!r}")
 
     def update(self, param, reset_failcount=True):
         """
@@ -619,14 +616,14 @@ class TokenClass:
                       description, genkey, otpkey, pin
         :type: param: dict
         """
-        tdesc = getParam(param, "description", optional)
-        rollover = getParam(param, "rollover", optional)
+        tdesc = get_optional(param, "description")
+        rollover = get_optional(param, "rollover")
         if tdesc is not None:
             self.token.set_description(tdesc)
 
         # key_size as parameter overrules a prevoiusly set
         # value e.g. in hashlib in the upper classes
-        key_size = int(getParam(param, "keysize", optional) or 20)
+        key_size = int(get_optional(param, "keysize") or 20)
 
         #
         # process the otpkey:
@@ -636,11 +633,11 @@ class TokenClass:
         #   if required and otpkey == None:
         #      raise param Exception, that we require an otpkey
         #
-        otpKey = getParam(param, "otpkey", optional)
-        genkey = is_true(getParam(param, "genkey", optional))
-        twostep_init = is_true(getParam(param, "2stepinit", optional))
-        verify = getParam(param, "verify", optional)
-        otpkeyformat = getParam(param, "otpkeyformat", optional)
+        otpKey = get_optional(param, "otpkey")
+        genkey = is_true(get_optional(param, "genkey"))
+        twostep_init = is_true(get_optional(param, "2stepinit"))
+        verify = get_optional(param, "verify")
+        otpkeyformat = get_optional(param, "otpkeyformat")
 
         if otpKey is not None and otpkeyformat is not None:
             # have to decode OTP key
@@ -672,7 +669,7 @@ class TokenClass:
 
         # otpKey still None?? - raise the exception, if an otpkey is required, and we are not in verify state
         if otpKey is None and self.hKeyRequired is True and not verify:
-            otpKey = getParam(param, "otpkey", required)
+            otpKey = get_required(param, "otpkey")
 
         if otpKey is not None:
             if self.token.rollout_state == RolloutState.CLIENTWAIT:
@@ -692,22 +689,22 @@ class TokenClass:
             # After the key is generated, we set "waiting for the client".
             self.token.rollout_state = RolloutState.CLIENTWAIT
 
-        pin = getParam(param, "pin", optional)
+        pin = get_optional(param, "pin")
         if pin is not None:
             store_hashed = True
-            encrypt_pin = getParam(param, "encryptpin", optional)
+            encrypt_pin = get_optional(param, "encryptpin")
             if is_true(encrypt_pin):
                 store_hashed = False
             self.token.set_pin(pin, store_hashed)
 
-        otplen = getParam(param, 'otplen', optional)
+        otplen = get_optional(param, 'otplen')
         if otplen is not None:
             self.set_otplen(otplen)
 
         # Add parameters starting with the tokentype-name to the tokeninfo:
         for p in param.keys():
             if p.startswith(self.type + "."):
-                self.add_tokeninfo(p, getParam(param, p))
+                self.add_tokeninfo(p, get_optional(param, p))
 
         # The base class will be a software tokenkind
         self.add_tokeninfo("tokenkind", Tokenkind.SOFTWARE)
@@ -1036,7 +1033,7 @@ class TokenClass:
                                        DATE_FORMAT))
         try:
             self.token.save()
-        except:  # pragma: no cover
+        except Exception:  # pragma: no cover
             log.error('update failed')
             raise TokenAdminError("Token Fail Counter update failed", id=1106)
         return self.token.failcount
@@ -1257,7 +1254,7 @@ class TokenClass:
             try:
                 d = parse_date_string(end_date)
             except ValueError as _e:
-                log.debug('{0!s}'.format(traceback.format_exc()))
+                log.debug(f'{traceback.format_exc()!s}')
                 raise TokenAdminError('Could not parse validity period end date!')
             self.add_tokeninfo("validity_period_end", d.strftime(DATE_FORMAT))
 
@@ -1290,7 +1287,7 @@ class TokenClass:
             try:
                 d = parse_date_string(start_date)
             except ValueError as _e:
-                log.debug('{0!s}'.format(traceback.format_exc()))
+                log.debug(f'{traceback.format_exc()!s}')
                 raise TokenAdminError('Could not parse validity period start date!')
 
             self.add_tokeninfo("validity_period_start", d.strftime(DATE_FORMAT))
@@ -1373,7 +1370,7 @@ class TokenClass:
         except Exception as exx:
             log.warning("Misconfiguration. Error retrieving "
                         "failcounter_clear_timeout: "
-                        "{0!s}".format(exx))
+                        f"{exx!s}")
         if timeout and self.token.failcount == self.get_max_failcount():
             now = datetime.now(tzlocal())
             lastfail = self.get_tokeninfo(FAILCOUNTER_EXCEEDED)
@@ -1467,7 +1464,7 @@ class TokenClass:
         else:
             r = True
         if not r:
-            log.info("{0} {1}".format(message_list, self.get_serial()))
+            log.info(f"{message_list} {self.get_serial()}")
         return r
 
     @log_with(log)
@@ -1582,10 +1579,10 @@ class TokenClass:
         """
         ldict = {}
         for attr in self.__dict__:
-            key = "{0!r}".format(attr)
-            val = "{0!r}".format(getattr(self, attr))
+            key = f"{attr!r}"
+            val = f"{getattr(self, attr)!r}"
             ldict[key] = val
-        res = "<{0!r} {1!r}>".format(self.__class__, ldict)
+        res = f"<{self.__class__!r} {ldict!r}>"
         return res
 
     def get_init_detail(self, params=None, user=None):
@@ -1617,7 +1614,7 @@ class TokenClass:
 
         if otpkey is not None:
             response_detail["otpkey"] = {"description": "OTP seed",
-                                         "value": "seed://{0!s}".format(otpkey),
+                                         "value": f"seed://{otpkey!s}",
                                          "img": create_img(otpkey)}
 
         return response_detail
@@ -1888,8 +1885,7 @@ class TokenClass:
         :param g: The Flask global object g
         :return: Flask Response or text
         """
-        raise ParameterError("{0!s} does not support the API endpoint".format(
-            cls.get_tokentype()))
+        raise ParameterError(f"{cls.get_tokentype()!s} does not support the API endpoint")
 
     @staticmethod
     def test_config(params=None):
@@ -1974,14 +1970,13 @@ class TokenClass:
         date_s = self.get_tokeninfo(PolicyAction.LASTAUTH)
         if date_s:
             log.debug("Compare the last successful authentication of "
-                      "token %s with policy "
-                      "tdelta %s: %s" % (self.token.serial, tdelta,
-                                         date_s))
+                      f"token {self.token.serial} with policy "
+                      f"tdelta {tdelta}: {date_s}")
             # parse the string from the database
             try:
                 last_success_auth = parse_date_string(date_s)
             except ParserError:
-                log.info("Failed to parse the date in 'last_auth' of token {0!s}.".format(self.token.serial))
+                log.info(f"Failed to parse the date in 'last_auth' of token {self.token.serial!s}.")
                 return False
 
             if not last_success_auth.tzinfo:
@@ -1992,7 +1987,7 @@ class TokenClass:
             if last_success_auth + tdelta < datetime.now(tzlocal()):
                 res = False
                 log.debug("The last successful authentication is too old: "
-                          "{0!s}".format(last_success_auth))
+                          f"{last_success_auth!s}")
 
         return res
 
@@ -2024,17 +2019,17 @@ class TokenClass:
         return key
 
     @staticmethod
-    def get_import_csv(l):
+    def get_import_csv(row):
         """
         Read the list from a csv file and return a dictionary, that can be used
         to do a token_init.
 
-        :param l: The list of the line of a csv file
-        :type l: list
+        :param row: The list of the line of a csv file
+        :type row: list
         :return: A dictionary of init params
         """
         # The OTPKey is at the second column
-        key = l[1].strip()
+        key = row[1].strip()
         if len(key) == 64:
             hashlib = "sha256"
         elif len(key) == 128:
@@ -2046,14 +2041,14 @@ class TokenClass:
         else:
             hashlib = "sha1"
 
-        params = {"serial": l[0].strip(),
+        params = {"serial": row[0].strip(),
                   "hashlib": hashlib,
                   "otpkey": key,
-                  "type": l[2].strip()}
+                  "type": row[2].strip()}
 
         # get OTP len
-        if len(l) >= 4:
-            params["otplen"] = l[3].strip()
+        if len(row) >= 4:
+            params["otplen"] = row[3].strip()
         else:
             params["otplen"] = 6
 

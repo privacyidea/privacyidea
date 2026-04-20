@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -29,8 +29,7 @@ describe("PasswdResolverComponent", () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [PasswdResolverComponent, NoopAnimationsModule]
-    })
-      .compileComponents();
+    }).compileComponents();
 
     fixture = TestBed.createComponent(PasswdResolverComponent);
     component = fixture.componentInstance;
@@ -44,9 +43,11 @@ describe("PasswdResolverComponent", () => {
 
   it("should expose controls via signal", () => {
     const controls = component.controls();
-    expect(controls).toEqual(expect.objectContaining({
-      fileName: component.filenameControl
-    }));
+    expect(controls).toEqual(
+      expect.objectContaining({
+        fileName: component.filenameControl
+      })
+    );
   });
 
   it("should update controls when data input changes", () => {

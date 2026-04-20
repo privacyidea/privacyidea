@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, inject } from "@angular/core";
-import { CommonModule } from "@angular/common";
+
 import { MAT_DIALOG_DATA, MatDialogClose } from "@angular/material/dialog";
 import { MatButton } from "@angular/material/button";
 
@@ -34,7 +34,7 @@ export type SubscriptionExpiryDialogData = {
 @Component({
   selector: "app-subscription-expiry-dialog",
   standalone: true,
-  imports: [CommonModule, MatDialogClose, MatButton],
+  imports: [MatDialogClose, MatButton],
   templateUrl: "./subscription-expiry-dialog.component.html",
   styleUrl: "./subscription-expiry-dialog.component.scss"
 })

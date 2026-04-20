@@ -252,12 +252,12 @@ class IdResolver (UserIdResolver):
             content = cls._search_users(param.get("Resourceserver"),
                                                     access_token, "")
             num = content.get("totalResults", -1)
-            desc = "Found {0!s} users".format(num)
+            desc = f"Found {num!s} users"
             success = True
         except Exception as exx:
-            log.error("Failed to retrieve users: {0!s}".format(exx))
-            log.debug("{0!s}".format(traceback.format_exc()))
-            desc = "failed to retrieve users: {0!s}".format(exx)
+            log.error(f"Failed to retrieve users: {exx!s}")
+            log.debug(f"{traceback.format_exc()!s}")
+            desc = f"failed to retrieve users: {exx!s}"
 
         return success, desc
 
@@ -268,12 +268,12 @@ class IdResolver (UserIdResolver):
         :type params: dictionary
         """
         params = params or {}
-        headers = {'Authorization': "Bearer {0}".format(access_token),
+        headers = {'Authorization': f"Bearer {access_token}",
                    'content-type': 'application/json'}
-        url = '{0}/Users?{1}'.format(resource_server, urlencode(params))
+        url = f'{resource_server}/Users?{urlencode(params)}'
         resp = requests.get(url, headers=headers, timeout=60)
         if resp.status_code != 200:
-            info = "Could not get user list: {0!s}".format(resp.status_code)
+            info = f"Could not get user list: {resp.status_code!s}"
             log.error(info)
             raise Exception(info)
         j_content = yaml.safe_load(resp.content)
@@ -293,13 +293,13 @@ class IdResolver (UserIdResolver):
         :type userid: basestring
         :return: Dictionary of User object.
         """
-        headers = {'Authorization': "Bearer {0}".format(access_token),
+        headers = {'Authorization': f"Bearer {access_token}",
                    'content-type': 'application/json'}
-        url = '{0}/Users/{1}'.format(resource_server, userid)
+        url = f'{resource_server}/Users/{userid}'
         resp = requests.get(url, headers=headers, timeout=60)
 
         if resp.status_code != 200:
-            info = "Could not get user: {0!s}".format(resp.status_code)
+            info = f"Could not get user: {resp.status_code!s}"
             log.error(info)
             raise Exception(info)
         j_content = yaml.safe_load(resp.content)
@@ -311,13 +311,13 @@ class IdResolver (UserIdResolver):
 
         auth = to_unicode(base64.b64encode(to_bytes(client + ':' + secret)))
 
-        url = "{0!s}/oauth/token?grant_type=client_credentials".format(server)
+        url = f"{server!s}/oauth/token?grant_type=client_credentials"
         resp = requests.get(url,
                             headers={'Authorization': 'Basic ' + auth},
                             timeout=60)
 
         if resp.status_code != 200:
-            info = "Could not get access token: {0!s}".format(resp.status_code)
+            info = f"Could not get access token: {resp.status_code!s}"
             log.error(info)
             raise Exception(info)
 

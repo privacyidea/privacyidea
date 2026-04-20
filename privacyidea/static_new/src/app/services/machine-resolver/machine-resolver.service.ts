@@ -19,7 +19,7 @@
 
 import { computed, inject, Injectable, Signal } from "@angular/core";
 import { environment } from "../../../environments/environment";
-import { HttpClient, httpResource } from "@angular/common/http";
+import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { PiResponse } from "../../app.component";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
@@ -78,6 +78,7 @@ export interface LdapMachineResolver extends MachineResolver {
 export interface MachineResolverServiceInterface {
   readonly allMachineResolverTypes: string[];
   readonly machineResolvers: Signal<MachineResolver[]>;
+  readonly machineResolverResource: HttpResourceRef<PiResponse<MachineResolvers> | undefined>;
 
   postMachineResolver(resolver: MachineResolver): Promise<void>;
 
@@ -114,6 +115,9 @@ export class MachineResolverService implements MachineResolverServiceInterface {
   });
 
   readonly machineResolvers = computed<MachineResolver[]>(() => {
+    if (!this.machineResolverResource.hasValue()) {
+      return [];
+    }
     const res = this.machineResolverResource.value();
     return res?.result?.value ? Object.values(res.result.value) : [];
   });

@@ -18,19 +18,20 @@
 -->
 
 <div class="policy-panel-edit-container">
-  <div class="name-priority-row">
-    <app-policy-name-edit
-      [policyName]="editedPolicy().name"
-      (policyNameChange)="addPolicyEdit({ name: $event })" />
-    <div class="spacer"></div>
-    <app-policy-priority-edit
-      [priority]="editedPolicy().priority"
-      (priorityChange)="addPolicyEdit({ priority: $event })" />
-  </div>
+  <div class="policy-metadata-group">
+    <div class="name-priority-row">
+      <app-policy-name-edit
+        [policyName]="editedPolicy().name"
+        (policyNameChange)="addPolicyEdit({ name: $event })" />
+      <app-policy-priority-edit
+        [priority]="editedPolicy().priority"
+        (priorityChange)="addPolicyEdit({ priority: $event })" />
+    </div>
 
-  <app-policy-description-edit
-    [description]="editedPolicy().description ?? ''"
-    (descriptionChange)="addPolicyEdit({ description: $event })" />
+    <app-policy-description-edit
+      [description]="editedPolicy().description ?? ''"
+      (descriptionChange)="addPolicyEdit({ description: $event })" />
+  </div>
 
   <div class="tab-buttons">
     <button

@@ -17,12 +17,11 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <mat-form-field
-  class="width-100 margin-bottom-32"
-  subscriptSizing="dynamic">
+  class="input-width-l margin-bottom-32">
   <mat-label i18n>Action</mat-label>
   <mat-select
-    [formControl]="selectedAction"
     (selectionChange)="onActionSelectionChange()"
+    [formControl]="selectedAction"
     required>
     @for (action of Object.keys(eventService.moduleActions()); track action) {
       <mat-option [value]="action">
@@ -41,17 +40,19 @@
   class="flex-column gap-16">
   @for (optionName of Object.keys(actionOptions()); track optionName) {
     @if (checkOptionVisibility(optionName)) {
-      <div class="pad-0 width-100">
+      <div class="pad-0">
         @if (actionOptions()[optionName].type == "bool") {
           <mat-checkbox
-            class="margin-0 width-100"
-            [formControlName]="optionName">
+            [formControlName]="optionName"
+            class="margin-0">
             {{ optionName }}
           </mat-checkbox>
         } @else {
           <mat-form-field
-            class="width-100"
-            subscriptSizing="dynamic">
+            [ngClass]="{
+              'input-width-l': actionOptions()[optionName].type !== 'text',
+              'input-width-xl': actionOptions()[optionName].type === 'text'
+            }">
             <mat-label>
               {{ optionName }}
             </mat-label>
@@ -69,24 +70,24 @@
               @switch (actionOptions()[optionName].type) {
                 @case ("int") {
                   <input
-                    matInput
-                    type="number"
                     [formControlName]="optionName"
-                    [required]="actionOptions()[optionName].required || false" />
+                    [required]="actionOptions()[optionName].required || false"
+                    matInput
+                    type="number" />
                 }
                 @case ("text") {
                   <textarea
-                    matInput
-                    rows="3"
                     [formControlName]="optionName"
-                    [required]="actionOptions()[optionName].required || false"></textarea>
+                    [required]="actionOptions()[optionName].required || false"
+                    matInput
+                    rows="3"></textarea>
                 }
                 @default {
                   <input
-                    matInput
-                    type="text"
                     [formControlName]="optionName"
-                    [required]="actionOptions()[optionName].required || false" />
+                    [required]="actionOptions()[optionName].required || false"
+                    matInput
+                    type="text" />
                 }
               }
             }
@@ -98,8 +99,10 @@
         @if (!(selectedOptions.get(optionName)?.invalid && (selectedOptions.get(optionName)?.dirty ||
           selectedOptions.get(optionName)?.touched))) {
           <div
-            class="checkbox-hint"
-            [innerHTML]="actionOptions()[optionName].desc || actionOptions()[optionName].description || ''"></div>
+            class="checkbox-hint input-width-xl"
+            [innerHTML]="actionOptions()[optionName].desc || actionOptions()[optionName].description || ''"
+            [ngClass]="{'margin-top--16': actionOptions()[optionName].type !== 'bool'}">
+          </div>
         }
       </div>
     }

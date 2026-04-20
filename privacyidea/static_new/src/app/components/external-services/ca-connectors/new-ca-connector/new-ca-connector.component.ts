@@ -28,7 +28,7 @@ import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatButtonModule } from "@angular/material/button";
-import { CommonModule } from "@angular/common";
+
 import { MatIconModule } from "@angular/material/icon";
 import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
 import { SaveAndExitDialogComponent } from "../../../shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
@@ -38,12 +38,16 @@ import { ContentService, ContentServiceInterface } from "../../../../services/co
 import { PendingChangesService } from "../../../../services/pending-changes/pending-changes.service";
 import { MatSelectModule } from "@angular/material/select";
 import { DialogServiceInterface, DialogService } from "../../../../services/dialog/dialog.service";
+import { ClearableInputComponent } from "../../../shared/clearable-input/clearable-input.component";
+import { NAVIGATION_ACCESSIBLE_DIALOG_CLASS } from "../../../../constants/global.constants";
 
 @Component({
   selector: "app-ca-connector-edit-dialog",
   standalone: true,
+  host: {
+    class: NAVIGATION_ACCESSIBLE_DIALOG_CLASS
+  },
   imports: [
-    CommonModule,
     ReactiveFormsModule,
     MatDialogModule,
     MatFormFieldModule,
@@ -52,7 +56,8 @@ import { DialogServiceInterface, DialogService } from "../../../../services/dial
     MatButtonModule,
     MatIconModule,
     MatProgressSpinnerModule,
-    MatSelectModule
+    MatSelectModule,
+    ClearableInputComponent
   ],
   templateUrl: "./new-ca-connector.component.html",
   styleUrl: "./new-ca-connector.component.scss"
@@ -87,6 +92,7 @@ export class NewCaConnectorComponent implements OnInit, OnDestroy {
 
     this.pendingChangesService.registerHasChanges(() => this.hasChanges);
     this.pendingChangesService.registerSave(() => this.save());
+    this.pendingChangesService.registerValidChanges(() => this.canSave);
 
     effect(() => {
       if (!this.contentService.routeUrl().startsWith(ROUTE_PATHS.EXTERNAL_SERVICES_CA_CONNECTORS)) {
@@ -175,7 +181,7 @@ export class NewCaConnectorComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.pendingChangesService.unregisterHasChanges();
+    this.pendingChangesService.clearAllRegistrations();
   }
 
   loadAvailableCas(): void {
@@ -205,60 +211,65 @@ export class NewCaConnectorComponent implements OnInit, OnDestroy {
     }
   }
 
-  save(): Promise<void> | void {
-    if (this.caConnectorForm.valid) {
-      const formValue = this.caConnectorForm.getRawValue();
-      const type = formValue.type;
-      const connectorname = formValue.connectorname;
+  async save(): Promise<boolean> {
+    if (this.caConnectorForm.invalid) {
+      return false;
+    }
+    const formValue = this.caConnectorForm.getRawValue();
+    const type = formValue.type;
+    const connectorname = formValue.connectorname;
 
-      const data: Record<string, any> = { type };
+    const data: Record<string, any> = { type };
 
-      if (type === "local") {
-        const localFields = [
-          "cacert",
-          "cakey",
-          "openssl.cnf",
-          "templates",
-          "WorkingDir",
-          "CSRDir",
-          "CertificateDir",
-          "CRL",
-          "CRL_Validity_Period",
-          "CRL_Overlap_Period"
-        ];
-        localFields.forEach((f) => {
-          if (formValue[f] !== undefined && formValue[f] !== "") {
-            data[f] = formValue[f];
-          }
-        });
-      } else if (type === "microsoft") {
-        const microsoftFields = [
-          "hostname",
-          "port",
-          "http_proxy",
-          "use_ssl",
-          "ssl_ca_cert",
-          "ssl_client_cert",
-          "ssl_client_key",
-          "ssl_client_key_password",
-          "ca"
-        ];
-        microsoftFields.forEach((f) => {
-          if (formValue[f] !== undefined && formValue[f] !== "") {
-            data[f] = formValue[f];
-          }
-        });
-      }
-
-      const connector: CaConnector = {
-        connectorname,
-        type,
-        data
-      };
-
-      return this.caConnectorService.postCaConnector(connector).then(() => {
-        this.dialogRef.close(true);
+    if (type === "local") {
+      const localFields = [
+        "cacert",
+        "cakey",
+        "openssl.cnf",
+        "templates",
+        "WorkingDir",
+        "CSRDir",
+        "CertificateDir",
+        "CRL",
+        "CRL_Validity_Period",
+        "CRL_Overlap_Period"
+      ];
+      localFields.forEach((f) => {
+        if (formValue[f] !== undefined && formValue[f] !== "") {
+          data[f] = formValue[f];
+        }
       });
+    } else if (type === "microsoft") {
+      const microsoftFields = [
+        "hostname",
+        "port",
+        "http_proxy",
+        "use_ssl",
+        "ssl_ca_cert",
+        "ssl_client_cert",
+        "ssl_client_key",
+        "ssl_client_key_password",
+        "ca"
+      ];
+      microsoftFields.forEach((f) => {
+        if (formValue[f] !== undefined && formValue[f] !== "") {
+          data[f] = formValue[f];
+        }
+      });
+    }
+
+    const connector: CaConnector = {
+      connectorname,
+      type,
+      data
+    };
+
+    try {
+      await this.caConnectorService.postCaConnector(connector);
+      this.dialogRef.close(true);
+      return true;
+    } catch (error) {
+      return false;
     }
   }
 
@@ -275,13 +286,15 @@ export class NewCaConnectorComponent implements OnInit, OnDestroy {
         .afterClosed()
         .subscribe((result) => {
           if (result === "discard") {
-            this.pendingChangesService.unregisterHasChanges();
+            this.pendingChangesService.clearAllRegistrations();
             this.closeActual();
           } else if (result === "save-exit") {
             if (!this.canSave) return;
-            Promise.resolve(this.pendingChangesService.save()).then(() => {
-              this.pendingChangesService.unregisterHasChanges();
-              this.closeActual();
+            Promise.resolve(this.pendingChangesService.save()).then((success) => {
+              if (success) {
+                this.pendingChangesService.clearAllRegistrations();
+                this.closeActual();
+              }
             });
           }
         });

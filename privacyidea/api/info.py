@@ -17,10 +17,11 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 #
 
-from flask import (Blueprint, request, g, current_app)
+from flask import (Blueprint, request, g)
 from privacyidea.lib.info.rss import get_news, FETCH_DAYS
 import logging
-from .lib.utils import send_result, getParam
+from .lib.utils import send_result
+from ..lib.params import get_optional
 from ..lib.log import log_with
 from privacyidea.api.lib.prepolicy import prepolicy, rss_age
 from privacyidea.lib.policy import Match, SCOPE, convert_action_dict_to_python_dict
@@ -56,8 +57,8 @@ def rss():
     """
     feeds = None
     param = request.all_data
-    age = int(getParam(param, PolicyAction.RSS_AGE, default=FETCH_DAYS))
-    channel = getParam(param, "channel")
+    age = int(get_optional(param, PolicyAction.RSS_AGE, default=FETCH_DAYS))
+    channel = get_optional(param, "channel")
     user = request.User if hasattr(request, 'User') else None
     feeds_pol = (Match.user(g, scope=SCOPE.WEBUI, action=PolicyAction.RSS_FEEDS, user_object=user).action_values(
         allow_white_space_in_action=True, unique=True))

@@ -360,9 +360,9 @@ be used during authentication. The list is separated by whitespaces like
 *"hotp totp"*.
 
 
-.. _policy_diable_token_types:
+.. _policy_diabled_token_types:
 
-disable_token_types
+disabled_token_types
 ~~~~~~~~~~~~~~~~~~~~
 
 type: ``string``
@@ -372,7 +372,7 @@ The list is separated by whitespaces like *"hotp totp"*.
 
 .. versionadded:: 3.12
 
-.. _policy_change_pin_via_validate:
+.. _policy_force_challenge_response:
 
 force_challenge_response
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -384,7 +384,7 @@ type: ``bool``
 When enabled, authentication attempts will be interpreted as either the PIN or the answer to a challenge.
 PIN concatenated with OTP can not be used anymore! Does only work when authenticating with a username.
 
-.. _policy_force_challenge_response:
+.. _policy_change_pin_via_validate:
 
 change_pin_via_validate
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -525,23 +525,6 @@ If enabled, passkeys that are enrolled with the :ref:`policy_enroll_via_multicha
 allowed for offline use and the required offline data is returned with completion of the enrollment.
 
 .. versionadded:: 3.13
-
-.. _policy_u2f_facets:
-
-u2f_facets
-~~~~~~~~~~
-
-type: ``string``
-
-This is a white space separated list of domain names, that are trusted to
-also use a U2F device that was registered with privacyIDEA.
-
-You need to specify a list of FQDNs without the https scheme like:
-
-*"host1.example.com host2.example.com firewall.example.com"*
-
-For more information on configuring U2F see :ref:`u2f_token`.
-
 
 .. [#pythonre] https://docs.python.org/3/library/re.html
 
@@ -924,15 +907,14 @@ challenge text received during enrollment
 
 .. _email-challenge-text:
 .. _sms-challenge-text:
-.. _u2f-challenge-text:
 
-email_challenge_text, sms_challenge_text, u2f_challenge_text
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+email_challenge_text, sms_challenge_text
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 type: ``string``
 
-With these actions the administrator may set alternative challenge texts for email, SMS
-and U2F tokens.
+With these actions the administrator may set alternative challenge texts for email
+and SMS tokens.
 
 
 indexedsecret_count
@@ -1034,12 +1016,12 @@ preferred_client_mode
 type: ``string``
 
 This action sets a list of the client mode in the preferred order. You can enter the different client
-modes in the order you like. For example: "interactive webauthn poll u2f". The client you are using
+modes in the order you like. For example: "interactive webauthn poll". The client you are using
 will show you the correct login for your preferred client mode. For example if this is your list:
-"interactive webauthn poll u2f" and in your multi-challenge list are a webauthn and u2f token,
+"interactive webauthn poll" and in your multi-challenge list are a webauthn and a HOTP token,
 then your client will automatically show you the login for a webauthn token.
 
-The default list is "interactive webauthn poll u2f".
+The default list is "interactive webauthn poll".
 
 client_mode_per_user
 ~~~~~~~~~~~~~~~~~~~~

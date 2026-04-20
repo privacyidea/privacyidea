@@ -31,7 +31,7 @@ from privacyidea.lib.user import User
 log = logging.getLogger(__name__)
 
 
-class ACTION_TYPE(object):
+class ACTION_TYPE:
     """
     Allowed actions
     """
@@ -39,7 +39,7 @@ class ACTION_TYPE(object):
     DELETE_CUSTOM_USER_ATTRIBUTES = "delete_custom_user_attributes"
 
 
-class USER_TYPE(object):
+class USER_TYPE:
     """
     Allowed user types
     """
@@ -127,7 +127,7 @@ class CustomUserAttributesHandler(BaseEventHandler):
                         realm=g.logged_in_user.get('realm'))
         else:
             log.warning("Unable to determine the user for handling the custom "
-                        "attribute! action: {0!s}, handler: {1!s}".format(action, handler_def))
+                        f"attribute! action: {action!s}, handler: {handler_def!s}")
             return False
 
         attrkey = handler_options.get("attrkey")
@@ -137,7 +137,7 @@ class CustomUserAttributesHandler(BaseEventHandler):
         elif action.lower() == "delete_custom_user_attributes":
             ret = user.delete_attribute(attrkey)
         else:
-            log.warning('Unknown action value: {0!s}'.format(action))
+            log.warning(f'Unknown action value: {action!s}')
             ret = False
 
         return ret

@@ -76,6 +76,7 @@ export class PrivacyideaServerService implements PrivacyideaServerServiceInterfa
     };
   });
   remoteServerOptions = computed<PrivacyideaServer[]>(() => {
+    if (!this.remoteServerResource.hasValue()) return [];
     const res = this.remoteServerResource.value();
     const values = res?.result?.value;
     if (values) {

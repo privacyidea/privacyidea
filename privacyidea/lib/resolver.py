@@ -58,8 +58,7 @@ from .config import (get_resolver_types, get_resolver_classes, get_config_object
 from .crypto import encryptPassword
 from .error import ConfigAdminError
 from .log import log_with
-from ..api.lib.utils import getParam
-from ..api.lib.utils import required
+from privacyidea.lib.params import get_required
 from ..models import (Resolver,
                       ResolverConfig, save_config_timestamp, db)
 
@@ -89,15 +88,15 @@ def save_resolver(params):
     """
     # before we create the resolver in the database, we need to check
     # for the name and type thing...
-    resolvername = getParam(params, 'resolver', required)
-    resolvertype = getParam(params, 'type', required)
+    resolvername = get_required(params, 'resolver')
+    resolvertype = get_required(params, 'type')
     update_resolver = False
     # check the name
     sanity_name_check(resolvername)
     # check the type
     resolvertypes = get_resolver_types()
     if resolvertype not in resolvertypes:
-        raise Exception("resolver type : {0!s} not in {1!s}".format(resolvertype, str(resolvertypes)))
+        raise Exception(f"resolver type : {resolvertype!s} not in {str(resolvertypes)!s}")
 
     # check the name
     resolvers = get_resolver_list(filter_resolver_name=resolvername)
@@ -108,7 +107,7 @@ def save_resolver(params):
             update_resolver = True
         else:
             raise Exception("resolver with similar name and other type already "
-                            "exists: %s" % r_name)
+                            f"exists: {r_name}")
 
     # create a dictionary for the ResolverConfig
     resolver_config = get_resolver_config_description(resolvertype)
@@ -273,8 +272,8 @@ def delete_resolver(resolvername):
         if resolver.realm_list:
             # The resolver is still contained in a realm! We must not delete it
             realmname = resolver.realm_list[0].realm.name
-            raise ConfigAdminError("The resolver %r is still contained in "
-                                   "realm %r." % (resolvername, realmname))
+            raise ConfigAdminError(f"The resolver {resolvername!r} is still contained in "
+                                   f"realm {realmname!r}.")
 
         db.session.delete(resolver)
         save_config_timestamp()
@@ -379,7 +378,7 @@ def get_resolver_object(resolvername):
     r_obj_class = get_resolver_class(r_type)
 
     if r_obj_class is None:
-        log.error("Can not find resolver with name {0!s} ".format(resolvername))
+        log.error(f"Can not find resolver with name {resolvername!s} ")
         return None
     else:
         store = get_request_local_store()
@@ -465,7 +464,7 @@ def import_resolver(data, name=None):
     #  given data. We could use "pretestresolver() / testconnection()" (which
     #  doesn't check the input) or "loadConfig()" (which also doesn't check the
     #  parameter, at least for LDAP/SQL-resolver).
-    log.debug('Import resolver config: {0!s}'.format(data))
+    log.debug(f'Import resolver config: {data!s}')
 
     # Check for old style export type where resolvers were given as a list
     if isinstance(data, list):
@@ -483,5 +482,5 @@ def import_resolver(data, name=None):
         rid = save_resolver(res_data)
         # TODO: we have no information if a new resolver was created or an
         #  existing resolver updated. We would need to enhance "save_resolver()".
-        log.info('Import of resolver "{0!s}" finished,'
-                 ' id: {1!s}'.format(res_data['resolver'], rid))
+        log.info('Import of resolver "{!s}" finished,'
+                 ' id: {!s}'.format(res_data['resolver'], rid))

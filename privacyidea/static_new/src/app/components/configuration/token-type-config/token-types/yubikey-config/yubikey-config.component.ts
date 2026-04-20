@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, input, output, signal } from "@angular/core";
-import { CommonModule } from "@angular/common";
+
 import { FormsModule } from "@angular/forms";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MatFormFieldModule } from "@angular/material/form-field";
@@ -25,19 +25,26 @@ import { MatInputModule } from "@angular/material/input";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
 import { MatDivider } from "@angular/material/list";
+import { MatCheckbox } from "@angular/material/checkbox";
+
+export type ApiKeyData = {
+  apiId: string;
+  apiKey: string;
+  generateKey: boolean;
+};
 
 @Component({
   selector: "app-yubikey-config",
   standalone: true,
   imports: [
-    CommonModule,
     FormsModule,
     MatExpansionModule,
     MatFormFieldModule,
     MatInputModule,
     MatButtonModule,
     MatIconModule,
-    MatDivider
+    MatDivider,
+    MatCheckbox
   ],
   templateUrl: "./yubikey-config.component.html",
   styleUrl: "./yubikey-config.component.scss"
@@ -46,15 +53,21 @@ export class YubikeyConfigComponent {
   formData = input.required<Record<string, any>>();
   yubikeyApiIds = input.required<string[]>();
 
-  onYubikeyCreateNewKey = output<string>();
+  onYubikeyCreateNewKey = output<ApiKeyData>();
   onDeleteEntry = output<string>();
 
   newYubikeyApiId = signal("");
   newYubikeyApiKey = signal("");
+  newYubikeyGenKey = signal(true);
 
   createNewKey() {
     if (this.newYubikeyApiId()) {
-      this.onYubikeyCreateNewKey.emit(this.newYubikeyApiId());
+      const newKeyData = {
+        apiId: this.newYubikeyApiId(),
+        apiKey: this.newYubikeyApiKey(),
+        generateKey: this.newYubikeyGenKey()
+      };
+      this.onYubikeyCreateNewKey.emit(newKeyData);
       this.newYubikeyApiId.set("");
       this.newYubikeyApiKey.set("");
     }

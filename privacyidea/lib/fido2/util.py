@@ -1,5 +1,4 @@
 import hashlib
-from typing import Union
 
 from sqlalchemy import select
 from webauthn import base64url_to_bytes
@@ -10,7 +9,7 @@ from privacyidea.lib.user import User
 from privacyidea.models import TokenInfo, Token, Challenge, TokenCredentialIdHash, db
 
 
-def get_fido2_token_by_credential_id(credential_id: str) -> Union[TokenClass, None]:
+def get_fido2_token_by_credential_id(credential_id: str) -> TokenClass | None:
     """
     Find a FIDO2 token (WebAuthn or Passkey) by the credential_id.
 
@@ -27,7 +26,8 @@ def get_fido2_token_by_credential_id(credential_id: str) -> Union[TokenClass, No
                 return create_tokenclass_object(db_token)
         else:
             log.debug(f"TokenCredentialIdHash entry not found for credential_id {credential_id}. Trying token info...")
-            token_id_stmt = select(TokenInfo.token_id).where(TokenInfo.Key == "credential_id_hash", TokenInfo.Value == credential_id_hash)
+            token_id_stmt = select(TokenInfo.token_id).where(TokenInfo.Key == "credential_id_hash",
+                                                             TokenInfo.Value == credential_id_hash)
             token_id = db.session.scalar(token_id_stmt)
             db_token = db.session.get(Token, token_id) if token_id else None
             if db_token:
@@ -41,7 +41,7 @@ def get_fido2_token_by_credential_id(credential_id: str) -> Union[TokenClass, No
     return None
 
 
-def get_fido2_token_by_transaction_id(transaction_id: str, credential_id: str) -> Union[TokenClass, None]:
+def get_fido2_token_by_transaction_id(transaction_id: str, credential_id: str) -> TokenClass | None:
     """
     Find a fido2 token (WebAuthn or Passkey) by the transaction_id of the challenge and the credential_id.
     First all challenges are retrieved with the transaction_id. Then the token is searched by the serial of the
@@ -90,7 +90,7 @@ def get_credential_ids_for_user(user: User) -> list:
     return credential_ids
 
 
-def hash_credential_id(credential_id: Union[str, bytes]) -> str:
+def hash_credential_id(credential_id: str | bytes) -> str:
     """
     Hash a credential_id with SHA256 and return the hexdigest.
 

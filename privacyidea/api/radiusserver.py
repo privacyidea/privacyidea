@@ -27,9 +27,8 @@ The code of this module is tested in tests/test_api_radiusserver.py
 from flask import (Blueprint, request)
 
 from privacyidea.lib.resolver import CENSORED
-from .lib.utils import (getParam,
-                        required,
-                        send_result)
+from .lib.utils import (send_result)
+from ..lib.params import get_optional, get_required
 from ..lib.log import log_with
 from ..lib.policies.actions import PolicyAction
 from ..api.lib.prepolicy import prepolicy, check_base_action
@@ -59,15 +58,14 @@ def create(identifier=None):
     """
     param = request.all_data
     identifier = identifier.replace(" ", "_")
-    server = getParam(param, "server", required)
-    port = int(getParam(param, "port", default=1812))
-    secret = getParam(param, "secret", required)
-    retries = int(getParam(param, "retries", default=3))
-    timeout = int(getParam(param, "timeout", default=5))
-    description = getParam(param, "description", default="")
-    dictionary = getParam(param, "dictionary",
-                          default="/etc/privacyidea/dictionary")
-    options = getParam(param, "options", default=None)
+    server = get_required(param, "server")
+    port = int(get_optional(param, "port", default=1812))
+    secret = get_required(param, "secret")
+    retries = int(get_optional(param, "retries", default=3))
+    timeout = int(get_optional(param, "timeout", default=5))
+    description = get_optional(param, "description", default="")
+    dictionary = get_optional(param, "dictionary", default="/etc/privacyidea/dictionary")
+    options = get_optional(param, "options", default=None)
 
     r = add_radius(identifier, server, secret, port=port,
                    description=description, dictionary=dictionary,
@@ -118,17 +116,16 @@ def test():
     :return:
     """
     param = request.all_data
-    identifier = getParam(param, "identifier", required)
-    server = getParam(param, "server", required)
-    port = int(getParam(param, "port", default=1812))
-    secret = getParam(param, "secret", required)
-    retries = int(getParam(param, "retries", default=3))
-    timeout = int(getParam(param, "timeout", default=5))
-    user = getParam(param, "username", required)
-    password = getParam(param, "password", required)
-    dictionary = getParam(param, "dictionary",
-                          default="/etc/privacyidea/dictionary")
-    options = getParam(param, "options", default=None)
+    identifier = get_required(param, "identifier")
+    server = get_required(param, "server")
+    port = int(get_optional(param, "port", default=1812))
+    secret = get_required(param, "secret")
+    retries = int(get_optional(param, "retries", default=3))
+    timeout = int(get_optional(param, "timeout", default=5))
+    user = get_required(param, "username")
+    password = get_required(param, "password")
+    dictionary = get_optional(param, "dictionary", default="/etc/privacyidea/dictionary")
+    options = get_optional(param, "options", default=None)
 
     r = test_radius(identifier, server, secret, user, password, port=port,
                     dictionary=dictionary, retries=retries, timeout=timeout, options=options)

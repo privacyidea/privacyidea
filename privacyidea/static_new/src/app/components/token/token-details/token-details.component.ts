@@ -24,14 +24,12 @@ import { EditableElement, EditButtonsComponent } from "../../shared/edit-buttons
 import { FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
 import { MatCell, MatColumnDef, MatRow, MatTable, MatTableModule } from "@angular/material/table";
-import { OverflowService, OverflowServiceInterface } from "../../../services/overflow/overflow.service";
 import { RealmService, RealmServiceInterface } from "../../../services/realm/realm.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "../../../services/table-utils/table-utils.service";
 import { TokenDetails, TokenService, TokenServiceInterface } from "../../../services/token/token.service";
 
 import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
 import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
-import { MatDialog } from "@angular/material/dialog";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
 import { MatIconButton } from "@angular/material/button";
@@ -132,7 +130,6 @@ export class TokenDetailsComponent {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
   protected readonly realmService: RealmServiceInterface = inject(RealmService);
-  protected readonly overflowService: OverflowServiceInterface = inject(OverflowService);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
@@ -155,34 +152,33 @@ export class TokenDetailsComponent {
   });
   tokenDetailResource = this.tokenService.tokenDetailResource;
   tokenDetails: WritableSignal<TokenDetails> = linkedSignal({
-    source: this.tokenDetailResource.value,
-    computation: (res) => {
-      return res && res.result?.value?.tokens[0]
-        ? (res.result?.value.tokens[0] as TokenDetails)
-        : {
-            active: false,
-            container_serial: "",
-            count: 0,
-            count_window: 0,
-            description: "",
-            failcount: 0,
-            id: 0,
-            info: {},
-            locked: false,
-            maxfail: 0,
-            otplen: 0,
-            realms: [],
-            resolver: "",
-            revoked: false,
-            rollout_state: "",
-            serial: "",
-            sync_window: 0,
-            tokengroup: [],
-            tokentype: "hotp",
-            user_id: "",
-            user_realm: "",
-            username: ""
-          };
+    source: () => this.tokenDetailResource.hasValue() ? this.tokenDetailResource.value() : undefined,
+    computation: (tokenDetailResource) => {
+      const tokenDetail = tokenDetailResource?.result?.value?.tokens[0] as TokenDetails | undefined;
+      return tokenDetail ?? {
+        active: false,
+        container_serial: "",
+        count: 0,
+        count_window: 0,
+        description: "",
+        failcount: 0,
+        id: 0,
+        info: {},
+        locked: false,
+        maxfail: 0,
+        otplen: 0,
+        realms: [],
+        resolver: "",
+        revoked: false,
+        rollout_state: "",
+        serial: "",
+        sync_window: 0,
+        tokengroup: [],
+        tokentype: "hotp",
+        user_id: "",
+        user_realm: "",
+        username: ""
+      };
     }
   });
   tokenDetailData = linkedSignal({

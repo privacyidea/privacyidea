@@ -5,7 +5,7 @@
 .motp-pin-input {
   display: flex;
   gap: 16px;
-  margin: 16px 0 16px 0;
+  margin-top: 16px;
 }
 
 .motp-input {
@@ -15,11 +15,6 @@
   outline: none;
 
   &:focus {
-    outline: inputs.$focus-outline;
+    outline: inputs.$input-focus-outline;
   }
 }
-
-.motp-description-form {
-  width: 66%;
-}
-

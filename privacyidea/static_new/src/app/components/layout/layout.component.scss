@@ -4,13 +4,13 @@
 
 .layout {
   --max-height: calc(100vh - 64px - var(--global-padding) * 2);
-  --drawer-width: 298px;
+  --drawer-width: var(--drawer-width-admin);
 }
 
 .progress-bar {
   position: fixed;
   top: calc(
-    100% - max(var(--mdc-linear-progress-track-height, 4px), var(--mdc-linear-progress-active-indicator-height, 4px))
+    100% - max(var(--mat-progress-bar-track-height, 4px), var(--mat-progress-bar-active-indicator-height, 4px))
   );
   left: 0;
   width: 100%;
@@ -32,8 +32,9 @@
   opacity: 0.33;
 }
 
-.drawer-container {
+.admin-layout {
   height: 100vh;
+  --drawer-width: var(--drawer-width-admin);
 }
 
 .drawer {
@@ -64,10 +65,11 @@
   gap: 20px;
 }
 
-.selfservice-layout {
+.self-service-layout {
   display: flex;
   justify-content: center;
   align-items: flex-start;
+  --drawer-width: var(--drawer-width-self-service);
 }
 
 .selfservice-content-container {

@@ -54,9 +54,7 @@ import { Subscription } from "rxjs";
 import { ROUTE_PATHS } from "../../../../route_paths";
 import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
 import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
-
-export const QUESTION_NUMBER_OF_ANSWERS = "question.num_answers";
-export const QUESTION_CONFIG_PREFIX = "question.question.";
+import { QUESTION_CONFIG_PREFIX, QUESTION_NUMBER_OF_ANSWERS } from "../../../../constants/token.constants";
 
 export interface QuestionEnrollmentOptions extends TokenEnrollmentData {
   type: "question";
@@ -79,8 +77,10 @@ export class EnrollQuestionComponent implements OnInit {
   protected readonly authService: AuthServiceInterface = inject(AuthService);
 
   readonly configMinNumberOfAnswers: Signal<number> = computed(() => {
+    const defaultQuestions = 5;
+    if (!this.systemService.systemConfigResource.hasValue()) return defaultQuestions;
     const cfg = this.systemService.systemConfigResource.value()?.result?.value;
-    return cfg && cfg[QUESTION_NUMBER_OF_ANSWERS] ? parseInt(cfg[QUESTION_NUMBER_OF_ANSWERS], 10) : 5;
+    return cfg && cfg[QUESTION_NUMBER_OF_ANSWERS] ? parseInt(cfg[QUESTION_NUMBER_OF_ANSWERS], 10) : defaultQuestions;
   });
   private readonly guardControl = new FormControl<boolean>(false, { nonNullable: true });
   private valueSubscription?: Subscription;
@@ -93,6 +93,7 @@ export class EnrollQuestionComponent implements OnInit {
   >();
   disabled = input<boolean>(false);
   configQuestions = computed(() => {
+    if (!this.systemService.systemConfigResource.hasValue()) return [];
     const cfg = this.systemService.systemConfigResource.value()?.result?.value || {};
     return Object.entries(cfg)
       .filter(([k]) => k.startsWith(QUESTION_CONFIG_PREFIX))

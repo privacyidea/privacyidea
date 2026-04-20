@@ -81,12 +81,12 @@ def delete(noaction=False):
                                           entry.resolver,
                                           entry.timestamp.isoformat(),
                                           entry.user_id))
-        click.echo('{} entries'.format(len(entries)))
+        click.echo(f'{len(entries)} entries')
         if not noaction:
             for entry in entries:
-                click.echo('Deleting entry with id={} ...'.format(entry.id))
+                click.echo(f'Deleting entry with id={entry.id} ...')
                 entry.delete()
-            click.echo('Deleted {} expired entries.'.format(len(entries)))
+            click.echo(f'Deleted {len(entries)} expired entries.')
             db.session.commit()
         else:
             click.echo("'--noaction' was passed, not doing anything.")
@@ -100,8 +100,8 @@ def delete_call():
       / _ \/ __/ / |/ / _ `/ __/ // // // // / _// __ |
      / .__/_/ /_/|___/\_,_/\__/\_, /___/____/___/_/ |_|  Usercache cleanup
     /_/                       /___/
-    {0!s:>51}
-        """.format('v{0!s}'.format(get_version_number())))
+    {!s:>51}
+        """.format(f'v{get_version_number()!s}'))
 
     # Add the ScriptInfo object to create the Flask-App when necessary
     s = ScriptInfo(create_app=create_silent_app)

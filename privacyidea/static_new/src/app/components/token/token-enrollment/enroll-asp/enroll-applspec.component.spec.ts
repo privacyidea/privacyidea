@@ -42,6 +42,15 @@ describe("EnrollAspComponent", () => {
     expect(component).toBeTruthy();
   });
 
+  it("should initialize form controls with default values", () => {
+    expect(component.serviceIdControl.value).toBe("");
+    expect(component.serviceIdControl.enabled).toBe(true);
+    expect(component.generateOnServerControl.value).toBe(true);
+    expect(component.generateOnServerControl.enabled).toBe(true);
+    expect(component.otpKeyFormControl.value).toBe("");
+    expect(component.otpKeyFormControl.disabled).toBe(true);
+  });
+
   describe("ngOnInit with enrollmentData input", () => {
     it("should set initial values from enrollmentData", () => {
       fixture.componentRef.setInput("enrollmentData", {

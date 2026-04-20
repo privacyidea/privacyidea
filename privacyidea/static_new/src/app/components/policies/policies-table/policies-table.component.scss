@@ -13,27 +13,41 @@
   border-bottom: 1px solid var(--mat-sys-outline-variant);
   border-radius: 0;
   box-sizing: border-box;
-  font-size: 1rem;
   margin: 2px;
   padding: var(--quarter-global-padding) 0;
   width: 100%;
 }
 
 .policies-table-layout {
-  @include table.table-container-styles;
+  @include styles.main-component-style;
   @include table.base-table-structure(".policies-table", ".policies-table-filter", ".table-scroll-container");
-  min-width: calc(100% - var(--global-padding) * 2);
-  max-width: calc(100% - var(--global-padding) * 2);
-  max-height: calc(100% - var(--global-padding) * 2);
-  display: flex;
-  flex-direction: column;
-  gap: var(--global-gap);
-  overflow: auto;
+
+  & {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .policies-table-filter {
+    max-width: 932px;
+    min-width: 300px;
+    width: 100%;
+  }
 
   .policies-table {
     border-collapse: collapse;
     table-layout: auto;
     width: 100%;
+
+    // Reset global column striping
+    td:nth-child(even),
+    th:nth-child(even) {
+      background: transparent;
+    }
+
+    // Apply row striping (zebra)
+    tr:nth-child(even) {
+      background-color: var(--mat-sys-surface-variant);
+    }
 
     th,
     td {
@@ -97,12 +111,7 @@
         align-items: center;
         display: flex;
         flex-direction: row;
-        gap: var(--half-global-gap);
-      }
-
-      .text-link-button {
-        color: var(--mat-sys-primary);
-        text-decoration: underline;
+        flex-wrap: nowrap;
       }
     }
 
@@ -113,6 +122,10 @@
       padding-top: var(--half-global-padding);
       white-space: normal;
       word-break: break-word;
+    }
+
+    td.col-scope {
+      font-size: 12px;
     }
 
     td.col-actions {
@@ -150,6 +163,9 @@
   .active-icon {
     color: var(--mat-sys-primary-base);
     opacity: 1;
+  }
+  .clickable-icon {
+    cursor: pointer;
   }
 
   mat-checkbox {

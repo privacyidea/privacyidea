@@ -1,5 +1,5 @@
 <!--
- (c) NetKnights GmbH 2025,  https://netknights.it
+ (c) NetKnights GmbH 2026,  https://netknights.it
 
  This code is free software; you can redistribute it and/or
  modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -22,16 +22,14 @@
   i18n-aria-label>
   <div class="flex-column">
     <div class="details-header">
-      <h3 i18n>
-        Tokens of User
-      </h3>
-      <h3 class="username-header">{{ userService.detailsUsername() }}</h3>
-      <h3 class="margin-left--8">:</h3>
+      <h4 i18n>Tokens of User</h4>
+      <h4 class="username-header">{{ userService.detailsUsername() }}</h4>
+      <h4 class="margin-left--8">:</h4>
     </div>
     <div class="flex-row filter-paginator-container">
       <mat-form-field
-        class="width-50"
-        subscriptSizing="dynamic">
+        subscriptSizing="dynamic"
+        class="user-details-token-table-filter">
         <mat-label i18n>Filter Tokens...</mat-label>
         <input
           #filterInput
@@ -48,7 +46,7 @@
         class="flex-just-start"
         showFirstLastButtons />
     </div>
-    <div [ngClass]="[overflowService.isWidthOverflowing('body', 1580) ? 'flex-column' : 'flex-row']">
+    <div class="responsive-flex-row-1580">
       <table
         [dataSource]="dataSource"
         aria-label="Token Table of the User"
@@ -63,7 +61,7 @@
               mat-header-cell>
               <div class="flex ali-center">
                 {{ column.label }}
-                <div class="margin-left-1 flex">
+                <div class="margin-left-16 flex">
                   <button
                     (click)="tableUtilsService.onSortButtonClick(column.key, sort)"
                     class="sort-button"
@@ -76,28 +74,30 @@
             </th>
             <td
               *matCellDef="let element"
-              [ngClass]="{ 'width-18rem': column.key === 'description' }"
+              [ngClass]="{ 'input-width-l': column.key === 'description' }"
               attr.aria-label="{{ column.label }} Cell"
               mat-cell>
               <ng-container>
                 <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
                   @switch (column.key) {
                     @case ("serial") {
-                      <a
-                        (click)="contentService.tokenSelected(element.serial)"
-                        attr.aria-label="{{ column.label }} Link">
-                        {{ element[column.key] }}
-                      </a>
-                      <app-copy-button [copyText]="element.serial"></app-copy-button>
+                      <div class="flex-row flex-nowrap ali-center">
+                        <a
+                          (click)="contentService.tokenSelected(element.serial)"
+                          attr.aria-label="{{ column.label }} Link">
+                          {{ element[column.key] }}
+                        </a>
+                        <app-copy-button [copyText]="element.serial"></app-copy-button>
+                      </div>
                     }
                     @case ("active") {
                       @if (authService.actionAllowed("enable") && authService.actionAllowed("disable")) {
                         <span
                           (click)="toggleActive(element)"
-                          [matTooltip]="tableUtilsService.getTooltipForColumn(column.key,element)"
+                          [matTooltip]="tableUtilsService.getTooltipForColumn(column.key, element)"
                           [ngClass]="tableUtilsService.getClassForColumn(column.key, element)">
-                      {{ tableUtilsService.getDisplayText(column.key, element) }}
-                    </span>
+                          {{ tableUtilsService.getDisplayText(column.key, element) }}
+                        </span>
                       } @else {
                         <span [ngClass]="tableUtilsService.getClassForColumn(column.key, element)">
                           {{ tableUtilsService.getDisplayText(column.key, element) }}
@@ -109,8 +109,8 @@
                         <span
                           (click)="resetFailCount(element)"
                           [ngClass]="tableUtilsService.getClassForColumn(column.key, element)">
-                      {{ tableUtilsService.getDisplayText(column.key, element) }}
-                    </span>
+                          {{ tableUtilsService.getDisplayText(column.key, element) }}
+                        </span>
                       } @else {
                         <span [ngClass]="tableUtilsService.getClassForColumn(column.key, element)">
                           {{ tableUtilsService.getDisplayText(column.key, element) }}
@@ -119,18 +119,20 @@
                     }
                     @case ("container_serial") {
                       @if (authService.actionAllowed("container_list")) {
-                        <a
-                          (click)="contentService.containerSelected(element[column.key])"
-                          attr.aria-label="{{ column.label }} Link">
-                          {{ element[column.key] }}
-                        </a>
-                        @if (element.container_serial !== "") {
-                          <app-copy-button [copyText]="element[column.key]" />
-                        }
+                        <div class="flex-row flex-nowrap ali-center">
+                          <a
+                            (click)="contentService.containerSelected(element[column.key])"
+                            attr.aria-label="{{ column.label }} Link">
+                            {{ element[column.key] }}
+                          </a>
+                          @if (element.container_serial !== "") {
+                            <app-copy-button [copyText]="element[column.key]" />
+                          }
+                        </div>
                       }
                     }
                     @default {
-                      <span> {{ element[column.key] }} </span>
+                      <span>{{ element[column.key] }}</span>
                     }
                   }
                 </div>
@@ -159,7 +161,7 @@
                   i18n-matTooltip
                   mat-icon-button
                   matTooltip="Remove Token from Container">
-                  <mat-icon> highlight_remove</mat-icon>
+                  <mat-icon>highlight_remove</mat-icon>
                 </button>
               </div>
             </td>
@@ -186,7 +188,7 @@
                   i18n-matTooltip
                   mat-icon-button
                   matTooltip="Delete Token">
-                  <mat-icon> delete</mat-icon>
+                  <mat-icon>delete</mat-icon>
                 </button>
               </div>
             </td>

@@ -16,14 +16,14 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, effect, inject, signal } from "@angular/core";
+import { Component, effect, inject, Renderer2, signal, DOCUMENT } from "@angular/core";
+
 import { MatProgressBar } from "@angular/material/progress-bar";
 import { RouterOutlet } from "@angular/router";
 import { AuthService, AuthServiceInterface } from "../../services/auth/auth.service";
 import { LoadingService, LoadingServiceInterface } from "../../services/loading/loading-service";
 import { MatDrawer, MatDrawerContainer, MatDrawerContent } from "@angular/material/sidenav";
 import { NavigationComponent } from "./navigation/navigation.component";
-import { OverflowService, OverflowServiceInterface } from "../../services/overflow/overflow.service";
 import { ContentService, ContentServiceInterface } from "../../services/content/content.service";
 import { NavigationSelfServiceComponent } from "./navigation-self-service/navigation-self-service.component";
 import { NavigationSelfServiceWizardComponent } from "./navigation-self-service/navigation-self-service.wizard.component";
@@ -38,33 +38,27 @@ import { NavigationSelfServiceWizardComponent } from "./navigation-self-service/
 export class LayoutComponent {
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly loadingService: LoadingServiceInterface = inject(LoadingService);
-  protected readonly overflowService: OverflowServiceInterface = inject(OverflowService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
+  private readonly renderer = inject(Renderer2);
+  private readonly document = inject(DOCUMENT);
   showProgressBar = signal(false);
   loadingUrls = signal<{ key: string; url: string }[]>([]);
-  isTokenDrawerOverflowing = signal(false);
 
   constructor() {
     effect(() => {
       this.contentService.routeUrl();
-      this.updateOverflowState();
+      this.updateBodyClasses();
     });
   }
 
-  ngAfterViewInit() {
-    window.addEventListener("resize", this.updateOverflowState.bind(this));
-    this.updateOverflowState();
-  }
-
-  updateOverflowState() {
-    setTimeout(() => {
-      this.isTokenDrawerOverflowing.set(
-        this.overflowService.isHeightOverflowing({
-          selector: ".token-layout",
-          thresholdSelector: ".drawer"
-        })
-      );
-    }, 400);
+  updateBodyClasses() {
+    if (this.authService.role() === "admin") {
+      this.renderer.addClass(this.document.body, "admin-layout");
+      this.renderer.removeClass(this.document.body, "self-service-layout");
+    } else {
+      this.renderer.addClass(this.document.body, "self-service-layout");
+      this.renderer.removeClass(this.document.body, "admin-layout");
+    }
   }
 
   ngOnInit(): void {
@@ -75,7 +69,8 @@ export class LayoutComponent {
   }
 
   ngOnDestroy(): void {
+    this.renderer.removeClass(this.document.body, "admin-layout");
+    this.renderer.removeClass(this.document.body, "self-service-layout");
     this.loadingService.removeListener("layout");
-    window.removeEventListener("resize", this.updateOverflowState);
   }
 }

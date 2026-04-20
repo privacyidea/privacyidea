@@ -27,7 +27,6 @@ The event handler module is bound to an event together with
 import datetime
 import logging
 import re
-from typing import Optional
 
 from dateutil.tz import tzlocal
 
@@ -51,7 +50,7 @@ from privacyidea.models import TokenContainer
 log = logging.getLogger(__name__)
 
 
-class CONDITION(object):
+class CONDITION:
     """
     Possible conditions
     """
@@ -97,7 +96,7 @@ class CONDITION(object):
     CONTAINER_LAST_SYNC = "container_last_synchronization"
 
 
-class GROUP(object):
+class GROUP:
     """
     These are the event handler groups. The conditions
     will be grouped in the UI.
@@ -115,14 +114,14 @@ class EventHandlerContext:
     Context to pass information from the check condition function to the do action function.
     """
 
-    def __init__(self, user: Optional[User] = None, token_serials: Optional[list[str]] = None,
-                 container: Optional[TokenContainer] = None):
+    def __init__(self, user: User | None = None, token_serials: list[str] | None = None,
+                 container: TokenContainer | None = None):
         self.user = user
         self.token_serials = token_serials
         self.container = container
 
 
-class BaseEventHandler(object):
+class BaseEventHandler:
     """
     An Eventhandler needs to return a list of actions, which it can handle.
 
@@ -528,8 +527,8 @@ class BaseEventHandler(object):
                 except Exception as exx:
                     user = User()
                     # This can happen for orphaned tokens.
-                    log.info("Could not determine tokenowner for {0!s}. Maybe the "
-                             "user does not exist anymore.".format(serial))
+                    log.info(f"Could not determine tokenowner for {serial!s}. Maybe the "
+                             "user does not exist anymore.")
                     log.debug(exx)
             # If the user does not exist, we set an empty user
             if not user.exist():
@@ -1076,5 +1075,5 @@ class BaseEventHandler(object):
         :return:
         """
         log.info("In fact we are doing nothing, be we presume we are doing"
-                 "{0!s}".format(action))
+                 f"{action!s}")
         return True

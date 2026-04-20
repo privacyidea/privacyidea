@@ -2,6 +2,13 @@
   box-shadow: var(--box-shadow) !important;
 }
 
+.expansion-well {
+  border: 1px solid var(--mat-sys-surface-container-highest);
+  border-radius: var(--border-radius);
+  padding: 16px;
+  background: var(--mat-sys-surface-container-lowest);
+}
+
 ::ng-deep {
   .mat-expansion-panel:not(.mat-expanded) .mat-expansion-panel-header:hover {
     background: var(--mat-sys-surface-container-high) !important;

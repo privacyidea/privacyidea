@@ -51,7 +51,7 @@ Defines the rough interface for a UserId Resolver
 """
 
 
-class UserIdResolver(object):
+class UserIdResolver:
     fields = {"username": 1, "userid": 1,
               "description": 0,
               "phone": 0, "mobile": 0, "email": 0,

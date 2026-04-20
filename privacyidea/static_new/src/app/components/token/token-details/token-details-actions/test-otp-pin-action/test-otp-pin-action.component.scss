@@ -3,7 +3,6 @@
 
 .actions-otp-pin-input {
   display: flex;
-  gap: 8px;
 }
 
 .actions-visibility-button {
@@ -12,7 +11,7 @@
 
 .actions-pin-button {
   display: flex;
-  margin-top: 8px;
+  align-items: center;
   gap: 8px;
   flex-direction: column;
 }

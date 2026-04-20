@@ -105,10 +105,10 @@ class SecureFormatter(Formatter):
             message = ''.join(map(lambda x: x if x.isprintable() else '.', record.msg))
             message = "!!Log Entry Secured by SecureFormatter!! " + message
             record.msg = message
-        return super(SecureFormatter, self).format(record)
+        return super().format(record)
 
 
-class log_with(object):
+class log_with:
     """
     Logging decorator that allows you to log with a
     specific logger.
@@ -211,7 +211,7 @@ class log_with(object):
                         stacklevel=2, extra={'s_line': lno})
             except Exception as exx:
                 self.logger.error(exx)
-                self.logger.error("Error during logging of function {0}! {1}".format(func.__name__, exx))
+                self.logger.error(f"Error during logging of function {func.__name__}! {exx}")
 
             f_result = func(*args, **kwds)
 
@@ -227,7 +227,7 @@ class log_with(object):
                         func.__name__, "HIDDEN"),
                         stacklevel=2, extra={'s_line': lno})
             except Exception as exx:
-                self.logger.error("Error during logging of function {0}! {1}".format(func.__name__, exx))
+                self.logger.error(f"Error during logging of function {func.__name__}! {exx}")
             return f_result
 
         return log_wrapper

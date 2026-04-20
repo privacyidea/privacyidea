@@ -28,11 +28,14 @@
   }
 
   ::ng-deep mat-expansion-panel.mat-expansion-panel {
-    background-color: var(--mat-sys-surface-container) !important;
+    background-color: transparent !important;
+    border: 1px solid var(--mat-sys-outline-variant);
+    box-shadow: none !important;
   }
   ::ng-deep mat-expansion-panel.mat-expansion-panel-header {
     padding: var(--half-global-padding) var(--three-quarters-global-padding) !important;
     height: 1rem;
+    background-color: transparent !important;
   }
 
   .action-card-in-panel {

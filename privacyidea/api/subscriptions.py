@@ -17,8 +17,7 @@ from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.subscriptions import (get_subscription,
                                            get_users_with_active_tokens,
                                            delete_subscription,
-                                           save_subscription,
-                                           SUBSCRIPTION_DATE_FORMAT)
+                                           save_subscription)
 import logging
 import datetime
 import yaml

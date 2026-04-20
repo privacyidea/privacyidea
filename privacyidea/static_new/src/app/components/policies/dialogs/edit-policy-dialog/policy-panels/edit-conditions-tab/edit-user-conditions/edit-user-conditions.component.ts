@@ -18,7 +18,7 @@
  **/
 
 import { Component, computed, inject, output, ViewChild, input } from "@angular/core";
-import { CommonModule } from "@angular/common";
+
 import { AbstractControl, FormControl, FormsModule, ReactiveFormsModule, ValidationErrors } from "@angular/forms";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
@@ -36,7 +36,6 @@ import { MatCheckboxModule } from "@angular/material/checkbox";
   selector: "app-edit-user-conditions",
   standalone: true,
   imports: [
-    CommonModule,
     FormsModule,
     MatIconModule,
     MatInputModule,

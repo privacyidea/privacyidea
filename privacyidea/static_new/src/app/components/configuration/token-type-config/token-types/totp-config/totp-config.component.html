@@ -18,61 +18,81 @@
 -->
 <mat-expansion-panel>
   <mat-expansion-panel-header>
-    <mat-panel-title i18n>TOTP Token Settings</mat-panel-title>
+    <mat-panel-title i18n>TOTP</mat-panel-title>
   </mat-expansion-panel-header>
-  <div class="panel-content">
+  <div class="panel-content expansion-well">
     <p i18n>The TOTP Token is a time based one time password token. It is described in
       <a
         href="https://datatracker.ietf.org/doc/html/rfc6238"
         target="_blank">RFC 6238.
       </a>
     </p>
-    <p i18n>Here you can define settings, that will be set as default values, when enrolling a TOTP token. Note that the
-            user/admin policies
+    <p i18n>Here you can define settings, that will be set as default values, when enrolling a TOTP token.</p>
+    <p i18n>Note that the user/admin policies
       <span class="policy-highlight">totp_hashlib</span>
             and
       <span class="policy-highlight">totp_timestep</span>
             always have precedence over these default values.
     </p>
 
-    <mat-form-field
-      appearance="fill">
-      <mat-label i18n>Default Time Step</mat-label>
-      <mat-select [(ngModel)]="formData()['totp.timeStep']">
-        @for (step of totpSteps(); track step) {
-          <mat-option [value]="step">{{ step }}</mat-option>
-        }
-      </mat-select>
-    </mat-form-field>
+    <div class="flex-row gap-16">
+      <mat-form-field
+        appearance="fill"
+        class="input-width-s">
+        <mat-label i18n>Default Time Step</mat-label>
+        <mat-select
+          [ngModel]="formData()[TOTP_TIME_STEP]"
+          (ngModelChange)="updateFormData(TOTP_TIME_STEP, $event)">
+          @for (step of totpSteps(); track step) {
+            <mat-option [value]="step">{{ step }}</mat-option>
+          }
+        </mat-select>
+        <app-clear-button
+          matSuffix
+          (onClick)="clearField(TOTP_TIME_STEP); $event.stopPropagation()"></app-clear-button>
+      </mat-form-field>
 
-    <mat-form-field
-      appearance="fill">
-      <mat-label i18n>Default Time Window</mat-label>
-      <input
-        [(ngModel)]="formData()['totp.timeWindow']"
-        matInput
-        placeholder="180"
-        type="number">
-    </mat-form-field>
+      <mat-form-field
+        appearance="fill"
+        class="input-width-s">
+        <mat-label i18n>Default Time Window</mat-label>
+        <input
+          [ngModel]="formData()[TOTP_TIME_WINDOW]"
+          (ngModelChange)="updateFormData(TOTP_TIME_WINDOW, $event)"
+          matInput
+          placeholder="180"
+          type="number">
+      </mat-form-field>
+    </div>
 
-    <mat-form-field
-      appearance="fill">
-      <mat-label i18n>Default Time Shift</mat-label>
-      <input
-        [(ngModel)]="formData()['totp.timeShift']"
-        matInput
-        placeholder="0"
-        type="number">
-    </mat-form-field>
+    <div class="flex-row gap-16">
+      <mat-form-field
+        appearance="fill"
+        class="input-width-s">
+        <mat-label i18n>Default Hashlib</mat-label>
+        <mat-select
+          [ngModel]="formData()[TOTP_HASHLIB]"
+          (ngModelChange)="updateFormData(TOTP_HASHLIB, $event)">
+          @for (hashlib of hashLibs(); track hashlib) {
+            <mat-option [value]="hashlib">{{ hashlib }}</mat-option>
+          }
+        </mat-select>
+        <app-clear-button
+          matSuffix
+          (onClick)="clearField(TOTP_HASHLIB); $event.stopPropagation()"></app-clear-button>
+      </mat-form-field>
 
-    <mat-form-field
-      appearance="fill">
-      <mat-label i18n>Default Hashlib</mat-label>
-      <mat-select [(ngModel)]="formData()['totp.hashlib']">
-        @for (hashlib of hashLibs(); track hashlib) {
-          <mat-option [value]="hashlib">{{ hashlib }}</mat-option>
-        }
-      </mat-select>
-    </mat-form-field>
+      <mat-form-field
+        appearance="fill"
+        class="input-width-s">
+        <mat-label i18n>Default Time Shift</mat-label>
+        <input
+          [ngModel]="formData()[TOTP_TIME_SHIFT]"
+          (ngModelChange)="updateFormData(TOTP_TIME_SHIFT, $event)"
+          matInput
+          placeholder="0"
+          type="number">
+      </mat-form-field>
+    </div>
   </div>
 </mat-expansion-panel>

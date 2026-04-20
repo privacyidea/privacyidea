@@ -3,10 +3,11 @@
 
 .actions-pin-input {
   display: flex;
-  gap: 8px;
+  flex-direction: column;
+  align-items: center;
 }
 
 .actions-pin-input-button {
-  margin-top: 8px;
   display: flex;
+  justify-content: center;
 }

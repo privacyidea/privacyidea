@@ -29,9 +29,10 @@ tokens and webservice!
 import logging
 import re
 
-from netaddr import IPAddress
-from sqlalchemy import and_, delete, select, update
+from sqlalchemy import select
 
+from privacyidea.lib.applications.base import get_auth_item, get_machine_application_class_dict
+from privacyidea.lib.log import log_with
 from privacyidea.lib.utils import fetch_one_resource, convert_column_to_unicode
 from privacyidea.models import (MachineToken, db, MachineTokenOptions,
                                 MachineResolver, get_token_id,
@@ -43,8 +44,6 @@ from .machineresolver import get_resolver_list, get_resolver_object
 from .token import token_exist
 
 log = logging.getLogger(__name__)
-from privacyidea.lib.log import log_with
-from privacyidea.lib.applications.base import get_auth_item, get_machine_application_class_dict
 
 ANY_MACHINE = "any machine"
 NO_RESOLVER = "no resolver"
@@ -98,16 +97,16 @@ def get_hostname(ip):
     """
     machines = get_machines(ip=ip)
     if len(machines) > 1:
-        raise Exception("Can not get unique ID for IP=%r. "
-                        "More than one machine found." % ip)
+        raise Exception(f"Can not get unique ID for IP={ip!r}. "
+                        "More than one machine found.")
     if len(machines) == 1:
         # There is only one machine in the list and we get its ID
         hostname = machines[0].hostname
         # return the first hostname
-        if type(hostname) == list:
+        if isinstance(hostname, list):
             hostname = hostname[0]
     else:
-        raise Exception("There is no machine with IP={0!r}".format(ip))
+        raise Exception(f"There is no machine with IP={ip!r}")
     return hostname
 
 
@@ -124,15 +123,15 @@ def get_machine_id(hostname, ip=None):
     resolver_name = None
     machines = get_machines(hostname=hostname, ip=ip, substring=False)
     if len(machines) > 1:
-        raise Exception("Can not get unique ID for hostname=%r and IP=%r. "
-                        "More than one machine found." % (hostname, ip))
+        raise Exception(f"Can not get unique ID for hostname={hostname!r} and IP={ip!r}. "
+                        "More than one machine found.")
     if len(machines) == 1:
         # There is only one machine in the list and we get its ID
         machine_id = machines[0].id
         resolver_name = machines[0].resolver_name
 
     if machine_id is None:
-        raise Exception("There is no machine with name={0!r} and IP={1!r}".format(hostname, ip))
+        raise Exception(f"There is no machine with name={hostname!r} and IP={ip!r}")
 
     return machine_id, resolver_name
 
@@ -235,9 +234,9 @@ def detach_token(serial, application, hostname=None, machine_id=None, resolver_n
         # Delete MachineTokenOptions
         for machine_token in machine_tokens:
             if (machine_token.get("application") == application
-                    and ((not machine_id or machine_id == machine_token.get("machine_id")
+                    and (not machine_id or machine_id == machine_token.get("machine_id")
                           and (not hostname or hostname == machine_token.get("hostname"))
-                          and (not resolver_name or resolver_name == machine_token.get("resolver"))))):
+                          and (not resolver_name or resolver_name == machine_token.get("resolver")))):
                 delete_mt = True
                 for key, value in filter_params.items():
                     # Check if the machine token contains the correct filter values
@@ -429,7 +428,7 @@ def list_token_machines(serial):
             # There is only one machine in the list and we get its ID
             hostname = machines[0].hostname
             # return the first hostname
-            if type(hostname) == list:
+            if isinstance(hostname, list):
                 hostname = hostname[0]
 
         res.append({"machine_id": machine.machine_id or ANY_MACHINE,

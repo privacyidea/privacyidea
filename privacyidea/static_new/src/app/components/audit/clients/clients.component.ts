@@ -152,9 +152,8 @@ export class ClientsComponent {
     return rows;
   };
 
-  clientResource = this.clientService.clientsResource;
   clientDataSource: WritableSignal<MatTableDataSource<FlattenedClientRow>> = linkedSignal({
-    source: this.clientResource.value,
+    source: () => this.clientService.clientsResource.hasValue() ? this.clientService.clientsResource.value() : undefined,
     computation: (clientResource, previous) => {
       if (clientResource) {
         const clientData = clientResource.result?.value || ({} as ClientsDict);

@@ -35,9 +35,8 @@ from flask import g
 
 from privacyidea.lib.smtpserver import (add_smtpserver, list_smtpservers,
                                         delete_smtpserver, send_or_enqueue_email)
-from .lib.utils import (getParam,
-                        required,
-                        send_result)
+from .lib.utils import (send_result)
+from ..lib.params import get_optional, get_required
 from ..api.lib.prepolicy import prepolicy, check_base_action
 from ..lib.log import log_with
 from ..lib.policies.actions import PolicyAction
@@ -62,22 +61,27 @@ def create(identifier=None):
     :param password: The password for authentication at the SMTP server
     :param tls: If the server should do TLS
     :param description: A description for the definition
+    :param smime: If the server should do S/MIME signing
+    :param dont_send_on_error: If the email should not be sent if there is an error in the S/MIME signing process
+    :param private_key: The private key for S/MIME signing
+    :param private_key_password: The password for the private key for S/MIME signing
+    :param certificate: The certificate for S/MIME signing
     """
     param = request.all_data
-    server = getParam(param, "server", required)
-    port = int(getParam(param, "port", default=25))
-    username = getParam(param, "username", default="")
-    password = getParam(param, "password", default="")
-    sender = getParam(param, "sender", default="")
-    tls = is_true(getParam(param, "tls", default=False))
-    description = getParam(param, "description", default="")
-    timeout = int(getParam(param, "timeout") or 10)
-    enqueue_job = is_true(getParam(param, "enqueue_job", default=False))
-    smime = is_true(getParam(param, "smime", default=False))
-    dont_send_on_error = is_true(getParam(param, "dont_send_on_error", default=False))
-    private_key = getParam(param, "private_key", default="")
-    private_key_password = getParam(param, "private_key_password", default="")
-    certificate = getParam(param, "certificate", default="")
+    server = get_required(param, "server")
+    port = int(get_optional(param, "port", default=25))
+    username = get_optional(param, "username", default="")
+    password = get_optional(param, "password", default="")
+    sender = get_optional(param, "sender", default="")
+    tls = is_true(get_optional(param, "tls", default=False))
+    description = get_optional(param, "description", default="")
+    timeout = int(get_optional(param, "timeout") or 10)
+    enqueue_job = is_true(get_optional(param, "enqueue_job", default=False))
+    smime = is_true(get_optional(param, "smime", default=False))
+    dont_send_on_error = is_true(get_optional(param, "dont_send_on_error", default=False))
+    private_key = get_optional(param, "private_key", default="")
+    private_key_password = get_optional(param, "private_key_password")
+    certificate = get_optional(param, "certificate", default="")
 
     r = add_smtpserver(identifier, server, port=port, username=username,
                        password=password, tls=tls, description=description,
@@ -128,21 +132,21 @@ def test():
     :return:
     """
     param = request.all_data
-    identifier = getParam(param, "identifier", required)
-    server = getParam(param, "server", required)
-    port = int(getParam(param, "port", default=25))
-    username = getParam(param, "username", default="")
-    password = getParam(param, "password", default="")
-    sender = getParam(param, "sender", default="")
-    tls = is_true(getParam(param, "tls", default=False))
-    recipient = getParam(param, "recipient", required)
-    timeout = int(getParam(param, "timeout") or 10)
-    enqueue_job = is_true(getParam(param, "enqueue_job", default=False))
-    smime = is_true(getParam(param, "smime", default=False))
-    dont_send_on_error = is_true(getParam(param, "dont_send_on_error", default=False))
-    private_key = getParam(param, "private_key", default="")
-    private_key_password = getParam(param, "private_key_password", default="")
-    certificate = getParam(param, "certificate", default="")
+    identifier = get_required(param, "identifier")
+    server = get_required(param, "server")
+    port = int(get_optional(param, "port", default=25))
+    username = get_optional(param, "username", default="")
+    password = get_optional(param, "password", default="")
+    sender = get_optional(param, "sender", default="")
+    tls = is_true(get_optional(param, "tls", default=False))
+    recipient = get_required(param, "recipient")
+    timeout = int(get_optional(param, "timeout") or 10)
+    enqueue_job = is_true(get_optional(param, "enqueue_job", default=False))
+    smime = is_true(get_optional(param, "smime", default=False))
+    dont_send_on_error = is_true(get_optional(param, "dont_send_on_error", default=False))
+    private_key = get_optional(param, "private_key", default="")
+    private_key_password = get_optional(param, "private_key_password", default="")
+    certificate = get_optional(param, "certificate", default="")
 
     s = dict(identifier=identifier, server=server, port=port,
              username=username, password=password, sender=sender,
@@ -153,7 +157,7 @@ def test():
     r = send_or_enqueue_email(s, recipient,
                               "Test Email from privacyIDEA",
                               "This is a test email from privacyIDEA. "
-                              "The configuration {} is working.".format(identifier))
+                              f"The configuration {identifier} is working.")
 
     g.audit_object.log({'success': r > 0,
                         'info': r})

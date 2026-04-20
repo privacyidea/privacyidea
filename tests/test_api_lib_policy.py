@@ -41,14 +41,13 @@ from privacyidea.api.lib.prepolicy import (check_token_upload,
                                            mangle, is_remote_user_allowed,
                                            required_email, auditlog_age, hide_audit_columns,
                                            papertoken_count,
-                                           u2ftoken_verify_cert,
                                            tantoken_count, sms_identifiers,
                                            pushtoken_add_config, pushtoken_validate,
                                            indexedsecret_force_attribute,
                                            check_admin_tokenlist, pushtoken_disable_wait,
                                            fido2_auth, webauthntoken_authz,
                                            fido2_enroll, webauthntoken_request,
-                                           webauthntoken_allowed, check_application_tokentype,
+                                           check_application_tokentype,
                                            required_piv_attestation, check_custom_user_attributes,
                                            hide_tokeninfo, init_ca_template, init_ca_connector,
                                            init_subject_components, increase_failcounter_on_challenge,
@@ -105,8 +104,7 @@ from privacyidea.lib.utils import (create_img, generate_charlists_from_pin_polic
 from privacyidea.lib.utils import hexlify_and_unicode, AUTH_RESPONSE
 from .base import (MyApiTestCase)
 from .test_lib_tokens_webauthn import (ALLOWED_TRANSPORTS, CRED_ID, ASSERTION_RESPONSE_TMPL,
-                                       ASSERTION_CHALLENGE, RP_ID, RP_NAME, ORIGIN,
-                                       REGISTRATION_RESPONSE_TMPL)
+                                       ASSERTION_CHALLENGE, RP_ID, RP_NAME, ORIGIN)
 
 HOSTSFILE = "tests/testdata/hosts"
 SSHKEY = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDO1rx366cmSSs/89j" \
@@ -1754,41 +1752,6 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         # finally delete policy
         delete_policy("tanpol")
 
-    def test_21_u2f_verify_cert(self):
-        # Usually the attestation certificate gets verified during enrollment unless
-        # we set the policy scope=enrollment, action=no_verify
-        from privacyidea.lib.tokens.u2ftoken import U2FAction
-        g.logged_in_user = {"username": "user1",
-                            "realm": "",
-                            "role": "user"}
-        builder = EnvironBuilder(method='POST',
-                                 data={'serial': "OATH123456"},
-                                 headers={})
-        env = builder.get_environ()
-        # Set the remote address so that we can filter for it
-        env["REMOTE_ADDR"] = "10.0.0.1"
-        g.client_ip = env["REMOTE_ADDR"]
-        req = Request(env)
-        req.User = User()
-        # The default behaviour is to verify the certificate
-        req.all_data = {
-            "type": "u2f"}
-        u2ftoken_verify_cert(req, "init")
-        self.assertTrue(req.all_data.get("u2f.verify_cert"))
-
-        # Set a policy that defines to NOT verify the certificate
-        set_policy(name="polu2f1",
-                   scope=SCOPE.ENROLL,
-                   action=U2FAction.NO_VERIFY_CERT)
-        g.policy_object = PolicyClass()
-        req.all_data = {
-            "type": "u2f"}
-        u2ftoken_verify_cert(req, "init")
-        self.assertFalse(req.all_data.get("u2f.verify_cert"))
-
-        # finally delete policy
-        delete_policy("polu2f1")
-
     def test_01_sms_identifier(self):
         # every admin is allowed to enroll sms token with gw1 or gw2
         set_policy("sms1", scope=SCOPE.ADMIN, action="{0!s}=gw1 gw2".format(SMSAction.GATEWAYS))
@@ -2906,102 +2869,6 @@ class PrePolicyDecoratorTestCase(MyApiTestCase):
         webauthntoken_request(request, None)
         self.assertEqual(set(request.all_data.get(FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST)),
                          set(authenticator_selection_list.split()))
-
-        # Delete policy
-        delete_policy("WebAuthn")
-
-    def test_30_webauthn_allowed_req(self):
-        class RequestMock(object):
-            pass
-
-        request = RequestMock()
-        request.all_data = {
-            "type": WebAuthnTokenClass.get_class_type(),
-            "serial": WebAuthnTokenClass.get_class_prefix() + "123",
-            "regdata": REGISTRATION_RESPONSE_TMPL['attObj']
-        }
-
-        allowed_certs = "subject/.*Yubico.*/"
-        set_policy(
-            name="WebAuthn",
-            scope=SCOPE.ENROLL,
-            action=FIDO2PolicyAction.REQ + "=" + allowed_certs
-        )
-        self.assertTrue(webauthntoken_allowed(request, None))
-
-        allowed_certs = "subject/.*Feitian.*/"
-        set_policy(
-            name="WebAuthn",
-            scope=SCOPE.ENROLL,
-            action=FIDO2PolicyAction.REQ + "=" + allowed_certs
-        )
-        self.assertRaisesRegex(PolicyError,
-                               'The WebAuthn token is not allowed to be registered '
-                               'due to a policy restriction.',
-                               webauthntoken_allowed, request, None)
-
-        # Delete policy
-        delete_policy("WebAuthn")
-
-    def test_31_webauthn_disallowed_req(self):
-        class RequestMock(object):
-            pass
-
-        allowed_certs = "subject/.*Frobnicate.*/"
-
-        request = RequestMock()
-        request.all_data = {
-            "type": WebAuthnTokenClass.get_class_type(),
-            "serial": WebAuthnTokenClass.get_class_prefix() + "123",
-            "regdata": REGISTRATION_RESPONSE_TMPL['attObj']
-        }
-
-        set_policy(
-            name="WebAuthn",
-            scope=SCOPE.ENROLL,
-            action=FIDO2PolicyAction.REQ + "=" + allowed_certs
-        )
-
-        with self.assertRaises(PolicyError):
-            webauthntoken_allowed(request, None)
-
-        # Delete policy
-        delete_policy("WebAuthn")
-
-    def test_32_webauthn_allowed_aaguid(self):
-        class RequestMock(object):
-            pass
-
-        request = RequestMock()
-        request.all_data = {
-            "type": WebAuthnTokenClass.get_class_type(),
-            "serial": WebAuthnTokenClass.get_class_prefix() + "123",
-            "regdata": REGISTRATION_RESPONSE_TMPL['attObj']
-        }
-
-        self.assertTrue(webauthntoken_allowed(request, None))
-
-    def test_33_webauthn_disallowed_aaguid(self):
-        class RequestMock(object):
-            pass
-
-        authenticator_selection_list = 'foo bar baz'
-
-        request = RequestMock()
-        request.all_data = {
-            "type": WebAuthnTokenClass.get_class_type(),
-            "serial": WebAuthnTokenClass.get_class_prefix() + "123",
-            "regdata": REGISTRATION_RESPONSE_TMPL['attObj']
-        }
-
-        set_policy(
-            name="WebAuthn",
-            scope=SCOPE.ENROLL,
-            action=FIDO2PolicyAction.AUTHENTICATOR_SELECTION_LIST + '=' + authenticator_selection_list
-        )
-
-        with self.assertRaises(PolicyError):
-            webauthntoken_allowed(request, None)
 
         # Delete policy
         delete_policy("WebAuthn")
@@ -6418,7 +6285,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
 
         # preferred client mode policy with webauthn first, but user prefers push
         set_policy("preferred_client_mode", scope=SCOPE.AUTH,
-                   action={PolicyAction.PREFERREDCLIENTMODE: "webauthn interactive poll u2f"})
+                   action={PolicyAction.PREFERREDCLIENTMODE: "webauthn interactive poll"})
         response = jsonify(response_data)
 
         preferred_client_mode(request, response)
@@ -6487,7 +6354,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
 
         # user_client_mode not allowed: use preferred_client_mode policy: webauthn
         set_policy("preferred_client_mode", scope=SCOPE.AUTH,
-                   action={PolicyAction.PREFERREDCLIENTMODE: "webauthn interactive poll u2f"})
+                   action={PolicyAction.PREFERREDCLIENTMODE: "webauthn interactive poll"})
         response = jsonify(response_data)
 
         preferred_client_mode(request, response)

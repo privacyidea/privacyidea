@@ -62,8 +62,8 @@ def cli():
       / _ \/ __/ / |/ / _ `/ __/ // // // // / _// __ |
      / .__/_/ /_/|___/\_,_/\__/\_, /___/____/___/_/ |_|  Get unused tokens
     /_/                       /___/
-    {0!s:>51}
-        """.format('v{0!s}'.format(get_version_number())))
+    {!s:>51}
+        """.format(f'v{get_version_number()!s}'))
 
 
 def _get_tokenlist(age):
@@ -116,14 +116,12 @@ def mark(age, description=None, tokeninfo=None):
     tlist = _get_tokenlist(age)
     for token_obj in tlist:
         if description:
-            click.echo("Setting description for token {0!s}: {1!s}".format(
-                token_obj.token.serial, description))
+            click.echo(f"Setting description for token {token_obj.token.serial!s}: {description!s}")
             token_obj.set_description(description)
             token_obj.save()
         if tokeninfo:
             key, value = tokeninfo.split("=")
-            click.echo("Setting tokeninfo for token {0!s}: {1!s}={2!s}".format(
-                token_obj.token.serial, key, value))
+            click.echo(f"Setting tokeninfo for token {token_obj.token.serial!s}: {key!s}={value!s}")
             token_obj.add_tokeninfo(key, value)
             token_obj.save()
 
@@ -141,7 +139,7 @@ def delete(age):
     for token_obj in tlist:
         serial = token_obj.token.serial
         remove_token(serial)
-        click.echo("Token {0!s} deleted.".format(serial))
+        click.echo(f"Token {serial!s} deleted.")
 
 
 @click.command()
@@ -157,7 +155,7 @@ def disable(age):
     for token_obj in tlist:
         serial = token_obj.token.serial
         enable_token(serial, enable=False)
-        click.echo("Token {0!s} disabled.".format(serial))
+        click.echo(f"Token {serial!s} disabled.")
 
 
 cli.add_command(list_tokens, "list")

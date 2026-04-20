@@ -44,7 +44,7 @@ def get_machine_application_class_list():
     modules = [f.split(".")[0] for f in files if f.endswith(".py") and f !=
                "__init__.py"]
     for module in modules:
-        class_list.append("privacyidea.lib.applications.{0!s}.MachineApplication".format(module))
+        class_list.append(f"privacyidea.lib.applications.{module!s}.MachineApplication")
     return class_list
 
 
@@ -76,7 +76,7 @@ def get_machine_application_class_dict():
     return ret
 
 
-class MachineApplication(object):
+class MachineApplication:
 
     application_name = "base"
     '''If bulk_call is false, the administrator may
@@ -180,7 +180,7 @@ def get_application_types():
     for f in files:
         if f not in ["base", "__init__"]:
             try:
-                mod = import_module("privacyidea.lib.applications.{0!s}".format(f))
+                mod = import_module(f"privacyidea.lib.applications.{f!s}")
                 name = mod.MachineApplication.application_name
                 token_options = mod.MachineApplication.get_options()
                 ret[name] = {"options": token_options}

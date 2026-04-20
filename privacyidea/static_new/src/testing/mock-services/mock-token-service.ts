@@ -114,6 +114,8 @@ export class MockTokenService implements TokenServiceInterface {
   sort: WritableSignal<Sort> = signal({ active: "serial", direction: "asc" });
   readonly pageIndex = signal(0);
   readonly tokenResource = new MockHttpResourceRef<PiResponse<Tokens> | undefined>(undefined as any);
+  tokenResourceValue: WritableSignal<Tokens | null> = signal(null);
+  readonly tokenSerialResource = new MockHttpResourceRef<PiResponse<Tokens> | undefined>(undefined as any);
   readonly tokenSelection: WritableSignal<TokenDetails[]> = signal<TokenDetails[]>([]);
   selectedToken: WritableSignal<string | null> = signal(null);
   tokenOptions: WritableSignal<string[]> = signal<string[]>([]);

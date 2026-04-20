@@ -18,7 +18,7 @@
  **/
 
 import { Component, computed, effect, inject, input, output, signal, DestroyRef, linkedSignal } from "@angular/core";
-import { CommonModule } from "@angular/common";
+
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { MatIconModule } from "@angular/material/icon";
 import { MatButtonModule } from "@angular/material/button";
@@ -56,7 +56,6 @@ import { getTokenApiPayloadMapper } from "src/app/mappers/token-api-payload/toke
   selector: "app-template-added-token-row",
   standalone: true,
   imports: [
-    CommonModule,
     MatIconModule,
     MatButtonModule,
     MatExpansionModule,

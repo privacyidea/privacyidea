@@ -326,12 +326,12 @@ def import_realms(data, name=None):
     # TODO: the set_realm() function always creates the realm in the DB even if
     #  the associated resolver are not available. So the realms must be imported
     #  *after* the resolver.
-    log.debug('Import realm config: {0!s}'.format(data))
+    log.debug(f'Import realm config: {data!s}')
     for realm, r_config in data.items():
         if name and name != realm:
             continue
         added, failed = set_realm(realm, resolvers=r_config.get('resolver', []))
         if is_true(r_config['default']):
             set_default_realm(realm)
-        log.info('realm: {0!s:<15} resolver added: {1!s} '
-                 'failed: {2!s}'.format(realm, added, failed))
+        log.info(f'realm: {realm!s:<15} resolver added: {added!s} '
+                 f'failed: {failed!s}')

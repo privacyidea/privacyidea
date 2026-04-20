@@ -178,6 +178,26 @@ version_scheme = "only-version"
 generate_hashes = true
 allow_unsafe = true
 
+[tool.ruff]
+target-version = "py310"
+line-length = 120
+extend-exclude = [
+    # Auto-generated gRPC/protobuf stubs
+    "privacyidea/lib/caconnectors/caservice_pb2.py",
+    "privacyidea/lib/caconnectors/caservice_pb2_grpc.py",
+]
+
+[tool.ruff.lint]
+# E/W: pycodestyle errors and warnings
+# F: pyflakes (unused imports, undefined names, etc.)
+# UP: pyupgrade (modernize Python syntax)
+select = ["E", "W", "F", "UP"]
+
+[tool.ruff.lint.per-file-ignores]
+# Alembic migration scripts conventionally place revision identifiers at
+# module level before imports; exempt them from the import-ordering rule.
+"privacyidea/migrations/versions/*.py" = ["E402"]
+
 [tool.pytest.ini_options]
 markers = [
     "migration: marks tests as database migration tests (run separately with -m migration)",

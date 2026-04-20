@@ -1,3 +1,4 @@
+@use "buttons";
 @use "@angular/material" as mat;
 
 .button-row {
@@ -40,7 +41,7 @@
   }
 
   &:focus {
-    outline: 2px solid var(--mat-sys-primary-base);
+    outline: buttons.$button-focus-outline;
     outline-offset: -2px;
     position: relative;
     z-index: 1;

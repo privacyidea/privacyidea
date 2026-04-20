@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { TestBed } from "@angular/core/testing";
-import { MachineResolver, MachineResolverService, MachineResolvers } from "./machine-resolver.service";
+import { MachineResolver, MachineResolvers, MachineResolverService } from "./machine-resolver.service";
 import { AuthService } from "../auth/auth.service";
 import { ContentService } from "../content/content.service";
 import { NotificationService } from "../notification/notification.service";
@@ -84,7 +84,7 @@ describe("MachineResolverService", () => {
         resolver2: { resolvername: "resolver2", type: "ldap", data: { resolver: "resolver2", type: "ldap" } }
       });
 
-      TestBed.flushEffects(); // Ensure computed properties are updated
+      TestBed.tick(); // Ensure computed properties are updated
 
       service.machineResolverResource.value(); // Trigger the resource load
       const req = httpMock.expectOne(`${service.machineResolverBaseUrl}`);
@@ -103,15 +103,14 @@ describe("MachineResolverService", () => {
     });
     it("should handle HTTP errors and notify", async () => {
       authServiceMock.actionAllowed.mockImplementation((arg) => (arg === "mresolverread" ? true : false));
-      TestBed.flushEffects(); // Ensure computed properties are updated
+      TestBed.tick(); // Ensure computed properties are updated
 
       service.machineResolverResource.value(); // Trigger the resource load
       const req = httpMock.expectOne(`${service.machineResolverBaseUrl}`);
       expect(req.request.method).toBe("GET");
       req.flush({}, { status: 500, statusText: "Internal Server Error" });
       await Promise.resolve(); // Wait for the microtask queue to flush
-      const resourceValue = service.machineResolverResource.value();
-      expect(resourceValue).toBeUndefined();
+
       expect(service.machineResolvers()).toEqual([]);
     });
   });

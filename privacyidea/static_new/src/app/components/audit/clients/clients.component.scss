@@ -2,17 +2,14 @@
 @use "table";
 
 .clients-layout {
-  @include table.table-container-styles;
-  @include table.base-table-structure();
-  max-height: var(--max-height);
-  max-width: calc(100vw - var(--global-padding) * 5 - 48px);
-  overflow: auto;
-  display: grid;
+  @include styles.main-component-style;
+  @include table.base-table-structure(".clients-table", ".clients-table-filter", ".table-scroll-container");
 }
 
 .col-even {
   background-color: var(--mat-sys-light) !important;
 }
+
 .col-odd {
   background-color: var(--mat-sys-surface-container-low) !important;
 }
@@ -25,4 +22,5 @@
   display: flex;
   flex-direction: row;
   align-items: center;
+  flex-wrap: nowrap;
 }

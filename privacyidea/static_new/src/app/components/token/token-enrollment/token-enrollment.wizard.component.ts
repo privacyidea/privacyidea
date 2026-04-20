@@ -180,7 +180,8 @@ export class TokenEnrollmentWizardComponent extends TokenEnrollmentComponent {
 
     this.dialogService.openDialog({
       component: TokenEnrollmentLastStepDialogWizardComponent,
-      data: this.enrolledDialogData()
+      data: this.enrolledDialogData(),
+      configOverride: { maxWidth: "1000px" }
     });
   }
 }

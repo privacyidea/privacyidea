@@ -17,8 +17,8 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, inject, computed, linkedSignal } from "@angular/core";
-import { CommonModule } from "@angular/common";
+import { Component, inject, computed, linkedSignal, effect } from "@angular/core";
+
 import { FormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCardModule } from "@angular/material/card";
@@ -29,8 +29,8 @@ import { MatInputModule } from "@angular/material/input";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatListModule } from "@angular/material/list";
 import {
-  ContainerTemplateServiceInterface,
-  ContainerTemplateService
+  ContainerTemplateService,
+  ContainerTemplateServiceInterface
 } from "../../../../../services/container-template/container-template.service";
 import { ContainerTemplate } from "../../../../../services/container/container.service";
 import { deepCopy } from "../../../../../utils/deep-copy.utils";
@@ -42,12 +42,17 @@ import { TemplateAddedTokenRowComponent } from "./template-added-token-row/templ
 import { PendingChangesDialogComponent } from "@components/shared/dialog/abstract-dialog/pending-changes-dialog.component";
 import { TokenEnrollmentPayload } from "src/app/mappers/token-api-payload/_token-api-payload.mapper";
 import { TokenTypeKey } from "src/app/services/token/token.service";
+import { ROUTE_PATHS } from "../../../../../route_paths";
+import { ContentService, ContentServiceInterface } from "../../../../../services/content/content.service";
+import { NAVIGATION_ACCESSIBLE_DIALOG_CLASS } from "../../../../../constants/global.constants";
 
 @Component({
   selector: "app-container-template-edit-dialog",
   standalone: true,
+  host: {
+    class: NAVIGATION_ACCESSIBLE_DIALOG_CLASS
+  },
   imports: [
-    CommonModule,
     MatInputModule,
     MatCardModule,
     MatIconModule,
@@ -71,6 +76,7 @@ export class ContainerTemplateEditDialogComponent extends PendingChangesDialogCo
 > {
   // --- Services ---
   readonly containerTemplateService: ContainerTemplateServiceInterface = inject(ContainerTemplateService);
+  readonly contentService: ContentServiceInterface = inject(ContentService);
 
   // --- State Signals ---
   readonly template = linkedSignal<any, ContainerTemplate>({
@@ -83,6 +89,17 @@ export class ContainerTemplateEditDialogComponent extends PendingChangesDialogCo
       return deepCopy({ ...source.initialData, container_type: type });
     }
   });
+
+  constructor() {
+    super();
+
+    // Close dialog if user navigates away from the container templates route (after pending changes guard allows it)
+    effect(() => {
+      if (this.contentService.routeUrl() !== ROUTE_PATHS.TOKENS_CONTAINERS_TEMPLATES) {
+        this.dialogRef?.close();
+      }
+    });
+  }
 
   // --- Pending Changes Implementations ---
   override readonly canSave = computed(() => this.canSaveTemplate());

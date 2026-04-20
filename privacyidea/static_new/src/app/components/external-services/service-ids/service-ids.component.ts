@@ -31,7 +31,7 @@ import {
 import { NewServiceIdComponent } from "./new-service-id/new-service-id.component";
 import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
 import { MatTooltipModule } from "@angular/material/tooltip";
-import { CommonModule } from "@angular/common";
+
 import { DialogService, DialogServiceInterface } from "../../../services/dialog/dialog.service";
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
@@ -46,7 +46,6 @@ import { SimpleConfirmationDialogComponent } from "../../shared/dialog/confirmat
   selector: "app-service-ids",
   standalone: true,
   imports: [
-    CommonModule,
     MatTableModule,
     MatPaginator,
     MatSortModule,
@@ -92,7 +91,9 @@ export class ServiceIdsComponent {
   openEditDialog(serviceId?: ServiceId): void {
     this.dialog.open(NewServiceIdComponent, {
       data: serviceId ? { ...serviceId } : null,
-      width: "800px"
+      width: "auto",
+      maxWidth: "65vw",
+      maxHeight: "90vh"
     });
   }
 

@@ -22,10 +22,12 @@
   class="details-container"
   i18n-aria-label>
   <div class="details-flex-layout flex-column">
-    <div class="container-details-header">
+    <div class="details-header">
       <h3 i18n>Details for Container:</h3>
-      <h3 style="color: var(--mat-sys-primary)">{{ containerSerial() }}</h3>
-      <app-copy-button [copyText]="containerSerial()"></app-copy-button>
+      <div class="flex-row flex-nowrap ali-center">
+        <h3 class="token-serial">{{ containerSerial() }}</h3>
+        <app-copy-button [copyText]="containerSerial()"></app-copy-button>
+      </div>
       @if (authService.actionAllowed("auditlog")) {
         <button
           (click)="showContainerAuditLog()"
@@ -37,8 +39,7 @@
       }
     </div>
     <div
-      [ngClass]="[overflowService.isWidthOverflowing('body', 1310) ? 'flex-column' : 'flex-row']"
-      class="details-flex-layout">
+      class="details-flex-layout responsive-flex-row-1310">
       <div>
         <table
           [dataSource]="containerDetailData()"
@@ -57,8 +58,8 @@
           <ng-container matColumnDef="value">
             <td
               *matCellDef="let element"
-              [ngClass]="tableUtilsService.getTdClassForKey(element.keyMap.key)"
-              class="fix-width-20-padr-0"
+              [ngClass]="tableUtilsService.getTdClassForKey(element.keyMap.key)
+              .concat(element.isEditing() ? ['padding-0'] : [])"
               mat-cell>
               @switch (element.keyMap.key) {
                 @case ("states") {
@@ -73,7 +74,7 @@
                 @case ("realms") {
                   <div
                     class="details-scrollable-container"
-                    [ngClass]="{ 'details-list': element.value.length > 2 }">
+                    [ngClass]="{ 'height-77': element.value.length > 2 }">
                     @for (realm of element.value; track realm; let idx = $index) {
                       <mat-list-item class="height-auto pad-0">
                         <span class="font-14">• {{ realm }}</span>
@@ -83,7 +84,9 @@
                 }
                 @case ("description") {
                   @if (element.isEditing()) {
-                    <mat-form-field class="width-288px description">
+                    <mat-form-field
+                      class="input-width-m description height-126"
+                      subscriptSizing="dynamic">
                       <textarea
                         matInput
                         rows="4"
@@ -144,12 +147,15 @@
           <ng-container matColumnDef="value">
             <td
               *matCellDef="let element"
-              class="user-editable-row height-52 fix-width-20-padr-0"
+              [ngClass]="tableUtilsService.getTdClassForKey(element.keyMap.key)
+              .concat(isEditingUser() ? ['padding-0'] : [])"
               mat-cell>
               @switch (element.keyMap.key) {
                 @case ("user_name") {
                   @if (isEditingUser() && userService.selectedUserRealm() !== "") {
-                    <mat-form-field class="width-18rem">
+                    <mat-form-field
+                      class="input-width-m height-52"
+                      subscriptSizing="dynamic">
                       <mat-label>Enter User</mat-label>
                       <app-clearable-input
                         (onClick)="userService.selectionFilter.set('')"
@@ -173,7 +179,9 @@
                 }
                 @case ("user_realm") {
                   @if (isEditingUser()) {
-                    <mat-form-field class="width-18rem">
+                    <mat-form-field
+                      class="input-width-m height-52"
+                      subscriptSizing="dynamic">
                       <mat-label i18n>Select Realm of User</mat-label>
                       <mat-select
                         [(ngModel)]="userService.selectedUserRealm"
@@ -227,33 +235,28 @@
           </ng-container>
           <tr
             *matRowDef="let row; columns: ['key', 'value', 'edit']"
+            class="height-52"
             mat-row></tr>
         </table>
-        <div class="details-flex-layout">
-          <app-container-details-info
-            [detailData]="containerDetailData"
-            [infoData]="infoData"
-            [isAnyEditingOrRevoked]="isAnyEditing"
-            [isEditingInfo]="isEditingInfo"
-            [isEditingUser]="isEditingUser" />
-        </div>
-        @if (overflowService.isWidthOverflowing("body", 1310)) {
-          <mat-divider class="margin-top-16 margin-bottom-16" />
-        }
+        <app-container-details-info
+          [detailData]="containerDetailData"
+          [infoData]="infoData"
+          [isAnyEditingOrRevoked]="isAnyEditing"
+          [isEditingInfo]="isEditingInfo"
+          [isEditingUser]="isEditingUser" />
+        <mat-divider class="responsive-divider-1310" />
       </div>
       <div
-        [ngClass]="[overflowService.isWidthOverflowing('body', 1310) ? '' : 'margin-left-1']"
-        class="flex-column">
+        class="flex-column responsive-margin-left-1310">
         <app-container-details-token-table [containerTokenData]="containerTokenData" />
         <div class="flex-row gap-32 margin-top-16">
           @if (authService.actionAllowed("container_add_token")) {
             <div class="flex-column">
-              <h4 class="margin-left-1 margin-bottom-0">Add Token</h4>
-              <div class="flex-row checkbox-paginator-container">
+              <h4 class="margin-left-16 margin-bottom-0">Add Token</h4>
+              <div class="flex-row filter-paginator-container">
                 <section>
                   <mat-checkbox
-                    [(ngModel)]="showOnlyTokenNotInContainer"
-                    class="pad-top-10">
+                    [(ngModel)]="showOnlyTokenNotInContainer">
                     <span i18n> Only display tokens that are not in a container </span>
                   </mat-checkbox>
                 </section>
@@ -310,8 +313,7 @@
         </div>
       </div>
       <div
-        [ngClass]="[overflowService.isWidthOverflowing('body', 1310) ? '' : 'margin-left-1']"
-        class="flex-column gap-32 ali-center">
+        class="flex-column gap-32 ali-center responsive-margin-left-1310">
         <app-container-details-actions
           [containerSerial]="containerSerial()"
           [containerType]="containerType()"></app-container-details-actions>

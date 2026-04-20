@@ -2,11 +2,15 @@
 
 .machine-dialog-content {
   min-width: 600px;
+  max-width: 100%;
 }
 
 .machines-container {
   @include styles.base-table-structure(".tokens-table");
-  margin-bottom: 16px;
+
+  & {
+    margin-bottom: 16px;
+  }
 }
 
 .details-section {

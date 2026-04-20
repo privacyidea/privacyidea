@@ -24,7 +24,7 @@ import { ContainerTableComponent } from "./components/token/container-table/cont
 import { TokenApplicationsComponent } from "./components/token/token-applications/token-applications.component";
 import { TokenDetailsComponent } from "./components/token/token-details/token-details.component";
 import { TokenEnrollmentComponent } from "./components/token/token-enrollment/token-enrollment.component";
-import { TokenGetSerialComponent } from "./components/token/token-get-serial/token-get-serial.component";
+import { TokenFindSerialComponent } from "@components/token/token-find-serial/token-find-serial.component";
 import { TokenTableComponent } from "./components/token/token-table/token-table.component";
 import { UserDetailsComponent } from "./components/user/user-details/user-details.component";
 import { UserTableComponent } from "./components/user/user-table/user-table.component";
@@ -42,7 +42,7 @@ import { PrivacyideaServersComponent } from "./components/external-services/priv
 import { CaConnectorsComponent } from "./components/external-services/ca-connectors/ca-connectors.component";
 import { TokengroupsComponent } from "./components/external-services/tokengroups/tokengroups.component";
 import { ServiceIdsComponent } from "./components/external-services/service-ids/service-ids.component";
-import { UserResolversComponent } from "./components/user/user-sources/user-resolvers.component";
+import { UserResolversComponent } from "./components/user/user-resolver/user-resolver.component";
 import { pendingChangesGuard } from "./guards/pending-changes.guard";
 import { PoliciesTableComponent } from "./components/policies/policies-table/policies-table.component";
 import { SubscriptionComponent } from "./components/configuration/subscription/subscription.component";
@@ -59,14 +59,14 @@ export const routes: Routes = [
       { path: "enrollment", component: TokenEnrollmentComponent },
       { path: "challenges", component: ChallengesTableComponent },
       { path: "applications", component: TokenApplicationsComponent },
-      { path: "get-serial", component: TokenGetSerialComponent },
+      { path: "get-serial", component: TokenFindSerialComponent },
       {
         path: "containers",
         children: [
           { path: "", component: ContainerTableComponent },
           { path: "create", component: ContainerCreateComponent },
           { path: "details/:serial", component: ContainerDetailsComponent },
-          { path: "templates", component: ContainerTemplatesComponent }
+          { path: "templates", component: ContainerTemplatesComponent, canDeactivate: [pendingChangesGuard] }
         ]
       },
       { path: "details/:serial", component: TokenDetailsComponent },
@@ -76,15 +76,15 @@ export const routes: Routes = [
   {
     path: "users",
     children: [
-      { path: "", component: UserTableComponent },
-      { path: "details/:username", component: UserDetailsComponent },
+      { path: "", component: UserTableComponent, canDeactivate: [pendingChangesGuard] },
+      { path: "details/:username", component: UserDetailsComponent, canDeactivate: [pendingChangesGuard] },
       { path: "realms", component: RealmTableComponent },
       { path: "resolvers", component: UserResolversComponent, canDeactivate: [pendingChangesGuard] }
     ]
   },
   {
     path: "policies",
-    children: [{ path: "", component: PoliciesTableComponent }]
+    children: [{ path: "", component: PoliciesTableComponent, canDeactivate: [pendingChangesGuard] }]
   },
   {
     path: "events",

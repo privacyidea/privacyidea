@@ -170,6 +170,7 @@
                             <div uib-accordion-group
                                  class="panel-default"
                                  ng-repeat="conditionGroup in conditionGroups"
+                                 ng-show="groupHasVisibleConditions(conditionGroup)"
                                  is-open="groupIsOpen[conditionGroup]">
                                 <uib-accordion-heading ng-click="groupIsOpen[conditionGroup]=!groupIsOpen[conditionGroup]">
                                     <div>

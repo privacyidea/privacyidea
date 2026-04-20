@@ -128,7 +128,8 @@ export class ContainerCreateComponent {
   templateOptions = this.containerTemplateService.templates;
   generateQRCode: WritableSignal<boolean> = linkedSignal({
     source: this.containerService.selectedContainerType,
-    computation: (containerType?: ContainerType) => containerType?.containerType === "smartphone"
+    computation: (containerType?: ContainerType) =>
+      containerType?.containerType === "smartphone" && this.authService.actionAllowed("container_register") && this.authService.actionAllowed("container_create")
   });
   passphrasePrompt = signal("");
   passphraseResponse = signal("");
@@ -168,28 +169,43 @@ export class ContainerCreateComponent {
     });
 
     effect(() => {
-      const containerDetailResource = this.containerService.containerDetailResource.value();
       const serial = this.containerService.containerSerial();
 
       if (!serial) {
         return;
       }
 
+      if (!this.containerService.containerDetailResource.hasValue()) {
+        return;
+      }
+
+      const containerDetailResource = this.containerService.containerDetailResource.value();
       if (containerDetailResource?.result?.value) {
-        const registrationState = containerDetailResource.result.value.containers[0]?.info?.registration_state;
+        const container = containerDetailResource.result.value.containers[0];
+        const registrationState = container?.info?.registration_state;
 
         if (registrationState !== "client_wait") {
           this.registrationDialog.closeAll();
           this.containerService.stopPolling();
 
-          let registrationCompletedDialogComponent: any = ContainerRegistrationCompletedDialogComponent;
-          if (this.wizard) {
-            registrationCompletedDialogComponent = ContainerRegistrationCompletedDialogWizardComponent;
-          }
+          if (container?.type === "smartphone" && this.authService.containerWizard().registration && this.authService.actionAllowed("container_register")) {
+            let registrationCompletedDialogComponent: any = ContainerRegistrationCompletedDialogComponent;
+            if (this.wizard) {
+              registrationCompletedDialogComponent = ContainerRegistrationCompletedDialogWizardComponent;
+            }
 
-          this.registrationDialog.open(registrationCompletedDialogComponent, {
-            data: { containerSerial: serial } as ContainerRegistrationCompletedDialogData
-          });
+            this.registrationDialog.open(registrationCompletedDialogComponent, {
+              data: { containerSerial: serial } as ContainerRegistrationCompletedDialogData
+            });
+          } else if (this.wizard) {
+            this.openRegistrationDialog({
+              result: {
+                value: {
+                  container_serial: serial
+                }
+              }
+            } as unknown as PiResponse<ContainerRegisterData>);
+          }
         }
       }
     });
@@ -263,6 +279,8 @@ export class ContainerCreateComponent {
         }
         if (this.generateQRCode()) {
           this.registerContainer(containerSerial);
+        } else if (this.wizard) {
+          this.containerSerial.set(containerSerial);
         } else {
           this.router.navigateByUrl(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + containerSerial);
           this.containerSerial.set(containerSerial);
@@ -275,7 +293,7 @@ export class ContainerCreateComponent {
     this.containerService
       .registerContainer({
         container_serial: serial,
-        passphrase_user: false,
+        passphrase_user: this.registrationConfigComponent?.userStorePassphrase() || false,
         passphrase_response: this.registrationConfigComponent?.passphraseResponse() || "",
         passphrase_prompt: this.registrationConfigComponent?.passphrasePrompt() || ""
       })
@@ -288,6 +306,10 @@ export class ContainerCreateComponent {
           this.containerService.startPolling(serial);
         }
       });
+  }
+
+  clearTemplateSelection() {
+    this.selectedTemplate.set("");
   }
 
   private openRegistrationDialog(response: PiResponse<ContainerRegisterData>) {
@@ -303,9 +325,5 @@ export class ContainerCreateComponent {
     this.registrationDialog.open(dialogComponent, {
       data: this.dialogData
     });
-  }
-
-  clearTemplateSelection() {
-    this.selectedTemplate.set("");
   }
 }

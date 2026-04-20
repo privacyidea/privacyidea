@@ -90,7 +90,7 @@ describe("PoliciesTableComponent", () => {
 
     const rows = fixture.debugElement.queryAll(By.css("tr[mat-row]"));
 
-    expect(rows.length).toBe(component.pageSize());
+    expect(rows.length).toBe(component.skeletonRowCount);
     expect(rows[0].classes["skeleton-row"]).toBeTruthy();
   });
 
@@ -102,38 +102,22 @@ describe("PoliciesTableComponent", () => {
     expect(headerCheckbox.componentInstance.disabled).toBeTruthy();
   });
 
-  it("should respect pageSize and slice data accordingly", () => {
-    component.pageSize.set(2);
+  it("should display all rows when policies are present", () => {
     fixture.detectChanges();
 
     const displayedRows = fixture.debugElement.queryAll(By.css("tr[mat-row], mat-row, .mat-mdc-row"));
-    expect(displayedRows.length).toBe(2);
-    expect(component.pagedPolicies().length).toBe(2);
+    expect(displayedRows.length).toBe(3);
+    expect(component.sortedFilteredPolicies().length).toBe(3);
   });
 
-  it("should change page and update displayed data", () => {
-    component.pageSize.set(1);
-    component.pageIndex.set(1);
-    fixture.detectChanges();
-
-    const rows = fixture.debugElement.queryAll(By.css("tr[mat-row], mat-row, .mat-mdc-row"));
-    expect(rows[0].nativeElement.textContent).toContain("Policy-B");
-  });
-
-  it("should reset pageIndex to 0 when filter changes", () => {
-    component.pageIndex.set(1);
-    const newFilter = component.filter().setValueOfKey("name", "A");
-    component.onFilterUpdate(newFilter);
-    expect(component.pageIndex()).toBe(0);
-  });
-
-  it("should only select displayed rows on the current page when masterToggle is called", () => {
-    component.pageSize.set(1);
+  it("should select all displayed rows when masterToggle is called", () => {
     fixture.detectChanges();
 
     component.masterToggle();
-    expect(component.selectedPolicies().size).toBe(1);
+    expect(component.selectedPolicies().size).toBe(3);
     expect(component.selectedPolicies().has("Policy-A")).toBeTruthy();
+    expect(component.selectedPolicies().has("Policy-B")).toBeTruthy();
+    expect(component.selectedPolicies().has("Policy-C")).toBeTruthy();
   });
 
   it("should open edit dialog only if row is not a skeleton row", () => {
@@ -149,12 +133,11 @@ describe("PoliciesTableComponent", () => {
     expect(dialogSpy).not.toHaveBeenCalled();
   });
 
-  it("should filter items and update totalLength", () => {
+  it("should filter items", () => {
     const newFilter = component.filter().setValueOfKey("name", "Policy-A");
     component.filter.set(newFilter);
     fixture.detectChanges();
 
-    expect(component.totalLength()).toBe(1);
     const rows = fixture.debugElement.queryAll(By.css("tr[mat-row], mat-row, .mat-mdc-row"));
     expect(rows.length).toBe(1);
   });
@@ -169,15 +152,13 @@ describe("PoliciesTableComponent", () => {
     expect(noDataRow.nativeElement.textContent).toContain($localize`No data matching the filter.`);
   });
 
-  it("should toggle filter keys and reset pageIndex when clicking header filter buttons", () => {
-    component.pageIndex.set(1);
+  it("should toggle filter keys when clicking header filter buttons", () => {
     const filterButton = fixture.debugElement.query(By.css(".col-name .filter-button"));
 
     filterButton.nativeElement.click();
     fixture.detectChanges();
 
     expect(component.filter().hasKey("name")).toBeTruthy();
-    expect(component.pageIndex()).toBe(0);
 
     filterButton.nativeElement.click();
     fixture.detectChanges();
@@ -198,7 +179,7 @@ describe("PoliciesTableComponent", () => {
     component.onSortChange({ active: "priority", direction: "asc" });
     fixture.detectChanges();
 
-    const data = component.pagedPolicies();
+    const data = component.sortedFilteredPolicies();
     expect(data[0].name).toBe("Policy-A");
     expect(data[1].name).toBe("Policy-B");
     expect(data[2].name).toBe("Policy-C");
@@ -208,7 +189,7 @@ describe("PoliciesTableComponent", () => {
     component.onSortChange({ active: "priority", direction: "desc" });
     fixture.detectChanges();
 
-    const data = component.pagedPolicies();
+    const data = component.sortedFilteredPolicies();
     expect(data[0].name).toBe("Policy-C");
     expect(data[1].name).toBe("Policy-B");
     expect(data[2].name).toBe("Policy-A");
@@ -218,7 +199,7 @@ describe("PoliciesTableComponent", () => {
     component.onSortChange({ active: "priority", direction: "" });
     fixture.detectChanges();
 
-    const data = component.pagedPolicies();
+    const data = component.sortedFilteredPolicies();
     // Default initial order from mock
     expect(data[0].name).toBe("Policy-C");
   });

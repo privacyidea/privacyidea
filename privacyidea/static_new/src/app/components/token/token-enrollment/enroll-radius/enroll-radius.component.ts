@@ -20,9 +20,9 @@ import { Component, computed, effect, EventEmitter, inject, input, Input, OnInit
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatOption } from "@angular/material/core";
-import { MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
+import { MatFormField, MatHint, MatLabel, MatError } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
-import { MatError, MatSelect } from "@angular/material/select";
+import { MatSelect } from "@angular/material/select";
 import { SystemService, SystemServiceInterface } from "../../../../services/system/system.service";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 
@@ -37,6 +37,7 @@ import {
 } from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
 import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
 import { ROUTE_PATHS } from "../../../../route_paths";
+import { RADIUS_SERVER } from "../../../../constants/token.constants";
 
 export interface RadiusEnrollmentOptions extends TokenEnrollmentData {
   type: "radius";
@@ -93,11 +94,12 @@ export class EnrollRadiusComponent implements OnInit {
     checkPinLocally: this.checkPinLocallyControl
   });
 
-  radiusServerConfigurationOptions = computed(() => this.systemService.radiusServerResource.value()?.result?.value);
+  radiusServerConfigurationOptions = computed(() => this.systemService.radiusServers());
 
   defaultRadiusServerIsSet = computed(() => {
+    if (!this.systemService.systemConfigResource.hasValue()) return false;
     const cfg = this.systemService.systemConfigResource.value()?.result?.value;
-    return !!cfg?.["radius.identifier"];
+    return !!cfg?.[RADIUS_SERVER];
   });
 
   constructor() {
@@ -105,7 +107,8 @@ export class EnrollRadiusComponent implements OnInit {
       this.disabled() ? this.radiusForm.disable({ emitEvent: false }) : this.radiusForm.enable({ emitEvent: false })
     );
     effect(() => {
-      const id = this.systemService.systemConfigResource.value()?.result?.value?.["radius.identifier"];
+      if (!this.systemService.systemConfigResource.hasValue()) return;
+      const id = this.systemService.systemConfigResource.value()?.result?.value?.[RADIUS_SERVER];
       if (id && this.radiusServerConfigurationControl.pristine) {
         this.radiusServerConfigurationControl.setValue(id);
       }

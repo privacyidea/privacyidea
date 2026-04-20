@@ -38,7 +38,7 @@ from flask import (Blueprint,
                    request)
 from flask import g, jsonify, current_app
 
-from privacyidea.api.lib.utils import get_all_params, map_error_to_code, send_error
+from privacyidea.api.lib.utils import get_all_params, get_optional, map_error_to_code, send_error
 from privacyidea.lib.audit import getAudit
 from privacyidea.lib.config import (get_token_class, get_from_config,
                                     SYSCONF, ensure_no_config_object, get_privacyidea_node)
@@ -47,7 +47,6 @@ from privacyidea.lib.event import EventConfiguration, event
 from privacyidea.lib.policy import PolicyClass, PolicyAction, SCOPE, Match
 from privacyidea.lib.user import get_user_from_param
 from privacyidea.lib.utils import get_client_ip, get_plugin_info_from_useragent
-from .lib.utils import getParam
 from ..lib.framework import get_app_config_value
 from ..lib.log import log_with
 from ..lib.tokens.push_types import PushAction
@@ -77,7 +76,7 @@ def before_request():
     # access_route contains the ip addresses of all clients, hops and proxies.
     g.client_ip = get_client_ip(request,
                                 get_from_config(SYSCONF.OVERRIDECLIENT))
-    g.serial = getParam(request.all_data, "serial", default=None)
+    g.serial = get_optional(request.all_data, "serial", default=None)
     ua_name, ua_version, _ua_comment = get_plugin_info_from_useragent(request.user_agent.string)
     g.user_agent = ua_name
     g.audit_object.log({"success": False,
@@ -86,8 +85,8 @@ def before_request():
                         "user_agent": ua_name,
                         "user_agent_version": ua_version,
                         "privacyidea_server": privacyidea_server,
-                        "action": "{0!s} {1!s}".format(request.method, request.url_rule),
-                        "thread_id": "{0!s}".format(threading.current_thread().ident),
+                        "action": f"{request.method!s} {request.url_rule!s}",
+                        "thread_id": f"{threading.current_thread().ident!s}",
                         "info": ""})
 
 
@@ -104,8 +103,8 @@ def token(ttype=None):
     """
     token_class = get_token_class(ttype)
     if token_class is None:
-        log.error("Invalid tokentype provided. ttype: {}".format(ttype.lower()))
-        raise ParameterError("Invalid tokentype provided. ttype: {}".format(ttype.lower()))
+        log.error(f"Invalid tokentype provided. ttype: {ttype.lower()}")
+        raise ParameterError(f"Invalid tokentype provided. ttype: {ttype.lower()}")
 
     if ttype == "push":
         # Code to phone message
@@ -128,7 +127,7 @@ def token(ttype=None):
         ).any():
             return send_error("Failed special token function"), map_error_to_code(e)
         raise
-    serial = getParam(request.all_data, "serial")
+    serial = get_optional(request.all_data, "serial")
     user = get_user_from_param(request.all_data)
     g.audit_object.log({"success": 1,
                         "user": user.login,
@@ -138,10 +137,10 @@ def token(ttype=None):
     if res[0] == "json":
         return jsonify(res[1])
     elif res[0] in ["html", "plain"]:
-        return current_app.response_class(res[1], mimetype="text/{0!s}".format(res[0]))
+        return current_app.response_class(res[1], mimetype=f"text/{res[0]!s}")
     elif len(res) == 2:
         return current_app.response_class(json.dumps(res[1]),
-                                          mimetype="application/{0!s}".format(res[0]))
+                                          mimetype=f"application/{res[0]!s}")
     else:
         return current_app.response_class(res[1], mimetype="application/octet-binary",
                                           headers=res[2])

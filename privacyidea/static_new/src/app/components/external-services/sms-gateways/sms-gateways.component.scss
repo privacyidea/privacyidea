@@ -2,27 +2,17 @@
 @use "@angular/material" as mat;
 
 .sms-gateways-container {
-  @include styles.table-container-styles;
+  @include styles.main-component-style;
   @include styles.base-table-structure(".sms-gateways-table", ".table-filter", ".table-scroll-container");
-  max-height: var(--max-height);
-  max-width: calc(100vw - var(--global-padding) * 5 - 48px);
-  display: grid;
-  overflow: auto;
-
-  .table-filter {
-    width: 29rem;
-  }
 }
 
-.sms-gateways-layout {
-  padding: 24px;
-}
-
-.header-row {
+.actions-container {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
+  justify-content: flex-start;
+  gap: 16px;
+  width: 100%;
+  margin-bottom: 16px;
 }
 
 .clickable {

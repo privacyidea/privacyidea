@@ -28,9 +28,9 @@ class Resolver(Base):
     __table_args__ = {'mysql_row_format': 'DYNAMIC'}
     id = sa.Column(sa.Integer, Sequence("resolver_seq"), primary_key=True,
                    nullable=False)
-    name = sa.Column(sa.Unicode(255), default=u"",
+    name = sa.Column(sa.Unicode(255), default="",
                      unique=True, nullable=False)
-    rtype = sa.Column(sa.Unicode(255), default=u"",
+    rtype = sa.Column(sa.Unicode(255), default="",
                       nullable=False)
     config_list = orm.relationship('ResolverConfig',
                                   lazy='select',
@@ -45,9 +45,9 @@ class ResolverConfig(Base):
     resolver_id = sa.Column(sa.Integer,
                             sa.ForeignKey('resolver.id'))
     Key = sa.Column(sa.Unicode(255), nullable=False)
-    Value = sa.Column(sa.Unicode(2000), default=u'')
-    Type = sa.Column(sa.Unicode(2000), default=u'')
-    Description = sa.Column(sa.Unicode(2000), default=u'')
+    Value = sa.Column(sa.Unicode(2000), default='')
+    Type = sa.Column(sa.Unicode(2000), default='')
+    Description = sa.Column(sa.Unicode(2000), default='')
     __table_args__ = (sa.UniqueConstraint('resolver_id',
                                           'Key',
                                           name='rcix_2'),
@@ -87,7 +87,7 @@ def upgrade():
             if (LDAPS or START_TLS):
                 if TLS_VERSION_qry is None:
                     session.add(ResolverConfig(resolver_id=resolver_id, Key="TLS_VERSION", Value=DEFAULT_TLS_VERSION,
-                                               Type=u'int'))
+                                               Type='int'))
                 elif TLS_VERSION == "":
                     base_query.filter(ResolverConfig.Key == "TLS_VERSION").update({"Value": DEFAULT_TLS_VERSION})
         session.commit()

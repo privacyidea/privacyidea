@@ -20,9 +20,9 @@ import { Component, computed, effect, EventEmitter, inject, input, linkedSignal,
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatButtonToggle, MatButtonToggleGroup } from "@angular/material/button-toggle";
 import { ErrorStateMatcher, MatOption } from "@angular/material/core";
-import { MatFormField, MatLabel, MatSuffix } from "@angular/material/form-field";
+import { MatFormField, MatLabel, MatSuffix, MatError } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
-import { MatError, MatSelect } from "@angular/material/select";
+import { MatSelect } from "@angular/material/select";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 import {
   CertificateApiPayloadMapper,
@@ -40,10 +40,9 @@ export interface CertificateEnrollmentOptions extends TokenEnrollmentData {
   pem?: string;
 }
 
-export class CaConnectorErrorStateMatcher implements ErrorStateMatcher {
+export class CertificateErrorStateMatcher implements ErrorStateMatcher {
   isErrorState(control: FormControl | null): boolean {
-    const invalid = control && control.value ? control.value === "" : true;
-    return !!(control && invalid && (control.dirty || control.touched));
+    return !!(control && control.invalid && (control.dirty || control.touched));
   }
 }
 
@@ -84,12 +83,13 @@ export class EnrollCertificateComponent implements OnInit {
   >();
   disabled = input<boolean>(false);
 
-  caConnectorControl = new FormControl<string>("", [Validators.required]);
-  certTemplateControl = new FormControl<string>("");
-  pemControl = new FormControl<string>("");
-  intentionToggleControl = new FormControl<"generate" | "uploadRequest" | "uploadCert">("generate", [
-    Validators.required
-  ]);
+  caConnectorControl = new FormControl<string>("", { nonNullable: true, validators: [Validators.required] });
+  certTemplateControl = new FormControl<string>("", { nonNullable: true, validators: [Validators.required] });
+  pemControl = new FormControl<string>("", { nonNullable: true });
+  intentionToggleControl = new FormControl<"generate" | "uploadRequest" | "uploadCert">("generate", {
+    nonNullable: true,
+    validators: [Validators.required]
+  });
 
   certificateForm = new FormGroup({
     caConnector: this.caConnectorControl,
@@ -100,7 +100,9 @@ export class EnrollCertificateComponent implements OnInit {
 
   caConnectorOptions = computed(
     () =>
-      this.systemService.caConnectorResource?.value()?.result?.value.map((config: any) => config.connectorname) || []
+      (this.systemService.caConnectorResource?.hasValue()
+        ? this.systemService.caConnectorResource?.value()?.result?.value.map((config: any) => config.connectorname)
+        : []) || []
   );
 
   caConnectorValueSignal = toSignal(this.caConnectorControl.valueChanges, {
@@ -117,7 +119,7 @@ export class EnrollCertificateComponent implements OnInit {
     }
   });
 
-  caConnectorErrorStateMatcher = new CaConnectorErrorStateMatcher();
+  certificateErrorStateMatcher = new CertificateErrorStateMatcher();
 
   constructor() {
     effect(() =>

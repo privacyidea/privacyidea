@@ -48,12 +48,12 @@ vasco_dll = None
 try:
     vasco_library_path = get_app_config_value("PI_VASCO_LIBRARY")
     if vasco_library_path is not None: # pragma: no cover
-        log.info("Loading VASCO library from {!s} ...".format(vasco_library_path))
+        log.info(f"Loading VASCO library from {vasco_library_path!s} ...")
         vasco_dll = CDLL(vasco_library_path)
     else:
         log.debug("PI_VASCO_LIBRARY option is not set, functionality disabled")
 except Exception as exx:
-    log.warning("Could not load VASCO library: {!r}".format(exx))
+    log.warning(f"Could not load VASCO library: {exx!r}")
 
 
 def check_vasco(fn):

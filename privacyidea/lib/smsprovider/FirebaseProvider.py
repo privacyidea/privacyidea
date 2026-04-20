@@ -24,6 +24,7 @@ This provider is used for the push token and can be used for SMS tokens.
 import json
 import logging
 import time
+from json import JSONDecodeError
 
 from google.auth.transport import requests
 from google.auth.transport.requests import AuthorizedSession
@@ -69,14 +70,14 @@ def get_firebase_access_token(config_file_name):
         credentials = service_account.Credentials.from_service_account_file(config_file_name,
                                                                             scopes=SCOPES)
 
-        log.debug("Fetching a new access_token for {!r} from firebase...".format(config_file_name))
+        log.debug(f"Fetching a new access_token for {config_file_name!r} from firebase...")
         # We do not use a lock here: The worst that could happen is that two threads
         # fetch new auth tokens concurrently. In this case, one of them wins and
         # is written to the dictionary.
         app_store[fbt][config_file_name] = credentials
         readable_time = credentials.expiry.isoformat() if credentials.expiry else 'Never'
-        log.debug("Setting the expiration for {!r} of the new access_token "
-                  "to {!s}.".format(config_file_name, readable_time))
+        log.debug(f"Setting the expiration for {config_file_name!r} of the new access_token "
+                  f"to {readable_time!s}.")
 
     return app_store[fbt][config_file_name]
 
@@ -176,9 +177,18 @@ class FirebaseProvider(ISMSProvider):
         :return:
         """
         file_path = self.smsgateway.option_dict.get(FirebaseConfig.JSON_CONFIG)
+        if not file_path:
+            raise ConfigAdminError(description="No JSON config file provided.")
         server_config = None
-        with open(file_path) as config_file:
-            server_config = json.load(config_file)
+        try:
+            with open(file_path) as config_file:
+                server_config = json.load(config_file)
+        except FileNotFoundError as error:
+            log.error("The JSON config file could not be found: %s", error)
+            raise ConfigAdminError(description="The JSON config file could not be found.") from error
+        except JSONDecodeError as error:
+            log.error("The config file has an invalid JSON format: %s", error)
+            raise ConfigAdminError(description="The config file has an invalid JSON format.") from error
         if server_config:
             if server_config.get("type") != "service_account":
                 raise ConfigAdminError(description="The JSON file is not a valid firebase credentials file.")

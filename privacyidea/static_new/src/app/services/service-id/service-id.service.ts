@@ -70,9 +70,9 @@ export class ServiceIdService implements ServiceIdServiceInterface {
   });
 
   serviceIds: WritableSignal<ServiceId[]> = linkedSignal({
-    source: this.serviceIdResource.value,
-    computation: (source, previous) => {
-      const value = source?.result?.value;
+    source: () => this.serviceIdResource.hasValue() ? this.serviceIdResource.value() : undefined,
+    computation: (serviceIdResource, previous) => {
+      const value = serviceIdResource?.result?.value;
       if (!value) {
         return previous?.value ?? [];
       }

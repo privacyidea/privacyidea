@@ -51,7 +51,7 @@ import traceback
 from passlib.crypto.digest import pbkdf2_hmac
 
 from privacyidea.api.lib.policyhelper import get_init_tokenlabel_parameters
-from privacyidea.api.lib.utils import getParam
+from privacyidea.lib.params import get_optional, get_required
 from privacyidea.lib import _, lazy_gettext
 from privacyidea.lib.apps import create_google_authenticator_url as cr_google
 from privacyidea.lib.apps import create_oathtoken_url as cr_oath
@@ -72,8 +72,6 @@ from .HMAC import HmacOtp
 from ..policies.actions import PolicyAction
 from ..user import User
 
-optional = True
-required = False
 log = logging.getLogger(__name__)
 
 keylen = {'sha1': 20,
@@ -309,12 +307,12 @@ class HotpTokenClass(TokenClass):
                     "img": create_img(oath_url)
                 }
             except KeyError as ex:
-                log.debug("{0!s}".format((traceback.format_exc())))
-                log.error('Unknown Tag {0!s} in one of your policy definition'
-                          .format(ex))
+                log.debug(f"{traceback.format_exc()!s}")
+                log.error(f'Unknown Tag {ex!s} in one of your policy definition'
+                          )
             except Exception as ex:  # pragma: no cover
-                log.debug("{0!s}".format((traceback.format_exc())))
-                log.error('failed to set oath or google url: {0!r}'.format(ex))
+                log.debug(f"{traceback.format_exc()!s}")
+                log.error(f'failed to set oath or google url: {ex!r}')
 
         return response_detail
 
@@ -346,18 +344,18 @@ class HotpTokenClass(TokenClass):
             upd_param[k] = v
 
         # Special handling of 2-step enrollment
-        if is_true(getParam(param, "2stepinit", optional)):
+        if is_true(get_optional(param, "2stepinit")):
             # Use the 2step_serversize setting for the size of the server secret
             # (if it is set)
             if "2step_serversize" in upd_param:
-                upd_param["keysize"] = int(getParam(upd_param, "2step_serversize", required))
+                upd_param["keysize"] = int(get_required(upd_param, "2step_serversize"))
             # Add twostep settings to the tokeninfo
             for key, default in [
                 ("2step_difficulty", TWOSTEP_DEFAULT_DIFFICULTY),
                 ("2step_clientsize", TWOSTEP_DEFAULT_CLIENTSIZE)]:
-                self.add_tokeninfo(key, getParam(param, key, optional, default))
+                self.add_tokeninfo(key, get_optional(param, key, default))
 
-        val = getParam(upd_param, "hashlib", optional)
+        val = get_optional(upd_param, "hashlib")
         if val is not None:
             hashlib_str = val
         else:
@@ -489,10 +487,10 @@ class HotpTokenClass(TokenClass):
             # we need to do this manually here:
             self.inc_otp_counter(res)
         if res == -1:
-            msg = "otp counter {0!r} was not found".format(otp)
+            msg = f"otp counter {otp!r} was not found"
         else:
-            msg = "otp counter {0!r} was found".format(otp)
-        log.debug("end. {0!r}: res {1!r}".format(msg, res))
+            msg = f"otp counter {otp!r} was found"
+        log.debug(f"end. {msg!r}: res {res!r}")
         return res
 
     @log_with(log)
@@ -509,7 +507,7 @@ class HotpTokenClass(TokenClass):
             res = previous_otp == otp
             if res:
                 log.info("Previous OTP used again. "
-                         "Serial {0!s} with counter {1!s}.".format(self.token.serial, counter))
+                         f"Serial {self.token.serial!s} with counter {counter!s}.")
             return res
         else:
             # The internal counter is 0, the token was not used, yet.
@@ -537,7 +535,7 @@ class HotpTokenClass(TokenClass):
 
         # if _autosync is not enabled
         if autosync is False:
-            log.debug("end. _autosync is not enabled : res {0!r}".format(res))
+            log.debug(f"end. _autosync is not enabled : res {res!r}")
             return res
 
         info = self.get_tokeninfo()
@@ -609,20 +607,20 @@ class HotpTokenClass(TokenClass):
         counter = hmac2Otp.checkOtp(otp1, syncWindow)
 
         if counter == -1:
-            log.debug("exit. First counter (-1) not found  ret: {0!r}".format(ret))
+            log.debug(f"exit. First counter (-1) not found  ret: {ret!r}")
             return ret
 
         nextOtp = hmac2Otp.generate(counter + 1)
 
         if nextOtp != otp2:
             log.debug("exit. Failed to verify second otp: nextOtp: "
-                      "%r != otp2: %r ret: %r" % (nextOtp, otp2, ret))
+                      f"{nextOtp!r} != otp2: {otp2!r} ret: {ret!r}")
             return ret
 
         ret = True
         self.inc_otp_counter(counter + 1, reset=True)
 
-        log.debug("end. resync was successful: ret: {0!r}".format(ret))
+        log.debug(f"end. resync was successful: ret: {ret!r}")
         return ret
 
     @staticmethod
@@ -636,7 +634,7 @@ class HotpTokenClass(TokenClass):
         try:
             timeOut = int(get_from_config("AutoResyncTimeout", 5 * 60))
         except Exception as ex:
-            log.warning("AutoResyncTimeout: value error {0!r} - reset to 5*60".format(ex))
+            log.warning(f"AutoResyncTimeout: value error {ex!r} - reset to 5*60")
             timeOut = 5 * 60
 
         return timeOut
@@ -662,9 +660,9 @@ class HotpTokenClass(TokenClass):
         pin = self.token.get_pin()
 
         if get_from_config("PrependPin") == "True":
-            combined = "{0!s}{1!s}".format(pin, otpval)
+            combined = f"{pin!s}{otpval!s}"
         else:
-            combined = "{0!s}{1!s}".format(otpval, pin)
+            combined = f"{otpval!s}{pin!s}"
 
         return 1, pin, otpval, combined
 
@@ -696,7 +694,7 @@ class HotpTokenClass(TokenClass):
         secretHOtp = self.token.get_otpkey()
         hmac2Otp = HmacOtp(secretHOtp, self.token.count, otplen,
                            self.get_hashlib(self.hashlib))
-        log.debug("retrieving {0:d} OTP values for token {1!s}".format(count, hmac2Otp))
+        log.debug(f"retrieving {count:d} OTP values for token {hmac2Otp!s}")
 
         if count > 0:
             error = "OK"
@@ -790,9 +788,8 @@ class HotpTokenClass(TokenClass):
         decoded_client_component = binascii.unhexlify(client_component)
         expected_client_size = int(self.get_tokeninfo('2step_clientsize'))
         if expected_client_size != len(decoded_client_component):
-            raise ParameterError('Client Secret Size is expected to be {}, but is {}'.format(
-                expected_client_size, len(decoded_client_component)
-            ))
+            raise ParameterError(f'Client Secret Size is expected to be {expected_client_size}, '
+                                 f'but is {len(decoded_client_component)}')
         # Based on the two components, we generate a symmetric key using PBKDF2
         # We pass the hex-encoded server component as the password and the
         # client component as the salt.
@@ -804,19 +801,19 @@ class HotpTokenClass(TokenClass):
         return hexlify_and_unicode(secret)
 
     @staticmethod
-    def get_import_csv(l):
+    def get_import_csv(row):
         """
         Read the list from a csv file and return a dictionary, that can be used
         to do a token_init.
 
-        :param l: The list of the line of a csv file
-        :type l: list
+        :param row: The list of the line of a csv file
+        :type row: list
         :return: A dictionary of init params
         """
-        params = TokenClass.get_import_csv(l)
+        params = TokenClass.get_import_csv(row)
         # get Counter
-        if len(l) >= 5:
-            params["counter"] = int(l[4].strip())
+        if len(row) >= 5:
+            params["counter"] = int(row[4].strip())
         return params
 
     def prepare_verify_enrollment(self, options=None):
@@ -842,7 +839,7 @@ class HotpTokenClass(TokenClass):
         :return: True
         """
         r = self.check_otp(verify)
-        log.debug("Enrollment verified: {0!s}".format(r))
+        log.debug(f"Enrollment verified: {r!s}")
         return r >= 0
 
     @classmethod

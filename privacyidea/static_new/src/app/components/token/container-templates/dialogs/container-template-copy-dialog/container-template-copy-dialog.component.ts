@@ -18,7 +18,7 @@
  **/
 
 import { Component, inject, computed, linkedSignal, signal } from "@angular/core";
-import { CommonModule } from "@angular/common";
+
 import { FormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCardModule } from "@angular/material/card";
@@ -37,15 +37,7 @@ import { PendingChangesDialogComponent } from "@components/shared/dialog/abstrac
 @Component({
   selector: "app-container-template-copy-dialog",
   standalone: true,
-  imports: [
-    CommonModule,
-    FormsModule,
-    MatInputModule,
-    MatButtonModule,
-    MatCardModule,
-    MatFormFieldModule,
-    DialogWrapperComponent
-  ],
+  imports: [FormsModule, MatInputModule, MatButtonModule, MatCardModule, MatFormFieldModule, DialogWrapperComponent],
   templateUrl: "./container-template-copy-dialog.component.html",
   styleUrl: "./container-template-copy-dialog.component.scss"
 })

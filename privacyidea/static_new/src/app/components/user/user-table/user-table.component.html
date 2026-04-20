@@ -1,5 +1,5 @@
 <!--
- (c) NetKnights GmbH 2025,  https://netknights.it
+ (c) NetKnights GmbH 2026,  https://netknights.it
 
  This code is free software; you can redistribute it and/or
  modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -25,8 +25,8 @@
     class="user-table-container">
     <div class="filter-paginator-container">
       <mat-form-field
-        class="token-table-filter"
-        subscriptSizing="dynamic">
+        subscriptSizing="dynamic"
+        class="token-table-filter">
         <mat-label i18n>Filter Users...</mat-label>
         <app-clearable-input
           (onClick)="userService.resetFilter()"
@@ -49,96 +49,97 @@
         showFirstLastButtons></mat-paginator>
     </div>
     <app-user-table-actions />
-    <div class="audit-table-overflow">
-      <table
-        [dataSource]="usersDataSource()"
-        aria-label="User Data Table"
-        class="token-table"
-        mat-table>
-        @for (column of columnKeysMap; track column) {
-          <ng-container [matColumnDef]="column.key">
-            <th
-              *matHeaderCellDef
-              attr.aria-label="{{ column.label }} Header"
-              mat-header-cell>
-              <div class="flex ali-center">
-                {{ column.label }}
-                <div class="margin-left-1 flex">
-                  @if (apiFilter.includes(column.key)) {
-                    <button
-                      (click)="onFilterClick(column.key)"
-                      class="filter-button"
-                      mat-icon-button
-                      type="button">
-                      <mat-icon class="keyword-button-icon margin-left-0">
-                        {{ getFilterIconName(column.key) }}
-                      </mat-icon>
-                    </button>
-                  }
+    <table
+      [dataSource]="usersDataSource()"
+      aria-label="User Data Table"
+      class="token-table"
+      mat-table>
+      @for (column of columnKeysMap; track column) {
+        <ng-container [matColumnDef]="column.key">
+          <th
+            *matHeaderCellDef
+            attr.aria-label="{{ column.label }} Header"
+            mat-header-cell>
+            <div class="flex ali-center">
+              {{ column.label }}
+              <div class="margin-left-16 flex">
+                @if (apiFilter.includes(column.key)) {
                   <button
-                    (click)="tableUtilsService.onSortButtonClick(column.key, sort)"
-                    class="sort-button"
+                    (click)="onFilterClick(column.key)"
+                    class="filter-button"
+                    i18n-matTooltip
                     mat-icon-button
+                    matTooltip="Filter by {{ column.label }}"
                     type="button">
-                    <mat-icon>{{ tableUtilsService.getSortIcon(column.key, sort()) }}</mat-icon>
+                    <mat-icon class="keyword-button-icon margin-left-0">
+                      {{ getFilterIconName(column.key) }}
+                    </mat-icon>
                   </button>
-                </div>
-              </div>
-            </th>
-            <td
-              *matCellDef="let element; let row"
-              [ngClass]="{
-                'width-18rem': column.key === 'description',
-                'table-checkbox': column.key === 'select'
-              }"
-              attr.aria-label="{{ column.label }} Cell"
-              mat-cell>
-              <div>
-                @switch (column.key) {
-                  @case ("username") {
-                    <a
-                      (click)="onClickUsername(element)"
-                      attr.aria-label="{{ column.label }} Link"
-                      routerLink="/users/details/{{ element.username }}">
-                      {{ element[column.key] }}
-                    </a>
-                  }
-                  @case ("resolver") {
-                    <a
-                      (click)="onClickResolver(element[column.key]); $event.preventDefault()"
-                      attr.aria-label="{{ column.label }} Link"
-                      role="button">
-                      {{ element[column.key] }}
-                    </a>
-                  }
-                  @default {
-                    <span>
-                      {{ element[column.key] }}
-                    </span>
-                  }
                 }
+                <button
+                  (click)="tableUtilsService.onSortButtonClick(column.key, sort)"
+                  class="sort-button"
+                  i18n-matTooltip
+                  mat-icon-button
+                  matTooltip="Sort by {{ column.label }}"
+                  type="button">
+                  <mat-icon>{{ tableUtilsService.getSortIcon(column.key, sort()) }}</mat-icon>
+                </button>
               </div>
-            </td>
-          </ng-container>
-        }
-        <tr
-          *matHeaderRowDef="columnKeys"
-          aria-label="Header Row"
-          mat-header-row></tr>
-        <tr
-          *matRowDef="let row; columns: columnKeys"
-          aria-label="Data Row"
-          mat-row></tr>
-        <tr
-          *matNoDataRow
-          aria-label="No Data Row">
+            </div>
+          </th>
           <td
-            [attr.colspan]="columnKeys.length"
-            aria-label="No Data Cell">
-            No data matching the filter.
+            *matCellDef="let element; let row"
+            [ngClass]="{
+              'table-checkbox': column.key === 'select'
+            }"
+            attr.aria-label="{{ column.label }} Cell"
+            mat-cell>
+            <div>
+              @switch (column.key) {
+                @case ("username") {
+                  <a
+                    (click)="onClickUsername(element)"
+                    attr.aria-label="{{ column.label }} Link"
+                    routerLink="/users/details/{{ element.username }}">
+                    {{ element[column.key] }}
+                  </a>
+                }
+                @case ("resolver") {
+                  <a
+                    (click)="onClickResolver(element[column.key]); $event.preventDefault()"
+                    attr.aria-label="{{ column.label }} Link"
+                    role="button">
+                    {{ element[column.key] }}
+                  </a>
+                }
+                @default {
+                  <span>
+                    {{ element[column.key] }}
+                  </span>
+                }
+              }
+            </div>
           </td>
-        </tr>
-      </table>
-    </div>
+        </ng-container>
+      }
+      <tr
+        *matHeaderRowDef="columnKeys"
+        aria-label="Header Row"
+        mat-header-row></tr>
+      <tr
+        *matRowDef="let row; columns: columnKeys"
+        aria-label="Data Row"
+        mat-row></tr>
+      <tr
+        *matNoDataRow
+        aria-label="No Data Row">
+        <td
+          [attr.colspan]="columnKeys.length"
+          aria-label="No Data Cell">
+          No data matching the filter.
+        </td>
+      </tr>
+    </table>
   </div>
 </div>

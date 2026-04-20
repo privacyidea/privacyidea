@@ -38,7 +38,19 @@ from flask import (jsonify,
 
 from privacyidea.lib.utils import (prepare_result, get_version, to_unicode,
                                    get_plugin_info_from_useragent)
-from ...lib.error import (ParameterError, PolicyError, ResourceNotFoundError,
+# Re-exported from privacyidea.lib.params for backwards-compatibility with
+# callers that import these names from privacyidea.api.lib.utils.
+from privacyidea.lib.params import (  # noqa: F401
+    _get_param,
+    get_required,
+    get_required_one_of,
+    get_optional,
+    get_optional_one_of,
+    attestation_certificate_allowed,
+)
+# check_policy_name lives in lib/policy; re-exported here for backward compatibility
+from privacyidea.lib.policy import check_policy_name  # noqa: F401
+from ...lib.error import (PolicyError, ResourceNotFoundError,
                           PrivacyIDEAError, AuthError, Error)
 from ...lib.log import log_with
 
@@ -58,104 +70,6 @@ NO_UNQUOTE_USER_AGENTS = {
 
 SESSION_KEY_LENGTH = 32
 
-optional = True
-required = False
-
-
-def _get_param(dictionary, key, default=None):
-    """
-    Get the parameter from the dictionary. If the parameter is not present, return the default value or None.
-    """
-    ret = None
-    if dictionary and key in dictionary:
-        ret = dictionary[key]
-    elif default is not None:
-        ret = default
-    return ret
-
-
-def get_required(dictionary, key, allow_empty=False):
-    """
-    Get the required parameter from the dictionary. If the parameter is not present, raise a ParameterError.
-    If the parameter is present, but empty, raise a ParameterError.
-    """
-    ret = _get_param(dictionary, key, None)
-    if ret is None or not allow_empty and ret == "":
-        raise ParameterError(f"Missing parameter: {key}", id=905)
-    return ret
-
-
-def get_required_one_of(param, keys, allow_empty=False):
-    """
-    Get the first parameter from the list of keys that is present and has a value in the param dictionary.
-    If none of the keys is present, raise a ParameterError.
-    """
-    for key in keys:
-        ret = _get_param(param, key, None)
-        if ret is not None:
-            if not allow_empty and ret == "":
-                continue
-            return ret
-    raise ParameterError(f"Missing one of the following parameters: {keys}", id=905)
-
-
-def get_optional(param, key, default=None):
-    """
-    Get the optional parameter from the dictionary. If the parameter is not present, return the default value or None.
-    """
-    return _get_param(param, key, default)
-
-
-def get_optional_one_of(param, keys, default=None):
-    """
-    Get the first parameter from the list of keys that is present in the param dictionary.
-    If none of the keys is present, return the default value or None.
-    """
-    for key in keys:
-        ret = _get_param(param, key, None)
-        if ret is not None:
-            return ret
-    return default
-
-
-def getParam(param, key, optional=True, default=None, allow_empty=True, allowed_values=None):
-    """
-    returns a parameter from the request parameters.
-
-    :param param: the dictionary of parameters
-    :type param: dict
-    :param key: the name of the parameter
-    :param optional: defines if this parameter is optional or not
-                     an exception is thrown if the parameter is required
-                     otherwise: nothing done!
-    :type optional: bool
-    :param default: The value to assign to the parameter, if it is not
-                    contained in the param.
-    :param allow_empty: Set to False is the parameter is a string and is
-        not allowed to be empty
-    :param allowed_values: A list of allowed values. If another value is given,
-        then the default value is returned
-    :type allow_empty: bool
-
-    :return: the value (literal) of the parameter if exists or nothing
-             in case the parameter is optional, otherwise throw an exception
-    """
-    ret = None
-
-    if key in param:
-        ret = param[key]
-    elif default:
-        ret = default
-    elif not optional:
-        raise ParameterError("Missing parameter: {0!r}".format(key), id=905)
-
-    if not allow_empty and ret == "":
-        raise ParameterError("Parameter {0!r} must not be empty".format(key), id=905)
-
-    if allowed_values and ret not in allowed_values:
-        ret = default
-
-    return ret
 
 
 def send_result(obj, rid=1, details=None, **kwargs) -> Response:
@@ -246,7 +160,7 @@ def send_file(output, filename, content_type='text/csv'):
     :return: The generated response
     :rtype: flask.Response
     """
-    headers = {'Content-disposition': 'attachment; filename={0!s}'.format(filename)}
+    headers = {'Content-disposition': f'attachment; filename={filename!s}'}
     return current_app.response_class(output, headers=headers, mimetype=content_type)
 
 
@@ -276,7 +190,7 @@ def send_csv_result(obj, data_key="tokens",
     if data_key in obj and len(obj[data_key]) > 0:
         # Do the header
         for k, _v in obj.get(data_key)[0].items():
-            output += "{0!s}{1!s}{2!s}, ".format(delim, k, delim)
+            output += f"{delim!s}{k!s}{delim!s}, "
         output += "\n"
 
         # Do the data
@@ -286,7 +200,7 @@ def send_csv_result(obj, data_key="tokens",
                     value = val.replace("\n", " ")
                 else:
                     value = val
-                output += "{0!s}{1!s}{2!s}, ".format(delim, value, delim)
+                output += f"{delim!s}{value!s}{delim!s}, "
             output += "\n"
 
     return send_file(output, filename)
@@ -340,14 +254,12 @@ def get_all_params(request):
     body = request.data
     return_param = {}
     if param:
-        log.debug("Update params in request {0!s} {1!s} with values.".format(request.method,
-                                                                             request.base_url))
+        log.debug(f"Update params in request {request.method!s} {request.base_url!s} with values.")
         # Add the unquoted HTML and form parameters
         return_param = check_unquote(request, request.values)
 
     if request.is_json:
-        log.debug("Update params in request {0!s} {1!s} with JSON data.".format(request.method,
-                                                                                request.base_url))
+        log.debug(f"Update params in request {request.method!s} {request.base_url!s} with JSON data.")
         # Add the original JSON data
         return_param.update(request.json)
     elif body:
@@ -357,11 +269,10 @@ def get_all_params(request):
             for k, v in json_data.items():
                 return_param[k] = v
         except Exception as exx:
-            log.debug("Can not get param: {0!s}".format(exx))
+            log.debug(f"Can not get param: {exx!s}")
 
     if request.view_args:
-        log.debug("Update params in request {0!s} {1!s} with view_args.".format(request.method,
-                                                                                request.base_url))
+        log.debug(f"Update params in request {request.method!s} {request.base_url!s} with view_args.")
         # We add the unquoted view_args
         return_param.update(check_unquote(request, request.view_args))
 
@@ -452,55 +363,6 @@ def verify_auth_token(auth_token, required_role=None):
     return r
 
 
-def check_policy_name(name):
-    """
-    This function checks, if the given name is a valid policy name.
-
-    :param name: The name of the policy
-    :return: Raises a ParameterError in case of an invalid name
-    """
-    disallowed_patterns = [("^check$", re.IGNORECASE),
-                           ("^pi-update-policy-", re.IGNORECASE)]
-    for disallowed_pattern in disallowed_patterns:
-        if re.search(disallowed_pattern[0], name, flags=disallowed_pattern[1]):
-            raise ParameterError(_("Invalid policy name:") + f" {name}")
-
-    if not re.match(r'^[a-zA-Z0-9_.\- ]*$', name):
-        raise ParameterError(_("The name of the policy may only contain the characters a-zA-Z0-9_. -"))
-
-
-def attestation_certificate_allowed(cert_info, allowed_certs_pols):
-    """
-    Check a certificate against a set of policies.
-
-    This will check an attestation certificate of a U2F-, or WebAuthn-Token,
-    against a list of policies. It is used to verify, whether a token with the
-    given attestation may be enrolled, or authorized, respectively.
-
-    The certificate info may be None, in which case, true will be returned if
-    the policies are also empty.
-
-    :param cert_info: The `attestation_issuer`, `attestation_serial`, and `attestation_subject` of the cert.
-    :type cert_info: dict or None
-    :param allowed_certs_pols: The policies restricting enrollment, or authorization.
-    :type allowed_certs_pols: dict or None
-    :return: Whether the token should be allowed to complete enrollment, or authorization, based on its attestation.
-    :rtype: bool
-    """
-
-    if not cert_info:
-        return not allowed_certs_pols
-
-    if allowed_certs_pols:
-        for allowed_cert in allowed_certs_pols:
-            tag, matching, _rest = allowed_cert.split("/", 3)
-            tag_value = cert_info.get(f"attestation_{tag!s}")
-            # if we do not get a match, we bail out
-            m = re.search(matching, tag_value) if matching and tag_value else None
-            if matching and not m:
-                return False
-
-    return True
 
 
 def is_fqdn(x):

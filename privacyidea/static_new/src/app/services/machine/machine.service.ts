@@ -19,7 +19,8 @@
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
 import { HttpClient, HttpParams, httpResource, HttpResourceRef } from "@angular/common/http";
-import { computed, inject, Injectable, linkedSignal, Signal, WritableSignal } from "@angular/core";
+import { computed, inject, Injectable, linkedSignal, Signal, WritableSignal, DOCUMENT } from "@angular/core";
+
 import { TableUtilsService, TableUtilsServiceInterface } from "../table-utils/table-utils.service";
 import { FilterValue } from "../../core/models/filter_value/filter_value";
 import { Observable, shareReplay } from "rxjs";
@@ -124,6 +125,12 @@ export interface MachineServiceInterface {
   onPageEvent(event: PageEvent): void;
 
   onSortEvent($event: Sort): void;
+
+  toggleFilter(filterKeyword: string): void;
+
+  getFilterIconName(keyword: string): string;
+
+  focusActiveInput(): void;
 }
 
 @Injectable({
@@ -135,6 +142,7 @@ export class MachineService implements MachineServiceInterface {
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
+  private readonly document: Document = inject(DOCUMENT);
   private baseUrl = environment.proxyUrl + "/machine/";
   sshApiFilter = ["serial", "service_id"];
   offlineApiFilter = ["serial", "count", "rounds"];
@@ -154,18 +162,18 @@ export class MachineService implements MachineServiceInterface {
   pageSize = linkedSignal({
     source: () => ({
       selectedApplicationType: this.selectedApplicationType,
-      tokenApplicationResource: this.tokenService.tokenDetailResource.value
+      tokenApplicationResource: this.tokenService.tokenDetailResourceValue
     }),
     computation: () => 10
   });
 
   machineFilter: WritableSignal<FilterValue> = linkedSignal({
     source: () => ({
-      selectedApplicationType: this.selectedApplicationType,
-      tokenDetailResource: this.tokenService.tokenDetailResource.value
+      selectedApplicationType: this.selectedApplicationType(),
+      tokenDetailResource: this.tokenService.tokenDetailResource.hasValue() ? this.tokenService.tokenDetailResource.value() : undefined
     }),
     computation: (source) => {
-      const tokenSerial = source.tokenDetailResource()?.result?.value?.tokens[0]?.serial;
+      const tokenSerial = source.tokenDetailResource?.result?.value?.tokens[0]?.serial;
       if (!tokenSerial) {
         return new FilterValue();
       }
@@ -204,7 +212,7 @@ export class MachineService implements MachineServiceInterface {
       application: this.selectedApplicationType(),
       filter: this.machineFilter(),
       sort: this.sort(),
-      tokenApplicationResource: this.tokenService.tokenDetailResource.value
+      tokenApplicationResource: this.tokenService.tokenDetailResourceValue
     }),
     computation: () => 0
   });
@@ -264,13 +272,17 @@ export class MachineService implements MachineServiceInterface {
   });
 
   machines: WritableSignal<Machines | undefined> = linkedSignal({
-    source: this.machinesResource.value,
-    computation: (machinesResource, previous) => machinesResource?.result?.value ?? previous?.value
+    source: () => this.machinesResource.hasValue() ? this.machinesResource.value() : undefined,
+    computation: (machinesResource, previous) => {
+      return machinesResource?.result?.value ?? previous?.value;
+    }
   });
 
   tokenApplications: Signal<TokenApplications | undefined> = linkedSignal({
-    source: this.tokenApplicationResource.value,
-    computation: (tokenApplicationResource, previous) => tokenApplicationResource?.result?.value ?? previous?.value
+    source: () => this.tokenApplicationResource.hasValue() ? this.tokenApplicationResource.value() : undefined,
+    computation: (tokenApplicationResource, previous) => {
+      return tokenApplicationResource?.result?.value ?? previous?.value;
+    }
   });
 
   handleFilterInput($event: Event): void {
@@ -395,5 +407,51 @@ export class MachineService implements MachineServiceInterface {
 
   onSortEvent($event: Sort): void {
     this.sort.set($event);
+  }
+
+  toggleFilter(filterKeyword: string): void {
+    let newValue;
+    if (filterKeyword === "machineid & resolver") {
+      const current = this.machineFilter();
+      const hasMachineId = current.hasKey("machineid");
+      const hasResolver = current.hasKey("resolver");
+
+      if (hasMachineId && hasResolver) {
+        newValue = this.tableUtilsService.toggleKeywordInFilter({ keyword: "machineid", currentValue: current });
+        newValue = this.tableUtilsService.toggleKeywordInFilter({ keyword: "resolver", currentValue: newValue });
+      } else if (!hasMachineId && !hasResolver) {
+        newValue = this.tableUtilsService.toggleKeywordInFilter({ keyword: "machineid", currentValue: current });
+        newValue = this.tableUtilsService.toggleKeywordInFilter({ keyword: "resolver", currentValue: newValue });
+      } else if (hasMachineId && !hasResolver) {
+        newValue = this.tableUtilsService.toggleKeywordInFilter({ keyword: "resolver", currentValue: current });
+      } else {
+        newValue = this.tableUtilsService.toggleKeywordInFilter({ keyword: "machineid", currentValue: current });
+      }
+    } else {
+      newValue = this.tableUtilsService.toggleKeywordInFilter({
+        keyword: filterKeyword,
+        currentValue: this.machineFilter()
+      });
+    }
+    this.machineFilter.set(newValue);
+  }
+
+  getFilterIconName(keyword: string): string {
+    if (keyword === "machineid & resolver") {
+      const current = this.machineFilter();
+      const selected = current.hasKey("machineid") && current.hasKey("resolver");
+      return selected ? "filter_alt_off" : "filter_alt";
+    }
+    const isSelected = this.machineFilter().hasKey(keyword);
+    return isSelected ? "filter_alt_off" : "filter_alt";
+  }
+
+  focusActiveInput(): void {
+    const type = this.selectedApplicationType();
+    const id = type === "ssh" ? "ssh-filter-input" : "offline-filter-input";
+    setTimeout(() => {
+      const el = this.document.getElementById(id) as HTMLInputElement | null;
+      el?.focus();
+    });
   }
 }

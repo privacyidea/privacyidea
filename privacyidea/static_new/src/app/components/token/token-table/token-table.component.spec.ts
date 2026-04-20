@@ -60,42 +60,9 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
   let authServiceMock: MockAuthService;
   let dialogServiceMock: MockDialogService;
   let dialogMock: MatDialogMock;
+  let tableUtilsService: MockTableUtilsService;
 
   beforeAll(() => {
-    Object.defineProperty(window, "matchMedia", {
-      writable: true,
-      value: (q: string) => ({
-        matches: false,
-        media: q,
-        onchange: null,
-        addListener: jest.fn(),
-        removeListener: jest.fn(),
-        addEventListener: jest.fn(),
-        removeEventListener: jest.fn(),
-        dispatchEvent: jest.fn()
-      })
-    });
-
-    class RO {
-      observe = jest.fn();
-      unobserve = jest.fn();
-      disconnect = jest.fn();
-    }
-
-    (globalThis as any).ResizeObserver = RO;
-
-    if (!(globalThis as any).MutationObserver) {
-      (globalThis as any).MutationObserver = class {
-        observe() {}
-
-        disconnect() {}
-
-        takeRecords() {
-          return [];
-        }
-      };
-    }
-
     jest.spyOn(console, "warn").mockImplementation(() => {});
   });
 
@@ -127,6 +94,7 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
     authServiceMock = TestBed.inject(AuthService) as unknown as MockAuthService;
     dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
     dialogMock = TestBed.inject(MatDialog) as unknown as MatDialogMock;
+    tableUtilsService = TestBed.inject(TableUtilsService) as unknown as MockTableUtilsService;
 
     tokenService.toggleActive.mockReturnValue(of({}));
     tokenService.resetFailCount.mockReturnValue(of(null));
@@ -154,13 +122,11 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
 
   it("isAllSelected/toggleAllRows/toggleRow work as expected", () => {
     const tokens = [{ serial: "T-1" } as any, { serial: "T-2" } as any];
-    tokenService.tokenResource.set(
-      MockPiResponse.fromValue({
+    tokenService.tokenResourceValue.set({
         tokens,
         count: 2,
         current: 1
-      })
-    );
+      });
     tableFixture.detectChanges();
 
     expect(table.isAllSelected()).toBe(false);
@@ -263,13 +229,28 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
     expect(table.sort()).toEqual({ active: "description", direction: "desc" });
   });
 
+  it("onFilterInput should only update filter if user: and realm: are NOT in the input", () => {
+    const inputEvent = { target: { value: "type: hotp" } } as any;
+    table.onFilterInput(inputEvent);
+    expect(tokenService.handleFilterInput).toHaveBeenCalledWith(inputEvent);
+
+    jest.clearAllMocks();
+    const inputEventWithUser = { target: { value: "user: admin" } } as any;
+    table.onFilterInput(inputEventWithUser);
+    expect(tokenService.handleFilterInput).not.toHaveBeenCalled();
+
+    const inputEventWithRealm = { target: { value: "realm: default" } } as any;
+    table.onFilterInput(inputEventWithRealm);
+    expect(tokenService.handleFilterInput).not.toHaveBeenCalled();
+  });
+
   it("tokenDataSource/totalLength reflect tokenResource; fall back to empty skeleton when undefined", () => {
     const initial = table.tokenDataSource().data;
     expect(Array.isArray(initial)).toBe(true);
     expect(initial.length).toBe(table.pageSize());
 
     const tokens = [{ serial: "S-1" }, { serial: "S-2" }] as any;
-    tokenService.tokenResource.set(MockPiResponse.fromValue({ tokens, count: 2, current: 1 }));
+    tokenService.tokenResourceValue.set({ tokens, count: 2, current: 1 });
     tableFixture.detectChanges();
 
     expect(table.tokenDataSource().data).toEqual(tokens);
@@ -310,5 +291,21 @@ describe("TokenTableComponent + TokenTableSelfServiceComponent", () => {
       expect.arrayContaining(["serial", "tokentype", "description", "container_serial", "active", "failcount"])
     );
     expect(c2.columnKeysSelfService).not.toEqual(expect.arrayContaining(["revoke", "delete"]));
+  });
+
+  it("pageSizeOptions should add custom page size if not included in default options", () => {
+    const defaultOptions = [5, 10, 25, 50];
+    tableUtilsService.pageSizeOptions.set(defaultOptions);
+    expect(component.pageSizeOptions()).toEqual(defaultOptions);
+
+    // Check custom page size is added but does not mutate the options from the service
+    const customOptions = [5, 10, 15, 25, 50];
+    component.pageSize.set(15);
+    expect(component.pageSizeOptions()).toEqual(customOptions);
+    expect(tableUtilsService.pageSizeOptions()).toEqual(defaultOptions);
+
+    // custom page size should still be included if selected pageSize changes
+    component.pageSize.set(10);
+    expect(component.pageSizeOptions()).toEqual(customOptions);
   });
 });

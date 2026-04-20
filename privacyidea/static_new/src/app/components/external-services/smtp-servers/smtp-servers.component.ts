@@ -28,7 +28,7 @@ import { SmtpServer, SmtpService, SmtpServiceInterface } from "../../../services
 import { NewSmtpServerComponent } from "./new-smtp-server/new-smtp-server.component";
 import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
 import { MatTooltipModule } from "@angular/material/tooltip";
-import { CommonModule } from "@angular/common";
+
 import { DialogService, DialogServiceInterface } from "../../../services/dialog/dialog.service";
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
@@ -41,7 +41,6 @@ import { SimpleConfirmationDialogComponent } from "../../shared/dialog/confirmat
   selector: "app-smtp",
   standalone: true,
   imports: [
-    CommonModule,
     MatTableModule,
     MatPaginator,
     MatSortModule,
@@ -87,7 +86,9 @@ export class SmtpServersComponent {
   openEditDialog(server?: SmtpServer): void {
     this.dialog.open(NewSmtpServerComponent, {
       data: server ? { ...server } : null,
-      width: "600px"
+      width: "auto",
+      maxWidth: "65vw",
+      maxHeight: "90vh"
     });
   }
 

@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -18,10 +18,26 @@
  **/
 import { Injectable, signal } from "@angular/core";
 
+export interface PendingChangesServiceInterface {
+  hasChanges: boolean;
+  validChanges: boolean;
+
+  registerHasChanges(fn: () => boolean): void;
+
+  clearAllRegistrations(): void;
+
+  registerSave(fn: () => Promise<boolean>): void;
+
+  save(): Promise<boolean>;
+
+  registerValidChanges(fn: () => boolean): void;
+}
+
 @Injectable({ providedIn: "root" })
-export class PendingChangesService {
+export class PendingChangesService implements PendingChangesServiceInterface {
   private _hasChangesFn = signal<(() => boolean) | null>(null);
-  private _saveFn = signal<(() => Promise<void> | void) | null>(null);
+  private _saveFn = signal<(() => Promise<boolean>) | null>(null);
+  private _validChanges: () => boolean = signal(true);
 
   get hasChanges(): boolean {
     const fn = this._hasChangesFn();
@@ -32,17 +48,26 @@ export class PendingChangesService {
     this._hasChangesFn.set(fn);
   }
 
-  unregisterHasChanges(): void {
+  clearAllRegistrations(): void {
     this._hasChangesFn.set(null);
     this._saveFn.set(null);
+    this._validChanges = signal(true);
   }
 
-  registerSave(fn: () => Promise<void> | void): void {
+  registerSave(fn: () => Promise<boolean>): void {
     this._saveFn.set(fn);
   }
 
-  save(): Promise<void> | void {
+  async save(): Promise<boolean> {
     const fn = this._saveFn();
-    return fn ? fn() : undefined;
+    return fn ? fn() : false;
+  }
+
+  registerValidChanges(fn: () => boolean): void {
+    this._validChanges = fn;
+  }
+
+  get validChanges(): boolean {
+    return this._validChanges();
   }
 }

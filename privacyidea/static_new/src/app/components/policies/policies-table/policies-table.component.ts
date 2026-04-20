@@ -18,12 +18,11 @@
  **/
 
 import { CommonModule, KeyValuePipe } from "@angular/common";
-import { Component, inject, viewChild, signal, linkedSignal, computed } from "@angular/core";
+import { Component, computed, inject, linkedSignal, signal, viewChild } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
-import { MatCheckboxModule, MatCheckboxChange } from "@angular/material/checkbox";
+import { MatCheckboxChange, MatCheckboxModule } from "@angular/material/checkbox";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
-import { MatPaginatorModule, PageEvent } from "@angular/material/paginator";
 import { MatSlideToggleModule } from "@angular/material/slide-toggle";
 import { MatSortModule, Sort } from "@angular/material/sort";
 import { MatTableModule } from "@angular/material/table";
@@ -32,15 +31,16 @@ import { lastValueFrom } from "rxjs";
 
 import { FilterValueGeneric } from "src/app/core/models/filter_value_generic/filter-value-generic";
 import { FilterOption } from "src/app/core/models/filter_value_generic/filter-option";
-import { AuthServiceInterface, AuthService } from "src/app/services/auth/auth.service";
-import { DialogServiceInterface, DialogService } from "src/app/services/dialog/dialog.service";
-import { PolicyServiceInterface, PolicyService, PolicyDetail } from "src/app/services/policies/policies.service";
-import { TableUtilsServiceInterface, TableUtilsService } from "src/app/services/table-utils/table-utils.service";
+import { AuthService, AuthServiceInterface } from "src/app/services/auth/auth.service";
+import { DialogService, DialogServiceInterface } from "src/app/services/dialog/dialog.service";
+import { PolicyDetail, PolicyService, PolicyServiceInterface } from "src/app/services/policies/policies.service";
+import { TableUtilsService, TableUtilsServiceInterface } from "src/app/services/table-utils/table-utils.service";
 import { EditPolicyDialogComponent } from "../dialogs/edit-policy-dialog/edit-policy-dialog.component";
 import { PoliciesTableActionsComponent } from "./policies-table-actions/policies-table-actions.component";
 import { PolicyFilterComponent } from "./policy-filter/policy-filter.component";
 import { ViewConditionsColumnComponent } from "./view-conditions-column/view-conditions-column.component";
 import { ViewActionColumnComponent } from "./view-action-column/view-action-column.component";
+import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
 
 @Component({
   selector: "app-policies-table",
@@ -54,13 +54,13 @@ import { ViewActionColumnComponent } from "./view-action-column/view-action-colu
     MatButtonModule,
     MatSlideToggleModule,
     MatInputModule,
-    MatPaginatorModule,
     PoliciesTableActionsComponent,
     MatCheckboxModule,
     ViewActionColumnComponent,
     MatTooltipModule,
     PolicyFilterComponent,
-    ViewConditionsColumnComponent
+    ViewConditionsColumnComponent,
+    CopyButtonComponent
   ],
   templateUrl: "./policies-table.component.html",
   styleUrl: "./policies-table.component.scss"
@@ -85,17 +85,16 @@ export class PoliciesTableComponent {
 
   readonly columnKeys = computed(() => ["select", ...Object.keys(this.columns)]);
 
-  readonly pageIndex = signal(0);
-  readonly pageSize = signal(10);
-  readonly pageSizeOptions = signal([5, 10, 25, 100]);
+  readonly skeletonRowCount = 10;
+
   readonly sort = signal<Sort>({ active: "priority", direction: "asc" });
   readonly filter = signal<FilterValueGeneric<PolicyDetail>>(
     new FilterValueGeneric({ availableFilters: policyFilterOptions })
   );
 
   readonly emptyResource = linkedSignal({
-    source: this.pageSize,
-    computation: (ps) => Array.from({ length: ps }, () => ({ name: "" }) as PolicyDetail)
+    source: () => this.policyService.allPolicies(),
+    computation: () => Array.from({ length: this.skeletonRowCount }, () => ({ name: "" }) as PolicyDetail)
   });
 
   readonly policiesListFiltered = computed(() => {
@@ -118,21 +117,10 @@ export class PoliciesTableComponent {
     });
   });
 
-  readonly pagedPolicies = computed(() => {
-    const data = this.sortedFilteredPolicies();
-    if (this.policyService.allPolicies().length === 0) return data;
-    const start = this.pageIndex() * this.pageSize();
-    return data.slice(start, start + this.pageSize());
-  });
-
-  readonly totalLength = computed(() =>
-    this.policyService.allPolicies().length > 0 ? this.policiesListFiltered().length : 0
-  );
-
   readonly selectedPolicies = linkedSignal<PolicyDetail[], Set<string>>({
     source: () => this.policiesListFiltered(),
     computation: (source, previous) => {
-      const selected = new Set(previous?.value ?? [])
+      const selected = new Set(previous?.value ?? []);
       if (this.policyService.allPolicies().length === 0) return new Set();
       const currentNames = new Set(source.map((p) => p.name));
       for (const name of selected) {
@@ -148,14 +136,8 @@ export class PoliciesTableComponent {
     this.sort.set(sort);
   }
 
-  onPageEvent(event: PageEvent): void {
-    this.pageSize.set(event.pageSize);
-    this.pageIndex.set(event.pageIndex);
-  }
-
   onFilterUpdate(newFilter: FilterValueGeneric<PolicyDetail>): void {
     this.filter.set(newFilter);
-    this.pageIndex.set(0);
   }
 
   onFilterClick(columnKey: string): void {
@@ -174,14 +156,14 @@ export class PoliciesTableComponent {
   }
 
   isAllSelected(): boolean {
-    const displayed = this.pagedPolicies().filter((p) => !!p.name);
+    const displayed = this.sortedFilteredPolicies().filter((p) => !!p.name);
     if (displayed.length === 0) return false;
     return displayed.every((p) => this.selectedPolicies().has(p.name));
   }
 
   masterToggle(): void {
     const selected = new Set(this.selectedPolicies());
-    const displayed = this.pagedPolicies().filter((p) => !!p.name);
+    const displayed = this.sortedFilteredPolicies().filter((p) => !!p.name);
     if (this.isAllSelected()) {
       displayed.forEach((p) => selected.delete(p.name));
     } else {
@@ -219,7 +201,7 @@ export class PoliciesTableComponent {
 
   async editPolicy(policy: PolicyDetail): Promise<void> {
     if (!policy.name) return;
-    const result = await lastValueFrom(
+    const _ = await lastValueFrom(
       this.dialogService
         .openDialog({
           component: EditPolicyDialogComponent,
@@ -227,7 +209,6 @@ export class PoliciesTableComponent {
         })
         .afterClosed()
     );
-    if (result) this.policyService.savePolicyEdits(policy.name, { ...policy, ...result });
   }
 }
 

@@ -33,12 +33,10 @@ The code of this module is tested in tests/test_api_system.py
 """
 from flask_babel import _
 from flask import Blueprint, request, current_app
-from .lib.utils import (getParam,
-                        getLowerParams,
-                        optional,
-                        required,
+from .lib.utils import (getLowerParams,
                         send_result,
-                        check_policy_name, send_file, get_required)
+                        send_file, get_required)
+from ..lib.params import get_optional
 from ..lib.log import log_with
 from ..lib.policies.actions import PolicyAction
 from ..lib.policies.conditions import ConditionHandleMissingData
@@ -46,7 +44,8 @@ from ..lib.policy import (set_policy, rename_policy,
                           export_policies, import_policies,
                           delete_policy, get_static_policy_definitions,
                           enable_policy, get_policy_condition_sections,
-                          get_policy_condition_comparators, Match, validate_values, get_policies, SCOPE)
+                          get_policy_condition_comparators, Match, validate_values, get_policies, SCOPE,
+                          check_policy_name)
 from ..lib.token import get_dynamic_policy_definitions
 from ..lib.error import (ParameterError)
 from privacyidea.lib.utils import is_true
@@ -228,7 +227,7 @@ def set_policy_api(name=None):
     validate_values(admin_realm, valid_admin_realms, "Admin Realms")
 
     g.audit_object.log({'action_detail': name,
-                        'info': "{0!s}".format(param)})
+                        'info': f"{param!s}"})
     ret = set_policy(name=name, scope=scope, action=action, realm=realm,
                      resolver=resolver, user=user, client=client, time=time,
                      active=active or True, adminrealm=admin_realm,
@@ -236,7 +235,7 @@ def set_policy_api(name=None):
                      check_all_resolvers=check_all_resolvers or False,
                      priority=priority, conditions=conditions,
                      description=description, user_agents=user_agents)
-    log.debug("policy {0!s} successfully saved.".format(name))
+    log.debug(f"policy {name!s} successfully saved.")
     string = "setPolicy " + name
     res[string] = ret
     g.audit_object.log({"success": True})
@@ -310,14 +309,14 @@ def get_policy(name=None, export=None):
         }
     """
     param = getLowerParams(request.all_data)
-    realm = getParam(param, "realm")
-    scope = getParam(param, "scope")
-    active = getParam(param, "active")
+    realm = get_optional(param, "realm")
+    scope = get_optional(param, "scope")
+    active = get_optional(param, "active")
     if active is not None:
         active = is_true(active)
 
     if not export:
-        log.debug("retrieving policy name: {0!s}, realm: {1!s}, scope: {2!s}".format(name, realm, scope))
+        log.debug(f"retrieving policy name: {name!s}, realm: {realm!s}, scope: {scope!s}")
 
         policies = get_policies(name=name, realm=realm, scope=scope, active=active)
         ret = send_result(policies)
@@ -327,7 +326,7 @@ def get_policy(name=None, export=None):
         ret = send_file(export_policies(policies), export, content_type='text/plain')
 
     g.audit_object.log({"success": True,
-                        'info': "name = {0!s}, realm = {1!s}, scope = {2!s}".format(name, realm, scope)})
+                        'info': f"name = {name!s}, realm = {realm!s}, scope = {scope!s}"})
     return ret
 
 
@@ -438,14 +437,12 @@ def import_policy_api(filename=None):
         raise ParameterError(_("Unable to convert file contents. Binary data is not supported"))
 
     if file_contents == "":
-        log.error("Error loading/importing policy file. file {0!s} empty!".format(
-                  filename))
+        log.error(f"Error loading/importing policy file. file {filename!s} empty!")
         raise ParameterError(_("Error loading policy. File empty!"))
 
     policy_num = import_policies(file_contents=file_contents)
     g.audit_object.log({"success": True,
-                        'info': "imported {0:d} policies from file {1!s}".format(
-                            policy_num, filename)})
+                        'info': f"imported {policy_num:d} policies from file {filename!s}"})
 
     return send_result(policy_num)
 
@@ -513,12 +510,12 @@ def check_policy_api():
     res = {}
     param = getLowerParams(request.all_data)
 
-    user = getParam(param, "user", required)
-    realm = getParam(param, "realm", required)
-    scope = getParam(param, "scope", required)
-    action = getParam(param, "action", required)
-    client = getParam(param, "client", optional)
-    resolver = getParam(param, "resolver", optional)
+    user = get_required(param, "user")
+    realm = get_required(param, "realm")
+    scope = get_required(param, "scope")
+    action = get_required(param, "action")
+    client = get_optional(param, "client")
+    resolver = get_optional(param, "resolver")
 
     policies = Match.generic(g, scope=scope, user=user, resolver=resolver, realm=realm,
                              action=action, client=client, active=True).policies()
@@ -528,14 +525,14 @@ def check_policy_api():
         policy_names = []
         for pol in policies:
             policy_names.append(pol.get("name"))
-        g.audit_object.log({'info': "allowed by policy {0!s}".format(policy_names)})
+        g.audit_object.log({'info': f"allowed by policy {policy_names!s}"})
     else:
         res["allowed"] = False
         res["info"] = "No policies found"
 
     g.audit_object.log({"success": True,
-                        'action_detail': "action = %s, realm = %s, scope = "
-                                         "%s" % (action, realm, scope)
+                        'action_detail': f"action = {action}, realm = {realm}, scope = "
+                                         f"{scope}"
                         })
 
     return send_result(res)

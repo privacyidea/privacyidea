@@ -4,7 +4,8 @@
 .assign-user-container {
   display: flex;
   flex-direction: row;
-  align-items: baseline;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 16px;
   margin-bottom: 8px;
 }

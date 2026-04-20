@@ -54,7 +54,6 @@ import binascii
 import ctypes
 import base64
 import traceback
-from typing import Union
 
 from cryptography.hazmat.primitives._serialization import NoEncryption
 from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePublicKey, EllipticCurvePrivateKey
@@ -107,7 +106,7 @@ class KeyPair:
         self.private_key = private_key
 
 
-class SecretObj(object):
+class SecretObj:
     def __init__(self, val, iv, preserve=True):
         self.val = val
         self.iv = iv
@@ -529,7 +528,7 @@ def geturandom(length=20, hex=False):
 # some random functions based on geturandom #################################
 
 
-class urandom(object):
+class urandom:
     precision = 12
 
     @staticmethod
@@ -652,7 +651,7 @@ def get_rand_digit_str(length=16):
         raise ValueError("get_rand_digit_str only works for values > 1")
     clen = int(length / 2.4 + 0.5)
     randd = geturandom(clen, hex=True)
-    s = "{0:d}".format((int(randd, 16)))
+    s = f"{int(randd, 16):d}"
     if len(s) < length:
         s = "0" * (length - len(s)) + s
     elif len(s) > length:
@@ -706,7 +705,7 @@ def _slow_rsa_verify_raw(key, sig, msg):
     return msg == pow(sig, pn.e, pn.n)
 
 
-class Sign(object):
+class Sign:
     """
     Signing class that is used to sign Audit Entries and to sign API responses.
     """
@@ -735,7 +734,7 @@ class Sign(object):
                                                                   backend=backend,
                                                                   unsafe_skip_rsa_key_validation=not check_private_key)
             except Exception as e:
-                log.error("Error loading private key: ({0!r})".format(e))
+                log.error(f"Error loading private key: ({e!r})")
                 log.debug(traceback.format_exc())
                 raise e
 
@@ -744,7 +743,7 @@ class Sign(object):
                 self.public = serialization.load_pem_public_key(public_key,
                                                                 backend=backend)
             except Exception as e:
-                log.error("Error loading public key: ({0!r})".format(e))
+                log.error(f"Error loading public key: ({e!r})")
                 log.debug(traceback.format_exc())
                 raise e
 
@@ -758,7 +757,7 @@ class Sign(object):
         :rtype: str
         """
         if not self.private:
-            log.info('Could not sign message {0!s}, no private key!'.format(s))
+            log.info(f'Could not sign message {s!s}, no private key!')
             # TODO: should we throw an exception in this case?
             return ''
 
@@ -786,8 +785,8 @@ class Sign(object):
         """
         r = False
         if not self.public:
-            log.info('Could not verify signature for message {0!s}, '
-                     'no public key!'.format(s))
+            log.info(f'Could not verify signature for message {s!s}, '
+                     'no public key!')
             return r
 
         sver = ''
@@ -812,11 +811,11 @@ class Sign(object):
                     int_s = int(binascii.hexlify(sha256(to_bytes(s)).digest()), 16)
                     r = _slow_rsa_verify_raw(self.public, int(signature), int_s)
                 else:
-                    log.debug('Could not verify old style signature {0!s} '
-                              'for data {1:s}'.format(signature, s))
+                    log.debug(f'Could not verify old style signature {signature!s} '
+                              f'for data {s:s}')
         except Exception:
-            log.error("Failed to verify signature: {0!r}".format(s))
-            log.debug("{0!s}".format(traceback.format_exc()))
+            log.error(f"Failed to verify signature: {s!r}")
+            log.debug(f"{traceback.format_exc()!s}")
 
         return r
 
@@ -866,7 +865,7 @@ def generate_otpkey(key_size=20):
     :return: hexlified key
     :rtype: str
     """
-    log.debug("generating key of size {0!s}".format(key_size))
+    log.debug(f"generating key of size {key_size!s}")
     return hexlify_and_unicode(geturandom(key_size))
 
 
@@ -1063,7 +1062,7 @@ def get_hash_algorithm_object(algorithm_name: str, default: HashAlgorithm = None
     return hash_algorithm
 
 
-def sign_ecc(message: bytes, private_key: EllipticCurvePrivateKey, algorithm_name: str) -> dict[str, Union[bytes, str]]:
+def sign_ecc(message: bytes, private_key: EllipticCurvePrivateKey, algorithm_name: str) -> dict[str, bytes | str]:
     """
     Signs a message with the given ecc private key.
 
@@ -1087,7 +1086,7 @@ def sign_ecc(message: bytes, private_key: EllipticCurvePrivateKey, algorithm_nam
 
 
 def verify_ecc(message: bytes, signature: bytes, public_key: EllipticCurvePublicKey,
-               algorithm_name: str) -> dict[str, Union[bool, str]]:
+               algorithm_name: str) -> dict[str, bool | str]:
     """
     Verifies a signature with the given public key.
     Raises InvalidSignature if the signature is invalid.

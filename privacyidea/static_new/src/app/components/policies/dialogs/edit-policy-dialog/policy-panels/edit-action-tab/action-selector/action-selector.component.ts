@@ -31,6 +31,8 @@ import {
   model
 } from "@angular/core";
 import { FormsModule } from "@angular/forms";
+import { MatButtonModule } from "@angular/material/button";
+import { MatExpansionModule } from "@angular/material/expansion";
 import { MatIconModule } from "@angular/material/icon";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import {
@@ -51,6 +53,8 @@ import { MatButtonToggleGroup, MatButtonToggle, MatButtonToggleModule } from "@a
     CommonModule,
     FormsModule,
     MatIconModule,
+    MatButtonModule,
+    MatExpansionModule,
     SelectorButtonsComponent,
     MatTooltipModule,
     PolicyActionItemComponent,

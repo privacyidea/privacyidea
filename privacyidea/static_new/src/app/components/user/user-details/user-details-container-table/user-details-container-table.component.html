@@ -1,5 +1,5 @@
 <!--
- (c) NetKnights GmbH 2025,  https://netknights.it
+ (c) NetKnights GmbH 2026,  https://netknights.it
 
  This code is free software; you can redistribute it and/or
  modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -20,19 +20,18 @@
   aria-label="User Details Container Table"
   class="user-details-container-table-layout"
   i18n-aria-label>
-
   <div class="details-header">
-    <h3 i18n>Containers of User</h3>
-    <h3 class="username-header">{{ userService.detailsUsername() }}</h3>
-    <h3 class="margin-left--8">:</h3>
+    <h4 i18n>Containers of User</h4>
+    <h4 class="username-header">{{ userService.detailsUsername() }}</h4>
+    <h4 class="margin-left--8">:</h4>
   </div>
   <div class="flex-row filter-paginator-container">
     <mat-form-field
-      class="width-50"
-      subscriptSizing="dynamic">
+      subscriptSizing="dynamic"
+      class="user-details-container-table-filter">
       <mat-label i18n>Filter Containers...</mat-label>
       <app-clearable-input
-        (onClick)="filterValue=''; dataSource.filter=''; filterInput.value=''"
+        (onClick)="filterValue = ''; dataSource.filter = ''; filterInput.value = ''"
         [showClearButton]="filterValue.length > 0">
         <input
           #filterInput
@@ -44,11 +43,11 @@
           placeholder="Filter across all columns." />
       </app-clearable-input>
     </mat-form-field>
-  <mat-paginator
-    [pageSizeOptions]="pageSizeOptions()"
-    [pageSize]="pageSize"
-    class="flex-just-start"
-    showFirstLastButtons></mat-paginator>
+    <mat-paginator
+      [pageSizeOptions]="pageSizeOptions()"
+      [pageSize]="pageSize"
+      class="flex-just-start"
+      showFirstLastButtons></mat-paginator>
   </div>
   <div class="table-wrapper">
     <table
@@ -57,7 +56,6 @@
       class="user-details-container-table"
       i18n-aria-label
       mat-table>
-
       @for (column of columnsKeyMap; track column) {
         <ng-container [matColumnDef]="column.key">
           <th
@@ -66,7 +64,7 @@
             mat-header-cell>
             <div class="flex ali-center">
               {{ column.label }}
-              <div class="margin-left-1 flex">
+              <div class="margin-left-16 flex">
                 <button
                   (click)="tableUtilsService.onSortButtonClick(column.key, sort)"
                   class="sort-button"
@@ -80,21 +78,22 @@
 
           <td
             *matCellDef="let element"
-            [ngClass]="{ 'width-18rem': column.key === 'description' }"
+            [ngClass]="{ 'input-width-l': column.key === 'description' }"
             attr.aria-label="{{ column.label }} Cell"
             mat-cell>
-
             <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
               @switch (column.key) {
                 @case ("serial") {
-                  <a
-                    (click)="contentService.containerSelected(element.serial)"
-                    attr.aria-label="{{ column.label }} Link">
-                    {{ element.serial }}
-                  </a>
-                  @if (element.serial !== "") {
-                    <app-copy-button [copyText]="element.serial"></app-copy-button>
-                  }
+                  <div class="flex-row flex-nowrap ali-center">
+                    <a
+                      (click)="contentService.containerSelected(element.serial)"
+                      attr.aria-label="{{ column.label }} Link">
+                      {{ element.serial }}
+                    </a>
+                    @if (element.serial !== "") {
+                      <app-copy-button [copyText]="element.serial"></app-copy-button>
+                    }
+                  </div>
                 }
                 @case ("states") {
                   <span
@@ -116,7 +115,6 @@
                 }
               }
             </div>
-
           </td>
         </ng-container>
       }

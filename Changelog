@@ -1,9 +1,49 @@
 Version 3.13
 
-  Fixes:
-  * TLS configuration for LDAP Machine-Resolver (#4964)
+  Features:
+  * The new WebUI 2.0 is now in beta, containing all admin functionality. But please be aware that layouts are not final and bugs may still occur.
+    If you have any feedback, please share it with us! The old WebUI is still the default for this version.
 
-Version 3.12.2
+  Enhancements:
+  * Token in the token table can be filtered by realm and by user. Search for a user is only possible with exact matches and requires to press enter. (#5032)
+  * Added --keep-db-uri flag to pi-manage backup restore, so that the database URI will not be overwritten with the value from the backup (#5033)
+  * Registration of passkeys during authentication can now directly enable offline usage with the
+    enroll_via_multichallenge_passkey_offline policy (#4259)
+  * Alternative Mode for Push Token: push_mode_code_to_phone. After confirming on their phone, the user is shown a
+    number in the app, which they have to enter in the client/login to complete the authentication (#4907)
+  * HTTP Resolvers (including Keycloak and EntraID) can now handle group memberships mapped to an attribute, similar to the LDAP Resolver (#4880)
+  * The unlock mechanism for the smartphone app can now be set explicitly by policy to PIN or biometrics (#4719)
+  * Emails can optionally be signed with S/MIME (#4288)
+  * The passkey login button for the WebUI login can now be disabled (#4949)
+  * Improved the search options for LDAP resolvers to allow more optimized queries with the API (#4874)
+  * Added tags that can be used in configurable messages of SMS and Email token: `phone_redacted` and
+    `email_redacted` (#4766)
+  * Allow to use attributes of the user as destination for Emails (#3963)
+  * Added functions for token containers to the token janitor (#4033)
+  * Updated SQLAlchemy from 1.4 to 2.0 (#3598)
+  * Hardening: Optionally, a strict Content Security Policy and HTTPS enforcement can be enabled in `pi.cfg` by adding
+    `PI_ENABLE_CSP=True` and `PI_FORCE_HTTPS=True` (#4802)
+  * Hardening: Optionally, the message returned by the server in case of failures can be made unspecific. This is done
+    via policy. Be aware that this alters the response for the corresponding endpoint! (#4739, #4684, #4622)
+
+  Fixes
+  * Corrected the Content-Types for the WebHook Event Handler (#4977)
+  * 'enrollpin' right is enforced more rigorously. If the user does not have the right but tries to set a PIN during
+    enrollment, the enrollment will be denied, instead of silently removing the PIN.
+  * Fixed a bug that would cause errors when writing challenges to Oracle databases (#4969)
+  * Keycloak Resolver will now properly use wildcards (*) (#5057)
+  * Fixed a bug with search_on_enter (webui policy) (#4967)
+  * Fixed a bug where passkey_trigger_by_pin in combination with multiple passkeys for the user, would cause failed
+    authentications (#4951)
+  * Fixed a bug with the passwd resolver where trying to access the token details would cause an error (#4887)
+  * Fixed the interaction of two_step_enrollment and verify_enrollment that would previously cause problems (#3170)
+  * Fixed TLS configuration for machine resolver (#4964)
+  * Verify token enrollment now throws an error for a failed verification (#5056)
+  * Fixed displaying of checkbox to use userstore password for container registration (#5114)
+  * Fixed updating of phone and email settings in the token info during SMS and email token rollover (#5073)
+  * Catch FileNotFoundError for saving firebase sms gateway with invalid config file (#5119)
+
+Version 3.12.2, 2025-12-04
 
   Enhancements:
   * The WebUI Preview is updated to the current development version.

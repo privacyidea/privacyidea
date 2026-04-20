@@ -2,24 +2,18 @@
 @use "table";
 
 .token-table-layout {
-  @include table.table-container-styles;
+  @include styles.main-component-style;
   @include table.base-table-structure(".token-table", ".token-table-filter", ".table-scroll-container");
-  max-height: var(--max-height);
-  max-width: calc(100vw - var(--global-padding) * 5 - 48px);
-  overflow: auto;
-  display: grid;
-}
-
-.selfservice-paginator-container {
-  justify-content: end;
-  display: flex;
-}
-
-.self-service-table-container {
-  overflow-y: auto;
-  max-width: 70.5rem;
 }
 
 .realm-break {
   margin-top: 3px;
+}
+
+.sticky-header {
+  z-index: 120;
+}
+
+::ng-deep .token-table-filter-menu {
+  max-height: 400px;
 }

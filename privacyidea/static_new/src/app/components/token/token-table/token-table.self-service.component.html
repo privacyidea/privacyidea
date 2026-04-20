@@ -17,11 +17,15 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div
+  #scrollContainer
   appScrollToTop
   aria-label="Token Table"
   class="token-table-layout"
   i18n-aria-label>
-  <div class="selfservice-paginator-container">
+  <div #stickySentinel></div>
+  <div
+    #stickyHeader
+    class="filter-paginator-container sticky-header">
     <h3
       class="selfservice-paginator-label"
       i18n>
@@ -31,17 +35,16 @@
       (page)="onPageEvent($event)"
       [length]="totalLength()"
       [pageIndex]="pageIndex()"
+      [pageSizeOptions]="pageSizeOptions()"
       [pageSize]="pageSize()"
-      hidePageSize
       showFirstLastButtons />
   </div>
-  <div class="self-service-table-container">
-    <table
-      [dataSource]="tokenDataSource()"
-      aria-label="Token Data Table"
-      class="token-table"
-      i18n-aria-label
-      mat-table>
+  <table
+    [dataSource]="tokenDataSource()"
+    aria-label="Token Data Table"
+    class="token-table"
+    i18n-aria-label
+    mat-table>
       @for (column of columnKeysMapSelfService(); track column) {
         <ng-container [matColumnDef]="column.key">
           <th
@@ -50,11 +53,13 @@
             mat-header-cell>
             <div class="flex ali-center">
               {{ column.label }}
-              <div class="margin-left-1 flex">
+              <div class="margin-left-16 flex">
                 <button
                   (click)="tableUtilsService.onSortButtonClick(column.key, sort)"
                   class="sort-button"
+                  i18n-matTooltip
                   mat-icon-button
+                  matTooltip="Sort by {{ column.label }}"
                   type="button">
                   <mat-icon>{{ tableUtilsService.getSortIcon(column.key, sort()) }}</mat-icon>
                 </button>
@@ -62,16 +67,15 @@
             </div>
           </th>
           <td
+            class="max-width-300"
             *matCellDef="let element; let row"
             attr.aria-label="{{ column.label }} Cell"
-            mat-cell
-            [ngClass]="{ 'width-18rem': column.key === 'description' }">
-            <div
-              [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
-              <div [ngClass]="tableUtilsService.getChildClassForColumnKey(column.key)">
-                @switch (column.key) {
+            mat-cell>
+    <div
+      [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
+        @switch (column.key) {
                   @case ("serial") {
-                    <div class="flex-row ali-center">
+                    <div class="flex-row flex-nowrap ali-center">
                       <a
                         attr.aria-label="{{ column.label }} Link"
                         (click)="contentService.tokenSelected(element.serial)">
@@ -81,7 +85,7 @@
                     </div>
                   }
                   @case ("container_serial") {
-                    <div class="flex-row ali-center">
+                    <div class="flex-row flex-nowrap ali-center">
                       @if (containerService.containerBelongsToUser(element.container_serial)) {
                         <a
                           attr.aria-label="{{ column.label }} Link"
@@ -157,7 +161,6 @@
                     }
                   }
                 }
-              </div>
             </div>
           </td>
         </ng-container>
@@ -185,5 +188,4 @@
         </td>
       </tr>
     </table>
-  </div>
 </div>

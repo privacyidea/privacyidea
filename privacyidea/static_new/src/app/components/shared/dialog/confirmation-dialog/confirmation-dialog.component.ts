@@ -18,13 +18,13 @@
  **/
 import { Component } from "@angular/core";
 import { DialogWrapperComponent } from "../dialog-wrapper/dialog-wrapper.component";
-import { CommonModule } from "@angular/common";
+
 import { DialogAction } from "../../../../models/dialog";
 import { AbstractDialogComponent } from "../abstract-dialog/abstract-dialog.component";
 
 @Component({
   selector: "app-simple-confirmation-dialog",
-  imports: [DialogWrapperComponent, CommonModule],
+  imports: [DialogWrapperComponent],
   templateUrl: "./confirmation-dialog.component.html",
   styleUrl: "./confirmation-dialog.component.scss"
 })
@@ -37,7 +37,7 @@ import { AbstractDialogComponent } from "../abstract-dialog/abstract-dialog.comp
  * * @see SimpleConfirmationDialogData for required input structure.
  */
 export class SimpleConfirmationDialogComponent extends AbstractDialogComponent<SimpleConfirmationDialogData, boolean> {
-  actions: DialogAction<boolean>[] = [this.data.confirmAction];
+  actions: DialogAction<boolean>[] = [{ ...this.data.confirmAction, primary: this.data.confirmAction.primary ?? true }];
   onAction(value: boolean): void {
     this.close(value);
   }

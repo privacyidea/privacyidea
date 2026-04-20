@@ -50,8 +50,11 @@ export type SmtpServers = {
 export interface SmtpServiceInterface {
   smtpServerResource: HttpResourceRef<PiResponse<SmtpServers> | undefined>;
   readonly smtpServers: Signal<SmtpServer[]>;
+
   postSmtpServer(server: SmtpServer): Promise<void>;
+
   testSmtpServer(params: any): Promise<boolean>;
+
   deleteSmtpServer(identifier: string): Promise<void>;
 }
 
@@ -67,7 +70,7 @@ export class SmtpService implements SmtpServiceInterface {
   readonly http: HttpClient = inject(HttpClient);
 
   readonly smtpServerResource = httpResource<PiResponse<SmtpServers>>(() => {
-    if (!this.contentService.onExternalSmtp()) {
+    if (!this.contentService.onExternalSmtp() && !this.contentService.onConfigurationTokenTypes() && !this.contentService.onConfigurationSystem()) {
       return undefined;
     }
     return {
@@ -78,6 +81,7 @@ export class SmtpService implements SmtpServiceInterface {
   });
 
   readonly smtpServers = computed<SmtpServer[]>(() => {
+    if (!this.smtpServerResource.hasValue()) return [];
     const res = this.smtpServerResource.value();
     const values = res?.result?.value;
     if (values) {

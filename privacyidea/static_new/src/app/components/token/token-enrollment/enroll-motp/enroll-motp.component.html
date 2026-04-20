@@ -17,7 +17,6 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div class="flex-column">
-  <h4 class="enroll-h4">Token Configuration</h4>
   @if (!wizard) {
     <mat-checkbox
       [formControl]="generateOnServerControl"
@@ -25,16 +24,15 @@
       i18n>
       Generate the OTP key on the server and show a QR code to scan.
     </mat-checkbox>
-    <div class="otp-inputs-container">
+    <div class="flex-row gap-16">
       @if (!this.authService.checkForceServerGenerateOTPKey("motp")) {
-        <mat-form-field class="width-33 input-height">
+        <mat-form-field class="input-width-l">
           <mat-label i18n>OTP Key</mat-label>
           <input
-            matInput
             [formControl]="otpKeyFormControl"
             i18n-placeholder
-            placeholder="Enter OTP key"
-            required />
+            matInput
+            placeholder="Enter OTP key" />
           <mat-error i18n>OTP key is <strong>required</strong></mat-error>
         </mat-form-field>
       }
@@ -48,14 +46,12 @@
   <input
     class="hidden-input"
     type="password" />
-  <h4
-    class="enroll-h4"
-    i18n>
+  <h4 i18n>
     mOTP PIN
   </h4>
   <span i18n>The mOTP PIN is the PIN that needs to be entered on the mobile device.</span>
   <div class="motp-pin-input">
-    <mat-form-field class="motp-input">
+    <mat-form-field class="input-width-l">
       <mat-label i18n>Enter Password</mat-label>
       <input
         [formControl]="motpPinControl"
@@ -68,7 +64,7 @@
         <mat-error i18n>Password must be at least 4 characters long</mat-error>
       }
     </mat-form-field>
-    <mat-form-field class="motp-input">
+    <mat-form-field class="input-width-l">
       <mat-label i18n>Repeat Password</mat-label>
       <input
         [formControl]="repeatMotpPinControl"

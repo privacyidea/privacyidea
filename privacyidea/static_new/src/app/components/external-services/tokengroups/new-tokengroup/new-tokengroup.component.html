@@ -16,47 +16,79 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<h2 mat-dialog-title i18n>
-  @if (isEditMode) {
-    Edit Tokengroup {{ data?.groupname }}
-  } @else {
+@if (isEditMode) {
+  <h3
+    class="margin-8 external-service-dialog-title"
+    i18n>
+    Edit Tokengroup
+  </h3>
+} @else {
+  <h3
+    class="margin-8 external-service-dialog-title"
+    i18n>
     Create Tokengroup
-  }
-</h2>
+  </h3>
+}
 
-<mat-dialog-content>
-  <form [formGroup]="tokengroupForm" class="tokengroup-column">
-    <mat-form-field>
-      <mat-label i18n>Identifier</mat-label>
-      <input
-        formControlName="groupname"
-        matInput
-        placeholder="myNewGroup"
-        required />
-      <mat-hint i18n>This is the unique identifying name for this group definition.</mat-hint>
-      @if (tokengroupForm.get('groupname')?.invalid && tokengroupForm.get('groupname')?.touched) {
-        <mat-error i18n>Identifier is <strong>required</strong>.</mat-error>
-      }
-    </mat-form-field>
+<mat-dialog-content class="tokengroup-dialog-content">
+  <form
+    [formGroup]="tokengroupForm"
+    class="tokengroup-form">
 
-    <mat-form-field>
-      <mat-label i18n>Description</mat-label>
-      <input
-        formControlName="description"
-        matInput
-        placeholder="some wise words" />
-    </mat-form-field>
+    <div class="flex-column gap-16">
+      <mat-form-field
+        appearance="fill"
+        class="input-width-l margin-bottom-16">
+        <mat-label i18n>Identifier</mat-label>
+        <app-clearable-input
+          (onClick)="tokengroupForm.get('groupname')?.setValue('')"
+          [showClearButton]="!isEditMode && !!tokengroupForm.get('groupname')?.value">
+          <input
+            formControlName="groupname"
+            matInput
+            placeholder="myNewGroup"
+            required />
+        </app-clearable-input>
+        <mat-hint i18n>This is the unique identifying name for this group definition.</mat-hint>
+        @if (tokengroupForm.get('groupname')?.invalid && tokengroupForm.get('groupname')?.touched) {
+          <mat-error i18n>Identifier is <strong>required</strong>.</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field
+        appearance="fill"
+        class="input-width-xl">
+        <mat-label i18n>Description</mat-label>
+        <app-clearable-input
+          (onClick)="tokengroupForm.get('description')?.setValue('')"
+          [showClearButton]="!!tokengroupForm.get('description')?.value">
+          <input
+            formControlName="description"
+            matInput
+            placeholder="some wise words" />
+        </app-clearable-input>
+      </mat-form-field>
+    </div>
   </form>
 </mat-dialog-content>
 
-<mat-dialog-actions align="end">
-  <button (click)="onCancel()" mat-button i18n>Cancel</button>
+<mat-dialog-actions
+  align="end"
+  class="margin-8 external-service-dialog-actions">
+  <button
+    (click)="onCancel()"
+    class="action-button-secondary button-width-s"
+    i18n
+    mat-button
+    mat-stroked-button>
+    Cancel
+  </button>
   <button
     (click)="save()"
     [disabled]="tokengroupForm.invalid"
-    class="action-button-1 width-238"
-    mat-stroked-button
-    i18n>
+    class="action-button-primary button-width-s"
+    i18n
+    mat-stroked-button>
     <mat-icon>save</mat-icon>
     Save
   </button>

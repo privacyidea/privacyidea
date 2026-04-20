@@ -3,61 +3,16 @@
 @use "@angular/material" as mat;
 
 .token-enrollment-container {
-  @include table.table-container-styles;
-  width: 56rem;
-  max-height: var(--max-height);
-  overflow: auto;
+  @include styles.main-component-style;
   display: grid;
 }
 
-.token-type-hint {
-  width: 473px;
-  margin-top: 8px;
-  font-size: 1rem;
+.type-select {
+  width: 616px;
 }
 
-.h4-container {
-  display: flex;
-  flex-direction: row;
+@media (max-width: 1040px) {
+  .type-select {
+    width: 100%;
+  }
 }
-
-.date-picker {
-  width: 40%;
-  margin: 0 0 16px 16px;
-}
-
-.time-picker {
-  width: 20%;
-  margin: 0 0 16px 16px;
-}
-
-.zone-picker {
-  width: 30%;
-  margin: 0 0 16px 32px;
-}
-
-h5 {
-  margin: 0 0 0 16px;
-}
-
-.width-47 {
-  width: 47%;
-}
-
-.wizard-top-div {
-  margin-top: 16px;
-}
-
-.description-form {
-  width: 100%;
-  margin-top: 16px;
-  margin-bottom: 16px;
-}
-
-.select-token-type-container {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  flex: 2;
-}
-

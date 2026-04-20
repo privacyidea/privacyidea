@@ -17,7 +17,6 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div class="flex-column">
-  <h4 class="enroll-h4">Token Configuration</h4>
   <mat-button-toggle-group
     [formControl]="intentionToggleControl"
     [hideSingleSelectionIndicator]="true"
@@ -39,10 +38,10 @@
     </mat-button-toggle>
   </mat-button-toggle-group>
   <div class="flex-row gap-16">
-    <mat-form-field class="width-33">
+    <mat-form-field class="input-width-l">
       <mat-label i18n>CA Connector</mat-label>
       <mat-select
-        [errorStateMatcher]="caConnectorErrorStateMatcher"
+        [errorStateMatcher]="certificateErrorStateMatcher"
         [formControl]="caConnectorControl"
         [value]="caConnectorControl.value"
         required>
@@ -52,52 +51,62 @@
       </mat-select>
       <mat-error i18n>CA Connector is <strong>required</strong></mat-error>
     </mat-form-field>
-    <mat-form-field class="width-33">
+    <mat-form-field class="input-width-l">
       <mat-label i18n>Certificate Template</mat-label>
       <mat-select
+        [errorStateMatcher]="certificateErrorStateMatcher"
         [formControl]="certTemplateControl"
-        [value]="certTemplateControl.value">
+        [value]="certTemplateControl.value"
+        required>
         @for (option of certTemplateOptions(); track option) {
           <mat-option [value]="option">{{ option }}</mat-option>
         }
       </mat-select>
+      <mat-error i18n>Certificate Template is <strong>required</strong></mat-error>
       @if (certTemplateControl.value) {
         <app-clear-button
-          matSuffix
-          (onClick)="clearTemplateSelection()"></app-clear-button>
+          (onClick)="clearTemplateSelection()"
+          matSuffix></app-clear-button>
       }
     </mat-form-field>
-    <span class="width-33"></span>
+    <span class="input-width-l"></span>
   </div>
   @switch (intentionToggleControl.value) {
     @case ("generate") {
       <span
-        i18n
-        class="margin-bottom-16">
-        The server will create the private RSA key and store it in the database. <br />
-        You can later download the PKCS#12 file.</span
-      >
+        class="margin-bottom-16"
+        i18n>
+ The server will create the private RSA key and store it in the database. <br />
+ You can later download the PKCS#12 file.</span>
     }
     @case ("uploadRequest") {
-      <mat-form-field class="width-66">
+      <mat-form-field
+        class="width-100">
         <mat-label i18n> Certificate Signing Request (PEM)</mat-label>
         <textarea
+          [errorStateMatcher]="certificateErrorStateMatcher"
           [formControl]="pemControl"
-          matInput
           i18n-placeholder
+          matInput
           placeholder="Paste the Certificate Signing Request here"
+          required
           rows="3"></textarea>
+        <mat-error i18n>Certificate Signing Request is <strong>required</strong></mat-error>
       </mat-form-field>
     }
     @case ("uploadCert") {
-      <mat-form-field class="width-66">
+      <mat-form-field
+        class="width-100">
         <mat-label i18n> Certificate (PEM)</mat-label>
         <textarea
+          [errorStateMatcher]="certificateErrorStateMatcher"
           [formControl]="pemControl"
-          matInput
           i18n-placeholder
+          matInput
           placeholder="Paste the Certificate here"
+          required
           rows="3"></textarea>
+        <mat-error i18n>Certificate is <strong>required</strong></mat-error>
       </mat-form-field>
     }
   }

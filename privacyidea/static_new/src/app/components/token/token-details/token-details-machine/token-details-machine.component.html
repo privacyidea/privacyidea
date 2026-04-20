@@ -18,10 +18,7 @@
 -->
 @for (machine of machineData(); track machine.id) {
   <div
-    [ngClass]="{
-      'pad-0': overflowService.isWidthOverflowing('body', 1310)
-    }"
-    class="info-container">
+    class="info-container responsive-pad-0-1310">
     <span
       class="info-title details-key-row"
       i18n>
@@ -36,7 +33,7 @@
       <ng-container matColumnDef="value">
         <td
           *matCellDef="let machine"
-          class="height-52 fix-width-20-padr-0"
+          class="height-52"
           mat-cell>
           <div class="info-value-container">
             <mat-list>

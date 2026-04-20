@@ -106,12 +106,28 @@ describe("ResolverService", () => {
       resolver1,
       resolver2
     });
-    TestBed.flushEffects();
+    TestBed.tick();
     const req = httpMock.expectOne(resolverService.resolverBaseUrl);
     expect(req.request.method).toBe("GET");
     req.flush(mockResponse);
     await lastValueFrom(of({})); // Wait for async updates
+    expect(resolverService.resolverResourceValue()).toEqual({ resolver1, resolver2 });
     expect(resolverService.resolvers()).toEqual([resolver1, resolver2]);
+  });
+
+  it("should handle http error of resolverResource", async () => {
+    TestBed.tick();
+    const req = httpMock.expectOne(resolverService.resolverBaseUrl);
+    expect(req.request.method).toBe("GET");
+    req.flush(MockPiResponse.fromError({ message: "Permission denied" }), {
+        status: 403, statusText: "Permission denied"
+      });
+    await lastValueFrom(of({})); // Wait for async updates
+
+    expect(resolverService.resolverResourceValue()).toEqual({});
+    expect(resolverService.resolvers()).toEqual([]);
+    expect(resolverService.resolverOptions()).toEqual([]);
+    expect(resolverService.editableResolvers()).toEqual([]);
   });
 
   it("should get resolver options", async () => {
@@ -131,7 +147,7 @@ describe("ResolverService", () => {
       resolver1,
       resolver2
     });
-    TestBed.flushEffects();
+    TestBed.tick();
     const req = httpMock.expectOne(resolverService.resolverBaseUrl);
     expect(req.request.method).toBe("GET");
     req.flush(mockResponse);
@@ -149,13 +165,13 @@ describe("ResolverService", () => {
       sql1: { data: {}, type: "sqlresolver" }
     };
     const mockResponse = MockPiResponse.fromValue(mockResolvers);
-    TestBed.flushEffects();
+    TestBed.tick();
     const req = httpMock.expectOne(resolverService.resolverBaseUrl);
     expect(req.request.method).toBe("GET");
     req.flush(mockResponse);
     await lastValueFrom(of({})); // Wait for async updates
 
-    TestBed.flushEffects && TestBed.flushEffects();
+    TestBed.tick();
     expect(resolverService.editableResolvers()).toEqual(["ldap1", "ldap2", "ldap3"]);
   });
 
@@ -167,7 +183,7 @@ describe("ResolverService", () => {
       (resolverService as any).selectedResolverName.set("ldap1");
       const mockResponse = MockPiResponse.fromValue(mockResolvers);
 
-      TestBed.flushEffects();
+      TestBed.tick();
       httpMock.expectOne(resolverService.resolverBaseUrl); // accept initial load of all resolvers;
       const req = httpMock.expectOne(resolverService.resolverBaseUrl + "ldap1");
       expect(req.request.method).toBe("GET");
@@ -184,7 +200,7 @@ describe("ResolverService", () => {
       (resolverService as any).selectedResolverName.set("ldap1");
       const mockResponse = MockPiResponse.fromValue(mockResolvers);
 
-      TestBed.flushEffects();
+      TestBed.tick();
       httpMock.expectOne(resolverService.resolverBaseUrl); // accept initial load of all resolvers;
       const req = httpMock.expectOne(resolverService.resolverBaseUrl + "ldap1");
       expect(req.request.method).toBe("GET");
@@ -201,7 +217,7 @@ describe("ResolverService", () => {
       const mockResponse = MockPiResponse.fromValue(mockResolvers);
       (resolverService as any).selectedResolverName.set("sql1");
 
-      TestBed.flushEffects();
+      TestBed.tick();
       httpMock.expectOne(resolverService.resolverBaseUrl); // accept initial load of all resolvers;
       const req = httpMock.expectOne(resolverService.resolverBaseUrl + "sql1");
       expect(req.request.method).toBe("GET");
@@ -226,7 +242,7 @@ describe("ResolverService", () => {
       const mockResponse = MockPiResponse.fromValue(mockResolvers);
       (resolverService as any).selectedResolverName.set("http1");
 
-      TestBed.flushEffects();
+      TestBed.tick();
       httpMock.expectOne(resolverService.resolverBaseUrl); // accept initial load of all resolvers;
       const req = httpMock.expectOne(resolverService.resolverBaseUrl + "http1");
       expect(req.request.method).toBe("GET");

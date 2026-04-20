@@ -2639,7 +2639,7 @@ class APIContainer(APIContainerTest):
         self.request_assert_error(400, f'/container/{container_serial}/assign',
                                   payload, self.at, 'POST',
                                   error_code=905,
-                                  error_message="ERR905: Missing parameter: 'user'")
+                                  error_message="ERR905: Missing parameter: user")
 
         delete_container_by_serial(container_serial)
 
@@ -2935,7 +2935,7 @@ class APIContainer(APIContainerTest):
         self.request_assert_error(400, f'/container/{container_serial}/realms',
                                   {}, self.at, 'POST',
                                   error_code=905,
-                                  error_message="ERR905: Missing parameter: 'realms'")
+                                  error_message="ERR905: Missing parameter: realms")
 
         # Set non-existing realm
         payload = {"realms": "nonexistingrealm"}
@@ -2974,13 +2974,13 @@ class APIContainer(APIContainerTest):
         self.request_assert_error(400, f'/container/{container_serial}/description',
                                   {}, self.at, 'POST',
                                   error_code=905,
-                                  error_message="ERR905: Missing parameter: 'description'")
+                                  error_message="ERR905: Missing parameter: description")
 
         # Description parameter is None
         self.request_assert_error(400, f'/container/{container_serial}/description',
                                   {"description": None}, self.at, 'POST',
                                   error_code=905,
-                                  error_message="ERR905: Missing parameter: 'description'")
+                                  error_message="ERR905: Missing parameter: description")
 
         # Missing container serial
         self.request_assert_405('/container/description', {"description": "new description"},
@@ -3011,7 +3011,7 @@ class APIContainer(APIContainerTest):
         self.request_assert_error(400, f'/container/{container_serial}/states',
                                   {}, self.at, 'POST',
                                   error_code=905,
-                                  error_message="ERR905: Missing parameter: 'states'")
+                                  error_message="ERR905: Missing parameter: states")
 
         # Missing container serial
         self.request_assert_405('/container/states', {"states": "active,damaged,lost"},
@@ -3044,7 +3044,7 @@ class APIContainer(APIContainerTest):
         self.request_assert_error(400, f'/container/{container_serial}/info/key1',
                                   {}, self.at, 'POST',
                                   error_code=905,
-                                  error_message="ERR905: Missing parameter: 'value'")
+                                  error_message="ERR905: Missing parameter: value")
 
         # Missing container serial
         self.request_assert_404_no_result('/container/info/key1', {"value": "value1"}, self.at, 'POST')
@@ -3537,7 +3537,7 @@ class APIContainerSynchronization(APIContainerTest):
         self.request_assert_error(400, 'container/register/initialize',
                                   {}, self.at, 'POST',
                                   error_code=905,
-                                  error_message="ERR905: Missing parameter: 'container_serial'")
+                                  error_message="ERR905: Missing parameter: container_serial")
 
         # Invalid container serial
         self.request_assert_error(404, 'container/register/initialize',
@@ -3551,7 +3551,7 @@ class APIContainerSynchronization(APIContainerTest):
         self.request_assert_error(400, 'container/register/finalize',
                                   {"device_brand": "LG", "device_model": "ABC123"}, None, 'POST',
                                   error_code=905,
-                                  error_message="ERR905: Missing parameter: 'container_serial'",
+                                  error_message="ERR905: Missing parameter: container_serial",
                                   try_unspecific=False)
 
         # Invalid container serial

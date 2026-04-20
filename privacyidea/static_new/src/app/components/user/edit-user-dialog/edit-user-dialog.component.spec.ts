@@ -24,12 +24,13 @@ import { UserService } from "../../../services/user/user.service";
 import { MockUserService } from "../../../../testing/mock-services";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { provideHttpClient } from "@angular/common/http";
+import { MockMatDialogRef } from "../../../../testing/mock-mat-dialog-ref";
 
 describe("EditUserDialogComponent", () => {
   let component: EditUserDialogComponent;
   let fixture: ComponentFixture<EditUserDialogComponent>;
   let mockUserService: MockUserService;
-  let dialogRef: { close: jest.Mock };
+  let dialogRefMock: MockMatDialogRef<any, any>;
 
   const testUserData = {
     username: "edituser",
@@ -45,18 +46,18 @@ describe("EditUserDialogComponent", () => {
   };
 
   beforeEach(async () => {
-    dialogRef = { close: jest.fn() };
     await TestBed.configureTestingModule({
       imports: [EditUserDialogComponent],
       providers: [
         provideHttpClient(),
         { provide: UserService, useClass: MockUserService },
         { provide: MAT_DIALOG_DATA, useValue: testUserData },
-        { provide: MatDialogRef, useValue: dialogRef }
+        { provide: MatDialogRef, useClass: MockMatDialogRef }
       ]
     }).compileComponents();
 
     mockUserService = TestBed.inject(UserService) as unknown as MockUserService;
+    dialogRefMock = TestBed.inject(MatDialogRef) as unknown as MockMatDialogRef<any, any>;
 
     fixture = TestBed.createComponent(EditUserDialogComponent);
     component = fixture.componentInstance;
@@ -86,7 +87,10 @@ describe("EditUserDialogComponent", () => {
       subscribe: ({ next }: any) => next(true)
     });
     component.save();
-    expect(mockUserService.editUser).toHaveBeenCalledWith("editresolver", expect.objectContaining({ username: "edituser" }));
+    expect(mockUserService.editUser).toHaveBeenCalledWith(
+      "editresolver",
+      expect.objectContaining({ username: "edituser" })
+    );
   });
 
   it("should call save always with input username", () => {
@@ -95,7 +99,10 @@ describe("EditUserDialogComponent", () => {
     });
     component.editedUserData.set({ ...component.editedUserData(), username: "" });
     component.save();
-    expect(mockUserService.editUser).toHaveBeenCalledWith("editresolver", expect.objectContaining({ username: "edituser" }));
+    expect(mockUserService.editUser).toHaveBeenCalledWith(
+      "editresolver",
+      expect.objectContaining({ username: "edituser" })
+    );
   });
 
   it("should reload userResource and close dialog on successful edit", () => {
@@ -111,6 +118,8 @@ describe("EditUserDialogComponent", () => {
     mockUserService.editUser.mockReturnValue({
       subscribe: ({ next }: any) => next(false)
     });
+    dialogRefMock.close.mockClear();
+
     component.save();
     expect(mockUserService.userResource.reload).not.toHaveBeenCalled();
     expect(component.dialogRef.close).not.toHaveBeenCalled();

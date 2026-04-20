@@ -22,7 +22,8 @@ This endpoint is used fetch monitoring/statistics data
 The code of this module is tested in tests/test_api_monitoring.py
 """
 from flask import (Blueprint, request)
-from privacyidea.api.lib.utils import getParam, send_result
+from privacyidea.api.lib.utils import send_result
+from privacyidea.lib.params import get_optional
 from privacyidea.api.lib.prepolicy import prepolicy, check_base_action
 from privacyidea.lib.utils import parse_legacy_time
 from privacyidea.lib.log import log_with
@@ -58,10 +59,10 @@ def get_statistics(stats_key=None):
         return send_result(stats_keys)
     else:
         param = request.all_data
-        start = getParam(param, "start")
+        start = get_optional(param, "start")
         if start:
             start = parse_legacy_time(start, return_date=True)
-        end = getParam(param, "end")
+        end = get_optional(param, "end")
         if end:
             end = parse_legacy_time(end, return_date=True)
         values = get_values(stats_key=stats_key, start_timestamp=start, end_timestamp=end)
@@ -87,10 +88,10 @@ def delete_statistics(stats_key):
     You can specify the dates like 2010-12-31 22:00+0200
     """
     param = request.all_data
-    start = getParam(param, "start")
+    start = get_optional(param, "start")
     if start:
         start = parse_legacy_time(start, return_date=True)
-    end = getParam(param, "end")
+    end = get_optional(param, "end")
     if end:
         end = parse_legacy_time(end, return_date=True)
     r = delete_stats(stats_key, start, end)

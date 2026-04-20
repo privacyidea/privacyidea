@@ -26,10 +26,8 @@ The code of this module is tested in tests/test_api_machineresolver.py
 """
 from flask import (Blueprint,
                    request)
-from .lib.utils import (getParam,
-                        optional,
-                        required,
-                        send_result)
+from .lib.utils import (send_result)
+from ..lib.params import get_optional, get_required
 from ..lib.log import log_with
 from ..lib.machineresolver import (get_resolver_list, save_resolver, delete_resolver,
                            pretestresolver)
@@ -53,7 +51,7 @@ def get_resolvers():
 
     :param type: Only return resolvers of type (like "hosts"...)
     """
-    typ = getParam(request.all_data, "type", optional)
+    typ = get_optional(request.all_data, "type")
     res = get_resolver_list(filter_resolver_type=typ)
     g.audit_object.log({"success": True})
     return send_result(res)
@@ -138,7 +136,7 @@ def test_resolver():
     :return: a json result with bool
     """
     param = request.all_data
-    rtype = getParam(param, "type", required)
+    rtype = get_required(param, "type")
     success, desc = pretestresolver(rtype, param)
     return send_result(success, details={"description": desc})
 

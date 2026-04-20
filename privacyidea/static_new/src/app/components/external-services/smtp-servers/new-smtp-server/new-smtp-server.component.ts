@@ -25,7 +25,7 @@ import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatButtonModule } from "@angular/material/button";
-import { CommonModule } from "@angular/common";
+
 import { MatIconModule } from "@angular/material/icon";
 import { MatTooltip } from "@angular/material/tooltip";
 import { ROUTE_PATHS } from "../../../../route_paths";
@@ -34,12 +34,17 @@ import { ContentService, ContentServiceInterface } from "../../../../services/co
 import { PendingChangesService } from "../../../../services/pending-changes/pending-changes.service";
 import { DialogService, DialogServiceInterface } from "../../../../services/dialog/dialog.service";
 import { SaveAndExitDialogComponent } from "../../../shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
+import { ClearableInputComponent } from "../../../shared/clearable-input/clearable-input.component";
+import { MatDivider } from "@angular/material/list";
+import { NAVIGATION_ACCESSIBLE_DIALOG_CLASS } from "../../../../constants/global.constants";
 
 @Component({
   selector: "app-smtp-edit-dialog",
   standalone: true,
+  host: {
+    class: NAVIGATION_ACCESSIBLE_DIALOG_CLASS
+  },
   imports: [
-    CommonModule,
     ReactiveFormsModule,
     MatDialogModule,
     MatFormFieldModule,
@@ -47,7 +52,9 @@ import { SaveAndExitDialogComponent } from "../../../shared/dialog/save-and-exit
     MatCheckboxModule,
     MatButtonModule,
     MatIconModule,
-    MatTooltip
+    MatTooltip,
+    ClearableInputComponent,
+    MatDivider
   ],
   templateUrl: "./new-smtp-server.component.html",
   styleUrl: "./new-smtp-server.component.scss"
@@ -81,6 +88,7 @@ export class NewSmtpServerComponent implements OnInit, OnDestroy {
 
     this.pendingChangesService.registerHasChanges(() => this.hasChanges);
     this.pendingChangesService.registerSave(() => this.save());
+    this.pendingChangesService.registerValidChanges(() => this.canSave);
 
     effect(() => {
       if (!this.contentService.routeUrl().startsWith(ROUTE_PATHS.EXTERNAL_SERVICES_SMTP)) {
@@ -100,6 +108,8 @@ export class NewSmtpServerComponent implements OnInit, OnDestroy {
   get showTLS(): boolean {
     return !this.smtpForm.get("server")?.value?.toLowerCase().startsWith("smtps:");
   }
+
+  initialPrivateKeyPassword = this.data?.private_key_password || "";
 
   ngOnInit(): void {
     this.isEditMode = !!this.data;
@@ -128,16 +138,27 @@ export class NewSmtpServerComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.pendingChangesService.unregisterHasChanges();
+    this.pendingChangesService.clearAllRegistrations();
   }
 
-  async save(): Promise<void> {
-    if (this.smtpForm.valid) {
-      const server: SmtpServer = {
-        ...this.smtpForm.getRawValue()
-      };
+  async save(): Promise<boolean> {
+    if (this.smtpForm.invalid) {
+      return false;
+    }
+    const server: SmtpServer = {
+      ...this.smtpForm.getRawValue()
+    };
+
+    if (server.private_key_password === this.initialPrivateKeyPassword) {
+      delete server.private_key_password;
+    }
+
+    try {
       await this.smtpService.postSmtpServer(server);
       this.dialogRef.close(true);
+      return true;
+    } catch (error) {
+      return false;
     }
   }
 
@@ -163,12 +184,13 @@ export class NewSmtpServerComponent implements OnInit, OnDestroy {
         .afterClosed()
         .subscribe(async (result) => {
           if (result === "discard") {
-            this.pendingChangesService.unregisterHasChanges();
+            this.pendingChangesService.clearAllRegistrations();
             this.closeCurrent();
           } else if (result === "save-exit") {
             if (!this.canSave) return;
-            await this.pendingChangesService.save();
-            this.pendingChangesService.unregisterHasChanges();
+            const success = await this.pendingChangesService.save();
+            if (!success) return;
+            this.pendingChangesService.clearAllRegistrations();
             this.closeCurrent();
           }
         });

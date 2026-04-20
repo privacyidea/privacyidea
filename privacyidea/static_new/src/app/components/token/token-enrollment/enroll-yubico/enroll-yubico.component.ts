@@ -19,9 +19,8 @@
 import { Component, computed, effect, EventEmitter, inject, input, OnInit, Output } from "@angular/core";
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { ErrorStateMatcher } from "@angular/material/core";
-import { MatFormField, MatLabel } from "@angular/material/form-field";
+import { MatFormField, MatLabel, MatError } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
-import { MatError } from "@angular/material/select";
 import { SystemService, SystemServiceInterface } from "../../../../services/system/system.service";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 
@@ -36,6 +35,7 @@ import {
 import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
 import { ROUTE_PATHS } from "../../../../route_paths";
 import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
+import { YUBICO_ID, YUBICO_SECRET, YUBICO_URL } from "../../../../constants/token.constants";
 
 export interface YubicoEnrollmentOptions extends TokenEnrollmentData {
   type: "yubico";
@@ -88,8 +88,9 @@ export class EnrollYubicoComponent implements OnInit {
   });
 
   yubicoIsConfigured = computed(() => {
+    if (!this.systemService.systemConfigResource.hasValue()) return false;
     const cfg = this.systemService.systemConfigResource.value()?.result?.value;
-    return !!(cfg?.["yubico.id"] && cfg?.["yubico.url"] && cfg?.["yubico.secret"]);
+    return !!(cfg?.[YUBICO_ID] && cfg?.[YUBICO_URL] && cfg?.[YUBICO_SECRET]);
   });
 
   constructor() {

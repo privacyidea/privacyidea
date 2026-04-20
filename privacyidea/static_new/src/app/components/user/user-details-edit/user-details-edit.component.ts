@@ -17,7 +17,17 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import {Component, computed, effect, inject, input, linkedSignal, output, signal, WritableSignal} from "@angular/core";
+import {
+  Component,
+  computed,
+  effect,
+  inject,
+  input,
+  linkedSignal,
+  output,
+  signal,
+  WritableSignal
+} from "@angular/core";
 import { EditUserData, UserData } from "../../../services/user/user.service";
 import { ResolverService, ResolverServiceInterface } from "../../../services/resolver/resolver.service";
 import { MatInput } from "@angular/material/input";
@@ -25,11 +35,7 @@ import { MatFormField, MatLabel } from "@angular/material/form-field";
 
 @Component({
   selector: "app-user-details-edit",
-  imports: [
-    MatFormField,
-    MatInput,
-    MatLabel
-  ],
+  imports: [MatFormField, MatInput, MatLabel],
   templateUrl: "./user-details-edit.component.html",
   styleUrl: "./user-details-edit.component.scss"
 })
@@ -57,7 +63,7 @@ export class UserDetailsEditComponent {
   attributes = computed(() => {
     const attributes = this.resolverService.userAttributes();
     // Remove 'username' and 'userid' from the list of attributes
-    return attributes.filter(attribute => attribute !== "username" && attribute !== "userid");
+    return attributes.filter((attribute) => attribute !== "username" && attribute !== "userid");
   });
 
   constructor() {

@@ -18,7 +18,6 @@
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
-import { EnrollHotpComponent, HOTP_HASHLIB, HOTP_OTP_LENGTH } from "./enroll-hotp.component";
 
 import { TokenService } from "../../../../services/token/token.service";
 import { AuthService } from "../../../../services/auth/auth.service";
@@ -26,7 +25,8 @@ import { HotpApiPayloadMapper } from "../../../../mappers/token-api-payload/hotp
 import { MockSystemService, MockTokenService } from "../../../../../testing/mock-services";
 import { MockAuthService } from "../../../../../testing/mock-services/mock-auth-service";
 import { SystemService } from "../../../../services/system/system.service";
-import { TOTP_HASHLIB, TOTP_TIME_STEP } from "@components/token/token-enrollment/enroll-totp/enroll-totp.component";
+import { HOTP_HASHLIB, HOTP_OTP_LENGTH, TOTP_HASHLIB, TOTP_TIME_STEP } from "../../../../constants/token.constants";
+import { EnrollHotpComponent } from "@components/token/token-enrollment/enroll-hotp/enroll-hotp.component";
 
 describe("EnrollHotpComponent", () => {
   let component: EnrollHotpComponent;
@@ -77,6 +77,25 @@ describe("EnrollHotpComponent", () => {
 
   it("Check default values are set correctly on init", () => {
     createAndInit();
+
+    expect(component.generateOnServerFormControl.value).toBe(true);
+    expect(component.generateOnServerFormControl.disabled).toBe(false);
+    expect(component.otpKeyFormControl.value).toEqual("");
+    expect(component.otpKeyFormControl.disabled).toBe(true);
+    expect(component.otpLengthFormControl.value).toBe(6);
+    expect(component.otpLengthFormControl.disabled).toBe(false);
+    expect(component.hashAlgorithmFormControl.value).toBe("sha1");
+    expect(component.hashAlgorithmFormControl.disabled).toBe(false);
+  });
+
+  it("Default values are also set correctly if config contains empty strings", () => {
+    createAndInit();
+    const mockConfig = { [HOTP_HASHLIB]: "" };
+    systemService.systemConfig.set(mockConfig);
+
+    fixture = TestBed.createComponent(EnrollHotpComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
 
     expect(component.generateOnServerFormControl.value).toBe(true);
     expect(component.generateOnServerFormControl.disabled).toBe(false);
@@ -139,7 +158,7 @@ describe("EnrollHotpComponent", () => {
     (TestBed.inject(AuthService) as unknown as MockAuthService).checkForceServerGenerateOTPKey.mockReturnValue(true);
     createAndInit();
     fixture.detectChanges();
-    TestBed.flushEffects();
+    TestBed.tick();
     fixture.detectChanges();
 
     expect(component.generateOnServerFormControl.disabled).toBe(true);
@@ -169,7 +188,7 @@ describe("EnrollHotpComponent", () => {
     (TestBed.inject(AuthService) as unknown as MockAuthService).check2Step.mockReturnValue("force");
     createAndInit();
     fixture.detectChanges();
-    TestBed.flushEffects();
+    TestBed.tick();
     fixture.detectChanges();
 
     // 2-step checkbox should be present
@@ -190,7 +209,7 @@ describe("EnrollHotpComponent", () => {
     (TestBed.inject(AuthService) as unknown as MockAuthService).check2Step.mockReturnValue("allow");
     createAndInit();
     fixture.detectChanges();
-    TestBed.flushEffects();
+    TestBed.tick();
     fixture.detectChanges();
 
     // 2-step checkbox should be present
@@ -211,7 +230,7 @@ describe("EnrollHotpComponent", () => {
     (TestBed.inject(AuthService) as unknown as MockAuthService).check2Step.mockReturnValue("allow");
     createAndInit();
     fixture.detectChanges();
-    TestBed.flushEffects();
+    TestBed.tick();
     fixture.detectChanges();
 
     // Set OTP Key
@@ -240,7 +259,7 @@ describe("EnrollHotpComponent", () => {
     (TestBed.inject(AuthService) as unknown as MockAuthService).check2Step.mockReturnValue("disabled");
     createAndInit();
     fixture.detectChanges();
-    TestBed.flushEffects();
+    TestBed.tick();
     fixture.detectChanges();
 
     // 2-step checkbox should NOT be present

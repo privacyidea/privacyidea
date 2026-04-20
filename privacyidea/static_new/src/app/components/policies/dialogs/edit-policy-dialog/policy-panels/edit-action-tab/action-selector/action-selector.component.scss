@@ -2,6 +2,20 @@
   display: flex;
   flex-direction: column;
   gap: var(--global-gap);
+  background-color: transparent;
+  box-shadow: none;
+  padding: 0;
+
+  ::ng-deep mat-expansion-panel.mat-expansion-panel {
+    background-color: transparent !important;
+    border: 1px solid var(--mat-sys-outline-variant);
+    box-shadow: none !important;
+  }
+  ::ng-deep mat-expansion-panel.mat-expansion-panel-header {
+    padding: var(--half-global-padding) var(--three-quarters-global-padding) !important;
+    height: 1rem;
+    background-color: transparent !important;
+  }
 }
 
 .search-input {
@@ -24,14 +38,12 @@
   display: flex;
   flex-direction: column;
   gap: var(--half-global-gap);
-  overflow-y: none;
 }
 
 .policy-action-items {
   flex: 1;
   overflow: auto;
   overflow-x: hidden;
-  overflow-y: auto;
 }
 
 .policy-action-item-selected {
@@ -46,4 +58,33 @@
   flex-direction: column;
   gap: calc(var(--global-gap) / 4);
   justify-content: center;
+}
+
+.panel-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--global-gap);
+}
+
+.selectors-container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--half-global-gap);
+}
+
+.selector-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--global-gap);
+
+  .selector-label {
+    min-width: 60px;
+    font-weight: 500;
+    margin: 0;
+  }
+
+  .flex-1 {
+    flex: 1;
+  }
 }

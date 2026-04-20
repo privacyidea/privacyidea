@@ -20,7 +20,6 @@ import logging
 import traceback
 from dataclasses import dataclass
 from enum import Enum
-from typing import Union, Optional
 
 from werkzeug.datastructures import EnvironHeaders
 
@@ -311,7 +310,7 @@ class PolicyConditionClass:
             raise PolicyError(f"Unknown handle missing data {self.handle_missing_data} defined in condition of "
                               f"policy {policy_name}.")
 
-    def get_token_data(self, serial: Union[str, None]) -> ConditionSectionData:
+    def get_token_data(self, serial: str | None) -> ConditionSectionData:
         """
         Get the token data for the condition.
 
@@ -342,7 +341,7 @@ class PolicyConditionClass:
                     data.available_keys = list(token_info.keys())
         return data
 
-    def get_container_data(self, container_serial: Union[str, None]) -> ConditionSectionData:
+    def get_container_data(self, container_serial: str | None) -> ConditionSectionData:
         """
         Get the container data for the condition.
 
@@ -373,7 +372,7 @@ class PolicyConditionClass:
                     data.available_keys = list(container_info.keys())
         return data
 
-    def get_user_data(self, user: Union[User, None]) -> ConditionSectionData:
+    def get_user_data(self, user: User | None) -> ConditionSectionData:
         """
         Get the user data for the condition.
 
@@ -389,7 +388,7 @@ class PolicyConditionClass:
                 data.available_keys = user.available_info_keys
         return data
 
-    def get_request_header_data(self, request_header: Union[EnvironHeaders, None]) -> ConditionSectionData:
+    def get_request_header_data(self, request_header: EnvironHeaders | None) -> ConditionSectionData:
         """
         Get the request header data for the condition.
 
@@ -411,7 +410,7 @@ class PolicyConditionClass:
                     data.available_keys = list(request_environment.keys())
         return data
 
-    def get_data_from_dict(self, dictionary: Optional[dict]) -> ConditionSectionData:
+    def get_data_from_dict(self, dictionary: dict | None) -> ConditionSectionData:
         """
         Get the value from the request data for the condition.
 
@@ -427,9 +426,9 @@ class PolicyConditionClass:
                 data.available_keys = list(dictionary.keys())
         return data
 
-    def match(self, policy_name: str, user: Union[User, None], serial: Union[str, None],
-              request_header: Union[EnvironHeaders, None], container_serial: Union[str, None] = None,
-              request_data: Optional[dict] = None) -> bool:
+    def match(self, policy_name: str, user: User | None, serial: str | None,
+              request_header: EnvironHeaders | None, container_serial: str | None = None,
+              request_data: dict | None = None) -> bool:
         """
         Check if the condition matches the given user, token, or request header.
 

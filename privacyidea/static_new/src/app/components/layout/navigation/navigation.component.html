@@ -1,5 +1,5 @@
 <!--
- (c) NetKnights GmbH 2025,  https://netknights.it
+ (c) NetKnights GmbH 2026,  https://netknights.it
 
  This code is free software; you can redistribute it and/or
  modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -17,11 +17,6 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div class="drawer-div">
-  <div
-    class="preview"
-    i18n>
-    Beta
-  </div>
   <div class="brand">
     @if (customLogo()) {
       <a
@@ -40,23 +35,38 @@
           sizes="(max-width: 307px) 100vw, 307px"
           width="307" />
       </a>
+
+      <h4
+        class="preview"
+        i18n>
+        Beta
+      </h4>
     } @else {
-      <a
-        [routerLink]="[ROUTE_PATHS.TOKENS]"
-        aria-label="Go to Token Overview"
-        class="clickable-logo">
-        <img
-          alt="logo"
-          aria-label="Logo"
-          class="logo"
-          height="307"
-          i18n-alt
-          i18n-aria-label
-          ngSrc="assets/privacyIDEA1.png"
-          ngSrcset="1x"
-          sizes="(max-width: 307px) 100vw, 307px"
-          width="307" />
-      </a>
+      <div class="brand-row">
+        <a
+          [routerLink]="[ROUTE_PATHS.TOKENS]"
+          aria-label="Go to Token Overview"
+          class="clickable-logo">
+          <img
+            alt="logo"
+            aria-label="Logo"
+            class="logo"
+            height="307"
+            i18n-alt
+            i18n-aria-label
+            ngSrc="assets/privacyIDEA1.png"
+            ngSrcset="1x"
+            sizes="(max-width: 307px) 100vw, 307px"
+            width="307" />
+        </a>
+
+        <h4
+          class="preview"
+          i18n>
+          Beta
+        </h4>
+      </div>
+
       <a
         [routerLink]="[ROUTE_PATHS.TOKENS]"
         aria-label="Go to Token Overview"
@@ -204,7 +214,7 @@
             i18n
             mat-stroked-button>
             <mat-icon>policy</mat-icon>
-            Get Serial
+            Find Token
           </button>
         </mat-list-item>
       </mat-list>
@@ -316,8 +326,6 @@
         <mat-list-item>
           <button
             [ngClass]="contentService.routeUrl() === ROUTE_PATHS.USERS_REALMS ? 'card-button-active' : 'card-button-1'"
-            [ngClass]="contentService.routeUrl() === ROUTE_PATHS.USERS_REALMS ?
-                  'card-button-active' : 'card-button-1'"
             [routerLink]="[ROUTE_PATHS.USERS_REALMS]"
             mat-stroked-button>
             <mat-icon>public</mat-icon>

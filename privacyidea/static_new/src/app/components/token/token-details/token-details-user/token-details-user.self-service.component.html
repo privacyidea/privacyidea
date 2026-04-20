@@ -17,11 +17,7 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div
-  [ngClass]="{
-    'pad-0': overflowService.isWidthOverflowing('body', 1310)
-  }"
-  appScrollToTop
-  class="user-container">
+  class="user-container responsive-pad-0-1310">
   <table
     [dataSource]="userData()"
     aria-label="User Detail Data Table"
@@ -39,12 +35,15 @@
     <ng-container matColumnDef="value">
       <td
         *matCellDef="let element"
-        class="user-editable-row height-52 fix-width-20-padr-0"
+        [ngClass]="[isEditingUser() ? 'padding-0' : '']"
+        class="user-editable-row height-52"
         mat-cell>
         @switch (element.keyMap.key) {
           @case ("username") {
             @if (isEditingUser() && userService.selectedUserRealm() !== "") {
-              <mat-form-field>
+              <mat-form-field
+                class="input-width-m height-52"
+                subscriptSizing="dynamic">
                 <mat-label i18n>Enter User</mat-label>
                 <app-clearable-input
                   (onClick)="userService.selectionFilter.set('')"
@@ -66,7 +65,9 @@
           }
           @case ("user_realm") {
             @if (isEditingUser()) {
-              <mat-form-field>
+              <mat-form-field
+                class="input-width-m height-52"
+                subscriptSizing="dynamic">
                 <mat-label i18n>Select Realm of User</mat-label>
                 <mat-select
                   [(ngModel)]="userService.selectedUserRealm"

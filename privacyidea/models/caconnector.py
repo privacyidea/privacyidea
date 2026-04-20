@@ -15,7 +15,6 @@
 #
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
-from typing import Optional
 
 from sqlalchemy import (
     Sequence,
@@ -62,11 +61,11 @@ class CAConnectorConfig(db.Model):
     """
     __tablename__ = 'caconnectorconfig'
     id: Mapped[int] = mapped_column(Integer, Sequence("caconfig_seq"), primary_key=True)
-    caconnector_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey('caconnector.id'))
+    caconnector_id: Mapped[int | None] = mapped_column(Integer, ForeignKey('caconnector.id'))
     Key: Mapped[str] = mapped_column(Unicode(255), nullable=False)
-    Value: Mapped[Optional[str]] = mapped_column(Unicode(2000), default='')
-    Type: Mapped[Optional[str]] = mapped_column(Unicode(2000), default='')
-    Description: Mapped[Optional[str]] = mapped_column(Unicode(2000), default='')
+    Value: Mapped[str | None] = mapped_column(Unicode(2000), default='')
+    Type: Mapped[str | None] = mapped_column(Unicode(2000), default='')
+    Description: Mapped[str | None] = mapped_column(Unicode(2000), default='')
     __table_args__ = (UniqueConstraint('caconnector_id', 'Key', name='ccix_2'),)
 
     def __init__(self, caconnector_id=None, Key=None, Value=None, caconnector=None, Type="", Description=""):

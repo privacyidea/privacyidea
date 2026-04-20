@@ -24,6 +24,7 @@ import {
   ElementRef,
   inject,
   linkedSignal,
+  OnDestroy,
   signal,
   ViewChild,
   WritableSignal
@@ -40,7 +41,6 @@ import { FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
 import { MatCell, MatColumnDef, MatTableDataSource, MatTableModule } from "@angular/material/table";
 import { MatPaginator, PageEvent } from "@angular/material/paginator";
-import { OverflowService, OverflowServiceInterface } from "../../../services/overflow/overflow.service";
 import { RealmService, RealmServiceInterface } from "../../../services/realm/realm.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "../../../services/table-utils/table-utils.service";
 import { TokenDetails, TokenService, TokenServiceInterface } from "../../../services/token/token.service";
@@ -133,8 +133,7 @@ interface TokenOption {
   templateUrl: "./container-details.component.html",
   styleUrls: ["./container-details.component.scss"]
 })
-export class ContainerDetailsComponent {
-  protected readonly overflowService: OverflowServiceInterface = inject(OverflowService);
+export class ContainerDetailsComponent implements OnDestroy {
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   protected readonly realmService: RealmServiceInterface = inject(RealmService);
@@ -145,6 +144,7 @@ export class ContainerDetailsComponent {
   private readonly auditService: AuditServiceInterface = inject(AuditService);
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
   protected readonly notificationService = inject(NotificationService);
+  private previousPageSize = 10;
   private router = inject(Router);
   states = this.containerService.states;
   isEditingUser = signal(false);
@@ -156,28 +156,23 @@ export class ContainerDetailsComponent {
   pageIndex = this.tokenService.pageIndex;
   pageSize = this.tokenService.pageSize;
   tokenDataSource: WritableSignal<MatTableDataSource<TokenDetails>> = linkedSignal({
-    source: this.tokenResource.value,
-    computation: (tokenResource, previous) => {
-      if (tokenResource && tokenResource.result?.value) {
-        return new MatTableDataSource(tokenResource.result?.value.tokens);
+    source: this.tokenService.tokenResourceValue,
+    computation: (tokenResourceValue, previous) => {
+      if (tokenResourceValue) {
+        return new MatTableDataSource(tokenResourceValue.tokens);
       }
       return previous?.value ?? new MatTableDataSource();
     }
   });
   total: WritableSignal<number> = linkedSignal({
-    source: this.tokenResource.value,
-    computation: (tokenResource, previous) => {
-      if (tokenResource && tokenResource.result?.value) {
-        return tokenResource.result?.value.count;
+    source: this.tokenService.tokenResourceValue,
+    computation: (tokenResourceValue, previous) => {
+      if (tokenResourceValue) {
+        return tokenResourceValue.count;
       }
       return previous?.value ?? 0;
     }
   });
-
-  containerType = computed(() => {
-    return this.containerDetails()?.type ?? "";
-  });
-
   containerDetailResource = this.containerService.containerDetailResource;
   containerDetails: WritableSignal<ContainerDetailData> = linkedSignal({
     source: this.containerDetailResource.value,
@@ -209,6 +204,9 @@ export class ContainerDetailsComponent {
       };
       return emptyContainerDetails;
     }
+  });
+  containerType = computed(() => {
+    return this.containerDetails()?.type ?? "";
   });
   containerDetailData = linkedSignal({
     source: this.containerDetails,
@@ -302,6 +300,9 @@ export class ContainerDetailsComponent {
   tokenAutoTrigger!: MatAutocompleteTrigger;
 
   constructor() {
+    this.previousPageSize = this.tokenService.pageSize();
+    this.tokenService.pageSize.set(5);
+
     effect(() => {
       this.showOnlyTokenNotInContainer();
       // do not focus if showOnlyTokenNotInContainer is deselected to ensure the hint is visible
@@ -310,6 +311,7 @@ export class ContainerDetailsComponent {
       }
     });
     effect(() => {
+      if (!this.containerDetailResource.hasValue()) return;
       const res = this.containerDetailResource.value();
       if (res && res?.result?.value?.containers.length === 0) {
         setTimeout(() => {
@@ -428,6 +430,10 @@ export class ContainerDetailsComponent {
         this.containerDetailResource.reload();
       }
     });
+  }
+
+  ngOnDestroy(): void {
+    this.tokenService.pageSize.set(this.previousPageSize);
   }
 
   protected showContainerAuditLog() {

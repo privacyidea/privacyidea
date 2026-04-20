@@ -1,11 +1,32 @@
-<div class="flex ali-center gap-8 margin-left-1 margin-top-16">
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+ -->
+
+<div class="flex ali-center gap-8 external-service-dialog-title">
   <h3
-    class="margin-left-1"
+    class="margin-0"
     i18n>
     Details for Machine:
   </h3>
-  <h3 class="h3-color">{{ data.hostname }}</h3>
-  <app-copy-button [copyText]="data.hostname[0]" />
+  <div class="flex-row flex-nowrap ali-center">
+    <h3 class="h3-color margin-0">{{ data.hostname }}</h3>
+    <app-copy-button [copyText]="data.hostname[0]" />
+  </div>
 </div>
 
 <mat-dialog-content class="machine-dialog-content">
@@ -32,7 +53,7 @@
       <span
         class="label"
         i18n>Machine Resolver:</span>
-      <div class="flex-row ali-center">
+      <div class="flex-row flex-nowrap ali-center">
         <a
           (click)="onMachineResolverClick(data.resolver_name)"
           class="value">{{ data.resolver_name }}
@@ -42,7 +63,7 @@
     </div>
   </div>
 
-  <div class="filter-paginator-container margin-bottom-16">
+  <div class="filter-paginator-container">
     <h3
       class="margin-0"
       i18n>Tokens and Applications
@@ -67,14 +88,14 @@
         <td
           *matCellDef="let token"
           mat-cell>
-          <div class="flex-row ali-center">
+          <div class="flex-row flex-nowrap ali-center">
             <a
               (click)="onTokenClick(token.serial)"
               class="flex ali-center clickable">
               {{ token.serial }}
             </a>
             <app-copy-button [copyText]="token.serial" />
-            <span class="margin-left-1">({{ token.type }})</span>
+            <span class="margin-left-16">({{ token.type }})</span>
           </div>
         </td>
       </ng-container>
@@ -110,8 +131,7 @@
             @if (token.application === 'ssh') {
               <div class="flex-column margin-top-16 gap-8">
                 <mat-form-field
-                  appearance="fill"
-                  subscriptSizing="dynamic">
+                  appearance="fill">
                   <mat-label i18n>Service ID</mat-label>
                   <mat-select [(ngModel)]="editedOptions[token.id]['service_id']">
                     @for (v of applicationsDef().ssh.options.sshkey.service_id.value; track v) {
@@ -122,8 +142,7 @@
                   </mat-select>
                 </mat-form-field>
                 <mat-form-field
-                  appearance="fill"
-                  subscriptSizing="dynamic">
+                  appearance="fill">
                   <mat-label i18n>User</mat-label>
                   <input
                     [(ngModel)]="editedOptions[token.id]['user']"
@@ -193,19 +212,19 @@
     </table>
   </div>
 
-  <div>
+  <form (ngSubmit)="attachToken()">
     <h3 i18n>Attach a New Token</h3>
     <div class="flex-row ali-center gap-16">
       <mat-form-field
         appearance="fill"
-        class="flex-size-2"
-        subscriptSizing="dynamic">
+        class="input-width-l">
         <mat-label i18n>Token Serial</mat-label>
         <input
           [(ngModel)]="newTokenSerial"
           (ngModelChange)="onTokenSerialInput($event)"
           [matAutocomplete]="tokenSerialAuto"
           matInput
+          name="newTokenSerial"
           placeholder="e.g. PIHOTP000001" />
         <mat-autocomplete #tokenSerialAuto="matAutocomplete">
           @for (serial of tokenService.filteredTokenOptions(); track serial) {
@@ -216,10 +235,11 @@
 
       <mat-form-field
         appearance="fill"
-        class="flex-size-1"
-        subscriptSizing="dynamic">
+        class="input-width-s">
         <mat-label i18n>Application</mat-label>
-        <mat-select [(ngModel)]="selectedApplication">
+        <mat-select
+          [(ngModel)]="selectedApplication"
+          name="selectedApplication">
           @for (app of applicationOptions; track app) {
             <mat-option [value]="app">
               {{ app }}
@@ -229,18 +249,20 @@
       </mat-form-field>
 
       <button
-        (click)="attachToken()"
         [disabled]="!newTokenSerial || !selectedApplication"
-        class="action-button-1 width-238"
-        mat-stroked-button>
+        class="action-button-primary button-width-s margin-bottom-16"
+        mat-stroked-button
+        type="submit">
         <mat-icon>add</mat-icon>
         <span i18n>Attach</span>
       </button>
     </div>
-  </div>
+  </form>
 </mat-dialog-content>
 
-<mat-dialog-actions align="end">
+<mat-dialog-actions
+  align="end"
+  class="margin-8 external-service-dialog-actions">
   <button
     (click)="close()"
     i18n

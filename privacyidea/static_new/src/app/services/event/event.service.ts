@@ -139,8 +139,8 @@ export class EventService implements EventServiceInterface {
   });
 
   eventHandlers: Signal<EventHandler[] | undefined> = computed(() => {
-    if (this.allEventsResource.value()) {
-      return this.allEventsResource.value()?.result?.value;
+    if (this.allEventsResource.hasValue()) {
+      return this.allEventsResource.value()?.result?.value ?? [];
     }
     return [] as unknown as EventHandler[];
   });
@@ -250,6 +250,7 @@ export class EventService implements EventServiceInterface {
   });
 
   eventHandlerModules = computed(() => {
+    if (!this.eventHandlerModulesResource.hasValue()) return [];
     const resource = this.eventHandlerModulesResource.value();
     if (resource) {
       return resource.result?.value || [];
@@ -269,6 +270,7 @@ export class EventService implements EventServiceInterface {
   });
 
   availableEvents = computed(() => {
+    if (!this.availableEventsResource.hasValue()) return [];
     const resource = this.availableEventsResource.value();
     if (resource) {
       return resource.result?.value || [];
@@ -288,6 +290,7 @@ export class EventService implements EventServiceInterface {
   });
 
   modulePositions = computed(() => {
+    if (!this.modulePositionsResource.hasValue()) return [];
     const resource = this.modulePositionsResource.value();
     if (resource) {
       return resource.result?.value || [];
@@ -307,6 +310,7 @@ export class EventService implements EventServiceInterface {
   });
 
   moduleActions = computed(() => {
+    if (!this.moduleActionsResource.hasValue()) return {};
     const resource = this.moduleActionsResource.value();
     if (resource) {
       return resource.result?.value || {};
@@ -326,6 +330,7 @@ export class EventService implements EventServiceInterface {
   });
 
   moduleConditions = computed(() => {
+    if (!this.moduleConditionsResource.hasValue()) return {};
     const resource = this.moduleConditionsResource.value();
     if (resource) {
       return resource.result?.value || {};

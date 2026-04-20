@@ -43,7 +43,7 @@ import logging
 import ldap3
 from ldap3.utils.conv import escape_filter_chars
 
-from privacyidea.api.lib.utils import get_required
+from privacyidea.lib.params import get_required
 from .base import Machine
 from .base import BaseMachineResolver
 from .base import MachineResolverError
@@ -61,7 +61,7 @@ class LdapMachineResolver(BaseMachineResolver):
 
     def __init__(self, name, config=None):
         self.i_am_bound = False
-        super(LdapMachineResolver, self).__init__(name, config)
+        super().__init__(name, config)
 
     def _bind(self):
         if not self.i_am_bound:
@@ -115,35 +115,35 @@ class LdapMachineResolver(BaseMachineResolver):
         if not any:
             if id_attribute.lower() != "dn" and machine_id:
                 if substring:
-                    ldap_filter += "({0!s}=*{1!s}*)".format(id_attribute, machine_id)
+                    ldap_filter += f"({id_attribute!s}=*{machine_id!s}*)"
                 else:
-                    ldap_filter += "({0!s}={1!s})".format(id_attribute, machine_id)
+                    ldap_filter += f"({id_attribute!s}={machine_id!s})"
             if hostname:
                 if substring:
-                    ldap_filter += "({0!s}=*{1!s}*)".format(hostname_attribute, hostname)
+                    ldap_filter += f"({hostname_attribute!s}=*{hostname!s}*)"
                 else:
-                    ldap_filter += "({0!s}={1!s})".format(hostname_attribute, hostname)
+                    ldap_filter += f"({hostname_attribute!s}={hostname!s})"
             if ip:
                 # Only add filter if we have an ip attribute set in the resolver
                 if ip_attribute:
                     if substring:
-                        ldap_filter += "({0!s}=*{1!s}*)".format(ip_attribute, ip)
+                        ldap_filter += f"({ip_attribute!s}=*{ip!s}*)"
                     else:
-                        ldap_filter += "({0!s}={1!s})".format(ip_attribute, ip)
+                        ldap_filter += f"({ip_attribute!s}={ip!s})"
         ldap_filter += ")"
         if any:
             # Now we need to extend the search filter
             # like this  (& (&(....)) (|(ip=...)(host=...)) )
             any_filter = "(|"
             if id_attribute:
-                any_filter += "({0!s}=*{1!s}*)".format(id_attribute, any)
+                any_filter += f"({id_attribute!s}=*{any!s}*)"
             if hostname_attribute:
-                any_filter += "({0!s}=*{1!s}*)".format(hostname_attribute, any)
+                any_filter += f"({hostname_attribute!s}=*{any!s}*)"
             if ip_attribute:
-                any_filter += "({0!s}=*{1!s}*)".format(ip_attribute, any)
+                any_filter += f"({ip_attribute!s}=*{any!s}*)"
             any_filter += ")"
 
-            ldap_filter = "(&{0!s}{1!s})".format(ldap_filter, any_filter)
+            ldap_filter = f"(&{ldap_filter!s}{any_filter!s})"
 
         return ldap_filter
 
@@ -171,8 +171,8 @@ class LdapMachineResolver(BaseMachineResolver):
         else:
             # No IP attribute configured, the search returns an empty list
             if ip:
-                log.warning("IP attribute is not set in LDAP resolver {0!s}! "
-                            "Can not perform search for an IP!".format(self.name))
+                log.warning(f"IP attribute is not set in LDAP resolver {self.name!s}! "
+                            "Can not perform search for an IP!")
                 return []
         if self.hostname_attribute:
             attributes.append(self.hostname_attribute)
@@ -222,8 +222,8 @@ class LdapMachineResolver(BaseMachineResolver):
                                             hostname=machine['hostname'],
                                             ip=machine['ip']))
         except Exception as exx:  # pragma: no cover
-            log.error("Error during fetching LDAP objects: {0!r}".format(exx))
-            log.debug("{0!s}".format(traceback.format_exc()))
+            log.error(f"Error during fetching LDAP objects: {exx!r}")
+            log.debug(f"{traceback.format_exc()!s}")
 
         return machines
 
@@ -246,8 +246,7 @@ class LdapMachineResolver(BaseMachineResolver):
         machine_id = None
         machines = self.get_machines(hostname=hostname, ip=ip)
         if len(machines) > 1:
-            raise Exception("More than one machine found in LDAP resolver {0!s}".format(
-                            self.name))
+            raise Exception(f"More than one machine found in LDAP resolver {self.name!s}")
 
         if len(machines) == 1:
             machine_id = machines[0].id
@@ -376,6 +375,6 @@ class LdapMachineResolver(BaseMachineResolver):
         except Exception as e:
             message = f"{e}"
             log.warning(f"LDAP Machine Resolver Test failed: {e!r}")
-            log.debug("{0!s}".format(traceback.format_exc()))
+            log.debug(f"{traceback.format_exc()!s}")
 
         return success, message

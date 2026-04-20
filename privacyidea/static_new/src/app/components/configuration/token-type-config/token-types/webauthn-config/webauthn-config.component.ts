@@ -16,26 +16,29 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, input } from "@angular/core";
-import { CommonModule } from "@angular/common";
+import { Component, input, output } from "@angular/core";
+
 import { FormsModule } from "@angular/forms";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
+import { WEBAUTHN_TRUST_ANCHOR_DIR } from "../../../../../constants/token.constants";
 
 @Component({
   selector: "app-webauthn-config",
   standalone: true,
-  imports: [
-    CommonModule,
-    FormsModule,
-    MatExpansionModule,
-    MatFormFieldModule,
-    MatInputModule
-  ],
+  imports: [FormsModule, MatExpansionModule, MatFormFieldModule, MatInputModule],
   templateUrl: "./webauthn-config.component.html",
   styleUrl: "./webauthn-config.component.scss"
 })
 export class WebauthnConfigComponent {
+  protected readonly WEBAUTHN_TRUST_ANCHOR_DIR = WEBAUTHN_TRUST_ANCHOR_DIR;
+
   formData = input.required<Record<string, any>>();
+  formDataChange = output<Record<string, any>>();
+
+  updateFormData(fieldName: string, value: any): void {
+    const newValue = { ...this.formData(), [fieldName]: value };
+    this.formDataChange.emit(newValue);
+  }
 }

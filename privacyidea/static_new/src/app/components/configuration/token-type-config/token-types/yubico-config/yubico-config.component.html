@@ -16,52 +16,79 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<mat-expansion-panel id="yubico" [expanded]="expanded()">
+<mat-expansion-panel
+  id="yubico"
+  [expanded]="expanded()">
   <mat-expansion-panel-header>
-    <mat-panel-title i18n>Yubico Token Settings</mat-panel-title>
+    <mat-panel-title i18n>Yubico</mat-panel-title>
   </mat-expansion-panel-header>
-  <div class="panel-content">
-    <p i18n>The Yubico Token is a Yubikey that is registered with the YubiCloud service. The Yubikey emits a 44
-            character one time password. The first 12 characters are a unique ID which is used to bind the device to the
-            user.
+  <div class="panel-content expansion-well">
+    <p i18n>The Yubico Token is a Yubikey that is registered with the YubiCloud service.</p>
+    <p i18n>The Yubikey emits a 44 character one time password.</p>
+    <p i18n>The first 12 characters are a unique ID which is used to bind the device to the user.
     </p>
-    <p i18n>The authentication request is forwarded to the YubiCloud. For accessing the YubiCloud you need to enter an
-            API Client ID and an API Key, which you can request
+    <p i18n>The authentication request is forwarded to the YubiCloud.</p>
+    <p i18n>For accessing the YubiCloud you need to enter an API Client ID and an API Key, which you can request
       <a
         href="https://upgrade.yubico.com/getapikey/"
         target="_blank">here
       </a>
     </p>
 
-    <mat-form-field
-      appearance="fill">
-      <mat-label i18n>API Client ID</mat-label>
-      <input
-        [(ngModel)]="formData()['yubico.id']"
-        matInput
-        placeholder="The client ID"
-        required>
-    </mat-form-field>
+    <div class="flex-row gap-16 ali-center margin-bottom-16">
+      <mat-form-field
+        appearance="fill"
+        class="input-width-l">
+        <mat-label i18n>API Key</mat-label>
+        <input
+          [ngModel]="formData()[YUBICO_SECRET]"
+          (ngModelChange)="updateFormData(YUBICO_SECRET, $event)"
+          #apiKeyInput="ngModel"
+          [ngModelOptions]="{ standalone: true }"
+          matInput
+          placeholder="API Key"
+          required>
+        @if (apiKeyInput.errors?.['required']) {
+          <mat-error i18n>API Key is <strong>required</strong></mat-error>
+        }
+      </mat-form-field>
 
-    <mat-form-field
-      appearance="fill">
-      <mat-label i18n>API Key</mat-label>
-      <input
-        [(ngModel)]="formData()['yubico.secret']"
-        matInput
-        placeholder="API Key"
-        required>
-    </mat-form-field>
+      <mat-form-field
+        appearance="fill"
+        class="input-width-l">
+        <mat-label i18n>API Client ID</mat-label>
+        <input
+          [ngModel]="formData()[YUBICO_ID]"
+          (ngModelChange)="updateFormData(YUBICO_ID, $event)"
+          #clientIdInput="ngModel"
+          [ngModelOptions]="{ standalone: true }"
+          matInput
+          placeholder="The client ID"
+          required>
+        @if (clientIdInput.errors?.['required']) {
+          <mat-error i18n>API Client ID is <strong>required</strong></mat-error>
+        }
+      </mat-form-field>
+    </div>
 
-    <mat-form-field
-      appearance="fill">
-      <mat-label i18n>Yubico URL</mat-label>
-      <input
-        [(ngModel)]="formData()['yubico.url']"
-        matInput
-        placeholder="https://api.yubico.com/wsapi/2.0/verify"
-        required
-        type="url">
-    </mat-form-field>
+    <div class="flex-row gap-16 ali-center">
+      <mat-form-field
+        appearance="fill"
+        class="input-width-xl">
+        <mat-label i18n>Yubico URL</mat-label>
+        <input
+          [ngModel]="formData()[YUBICO_URL]"
+          (ngModelChange)="updateFormData(YUBICO_URL, $event)"
+          #urlInput="ngModel"
+          [ngModelOptions]="{ standalone: true }"
+          matInput
+          placeholder="https://api.yubico.com/wsapi/2.0/verify"
+          required
+          type="url">
+        @if (urlInput.errors?.['required']) {
+          <mat-error i18n>Yubico URL is <strong>required</strong></mat-error>
+        }
+      </mat-form-field>
+    </div>
   </div>
 </mat-expansion-panel>

@@ -16,30 +16,36 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<mat-expansion-panel id="radius" [expanded]="expanded()">
+<mat-expansion-panel
+  id="radius"
+  [expanded]="expanded()">
   <mat-expansion-panel-header>
-    <mat-panel-title i18n>RADIUS Token Settings</mat-panel-title>
+    <mat-panel-title i18n>RADIUS</mat-panel-title>
   </mat-expansion-panel-header>
-  <div class="panel-content">
+  <div class="panel-content expansion-well">
     <p i18n>The RADIUS token forwards the authentication request to another RADIUS server.</p>
 
-    <mat-form-field
-      appearance="fill">
-      <mat-label i18n>RADIUS Server Configuration</mat-label>
-      <mat-select [(ngModel)]="formData()['radius.identifier']">
-        <mat-option
-          [value]="''"
-          i18n>None
-        </mat-option>
-        @for (id of radiusServers(); track id) {
-          <mat-option [value]="id">{{ id }}</mat-option>
-        }
-      </mat-select>
-      <mat-hint i18n>Select a predefined
-        <a
-          [routerLink]="[ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS]"><strong>RADIUS server configuration</strong>.
-        </a>
-      </mat-hint>
-    </mat-form-field>
+    <div class="flex-row gap-16 ali-center margin-bottom-16">
+      <mat-form-field
+        appearance="fill"
+        class="input-width-m">
+        <mat-label i18n>RADIUS Server Configuration</mat-label>
+        <mat-select
+          [ngModel]="formData()[RADIUS_SERVER]"
+          (ngModelChange)="updateFormData(RADIUS_SERVER, $event)">
+          @for (id of radiusServers(); track id) {
+            <mat-option [value]="id">{{ id }}</mat-option>
+          }
+        </mat-select>
+        <mat-hint i18n>Select a predefined
+          <a
+            [routerLink]="[ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS]"><strong>RADIUS server configuration</strong>.
+          </a>
+        </mat-hint>
+        <app-clear-button
+          matSuffix
+          (onClick)="clearField(RADIUS_SERVER); $event.stopPropagation()"></app-clear-button>
+      </mat-form-field>
+    </div>
   </div>
 </mat-expansion-panel>

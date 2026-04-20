@@ -18,29 +18,37 @@
 -->
 <mat-expansion-panel>
   <mat-expansion-panel-header>
-    <mat-panel-title i18n>HOTP Token Settings</mat-panel-title>
+    <mat-panel-title i18n>HOTP</mat-panel-title>
   </mat-expansion-panel-header>
-  <div class="panel-content">
+  <div class="panel-content expansion-well">
     <p i18n>The HOTP Token is an event based one time password token. It is described in
       <a
         href="https://datatracker.ietf.org/doc/html/rfc4226"
         target="_blank">RFC 4226.
       </a>
     </p>
-    <p i18n>Here you can define settings, that will be set as default values, when enrolling a HOTP token. Note that the
-            user/admin policy
+    <p i18n>Here you can define settings, that will be set as default values, when enrolling a HOTP token.</p>
+    <p i18n>Note that the user/admin policy
       <span class="policy-highlight">hotp_hashlib</span>
             always have precedence over this default value.
     </p>
 
-    <mat-form-field
-      appearance="fill">
-      <mat-label i18n>Default Hashlib</mat-label>
-      <mat-select [(ngModel)]="formData()['hotp.hashlib']">
-        @for (hashlib of hashLibs(); track hashlib) {
-          <mat-option [value]="hashlib">{{ hashlib }}</mat-option>
-        }
-      </mat-select>
-    </mat-form-field>
+    <div class="flex-row gap-16 ali-center">
+      <mat-form-field
+        appearance="fill"
+        class="input-width-m">
+        <mat-label i18n>Default Hashlib</mat-label>
+        <mat-select
+          [ngModel]="formData()[HOTP_HASHLIB]"
+          (ngModelChange)="updateFormData(HOTP_HASHLIB, $event)">
+          @for (hashlib of hashLibs(); track hashlib) {
+            <mat-option [value]="hashlib">{{ hashlib }}</mat-option>
+          }
+        </mat-select>
+        <app-clear-button
+          matSuffix
+          (onClick)="clearField(HOTP_HASHLIB); $event.stopPropagation()"></app-clear-button>
+      </mat-form-field>
+    </div>
   </div>
 </mat-expansion-panel>

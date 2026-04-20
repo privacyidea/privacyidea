@@ -19,8 +19,8 @@
 import { TestBed } from "@angular/core/testing";
 
 import { ThemeMode, ThemeService } from "./theme.service";
-import { DOCUMENT } from "@angular/common";
-import { Renderer2, RendererFactory2 } from "@angular/core";
+
+import { Renderer2, RendererFactory2, DOCUMENT } from "@angular/core";
 import { APP_THEME_STORAGE_KEY } from "../../core/constants";
 
 class DomRendererFactory implements RendererFactory2 {

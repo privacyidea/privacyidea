@@ -34,7 +34,7 @@ from privacyidea.lib.token import enable_token
 log = logging.getLogger(__name__)
 
 
-class ACTION_TYPE(object):
+class ACTION_TYPE:
     """
     Allowed actions
     """

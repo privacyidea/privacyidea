@@ -771,7 +771,8 @@ class UserTestCase(MyTestCase):
         self.assertDictEqual({"color": "green", "department": "dev", "working_hours": "40"}, attributes)
 
         # Get only specific attributes
-        attributes = get_attributes(user.uid, user.resolver, realm_id, requested_attributes=["department", "working_hours"])
+        attributes = get_attributes(user.uid, user.resolver, realm_id,
+                                    requested_attributes=["department", "working_hours"])
         self.assertDictEqual({"department": "dev", "working_hours": "40"}, attributes)
 
         # pass empty list for attributes to get all attributes
@@ -782,7 +783,6 @@ class UserTestCase(MyTestCase):
         user.delete_attribute()
         delete_realm(self.realm1)
         delete_resolver(self.resolvername1)
-
 
     def test_50_user_attributes(self):
         save_resolver({"resolver": self.resolvername1, "type": "passwdresolver",

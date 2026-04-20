@@ -17,7 +17,6 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div class="flex-column">
-  <h4 class="enroll-h4">Token Configuration</h4>
   @if (!yubicoIsConfigured()) {
     @if (authService.role() === "admin") {
       <span
@@ -44,7 +43,7 @@
     }
   }
   <div class="flex-row gap-16">
-    <mat-form-field class="input-height width-33">
+    <mat-form-field class="input-width-l">
       <mat-label i18n>Yubikey Identifier</mat-label>
       <input
         [errorStateMatcher]="yubicoErrorStatematcher"

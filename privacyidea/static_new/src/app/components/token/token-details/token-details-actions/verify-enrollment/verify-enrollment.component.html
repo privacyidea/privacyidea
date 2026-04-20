@@ -16,8 +16,8 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<div class="flex-column gap-8">
-  <mat-form-field>
+<div class="flex-column">
+  <mat-form-field class="input-width-s">
     <mat-label i18n>OTP</mat-label>
     <input
       [formControl]="otpControl"
@@ -26,7 +26,7 @@
 
   <button
     mat-stroked-button
-    class="action-button-1 width-238"
+    class="action-button-secondary button-width-m"
     [disabled]="otpControl.invalid"
     (click)="verifyOTP()">
     <mat-icon>verified_user</mat-icon>

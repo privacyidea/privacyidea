@@ -32,7 +32,8 @@
 The code of this module is tested in tests/test_api_system.py
 """
 from flask import Blueprint, request
-from .lib.utils import getParam, optional, required, send_result
+from .lib.utils import send_result
+from ..lib.params import get_optional, get_required
 from ..lib.log import log_with
 from ..lib.resolver import get_resolver_list, save_resolver, delete_resolver, pretestresolver, get_resolver_class
 from flask import g
@@ -67,8 +68,8 @@ def get_resolvers(resolver=None):
     :type editable: str
     :return: a json result with the configuration of resolvers
     """
-    typ = getParam(request.all_data, "type", optional)
-    editable = getParam(request.all_data, "editable", optional)
+    typ = get_optional(request.all_data, "type")
+    editable = get_optional(request.all_data, "editable")
     if editable is not None:
         editable = is_true(editable)
 
@@ -182,7 +183,7 @@ def test_resolver():
         working resolver and a description.
     """
     param = request.all_data
-    rtype = getParam(param, "type", required)
+    rtype = get_required(param, "type")
     success, desc = pretestresolver(rtype, param)
     return send_result(success, details={"description": desc})
 

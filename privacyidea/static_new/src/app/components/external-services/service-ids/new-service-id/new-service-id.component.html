@@ -16,53 +16,76 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<h2
-  i18n
-  mat-dialog-title>
-  @if (isEditMode) {
-    Edit Service ID {{ data?.servicename }}
-  } @else {
+@if (isEditMode) {
+  <h3
+    class="margin-8 external-service-dialog-title"
+    i18n>
+    Edit Service ID
+  </h3>
+} @else {
+  <h3
+    class="margin-8 external-service-dialog-title"
+    i18n>
     Create Service ID
-  }
-</h2>
+  </h3>
+}
 
-<mat-dialog-content>
+<mat-dialog-content class="service-id-dialog-content">
   <form
     [formGroup]="serviceIdForm"
-    class="service-id-column">
-    <mat-form-field>
-      <mat-label i18n>Identifier</mat-label>
-      <input
-        formControlName="servicename"
-        matInput
-        placeholder="myNewService"
-        required />
-      <mat-hint i18n>This is the unique identifying name for this service definition.</mat-hint>
-      @if (serviceIdForm.get('servicename')?.invalid && serviceIdForm.get('servicename')?.touched) {
-        <mat-error i18n>Identifier is <strong>required</strong>.</mat-error>
-      }
-    </mat-form-field>
+    class="service-id-form">
 
-    <mat-form-field>
-      <mat-label i18n>Description</mat-label>
-      <input
-        formControlName="description"
-        matInput
-        placeholder="some wise words" />
-    </mat-form-field>
+    <div class="flex-column gap-16">
+      <mat-form-field
+        appearance="fill"
+        class="input-width-l  margin-bottom-16">
+        <mat-label i18n>Identifier</mat-label>
+        <app-clearable-input
+          (onClick)="serviceIdForm.get('servicename')?.setValue('')"
+          [showClearButton]="!isEditMode && !!serviceIdForm.get('servicename')?.value">
+          <input
+            formControlName="servicename"
+            matInput
+            placeholder="myNewService"
+            required />
+        </app-clearable-input>
+        <mat-hint i18n>This is the unique identifying name for this service definition.</mat-hint>
+        @if (serviceIdForm.get('servicename')?.invalid && serviceIdForm.get('servicename')?.touched) {
+          <mat-error i18n>Identifier is <strong>required</strong>.</mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field
+        appearance="fill"
+        class="input-width-xl">
+        <mat-label i18n>Description</mat-label>
+        <app-clearable-input
+          (onClick)="serviceIdForm.get('description')?.setValue('')"
+          [showClearButton]="!!serviceIdForm.get('description')?.value">
+          <input
+            formControlName="description"
+            matInput
+            placeholder="some wise words" />
+        </app-clearable-input>
+      </mat-form-field>
+    </div>
   </form>
 </mat-dialog-content>
 
-<mat-dialog-actions align="end">
+<mat-dialog-actions
+  align="end"
+  class="margin-8 external-service-dialog-actions">
   <button
     (click)="onCancel()"
+    class="action-button-secondary button-width-s"
     i18n
-    mat-button>Cancel
+    mat-stroked-button>
+    Cancel
   </button>
   <button
     (click)="save()"
     [disabled]="serviceIdForm.invalid"
-    class="action-button-1 width-238"
+    class="action-button-primary button-width-s"
     i18n
     mat-stroked-button>
     <mat-icon>save</mat-icon>

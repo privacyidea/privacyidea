@@ -18,23 +18,21 @@
 -->
 
 <div class="conditions-container">
-  <div class="condition-column">
-    <!--   Add New Conditions   -->
+  <div class="condition-column margin-bottom-16">
     <mat-card>
       <mat-card-header>
         <div class="flex margin-bottom-8 gap-8">
-          <mat-icon class="small-icon">add_circle</mat-icon>
+          <mat-icon class="small-icon">add_circle_outline</mat-icon>
           <h4
             class="margin-0"
             i18n>Add New Conditions
           </h4>
         </div>
       </mat-card-header>
+
       <mat-card-content>
-        <div class="add-conditions-container">
-          <!-- Search bar -->
-          <mat-form-field
-            subscriptSizing="dynamic">
+        <div class="add-conditions-container expansion-well">
+          <mat-form-field>
             <mat-label i18n>Search condition ...</mat-label>
             <app-clearable-input
               (onClick)="searchTerm.set('')"
@@ -47,7 +45,7 @@
                 (ngModelChange)="searchTerm.set($event)" />
             </app-clearable-input>
           </mat-form-field>
-          <!-- Condition Groups -->
+
           <mat-tab-group
             #conditionTabs
             mat-stretch-tabs="false"
@@ -80,7 +78,6 @@
   </div>
 
   <div class="condition-column">
-    <!--  Selected Conditions  -->
     <mat-card>
       <mat-card-header>
         <div class="flex margin-bottom-8 gap-8">
@@ -91,8 +88,9 @@
           </h4>
         </div>
       </mat-card-header>
+
       <mat-card-content>
-        <div class="configured-conditions-list-container">
+        <div class="configured-conditions-list-container expansion-well">
           <app-event-condition-list
             [conditions]="selectedConditions()"
             [action]="'delete'"

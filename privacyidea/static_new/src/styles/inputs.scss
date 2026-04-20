@@ -1,4 +1,6 @@
-$focus-outline: 3px solid var(--mat-sys-primary-light);
+@use "theme";
+
+$input-focus-outline: theme.$focus-outline;
 
 .input {
   height: 40px;
@@ -7,16 +9,24 @@ $focus-outline: 3px solid var(--mat-sys-primary-light);
   outline: none;
 
   &:focus {
-    outline: $focus-outline;
+    outline: $input-focus-outline;
   }
-}
-
-.input-height {
-  height: 76.5px;
 }
 
 .hint-spacer {
   margin-bottom: 1.2em;
+}
+
+.checkbox-hint {
+  display: block;
+  font-size: var(--mat-form-field-subscript-text-size, var(--mat-sys-body-small-size));
+  font-weight: var(--mat-form-field-subscript-text-weight, var(--mat-sys-body-small-weight));
+  color: var(--mat-sys-primary);
+  padding-left: 16px;
+  padding-right: 16px;
+  padding-top: 4px;
+  line-height: var(--mat-form-field-subscript-text-line-height, var(--mat-sys-body-small-line-height));
+  letter-spacing: var(--mat-form-field-subscript-text-tracking, var(--mat-sys-body-small-tracking));
 }
 
 .user-pin-container {
@@ -25,15 +35,10 @@ $focus-outline: 3px solid var(--mat-sys-primary-light);
   gap: 8px;
 }
 
-.user-pin-input {
-  display: flex;
-  gap: 8px;
-}
-
 .user-pin-button {
   display: flex;
-  margin-top: 8px;
   flex-direction: column;
+  align-items: center;
   gap: 8px;
 }
 
@@ -43,6 +48,7 @@ $focus-outline: 3px solid var(--mat-sys-primary-light);
   border-bottom: 1px solid var(--mat-sys-outline-variant);
   border-radius: 0;
   box-sizing: border-box;
+  font-family: inherit;
   font-size: 1rem;
   resize: vertical;
   width: 100%;
@@ -52,15 +58,40 @@ $focus-outline: 3px solid var(--mat-sys-primary-light);
     outline: none;
   }
 }
-.checkbox-hint {
-  display: block;
-  font-family: var(--mat-form-field-subscript-text-font, var(--mat-sys-body-small-font));
-  font-size: var(--mat-form-field-subscript-text-size, var(--mat-sys-body-small-size));
-  font-weight: var(--mat-form-field-subscript-text-weight, var(--mat-sys-body-small-weight));
-  color: var(--mat-sys-primary);
-  padding-left: 16px;
-  padding-right: 16px;
-  padding-top: 4px;
-  line-height: var(--mat-form-field-subscript-text-line-height, var(--mat-sys-body-small-line-height));
-  letter-spacing: var(--mat-form-field-subscript-text-tracking, var(--mat-sys-body-small-tracking));
+
+.input-width-s {
+  width: 100%;
+  max-width: 180px;
+}
+
+.input-width-m {
+  width: 100%;
+  max-width: 240px;
+}
+
+.input-width-l {
+  width: 100%;
+  max-width: 300px;
+}
+
+.input-width-xl {
+  width: 100%;
+  max-width: 616px;
+}
+
+.input-width-xxl {
+  width: 100%;
+  max-width: 932px;
+}
+
+::ng-deep mat-form-field:has(input):not(.sticky-header *):not(.filter-paginator-container *):not(td *):not(.condition-value-container *):not(.login-form *) {
+  height: 76.5px;
+}
+
+::ng-deep .mat-mdc-form-field-required .mdc-floating-label {
+  font-weight: bold;
+}
+
+::ng-deep .mat-mdc-form-field-required-marker {
+  font-weight: bold;
 }

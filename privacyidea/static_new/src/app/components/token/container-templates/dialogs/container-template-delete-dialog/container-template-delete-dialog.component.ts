@@ -28,7 +28,7 @@ import { ContainerTemplate } from "../../../../../services/container/container.s
 @Component({
   selector: "app-container-template-delete-dialog",
   standalone: true,
-  imports: [CommonModule, MatIconModule, DialogWrapperComponent],
+  imports: [MatIconModule, DialogWrapperComponent],
   templateUrl: "./container-template-delete-dialog.component.html",
   styleUrl: "./container-template-delete-dialog.component.scss"
 })

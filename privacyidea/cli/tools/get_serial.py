@@ -62,16 +62,15 @@ def byotp(otp, tokentype, serial, window, unassigned, assigned):
     """
     if not assigned and not unassigned:
         assigned = None
-    count = get_tokens(tokentype=tokentype, serial_wildcard="*{0!s}*".format(
-            serial), assigned=assigned, count=True)
-    click.echo("Searching in {0!s} tokens.".format(count))
+    count = get_tokens(tokentype=tokentype, serial_wildcard=f"*{serial!s}*", assigned=assigned, count=True)
+    click.echo(f"Searching in {count!s} tokens.")
 
     tokenobj_list = get_tokens(tokentype=tokentype,
-                               serial_wildcard="*{0!s}*".format(serial),
+                               serial_wildcard=f"*{serial!s}*",
                                assigned=assigned)
     serial = get_serial_by_otp(tokenobj_list, otp=otp, window=window)
     if serial:
-        click.echo("Found the token with serial {0!s}".format(serial))
+        click.echo(f"Found the token with serial {serial!s}")
     else:
         click.echo("No token found.")
 
@@ -84,8 +83,8 @@ def byotp_call():
       / _ \/ __/ / |/ / _ `/ __/ // // // // / _// __ |
      / .__/_/ /_/|___/\_,_/\__/\_, /___/____/___/_/ |_|  Get Serial
     /_/                       /___/
-    {0!s:>51}
-        """.format('v{0!s}'.format(get_version_number())))
+    {!s:>51}
+        """.format(f'v{get_version_number()!s}'))
 
     # Add the ScriptInfo object to create the Flask-App when necessary
     s = ScriptInfo(create_app=create_silent_app)

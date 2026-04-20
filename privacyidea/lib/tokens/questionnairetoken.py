@@ -24,7 +24,7 @@ user is asked one of these questions and can respond with the corresponding
 answer.
 """
 
-from privacyidea.api.lib.utils import getParam
+from privacyidea.lib.params import get_required
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.log import log_with
@@ -42,12 +42,10 @@ import json
 import datetime
 
 log = logging.getLogger(__name__)
-optional = True
-required = False
 DEFAULT_NUM_ANSWERS = 5
 
 
-class QUESTACTION(object):
+class QUESTACTION:
     NUM_QUESTIONS = "number"
 
 
@@ -118,7 +116,8 @@ class QuestionnaireTokenClass(TokenClass):
                        },
                        PolicyAction.MAXACTIVETOKENUSER: {
                            'type': 'int',
-                           'desc': _("The user may only have this maximum number of active questionaire tokens assigned."),
+                           'desc': _("The user may only have this maximum number of active questionaire "
+                                     "tokens assigned."),
                            'group': GROUP.TOKEN
                        }
                    }
@@ -152,7 +151,7 @@ class QuestionnaireTokenClass(TokenClass):
         :type param: dict
         :return: None
         """
-        j_questions = getParam(param, "questions", required)
+        j_questions = get_required(param, "questions")
         try:
             # If we have a string, we load the json format
             questions = json.loads(j_questions)
@@ -184,7 +183,6 @@ class QuestionnaireTokenClass(TokenClass):
         :return: true or false
         :rtype: bool
         """
-        request_is_challenge = False
         options = options or {}
         pin_match = self.check_pin(passw, user=user, options=options)
         return pin_match
@@ -224,13 +222,13 @@ class QuestionnaireTokenClass(TokenClass):
                 questions[tinfo.id] = tinfo.Key
         # if all questions are used up, make a new round
         if len(questions) == len(used_questions):
-            log.info("User has only {0!s} questions in his token. Reusing questions now.".format(len(questions)))
+            log.info(f"User has only {len(questions)!s} questions in his token. Reusing questions now.")
             used_questions = []
         # Reduce the allowed questions
         remaining_questions = {k: v for (k, v) in questions.items() if k not in used_questions}
         message_id = secrets.choice(list(remaining_questions))
         message = remaining_questions[message_id]
-        used_questions = (options.get("data", "") + ",{0!s}".format(message_id)).strip(",")
+        used_questions = (options.get("data", "") + f",{message_id!s}").strip(",")
 
         validity = int(get_from_config('DefaultChallengeValidityTime', 120))
         tokentype = self.get_tokentype().lower()
@@ -248,7 +246,7 @@ class QuestionnaireTokenClass(TokenClass):
         db_challenge.save()
         expiry_date = datetime.datetime.now() + \
                       datetime.timedelta(seconds=validity)
-        reply_dict = {'attributes': {'valid_until': "{0!s}".format(expiry_date)}}
+        reply_dict = {'attributes': {'valid_until': f"{expiry_date!s}"}}
         return True, message, db_challenge.transaction_id, reply_dict
 
     def check_answer(self, given_answer, challenge_object):
@@ -270,8 +268,7 @@ class QuestionnaireTokenClass(TokenClass):
         if safe_compare(answer, given_answer):
             res = 1
         else:
-            log.debug("The answer for token {0!s} does not match.".format(
-                      self.get_serial()))
+            log.debug(f"The answer for token {self.get_serial()!s} does not match.")
         return res
 
     @check_token_locked
@@ -334,12 +331,11 @@ class QuestionnaireTokenClass(TokenClass):
         challengeobject_list = get_challenges(serial=self.token.serial,
                                               transaction_id=transaction_id)
         question_number = int(get_action_values_from_options(SCOPE.AUTH,
-                                                             "{0!s}_{1!s}".format(self.get_class_type(),
-                                                                                  QUESTACTION.NUM_QUESTIONS),
+                                                             f"{self.get_class_type()!s}_{QUESTACTION.NUM_QUESTIONS!s}",
                                                              options) or 1)
         if len(challengeobject_list) == 1:
             session = int(challengeobject_list[0].session or "0") + 1
-            options["session"] = "{0!s}".format(session)
+            options["session"] = f"{session!s}"
             # write the used questions to the data field
             options["data"] = challengeobject_list[0].data or ""
             if session < question_number:

@@ -16,9 +16,8 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import logging
-from typing import Optional
 
-from sqlalchemy import Sequence, Unicode, Integer, select, update
+from sqlalchemy import Sequence, Unicode, Integer
 from sqlalchemy.orm import Mapped, mapped_column
 
 from privacyidea.lib.log import log_with
@@ -37,7 +36,7 @@ class Serviceid(TimestampMethodsMixin, db.Model):
     __tablename__ = 'serviceid'
     id: Mapped[int] = mapped_column(Integer, Sequence("serviceid_seq"), primary_key=True, nullable=False)
     name: Mapped[str] = mapped_column(Unicode(255), default='', unique=True, nullable=False)
-    Description: Mapped[Optional[str]] = mapped_column(Unicode(2000), default='')
+    Description: Mapped[str | None] = mapped_column(Unicode(2000), default='')
 
     @log_with(log)
     def __init__(self, servicename, description=None):

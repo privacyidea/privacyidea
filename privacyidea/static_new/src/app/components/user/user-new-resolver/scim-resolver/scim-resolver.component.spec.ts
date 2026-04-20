@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -29,8 +29,7 @@ describe("ScimResolverComponent", () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [ScimResolverComponent, NoopAnimationsModule]
-    })
-      .compileComponents();
+    }).compileComponents();
 
     fixture = TestBed.createComponent(ScimResolverComponent);
     component = fixture.componentInstance;
@@ -44,10 +43,12 @@ describe("ScimResolverComponent", () => {
 
   it("should expose controls via signal", () => {
     const controls = component.controls();
-    expect(controls).toEqual(expect.objectContaining({
-      Authserver: component.authServerControl,
-      Resourceserver: component.resourceServerControl
-    }));
+    expect(controls).toEqual(
+      expect.objectContaining({
+        Authserver: component.authServerControl,
+        Resourceserver: component.resourceServerControl
+      })
+    );
   });
 
   it("should update controls when data input changes", () => {

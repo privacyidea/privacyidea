@@ -6,6 +6,12 @@
   flex-direction: column;
   gap: var(--half-global-gap);
 
+  .policy-metadata-group {
+    border-radius: var(--border-radius);
+    display: flex;
+    flex-direction: column;
+  }
+
   .tab-buttons {
     align-items: center;
     display: flex;
@@ -14,14 +20,20 @@
     gap: var(--half-global-gap);
     justify-content: center;
     padding: var(--half-global-padding) 0;
+    width: 100%;
+
+    .action-button-1 {
+      flex: 1;
+      justify-content: center;
+    }
   }
 
   .action-button-1 {
     padding: var(--global-padding);
 
     &.action-button-active {
-      background-color: var(--mat-sys-surface-container-low);
-      color: var(--mat-sys-on-primary-container);
+      background-color: var(--mat-sys-primary-base);
+      color: var(--mat-sys-on-primary);
       border-color: var(--mat-sys-primary);
     }
   }
@@ -36,9 +48,6 @@
       flex: 1;
     }
 
-    .spacer {
-      flex: 1;
-    }
 
     app-policy-priority-edit {
       flex: 0 0 auto;

@@ -18,7 +18,6 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 #
 import logging
-from typing import Union
 
 from requests import Response
 
@@ -39,7 +38,7 @@ REALM = "realm"
 class KeycloakResolver(HTTPResolver):
 
     def __init__(self):
-        super(KeycloakResolver, self).__init__()
+        super().__init__()
 
         self.config_get_user_by_id = {METHOD: "GET", ENDPOINT: "/admin/realms/{realm}/users/{userid}"}
         self.config.update({CONFIG_GET_USER_BY_ID: self.config_get_user_by_id,
@@ -69,7 +68,8 @@ class KeycloakResolver(HTTPResolver):
         self.base_url = "http://localhost:8080"
         self.authorization_config = {METHOD: "POST",
                                      ENDPOINT: "/realms/{realm}/protocol/openid-connect/token",
-                                     REQUEST_MAPPING: "grant_type=password&client_id=admin-cli&username={username}&password={password}",
+                                     REQUEST_MAPPING: ("grant_type=password&client_id=admin-cli"
+                                                       "&username={username}&password={password}"),
                                      RESPONSE_MAPPING: '{"Authorization": "Bearer {access_token}"}',
                                      HEADERS: '{"Content-Type": "application/x-www-form-urlencoded"}'}
         # No wildcard required
@@ -160,10 +160,56 @@ class KeycloakResolver(HTTPResolver):
             config.endpoint = config.endpoint.replace("{realm}", self.realm)
         return config
 
+    @staticmethod
+    def _is_wildcard_search(search_dict: dict | None) -> bool:
+        """
+        Checks if the search dict contains a wildcard search. Since substring search can only be applied for username,
+        given name, surname, and email, we only check if asterisk is contained in at least one of the values of the
+        search dict.
+        If the search dict is None or empty, it is not a wildcard search.
+
+        :param search_dict: The search dictionary containing the search parameters
+        :return: True if it is a wildcard search, False otherwise
+        """
+        if not search_dict:
+            return False
+
+        wildcard_keys = {"username", "givenname", "surname", "email"}
+        return any("*" in str(search_dict.get(key, "")) for key in wildcard_keys if key in search_dict)
+
+    def _get_user_list(self, search_dict: dict, config: RequestConfig, attributes: list[str] = None) -> list[dict]:
+        """
+        Fetches a list of users from the user store.
+
+        :param search_dict: Dictionary containing search parameters that are added as query to the endpoint url
+        :param config: Configuration contains all information of the api endpoint to fetch the users.
+        :param attributes: List of attributes that should be included in the response. If None, all attributes
+            are included.
+        :return: List of dictionaries containing pi conform user attributes
+        """
+
+        request_params = config.request_mapping or {}
+        request_params.update(self._get_search_params(search_dict))
+        if search_dict:
+            request_params["exact"] = str(not self._is_wildcard_search(search_dict)).lower()
+        config.headers.update(self._get_auth_header())
+
+        response = self._do_request(config, request_params)
+
+        self._get_user_list_error_handling(response, config)
+
+        # Map user store attributes to pi attributes
+        json_result = response.json()
+        json_result = self._apply_response_mapping(config, json_result)
+        user_store_users = self._get_user_list_from_response(json_result)
+        users = [self._user_store_user_to_pi_user(user, attributes) for user in user_store_users]
+
+        return users
+
     # Error Handling
 
     @staticmethod
-    def get_error(response: Response) -> Union[Error, None]:
+    def get_error(response: Response) -> Error | None:
         """
         Extracts the error message from the response if available.
         It tries to get the error message under the key "errorMessage" or "error".
@@ -206,7 +252,7 @@ class KeycloakResolver(HTTPResolver):
             success = self._custom_error_handling(response, config)
 
         if not success:
-            raise ResolverError(f"Failed to get the user list!")
+            raise ResolverError("Failed to get the user list!")
 
     def _get_user_error_handling(self, response: Response, config: RequestConfig, user_identifier: str) -> bool:
         """

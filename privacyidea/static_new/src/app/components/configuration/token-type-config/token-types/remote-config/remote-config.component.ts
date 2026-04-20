@@ -16,28 +16,34 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, input } from "@angular/core";
-import { CommonModule } from "@angular/common";
+import { Component, computed, input, output } from "@angular/core";
+
 import { FormsModule } from "@angular/forms";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { MatCheckboxModule } from "@angular/material/checkbox";
+import { parseBooleanValue } from "../../../../../utils/parse-boolean-value";
+import { REMOTE_SERVER, REMOTE_VERIFY_SSL } from "../../../../../constants/token.constants";
 
 @Component({
   selector: "app-remote-config",
   standalone: true,
-  imports: [
-    CommonModule,
-    FormsModule,
-    MatExpansionModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatCheckboxModule
-  ],
+  imports: [FormsModule, MatExpansionModule, MatFormFieldModule, MatInputModule, MatCheckboxModule],
   templateUrl: "./remote-config.component.html",
   styleUrl: "./remote-config.component.scss"
 })
 export class RemoteConfigComponent {
+  protected readonly REMOTE_SERVER = REMOTE_SERVER;
+  protected readonly REMOTE_VERIFY_SSL = REMOTE_VERIFY_SSL;
+
   formData = input.required<Record<string, any>>();
+  formDataChange = output<Record<string, any>>();
+
+  verifySSL = computed(() => parseBooleanValue(this.formData()[REMOTE_VERIFY_SSL]));
+
+  updateFormData(fieldName: string, value: any): void {
+    const newValue = { ...this.formData(), [fieldName]: value };
+    this.formDataChange.emit(newValue);
+  }
 }

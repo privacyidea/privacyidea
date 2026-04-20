@@ -25,7 +25,7 @@ from urllib.parse import quote
 from cryptography.hazmat.primitives.asymmetric.x25519 import X25519PublicKey
 from flask import json
 
-from privacyidea.api.lib.utils import getParam
+from privacyidea.lib.params import get_optional, get_required
 from privacyidea.lib import _
 from privacyidea.lib.apps import _construct_extra_parameters
 from privacyidea.lib.challenge import get_challenges
@@ -71,10 +71,10 @@ def create_container_registration_url(nonce: str, time_stamp: str, server_url: s
     extra_data = extra_data or {}
     url_extra_data = _construct_extra_parameters(extra_data)
     url_passphrase = quote(passphrase.encode("utf-8"))
-    url_send_passphrase = quote(f"{send_passphrase}".encode("utf-8"))
+    url_send_passphrase = quote(f"{send_passphrase}".encode())
     url_key_algorithm = quote(key_algorithm.encode("utf-8"))
     url_hash_algorithm = quote(hash_algorithm.encode("utf-8"))
-    url_ssl_verify = quote(f"{ssl_verify}".encode("utf-8"))
+    url_ssl_verify = quote(f"{ssl_verify}".encode())
     url_server_url = quote(server_url.encode("utf-8"))
 
     url = (f"pia://container/{url_label}?issuer={url_issuer}&ttl={ttl}&nonce={url_nonce}&time={url_time_stamp}"
@@ -180,10 +180,10 @@ class SmartphoneContainer(TokenContainerClass):
         """
         # get params
         params = params or {}
-        extra_data = getParam(params, 'extra_data', optional=True) or {}
-        passphrase_user = getParam(params, 'passphrase_user', optional=True) or False
-        passphrase_prompt = getParam(params, 'passphrase_prompt', optional=True) or ""
-        passphrase_response = getParam(params, 'passphrase_response', optional=True) or ""
+        extra_data = get_optional(params, 'extra_data') or {}
+        passphrase_user = get_optional(params, 'passphrase_user') or False
+        passphrase_prompt = get_optional(params, 'passphrase_prompt') or ""
+        passphrase_response = get_optional(params, 'passphrase_response') or ""
         if passphrase_response and passphrase_user:
             raise ParameterError("passphrase_response and passphrase_user cannot be set at the same time!")
         if passphrase_user:
@@ -272,7 +272,8 @@ class SmartphoneContainer(TokenContainerClass):
 
         ::
 
-            message = <nonce>|<time>|<serial>|<scope>|<device_brand>|<device_model>|<passphrase_response>|<public_key_client>
+            message = <nonce>|<time>|<serial>|<scope>|<device_brand>|<device_model>|
+                      <passphrase_response>|<public_key_client>
 
         To verify the signature, the ECDSA signature algorithm with SHA256 hash function is used. The public key is
         expected to be an ecc key of curve secp384r1.
@@ -293,13 +294,13 @@ class SmartphoneContainer(TokenContainerClass):
         :return: A dictionary with the success status like ``{"success": True}``
         """
         # Get params
-        signature = base64.urlsafe_b64decode(getParam(params, "signature", optional=False))
-        pub_key_container_str = getParam(params, "public_client_key", optional=False)
+        signature = base64.urlsafe_b64decode(get_required(params, "signature"))
+        pub_key_container_str = get_required(params, "public_client_key")
         keys_container = b64url_str_key_pair_to_ecc_obj(public_key_str=pub_key_container_str)
-        scope = getParam(params, "scope", optional=False)
-        passphrase = getParam(params, "passphrase", optional=True)
-        device_brand = getParam(params, "device_brand", optional=True)
-        device_model = getParam(params, "device_model", optional=True)
+        scope = get_required(params, "scope")
+        passphrase = get_optional(params, "passphrase")
+        device_brand = get_optional(params, "device_brand")
+        device_model = get_optional(params, "device_model")
         device = ""
         if device_brand:
             device += device_brand
@@ -427,13 +428,13 @@ class SmartphoneContainer(TokenContainerClass):
         :return: True if a valid challenge exists, raises a privacyIDEAError otherwise.
         """
         # Get params
-        signature = base64.urlsafe_b64decode(getParam(params, "signature", optional=False))
-        pub_key_encr_container_str = getParam(params, "public_enc_key_client", optional=True)
-        container_client_str = getParam(params, "container_dict_client", optional=True)
-        scope = getParam(params, "scope", optional=False)
-        device_brand = getParam(params, "device_brand", optional=True)
-        device_model = getParam(params, "device_model", optional=True)
-        passphrase = getParam(params, "passphrase", optional=True)
+        signature = base64.urlsafe_b64decode(get_required(params, "signature"))
+        pub_key_encr_container_str = get_optional(params, "public_enc_key_client")
+        container_client_str = get_optional(params, "container_dict_client")
+        scope = get_required(params, "scope")
+        device_brand = get_optional(params, "device_brand")
+        device_model = get_optional(params, "device_model")
+        passphrase = get_optional(params, "passphrase")
 
         try:
             pub_key_sig_container_str = self.get_container_info_dict()["public_key_client"]
@@ -471,7 +472,7 @@ class SmartphoneContainer(TokenContainerClass):
                     "container_dict_server": <encrypted container dict from server>
                 }
         """
-        pub_key_encr_container_str = getParam(params, "public_enc_key_client", optional=False)
+        pub_key_encr_container_str = get_required(params, "public_enc_key_client")
         pub_key_encr_container_bytes = base64.urlsafe_b64decode(pub_key_encr_container_str)
         pub_key_encr_container = X25519PublicKey.from_public_bytes(pub_key_encr_container_bytes)
 

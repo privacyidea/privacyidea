@@ -23,7 +23,7 @@ import json
 import logging
 import os
 from datetime import timezone, datetime
-from typing import Union, Generator, Any
+from collections.abc import Generator
 
 from flask import g
 from sqlalchemy import func, select, and_
@@ -105,7 +105,7 @@ def _gen_serial(container_type: str) -> str:
     ).scalar()
 
     while True:
-        count = '{:04d}'.format(container_num)
+        count = f'{container_num:04d}'
         rnd_len = serial_len - len(count)
         rnd = ""
         if rnd_len > 0:
@@ -120,7 +120,7 @@ def _gen_serial(container_type: str) -> str:
     return serial
 
 
-def create_container_from_db_object(db_container: TokenContainer) -> Union[TokenContainerClass, None]:
+def create_container_from_db_object(db_container: TokenContainer) -> TokenContainerClass | None:
     """
     Create a TokenContainerClass object from the given db object.
 
@@ -349,7 +349,7 @@ def get_all_containers(user: User = None, serial: str = None, ctype: str = None,
                        sortdir: str = 'asc', template: str = None, description: str = None, assigned: bool = None,
                        resolver: str = None, info: dict = None, last_auth_delta: str = None,
                        last_sync_delta: str = None, state: str = None, page: int = 0,
-                       pagesize: int = 0) -> dict[str, Union[int, None, list[TokenContainerClass]]]:
+                       pagesize: int = 0) -> dict[str, int | None | list[TokenContainerClass]]:
     """
     This function is used to retrieve a container list, that can be displayed in
     the Web UI. It supports pagination if either page or pagesize is given (e.g. >0).
@@ -385,8 +385,9 @@ def get_all_containers(user: User = None, serial: str = None, ctype: str = None,
     :returns: A dictionary with a list of containers at the key 'containers' and optionally pagination entries ('prev',
               'next', 'current', 'count')
     """
-    sql_query: Select = _create_container_query(user=user, serial=serial, ctype=ctype, token_serial=token_serial, realm=realm,
-                                        allowed_realms=allowed_realms, template=template, description=description,
+    sql_query: Select = _create_container_query(user=user, serial=serial, ctype=ctype, token_serial=token_serial,
+                                        realm=realm, allowed_realms=allowed_realms, template=template,
+                                        description=description,
                                         assigned=assigned, resolver=resolver, info=info,
                                         last_auth_delta=last_auth_delta,
                                         last_sync_delta=last_sync_delta, state=state, sortby=sortby, sortdir=sortdir)
@@ -424,7 +425,7 @@ def get_container_generator(pagesize: int = 10, **kwargs) -> Generator[list[Toke
 
 
 def create_pagination(page: int, pagesize: int, sql_query: Select,
-                      object_list_key: str) -> dict[str, Union[int, None, list[any]]]:
+                      object_list_key: str) -> dict[str, int | None | list[any]]:
     """
         Creates the pagination of a sql query.
 
@@ -459,7 +460,7 @@ def create_pagination(page: int, pagesize: int, sql_query: Select,
     }
 
 
-def find_container_for_token(serial: str) -> Union[TokenContainerClass, None]:
+def find_container_for_token(serial: str) -> TokenContainerClass | None:
     """
     Returns a TokenContainerClass object for the given token or raises a ResourceNotFoundError
     if the token does not exist.
@@ -507,7 +508,7 @@ def get_container_classes() -> dict[str, type[TokenContainerClass]]:
     return ret
 
 
-def init_container(params: dict[str, any]) -> dict[str, Union[str, list]]:
+def init_container(params: dict[str, any]) -> dict[str, str | list]:
     """
     Create a new container with the given parameters. Requires at least the type.
 
@@ -943,7 +944,7 @@ def set_container_info(serial: str, info: dict) -> dict[str, bool]:
     return result
 
 
-def get_container_info_dict(serial: str, ikey: str = None) -> dict[str, Union[str, None]]:
+def get_container_info_dict(serial: str, ikey: str = None) -> dict[str, str | None]:
     """
     Returns the info of the given key or all infos if no key is given for the container with the given serial.
 
@@ -1047,7 +1048,7 @@ def add_container_states(serial: str, states: list[str]) -> dict[str, bool]:
 
 
 def set_container_realms(serial: str, realms: list[str],
-                         allowed_realms: Union[list[str], None] = []) -> dict[str, bool]:
+                         allowed_realms: list[str] | None = []) -> dict[str, bool]:
     """
     Set the realms of a container.
 
@@ -1081,7 +1082,7 @@ def set_container_realms(serial: str, realms: list[str],
     return res
 
 
-def add_container_realms(serial: str, realms: list[str], allowed_realms: Union[list[str], None]) -> dict[str, bool]:
+def add_container_realms(serial: str, realms: list[str], allowed_realms: list[str] | None) -> dict[str, bool]:
     """
     Add the realms to the container realms.
 
@@ -1121,7 +1122,7 @@ def get_container_realms(serial: str) -> list[str]:
 
 
 def create_container_dict(container_list: list[TokenContainerClass], no_token: bool = False, user: User = None,
-                          logged_in_user_role: str = 'user', allowed_token_realms: Union[list[str], None] = [],
+                          logged_in_user_role: str = 'user', allowed_token_realms: list[str] | None = [],
                           hide_token_info: list[str] = None, hide_container_info: list[str] = None) -> list[dict]:
     """
     Create a dictionary for each container in the list.
@@ -1496,7 +1497,7 @@ def create_container_template(container_type: str, template_name: str, options: 
     return template.id
 
 
-def create_container_template_from_db_object(db_template: TokenContainerTemplate) -> Union[ContainerTemplateBase, None]:
+def create_container_template_from_db_object(db_template: TokenContainerTemplate) -> ContainerTemplateBase | None:
     """
     Create a TokenContainerTemplate object from the given db object.
 
@@ -1530,7 +1531,7 @@ def get_all_templates_with_type():
 
 def get_templates_by_query(name: str = None, container_type: str = None, default: bool = None, page: int = 0,
                            pagesize: int = 0, sortdir: str = "asc",
-                           sortby: str = "name") -> dict[str, Union[int, list[dict], None]]:
+                           sortby: str = "name") -> dict[str, int | list[dict] | None]:
     """
     Returns a list of all templates or a list filtered by the given parameters.
 

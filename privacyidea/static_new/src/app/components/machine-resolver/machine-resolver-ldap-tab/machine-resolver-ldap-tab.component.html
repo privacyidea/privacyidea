@@ -1,5 +1,5 @@
 <!--
- (c) NetKnights GmbH 2025,  https://netknights.it
+ (c) NetKnights GmbH 2026,  https://netknights.it
 
  This code is free software; you can redistribute it and/or
  modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -133,23 +133,14 @@
       @if (isEditMode()) {
         <button
           mat-stroked-button
-          class="button-margin"
-          [ngClass]="isActiveDirectoryAttributesPreassigned() ? 'action-button-active' : 'action-button-1'"
+          class="button-margin action-button-secondary button-width-l"
           (click)="preassignActiveDirectoryAttributes()"
           i18n="@@preassignADAttributesButton">
           Pre-assign Active Directory Attributes
         </button>
-      } @else {
-        <div>
-          <!-- Spacer -->
-        </div>
       }
-      <div>
-        <!-- Spacer -->
-      </div>
       <div class="checkbox-container">
         <mat-checkbox
-          matInput
           [disabled]="!isEditMode()"
           [ngModel]="hostsData().NOREFERRALS === 'True'"
           (ngModelChange)="onClickNoReferrals($event)"

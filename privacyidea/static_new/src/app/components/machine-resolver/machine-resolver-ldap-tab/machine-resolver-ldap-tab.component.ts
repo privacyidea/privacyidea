@@ -27,13 +27,14 @@ import { MatInputModule } from "@angular/material/input";
 import { FormsModule } from "@angular/forms";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatSelectModule } from "@angular/material/select";
-import { CommonModule } from "@angular/common";
+
+import { MatButton } from "@angular/material/button";
 
 @Component({
   selector: "app-machine-resolver-ldap-tab",
   templateUrl: "./machine-resolver-ldap-tab.component.html",
   styleUrls: ["./machine-resolver-ldap-tab.component.scss"],
-  imports: [FormsModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatCheckboxModule, CommonModule],
+  imports: [FormsModule, MatFormFieldModule, MatInputModule, MatSelectModule, MatCheckboxModule, MatButton],
   standalone: true,
   encapsulation: ViewEncapsulation.ShadowDom
 })
@@ -47,16 +48,6 @@ export class MachineResolverLdapTabComponent {
   });
   readonly onNewData = output<MachineResolverData>();
   readonly onNewValidator = output<(data: MachineResolverData) => boolean>();
-
-  readonly isActiveDirectoryAttributesPreassigned = computed<boolean>(() => {
-    const data = this.machineResolverData() as LdapMachineResolverData;
-    return (
-      data.SEARCHFILTER === "(objectClass=computer)" &&
-      data.IDATTRIBUTE === "DN" &&
-      data.HOSTNAMEATTRIBUTE === "dNSHostName" &&
-      data.NOREFERRALS === "True"
-    );
-  });
 
   ngOnInit(): void {
     this.onNewValidator.emit(this.isValid.bind(this));

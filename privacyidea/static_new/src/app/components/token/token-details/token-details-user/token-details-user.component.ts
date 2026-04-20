@@ -30,7 +30,6 @@ import {
   NotificationService,
   NotificationServiceInterface
 } from "../../../../services/notification/notification.service";
-import { OverflowService, OverflowServiceInterface } from "../../../../services/overflow/overflow.service";
 import { RealmService, RealmServiceInterface } from "../../../../services/realm/realm.service";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 import { UserService, UserServiceInterface } from "../../../../services/user/user.service";
@@ -69,7 +68,6 @@ export class TokenDetailsUserComponent {
   protected readonly realmService: RealmServiceInterface = inject(RealmService);
   protected readonly userService: UserServiceInterface = inject(UserService);
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
-  protected readonly overflowService: OverflowServiceInterface = inject(OverflowService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
 
@@ -79,6 +77,7 @@ export class TokenDetailsUserComponent {
   @Input() isEditingInfo!: WritableSignal<boolean>;
   @Input() isAnyEditingOrRevoked!: Signal<boolean>;
   tokenType = computed(() => {
+    if (!this.tokenService.tokenDetailResource.hasValue()) return undefined;
     const tokenDetail = this.tokenService.tokenDetailResource.value();
     return tokenDetail?.result?.value?.tokens?.[0].tokentype;
   });

@@ -81,7 +81,7 @@ describe("PendingChangesDialogComponent", () => {
     expect(pendingChangesService.registerHasChanges).toHaveBeenCalledWith(component.isDirty);
 
     component.ngOnDestroy();
-    expect(pendingChangesService.unregisterHasChanges).toHaveBeenCalled();
+    expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
   });
 
   it("should set disableClose to true on construction", () => {

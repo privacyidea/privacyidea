@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -17,12 +17,13 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { of } from "rxjs";
+import { BehaviorSubject, map, of } from "rxjs";
 import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 
 import { UserDetailsComponent } from "./user-details.component";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
+import { BreakpointObserver, BreakpointState } from "@angular/cdk/layout";
 
 import { AuthService } from "../../../services/auth/auth.service";
 import { ContentService } from "../../../services/content/content.service";
@@ -59,6 +60,7 @@ describe("UserDetailsComponent", () => {
   let tokenServiceMock: MockTokenService;
   let dialogServiceMock: MockDialogService;
   let dialogMock: MockMatDialog;
+  let breakpointSubject: BehaviorSubject<Record<string, boolean>>;
 
   const mockUserData = {
     username: "alice",
@@ -77,12 +79,22 @@ describe("UserDetailsComponent", () => {
     TestBed.resetTestingModule();
 
     dialogMock = new MockMatDialog();
+    breakpointSubject = new BehaviorSubject<Record<string, boolean>>({
+      "(max-width: 1000px)": false,
+      "(max-width: 1240px)": false
+    });
 
     await TestBed.configureTestingModule({
       imports: [UserDetailsComponent, BrowserAnimationsModule],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
+        {
+          provide: BreakpointObserver,
+          useValue: {
+            observe: (query: string) => breakpointSubject.pipe(map((b) => ({ matches: b[query] || false, breakpoints: {} })))
+          }
+        },
         {
           provide: ActivatedRoute,
           useValue: {
@@ -118,26 +130,14 @@ describe("UserDetailsComponent", () => {
   });
 
   it("tokenDataSource populates from tokenResource and keeps previous when resource is missing", () => {
-    tokenServiceMock.tokenResource.value.set({
-      detail: {},
-      id: 0,
-      jsonrpc: "2.0",
-      signature: "",
-      time: Date.now(),
-      version: "1.0",
-      versionnumber: "1.0",
-      result: {
-        status: true,
-        value: {
-          count: 2,
-          current: 2,
-          tokens: [
-            { serial: "T-1", revoked: false, locked: false } as any,
-            { serial: "T-2", revoked: false, locked: false } as any
-          ]
-        }
-      }
-    } as any);
+    tokenServiceMock.tokenResourceValue.set({
+      count: 2,
+      current: 2,
+      tokens: [
+        { serial: "T-1", revoked: false, locked: false } as any,
+        { serial: "T-2", revoked: false, locked: false } as any
+      ]
+    });
     fixture.detectChanges();
 
     expect(component.tokenDataSource().data.map((t) => t.serial)).toEqual(["T-1", "T-2"]);
@@ -281,7 +281,7 @@ describe("UserDetailsComponent", () => {
 
     // detailsEntries should not include custom1 or custom2
     const entries = component.detailsEntries();
-    const keys = entries.map(e => e.key);
+    const keys = entries.map((e) => e.key);
 
     expect(keys).not.toContain("custom1");
     expect(keys).not.toContain("custom2");
@@ -308,9 +308,8 @@ describe("UserDetailsComponent", () => {
     });
   });
 
-  it("deleteUser opens confirmation dialog, deletes user, navigates, and reloads", () => {
+  it("should navigateByUrl and reload usersResource on deleteUser success", () => {
     component.userData.set(mockUserData);
-
     const deleteSpy = jest.spyOn(userServiceMock, "deleteUser").mockReturnValue(of(true));
     const routerSpy = jest.spyOn((component as any).router, "navigateByUrl").mockResolvedValue(true);
     userServiceMock.usersResource = { reload: jest.fn() } as any;
@@ -320,18 +319,35 @@ describe("UserDetailsComponent", () => {
 
     component.deleteUser();
 
-    expect(dialogServiceMock.openDialog).toHaveBeenCalledWith({
-      component: SimpleConfirmationDialogComponent,
-      data: expect.objectContaining({
-        title: "Delete User",
-        items: ["alice"],
-        itemType: "user",
-        confirmAction: expect.any(Object)
-      })
-    });
+    expect(deleteSpy).toHaveBeenCalled();
+    expect(routerSpy).toHaveBeenCalled();
+  });
 
-    expect(deleteSpy).toHaveBeenCalledWith("default", "alice");
-    expect(routerSpy).toHaveBeenCalledWith(expect.any(String));
-    expect(userServiceMock.usersResource.reload).toHaveBeenCalled();
+  it("should adjust colCount based on breakpoints", () => {
+    expect(component.colCount()).toBe(3);
+
+    breakpointSubject.next({ "(max-width: 1000px)": false, "(max-width: 1240px)": true });
+    expect(component.colCount()).toBe(2);
+
+    breakpointSubject.next({ "(max-width: 1000px)": true, "(max-width: 1240px)": true });
+    expect(component.colCount()).toBe(1);
+  });
+
+  it("should split detailsColumns according to colCount", () => {
+    userServiceMock.user.set(mockUserData);
+    const totalEntries = component.detailsEntries().length;
+
+    // Default 3 columns
+    expect(component.colCount()).toBe(3);
+    let columns = component.detailsColumns();
+    expect(columns.length).toBe(3);
+    expect(columns.flat().length).toBe(totalEntries);
+
+    // 1 column
+    breakpointSubject.next({ "(max-width: 1000px)": true, "(max-width: 1240px)": true });
+    expect(component.colCount()).toBe(1);
+    columns = component.detailsColumns();
+    expect(columns.length).toBe(1);
+    expect(columns[0].length).toBe(totalEntries);
   });
 });

@@ -44,17 +44,17 @@ The functions of this module are tested in tests/test_lib_policy_decorator.py
 import datetime
 import functools
 import logging
-import pyrad
 import re
 
+import pyrad
 from dateutil.tz import tzlocal
 
 from privacyidea.lib.authcache import verify_in_cache, add_to_cache
 from privacyidea.lib.error import PolicyError, UserError, AuthError, Error
-from privacyidea.lib.policies.helper import check_max_auth_fail, check_max_auth_success
-from privacyidea.lib.policy import SCOPE, ACTIONVALUE, LOGINMODE
 from privacyidea.lib.policies.actions import PolicyAction
+from privacyidea.lib.policies.helper import check_max_auth_fail, check_max_auth_success
 from privacyidea.lib.policy import Match
+from privacyidea.lib.policy import SCOPE, ACTIONVALUE, LOGINMODE
 from privacyidea.lib.radiusserver import get_radius
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import parse_timedelta, split_pin_pass
@@ -62,7 +62,7 @@ from privacyidea.lib.utils import parse_timedelta, split_pin_pass
 log = logging.getLogger(__name__)
 
 
-class libpolicy(object):
+class libpolicy:
     """
     This is the decorator wrapper to call a specific function before a
     library call in contrast to prepolicy and postpolicy, which are to be
@@ -97,6 +97,26 @@ class libpolicy(object):
             return self.decorator_function(wrapped_function, *args, **kwds)
 
         return policy_wrapper
+
+
+def _get_token_count_excluding_rollout_states(user_object, ignore_rollout_state):
+    """
+    Get the number of tokens for a user, optionally ignoring tokens
+    whose rollout_state matches one of the given states.
+
+    :param user_object: The user whose tokens to count
+    :param ignore_rollout_state: A collection of rollout states to ignore, or empty/falsy to count all
+    :return: The number of relevant tokens
+    """
+    from privacyidea.lib.token import get_tokens
+    token_count = get_tokens(user=user_object, count=True)
+    if ignore_rollout_state and token_count > 0:
+        ignored_states = {s.lower() for s in ignore_rollout_state}
+        user_tokens = get_tokens(user=user_object)
+        relevant_tokens = [t for t in user_tokens
+                           if (t.token.rollout_state or "").lower() not in ignored_states]
+        token_count = len(relevant_tokens)
+    return token_count
 
 
 def challenge_response_allowed(func):
@@ -213,7 +233,6 @@ def auth_user_has_no_token(wrapped_function, user_object, passw,
     :param options: Dict containing values for "g" and "clientip"
     :return: Tuple of True/False and reply-dictionary
     """
-    from privacyidea.lib.token import get_tokens
     options = options or {}
     g = options.get("g")
     if g:
@@ -221,7 +240,13 @@ def auth_user_has_no_token(wrapped_function, user_object, passw,
                                    user_object=user_object).policies(write_to_audit_log=False)
         if pass_no_token:
             # Now we need to check, if the user really has no token.
-            token_count = get_tokens(user=user_object, count=True)
+            # If PASSNOTOKEN_IGNORE_ROLLOUT_STATE is set, tokens with a rollout state
+            # listed in the policy are ignored when counting the user's tokens.
+            ignore_rollout_state = (Match.user(g, scope=SCOPE.AUTH,
+                                               action=PolicyAction.PASSNOTOKEN_IGNORE_ROLLOUT_STATE,
+                                               user_object=user_object)
+                                    .action_values(unique=False, write_to_audit_log=True))
+            token_count = _get_token_count_excluding_rollout_states(user_object, ignore_rollout_state)
             if token_count == 0:
                 g.audit_object.add_policy({p.get("name") for p in pass_no_token})
                 return True, {"message": f"user has no token, accepted due to '{pass_no_token[0].get('name')}'"}
@@ -289,7 +314,13 @@ def auth_user_passthru(wrapped_function, user_object, passw, options=None):
         pass_thru = Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.PASSTHRU,
                                user_object=user_object).policies(write_to_audit_log=False)
         # We only go to passthru, if the user has no tokens!
-        if pass_thru and get_tokens(user=user_object, count=True) == 0:
+        # If PASSTHRU_IGNORE_ROLLOUT_STATE is set, tokens with a rollout state
+        # listed in the policy are ignored when counting the user's tokens.
+        ignore_rollout_state = (Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.PASSTHRU_IGNORE_ROLLOUT_STATE,
+                                           user_object=user_object)
+                                .action_values(unique=False, write_to_audit_log=True))
+        token_count = _get_token_count_excluding_rollout_states(user_object, ignore_rollout_state)
+        if pass_thru and token_count == 0:
             # Ensure that there are no conflicting action values within the same priority
             policy_object.check_for_conflicts(pass_thru, "passthru")
             pass_thru_action = pass_thru[0].get("action").get("passthru")
@@ -302,12 +333,12 @@ def auth_user_passthru(wrapped_function, user_object, passw, options=None):
             else:
                 # We are doing RADIUS passthru
                 log.info("Forwarding the authentication request to the radius "
-                         "server %s" % pass_thru_action)
+                         f"server {pass_thru_action}")
                 radius = get_radius(pass_thru_action)
                 # TODO: Handle challenge-response from RADIUS server (#2587)
                 r = radius.request(user_object.login, passw)
                 if r is not None and r.code == pyrad.packet.AccessAccept:
-                    log.debug("Successful RADIUS authentication in passthru with server %r" % pass_thru_action)
+                    log.debug(f"Successful RADIUS authentication in passthru with server {pass_thru_action!r}")
                     passthru_assign = Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.PASSTHRU_ASSIGN,
                                                  user_object=user_object).action_values(unique=True)
                     messages = []
@@ -336,7 +367,7 @@ def auth_user_passthru(wrapped_function, user_object, passw, options=None):
                     messages.append(f"against RADIUS server {pass_thru_action} due to '{policy_name}'")
                     return True, {'message': ",".join(messages)}
                 else:
-                    log.debug("Passthru authentication failed with RADIUS server %r" % pass_thru_action)
+                    log.debug(f"Passthru authentication failed with RADIUS server {pass_thru_action!r}")
 
     # If nothing else returned, we return the wrapped function
     return wrapped_function(user_object, passw, options)
@@ -597,8 +628,7 @@ def reset_all_user_tokens(wrapped_function, *args, **kwds):
         reset_all = Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.RESETALLTOKENS,
                                user_object=token_owner if token_owner else None).policies()
         if reset_all:
-            log.debug("Reset failcounter of all tokens of {0!s}".format(
-                token_owner))
+            log.debug(f"Reset failcounter of all tokens of {token_owner!s}")
             for tok_obj_reset in available_tokens:
                 try:
                     tok_obj_reset.reset()

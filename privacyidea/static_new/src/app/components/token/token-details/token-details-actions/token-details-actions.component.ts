@@ -26,7 +26,6 @@ import {
   NotificationService,
   NotificationServiceInterface
 } from "../../../../services/notification/notification.service";
-import { OverflowService, OverflowServiceInterface } from "../../../../services/overflow/overflow.service";
 import {
   TokenDetails,
   TokenService,
@@ -79,7 +78,6 @@ export class TokenDetailsActionsComponent {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   private readonly machineService: MachineServiceInterface = inject(MachineService);
   protected readonly validateService: ValidateServiceInterface = inject(ValidateService);
-  protected readonly overflowService: OverflowServiceInterface = inject(OverflowService);
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly dialogService: DialogServiceInterface = inject(DialogService);

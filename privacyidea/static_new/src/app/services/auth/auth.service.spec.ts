@@ -275,7 +275,7 @@ describe("AuthService", () => {
   });
 
   it("authtype, jwtExpDate and logoutTimeSeconds compute correctly", () => {
-    jest.useFakeTimers().setSystemTime(new Date("2025-01-01T00:00:00Z"));
+    jest.useFakeTimers().setSystemTime(Date.parse("2025-01-01T00:00:00Z"));
 
     expect(authService.authtype()).toBe("none");
     expect(authService.jwtExpDate()).toBeNull();
@@ -299,7 +299,7 @@ describe("AuthService", () => {
   });
 
   it("jwtExpDate and jwtLogoutTimeS are null if expiration or no jwt data at all are defined", () => {
-    jest.useFakeTimers().setSystemTime(new Date("2025-01-01T00:00:00Z"));
+    jest.useFakeTimers().setSystemTime(Date.parse("2025-01-01T00:00:00Z"));
 
     expect(authService.jwtExpDate()).toBeNull();
     expect(authService.jwtLogoutTimeS()).toBeNull();

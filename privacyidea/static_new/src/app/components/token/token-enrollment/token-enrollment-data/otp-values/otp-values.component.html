@@ -24,7 +24,8 @@
         @if (otpValues) {
           <button
             (click)="$event.stopPropagation(); printOtps()"
-            mat-icon-button>
+            mat-icon-button
+            class="margin-left-16">
             <mat-icon>print</mat-icon>
           </button>
         }

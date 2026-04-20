@@ -28,7 +28,7 @@ type ThemeIcon = "light_mode" | "dark_mode";
 @Component({
   selector: "app-theme-switcher",
   standalone: true,
-  imports: [CommonModule, MatIconModule, MatButtonModule, MatTooltipModule],
+  imports: [MatIconModule, MatButtonModule, MatTooltipModule],
   templateUrl: "./theme-switcher.component.html",
   styleUrls: ["./theme-switcher.component.scss"]
 })

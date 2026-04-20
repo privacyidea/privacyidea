@@ -151,7 +151,9 @@ export class ContainerDetailsActionsComponent {
   }
 
   openRegisterInitDialog(rollover: boolean) {
-    const container = this.containerService.containerDetailResource.value()?.result?.value?.containers?.[0];
+    const container = this.containerService.containerDetailResource.hasValue()
+      ? this.containerService.containerDetailResource.value()?.result?.value?.containers?.[0]
+      : undefined;
     this.dialogService.openDialog({
       component: ContainerRegistrationInitDialogComponent,
       data: {

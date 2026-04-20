@@ -23,7 +23,7 @@
 import functools
 import logging
 
-from sqlalchemy import select, update, delete
+from sqlalchemy import select, delete
 
 from privacyidea.lib.audit import getAudit
 from privacyidea.lib.config import get_config_object
@@ -36,7 +36,7 @@ log = logging.getLogger(__name__)
 AVAILABLE_EVENTS = []
 
 
-class event(object):
+class event:
     """
     This is the event decorator that calls the event handler in the handler
     module. This event decorator can be used at any API call
@@ -290,7 +290,7 @@ def delete_event(event_id: int) -> int:
     return event_id
 
 
-class EventConfiguration(object):
+class EventConfiguration:
     """
     This class is supposed to contain the event handling configuration during
     the Request.
@@ -349,12 +349,12 @@ def export_event(name=None):
 @register_import('event')
 def import_event(data, name=None):
     """Import policy configuration"""
-    log.debug('Import event config: {0!s}'.format(data))
+    log.debug(f'Import event config: {data!s}')
     for res_data in data:
         if name and name != res_data.get('name'):
             continue
         # condition is apparently not used anymore
         del res_data["condition"]
         rid = set_event(**res_data)
-        log.info('Import of event "{0!s}" finished,'
-                 ' id: {1!s}'.format(res_data['name'], rid))
+        log.info('Import of event "{!s}" finished,'
+                 ' id: {!s}'.format(res_data['name'], rid))

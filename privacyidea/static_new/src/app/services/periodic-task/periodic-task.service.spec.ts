@@ -174,5 +174,6 @@ describe("PeriodicTaskService", () => {
     reqs[0].flush(null, { status: 500, statusText: "Server Error" });
     // Do NOT flush the rest, as they are cancelled
     expect(notificationMock.openSnackBar).toHaveBeenCalledWith("Failed to fetch module options.");
+    expect(service.moduleOptions()).toEqual({});
   });
 });

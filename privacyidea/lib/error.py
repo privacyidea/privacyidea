@@ -102,7 +102,7 @@ class SubscriptionError(PrivacyIDEAError):
         return self.__repr__()
 
     def __repr__(self):
-        ret = '{0!s}({1!r}, application={2!s})'.format(type(
+        ret = '{!s}({!r}, application={!s})'.format(type(
             self).__name__, self.message, self.application)
         return ret
 
@@ -206,6 +206,12 @@ class ResolverError(PrivacyIDEAError):
     """Error in user resolver"""
     def __init__(self, description="resolver error!", eid=Error.RESOLVER):
         PrivacyIDEAError.__init__(self, description=description, id=eid)
+
+
+class NoLongerSupportedError(PrivacyIDEAError):
+    """Raised when an operation targets a token type that is no longer supported."""
+    def __init__(self, description="This token is no longer supported!", id=Error.PARAMETER):
+        PrivacyIDEAError.__init__(self, description=description, id=id)
 
 
 class ContainerError(PrivacyIDEAError):

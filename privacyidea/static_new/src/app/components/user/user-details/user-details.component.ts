@@ -28,6 +28,8 @@ import {
   ViewChild,
   WritableSignal
 } from "@angular/core";
+import { toSignal } from "@angular/core/rxjs-interop";
+import { BreakpointObserver } from "@angular/cdk/layout";
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { UserService, UserServiceInterface } from "../../../services/user/user.service";
 import { ROUTE_PATHS } from "../../../route_paths";
@@ -43,7 +45,7 @@ import { MatTableDataSource } from "@angular/material/table";
 import { MatPaginator, PageEvent } from "@angular/material/paginator";
 import { UserDetailsContainerTableComponent } from "./user-details-container-table/user-details-container-table.component";
 import { UserDetailsPinDialogComponent } from "./user-details-pin-dialog/user-details-pin-dialog.component";
-import { filter } from "rxjs";
+import { filter, map } from "rxjs";
 import { FormsModule } from "@angular/forms";
 import { MatSelectModule } from "@angular/material/select";
 import { FilterValue } from "../../../core/models/filter_value/filter_value";
@@ -55,6 +57,7 @@ import { DialogService, DialogServiceInterface } from "../../../services/dialog/
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { EditUserDialogComponent } from "@components/user/edit-user-dialog/edit-user-dialog.component";
 import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
+import { TableUtilsService, TableUtilsServiceInterface } from "../../../services/table-utils/table-utils.service";
 
 @Component({
   selector: "app-user-details",
@@ -90,7 +93,23 @@ export class UserDetailsComponent {
   private readonly auditService: AuditServiceInterface = inject(AuditService);
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
+  protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   private router = inject(Router);
+  private breakpointObserver = inject(BreakpointObserver);
+
+  private isSmall = toSignal(this.breakpointObserver.observe("(max-width: 1000px)").pipe(map((r) => r.matches)));
+  private isMedium = toSignal(this.breakpointObserver.observe("(max-width: 1240px)").pipe(map((r) => r.matches)));
+
+  colCount = computed(() => {
+    if (this.isSmall()) return 1;
+    if (this.isMedium()) return 2;
+    return 3;
+  });
+
+  customColCount = computed(() => {
+    if (this.isSmall()) return 1;
+    return 2;
+  });
 
   readonly labels: Record<string, string> = {
     username: $localize`Username`,
@@ -113,12 +132,13 @@ export class UserDetailsComponent {
   tokenResource = this.tokenService.tokenResource;
   pageIndex = this.tokenService.pageIndex;
   pageSize = this.tokenService.pageSize;
+  pageSizeOptions = this.tableUtilsService.pageSizeOptions;
 
   total: WritableSignal<number> = linkedSignal({
-    source: this.tokenResource.value,
-    computation: (tokenResource, previous) => {
-      if (tokenResource && tokenResource.result?.value) {
-        return tokenResource.result?.value.count;
+    source: this.tokenService.tokenResourceValue,
+    computation: (tokenResourceValue, previous) => {
+      if (tokenResourceValue) {
+        return tokenResourceValue.count;
       }
       return previous?.value ?? 0;
     }
@@ -131,10 +151,10 @@ export class UserDetailsComponent {
   tokenAutoTrigger!: MatAutocompleteTrigger;
 
   tokenDataSource: WritableSignal<MatTableDataSource<TokenDetails>> = linkedSignal({
-    source: this.tokenResource.value,
-    computation: (tokenResource, previous) => {
-      if (tokenResource && tokenResource.result?.value) {
-        return new MatTableDataSource(tokenResource.result?.value.tokens);
+    source: this.tokenService.tokenResourceValue,
+    computation: (tokenResourceValue, previous) => {
+      if (tokenResourceValue) {
+        return new MatTableDataSource(tokenResourceValue.tokens);
       }
       return previous?.value ?? new MatTableDataSource();
     }
@@ -192,9 +212,16 @@ export class UserDetailsComponent {
 
   detailsColumns = computed(() => {
     const entries = this.detailsEntries();
-    const colCount = 3;
+    const colCount = this.colCount();
     const perCol = Math.ceil(entries.length / colCount);
     return Array.from({ length: colCount }, (_, i) => entries.slice(i * perCol, (i + 1) * perCol));
+  });
+
+  customAttributeColumns = computed(() => {
+    const attributes = this.userService.userAttributesList();
+    const colCount = this.customColCount();
+    const perCol = Math.ceil(attributes.length / colCount);
+    return Array.from({ length: colCount }, (_, i) => attributes.slice(i * perCol, (i + 1) * perCol));
   });
 
   switchToCustomKey() {

@@ -115,7 +115,7 @@ def create_pgp_keys(ctx, keysize, force):
     if not gpg_home.exists():
         try:
             gpg_home.mkdir(parents=True)
-        except IOError as e:
+        except OSError as e:
             click.secho(f"Could not create PGP directory {gpg_home}: {e}", fg="red")
             ctx.exit(1)
     gpg = gnupg.GPG(gnupghome=gpg_home.as_posix())

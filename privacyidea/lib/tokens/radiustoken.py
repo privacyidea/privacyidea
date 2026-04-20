@@ -48,9 +48,10 @@ import logging
 import traceback
 import binascii
 from privacyidea.lib.utils import is_true, hexlify_and_unicode
+from privacyidea.lib.error import ParameterError
 from privacyidea.lib.tokens.remotetoken import RemoteTokenClass
 from privacyidea.lib.tokenclass import TokenClass, Tokenkind, AuthenticationMode
-from privacyidea.api.lib.utils import getParam, ParameterError
+from privacyidea.lib.params import get_optional, get_required
 from privacyidea.lib.log import log_with
 from privacyidea.lib.config import get_from_config
 from privacyidea.lib.decorators import check_token_locked
@@ -65,8 +66,6 @@ from privacyidea.lib import _
 from privacyidea.lib.policy import SCOPE, GROUP
 from privacyidea.lib.policies.actions import PolicyAction
 
-optional = True
-required = False
 
 log = logging.getLogger(__name__)
 
@@ -135,29 +134,28 @@ class RadiusTokenClass(RemoteTokenClass):
     @log_with(log, hide_args_keywords={'param': 'pin'})
     def update(self, param):
         # New value
-        radius_identifier = getParam(param, "radius.identifier")
+        radius_identifier = get_optional(param, "radius.identifier")
         self.add_tokeninfo("radius.identifier", radius_identifier)
 
         # old values
         if not radius_identifier:
-            radiusServer = getParam(param, "radius.server", optional=required)
+            radiusServer = get_optional(param, "radius.server")
             self.add_tokeninfo("radius.server", radiusServer)
-            radius_secret = getParam(param, "radius.secret", optional=required)
-            self.token.set_otpkey(hexlify_and_unicode(radius_secret))
-            system_settings = getParam(param, "radius.system_settings",
-                                       default=False)
+            radius_secret = get_optional(param, "radius.secret")
+            self.token.set_otpkey(hexlify_and_unicode(radius_secret or ""))
+            system_settings = get_optional(param, "radius.system_settings")
             self.add_tokeninfo("radius.system_settings", system_settings)
 
-            if not (radiusServer or radius_secret) and not system_settings:
+            if not (radiusServer or radius_secret) and not is_true(system_settings):
                 raise ParameterError("Missing parameter: radius.identifier", id=905)
 
         # if another OTP length would be specified in /admin/init this would
         # be overwritten by the parent class, which is ok.
         self.set_otplen(6)
         TokenClass.update(self, param)
-        val = getParam(param, "radius.local_checkpin", optional) or 0
+        val = get_optional(param, "radius.local_checkpin") or 0
         self.add_tokeninfo("radius.local_checkpin", val)
-        val = getParam(param, "radius.user", required)
+        val = get_required(param, "radius.user")
         self.add_tokeninfo("radius.user", val)
         self.add_tokeninfo("tokenkind", Tokenkind.VIRTUAL)
 
@@ -349,7 +347,7 @@ class RadiusTokenClass(RemoteTokenClass):
         :return: bool
         """
         local_check = is_true(self.get_tokeninfo("radius.local_checkpin"))
-        log.debug("local checking pin? {0!r}".format(local_check))
+        log.debug(f"local checking pin? {local_check!r}")
 
         return local_check
 
@@ -463,7 +461,7 @@ class RadiusTokenClass(RemoteTokenClass):
         if radius_identifier:
             # New configuration
             radius_server_object = get_radius(radius_identifier)
-        elif system_radius_settings:
+        elif is_true(system_radius_settings):
             # system configuration
             radius_server = get_from_config("radius.server").split(':')
             radius_secret = get_from_config("radius.secret")
@@ -487,10 +485,8 @@ class RadiusTokenClass(RemoteTokenClass):
             )
 
         # here we also need to check for radius.user
-        log.debug("checking OTP len:{0!s} on radius server: "
-                  "{1!s}, user: {2!r}".format(len(otpval),
-                                              radius_server_object.config.server,
-                                              radius_user))
+        log.debug(f"checking OTP len:{len(otpval)!s} on radius server: "
+                  f"{radius_server_object.config.server!s}, user: {radius_user!r}")
 
         try:
             # TODO: At the moment we support only one radius server.
@@ -520,14 +516,14 @@ class RadiusTokenClass(RemoteTokenClass):
             else:
                 radius_state = '<REJECTED>'
                 radius_message = 'RADIUS authentication failed'
-                log.debug("radius response code: %r" % response.code)
+                log.debug(f"radius response code: {response.code!r}")
                 log.info(f"Radiusserver {radius_server_object.config.identifier} "
                          f"rejected access to user {radius_user}!")
                 result = AccessReject
 
         except Exception as e:  # pragma: no cover
             log.error(f"Error contacting radius Server: {e}")
-            log.info("{0!s}".format(traceback.format_exc()))
+            log.info(f"{traceback.format_exc()!s}")
 
         options.update({'radius_result': result})
         options.update({'radius_state': radius_state})

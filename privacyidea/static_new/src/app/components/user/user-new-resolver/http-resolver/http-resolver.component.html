@@ -1,5 +1,5 @@
 <!--
- (c) NetKnights GmbH 2025,  https://netknights.it
+ (c) NetKnights GmbH 2026,  https://netknights.it
 
  This code is free software; you can redistribute it and/or
  modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,13 +16,13 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<div class="type-section">
-  @if (type() === 'entraidresolver') {
-    <h3 i18n>Entra ID Settings</h3>
-  } @else if (type() === 'keycloakresolver') {
-    <h3 i18n>Keycloak Settings</h3>
+<div class="margin-left-16">
+  @if (type() === "entraidresolver") {
+    <h4 i18n>Entra ID Settings</h4>
+  } @else if (type() === "keycloakresolver") {
+    <h4 i18n>Keycloak Settings</h4>
   } @else {
-    <h3 i18n>HTTP Settings</h3>
+    <h4 i18n>HTTP Settings</h4>
   }
 
   @if (!isAdvanced) {
@@ -32,11 +32,13 @@
       class="mode-toggle">
       <mat-button-toggle
         [value]="true"
-        i18n>Basic
+        i18n>
+        Basic
       </mat-button-toggle>
       <mat-button-toggle
         [value]="false"
-        i18n>Advanced
+        i18n>
+        Advanced
       </mat-button-toggle>
     </mat-button-toggle-group>
 
@@ -44,69 +46,91 @@
   }
 
   @if (!isAdvanced && basicSettings()) {
-    <div class="auth-grid">
-      <mat-form-field class="width-238">
-        <mat-label i18n>Method</mat-label>
-        <mat-select
-          [formControl]="methodControl"
-          required>
-          <mat-option value="GET">GET</mat-option>
-          <mat-option value="POST">POST</mat-option>
-        </mat-select>
-        @if (methodControl.hasError('required') && methodControl.touched) {
-          <mat-error i18n>Method is <strong>required</strong>.</mat-error>
-        }
-      </mat-form-field>
+    <div class="flex-column">
+      <div class="flex-row gap-16 margin-bottom-16">
+        <mat-form-field class="input-width-xl">
+          <mat-label i18n>Endpoint (URL)</mat-label>
+          <app-clearable-input
+            (onClick)="endpointControl.setValue('')"
+            [showClearButton]="!!endpointControl.value">
+            <input
+              [formControl]="endpointControl"
+              matInput
+              placeholder="https://example.com/path/to/users/:userid"
+              required />
+          </app-clearable-input>
+          @if (endpointControl.hasError("required") && endpointControl.touched) {
+            <mat-error i18n>
+              Endpoint is
+              <strong>required</strong>
+              .
+            </mat-error>
+          }
+        </mat-form-field>
 
-      <mat-form-field class="auth-endpoint">
-        <mat-label i18n>Endpoint (URL)</mat-label>
-        <app-clearable-input
-          (onClick)="endpointControl.setValue('')"
-          [showClearButton]="!!endpointControl.value">
-          <input
-            [formControl]="endpointControl"
-            matInput
-            placeholder="https://example.com/path/to/users/:userid"
-            required />
-        </app-clearable-input>
-        @if (endpointControl.hasError('required') && endpointControl.touched) {
-          <mat-error i18n>Endpoint is <strong>required</strong>.</mat-error>
-        }
-      </mat-form-field>
+        <mat-form-field class="input-width-s">
+          <mat-label i18n>Method</mat-label>
+          <mat-select
+            [formControl]="methodControl"
+            required>
+            <mat-option value="GET">GET</mat-option>
+            <mat-option value="POST">POST</mat-option>
+          </mat-select>
+          @if (methodControl.hasError("required") && methodControl.touched) {
+            <mat-error i18n>
+              Method is
+              <strong>required</strong>
+              .
+            </mat-error>
+          }
+        </mat-form-field>
+      </div>
 
-      <mat-form-field class="auth-wide">
+      <mat-form-field class="input-width-xl margin-bottom-16">
         <mat-label i18n>Request Mapping (JSON Format)</mat-label>
         <textarea
           [formControl]="requestMappingControl"
           matInput
           placeholder='{"customerid":"{userid}","accessKey":"secr3t!"}'
           required></textarea>
-        @if (requestMappingControl.hasError('required') && requestMappingControl.touched) {
-          <mat-error i18n>Request mapping is <strong>required</strong>.</mat-error>
+        @if (requestMappingControl.hasError("required") && requestMappingControl.touched) {
+          <mat-error i18n>
+            Request mapping is
+            <strong>required</strong>
+            .
+          </mat-error>
         }
       </mat-form-field>
 
-      <mat-form-field class="auth-wide">
+      <mat-form-field class="input-width-xl margin-bottom-16">
         <mat-label i18n>Headers (JSON Format)</mat-label>
         <textarea
           [formControl]="headersControl"
           matInput
           placeholder='{"Content-Type":"application/json; charset=UTF-8"}'
           required></textarea>
-        @if (headersControl.hasError('required') && headersControl.touched) {
-          <mat-error i18n>Headers are <strong>required</strong>.</mat-error>
+        @if (headersControl.hasError("required") && headersControl.touched) {
+          <mat-error i18n>
+            Headers are
+            <strong>required</strong>
+            .
+          </mat-error>
         }
       </mat-form-field>
 
-      <mat-form-field class="auth-wide">
+      <mat-form-field class="input-width-xl margin-bottom-16">
         <mat-label i18n>Response Mapping (JSON Format)</mat-label>
         <textarea
           [formControl]="responseMappingControl"
           matInput
           placeholder='{"username":"{Username}","email":"{Email}"}'
           required></textarea>
-        @if (responseMappingControl.hasError('required') && responseMappingControl.touched) {
-          <mat-error i18n>Response mapping is <strong>required</strong>.</mat-error>
+        @if (responseMappingControl.hasError("required") && responseMappingControl.touched) {
+          <mat-error i18n>
+            Response mapping is
+            <strong>required</strong>
+            .
+          </mat-error>
         }
       </mat-form-field>
     </div>
@@ -118,24 +142,27 @@
       Special Error Handling
     </mat-checkbox>
 
-    @if (editableControl.value) {
-      <mat-form-field class="auth-wide width-100">
+    @if (editable()) {
+      <mat-form-field class="auth-wide input-width-xl margin-bottom-16">
         <mat-label i18n>Response contains (JSON Format)</mat-label>
         <textarea
           [formControl]="errorResponseControl"
           matInput
           placeholder='{"success": false, "message": "An error occurred!"}'
           required></textarea>
-        @if (errorResponseControl.hasError('required') && errorResponseControl.touched) {
-          <mat-error i18n>Response contains is <strong>required</strong>.</mat-error>
+        @if (errorResponseControl.hasError("required") && errorResponseControl.touched) {
+          <mat-error i18n>
+            Response contains is
+            <strong>required</strong>
+            .
+          </mat-error>
         }
       </mat-form-field>
     }
   } @else {
-
-    @if (type() === 'keycloakresolver') {
-      <div class="form-grid">
-        <mat-form-field>
+    @if (type() === "keycloakresolver") {
+      <div class="flex-column">
+        <mat-form-field class="input-width-l">
           <mat-label i18n>Realm</mat-label>
           <app-clearable-input
             (onClick)="realmControl.setValue('')"
@@ -149,8 +176,8 @@
       </div>
     }
 
-    <div class="form-grid">
-      <mat-form-field class="field-lg">
+    <div class="flex-column">
+      <mat-form-field class="input-width-xl">
         <mat-label i18n>Base URL</mat-label>
         <app-clearable-input
           (onClick)="baseUrlControl.setValue('')"
@@ -161,43 +188,51 @@
             placeholder="https://example.com/path/to/users"
             required />
         </app-clearable-input>
-        <mat-hint i18n>The base URL of the API of the user store which will be concatenated with the user endpoints
-                       defined below.
+        <mat-hint i18n>
+          The base URL of the API of the user store which will be concatenated with the user endpoints defined below.
         </mat-hint>
-        @if (baseUrlControl.hasError('required') && baseUrlControl.touched) {
-          <mat-error i18n>Base URL is <strong>required</strong>.</mat-error>
+        @if (baseUrlControl.hasError("required") && baseUrlControl.touched) {
+          <mat-error i18n>
+            Base URL is
+            <strong>required</strong>
+            .
+          </mat-error>
         }
       </mat-form-field>
     </div>
 
     <div class="mapping-header">
-      <h4 i18n>Attribute Mapping</h4>
+      <h4
+        class="margin-0"
+        i18n>
+        Attribute Mapping
+      </h4>
     </div>
 
     <table
       [dataSource]="mappingRows()"
       class="mapping-table"
       mat-table>
-
       <ng-container matColumnDef="privacyideaAttr">
         <th
           *matHeaderCellDef
           i18n
-          mat-header-cell>PrivacyIDEA Attribute
+          mat-header-cell>
+          PrivacyIDEA Attribute
         </th>
         <td
           *matCellDef="let row; let i = index"
+          class="input-width-l"
           mat-cell>
           @if (!row.isCustom) {
             <mat-form-field
-              class="cell-field"
+              class="input-width-l height-57"
               subscriptSizing="dynamic">
               <mat-select
                 (selectionChange)="onPrivacyIdeaAttrChanged(i, $event.value)"
                 [value]="row.privacyideaAttr"
                 i18n-placeholder
                 placeholder="Select PrivacyIDEA Attribute">
-
                 @for (attr of availableAttributes()[i]; track attr) {
                   <mat-option [value]="attr">{{ attr }}</mat-option>
                 }
@@ -206,7 +241,8 @@
 
                 <mat-option
                   [value]="CUSTOM_ATTR_VALUE"
-                  i18n>Custom…
+                  i18n>
+                  Custom…
                 </mat-option>
               </mat-select>
             </mat-form-field>
@@ -214,7 +250,7 @@
 
           @if (row.isCustom) {
             <mat-form-field
-              class="cell-field"
+              class="input-width-l"
               subscriptSizing="dynamic">
               <app-clearable-input
                 (onClick)="setCustomAttr(i, '')"
@@ -235,13 +271,15 @@
         <th
           *matHeaderCellDef
           i18n
-          mat-header-cell>User Store Attribute
+          mat-header-cell>
+          User Store Attribute
         </th>
         <td
           *matCellDef="let row; let i = index"
+          class="input-width-l"
           mat-cell>
           <mat-form-field
-            class="cell-field"
+            class="input-width-l"
             subscriptSizing="dynamic">
             <app-clearable-input
               (onClick)="row.userStoreAttr = ''; onMappingChanged()"
@@ -261,11 +299,12 @@
         <th
           *matHeaderCellDef
           i18n
-          mat-header-cell>Actions
+          mat-header-cell>
+          Actions
         </th>
         <td
           *matCellDef="let row; let i = index"
-          class="actions-cell"
+          class="input-width-s text-center"
           mat-cell>
           @if (row.privacyideaAttr !== null || row.isCustom) {
             <div class="actions-buttons">
@@ -298,11 +337,11 @@
     </mat-hint>
 
     <app-http-groups-attribute
-      [userGroupsControl]="userGroupsControl"
-      [resolverType]="type()"></app-http-groups-attribute>
+      [resolverType]="type()"
+      [userGroupsControl]="userGroupsControl"></app-http-groups-attribute>
 
-    <div class="form-grid margin-top-16">
-      <mat-form-field class="field-lg">
+    <div class="flex-column margin-top-16">
+      <mat-form-field class="input-width-xl">
         <mat-label i18n>Headers (JSON Format)</mat-label>
         <textarea
           [formControl]="globalHeadersControl"
@@ -311,33 +350,54 @@
         <mat-hint i18n>If no custom headers are defined this header is used for all endpoints.</mat-hint>
       </mat-form-field>
 
-      <div class="flex-column">
-        <mat-checkbox
-          [formControl]="editableControl"
-          i18n>
-          Edit User Store
-        </mat-checkbox>
-        <span
-          class="hint"
-          i18n>The user data in this user store can be modified from within privacyIDEA.</span>
+      <div class="flex-row gap-16 margin-top-16 margin-bottom-16">
+        <div class="flex-column input-width-l">
+          <mat-checkbox
+            [formControl]="editableControl"
+            i18n>
+            Edit User Store
+          </mat-checkbox>
+          <span
+            class="hint margin-bottom-16 margin-top-16"
+            i18n>
+            The user data in this user store can be modified from within privacyIDEA.
+          </span>
+        </div>
+
+        <div class="flex-column">
+          <mat-form-field class="input-width-s">
+            <mat-label i18n>Timeout</mat-label>
+            <input
+              [formControl]="timeoutControl"
+              matInput
+              placeholder="60" />
+          </mat-form-field>
+          <span
+            class="hint margin-top--16"
+            i18n>
+            Time in seconds privacyIDEA tries
+            <br />
+            to reach the user store server.
+          </span>
+        </div>
       </div>
 
-      <div class="flex-column">
+      <div class="flex-row gap-16 margin-bottom-16">
         <mat-checkbox
+          class="input-width-l"
           [formControl]="verifyTlsControl"
           i18n>
           Verify TLS certificate of the server.
         </mat-checkbox>
-      </div>
 
-      @if (verifyTlsControl.value) {
-        <mat-form-field class="field-lg">
+        <mat-form-field class="input-width-l">
           <mat-label i18n>CA Certificate</mat-label>
           <mat-hint i18n>
             The file containing the CA certificate which signed the TLS certificate of the server.
           </mat-hint>
           <app-clearable-input
             (onClick)="tlsCaPathControl.setValue('')"
+            [disabled]="!verifyTls()"
             [showClearButton]="!!tlsCaPathControl.value">
             <input
               [formControl]="tlsCaPathControl"
@@ -345,18 +405,10 @@
               placeholder="/etc/privacyidea/ldap-ca.crt" />
           </app-clearable-input>
         </mat-form-field>
-      }
-
-      <mat-form-field>
-        <mat-label i18n>Timeout (seconds)</mat-label>
-        <input
-          [formControl]="timeoutControl"
-          matInput
-          placeholder="60" />
-        <mat-hint i18n>Time in seconds privacyIDEA tries to reach the user store server.</mat-hint>
-      </mat-form-field>
+      </div>
     </div>
-    <div class="margin-top-16">
+
+    <div class="margin-top-16 margin-bottom-16">
       <mat-accordion>
         <mat-expansion-panel [expanded]="isAuthorizationExpanded">
           <mat-expansion-panel-header>
@@ -364,18 +416,16 @@
           </mat-expansion-panel-header>
 
           <div class="auth-panel-body">
-            @if (type() === 'entraidresolver') {
+            @if (type() === "entraidresolver") {
               <p
                 class="auth-description"
                 i18n>
                 This section allows to configure an endpoint to which the privacyIDEA server must authenticate in order
-                to receive an access token. This token can then be used to access the user store API.
-
-                You can find most of these settings in the app registration in the Entra Admin Center or you also have
-                to add them there.
+                to receive an access token. This token can then be used to access the user store API. You can find most
+                of these settings in the app registration in the Entra Admin Center or you also have to add them there.
               </p>
-              <div class="auth-grid">
-                <mat-form-field class="auth-wide">
+              <div class="flex-column">
+                <mat-form-field class="input-width-xl">
                   <mat-label i18n>Authority</mat-label>
                   <app-clearable-input
                     (onClick)="authorityControl.setValue('')"
@@ -387,70 +437,86 @@
                   </app-clearable-input>
                 </mat-form-field>
 
-                <mat-form-field class="width-238">
-                  <mat-label i18n>Tenant ID</mat-label>
-                  <app-clearable-input
-                    (onClick)="tenantControl.setValue('')"
-                    [showClearButton]="!!tenantControl.value">
-                    <input
-                      [formControl]="tenantControl"
-                      matInput
-                      placeholder="e.g. 12345678-1234-1234-1234-123456789012"
-                      required />
-                  </app-clearable-input>
-                  @if (tenantControl.hasError('required') && tenantControl.touched) {
-                    <mat-error i18n>Tenant ID is <strong>required</strong>.</mat-error>
-                  }
-                </mat-form-field>
-
-                <mat-form-field>
-                  <mat-label i18n>Client ID</mat-label>
-                  <app-clearable-input
-                    (onClick)="clientIdControl.setValue('')"
-                    [showClearButton]="!!clientIdControl.value">
-                    <input
-                      [formControl]="clientIdControl"
-                      matInput
-                      placeholder="e.g. 87654321-4321-4321-4321-210987654321"
-                      required />
-                  </app-clearable-input>
-                  @if (clientIdControl.hasError('required') && clientIdControl.touched) {
-                    <mat-error i18n>Client ID is <strong>required</strong>.</mat-error>
-                  }
-                </mat-form-field>
-
-                <mat-form-field class="width-238">
-                  <mat-label i18n>Client Credential Type</mat-label>
-                  <mat-select
-                    [formControl]="clientCredentialTypeControl">
-                    <mat-option value="secret">Secret</mat-option>
-                    <mat-option value="certificate">Certificate</mat-option>
-                  </mat-select>
-                </mat-form-field>
-
-                @if (clientCredentialTypeControl.value === 'secret') {
-                  <mat-form-field>
-                    <mat-label i18n>Client Secret</mat-label>
+                <div class="flex-row gap-16">
+                  <mat-form-field class="input-width-l">
+                    <mat-label i18n>Tenant ID</mat-label>
                     <app-clearable-input
-                      (onClick)="clientSecretControl.setValue('')"
-                      [showClearButton]="!!clientSecretControl.value">
+                      (onClick)="tenantControl.setValue('')"
+                      [showClearButton]="!!tenantControl.value">
                       <input
-                        [formControl]="clientSecretControl"
+                        [formControl]="tenantControl"
                         matInput
-                        required
-                        type="password" />
+                        placeholder="e.g. 12345678-1234-1234-1234-123456789012"
+                        required />
                     </app-clearable-input>
-                    @if (clientSecretControl.hasError('required') && clientSecretControl.touched) {
-                      <mat-error i18n>Client secret is <strong>required</strong>.</mat-error>
+                    @if (tenantControl.hasError("required") && tenantControl.touched) {
+                      <mat-error i18n>
+                        Tenant ID is
+                        <strong>required</strong>
+                        .
+                      </mat-error>
                     }
                   </mat-form-field>
-                } @else if (clientCredentialTypeControl.value === 'certificate') {
+
+                  <mat-form-field class="input-width-l">
+                    <mat-label i18n>Client ID</mat-label>
+                    <app-clearable-input
+                      (onClick)="clientIdControl.setValue('')"
+                      [showClearButton]="!!clientIdControl.value">
+                      <input
+                        [formControl]="clientIdControl"
+                        matInput
+                        placeholder="e.g. 87654321-4321-4321-4321-210987654321"
+                        required />
+                    </app-clearable-input>
+                    @if (clientIdControl.hasError("required") && clientIdControl.touched) {
+                      <mat-error i18n>
+                        Client ID is
+                        <strong>required</strong>
+                        .
+                      </mat-error>
+                    }
+                  </mat-form-field>
+                </div>
+
+                <div class="flex-row gap-16">
+                  <mat-form-field class="input-width-l">
+                    <mat-label i18n>Client Credential Type</mat-label>
+                    <mat-select [formControl]="clientCredentialTypeControl">
+                      <mat-option value="secret">Secret</mat-option>
+                      <mat-option value="certificate">Certificate</mat-option>
+                    </mat-select>
+                  </mat-form-field>
+
+                  @if (clientCredentialType() === "secret") {
+                    <mat-form-field class="input-width-l">
+                      <mat-label i18n>Client Secret</mat-label>
+                      <app-clearable-input
+                        (onClick)="clientSecretControl.setValue('')"
+                        [showClearButton]="!!clientSecretControl.value">
+                        <input
+                          [formControl]="clientSecretControl"
+                          matInput
+                          required
+                          type="password" />
+                      </app-clearable-input>
+                      @if (clientSecretControl.hasError("required") && clientSecretControl.touched) {
+                        <mat-error i18n>
+                          Client secret is
+                          <strong>required</strong>
+                          .
+                        </mat-error>
+                      }
+                    </mat-form-field>
+                  }
+                </div>
+                @if (clientCredentialType() === "certificate") {
                   <p
-                    class="auth-description auth-wide"
+                    class="auth-description"
                     i18n>
                     This credential type does not support to check the user's password.
-                    <br>
-                    <br>
+                    <br />
+                    <br />
                     Specify the path to the private key file of the servers certificate. If you use an encrypted key,
                     add the password here, otherwise leave the field empty. The server certificate must be uploaded in
                     Entra's app registration as client credential.
@@ -458,32 +524,34 @@
 
                   <div
                     [formGroup]="clientCertificateGroup"
-                    class="auth-grid auth-wide">
-                    <mat-form-field>
-                      <mat-label i18n>Path to the Private Key File</mat-label>
-                      <app-clearable-input
-                        (onClick)="clientCertificateGroup.get('private_key_file')?.setValue('')"
-                        [showClearButton]="!!clientCertificateGroup.get('private_key_file')?.value">
-                        <input
-                          formControlName="private_key_file"
-                          matInput
-                          placeholder="/etc/privacyidea/entra.key" />
-                      </app-clearable-input>
-                    </mat-form-field>
+                    class="flex-column input-width-l">
+                    <div class="flex-row gap-16">
+                      <mat-form-field class="input-width-l">
+                        <mat-label i18n>Path to the Private Key File</mat-label>
+                        <app-clearable-input
+                          (onClick)="clientCertificateGroup.get('private_key_file')?.setValue('')"
+                          [showClearButton]="!!clientCertificateGroup.get('private_key_file')?.value">
+                          <input
+                            formControlName="private_key_file"
+                            matInput
+                            placeholder="/etc/privacyidea/entra.key" />
+                        </app-clearable-input>
+                      </mat-form-field>
 
-                    <mat-form-field>
-                      <mat-label i18n>Password for the Private Key</mat-label>
-                      <app-clearable-input
-                        (onClick)="clientCertificateGroup.get('private_key_password')?.setValue('')"
-                        [showClearButton]="!!clientCertificateGroup.get('private_key_password')?.value">
-                        <input
-                          formControlName="private_key_password"
-                          matInput
-                          type="password" />
-                      </app-clearable-input>
-                    </mat-form-field>
+                      <mat-form-field class="input-width-l">
+                        <mat-label i18n>Password for the Private Key</mat-label>
+                        <app-clearable-input
+                          (onClick)="clientCertificateGroup.get('private_key_password')?.setValue('')"
+                          [showClearButton]="!!clientCertificateGroup.get('private_key_password')?.value">
+                          <input
+                            formControlName="private_key_password"
+                            matInput
+                            type="password" />
+                        </app-clearable-input>
+                      </mat-form-field>
+                    </div>
 
-                    <mat-form-field>
+                    <mat-form-field class="input-width-l">
                       <mat-label i18n>Thumbprint of the Certificate</mat-label>
                       <app-clearable-input
                         (onClick)="clientCertificateGroup.get('certificate_fingerprint')?.setValue('')"
@@ -505,8 +573,8 @@
                 to receive an access token. This token can then be used to access the user store API.
               </p>
 
-              <div class="auth-grid">
-                <mat-form-field>
+              <div class="flex-row gap-16">
+                <mat-form-field class="input-width-l">
                   <mat-label i18n>Username</mat-label>
                   <app-clearable-input
                     (onClick)="usernameControl.setValue('')"
@@ -518,7 +586,7 @@
                   </app-clearable-input>
                 </mat-form-field>
 
-                <mat-form-field>
+                <mat-form-field class="input-width-l">
                   <mat-label i18n>Password</mat-label>
                   <app-clearable-input
                     (onClick)="passwordControl.setValue('')"
@@ -539,7 +607,7 @@
           </div>
         </mat-expansion-panel>
 
-        @if (clientCredentialTypeControl.value !== 'certificate') {
+        @if (clientCredentialType() !== "certificate") {
           <mat-expansion-panel>
             <mat-expansion-panel-header>
               <mat-panel-title i18n>Check User Password</mat-panel-title>
@@ -562,7 +630,9 @@
 
           <div class="auth-panel-body">
             <app-http-config
-              [description]="'Configure the endpoint to retrieve a list of users from the user store. The above defined attributes are added to the request as search parameters if they are available in the request.'"
+              [description]="
+                'Configure the endpoint to retrieve a list of users from the user store. The above defined attributes are added to the request as search parameters if they are available in the request.'
+              "
               [endpointHint]="'Possible tags: {userid} {username} {password} {givenname}'"
               [formGroup]="configGetUserListGroup"
               [title]="'User List'" />
@@ -576,7 +646,9 @@
 
           <div class="auth-panel-body">
             <app-http-config
-              [description]="'Configure the endpoint to retrieve a single user for the UID. For example, privacyIDEA only stores the UID of the token owner. To resolve the complete user, this endpoint is used.'"
+              [description]="
+                'Configure the endpoint to retrieve a single user for the UID. For example, privacyIDEA only stores the UID of the token owner. To resolve the complete user, this endpoint is used.'
+              "
               [endpointHint]="'Possible tags: {userid}'"
               [formGroup]="configGetUserByIdGroup"
               [title]="'Get User by ID'" />
@@ -590,14 +662,16 @@
 
           <div class="auth-panel-body">
             <app-http-config
-              [description]="'Configure the endpoint to retrieve a single user for the username. For example, when a user tries to authenticate against privacyIDEA, only the username is provided. To resolve the complete user and evaluate if the user exists, this endpoint is used.'"
+              [description]="
+                'Configure the endpoint to retrieve a single user for the username. For example, when a user tries to authenticate against privacyIDEA, only the username is provided. To resolve the complete user and evaluate if the user exists, this endpoint is used.'
+              "
               [endpointHint]="'Possible tags: {username}'"
               [formGroup]="configGetUserByNameGroup"
               [title]="'Get User by Name'" />
           </div>
         </mat-expansion-panel>
 
-        @if (editableControl.value) {
+        @if (editable()) {
           <mat-expansion-panel>
             <mat-expansion-panel-header>
               <mat-panel-title i18n>Create User</mat-panel-title>
@@ -605,8 +679,12 @@
 
             <div class="auth-panel-body">
               <app-http-config
-                [description]="'Configure the endpoint to create a new user in the user store. The above defined attributes can be set in the UI and will be added to the request body. Additionally, you can define a password which must be specified in the request mapping using the tag &quot;{password}&quot;.'"
-                [endpointHint]="'Possible tags: {username} {userid} {surname} {givenname} {email} {mobile} {phone} {password}'"
+                [description]="
+                  'Configure the endpoint to create a new user in the user store. The above defined attributes can be set in the UI and will be added to the request body. Additionally, you can define a password which must be specified in the request mapping using the tag &quot;{password}&quot;.'
+                "
+                [endpointHint]="
+                  'Possible tags: {username} {userid} {surname} {givenname} {email} {mobile} {phone} {password}'
+                "
                 [formGroup]="configCreateUserGroup"
                 [title]="'Create User'" />
             </div>
@@ -619,8 +697,12 @@
 
             <div class="auth-panel-body">
               <app-http-config
-                [description]="'Configure the endpoint to edit an existing user in the user store. The above defined attributes can be set in the UI and will be added to the request body. Additionally, you can define custom request parameters in the request mapping.'"
-                [endpointHint]="'Possible tags: {username} {userid} {surname} {givenname} {email} {mobile} {phone} {password}'"
+                [description]="
+                  'Configure the endpoint to edit an existing user in the user store. The above defined attributes can be set in the UI and will be added to the request body. Additionally, you can define custom request parameters in the request mapping.'
+                "
+                [endpointHint]="
+                  'Possible tags: {username} {userid} {surname} {givenname} {email} {mobile} {phone} {password}'
+                "
                 [formGroup]="configEditUserGroup"
                 [title]="'Edit User'" />
             </div>

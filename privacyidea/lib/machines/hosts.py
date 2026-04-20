@@ -52,7 +52,7 @@ class HostsMachineResolver(BaseMachineResolver):
         """
         machines = []
 
-        f = open(self.filename, "r")
+        f = open(self.filename)
         try:
             for line in f:
                 split_line = line.split()
@@ -68,7 +68,7 @@ class HostsMachineResolver(BaseMachineResolver):
                 # check if machine_id, ip or hostname matches a substring
                 if (any and any not in line_id and
                         len([x for x in line_hostname if any in x]) <= 0 and
-                        any not in "{0!s}".format(line_ip)):
+                        any not in f"{line_ip!s}"):
                     # "any" was provided but did not match either
                     # hostname, ip or machine_id
                     continue

@@ -14,6 +14,7 @@
 @include meta.load-css("panel.scss");
 @include meta.load-css("list.scss");
 @include meta.load-css("actions.scss");
+@include meta.load-css("overflow.scss");
 
 html,
 body {
@@ -38,6 +39,7 @@ body {
 }
 
 :root {
+  --overlay-margin: 297px;
   --blur: 4px;
   --border-radius: 4px;
   --light-distance: -4px;
@@ -61,7 +63,7 @@ body {
   --background-green-brand: linear-gradient(145deg, var(--green-brand-light), var(--green-brand-base));
 
   --box-shadow: var(--shadow-distance) var(--shadow-distance) var(--blur) var(--mat-sys-shadow),
-    var(--light-distance) var(--light-distance) var(--blur) var(--mat-sys-light);
+  var(--light-distance) var(--light-distance) var(--blur) var(--mat-sys-light);
   --box-shadow-white: var(--shadow-distance) var(--shadow-distance) var(--blur) var(--mat-sys-shadow),
   var(--light-distance) var(--light-distance) var(--blur) var(--mat-sys-light);
   --box-shadow-inset: inset var(--shadow-distance) var(--shadow-distance) var(--blur) var(--mat-sys-shadow),
@@ -103,14 +105,33 @@ body {
   --box-dialog-shadow: 0px 4px 20px var(--mat-sys-shadow-color-high);
   --table-color: var(--mat-sys-surface-container-lowest);
 
-  --mdc-filled-text-field-container-color: var(surface-container-low);
-  --mdc-tab-indicator-active-indicator-color: var(--mat-sys-primary);
-  --mdc-filled-text-field-focus-active-indicator-color: var(--mat-sys-primary-light);
-  --mat-tab-header-active-focus-indicator-color: var(--mat-sys-primary);
-  --mat-tab-header-active-ripple-color: white;
-  --mat-tab-header-inactive-ripple-color: white;
+  --mat-form-field-filled-container-color: var(surface-container-low);
+  --mat-tab-active-indicator-color: var(--mat-sys-primary);
+  --mat-form-field-filled-focus-active-indicator-color: var(--mat-sys-primary-light);
+  --mat-tab-active-focus-indicator-color: var(--mat-sys-primary);
+  --mat-tab-active-ripple-color: white;
+  --mat-tab-inactive-ripple-color: white;
   --mat-select-focused-arrow-color: var(--mat-sys-primary-light);
   --mdc-outlined-text-field-focus-outline-color: var(--mat-sys-primary-light);
+
+  --drawer-width-admin: var(--overlay-margin);
+  --drawer-width-self-service: 256px;
+}
+
+@mixin main-component-style {
+  padding: var(--global-padding);
+  border-radius: var(--border-radius);
+  @include mat.elevation(5);
+  background-color: var(--table-color);
+  // subtract double global padding to preserve margin around the component
+  // subtract single global padding which is the defined padding above to correctly get the displayed width of the component
+  max-width: calc(100vw - var(--drawer-width) - 2 * var(--double-global-padding) - 2 * var(--global-padding));
+  max-height: var(--max-height);
+  overflow: auto;
+}
+
+body.self-service-layout {
+  --overlay-margin: var(--drawer-width-self-service);
 }
 
 .shadow {
@@ -251,14 +272,6 @@ body {
   flex: auto;
 }
 
-.width-238 {
-  width: 238px;
-}
-
-.min-width-238 {
-  min-width: 238px;
-}
-
 .width-288px {
   width: 288px;
 }
@@ -292,19 +305,23 @@ body {
   height: fit-content;
 }
 
-.margin-left-2 {
+.margin-left-32 {
   margin-left: 32px;
 }
 
-.margin-left-1 {
+.margin-left-16 {
   margin-left: 16px;
+}
+
+.margin-left-8 {
+  margin-left: 8px;
 }
 
 .margin-right-32 {
   margin-right: 32px;
 }
 
-.margin-right-1 {
+.margin-right-16 {
   margin-right: 16px;
 }
 
@@ -324,8 +341,16 @@ body {
   margin-top: 16px;
 }
 
-.margin-top-2 {
+.margin-top-32 {
   margin-top: 32px;
+}
+
+.margin-top--16 {
+  margin-top: -16px;
+}
+
+.margin-top--32 {
+  margin-top: -32px;
 }
 
 .margin-top-0 {
@@ -346,6 +371,10 @@ body {
 
 .margin-bottom-32 {
   margin-bottom: 32px;
+}
+
+.margin-bottom-64 {
+  margin-bottom: 64px;
 }
 
 .margin-0 {
@@ -388,6 +417,15 @@ body {
   width: 13rem;
 }
 
+.width-241 {
+  width: 241px;
+  max-width: 241px;
+}
+
+.height-53 {
+  height: 53px;
+}
+
 .height-auto {
   height: auto;
 }
@@ -420,8 +458,16 @@ body {
   margin-bottom: 0;
 }
 
+.margin-bottom-4 {
+  margin-bottom: 4px;
+}
+
 .overflow {
   overflow: auto;
+}
+
+.padding-0 {
+  padding: 0;
 }
 
 .padding-2 {
@@ -466,6 +512,10 @@ body {
 
 .margin-left-64 {
   margin-left: 64px;
+}
+
+.max-width-300 {
+  max-width: 300px;
 }
 
 .copy-button {
@@ -556,6 +606,7 @@ body {
 .sticky-controls {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: var(--global-gap);
 }
 
@@ -577,6 +628,11 @@ body {
 .flex-row {
   display: flex;
   flex-direction: row;
+  flex-wrap: wrap;
+}
+
+.flex-nowrap {
+  flex-wrap: nowrap !important;
 }
 
 .flex-grow-1 {
@@ -612,40 +668,39 @@ body {
   }
 
   .mat-mdc-option.mat-mdc-option-active {
-    background-color: var(--mat-sys-primary-container) !important;
-    color: var(--mat-sys-on-primary-container) !important;
+    background-color: var(--mat-sys-surface-container-low) !important;
+    color: var(--mat-sys-on-surface) !important;
   }
 
   .cdk-overlay-container {
-    margin-left: 297px;
-    width: calc(100% - 297px);
-
-    .mat-mdc-select-panel {
-      margin-left: -297px;
+    // Navigation blocking dialog wins over navigation accessible dialog, e.g. confirmation dialog over resolver edit
+    &:has(.nav-accessible-dialog):has(.nav-blocking-dialog) {
+      .cdk-overlay-backdrop {
+        margin-left: 0;
+        width: 100%;
+      }
     }
 
-    .mat-mdc-autocomplete-panel {
-      margin-left: -297px;
+    // Dialogs where navigation should remain accessible shift the overlay
+    &:has(.nav-accessible-dialog):not(:has(.nav-blocking-dialog)) {
+      .cdk-overlay-backdrop {
+        margin-left: var(--overlay-margin);
+        width: calc(100% - var(--overlay-margin));
+      }
     }
 
-    .mat-mdc-menu-panel {
-      margin-left: -297px;
-    }
+    // Navigation accessible dialogs are always shifted, to be centered in the remaining space
+    &:has(.nav-accessible-dialog) {
+      .cdk-overlay-pane {
+        margin-left: var(--overlay-margin);
+      }
 
-    .mat-mdc-tooltip {
-      margin-left: -340px;
-    }
-
-    &:has(.welcome-dialog-panel),
-    &:has(.global-dialog-panel) {
-      margin-left: 0;
-      width: 100%;
-
+      // Shift back components which could be contained in the dialog to be correctly aligned
       .mat-mdc-select-panel,
       .mat-mdc-autocomplete-panel,
       .mat-mdc-menu-panel,
       .mat-mdc-tooltip {
-        margin-left: 0;
+        margin-left: calc(-1 * var(--overlay-margin));
       }
     }
   }

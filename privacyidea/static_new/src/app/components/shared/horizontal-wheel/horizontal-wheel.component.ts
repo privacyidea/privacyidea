@@ -33,12 +33,11 @@ import {
   effect,
   linkedSignal
 } from "@angular/core";
-import { CommonModule } from "@angular/common";
 
 @Component({
   selector: "app-horizontal-wheel",
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   templateUrl: "./horizontal-wheel.component.html",
   styleUrl: "./horizontal-wheel.component.scss",
   changeDetection: ChangeDetectionStrategy.OnPush

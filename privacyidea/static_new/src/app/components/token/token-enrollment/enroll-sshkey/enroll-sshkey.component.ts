@@ -18,9 +18,8 @@
  **/
 import { Component, effect, EventEmitter, inject, input, Output } from "@angular/core";
 import { AbstractControl, FormControl, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
-import { MatFormField, MatLabel } from "@angular/material/form-field";
+import { MatFormField, MatLabel, MatError } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
-import { MatError } from "@angular/material/select";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 
 import {
@@ -40,7 +39,8 @@ export interface SshkeyEnrollmentOptions extends TokenEnrollmentData {
 @Component({
   selector: "app-enroll-sshkey",
   imports: [FormsModule, MatFormField, MatInput, MatLabel, MatError, ReactiveFormsModule],
-  templateUrl: "./enroll-sshkey.component.html"
+  templateUrl: "./enroll-sshkey.component.html",
+  styleUrl: "./enroll-sshkey.component.scss"
 })
 export class EnrollSshkeyComponent {
   disabled = input<boolean>(false);

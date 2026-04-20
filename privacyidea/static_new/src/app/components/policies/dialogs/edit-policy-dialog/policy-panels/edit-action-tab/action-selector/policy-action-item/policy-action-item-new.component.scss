@@ -7,10 +7,10 @@
   align-items: center;
   gap: 16px;
   min-height: 52px;
-  padding: 0 16px;
+  padding: 8px 16px;
   margin: 4px 0;
   border-radius: var(--border-radius);
-  box-shadow: var(--mat-sys-level1);
+  border: 1px solid color-mix(in srgb, var(--mat-sys-outline-variant), transparent 50%);
   background-color: var(--mat-sys-surface-container-low);
   font-weight: 500;
   box-sizing: border-box;
@@ -22,11 +22,15 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-size: 1.1rem;
+  font-weight: bold;
 }
 
 .detail-description {
   flex: 1 1 auto;
   padding: 8px 0;
+  font-weight: normal;
+  font-size: 1rem;
 }
 
 .detail-input {
@@ -75,7 +79,7 @@
   }
 
   &:focus-visible {
-    outline: 1px solid var(--mat-sys-primary-light);
+    outline: buttons.$button-focus-outline;
     outline-offset: 1px;
   }
 }

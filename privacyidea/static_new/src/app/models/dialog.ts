@@ -27,4 +27,6 @@ export type DialogAction<R = any> = {
   hidden?: boolean;
   disabled?: boolean;
   icon?: string;
+  primary?: boolean;
+  className?: string;
 };

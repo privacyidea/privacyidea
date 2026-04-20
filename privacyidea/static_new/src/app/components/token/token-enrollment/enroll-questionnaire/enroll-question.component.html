@@ -17,7 +17,6 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <div class="flex-column">
-  <h4 class="enroll-h4">Token Configuration</h4>
   @if (configQuestions().length === 0) {
     @if (authService.role() === "admin") {
       <span
@@ -47,14 +46,15 @@
   }
   <div
     [formGroup]="questionForm()"
-    class="margin-top-16 form-group">
+    class="margin-top-16 flex-column gap-16">
     @for (question of configQuestions(); track question; let i = $index) {
-      <mat-form-field class="question-input-width input-height">
+      <mat-form-field
+        class="input-width-xl">
         <mat-label>{{ question.question }}</mat-label>
         <input
-          type="text"
           [formControlName]="questionControlNames()[i]"
-          matInput />
+          matInput
+          type="text" />
       </mat-form-field>
     }
   </div>

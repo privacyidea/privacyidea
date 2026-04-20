@@ -1,5 +1,5 @@
 <!--
- (c) NetKnights GmbH 2026,  https://netknights.it
+ (c) NetKnights GmbH 2026, https://netknights.it
 
  This code is free software; you can redistribute it and/or
  modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -12,16 +12,16 @@
  GNU AFFERO GENERAL PUBLIC LICENSE for more details.
 
  You should have received a copy of the GNU Affero General Public
- License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ License along with this program. If not, see <http://www.gnu.org/licenses/>.
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 <app-dialog-wrapper
-  title="Token Successfully Enrolled"
-  i18n-title="@@tokenEnrolledTitle"
-  [actions]="actions"
   (close)="close()"
-  (onAction)="onAction($event)">
+  (onAction)="onAction($event)"
+  [actions]="actions()"
+  i18n-title="@@tokenEnrolledTitle"
+  title="Token Successfully Enrolled">
   <mat-dialog-content>
     @let postTopHtml = postTopHtml$ | async;
     @if (postTopHtml?.hasContent) {
@@ -29,21 +29,19 @@
         [innerHTML]="postTopHtml?.sanitized"
         class="margin-top-16"></div>
     } @else {
-      <h2 i18n>Token Successfully Enrolled</h2>
-
       <app-token-enrolled-text
-        [serial]="serial"
+        (switchRoute)="onSwitchRoute()"
         [rollover]="data.rollover ?? false"
-        (switchRoute)="onSwitchRoute()"></app-token-enrolled-text>
+        [serial]="serial"></app-token-enrolled-text>
 
     }
     <div class="flex-row gap-16">
       @if (showQRCode() && qrCode) {
         <img
           alt="QR Code"
-          i18n-alt="@@qrCodeAlt"
           class="qr-code"
           height="300px"
+          i18n-alt="@@qrCodeAlt"
           src="{{ qrCode }}"
           width="300px" />
       }
@@ -58,8 +56,8 @@
 
           @if (data.response?.detail?.otpkey?.value && !data.response?.detail?.["otps"] && showQRCode()) {
             <app-otp-key
-              [otpKeyHex]="data.response?.detail?.otpkey?.value ?? ''"
-              [otpKeyBase32]="data.response?.detail?.otpkey?.value_b32 ?? ''" />
+              [otpKeyBase32]="data.response?.detail?.otpkey?.value_b32 ?? ''"
+              [otpKeyHex]="data.response?.detail?.otpkey?.value ?? ''" />
           }
 
           @if (data.tokenType === "tiqr") {

@@ -21,8 +21,8 @@
   aria-label="Container Table"
   class="container-table-container"
   i18n-aria-label>
-  <div class="filter-paginator-container-selfservice">
-    <h3 class="selfservice-paginator-label"> Your Containers </h3>
+  <div class="filter-paginator-container">
+    <h3 class="selfservice-paginator-label"> Your Containers</h3>
     <mat-paginator
       (page)="onPageEvent($event)"
       [length]="total()"
@@ -31,26 +31,25 @@
       [pageSize]="pageSize()"
       showFirstLastButtons />
   </div>
-  <div class="self-service-table-container">
-    <table
-      [dataSource]="containerDataSource()"
-      aria-label="Container Data Table"
-      class="container-table"
-      i18n-aria-label
-      mat-table
-      multiTemplateDataRows>
+  <table
+    [dataSource]="containerDataSource()"
+    aria-label="Container Data Table"
+    class="container-table"
+    i18n-aria-label
+    mat-table
+    multiTemplateDataRows>
       @for (column of columnKeysMapSelfService; track column) {
         <ng-container [matColumnDef]="column.key">
           @if (column.key === "select") {
             <th
               *matHeaderCellDef
-              mat-header-cell
-              class="table-checkbox">
+              class="table-checkbox"
+              mat-header-cell>
               <mat-checkbox
                 (change)="$event ? toggleAllRows() : null"
                 [checked]="isAllSelected()"
-                [indeterminate]="containerSelection().length > 0 && !isAllSelected()"
-                [disabled]="total() === 0" />
+                [disabled]="total() === 0"
+                [indeterminate]="containerSelection().length > 0 && !isAllSelected()" />
             </th>
           } @else {
             <th
@@ -59,7 +58,7 @@
               mat-header-cell>
               <div class="flex ali-center">
                 {{ column.label }}
-                <div class="margin-left-1 flex">
+                <div class="margin-left-16 flex">
                   <button
                     (click)="tableUtilsService.onSortButtonClick(column.key, sort)"
                     class="sort-button"
@@ -73,12 +72,12 @@
           }
           <td
             *matCellDef="let element; let row"
-            attr.aria-label="{{ column.label }} Cell"
-            mat-cell
             [ngClass]="{
-            'width-18rem': column.key === 'description',
-            'table-checkbox': column.key === 'select'
-          }">
+                'input-width-l': column.key === 'description',
+                'table-checkbox': column.key === 'select'
+              }"
+            attr.aria-label="{{ column.label }} Cell"
+            mat-cell>
             <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
               @switch (column.key) {
                 @case ("select") {
@@ -89,14 +88,16 @@
                     [disabled]="total() === 0" />
                 }
                 @case ("serial") {
-                  <a
-                    attr.aria-label="{{ column.label }} Link"
-                    (click)="contentService.containerSelected(element.serial)">
-                    {{ element[column.key] }}
-                  </a>
-                  @if (element.serial !== "") {
-                    <app-copy-button [copyText]="element.serial" />
-                  }
+                  <div class="flex-row flex-nowrap ali-center">
+                    <a
+                      (click)="contentService.containerSelected(element.serial)"
+                      attr.aria-label="{{ column.label }} Link">
+                      {{ element[column.key] }}
+                    </a>
+                    @if (element.serial !== "") {
+                      <app-copy-button [copyText]="element.serial" />
+                    }
+                  </div>
                 }
                 @case ("realms") {
                   <div [ngClass]="(element[column.key]?.length || 0) > 1 ? 'realm-list' : 'realm'">
@@ -105,7 +106,8 @@
                         attr.aria-label="{{ column.label }} Link"
                         href="#">
                         {{ realm }}
-                      </a><br class="realm-break" />
+                      </a>
+                      <br class="realm-break" />
                     }
                   </div>
                 }
@@ -119,8 +121,8 @@
                 @case ("delete") {
                   <button
                     (click)="deleteContainer(element.serial)"
-                    mat-icon-button
-                    i18n-aria-label="Delete Container">
+                    i18n-aria-label="Delete Container"
+                    mat-icon-button>
                     <mat-icon> delete</mat-icon>
                   </button>
                 }
@@ -168,8 +170,8 @@
               }
               @if (element.tokens?.length === 0) {
                 <div
-                  i18n
-                  class="flex ali-center">
+                  class="flex ali-center"
+                  i18n>
                   Container has no tokens.
                 </div>
               }
@@ -202,5 +204,4 @@
         </td>
       </tr>
     </table>
-  </div>
 </div>

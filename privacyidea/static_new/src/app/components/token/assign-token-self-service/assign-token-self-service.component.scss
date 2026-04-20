@@ -2,9 +2,6 @@
 @use "table";
 
 .assign-token-self-service-container {
+  @include styles.main-component-style;
   display: grid;
-  @include table.table-container-styles;
-  width: 49rem;
-  max-height: var(--max-height);
-  overflow: auto;
 }

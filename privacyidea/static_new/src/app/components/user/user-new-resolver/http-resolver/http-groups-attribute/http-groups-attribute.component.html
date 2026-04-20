@@ -16,30 +16,32 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<div [formGroup]="userGroupsControl">
-  <div class="flex-row gap-16 ali-center">
-    <h4 i18n>User Groups</h4>
-    <mat-slide-toggle
-      [formControlName]="'active'"
-      [matTooltip]="slideToggleTooltipSignal()"></mat-slide-toggle>
-  </div>
-  <div class="flex-row gap-16">
-    <mat-form-field
-      subscriptSizing="dynamic"
-      class="flex-size-1">
+<h4 i18n>User Groups</h4>
+<div
+  [formGroup]="userGroupsControl"
+  class="flex-column margin-top-16">
+  <div class="flex-row gap-16 margin-bottom-32">
+    <div class="flex just-center ali-center toggle-width">
+      Enable:
+      <mat-slide-toggle
+        class="margin-left-8"
+        [formControlName]="'active'"
+        [matTooltip]="slideToggleTooltipSignal()" />
+    </div>
+
+    <mat-form-field class="input-width-l">
       <mat-label i18n>privacyIDEA User Groups Key</mat-label>
       <input
         formControlName="pi_user_groups_key"
         matInput />
       <mat-hint i18n>Key to store the groups of the user in privacyIDEA.</mat-hint>
     </mat-form-field>
-    <mat-form-field
-      subscriptSizing="dynamic"
-      class="flex-size-1">
+
+    <mat-form-field class="input-width-l">
       @if (resolverType === "entraidresolver") {
         <mat-label i18n>Group Identifier</mat-label>
       } @else {
-        <mat-label i18n>User Store Group Attribute</mat-label>
+        <mat-label i18n>User Store Attribute</mat-label>
       }
       <input
         formControlName="user_groups_attribute"
@@ -51,12 +53,12 @@
       }
     </mat-form-field>
   </div>
-  <div class="flex-row gap-16 margin-top-16">
-    @if (resolverType !== "entraidresolver") {
-      <mat-form-field class="flex-size-1">
+
+  @if (resolverType !== "entraidresolver") {
+    <div class="flex-row gap-16 margin-bottom-16">
+      <mat-form-field class="input-width-s">
         <mat-label i18n>Method</mat-label>
-        <mat-select
-          formControlName="method">
+        <mat-select formControlName="method">
           <mat-option value="POST">POST</mat-option>
           <mat-option value="GET">GET</mat-option>
           <mat-option value="PUT">PUT</mat-option>
@@ -66,33 +68,37 @@
         <mat-hint i18n>HTTP method for the groups request.</mat-hint>
       </mat-form-field>
 
-      <mat-form-field
-        subscriptSizing="dynamic"
-        class="flex-size-3">
+      <mat-form-field class="input-width-xl">
         <mat-label i18n>Endpoint</mat-label>
         <input
           formControlName="endpoint"
           matInput />
         <mat-hint>
           <span i18n>Endpoint to receive the groups of a specific user. Possible tags:</span>
-          <code> &#123;userid&#125;</code>
-          @if (resolverType === 'keycloakresolver') {
-            <code> &#123;realm&#125;</code>
+          <code>&#123;userid&#125;</code>
+          @if (resolverType === "keycloakresolver") {
+            <code>&#123;realm&#125;</code>
           }
         </mat-hint>
       </mat-form-field>
-    }
-  </div>
+    </div>
+  }
 </div>
+
 @if (resolverType === "entraidresolver") {
   <div
-    class="hint margin-bottom-16"
+    class="hint margin-top-16 margin-bottom-16"
     i18n>
-    Receive the users groups via the <code>memberOf</code> attribute.
+    Receive the users groups via the
+    <code>memberOf</code>
+    attribute.
   </div>
 } @else {
   <div
-    class="hint margin-bottom-16"
-    i18n>User groups are received in a separate request.
+    class="hint margin-top-16 margin-bottom-16"
+    i18n>
+    User groups are received in a separate request and stored under the privacyIDEA attribute
+    <code>groups</code>
+    .
   </div>
 }

@@ -1,0 +1,41 @@
+@use "styles";
+@use "table";
+@use "@angular/material" as mat;
+
+.user-resolver-layout {
+  display: flex;
+  justify-content: center;
+}
+
+.user-sources-table-container {
+  @include styles.main-component-style;
+  @include table.base-table-structure(".user-sources-table", ".table-filter", ".table-scroll-container");
+  min-width: 616px;
+}
+
+.new-resolver-footer-row {
+  background-color: rgba(0, 0, 0, 0.02);
+}
+
+.name-actions-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.resolver-link {
+  cursor: pointer;
+  text-decoration: underline;
+  color: var(--mat-theme-primary);
+
+  &:hover {
+    color: var(--mat-theme-secondary);
+  }
+}
+
+.actions-buttons {
+  display: flex;
+  gap: 0.25rem;
+  align-items: center;
+}

@@ -43,8 +43,8 @@
   }
 
   <div class="flex-row">
-    <div class="flex-size-1">
-      <mat-form-field subscriptSizing="dynamic">
+    <div class="flex-size-1 margin-bottom-16">
+      <mat-form-field class="input-width-l">
         <mat-label i18n>Interval</mat-label>
         <input
           matInput
@@ -134,7 +134,7 @@
                 {{ editTask().options[option] }}
               </div>
             }
-            <div class="actions margin-left-1 height-48">
+            <div class="actions margin-left-16 height-48">
               @if (taskModuleOptions()[option] && !taskModuleOptions()[option].required) {
                 <button
                   (click)="deleteOption(option)"

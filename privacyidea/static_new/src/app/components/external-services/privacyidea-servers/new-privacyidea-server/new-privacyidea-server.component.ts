@@ -18,11 +18,11 @@
  **/
 
 import { CommonModule } from "@angular/common";
-import { Component, OnInit, OnDestroy, inject, signal, effect } from "@angular/core";
-import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from "@angular/forms";
+import { Component, effect, inject, OnDestroy, OnInit, signal } from "@angular/core";
+import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCheckboxModule } from "@angular/material/checkbox";
-import { MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from "@angular/material/dialog";
+import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from "@angular/material/dialog";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
@@ -30,21 +30,25 @@ import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
 import { Router } from "@angular/router";
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { ROUTE_PATHS } from "src/app/route_paths";
-import { AuthServiceInterface, AuthService } from "src/app/services/auth/auth.service";
-import { ContentServiceInterface, ContentService } from "src/app/services/content/content.service";
-import { DialogServiceInterface, DialogService } from "src/app/services/dialog/dialog.service";
+import { AuthService, AuthServiceInterface } from "src/app/services/auth/auth.service";
+import { ContentService, ContentServiceInterface } from "src/app/services/content/content.service";
+import { DialogService, DialogServiceInterface } from "src/app/services/dialog/dialog.service";
 import { PendingChangesService } from "src/app/services/pending-changes/pending-changes.service";
+import { ClearableInputComponent } from "../../../shared/clearable-input/clearable-input.component";
 import {
   PrivacyideaServer,
-  PrivacyideaServerServiceInterface,
-  PrivacyideaServerService
+  PrivacyideaServerService,
+  PrivacyideaServerServiceInterface
 } from "src/app/services/privacyidea-server/privacyidea-server.service";
+import { NAVIGATION_ACCESSIBLE_DIALOG_CLASS } from "../../../../constants/global.constants";
 
 @Component({
   selector: "app-privacyidea-edit-dialog",
   standalone: true,
+  host: {
+    class: NAVIGATION_ACCESSIBLE_DIALOG_CLASS
+  },
   imports: [
-    CommonModule,
     ReactiveFormsModule,
     MatDialogModule,
     MatFormFieldModule,
@@ -52,7 +56,8 @@ import {
     MatCheckboxModule,
     MatButtonModule,
     MatIconModule,
-    MatProgressSpinnerModule
+    MatProgressSpinnerModule,
+    ClearableInputComponent
   ],
   templateUrl: "./new-privacyidea-server.component.html",
   styleUrl: "./new-privacyidea-server.component.scss"
@@ -87,6 +92,7 @@ export class NewPrivacyideaServerComponent implements OnInit, OnDestroy {
 
     this.pendingChangesService.registerHasChanges(() => this.hasChanges);
     this.pendingChangesService.registerSave(() => this.save());
+    this.pendingChangesService.registerValidChanges(() => this.canSave);
 
     effect(() => {
       if (!this.contentService.routeUrl().startsWith(ROUTE_PATHS.EXTERNAL_SERVICES_PRIVACYIDEA)) {
@@ -100,7 +106,7 @@ export class NewPrivacyideaServerComponent implements OnInit, OnDestroy {
   }
 
   get canSave(): boolean {
-    return this.authService.rights().includes("privacyidea_write") && this.privacyideaForm.valid;
+    return this.authService.actionAllowed("privacyideaserver_write") && this.privacyideaForm.valid;
   }
 
   ngOnInit(): void {
@@ -120,17 +126,23 @@ export class NewPrivacyideaServerComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.pendingChangesService.unregisterHasChanges();
+    this.pendingChangesService.clearAllRegistrations();
   }
 
-  save(): Promise<void> | void {
-    if (this.privacyideaForm.valid) {
-      const server: PrivacyideaServer = {
-        ...this.privacyideaForm.getRawValue()
-      };
-      return this.privacyideaServerService.postPrivacyideaServer(server).then(() => {
-        this.dialogRef.close(true);
-      });
+  async save(): Promise<boolean> {
+    if (this.privacyideaForm.invalid) {
+      return false;
+    }
+
+    const server: PrivacyideaServer = {
+      ...this.privacyideaForm.getRawValue()
+    };
+    try {
+      await this.privacyideaServerService.postPrivacyideaServer(server);
+      this.dialogRef.close(true);
+      return true;
+    } catch (error) {
+      return false;
     }
   }
 
@@ -160,13 +172,15 @@ export class NewPrivacyideaServerComponent implements OnInit, OnDestroy {
       .afterClosed()
       .subscribe((result) => {
         if (result === "discard") {
-          this.pendingChangesService.unregisterHasChanges();
+          this.pendingChangesService.clearAllRegistrations();
           this.closeCurrent();
         } else if (result == "save-exit") {
           if (!this.canSave) return;
-          Promise.resolve(this.pendingChangesService.save()).then(() => {
-            this.pendingChangesService.unregisterHasChanges();
-            this.closeCurrent();
+          Promise.resolve(this.pendingChangesService.save()).then((success) => {
+            if (success) {
+              this.pendingChangesService.clearAllRegistrations();
+              this.closeCurrent();
+            }
           });
         }
       });

@@ -16,11 +16,11 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { HttpClient, HttpHeaders, HttpParams } from "@angular/common/http";
+import { HttpClient, HttpHeaders, HttpParams, provideHttpClient } from "@angular/common/http";
 import {
   MockContentService,
   MockLocalService,
-  MockNotificationService,
+  MockPiResponse,
   MockTableUtilsService
 } from "../../../testing/mock-services";
 import { lastValueFrom, of } from "rxjs";
@@ -32,6 +32,10 @@ import { TableUtilsService } from "../table-utils/table-utils.service";
 import { TestBed } from "@angular/core/testing";
 import { environment } from "../../../environments/environment";
 import { FilterValue } from "../../core/models/filter_value/filter_value";
+import { signal } from "@angular/core";
+import { MockAuthService } from "../../../testing/mock-services/mock-auth-service";
+import { AuthService } from "../auth/auth.service";
+import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
 
 environment.proxyUrl = "/api";
 
@@ -229,5 +233,108 @@ describe("MachineService (with mock classes)", () => {
     expect(params).toHaveProperty("service_id", "*123*");
     expect(params).not.toHaveProperty("hostname");
     expect(params).not.toHaveProperty("machineid");
+  });
+});
+
+describe("MachineService resources and signals", () => {
+  let machineService: MachineService;
+  let authService: MockAuthService;
+  let contentService: MockContentService;
+  let httpMock: HttpTestingController;
+
+  beforeEach(() => {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: LocalService, useClass: MockLocalService },
+        { provide: TableUtilsService, useClass: MockTableUtilsService },
+        { provide: ContentService, useClass: MockContentService },
+        { provide: AuthService, useClass: MockAuthService },
+        MachineService
+      ]
+    });
+
+    httpStub.get.mockReturnValue(of({}));
+
+    machineService = TestBed.inject(MachineService);
+    authService = TestBed.inject(AuthService) as unknown as MockAuthService;
+    contentService = TestBed.inject(ContentService) as unknown as MockContentService;
+    httpMock = TestBed.inject(HttpTestingController);
+  });
+
+  describe("machines signal", () => {
+    it("Fallback should be undefined", () => {
+      expect(machineService.machines()).toBeUndefined();
+    });
+
+    it("should read machines correctly from machineResource", async () => {
+      authService.actionAllowed = jest.fn().mockReturnValue(true);
+      contentService.onConfigurationMachines = signal(true);
+      TestBed.tick();
+
+      const req = httpMock.expectOne((r) => r.url.includes("/machine/"));
+      expect(req.request.method).toBe("GET");
+      const machines = [
+        { hostname: "test", id: 1, ip: "127.0.0.1", resolver_name: "test" }
+      ];
+      req.flush(MockPiResponse.fromValue(machines));
+      await Promise.resolve();
+
+      expect(machineService.machines()).toEqual(machines);
+    });
+
+    it("should fall back to undefined for http error", async () => {
+      authService.actionAllowed = jest.fn().mockReturnValue(true);
+      contentService.onConfigurationMachines = signal(true);
+      TestBed.tick();
+
+      const req = httpMock.expectOne((r) => r.url.includes("/machine/"));
+      expect(req.request.method).toBe("GET");
+      req.flush(MockPiResponse.fromError({ message: "Permission denied" }), {
+        status: 403, statusText: "Permission denied"
+      });
+      await Promise.resolve();
+
+      expect(machineService.machines()).toBeUndefined();
+    });
+  });
+
+  describe("tokenApplications signal", () => {
+    it("Fallback should be undefined", () => {
+      expect(machineService.tokenApplications()).toBeUndefined();
+    });
+
+    it("should read token applications correctly from tokenApplicationResource", async () => {
+      authService.actionAllowed = jest.fn().mockReturnValue(true);
+      contentService.onTokensApplications = signal(true);
+      TestBed.tick();
+
+      const req = httpMock.expectOne((r) => r.url.includes("/machine/token"));
+      expect(req.request.method).toBe("GET");
+      const applications = [
+        { application: "test", hostname: "localhost", id: 0, options: {}, serial: "1234", type: "ssh"}
+      ];
+      req.flush(MockPiResponse.fromValue(applications));
+      await Promise.resolve();
+
+      expect(machineService.tokenApplications()).toEqual(applications);
+    });
+
+    it("should fall back to undefined for http error", async () => {
+      authService.actionAllowed = jest.fn().mockReturnValue(true);
+      contentService.onTokensApplications = signal(true);
+      TestBed.tick();
+
+      const req = httpMock.expectOne((r) => r.url.includes("/machine/token"));
+      expect(req.request.method).toBe("GET");
+      req.flush(MockPiResponse.fromError({ message: "Permission denied" }), {
+        status: 403, statusText: "Permission denied"
+      });
+      await Promise.resolve();
+
+      expect(machineService.tokenApplications()).toBeUndefined();
+    });
   });
 });

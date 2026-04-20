@@ -18,7 +18,7 @@
  **/
 import { AuditData, AuditService, AuditServiceInterface } from "../../services/audit/audit.service";
 import { AuthService, AuthServiceInterface } from "../../services/auth/auth.service";
-import { Component, ElementRef, inject, linkedSignal, ViewChild, WritableSignal } from "@angular/core";
+import { Component, computed, ElementRef, inject, linkedSignal, ViewChild, WritableSignal } from "@angular/core";
 import { ContentService, ContentServiceInterface } from "../../services/content/content.service";
 import {
   MatCell,
@@ -125,12 +125,9 @@ export class AuditComponent {
   filterInput!: ElementRef<HTMLInputElement>;
 
   totalLength: WritableSignal<number> = linkedSignal({
-    source: this.auditService.auditResource.value,
+    source: () => this.auditService.auditResource.hasValue() ? this.auditService.auditResource.value() : undefined,
     computation: (auditResource, previous) => {
-      if (auditResource) {
-        return auditResource.result?.value?.count ?? 0;
-      }
-      return previous?.value ?? 0;
+      return auditResource?.result?.value?.count ?? previous?.value ?? 0;
     }
   });
   emptyResource: WritableSignal<AuditData[]> = linkedSignal({
@@ -139,7 +136,7 @@ export class AuditComponent {
       Array.from({ length: pageSize }, () => Object.fromEntries(this.columnKeysMap.map((col) => [col.key, ""])))
   });
   auditDataSource: WritableSignal<MatTableDataSource<AuditData>> = linkedSignal({
-    source: this.auditService.auditResource.value,
+    source: () => this.auditService.auditResource.hasValue() ? this.auditService.auditResource.value() : undefined,
     computation: (auditResource, previous) => {
       if (auditResource) {
         return new MatTableDataSource(auditResource.result?.value?.auditdata);
@@ -147,7 +144,14 @@ export class AuditComponent {
       return previous?.value ?? new MatTableDataSource(this.emptyResource());
     }
   });
-  pageSizeOptions = this.tableUtilsService.pageSizeOptions;
+  basePageSizeOptions = [...this.tableUtilsService.pageSizeOptions()];
+  pageSizeOptions = computed(() => {
+    if (!this.basePageSizeOptions.includes(this.auditService.pageSize())) {
+      this.basePageSizeOptions.push(this.auditService.pageSize());
+      this.basePageSizeOptions.sort((a, b) => a - b);
+    }
+    return this.basePageSizeOptions;
+  });
 
   onPageEvent(event: PageEvent) {
     this.auditService.pageSize.set(event.pageSize);

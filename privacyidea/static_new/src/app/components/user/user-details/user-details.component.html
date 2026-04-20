@@ -1,5 +1,5 @@
 <!--
- (c) NetKnights GmbH 2025,  https://netknights.it
+ (c) NetKnights GmbH 2026,  https://netknights.it
 
  This code is free software; you can redistribute it and/or
  modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -23,8 +23,10 @@
   i18n-aria-label>
   <div class="details-header">
     <h3 i18n>Details for User:</h3>
-    <h3 class="username-header">{{ userService.detailsUsername() }}</h3>
-    <app-copy-button [copyText]="userService.detailsUsername()"></app-copy-button>
+    <div class="flex-row flex-nowrap ali-center">
+      <h3 class="username-header">{{ userService.detailsUsername() }}</h3>
+      <app-copy-button [copyText]="userService.detailsUsername()"></app-copy-button>
+    </div>
     <h3>in Realm {{ userService.selectedUserRealm() }}</h3>
     <button
       (click)="showUserAuditLog()"
@@ -40,18 +42,18 @@
       @if (authService.actionsAllowed(["updateuser", "resolverread"])) {
         <button
           (click)="editUser()"
-          class="action-button-1"
+          class="action-button-secondary button-width-s"
           mat-stroked-button>
-          <mat-icon> edit</mat-icon>
+          <mat-icon>edit</mat-icon>
           <span i18n>Edit</span>
         </button>
       }
       @if (authService.actionAllowed("deleteuser")) {
         <button
           (click)="deleteUser()"
-          class="action-button-delete"
+          class="action-button-delete-secondary button-width-s"
           mat-stroked-button>
-          <mat-icon> delete</mat-icon>
+          <mat-icon>delete</mat-icon>
           <span i18n>Delete</span>
         </button>
       }
@@ -81,10 +83,10 @@
 
   <div class="flex-column">
     <div class="details-header">
-      <h3 i18n>Custom Attributes:</h3>
+      <h4 i18n>Custom Attributes:</h4>
     </div>
     <div class="add-attr-row">
-      <mat-form-field class="width-238">
+      <mat-form-field class="input-width-l">
         <mat-label i18n>Attribute Key</mat-label>
         <div class="flex-row">
           @if (keyMode() === "select") {
@@ -121,7 +123,7 @@
         </div>
       </mat-form-field>
 
-      <mat-form-field class="width-238">
+      <mat-form-field class="input-width-l">
         <mat-label i18n>Attribute Value</mat-label>
 
         @if (isValueInput()) {
@@ -142,7 +144,7 @@
       <button
         (click)="addCustomAttribute()"
         [disabled]="!canAddAttribute()"
-        class="ml-8"
+        class="ml-8 margin-bottom-16"
         color="primary"
         i18n
         mat-icon-button>
@@ -151,22 +153,26 @@
     </div>
 
     @if (userService.userAttributesList().length > 0) {
-      <div class="custom-user-details mt-12 custom-details">
-        @for (attr of userService.userAttributesList(); track attr.key) {
-          <div class="label">{{ attr.key }}:</div>
-          <div class="value">{{ attr.value || "-" }}</div>
-          @if (deletableAttributes().includes(attr.key) || deletableAttributes().includes("*")) {
-            <button
-              (click)="deleteCustomAttribute(attr.key)"
-              aria-label="Delete custom attribute"
-              class="ml-4 small-icon-button"
-              i18n-aria-label="Delete custom attribute"
-              mat-icon-button>
-              <mat-icon>delete</mat-icon>
-            </button>
-          } @else {
-            <div class="small-icon-button"></div>
-          }
+      <div class="custom-user-details mt-12">
+        @for (col of customAttributeColumns(); track $index) {
+          <div class="custom-user-details-column">
+            @for (attr of col; track attr.key) {
+              <div class="label">{{ attr.key }}:</div>
+              <div class="value">{{ attr.value || "-" }}</div>
+              @if (deletableAttributes().includes(attr.key) || deletableAttributes().includes("*")) {
+                <button
+                  (click)="deleteCustomAttribute(attr.key)"
+                  aria-label="Delete custom attribute"
+                  class="ml-4 small-icon-button"
+                  i18n-aria-label="Delete custom attribute"
+                  mat-icon-button>
+                  <mat-icon>delete</mat-icon>
+                </button>
+              } @else {
+                <div class="small-icon-button"></div>
+              }
+            }
+          </div>
         }
       </div>
     }
@@ -174,8 +180,10 @@
 
   <app-user-details-token-table />
 
-  <div class="flex-row filter-paginator-container">
-    <mat-form-field class="width-66">
+  <div class="flex-row filter-paginator-container margin-top-16">
+    <mat-form-field
+      class="input-width-xl"
+      subscriptSizing="dynamic">
       <mat-label i18n>Assign Token to User</mat-label>
       <app-clearable-input
         (onClick)="tokenService.clearFilter()"
@@ -195,7 +203,7 @@
           <mat-option
             (click)="assignUserToToken(option)"
             class="token-option">
-            <span class="token-option-span"> {{ option["serial"] }} </span>
+            <span class="token-option-span">{{ option["serial"] }}</span>
             <span class="token-option-span">
               {{ option["tokentype"] }}
             </span>
@@ -215,10 +223,11 @@
     </mat-form-field>
     <mat-paginator
       (page)="onPageEvent($event)"
-      [hidePageSize]="true"
       [length]="total()"
+      [pageSizeOptions]="pageSizeOptions()"
       [pageIndex]="pageIndex()"
-      [pageSize]="pageSize()" />
+      [pageSize]="pageSize()"
+      showFirstLastButtons />
   </div>
 
   <app-user-details-container-table />

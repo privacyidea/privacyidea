@@ -16,8 +16,18 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, effect, inject, signal, untracked, AfterViewInit, OnInit } from "@angular/core";
-import { CommonModule } from "@angular/common";
+import {
+  AfterViewInit,
+  Component,
+  computed,
+  DestroyRef,
+  effect,
+  inject,
+  OnInit,
+  signal,
+  untracked
+} from "@angular/core";
+
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
@@ -41,17 +51,15 @@ import { TiqrConfigComponent } from "./token-types/tiqr-config/tiqr-config.compo
 import { EmailConfigComponent } from "./token-types/email-config/email-config.component";
 import { QuestionnaireConfigComponent } from "./token-types/questionnaire-config/questionnaire-config.component";
 import { YubicoConfigComponent } from "./token-types/yubico-config/yubico-config.component";
-import { YubikeyConfigComponent } from "./token-types/yubikey-config/yubikey-config.component";
+import { ApiKeyData, YubikeyConfigComponent } from "./token-types/yubikey-config/yubikey-config.component";
 import { DaypasswordConfigComponent } from "./token-types/daypassword-config/daypassword-config.component";
+import { takeUntilDestroyed, toSignal } from "@angular/core/rxjs-interop";
 import { ActivatedRoute } from "@angular/router";
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { DestroyRef } from '@angular/core';
 
 @Component({
   selector: "app-token-type-config",
   standalone: true,
   imports: [
-    CommonModule,
     MatExpansionModule,
     MatButtonModule,
     MatIconModule,
@@ -79,8 +87,10 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit {
   readonly authService: AuthServiceInterface = inject(AuthService);
   readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly http = inject(HttpClient);
-  private route = inject(ActivatedRoute);
+  private readonly route = inject(ActivatedRoute);
   private destroyRef = inject(DestroyRef);
+  queryParams = toSignal(this.route.queryParams);
+  expandEmail = computed(() => this.queryParams()?.["expanded"] === "email");
 
   formData = signal<Record<string, any>>({});
   nextQuestion = signal(0);
@@ -91,8 +101,8 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit {
   smsGateways = this.smsGatewayService.smsGateways;
   smtpServers = this.smtpService.smtpServers;
 
-  smsGatewayNames = computed(() => this.smsGateways().map(g => g.name));
-  smtpServerIdentifiers = computed(() => this.smtpServers().map(s => s.identifier));
+  smsGatewayNames = computed(() => this.smsGateways().map((g) => g.name));
+  smtpServerIdentifiers = computed(() => this.smtpServers().map((s) => s.identifier));
 
   // Fallbacks when backend does not provide init values
   hashLibs = computed<string[]>(() => this.systemConfigInit()?.hashlibs ?? ["sha1", "sha256", "sha512"]);
@@ -113,7 +123,7 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit {
 
           // Find next question index
           let max = -1;
-          Object.keys(config).forEach(key => {
+          Object.keys(config).forEach((key) => {
             if (key.startsWith("question.question.")) {
               const idx = parseInt(key.substring("question.question.".length));
               if (!isNaN(idx) && idx > max) {
@@ -127,11 +137,17 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit {
     });
   }
 
+  get questionKeys() {
+    return Object.keys(this.formData()).filter((k) => k.startsWith("question.question."));
+  }
+
+  get yubikeyApiIds() {
+    return Object.keys(this.formData()).filter((k) => k.startsWith("yubikey.apiid."));
+  }
+
   ngOnInit() {
     // allow opening a specific panel via URL fragment, e.g. /configuration/token-types#yubico
-    this.route.fragment
-        .pipe(takeUntilDestroyed(this.destroyRef))
-        .subscribe(fragment => {
+    this.route.fragment.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((fragment) => {
       if (fragment) {
         this.expandedPanel = fragment;
       }
@@ -143,17 +159,9 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit {
       // scroll to the initially referenced panel
       const panel = document.getElementById(this.expandedPanel);
       if (panel) {
-        panel.scrollIntoView({ behavior: 'smooth' });
+        panel.scrollIntoView({ behavior: "smooth" });
       }
     }
-  }
-
-  get questionKeys() {
-    return Object.keys(this.formData()).filter(k => k.startsWith("question.question."));
-  }
-
-  get yubikeyApiIds() {
-    return Object.keys(this.formData()).filter(k => k.startsWith("yubikey.apiid."));
   }
 
   addQuestion(text: string) {
@@ -162,18 +170,18 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit {
       return;
     }
     const index = this.nextQuestion();
-    this.formData.update(f => ({
+    this.formData.update((f) => ({
       ...f,
       [`question.question.${index}`]: text
     }));
-    this.nextQuestion.update(n => n + 1);
+    this.nextQuestion.update((n) => n + 1);
   }
 
   deleteQuestion(key: string) {
     const existedInitially = this.systemService.systemConfig()?.hasOwnProperty(key) ?? false;
 
     // Remove from local form data so it disappears from the list immediately
-    this.formData.update(f => {
+    this.formData.update((f) => {
       const next = { ...f } as Record<string, any>;
       delete next[key];
       return next;
@@ -181,7 +189,7 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit {
 
     // If it existed on the backend, collect it for deletion on save
     if (existedInitially) {
-      this.pendingQuestionDeletes.update(set => {
+      this.pendingQuestionDeletes.update((set) => {
         const copy = new Set(set);
         copy.add(key);
         return copy;
@@ -194,7 +202,12 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit {
       next: (response) => {
         if (response?.result?.status) {
           this.notificationService.openSnackBar($localize`System entry deleted.`);
-          this.systemService.systemConfigResource.reload();
+          // Update entries in the formData but not reload the whole config to prevent losing unsaved changes
+          this.formData.update((f) => {
+            const next = { ...f } as Record<string, any>;
+            delete next[key];
+            return next;
+          });
         } else {
           this.notificationService.openSnackBar($localize`Failed to delete system entry.`);
         }
@@ -205,32 +218,43 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit {
     });
   }
 
-  async yubikeyCreateNewKey(apiId: string) {
+  async yubikeyAddNewKey(apiKeyData: ApiKeyData) {
+    const apiId = apiKeyData.apiId;
+    const apiKey = apiKeyData.apiKey;
+    const generateKey = apiKeyData.generateKey;
+
     if (!apiId) {
       this.notificationService.openSnackBar($localize`Please enter a Client ID.`);
       return;
     }
-    try {
-      const response = await lastValueFrom(
-        this.http.get<PiResponse<string>>(
-          environment.proxyUrl + "/system/random?len=20&encode=b64",
-          { headers: this.authService.getHeaders() }
-        )
-      );
-      if (response?.result?.value) {
-        this.formData.update(f => ({
-          ...f,
-          [`yubikey.apiid.${apiId}`]: response.result?.value
-        }));
+
+    if (generateKey) {
+      try {
+        const response = await lastValueFrom(
+          this.http.get<PiResponse<string>>(environment.proxyUrl + "/system/random?len=20&encode=b64", {
+            headers: this.authService.getHeaders()
+          })
+        );
+        if (response?.result?.value) {
+          this.formData.update((f) => ({
+            ...f,
+            [`yubikey.apiid.${apiId}`]: response.result?.value
+          }));
+        }
+      } catch (e) {
+        this.notificationService.openSnackBar($localize`Failed to generate API key.`);
       }
-    } catch (e) {
-      this.notificationService.openSnackBar($localize`Failed to generate API key.`);
+    } else {
+      this.formData.update((f) => ({
+        ...f,
+        [`yubikey.apiid.${apiId}`]: apiKey
+      }));
     }
   }
 
   save() {
     const deletes = Array.from(this.pendingQuestionDeletes());
-    const deleteCalls = deletes.map(key => this.systemService.deleteSystemConfig(key));
+    const deleteCalls = deletes.map((key) => this.systemService.deleteSystemConfig(key));
     const saveCall = this.systemService.saveSystemConfig(this.formData());
 
     if (deleteCalls.length > 0) {
@@ -265,7 +289,7 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit {
   }
 
   onCheckboxChange(key: string, event: any) {
-    this.formData.update(f => ({
+    this.formData.update((f) => ({
       ...f,
       [key]: event.checked ? "True" : "False"
     }));

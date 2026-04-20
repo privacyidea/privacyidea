@@ -39,6 +39,8 @@ import {
 } from "src/app/services/token/challenges/challenges.service";
 import { TokenServiceInterface, TokenService } from "src/app/services/token/token.service";
 
+import { ChallengesTableActionsComponent } from "./challenges-table-actions/challenges-table-actions.component";
+
 const columnKeysMap = [
   { key: "timestamp", label: "Timestamp" },
   { key: "serial", label: "Serial" },
@@ -60,7 +62,8 @@ const columnKeysMap = [
     NgClass,
     CopyButtonComponent,
     ScrollToTopDirective,
-    ClearableInputComponent
+    ClearableInputComponent,
+    ChallengesTableActionsComponent
   ],
   templateUrl: "./challenges-table.component.html",
   styleUrls: ["./challenges-table.component.scss"]
@@ -82,16 +85,13 @@ export class ChallengesTableComponent {
   pageIndex = this.challengesService.pageIndex;
   sort = this.challengesService.sort;
   length = linkedSignal({
-    source: this.challengesService.challengesResource.value,
-    computation: (res, prev) => {
-      if (res) {
-        return res.result?.value?.count;
-      }
-      return prev?.value ?? 0;
+    source: () => this.challengesService.challengesResource.hasValue() ? this.challengesService.challengesResource.value() : undefined,
+    computation: (challengesResource, prev) => {
+      return challengesResource?.result?.value?.count ?? prev?.value ?? 0;
     }
   });
   challengesDataSource: WritableSignal<MatTableDataSource<Challenge>> = linkedSignal({
-    source: this.challengesService.challengesResource.value,
+    source: () => this.challengesService.challengesResource.hasValue() ? this.challengesService.challengesResource.value() : undefined,
     computation: (challengesResource, previous) => {
       if (challengesResource) {
         return new MatTableDataSource(challengesResource.result?.value?.challenges);
@@ -138,17 +138,5 @@ export class ChallengesTableComponent {
     } else {
       this.contentService.tokenSelected(element.serial);
     }
-  }
-
-  onDeleteExpiredChallenges(): void {
-    this.challengesService.deleteExpiredChallenges().subscribe({
-      next: () => {
-        this.challengesService.challengesResource.reload();
-      },
-      error: (err) => {
-        const message = err?.error?.result?.error?.message ?? "Failed to delete expired challenges.";
-        this.notificationService.openSnackBar(message);
-      }
-    });
   }
 }

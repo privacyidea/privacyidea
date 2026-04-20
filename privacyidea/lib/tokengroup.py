@@ -82,8 +82,7 @@ def delete_tokengroup(name: str = None, tokengroup_id: int = None):
 
     if len(token_group.tokens) > 0:
         raise PrivacyIDEAError(
-            "The token group with name '{0!s}' still has {1:d} tokens assigned.".format(token_group.name,
-                                                                                        len(token_group.tokens)))
+            f"The token group with name '{token_group.name!s}' still has {len(token_group.tokens):d} tokens assigned.")
 
     db.session.delete(token_group)
     db.session.commit()

@@ -19,7 +19,7 @@
 
 import { Component, computed } from "@angular/core";
 import { DialogWrapperComponent } from "../../../shared/dialog/dialog-wrapper/dialog-wrapper.component";
-import { CommonModule } from "@angular/common";
+
 import { DialogAction } from "../../../../models/dialog";
 import { AbstractDialogComponent } from "../../../shared/dialog/abstract-dialog/abstract-dialog.component";
 import {
@@ -34,6 +34,7 @@ import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { toSignal } from "@angular/core/rxjs-interop";
 import { map } from "rxjs";
+import { NAVIGATION_ACCESSIBLE_DIALOG_CLASS } from "../../../../constants/global.constants";
 
 export function mustBeDifferentValidator(originalValue: string | null): ValidatorFn {
   return (control: AbstractControl): ValidationErrors | null => {
@@ -47,7 +48,10 @@ export function mustBeDifferentValidator(originalValue: string | null): Validato
   templateUrl: "./copy-policy-dialog.component.html",
   styleUrls: ["./copy-policy-dialog.component.scss"],
   standalone: true,
-  imports: [DialogWrapperComponent, CommonModule, ReactiveFormsModule, MatFormFieldModule, MatInputModule]
+  host: {
+    class: NAVIGATION_ACCESSIBLE_DIALOG_CLASS
+  },
+  imports: [DialogWrapperComponent, ReactiveFormsModule, MatFormFieldModule, MatInputModule]
 })
 export class CopyPolicyDialogComponent extends AbstractDialogComponent<string, string | null> {
   readonly nameControl = new FormControl(this.data, [Validators.required, mustBeDifferentValidator(this.data)]);

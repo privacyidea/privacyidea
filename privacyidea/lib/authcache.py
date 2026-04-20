@@ -41,8 +41,7 @@ def add_to_cache(username: str, realm: str, resolver: str, password: str) -> int
     first_auth = utc_now()
     auth_hash = _hash_password(password)
     record = AuthCache(username, realm, resolver, auth_hash, first_auth, first_auth)
-    log.debug('Adding record to auth cache: ({!r}, {!r}, {!r}, {!r})'.format(
-        username, realm, resolver, auth_hash))
+    log.debug(f'Adding record to auth cache: ({username!r}, {realm!r}, {resolver!r}, {auth_hash!r})')
     r = record.save()
     return r
 
@@ -89,7 +88,7 @@ def delete_from_cache(username: str, realm: str, resolver: str, password: str,
                 delete_entry = True
 
         except ValueError:
-            log.debug("Old (non-argon2) authcache entry for user {0!s}@{1!s}.".format(username, realm))
+            log.debug(f"Old (non-argon2) authcache entry for user {username!s}@{realm!s}.")
             # Also delete old entries
             delete_entry = True
         if delete_entry:
@@ -118,20 +117,20 @@ def verify_in_cache(username, realm, resolver, password, first_auth=None, last_a
                     max_auths=0):
     """
     Verify if the given credentials are cached and if the time is correct.
-    
-    :param username: 
-    :param realm: 
-    :param resolver: 
-    :param password: 
-    :param first_auth: The timestamp when the entry was first written to the 
-        cache. Only find newer entries 
-    :param last_auth: The timestamp when the entry was last successfully 
+
+    :param username:
+    :param realm:
+    :param resolver:
+    :param password:
+    :param first_auth: The timestamp when the entry was first written to the
+        cache. Only find newer entries
+    :param last_auth: The timestamp when the entry was last successfully
         verified. Only find newer entries
     :param max_auths: Maximum number of times the authcache entry can be used to skip
         authentication, as defined by ACTION.AUTH_CACHE policy. Will return False if the current number of
         authentications + 1 of the cached authentication exceeds this value.
     :type max_auths: int
-    :return: 
+    :return:
     """
     result = False
 
@@ -149,7 +148,7 @@ def verify_in_cache(username, realm, resolver, password, first_auth=None, last_a
         try:
             result = argon2.verify(password, cached_auth.authentication)
         except ValueError:
-            log.debug("Old (non-argon2) authcache entry for user {0!s}@{1!s}.".format(username, realm))
+            log.debug(f"Old (non-argon2) authcache entry for user {username!s}@{realm!s}.")
             result = False
 
         if result and max_auths > 0:

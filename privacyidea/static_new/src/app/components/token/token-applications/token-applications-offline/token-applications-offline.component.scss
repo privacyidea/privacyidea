@@ -4,8 +4,11 @@
 .application-table-container {
   @include table.table-container-styles;
   @include table.base-table-structure(".token-table", ".token-table-filter", ".table-scroll-container");
-  padding: unset;
-  box-shadow: unset;
+
+  & {
+    padding: unset;
+    box-shadow: unset;
+  }
 
   .application-table-filter {
     width: 32.7rem;
@@ -15,11 +18,6 @@
 .token-applications-offline {
   h4 {
     margin: 0 0 16px 8px;
-  }
-
-  .application-p-div {
-    margin-left: 16px;
-    max-width: 59rem;
   }
 
   p {

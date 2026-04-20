@@ -1,28 +1,8 @@
 @use "inputs";
 
 .action-description-container {
-  background-color: var(--mat-sys-surface-container-low);
-  border-radius: var(--border-radius);
-  box-shadow: var(--mat-sys-level2);
-  color: var(--mat-sys-on-surface);
   display: flex;
-  flex-direction: row;
-  gap: var(--global-gap);
+  flex-direction: column;
+  gap: var(--half-global-gap);
   min-width: 0;
-  padding: var(--three-quarters-global-padding);
-
-  .description-header {
-    font-size: 1.17em;
-    font-weight: bold;
-    margin: 0;
-  }
-
-  .description-textarea {
-    @include inputs.action-tab-input;
-  }
-
-  &:focus-within {
-    outline: 2px solid var(--mat-sys-primary-base);
-    outline-offset: -2px;
-  }
 }

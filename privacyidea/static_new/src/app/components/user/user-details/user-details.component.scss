@@ -3,32 +3,40 @@
 @use "@angular/material" as mat;
 
 .details-container {
+  @include styles.main-component-style;
   display: grid;
-  border-radius: var(--border-radius);
-  @include mat.elevation(5);
-  background-color: var(--table-color);
-  padding: var(--global-padding);
-  max-height: var(--max-height);
-  overflow-x: hidden;
-  overflow-y: auto;
 }
 
 .user-details {
   display: grid;
-  grid-template-columns: auto auto auto;
-  gap: 64px;
+  grid-template-columns: repeat(3, auto);
+  gap: 32px;
   padding: 12px 16px;
-  border: 1px solid #c7c5d0;
+  border: 1px solid var(--mat-sys-surface-container-highest);
   border-radius: var(--border-radius);
+  background: var(--mat-sys-surface-container-low);
 }
 
 .custom-user-details {
   display: grid;
-  grid-template-columns: 50fr 50fr 1fr;
-  column-gap: 16px;
+  grid-template-columns: repeat(2, auto);
+  gap: 0 16px;
   padding: 12px 16px;
-  border: 1px solid #c7c5d0;
+  border: 1px solid var(--mat-sys-surface-container-highest);
   border-radius: var(--border-radius);
+  background: var(--mat-sys-surface-container-low);
+}
+
+.custom-user-details-column {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 0 16px;
+  margin-bottom: auto;
+
+  &:not(:last-of-type) {
+    border-right: 1px solid var(--mat-sys-surface-container-highest);
+    padding-right: 32px;
+  }
 }
 
 .user-details-grid,
@@ -39,21 +47,28 @@
   padding: 0;
   border: 0;
   margin-bottom: auto;
+
+  &:not(:last-of-type) {
+    border-right: 1px solid var(--mat-sys-surface-container-highest);
+  }
 }
 
 .label {
   font-weight: 600;
-  overflow: hidden;
+  overflow: auto;
   text-overflow: ellipsis;
   display: block;
   margin-block: auto;
+  max-width: 240px;
 }
 
 .value {
   grid-column: 2;
-  overflow: scroll;
+  overflow: auto;
+  text-overflow: ellipsis;
   display: block;
   margin-block: auto;
+  max-width: 240px;
 }
 
 .return-button {
@@ -62,40 +77,28 @@
   padding-right: 0;
 }
 
-@media (max-width: 720px) {
+@media (max-width: 1240px) {
   .user-details {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, auto);
+  }
+  .custom-user-details {
+    grid-template-columns: auto;
+  }
+  .custom-user-details-column:not(:last-of-type) {
+    border-right: 0;
+    padding-right: 0;
+  }
+}
+
+@media (max-width: 1000px) {
+  .user-details {
+    grid-template-columns: auto;
   }
   .user-details-grid,
   .user-details-column {
-    grid-template-columns: 1fr;
+    border-right: 0;
+    padding-right: 0;
   }
-  .value {
-    grid-column: 1;
-  }
-}
-
-.custom-details {
-  max-width: 1035px;
-}
-
-.token-option {
-  border: 1px solid var(--mat-sys-outline);
-  background: var(--mat-sys-surface-container-low);
-  margin: 0 1px;
-  border-radius: var(--border-radius);
-}
-
-.token-option-span {
-  background: var(--mat-sys-surface-container-lowest);
-  padding: 6px;
-  border-radius: var(--border-radius);
-  margin-right: 8px;
-}
-
-.filter-paginator-container {
-  margin-top: 16px;
-  justify-content: space-between;
 }
 
 .custom-attr-add-row {
@@ -119,11 +122,6 @@
   gap: 12px;
   align-items: center;
   flex-wrap: wrap;
-  margin-bottom: 8px;
-}
-
-.mt-12 {
-  margin-top: 12px;
 }
 
 .ml-8 {

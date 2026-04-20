@@ -92,7 +92,7 @@ def get_users_with_active_tokens():
         select(TokenOwner.resolver, TokenOwner.user_id)
         .select_from(TokenOwner)
         .join(Token, Token.id == TokenOwner.token_id)
-        .where(Token.active == True)
+        .where(Token.active.is_(True))
         .distinct()
     )
     result = db.session.execute(stmt)
@@ -122,7 +122,7 @@ def subscription_status(component="privacyidea", tokentype=None):
     try:
         check_subscription(component)
     except SubscriptionError as exx:
-        log.warning("{0}".format(exx))
+        log.warning(f"{exx}")
         return 2
 
     return 3
@@ -331,7 +331,7 @@ def check_signature(subscription):
     enckey = get_app_config_value("PI_ENCFILE", "/etc/privacyidea/enckey")
     dirname = os.path.dirname(enckey)
     # In dirname we are searching for <vendor>.pem
-    filename = "{0!s}/{1!s}.pem".format(dirname, vendor)
+    filename = f"{dirname!s}/{vendor!s}.pem"
 
     try:
         # remove the minutes 00:00:00
@@ -363,7 +363,7 @@ def check_signature(subscription):
     return r
 
 
-class CheckSubscription(object):
+class CheckSubscription:
     """
     Decorator to decorate an API request and check if the subscription is valid.
     For this, we evaluate the requesting client.

@@ -1,11 +1,7 @@
 @use "../../../../styles" as styles;
 
 .token-type-config-container {
-  @include styles.table-container-styles;
-  max-width: 100%;
-  max-height: var(--max-height);
-  overflow: auto;
-  width: 1000px;
+  @include styles.main-component-style;
 
   h2 {
     margin-bottom: 20px;
@@ -13,33 +9,27 @@
 
   ::ng-deep {
     .panel-content {
-      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
 
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 16px;
-      align-items: start;
+      p {
+        max-width: 816px;
+      }
 
       p,
       h3,
       h4,
       .alert,
       table,
-      .table {
-        grid-column: 1 / -1;
-      }
-
-      mat-form-field {
+      .table,
+      .flex-row {
         width: 100%;
       }
 
-      @media (max-width: 900px) {
-        grid-template-columns: 1fr;
-      }
-
       p {
-        margin: 0;
         color: var(--mat-sys-on-surface-variant);
+        margin-top: 0;
       }
     }
 

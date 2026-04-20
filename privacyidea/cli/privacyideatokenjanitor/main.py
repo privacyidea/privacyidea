@@ -47,8 +47,8 @@ def cli():
   / _ \/ __/ / |/ / _ `/ __/ // // // // / _// __ |
  / .__/_/ /_/|___/\_,_/\__/\_, /___/____/___/_/ |_|
 /_/                       /___/
-{0!s:>51}
-    """.format('v{0!s}'.format(get_version_number())))
+{!s:>51}
+    """.format(f'v{get_version_number()!s}'))
 
 
 cli.add_command(findtokens)

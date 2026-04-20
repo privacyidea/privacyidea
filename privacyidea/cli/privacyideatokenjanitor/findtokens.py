@@ -113,7 +113,7 @@ def _try_convert_to_integer(given_value_string):
     try:
         return int(given_value_string)
     except ValueError:
-        raise ClickException('Not an integer: {}'.format(given_value_string))
+        raise ClickException(f'Not an integer: {given_value_string}')
 
 
 def _compare_greater_than(_key, given_value_string):
@@ -168,7 +168,7 @@ def _try_convert_to_datetime(given_value_string):
             parsed = parsed.replace(tzinfo=tzlocal())
         return parsed
     except ValueError:
-        raise ClickException('Not a valid datetime format: {}'.format(given_value_string))
+        raise ClickException(f'Not a valid datetime format: {given_value_string}')
 
 
 def _compare_after(key, given_value_string):
@@ -279,7 +279,7 @@ def _get_tokenlist(last_auth, assigned, active, tokeninfo_key,
         tok_count = 0
         tok_found = 0
         for token_obj in tokenobj_list:
-            sys.stderr.write('{0} Tokens processed / {1} Tokens found\r'.format(tok_count, tok_found))
+            sys.stderr.write(f'{tok_count} Tokens processed / {tok_found} Tokens found\r')
             sys.stderr.flush()
             tok_count += 1
             if last_auth and token_obj.check_last_auth_newer(last_auth):
@@ -321,7 +321,7 @@ def _get_tokenlist(last_auth, assigned, active, tokeninfo_key,
             # if everything matched, we append the token object
             filtered_list.append(token_obj)
 
-        sys.stderr.write('{0} Tokens processed / {1} Tokens found\r\n'.format(tok_count, tok_found))
+        sys.stderr.write(f'{tok_count} Tokens processed / {tok_found} Tokens found\r\n')
         sys.stderr.write("++ Token object list created.\n")
         sys.stderr.flush()
         yield filtered_list
@@ -337,28 +337,26 @@ def export_token_data(token_list, attributes=None):
     """
     tokens = []
     for token_obj in token_list:
-        token_data = ["{0!s}".format(token_obj.token.serial),
-                      "{0!s}".format(token_obj.token.tokentype)]
+        token_data = [f"{token_obj.token.serial!s}",
+                      f"{token_obj.token.tokentype!s}"]
         try:
             user = token_obj.user
             if user:
                 user_info = user.get_specific_info(["username", "givenname", "surname"])
-                token_data.append("{0!s}".format(user_info.get("username", "")))
-                token_data.append("{0!s}".format(user_info.get("givenname", "")))
-                token_data.append("{0!s}".format(user_info.get("surname", "")))
-                token_data.append("{0!s}".format(user.uid))
-                token_data.append("{0!s}".format(user.resolver))
-                token_data.append("{0!s}".format(user.realm))
+                token_data.append("{!s}".format(user_info.get("username", "")))
+                token_data.append("{!s}".format(user_info.get("givenname", "")))
+                token_data.append("{!s}".format(user_info.get("surname", "")))
+                token_data.append(f"{user.uid!s}")
+                token_data.append(f"{user.resolver!s}")
+                token_data.append(f"{user.realm!s}")
 
             if attributes:
                 for att in attributes.split(","):
-                    token_data.append("{0!s}".format(
+                    token_data.append("{!s}".format(
                         user.info.get(att, ""))
                     )
         except Exception:
-            sys.stderr.write("Failed to determine user for token {0!s}.\n".format(
-                token_obj.token.serial
-            ))
+            sys.stderr.write(f"Failed to determine user for token {token_obj.token.serial!s}.\n")
             token_data.append("**failed to resolve user**")
         tokens.append(token_data)
     return tokens
@@ -377,14 +375,12 @@ def export_user_data(token_list, attributes=None):
         try:
             user = token_obj.user
         except Exception:
-            sys.stderr.write("Failed to determine user for token {0!s}.\n".format(
-                token_obj.token.serial
-            ))
+            sys.stderr.write(f"Failed to determine user for token {token_obj.token.serial!s}.\n")
         if user:
             request_attributes = attributes.split(",") if attributes else []
             request_attributes += ["username", "givenname", "surname"]
             user_info = user.get_specific_info(request_attributes)
-            uid = "'{0!s}','{1!s}','{2!s}','{3!s}','{4!s}','{5!s}'".format(
+            uid = "'{!s}','{!s}','{!s}','{!s}','{!s}','{!s}'".format(
                 user_info.get("username", ""),
                 user_info.get("givenname", ""),
                 user_info.get("surname", ""),
@@ -394,7 +390,7 @@ def export_user_data(token_list, attributes=None):
             )
             if attributes:
                 for att in attributes.split(","):
-                    uid += ",'{0!s}'".format(
+                    uid += ",'{!s}'".format(
                         user_info.get(att, "")
                     )
         else:
@@ -444,7 +440,7 @@ def export_user_data(token_list, attributes=None):
               help='In case of the action "listuser", this switch specifies if'
                    ' the output should only contain the number of tokens owned by the user.')
 @click.option('--action', help='Which action should be performed on the '
-                               'found tokens. {0!s}. Exporting to PSKC only supports '
+                               'found tokens. {!s}. Exporting to PSKC only supports '
                                'HOTP, TOTP and PW tokens!'.format("|".join(ALLOWED_ACTIONS)))
 @click.option('--csv', is_flag=True,
               help='In case of a simple find, the output is written as CSV instead of the '
@@ -476,13 +472,13 @@ def findtokens(last_auth, assigned, active, tokeninfo_key, tokeninfo_value,
     """
     tokenattributes = [col.key for col in Token.__table__.columns]
     if tokenattribute and tokenattribute not in tokenattributes:
-        sys.stderr.write("Unknown token attribute. Allowed attributes are {0!s}\n".format(
+        sys.stderr.write("Unknown token attribute. Allowed attributes are {!s}\n".format(
             ", ".join(tokenattributes)
         ))
         sys.exit(1)
     if action and action not in ALLOWED_ACTIONS:
-        sys.stderr.write("Unknown action. Allowed actions are {0!s}\n".format(
-            ", ".join(["'{0!s}'".format(x) for x in ALLOWED_ACTIONS])
+        sys.stderr.write("Unknown action. Allowed actions are {!s}\n".format(
+            ", ".join([f"'{x!s}'" for x in ALLOWED_ACTIONS])
         ))
         sys.exit(1)
     if chunksize is not None:
@@ -507,7 +503,7 @@ def findtokens(last_auth, assigned, active, tokeninfo_key, tokeninfo_value,
                                description, chunksize, has_not_tokeninfo_key,
                                has_tokeninfo_key, orphaned_on_error)
     if chunksize is not None:
-        sys.stderr.write("+ Reading tokens from database in chunks of {}...\n".format(chunksize))
+        sys.stderr.write(f"+ Reading tokens from database in chunks of {chunksize}...\n")
     else:
         sys.stderr.write("+ Reading tokens from database...\n")
     for tlist in generator:
@@ -517,29 +513,20 @@ def findtokens(last_auth, assigned, active, tokeninfo_key, tokeninfo_value,
                 print("Token serial\tTokeninfo")
                 print("=" * 42)
                 for token_obj in tlist:
-                    print("{0!s}\t({1!s})\n\t\t{2!s}\n\t\t{3!s}".format(
-                        token_obj.token.serial,
-                        token_obj.token.tokentype,
-                        token_obj.token.description,
-                        token_obj.get_tokeninfo()))
+                    print(f"{token_obj.token.serial!s}\t({token_obj.token.tokentype!s})\n\t\t{token_obj.token.description!s}\n\t\t{token_obj.get_tokeninfo()!s}")
             else:
                 for token_obj in tlist:
-                    print("'{!s}','{!s}','{!s}','{!s}'".format(
-                        token_obj.token.serial,
-                        token_obj.token.tokentype,
-                        token_obj.token.description,
-                        token_obj.get_tokeninfo()
-                    ))
+                    print(f"'{token_obj.token.serial!s}','{token_obj.token.tokentype!s}','{token_obj.token.description!s}','{token_obj.get_tokeninfo()!s}'")
 
         elif action == "listuser":
             if not sum_tokens:
                 tokens = export_token_data(tlist, attributes)
                 for token in tokens:
-                    print(",".join(["'{0!s}'".format(x) for x in token]))
+                    print(",".join([f"'{x!s}'" for x in token]))
             else:
                 users = export_user_data(tlist, attributes)
                 for user, tokens in users.items():
-                    print("{0!s},{1!s}".format(user, len(tokens)))
+                    print(f"{user!s},{len(tokens)!s}")
 
         elif action == "export":
             if csv:
@@ -547,10 +534,8 @@ def findtokens(last_auth, assigned, active, tokeninfo_key, tokeninfo_value,
                     if tokenobj.type.lower() not in ["totp", "hotp"]:
                         continue
                     token_dict = tokenobj._to_dict(b32=b32)
-                    owner = "{!s}@{!s}".format(
-                        tokenobj.user.login,
-                        tokenobj.user.realm) if tokenobj.user else "n/a"
-                    if type == "totp":
+                    owner = f"{tokenobj.user.login!s}@{tokenobj.user.realm!s}" if tokenobj.user else "n/a"
+                    if tokenobj.type.lower() == "totp":
                         print("{!s}, {!s}, {!s}, {!s}, {!s}, {!s}".format(
                             owner, token_dict.get("serial"),
                             token_dict.get("otpkey"),
@@ -568,47 +553,45 @@ def findtokens(last_auth, assigned, active, tokeninfo_key, tokeninfo_value,
                 for tokenobj in tlist:
                     try:
                         token_dict = tokenobj._to_dict(b32=b32)
-                        token_dict["owner"] = "{!s}@{!s}".format(tokenobj.user.login,
-                                                                 tokenobj.user.realm) if tokenobj.user else "n/a"
+                        token_dict["owner"] = (f"{tokenobj.user.login!s}@{tokenobj.user.realm!s}"
+                                               if tokenobj.user else "n/a")
                         token_list.append(token_dict)
-                    except Exception as e:
-                        sys.stderr.write("\nFailed to export token {0!s}.\n".format(token_dict.get("serial")))
+                    except Exception:
+                        sys.stderr.write("\nFailed to export token {!s}.\n".format(token_dict.get("serial")))
                 print(yaml_safe_dump(token_list))
             else:
                 key, token_num, soup = export_pskc(tlist)
-                sys.stderr.write("\n{0!s} tokens exported.\n".format(token_num))
+                sys.stderr.write(f"\n{token_num!s} tokens exported.\n")
                 sys.stderr.write("\nThis is the AES encryption key of the token seeds.\n"
                                  "You need this key to import the "
-                                 "tokens again:\n\n\t{0!s}\n\n".format(key))
-                print("{0!s}".format(soup))
+                                 f"tokens again:\n\n\t{key!s}\n\n")
+                print(f"{soup!s}")
         else:
             for token_obj in tlist:
                 try:
                     if action == "tokenrealms":
                         trealms = [r.strip() for r in tokenrealms.split(",") if r]
                         token_obj.set_realms(trealms)
-                        print("Setting realms of token {0!s} to {1!s}.".format(token_obj.token.serial, trealms))
+                        print(f"Setting realms of token {token_obj.token.serial!s} to {trealms!s}.")
                     if action == "disable":
                         enable_token(serial=token_obj.token.serial, enable=False)
-                        print("Disabling token {0!s}".format(token_obj.token.serial))
+                        print(f"Disabling token {token_obj.token.serial!s}")
                     elif action == "delete":
                         remove_token(serial=token_obj.token.serial)
-                        print("Deleting token {0!s}".format(token_obj.token.serial))
+                        print(f"Deleting token {token_obj.token.serial!s}")
                     elif action == "unassign":
                         unassign_token(serial=token_obj.token.serial)
-                        print("Unassigning token {0!s}".format(token_obj.token.serial))
+                        print(f"Unassigning token {token_obj.token.serial!s}")
                     elif action == "mark":
                         if set_description:
-                            print("Setting description for token {0!s}: {1!s}".format(
-                                token_obj.token.serial, set_description))
+                            print(f"Setting description for token {token_obj.token.serial!s}: {set_description!s}")
                             token_obj.set_description(set_description)
                             token_obj.save()
                         if set_tokeninfo_value and set_tokeninfo_key:
-                            print("Setting tokeninfo for token {0!s}: {1!s}={2!s}".format(
-                                token_obj.token.serial, set_tokeninfo_key, set_tokeninfo_value))
+                            print(f"Setting tokeninfo for token {token_obj.token.serial!s}: "
+                                  f"{set_tokeninfo_key!s}={set_tokeninfo_value!s}")
                             token_obj.add_tokeninfo(set_tokeninfo_key, set_tokeninfo_value)
                             token_obj.save()
                 except Exception as exx:
-                    print("Failed to process token {0}.".format(
-                        token_obj.token.serial))
-                    print("{0}".format(exx))
+                    print(f"Failed to process token {token_obj.token.serial}.")
+                    print(f"{exx}")

@@ -1,0 +1,30 @@
+name: GitLab
+
+on:
+  push:
+    branches:
+      - master
+
+permissions: {}
+
+jobs:
+  trigger-gitlab:
+    name: Trigger internal GitLab pipeline
+    runs-on: ubuntu-latest
+    environment: gitlab
+    
+    steps:
+      - name: On Push To Master Trigger Pipeline
+        env:
+          GITLAB_TRIGGER_URL: https://lucan.netknights.it/api/v4/projects/6/trigger/pipeline
+          GITLAB_TRIGGER_TOKEN: ${{ secrets.GITLAB_TRIGGER_TOKEN_MASTER }}
+          GITHUB_BRANCH: ${{ github.ref_name }}
+          GITHUB_SHA: ${{ github.sha }}
+          GITHUB_REPO_URL: git@github.com:${{ github.repository }}.git
+        run: |
+          curl --fail --request POST "$GITLAB_TRIGGER_URL" \
+            --form token="$GITLAB_TRIGGER_TOKEN" \
+            --form ref=main \
+            --form variables[GITHUB_BRANCH]="$GITHUB_BRANCH" \
+            --form variables[GITHUB_SHA]="$GITHUB_SHA" \
+            --form variables[GITHUB_REPO]="$GITHUB_REPO_URL"

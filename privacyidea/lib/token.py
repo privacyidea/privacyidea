@@ -70,7 +70,6 @@ import string
 import traceback
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Union
 
 from dateutil.tz import tzlocal
 from flask import Request
@@ -118,8 +117,6 @@ from privacyidea.models.utils import clob_to_varchar
 
 log = logging.getLogger(__name__)
 
-optional = True
-required = False
 
 ENCODING = "utf-8"
 
@@ -166,7 +163,7 @@ def create_tokenclass_object(db_token):
             raise TokenAdminError(_("create_tokenclass_object failed: {0!r}").format(e),
                                   id=1609)
     else:
-        log.error('type {0!r} not found in tokenclasses'.format(tokentype))
+        log.error(f'type {tokentype!r} not found in tokenclasses')
 
     return token_object
 
@@ -494,7 +491,7 @@ def convert_token_objects_to_dicts(tokens, user, user_role="user", allowed_realm
                     token_dict["user_realm"] = token_owner.realm
                     token_dict["user_editable"] = get_resolver_object(token_owner.resolver).editable
             except Exception as exx:
-                log.error("User information can not be retrieved: {0!s}".format(exx))
+                log.error(f"User information can not be retrieved: {exx!s}")
                 log.debug(traceback.format_exc())
                 token_dict["username"] = "**resolver error**"
 
@@ -598,10 +595,10 @@ def get_tokens(tokentype=None, token_type_list=None, realm=None, assigned=None, 
 
     # Warning for unintentional exact serial matches
     if serial is not None and "*" in serial:
-        log.info("Exact match on a serial containing a wildcard: {!r}".format(serial))
+        log.info(f"Exact match on a serial containing a wildcard: {serial!r}")
     # Warning for unintentional wildcard serial matches
     if serial_wildcard is not None and "*" not in serial_wildcard:
-        log.info("Wildcard match on serial without a wildcard: {!r}".format(serial_wildcard))
+        log.info(f"Wildcard match on serial without a wildcard: {serial_wildcard!r}")
 
     session: Session = db.session
 
@@ -843,7 +840,7 @@ def check_serial(serial):
         # as long as we find a token, modify the serial:
         i += 1
         result = False
-        new_serial = "{0!s}_{1:02d}".format(serial, i)
+        new_serial = f"{serial!s}_{i:02d}"
 
     return result, new_serial
 
@@ -1198,11 +1195,11 @@ def gen_serial(tokentype: str, prefix: str = None) -> str:
     else:
         def _gen_serial(_tokennum):
             h_serial = ''
-            num_str = '{:04d}'.format(_tokennum)
+            num_str = f'{_tokennum:04d}'
             h_len = serial_len - len(num_str)
             if h_len > 0:
                 h_serial = hexlify_and_unicode(os.urandom(h_len)).upper()[0:h_len]
-            return "{0!s}{1!s}{2!s}".format(prefix, num_str, h_serial)
+            return f"{prefix!s}{num_str!s}{h_serial!s}"
 
     # now search the number of tokens of tokenytype in the token database
     session = db.session
@@ -1527,7 +1524,7 @@ def assign_token(serial, user, pin=None, encrypt_pin=False, error_message=None):
         raise TokenAdminError(_("Token assign failed for {0!r}/{1!s} : {2!r}").format(user, serial, e), id=1105)
 
     log.debug("successfully assigned token with serial "
-              "{0!r} to user {1!r}".format(serial, user))
+              f"{serial!r} to user {user!r}")
     return True
 
 
@@ -2183,18 +2180,17 @@ def lost_token(serial, new_serial=None, password=None,
     :rtype: dict
     """
     res = {}
-    new_serial = new_serial or "lost{0!s}".format(serial)
+    new_serial = new_serial or f"lost{serial!s}"
     user = get_token_owner(serial)
 
-    log.debug("doing lost token for serial {0!r} and user {1!r}".format(serial, user))
+    log.debug(f"doing lost token for serial {serial!r} and user {user!r}")
 
     if user is None or user.is_empty():
         err = _("You can only define a lost token for an assigned token.")
-        log.warning("{0!s}".format(err))
+        log.warning(f"{err!s}")
         raise TokenAdminError(err, id=2012)
 
-    character_pool = "{0!s}{1!s}{2!s}".format(string.ascii_lowercase,
-                                              string.ascii_uppercase, string.digits)
+    character_pool = f"{string.ascii_lowercase!s}{string.ascii_uppercase!s}{string.digits!s}"
     if contents != "":
         character_pool = ""
         if "c" in contents:
@@ -2668,7 +2664,7 @@ def check_token_list(token_object_list, passw, user=None, options=None, allow_re
                     messages.insert(0, _("Challenge matches, but token is not fit for challenge"))
                     reply_dict["message"] = ". ".join(messages)
                     log.info("Received a valid response to a "
-                             "challenge for a non-fit token {0!s}. {1!s}".format(token_object.token.serial,
+                             "challenge for a non-fit token {!s}. {!s}".format(token_object.token.serial,
                                                                                  reply_dict["message"]))
                 else:
                     # Challenge matches, token is active and token is fit for challenge
@@ -2832,7 +2828,7 @@ def get_dynamic_policy_definitions(scope: str = None) -> dict:
                 for pol_def in pol_entry:
                     set_def = pol_def
                     if pol_def.startswith(ttype) is not True:
-                        set_def = '{0!s}_{1!s}'.format(ttype, pol_def)
+                        set_def = f'{ttype!s}_{pol_def!s}'
 
                     pol[pol_section][set_def] = pol_entry.get(pol_def)
 
@@ -2978,14 +2974,14 @@ def challenge_text_replace(message, user, token_obj, additional_tags: dict = Non
     presence_answer = tags.get("presence_answer", None)
     if presence_answer and token_type == "push" and "{presence_answer}" not in message:
         # PyBabel gettext and f-strings don't like each other
-        message += _(" Please press: {presence_answer}".format(presence_answer=presence_answer))
+        message += _(f" Please press: {presence_answer}")
 
     message = message.format_map(defaultdict(str, tags))
 
     return message
 
 
-def regenerate_enroll_url(serial: str, request: Request, g) -> Union[str, None]:
+def regenerate_enroll_url(serial: str, request: Request, g) -> str | None:
     """
     Returns the enroll URL for a token with the given serial number that is already enrolled.
     Loads the configurations from the policies.

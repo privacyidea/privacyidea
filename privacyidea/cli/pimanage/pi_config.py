@@ -336,7 +336,7 @@ def resolver_create_internal(ctx, name):
     from sqlalchemy import Integer, String
     engine = create_engine(sqluri)
     metadata = MetaData()
-    Table('users_%s' % name,
+    Table(f'users_{name}',
           metadata,
           Column('id', Integer, Identity(), primary_key=True),
           Column('username', String(40), unique=True),
@@ -361,7 +361,7 @@ def event_list():
     List events
     """
     events = EventConfiguration().events
-    click.echo("\n{0:7} {4:4} {1:30}\t{2:20}\t{3}".format("Active", "Name", "Module", "Action", "ID"))
+    click.echo("\n{:7} {:4} {:30}\t{:20}\t{}".format("Active", "ID", "Name", "Module", "Action"))
     click.echo(90 * "=")
     for event in events:
         click.echo(f"{event['active']!r:7} {event['id']:<4} {event['name']:30}"
@@ -496,27 +496,27 @@ def policy_create(name, scope, action, file):
             contents = file.read()
             params = ast.literal_eval(contents)
             if params.get("name") and params.get("name") != name:
-                print("Found name '{0!s}' in file, will use that instead of "
-                      "'{1!s}'.".format(params.get("name"), name))
+                print("Found name '{!s}' in file, will use that instead of "
+                      "'{!s}'.".format(params.get("name"), name))
             else:
                 print("name not defined in file, will use the cli value "
-                      "{0!s}.".format(name))
+                      f"{name!s}.")
                 params["name"] = name
 
             if params.get("scope") and params.get("scope") != scope:
-                print("Found scope '{0!s}' in file, will use that instead of "
-                      "'{1!s}'.".format(params.get("scope"), scope))
+                print("Found scope '{!s}' in file, will use that instead of "
+                      "'{!s}'.".format(params.get("scope"), scope))
             else:
                 print("scope not defined in file, will use the cli value "
-                      "{0!s}.".format(scope))
+                      f"{scope!s}.")
                 params["scope"] = scope
 
             if params.get("action") and params.get("action") != action:
-                print("Found action in file: '{0!s}', will use that instead "
-                      "of: '{1!s}'.".format(params.get("action"), action))
+                print("Found action in file: '{!s}', will use that instead "
+                      "of: '{!s}'.".format(params.get("action"), action))
             else:
                 print("action not defined in file, will use the cli value "
-                      "{0!s}.".format(action))
+                      f"{action!s}.")
                 params["action"] = action
 
             r = set_policy(params.get("name"),
@@ -535,7 +535,7 @@ def policy_create(name, scope, action, file):
             return r
 
         except Exception as _e:
-            print("Unexpected error: {0!s}".format(sys.exc_info()[1]))
+            print(f"Unexpected error: {sys.exc_info()[1]!s}")
 
     else:
         r = set_policy(name, scope, action)
@@ -561,7 +561,7 @@ imp_fmt_dict = {
               help='The types of configuration to import. By default, import all '
                    'available data if a corresponding importer type exists. '
                    'Currently registered importer types are: '
-                   '{0!s}'.format(', '.join(['all'] + list(IMPORT_FUNCTIONS.keys()))))
+                   '{!s}'.format(', '.join(['all'] + list(IMPORT_FUNCTIONS.keys()))))
 @click.option('-n', '--name', metavar="NAME",
               help='The name of the configuration object to import (default: import all)')
 @click.pass_context

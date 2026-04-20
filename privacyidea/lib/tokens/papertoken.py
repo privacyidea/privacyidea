@@ -35,7 +35,7 @@ log = logging.getLogger(__name__)
 DEFAULT_COUNT = 100
 
 
-class PAPERACTION(object):
+class PAPERACTION:
     PAPERTOKEN_COUNT = "papertoken_count"
 
 

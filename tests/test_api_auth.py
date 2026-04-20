@@ -21,7 +21,7 @@ from privacyidea.lib.realm import (set_realm, set_default_realm, delete_realm,
                                    get_default_realm)
 from privacyidea.lib.resolver import save_resolver, delete_resolver
 from privacyidea.lib.token import get_tokens, remove_token, init_token, get_one_token
-from privacyidea.lib.tokenclass import FAILCOUNTER_EXCEEDED, DATE_FORMAT, FAILCOUNTER_CLEAR_TIMEOUT
+from privacyidea.lib.tokenclass import FAILCOUNTER_EXCEEDED, DATE_FORMAT, FAILCOUNTER_CLEAR_TIMEOUT, RolloutState
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import to_unicode, AUTH_RESPONSE
 from privacyidea.models import Realm, NodeName, db
@@ -984,7 +984,7 @@ class AuthApiTestCase(MyApiTestCase):
         self.assertRaises(ResourceNotFoundError, get_one_token, serial=serial)
 
         # Enroll new token
-        db.session.expunge_all()    # Clear session for new request
+        db.session.expunge_all()  # Clear session for new request
         with self.app.test_request_context('/token/init',
                                            method='POST',
                                            headers={"Authorization": auth_token},
@@ -1302,6 +1302,270 @@ class AuthApiTestCase(MyApiTestCase):
         self.assertEqual("Authentication failed.", detail.get("message"))
         self.assertIn("threadid", detail)
         self.assertEqual(2, len(detail))
+
+    def test_16_passthru_ignore_rollout_state(self):
+        """
+        Test that tokens whose rollout_state is listed in the
+        PASSTHRU_IGNORE_ROLLOUT_STATE policy are ignored when determining
+        whether a user has tokens. The policy value is stored as
+        space-separated rollout states, e.g.
+        ``passthru_ignore_rollout_state=pending verify broken``.
+        """
+        self.setUp_user_realms()
+        set_policy("pi-login", scope=SCOPE.WEBUI,
+                   action=f"{PolicyAction.LOGINMODE}=privacyIDEA")
+        set_policy("passthru", scope=SCOPE.AUTH,
+                   action=f"{PolicyAction.PASSTHRU}=userstore")
+
+        user = User("cornelius", self.realm1)
+        # Make sure the user has no tokens
+        remove_token(user=user)
+
+        # Assign a token with rollout_state=clientwait
+        tok1 = init_token({"serial": "PTIRS1", "type": "spass", "pin": "pin"},
+                          user=user)
+        tok1.token.rollout_state = RolloutState.CLIENTWAIT
+        tok1.token.save()
+
+        # Without PASSTHRU_IGNORE_ROLLOUT_STATE, the user has a token,
+        # so passthru should NOT be used. Auth with userstore password fails.
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "cornelius",
+                                                 "password": "test"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(401, res.status_code, res)
+            result = res.json.get("result")
+            self.assertFalse(result.get("status"), result)
+
+        # Set PASSTHRU_IGNORE_ROLLOUT_STATE with a single value "clientwait"
+        set_policy("ignore_rollout", scope=SCOPE.AUTH,
+                   action=f"{PolicyAction.PASSTHRU_IGNORE_ROLLOUT_STATE}=clientwait")
+
+        # Token in "clientwait" is ignored -> passthru succeeds
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "cornelius",
+                                                 "password": "test"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"), result)
+            self.assertIn('token', result.get("value"), result)
+
+        # Policy ignores only "verify" -> "clientwait" token is NOT ignored
+        set_policy("ignore_rollout", scope=SCOPE.AUTH,
+                   action=f"{PolicyAction.PASSTHRU_IGNORE_ROLLOUT_STATE}=verify")
+
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "cornelius",
+                                                 "password": "test"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(401, res.status_code, res)
+
+        # --- Multiple rollout states in one policy (space-separated) ---
+        # Add a second token with rollout_state=verify
+        tok2 = init_token({"serial": "PTIRS2", "type": "spass", "pin": "pin2"},
+                          user=user)
+        tok2.token.rollout_state = RolloutState.VERIFY_PENDING
+        tok2.token.save()
+
+        # Policy ignores only "clientwait" -> "verify" token is still counted
+        set_policy("ignore_rollout", scope=SCOPE.AUTH,
+                   action=f"{PolicyAction.PASSTHRU_IGNORE_ROLLOUT_STATE}=clientwait")
+
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "cornelius",
+                                                 "password": "test"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(401, res.status_code, res)
+
+        # Policy ignores "clientwait verify" (space-separated) -> both tokens ignored
+        set_policy("ignore_rollout", scope=SCOPE.AUTH,
+                   action=f"{PolicyAction.PASSTHRU_IGNORE_ROLLOUT_STATE}=clientwait verify")
+
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "cornelius",
+                                                 "password": "test"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"), result)
+
+        # Add a third token with rollout_state=broken
+        tok3 = init_token({"serial": "PTIRS3", "type": "spass", "pin": "pin3"},
+                          user=user)
+        tok3.token.rollout_state = RolloutState.BROKEN
+        tok3.token.save()
+
+        # Policy ignores "clientwait verify" but NOT "broken" -> auth fails
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "cornelius",
+                                                 "password": "test"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(401, res.status_code, res)
+
+        # Policy ignores all three states: "clientwait verify broken"
+        set_policy("ignore_rollout", scope=SCOPE.AUTH,
+                   action=f"{PolicyAction.PASSTHRU_IGNORE_ROLLOUT_STATE}=clientwait verify broken")
+
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "cornelius",
+                                                 "password": "test"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"), result)
+
+        # Add a fully enrolled token (no rollout_state).
+        # Even though all rollout states are ignored, the user still has
+        # a real token, so passthru should NOT be used.
+        tok4 = init_token({"serial": "PTIRS4", "type": "spass", "pin": "Hallo"},
+                          user=user)
+
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "cornelius",
+                                                 "password": "test"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(401, res.status_code, res)
+            result = res.json.get("result")
+            self.assertFalse(result.get("status"), result)
+
+        # Clean up
+        remove_token("PTIRS1")
+        remove_token("PTIRS2")
+        remove_token("PTIRS3")
+        remove_token("PTIRS4")
+        delete_policy("passthru")
+        delete_policy("ignore_rollout")
+        delete_policy("pi-login")
+
+    def test_17_passnotoken_ignore_rollout_state(self):
+        """
+        Test that tokens whose rollout_state is listed in the
+        PASSNOTOKEN_IGNORE_ROLLOUT_STATE policy are ignored when determining
+        whether a user has tokens for the passOnNoToken policy.
+        The policy value is stored as space-separated rollout states, e.g.
+        ``passnotoken_ignore_rollout_state=clientwait verify broken``.
+        """
+        self.setUp_user_realms()
+        set_policy("pi-login", scope=SCOPE.WEBUI,
+                   action=f"{PolicyAction.LOGINMODE}=privacyIDEA")
+        set_policy("notoken", scope=SCOPE.AUTH,
+                   action=f"{PolicyAction.PASSNOTOKEN}")
+
+        user = User("cornelius", self.realm1)
+        # Make sure the user has no tokens
+        remove_token(user=user)
+
+        # Assign a token with rollout_state=clientwait
+        tok1 = init_token({"serial": "PNTIRS1", "type": "spass", "pin": "pin"},
+                          user=user)
+        tok1.token.rollout_state = RolloutState.CLIENTWAIT
+        tok1.token.save()
+
+        # Without PASSNOTOKEN_IGNORE_ROLLOUT_STATE, the user has a token,
+        # so passOnNoToken should NOT trigger. Auth fails.
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "cornelius",
+                                                 "password": "test"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(401, res.status_code, res)
+
+        # Set PASSNOTOKEN_IGNORE_ROLLOUT_STATE to "clientwait"
+        set_policy("notoken_ignore", scope=SCOPE.AUTH,
+                   action=f"{PolicyAction.PASSNOTOKEN_IGNORE_ROLLOUT_STATE}=clientwait")
+
+        # Token in "clientwait" is ignored -> passOnNoToken triggers
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "cornelius",
+                                                 "password": "test"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+            result = res.json.get("result")
+            self.assertTrue(result.get("status"), result)
+
+        # Policy ignores only "verify" -> "clientwait" token NOT ignored
+        set_policy("notoken_ignore", scope=SCOPE.AUTH,
+                   action=f"{PolicyAction.PASSNOTOKEN_IGNORE_ROLLOUT_STATE}=verify")
+
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "cornelius",
+                                                 "password": "test"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(401, res.status_code, res)
+
+        # --- Multiple rollout states (space-separated) ---
+        # Add a second token with rollout_state=verify
+        tok2 = init_token({"serial": "PNTIRS2", "type": "spass", "pin": "pin2"},
+                          user=user)
+        tok2.token.rollout_state = RolloutState.VERIFY_PENDING
+        tok2.token.save()
+
+        # Policy "clientwait verify" -> both ignored
+        set_policy("notoken_ignore", scope=SCOPE.AUTH,
+                   action=f"{PolicyAction.PASSNOTOKEN_IGNORE_ROLLOUT_STATE}=clientwait verify")
+
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "cornelius",
+                                                 "password": "test"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+
+        # Add a third token with rollout_state=broken
+        tok3 = init_token({"serial": "PNTIRS3", "type": "spass", "pin": "pin3"},
+                          user=user)
+        tok3.token.rollout_state = RolloutState.BROKEN
+        tok3.token.save()
+
+        # "clientwait verify" does NOT cover "broken" -> auth fails
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "cornelius",
+                                                 "password": "test"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(401, res.status_code, res)
+
+        # "clientwait verify broken" -> all three ignored
+        set_policy("notoken_ignore", scope=SCOPE.AUTH,
+                   action=f"{PolicyAction.PASSNOTOKEN_IGNORE_ROLLOUT_STATE}=clientwait verify broken")
+
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "cornelius",
+                                                 "password": "test"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(200, res.status_code, res)
+
+        # Add a fully enrolled token -> user has a real token
+        tok4 = init_token({"serial": "PNTIRS4", "type": "spass", "pin": "Hallo"},
+                          user=user)
+
+        with self.app.test_request_context('/auth',
+                                           method='POST',
+                                           data={"username": "cornelius",
+                                                 "password": "test"}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(401, res.status_code, res)
+
+        # Clean up
+        remove_token("PNTIRS1")
+        remove_token("PNTIRS2")
+        remove_token("PNTIRS3")
+        remove_token("PNTIRS4")
+        delete_policy("notoken")
+        delete_policy("notoken_ignore")
+        delete_policy("pi-login")
 
 
 class AdminFromUserstore(OverrideConfigTestCase):

@@ -2,21 +2,10 @@
 @use "table";
 
 .container-table-container {
-  @include table.table-container-styles;
+  @include styles.main-component-style;
   @include table.base-table-structure(".container-table", ".container-table-filter", ".table-scroll-container");
-  overflow-y: auto;
-  overflow-x: hidden;
-  max-height: var(--max-height);
-  max-width: calc(100vw - var(--global-padding) * 5 - 48px);
-  display: grid;
 }
 
-.filter-paginator-container-selfservice {
-  display: flex;
-  align-items: center;
-  justify-content: end;
-  gap: 16px;
-}
 
 tr.example-detail-row {
   background: var(--mat-sys-surface-container-lowest);
@@ -47,7 +36,7 @@ tr.example-detail-row td {
 
 .expanded-token-list {
   display: grid;
-  grid-template-columns: auto auto auto auto auto;
+  grid-template-columns: repeat(5, auto);
   gap: 8px;
   margin-bottom: 16px;
   margin-top: 16px;
@@ -72,14 +61,6 @@ tr.example-detail-row td {
   background: var(--mat-sys-surface-container-low);
 }
 
-.table-container {
-  width: 1430px;
-}
-
-.selfservice-paginator-container {
-  justify-content: end;
-  display: flex;
-}
 
 .realm-break {
   margin-top: 3px;

@@ -3,56 +3,13 @@
 
 :host {
   display: block;
-  width: 1100px;
-}
-
-.type-section {
-  padding: 1rem;
-  border: 1px solid var(--pi-border-color, #dcdcdc);
-  border-radius: var(--border-radius);
-  background: var(--mat-sys-surface-container-low);
-  margin-bottom: 16px;
-
-  h3 {
-    margin-top: 0;
-    margin-bottom: 1rem;
-    font-size: 1.2rem;
-    font-weight: 500;
-  }
-}
-
-.form-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-
-  @media (max-width: 1100px) {
-    grid-template-columns: 1fr;
-  }
-
-  mat-form-field {
-    width: 100%;
-  }
-
-  .field-lg {
-    grid-column: span 2;
-
-    @media (max-width: 1100px) {
-      grid-column: span 1;
-    }
-  }
-}
-
-textarea[matInput] {
-  min-height: 6rem;
-  resize: vertical;
 }
 
 .mapping-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin: 12px 0 8px;
+  margin: 32px 0 16px 0;
 }
 
 @include table.base-table-structure(".mapping-table");
@@ -61,7 +18,13 @@ textarea[matInput] {
   width: 100%;
   margin-bottom: 1rem;
 
-  th.mat-column-actions {
+  .mat-column-privacyideaAttr,
+  .mat-column-userStoreAttr {
+    width: 300px
+  }
+
+  .mat-column-actions {
+    width: 80px;
     text-align: center;
   }
 
@@ -73,16 +36,6 @@ textarea[matInput] {
       background-color: var(--table-color) !important;
     }
   }
-
-  .cell-field {
-    width: 100%;
-    height: 56px;
-  }
-}
-
-.actions-cell {
-  width: 80px;
-  text-align: center !important;
 }
 
 .actions-buttons {
@@ -93,40 +46,16 @@ textarea[matInput] {
 }
 
 .auth-panel-body {
-  padding-top: 8px;
+  border: 1px solid var(--mat-sys-surface-container-highest);
+  border-radius: var(--border-radius);
+  padding: 16px;
+  background: var(--mat-sys-surface-container-lowest);
 }
 
 .auth-description {
   margin: 0 0 12px 0;
   opacity: 0.8;
-}
-
-.auth-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  column-gap: 16px;
-  row-gap: 12px;
-  align-items: start;
-
-  mat-form-field {
-    width: 100%;
-  }
-
-  @media (max-width: 1100px) {
-    grid-template-columns: 1fr;
-  }
-}
-
-.auth-wide {
-  grid-column: 1 / -1;
-}
-
-.auth-endpoint {
-  grid-column: 2 / -1;
-
-  @media (max-width: 1100px) {
-    grid-column: 1 / -1;
-  }
+  max-width: 800px;
 }
 
 .hint {
@@ -143,4 +72,8 @@ textarea[matInput] {
 .mat-button-toggle-appearance-standard.mat-button-toggle-checked {
   background-color: var(--mat-sys-primary-base-active);
   color: white;
+}
+
+.height-57 {
+  height: 57px;
 }

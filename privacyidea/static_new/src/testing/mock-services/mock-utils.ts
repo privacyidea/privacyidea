@@ -44,7 +44,7 @@ export class MockHttpResourceRef<T> implements HttpResourceRef<T> {
       reload: this.reload,
       error: this.error,
       hasValue: this.hasValue.bind(this),
-      status: signal(ResourceStatus.Resolved),
+      status: signal("resolved"),
       isLoading: signal(false)
     } as any;
   }
@@ -59,8 +59,8 @@ export class MockHttpResourceRef<T> implements HttpResourceRef<T> {
 
   destroy(): void {}
 
-  status: Signal<ResourceStatus> = signal(ResourceStatus.Resolved);
-  error = signal<Error | null>(null);
+  status: Signal<ResourceStatus> = signal("resolved");
+  error = signal<Error | undefined>(undefined);
   isLoading: Signal<boolean> = signal(false);
   reload = jest.fn();
 
@@ -115,5 +115,10 @@ export class MockPiResponse<Value, Detail = unknown> {
 
   static fromValue<Value, Detail = unknown>(value: Value, detail: Detail = {} as Detail, init: any = {}): MockPiResponse<Value, Detail> {
     return new MockPiResponse<Value, Detail>({ detail, result: { status: true, value, init } });
+  }
+
+  static fromError<Value = unknown, Detail = unknown>(error: { code?: number; message: string }, detail: Detail = {} as Detail): MockPiResponse<Value, Detail> {
+    const errorWithCode = { code: error.code ?? 0, message: error.message };
+    return new MockPiResponse<Value, Detail>({ detail, result: { status: false, error: errorWithCode } });
   }
 }

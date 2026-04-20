@@ -573,3 +573,17 @@ Allowed values are ``show`` and ``hide``.
 The default behavior is to show the passkey login option on the login page.
 
 .. versionadded:: 3.13
+
+
+.. _policy_jwt_validity:
+
+jwt_validity
+~~~~~~~~~~~~
+
+type: ``int``
+
+privacyIDEA issues a JWT when the user or admins logs in to the WebUI.
+The default validity is 1 hour.
+You can specify different validity times in seconds.
+
+.. versionadded:: 3.10

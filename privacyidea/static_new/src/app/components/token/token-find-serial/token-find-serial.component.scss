@@ -1,0 +1,14 @@
+@use "styles";
+@use "table";
+
+.find-token-serial {
+  @include styles.main-component-style;
+  display: grid;
+}
+
+.token-get-serial-footer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 16px;
+}

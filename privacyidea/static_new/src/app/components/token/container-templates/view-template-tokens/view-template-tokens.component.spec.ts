@@ -48,7 +48,7 @@ describe("ViewTemplateTokensComponent", () => {
 
     fixture.componentRef.setInput("templateTokens", mockTokens);
     fixture.detectChanges();
-    TestBed.flushEffects();
+    TestBed.tick();
 
     const tokenContainers = fixture.debugElement.queryAll(By.css(".token-container"));
     expect(tokenContainers.length).toBe(2);
@@ -61,7 +61,7 @@ describe("ViewTemplateTokensComponent", () => {
   it("should not render container if tokens are empty", () => {
     fixture.componentRef.setInput("templateTokens", []);
     fixture.detectChanges();
-    TestBed.flushEffects();
+    TestBed.tick();
 
     const container = fixture.debugElement.query(By.css(".template-tokens-container"));
     expect(container).toBeNull();
@@ -72,7 +72,7 @@ describe("ViewTemplateTokensComponent", () => {
 
     fixture.componentRef.setInput("templateTokens", mockTokens);
     fixture.detectChanges();
-    TestBed.flushEffects();
+    TestBed.tick();
 
     const items = fixture.debugElement.queryAll(By.css(".token-item"));
     const labels = items.map((i) => i.nativeElement.textContent);

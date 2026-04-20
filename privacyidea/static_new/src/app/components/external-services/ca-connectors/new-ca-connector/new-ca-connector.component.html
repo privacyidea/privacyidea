@@ -16,119 +16,210 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<h2 mat-dialog-title>
-  @if (isEditMode) {
-    <span i18n>Edit CA Connector</span>
-  } @else {
-    <span i18n>Create CA Connector</span>
-  }
-</h2>
+@if (isEditMode) {
+  <h3
+    class="margin-8 external-service-dialog-title"
+    i18n>
+    Edit CA Connector
+  </h3>
+} @else {
+  <h3
+    class="margin-8 external-service-dialog-title"
+    i18n>
+    Create CA Connector
+  </h3>
+}
 
-<mat-dialog-content>
+<mat-dialog-content class="ca-connector-dialog-content">
   <form
     [formGroup]="caConnectorForm"
-    class="ca-connector-column">
-    <mat-form-field>
-      <mat-label i18n>Connector Name</mat-label>
-      <input
-        formControlName="connectorname"
-        matInput
-        placeholder="MyConnector1"
-        required />
-    </mat-form-field>
+    class="ca-connector-form">
 
-    <mat-form-field>
-      <mat-label i18n>Type</mat-label>
-      <mat-select
-        formControlName="type"
-        required>
-        <mat-option
-          i18n
-          value="local">Local
-        </mat-option>
-        <mat-option
-          i18n
-          value="microsoft">Microsoft
-        </mat-option>
-      </mat-select>
-    </mat-form-field>
+    <div class="flex-row gap-16">
+      <mat-form-field
+        appearance="fill"
+        class="input-width-l">
+        <mat-label i18n>Connector Name</mat-label>
+        <app-clearable-input
+          (onClick)="caConnectorForm.get('connectorname')?.setValue('')"
+          [showClearButton]="!isEditMode && !!caConnectorForm.get('connectorname')?.value">
+          <input
+            formControlName="connectorname"
+            matInput
+            placeholder="MyConnector1"
+            required />
+        </app-clearable-input>
+        @if (caConnectorForm.get('connectorname')?.hasError('required')) {
+          <mat-error i18n>Connector Name is <strong>required</strong></mat-error>
+        }
+      </mat-form-field>
+
+      <mat-form-field
+        appearance="fill"
+        class="input-width-l">
+        <mat-label i18n>Type</mat-label>
+        <mat-select
+          formControlName="type"
+          required>
+          <mat-option
+            i18n
+            value="local">Local
+          </mat-option>
+          <mat-option
+            i18n
+            value="microsoft">Microsoft
+          </mat-option>
+        </mat-select>
+        @if (caConnectorForm.get('type')?.hasError('required')) {
+          <mat-error i18n>Type is <strong>required</strong></mat-error>
+        }
+      </mat-form-field>
+    </div>
 
     @if (caConnectorForm.get('type')?.value === 'local') {
-      <h3 i18n>Base Config</h3>
-      <mat-form-field>
-        <mat-label i18n>CA Certificate</mat-label>
-        <input
-          formControlName="cacert"
-          matInput
-          placeholder="/etc/cacert.pem"
-          required />
-      </mat-form-field>
+      <h4 i18n>Base Config</h4>
 
-      <mat-form-field>
-        <mat-label i18n>CA Key</mat-label>
-        <input
-          formControlName="cakey"
-          matInput
-          placeholder="/etc/cakey.pem"
-          required />
-      </mat-form-field>
+      <div class="flex-row gap-16 margin-bottom-16">
+        <mat-form-field
+          appearance="fill"
+          class="input-width-l">
+          <mat-label i18n>CA Certificate</mat-label>
+          <app-clearable-input
+            (onClick)="caConnectorForm.get('cacert')?.setValue('')"
+            [showClearButton]="!!caConnectorForm.get('cacert')?.value">
+            <input
+              formControlName="cacert"
+              matInput
+              placeholder="/etc/cacert.pem"
+              [required]="caConnectorForm.get('type')?.value === 'local'" />
+          </app-clearable-input>
+          @if (caConnectorForm.get('cacert')?.hasError('required')) {
+            <mat-error i18n>CA Certificate is <strong>required</strong></mat-error>
+          }
+        </mat-form-field>
 
-      <mat-form-field>
-        <mat-label i18n>OpenSSL Config File</mat-label>
-        <input
-          formControlName="openssl.cnf"
-          matInput
-          placeholder="/etc/openssl.cnf"
-          required />
-      </mat-form-field>
+        <mat-form-field
+          appearance="fill"
+          class="input-width-l">
+          <mat-label i18n>CA Key</mat-label>
+          <app-clearable-input
+            (onClick)="caConnectorForm.get('cakey')?.setValue('')"
+            [showClearButton]="!!caConnectorForm.get('cakey')?.value">
+            <input
+              formControlName="cakey"
+              matInput
+              placeholder="/etc/cakey.pem"
+              [required]="caConnectorForm.get('type')?.value === 'local'" />
+          </app-clearable-input>
+          @if (caConnectorForm.get('cakey')?.hasError('required')) {
+            <mat-error i18n>CA Key is <strong>required</strong></mat-error>
+          }
+        </mat-form-field>
+      </div>
+      <div class="flex-row gap-16 margin-bottom-16">
 
-      <mat-form-field>
-        <mat-label i18n>Certificates Templates File</mat-label>
-        <input
-          formControlName="templates"
-          matInput
-          placeholder="/etc/privacyidea/ca/templates.yaml" />
-      </mat-form-field>
+        <mat-form-field
+          appearance="fill"
+          class="input-width-l">
+          <mat-label i18n>OpenSSL Config File</mat-label>
+          <app-clearable-input
+            (onClick)="caConnectorForm.get('openssl.cnf')?.setValue('')"
+            [showClearButton]="!!caConnectorForm.get('openssl.cnf')?.value">
+            <input
+              formControlName="openssl.cnf"
+              matInput
+              placeholder="/etc/openssl.cnf"
+              [required]="caConnectorForm.get('type')?.value === 'local'" />
+          </app-clearable-input>
+          @if (caConnectorForm.get('openssl.cnf')?.hasError('required')) {
+            <mat-error i18n>OpenSSL Config File is <strong>required</strong></mat-error>
+          }
+        </mat-form-field>
 
-      <mat-form-field>
-        <mat-label i18n>Working Directory</mat-label>
-        <input
-          formControlName="WorkingDir"
-          matInput
-          placeholder="/opt/myCA" />
-      </mat-form-field>
+        <mat-form-field
+          appearance="fill"
+          class="input-width-l">
+          <mat-label i18n>Certificates Templates File</mat-label>
+          <app-clearable-input
+            (onClick)="caConnectorForm.get('templates')?.setValue('')"
+            [showClearButton]="!!caConnectorForm.get('templates')?.value">
+            <input
+              formControlName="templates"
+              matInput
+              placeholder="/etc/privacyidea/ca/templates.yaml" />
+          </app-clearable-input>
+        </mat-form-field>
+      </div>
+      <div class="flex-row gap-16">
+        <mat-form-field
+          appearance="fill"
+          class="input-width-l">
+          <mat-label i18n>Working Directory</mat-label>
+          <app-clearable-input
+            (onClick)="caConnectorForm.get('WorkingDir')?.setValue('')"
+            [showClearButton]="!!caConnectorForm.get('WorkingDir')?.value">
+            <input
+              formControlName="WorkingDir"
+              matInput
+              placeholder="/opt/myCA" />
+          </app-clearable-input>
+        </mat-form-field>
 
-      <mat-form-field>
-        <mat-label i18n>Certificate Signing Request Directory</mat-label>
-        <input
-          formControlName="CSRDir"
-          matInput
-          placeholder="/opt/myCA/csrs" />
-      </mat-form-field>
+        <mat-form-field
+          appearance="fill"
+          class="input-width-l">
+          <mat-label i18n>Certificate Signing Request Directory</mat-label>
+          <app-clearable-input
+            (onClick)="caConnectorForm.get('CSRDir')?.setValue('')"
+            [showClearButton]="!!caConnectorForm.get('CSRDir')?.value">
+            <input
+              formControlName="CSRDir"
+              matInput
+              placeholder="/opt/myCA/csrs" />
+          </app-clearable-input>
+        </mat-form-field>
+      </div>
 
-      <mat-form-field>
+      <mat-form-field
+        appearance="fill"
+        class="input-width-l">
         <mat-label i18n>Certificate Directory</mat-label>
-        <input
-          formControlName="CertificateDir"
-          matInput
-          placeholder="/opt/myCA/certs" />
+        <app-clearable-input
+          (onClick)="caConnectorForm.get('CertificateDir')?.setValue('')"
+          [showClearButton]="!!caConnectorForm.get('CertificateDir')?.value">
+          <input
+            formControlName="CertificateDir"
+            matInput
+            placeholder="/opt/myCA/certs" />
+        </app-clearable-input>
         <mat-hint i18n>This is the directory where certificates get written to.</mat-hint>
       </mat-form-field>
 
-      <h3 i18n>CRL Configuration</h3>
-      <mat-form-field>
+      <h4
+        class="margin-top-32"
+        i18n>CRL Configuration
+      </h4>
+      <mat-form-field
+        appearance="fill"
+        class="input-width-xl margin-bottom-16">
         <mat-label i18n>Certificate Revocation List</mat-label>
-        <input
-          formControlName="CRL"
-          matInput
-          placeholder="/opt/myCA/certs/crl.pem" />
+        <app-clearable-input
+          (onClick)="caConnectorForm.get('CRL')?.setValue('')"
+          [showClearButton]="!!caConnectorForm.get('CRL')?.value">
+          <input
+            formControlName="CRL"
+            matInput
+            placeholder="/opt/myCA/certs/crl.pem" />
+        </app-clearable-input>
         <mat-hint i18n>This is the CRL file, which is written when a certificate is revoked or the CRL is created
                        otherwise.
         </mat-hint>
       </mat-form-field>
 
-      <div class="flex-row gap-1">
-        <mat-form-field class="flex-size-1">
+      <div class="flex-row gap-16 margin-top-16">
+        <mat-form-field
+          appearance="fill"
+          class="input-width-s">
           <mat-label i18n>Validity Period</mat-label>
           <input
             formControlName="CRL_Validity_Period"
@@ -138,7 +229,9 @@
           <mat-hint i18n>Number of days the generated CRL should be valid.</mat-hint>
         </mat-form-field>
 
-        <mat-form-field class="flex-size-1">
+        <mat-form-field
+          appearance="fill"
+          class="input-width-s margin-bottom-16">
           <mat-label i18n>Overlap Period</mat-label>
           <input
             formControlName="CRL_Overlap_Period"
@@ -149,109 +242,162 @@
         </mat-form-field>
       </div>
     } @else if (caConnectorForm.get('type')?.value === 'microsoft') {
-      <h3 i18n>Base Config</h3>
-      <mat-form-field>
-        <mat-label i18n>Microsoft CA Worker Hostname</mat-label>
-        <input
-          formControlName="hostname"
-          matInput
-          placeholder="example.net"
-          required />
-      </mat-form-field>
+      <h4 i18n>Base Config</h4>
+      <div class="flex-row gap-16">
+        <mat-form-field
+          appearance="fill"
+          class="input-width-l">
+          <mat-label i18n>Microsoft CA Worker Hostname</mat-label>
+          <app-clearable-input
+            (onClick)="caConnectorForm.get('hostname')?.setValue('')"
+            [showClearButton]="!!caConnectorForm.get('hostname')?.value">
+            <input
+              formControlName="hostname"
+              matInput
+              placeholder="example.net"
+              [required]="caConnectorForm.get('type')?.value === 'microsoft'" />
+          </app-clearable-input>
+          @if (caConnectorForm.get('hostname')?.hasError('required')) {
+            <mat-error i18n>Hostname is <strong>required</strong></mat-error>
+          }
+        </mat-form-field>
 
-      <mat-form-field>
-        <mat-label i18n>Microsoft CA Worker Port</mat-label>
-        <input
-          formControlName="port"
-          matInput
-          placeholder="1234"
-          required
-          type="number" />
-      </mat-form-field>
+        <mat-form-field
+          appearance="fill"
+          class="input-width-l">
+          <mat-label i18n>Microsoft CA Worker Port</mat-label>
+          <input
+            formControlName="port"
+            matInput
+            placeholder="1234"
+            [required]="caConnectorForm.get('type')?.value === 'microsoft'"
+            type="number" />
+          @if (caConnectorForm.get('port')?.hasError('required')) {
+            <mat-error i18n>Port is <strong>required</strong></mat-error>
+          }
+        </mat-form-field>
+      </div>
 
       <mat-checkbox
         formControlName="http_proxy"
         i18n>Use HTTP proxy
       </mat-checkbox>
 
-      <h3 i18n>SSL Config</h3>
+      <h4 i18n>SSL Config</h4>
       <mat-checkbox
         formControlName="use_ssl"
         i18n>Use SSL
       </mat-checkbox>
 
       @if (caConnectorForm.get('use_ssl')?.value) {
-        <mat-form-field>
-          <mat-label i18n>CA Certificate (Filename)</mat-label>
-          <input
-            formControlName="ssl_ca_cert"
-            matInput
-            placeholder="/etc/privacyidea/ca/ca.crt" />
-        </mat-form-field>
+        <div class="flex-row gap-16">
+          <mat-form-field
+            appearance="fill"
+            class="input-width-l">
+            <mat-label i18n>CA Certificate (Filename)</mat-label>
+            <app-clearable-input
+              (onClick)="caConnectorForm.get('ssl_ca_cert')?.setValue('')"
+              [showClearButton]="!!caConnectorForm.get('ssl_ca_cert')?.value">
+              <input
+                formControlName="ssl_ca_cert"
+                matInput
+                placeholder="/etc/privacyidea/ca/ca.crt" />
+            </app-clearable-input>
+          </mat-form-field>
 
-        <mat-form-field>
-          <mat-label i18n>Client Certificate (Filename)</mat-label>
-          <input
-            formControlName="ssl_client_cert"
-            matInput
-            placeholder="/etc/privacyidea/ca/privacyidea.crt" />
-        </mat-form-field>
+          <mat-form-field
+            appearance="fill"
+            class="input-width-l">
+            <mat-label i18n>Client Certificate (Filename)</mat-label>
+            <app-clearable-input
+              (onClick)="caConnectorForm.get('ssl_client_cert')?.setValue('')"
+              [showClearButton]="!!caConnectorForm.get('ssl_client_cert')?.value">
+              <input
+                formControlName="ssl_client_cert"
+                matInput
+                placeholder="/etc/privacyidea/ca/privacyidea.crt" />
+            </app-clearable-input>
+          </mat-form-field>
+        </div>
 
-        <mat-form-field>
-          <mat-label i18n>Client Private Key (Filename)</mat-label>
-          <input
-            formControlName="ssl_client_key"
-            matInput
-            placeholder="/etc/privacyidea/ca/privacyidea.key" />
-        </mat-form-field>
+        <div class="flex-row gap-16">
+          <mat-form-field
+            appearance="fill"
+            class="input-width-l">
+            <mat-label i18n>Client Private Key (Filename)</mat-label>
+            <app-clearable-input
+              (onClick)="caConnectorForm.get('ssl_client_key')?.setValue('')"
+              [showClearButton]="!!caConnectorForm.get('ssl_client_key')?.value">
+              <input
+                formControlName="ssl_client_key"
+                matInput
+                placeholder="/etc/privacyidea/ca/privacyidea.key" />
+            </app-clearable-input>
+          </mat-form-field>
 
-        <mat-form-field>
-          <mat-label i18n>Password of Encrypted Client Private Key</mat-label>
-          <input
-            formControlName="ssl_client_key_password"
-            matInput
-            placeholder="top secret"
-            type="password" />
-        </mat-form-field>
+          <mat-form-field
+            appearance="fill"
+            class="input-width-l">
+            <mat-label i18n>Password of Encrypted Client Private Key</mat-label>
+            <app-clearable-input
+              (onClick)="caConnectorForm.get('ssl_client_key_password')?.setValue('')"
+              [showClearButton]="!!caConnectorForm.get('ssl_client_key_password')?.value">
+              <input
+                formControlName="ssl_client_key_password"
+                matInput
+                placeholder="top secret"
+                type="password" />
+            </app-clearable-input>
+          </mat-form-field>
+        </div>
       }
 
-      <div class="margin-top-1 margin-bottom-1">
+      <div class="flex-row gap-16 margin-bottom-16">
+        @if (availableCas().length > 0) {
+          <mat-form-field
+            appearance="fill"
+            class="input-width-l">
+            <mat-label i18n>Domain CA</mat-label>
+            <mat-select
+              formControlName="ca"
+              [required]="caConnectorForm.get('type')?.value === 'microsoft' && availableCas().length > 0">
+              @for (ca of availableCas(); track ca) {
+                <mat-option [value]="ca">{{ ca }}</mat-option>
+              }
+            </mat-select>
+            @if (caConnectorForm.get('ca')?.hasError('required')) {
+              <mat-error i18n>Domain CA is <strong>required</strong></mat-error>
+            }
+          </mat-form-field>
+        }
+
         <button
           (click)="loadAvailableCas()"
           [disabled]="!caConnectorForm.get('hostname')?.value || !caConnectorForm.get('port')?.value || isLoadingCas()"
-          class="action-button-1"
+          class="action-button-secondary button-width-m margin-bottom-16"
           mat-stroked-button>
           <mat-icon>assured_workload</mat-icon>
           <span i18n>Get Available CAs</span>
         </button>
       </div>
-
-      @if (availableCas().length > 0) {
-        <mat-form-field>
-          <mat-label i18n>Domain CA</mat-label>
-          <mat-select
-            formControlName="ca"
-            required>
-            @for (ca of availableCas(); track ca) {
-              <mat-option [value]="ca">{{ ca }}</mat-option>
-            }
-          </mat-select>
-        </mat-form-field>
-      }
     }
   </form>
 </mat-dialog-content>
 
-<mat-dialog-actions align="end">
+<mat-dialog-actions
+  align="end"
+  class="margin-8 external-service-dialog-actions">
   <button
     (click)="onCancel()"
+    class="action-button-secondary button-width-s"
     i18n
-    mat-button>Cancel
+    mat-stroked-button>
+    Cancel
   </button>
   <button
     (click)="save()"
     [disabled]="caConnectorForm.invalid"
-    class="action-button-1 width-238"
+    class="action-button-primary button-width-s"
     i18n
     mat-stroked-button>
     <mat-icon>save</mat-icon>

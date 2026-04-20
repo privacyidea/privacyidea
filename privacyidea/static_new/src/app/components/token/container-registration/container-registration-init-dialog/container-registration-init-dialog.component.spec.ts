@@ -56,7 +56,7 @@ describe("ContainerRegistrationInitDialogComponent", () => {
     });
 
     it("should render Register button", () => {
-      const button = fixture.debugElement.query(By.css(".pi-dialog-footer .action-button-1"))
+      const button = fixture.debugElement.query(By.css(".pi-dialog-footer .action-button-primary"))
         ?.nativeElement as HTMLButtonElement;
       expect(button).toBeDefined();
       expect(button.textContent).toContain("Register");
@@ -78,7 +78,7 @@ describe("ContainerRegistrationInitDialogComponent", () => {
       // Simulate invalid input by mocking the getter
       Object.defineProperty(component, "validInput", { get: () => false });
       fixture.detectChanges();
-      const button = fixture.debugElement.query(By.css(".pi-dialog-footer .action-button-1"))
+      const button = fixture.debugElement.query(By.css(".pi-dialog-footer .action-button-primary"))
         ?.nativeElement as HTMLButtonElement;
       expect(button).toBeDefined();
       expect(button.disabled).toBe(true);
@@ -113,12 +113,12 @@ describe("ContainerRegistrationInitDialogComponent", () => {
     });
 
     it("should render 'Container Rollover' title", async () => {
-      const title = fixture.nativeElement.querySelector("h2");
+      const title = fixture.nativeElement.querySelector("h3");
       expect(title.textContent).toContain("Container Rollover");
     });
 
     it("should render Rollover button", async () => {
-      const button = fixture.debugElement.query(By.css(".pi-dialog-footer .action-button-1"))
+      const button = fixture.debugElement.query(By.css(".pi-dialog-footer .action-button-primary"))
         ?.nativeElement as HTMLButtonElement;
       expect(button).toBeDefined();
       expect(button.textContent).toContain("Rollover");
@@ -140,7 +140,7 @@ describe("ContainerRegistrationInitDialogComponent", () => {
       // Simulate invalid input by mocking the getter
       Object.defineProperty(component, "validInput", { get: () => false });
       fixture.detectChanges();
-      const button = fixture.debugElement.query(By.css(".pi-dialog-footer .action-button-1"))
+      const button = fixture.debugElement.query(By.css(".pi-dialog-footer .action-button-primary"))
         ?.nativeElement as HTMLButtonElement;
       expect(button).toBeDefined();
       expect(button.disabled).toBe(true);

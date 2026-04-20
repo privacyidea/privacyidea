@@ -23,9 +23,13 @@
       [innerHTML]="registeredHtml?.sanitized"
       class="margin-top-16"></div>
   } @else {
-    <h2>
-      Container Registration Completed
-    </h2>
+    <div class="margin-bottom-16">
+      <h3
+        class="margin-8"
+        i18n>
+        Container Registration Completed
+      </h3>
+    </div>
     <span
       i18n>The container
     <a (click)="containerSelected(data.containerSerial)"> {{ data.containerSerial }} </a> was successfully
@@ -35,8 +39,9 @@
 <mat-dialog-actions>
   <button
     (click)="authService.logout()"
-    mat-dialog-close
-    mat-button>
+    class="action-button-primary button-width-s"
+    mat-button
+    mat-dialog-close>
     Logout
   </button>
 </mat-dialog-actions>

@@ -12,10 +12,10 @@ from flask import g
 from privacyidea.lib.audit import getAudit
 from privacyidea.lib.authcache import delete_from_cache, _hash_password
 from privacyidea.lib.error import UserError, PolicyError
+from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import (set_policy, delete_policy,
                                     PolicyClass, SCOPE,
                                     ACTIONVALUE, LOGINMODE)
-from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policydecorators import (auth_otppin,
                                               auth_user_does_not_exist,
                                               auth_user_passthru,
@@ -28,6 +28,7 @@ from privacyidea.lib.realm import set_realm, delete_realm
 from privacyidea.lib.resolver import save_resolver, delete_resolver
 from privacyidea.lib.token import (init_token, remove_token, check_user_pass,
                                    get_tokens)
+from privacyidea.lib.tokenclass import RolloutState
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import AUTH_RESPONSE
 from privacyidea.models import AuthCache
@@ -1064,3 +1065,309 @@ class LibPolicyTestCase(MyTestCase):
 
         self.app_context.g.audit_object.clear()
         self.set_default_g_variables()
+
+    def test_20_passthru_ignore_rollout_state(self):
+        # create a realm, where cornelius has a password test
+        rid = save_resolver({"resolver": "myreso",
+                             "type": "passwdresolver",
+                             "fileName": PW_FILE_2})
+        self.assertTrue(rid > 0, rid)
+        (added, failed) = set_realm("r1", [{'name': "myreso"}])
+        self.assertTrue(len(failed) == 0)
+        self.assertTrue(len(added) == 1)
+
+        user = User("cornelius", realm="r1")
+        passw = "test"
+        # remove all tokens of cornelius
+        remove_token(user=user)
+
+        # Set a PASSTHRU policy to the userstore
+        set_policy(name="pol_passthru",
+                   scope=SCOPE.AUTH,
+                   action="{0!s}=userstore".format(PolicyAction.PASSTHRU))
+
+        # Assign a token with rollout_state=clientwait to the user
+        tok1 = init_token({"serial": "ROLLOUT1",
+                           "type": "spass", "pin": "pin"},
+                          user=user)
+        tok1.token.rollout_state = RolloutState.CLIENTWAIT
+        tok1.token.save()
+
+        # Without PASSTHRU_IGNORE_ROLLOUT_STATE, the user has a token,
+        # so passthru should NOT be used. Authentication falls through
+        # to the wrapped function (check_user_pass) which fails.
+        self.set_default_g_variables()
+        self.app_context.g.policy_object = PolicyClass()
+        self.app_context.g.audit_object = FakeAudit()
+        options = {"g": self.app_context.g}
+        rv = auth_user_passthru(check_user_pass, user, passw, options=options)
+        self.assertFalse(rv[0])
+
+        # Set PASSTHRU_IGNORE_ROLLOUT_STATE with a single value "clientwait"
+        set_policy(name="pol_ignore_rollout",
+                   scope=SCOPE.AUTH,
+                   action="{0!s}=clientwait".format(PolicyAction.PASSTHRU_IGNORE_ROLLOUT_STATE))
+        self.set_default_g_variables()
+        self.app_context.g.policy_object = PolicyClass()
+        self.app_context.g.audit_object = FakeAudit()
+        options = {"g": self.app_context.g}
+
+        # Token in "clientwait" is ignored -> passthru succeeds
+        rv = auth_user_passthru(check_user_pass, user, passw, options=options)
+        self.assertTrue(rv[0])
+        self.assertEqual(rv[1].get("message"),
+                         "against userstore due to 'pol_passthru'")
+
+        # Policy ignores only "verify" -> "clientwait" token is NOT ignored
+        set_policy(name="pol_ignore_rollout",
+                   scope=SCOPE.AUTH,
+                   action="{0!s}=verify".format(PolicyAction.PASSTHRU_IGNORE_ROLLOUT_STATE))
+        self.set_default_g_variables()
+        self.app_context.g.policy_object = PolicyClass()
+        self.app_context.g.audit_object = FakeAudit()
+        options = {"g": self.app_context.g}
+
+        rv = auth_user_passthru(check_user_pass, user, passw, options=options)
+        self.assertFalse(rv[0])
+
+        # --- Multiple rollout states in one policy (space-separated) ---
+        # Add a second token with rollout_state=verify
+        tok2 = init_token({"serial": "ROLLOUT2",
+                           "type": "spass", "pin": "pin2"},
+                          user=user)
+        tok2.token.rollout_state = RolloutState.VERIFY_PENDING
+        tok2.token.save()
+
+        # Policy ignores only "clientwait" -> "verify" token still counted
+        set_policy(name="pol_ignore_rollout",
+                   scope=SCOPE.AUTH,
+                   action="{0!s}=clientwait".format(PolicyAction.PASSTHRU_IGNORE_ROLLOUT_STATE))
+        self.set_default_g_variables()
+        self.app_context.g.policy_object = PolicyClass()
+        self.app_context.g.audit_object = FakeAudit()
+        options = {"g": self.app_context.g}
+
+        rv = auth_user_passthru(check_user_pass, user, passw, options=options)
+        self.assertFalse(rv[0])
+
+        # Policy ignores "clientwait verify" (space-separated) -> both ignored
+        set_policy(name="pol_ignore_rollout",
+                   scope=SCOPE.AUTH,
+                   action="{0!s}=clientwait verify".format(
+                       PolicyAction.PASSTHRU_IGNORE_ROLLOUT_STATE))
+        self.set_default_g_variables()
+        self.app_context.g.policy_object = PolicyClass()
+        self.app_context.g.audit_object = FakeAudit()
+        options = {"g": self.app_context.g}
+
+        rv = auth_user_passthru(check_user_pass, user, passw, options=options)
+        self.assertTrue(rv[0])
+        self.assertEqual(rv[1].get("message"),
+                         "against userstore due to 'pol_passthru'")
+
+        # Add a third token with rollout_state=broken
+        tok3 = init_token({"serial": "ROLLOUT3",
+                           "type": "spass", "pin": "pin3"},
+                          user=user)
+        tok3.token.rollout_state = RolloutState.BROKEN
+        tok3.token.save()
+
+        # Policy ignores "clientwait verify" but NOT "broken" -> auth fails
+        self.set_default_g_variables()
+        self.app_context.g.policy_object = PolicyClass()
+        self.app_context.g.audit_object = FakeAudit()
+        options = {"g": self.app_context.g}
+
+        rv = auth_user_passthru(check_user_pass, user, passw, options=options)
+        self.assertFalse(rv[0])
+
+        # Policy ignores all three: "clientwait verify broken"
+        set_policy(name="pol_ignore_rollout",
+                   scope=SCOPE.AUTH,
+                   action="{0!s}=clientwait verify broken".format(
+                       PolicyAction.PASSTHRU_IGNORE_ROLLOUT_STATE))
+        self.set_default_g_variables()
+        self.app_context.g.policy_object = PolicyClass()
+        self.app_context.g.audit_object = FakeAudit()
+        options = {"g": self.app_context.g}
+
+        rv = auth_user_passthru(check_user_pass, user, passw, options=options)
+        self.assertTrue(rv[0])
+        self.assertEqual(rv[1].get("message"),
+                         "against userstore due to 'pol_passthru'")
+
+        # Add a fully enrolled token (no rollout_state).
+        # Even though all rollout states are ignored, the user still has
+        # a real token, so passthru should NOT be used.
+        tok4 = init_token({"serial": "ENROLLED1",
+                           "type": "spass", "pin": "Hallo"},
+                          user=user)
+        self.set_default_g_variables()
+        self.app_context.g.policy_object = PolicyClass()
+        self.app_context.g.audit_object = FakeAudit()
+        options = {"g": self.app_context.g}
+
+        rv = auth_user_passthru(check_user_pass, user, passw, options=options)
+        self.assertFalse(rv[0])
+        self.assertEqual(rv[1].get("message"), "wrong otp pin")
+
+        # Clean up
+        remove_token("ROLLOUT1")
+        remove_token("ROLLOUT2")
+        remove_token("ROLLOUT3")
+        remove_token("ENROLLED1")
+        delete_policy("pol_passthru")
+        delete_policy("pol_ignore_rollout")
+        self.set_default_g_variables()
+
+    def test_21_passnotoken_ignore_rollout_state(self):
+        # create a realm, where cornelius has a password test
+        rid = save_resolver({"resolver": "myreso",
+                             "type": "passwdresolver",
+                             "fileName": PW_FILE_2})
+        self.assertTrue(rid > 0, rid)
+        (added, failed) = set_realm("r1", [{'name': "myreso"}])
+        self.assertTrue(len(failed) == 0)
+        self.assertTrue(len(added) == 1)
+
+        user = User("cornelius", realm="r1")
+        passw = "test"
+        # remove all tokens of cornelius
+        remove_token(user=user)
+
+        # Set a PASSNOTOKEN policy
+        set_policy(name="pol_notoken",
+                   scope=SCOPE.AUTH,
+                   action=PolicyAction.PASSNOTOKEN)
+
+        # Assign a token with rollout_state=clientwait to the user
+        tok1 = init_token({"serial": "NOTOKEN_RS1",
+                           "type": "spass", "pin": "pin"},
+                          user=user)
+        tok1.token.rollout_state = RolloutState.CLIENTWAIT
+        tok1.token.save()
+
+        # Without PASSNOTOKEN_IGNORE_ROLLOUT_STATE, the user has a token,
+        # so passOnNoToken should NOT trigger. Auth falls through to
+        # the wrapped function (check_user_pass) which fails.
+        self.set_default_g_variables()
+        self.app_context.g.policy_object = PolicyClass()
+        self.app_context.g.audit_object = FakeAudit()
+        options = {"g": self.app_context.g}
+        rv = auth_user_has_no_token(check_user_pass, user, passw, options=options)
+        self.assertFalse(rv[0])
+
+        # Set PASSNOTOKEN_IGNORE_ROLLOUT_STATE to ignore "clientwait"
+        set_policy(name="pol_notoken_ignore",
+                   scope=SCOPE.AUTH,
+                   action="{0!s}=clientwait".format(PolicyAction.PASSNOTOKEN_IGNORE_ROLLOUT_STATE))
+        self.set_default_g_variables()
+        self.app_context.g.policy_object = PolicyClass()
+        self.app_context.g.audit_object = FakeAudit()
+        options = {"g": self.app_context.g}
+
+        # Token in "clientwait" is ignored -> user treated as having no token
+        rv = auth_user_has_no_token(check_user_pass, user, passw, options=options)
+        self.assertTrue(rv[0])
+        self.assertEqual(rv[1].get("message"),
+                         "user has no token, accepted due to 'pol_notoken'")
+
+        # Policy ignores only "verify" -> "clientwait" token is NOT ignored
+        set_policy(name="pol_notoken_ignore",
+                   scope=SCOPE.AUTH,
+                   action="{0!s}=verify".format(PolicyAction.PASSNOTOKEN_IGNORE_ROLLOUT_STATE))
+        self.set_default_g_variables()
+        self.app_context.g.policy_object = PolicyClass()
+        self.app_context.g.audit_object = FakeAudit()
+        options = {"g": self.app_context.g}
+
+        rv = auth_user_has_no_token(check_user_pass, user, passw, options=options)
+        self.assertFalse(rv[0])
+
+        # --- Multiple rollout states (space-separated) ---
+        # Add a second token with rollout_state=verify
+        tok2 = init_token({"serial": "NOTOKEN_RS2",
+                           "type": "spass", "pin": "pin2"},
+                          user=user)
+        tok2.token.rollout_state = RolloutState.VERIFY_PENDING
+        tok2.token.save()
+
+        # Policy ignores only "clientwait" -> "verify" token still counted
+        set_policy(name="pol_notoken_ignore",
+                   scope=SCOPE.AUTH,
+                   action="{0!s}=clientwait".format(PolicyAction.PASSNOTOKEN_IGNORE_ROLLOUT_STATE))
+        self.set_default_g_variables()
+        self.app_context.g.policy_object = PolicyClass()
+        self.app_context.g.audit_object = FakeAudit()
+        options = {"g": self.app_context.g}
+
+        rv = auth_user_has_no_token(check_user_pass, user, passw, options=options)
+        self.assertFalse(rv[0])
+
+        # Policy ignores "clientwait verify" -> both tokens ignored
+        set_policy(name="pol_notoken_ignore",
+                   scope=SCOPE.AUTH,
+                   action="{0!s}=clientwait verify".format(
+                       PolicyAction.PASSNOTOKEN_IGNORE_ROLLOUT_STATE))
+        self.set_default_g_variables()
+        self.app_context.g.policy_object = PolicyClass()
+        self.app_context.g.audit_object = FakeAudit()
+        options = {"g": self.app_context.g}
+
+        rv = auth_user_has_no_token(check_user_pass, user, passw, options=options)
+        self.assertTrue(rv[0])
+        self.assertEqual(rv[1].get("message"),
+                         "user has no token, accepted due to 'pol_notoken'")
+
+        # Add a third token with rollout_state=broken
+        tok3 = init_token({"serial": "NOTOKEN_RS3",
+                           "type": "spass", "pin": "pin3"},
+                          user=user)
+        tok3.token.rollout_state = RolloutState.BROKEN
+        tok3.token.save()
+
+        # "clientwait verify" ignores two but NOT "broken" -> auth fails
+        self.set_default_g_variables()
+        self.app_context.g.policy_object = PolicyClass()
+        self.app_context.g.audit_object = FakeAudit()
+        options = {"g": self.app_context.g}
+
+        rv = auth_user_has_no_token(check_user_pass, user, passw, options=options)
+        self.assertFalse(rv[0])
+
+        # Policy ignores all three: "clientwait verify broken"
+        set_policy(name="pol_notoken_ignore",
+                   scope=SCOPE.AUTH,
+                   action="{0!s}=clientwait verify broken".format(
+                       PolicyAction.PASSNOTOKEN_IGNORE_ROLLOUT_STATE))
+        self.set_default_g_variables()
+        self.app_context.g.policy_object = PolicyClass()
+        self.app_context.g.audit_object = FakeAudit()
+        options = {"g": self.app_context.g}
+
+        rv = auth_user_has_no_token(check_user_pass, user, passw, options=options)
+        self.assertTrue(rv[0])
+        self.assertEqual(rv[1].get("message"),
+                         "user has no token, accepted due to 'pol_notoken'")
+
+        # Add a fully enrolled token (no rollout_state).
+        # Even though all rollout states are ignored, the user still has
+        # a real token, so passOnNoToken should NOT trigger.
+        tok4 = init_token({"serial": "NOTOKEN_ENROLLED1",
+                           "type": "spass", "pin": "Hallo"},
+                          user=user)
+        self.set_default_g_variables()
+        self.app_context.g.policy_object = PolicyClass()
+        self.app_context.g.audit_object = FakeAudit()
+        options = {"g": self.app_context.g}
+
+        rv = auth_user_has_no_token(check_user_pass, user, passw, options=options)
+        self.assertFalse(rv[0])
+
+        # Clean up
+        remove_token("NOTOKEN_RS1")
+        remove_token("NOTOKEN_RS2")
+        remove_token("NOTOKEN_RS3")
+        remove_token("NOTOKEN_ENROLLED1")
+        delete_policy("pol_notoken")
+        delete_policy("pol_notoken_ignore")

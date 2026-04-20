@@ -16,32 +16,39 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, input } from "@angular/core";
-import { CommonModule } from "@angular/common";
+import { Component, input, output } from "@angular/core";
+
 import { FormsModule } from "@angular/forms";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatSelectModule } from "@angular/material/select";
 import { RouterLink } from "@angular/router";
 import { ROUTE_PATHS } from "../../../../../route_paths";
+import { ClearButtonComponent } from "@components/shared/clear-button/clear-button.component";
+import { RADIUS_SERVER } from "../../../../../constants/token.constants";
 
 @Component({
   selector: "app-radius-config",
   standalone: true,
-  imports: [
-    CommonModule,
-    FormsModule,
-    MatExpansionModule,
-    MatFormFieldModule,
-    MatSelectModule,
-    RouterLink
-  ],
+  imports: [FormsModule, MatExpansionModule, MatFormFieldModule, MatSelectModule, RouterLink, ClearButtonComponent],
   templateUrl: "./radius-config.component.html",
   styleUrl: "./radius-config.component.scss"
 })
 export class RadiusConfigComponent {
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
+  protected readonly RADIUS_SERVER = RADIUS_SERVER;
+
   formData = input.required<Record<string, any>>();
+  formDataChange = output<Record<string, any>>();
   radiusServers = input.required<string[]>();
   expanded = input<boolean>(false);
+
+  updateFormData(fieldName: string, value: any): void {
+    const newValue = { ...this.formData(), [fieldName]: value };
+    this.formDataChange.emit(newValue);
+  }
+
+  clearField(fieldName: string): void {
+    this.updateFormData(fieldName, "");
+  }
 }

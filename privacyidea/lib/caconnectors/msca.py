@@ -23,7 +23,6 @@ from cryptography import x509
 from cryptography.hazmat.primitives import serialization
 import logging
 import traceback
-from typing import Union
 
 from privacyidea.lib.error import CAError
 from privacyidea.lib.caconnectors.baseca import BaseCAConnector, AvailableCAConnectors
@@ -38,10 +37,8 @@ try:
     from privacyidea.lib.caconnectors.caservice_pb2 import (GetCAsRequest,
                                                             GetTemplatesRequest,
                                                             GetCSRStatusRequest,
-                                                            GetCSRStatusReply,
                                                             SubmitCSRRequest,
                                                             GetCertificateRequest,
-                                                            GetCertificateReply,
                                                             RevokeCertificateRequest,
                                                             RevokeCertificateReply)
 
@@ -55,7 +52,7 @@ CRL_REASONS = ["unspecified", "keyCompromise", "CACompromise",
 TIMEOUT = 3
 
 
-class CONFIG(object):  # pragma: no cover
+class CONFIG:  # pragma: no cover
     # Only needed for command line creation
 
     def __init__(self, name):
@@ -70,17 +67,17 @@ class CONFIG(object):  # pragma: no cover
         self.ssl_client_key_password = None
 
     def __str__(self):
-        s = """
-        Worker HostName  : {ca.hostname}
-        Worker Port      : {ca.port}
-        Connect via HTTP Proxy      : {ca.http_proxy}
-        CA               : {ca.ca}
-        Use SSL          : {ca.use_ssl}
-        """.format(ca=self)
+        s = f"""
+        Worker HostName  : {self.hostname}
+        Worker Port      : {self.port}
+        Connect via HTTP Proxy      : {self.http_proxy}
+        CA               : {self.ca}
+        Use SSL          : {self.use_ssl}
+        """
         return s
 
 
-class ATTR(object):
+class ATTR:
     __doc__ = """This is the list Attributes of the Microsoft CA connector."""
     HOSTNAME = "hostname"
     PORT = "port"
@@ -155,10 +152,9 @@ class MSCAConnector(BaseCAConnector):
             if not (self.ssl_ca_cert and self.ssl_client_cert and self.ssl_client_key):
                 log.error("For a secure connection we need 'ssl_ca_cert', 'ssl_client_cert'"
                           " and 'ssl_client_key'. The following configuration seems incomplete: "
-                          "({0!s}, {1!s}, {2!s})".format(self.ssl_ca_cert, self.ssl_client_cert,
-                                                         self.ssl_client_key))
+                          f"({self.ssl_ca_cert!s}, {self.ssl_client_cert!s}, {self.ssl_client_key!s})")
                 raise CAError('Incomplete TLS configuration for MSCA worker '
-                              'configuration {0!s}'.format(self.name))
+                              f'configuration {self.name!s}')
             else:
                 # Read all stuff. We need to provide all parameters as PEM encoded byte string
                 with open(self.ssl_ca_cert, 'rb') as f:
@@ -182,21 +178,21 @@ class MSCAConnector(BaseCAConnector):
                     log.debug("Client private key decrypted.")
                 except ValueError as e:
                     log.error('Could not decrypt TLS key with given password. '
-                              '({0!s})'.format(e))
+                              f'({e!s})')
                     raise CAError('Invalid TLS configuration for MSCA worker.')
                 except TypeError as e:
-                    log.error("Faulty configuration in CA '{0!s}'. "
+                    log.error(f"Faulty configuration in CA '{self.name!s}'. "
                               "Trying to use an encrypted private key "
                               "without providing a password (or vice versa)! "
-                              "The CA connector will not work! ({1!s})".format(self.name, e))
+                              f"The CA connector will not work! ({e!s})")
                     raise CAError('Invalid TLS configuration for MSCA worker.')
 
                 credentials = grpc.ssl_channel_credentials(ca_cert_pem, client_key_pem, client_cert_pem)
-                channel = grpc.secure_channel('{0!s}:{1!s}'.format(self.hostname, self.port),
+                channel = grpc.secure_channel(f'{self.hostname!s}:{self.port!s}',
                                               credentials,
                                               options=(('grpc.enable_http_proxy', int(is_true(self.http_proxy))),))
         else:
-            channel = grpc.insecure_channel('{0!s}:{1!s}'.format(self.hostname, self.port),
+            channel = grpc.insecure_channel(f'{self.hostname!s}:{self.port!s}',
                                             options=(('grpc.enable_http_proxy', int(is_true(self.http_proxy))),))
         try:
             grpc.channel_ready_future(channel).result(timeout=TIMEOUT)
@@ -233,8 +229,7 @@ class MSCAConnector(BaseCAConnector):
     def _check_attributes(self):
         for req_key in [ATTR.HOSTNAME, ATTR.PORT]:
             if req_key not in self.config:
-                raise CAError("required argument '{0!s}' is missing.".format(
-                    req_key))
+                raise CAError(f"required argument '{req_key!s}' is missing.")
 
     def set_config(self, config=None):
         self.config = config or {}
@@ -251,7 +246,7 @@ class MSCAConnector(BaseCAConnector):
         self.ssl_client_key_password = self.config.get(ATTR.SSL_CLIENT_KEY_PASSWORD)
         self.templates = self.get_templates()
 
-    def sign_request(self, csr: str, options: dict = None) -> tuple[int, Union[str, None]]:
+    def sign_request(self, csr: str, options: dict = None) -> tuple[int, str | None]:
         """
         Send a signing request to the Microsoft CA
 
@@ -271,7 +266,7 @@ class MSCAConnector(BaseCAConnector):
                                                                caName=self.ca))
             if reply.disposition == 3:
                 request_id = reply.requestId
-                log.info("certificate with request ID {0!s} successfully rolled out".format(request_id))
+                log.info(f"certificate with request ID {request_id!s} successfully rolled out")
                 certificate = self.connection.GetCertificate(GetCertificateRequest(id=request_id,
                                                                                    caName=self.ca)).cert
                 return request_id, certificate
@@ -279,7 +274,7 @@ class MSCAConnector(BaseCAConnector):
                 log.info("cert still under submission")
                 raise CSRPending(requestId=reply.requestId)
             else:
-                log.warning("certification request could not be fulfilled! {0!s}".format(reply))
+                log.warning(f"certification request could not be fulfilled! {reply!s}")
                 raise CSRError(description=reply.dispositionMessage)
 
     def revoke_cert(self, certificate, request_id=None, reason=None):
@@ -403,10 +398,10 @@ class MSCAConnector(BaseCAConnector):
             cas = [x for x in get_cas_reply.caNames]
             print("Available CAs: \n")
             for c in cas:
-                print("     {0!s}".format(c))
+                print(f"     {c!s}")
             config.ca = input("Choose CA: ")
             print("=" * 60)
-            print("{0!s}".format(config))
+            print(f"{config!s}")
             answer = input("Is this configuration correct? [y/n] ")
             if answer.lower() == "y":
                 break

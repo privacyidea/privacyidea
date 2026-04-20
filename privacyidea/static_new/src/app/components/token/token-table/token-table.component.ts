@@ -16,14 +16,29 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, ElementRef, inject, linkedSignal, ViewChild, WritableSignal } from "@angular/core";
+import {
+  AfterViewInit,
+  Component,
+  computed,
+  ElementRef,
+  inject,
+  linkedSignal,
+  OnDestroy,
+  Renderer2,
+  ViewChild,
+  WritableSignal
+} from "@angular/core";
 import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
 import { DialogService, DialogServiceInterface } from "../../../services/dialog/dialog.service";
 import { MatPaginatorModule, PageEvent } from "@angular/material/paginator";
+import { MatMenuModule } from "@angular/material/menu";
+import { MatDividerModule } from "@angular/material/divider";
+import { MatTooltipModule } from "@angular/material/tooltip";
 import { MatSortModule, Sort } from "@angular/material/sort";
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
 import { TableUtilsService, TableUtilsServiceInterface } from "../../../services/table-utils/table-utils.service";
 import { TokenDetails, TokenService, TokenServiceInterface } from "../../../services/token/token.service";
+import { RealmService, RealmServiceInterface } from "../../../services/realm/realm.service";
 
 import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
 import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
@@ -70,33 +85,57 @@ const columnKeysMap = [
     ClearableInputComponent,
     CopyButtonComponent,
     TokenTableActionsComponent,
-    MatIconButton
+    MatIconButton,
+    MatMenuModule,
+    MatDividerModule,
+    MatTooltipModule
   ],
   templateUrl: "./token-table.component.html",
   styleUrl: "./token-table.component.scss"
 })
-export class TokenTableComponent {
+export class TokenTableComponent implements AfterViewInit, OnDestroy {
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
+  protected readonly realmService: RealmServiceInterface = inject(RealmService);
+  protected readonly renderer: Renderer2 = inject(Renderer2);
 
   readonly columnKeysMap = columnKeysMap;
   readonly columnKeys: string[] = columnKeysMap.map((column) => column.key);
   readonly apiFilterKeyMap = this.tokenService.apiFilterKeyMap;
   readonly advancedApiFilter = this.tokenService.advancedApiFilter;
-
+  private observer!: IntersectionObserver;
+  private basePageSizeOptions = [...this.tableUtilsService.pageSizeOptions()];
   @ViewChild("filterHTMLInputElement", { static: false })
   filterInput!: ElementRef<HTMLInputElement>;
-
+  @ViewChild("scrollContainer") scrollContainer!: ElementRef<HTMLElement>;
+  @ViewChild("stickyHeader") stickyHeader!: ElementRef<HTMLElement>;
+  @ViewChild("stickySentinel") stickySentinel!: ElementRef<HTMLElement>;
   tokenSelection = this.tokenService.tokenSelection;
-
   tokenResource = this.tokenService.tokenResource;
   tokenFilter = this.tokenService.tokenFilter;
   pageSize = this.tokenService.pageSize;
   pageIndex = this.tokenService.pageIndex;
   sort = this.tokenService.sort;
+
+  protected readonly filterInputValue = linkedSignal({
+    source: () => this.tokenService.tokenFilter().filterString,
+    computation: (v) => v
+  });
+
+  protected readonly showFilterHint = computed(() => {
+    const current = this.filterInputValue().trim().toLowerCase();
+    const applied = this.tokenService.tokenFilter().filterString.trim().toLowerCase();
+
+    if (current !== applied) {
+      const hasUser = /(^|\s)user:/.test(current);
+      const hasRealm = /(^|\s)realm:/.test(current);
+      return hasUser || hasRealm;
+    }
+    return false;
+  });
 
   emptyResource = linkedSignal({
     source: this.pageSize,
@@ -109,28 +148,37 @@ export class TokenTableComponent {
         return emptyRow;
       })
   });
-
   tokenDataSource: WritableSignal<MatTableDataSource<TokenDetails>> = linkedSignal({
-    source: this.tokenResource.value,
-    computation: (tokenResource, previous) => {
-      if (tokenResource && tokenResource.result?.value) {
-        return new MatTableDataSource(tokenResource.result?.value.tokens);
+    source: () => ({ value: this.tokenService.tokenResourceValue(), error: this.tokenResource.error() }),
+    computation: (src, previous) => {
+      if (src.error) {
+        return new MatTableDataSource<TokenDetails>([]);
+      }
+      if (src.value) {
+        return new MatTableDataSource(src.value.tokens);
       }
       return previous?.value ?? new MatTableDataSource(this.emptyResource());
     }
   });
-
   totalLength: WritableSignal<number> = linkedSignal({
-    source: this.tokenResource.value,
-    computation: (tokenResource, previous) => {
-      if (tokenResource && tokenResource.result?.value) {
-        return tokenResource.result?.value.count;
+    source: () => ({ value: this.tokenService.tokenResourceValue(), error: this.tokenResource.error() }),
+    computation: (src, previous) => {
+      if (src.error) {
+        return 0;
+      }
+      if (src.value) {
+        return src.value.count;
       }
       return previous?.value ?? 0;
     }
   });
-
-  pageSizeOptions = this.tableUtilsService.pageSizeOptions;
+  pageSizeOptions = computed(() => {
+    if (!this.basePageSizeOptions.includes(this.pageSize())) {
+      this.basePageSizeOptions.push(this.pageSize());
+      this.basePageSizeOptions.sort((a, b) => a - b);
+    }
+    return this.basePageSizeOptions;
+  });
 
   isAllSelected() {
     return this.tokenSelection().length === this.tokenDataSource().data.length;
@@ -192,6 +240,17 @@ export class TokenTableComponent {
     this.pageIndex.set(event.pageIndex);
   }
 
+  onFilterInput($event: Event) {
+    const input = $event.target as HTMLInputElement;
+    this.filterInputValue.set(input.value);
+    const value = input.value.toLowerCase();
+    const hasUser = /(^|\s)user:/.test(value);
+    const hasRealm = /(^|\s)realm:/.test(value);
+    if (!hasUser && !hasRealm) {
+      this.tokenService.handleFilterInput($event);
+    }
+  }
+
   toggleFilter(filterKeyword: string): void {
     let newValue;
     if (filterKeyword === "active") {
@@ -205,6 +264,14 @@ export class TokenTableComponent {
         currentValue: this.tokenService.tokenFilter()
       });
     }
+
+    if (filterKeyword === "user" && newValue.hasKey("user") && !newValue.hasKey("realm")) {
+      const defaultRealm = this.realmService.defaultRealm();
+      if (defaultRealm) {
+        newValue = newValue.addEntry("realm", defaultRealm);
+      }
+    }
+
     this.tokenService.tokenFilter.set(newValue);
   }
 
@@ -227,6 +294,62 @@ export class TokenTableComponent {
 
   onKeywordClick(filterKeyword: string): void {
     this.toggleFilter(filterKeyword);
+    const inputElement = this.filterInput?.nativeElement;
+    if (inputElement) {
+      inputElement.focus();
+      if (filterKeyword === "user" && this.tokenService.tokenFilter().hasKey("user")) {
+        setTimeout(() => {
+          const filterString = inputElement.value;
+          const userIndex = filterString.indexOf("user:");
+          if (userIndex !== -1) {
+            const focusIndex = userIndex + "user: ".length;
+            inputElement.setSelectionRange(focusIndex, focusIndex);
+          }
+        });
+      }
+    }
+  }
+
+  onItemSelected(keyword: string, value: string): void {
+    const currentFilter = this.tokenService.tokenFilter();
+    let newValue;
+    if (value) {
+      newValue = currentFilter.addEntry(keyword, value);
+    } else {
+      newValue = currentFilter.removeKey(keyword);
+    }
+    this.tokenService.tokenFilter.set(newValue);
     this.filterInput?.nativeElement.focus();
+  }
+
+  ngAfterViewInit(): void {
+    if (!this.scrollContainer || !this.stickyHeader || !this.stickySentinel) {
+      return;
+    }
+
+    const options = {
+      root: this.scrollContainer.nativeElement,
+      threshold: [0, 1]
+    };
+
+    this.observer = new IntersectionObserver(([entry]) => {
+      if (!entry.rootBounds) return;
+
+      const isSticky = entry.boundingClientRect.top < entry.rootBounds.top;
+
+      if (isSticky) {
+        this.renderer.addClass(this.stickyHeader.nativeElement, "is-sticky");
+      } else {
+        this.renderer.removeClass(this.stickyHeader.nativeElement, "is-sticky");
+      }
+    }, options);
+
+    this.observer.observe(this.stickySentinel.nativeElement);
+  }
+
+  ngOnDestroy(): void {
+    if (this.observer) {
+      this.observer.disconnect();
+    }
   }
 }

@@ -26,7 +26,7 @@ import { TestBed } from "@angular/core/testing";
 import { TokenService } from "./token.service";
 import { AuthService } from "../auth/auth.service";
 import { FilterValue } from "../../core/models/filter_value/filter_value";
-import { MockContentService } from "../../../testing/mock-services";
+import { MockContentService, MockPiResponse } from "../../../testing/mock-services";
 import { ROUTE_PATHS } from "../../route_paths";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
 import { environment } from "../../../environments/environment";
@@ -34,6 +34,7 @@ import { MockAuthService } from "../../../testing/mock-services/mock-auth-servic
 import { DialogService } from "../dialog/dialog.service";
 import { MockDialogService } from "../../../testing/mock-services/mock-dialog-service";
 import { MockMatDialogRef } from "../../../testing/mock-mat-dialog-ref";
+import { signal } from "@angular/core";
 
 class MockNotificationService {
   openSnackBar = jest.fn();
@@ -49,6 +50,7 @@ describe("TokenService", () => {
   let contentServiceMock: MockContentService;
   let dialogServiceMock: MockDialogService;
   let getSpy: jest.SpyInstance;
+  let mockBackend: HttpTestingController;
 
   beforeEach(() => {
     TestBed.resetTestingModule();
@@ -68,6 +70,7 @@ describe("TokenService", () => {
     contentServiceMock = TestBed.inject(ContentService) as unknown as MockContentService;
     dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
     http = TestBed.inject(HttpClient);
+    mockBackend = TestBed.inject(HttpTestingController);
     postSpy = jest.spyOn(http, "post");
     deleteSpy = jest.spyOn(http, "delete");
     authService = TestBed.inject(AuthService) as any;
@@ -330,7 +333,7 @@ describe("TokenService", () => {
       tokenService.tokenFilter.set(new FilterValue({ value: "serial: otp user: alice description: vpn" }));
       expect(tokenService.filterParams()).toEqual({
         serial: "*otp*",
-        // user: "alice",
+        user: "alice",
         description: "*vpn*"
       });
     });
@@ -852,7 +855,7 @@ describe("TokenService", () => {
     it("should return undefined if route is not USER_DETAILS", async () => {
       contentServiceMock.routeUrl.update(() => ROUTE_PATHS.TOKENS);
       const mockBackend = TestBed.inject(HttpTestingController);
-      TestBed.flushEffects();
+      TestBed.tick();
 
       // Expect and flush the HTTP request
       mockBackend.expectNone(environment.proxyUrl + "/token/");
@@ -868,7 +871,7 @@ describe("TokenService", () => {
       contentServiceMock.detailsUsername.set(user);
       tokenService.userRealm.set(realm);
       const mockBackend = TestBed.inject(HttpTestingController);
-      TestBed.flushEffects();
+      TestBed.tick();
 
       // Expect and flush the HTTP request
       const req = mockBackend.expectOne(environment.proxyUrl + "/token/?user=" + user + "&realm=" + realm);
@@ -876,6 +879,121 @@ describe("TokenService", () => {
       await Promise.resolve();
 
       expect(tokenService.userTokenResource.value()).toBeDefined();
+    });
+  });
+
+  describe("tokenSerialResource / tokenOptions", () => {
+
+    it("tokenOptions falls back to default when resource empty", () => {
+      expect(tokenService.tokenOptions()).toEqual([]);
+    });
+
+    it("should update tokenOptions from tokenSerialResource on successful response", async () => {
+      tokenService.selectedToken.set("OATH123");
+      TestBed.tick();
+
+      const req = mockBackend.expectOne((r) => r.url === "/token/");
+      expect(req.request.method).toBe("GET");
+      const tokens = [{ serial: "OATH123" }];
+      req.flush(MockPiResponse.fromValue({ count: 1, current: 1, tokens: tokens }));
+      await Promise.resolve();
+
+      expect(tokenService.tokenSerialResource.hasValue()).toBe(true);
+      expect(tokenService.tokenOptions()).toEqual(["OATH123"]);
+    });
+
+    it("should handle error state from tokenSerialResource", async () => {
+      tokenService.selectedToken.set("OATH123");
+      TestBed.tick();
+
+      const req = mockBackend.expectOne((r) => r.url === "/token/");
+      expect(req.request.method).toBe("GET");
+      req.flush(MockPiResponse.fromError({ message: "Permission denied" }), {
+        status: 403, statusText: "Permission denied"
+      });
+      await Promise.resolve();
+
+      expect(tokenService.tokenSerialResource.hasValue()).toBe(false);
+      expect(tokenService.tokenOptions()).toEqual([]);
+    });
+  });
+
+  describe("tokenTypesResource / tokenTypeOptions", () => {
+
+    it("tokenTypeOptions falls back to default when resource empty", () => {
+      expect(tokenService.tokenTypeOptions()).toEqual([]);
+    });
+
+    it("should update tokenTypeOptions from tokenTypesResource on successful response", async () => {
+      contentServiceMock.onTokens = signal(true);
+      TestBed.tick();
+
+      const req = mockBackend.expectOne((r) => r.url === "/auth/rights");
+      expect(req.request.method).toBe("GET");
+      const responseValue = { hotp: "text" };
+      req.flush(MockPiResponse.fromValue(responseValue));
+      await Promise.resolve();
+
+      expect(tokenService.tokenTypesResource.hasValue()).toBe(true);
+      expect(tokenService.tokenTypeOptions()).toHaveLength(1);
+      expect(tokenService.tokenTypeOptions()).toEqual([{
+        key: "hotp",
+        name: "HOTP",
+        info: "text",
+        text: "The HOTP token is an event based token. With a smartphone app like the privacyIDEA Authenticator" +
+          " you can turn your smartphone into an authentication device."
+      }]);
+    });
+
+    it("should handle error state from tokenTypesResource", async () => {
+      contentServiceMock.onTokens = signal(true);
+      TestBed.tick();
+
+      const req = mockBackend.expectOne((r) => r.url === "/auth/rights");
+      expect(req.request.method).toBe("GET");
+      req.flush(MockPiResponse.fromError({ message: "Permission denied" }), {
+        status: 403, statusText: "Permission denied"
+      });
+      await Promise.resolve();
+
+      expect(tokenService.tokenTypesResource.hasValue()).toBe(false);
+      expect(tokenService.tokenTypeOptions()).toEqual([]);
+    });
+  });
+
+  describe("tokenResource / tokenResourceValue", () => {
+
+    it("tokenResourceValue falls back to default when resource empty", () => {
+      expect(tokenService.tokenResourceValue()).toBeNull();
+    });
+
+    it("should update tokenResourceValue from tokenResource on successful response", async () => {
+      contentServiceMock.onTokens = signal(true);
+      TestBed.tick();
+
+      const req = mockBackend.expectOne((r) => r.url === "/token/");
+      expect(req.request.method).toBe("GET");
+      const responseValue = { count: 1, current: 1, tokens: [{ serial: "OATH123" }] };
+      req.flush(MockPiResponse.fromValue(responseValue));
+      await Promise.resolve();
+
+      expect(tokenService.tokenResource.hasValue()).toBe(true);
+      expect(tokenService.tokenResourceValue()).toEqual(responseValue);
+    });
+
+    it("should handle error state from tokenResource", async () => {
+      contentServiceMock.onTokens = signal(true);
+      TestBed.tick();
+
+      const req = mockBackend.expectOne((r) => r.url === "/token/");
+      expect(req.request.method).toBe("GET");
+      req.flush(MockPiResponse.fromError({ message: "Permission denied" }), {
+        status: 403, statusText: "Permission denied"
+      });
+      await Promise.resolve();
+
+      expect(tokenService.tokenResource.hasValue()).toBe(false);
+      expect(tokenService.tokenResourceValue()).toBeNull();
     });
   });
 });

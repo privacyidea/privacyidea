@@ -22,7 +22,7 @@ def upgrade():
                         existing_nullable=True)
         # ### end Alembic commands ###
     except Exception as exx:
-        print('Modifying of authcache column "authentication" failed: {!r}'.format(exx))
+        print(f'Modifying of authcache column "authentication" failed: {exx!r}')
         print('This is expected behavior if the columns have already been modified.')
 
 

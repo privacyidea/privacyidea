@@ -46,10 +46,15 @@ export interface ContainerTemplateServiceInterface {
   availableContainerTypes: Signal<string[]>;
 
   canSaveTemplate(template: ContainerTemplate): boolean;
+
   copyTemplate(template: ContainerTemplate, newName: string): Promise<boolean>;
+
   deleteTemplate(name: string): Promise<void>;
+
   deleteTemplates(name: string[]): Promise<void>;
+
   getTokenTypesForContainerType(containerType: string): string[];
+
   postTemplateEdits(template: ContainerTemplate): Promise<boolean>;
 }
 
@@ -108,11 +113,12 @@ export class ContainerTemplateService implements ContainerTemplateServiceInterfa
 
   // --- Signals & Computed ---
   readonly templates: WritableSignal<ContainerTemplate[]> = linkedSignal({
-    source: () => this.templatesResource.value(),
+    source: () => this.templatesResource.hasValue() ? this.templatesResource.value() : undefined,
     computation: (templatesResource, previous) => templatesResource?.result?.value?.templates ?? previous?.value ?? []
   });
 
   readonly templateTokenTypes = computed<TemplateTokenTypes>(() => {
+    if (!this.templateTokenTypesResource.hasValue()) return {};
     return this.templateTokenTypesResource.value()?.result?.value ?? {};
   });
 

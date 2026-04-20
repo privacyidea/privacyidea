@@ -3,7 +3,7 @@
 }
 
 .input-container button {
-  top: 0;
+  top: 0px;
   position: absolute;
   right: 2px;
   color: var(--grey-light-active);
@@ -17,7 +17,11 @@
   rotate: 45deg;
 }
 
-.input-container button :hover {
+.input-container button:not(:disabled):hover {
   color: var(--red-light);
   cursor: pointer;
+}
+
+.input-container button:disabled {
+  display: none;
 }

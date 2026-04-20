@@ -18,7 +18,8 @@
 __doc__ = """The serviceid endpoint allows administrators to manage service ID definitions.
 """
 from flask import (Blueprint, request)
-from .lib.utils import (getParam, send_result)
+from .lib.utils import (send_result)
+from ..lib.params import get_optional
 from ..lib.log import log_with
 from privacyidea.lib.serviceid import get_serviceids, delete_serviceid, set_serviceid
 from privacyidea.lib.event import event
@@ -83,7 +84,7 @@ def set_serviceid_api(name):
 
     """
     param = request.all_data
-    description = getParam(param, "description", optional=True)
+    description = get_optional(param, "description")
 
     r = set_serviceid(name, description)
 
@@ -181,7 +182,7 @@ def delete_serviceid_api(name=None):
         }
 
     """
-    ret = delete_serviceid(name)
+    delete_serviceid(name)
     g.audit_object.log({"success": True,
                         "info": name})
 

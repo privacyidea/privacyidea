@@ -8,10 +8,10 @@
 }
 
 .conditions-container {
-  background-color: var(--mat-sys-surface-container);
+  background-color: transparent;
   border: 1px solid var(--mat-sys-outline-variant);
   border-radius: var(--border-radius);
-  box-shadow: var(--mat-sys-level1);
+  box-shadow: none;
   padding: var(--half-global-padding) var(--three-quarters-global-padding);
 
   .conditions-title {

@@ -18,7 +18,7 @@
  **/
 
 import { Component, inject, input } from "@angular/core";
-import { CommonModule } from "@angular/common";
+
 import { MatIconModule } from "@angular/material/icon";
 import { MatButtonModule } from "@angular/material/button";
 import { lastValueFrom } from "rxjs";
@@ -32,7 +32,7 @@ import { CopyPolicyDialogComponent } from "@components/policies/dialogs/copy-pol
 @Component({
   selector: "app-policies-table-actions",
   standalone: true,
-  imports: [CommonModule, MatIconModule, MatButtonModule],
+  imports: [MatIconModule, MatButtonModule],
   templateUrl: "./policies-table-actions.component.html",
   styleUrl: "./policies-table-actions.component.scss"
 })
@@ -44,21 +44,10 @@ export class PoliciesTableActionsComponent {
   readonly policyService = inject(PolicyService);
 
   createNewPolicy(): void {
-    this.dialogService
-      .openDialog({
-        component: EditPolicyDialogComponent,
-        data: { mode: "create", policyDetail: this.policyService.getEmptyPolicy() }
-      })
-      .afterClosed()
-      .subscribe((result) => {
-        if (result) {
-          const policy: PolicyDetail = {
-            ...this.policyService.getEmptyPolicy(),
-            ...result
-          };
-          this.policyService.saveNewPolicy(policy);
-        }
-      });
+    this.dialogService.openDialog({
+      component: EditPolicyDialogComponent,
+      data: { mode: "create", policyDetail: this.policyService.getEmptyPolicy() }
+    });
   }
 
   async deleteSelectedPolicies(): Promise<void> {

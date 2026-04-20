@@ -18,7 +18,7 @@
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 
-import { EnrollTotpComponent, TOTP_HASHLIB, TOTP_OTP_LENGTH, TOTP_TIME_STEP } from "./enroll-totp.component";
+import { EnrollTotpComponent } from "./enroll-totp.component";
 import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
@@ -26,7 +26,7 @@ import { AuthService } from "../../../../services/auth/auth.service";
 import { MockAuthService } from "../../../../../testing/mock-services/mock-auth-service";
 import { MockSystemService } from "../../../../../testing/mock-services";
 import { SystemService } from "../../../../services/system/system.service";
-import { HOTP_HASHLIB } from "@components/token/token-enrollment/enroll-hotp/enroll-hotp.component";
+import { HOTP_HASHLIB, TOTP_HASHLIB, TOTP_OTP_LENGTH, TOTP_TIME_STEP } from "../../../../constants/token.constants";
 
 describe("EnrollTotpComponent", () => {
   let component: EnrollTotpComponent;
@@ -55,6 +55,28 @@ describe("EnrollTotpComponent", () => {
   });
 
   it("Check default values are set correctly on init", () => {
+    expect(component.generateOnServerFormControl.value).toBe(true);
+    expect(component.generateOnServerFormControl.disabled).toBe(false);
+    expect(component.otpKeyFormControl.value).toEqual("");
+    expect(component.otpKeyFormControl.disabled).toBe(true);
+    expect(component.otpLengthFormControl.value).toBe(6);
+    expect(component.otpLengthFormControl.disabled).toBe(false);
+    expect(component.hashAlgorithmControl.value).toBe("sha1");
+    expect(component.hashAlgorithmControl.disabled).toBe(false);
+    expect(component.timeStepControl.value).toBe(30);
+    expect(component.timeStepControl.disabled).toBe(false);
+  });
+
+  it("Default values are also set correctly if config contains empty strings", () => {
+    const mockConfig = {
+      [TOTP_HASHLIB]: "",
+      [TOTP_TIME_STEP]: ""
+    };
+    systemService.systemConfig.set(mockConfig);
+    fixture = TestBed.createComponent(EnrollTotpComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+
     expect(component.generateOnServerFormControl.value).toBe(true);
     expect(component.generateOnServerFormControl.disabled).toBe(false);
     expect(component.otpKeyFormControl.value).toEqual("");

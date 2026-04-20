@@ -137,6 +137,22 @@ describe("AuditComponent (unit)", () => {
     });
   });
 
+  it("pageSizeOptions should add custom page size if not included in default options", () => {
+    const defaultOptions = [5, 10, 25, 50];
+    mockTableUtilsService.pageSizeOptions.set(defaultOptions);
+    expect(component.pageSizeOptions()).toEqual(defaultOptions);
+
+    // Check custom page size is added but does not mutate the options from the service
+    const customOptions = [5, 10, 15, 25, 50];
+    mockAuditService.pageSize.set(15);
+    expect(component.pageSizeOptions()).toEqual(customOptions);
+    expect(mockTableUtilsService.pageSizeOptions()).toEqual(defaultOptions);
+
+    // custom page size should still be included if selected pageSize changes
+    mockAuditService.pageSize.set(10);
+    expect(component.pageSizeOptions()).toEqual(customOptions);
+  });
+
   it("emptyResource mirrors pageSize", () => {
     mockAuditService.pageSize.set(3);
     expect(component.emptyResource().length).toBe(3);

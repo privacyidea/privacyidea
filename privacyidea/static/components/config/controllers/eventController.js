@@ -292,6 +292,17 @@ myApp.controller("eventDetailController", ["$scope", "$stateParams",
                 (re.test(conditionname) || re.test(condition.desc));
         };
 
+        $scope.groupHasVisibleConditions = function (conditionGroup) {
+            let visible = false;
+            angular.forEach($scope.handlerConditions, function (condition, conditionname) {
+                if ((condition.group === null || conditionGroup === condition.group) &&
+                    $scope.checkOpenConditionGroup(condition, conditionname, $scope.condition_filter)) {
+                    visible = true;
+                }
+            });
+            return visible;
+        };
+
         $scope.handlerModuleChanged = function () {
             $scope.getHandlerActions();
             $scope.getHandlerConditions();

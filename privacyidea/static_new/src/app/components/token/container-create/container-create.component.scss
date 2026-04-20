@@ -2,22 +2,21 @@
 @use "table";
 
 .container-create-container {
-  @include table.table-container-styles;
-  width: 920px;
-  max-height: var(--max-height);
-  max-width: calc(100vw - var(--global-padding) * 5 - 48px);
+  @include styles.main-component-style;
   display: grid;
-  overflow: auto;
 }
 
 .container-type-hint {
   margin-top: 8px;
-  font-size: 16px;
+  font-size: 1rem;
 }
 
-.select-container-type {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  flex: 2;
+.type-select {
+  width: 616px;
+}
+
+@media (max-width: 1040px) {
+  .type-select {
+    width: 100%;
+  }
 }

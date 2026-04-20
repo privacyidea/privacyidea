@@ -18,7 +18,7 @@ def upgrade():
     try:
         op.add_column('policy', sa.Column('pinode', sa.Unicode(length=256), nullable=True))
     except Exception as exx:
-        print('Adding of column "pinode" in table policy failed: {!r}'.format(exx))
+        print(f'Adding of column "pinode" in table policy failed: {exx!r}')
         print('This is expected behavior if this column already exists.')
 
 

@@ -24,7 +24,6 @@ import re
 import time
 from dataclasses import dataclass
 from enum import Enum
-from typing import Union, Optional
 from urllib.parse import urlencode
 
 import requests
@@ -35,7 +34,7 @@ from .UserIdResolver import UserIdResolver
 from ..error import ParameterError, ResolverError
 from ..log import log_with
 from ..utils import is_true
-from ...api.lib.utils import get_required
+from privacyidea.lib.params import get_required
 
 ENCODING = "utf-8"
 EDITABLE = "Editable"
@@ -103,7 +102,7 @@ class HTTPMethod(Enum):
 
 class RequestConfig:
 
-    def __init__(self, config: dict, default_headers: dict, tags: Optional[dict] = None, wildcard: str = "*"):
+    def __init__(self, config: dict, default_headers: dict, tags: dict | None = None, wildcard: str = "*"):
         config = copy.deepcopy(config)
         self._method = HTTPMethod.GET
         self.method = get_required(config, METHOD)
@@ -142,7 +141,7 @@ class RequestConfig:
             self.request_mapping = request_mapping
 
     @staticmethod
-    def get_as_dict(value: Union[str, dict]) -> dict:
+    def get_as_dict(value: str | dict) -> dict:
         """
         Convert the given value to a dictionary.
         """
@@ -176,7 +175,7 @@ class RequestConfig:
         return self._headers
 
     @headers.setter
-    def headers(self, value: Union[dict, str]):
+    def headers(self, value: dict | str):
         if isinstance(value, str):
             try:
                 self._headers = json.loads(value)
@@ -190,7 +189,7 @@ class RequestConfig:
         return self._response_mapping
 
     @response_mapping.setter
-    def response_mapping(self, value: Union[dict, str]):
+    def response_mapping(self, value: dict | str):
         try:
             self._response_mapping = self.get_as_dict(value)
         except json.JSONDecodeError:
@@ -203,7 +202,7 @@ class RequestConfig:
         return self._error_response
 
     @error_response.setter
-    def error_response(self, value: Union[dict, str]):
+    def error_response(self, value: dict | str):
         try:
             self._error_response = self.get_as_dict(value)
         except json.JSONDecodeError:
@@ -224,7 +223,7 @@ class HTTPResolver(UserIdResolver):
     }
 
     def __init__(self):
-        super(HTTPResolver, self).__init__()
+        super().__init__()
         self.config = {}
         self.headers = {}
         self.config_get_user_by_id = {}
@@ -420,7 +419,7 @@ class HTTPResolver(UserIdResolver):
             attributes.append(self.pi_user_groups_key)
         return attributes
 
-    def getUserList(self, search_dict: Optional[dict] = None, attributes: list[str] = None) -> list[dict]:
+    def getUserList(self, search_dict: dict | None = None, attributes: list[str] = None) -> list[dict]:
         """
         Fetches all users from the user store according to the search dictionary.
         If the endpoint is not configured to list all users, an empty list is returned.
@@ -439,7 +438,7 @@ class HTTPResolver(UserIdResolver):
         user_list = self._get_user_list(search_dict, config, attributes)
         return user_list
 
-    def add_user(self, attributes: Optional[dict] = None) -> str:
+    def add_user(self, attributes: dict | None = None) -> str:
         """
         Add a new user in the useridresolver.
         This is only possible, if the UserIdResolver supports this and if
@@ -504,7 +503,7 @@ class HTTPResolver(UserIdResolver):
 
         return success
 
-    def update_user(self, uid: str, attributes: Optional[dict] = None) -> bool:
+    def update_user(self, uid: str, attributes: dict | None = None) -> bool:
         """
         Update an existing user.
         This function can also be used to update the password.
@@ -537,7 +536,7 @@ class HTTPResolver(UserIdResolver):
         return success
 
     @log_with(log, hide_args=[2])
-    def checkPass(self, uid: str, password: str, username: Optional[str] = None) -> bool:
+    def checkPass(self, uid: str, password: str, username: str | None = None) -> bool:
         """
         This function checks the password for a given user. The user can either be identified by the uid or the
         username.
@@ -847,6 +846,8 @@ class HTTPResolver(UserIdResolver):
         Maps the attributes from the user store to the attributes used in privacyidea.
 
         :param user: Dictionary containing user attributes from the user store
+        :param attributes: List of attributes to be included in the returned dictionary. If None or an empty list, all
+            attributes are included.
         :return: Dictionary containing user attributes mapped to privacyidea
         """
         pi_user = {}
@@ -861,12 +862,19 @@ class HTTPResolver(UserIdResolver):
         if not attributes:
             attributes = self.attribute_mapping_pi_to_user_store.keys()
 
-        for pi_attribute in attributes:
+        unknown_attributes = set(attributes).difference(set(self.get_available_info_keys()))
+        known_attributes = set(attributes) - unknown_attributes
+        if unknown_attributes:
+            unknown_attributes = ", ".join(unknown_attributes)
+            log.debug(
+                "No mapping for privacyidea attributes %s found. They are excluded from the user info dictionary.",
+                unknown_attributes)
+        for pi_attribute in known_attributes:
             user_store_attribute = self.attribute_mapping_pi_to_user_store.get(pi_attribute)
             if user_store_attribute:
                 pi_user[pi_attribute] = user.get(user_store_attribute, "")
             else:
-                log.debug(f"No mapping for privacyidea attribute '{pi_attribute}' found.")
+                log.debug("No mapping for privacyidea attribute '%s' found.", pi_attribute)
 
         return pi_user
 
@@ -944,7 +952,7 @@ class HTTPResolver(UserIdResolver):
             mapped_response[key] = value
         return mapped_response
 
-    def _do_request(self, config: RequestConfig, params: Union[dict, str], censor_log: bool = False) -> Response:
+    def _do_request(self, config: RequestConfig, params: dict | str, censor_log: bool = False) -> Response:
         """
         Performs the HTTP request based on the provided configuration and parameters.
 
@@ -1038,7 +1046,7 @@ class HTTPResolver(UserIdResolver):
 
         return user_info
 
-    def _get_user_list_from_response(self, response: Union[dict, list]) -> list[dict]:
+    def _get_user_list_from_response(self, response: dict | list) -> list[dict]:
         """
         Extracts the user list from the response body.
         By default, we expect that there is no further nesting.

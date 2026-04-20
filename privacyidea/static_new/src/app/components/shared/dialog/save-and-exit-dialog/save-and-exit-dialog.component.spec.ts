@@ -61,10 +61,12 @@ describe("SaveAndExitDialogComponent", () => {
   });
 
   describe("Actions Logic", () => {
-    it("should compute both actions when save is allowed", () => {
+    it("should compute both actions when save is allowed and include save icon", () => {
       const actions = component.actions();
       expect(actions.length).toBe(2);
-      expect(actions.some((a) => a.value === "save-exit")).toBeTruthy();
+      const saveAction = actions.find((a) => a.value === "save-exit");
+      expect(saveAction).toBeTruthy();
+      expect(saveAction?.icon).toBe("save");
       expect(actions.some((a) => a.value === "discard")).toBeTruthy();
     });
   });

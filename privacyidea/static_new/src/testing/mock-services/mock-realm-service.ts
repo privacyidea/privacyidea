@@ -19,10 +19,7 @@ export class MockRealmService implements RealmServiceInterface {
 
   realmResource = new MockHttpResourceRef<PiResponse<Realms> | undefined>(MockPiResponse.fromValue<Realms>({} as any));
 
-  realmOptions: Signal<string[]> = computed(() => {
-    const realms = this.realmResource.value()?.result?.value as any;
-    return realms ? Object.keys(realms) : [];
-  });
+  realmOptions: WritableSignal<string[]> = signal([]);
 
   defaultRealmResource = new MockHttpResourceRef<PiResponse<Realms> | undefined>(
     MockPiResponse.fromValue<Realms>({

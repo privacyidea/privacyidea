@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,7 +16,16 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, ElementRef, ViewChild, WritableSignal, inject, linkedSignal, signal } from "@angular/core";
+import {
+  Component,
+  ElementRef,
+  ViewChild,
+  WritableSignal,
+  inject,
+  linkedSignal,
+  signal,
+  computed
+} from "@angular/core";
 import {
   MatCell,
   MatCellDef,
@@ -46,6 +55,7 @@ import { RouterLink } from "@angular/router";
 import { UserTableActionsComponent } from "./user-table-actions/user-table-actions.component";
 import { MatIcon } from "@angular/material/icon";
 import { MatIconButton } from "@angular/material/button";
+import { MatTooltipModule } from "@angular/material/tooltip";
 import { MatDialog } from "@angular/material/dialog";
 import { Resolver, ResolverService } from "../../../services/resolver/resolver.service";
 import { UserNewResolverComponent } from "../user-new-resolver/user-new-resolver.component";
@@ -88,7 +98,8 @@ const columnKeysMap = [
     ClearableInputComponent,
     RouterLink,
     MatIcon,
-    MatIconButton
+    MatIconButton,
+    MatTooltipModule
   ],
   templateUrl: "./user-table.component.html",
   styleUrl: "./user-table.component.scss"
@@ -105,10 +116,18 @@ export class UserTableComponent {
   @ViewChild("filterHTMLInputElement", { static: false }) filterInput!: ElementRef<HTMLInputElement>;
   sort = signal({ active: "", direction: "" } as Sort);
   readonly apiFilter = this.userService.apiFilterOptions;
-  pageSizeOptions = this.tableUtilsService.pageSizeOptions;
+
+  private basePageSizeOptions = [...this.tableUtilsService.pageSizeOptions()];
+  pageSizeOptions = computed(() => {
+    if (!this.basePageSizeOptions.includes(this.userService.pageSize())) {
+      this.basePageSizeOptions.push(this.userService.pageSize());
+      this.basePageSizeOptions.sort((a, b) => a - b);
+    }
+    return this.basePageSizeOptions;
+  });
 
   totalLength: WritableSignal<number> = linkedSignal({
-    source: this.userService.usersResource.value,
+    source: () => this.userService.usersResource.hasValue() ? this.userService.usersResource.value() : undefined,
     computation: (userResource, previous) => {
       if (userResource) {
         return userResource.result?.value?.length ?? 0;
@@ -125,7 +144,7 @@ export class UserTableComponent {
   });
   usersDataSource: WritableSignal<MatTableDataSource<UserData>> = linkedSignal({
     source: () => ({
-      userRes: this.userService.usersResource.value(),
+      userRes: this.userService.usersResource.hasValue() ? this.userService.usersResource.value() : undefined,
       sort: this.sort()
     }),
     computation: (src, prev) => {

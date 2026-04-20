@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -126,7 +126,11 @@ export class HttpResolverComponent {
   passwordControl = new FormControl<string>("", { nonNullable: true });
   authorityControl = new FormControl<string>("", { nonNullable: true });
   clientCredentialTypeControl = new FormControl<string>("secret", { nonNullable: true });
-  clientCredentialType = toSignal(this.clientCredentialTypeControl.valueChanges, { initialValue: this.clientCredentialTypeControl.value });
+  clientCredentialType = toSignal(this.clientCredentialTypeControl.valueChanges, {
+    initialValue: this.clientCredentialTypeControl.value
+  });
+  verifyTls = toSignal(this.verifyTlsControl.valueChanges, { initialValue: this.verifyTlsControl.value });
+  editable = toSignal(this.editableControl.valueChanges, { initialValue: this.editableControl.value });
 
   clientCertificateGroup = new FormGroup({
     private_key_file: new FormControl<string>("", { nonNullable: true }),
@@ -230,7 +234,7 @@ export class HttpResolverComponent {
         isCustom: !this.privacyideaAttributes.includes(privacyideaAttr)
       }));
     } else {
-      rows = this.defaultMapping().map(row => ({ ...row, isCustom: false }));
+      rows = this.defaultMapping().map((row) => ({ ...row, isCustom: false }));
     }
     // Always add an empty row at the end to allow adding new attributes
     rows.push({ privacyideaAttr: null, userStoreAttr: "", isCustom: false });
@@ -239,10 +243,8 @@ export class HttpResolverComponent {
   protected availableAttributes = computed(() => {
     const rows = this.mappingRows();
     return rows.map((_, rowIndex) => {
-      const selectedAttributes = rows
-        .filter((_, i) => i !== rowIndex)
-        .map(row => row.privacyideaAttr);
-      return this.privacyideaAttributes.filter(attr => !selectedAttributes.includes(attr));
+      const selectedAttributes = rows.filter((_, i) => i !== rowIndex).map((row) => row.privacyideaAttr);
+      return this.privacyideaAttributes.filter((attr) => !selectedAttributes.includes(attr));
     });
   });
 
@@ -251,22 +253,25 @@ export class HttpResolverComponent {
       this.syncControls();
     });
 
-    effect(() => {
-      if (Object.keys(this.data()).length === 0) {
-        this.resolverService.getDefaultResolverConfig(this.type()).subscribe(resp => {
-          if (resp.result?.status && resp.result?.value) {
-            this.serverDefaults.set(resp.result.value);
-          }
-        });
-      }
-    }, { allowSignalWrites: true });
+    effect(
+      () => {
+        if (Object.keys(this.data()).length === 0) {
+          this.resolverService.getDefaultResolverConfig(this.type()).subscribe((resp) => {
+            if (resp.result?.status && resp.result?.value) {
+              this.serverDefaults.set(resp.result.value);
+            }
+          });
+        }
+      },
+      { allowSignalWrites: true }
+    );
 
     effect(() => {
       const basic = this.basicSettings();
       const data = this.mergedData();
       if (!basic && !this.responseMappingControl.value) {
         if (data.responseMapping === undefined) {
-          this.responseMappingControl.setValue("{\"username\":\"{username}\", \"userid\":\"{userid}\"}");
+          this.responseMappingControl.setValue('{"username":"{username}", "userid":"{userid}"}');
         }
         if (data.verify_tls === undefined) {
           this.verifyTlsControl.setValue(true);
@@ -279,6 +284,14 @@ export class HttpResolverComponent {
         if (data.verify_tls === undefined) {
           this.verifyTlsControl.setValue(false);
         }
+      }
+    });
+
+    effect(() => {
+      if (this.verifyTls()) {
+        this.tlsCaPathControl.enable({ emitEvent: false });
+      } else {
+        this.tlsCaPathControl.disable({ emitEvent: false });
       }
     });
   }
@@ -316,11 +329,14 @@ export class HttpResolverComponent {
     this.onMappingChanged();
   }
 
-
   removeMappingRow(index: number): void {
-    this.mappingRows.update(rows => {
+    this.mappingRows.update((rows) => {
       const newRows = rows.filter((_, i) => i !== index);
-      if (newRows.length === 0 || newRows[newRows.length - 1].privacyideaAttr !== null || newRows[newRows.length - 1].isCustom) {
+      if (
+        newRows.length === 0 ||
+        newRows[newRows.length - 1].privacyideaAttr !== null ||
+        newRows[newRows.length - 1].isCustom
+      ) {
         newRows.push({ privacyideaAttr: null, userStoreAttr: "", isCustom: false });
       }
       return newRows;
@@ -346,10 +362,13 @@ export class HttpResolverComponent {
 
     if (data.endpoint !== undefined) this.endpointControl.setValue(data.endpoint);
     if (data.method !== undefined) this.methodControl.setValue(data.method.toUpperCase());
-    if (data.requestMapping !== undefined) this.requestMappingControl.setValue(this.formatConfigValue(data.requestMapping));
+    if (data.requestMapping !== undefined)
+      this.requestMappingControl.setValue(this.formatConfigValue(data.requestMapping));
     if (data.headers !== undefined) this.headersControl.setValue(this.formatConfigValue(data.headers));
-    if (data.responseMapping !== undefined) this.responseMappingControl.setValue(this.formatConfigValue(data.responseMapping));
-    if (data.errorResponse !== undefined) this.errorResponseControl.setValue(this.formatConfigValue(data.errorResponse));
+    if (data.responseMapping !== undefined)
+      this.responseMappingControl.setValue(this.formatConfigValue(data.responseMapping));
+    if (data.errorResponse !== undefined)
+      this.errorResponseControl.setValue(this.formatConfigValue(data.errorResponse));
     if (data.base_url !== undefined) this.baseUrlControl.setValue(data.base_url);
     if (data.tenant !== undefined) this.tenantControl.setValue(data.tenant);
     if (data.client_id !== undefined) this.clientIdControl.setValue(data.client_id);
@@ -364,7 +383,8 @@ export class HttpResolverComponent {
     if (data.username !== undefined) this.usernameControl.setValue(data.username);
     if (data.password !== undefined) this.passwordControl.setValue(data.password);
     if (data.authority !== undefined) this.authorityControl.setValue(data.authority);
-    if (data.client_credential_type !== undefined) this.clientCredentialTypeControl.setValue(data.client_credential_type);
+    if (data.client_credential_type !== undefined)
+      this.clientCredentialTypeControl.setValue(data.client_credential_type);
 
     if (data.client_certificate) {
       this.clientCertificateGroup.patchValue(data.client_certificate);
@@ -393,7 +413,7 @@ export class HttpResolverComponent {
       if (sanitizedConfig.method) {
         sanitizedConfig.method = sanitizedConfig.method.toUpperCase();
       }
-      ['headers', 'requestMapping', 'responseMapping', 'errorResponse'].forEach(field => {
+      ["headers", "requestMapping", "responseMapping", "errorResponse"].forEach((field) => {
         if (sanitizedConfig[field] !== undefined) {
           sanitizedConfig[field] = this.formatConfigValue(sanitizedConfig[field]);
         }
@@ -403,7 +423,7 @@ export class HttpResolverComponent {
   }
 
   private formatConfigValue(value: {} | null): string {
-    if (typeof value === 'object' && value !== null) {
+    if (typeof value === "object" && value !== null) {
       if (Object.keys(value).length === 0) {
         return "";
       }

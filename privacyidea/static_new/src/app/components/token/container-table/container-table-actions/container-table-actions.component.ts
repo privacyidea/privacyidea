@@ -16,10 +16,11 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, inject } from "@angular/core";
-import { DOCUMENT } from "@angular/common";
+import { Component, inject, DOCUMENT } from "@angular/core";
+
 import { MatIcon } from "@angular/material/icon";
 import { MatButtonModule } from "@angular/material/button";
+import { MatTooltipModule } from "@angular/material/tooltip";
 import { SimpleConfirmationDialogComponent } from "../../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { forkJoin } from "rxjs";
 import { MatDialog } from "@angular/material/dialog";
@@ -37,7 +38,7 @@ import { TableUtilsService, TableUtilsServiceInterface } from "../../../../servi
 
 @Component({
   selector: "app-container-table-actions",
-  imports: [MatButtonModule, MatIcon, RouterLink, MatMenuModule],
+  imports: [MatButtonModule, MatIcon, RouterLink, MatMenuModule, MatTooltipModule],
   templateUrl: "./container-table-actions.component.html",
   styleUrl: "./container-table-actions.component.scss"
 })
