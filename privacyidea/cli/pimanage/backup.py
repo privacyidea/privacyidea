@@ -158,12 +158,13 @@ def backup_restore(backup_file, keep_db_uri):
 
     try:
         with tarfile.open(backup_file, "r:gz") as tf:
-            for member in tf.getnames():
-                if re.search(r"/pi.cfg$", member):
-                    config_file = "/{0!s}".format(member.strip())
-                elif re.search(r"dbdump-\d{8}-\d{4}\.sql", member):
-                    sqlfile = "/{0!s}".format(member.strip())
-                elif re.search(r"/enc[kK]ey", member):
+            for member in tf:
+                member_name = member.name
+                if re.search(r"/pi.cfg$", member_name):
+                    config_file = f"/{member_name.strip()}"
+                elif re.search(r"dbdump-\d{8}-\d{4}\.sql", member_name):
+                    sqlfile = f"/{member_name.strip()}"
+                elif re.search(r"/enc[kK]ey", member_name):
                     enckey_contained = True
     except (tarfile.TarError, OSError):
         click.secho(f"Unable to open backup file {backup_file}", fg="red")

@@ -16,6 +16,7 @@
 # SPDX-FileCopyrightText: 2024 Paul Lettich <paul.lettich@netknights.it>
 #
 # SPDX-License-Identifier: AGPL-3.0-or-later
+import contextlib
 import datetime as dt
 import pathlib
 import tempfile
@@ -72,50 +73,50 @@ class PIManageBackupTestCase(CliTestCase):
         self.assertIn("--keep-db-uri", result.output, result)
 
     @staticmethod
-    def _make_fake_run(live_pi_cfg, backup_uri):
+    def _make_fake_tarfile(live_pi_cfg, backup_uri):
         """
-        Return a ``subprocess.run`` replacement that simulates two tar calls:
+        Return a context manager that replaces ``tarfile.open`` with a fake
+        that simulates:
 
-        1. ``tar -ztf <archive>`` (listing) – returns a two-line stdout with
-           the relative paths of pi.cfg and the SQL dump so that
-           ``backup_restore`` can locate both files inside the archive.
+        1. Iterating members – yields two fake members whose ``name``
+           attributes match the relative paths of pi.cfg and the SQL dump.
 
-        2. ``tar -zxf <archive> -C /`` (extraction) – writes the backup
-           content (``backup_uri``) into ``live_pi_cfg`` and creates a
-           placeholder SQL file, mimicking what a real tar extraction would do.
+        2. ``extractall`` – writes the backup content (``backup_uri``) into
+           ``live_pi_cfg`` and creates a placeholder SQL file.
 
-
-        Note on path handling: ``backup_restore`` reads the tar listing and
-        prepends "/" to each line to reconstruct absolute paths.  We therefore
-        strip the leading "/" from the absolute ``live_pi_cfg`` path so that
-        prepending "/" gives back the original absolute path.
+        The ``backup_restore`` command opens the archive twice (once to list,
+        once to extract), so the fake supports both uses.
         """
         import unittest.mock as mock
 
         sql_file_path = live_pi_cfg.parent / "dbdump-20240101-1200.sql"
-        # Strip the leading "/" so backup_restore's "/{line}" reconstruction
-        # resolves to the same absolute path we started with.
         cfg_rel = str(live_pi_cfg).lstrip("/")
         sql_rel = str(sql_file_path).lstrip("/")
 
-        def fake_run(cmd, **kwargs):
-            r = mock.MagicMock()
-            r.returncode = 0
-            if "-ztf" in cmd:
-                # Simulate `tar -ztf fake.tgz` listing the archive contents.
-                r.stdout = f"{cfg_rel}\n{sql_rel}\n"
-            elif "-zxf" in cmd:
-                # Simulate `tar -zxf fake.tgz -C /` extraction:
-                # overwrite pi.cfg with the content that was stored in the
-                # backup (backup_uri), and create a minimal SQL file.
+        def make_member(name):
+            m = mock.MagicMock()
+            m.name = name
+            return m
+
+        @contextlib.contextmanager
+        def fake_tarfile_open(*args, **kwargs):
+            tf = mock.MagicMock()
+            tf.__iter__ = mock.Mock(return_value=iter([
+                make_member(cfg_rel),
+                make_member(sql_rel),
+            ]))
+
+            def fake_extractall(path="/", **kw):
                 live_pi_cfg.write_text(
                     f'SQLALCHEMY_DATABASE_URI = {repr(backup_uri)}\n'
                     'SECRET_KEY = "secret"\n'
                 )
                 sql_file_path.write_text("-- sql dump placeholder\n")
-            return r
 
-        return fake_run
+            tf.extractall = fake_extractall
+            yield tf
+
+        return fake_tarfile_open
 
     def _run_restore_with_mocks(self, live_pi_cfg, backup_uri, live_uri):
         """
@@ -145,8 +146,8 @@ class PIManageBackupTestCase(CliTestCase):
         )
 
         runner = self.app.test_cli_runner()
-        with mock.patch("privacyidea.cli.pimanage.backup.subprocess.run",
-                        side_effect=self._make_fake_run(live_pi_cfg, backup_uri)):
+        with mock.patch("privacyidea.cli.pimanage.backup.tarfile.open",
+                        side_effect=self._make_fake_tarfile(live_pi_cfg, backup_uri)):
             with mock.patch("privacyidea.cli.pimanage.backup.shutil.copyfile"):
                 with mock.patch("privacyidea.cli.pimanage.backup.os.unlink"):
                     return runner.invoke(
@@ -201,8 +202,8 @@ class PIManageBackupTestCase(CliTestCase):
             live_pi_cfg.write_text("this is not valid python !!!\n")
 
             runner = self.app.test_cli_runner()
-            with mock.patch("privacyidea.cli.pimanage.backup.subprocess.run",
-                            side_effect=self._make_fake_run(live_pi_cfg, backup_uri)):
+            with mock.patch("privacyidea.cli.pimanage.backup.tarfile.open",
+                            side_effect=self._make_fake_tarfile(live_pi_cfg, backup_uri)):
                 with mock.patch("privacyidea.cli.pimanage.backup.shutil.copyfile"):
                     with mock.patch("privacyidea.cli.pimanage.backup.os.unlink"):
                         result = runner.invoke(
@@ -420,9 +421,9 @@ class PIManageChallengeTestCase(CliTestCase):
 
     def _init_challenges(self):
         # Insert two expired and one still-valid challenge.
-        Challenge(serial='0',validitytime=0).save()
-        Challenge(serial='1',validitytime=0).save()
-        Challenge(serial='2',validitytime=300).save()
+        Challenge(serial='0', validitytime=0).save()
+        Challenge(serial='1', validitytime=0).save()
+        Challenge(serial='2', validitytime=300).save()
 
     def tearDown(self):
         Challenge.query.delete()
