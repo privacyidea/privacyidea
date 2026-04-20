@@ -19,28 +19,28 @@
 .mat-mdc-snack-bar-container {
   &.success-snackbar {
     --mat-snack-bar-container-color: var(--green-base);
-    --mat-snack-bar-supporting-text-color: var(--mat-sys-on-primary);
+    --mat-snack-bar-supporting-text-color: white;
 
-    .mat-mdc-button {
-      color: var(--mat-sys-on-primary);
+    .mat-mdc-button.mat-mdc-snack-bar-action:not(:disabled).mat-unthemed {
+      color: white
     }
   }
 
   &.error-snackbar {
-    --mat-snack-bar-container-color: var(--mat-sys-error);
-    --mat-snack-bar-supporting-text-color: var(--mat-sys-on-error);
+    --mat-snack-bar-container-color: var(--red-base);
+    --mat-snack-bar-supporting-text-color: white;
 
-    .mat-mdc-button {
-      color: var(--mat-sys-on-error);
+    .mat-mdc-button.mat-mdc-snack-bar-action:not(:disabled).mat-unthemed {
+      color: white
     }
   }
 
   &.warning-snackbar {
-    --mat-snack-bar-container-color: var(--mat-sys-tertiary);
-    --mat-snack-bar-supporting-text-color: var(--mat-sys-on-tertiary);
+    --mat-snack-bar-container-color: var(--yellow-base);
+    --mat-snack-bar-supporting-text-color: white;
 
-    .mat-mdc-button {
-      color: var(--mat-sys-on-tertiary);
+    .mat-mdc-button.mat-mdc-snack-bar-action:not(:disabled).mat-unthemed {
+      color: white
     }
   }
 }
