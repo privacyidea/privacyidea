@@ -164,6 +164,10 @@ $button-low-contrast-variant: linear-gradient(
   );
 }
 
+.card-icon-support {
+  color: var(--green-brand-light);
+}
+
 .card-button-docs {
   @include card-button-variant(var(--mat-sys-surface-container-lowest), var(--mat-sys-primary), var(--mat-sys-primary));
 }

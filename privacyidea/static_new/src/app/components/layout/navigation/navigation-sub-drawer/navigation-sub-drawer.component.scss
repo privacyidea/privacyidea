@@ -28,6 +28,17 @@
     .card-button-active > mat-icon.mat-icon.notranslate.material-icons {
       font-size: 20px;
     }
+
+    button.mat-mdc-outlined-button[mat-stroked-button] {
+      max-width: 180px !important;
+      width: 100% !important;
+    }
+
+    .card-button-1,
+    .card-button-active {
+      max-width: 180px !important;
+      width: 100% !important;
+    }
   }
 }
 
