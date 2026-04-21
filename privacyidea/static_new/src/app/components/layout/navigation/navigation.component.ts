@@ -18,7 +18,6 @@
  **/
 import { Component, computed, inject, signal } from "@angular/core";
 import { NgClass, NgOptimizedImage } from "@angular/common";
-import { MatList, MatListItem } from "@angular/material/list";
 import { ROUTE_PATHS } from "../../../route_paths";
 import { MatAnchor, MatButton } from "@angular/material/button";
 import { MatIcon, MatIconModule } from "@angular/material/icon";
@@ -46,7 +45,7 @@ import { ConfigService, ConfigServiceInterface } from "../../../services/config/
 import { environment } from "../../../../environments/environment";
 import { UserUtilsPanelComponent } from "@components/layout/user-utils-panel/user-utils-panel.component";
 import { MatIconButton } from "@angular/material/button";
-import { MatDrawer, MatDrawerContainer, MatDrawerContent } from "@angular/material/sidenav";
+import { NavigationSubDrawerComponent } from "./navigation-sub-drawer/navigation-sub-drawer.component";
 
 export type NavSection = 'token' | 'container' | 'users' | 'policies' | 'events' | 'audit' | 'external-services' | 'configuration' | null;
 
@@ -55,8 +54,6 @@ export type NavSection = 'token' | 'container' | 'users' | 'policies' | 'events'
   imports: [
     MatButton,
     MatIconModule,
-    MatList,
-    MatListItem,
     NgOptimizedImage,
     MatIcon,
     RouterLink,
@@ -66,9 +63,7 @@ export type NavSection = 'token' | 'container' | 'users' | 'policies' | 'events'
     FormsModule,
     UserUtilsPanelComponent,
     MatIconButton,
-    MatDrawer,
-    MatDrawerContainer,
-    MatDrawerContent
+    NavigationSubDrawerComponent
   ],
   templateUrl: "./navigation.component.html",
   styleUrl: "./navigation.component.scss"

@@ -1,5 +1,4 @@
 @use "styles";
-@use "table";
 @use "@angular/material" as mat;
 
 .brand {
@@ -57,21 +56,11 @@
 }
 
 .nav-wrapper {
+  display: flex;
+  flex-direction: row;
   height: 100%;
 }
 
-:host ::ng-deep .mat-drawer-container {
-  background-color: transparent;
-}
-
-:host ::ng-deep .mat-drawer-content {
-  background-color: transparent;
-}
-
-:host ::ng-deep .mat-drawer.sub-drawer {
-  background-color: var(--mat-sys-surface-container-low);
-  border-left: 1px solid var(--mat-sys-outline-variant);
-}
 
 .nav-rail {
   display: flex;
@@ -126,84 +115,41 @@
     }
   }
 
-  .nav-buttons button {
-    min-width: 48px;
-    width: 48px;
-    height: 48px;
-    padding: 0;
-    border-radius: 50%;
-
-    ::ng-deep .mdc-button__label {
-      display: flex;
-      justify-content: center;
-
-      span {
-        display: none;
-      }
-    }
-  }
-
   .sticky-actions {
-    width: 56px;
+    width: auto;
     padding: 4px;
-
-    h4 {
-      display: none;
-    }
-
-    a[mat-stroked-button] {
-      min-width: 48px;
-      width: 48px;
-      height: 48px;
-      padding: 0;
-      border-radius: 50%;
-      justify-content: center;
-    }
+    align-items: center;
+    justify-items: center;
+    margin-top: auto;
   }
 }
 
+.nav-icon-active {
+  background-color: var(--sky-bg) !important;
+  color: var(--mat-sys-primary);
+}
+
 .nav-buttons {
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--border-radius);
+  border: solid 1px var(--mat-sys-outline-variant);
+  padding: 8px;
   display: flex;
   flex-direction: column;
-  width: 100%;
   gap: 4px;
+  @include mat.elevation(3);
 }
 
 .sub-drawer {
   width: 260px;
+  min-width: 260px;
   padding: 12px;
   overflow-y: auto;
+  border-radius: var(--border-radius);
+  border-left: 1px solid var(--mat-sys-outline-variant);
 }
 
-.sub-drawer-header {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  margin-bottom: 8px;
-  padding: 4px 0;
-}
-
-.sub-drawer-title {
-  margin: 0;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--mat-sys-on-surface);
-}
-
-.sub-nav-list {
-  ::ng-deep {
-    .mdc-list-item.mdc-list-item--with-one-line {
-      height: auto !important;
-      padding-left: 0;
-      padding-right: 0;
-      padding-bottom: 8px;
-    }
-
-    .card-button-active > mat-icon.mat-icon.notranslate.material-icons {
-      font-size: 20px;
-    }
-  }
-}
 
 .sticky-actions {
   position: sticky;

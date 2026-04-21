@@ -1,0 +1,33 @@
+@use "styles";
+@use "@angular/material" as mat;
+
+.sub-drawer-header {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 8px;
+  padding: 4px 0;
+}
+
+.sub-drawer-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--mat-sys-on-surface);
+}
+
+.sub-nav-list {
+  ::ng-deep {
+    .mdc-list-item.mdc-list-item--with-one-line {
+      height: auto !important;
+      padding-left: 0;
+      padding-right: 0;
+      padding-bottom: 8px;
+    }
+
+    .card-button-active > mat-icon.mat-icon.notranslate.material-icons {
+      font-size: 20px;
+    }
+  }
+}
+
