@@ -10,12 +10,17 @@
 }
 
 .mat-expansion-panel:not(.mat-expanded) .mat-expansion-panel-header:hover {
-  background: var(--mat-sys-surface-container-high) !important;
+  background: var(--mat-expansion-container-background-color, var(--mat-sys-surface-container-high));
+}
+
+.mat-expansion-panel-header {
+  padding: var(--expansion-panel-header-padding, 0 24px);
 }
 
 .mat-expansion-panel {
-  background: var(--mat-sys-surface-container-low) !important;
-  border-radius: var(--border-radius);
+  background: var(--mat-expansion-container-background-color, var(--mat-sys-surface-container-low));
+  border: var(--expansion-panel-border);
+  --mat-expansion-container-shape: var(--border-radius);
 }
 
 .mat-accordion .mat-expansion-panel {
