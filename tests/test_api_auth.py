@@ -1458,7 +1458,7 @@ class AuthApiTestCase(MyApiTestCase):
         set_policy("pi-login", scope=SCOPE.WEBUI,
                    action=f"{PolicyAction.LOGINMODE}=privacyIDEA")
         set_policy("notoken", scope=SCOPE.AUTH,
-                   action=f"{PolicyAction.PASSNOTOKEN}")
+                   action=f"{PolicyAction.PASSONNOTOKEN}")
 
         user = User("cornelius", self.realm1)
         # Make sure the user has no tokens
@@ -1481,7 +1481,7 @@ class AuthApiTestCase(MyApiTestCase):
 
         # Set PASSNOTOKEN_IGNORE_ROLLOUT_STATE to "clientwait"
         set_policy("notoken_ignore", scope=SCOPE.AUTH,
-                   action=f"{PolicyAction.PASSNOTOKEN_IGNORE_ROLLOUT_STATE}=clientwait")
+                   action=f"{PolicyAction.PASSONNOTOKEN_IGNORE_ROLLOUT_STATE}=clientwait")
 
         # Token in "clientwait" is ignored -> passOnNoToken triggers
         with self.app.test_request_context('/auth',
@@ -1495,7 +1495,7 @@ class AuthApiTestCase(MyApiTestCase):
 
         # Policy ignores only "verify" -> "clientwait" token NOT ignored
         set_policy("notoken_ignore", scope=SCOPE.AUTH,
-                   action=f"{PolicyAction.PASSNOTOKEN_IGNORE_ROLLOUT_STATE}=verify")
+                   action=f"{PolicyAction.PASSONNOTOKEN_IGNORE_ROLLOUT_STATE}=verify")
 
         with self.app.test_request_context('/auth',
                                            method='POST',
@@ -1513,7 +1513,7 @@ class AuthApiTestCase(MyApiTestCase):
 
         # Policy "clientwait verify" -> both ignored
         set_policy("notoken_ignore", scope=SCOPE.AUTH,
-                   action=f"{PolicyAction.PASSNOTOKEN_IGNORE_ROLLOUT_STATE}=clientwait verify")
+                   action=f"{PolicyAction.PASSONNOTOKEN_IGNORE_ROLLOUT_STATE}=clientwait verify")
 
         with self.app.test_request_context('/auth',
                                            method='POST',
@@ -1538,7 +1538,7 @@ class AuthApiTestCase(MyApiTestCase):
 
         # "clientwait verify broken" -> all three ignored
         set_policy("notoken_ignore", scope=SCOPE.AUTH,
-                   action=f"{PolicyAction.PASSNOTOKEN_IGNORE_ROLLOUT_STATE}=clientwait verify broken")
+                   action=f"{PolicyAction.PASSONNOTOKEN_IGNORE_ROLLOUT_STATE}=clientwait verify broken")
 
         with self.app.test_request_context('/auth',
                                            method='POST',

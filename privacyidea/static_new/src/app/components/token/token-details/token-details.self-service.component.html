@@ -129,7 +129,7 @@
                 @case ("description") {
                   @if (element.isEditing()) {
                     <mat-form-field
-                      class="input-width-m description height-126"
+                      class="input-width-m description height-136"
                       subscriptSizing="dynamic">
                       <textarea
                         [(ngModel)]="element.value"
@@ -138,6 +138,8 @@
                         matInput
                         placeholder="Enter description"
                         rows="4"></textarea>
+                      <mat-hint align="end">{{ element.value?.length || 0 }} / {{ tokenService.maxDescriptionLength }}
+                      </mat-hint>
                     </mat-form-field>
                   } @else {
                     <div class="details-description-div">

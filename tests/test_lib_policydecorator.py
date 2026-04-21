@@ -175,7 +175,7 @@ class LibPolicyTestCase(MyTestCase):
         # Now we set a policy, that a non-existing user will authenticate
         set_policy(name="pol1",
                    scope=SCOPE.AUTH,
-                   action=PolicyAction.PASSNOUSER)
+                   action=PolicyAction.PASSONNOUSER)
         rv = auth_user_does_not_exist(check_user_pass, user, passw,
                                       options=options)
         self.assertTrue(rv[0])
@@ -193,8 +193,8 @@ class LibPolicyTestCase(MyTestCase):
                    scope=SCOPE.AUTH,
                    action="{0}, {1}, {2}, {3}=none".format(
                        PolicyAction.RESETALLTOKENS,
-                       PolicyAction.PASSNOUSER,
-                       PolicyAction.PASSNOTOKEN,
+                       PolicyAction.PASSONNOUSER,
+                       PolicyAction.PASSONNOTOKEN,
                        PolicyAction.OTPPIN
                    ),
                    realm="r1")
@@ -220,7 +220,7 @@ class LibPolicyTestCase(MyTestCase):
         self.assertEqual(rv[1].get("message"), "The user has no tokens assigned")
 
         # Now we set a policy, that a non-existing user will authenticate
-        set_policy(name="pol1", scope=SCOPE.AUTH, action=PolicyAction.PASSNOTOKEN)
+        set_policy(name="pol1", scope=SCOPE.AUTH, action=PolicyAction.PASSONNOTOKEN)
         fake_g = FakeFlaskG()
         fake_g.policy_object = PolicyClass()
         fake_g.audit_object = FakeAudit()
@@ -1238,7 +1238,7 @@ class LibPolicyTestCase(MyTestCase):
         # Set a PASSNOTOKEN policy
         set_policy(name="pol_notoken",
                    scope=SCOPE.AUTH,
-                   action=PolicyAction.PASSNOTOKEN)
+                   action=PolicyAction.PASSONNOTOKEN)
 
         # Assign a token with rollout_state=clientwait to the user
         tok1 = init_token({"serial": "NOTOKEN_RS1",
@@ -1260,7 +1260,7 @@ class LibPolicyTestCase(MyTestCase):
         # Set PASSNOTOKEN_IGNORE_ROLLOUT_STATE to ignore "clientwait"
         set_policy(name="pol_notoken_ignore",
                    scope=SCOPE.AUTH,
-                   action="{0!s}=clientwait".format(PolicyAction.PASSNOTOKEN_IGNORE_ROLLOUT_STATE))
+                   action="{0!s}=clientwait".format(PolicyAction.PASSONNOTOKEN_IGNORE_ROLLOUT_STATE))
         self.set_default_g_variables()
         self.app_context.g.policy_object = PolicyClass()
         self.app_context.g.audit_object = FakeAudit()
@@ -1275,7 +1275,7 @@ class LibPolicyTestCase(MyTestCase):
         # Policy ignores only "verify" -> "clientwait" token is NOT ignored
         set_policy(name="pol_notoken_ignore",
                    scope=SCOPE.AUTH,
-                   action="{0!s}=verify".format(PolicyAction.PASSNOTOKEN_IGNORE_ROLLOUT_STATE))
+                   action="{0!s}=verify".format(PolicyAction.PASSONNOTOKEN_IGNORE_ROLLOUT_STATE))
         self.set_default_g_variables()
         self.app_context.g.policy_object = PolicyClass()
         self.app_context.g.audit_object = FakeAudit()
@@ -1295,7 +1295,7 @@ class LibPolicyTestCase(MyTestCase):
         # Policy ignores only "clientwait" -> "verify" token still counted
         set_policy(name="pol_notoken_ignore",
                    scope=SCOPE.AUTH,
-                   action="{0!s}=clientwait".format(PolicyAction.PASSNOTOKEN_IGNORE_ROLLOUT_STATE))
+                   action="{0!s}=clientwait".format(PolicyAction.PASSONNOTOKEN_IGNORE_ROLLOUT_STATE))
         self.set_default_g_variables()
         self.app_context.g.policy_object = PolicyClass()
         self.app_context.g.audit_object = FakeAudit()
@@ -1308,7 +1308,7 @@ class LibPolicyTestCase(MyTestCase):
         set_policy(name="pol_notoken_ignore",
                    scope=SCOPE.AUTH,
                    action="{0!s}=clientwait verify".format(
-                       PolicyAction.PASSNOTOKEN_IGNORE_ROLLOUT_STATE))
+                       PolicyAction.PASSONNOTOKEN_IGNORE_ROLLOUT_STATE))
         self.set_default_g_variables()
         self.app_context.g.policy_object = PolicyClass()
         self.app_context.g.audit_object = FakeAudit()
@@ -1339,7 +1339,7 @@ class LibPolicyTestCase(MyTestCase):
         set_policy(name="pol_notoken_ignore",
                    scope=SCOPE.AUTH,
                    action="{0!s}=clientwait verify broken".format(
-                       PolicyAction.PASSNOTOKEN_IGNORE_ROLLOUT_STATE))
+                       PolicyAction.PASSONNOTOKEN_IGNORE_ROLLOUT_STATE))
         self.set_default_g_variables()
         self.app_context.g.policy_object = PolicyClass()
         self.app_context.g.audit_object = FakeAudit()

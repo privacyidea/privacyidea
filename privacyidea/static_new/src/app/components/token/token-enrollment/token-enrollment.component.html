@@ -220,6 +220,8 @@
           matInput
           placeholder="Enter description"
           rows="3"></textarea>
+        <mat-hint align="end">{{ descriptionControl.value.length }} / {{ tokenService.maxDescriptionLength }}
+        </mat-hint>
       </mat-form-field>
       <div class="gap-16">
         @if (authService.actionAllowed("userlist")) {
@@ -264,7 +266,10 @@
             </div>
             @if (formGroupSignal().hasError("pinMismatch") &&
             (formGroupSignal().get("setPin")?.touched || formGroupSignal().get("repeatPin")?.touched)) {
-              <mat-error class="pin-error" i18n>PINs do not match.</mat-error>
+              <mat-error
+                class="pin-error"
+                i18n>PINs do not match.
+              </mat-error>
             }
           </div>
         }

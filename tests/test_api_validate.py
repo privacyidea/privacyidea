@@ -2151,8 +2151,8 @@ class ValidateAPITestCase(MyApiTestCase):
         serial = "t23"
         set_policy(name="pass_no",
                    scope=SCOPE.AUTH,
-                   action="{0!s},{1!s}".format(PolicyAction.PASSNOTOKEN,
-                                               PolicyAction.PASSNOUSER))
+                   action="{0!s},{1!s}".format(PolicyAction.PASSONNOTOKEN,
+                                               PolicyAction.PASSONNOUSER))
 
         r = init_token({"type": "spass", "serial": serial,
                         "pin": pin}, user=User(user, self.realm2))
@@ -2264,8 +2264,8 @@ class ValidateAPITestCase(MyApiTestCase):
                    scope=SCOPE.AUTH,
                    action="{0}, {1}, {2}, {3}=none".format(
                        PolicyAction.RESETALLTOKENS,
-                       PolicyAction.PASSNOUSER,
-                       PolicyAction.PASSNOTOKEN,
+                       PolicyAction.PASSONNOUSER,
+                       PolicyAction.PASSONNOTOKEN,
                        PolicyAction.OTPPIN
                    ),
                    realm=self.realm1)

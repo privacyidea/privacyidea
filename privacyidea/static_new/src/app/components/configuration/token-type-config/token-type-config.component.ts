@@ -22,10 +22,15 @@ import {
   computed,
   DestroyRef,
   effect,
+  ElementRef,
   inject,
+  linkedSignal,
+  OnDestroy,
   OnInit,
+  Renderer2,
   signal,
-  untracked
+  untracked,
+  ViewChild
 } from "@angular/core";
 
 import { MatExpansionModule } from "@angular/material/expansion";
@@ -36,6 +41,7 @@ import { SmsGatewayService, SmsGatewayServiceInterface } from "../../../services
 import { SmtpService, SmtpServiceInterface } from "../../../services/smtp/smtp.service";
 import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
 import { NotificationService, NotificationServiceInterface } from "../../../services/notification/notification.service";
+import { PendingChangesService } from "../../../services/pending-changes/pending-changes.service";
 import { HttpClient } from "@angular/common/http";
 import { environment } from "../../../../environments/environment";
 import { forkJoin, lastValueFrom } from "rxjs";
@@ -80,21 +86,68 @@ import { ActivatedRoute } from "@angular/router";
   templateUrl: "./token-type-config.component.html",
   styleUrl: "./token-type-config.component.scss"
 })
-export class TokenTypeConfigComponent implements OnInit, AfterViewInit {
+export class TokenTypeConfigComponent implements OnInit, AfterViewInit, OnDestroy {
   readonly systemService: SystemServiceInterface = inject(SystemService);
   readonly smsGatewayService: SmsGatewayServiceInterface = inject(SmsGatewayService);
   readonly smtpService: SmtpServiceInterface = inject(SmtpService);
   readonly authService: AuthServiceInterface = inject(AuthService);
   readonly notificationService: NotificationServiceInterface = inject(NotificationService);
+  private readonly pendingChangesService = inject(PendingChangesService);
   private readonly http = inject(HttpClient);
   private readonly route = inject(ActivatedRoute);
+  private readonly renderer = inject(Renderer2);
   private destroyRef = inject(DestroyRef);
   queryParams = toSignal(this.route.queryParams);
   expandEmail = computed(() => this.queryParams()?.["expanded"] === "email");
 
-  formData = signal<Record<string, any>>({});
-  nextQuestion = signal(0);
-  pendingQuestionDeletes = signal<Set<string>>(new Set());
+  @ViewChild("scrollContainer") scrollContainer!: ElementRef;
+  @ViewChild("stickyHeader") stickyHeader!: ElementRef;
+  @ViewChild("stickySentinel") stickySentinel!: ElementRef;
+
+  private observer!: IntersectionObserver;
+
+  formData = linkedSignal<any, Record<string, any>>({
+    source: () => this.systemService.systemConfig(),
+    computation: (config) => ({ ...config })
+  });
+  nextQuestionIndex = linkedSignal<any, number>({
+    source: () => this.systemService.systemConfig(),
+    computation: (config) => {
+      let max = -1;
+      Object.keys(config).forEach((key) => {
+        if (key.startsWith("question.question.")) {
+          const idx = parseInt(key.substring("question.question.".length));
+          if (!isNaN(idx) && idx > max) {
+            max = idx;
+          }
+        }
+      });
+      return max + 1;
+    }
+  });
+  pendingDeletes = linkedSignal<any, Set<string>>({
+    source: () => this.systemService.systemConfig(),
+    computation: () => new Set<string>()
+  });
+
+  hasChanges = computed(() => {
+    const current = this.formData();
+    const original = this.systemConfig();
+    const deletes = this.pendingDeletes();
+
+    if (deletes.size > 0) return true;
+
+    const currentKeys = Object.keys(current);
+    const originalKeys = Object.keys(original);
+
+    if (currentKeys.length !== originalKeys.length) return true;
+
+    for (const key of currentKeys) {
+      if (current[key] !== original[key]) return true;
+    }
+
+    return false;
+  });
 
   systemConfig = this.systemService.systemConfig;
   systemConfigInit = this.systemService.systemConfigInit;
@@ -113,30 +166,6 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit {
 
   expandedPanel: string | null = null;
 
-  constructor() {
-    effect(() => {
-      // Initialize form with system config values
-      const config = this.systemService.systemConfig();
-      if (config && Object.keys(config).length > 0) {
-        untracked(() => {
-          this.formData.set({ ...config });
-
-          // Find next question index
-          let max = -1;
-          Object.keys(config).forEach((key) => {
-            if (key.startsWith("question.question.")) {
-              const idx = parseInt(key.substring("question.question.".length));
-              if (!isNaN(idx) && idx > max) {
-                max = idx;
-              }
-            }
-          });
-          this.nextQuestion.set(max + 1);
-        });
-      }
-    });
-  }
-
   get questionKeys() {
     return Object.keys(this.formData()).filter((k) => k.startsWith("question.question."));
   }
@@ -146,6 +175,9 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit {
   }
 
   ngOnInit() {
+    this.pendingChangesService.registerHasChanges(() => this.hasChanges());
+    this.pendingChangesService.registerSave(() => this.savePromise());
+
     // allow opening a specific panel via URL fragment, e.g. /configuration/token-types#yubico
     this.route.fragment.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((fragment) => {
       if (fragment) {
@@ -162,6 +194,29 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit {
         panel.scrollIntoView({ behavior: "smooth" });
       }
     }
+
+    if (!this.scrollContainer || !this.stickyHeader || !this.stickySentinel) {
+      return;
+    }
+
+    const options: IntersectionObserverInit = {
+      root: this.scrollContainer.nativeElement,
+      threshold: [0, 1]
+    };
+
+    this.observer = new IntersectionObserver(([entry]) => {
+      if (!entry.rootBounds) return;
+
+      const isSticky = entry.boundingClientRect.top < entry.rootBounds.top;
+
+      if (isSticky) {
+        this.renderer.addClass(this.stickyHeader.nativeElement, "is-sticky");
+      } else {
+        this.renderer.removeClass(this.stickyHeader.nativeElement, "is-sticky");
+      }
+    }, options);
+
+    this.observer.observe(this.stickySentinel.nativeElement);
   }
 
   addQuestion(text: string) {
@@ -169,12 +224,12 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit {
       this.notificationService.openSnackBar($localize`Please enter a question.`);
       return;
     }
-    const index = this.nextQuestion();
+    const index = this.nextQuestionIndex();
     this.formData.update((f) => ({
       ...f,
       [`question.question.${index}`]: text
     }));
-    this.nextQuestion.update((n) => n + 1);
+    this.nextQuestionIndex.update((n) => n + 1);
   }
 
   deleteQuestion(key: string) {
@@ -189,7 +244,7 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit {
 
     // If it existed on the backend, collect it for deletion on save
     if (existedInitially) {
-      this.pendingQuestionDeletes.update((set) => {
+      this.pendingDeletes.update((set) => {
         const copy = new Set(set);
         copy.add(key);
         return copy;
@@ -198,24 +253,23 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit {
   }
 
   deleteSystemEntry(key: string) {
-    this.systemService.deleteSystemConfig(key).subscribe({
-      next: (response) => {
-        if (response?.result?.status) {
-          this.notificationService.openSnackBar($localize`System entry deleted.`);
-          // Update entries in the formData but not reload the whole config to prevent losing unsaved changes
-          this.formData.update((f) => {
-            const next = { ...f } as Record<string, any>;
-            delete next[key];
-            return next;
-          });
-        } else {
-          this.notificationService.openSnackBar($localize`Failed to delete system entry.`);
-        }
-      },
-      error: () => {
-        this.notificationService.openSnackBar($localize`Failed to delete system entry.`);
-      }
+    const existedInitially = this.systemService.systemConfig()?.hasOwnProperty(key) ?? false;
+
+    // Remove from local form data so it disappears from the list immediately
+    this.formData.update((f) => {
+      const next = { ...f } as Record<string, any>;
+      delete next[key];
+      return next;
     });
+
+    // If it existed on the backend, collect it for deletion on save
+    if (existedInitially) {
+      this.pendingDeletes.update((set) => {
+        const copy = new Set(set);
+        copy.add(key);
+        return copy;
+      });
+    }
   }
 
   async yubikeyAddNewKey(apiKeyData: ApiKeyData) {
@@ -253,38 +307,38 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit {
   }
 
   save() {
-    const deletes = Array.from(this.pendingQuestionDeletes());
+    return this.savePromise();
+  }
+
+  async savePromise(): Promise<boolean> {
+    const deletes = Array.from(this.pendingDeletes());
     const deleteCalls = deletes.map((key) => this.systemService.deleteSystemConfig(key));
     const saveCall = this.systemService.saveSystemConfig(this.formData());
 
-    if (deleteCalls.length > 0) {
-      forkJoin(deleteCalls).subscribe({
-        next: () => {
-          saveCall.subscribe({
-            next: () => {
-              this.notificationService.openSnackBar($localize`Token configuration saved successfully.`);
-              this.pendingQuestionDeletes.set(new Set());
-              this.systemService.systemConfigResource.reload();
-            },
-            error: () => {
-              this.notificationService.openSnackBar($localize`Failed to save token configuration.`);
-            }
-          });
-        },
-        error: () => {
-          this.notificationService.openSnackBar($localize`Failed to delete some questionnaire entries.`);
-        }
-      });
-    } else {
-      saveCall.subscribe({
-        next: () => {
-          this.notificationService.openSnackBar($localize`Token configuration saved successfully.`);
-          this.systemService.systemConfigResource.reload();
-        },
-        error: () => {
-          this.notificationService.openSnackBar($localize`Failed to save token configuration.`);
-        }
-      });
+    try {
+      if (deleteCalls.length > 0) {
+        await lastValueFrom(forkJoin(deleteCalls));
+      }
+      const response = await lastValueFrom(saveCall);
+      if (response?.result?.status) {
+        this.notificationService.openSnackBar($localize`Token configuration saved successfully.`);
+        this.pendingDeletes.set(new Set());
+        this.systemService.systemConfigResource.reload();
+        return true;
+      } else {
+        this.notificationService.openSnackBar($localize`Failed to save token configuration.`);
+        return false;
+      }
+    } catch (e) {
+      this.notificationService.openSnackBar($localize`Error saving token configuration.`);
+      return false;
+    }
+  }
+
+  ngOnDestroy() {
+    this.pendingChangesService.clearAllRegistrations();
+    if (this.observer) {
+      this.observer.disconnect();
     }
   }
 
