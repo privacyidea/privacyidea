@@ -9,59 +9,56 @@
   background: var(--mat-sys-surface-container-lowest);
 }
 
-::ng-deep {
-  .mat-expansion-panel:not(.mat-expanded) .mat-expansion-panel-header:hover {
-    background: var(--mat-sys-surface-container-high) !important;
-  }
+.mat-expansion-panel:not(.mat-expanded) .mat-expansion-panel-header:hover {
+  background: var(--mat-sys-surface-container-high) !important;
+}
 
-  .mat-expansion-panel {
-    background: var(--mat-sys-surface-container-low) !important;
-    border-radius: var(--border-radius);
-  }
+.mat-expansion-panel {
+  background: var(--mat-sys-surface-container-low) !important;
+  border-radius: var(--border-radius);
+}
 
-  .mat-accordion .mat-expansion-panel {
-    border-radius: 0 !important;
-    overflow: hidden;
-  }
+.mat-accordion .mat-expansion-panel {
+  border-radius: 0 !important;
+  overflow: hidden;
+}
 
-  .mat-accordion > *:first-child .mat-expansion-panel,
-  .mat-accordion > .mat-expansion-panel:first-child {
-    border-top-left-radius: var(--border-radius) !important;
-    border-top-right-radius: var(--border-radius) !important;
-  }
+.mat-accordion > *:first-child .mat-expansion-panel,
+.mat-accordion > .mat-expansion-panel:first-child {
+  border-top-left-radius: var(--border-radius) !important;
+  border-top-right-radius: var(--border-radius) !important;
+}
 
-  .mat-accordion > *:last-child .mat-expansion-panel,
-  .mat-accordion > .mat-expansion-panel:last-child {
-    border-bottom-left-radius: var(--border-radius) !important;
-    border-bottom-right-radius: var(--border-radius) !important;
-  }
+.mat-accordion > *:last-child .mat-expansion-panel,
+.mat-accordion > .mat-expansion-panel:last-child {
+  border-bottom-left-radius: var(--border-radius) !important;
+  border-bottom-right-radius: var(--border-radius) !important;
+}
 
-  .mat-accordion .mat-expansion-panel .mat-expansion-panel-header {
-    border-radius: inherit !important;
-  }
+.mat-accordion .mat-expansion-panel .mat-expansion-panel-header {
+  border-radius: inherit !important;
+}
+mat-panel-title.mat-expansion-panel-header-title .mat-icon {
+  color: var(--mat-expansion-header-description-color, var(--mat-sys-on-surface-variant));
+  margin-right: 16px;
+}
 
-  mat-panel-title.mat-expansion-panel-header-title .mat-icon {
-    color: var(--mat-expansion-header-description-color, var(--mat-sys-on-surface-variant));
-    margin-right: 16px;
-  }
+.type-option .mat-pseudo-checkbox.mat-pseudo-checkbox-checked::after {
+  color: white !important;
+}
 
-  .type-option .mat-pseudo-checkbox.mat-pseudo-checkbox-checked::after {
-    color: white !important;
-  }
+.type-option.mdc-list-item--selected:not(.mdc-list-item--disabled):not(.mat-mdc-option-multiple) {
+  background-color: var(--mat-sys-primary-light) !important;
+}
 
-  .type-option.mdc-list-item--selected:not(.mdc-list-item--disabled):not(.mat-mdc-option-multiple) {
-    background-color: var(--mat-sys-primary-light) !important;
-  }
+.type-option.mat-mdc-option.mdc-list-item {
+  background: var(--mat-sys-surface-container-low) !important;
+}
 
-  .type-option.mat-mdc-option.mdc-list-item {
-    background: var(--mat-sys-surface-container-low) !important;
-  }
+.type-option.mat-mdc-option.mdc-list-item--selected:not(.mdc-list-item--disabled) .mdc-list-item__primary-text {
+  color: white !important;
+}
 
-  .type-option.mat-mdc-option.mdc-list-item--selected:not(.mdc-list-item--disabled) .mdc-list-item__primary-text {
-    color: white !important;
-  }
-
-  .type-option.mat-mdc-option:hover:not(.mdc-list-item--selected, .mdc-list-item--disabled) {
-    background-color: #f2f9fd;
-  }
+.type-option.mat-mdc-option:hover:not(.mdc-list-item--selected, .mdc-list-item--disabled) {
+  background-color: #f2f9fd;
 }

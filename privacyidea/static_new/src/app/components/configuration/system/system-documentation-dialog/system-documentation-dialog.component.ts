@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, ElementRef, Inject, inject, ViewChild, AfterViewInit } from "@angular/core";
+import { Component, ElementRef, Inject, inject, ViewChild, AfterViewInit, ViewEncapsulation } from "@angular/core";
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from "@angular/material/dialog";
 import { FormsModule } from "@angular/forms";
 import { MatFormField, MatLabel } from "@angular/material/form-field";
@@ -40,7 +40,8 @@ import { SystemService } from "../../../../services/system/system.service";
     MatButton,
     CdkTextareaAutosize,
     CopyButtonComponent
-  ]
+  ],
+  encapsulation: ViewEncapsulation.Emulated
 })
 export class SystemDocumentationDialogComponent implements AfterViewInit {
   @ViewChild("autosize", { read: ElementRef }) textareaElement!: ElementRef<HTMLTextAreaElement>;
@@ -59,8 +60,7 @@ export class SystemDocumentationDialogComponent implements AfterViewInit {
       if (element) {
         try {
           element.setSelectionRange(0, 0);
-        } catch {
-        }
+        } catch {}
         element.scrollTop = 0;
       }
     });

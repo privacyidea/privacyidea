@@ -99,9 +99,10 @@
 }
 
 .childless-expension-panel-header-active {
-  box-shadow: 0 3px 5px -1px rgba(0, 0, 0, 0.2),
-  0px 5px 8px 0px rgba(0, 0, 0, 0.14),
-  0px 1px 14px 0px rgba(0, 0, 0, 0.12) !important;
+  box-shadow:
+    0 3px 5px -1px rgba(0, 0, 0, 0.2),
+    0px 5px 8px 0px rgba(0, 0, 0, 0.14),
+    0px 1px 14px 0px rgba(0, 0, 0, 0.12) !important;
   margin: 14px 0;
   border-radius: var(--border-radius) !important;
 
@@ -114,8 +115,7 @@
   color: var(--mat-sys-on-surface-variant);
   transform: rotate(90deg);
   transition: transform 200ms ease;
-  display: inline-flex;
-  left: 216px;
+  right: 16px;
   position: absolute;
 }
 

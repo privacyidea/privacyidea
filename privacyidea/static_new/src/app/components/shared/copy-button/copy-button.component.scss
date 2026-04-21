@@ -1,2 +1,9 @@
 @use "styles";
 @use "table";
+
+.copy-icon {
+  font-size: var(--copy-icon-size, 16px);
+  display: flex !important;
+  justify-content: center;
+  color: var(--copy-icon-color, var(--mat-sys-surface-container-high));
+}

@@ -1,13 +1,6 @@
 @use "buttons";
 @use "@angular/material" as mat;
 
-.dialog-content {
-  ::ng-deep .mat-mdc-dialog-content {
-    min-height: 75vh !important;
-    padding-bottom: 0 !important;
-  }
-}
-
 .tab-buttons {
   align-items: center;
   display: flex;

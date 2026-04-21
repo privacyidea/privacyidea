@@ -79,16 +79,3 @@
   height: calc(var(--main-height) - var(--global-padding) * 2);
   padding: calc(2 * var(--global-padding));
 }
-
-::ng-deep {
-  .mat-drawer-backdrop {
-    opacity: 0.5;
-  }
-
-  .mdc-list-item.mdc-list-item--with-one-line {
-    height: auto !important;
-    padding-left: 0;
-    padding-right: 0;
-    padding-bottom: 8px;
-  }
-}

@@ -83,23 +83,21 @@ $table-cell-font-size: 0.875rem;
     border-top: 1px solid $border-color;
   }
 
-  ::ng-deep {
-    .mat-mdc-list-item {
-      padding: 0;
-    }
+  .mat-mdc-list-item {
+    padding: 0;
+  }
 
-    .mat-mdc-text-field-wrapper {
-      padding-left: 5px;
-    }
+  .mat-mdc-text-field-wrapper {
+    padding-left: 5px;
+  }
 
-    .mat-mdc-form-field {
-      font-size: 14px;
-    }
+  .mat-mdc-form-field {
+    font-size: 14px;
+  }
 
-    .mat-mdc-form-field-infix {
-      padding-top: 24px;
-      padding-bottom: 4px;
-    }
+  .mat-mdc-form-field-infix {
+    padding-top: 24px;
+    padding-bottom: 4px;
   }
 }
 

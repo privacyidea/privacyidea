@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, inject } from "@angular/core";
+import { Component, inject, ViewEncapsulation } from "@angular/core";
 import { MatCardContent, MatCardModule } from "@angular/material/card";
 import { UserService, UserServiceInterface } from "../../services/user/user.service";
 
@@ -24,7 +24,8 @@ import { UserService, UserServiceInterface } from "../../services/user/user.serv
   selector: "app-user-self-service",
   imports: [MatCardModule, MatCardContent],
   templateUrl: "./user.self-service.component.html",
-  styleUrl: "./user.component.scss"
+  styleUrl: "./user.component.scss",
+  encapsulation: ViewEncapsulation.ShadowDom
 })
 export class UserSelfServiceComponent {
   private readonly userService: UserServiceInterface = inject(UserService);

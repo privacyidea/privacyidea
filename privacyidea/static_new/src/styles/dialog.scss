@@ -1,6 +1,6 @@
 @use "@angular/material" as mat;
 
-::ng-deep .mat-mdc-dialog-surface {
+.mat-mdc-dialog-surface {
   border-radius: var(--border-radius);
   box-shadow: var(--box-dialog-shadow);
   background-color: var(--mat-sys-surface-container-lowest);
@@ -34,4 +34,7 @@
 .width-600 {
   width: 600px;
   min-width: 600px;
+}
+.mat-mdc-dialog-content {
+  max-height: 82vh;
 }

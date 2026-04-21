@@ -73,9 +73,3 @@
 .value {
   font-size: 14px;
 }
-
-::ng-deep {
-  .mat-expansion-panel-body {
-    padding: 0 16px 16px !important;
-  }
-}
