@@ -17,33 +17,23 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
 
-<div class="utils-group">
-  <div class="account-div">
-    <span><mat-icon>account_box</mat-icon></span>
-
-    <div class="text-div">
-      <span class="profile-text">{{ profileText() }}</span>
-      @if (localNode()) {
-        <i>{{ localNode() }}</i>
-      }
-    </div>
+@if (collapsed()) {
+  <div class="utils-group-collapsed">
+    <span [matTooltip]="profileTooltip()">
+      <mat-icon>account_box</mat-icon>
+    </span>
     <button
       (click)="logout()"
       aria-label="Logout"
-      class="logout-btn"
       i18n-aria-label
       mat-icon-button
       matTooltip="Logout">
       <mat-icon>logout</mat-icon>
     </button>
-  </div>
-
-  <div class="utils">
     <app-theme-switcher></app-theme-switcher>
     <button
       (click)="refreshPage()"
-      class="refresh-btn"
-      mat-fab
+      mat-icon-button
       matTooltip="Refresh Resources">
       <mat-icon>refresh</mat-icon>
     </button>
@@ -55,4 +45,44 @@
       {{ sessionTimerService.remainingTime() | date: sessionTimeFormat() : "UTC" }}
     </div>
   </div>
-</div>
+} @else {
+  <div class="utils-group">
+    <div class="account-div">
+      <span><mat-icon>account_box</mat-icon></span>
+
+      <div class="text-div">
+        <span class="profile-text">{{ profileText() }}</span>
+        @if (localNode()) {
+          <i>{{ localNode() }}</i>
+        }
+      </div>
+      <button
+        (click)="logout()"
+        aria-label="Logout"
+        class="logout-btn"
+        i18n-aria-label
+        mat-icon-button
+        matTooltip="Logout">
+        <mat-icon>logout</mat-icon>
+      </button>
+    </div>
+
+    <div class="utils">
+      <app-theme-switcher></app-theme-switcher>
+      <button
+        (click)="refreshPage()"
+        class="refresh-btn"
+        mat-fab
+        matTooltip="Refresh Resources">
+        <mat-icon>refresh</mat-icon>
+      </button>
+      <div
+        [ngClass]="[sessionTimerService.remainingTime()! < 31000 ? 'red-light' : sessionTimerService.remainingTime()! <
+         60000 ? 'yellow-light' : 'surface-highest']"
+        class="session-timer"
+        matTooltip="Time until session expires">
+        {{ sessionTimerService.remainingTime() | date: sessionTimeFormat() : "UTC" }}
+      </div>
+    </div>
+  </div>
+}

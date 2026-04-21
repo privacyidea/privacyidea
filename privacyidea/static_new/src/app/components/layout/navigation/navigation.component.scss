@@ -43,6 +43,7 @@
   color: var(--mat-sys-on-surface);
   height: 20px;
   width: 50px;
+  margin-right: 16px;
 }
 
 .clickable-logo {
@@ -68,8 +69,6 @@
   align-items: center;
   gap: 8px;
   padding: 16px;
-  width: 272px;
-  min-width: 272px;
   position: relative;
   transition: width 200ms ease, min-width 200ms ease, padding 200ms ease;
   overflow: hidden;
@@ -142,8 +141,6 @@
 }
 
 .sub-drawer {
-  width: 260px;
-  min-width: 260px;
   padding: 12px;
   overflow-y: auto;
   border-radius: var(--border-radius);

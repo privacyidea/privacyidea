@@ -107,7 +107,7 @@
         </p>
       </div>
 
-      <app-user-utils-panel></app-user-utils-panel>
+      <app-user-utils-panel [collapsed]="isSubDrawerOpen()"></app-user-utils-panel>
 
       <div class="nav-buttons">
         @if (isSubDrawerOpen()) {

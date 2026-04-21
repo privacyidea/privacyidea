@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, inject } from "@angular/core";
+import { Component, computed, inject, input } from "@angular/core";
 import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
 import { MatIcon } from "@angular/material/icon";
 import { MatTooltip } from "@angular/material/tooltip";
@@ -118,6 +118,8 @@ export class UserUtilsPanelComponent {
   protected readonly router: Router = inject(Router);
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
 
+  collapsed = input(false);
+
   profileText = computed(() => {
     let profileText = this.authService.username();
     if (this.authService.realm()) {
@@ -127,6 +129,14 @@ export class UserUtilsPanelComponent {
       profileText += " (" + this.authService.role() + ")";
     }
     return profileText;
+  });
+
+  profileTooltip = computed(() => {
+    let tooltip = this.authService.username() || '';
+    if (this.authService.realm()) {
+      tooltip += ' @ ' + this.authService.realm();
+    }
+    return tooltip;
   });
 
   sessionTimeFormat = computed(() => {
