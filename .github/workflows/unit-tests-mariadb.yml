@@ -84,6 +84,18 @@ jobs:
         pip install -r tests/requirements.txt
         pip install PyMySQL
 
+    - name: Pre-create per-worker databases
+      # pytest-xdist workers append a _gw<N> suffix to TEST_DATABASE_URL (see
+      # tests/conftest.py). db.create_all() creates tables inside an existing
+      # database — the databases themselves must be pre-created. Eight covers
+      # typical GH runners (2-4 cores) with room to spare.
+      run: |
+        for i in $(seq 0 7); do
+          mysql -h 127.0.0.1 -u root -proot -e \
+            "CREATE DATABASE privacyidea_test_gw$i; \
+             GRANT ALL ON privacyidea_test_gw$i.* TO 'privacyidea'@'%';"
+        done
+
     - name: Test with pytest
       id: pytest_run
       env:
@@ -94,10 +106,12 @@ jobs:
         pip freeze
         # Collect coverage only on the lowest Python version to avoid redundant
         # reports and reduce overhead on all other matrix jobs.
+        # --dist=loadfile keeps all tests in one file on one worker, preserving
+        # the intra-file ordering the unittest-style suite currently relies on.
         if [ "$PYTHON_VERSION" = "3.10" ]; then
-          python -b -m pytest -v --cov=privacyidea --cov-report=xml -m "not migration" tests/
+          python -b -m pytest -v -n auto --dist=loadfile --cov=privacyidea --cov-report=xml -m "not migration" tests/
         else
-          python -b -m pytest -v -m "not migration" tests/
+          python -b -m pytest -v -n auto --dist=loadfile -m "not migration" tests/
         fi
 
     - name: Codecov upload

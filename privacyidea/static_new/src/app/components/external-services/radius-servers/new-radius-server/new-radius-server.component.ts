@@ -19,7 +19,7 @@
 import { Component, effect, inject, OnDestroy, OnInit, signal } from "@angular/core";
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from "@angular/material/dialog";
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
-import { RadiusServer, RadiusService, RadiusServiceInterface } from "../../../../services/radius/radius.service";
+import { RadiusServer, RadiusServerService, RadiusServerServiceInterface } from "../../../../services/radius-server/radius-server.service";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { MatCheckboxModule } from "@angular/material/checkbox";
@@ -62,7 +62,7 @@ export class NewRadiusServerComponent implements OnInit, OnDestroy {
   private readonly formBuilder = inject(FormBuilder);
   private readonly dialogRef = inject(MatDialogRef<NewRadiusServerComponent>);
   protected readonly data = inject<RadiusServer | null>(MAT_DIALOG_DATA);
-  protected readonly radiusService: RadiusServiceInterface = inject(RadiusService);
+  protected readonly radiusService: RadiusServerServiceInterface = inject(RadiusServerService);
   private readonly dialogService: DialogServiceInterface = inject(DialogService);
   private readonly router = inject(Router);
   private readonly contentService: ContentServiceInterface = inject(ContentService);

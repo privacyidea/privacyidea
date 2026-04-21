@@ -24,7 +24,7 @@ import { MatSort, MatSortModule } from "@angular/material/sort";
 import { MatIconModule } from "@angular/material/icon";
 import { MatButtonModule } from "@angular/material/button";
 import { MatDialog, MatDialogModule } from "@angular/material/dialog";
-import { RadiusServer, RadiusService, RadiusServiceInterface } from "../../../services/radius/radius.service";
+import { RadiusServer, RadiusServerService, RadiusServerServiceInterface } from "../../../services/radius-server/radius-server.service";
 import { NewRadiusServerComponent } from "./new-radius-server/new-radius-server.component";
 import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
 import { MatTooltipModule } from "@angular/material/tooltip";
@@ -59,7 +59,7 @@ import { SimpleConfirmationDialogComponent } from "../../shared/dialog/confirmat
   styleUrl: "./radius-servers.component.scss"
 })
 export class RadiusServersComponent {
-  protected readonly radiusService: RadiusServiceInterface = inject(RadiusService);
+  protected readonly radiusService: RadiusServerServiceInterface = inject(RadiusServerService);
   protected readonly dialog: MatDialog = inject(MatDialog);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);

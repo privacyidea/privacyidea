@@ -236,14 +236,14 @@ def auth_user_has_no_token(wrapped_function, user_object, passw,
     options = options or {}
     g = options.get("g")
     if g:
-        pass_no_token = Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.PASSNOTOKEN,
+        pass_no_token = Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.PASSONNOTOKEN,
                                    user_object=user_object).policies(write_to_audit_log=False)
         if pass_no_token:
             # Now we need to check, if the user really has no token.
             # If PASSNOTOKEN_IGNORE_ROLLOUT_STATE is set, tokens with a rollout state
             # listed in the policy are ignored when counting the user's tokens.
             ignore_rollout_state = (Match.user(g, scope=SCOPE.AUTH,
-                                               action=PolicyAction.PASSNOTOKEN_IGNORE_ROLLOUT_STATE,
+                                               action=PolicyAction.PASSONNOTOKEN_IGNORE_ROLLOUT_STATE,
                                                user_object=user_object)
                                     .action_values(unique=False, write_to_audit_log=True))
             token_count = _get_token_count_excluding_rollout_states(user_object, ignore_rollout_state)
@@ -272,7 +272,7 @@ def auth_user_does_not_exist(wrapped_function, user_object, passw, options=None)
     options = options or {}
     g = options.get("g")
     if g:
-        pass_no_user = Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.PASSNOUSER,
+        pass_no_user = Match.user(g, scope=SCOPE.AUTH, action=PolicyAction.PASSONNOUSER,
                                   user_object=user_object).policies(write_to_audit_log=False)
         if not user_object.exist():
             if pass_no_user:

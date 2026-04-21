@@ -99,7 +99,7 @@ export const routes: Routes = [
       { path: "periodic-tasks", component: PeriodicTaskComponent },
       { path: "subscription", component: SubscriptionComponent },
       { path: "system", component: SystemConfigComponent },
-      { path: "tokens", component: TokenTypeConfigComponent }
+      { path: "tokens", component: TokenTypeConfigComponent, canDeactivate: [pendingChangesGuard] }
     ]
   },
   {

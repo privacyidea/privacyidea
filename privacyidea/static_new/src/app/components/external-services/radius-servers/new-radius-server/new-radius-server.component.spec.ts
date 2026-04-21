@@ -23,7 +23,7 @@ import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from "@angular/material/dialog";
 import { of } from "rxjs";
-import { RadiusService } from "../../../../services/radius/radius.service";
+import { RadiusServerService } from "../../../../services/radius-server/radius-server.service";
 import { MockRadiusService } from "../../../../../testing/mock-services/mock-radius-service";
 import { SaveAndExitDialogComponent } from "../../../shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { PendingChangesService } from "../../../../services/pending-changes/pending-changes.service";
@@ -62,7 +62,7 @@ describe("NewRadiusServerComponent", () => {
         provideHttpClientTesting(),
         { provide: MAT_DIALOG_DATA, useValue: null },
         { provide: MatDialogRef, useValue: dialogRefMock },
-        { provide: RadiusService, useClass: MockRadiusService },
+        { provide: RadiusServerService, useClass: MockRadiusService },
         { provide: PendingChangesService, useClass: MockPendingChangesService },
         { provide: DialogService, useClass: MockDialogService },
         { provide: AuthService, useClass: MockAuthService }
@@ -75,7 +75,7 @@ describe("NewRadiusServerComponent", () => {
       }
     }).compileComponents();
 
-    radiusServiceMock = TestBed.inject(RadiusService);
+    radiusServiceMock = TestBed.inject(RadiusServerService);
     pendingChangesService = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
     dialogService = TestBed.inject(DialogService) as unknown as MockDialogService;
     authService = TestBed.inject(AuthService) as unknown as MockAuthService;

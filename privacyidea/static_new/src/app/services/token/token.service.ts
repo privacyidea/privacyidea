@@ -206,6 +206,7 @@ export interface TokenImportResult {
 }
 
 export interface TokenServiceInterface {
+  maxDescriptionLength: number;
   apiFilterKeyMap: Record<string, string>;
   stopPolling$: Subject<void>;
   tokenBaseUrl: string;
@@ -323,13 +324,12 @@ export class TokenService implements TokenServiceInterface {
   private readonly realmService: RealmServiceInterface = inject(RealmService);
 
   readonly hiddenApiFilter = hiddenApiFilter;
+  readonly maxDescriptionLength = 80;
   readonly apiFilterKeyMap = apiFilterKeyMap;
   stopPolling$ = new Subject<void>();
   tokenBaseUrl = environment.proxyUrl + "/token/";
   eventPageSize = 10;
-  userRealm = signal("");
   tokenSerial = this.contentService.tokenSerial;
-  detailsUsername = this.contentService.detailsUsername;
   filterParams = computed<Record<string, string>>(() => {
     const allowed = [...this.apiFilter, ...this.advancedApiFilter, ...this.hiddenApiFilter, "infokey", "infovalue"];
 
@@ -344,20 +344,7 @@ export class TokenService implements TokenServiceInterface {
       .filter(([key, v]) => (key === "container_serial" ? true : StringUtils.validFilterValue(v)))
       .map(([key, v]) => [key, plainKeys.has(key) ? v : `*${v}*`] as const);
     return Object.fromEntries(entries) as Record<string, string>;
-  });
-
-  tokenSerialResource = httpResource<PiResponse<Tokens>>(() => {
-    const filter = this.selectedToken();
-    if (!filter || filter.length < 1) {
-      return undefined;
-    }
-    return {
-      url: this.tokenBaseUrl,
-      method: "GET",
-      headers: this.authService.getHeaders(),
-      params: { serial: `*${filter}*` }
-    };
-  });
+  });  userRealm = signal("");
 
   constructor() {
     effect(() => {
@@ -375,6 +362,21 @@ export class TokenService implements TokenServiceInterface {
       }
     });
   }
+
+  detailsUsername = this.contentService.detailsUsername;
+
+  tokenSerialResource = httpResource<PiResponse<Tokens>>(() => {
+    const filter = this.selectedToken();
+    if (!filter || filter.length < 1) {
+      return undefined;
+    }
+    return {
+      url: this.tokenBaseUrl,
+      method: "GET",
+      headers: this.authService.getHeaders(),
+      params: { serial: `*${filter}*` }
+    };
+  });
 
   selectedTokenType = linkedSignal({
     source: () => ({

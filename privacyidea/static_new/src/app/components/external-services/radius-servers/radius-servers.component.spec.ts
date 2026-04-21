@@ -27,7 +27,7 @@ import { Subject } from "rxjs";
 import { MockMatDialogRef } from "../../../../testing/mock-mat-dialog-ref";
 import { MockDialogService } from "../../../../testing/mock-services";
 import { DialogService } from "../../../services/dialog/dialog.service";
-import { RadiusService } from "../../../services/radius/radius.service";
+import { RadiusServerService } from "../../../services/radius-server/radius-server.service";
 import { RadiusServersComponent } from "./radius-servers.component";
 
 describe("RadiusServersComponent", () => {
@@ -51,7 +51,7 @@ describe("RadiusServersComponent", () => {
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
-        { provide: RadiusService, useValue: radiusServiceMock },
+        { provide: RadiusServerService, useValue: radiusServiceMock },
         { provide: DialogService, useClass: MockDialogService }
       ]
     })

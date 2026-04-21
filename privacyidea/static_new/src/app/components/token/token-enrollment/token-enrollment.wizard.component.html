@@ -209,6 +209,8 @@
           matInput
           placeholder="Enter description"
           rows="3"></textarea>
+        <mat-hint align="end">{{ descriptionControl.value.length }} / {{ tokenService.maxDescriptionLength }}
+        </mat-hint>
         @if (descriptionControl.hasError("required")) {
           <mat-error i18n>
             Description is <strong>required</strong>.

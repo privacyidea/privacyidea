@@ -90,6 +90,7 @@ from sqlalchemy import select, delete
 from privacyidea.lib import _
 from privacyidea.lib.crypto import (decryptPassword,
                                     generate_otpkey, encryptPassword)
+from privacyidea.lib.params import get_optional, get_required
 from privacyidea.lib.utils import (is_true, decode_base32check,
                                    to_unicode, create_img, parse_timedelta,
                                    parse_legacy_time, split_pin_pass)
@@ -102,7 +103,6 @@ from .log import log_with
 from .policies.actions import PolicyAction
 from .policydecorators import libpolicy, auth_otppin, challenge_response_allowed
 from .user import (User)
-from privacyidea.lib.params import get_optional, get_required
 from ..models import (TokenOwner, TokenTokengroup, Challenge, cleanup_challenges, TokenInfo, db, TokenRealm, Realm,
                       Tokengroup, TokenCredentialIdHash)
 
@@ -154,6 +154,10 @@ class RolloutState:
     BROKEN = 'broken'
     FAILED = 'failed'
     DENIED = 'denied'
+
+    @classmethod
+    def all_states(cls):
+        return [v for k, v in vars(cls).items() if not k.startswith('_') and isinstance(v, str)]
 
 
 class TokenClass:
@@ -373,7 +377,7 @@ class TokenClass:
         user_info = user.get_specific_info(["givenname", "surname"])
         user_identifier = f"{user.login!s}_{user.realm!s}"
         user_displayname = "{!s} {!s}".format(user_info.get("givenname", "."),
-                                                user_info.get("surname", "."))
+                                              user_info.get("surname", "."))
         return user_identifier, user_displayname
 
     @check_token_locked

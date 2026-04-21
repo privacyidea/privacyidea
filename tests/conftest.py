@@ -17,8 +17,23 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-import pytest
+import os
 import shutil
+
+# Per-worker DB isolation for pytest-xdist. Must run before any `privacyidea`
+# import, because TestingConfig.SQLALCHEMY_DATABASE_URI is evaluated at class
+# definition (i.e. import) time.
+_worker = os.environ.get("PYTEST_XDIST_WORKER")
+if _worker:
+    _base = os.environ.get("TEST_DATABASE_URL", "")
+    if not _base:
+        os.environ["TEST_DATABASE_URL"] = f"sqlite:////tmp/pi-test-{_worker}.sqlite"
+    elif _base.startswith("sqlite"):
+        os.environ["TEST_DATABASE_URL"] = _base.replace(".sqlite", f"-{_worker}.sqlite")
+    else:  # mysql / postgres — suffix the DB name
+        os.environ["TEST_DATABASE_URL"] = f"{_base}_{_worker}"
+
+import pytest
 
 from privacyidea.lib.caconnector import save_caconnector
 

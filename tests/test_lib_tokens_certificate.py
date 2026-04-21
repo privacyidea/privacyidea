@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2024 NetKnights GmbH <https://netknights.it>
+# SPDX-License-Identifier: AGPL-3.0-or-later
 """
 This test file tests the lib.tokens.certificatetoken
 """
@@ -12,6 +14,7 @@ from testfixtures import LogCapture
 
 from privacyidea.lib.caconnector import save_caconnector
 from privacyidea.lib.caconnectors.baseca import AvailableCAConnectors
+from privacyidea.lib.caconnectors.localca import LocalCAConnector  # noqa: F401  registers "local" in AvailableCAConnectors
 from privacyidea.lib.caconnectors.msca import ATTR as MS_ATTR
 from privacyidea.lib.caconnectors.msca import MSCAConnector
 from privacyidea.lib.error import ParameterError, PrivacyIDEAError

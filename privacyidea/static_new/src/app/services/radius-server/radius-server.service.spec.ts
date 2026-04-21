@@ -65,7 +65,7 @@ describe("RadiusServerService", () => {
   });
 
   it("should post RADIUS server", async () => {
-    const server = { identifier: "test", ip: "1.2.3.4", secret: "secret" } as any;
+    const server = { identifier: "test", server: "1.2.3.4", secret: "secret" } as any;
     const promise = service.postRadiusServer(server);
 
     const req = httpMock.expectOne(`${environment.proxyUrl}/radiusserver/test`);
@@ -87,27 +87,40 @@ describe("RadiusServerService", () => {
     expect(notificationService.openSnackBar).toHaveBeenCalledWith("Successfully deleted RADIUS server: test.");
   });
 
-  describe("radiusServerConfigurations", () => {
+  it("should test RADIUS server", async () => {
+    const params = { server: "1.2.3.4", secret: "secret" };
+    const promise = service.testRadiusServer(params);
+
+    const req = httpMock.expectOne(`${environment.proxyUrl}/radiusserver/test_request`);
+    expect(req.request.method).toBe("POST");
+    req.flush({ result: { value: true } });
+
+    const result = await promise;
+    expect(result).toBe(true);
+    expect(notificationService.openSnackBar).toHaveBeenCalledWith("RADIUS request successful.");
+  });
+
+  describe("radiusServers", () => {
     it("should default to empty array if resource is empty", () => {
-      expect(service.radiusServerConfigurations()).toEqual([]);
+      expect(service.radiusServers()).toEqual([]);
     });
 
-    it("should update radiusServerConfigurations from resource", async () => {
+    it("should update radiusServers from resource", async () => {
       contentServiceMock.onExternalRadius = signal(true);
       TestBed.tick();
 
       const radiusServers = {
-        server1: { ip: "1.2.3.4", secret: "abc" },
-        server2: { ip: "5.6.7.8", secret: "def" }
+        server1: { server: "1.2.3.4", secret: "abc" },
+        server2: { server: "5.6.7.8", secret: "def" }
       };
       const req = httpMock.expectOne(`${environment.proxyUrl}/radiusserver/`);
       expect(req.request.method).toBe("GET");
       req.flush(MockPiResponse.fromValue(radiusServers));
       await Promise.resolve();
 
-      expect(service.radiusServerConfigurations()).toEqual([
-        { name: "server1", ip: "1.2.3.4", secret: "abc" },
-        { name: "server2", ip: "5.6.7.8", secret: "def" }
+      expect(service.radiusServers()).toEqual([
+        { identifier: "server1", server: "1.2.3.4", secret: "abc" },
+        { identifier: "server2", server: "5.6.7.8", secret: "def" }
       ]);
     });
 
@@ -121,7 +134,7 @@ describe("RadiusServerService", () => {
       });
       await Promise.resolve();
 
-      expect(service.radiusServerConfigurations()).toEqual([]);
+      expect(service.radiusServers()).toEqual([]);
     });
   });
 });

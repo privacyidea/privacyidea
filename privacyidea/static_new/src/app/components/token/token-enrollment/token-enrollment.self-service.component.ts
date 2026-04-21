@@ -23,7 +23,7 @@ import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autoc
 import { MatButton, MatIconButton } from "@angular/material/button";
 import { DateAdapter, MAT_DATE_FORMATS, MatNativeDateModule, provideNativeDateAdapter } from "@angular/material/core";
 import { MatDatepickerModule } from "@angular/material/datepicker";
-import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
+import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
 import { MatOption, MatSelect } from "@angular/material/select";
@@ -120,7 +120,8 @@ import { EnrollmentResponse } from "../../../mappers/token-api-payload/_token-ap
     MatError,
     MatTooltip,
     ClearableInputComponent,
-    ScrollToTopDirective
+    ScrollToTopDirective,
+    MatHint
   ],
   templateUrl: "./token-enrollment.self-service.component.html",
   styleUrl: "./token-enrollment.component.scss",
