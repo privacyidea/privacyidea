@@ -253,6 +253,49 @@ class YubikeyTokenTestCase(MyTestCase):
         self.assertTrue("status=OK" in result, result)
         self.assertTrue("nonce={0!s}".format(nonce) in result, result)
 
+    def test_12_yubico_spec_otp_test_vectors(self):
+        """
+        Yubico OTP test vectors from
+        https://developers.yubico.com/OTP/Specifications/Test_vectors.html
+
+        Each vector pairs an AES key with an OTP whose decrypted payload has
+        a known private uid, usage counter, session counter and CRC. The
+        expected counter returned by check_otp is
+        (usage_counter << 8) | session_counter — the usage counter is stored
+        little-endian on the wire and reassembled big-endian by
+        YubikeyTokenClass.check_otp when assembling the counter value.
+        """
+        # (aes_key, expected_uid, expected_counter, otp)
+        vectors = [
+            ("000102030405060708090a0b0c0d0e0f", "010203040506", (0x0001 << 8) | 0x01,
+             "dvgtiblfkbgturecfllberrvkinnctnn"),
+            ("000102030405060708090a0b0c0d0e0f", "010203040506", (0x0001 << 8) | 0x02,
+             "rnibcnfhdninbrdebccrndfhjgnhftee"),
+            ("000102030405060708090a0b0c0d0e0f", "010203040506", (0x0fff << 8) | 0x01,
+             "iikkijbdknrrdhfdrjltvgrbkkjblcbh"),
+            ("88888888888888888888888888888888", "888888888888", (0x8888 << 8) | 0x88,
+             "dcihgvrhjeucvrinhdfddbjhfjftjdei"),
+            ("00000000000000000000000000000000", "000000000000", 0,
+             "kkkncjnvcnenkjvjgncjihljiibgbhbh"),
+            ("c4422890653076cde73d449b191b416a", "33c69e7f249e", (0x0001 << 8) | 0x00,
+             "iucvrkjiegbhidrcicvlgrcgkgurhjnj"),
+        ]
+        for i, (key, uid, expected_counter, otp) in enumerate(vectors):
+            serial = f"YKSPEC_{i}"
+            token = init_token({"type": "yubikey",
+                                "serial": serial,
+                                "otpkey": key,
+                                "otplen": len(otp)})
+            try:
+                self.assertEqual(expected_counter, token.check_otp(otp),
+                                 f"vector {i} ({otp}) decoded to wrong counter")
+                # First check_otp auto-populates yubikey.tokenid from the
+                # decrypted private uid — verify it matches the spec.
+                self.assertEqual(uid, token.get_tokeninfo("yubikey.tokenid"),
+                                 f"vector {i}: uid mismatch")
+            finally:
+                remove_token(serial)
+
     def test_20_broken_otp_value(self):
         token = init_token({"type": "yubikey",
                             "otpkey": self.otpkey,

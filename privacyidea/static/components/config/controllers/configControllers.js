@@ -609,6 +609,8 @@ myApp.controller("tokenConfigController", ["$scope", "$location", "$rootScope",
                 $scope.form['radius.dictfile'] = "/etc/privacyidea/dictionary";
                 // SMS
                 $scope.form['sms.Provider'] = $scope.form['sms.Provider'] || $scope.defaultSMSProvider;
+                // Yubico
+                $scope.form['yubico.url'] = $scope.form['yubico.url'] || "https://api.yubico.com/wsapi/2.0/verify";
                 // Email
                 $scope.form['email.password.type'] = "password";
                 // We need to convert the values to bools - otherwise we have
