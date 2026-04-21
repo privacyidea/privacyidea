@@ -136,6 +136,9 @@ export class UserUtilsPanelComponent {
     if (this.authService.realm()) {
       tooltip += ' @ ' + this.authService.realm();
     }
+    if (this.authService.role()) {
+      tooltip += " (" + this.authService.role() + ")";
+    }
     return tooltip;
   });
 
