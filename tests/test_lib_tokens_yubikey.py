@@ -286,13 +286,15 @@ class YubikeyTokenTestCase(MyTestCase):
                                 "serial": serial,
                                 "otpkey": key,
                                 "otplen": len(otp)})
-            self.assertEqual(expected_counter, token.check_otp(otp),
-                             f"vector {i} ({otp}) decoded to wrong counter")
-            # First check_otp auto-populates yubikey.tokenid from the
-            # decrypted private uid — verify it matches the spec.
-            self.assertEqual(uid, token.get_tokeninfo("yubikey.tokenid"),
-                             f"vector {i}: uid mismatch")
-            remove_token(serial)
+            try:
+                self.assertEqual(expected_counter, token.check_otp(otp),
+                                 f"vector {i} ({otp}) decoded to wrong counter")
+                # First check_otp auto-populates yubikey.tokenid from the
+                # decrypted private uid — verify it matches the spec.
+                self.assertEqual(uid, token.get_tokeninfo("yubikey.tokenid"),
+                                 f"vector {i}: uid mismatch")
+            finally:
+                remove_token(serial)
 
     def test_20_broken_otp_value(self):
         token = init_token({"type": "yubikey",
