@@ -45,7 +45,13 @@ import { TokenTypeKey } from "src/app/services/token/token.service";
 import { ROUTE_PATHS } from "../../../../../route_paths";
 import { ContentService, ContentServiceInterface } from "../../../../../services/content/content.service";
 import { NAVIGATION_ACCESSIBLE_DIALOG_CLASS } from "../../../../../constants/global.constants";
+import { ContainerTemplateEditComponent } from "../../container-template-edit/container-template-edit.component";
 
+/**
+ * Dialog component for editing container templates. Used for both creating new templates and editing existing ones.
+ * When the dialog closes with the "Save" action, the edited template is saved via the ContainerTemplateService and returned as the dialog result.
+ * When the edit was cancelled, the dialog simply closes without saving, and no data is returned.
+ */
 @Component({
   selector: "app-container-template-edit-dialog",
   standalone: true,
@@ -63,9 +69,7 @@ import { NAVIGATION_ACCESSIBLE_DIALOG_CLASS } from "../../../../../constants/glo
     MatListModule,
     DialogWrapperComponent,
     MatCheckboxModule,
-    SelectorButtonsComponent,
-    ContainerTemplateAddTokenComponent,
-    TemplateAddedTokenRowComponent
+    ContainerTemplateEditComponent
   ],
   templateUrl: "./container-template-edit-dialog.component.html",
   styleUrl: "./container-template-edit-dialog.component.scss"
@@ -95,7 +99,14 @@ export class ContainerTemplateEditDialogComponent extends PendingChangesDialogCo
 
     // Close dialog if user navigates away from the container templates route (after pending changes guard allows it)
     effect(() => {
-      if (this.contentService.routeUrl() !== ROUTE_PATHS.TOKENS_CONTAINERS_TEMPLATES) {
+      if (
+        this.contentService.routeUrl() !== ROUTE_PATHS.TOKENS_CONTAINERS_TEMPLATES &&
+        this.contentService.routeUrl() !== ROUTE_PATHS.TOKENS_CONTAINERS_CREATE
+      ) {
+        console.log(
+          "Effect: Closing the ContainerTemplateEditDialogComponent due to incorrect route: ",
+          this.contentService.routeUrl()
+        );
         this.dialogRef?.close();
       }
     });
@@ -120,17 +131,6 @@ export class ContainerTemplateEditDialogComponent extends PendingChangesDialogCo
 
   // --- Computed - General State ---
   readonly isNewTemplate = computed(() => !this.data);
-  readonly containerTypes = computed(() => this.containerTemplateService.availableContainerTypes());
-  readonly containerTypesTitleCase = computed(() =>
-    this.containerTemplateService.availableContainerTypes().map((type) => type.charAt(0).toUpperCase() + type.slice(1))
-  );
-  readonly availableTokenTypes = computed(() =>
-    this.containerTemplateService.getTokenTypesForContainerType(this.template().container_type)
-  );
-
-  // --- Computed - Tokens ---
-  readonly tokens = computed(() => this.template().template_options.tokens);
-  readonly hasToken = computed(() => this.tokens().length > 0);
 
   // --- Computed - Validation & Conflict ---
   readonly nameConflict = computed(() =>
@@ -167,44 +167,7 @@ export class ContainerTemplateEditDialogComponent extends PendingChangesDialogCo
     }
   }
 
-  // --- Data Modification Methods ---
-  editTemplate(templateUpdates: Partial<ContainerTemplate>) {
-    this.template.set({ ...this.template(), ...templateUpdates });
-  }
-
-  onAddToken(tokenType: string) {
-    const updatedTokens = [...this.tokens(), { type: tokenType as TokenTypeKey }];
-    this.updateTokens(updatedTokens);
-  }
-
-  onEditToken(patch: Partial<TokenEnrollmentPayload>, index: number) {
-    const updatedTokens = this.tokens().map((token, i) => {
-      if (i !== index) return token;
-      const updatedToken = { ...token, ...patch };
-      Object.keys(updatedToken).forEach((key) => {
-        if (updatedToken[key] === undefined) {
-          delete updatedToken[key]; // Remove undefined fields to avoid sending them in the API payload
-        }
-      });
-      return updatedToken;
-    });
-    this.updateTokens(updatedTokens);
-  }
-
-  onDeleteToken(index: number) {
-    this.updateTokens(this.tokens().filter((_, i) => i !== index));
-  }
-
   // --- Private Helper Methods ---
-  private updateTokens(tokens: TokenEnrollmentPayload[]) {
-    this.editTemplate({
-      template_options: {
-        ...this.template().template_options,
-        tokens
-      }
-    });
-  }
-
   private async _saveTemplate(): Promise<boolean> {
     if (this.canSaveTemplate()) {
       return this.containerTemplateService.postTemplateEdits(this.template());

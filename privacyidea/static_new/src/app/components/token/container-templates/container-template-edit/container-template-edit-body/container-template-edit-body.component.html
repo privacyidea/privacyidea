@@ -1,0 +1,15 @@
+@if (template().container_type) {
+  <app-container-template-add-token
+    [tokenTypes]="availableTokenTypes()"
+    (onAddToken)="onAddToken($event)" />
+}
+<div class="added-tokens-list">
+  @for (token of tokens(); track $index) {
+    <app-template-added-token-row
+      [tokenEnrollmentPayload]="token"
+      [index]="$index"
+      (onEditToken)="onEditToken($event, $index)"
+      (onRemoveToken)="onDeleteToken($index)">
+    </app-template-added-token-row>
+  }
+</div>

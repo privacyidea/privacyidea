@@ -16,68 +16,65 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { CommonModule, NgClass } from "@angular/common";
-import {
-  Component,
-  computed,
-  effect,
-  ElementRef,
-  inject,
-  linkedSignal,
-  Renderer2,
-  signal,
-  untracked,
-  ViewChild,
-  WritableSignal
-} from "@angular/core";
-import { FormsModule } from "@angular/forms";
-import { MatButton, MatIconButton } from "@angular/material/button";
-import { MatCheckbox } from "@angular/material/checkbox";
-import { MatOption } from "@angular/material/core";
-import { MatDialog } from "@angular/material/dialog";
+
+import { NgClass, CommonModule } from "node_modules/@angular/common/types/_common_module-chunk";
+import { signal, WritableSignal } from "node_modules/@angular/core/types/_chrome_dev_tools_performance-chunk";
+import { Component, Renderer2, ElementRef, effect } from "node_modules/@angular/core/types/_discovery-chunk";
+import { computed, linkedSignal, ViewChild, untracked } from "node_modules/@angular/core/types/core";
+import { inject } from "node_modules/@angular/core/types/primitives-di";
+import { FormsModule } from "node_modules/@angular/forms/types/forms";
+import { MatDialog } from "node_modules/@angular/material/types/_dialog-chunk";
+import { MatFormField, MatSuffix } from "node_modules/@angular/material/types/_form-field-chunk";
+import { MatLabel } from "node_modules/@angular/material/types/_form-field-module-chunk";
+import { MatIcon } from "node_modules/@angular/material/types/_icon-module-chunk";
+import { MatOption } from "node_modules/@angular/material/types/_option-chunk";
+import { MatButton, MatIconButton } from "node_modules/@angular/material/types/button";
+import { MatCheckbox } from "node_modules/@angular/material/types/checkbox";
 import {
   MatAccordion,
   MatExpansionPanel,
-  MatExpansionPanelHeader,
-  MatExpansionPanelTitle
-} from "@angular/material/expansion";
-import { MatFormField, MatLabel, MatSuffix } from "@angular/material/form-field";
-import { MatIcon } from "@angular/material/icon";
-import { MatInput } from "@angular/material/input";
-import { MatSelect } from "@angular/material/select";
-import { MatTooltip } from "@angular/material/tooltip";
-import { Router } from "@angular/router";
-import { PiResponse } from "../../../app.component";
-import { ROUTE_PATHS } from "../../../route_paths";
+  MatExpansionPanelTitle,
+  MatExpansionPanelHeader
+} from "node_modules/@angular/material/types/expansion";
+import { MatInput } from "node_modules/@angular/material/types/input";
+import { MatSelect } from "node_modules/@angular/material/types/select";
+import { MatTooltip } from "node_modules/@angular/material/types/tooltip";
+import { Router } from "node_modules/@angular/router/types/_router_module-chunk";
+import { PiResponse } from "src/app/app.component";
+import { TokenEnrollmentPayload } from "src/app/mappers/token-api-payload/_token-api-payload.mapper";
+import { ROUTE_PATHS } from "src/app/route_paths";
+import { AuthServiceInterface, AuthService } from "src/app/services/auth/auth.service";
+import { ContainerTemplateService } from "src/app/services/container-template/container-template.service";
 import {
-  ContainerCreateData,
-  ContainerRegisterData,
-  ContainerService,
   ContainerServiceInterface,
-  ContainerType
-} from "../../../services/container/container.service";
-import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
-import { NotificationService, NotificationServiceInterface } from "../../../services/notification/notification.service";
-import { RealmService, RealmServiceInterface } from "../../../services/realm/realm.service";
-import { TokenService, TokenServiceInterface } from "../../../services/token/token.service";
-import { UserService, UserServiceInterface } from "../../../services/user/user.service";
-import { VersioningService, VersioningServiceInterface } from "../../../services/version/version.service";
+  ContainerService,
+  ContainerTemplate,
+  ContainerType,
+  ContainerRegisterData,
+  ContainerCreateData
+} from "src/app/services/container/container.service";
+import { ContentServiceInterface, ContentService } from "src/app/services/content/content.service";
+import { DialogServiceInterface, DialogService } from "src/app/services/dialog/dialog.service";
+import { NotificationServiceInterface, NotificationService } from "src/app/services/notification/notification.service";
+import { RealmServiceInterface, RealmService } from "src/app/services/realm/realm.service";
+import { TokenServiceInterface, TokenService } from "src/app/services/token/token.service";
+import { UserServiceInterface, UserService } from "src/app/services/user/user.service";
+import { VersioningServiceInterface, VersioningService } from "src/app/services/version/version.service";
+import { ClearButtonComponent } from "../../shared/clear-button/clear-button.component";
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
-import {
-  ContainerCreatedDialogComponent,
-  ContainerCreationDialogData
-} from "./container-created-dialog/container-created-dialog.component";
-import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
 import { ContainerRegistrationConfigComponent } from "../container-registration/container-registration-config/container-registration-config.component";
+import { ContainerTemplateEditBodyComponent } from "../container-templates/container-template-edit/container-template-edit-body/container-template-edit-body.component";
+import { UserAssignmentComponent } from "../user-assignment/user-assignment.component";
+import {
+  ContainerCreationDialogData,
+  ContainerCreatedDialogComponent
+} from "./container-created-dialog/container-created-dialog.component";
+import { ContainerCreatedDialogWizardComponent } from "./container-created-dialog/container-created-dialog.wizard.component";
 import {
   ContainerRegistrationCompletedDialogComponent,
   ContainerRegistrationCompletedDialogData
 } from "./container-registration-completed-dialog/container-registration-completed-dialog.component";
 import { ContainerRegistrationCompletedDialogWizardComponent } from "./container-registration-completed-dialog/container-registration-completed-dialog.wizard.component";
-import { ContainerCreatedDialogWizardComponent } from "./container-created-dialog/container-created-dialog.wizard.component";
-import { UserAssignmentComponent } from "../user-assignment/user-assignment.component";
-import { ContainerTemplateService } from "../../../services/container-template/container-template.service";
-import { ClearButtonComponent } from "../../shared/clear-button/clear-button.component";
 
 @Component({
   selector: "app-container-create",
@@ -103,7 +100,8 @@ import { ClearButtonComponent } from "../../shared/clear-button/clear-button.com
     ContainerRegistrationConfigComponent,
     UserAssignmentComponent,
     MatSuffix,
-    ClearButtonComponent
+    ClearButtonComponent,
+    ContainerTemplateEditBodyComponent
   ],
   templateUrl: "./container-create.component.html",
   styleUrl: "./container-create.component.scss"
@@ -117,6 +115,7 @@ export class ContainerCreateComponent {
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
+  protected readonly dialogService: DialogServiceInterface = inject(DialogService);
   protected readonly renderer: Renderer2 = inject(Renderer2);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly wizard: boolean = false;
@@ -124,16 +123,28 @@ export class ContainerCreateComponent {
   private observer!: IntersectionObserver;
   containerSerial = this.containerService.containerSerial;
   description = signal("");
-  selectedTemplate = signal("");
+  readonly tokens = computed<TokenEnrollmentPayload[]>(() => this.selectedTemplate()?.template_options.tokens ?? []);
+  selectedTemplate = signal<ContainerTemplate | null>(null);
+  selectedTemplateName = computed<string>(() => this.selectedTemplate()?.name ?? "");
   templateOptions = this.containerTemplateService.templates;
   generateQRCode: WritableSignal<boolean> = linkedSignal({
     source: this.containerService.selectedContainerType,
     computation: (containerType?: ContainerType) =>
-      containerType?.containerType === "smartphone" && this.authService.actionAllowed("container_register") && this.authService.actionAllowed("container_create")
+      containerType?.containerType === "smartphone" &&
+      this.authService.actionAllowed("container_register") &&
+      this.authService.actionAllowed("container_create")
   });
   passphrasePrompt = signal("");
   passphraseResponse = signal("");
   userStorePassphrase = signal(false);
+  readonly availableTokenTypes = computed(() => {
+    const containerType = this.selectedTemplate()?.container_type;
+    if (!containerType) {
+      return [];
+    }
+    return this.containerTemplateService.getTokenTypesForContainerType(containerType);
+  });
+
   registerResponse = signal<PiResponse<ContainerRegisterData> | null>(null);
   pollResponse = signal<any>(null);
   userSelected = computed(() => this.userService.selectionUsernameFilter() !== "");
@@ -153,7 +164,7 @@ export class ContainerCreateComponent {
     this.passphraseResponse.set("");
     this.userStorePassphrase.set(false);
     this.description.set("");
-    this.selectedTemplate.set("");
+    this.selectedTemplate.set(null);
   };
 
   constructor(protected registrationDialog: MatDialog) {
@@ -188,7 +199,11 @@ export class ContainerCreateComponent {
           this.registrationDialog.closeAll();
           this.containerService.stopPolling();
 
-          if (container?.type === "smartphone" && this.authService.containerWizard().registration && this.authService.actionAllowed("container_register")) {
+          if (
+            container?.type === "smartphone" &&
+            this.authService.containerWizard().registration &&
+            this.authService.actionAllowed("container_register")
+          ) {
             let registrationCompletedDialogComponent: any = ContainerRegistrationCompletedDialogComponent;
             if (this.wizard) {
               registrationCompletedDialogComponent = ContainerRegistrationCompletedDialogWizardComponent;
@@ -267,8 +282,8 @@ export class ContainerCreateComponent {
     if (createData.user || this.userAssignmentComponent?.onlyAddToRealm()) {
       createData.realm = this.userService.selectedUserRealm();
     }
-    if (this.selectedTemplate()) {
-      createData.template_name = this.selectedTemplate();
+    if (this.selectedTemplateName()) {
+      createData.template_name = this.selectedTemplateName();
     }
     this.containerService.createContainer(createData).subscribe({
       next: (response) => {
@@ -309,7 +324,7 @@ export class ContainerCreateComponent {
   }
 
   clearTemplateSelection() {
-    this.selectedTemplate.set("");
+    this.selectedTemplate.set(null);
   }
 
   private openRegistrationDialog(response: PiResponse<ContainerRegisterData>) {

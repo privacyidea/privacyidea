@@ -67,11 +67,11 @@ export class ContainerCreateWizardComponent extends ContainerCreateComponent {
     source: () => ({
       registration: this.authService.containerWizard().registration,
       containerType: this.containerService.selectedContainerType()?.containerType,
-      canRegister: this.authService.actionAllowed("container_register"),
+      canRegister: this.authService.actionAllowed("container_register")
     }),
     computation: (source) => source.registration && source.containerType === "smartphone" && source.canRegister
   });
-  override selectedTemplate = linkedSignal({
+  override selectedTemplateName = linkedSignal({
     source: this.authService.containerWizard,
     computation: (containerWizard) => containerWizard.template || ""
   });
@@ -91,7 +91,8 @@ export class ContainerCreateWizardComponent extends ContainerCreateComponent {
     .get(environment.proxyUrl + this.customizationPath + "container-create.wizard.pre.top.html", {
       responseType: "text"
     })
-    .pipe(map((raw) => ({
+    .pipe(
+      map((raw) => ({
         hasContent: !!raw && raw.trim().length > 0,
         sanitized: this.sanitizer.sanitize(SecurityContext.HTML, raw)
       }))
@@ -111,4 +112,3 @@ export class ContainerCreateWizardComponent extends ContainerCreateComponent {
     super(registrationDialog);
   }
 }
-
