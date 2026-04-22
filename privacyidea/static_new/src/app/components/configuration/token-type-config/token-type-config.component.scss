@@ -7,69 +7,6 @@
     margin-bottom: 20px;
   }
 
-  // I cant find what difference this makes, but it seems to be necessary.
-  // ::ng-deep {
-  //   .panel-content {
-  //     display: flex;
-  //     flex-direction: column;
-  //     align-items: flex-start;
-
-  //     p {
-  //       max-width: 816px;
-  //     }
-
-  //     p,
-  //     h3,
-  //     h4,
-  //     .alert,
-  //     table,
-  //     .table,
-  //     .flex-row {
-  //       width: 100%;
-  //     }
-
-  //     p {
-  //       color: var(--mat-sys-on-surface-variant);
-  //       margin-top: 0;
-  //     }
-  //   }
-
-  //   .policy-highlight {
-  //     background: var(--mat-sys-surface-container-lowest);
-  //     border-radius: var(--border-radius);
-  //     color: var(--mat-sys-primary-light-hover);
-  //     padding: 4px;
-  //   }
-
-  //   .alert {
-  //     padding: 15px;
-  //     margin-bottom: 0;
-  //     border: 1px solid transparent;
-  //     border-radius: 4px;
-  //   }
-
-  //   .alert-warning {
-  //     color: #8a6d3b;
-  //     background-color: #fcf8e3;
-  //     border-color: #faebcc;
-  //   }
-
-  //   .table {
-  //     width: 100%;
-  //     margin-top: 0;
-  //     border: 1px solid var(--mat-sys-surface-container-highest);
-  //     border-radius: var(--border-radius);
-  //     padding: 8px;
-
-  //     th,
-  //     td {
-  //       padding: 4px;
-  //       text-align: left;
-  //       background: var(--table-color);
-  //     }
-  //   }
-  // }
-
   .actions-container {
     margin-top: 20px;
     display: flex;
