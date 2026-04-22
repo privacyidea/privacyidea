@@ -116,6 +116,8 @@ body {
 
   --drawer-width-admin: var(--overlay-margin);
   --drawer-width-self-service: 256px;
+
+  --mat-menu-container-color: var(--mat-sys-surface-container-low);
 }
 
 @mixin main-component-style {
@@ -690,7 +692,6 @@ body.self-service-layout {
 
 .mat-mdc-menu-content {
   max-height: 400px;
-  background: var(--mat-sys-surface-container-low);
 }
 
 mat-chip.mat-mdc-chip {
@@ -711,8 +712,13 @@ mat-chip.mat-mdc-chip {
   padding-right: 0;
   padding-bottom: 8px;
 }
+
 .user-details-panel {
   .mat-expansion-panel-body {
     padding: 0 16px 16px !important;
   }
+}
+
+.mdc-evolution-chip-set__chips {
+  flex-flow: var(--chip-listbox-flex-flow, row wrap) !important;
 }

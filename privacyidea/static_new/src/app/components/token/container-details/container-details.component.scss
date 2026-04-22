@@ -31,10 +31,11 @@ $gap-small: 8px;
   border-collapse: collapse;
 }
 
-::ng-deep .cdk-overlay-container div.mat-mdc-autocomplete-panel {
-  max-height: 265px;
+// I see no difference by removing this.
+// ::ng-deep .cdk-overlay-container div.mat-mdc-autocomplete-panel {
+//   max-height: 265px;
 
-  &.user-selection-autocomplete {
-    max-height: 256px;
-  }
-}
+//   &.user-selection-autocomplete {
+//     max-height: 256px;
+//   }
+// }

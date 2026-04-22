@@ -9,14 +9,6 @@
   --mat-expansion-container-elevation-shadow: none;
   --expansion-panel-border: 1px solid var(--mat-sys-outline-variant);
   --expansion-panel-header-padding: var(--half-global-padding) var(--three-quarters-global-padding);
-  // ::ng-deep mat-expansion-panel.mat-expansion-panel {
-  //   border: 1px solid var(--mat-sys-outline-variant);
-  //   box-shadow: none !important;
-  // }
-  // ::ng-deep mat-expansion-panel.mat-expansion-panel-header {
-  //   padding: var(--half-global-padding) var(--three-quarters-global-padding) !important;
-  //   height: 1rem;
-  // }
 }
 
 .search-input {
