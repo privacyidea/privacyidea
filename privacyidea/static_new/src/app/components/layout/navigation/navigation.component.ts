@@ -17,18 +17,11 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, computed, inject } from "@angular/core";
-import { NgClass, NgOptimizedImage } from "@angular/common";
-import {
-  MatAccordion,
-  MatExpansionPanel,
-  MatExpansionPanelHeader,
-  MatExpansionPanelTitle
-} from "@angular/material/expansion";
-import { MatInput, MatLabel, MatSuffix } from "@angular/material/input";
-import { MatList, MatListItem } from "@angular/material/list";
+import { NgClass, NgOptimizedImage, NgTemplateOutlet } from "@angular/common";
+import { MatToolbar } from "@angular/material/toolbar";
+import { MatTabsModule } from "@angular/material/tabs";
 import { ROUTE_PATHS } from "../../../route_paths";
-import { MatAnchor, MatButton } from "@angular/material/button";
-import { MatFormField } from "@angular/material/form-field";
+import { MatAnchor, MatButton, MatIconButton } from "@angular/material/button";
 import { MatIcon, MatIconModule } from "@angular/material/icon";
 import { Router, RouterLink } from "@angular/router";
 import { UserService, UserServiceInterface } from "../../../services/user/user.service";
@@ -57,18 +50,11 @@ import { UserUtilsPanelComponent } from "@components/layout/user-utils-panel/use
 @Component({
   selector: "app-navigation",
   imports: [
-    MatAccordion,
+    MatToolbar,
+    MatTabsModule,
     MatButton,
-    MatExpansionPanel,
-    MatExpansionPanelHeader,
-    MatExpansionPanelTitle,
-    MatFormField,
+    MatIconButton,
     MatIconModule,
-    MatInput,
-    MatLabel,
-    MatList,
-    MatListItem,
-    MatSuffix,
     NgOptimizedImage,
     MatIcon,
     RouterLink,
@@ -76,7 +62,8 @@ import { UserUtilsPanelComponent } from "@components/layout/user-utils-panel/use
     MatAnchor,
     MatTooltipModule,
     FormsModule,
-    UserUtilsPanelComponent
+    UserUtilsPanelComponent,
+    NgTemplateOutlet
   ],
   templateUrl: "./navigation.component.html",
   styleUrl: "./navigation.component.scss"
@@ -108,6 +95,19 @@ export class NavigationComponent {
       return $localize`privacyIDEA Version ` + this.versioningService.version();
     }
     return $localize`Version ` + this.versioningService.version();
+  });
+
+  activeSection = computed(() => {
+    const url = this.contentService.routeUrl();
+    if (url.includes('containers')) return 'container';
+    if (url.startsWith(ROUTE_PATHS.USERS)) return 'users';
+    if (url.startsWith(ROUTE_PATHS.POLICIES)) return 'policies';
+    if (url.startsWith(ROUTE_PATHS.EVENTS)) return 'events';
+    if (url.startsWith(ROUTE_PATHS.AUDIT) || url.startsWith(ROUTE_PATHS.CLIENTS)) return 'audit';
+    if (url.startsWith('/external-services')) return 'external';
+    if (url.startsWith('/configuration') || url.startsWith(ROUTE_PATHS.SUBSCRIPTION) || url.startsWith(ROUTE_PATHS.MACHINE_RESOLVER)) return 'config';
+    if (url.startsWith(ROUTE_PATHS.TOKENS)) return 'token';
+    return 'token';
   });
 
   onSingleHeaderClick(event: MouseEvent, route_path: string): void {

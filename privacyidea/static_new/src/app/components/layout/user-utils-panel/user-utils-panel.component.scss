@@ -1,10 +1,19 @@
 @use "styles";
 @use "@angular/material" as mat;
 
+:host {
+  font-size: 14px;
+}
+
 .utils-group {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
   border: solid 1px var(--mat-sys-surface-container-highest);
   border-radius: var(--border-radius);
-  margin-bottom: 6px;
+  padding: 2px 6px;
+  background: var(--mat-sys-surface-container);
 }
 
 .utils-group-self-service {
@@ -15,41 +24,27 @@
   @include mat.elevation(3);
 }
 
-.account-div {
-  display: flex;
-  flex-direction: row;
-  width: 248px;
-  justify-content: space-around;
-  align-items: center;
-  background: var(--mat-sys-surface-container);
-  border-radius: var(--border-radius);
-  min-height: 40px;
-  padding: 4px;
-  gap: 4px;
-}
-
-.utils {
-  display: flex;
-  flex-direction: row;
-  justify-content: space-around;
-  align-items: center;
-}
-
-.session-timer {
-  width: auto;
-  text-align: right;
-  white-space: break-spaces;
+.separator {
+  width: 1px;
+  height: 20px;
+  background: var(--mat-sys-outline-variant);
+  margin: 0 2px;
 }
 
 .profile-text {
   font-weight: bold;
-  text-align: center;
-  margin: 0;
-  padding: 0;
+  font-size: 14px;
+  white-space: nowrap;
 }
 
-.text-div {
-  display: flex;
-  flex-direction: column;
-  padding: 8px 0;
+.node-text {
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.session-timer {
+  font-size: 14px;
+  white-space: nowrap;
+  padding: 2px 6px;
+  border-radius: var(--border-radius);
 }
