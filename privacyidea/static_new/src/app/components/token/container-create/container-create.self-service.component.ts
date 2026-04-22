@@ -16,27 +16,27 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+
 import { NgClass } from "@angular/common";
 import { Component, computed } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { MatButton, MatIconButton } from "@angular/material/button";
 import { MatCheckbox } from "@angular/material/checkbox";
-import { MatOption } from "@angular/material/core";
+import { MatDialog } from "@angular/material/dialog";
 import {
   MatAccordion,
   MatExpansionPanel,
-  MatExpansionPanelHeader,
-  MatExpansionPanelTitle
+  MatExpansionPanelTitle,
+  MatExpansionPanelHeader
 } from "@angular/material/expansion";
-import { MatFormField, MatLabel, MatSuffix } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
-import { MatInput } from "@angular/material/input";
-import { MatSelect } from "@angular/material/select";
+import { MatFormField, MatInput, MatLabel, MatSuffix } from "@angular/material/input";
+import { MatOption, MatSelect } from "@angular/material/select";
 import { MatTooltip } from "@angular/material/tooltip";
-import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
-import { ContainerCreateComponent } from "./container-create.component";
-import { ContainerRegistrationConfigComponent } from "../container-registration/container-registration-config/container-registration-config.component";
 import { ClearButtonComponent } from "../../shared/clear-button/clear-button.component";
+import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
+import { ContainerRegistrationConfigComponent } from "../container-registration/container-registration-config/container-registration-config.component";
+import { ContainerCreateComponent } from "./container-create.component";
 
 @Component({
   selector: "app-container-create-self-service",
@@ -66,5 +66,9 @@ import { ClearButtonComponent } from "../../shared/clear-button/clear-button.com
   styleUrl: "./container-create.component.scss"
 })
 export class ContainerCreateSelfServiceComponent extends ContainerCreateComponent {
+  constructor(registrationDialog: MatDialog) {
+    super(registrationDialog);
+  }
+
   override userSelected = computed(() => true);
 }

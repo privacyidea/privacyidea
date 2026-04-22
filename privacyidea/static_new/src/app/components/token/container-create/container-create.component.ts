@@ -17,29 +17,35 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { NgClass, CommonModule } from "node_modules/@angular/common/types/_common_module-chunk";
-import { signal, WritableSignal } from "node_modules/@angular/core/types/_chrome_dev_tools_performance-chunk";
-import { Component, Renderer2, ElementRef, effect } from "node_modules/@angular/core/types/_discovery-chunk";
-import { computed, linkedSignal, ViewChild, untracked } from "node_modules/@angular/core/types/core";
-import { inject } from "node_modules/@angular/core/types/primitives-di";
-import { FormsModule } from "node_modules/@angular/forms/types/forms";
-import { MatDialog } from "node_modules/@angular/material/types/_dialog-chunk";
-import { MatFormField, MatSuffix } from "node_modules/@angular/material/types/_form-field-chunk";
-import { MatLabel } from "node_modules/@angular/material/types/_form-field-module-chunk";
-import { MatIcon } from "node_modules/@angular/material/types/_icon-module-chunk";
-import { MatOption } from "node_modules/@angular/material/types/_option-chunk";
-import { MatButton, MatIconButton } from "node_modules/@angular/material/types/button";
-import { MatCheckbox } from "node_modules/@angular/material/types/checkbox";
+import { NgClass, CommonModule } from "@angular/common";
+import {
+  Component,
+  inject,
+  Renderer2,
+  signal,
+  computed,
+  WritableSignal,
+  linkedSignal,
+  ViewChild,
+  ElementRef,
+  effect,
+  untracked
+} from "@angular/core";
+import { FormsModule } from "@angular/forms";
+import { MatButton, MatIconButton } from "@angular/material/button";
+import { MatCheckbox } from "@angular/material/checkbox";
+import { MatDialog } from "@angular/material/dialog";
 import {
   MatAccordion,
   MatExpansionPanel,
   MatExpansionPanelTitle,
   MatExpansionPanelHeader
-} from "node_modules/@angular/material/types/expansion";
-import { MatInput } from "node_modules/@angular/material/types/input";
-import { MatSelect } from "node_modules/@angular/material/types/select";
-import { MatTooltip } from "node_modules/@angular/material/types/tooltip";
-import { Router } from "node_modules/@angular/router/types/_router_module-chunk";
+} from "@angular/material/expansion";
+import { MatIcon } from "@angular/material/icon";
+import { MatFormField, MatInput, MatLabel, MatSuffix } from "@angular/material/input";
+import { MatOption, MatSelect } from "@angular/material/select";
+import { MatTooltip } from "@angular/material/tooltip";
+import { Router } from "@angular/router";
 import { PiResponse } from "src/app/app.component";
 import { TokenEnrollmentPayload } from "src/app/mappers/token-api-payload/_token-api-payload.mapper";
 import { ROUTE_PATHS } from "src/app/route_paths";
@@ -63,7 +69,6 @@ import { VersioningServiceInterface, VersioningService } from "src/app/services/
 import { ClearButtonComponent } from "../../shared/clear-button/clear-button.component";
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { ContainerRegistrationConfigComponent } from "../container-registration/container-registration-config/container-registration-config.component";
-import { ContainerTemplateEditBodyComponent } from "../container-templates/container-template-edit/container-template-edit-body/container-template-edit-body.component";
 import { UserAssignmentComponent } from "../user-assignment/user-assignment.component";
 import {
   ContainerCreationDialogData,
@@ -100,8 +105,7 @@ import { ContainerRegistrationCompletedDialogWizardComponent } from "./container
     ContainerRegistrationConfigComponent,
     UserAssignmentComponent,
     MatSuffix,
-    ClearButtonComponent,
-    ContainerTemplateEditBodyComponent
+    ClearButtonComponent
   ],
   templateUrl: "./container-create.component.html",
   styleUrl: "./container-create.component.scss"
@@ -123,7 +127,7 @@ export class ContainerCreateComponent {
   private observer!: IntersectionObserver;
   containerSerial = this.containerService.containerSerial;
   description = signal("");
-  readonly tokens = computed<TokenEnrollmentPayload[]>(() => this.selectedTemplate()?.template_options.tokens ?? []);
+  tokens = computed<TokenEnrollmentPayload[]>(() => this.selectedTemplate()?.template_options.tokens ?? []);
   selectedTemplate = signal<ContainerTemplate | null>(null);
   selectedTemplateName = computed<string>(() => this.selectedTemplate()?.name ?? "");
   templateOptions = this.containerTemplateService.templates;
@@ -137,7 +141,7 @@ export class ContainerCreateComponent {
   passphrasePrompt = signal("");
   passphraseResponse = signal("");
   userStorePassphrase = signal(false);
-  readonly availableTokenTypes = computed(() => {
+  availableTokenTypes = computed(() => {
     const containerType = this.selectedTemplate()?.container_type;
     if (!containerType) {
       return [];
