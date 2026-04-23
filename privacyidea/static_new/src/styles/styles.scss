@@ -805,7 +805,7 @@ body.self-service-layout {
   }
 
   &:hover {
-    background: color-mix(in srgb, var(--mat-sys-primary) 8%, transparent) !important;
+    background: var(--mat-sys-surface-container-high, #f0f0f0) !important;
   }
 
   &.nav-active {

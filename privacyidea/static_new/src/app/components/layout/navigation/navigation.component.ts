@@ -21,7 +21,7 @@ import { NgClass, NgOptimizedImage, NgTemplateOutlet } from "@angular/common";
 import { MatToolbar } from "@angular/material/toolbar";
 import { MatTabsModule } from "@angular/material/tabs";
 import { ROUTE_PATHS } from "src/app/route_paths";
-import { MatButton } from "@angular/material/button";
+import { MatButton, MatIconButton } from "@angular/material/button";
 import { MatIcon, MatIconModule } from "@angular/material/icon";
 import { Router, RouterLink } from "@angular/router";
 import { UserService, UserServiceInterface } from "../../../services/user/user.service";
@@ -78,6 +78,7 @@ export interface SubNavSection {
     MatToolbar,
     MatTabsModule,
     MatButton,
+    MatIconButton,
     MatIconModule,
     NgOptimizedImage,
     MatIcon,
@@ -253,5 +254,9 @@ export class NavigationComponent implements AfterViewInit, OnDestroy {
 
   openSupport(): void {
     window.open("https://netknights.it/support_link_admin", "_blank");
+  }
+
+  openExternalLink(url: string): void {
+    window.open(url, "_blank");
   }
 }

@@ -38,8 +38,8 @@
 }
 
 .toolbar-logo {
-  height: 48px;
-  width: 48px;
+  height: 56px;
+  width: 56px;
   border-radius: 50%;
   @include mat.elevation(2);
 }
@@ -120,6 +120,7 @@
   button {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     border-radius: var(--border-radius);
     white-space: nowrap;
     flex-shrink: 0;
@@ -185,7 +186,38 @@
   }
 }
 
-/* ===== Overflow "More" menu ===== */
+.footer-icons {
+  display: none;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.footer-icon-button {
+  display: inline-flex;
+  border-radius: var(--border-radius);
+  color: var(--mat-sys-on-surface-variant);
+  text-decoration: none;
+  transition: background 200ms ease, color 200ms ease;
+
+  &:hover {
+    background: color-mix(in srgb, var(--mat-sys-primary) 8%, transparent);
+    color: var(--mat-sys-primary);
+  }
+
+  mat-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+}
+
+
+.docs-button-icon {
+  display: none !important;
+}
 
 .more-button {
   flex-shrink: 0;
@@ -206,7 +238,7 @@
   }
 
   .main-nav {
-    margin-left: 8px;
+    margin-left: 12px;
     gap: 2px;
   }
 
@@ -228,8 +260,20 @@
       display: none;
     }
 
+    .footer-icons {
+      display: flex;
+    }
+
     button span {
       font-size: 12px;
+    }
+
+    .docs-button-full {
+      display: none !important;
+    }
+
+    .docs-button-icon {
+      display: inline-flex !important;
     }
   }
 }
