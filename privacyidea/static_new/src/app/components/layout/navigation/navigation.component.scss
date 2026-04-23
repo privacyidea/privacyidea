@@ -188,10 +188,7 @@
   color: var(--mat-sys-on-primary-container) !important;
 }
 
-/* ===== 200% zoom support ===== */
-
-/* At 200% zoom on a 1920px screen, effective viewport is ~960px */
-@media (max-width: 1100px) {
+@media (max-width: 1630px) {
   .toolbar-logo-text {
     display: none;
   }
@@ -221,30 +218,6 @@
 
     button span {
       font-size: 12px;
-    }
-  }
-}
-
-/* At 200% zoom on a 1440px screen, effective viewport is ~720px */
-@media (max-width: 780px) {
-  .primary-toolbar {
-    padding: 4px 8px;
-    gap: 4px;
-  }
-
-  .toolbar-logo {
-    height: 36px;
-    width: 36px;
-  }
-
-  .secondary-toolbar {
-    padding: 4px 8px;
-    gap: 2px;
-  }
-
-  .toolbar-actions {
-    .beta-badge {
-      display: none;
     }
   }
 }
