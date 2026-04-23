@@ -66,8 +66,10 @@
   gap: 4px;
   flex: 1;
   justify-content: start;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   margin-left: 22px;
+  overflow: hidden;
+  min-width: 0;
 }
 
 .nav-button {
@@ -76,6 +78,7 @@
   white-space: nowrap;
   border-radius: var(--border-radius);
   transition: background 200ms ease, color 200ms ease;
+  flex-shrink: 0;
 
   mat-icon {
     font-size: 18px;
@@ -105,6 +108,8 @@
   min-height: 44px;
   background: var(--mat-sys-surface-container-low);
   border-bottom: 1px solid var(--mat-sys-outline-variant);
+  overflow: hidden;
+  flex-wrap: nowrap;
 
   ::ng-deep {
     .mat-toolbar-row, .mat-toolbar-single-row {
@@ -117,6 +122,7 @@
     align-items: center;
     border-radius: var(--border-radius);
     white-space: nowrap;
+    flex-shrink: 0;
 
     mat-icon {
       font-size: 18px;
@@ -163,6 +169,82 @@
 
     &:hover {
       text-decoration: underline;
+    }
+  }
+}
+
+/* ===== Overflow "More" menu ===== */
+
+.more-button {
+  flex-shrink: 0;
+}
+
+.overflow-hidden {
+  display: none !important;
+}
+
+.overflow-item-active {
+  background: var(--mat-sys-primary-container) !important;
+  color: var(--mat-sys-on-primary-container) !important;
+}
+
+/* ===== 200% zoom support ===== */
+
+/* At 200% zoom on a 1920px screen, effective viewport is ~960px */
+@media (max-width: 1100px) {
+  .toolbar-logo-text {
+    display: none;
+  }
+
+  .main-nav {
+    margin-left: 8px;
+    gap: 2px;
+  }
+
+  .toolbar-brand {
+    gap: 8px;
+  }
+
+  .toolbar-actions {
+    gap: 2px;
+  }
+
+  .beta-badge {
+    font-size: 11px;
+    padding: 0 4px;
+  }
+
+  .secondary-toolbar {
+    .footer-text {
+      display: none;
+    }
+
+    button span {
+      font-size: 12px;
+    }
+  }
+}
+
+/* At 200% zoom on a 1440px screen, effective viewport is ~720px */
+@media (max-width: 780px) {
+  .primary-toolbar {
+    padding: 4px 8px;
+    gap: 4px;
+  }
+
+  .toolbar-logo {
+    height: 36px;
+    width: 36px;
+  }
+
+  .secondary-toolbar {
+    padding: 4px 8px;
+    gap: 2px;
+  }
+
+  .toolbar-actions {
+    .beta-badge {
+      display: none;
     }
   }
 }

@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, inject } from "@angular/core";
+import { Component, computed, inject, signal, ViewChild, ElementRef, AfterViewInit, OnDestroy, NgZone } from "@angular/core";
 import { NgClass, NgOptimizedImage, NgTemplateOutlet } from "@angular/common";
 import { MatToolbar } from "@angular/material/toolbar";
 import { MatTabsModule } from "@angular/material/tabs";
@@ -46,6 +46,31 @@ import { SystemService, SystemServiceInterface } from "../../../services/system/
 import { ConfigService, ConfigServiceInterface } from "../../../services/config/config.service";
 import { environment } from "../../../../environments/environment";
 import { UserUtilsPanelComponent } from "@components/layout/user-utils-panel/user-utils-panel.component";
+import { MatMenuModule } from "@angular/material/menu";
+import { OverflowNavDirective } from "./overflow-nav.directive";
+
+export interface NavItem {
+  icon: string;
+  label: string;
+  route?: string;
+  section: string;
+  iconClass?: string;
+  /** For sub-nav: check condition for visibility */
+  visible?: () => boolean;
+  /** For sub-nav: check if this is the active sub-item */
+  isActive?: () => boolean;
+  /** For items that are always active (e.g. Details when on details page) */
+  alwaysActive?: boolean;
+  /** Click handler instead of routerLink */
+  action?: () => void;
+}
+
+export interface SubNavSection {
+  section: string;
+  items: NavItem[];
+  /** Right-side items (support, docs) */
+  rightItems?: NavItem[];
+}
 
 @Component({
   selector: "app-navigation",
@@ -61,12 +86,14 @@ import { UserUtilsPanelComponent } from "@components/layout/user-utils-panel/use
     MatTooltipModule,
     FormsModule,
     UserUtilsPanelComponent,
-    NgTemplateOutlet
+    NgTemplateOutlet,
+    MatMenuModule,
+    OverflowNavDirective
   ],
   templateUrl: "./navigation.component.html",
   styleUrl: "./navigation.component.scss"
 })
-export class NavigationComponent {
+export class NavigationComponent implements AfterViewInit, OnDestroy {
   protected readonly userService: UserServiceInterface = inject(UserService);
   protected readonly realmService: RealmServiceInterface = inject(RealmService);
   protected readonly versioningService: VersioningServiceInterface = inject(VersioningService);
@@ -81,6 +108,109 @@ export class NavigationComponent {
   protected readonly configService: ConfigServiceInterface = inject(ConfigService);
   protected readonly router: Router = inject(Router);
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
+
+  @ViewChild("mainNavRef", { static: false }) mainNavRef!: ElementRef<HTMLElement>;
+
+  primaryNavItems: NavItem[] = [
+    { icon: "shield", label: $localize`Token`, route: ROUTE_PATHS.TOKENS, section: "token" },
+    { icon: "folder", label: $localize`Container`, route: ROUTE_PATHS.TOKENS_CONTAINERS, section: "container" },
+    { icon: "supervised_user_circle", label: $localize`Users`, route: ROUTE_PATHS.USERS, section: "users" },
+    { icon: "gavel", label: $localize`Policies`, route: ROUTE_PATHS.POLICIES, section: "policies" },
+    { icon: "flag", label: $localize`Events`, route: ROUTE_PATHS.EVENTS, section: "events" },
+    { icon: "receipt_long", label: $localize`Audit`, route: ROUTE_PATHS.AUDIT, section: "audit" },
+    { icon: "hub", label: $localize`External Services`, route: ROUTE_PATHS.EXTERNAL_SERVICES_SMTP, section: "external" },
+    { icon: "miscellaneous_services", label: $localize`Configuration`, route: ROUTE_PATHS.CONFIGURATION_SYSTEM, section: "config" },
+  ];
+
+  visibleNavCount = signal(this.primaryNavItems.length);
+  private resizeObserver: ResizeObserver | null = null;
+  private ngZone = inject(NgZone);
+
+  get visibleNavItems(): NavItem[] {
+    return this.getFilteredNavItems().slice(0, this.visibleNavCount());
+  }
+
+  get overflowNavItems(): NavItem[] {
+    return this.getFilteredNavItems().slice(this.visibleNavCount());
+  }
+
+  private getFilteredNavItems(): NavItem[] {
+    return this.primaryNavItems.filter(item => {
+      if (item.section === "policies") return this.authService.actionAllowed("policyread");
+      if (item.section === "events") return this.authService.actionAllowed("eventhandling_read");
+      return true;
+    });
+  }
+
+  ngAfterViewInit(): void {
+    this.setupOverflowDetection();
+  }
+
+  ngOnDestroy(): void {
+    this.resizeObserver?.disconnect();
+  }
+
+  private setupOverflowDetection(): void {
+    if (!this.mainNavRef) return;
+    const navEl = this.mainNavRef.nativeElement;
+
+    this.resizeObserver = new ResizeObserver(() => {
+      this.ngZone.run(() => this.calculateVisibleItems(navEl));
+    });
+    this.resizeObserver.observe(navEl);
+
+    // Initial calculation
+    setTimeout(() => this.calculateVisibleItems(navEl), 0);
+  }
+
+  private calculateVisibleItems(navEl: HTMLElement): void {
+    const filteredItems = this.getFilteredNavItems();
+    const buttons = Array.from(navEl.querySelectorAll<HTMLElement>(".nav-button"));
+    if (buttons.length === 0) {
+      this.visibleNavCount.set(filteredItems.length);
+      return;
+    }
+
+    const navWidth = navEl.clientWidth;
+    const moreButtonWidth = 56; // approximate width of the "More" button
+    const gap = 4;
+    let usedWidth = 0;
+    let count = 0;
+
+    for (const btn of buttons) {
+      // Temporarily make visible to measure
+      const wasHidden = btn.classList.contains("overflow-hidden");
+      if (wasHidden) {
+        btn.style.position = "absolute";
+        btn.style.visibility = "hidden";
+        btn.style.display = "";
+        btn.classList.remove("overflow-hidden");
+      }
+
+      const btnWidth = btn.offsetWidth + gap;
+
+      if (wasHidden) {
+        btn.classList.add("overflow-hidden");
+        btn.style.position = "";
+        btn.style.visibility = "";
+        btn.style.display = "";
+      }
+
+      const remaining = filteredItems.length - count;
+      const needsMore = remaining > 1;
+      const availableWidth = needsMore ? navWidth - moreButtonWidth : navWidth;
+
+      if (usedWidth + btnWidth <= availableWidth) {
+        usedWidth += btnWidth;
+        count++;
+      } else {
+        break;
+      }
+    }
+
+    // Always show at least 1 item
+    this.visibleNavCount.set(Math.max(1, Math.min(count, filteredItems.length)));
+  }
 
   customLogo = computed(() => {
     if (!this.configService.config()?.logo) {
@@ -116,6 +246,10 @@ export class NavigationComponent {
 
     this.router.navigate([route_path]);
   }
+
+  isOverflowSectionActive = computed(() => {
+    return this.overflowNavItems.some(item => item.section === this.activeSection());
+  });
 
   openSupport(): void {
     window.open("https://netknights.it/support_link_admin", "_blank");

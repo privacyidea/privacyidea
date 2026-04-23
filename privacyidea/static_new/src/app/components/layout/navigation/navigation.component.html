@@ -58,82 +58,38 @@
     </a>
   </div>
 
-  <nav class="main-nav">
-    <button
-      mat-button
-      [ngClass]="{'nav-active': activeSection() === 'token'}"
-      [routerLink]="[ROUTE_PATHS.TOKENS]"
-      class="nav-button">
-      <mat-icon>shield</mat-icon>
-      <span i18n>Token</span>
-    </button>
-
-    <button
-      mat-button
-      [ngClass]="{'nav-active': activeSection() === 'container'}"
-      [routerLink]="[ROUTE_PATHS.TOKENS_CONTAINERS]"
-      class="nav-button">
-      <mat-icon>folder</mat-icon>
-      <span i18n>Container</span>
-    </button>
-
-    <button
-      mat-button
-      [ngClass]="{'nav-active': activeSection() === 'users'}"
-      [routerLink]="[ROUTE_PATHS.USERS]"
-      class="nav-button">
-      <mat-icon>supervised_user_circle</mat-icon>
-      <span i18n>Users</span>
-    </button>
-
-    @if (authService.actionAllowed("policyread")) {
+  <nav class="main-nav" #mainNavRef>
+    @for (item of visibleNavItems; track item.section) {
       <button
         mat-button
-        [ngClass]="{'nav-active': activeSection() === 'policies'}"
-        [routerLink]="[ROUTE_PATHS.POLICIES]"
+        [ngClass]="{'nav-active': activeSection() === item.section}"
+        [routerLink]="[item.route]"
         class="nav-button">
-        <mat-icon>gavel</mat-icon>
-        <span i18n>Policies</span>
+        <mat-icon [ngClass]="item.iconClass || ''">{{ item.icon }}</mat-icon>
+        <span>{{ item.label }}</span>
       </button>
     }
-
-    @if (authService.actionAllowed("eventhandling_read")) {
+    @if (overflowNavItems.length > 0) {
       <button
         mat-button
-        [ngClass]="{'nav-active': activeSection() === 'events'}"
-        [routerLink]="[ROUTE_PATHS.EVENTS]"
-        class="nav-button">
-        <mat-icon>flag</mat-icon>
-        <span i18n>Events</span>
+        class="nav-button more-button"
+        [matMenuTriggerFor]="overflowMenu"
+        [ngClass]="{'nav-active': isOverflowSectionActive()}">
+        <mat-icon>more_horiz</mat-icon>
+        <span i18n>More</span>
       </button>
+      <mat-menu #overflowMenu="matMenu">
+        @for (item of overflowNavItems; track item.section) {
+          <button
+            mat-menu-item
+            [routerLink]="[item.route]"
+            [ngClass]="{'overflow-item-active': activeSection() === item.section}">
+            <mat-icon [ngClass]="item.iconClass || ''">{{ item.icon }}</mat-icon>
+            <span>{{ item.label }}</span>
+          </button>
+        }
+      </mat-menu>
     }
-
-    <button
-      mat-button
-      [ngClass]="{'nav-active': activeSection() === 'audit'}"
-      [routerLink]="[ROUTE_PATHS.AUDIT]"
-      class="nav-button">
-      <mat-icon>receipt_long</mat-icon>
-      <span i18n>Audit</span>
-    </button>
-
-    <button
-      mat-button
-      [ngClass]="{'nav-active': activeSection() === 'external'}"
-      [routerLink]="[ROUTE_PATHS.EXTERNAL_SERVICES_SMTP]"
-      class="nav-button">
-      <mat-icon>hub</mat-icon>
-      <span i18n>External Services</span>
-    </button>
-
-    <button
-      mat-button
-      [ngClass]="{'nav-active': activeSection() === 'config'}"
-      [routerLink]="[ROUTE_PATHS.CONFIGURATION_SYSTEM]"
-      class="nav-button">
-      <mat-icon>miscellaneous_services</mat-icon>
-      <span i18n>Configuration</span>
-    </button>
   </nav>
 
   <div class="toolbar-actions">
@@ -181,7 +137,7 @@
 </ng-template>
 
 @if (activeSection() === 'token') {
-  <mat-toolbar class="secondary-toolbar">
+  <mat-toolbar class="secondary-toolbar" appOverflowNav>
     <ng-container *ngTemplateOutlet="footerText"></ng-container>
     <button
       mat-button
@@ -246,7 +202,7 @@
 }
 
 @if (activeSection() === 'container') {
-  <mat-toolbar class="secondary-toolbar">
+  <mat-toolbar class="secondary-toolbar" appOverflowNav>
     <ng-container *ngTemplateOutlet="footerText"></ng-container>
     <button
       mat-button
@@ -286,7 +242,7 @@
 }
 
 @if (activeSection() === 'users') {
-  <mat-toolbar class="secondary-toolbar">
+  <mat-toolbar class="secondary-toolbar" appOverflowNav>
     <ng-container *ngTemplateOutlet="footerText"></ng-container>
     <button
       mat-button
@@ -322,7 +278,7 @@
 }
 
 @if (activeSection() === 'audit') {
-  <mat-toolbar class="secondary-toolbar">
+  <mat-toolbar class="secondary-toolbar" appOverflowNav>
     <ng-container *ngTemplateOutlet="footerText"></ng-container>
     <button
       mat-button
@@ -345,7 +301,7 @@
 }
 
 @if (activeSection() === 'external') {
-  <mat-toolbar class="secondary-toolbar">
+  <mat-toolbar class="secondary-toolbar" appOverflowNav>
     <ng-container *ngTemplateOutlet="footerText"></ng-container>
     @if (authService.actionAllowed("smtpserver_read")) {
       <button
@@ -415,7 +371,7 @@
 }
 
 @if (activeSection() === 'config') {
-  <mat-toolbar class="secondary-toolbar">
+  <mat-toolbar class="secondary-toolbar" appOverflowNav>
     <ng-container *ngTemplateOutlet="footerText"></ng-container>
     @if (authService.actionAllowed('configread')) {
       <button
