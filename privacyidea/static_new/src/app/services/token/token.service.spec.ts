@@ -38,6 +38,7 @@ import { signal } from "@angular/core";
 
 class MockNotificationService {
   openSnackBar = jest.fn();
+  handleResourceError = jest.fn();
 }
 
 describe("TokenService", () => {

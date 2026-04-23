@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
-import { inject, Injectable, linkedSignal, WritableSignal, Signal } from "@angular/core";
+import { effect, inject, Injectable, linkedSignal, WritableSignal, Signal } from "@angular/core";
 import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
@@ -64,6 +64,11 @@ export class RadiusServerService implements RadiusServerServiceInterface {
   private readonly http: HttpClient = inject(HttpClient);
 
   readonly radiusServerBaseUrl = environment.proxyUrl + "/radiusserver/";
+  constructor() {
+    effect(() => {
+      this.notificationService.handleResourceError(this.radiusServerResource.error(), "RADIUS servers");
+    });
+  }
 
   radiusServerResource = httpResource<PiResponse<RadiusServers>>(() => {
     if (!this.contentService.onExternalRadius()) {

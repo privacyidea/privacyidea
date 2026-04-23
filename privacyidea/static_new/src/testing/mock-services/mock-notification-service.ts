@@ -25,4 +25,5 @@ export class MockNotificationService implements NotificationServiceInterface {
   startTime: number = 0;
 
   openSnackBar = jest.fn();
+  handleResourceError = jest.fn();
 }

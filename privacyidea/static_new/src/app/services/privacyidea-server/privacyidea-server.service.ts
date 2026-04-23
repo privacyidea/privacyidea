@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
-import { computed, inject, Injectable, Signal } from "@angular/core";
+import { computed, effect, inject, Injectable, Signal } from "@angular/core";
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
 
@@ -64,6 +64,12 @@ export class PrivacyideaServerService implements PrivacyideaServerServiceInterfa
   private readonly http: HttpClient = inject(HttpClient);
 
   readonly privacyideaServerBaseUrl = environment.proxyUrl + "/privacyideaserver/";
+
+  constructor() {
+    effect(() => {
+      this.notificationService.handleResourceError(this.remoteServerResource.error(), "privacyIDEA servers");
+    });
+  }
 
   remoteServerResource = httpResource<PiResponse<PrivacyideaServers>>(() => {
     if (!this.contentService.onExternalPrivacyIdea() && !this.contentService.onTokenEnrollmentLikely()) {

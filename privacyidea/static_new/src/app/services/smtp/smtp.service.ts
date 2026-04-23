@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { computed, inject, Injectable, Signal } from "@angular/core";
+import { computed, effect, inject, Injectable, Signal } from "@angular/core";
 import { environment } from "../../../environments/environment";
 import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
@@ -68,6 +68,12 @@ export class SmtpService implements SmtpServiceInterface {
   readonly contentService: ContentServiceInterface = inject(ContentService);
   readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   readonly http: HttpClient = inject(HttpClient);
+
+  constructor() {
+    effect(() => {
+      this.notificationService.handleResourceError(this.smtpServerResource.error(), "SMTP servers");
+    });
+  }
 
   readonly smtpServerResource = httpResource<PiResponse<SmtpServers>>(() => {
     if (!this.contentService.onExternalSmtp() && !this.contentService.onConfigurationTokenTypes() && !this.contentService.onConfigurationSystem()) {

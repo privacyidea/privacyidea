@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
-import { inject, Injectable, linkedSignal, WritableSignal } from "@angular/core";
+import { effect, inject, Injectable, linkedSignal, WritableSignal } from "@angular/core";
 import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
@@ -57,6 +57,12 @@ export class TokengroupService implements TokengroupServiceInterface {
   private readonly http: HttpClient = inject(HttpClient);
 
   private readonly tokengroupBaseUrl = environment.proxyUrl + "/tokengroup/";
+
+  constructor() {
+    effect(() => {
+      this.notificationService.handleResourceError(this.tokengroupResource.error(), "tokengroups");
+    });
+  }
 
   tokengroupResource = httpResource<PiResponse<Tokengroups>>(() => {
     if (!this.contentService.onExternalTokenGroups()) {

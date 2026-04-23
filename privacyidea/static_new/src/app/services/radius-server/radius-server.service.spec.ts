@@ -37,7 +37,8 @@ describe("RadiusServerService", () => {
 
   beforeEach(() => {
     const notificationServiceMock = {
-      openSnackBar: jest.fn()
+      openSnackBar: jest.fn(),
+      handleResourceError: jest.fn()
     };
 
     TestBed.configureTestingModule({

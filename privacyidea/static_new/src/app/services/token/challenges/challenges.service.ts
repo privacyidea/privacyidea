@@ -19,11 +19,12 @@
 import { AuthService, AuthServiceInterface } from "../../auth/auth.service";
 import { ContentService, ContentServiceInterface } from "../../content/content.service";
 import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
-import { computed, inject, Injectable, linkedSignal, signal, WritableSignal } from "@angular/core";
+import { computed, effect, inject, Injectable, linkedSignal, signal, WritableSignal } from "@angular/core";
 import { TokenService, TokenServiceInterface } from "../token.service";
 import { Observable } from "rxjs";
 
 import { FilterValue } from "../../../core/models/filter_value/filter_value";
+import { NotificationService } from "../../notification/notification.service";
 import { PiResponse } from "../../../app.component";
 import { Sort } from "@angular/material/sort";
 import { StringUtils } from "../../../utils/string.utils";
@@ -76,6 +77,13 @@ export class ChallengesService implements ChallengesServiceInterface {
   private readonly tokenService: TokenServiceInterface = inject(TokenService);
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
+  private readonly notificationService = inject(NotificationService);
+
+  constructor() {
+    effect(() => {
+      this.notificationService.handleResourceError(this.challengesResource.error(), "challenges");
+    });
+  }
   readonly apiFilter = apiFilter;
   readonly advancedApiFilter = advancedApiFilter;
   challengesFilter = linkedSignal({
