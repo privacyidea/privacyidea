@@ -139,11 +139,23 @@
 .support-color {
   color: var(--green-brand-base) !important;
 
-  --mat-button-state-layer-color: var(--mint-bg);
-  --mat-button-ripple-color: var(--mint-bg);
-  --mat-ripple-color: var(--mat-sys-surface-container-lowest);
+  --mat-text-button-state-layer-color: var(--green-brand-base);
+  --mat-text-button-hover-state-layer-opacity: 0;
+  --mat-text-button-pressed-state-layer-opacity: 0;
+  --mat-text-button-focus-state-layer-opacity: 0;
+  --mat-ripple-color: var(--mint-bg);
 
-  &:hover {
+  &:hover,
+  &:focus,
+  &:active {
+    background-color: var(--mint-bg) !important;
+  }
+
+  ::ng-deep .mat-mdc-button-persistent-ripple::before {
+    background-color: var(--green-brand-base) !important;
+  }
+
+  ::ng-deep .mat-ripple-element {
     background-color: var(--mint-bg) !important;
   }
 }
