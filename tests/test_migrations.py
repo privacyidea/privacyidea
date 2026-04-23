@@ -161,6 +161,14 @@ def _load_seed_db(db_url: str = DB_URL) -> None:
 
     Seed files are pre-written for each supported dialect (mariadb, postgresql)
     so no on-the-fly SQL transformation is needed.
+
+    The seed marks revision 5cb310101a1f as already applied, but its body —
+    which walks model metadata and CREATEs a Sequence for every table with an
+    `id` column whose default is a Sequence — is therefore skipped by
+    flask_upgrade(). Real installs *did* run that body, so we replay its
+    effect here to put the test DB in the same starting state. Without this,
+    tests can't tell the difference between sequences created by the seed
+    revision and sequences a later migration forgot to create.
     """
     statements = _read_seed_statements(db_url)
     engine = create_engine(db_url)
@@ -169,8 +177,35 @@ def _load_seed_db(db_url: str = DB_URL) -> None:
             for stmt in statements:
                 conn.execute(text(stmt))
             conn.commit()
+        _replay_seed_revision_sequences(engine)
     finally:
         engine.dispose()
+
+
+def _replay_seed_revision_sequences(engine) -> None:
+    """Mirror the upgrade() body of revision 5cb310101a1f against `engine`."""
+    from sqlalchemy import Sequence
+    from sqlalchemy.schema import CreateSequence
+    from privacyidea.models import db
+
+    if not engine.dialect.supports_sequences:
+        return
+
+    inspector = sa_inspect(engine)
+    existing_tables = set(inspector.get_table_names())
+    with engine.connect() as conn:
+        for tbl in db.metadata.sorted_tables:
+            if tbl.name not in existing_tables or "id" not in tbl.c:
+                continue
+            seq = tbl.c["id"].default
+            if not isinstance(seq, Sequence):
+                continue
+            current_id = conn.execute(
+                text(f"SELECT COALESCE(MAX(id), 0) FROM {tbl.name}")
+            ).scalar() or 0
+            conn.execute(CreateSequence(Sequence(seq.name, start=current_id + 1),
+                                        if_not_exists=True))
+        conn.commit()
 
 
 @pytest.fixture(autouse=True)
@@ -457,6 +492,76 @@ def test_schema_matches_models_after_upgrade_to_head(flask_app):
         + "\n".join(str(d) for d in filtered_diffs)
         + "\n\nThis means either a migration is missing or incomplete. "
         f"Run `flask db migrate` to generate the missing migration."
+    )
+
+
+def _get_declared_sequence_names() -> set[str]:
+    """
+    Collect every Sequence(...) name declared on any mapped_column across the
+    models. Alembic's autogenerate does not compare sequences, so we have to
+    check these ourselves — otherwise a migration that creates a table with
+    sa.Identity() while the model declares Sequence() ships silently and
+    blows up on the first insert on MariaDB 10.3+ / SQLAlchemy 2.x (which
+    honors Sequence() on MySQL/MariaDB and emits SELECT nextval(...)).
+    """
+    from sqlalchemy import Sequence
+    from privacyidea.models import db
+
+    names: set[str] = set()
+    for table in db.metadata.tables.values():
+        for col in table.columns:
+            default = col.default
+            if isinstance(default, Sequence):
+                names.add(default.name)
+    return names
+
+
+def _get_existing_sequence_names(engine) -> set[str]:
+    """Return the set of sequence names present in the live database."""
+    with engine.connect() as conn:
+        if _is_postgres(str(engine.url)):
+            rows = conn.execute(
+                text("SELECT sequencename FROM pg_sequences WHERE schemaname = 'public'")
+            ).fetchall()
+        else:
+            rows = conn.execute(text(
+                "SELECT table_name FROM information_schema.tables "
+                "WHERE table_schema = DATABASE() AND table_type = 'SEQUENCE'"
+            )).fetchall()
+    return {r[0] for r in rows}
+
+
+def test_all_declared_sequences_exist_after_upgrade_to_head(flask_app):
+    """
+    Every Sequence(...) declared on a model must exist in the database after
+    upgrading to head. Alembic's autogenerate does not compare sequences, so
+    this check is not covered by test_schema_matches_models_after_upgrade_to_head.
+
+    Regression guard for the tokencredentialidhash_seq incident: migration
+    903a6ed6f6c4 created the table with sa.Identity() instead of sa.Sequence(),
+    so the sequence was never created. Inserts then failed on MariaDB 10.3+
+    with "Unknown SEQUENCE" because SQLAlchemy 2.x emits SELECT nextval(...)
+    whenever a column has a Sequence() default.
+    """
+    from flask_migrate import upgrade as flask_upgrade
+
+    _load_seed_db()
+    flask_upgrade()
+
+    engine = create_engine(DB_URL)
+    try:
+        actual = _get_existing_sequence_names(engine)
+    finally:
+        engine.dispose()
+
+    expected = _get_declared_sequence_names()
+    missing = expected - actual
+    assert not missing, (
+        f"The following sequences are declared on the models but do not exist "
+        f"in the database after upgrade to head: {sorted(missing)}.\n"
+        f"This means a migration creates the table without issuing CREATE SEQUENCE "
+        f"(e.g. via sa.Identity() instead of sa.Sequence()). Inserts will fail "
+        f"on MariaDB 10.3+ with 'Unknown SEQUENCE'."
     )
 
 
