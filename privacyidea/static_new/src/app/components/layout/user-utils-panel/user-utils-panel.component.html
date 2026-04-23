@@ -18,32 +18,35 @@
 -->
 
 <div class="utils-group">
+  <div class="flex-row profile-info">
   <span><mat-icon>account_box</mat-icon></span>
   <span class="profile-text">{{ profileText() }}</span>
   @if (localNode()) {
     <i class="node-text">{{ localNode() }}</i>
   }
-  <button
-    (click)="logout()"
-    aria-label="Logout"
-    i18n-aria-label
-    mat-icon-button
-    matTooltip="Logout">
-    <mat-icon>logout</mat-icon>
-  </button>
-  <div class="separator"></div>
-  <app-theme-switcher></app-theme-switcher>
-  <button
-    (click)="refreshPage()"
-    mat-icon-button
-    matTooltip="Refresh Resources">
-    <mat-icon>refresh</mat-icon>
-  </button>
-  <div
-    [ngClass]="[sessionTimerService.remainingTime()! < 31000 ? 'red-light' : sessionTimerService.remainingTime()! <
+  </div>
+  <div class="flex-row separator">
+    <app-theme-switcher></app-theme-switcher>
+    <button
+      (click)="refreshPage()"
+      mat-icon-button
+      matTooltip="Refresh Resources">
+      <mat-icon>refresh</mat-icon>
+    </button>
+    <div
+      [ngClass]="[sessionTimerService.remainingTime()! < 31000 ? 'red-light' : sessionTimerService.remainingTime()! <
      60000 ? 'yellow-light' : 'surface-highest']"
-    class="session-timer"
-    matTooltip="Time until session expires">
-    {{ sessionTimerService.remainingTime() | date: sessionTimeFormat() : "UTC" }}
+      class="session-timer"
+      matTooltip="Time until session expires">
+      {{ sessionTimerService.remainingTime() | date: sessionTimeFormat() : "UTC" }}
+    </div>
+    <button
+      (click)="logout()"
+      aria-label="Logout"
+      i18n-aria-label
+      mat-icon-button
+      matTooltip="Logout">
+      <mat-icon>logout</mat-icon>
+    </button>
   </div>
 </div>

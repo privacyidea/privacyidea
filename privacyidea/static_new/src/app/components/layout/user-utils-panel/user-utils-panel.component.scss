@@ -12,7 +12,7 @@
   gap: 4px;
   border: solid 1px var(--mat-sys-surface-container-highest);
   border-radius: var(--border-radius);
-  padding: 2px 6px;
+  padding-left: 8px;
   background: var(--mat-sys-surface-container);
 }
 
@@ -25,16 +25,21 @@
 }
 
 .separator {
-  width: 1px;
-  height: 20px;
-  background: var(--mat-sys-outline-variant);
-  margin: 0 2px;
+  background-color: var(--table-color);
+  border-radius: var(--border-radius);
+  align-items: center;
 }
 
 .profile-text {
   font-weight: bold;
   font-size: 14px;
   white-space: nowrap;
+}
+
+.profile-info {
+  padding: 0 8px;
+  gap: 4px;
+  align-items: center;
 }
 
 .node-text {

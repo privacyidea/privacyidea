@@ -21,7 +21,7 @@ import { Component, computed, inject } from "@angular/core";
 import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
 import { MatIcon } from "@angular/material/icon";
 import { MatTooltip } from "@angular/material/tooltip";
-import { MatFabButton, MatIconButton } from "@angular/material/button";
+import { MatIconButton } from "@angular/material/button";
 import { ThemeSwitcherComponent } from "@components/shared/theme-switcher/theme-switcher.component";
 import { DatePipe, NgClass } from "@angular/common";
 import { Router } from "@angular/router";
@@ -57,7 +57,10 @@ import {
 } from "../../../services/session-timer/session-timer.service";
 import { ResolverService, ResolverServiceInterface } from "../../../services/resolver/resolver.service";
 import { SmtpService, SmtpServiceInterface } from "../../../services/smtp/smtp.service";
-import { RadiusServerService, RadiusServerServiceInterface } from "../../../services/radius-server/radius-server.service";
+import {
+  RadiusServerService,
+  RadiusServerServiceInterface
+} from "../../../services/radius-server/radius-server.service";
 import { SmsGatewayService, SmsGatewayServiceInterface } from "../../../services/sms-gateway/sms-gateway.service";
 import {
   PrivacyideaServerService,
@@ -79,7 +82,7 @@ import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-e
 
 @Component({
   selector: "app-user-utils-panel",
-  imports: [MatIcon, MatIconButton, MatTooltip, ThemeSwitcherComponent, MatFabButton, NgClass, DatePipe],
+  imports: [MatIcon, MatIconButton, MatTooltip, ThemeSwitcherComponent, NgClass, DatePipe],
   templateUrl: "./user-utils-panel.component.html",
   styleUrl: "./user-utils-panel.component.scss"
 })

@@ -144,7 +144,7 @@
   </div>
 </mat-toolbar>
 
-<!-- SECONDARY TOP BAR (contextual sub-items) -->
+<!-- SECONDARY TOP BAR -->
 <ng-template #footerText>
   <span class="flex-column margin-right-16 footer-text">
     <div>   An open-source project
@@ -162,20 +162,19 @@
 
 <ng-template #supportDocs>
   <span class="spacer"></span>
-  <a
+  <button
     mat-button
-    href="https://netknights.it/support_link_admin"
-    target="_blank"
+    (click)="openSupport()"
     aria-label="Support"
-    class="nav-button green">
+    class="nav-button support-color">
     <mat-icon>support_agent</mat-icon>
     <span i18n>Support</span>
-  </a>
+  </button>
   <button
     mat-button
     (click)="documentationService.openDocumentation(contentService.routeUrl())"
     aria-label="Documentation"
-    class="nav-button yellow">
+    class="nav-button">
     <mat-icon>info_outline</mat-icon>
     <span i18n>Documentation</span>
   </button>

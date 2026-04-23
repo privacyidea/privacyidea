@@ -20,8 +20,8 @@ import { Component, computed, inject } from "@angular/core";
 import { NgClass, NgOptimizedImage, NgTemplateOutlet } from "@angular/common";
 import { MatToolbar } from "@angular/material/toolbar";
 import { MatTabsModule } from "@angular/material/tabs";
-import { ROUTE_PATHS } from "../../../route_paths";
-import { MatAnchor, MatButton, MatIconButton } from "@angular/material/button";
+import { ROUTE_PATHS } from "src/app/route_paths";
+import { MatButton } from "@angular/material/button";
 import { MatIcon, MatIconModule } from "@angular/material/icon";
 import { Router, RouterLink } from "@angular/router";
 import { UserService, UserServiceInterface } from "../../../services/user/user.service";
@@ -53,13 +53,11 @@ import { UserUtilsPanelComponent } from "@components/layout/user-utils-panel/use
     MatToolbar,
     MatTabsModule,
     MatButton,
-    MatIconButton,
     MatIconModule,
     NgOptimizedImage,
     MatIcon,
     RouterLink,
     NgClass,
-    MatAnchor,
     MatTooltipModule,
     FormsModule,
     UserUtilsPanelComponent,
@@ -99,15 +97,16 @@ export class NavigationComponent {
 
   activeSection = computed(() => {
     const url = this.contentService.routeUrl();
-    if (url.includes('containers')) return 'container';
-    if (url.startsWith(ROUTE_PATHS.USERS)) return 'users';
-    if (url.startsWith(ROUTE_PATHS.POLICIES)) return 'policies';
-    if (url.startsWith(ROUTE_PATHS.EVENTS)) return 'events';
-    if (url.startsWith(ROUTE_PATHS.AUDIT) || url.startsWith(ROUTE_PATHS.CLIENTS)) return 'audit';
-    if (url.startsWith('/external-services')) return 'external';
-    if (url.startsWith('/configuration') || url.startsWith(ROUTE_PATHS.SUBSCRIPTION) || url.startsWith(ROUTE_PATHS.MACHINE_RESOLVER)) return 'config';
-    if (url.startsWith(ROUTE_PATHS.TOKENS)) return 'token';
-    return 'token';
+    if (url.includes("containers")) return "container";
+    if (url.startsWith(ROUTE_PATHS.USERS)) return "users";
+    if (url.startsWith(ROUTE_PATHS.POLICIES)) return "policies";
+    if (url.startsWith(ROUTE_PATHS.EVENTS)) return "events";
+    if (url.startsWith(ROUTE_PATHS.AUDIT) || url.startsWith(ROUTE_PATHS.CLIENTS)) return "audit";
+    if (url.startsWith("/external-services")) return "external";
+    if (url.startsWith("/configuration") || url.startsWith(ROUTE_PATHS.SUBSCRIPTION)
+      || url.startsWith(ROUTE_PATHS.MACHINE_RESOLVER)) return "config";
+    if (url.startsWith(ROUTE_PATHS.TOKENS)) return "token";
+    return "token";
   });
 
   onSingleHeaderClick(event: MouseEvent, route_path: string): void {
@@ -116,5 +115,9 @@ export class NavigationComponent {
     event.stopPropagation();
 
     this.router.navigate([route_path]);
+  }
+
+  openSupport(): void {
+    window.open("https://netknights.it/support_link_admin", "_blank");
   }
 }
