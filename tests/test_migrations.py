@@ -1,7 +1,47 @@
 """
-Note: Data transformation tests for specific migrations do not belong in this
-file.  See ``tests/README.md`` for the full guide on when a per-migration test
-is required and how to write one.
+Generic, migration-agnostic checks for the Alembic migration chain.
+
+The goal of this file is to catch structural and behavioural regressions in
+the migration history *as a whole*, without knowing what any individual
+migration does. Concretely, it verifies that:
+
+  - The chain is well-formed: a single head, every down_revision points at a
+    real revision, every revision has a non-empty message.
+  - Upgrading from a pinned baseline (START_REVISION, currently v3.9) to head
+    produces every table the SQLAlchemy models declare, and the alembic
+    version stamp matches the script head.
+  - The resulting schema matches the models — columns, types, indexes,
+    constraints — using Alembic autogenerate, modulo a small set of
+    documented dialect false positives.
+  - Every Sequence() declared on a model exists in the live database after
+    upgrade. Alembic autogenerate does not compare sequences, so this is
+    checked separately.
+  - Every migration in the window has a working downgrade(), and every
+    upgrade → downgrade → upgrade round-trip produces the same per-table
+    columns/indexes/foreign-keys/unique-constraints both times. This catches
+    downgrades that forget to drop something (or upgrades that don't fully
+    restore after one).
+  - A default INSERT succeeds against every model-declared table after
+    upgrade-to-head, exercising the auto-PK path. This catches sequence/
+    identity misconfigurations and missing NOT NULL defaults that schema-
+    only checks cannot see.
+  - Downgrading to the baseline does not destroy data in tables that survive
+    the downgrade.
+
+Tests are run against the dialect provided in TEST_DATABASE_URL — the
+project supports MariaDB and PostgreSQL — and use a pre-written seed file
+per dialect (tests/testdata/migrations/) as a complete, on-disk snapshot of
+the database state at START_REVISION. No runtime fixups; the seed is
+authoritative.
+
+Migrations older than START_REVISION are intentionally not covered: the pin
+exists because nothing in the supported window upgrades from older state,
+and exercising those migrations would only burn CI on code paths that no
+real install hits anymore. Bump the pin when keeping it gets in the way.
+
+Data-transformation tests for specific migrations do NOT belong here. They
+live in tests/test_migration_<revision>.py and use MigrationTestBase. See
+tests/README.md for the full guide.
 """
 
 import os
@@ -9,11 +49,19 @@ import pathlib
 import time
 
 import pytest
-from alembic.config import Config as AlembicConfig
 from alembic.runtime.migration import MigrationContext
 from alembic.script import ScriptDirectory
 from sqlalchemy import create_engine, text, inspect as sa_inspect
 from sqlalchemy.exc import OperationalError
+
+from tests.migration_test_utils import (
+    DB_URL,
+    START_REVISION,
+    drop_all_tables,
+    get_alembic_cfg,
+    is_postgres,
+    load_seed,
+)
 
 # Skip these tests if no database URL is provided
 pytestmark = [
@@ -23,36 +71,6 @@ pytestmark = [
         reason="TEST_DATABASE_URL environment variable is not set"
     ),
 ]
-
-DB_URL = os.environ.get("TEST_DATABASE_URL", "")
-
-# The revision from which we test migrations forward to head.
-# Pinned at v3.9 (2022) — every migration added after this point is covered.
-# Update this pin when it becomes too old or causes issues.
-START_REVISION = "5cb310101a1f"  # v3.9: Create sequences needed for SQLAlchemy 1.4
-
-# Directory that holds dialect-specific seed SQL files.
-# Naming convention: seed_v<version>_<revision>_<dialect>.sql
-#   dialect = "mariadb" or "postgresql"
-SEED_SQL_DIR = pathlib.Path(__file__).parent / "testdata" / "migrations"
-
-
-def _get_seed_sql_path(db_url: str = DB_URL) -> pathlib.Path:
-    """Return the seed file path for the active dialect."""
-    dialect = "postgresql" if _is_postgres(db_url) else "mariadb"
-    return SEED_SQL_DIR / f"seed_v3.9_{START_REVISION}_{dialect}.sql"
-
-
-def _get_script_dir() -> str:
-    return str(pathlib.Path(__file__).parent.parent / "privacyidea" / "migrations")
-
-
-def _get_alembic_cfg() -> AlembicConfig:
-    ini_path = str(pathlib.Path(_get_script_dir()) / "alembic.ini")
-    cfg = AlembicConfig(ini_path)
-    cfg.set_main_option("script_location", _get_script_dir())
-    cfg.set_main_option("sqlalchemy.url", DB_URL)
-    return cfg
 
 
 def _get_expected_tables() -> set[str]:
@@ -68,27 +86,46 @@ def _get_tables(engine) -> set[str]:
     return set(sa_inspect(engine).get_table_names())
 
 
-def _get_schema_snapshot(engine) -> dict[str, set[str]]:
+def _get_schema_snapshot(engine) -> dict[str, dict]:
     """
-    Return a mapping of {table_name: {col_name, ...}} for every table in the DB.
-    This gives a richer comparison than just table names — it catches leftover
-    columns that a downgrade() forgot to drop, or columns that an upgrade() forgot
-    to add.
+    Return a per-table snapshot of columns, indexes, foreign keys, and unique
+    constraints. Used by the round-trip test to detect downgrades that forget
+    to drop something the upgrade added (or upgrades that don't fully restore
+    after a downgrade).
+
+    The snapshot is compared against itself across an upgrade→downgrade→upgrade
+    cycle on the same engine, so dialect-specific artefacts (e.g. MariaDB
+    auto-creating indexes for FK columns) appear in both snapshots and cancel.
     """
     inspector = sa_inspect(engine)
-    return {
-        table: {col["name"] for col in inspector.get_columns(table)}
-        for table in inspector.get_table_names()
-    }
+    snapshot: dict[str, dict] = {}
+    for table in inspector.get_table_names():
+        snapshot[table] = {
+            "columns": frozenset(col["name"] for col in inspector.get_columns(table)),
+            "indexes": frozenset(
+                (idx.get("name"), tuple(idx["column_names"]), bool(idx.get("unique", False)))
+                for idx in inspector.get_indexes(table)
+            ),
+            "foreign_keys": frozenset(
+                (
+                    fk.get("name"),
+                    tuple(fk["constrained_columns"]),
+                    fk["referred_table"],
+                    tuple(fk["referred_columns"]),
+                )
+                for fk in inspector.get_foreign_keys(table)
+            ),
+            "unique_constraints": frozenset(
+                (uc.get("name"), tuple(uc["column_names"]))
+                for uc in inspector.get_unique_constraints(table)
+            ),
+        }
+    return snapshot
 
 
 def _get_current_revision(engine) -> str | None:
     with engine.connect() as conn:
         return MigrationContext.configure(conn).get_current_revision()
-
-
-def _is_postgres(db_url: str = DB_URL) -> bool:
-    return db_url.startswith("postgresql")
 
 
 def _wait_for_db(engine, timeout: int = 30, interval: float = 1.0) -> None:
@@ -111,79 +148,17 @@ def _wait_for_db(engine, timeout: int = 30, interval: float = 1.0) -> None:
     ) from last_exc
 
 
-def _drop_all_tables(engine) -> None:
-    """Drop every table (and for Postgres, every sequence) in the database, dialect-safe."""
-    with engine.connect() as conn:
-        if _is_postgres(str(engine.url)):
-            # Postgres: drop each table with CASCADE to handle FK dependencies.
-            for table in sa_inspect(engine).get_table_names():
-                conn.execute(text(f'DROP TABLE IF EXISTS "{table}" CASCADE;'))
-            # Also drop all sequences so the seed file can re-create them cleanly.
-            sequences = conn.execute(
-                text("SELECT sequencename FROM pg_sequences WHERE schemaname = 'public';")
-            ).fetchall()
-            for (seq,) in sequences:
-                conn.execute(text(f'DROP SEQUENCE IF EXISTS "{seq}" CASCADE;'))
-        else:
-            # MariaDB/MySQL: disable FK checks, use backtick quoting.
-            conn.execute(text("SET FOREIGN_KEY_CHECKS = 0;"))
-            for table in sa_inspect(engine).get_table_names():
-                conn.execute(text(f"DROP TABLE IF EXISTS `{table}`;"))
-            conn.execute(text("SET FOREIGN_KEY_CHECKS = 1;"))
-        conn.commit()
-
-
-def _read_seed_statements(db_url: str = DB_URL) -> list[str]:
-    """
-    Read the dialect-specific seed SQL file and split it into individual
-    statements (split on semicolons), discarding empty / comment-only chunks.
-    """
-    seed_path = _get_seed_sql_path(db_url)
-    sql = seed_path.read_text(encoding="utf-8")
-    statements = []
-    for chunk in sql.split(";"):
-        stripped = chunk.strip()
-        if not stripped:
-            continue
-        # Discard chunks that consist entirely of comment lines
-        non_comment_lines = [
-            line for line in stripped.splitlines()
-            if line.strip() and not line.strip().startswith("--")
-        ]
-        if non_comment_lines:
-            statements.append(stripped)
-    return statements
-
-
-def _load_seed_db(db_url: str = DB_URL) -> None:
-    """
-    Load the dialect-specific v3.9 seed SQL file into the database.
-
-    Seed files are pre-written for each supported dialect (mariadb, postgresql)
-    so no on-the-fly SQL transformation is needed.
-    """
-    statements = _read_seed_statements(db_url)
-    engine = create_engine(db_url)
-    try:
-        with engine.connect() as conn:
-            for stmt in statements:
-                conn.execute(text(stmt))
-            conn.commit()
-    finally:
-        engine.dispose()
-
-
 @pytest.fixture(autouse=True)
 def clean_database():
     """Wipe the database before and after every test."""
     engine = create_engine(DB_URL)
     _wait_for_db(engine)
-    _drop_all_tables(engine)
+    drop_all_tables(engine)
     engine.dispose()
     yield
     engine = create_engine(DB_URL)
     _wait_for_db(engine)
-    _drop_all_tables(engine)
+    drop_all_tables(engine)
     engine.dispose()
 
 
@@ -191,7 +166,7 @@ def clean_database():
 def flask_app():
     """
     Provide a Flask app context pointing at the test database.
-    Schema setup is done by _load_seed_db(), not db.create_all().
+    Schema setup is done by load_seed(), not db.create_all().
     """
     from privacyidea.app import create_app
 
@@ -211,7 +186,7 @@ def test_migration_history_has_single_head():
     down_revision parents) — these are intentional and valid. What matters
     is that all branches are eventually merged into a single head.
     """
-    heads = ScriptDirectory.from_config(_get_alembic_cfg()).get_heads()
+    heads = ScriptDirectory.from_config(get_alembic_cfg()).get_heads()
     assert len(heads) == 1, (
         f"Migration history has multiple heads: {heads}. "
         f"Either add a merge migration or fix the branching revision."
@@ -224,7 +199,7 @@ def test_migrations_since_start_revision_have_non_empty_messages():
     An empty message makes the migration history unreadable and the upgrade log
     unhelpful (e.g. 'Applying abc -> def (head), empty message...').
     """
-    script = ScriptDirectory.from_config(_get_alembic_cfg())
+    script = ScriptDirectory.from_config(get_alembic_cfg())
     revisions_in_window = list(script.iterate_revisions("head", START_REVISION))
 
     empty = [
@@ -246,7 +221,7 @@ def test_upgrade_to_head_creates_all_model_tables(flask_app):
     """
     from flask_migrate import upgrade as flask_upgrade
 
-    _load_seed_db()
+    load_seed()
     flask_upgrade()
 
     engine = create_engine(DB_URL)
@@ -265,10 +240,10 @@ def test_current_revision_matches_head_after_upgrade(flask_app):
     """After upgrading to head, the alembic_version in the DB must equal the head revision."""
     from flask_migrate import upgrade as flask_upgrade
 
-    _load_seed_db()
+    load_seed()
     flask_upgrade()
 
-    head_rev = ScriptDirectory.from_config(_get_alembic_cfg()).get_current_head()
+    head_rev = ScriptDirectory.from_config(get_alembic_cfg()).get_current_head()
     engine = create_engine(DB_URL)
     current_rev = _get_current_revision(engine)
     engine.dispose()
@@ -285,10 +260,10 @@ def test_migrations_since_start_revision_are_reversible(flask_app):
     """
     from alembic import command
 
-    _load_seed_db()
-    command.upgrade(_get_alembic_cfg(), "head")
+    load_seed()
+    command.upgrade(get_alembic_cfg(), "head")
 
-    script = ScriptDirectory.from_config(_get_alembic_cfg())
+    script = ScriptDirectory.from_config(get_alembic_cfg())
     # Walk from head down to (but not including) START_REVISION
     revisions_in_window = list(script.iterate_revisions("head", START_REVISION))
 
@@ -304,7 +279,7 @@ def test_migrations_since_start_revision_are_reversible(flask_app):
         else:
             target = rev.down_revision
         try:
-            command.downgrade(_get_alembic_cfg(), target)
+            command.downgrade(get_alembic_cfg(), target)
         except Exception as e:
             pytest.fail(
                 f"downgrade() of revision {rev.revision!r} "
@@ -320,14 +295,14 @@ def test_upgrade_then_downgrade_then_upgrade_is_idempotent(flask_app):
     from alembic import command
     from flask_migrate import upgrade as flask_upgrade
 
-    _load_seed_db()
+    load_seed()
     flask_upgrade()
 
     engine = create_engine(DB_URL)
     tables_first = _get_tables(engine)
     engine.dispose()
 
-    command.downgrade(_get_alembic_cfg(), START_REVISION)
+    command.downgrade(get_alembic_cfg(), START_REVISION)
     flask_upgrade()
 
     engine = create_engine(DB_URL)
@@ -361,7 +336,7 @@ def test_schema_matches_models_after_upgrade_to_head(flask_app):
     from flask_migrate import upgrade as flask_upgrade
     from privacyidea.models import db
 
-    _load_seed_db()
+    load_seed()
     flask_upgrade()
 
     engine = create_engine(DB_URL)
@@ -388,7 +363,7 @@ def test_schema_matches_models_after_upgrade_to_head(flask_app):
     #
     # Postgres:
     # - 'modify_nullable': similar mismatch for Boolean columns.
-    if _is_postgres():
+    if is_postgres():
         # PostgreSQL false positives:
         # - 'add_index'/'remove_index': Alembic detects named non-unique indexes
         #   declared in models (ix_*) that migrations don't explicitly create,
@@ -460,6 +435,220 @@ def test_schema_matches_models_after_upgrade_to_head(flask_app):
     )
 
 
+def _get_declared_sequence_names() -> set[str]:
+    """
+    Collect every Sequence(...) name declared on any mapped_column across the
+    models. Alembic's autogenerate does not compare sequences, so we have to
+    check these ourselves — otherwise a migration that creates a table with
+    sa.Identity() while the model declares Sequence() ships silently and
+    blows up on the first insert on MariaDB 10.3+ / SQLAlchemy 2.x (which
+    honors Sequence() on MySQL/MariaDB and emits SELECT nextval(...)).
+    """
+    from sqlalchemy import Sequence
+    from privacyidea.models import db
+
+    names: set[str] = set()
+    for table in db.metadata.tables.values():
+        for col in table.columns:
+            default = col.default
+            if isinstance(default, Sequence):
+                names.add(default.name)
+    return names
+
+
+def _get_existing_sequence_names(engine) -> set[str]:
+    """Return the set of sequence names present in the live database."""
+    with engine.connect() as conn:
+        if is_postgres(str(engine.url)):
+            rows = conn.execute(
+                text("SELECT sequencename FROM pg_sequences WHERE schemaname = 'public'")
+            ).fetchall()
+        else:
+            rows = conn.execute(text(
+                "SELECT table_name FROM information_schema.tables "
+                "WHERE table_schema = DATABASE() AND table_type = 'SEQUENCE'"
+            )).fetchall()
+    return {r[0] for r in rows}
+
+
+def test_all_declared_sequences_exist_after_upgrade_to_head(flask_app):
+    """
+    Every Sequence(...) declared on a model must exist in the database after
+    upgrading to head. Alembic's autogenerate does not compare sequences, so
+    this check is not covered by test_schema_matches_models_after_upgrade_to_head.
+
+    On MariaDB 10.3+ / SQLAlchemy 2.x, a column with a Sequence() default
+    causes SQLAlchemy to emit SELECT nextval(<seq>) on insert. If the
+    corresponding CREATE SEQUENCE was never issued by a migration (e.g. the
+    table was created with sa.Identity() while the model declares Sequence()),
+    every insert fails at runtime with "Unknown SEQUENCE".
+    """
+    from flask_migrate import upgrade as flask_upgrade
+
+    load_seed()
+    flask_upgrade()
+
+    engine = create_engine(DB_URL)
+    try:
+        # supports_sequences is a class attribute on the base MySQL dialect
+        # (False) and is upgraded to True only after connection-time server
+        # detection identifies a MariaDB server. Connect first, then check.
+        with engine.connect() as conn:
+            if not conn.dialect.supports_sequences:
+                pytest.skip(
+                    f"Dialect {conn.dialect.name!r} does not support sequences; "
+                    "the model declares Sequence() but the dialect ignores it."
+                )
+        actual = _get_existing_sequence_names(engine)
+    finally:
+        engine.dispose()
+
+    expected = _get_declared_sequence_names()
+    missing = expected - actual
+    assert not missing, (
+        f"The following sequences are declared on the models but do not exist "
+        f"in the database after upgrade to head: {sorted(missing)}.\n"
+        f"This means a migration creates the table without issuing CREATE SEQUENCE "
+        f"(e.g. via sa.Identity() instead of sa.Sequence()). Inserts will fail "
+        f"on MariaDB 10.3+ with 'Unknown SEQUENCE'."
+    )
+
+
+def _generic_dummy_value(col):
+    """
+    Return a value appropriate for *col*'s SQL type, used by the insert smoke
+    test to populate NOT NULL columns without per-table fixtures. Returns None
+    only for column types we don't know how to fill — caller must skip those.
+    """
+    import datetime as dt
+    from sqlalchemy import (
+        BigInteger, Boolean, Date, DateTime, Float, Integer, Interval,
+        JSON, LargeBinary, Numeric, SmallInteger, String, Text, Time,
+        Unicode, UnicodeText,
+    )
+
+    t = col.type
+    if isinstance(t, (String, Unicode, UnicodeText, Text)):
+        length = getattr(t, "length", None) or 8
+        return "x" * min(length, 8)
+    if isinstance(t, Boolean):
+        return False
+    if isinstance(t, (Integer, BigInteger, SmallInteger)):
+        return 1
+    if isinstance(t, DateTime):
+        return dt.datetime(2000, 1, 1)
+    if isinstance(t, Date):
+        return dt.date(2000, 1, 1)
+    if isinstance(t, Time):
+        return dt.time(0, 0)
+    if isinstance(t, Interval):
+        return dt.timedelta(0)
+    if isinstance(t, (Float, Numeric)):
+        return 0
+    if isinstance(t, LargeBinary):
+        return b"x"
+    if isinstance(t, JSON):
+        return {}
+    return None
+
+
+def test_default_insert_succeeds_for_every_model_table(flask_app):
+    """
+    For every table the SQLAlchemy models declare, build a minimal INSERT and
+    execute it against the live (upgraded-to-head) DB. Catches failures that
+    schema checks cannot — e.g. a Sequence default declared on the model but
+    no CREATE SEQUENCE issued by any migration, an Identity column SQLAlchemy
+    can't drive on this dialect, or a NOT NULL column whose default isn't
+    actually applied.
+
+    Strategy:
+      - PKs whose default is a Sequence or that are autoincrement are omitted
+        so SQLAlchemy fires its auto-PK path — this is the exact path that
+        breaks when the migration created the table without the matching
+        CREATE SEQUENCE / AUTO_INCREMENT machinery the model expects.
+      - NOT NULL columns without any default get a type-appropriate dummy.
+      - Nullable columns and columns with Python/server defaults are omitted.
+      - FK checks are disabled for the duration so we don't have to insert in
+        dependency order; this test is about INSERT mechanics, not referential
+        integrity.
+      - All inserts run inside a single transaction that is rolled back at
+        the end, so no rows leak into the test DB.
+    """
+    from flask_migrate import upgrade as flask_upgrade
+    from sqlalchemy import Sequence
+    from privacyidea.models import db
+
+    load_seed()
+    flask_upgrade()
+
+    engine = create_engine(DB_URL)
+    is_pg = is_postgres()
+    failures: list[tuple[str, str]] = []
+
+    try:
+        with engine.connect() as conn:
+            outer = conn.begin()
+            try:
+                if is_pg:
+                    conn.execute(text("SET session_replication_role = 'replica'"))
+                else:
+                    conn.execute(text("SET FOREIGN_KEY_CHECKS = 0"))
+
+                for table in db.metadata.sorted_tables:
+                    values = {}
+                    skip_reason = None
+                    for col in table.columns:
+                        # A PK column is auto-generated only if it has an
+                        # explicit Sequence/Identity, OR it's the sole integer
+                        # PK with autoincrement not explicitly disabled.
+                        # Composite PKs and string PKs do not auto-generate
+                        # — every member must be filled by the caller.
+                        from sqlalchemy import BigInteger, Integer, SmallInteger
+                        is_sole_int_pk = (
+                            col.primary_key
+                            and len(table.primary_key.columns) == 1
+                            and isinstance(col.type, (Integer, BigInteger, SmallInteger))
+                            and col.autoincrement is not False
+                        )
+                        is_auto_pk = isinstance(col.default, Sequence) or is_sole_int_pk
+                        if is_auto_pk:
+                            continue
+                        if col.default is not None or col.server_default is not None:
+                            continue
+                        if col.nullable:
+                            continue
+                        val = _generic_dummy_value(col)
+                        if val is None:
+                            skip_reason = f"no dummy generator for column {col.name!r} of type {col.type!r}"
+                            break
+                        values[col.name] = val
+
+                    if skip_reason is not None:
+                        failures.append((table.name, f"SKIPPED: {skip_reason}"))
+                        continue
+
+                    sp = conn.begin_nested()
+                    try:
+                        conn.execute(table.insert().values(**values))
+                        sp.rollback()
+                    except Exception as e:
+                        sp.rollback()
+                        first_line = str(e).splitlines()[0] if str(e) else type(e).__name__
+                        failures.append((table.name, first_line))
+            finally:
+                outer.rollback()
+    finally:
+        engine.dispose()
+
+    assert not failures, (
+        "INSERT failed for the following model tables after upgrade-to-head. "
+        "This usually means a migration created the table without the auto-PK "
+        "machinery the model expects (e.g. sa.Identity() instead of sa.Sequence(), "
+        "or a NOT NULL column added without a default):\n"
+        + "\n".join(f"  {tbl}: {msg}" for tbl, msg in failures)
+    )
+
+
 def test_all_down_revisions_point_to_existing_revisions():
     """
     Every migration's down_revision must reference a revision that actually
@@ -469,7 +658,7 @@ def test_all_down_revisions_point_to_existing_revisions():
     Note: merge revisions have a tuple of down_revisions (multiple parents),
     which is valid Alembic syntax — all parents are checked individually.
     """
-    script = ScriptDirectory.from_config(_get_alembic_cfg())
+    script = ScriptDirectory.from_config(get_alembic_cfg())
     all_revisions = {rev.revision for rev in script.walk_revisions()}
 
     def _iter_down_revisions(rev):
@@ -517,12 +706,12 @@ def test_each_migration_survives_round_trip(flask_app):
     """
     from alembic import command
 
-    script = ScriptDirectory.from_config(_get_alembic_cfg())
+    script = ScriptDirectory.from_config(get_alembic_cfg())
     # Chronological order: oldest (just after START_REVISION) first.
     revisions_in_window = list(reversed(list(script.iterate_revisions("head", START_REVISION))))
 
     # Set up the DB once — all iterations share this starting point.
-    _load_seed_db()
+    load_seed()
 
     for rev in revisions_in_window:
         # Merge revisions have a tuple of parents — use the first one.
@@ -535,7 +724,7 @@ def test_each_migration_survives_round_trip(flask_app):
 
         # 1. Upgrade to the revision under test.
         try:
-            command.upgrade(_get_alembic_cfg(), rev.revision)
+            command.upgrade(get_alembic_cfg(), rev.revision)
         except Exception as e:
             pytest.fail(
                 f"First upgrade() to revision {rev.revision!r} ('{rev.doc}') failed: {e}"
@@ -547,7 +736,7 @@ def test_each_migration_survives_round_trip(flask_app):
 
         # 2. Downgrade one step back.
         try:
-            command.downgrade(_get_alembic_cfg(), parent_revision)
+            command.downgrade(get_alembic_cfg(), parent_revision)
         except Exception as e:
             pytest.fail(
                 f"downgrade() of revision {rev.revision!r} ('{rev.doc}') "
@@ -556,7 +745,7 @@ def test_each_migration_survives_round_trip(flask_app):
 
         # 3. Upgrade to the revision again.
         try:
-            command.upgrade(_get_alembic_cfg(), rev.revision)
+            command.upgrade(get_alembic_cfg(), rev.revision)
         except Exception as e:
             pytest.fail(
                 f"Second upgrade() to revision {rev.revision!r} ('{rev.doc}') "
@@ -579,18 +768,26 @@ def test_each_migration_survives_round_trip(flask_app):
             f"  Only after second upgrade: {tables_second - tables_first}"
         )
 
-        # Compare columns per table
+        # Compare columns, indexes, FKs and unique constraints per table.
+        # If any aspect differs, the offending downgrade() likely forgot to
+        # drop something the upgrade() added (or vice versa).
+        ASPECT_HINTS = {
+            "columns": "downgrade() likely forgot to drop a column, or upgrade() forgot to add one",
+            "indexes": "downgrade() likely forgot to drop an index, or upgrade() forgot to recreate one",
+            "foreign_keys": "downgrade() likely forgot to drop a foreign key, or upgrade() forgot to recreate one",
+            "unique_constraints": "downgrade() likely forgot to drop a unique constraint, or upgrade() forgot to recreate one",
+        }
         for table in tables_first:
-            cols_first = schema_after_first_upgrade[table]
-            cols_second = schema_after_second_upgrade.get(table, set())
-            assert cols_first == cols_second, (
-                f"Migration {rev.revision!r} ('{rev.doc}'): column set for table "
-                f"'{table}' differs between first and second upgrade after round-trip.\n"
-                f"  Only after first upgrade:  {cols_first - cols_second}\n"
-                f"  Only after second upgrade: {cols_second - cols_first}\n"
-                f"  This likely means downgrade() forgot to drop a column, or "
-                f"upgrade() forgot to add one."
-            )
+            for aspect, hint in ASPECT_HINTS.items():
+                first = schema_after_first_upgrade[table][aspect]
+                second = schema_after_second_upgrade[table][aspect]
+                assert first == second, (
+                    f"Migration {rev.revision!r} ('{rev.doc}'): {aspect} for table "
+                    f"'{table}' differ between first and second upgrade after round-trip.\n"
+                    f"  Only after first upgrade:  {sorted(first - second)}\n"
+                    f"  Only after second upgrade: {sorted(second - first)}\n"
+                    f"  {hint}."
+                )
 
         assert current_rev == rev.revision, (
             f"After round-trip for {rev.revision!r}, current revision is "
@@ -612,12 +809,12 @@ def test_downgrade_does_not_destroy_data_in_surviving_tables(flask_app):
     from alembic import command
     from flask_migrate import upgrade as flask_upgrade
 
-    _load_seed_db()
+    load_seed()
     flask_upgrade()
 
     # The seed already has realm rows (id=1 'defrealm', id=2 'testrealm').
     # Downgrade all the way back to START_REVISION and verify they survived.
-    command.downgrade(_get_alembic_cfg(), START_REVISION)
+    command.downgrade(get_alembic_cfg(), START_REVISION)
 
     engine = create_engine(DB_URL)
     with engine.connect() as conn:
