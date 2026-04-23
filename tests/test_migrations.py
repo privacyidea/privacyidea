@@ -573,6 +573,15 @@ def test_all_declared_sequences_exist_after_upgrade_to_head(flask_app):
 
     engine = create_engine(DB_URL)
     try:
+        # supports_sequences is a class attribute on the base MySQL dialect
+        # (False) and is upgraded to True only after connection-time server
+        # detection identifies a MariaDB server. Connect first, then check.
+        with engine.connect() as conn:
+            if not conn.dialect.supports_sequences:
+                pytest.skip(
+                    f"Dialect {conn.dialect.name!r} does not support sequences; "
+                    "the model declares Sequence() but the dialect ignores it."
+                )
         actual = _get_existing_sequence_names(engine)
     finally:
         engine.dispose()
