@@ -159,7 +159,7 @@ describe("ContainerCreateComponent", () => {
       .mockReturnValue(of({ result: { value: { container_serial: "C-001" } } } as any));
     jest.spyOn(containerServiceMock, "pollContainerRolloutState").mockReturnValue(
       of({
-        result: { value: { containers: [{ info: { registration_state: "ok" } }] } }
+        result: { value: { containers: [{ info: { registration_state: "client_wait" } }] } }
       } as any)
     );
 

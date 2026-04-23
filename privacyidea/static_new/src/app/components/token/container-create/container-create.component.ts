@@ -29,7 +29,8 @@ import {
   ViewChild,
   ElementRef,
   effect,
-  untracked
+  untracked,
+  Signal
 } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { MatButton, MatIconButton } from "@angular/material/button";
@@ -80,6 +81,7 @@ import {
   ContainerRegistrationCompletedDialogData
 } from "./container-registration-completed-dialog/container-registration-completed-dialog.component";
 import { ContainerRegistrationCompletedDialogWizardComponent } from "./container-registration-completed-dialog/container-registration-completed-dialog.wizard.component";
+import { ContainerTemplateEditBodyComponent } from "../container-templates/container-template-edit/container-template-edit-body/container-template-edit-body.component";
 
 @Component({
   selector: "app-container-create",
@@ -105,29 +107,25 @@ import { ContainerRegistrationCompletedDialogWizardComponent } from "./container
     ContainerRegistrationConfigComponent,
     UserAssignmentComponent,
     MatSuffix,
-    ClearButtonComponent
+    ClearButtonComponent,
+    ContainerTemplateEditBodyComponent
   ],
   templateUrl: "./container-create.component.html",
   styleUrl: "./container-create.component.scss"
 })
 export class ContainerCreateComponent {
-  protected readonly versioningService: VersioningServiceInterface = inject(VersioningService);
   protected readonly userService: UserServiceInterface = inject(UserService);
-  protected readonly realmService: RealmServiceInterface = inject(RealmService);
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
   protected readonly containerTemplateService: ContainerTemplateService = inject(ContainerTemplateService);
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
-  protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
   protected readonly renderer: Renderer2 = inject(Renderer2);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
-  protected readonly wizard: boolean = false;
-  private router = inject(Router);
+  private readonly router = inject(Router);
   private observer!: IntersectionObserver;
   containerSerial = this.containerService.containerSerial;
   description = signal("");
-  tokens = computed<TokenEnrollmentPayload[]>(() => this.selectedTemplate()?.template_options.tokens ?? []);
   selectedTemplate = signal<ContainerTemplate | null>(null);
   selectedTemplateName = computed<string>(() => this.selectedTemplate()?.name ?? "");
   templateOptions = this.containerTemplateService.templates;
@@ -171,7 +169,7 @@ export class ContainerCreateComponent {
     this.selectedTemplate.set(null);
   };
 
-  constructor(protected registrationDialog: MatDialog) {
+  constructor() {
     // Clear container serial and detail resource when entering create page
     this.containerService.containerSerial.set("");
     this.containerService.containerDetailResource.set(undefined);
@@ -186,47 +184,24 @@ export class ContainerCreateComponent {
     effect(() => {
       const serial = this.containerService.containerSerial();
 
-      if (!serial) {
-        return;
-      }
-
-      if (!this.containerService.containerDetailResource.hasValue()) {
-        return;
-      }
-
+      if (!serial || !this.containerService.containerDetailResource.hasValue()) return;
       const containerDetailResource = this.containerService.containerDetailResource.value();
-      if (containerDetailResource?.result?.value) {
-        const container = containerDetailResource.result.value.containers[0];
-        const registrationState = container?.info?.registration_state;
+      if (!containerDetailResource?.result?.value) return;
+      const container = containerDetailResource.result.value.containers[0];
+      const registrationState = container?.info?.registration_state;
+      if (registrationState !== "registered") return;
 
-        if (registrationState !== "client_wait") {
-          this.registrationDialog.closeAll();
-          this.containerService.stopPolling();
+      this.dialogService.closeAllDialogs();
+      this.containerService.stopPolling();
 
-          if (
-            container?.type === "smartphone" &&
-            this.authService.containerWizard().registration &&
-            this.authService.actionAllowed("container_register")
-          ) {
-            let registrationCompletedDialogComponent: any = ContainerRegistrationCompletedDialogComponent;
-            if (this.wizard) {
-              registrationCompletedDialogComponent = ContainerRegistrationCompletedDialogWizardComponent;
-            }
+      this.openRegistrationCompletedDialog(serial);
+    });
+  }
 
-            this.registrationDialog.open(registrationCompletedDialogComponent, {
-              data: { containerSerial: serial } as ContainerRegistrationCompletedDialogData
-            });
-          } else if (this.wizard) {
-            this.openRegistrationDialog({
-              result: {
-                value: {
-                  container_serial: serial
-                }
-              }
-            } as unknown as PiResponse<ContainerRegisterData>);
-          }
-        }
-      }
+  protected openRegistrationCompletedDialog(serial: string) {
+    this.dialogService.openDialog({
+      component: ContainerRegistrationCompletedDialogComponent,
+      data: { containerSerial: serial } as ContainerRegistrationCompletedDialogData
     });
   }
 
@@ -289,8 +264,9 @@ export class ContainerCreateComponent {
     if (this.selectedTemplateName()) {
       createData.template_name = this.selectedTemplateName();
     }
+    console.log("Creating container with data:", createData);
     this.containerService.createContainer(createData).subscribe({
-      next: (response) => {
+      next: (response: PiResponse<{ container_serial: string }>) => {
         const containerSerial = response.result?.value?.container_serial;
         if (!containerSerial) {
           this.notificationService.openSnackBar("Container creation failed. No container serial returned.");
@@ -298,8 +274,6 @@ export class ContainerCreateComponent {
         }
         if (this.generateQRCode()) {
           this.registerContainer(containerSerial);
-        } else if (this.wizard) {
-          this.containerSerial.set(containerSerial);
         } else {
           this.router.navigateByUrl(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + containerSerial);
           this.containerSerial.set(containerSerial);
@@ -308,7 +282,7 @@ export class ContainerCreateComponent {
     });
   }
 
-  registerContainer(serial: string, regenerate: boolean = false) {
+  protected registerContainer(serial: string, regenerate: boolean = false) {
     this.containerService
       .registerContainer({
         container_serial: serial,
@@ -331,18 +305,16 @@ export class ContainerCreateComponent {
     this.selectedTemplate.set(null);
   }
 
-  private openRegistrationDialog(response: PiResponse<ContainerRegisterData>) {
+  protected openRegistrationDialog(response: PiResponse<ContainerRegisterData>) {
     this.dialogData.set({
       response: response,
       containerSerial: this.containerSerial,
       registerContainer: this.registerContainer.bind(this)
     });
-    let dialogComponent: any = ContainerCreatedDialogComponent;
-    if (this.wizard) {
-      dialogComponent = ContainerCreatedDialogWizardComponent;
-    }
-    this.registrationDialog.open(dialogComponent, {
-      data: this.dialogData
+
+    this.dialogService.openDialog({
+      component: ContainerCreatedDialogComponent,
+      data: this.dialogData as Signal<ContainerCreationDialogData>
     });
   }
 }

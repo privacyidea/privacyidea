@@ -1,4 +1,4 @@
-import { Component, Input, model, output } from "@angular/core";
+import { Component, computed, Input, model, output } from "@angular/core";
 import { ContainerTemplateAddTokenComponent } from "../../dialogs/container-template-edit-dialog/container-template-add-token-chips/container-template-add-token.component";
 import { TemplateAddedTokenRowComponent } from "../../dialogs/container-template-edit-dialog/template-added-token-row/template-added-token-row.component";
 import { ContainerTemplate } from "src/app/services/container/container.service";
@@ -15,7 +15,8 @@ import { TokenEnrollmentPayload } from "src/app/mappers/token-api-payload/_token
 export class ContainerTemplateEditBodyComponent {
   template = model.required<ContainerTemplate>();
   availableTokenTypes = model.required<string[]>();
-  tokens = model.required<TokenEnrollmentPayload[]>();
+
+  tokens = computed(() => this.template().template_options?.tokens || []);
 
   editTemplate = output<Partial<ContainerTemplate>>();
 
@@ -42,12 +43,14 @@ export class ContainerTemplateEditBodyComponent {
   }
   // --- Private Helper Methods ---
   private updateTokens(tokens: TokenEnrollmentPayload[]) {
-    this.editTemplate.emit({
+    const editedTemplate: Partial<ContainerTemplate> = {
       template_options: {
         ...this.template().template_options,
         tokens
       }
-    });
+    };
+    console.log("Emitting edited template:", editedTemplate);
+    this.editTemplate.emit(editedTemplate);
   }
 
   onAddToken(tokenType: string) {

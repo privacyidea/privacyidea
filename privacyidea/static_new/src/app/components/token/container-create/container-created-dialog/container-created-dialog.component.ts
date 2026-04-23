@@ -27,6 +27,7 @@ import {
   ContainerServiceInterface
 } from "../../../../services/container/container.service";
 import { ContentService } from "../../../../services/content/content.service";
+import { AbstractDialogComponent } from "src/app/components/shared/dialog/abstract-dialog/abstract-dialog.component";
 
 export type ContainerCreationDialogData = {
   response: PiResponse<ContainerRegisterData>;
@@ -40,13 +41,12 @@ export type ContainerCreationDialogData = {
   templateUrl: "./container-created-dialog.component.html",
   styleUrl: "./container-created-dialog.component.scss"
 })
-export class ContainerCreatedDialogComponent {
+export class ContainerCreatedDialogComponent extends AbstractDialogComponent<Signal<ContainerCreationDialogData>> {
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
-  protected readonly dialogRef: MatDialogRef<ContainerCreatedDialogComponent> = inject(MatDialogRef);
-  public readonly data: Signal<ContainerCreationDialogData> = inject(MAT_DIALOG_DATA);
   private contentService = inject(ContentService);
 
   constructor() {
+    super();
     this.dialogRef.afterClosed().subscribe(() => {
       this.containerService.stopPolling();
     });
@@ -58,6 +58,8 @@ export class ContainerCreatedDialogComponent {
   }
 
   regenerateQRCode() {
-    this.data().registerContainer(this.data().containerSerial(), true);
+    const data = this.data();
+    if (!data) return;
+    data.registerContainer(data.containerSerial(), true);
   }
 }

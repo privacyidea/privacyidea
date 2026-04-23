@@ -120,11 +120,10 @@
               <mat-expansion-panel-header>
                 <mat-panel-title i18n> Selected Template Details</mat-panel-title>
               </mat-expansion-panel-header>
-              <app-container-template-edit-body
+              <!-- <app-container-template-edit-body
                 [template]="selectedTemplate()!"
-                (templateChange)="selectedTemplate.set($event)"
-                [tokens]="tokens()!"
-                [availableTokenTypes]="availableTokenTypes()" />
+                (templateChange)="onTemplateChange($event)"
+                [availableTokenTypes]="availableTokenTypes()" /> -->
             </mat-expansion-panel>
           }
         </div>

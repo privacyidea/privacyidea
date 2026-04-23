@@ -66,9 +66,5 @@ import { ContainerCreateComponent } from "./container-create.component";
   styleUrl: "./container-create.component.scss"
 })
 export class ContainerCreateSelfServiceComponent extends ContainerCreateComponent {
-  constructor(registrationDialog: MatDialog) {
-    super(registrationDialog);
-  }
-
   override userSelected = computed(() => true);
 }

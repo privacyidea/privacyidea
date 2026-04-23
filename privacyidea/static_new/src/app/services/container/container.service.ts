@@ -38,10 +38,14 @@ export interface ContainerDetails {
   count?: number;
   containers: Array<ContainerDetailData>;
 }
+type ContainerRegistrationState = "registered" | "client_wait";
 
 export interface ContainerDetailData {
   description?: string;
-  info?: any;
+  info?: {
+    [key: string]: any;
+    registration_state?: ContainerRegistrationState;
+  };
   internal_info_keys?: any[];
   last_authentication?: any;
   last_synchronization?: any;
@@ -387,7 +391,7 @@ export class ContainerService implements ContainerServiceInterface {
   });
 
   containerOptions = linkedSignal({
-    source: () => this.containerResource.hasValue() ? this.containerResource.value() : undefined,
+    source: () => (this.containerResource.hasValue() ? this.containerResource.value() : undefined),
     computation: (containerResource) => {
       if (!containerResource) return [];
       return containerResource.result?.value?.containers.map((container) => container.serial) ?? [];
@@ -400,17 +404,16 @@ export class ContainerService implements ContainerServiceInterface {
   });
 
   containersForTokenType = linkedSignal({
-      source: () => this.containerResource.hasValue() ? this.containerResource.value() : undefined,
-      computation: (containerResource) => {
-        if (!containerResource) return [];
-        return (
-          containerResource.result?.value?.containers
-            .filter((container) => this.compatibleTypes().includes(container.type))
-            .map((container) => container.serial) ?? []
-        );
-      }
+    source: () => (this.containerResource.hasValue() ? this.containerResource.value() : undefined),
+    computation: (containerResource) => {
+      if (!containerResource) return [];
+      return (
+        containerResource.result?.value?.containers
+          .filter((container) => this.compatibleTypes().includes(container.type))
+          .map((container) => container.serial) ?? []
+      );
     }
-  );
+  });
 
   containerSelection: WritableSignal<ContainerDetailData[]> = linkedSignal({
     source: () => ({
@@ -496,7 +499,7 @@ export class ContainerService implements ContainerServiceInterface {
   });
 
   containerDetail: WritableSignal<ContainerDetails> = linkedSignal({
-    source: () => this.containerDetailResource.hasValue() ? this.containerDetailResource.value() : undefined,
+    source: () => (this.containerDetailResource.hasValue() ? this.containerDetailResource.value() : undefined),
     computation: (containerDetailResource, previous) => {
       const containerDetail = containerDetailResource?.result?.value;
       if (containerDetail) {

@@ -37,13 +37,20 @@ import { environment } from "../../../../../environments/environment";
 })
 export class ContainerCreatedDialogWizardComponent extends ContainerCreatedDialogComponent {
   protected override readonly containerService: ContainerServiceInterface = inject(ContainerService);
-  protected override readonly dialogRef: MatDialogRef<ContainerCreatedDialogWizardComponent> = inject(MatDialogRef);
+  // protected override readonly dialogRef: MatDialogRef<ContainerCreatedDialogWizardComponent> = inject(MatDialogRef);
   public readonly authService: AuthServiceInterface = inject(AuthService);
-  tagData: Signal<Record<string, string>> = computed(() => ({
-    containerSerial: this.data().containerSerial(),
-    containerRegistrationURL: this.data().response.result?.value?.container_url?.value || "",
-    containerRegistrationQR: this.data().response.result?.value?.container_url?.img || ""
-  }));
+  tagData = computed<Record<string, string>>(() => {
+    const data = this.data();
+    if (!data) {
+      const record = {};
+      return record;
+    }
+    return {
+      containerSerial: data.containerSerial(),
+      containerRegistrationURL: data.response.result?.value?.container_url?.value || "",
+      containerRegistrationQR: data.response.result?.value?.container_url?.img || ""
+    };
+  });
 
   // TODO: Get custom path from pi.cfg
   customizationPath = "/static/public/customize/";
@@ -66,9 +73,8 @@ export class ContainerCreatedDialogWizardComponent extends ContainerCreatedDialo
     })
     .pipe(
       catchError(() => of("")),
-      map((raw) => this.sanitizer.sanitize(SecurityContext.HTML,
-        StringUtils.replaceWithTags(raw, this.tagData()))
-      ));
+      map((raw) => this.sanitizer.sanitize(SecurityContext.HTML, StringUtils.replaceWithTags(raw, this.tagData())))
+    );
 
   constructor(
     private http: HttpClient,
