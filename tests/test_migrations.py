@@ -68,18 +68,41 @@ def _get_tables(engine) -> set[str]:
     return set(sa_inspect(engine).get_table_names())
 
 
-def _get_schema_snapshot(engine) -> dict[str, set[str]]:
+def _get_schema_snapshot(engine) -> dict[str, dict]:
     """
-    Return a mapping of {table_name: {col_name, ...}} for every table in the DB.
-    This gives a richer comparison than just table names — it catches leftover
-    columns that a downgrade() forgot to drop, or columns that an upgrade() forgot
-    to add.
+    Return a per-table snapshot of columns, indexes, foreign keys, and unique
+    constraints. Used by the round-trip test to detect downgrades that forget
+    to drop something the upgrade added (or upgrades that don't fully restore
+    after a downgrade).
+
+    The snapshot is compared against itself across an upgrade→downgrade→upgrade
+    cycle on the same engine, so dialect-specific artefacts (e.g. MariaDB
+    auto-creating indexes for FK columns) appear in both snapshots and cancel.
     """
     inspector = sa_inspect(engine)
-    return {
-        table: {col["name"] for col in inspector.get_columns(table)}
-        for table in inspector.get_table_names()
-    }
+    snapshot: dict[str, dict] = {}
+    for table in inspector.get_table_names():
+        snapshot[table] = {
+            "columns": frozenset(col["name"] for col in inspector.get_columns(table)),
+            "indexes": frozenset(
+                (idx.get("name"), tuple(idx["column_names"]), bool(idx.get("unique", False)))
+                for idx in inspector.get_indexes(table)
+            ),
+            "foreign_keys": frozenset(
+                (
+                    fk.get("name"),
+                    tuple(fk["constrained_columns"]),
+                    fk["referred_table"],
+                    tuple(fk["referred_columns"]),
+                )
+                for fk in inspector.get_foreign_keys(table)
+            ),
+            "unique_constraints": frozenset(
+                (uc.get("name"), tuple(uc["column_names"]))
+                for uc in inspector.get_unique_constraints(table)
+            ),
+        }
+    return snapshot
 
 
 def _get_current_revision(engine) -> str | None:
@@ -684,18 +707,26 @@ def test_each_migration_survives_round_trip(flask_app):
             f"  Only after second upgrade: {tables_second - tables_first}"
         )
 
-        # Compare columns per table
+        # Compare columns, indexes, FKs and unique constraints per table.
+        # If any aspect differs, the offending downgrade() likely forgot to
+        # drop something the upgrade() added (or vice versa).
+        ASPECT_HINTS = {
+            "columns": "downgrade() likely forgot to drop a column, or upgrade() forgot to add one",
+            "indexes": "downgrade() likely forgot to drop an index, or upgrade() forgot to recreate one",
+            "foreign_keys": "downgrade() likely forgot to drop a foreign key, or upgrade() forgot to recreate one",
+            "unique_constraints": "downgrade() likely forgot to drop a unique constraint, or upgrade() forgot to recreate one",
+        }
         for table in tables_first:
-            cols_first = schema_after_first_upgrade[table]
-            cols_second = schema_after_second_upgrade.get(table, set())
-            assert cols_first == cols_second, (
-                f"Migration {rev.revision!r} ('{rev.doc}'): column set for table "
-                f"'{table}' differs between first and second upgrade after round-trip.\n"
-                f"  Only after first upgrade:  {cols_first - cols_second}\n"
-                f"  Only after second upgrade: {cols_second - cols_first}\n"
-                f"  This likely means downgrade() forgot to drop a column, or "
-                f"upgrade() forgot to add one."
-            )
+            for aspect, hint in ASPECT_HINTS.items():
+                first = schema_after_first_upgrade[table][aspect]
+                second = schema_after_second_upgrade[table][aspect]
+                assert first == second, (
+                    f"Migration {rev.revision!r} ('{rev.doc}'): {aspect} for table "
+                    f"'{table}' differ between first and second upgrade after round-trip.\n"
+                    f"  Only after first upgrade:  {sorted(first - second)}\n"
+                    f"  Only after second upgrade: {sorted(second - first)}\n"
+                    f"  {hint}."
+                )
 
         assert current_rev == rev.revision, (
             f"After round-trip for {rev.revision!r}, current revision is "
