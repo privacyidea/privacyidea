@@ -560,11 +560,11 @@ def test_all_declared_sequences_exist_after_upgrade_to_head(flask_app):
     upgrading to head. Alembic's autogenerate does not compare sequences, so
     this check is not covered by test_schema_matches_models_after_upgrade_to_head.
 
-    Regression guard for the tokencredentialidhash_seq incident: migration
-    903a6ed6f6c4 created the table with sa.Identity() instead of sa.Sequence(),
-    so the sequence was never created. Inserts then failed on MariaDB 10.3+
-    with "Unknown SEQUENCE" because SQLAlchemy 2.x emits SELECT nextval(...)
-    whenever a column has a Sequence() default.
+    On MariaDB 10.3+ / SQLAlchemy 2.x, a column with a Sequence() default
+    causes SQLAlchemy to emit SELECT nextval(<seq>) on insert. If the
+    corresponding CREATE SEQUENCE was never issued by a migration (e.g. the
+    table was created with sa.Identity() while the model declares Sequence()),
+    every insert fails at runtime with "Unknown SEQUENCE".
     """
     from flask_migrate import upgrade as flask_upgrade
 
@@ -585,6 +585,141 @@ def test_all_declared_sequences_exist_after_upgrade_to_head(flask_app):
         f"This means a migration creates the table without issuing CREATE SEQUENCE "
         f"(e.g. via sa.Identity() instead of sa.Sequence()). Inserts will fail "
         f"on MariaDB 10.3+ with 'Unknown SEQUENCE'."
+    )
+
+
+def _generic_dummy_value(col):
+    """
+    Return a value appropriate for *col*'s SQL type, used by the insert smoke
+    test to populate NOT NULL columns without per-table fixtures. Returns None
+    only for column types we don't know how to fill — caller must skip those.
+    """
+    import datetime as dt
+    from sqlalchemy import (
+        BigInteger, Boolean, Date, DateTime, Float, Integer, Interval,
+        JSON, LargeBinary, Numeric, SmallInteger, String, Text, Time,
+        Unicode, UnicodeText,
+    )
+
+    t = col.type
+    if isinstance(t, (String, Unicode, UnicodeText, Text)):
+        length = getattr(t, "length", None) or 8
+        return "x" * min(length, 8)
+    if isinstance(t, Boolean):
+        return False
+    if isinstance(t, (Integer, BigInteger, SmallInteger)):
+        return 1
+    if isinstance(t, DateTime):
+        return dt.datetime(2000, 1, 1)
+    if isinstance(t, Date):
+        return dt.date(2000, 1, 1)
+    if isinstance(t, Time):
+        return dt.time(0, 0)
+    if isinstance(t, Interval):
+        return dt.timedelta(0)
+    if isinstance(t, (Float, Numeric)):
+        return 0
+    if isinstance(t, LargeBinary):
+        return b"x"
+    if isinstance(t, JSON):
+        return {}
+    return None
+
+
+def test_default_insert_succeeds_for_every_model_table(flask_app):
+    """
+    For every table the SQLAlchemy models declare, build a minimal INSERT and
+    execute it against the live (upgraded-to-head) DB. Catches failures that
+    schema checks cannot — e.g. a Sequence default declared on the model but
+    no CREATE SEQUENCE issued by any migration, an Identity column SQLAlchemy
+    can't drive on this dialect, or a NOT NULL column whose default isn't
+    actually applied.
+
+    Strategy:
+      - PKs whose default is a Sequence or that are autoincrement are omitted
+        so SQLAlchemy fires its auto-PK path — this is the exact path that
+        breaks when the migration created the table without the matching
+        CREATE SEQUENCE / AUTO_INCREMENT machinery the model expects.
+      - NOT NULL columns without any default get a type-appropriate dummy.
+      - Nullable columns and columns with Python/server defaults are omitted.
+      - FK checks are disabled for the duration so we don't have to insert in
+        dependency order; this test is about INSERT mechanics, not referential
+        integrity.
+      - All inserts run inside a single transaction that is rolled back at
+        the end, so no rows leak into the test DB.
+    """
+    from flask_migrate import upgrade as flask_upgrade
+    from sqlalchemy import Sequence
+    from privacyidea.models import db
+
+    _load_seed_db()
+    flask_upgrade()
+
+    engine = create_engine(DB_URL)
+    is_pg = _is_postgres()
+    failures: list[tuple[str, str]] = []
+
+    try:
+        with engine.connect() as conn:
+            outer = conn.begin()
+            try:
+                if is_pg:
+                    conn.execute(text("SET session_replication_role = 'replica'"))
+                else:
+                    conn.execute(text("SET FOREIGN_KEY_CHECKS = 0"))
+
+                for table in db.metadata.sorted_tables:
+                    values = {}
+                    skip_reason = None
+                    for col in table.columns:
+                        # A PK column is auto-generated only if it has an
+                        # explicit Sequence/Identity, OR it's the sole integer
+                        # PK with autoincrement not explicitly disabled.
+                        # Composite PKs and string PKs do not auto-generate
+                        # — every member must be filled by the caller.
+                        from sqlalchemy import BigInteger, Integer, SmallInteger
+                        is_sole_int_pk = (
+                            col.primary_key
+                            and len(table.primary_key.columns) == 1
+                            and isinstance(col.type, (Integer, BigInteger, SmallInteger))
+                            and col.autoincrement is not False
+                        )
+                        is_auto_pk = isinstance(col.default, Sequence) or is_sole_int_pk
+                        if is_auto_pk:
+                            continue
+                        if col.default is not None or col.server_default is not None:
+                            continue
+                        if col.nullable:
+                            continue
+                        val = _generic_dummy_value(col)
+                        if val is None:
+                            skip_reason = f"no dummy generator for column {col.name!r} of type {col.type!r}"
+                            break
+                        values[col.name] = val
+
+                    if skip_reason is not None:
+                        failures.append((table.name, f"SKIPPED: {skip_reason}"))
+                        continue
+
+                    sp = conn.begin_nested()
+                    try:
+                        conn.execute(table.insert().values(**values))
+                        sp.rollback()
+                    except Exception as e:
+                        sp.rollback()
+                        first_line = str(e).splitlines()[0] if str(e) else type(e).__name__
+                        failures.append((table.name, first_line))
+            finally:
+                outer.rollback()
+    finally:
+        engine.dispose()
+
+    assert not failures, (
+        "INSERT failed for the following model tables after upgrade-to-head. "
+        "This usually means a migration created the table without the auto-PK "
+        "machinery the model expects (e.g. sa.Identity() instead of sa.Sequence(), "
+        "or a NOT NULL column added without a default):\n"
+        + "\n".join(f"  {tbl}: {msg}" for tbl, msg in failures)
     )
 
 
