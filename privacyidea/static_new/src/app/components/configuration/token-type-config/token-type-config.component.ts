@@ -17,50 +17,47 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import {
-  AfterViewInit,
-  Component,
-  computed,
-  DestroyRef,
-  effect,
-  ElementRef,
-  inject,
-  linkedSignal,
-  OnDestroy,
-  OnInit,
-  Renderer2,
-  signal,
-  untracked,
-  ViewChild
+    AfterViewInit,
+    Component,
+    computed,
+    DestroyRef,
+    ElementRef,
+    inject,
+    linkedSignal,
+    OnDestroy,
+    OnInit,
+    Renderer2,
+    ViewChild
 } from "@angular/core";
 
-import { MatExpansionModule } from "@angular/material/expansion";
-import { MatButtonModule } from "@angular/material/button";
-import { MatIconModule } from "@angular/material/icon";
-import { SystemService, SystemServiceInterface } from "../../../services/system/system.service";
-import { SmsGatewayService, SmsGatewayServiceInterface } from "../../../services/sms-gateway/sms-gateway.service";
-import { SmtpService, SmtpServiceInterface } from "../../../services/smtp/smtp.service";
-import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
-import { NotificationService, NotificationServiceInterface } from "../../../services/notification/notification.service";
-import { PendingChangesService } from "../../../services/pending-changes/pending-changes.service";
 import { HttpClient } from "@angular/common/http";
-import { environment } from "../../../../environments/environment";
+import { takeUntilDestroyed, toSignal } from "@angular/core/rxjs-interop";
+import { MatButtonModule } from "@angular/material/button";
+import { MatExpansionModule } from "@angular/material/expansion";
+import { MatIconModule } from "@angular/material/icon";
+import { ActivatedRoute } from "@angular/router";
+import { PiResponse } from "@app/app.component";
+import { environment } from "@env/environment";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+import { SmsGatewayService, SmsGatewayServiceInterface } from "@services/sms-gateway/sms-gateway.service";
+import { SmtpService, SmtpServiceInterface } from "@services/smtp/smtp.service";
+import { SystemService, SystemServiceInterface } from "@services/system/system.service";
 import { forkJoin, lastValueFrom } from "rxjs";
-import { PiResponse } from "../../../app.component";
+import { DaypasswordConfigComponent } from "./token-types/daypassword-config/daypassword-config.component";
+import { EmailConfigComponent } from "./token-types/email-config/email-config.component";
 import { HotpConfigComponent } from "./token-types/hotp-config/hotp-config.component";
-import { TotpConfigComponent } from "./token-types/totp-config/totp-config.component";
-import { U2fConfigComponent } from "./token-types/u2f-config/u2f-config.component";
-import { WebauthnConfigComponent } from "./token-types/webauthn-config/webauthn-config.component";
+import { QuestionnaireConfigComponent } from "./token-types/questionnaire-config/questionnaire-config.component";
 import { RadiusConfigComponent } from "./token-types/radius-config/radius-config.component";
 import { RemoteConfigComponent } from "./token-types/remote-config/remote-config.component";
 import { SmsConfigComponent } from "./token-types/sms-config/sms-config.component";
 import { TiqrConfigComponent } from "./token-types/tiqr-config/tiqr-config.component";
-import { EmailConfigComponent } from "./token-types/email-config/email-config.component";
-import { QuestionnaireConfigComponent } from "./token-types/questionnaire-config/questionnaire-config.component";
+import { TotpConfigComponent } from "./token-types/totp-config/totp-config.component";
+import { U2fConfigComponent } from "./token-types/u2f-config/u2f-config.component";
+import { WebauthnConfigComponent } from "./token-types/webauthn-config/webauthn-config.component";
 import { YubicoConfigComponent } from "./token-types/yubico-config/yubico-config.component";
 import { ApiKeyData, YubikeyConfigComponent } from "./token-types/yubikey-config/yubikey-config.component";
-import { DaypasswordConfigComponent } from "./token-types/daypassword-config/daypassword-config.component";
-import { takeUntilDestroyed, toSignal } from "@angular/core/rxjs-interop";
-import { ActivatedRoute } from "@angular/router";
 
 @Component({
   selector: "app-token-type-config",

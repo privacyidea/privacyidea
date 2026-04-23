@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,20 +16,20 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+
 import { HttpClient, HttpHeaders } from "@angular/common/http";
-import { computed, inject, Injectable, Signal, signal, WritableSignal } from "@angular/core";
-import { Observable, throwError } from "rxjs";
-import { catchError, tap } from "rxjs/operators";
-import { environment } from "../../../environments/environment";
-import { PiResponse } from "../../app.component";
-import { BEARER_TOKEN_STORAGE_KEY } from "../../core/constants";
-import { LocalService, LocalServiceInterface } from "../local/local.service";
-import { VersioningService, VersioningServiceInterface } from "../version/version.service";
-import { tokenTypes } from "../../utils/token.utils";
-import { PolicyAction } from "./policy-actions";
-import { Router } from "@angular/router";
-import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
+import { Injectable, Signal, WritableSignal, computed, inject, signal } from "@angular/core";
 import { MatDialog } from "@angular/material/dialog";
+import { Router } from "@angular/router";
+import { PiResponse } from "@app/app.component";
+import { BEARER_TOKEN_STORAGE_KEY } from "@core/constants";
+import { environment } from "@env/environment";
+import { tokenTypes } from "@utils/token.utils";
+import { Observable, catchError, tap, throwError } from "rxjs";
+import { LocalService, LocalServiceInterface } from "../local/local.service";
+import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
+import { VersioningService, VersioningServiceInterface } from "../version/version.service";
+import { PolicyAction } from "./policy-actions";
 
 export type AuthResponse = PiResponse<AuthData, AuthDetail>;
 
@@ -236,7 +236,7 @@ export class AuthService implements AuthServiceInterface {
   readonly rightsWithValues = computed(() => {
     const rightsList = this.rights();
     const result: Record<string, string | null> = {};
-    rightsList.forEach(entry => {
+    rightsList.forEach((entry) => {
       const equation_index = entry.indexOf("=");
       if (equation_index === -1) {
         if (!(entry in result)) {

@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,59 +16,58 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
+
+import { NgClass } from "@angular/common";
 import {
-  Component,
-  computed,
-  effect,
-  ElementRef,
-  inject,
-  linkedSignal,
-  OnDestroy,
-  signal,
-  ViewChild,
-  WritableSignal
+    Component,
+    ElementRef,
+    OnDestroy,
+    ViewChild,
+    WritableSignal,
+    computed,
+    effect,
+    inject,
+    linkedSignal,
+    signal
 } from "@angular/core";
-import {
-  ContainerDetailData,
-  ContainerDetailToken,
-  ContainerService,
-  ContainerServiceInterface
-} from "../../../services/container/container.service";
-import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
-import { EditableElement, EditButtonsComponent } from "../../shared/edit-buttons/edit-buttons.component";
 import { FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
-import { MatCell, MatColumnDef, MatTableDataSource, MatTableModule } from "@angular/material/table";
-import { MatPaginator, PageEvent } from "@angular/material/paginator";
-import { RealmService, RealmServiceInterface } from "../../../services/realm/realm.service";
-import { TableUtilsService, TableUtilsServiceInterface } from "../../../services/table-utils/table-utils.service";
-import { TokenDetails, TokenService, TokenServiceInterface } from "../../../services/token/token.service";
-import { UserService, UserServiceInterface } from "../../../services/user/user.service";
-
-import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
-import { ContainerDetailsInfoComponent } from "./container-details-info/container-details-info.component";
-import { ContainerDetailsTokenTableComponent } from "./container-details-token-table/container-details-token-table.component";
-import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
+import { MatIconButton } from "@angular/material/button";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatDivider } from "@angular/material/divider";
-import { MatFormField } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
-import { MatIconButton } from "@angular/material/button";
 import { MatInput } from "@angular/material/input";
 import { MatListItem } from "@angular/material/list";
-import { MatSelectModule } from "@angular/material/select";
-import { NgClass } from "@angular/common";
-import { ROUTE_PATHS } from "../../../route_paths";
-import { Router, RouterLink } from "@angular/router";
-import { infoDetailsKeyMap } from "../token-details/token-details.component";
+import { MatPaginator, PageEvent } from "@angular/material/paginator";
+import { MatFormField, MatSelectModule } from "@angular/material/select";
+import { MatCell, MatColumnDef, MatTableDataSource, MatTableModule } from "@angular/material/table";
 import { MatTooltip } from "@angular/material/tooltip";
-import { AuditService, AuditServiceInterface } from "../../../services/audit/audit.service";
-import { NotificationService } from "../../../services/notification/notification.service";
-import { ContainerDetailsActionsComponent } from "./container-details-actions/container-details-actions.component";
-import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
-import { ContainerDetailsTokenActionsComponent } from "./container-details-token-actions/container-details-token-actions.component";
-import { FilterValue } from "../../../core/models/filter_value/filter_value";
+import { Router, RouterLink } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
+import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { EditButtonsComponent, EditableElement } from "@components/shared/edit-buttons/edit-buttons.component";
+import { ContainerDetailsActionsComponent } from "@components/token/container-details/container-details-actions/container-details-actions.component";
+import { ContainerDetailsInfoComponent } from "@components/token/container-details/container-details-info/container-details-info.component";
+import { ContainerDetailsTokenActionsComponent } from "@components/token/container-details/container-details-token-actions/container-details-token-actions.component";
+import { ContainerDetailsTokenTableComponent } from "@components/token/container-details/container-details-token-table/container-details-token-table.component";
+import { infoDetailsKeyMap } from "@components/token/token-details/token-details.component";
+import { FilterValue } from "@core/models/filter_value/filter_value";
+import { AuditService, AuditServiceInterface } from "@services/audit/audit.service";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import {
+    ContainerDetailData,
+    ContainerDetailToken,
+    ContainerService,
+    ContainerServiceInterface
+} from "@services/container/container.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { NotificationService } from "@services/notification/notification.service";
+import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
+import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
+import { TokenDetails, TokenService, TokenServiceInterface } from "@services/token/token.service";
+import { UserService, UserServiceInterface } from "@services/user/user.service";
 
 export const containerDetailsKeyMap = [
   { key: "type", label: "Type" },

@@ -16,7 +16,6 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { CommonModule } from "@angular/common";
 import { Component, computed, effect, inject, OnDestroy, OnInit, signal, untracked } from "@angular/core";
 import { toSignal } from "@angular/core/rxjs-interop";
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
@@ -29,19 +28,19 @@ import { MatInputModule } from "@angular/material/input";
 import { MatSelectModule } from "@angular/material/select";
 import { MatTableModule } from "@angular/material/table";
 import { Router } from "@angular/router";
-import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
+import { NAVIGATION_ACCESSIBLE_DIALOG_CLASS } from "@constants/global.constants";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import {
-  SmsGateway,
-  SmsGatewayService,
-  SmsGatewayServiceInterface,
-  SmsProvider
-} from "../../../../services/sms-gateway/sms-gateway.service";
-import { PendingChangesService } from "../../../../services/pending-changes/pending-changes.service";
-import { ROUTE_PATHS } from "../../../../route_paths";
-import { SaveAndExitDialogComponent } from "../../../shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
-import { DialogService, DialogServiceInterface } from "../../../../services/dialog/dialog.service";
-import { ClearableInputComponent } from "../../../shared/clearable-input/clearable-input.component";
-import { NAVIGATION_ACCESSIBLE_DIALOG_CLASS } from "../../../../constants/global.constants";
+    SmsGateway,
+    SmsGatewayService,
+    SmsGatewayServiceInterface,
+    SmsProvider
+} from "@services/sms-gateway/sms-gateway.service";
 
 type KeyValueRow = { key: string; value: string };
 

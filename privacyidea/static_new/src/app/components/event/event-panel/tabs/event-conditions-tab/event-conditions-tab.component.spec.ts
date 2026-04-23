@@ -17,11 +17,11 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { EventConditionsTabComponent } from "./event-conditions-tab.component";
-import { EventService } from "../../../../../services/event/event.service";
-import { MockEventService } from "../../../../../../testing/mock-services/mock-event-service";
 import { provideHttpClient } from "@angular/common/http";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { EventService } from "@services/event/event.service";
+import { MockEventService } from "@testing/mock-services/mock-event-service";
+import { EventConditionsTabComponent } from "./event-conditions-tab.component";
 
 describe("EventConditionsTabComponent", () => {
   let component: EventConditionsTabComponent;
@@ -31,15 +31,12 @@ describe("EventConditionsTabComponent", () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [EventConditionsTabComponent],
-      providers: [
-        provideHttpClient(),
-        { provide: EventService, useClass: MockEventService }
-      ]
+      providers: [provideHttpClient(), { provide: EventService, useClass: MockEventService }]
     }).compileComponents();
 
     fixture = TestBed.createComponent(EventConditionsTabComponent);
     component = fixture.componentInstance;
-    fixture.componentRef.setInput("conditions", { "test_condition": "test_value" });
+    fixture.componentRef.setInput("conditions", { test_condition: "test_value" });
     fixture.componentRef.setInput("isEditMode", true);
     component.newConditions = { emit: jest.fn() } as any;
     mockEventService = TestBed.inject(EventService) as unknown as MockEventService;
@@ -52,16 +49,16 @@ describe("EventConditionsTabComponent", () => {
 
   it("should initialize selectedConditions from input", () => {
     component.selectedConditions.set({});
-    fixture.componentRef.setInput("conditions", { "foo": "bar" });
+    fixture.componentRef.setInput("conditions", { foo: "bar" });
     fixture.detectChanges();
-    expect(component.selectedConditions()).toEqual({ "foo": "bar" });
+    expect(component.selectedConditions()).toEqual({ foo: "bar" });
   });
 
   it("removeCondition", () => {
-    component.selectedConditions.set({ "cond1": "val1", "cond2": "val2" });
+    component.selectedConditions.set({ cond1: "val1", cond2: "val2" });
     component.removeCondition("cond1");
-    expect(component.selectedConditions()).toEqual({ "cond2": "val2" });
-    expect(component.newConditions.emit).toHaveBeenCalledWith({ "cond2": "val2" });
+    expect(component.selectedConditions()).toEqual({ cond2: "val2" });
+    expect(component.newConditions.emit).toHaveBeenCalledWith({ cond2: "val2" });
   });
 
   it("should return all conditions by group if nothing is selected and no search", () => {

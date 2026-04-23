@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -27,16 +27,16 @@ import { MatInput } from "@angular/material/input";
 import { MatListItem } from "@angular/material/list";
 import { MatSelectModule } from "@angular/material/select";
 import { MatCell, MatColumnDef, MatRow, MatTable, MatTableModule } from "@angular/material/table";
-import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
-import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
-import { EditButtonsComponent } from "../../shared/edit-buttons/edit-buttons.component";
+import { MatTooltip } from "@angular/material/tooltip";
+import { RouterLink } from "@angular/router";
+import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
+import { EditButtonsComponent } from "@components/shared/edit-buttons/edit-buttons.component";
+import { TokenDetailsMachineComponent } from "@components/token/token-details/token-details-machine/token-details-machine.component";
 import { TokenDetailsActionsComponent } from "./token-details-actions/token-details-actions.component";
 import { TokenDetailsInfoComponent } from "./token-details-info/token-details-info.component";
 import { TokenDetailsUserSelfServiceComponent } from "./token-details-user/token-details-user.self-service.component";
 import { TokenDetailsComponent } from "./token-details.component";
-import { TokenDetailsMachineComponent } from "@components/token/token-details/token-details-machine/token-details-machine.component";
-import { RouterLink } from "@angular/router";
-import { MatTooltip } from "@angular/material/tooltip";
 
 @Component({
   selector: "app-token-details-self-service",

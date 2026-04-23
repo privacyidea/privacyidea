@@ -16,32 +16,30 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+
 import { Component, EventEmitter, inject, Input, OnInit, Output } from "@angular/core";
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule } from "@angular/forms";
-import {
-  WebAuthnApiPayloadMapper,
-  WebAuthnEnrollmentData,
-  WebauthnEnrollmentResponse,
-  WebAuthnFinalizeApiPayloadMapper,
-  WebauthnFinalizeData
-} from "../../../../mappers/token-api-payload/webauthn-token-api-payload.mapper";
-import { Base64Service, Base64ServiceInterface } from "../../../../services/base64/base64.service";
-import { DialogService, DialogServiceInterface } from "../../../../services/dialog/dialog.service";
-import {
-  NotificationService,
-  NotificationServiceInterface
-} from "../../../../services/notification/notification.service";
-import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
-import { ReopenDialogFn } from "../token-enrollment.component";
-import {
-  EnrollmentResponse,
-  TokenApiPayloadMapper,
-  TokenEnrollmentData
-} from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
-import { firstValueFrom } from "rxjs";
-import { TokenEnrollmentFirstStepDialogComponent } from "../token-enrollment-firtst-step-dialog/token-enrollment-first-step-dialog.component";
 import { MatDialogRef } from "@angular/material/dialog";
-import { AbstractDialogComponent } from "../../../shared/dialog/abstract-dialog/abstract-dialog.component";
+import {
+    EnrollmentResponse,
+    TokenApiPayloadMapper,
+    TokenEnrollmentData
+} from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import {
+    WebAuthnApiPayloadMapper,
+    WebAuthnEnrollmentData,
+    WebauthnEnrollmentResponse,
+    WebAuthnFinalizeApiPayloadMapper,
+    WebauthnFinalizeData
+} from "@app/mappers/token-api-payload/webauthn-token-api-payload.mapper";
+import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
+import { TokenEnrollmentFirstStepDialogComponent } from "@components/token/token-enrollment/token-enrollment-firtst-step-dialog/token-enrollment-first-step-dialog.component";
+import { ReopenDialogFn } from "@components/token/token-enrollment/token-enrollment.component";
+import { Base64Service, Base64ServiceInterface } from "@services/base64/base64.service";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
+import { TokenService, TokenServiceInterface } from "@services/token/token.service";
+import { firstValueFrom } from "rxjs";
 
 @Component({
   selector: "app-enroll-webauthn",

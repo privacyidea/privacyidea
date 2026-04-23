@@ -17,15 +17,15 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
+import { CommonModule } from "@angular/common";
+import { Component, input, output } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { PolicyActionItemEditComponent } from "./policy-action-item-edit.component";
-import { PolicyService, PolicyActionDetail } from "../../../../../../../../services/policies/policies.service";
-import { MockPolicyService } from "src/testing/mock-services/mock-policies-service";
-import { provideNoopAnimations } from "@angular/platform-browser/animations";
 import { FormsModule } from "@angular/forms";
 import { By } from "@angular/platform-browser";
-import { Component, input, output } from "@angular/core";
-import { CommonModule } from "@angular/common";
+import { provideNoopAnimations } from "@angular/platform-browser/animations";
+import { PolicyActionDetail, PolicyService } from "@services/policies/policies.service";
+import { MockPolicyService } from "@testing/mock-services/mock-policies-service";
+import { PolicyActionItemEditComponent } from "./policy-action-item-edit.component";
 
 @Component({
   selector: "app-selector-buttons",

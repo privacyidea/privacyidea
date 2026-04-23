@@ -16,23 +16,23 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { UserResolversComponent } from "./user-resolver.component";
-import { Resolver, ResolverService } from "../../../services/resolver/resolver.service";
-import { TableUtilsService } from "../../../services/table-utils/table-utils.service";
-import { NotificationService } from "../../../services/notification/notification.service";
-import { AuthService } from "../../../services/auth/auth.service";
-import { MatDialog } from "@angular/material/dialog";
-import { of } from "rxjs";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { MatDialog } from "@angular/material/dialog";
 import { ActivatedRoute, Router } from "@angular/router";
-import { MockResolverService } from "../../../../testing/mock-services/mock-resolver-service";
-import { MockNotificationService } from "../../../../testing/mock-services";
-import { MockAuthService } from "../../../../testing/mock-services/mock-auth-service";
-import { MockTableUtilsService } from "src/testing/mock-services/mock-table-utils-service";
-import { ContentService } from "../../../services/content/content.service";
-import { MockContentService } from "../../../../testing/mock-services/mock-content-service";
+import { AuthService } from "@services/auth/auth.service";
+import { ContentService } from "@services/content/content.service";
+import { NotificationService } from "@services/notification/notification.service";
+import { Resolver, ResolverService } from "@services/resolver/resolver.service";
+import { TableUtilsService } from "@services/table-utils/table-utils.service";
+import { MockNotificationService } from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { MockContentService } from "@testing/mock-services/mock-content-service";
+import { MockResolverService } from "@testing/mock-services/mock-resolver-service";
+import { MockTableUtilsService } from "@testing/mock-services/mock-table-utils-service";
+import { of } from "rxjs";
+import { UserResolversComponent } from "./user-resolver.component";
 
 class LocalMockMatDialog {
   result$ = of(true);

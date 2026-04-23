@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -20,24 +20,24 @@ import { Component, computed, effect, EventEmitter, inject, input, Input, OnInit
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatOption } from "@angular/material/core";
-import { MatFormField, MatHint, MatLabel, MatError } from "@angular/material/form-field";
+import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
 import { MatSelect } from "@angular/material/select";
-import { SystemService, SystemServiceInterface } from "../../../../services/system/system.service";
-import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
+import { SystemService, SystemServiceInterface } from "@services/system/system.service";
+import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 
 import {
-  RadiusApiPayloadMapper,
-  RadiusEnrollmentData
-} from "../../../../mappers/token-api-payload/radius-token-api-payload.mapper";
-import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
+    TokenApiPayloadMapper,
+    TokenEnrollmentData
+} from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import {
-  TokenApiPayloadMapper,
-  TokenEnrollmentData
-} from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
-import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
-import { ROUTE_PATHS } from "../../../../route_paths";
-import { RADIUS_SERVER } from "../../../../constants/token.constants";
+    RadiusApiPayloadMapper,
+    RadiusEnrollmentData
+} from "@app/mappers/token-api-payload/radius-token-api-payload.mapper";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { RADIUS_SERVER } from "@constants/token.constants";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 
 export interface RadiusEnrollmentOptions extends TokenEnrollmentData {
   type: "radius";
@@ -128,7 +128,9 @@ export class EnrollRadiusComponent implements OnInit {
   private _setInitialFormValues() {
     if (!!this.enrollmentData()) {
       this.radiusUserControl.setValue(this.enrollmentData()?.radiusUser ?? "", { emitEvent: false });
-      this.radiusServerConfigurationControl.setValue(this.enrollmentData()?.radiusServerConfiguration ?? "", { emitEvent: false });
+      this.radiusServerConfigurationControl.setValue(this.enrollmentData()?.radiusServerConfiguration ?? "", {
+        emitEvent: false
+      });
     }
   }
 
@@ -162,11 +164,11 @@ export class EnrollRadiusComponent implements OnInit {
   };
 
   goToRadiusConfig() {
-    this.contentService.router.navigate([ROUTE_PATHS.CONFIGURATION_TOKENTYPES], { fragment: 'radius' });
+    this.contentService.router.navigate([ROUTE_PATHS.CONFIGURATION_TOKENTYPES], { fragment: "radius" });
   }
 
   onRadiusConfigKeydown(event: KeyboardEvent) {
-    if (event.key === 'Enter' || event.key === ' ') {
+    if (event.key === "Enter" || event.key === " ") {
       this.goToRadiusConfig();
     }
   }

@@ -16,55 +16,51 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
 import {
-  Component,
-  computed,
-  effect,
-  inject,
-  Input,
-  linkedSignal,
-  signal,
-  ViewChild,
-  WritableSignal,
-  ElementRef
+    Component,
+    computed,
+    effect,
+    ElementRef,
+    inject,
+    Input,
+    linkedSignal,
+    signal,
+    ViewChild,
+    WritableSignal
 } from "@angular/core";
-import {
-  ContainerDetailToken,
-  ContainerService,
-  ContainerServiceInterface
-} from "../../../../services/container/container.service";
-import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
 import { FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { MatIconButton } from "@angular/material/button";
-import {
-  MatCell,
-  MatHeaderCell,
-  MatHeaderRow,
-  MatRow,
-  MatTable,
-  MatTableDataSource,
-  MatTableModule
-} from "@angular/material/table";
 import { MatFormField, MatLabel } from "@angular/material/form-field";
-import { TableUtilsService, TableUtilsServiceInterface } from "../../../../services/table-utils/table-utils.service";
-import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
+import {
+    MatCell,
+    MatHeaderCell,
+    MatHeaderRow,
+    MatRow,
+    MatTable,
+    MatTableDataSource,
+    MatTableModule
+} from "@angular/material/table";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import {
+    ContainerDetailToken,
+    ContainerService,
+    ContainerServiceInterface
+} from "@services/container/container.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
+import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 
-import { SimpleConfirmationDialogComponent } from "../../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
-import { CopyButtonComponent } from "../../../shared/copy-button/copy-button.component";
-import { MatDialog } from "@angular/material/dialog";
-import { MatPaginator, MatPaginatorModule } from "@angular/material/paginator";
 import { NgClass } from "@angular/common";
 import { MatIconModule } from "@angular/material/icon";
-import { MatTooltipModule } from "@angular/material/tooltip";
 import { MatInput } from "@angular/material/input";
-import {
-  NotificationService,
-  NotificationServiceInterface
-} from "../../../../services/notification/notification.service";
-import { DialogService, DialogServiceInterface } from "../../../../services/dialog/dialog.service";
+import { MatPaginator, MatPaginatorModule } from "@angular/material/paginator";
 import { Sort } from "@angular/material/sort";
+import { MatTooltipModule } from "@angular/material/tooltip";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
+import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 
 @Component({
   selector: "app-container-details-token-table",

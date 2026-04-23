@@ -19,32 +19,31 @@
 
 import { CommonModule } from "@angular/common";
 import {
-  Component,
-  inject,
-  input,
-  output,
-  WritableSignal,
-  linkedSignal,
-  signal,
-  computed,
-  viewChildren,
-  model
+    Component,
+    computed,
+    inject,
+    input,
+    linkedSignal,
+    output,
+    signal,
+    viewChildren,
+    WritableSignal
 } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
+import { MatButtonToggleModule } from "@angular/material/button-toggle";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MatIconModule } from "@angular/material/icon";
 import { MatTooltipModule } from "@angular/material/tooltip";
+import { SelectorButtonsComponent } from "@components/policies/dialogs/edit-policy-dialog/policy-panels/edit-action-tab/selector-buttons/selector-buttons.component";
+import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import {
-  PolicyServiceInterface,
-  PolicyService,
-  PolicyDetail,
-  PolicyActionDetail
-} from "../../../../../../../services/policies/policies.service";
-import { SelectorButtonsComponent } from "../selector-buttons/selector-buttons.component";
+    PolicyActionDetail,
+    PolicyDetail,
+    PolicyService,
+    PolicyServiceInterface
+} from "@services/policies/policies.service";
 import { PolicyActionItemComponent } from "./policy-action-item/policy-action-item-new.component";
-import { ClearableInputComponent } from "../../../../../../shared/clearable-input/clearable-input.component";
-import { MatButtonToggleGroup, MatButtonToggle, MatButtonToggleModule } from "@angular/material/button-toggle";
 
 @Component({
   selector: "app-action-selector",

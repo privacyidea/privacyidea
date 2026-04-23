@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -20,24 +20,24 @@ import { Component, effect, EventEmitter, inject, input, OnInit, Output } from "
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { ErrorStateMatcher, MatOption } from "@angular/material/core";
-import { MatFormField, MatLabel, MatError } from "@angular/material/form-field";
+import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
 import { MatSelect } from "@angular/material/select";
 import {
-  PrivacyideaServerService,
-  PrivacyideaServerServiceInterface,
-  RemoteServer
-} from "../../../../services/privacyidea-server/privacyidea-server.service";
-import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
+    PrivacyideaServerService,
+    PrivacyideaServerServiceInterface,
+    RemoteServer
+} from "@services/privacyidea-server/privacyidea-server.service";
+import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 
 import {
-  RemoteApiPayloadMapper,
-  RemoteEnrollmentData
-} from "../../../../mappers/token-api-payload/remote-token-api-payload.mapper";
+    TokenApiPayloadMapper,
+    TokenEnrollmentData
+} from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import {
-  TokenApiPayloadMapper,
-  TokenEnrollmentData
-} from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
+    RemoteApiPayloadMapper,
+    RemoteEnrollmentData
+} from "@app/mappers/token-api-payload/remote-token-api-payload.mapper";
 
 export class RemoteErrorStateMatcher implements ErrorStateMatcher {
   isErrorState(control: FormControl | null): boolean {

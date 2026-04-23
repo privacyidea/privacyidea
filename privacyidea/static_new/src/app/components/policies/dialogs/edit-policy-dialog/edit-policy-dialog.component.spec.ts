@@ -17,17 +17,17 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { EditPolicyDialogComponent } from "./edit-policy-dialog.component";
-import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
-import { PolicyService } from "../../../../services/policies/policies.service";
-import { DialogService } from "../../../../services/dialog/dialog.service";
-import { MockPolicyService } from "src/testing/mock-services/mock-policies-service";
-import { MockDialogService } from "src/testing/mock-services/mock-dialog-service";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { Component, input, output } from "@angular/core";
-import { MockMatDialogRef } from "../../../../../testing/mock-mat-dialog-ref";
-import { of, Subject } from "rxjs";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
+import { NoopAnimationsModule } from "@angular/platform-browser/animations";
+import { DialogService } from "@services/dialog/dialog.service";
+import { PolicyService } from "@services/policies/policies.service";
+import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
+import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
+import { MockPolicyService } from "@testing/mock-services/mock-policies-service";
+import { Subject } from "rxjs";
+import { EditPolicyDialogComponent } from "./edit-policy-dialog.component";
 
 @Component({ selector: "app-dialog-wrapper", standalone: true, template: "<ng-content></ng-content>" })
 class MockWrapper {

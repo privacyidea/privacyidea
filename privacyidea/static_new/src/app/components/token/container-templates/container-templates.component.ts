@@ -25,15 +25,15 @@ import { MatIconModule } from "@angular/material/icon";
 import { MatPaginatorModule, PageEvent } from "@angular/material/paginator";
 import { MatSortModule, Sort } from "@angular/material/sort";
 import { MatTableModule } from "@angular/material/table";
-import { FilterOption } from "src/app/core/models/filter_value_generic/filter-option";
-import { FilterValueGeneric } from "src/app/core/models/filter_value_generic/filter-value-generic";
-import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
+import { FilterOption } from "@core/models/filter_value_generic/filter-option";
+import { FilterValueGeneric } from "@core/models/filter_value_generic/filter-value-generic";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import {
-  ContainerTemplateService,
-  ContainerTemplateServiceInterface
-} from "../../../services/container-template/container-template.service";
-import { ContainerTemplate } from "../../../services/container/container.service";
-import { DialogService, DialogServiceInterface } from "src/app/services/dialog/dialog.service";
+    ContainerTemplateService,
+    ContainerTemplateServiceInterface
+} from "@services/container-template/container-template.service";
+import { ContainerTemplate } from "@services/container/container.service";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { ContainerTemplatesFilterComponent } from "./container-templates-filter/container-templates-filter.component";
 import { ContainerTemplatesTableActionsComponent } from "./container-templates-table-actions/container-templates-table-actions.component";
 import { ContainerTemplateEditDialogComponent } from "./dialogs/container-template-edit-dialog/container-template-edit-dialog.component";

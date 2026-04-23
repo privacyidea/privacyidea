@@ -22,27 +22,24 @@ import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MatDialog, MatDialogRef } from "@angular/material/dialog";
 import { provideNoopAnimations } from "@angular/platform-browser/animations";
-import { Router, NavigationEnd, ActivatedRoute } from "@angular/router";
+import { ActivatedRoute, NavigationEnd, Router } from "@angular/router";
+import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { AuditService } from "@services/audit/audit.service";
+import { AuthService } from "@services/auth/auth.service";
+import { ContentService } from "@services/content/content.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
+import { BulkResult, TokenDetails, TokenService } from "@services/token/token.service";
+import { VersioningService } from "@services/version/version.service";
+import {
+    MockAuditService,
+    MockContentService,
+    MockNotificationService,
+    MockPiResponse,
+    MockTokenService,
+    MockVersioningService
+} from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { of } from "rxjs";
-import {
-  MockTokenService,
-  MockVersioningService,
-  MockNotificationService,
-  MockContentService,
-  MockAuditService,
-  MockPiResponse
-} from "../../../../../testing/mock-services";
-import { MockAuthService } from "../../../../../testing/mock-services/mock-auth-service";
-import { AuditService } from "../../../../services/audit/audit.service";
-import { AuthService } from "../../../../services/auth/auth.service";
-import { ContentService } from "../../../../services/content/content.service";
-import {
-  NotificationServiceInterface,
-  NotificationService
-} from "../../../../services/notification/notification.service";
-import { TokenService, TokenDetails, BulkResult } from "../../../../services/token/token.service";
-import { VersioningService } from "../../../../services/version/version.service";
-import { SimpleConfirmationDialogComponent } from "../../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { TokenTableActionsComponent } from "./token-table-actions.component";
 
 describe("TokenTableActionsComponent", () => {

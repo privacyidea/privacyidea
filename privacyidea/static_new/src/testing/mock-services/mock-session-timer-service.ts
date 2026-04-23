@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { signal } from "@angular/core";
-import { SessionTimerServiceInterface } from "../../app/services/session-timer/session-timer.service";
+import { SessionTimerServiceInterface } from "@services/session-timer/session-timer.service";
 
 export class MockSessionTimerService implements SessionTimerServiceInterface {
   remainingTime = signal(300);

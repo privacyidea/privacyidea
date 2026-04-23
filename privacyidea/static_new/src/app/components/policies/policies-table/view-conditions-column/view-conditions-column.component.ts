@@ -17,19 +17,19 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, input, computed } from "@angular/core";
-import {
-  AdditionalCondition,
-  COMPARATOR_OPTIONS,
-  ComparatorOptionKey,
-  HANDLE_MISSING_DATA_OPTIONS,
-  HandleMissingDataOptionKey,
-  PolicyDetail,
-  SECTION_OPTIONS,
-  SectionOptionKey
-} from "../../../../services/policies/policies.service";
-import { ViewConditionSectionComponent } from "./view-condition-section/view-condition-section.component";
+import { Component, computed, input } from "@angular/core";
 import { MatIconModule } from "@angular/material/icon";
+import {
+    AdditionalCondition,
+    COMPARATOR_OPTIONS,
+    ComparatorOptionKey,
+    HANDLE_MISSING_DATA_OPTIONS,
+    HandleMissingDataOptionKey,
+    PolicyDetail,
+    SECTION_OPTIONS,
+    SectionOptionKey
+} from "@services/policies/policies.service";
+import { ViewConditionSectionComponent } from "./view-condition-section/view-condition-section.component";
 
 @Component({
   selector: "app-view-conditions-column",

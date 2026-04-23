@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -18,25 +18,18 @@
  **/
 
 import { Component, Input } from "@angular/core";
-import {
-  MatAccordion,
-  MatExpansionPanel,
-  MatExpansionPanelHeader,
-  MatExpansionPanelTitle
-} from "@angular/material/expansion";
-import { MatIcon } from "@angular/material/icon";
 import { MatIconButton } from "@angular/material/button";
-
-@Component({
-  selector: "app-otp-values",
-  imports: [
+import {
     MatAccordion,
     MatExpansionPanel,
     MatExpansionPanelHeader,
-    MatExpansionPanelTitle,
-    MatIcon,
-    MatIconButton
-  ],
+    MatExpansionPanelTitle
+} from "@angular/material/expansion";
+import { MatIcon } from "@angular/material/icon";
+
+@Component({
+  selector: "app-otp-values",
+  imports: [MatAccordion, MatExpansionPanel, MatExpansionPanelHeader, MatExpansionPanelTitle, MatIcon, MatIconButton],
   templateUrl: "./otp-values.component.html",
   styleUrl: "./otp-values.component.scss"
 })

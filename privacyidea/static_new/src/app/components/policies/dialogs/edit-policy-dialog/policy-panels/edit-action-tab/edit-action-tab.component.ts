@@ -18,20 +18,20 @@
  **/
 
 import {
-  Component,
-  input,
-  output,
-  WritableSignal,
-  linkedSignal,
-  signal,
-  computed,
-  Signal,
-  inject
+    Component,
+    computed,
+    inject,
+    input,
+    linkedSignal,
+    output,
+    signal,
+    Signal,
+    WritableSignal
 } from "@angular/core";
-import { PolicyDetail, PolicyActionDetail } from "../../../../../../services/policies/policies.service";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { PolicyActionDetail, PolicyDetail } from "@services/policies/policies.service";
 import { ActionSelectorComponent } from "./action-selector/action-selector.component";
 import { AddedActionsListComponent } from "./added-actions-list/added-actions-list.component";
-import { DialogServiceInterface, DialogService } from "../../../../../../services/dialog/dialog.service";
 
 @Component({
   selector: "app-edit-action-tab",

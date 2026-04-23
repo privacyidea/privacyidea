@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,19 +16,20 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+
 import { Component, computed, inject } from "@angular/core";
-import { NavigationSelfServiceButtonComponent } from "./navigation-self-service-button/navigation-self-service-button.component";
-import { ROUTE_PATHS } from "../../../route_paths";
-import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
-import { MatIcon } from "@angular/material/icon";
-import { UserService, UserServiceInterface } from "../../../services/user/user.service";
 import {
-  MatAccordion,
-  MatExpansionPanel,
-  MatExpansionPanelHeader,
-  MatExpansionPanelTitle
+    MatAccordion,
+    MatExpansionPanel,
+    MatExpansionPanelHeader,
+    MatExpansionPanelTitle
 } from "@angular/material/expansion";
-import { UserUtilsPanelSelfServiceComponent } from "@components/layout/user-utils-panel/user-utils-panel.self-service.component";
+import { MatIcon } from "@angular/material/icon";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { UserService, UserServiceInterface } from "@services/user/user.service";
+import { UserUtilsPanelSelfServiceComponent } from "../user-utils-panel/user-utils-panel.self-service.component";
+import { NavigationSelfServiceButtonComponent } from "./navigation-self-service-button/navigation-self-service-button.component";
 
 @Component({
   selector: "app-navigation-self-service",
@@ -65,14 +66,7 @@ export class NavigationSelfServiceComponent {
 
   readonly excludedKeys = new Set<string>(["editable", "username"]);
 
-  readonly detailOrder: string[] = [
-    "givenname",
-    "surname",
-    "description",
-    "email",
-    "phone",
-    "mobile"
-  ];
+  readonly detailOrder: string[] = ["givenname", "surname", "description", "email", "phone", "mobile"];
 
   userData = this.userService.user;
 

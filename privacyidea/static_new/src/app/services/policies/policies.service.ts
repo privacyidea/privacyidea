@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -19,12 +19,12 @@
 
 import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
 import { computed, effect, inject, Injectable, linkedSignal, Signal } from "@angular/core";
+import { PiResponse } from "@app/app.component";
+import { environment } from "@env/environment";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { lastValueFrom } from "rxjs";
-import { environment } from "../../../environments/environment";
-import { PiResponse } from "../../app.component";
-import { AuthService, AuthServiceInterface } from "../auth/auth.service";
-import { ContentService, ContentServiceInterface } from "../content/content.service";
-import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
 
 export type ActionType = "bool" | "int" | "str" | "text";
 export type PolicyActionDetail<T extends string | number = string | number> = {
@@ -261,13 +261,13 @@ export class PolicyService implements PolicyServiceInterface {
    * Filter policy actions by the actionFilter signal and already added actions.
    * @returns {PolicyActionGroups} The filtered policy actions grouped by scope and group.
    */
-    // currentActionGroupsFiltered = computed<PolicyActionGroups>(() => {
-    //   return this.filteredPolicyActionGroups(this.alreadyAddedActionNames(), this.actionFilter());
-    // });
+  // currentActionGroupsFiltered = computed<PolicyActionGroups>(() => {
+  //   return this.filteredPolicyActionGroups(this.alreadyAddedActionNames(), this.actionFilter());
+  // });
 
   _allPolicies = computed(() => {
     if (!this.allPoliciesResource.hasValue()) return [];
-    return this.allPoliciesResource.value()?.result?.value ?? []
+    return this.allPoliciesResource.value()?.result?.value ?? [];
   });
 
   getEmptyPolicy(): PolicyDetail {

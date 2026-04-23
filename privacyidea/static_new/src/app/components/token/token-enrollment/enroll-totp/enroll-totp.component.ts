@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -24,21 +24,18 @@ import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/for
 import { MatInput } from "@angular/material/input";
 import { MatSelect } from "@angular/material/select";
 import {
-  TokenApiPayloadMapper,
-  TokenEnrollmentData
-} from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
+    TokenApiPayloadMapper,
+    TokenEnrollmentData
+} from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import {
-  TotpApiPayloadMapper,
-  TotpEnrollmentData
-} from "../../../../mappers/token-api-payload/totp-token-api-payload.mapper";
-import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
-import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
-import {
-  NotificationService,
-  NotificationServiceInterface
-} from "../../../../services/notification/notification.service";
-import { SystemService, SystemServiceInterface } from "../../../../services/system/system.service";
-import { TOTP_HASHLIB, TOTP_OTP_LENGTH, TOTP_TIME_STEP } from "../../../../constants/token.constants";
+    TotpApiPayloadMapper,
+    TotpEnrollmentData
+} from "@app/mappers/token-api-payload/totp-token-api-payload.mapper";
+import { TOTP_HASHLIB, TOTP_OTP_LENGTH, TOTP_TIME_STEP } from "@constants/token.constants";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
+import { SystemService, SystemServiceInterface } from "@services/system/system.service";
+import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 
 export interface TotpEnrollmentOptions extends TokenEnrollmentData {
   type: "totp";
@@ -161,7 +158,9 @@ export class EnrollTotpComponent implements OnInit {
       this.generateOnServerFormControl.setValue(enrollmentData.generateOnServer ?? true, { emitEvent: eventEmit });
       this.otpLengthFormControl.setValue(enrollmentData.otpLength ?? 6, { emitEvent: eventEmit });
       this.otpKeyFormControl.setValue(enrollmentData.otpKey ?? "", { emitEvent: eventEmit });
-      this.hashAlgorithmControl.setValue(enrollmentData.hashAlgorithm ?? this.defaultHashlib(), { emitEvent: eventEmit });
+      this.hashAlgorithmControl.setValue(enrollmentData.hashAlgorithm ?? this.defaultHashlib(), {
+        emitEvent: eventEmit
+      });
       this.timeStepControl.setValue(enrollmentData.timeStep ?? this.defaultTimeStep(), { emitEvent: eventEmit });
     }
   }

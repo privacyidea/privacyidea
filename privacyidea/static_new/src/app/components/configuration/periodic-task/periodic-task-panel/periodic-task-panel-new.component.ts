@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -18,19 +18,19 @@
  **/
 
 import { Component, EventEmitter, Output, ViewChild } from "@angular/core";
-import { PeriodicTaskPanelComponent } from "./periodic-task-panel.component";
-import {
-  MatExpansionPanel,
-  MatExpansionPanelDescription,
-  MatExpansionPanelHeader,
-  MatExpansionPanelTitle
-} from "@angular/material/expansion";
-import { MatSlideToggle } from "@angular/material/slide-toggle";
-import { PeriodicTaskEditComponent } from "./periodic-task-edit/periodic-task-edit.component";
-import { MatIcon } from "@angular/material/icon";
 import { MatIconButton } from "@angular/material/button";
+import {
+    MatExpansionPanel,
+    MatExpansionPanelDescription,
+    MatExpansionPanelHeader,
+    MatExpansionPanelTitle
+} from "@angular/material/expansion";
+import { MatIcon } from "@angular/material/icon";
+import { MatSlideToggle } from "@angular/material/slide-toggle";
 import { MatTooltip } from "@angular/material/tooltip";
-import { EMPTY_PERIODIC_TASK } from "../../../../services/periodic-task/periodic-task.service";
+import { EMPTY_PERIODIC_TASK } from "@services/periodic-task/periodic-task.service";
+import { PeriodicTaskEditComponent } from "./periodic-task-edit/periodic-task-edit.component";
+import { PeriodicTaskPanelComponent } from "./periodic-task-panel.component";
 
 @Component({
   selector: "app-periodic-task-panel-new",
@@ -49,7 +49,7 @@ import { EMPTY_PERIODIC_TASK } from "../../../../services/periodic-task/periodic
   styleUrl: "./periodic-task-panel.component.scss"
 })
 export class PeriodicTaskPanelNewComponent extends PeriodicTaskPanelComponent {
-  @ViewChild('panel') panel!: MatExpansionPanel;
+  @ViewChild("panel") panel!: MatExpansionPanel;
   @Output() taskSaved = new EventEmitter<void>();
 
   override cancelEdit(): void {

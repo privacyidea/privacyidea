@@ -17,15 +17,19 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { computed, effect, inject, Injectable, linkedSignal, Signal, WritableSignal } from "@angular/core";
 import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
-import { PiResponse } from "../../app.component";
-import { ContentService, ContentServiceInterface } from "../content/content.service";
-import { AuthService, AuthServiceInterface } from "../auth/auth.service";
+import { computed, effect, inject, Injectable, linkedSignal, Signal, WritableSignal } from "@angular/core";
+import { PiResponse } from "@app/app.component";
+import { environment } from "@env/environment";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import {
+    ContainerService,
+    ContainerServiceInterface,
+    ContainerTemplate
+} from "@services/container/container.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { catchError, lastValueFrom, throwError } from "rxjs";
-import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
-import { ContainerService, ContainerServiceInterface, ContainerTemplate } from "../container/container.service";
-import { environment } from "../../../environments/environment";
 
 export interface TemplateTokenType {
   description: string;
@@ -122,7 +126,7 @@ export class ContainerTemplateService implements ContainerTemplateServiceInterfa
 
   // --- Signals & Computed ---
   readonly templates: WritableSignal<ContainerTemplate[]> = linkedSignal({
-    source: () => this.templatesResource.hasValue() ? this.templatesResource.value() : undefined,
+    source: () => (this.templatesResource.hasValue() ? this.templatesResource.value() : undefined),
     computation: (templatesResource, previous) => templatesResource?.result?.value?.templates ?? previous?.value ?? []
   });
 

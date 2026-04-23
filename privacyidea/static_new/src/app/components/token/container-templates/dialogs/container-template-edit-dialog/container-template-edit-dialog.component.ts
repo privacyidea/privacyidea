@@ -17,34 +17,34 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, inject, computed, linkedSignal, effect } from "@angular/core";
+import { Component, computed, effect, inject, linkedSignal } from "@angular/core";
 
 import { FormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCardModule } from "@angular/material/card";
+import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
-import { MatTooltipModule } from "@angular/material/tooltip";
 import { MatInputModule } from "@angular/material/input";
-import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatListModule } from "@angular/material/list";
+import { MatTooltipModule } from "@angular/material/tooltip";
+import { TokenEnrollmentPayload } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { SelectorButtonsComponent } from "@components/policies/dialogs/edit-policy-dialog/policy-panels/edit-action-tab/selector-buttons/selector-buttons.component";
+import { PendingChangesDialogComponent } from "@components/shared/dialog/abstract-dialog/pending-changes-dialog.component";
+import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
+import { NAVIGATION_ACCESSIBLE_DIALOG_CLASS } from "@constants/global.constants";
+import { DialogAction } from "@models/dialog";
 import {
   ContainerTemplateService,
   ContainerTemplateServiceInterface
-} from "../../../../../services/container-template/container-template.service";
-import { ContainerTemplate } from "../../../../../services/container/container.service";
-import { deepCopy } from "../../../../../utils/deep-copy.utils";
-import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
-import { SelectorButtonsComponent } from "@components/policies/dialogs/edit-policy-dialog/policy-panels/edit-action-tab/selector-buttons/selector-buttons.component";
-import { DialogAction } from "src/app/models/dialog";
+} from "@services/container-template/container-template.service";
+import { ContainerTemplate } from "@services/container/container.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { TokenTypeKey } from "@services/token/token.service";
+import { deepCopy } from "@utils/deep-copy.utils";
 import { ContainerTemplateAddTokenComponent } from "./container-template-add-token-chips/container-template-add-token.component";
 import { TemplateAddedTokenRowComponent } from "./template-added-token-row/template-added-token-row.component";
-import { PendingChangesDialogComponent } from "@components/shared/dialog/abstract-dialog/pending-changes-dialog.component";
-import { TokenEnrollmentPayload } from "src/app/mappers/token-api-payload/_token-api-payload.mapper";
-import { TokenTypeKey } from "src/app/services/token/token.service";
-import { ROUTE_PATHS } from "../../../../../route_paths";
-import { ContentService, ContentServiceInterface } from "../../../../../services/content/content.service";
-import { NAVIGATION_ACCESSIBLE_DIALOG_CLASS } from "../../../../../constants/global.constants";
 
 @Component({
   selector: "app-container-template-edit-dialog",

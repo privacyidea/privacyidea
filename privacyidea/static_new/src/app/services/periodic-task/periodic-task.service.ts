@@ -17,17 +17,17 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { HttpResourceRef, HttpClient, httpResource } from "@angular/common/http";
-import { WritableSignal, Injectable, inject, signal, effect } from "@angular/core";
-import { Observable, lastValueFrom, catchError, of, throwError, forkJoin } from "rxjs";
-import { environment } from "../../../environments/environment";
-import { PiResponse } from "../../app.component";
-import { SimpleConfirmationDialogComponent } from "../../components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
-import { ROUTE_PATHS } from "../../route_paths";
-import { AuthServiceInterface, AuthService } from "../auth/auth.service";
-import { ContentServiceInterface, ContentService } from "../content/content.service";
-import { DialogService, DialogServiceInterface } from "../dialog/dialog.service";
-import { NotificationService } from "../notification/notification.service";
+import { HttpClient, HttpResourceRef, httpResource } from "@angular/common/http";
+import { Injectable, WritableSignal, effect, inject, signal } from "@angular/core";
+import { PiResponse } from "@app/app.component";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { environment } from "@env/environment";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { NotificationService } from "@services/notification/notification.service";
+import { Observable, catchError, forkJoin, lastValueFrom, of, throwError } from "rxjs";
 
 export type PeriodicTask = {
   id: string;

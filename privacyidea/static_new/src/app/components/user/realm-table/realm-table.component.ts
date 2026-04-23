@@ -20,61 +20,60 @@
 import { NgClass } from "@angular/common";
 import { HttpErrorResponse } from "@angular/common/http";
 import {
-  Component,
-  inject,
-  ViewChild,
-  ElementRef,
-  signal,
-  computed,
-  WritableSignal,
-  linkedSignal
+    Component,
+    computed,
+    ElementRef,
+    inject,
+    linkedSignal,
+    signal,
+    ViewChild,
+    WritableSignal
 } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
 import { MatDialog } from "@angular/material/dialog";
 import { MatIconModule } from "@angular/material/icon";
-import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
-import { MatPaginator } from "@angular/material/paginator";
-import { MatSelectModule } from "@angular/material/select";
+import { MatInput } from "@angular/material/input";
+import { MatFormField, MatLabel, MatSelectModule } from "@angular/material/select";
 import { Sort } from "@angular/material/sort";
 import {
-  MatCell,
-  MatCellDef,
-  MatColumnDef,
-  MatFooterCell,
-  MatFooterCellDef,
-  MatFooterRow,
-  MatFooterRowDef,
-  MatHeaderCell,
-  MatHeaderCellDef,
-  MatHeaderRow,
-  MatHeaderRowDef,
-  MatNoDataRow,
-  MatRow,
-  MatRowDef,
-  MatTable,
-  MatTableDataSource
+    MatCell,
+    MatCellDef,
+    MatColumnDef,
+    MatFooterCell,
+    MatFooterCellDef,
+    MatFooterRow,
+    MatFooterRowDef,
+    MatHeaderCell,
+    MatHeaderCellDef,
+    MatHeaderRow,
+    MatHeaderRowDef,
+    MatNoDataRow,
+    MatRow,
+    MatRowDef,
+    MatTable,
+    MatTableDataSource
 } from "@angular/material/table";
 import { MatTooltip } from "@angular/material/tooltip";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
-import { concat, last, take } from "rxjs";
-import { AuthServiceInterface, AuthService } from "src/app/services/auth/auth.service";
-import { ContentServiceInterface, ContentService } from "src/app/services/content/content.service";
-import { DialogServiceInterface, DialogService } from "src/app/services/dialog/dialog.service";
-import { NotificationServiceInterface, NotificationService } from "src/app/services/notification/notification.service";
+import { UserNewResolverComponent } from "@components/user/user-new-resolver/user-new-resolver.component";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import {
-  RealmServiceInterface,
-  RealmService,
-  RealmRow,
-  Realms,
-  ResolverGroup
-} from "src/app/services/realm/realm.service";
-import { ResolverServiceInterface, ResolverService } from "src/app/services/resolver/resolver.service";
-import { SystemServiceInterface, SystemService, NodeInfo } from "src/app/services/system/system.service";
-import { TableUtilsServiceInterface, TableUtilsService } from "src/app/services/table-utils/table-utils.service";
-import { UserNewResolverComponent } from "../user-new-resolver/user-new-resolver.component";
+    RealmRow,
+    Realms,
+    RealmService,
+    RealmServiceInterface,
+    ResolverGroup
+} from "@services/realm/realm.service";
+import { ResolverService, ResolverServiceInterface } from "@services/resolver/resolver.service";
+import { NodeInfo, SystemService, SystemServiceInterface } from "@services/system/system.service";
+import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
+import { concat, last, take } from "rxjs";
 
 type ResolverWithPriority = { name: string; priority: number | null };
 type NodeResolversMap = { [nodeId: string]: ResolverWithPriority[] };

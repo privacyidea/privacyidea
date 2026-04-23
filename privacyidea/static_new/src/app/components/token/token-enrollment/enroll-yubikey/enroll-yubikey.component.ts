@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,23 +16,22 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { CommonModule } from "@angular/common";
 import { Component, EventEmitter, inject, input, OnInit, Output } from "@angular/core";
 import { FormControl, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 
 import { MatOptionModule } from "@angular/material/core";
+import {
+    TokenApiPayloadMapper,
+    TokenEnrollmentData
+} from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import {
+    YubikeyApiPayloadMapper,
+    YubikeyEnrollmentData
+} from "@app/mappers/token-api-payload/yubikey-token-api-payload.mapper";
+import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 import { distinctUntilChanged, map } from "rxjs";
-import {
-  TokenApiPayloadMapper,
-  TokenEnrollmentData
-} from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
-import {
-  YubikeyApiPayloadMapper,
-  YubikeyEnrollmentData
-} from "../../../../mappers/token-api-payload/yubikey-token-api-payload.mapper";
-import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 
 @Component({
   selector: "app-enroll-yubikey",

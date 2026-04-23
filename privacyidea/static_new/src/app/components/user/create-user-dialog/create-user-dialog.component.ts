@@ -17,23 +17,23 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { ResolverService } from "../../../services/resolver/resolver.service";
 import { Component, computed, effect, inject, linkedSignal, signal, Signal, WritableSignal } from "@angular/core";
-import { EditUserData, UserService } from "../../../services/user/user.service";
-import { DialogAction } from "../../../models/dialog";
+import { toSignal } from "@angular/core/rxjs-interop";
+import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
+import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
+import { MatInput } from "@angular/material/input";
+import { MatOption, MatSelect } from "@angular/material/select";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { PendingChangesDialogComponent } from "@components/shared/dialog/abstract-dialog/pending-changes-dialog.component";
 import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
 import { UserDetailsEditComponent } from "@components/user/user-details-edit/user-details-edit.component";
-import { NotificationService } from "../../../services/notification/notification.service";
-import { MatFormField, MatHint, MatLabel, MatError } from "@angular/material/form-field";
-import { MatOption, MatSelect } from "@angular/material/select";
-import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
-import { RealmService } from "../../../services/realm/realm.service";
-import { MatInput } from "@angular/material/input";
-import { toSignal } from "@angular/core/rxjs-interop";
-import { ROUTE_PATHS } from "../../../route_paths";
-import { ContentService } from "../../../services/content/content.service";
-import { PendingChangesDialogComponent } from "@components/shared/dialog/abstract-dialog/pending-changes-dialog.component";
-import { NAVIGATION_ACCESSIBLE_DIALOG_CLASS } from "../../../constants/global.constants";
+import { NAVIGATION_ACCESSIBLE_DIALOG_CLASS } from "@constants/global.constants";
+import { DialogAction } from "@models/dialog";
+import { ContentService } from "@services/content/content.service";
+import { NotificationService } from "@services/notification/notification.service";
+import { RealmService } from "@services/realm/realm.service";
+import { ResolverService } from "@services/resolver/resolver.service";
+import { EditUserData, UserService } from "@services/user/user.service";
 
 export interface CreateUserDialogData {
   resolver?: string;

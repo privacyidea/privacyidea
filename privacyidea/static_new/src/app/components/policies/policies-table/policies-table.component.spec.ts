@@ -17,18 +17,18 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { AuthService } from "../../../services/auth/auth.service";
-import { DialogService } from "src/app/services/dialog/dialog.service";
 import { Component, Input, output } from "@angular/core";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { By } from "@angular/platform-browser";
+import { NoopAnimationsModule } from "@angular/platform-browser/animations";
+import { FilterValueGeneric } from "@core/models/filter_value_generic/filter-value-generic";
+import { AuthService } from "@services/auth/auth.service";
+import { DialogService } from "@services/dialog/dialog.service";
+import { PolicyDetail, PolicyService } from "@services/policies/policies.service";
+import { TableUtilsService } from "@services/table-utils/table-utils.service";
+import { MockDialogService, MockPolicyService, MockTableUtilsService } from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { of } from "rxjs";
-import { FilterValueGeneric } from "src/app/core/models/filter_value_generic/filter-value-generic";
-import { PolicyDetail, PolicyService } from "src/app/services/policies/policies.service";
-import { TableUtilsService } from "src/app/services/table-utils/table-utils.service";
-import { MockPolicyService, MockDialogService, MockTableUtilsService } from "src/testing/mock-services";
-import { MockAuthService } from "src/testing/mock-services/mock-auth-service";
 import { PoliciesTableComponent } from "./policies-table.component";
 import { PolicyFilterComponent } from "./policy-filter/policy-filter.component";
 

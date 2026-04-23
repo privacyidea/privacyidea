@@ -16,11 +16,11 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component } from "@angular/core";
-import { DialogWrapperComponent } from "../dialog-wrapper/dialog-wrapper.component";
 
-import { DialogAction } from "../../../../models/dialog";
+import { Component } from "@angular/core";
+import { DialogAction } from "@models/dialog";
 import { AbstractDialogComponent } from "../abstract-dialog/abstract-dialog.component";
+import { DialogWrapperComponent } from "../dialog-wrapper/dialog-wrapper.component";
 
 @Component({
   selector: "app-simple-confirmation-dialog",

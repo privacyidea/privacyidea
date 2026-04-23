@@ -16,35 +16,35 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { CommonModule } from "@angular/common";
 import { Component, effect, inject, OnInit, signal, ViewChild } from "@angular/core";
-import { lastValueFrom } from "rxjs";
+import { FormsModule } from "@angular/forms";
+import { MatAutocompleteModule } from "@angular/material/autocomplete";
+import { MatButtonModule } from "@angular/material/button";
 import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from "@angular/material/dialog";
 import { MatFormFieldModule } from "@angular/material/form-field";
-import { MatInputModule } from "@angular/material/input";
-import { MatButtonModule } from "@angular/material/button";
-import { CommonModule } from "@angular/common";
 import { MatIconModule } from "@angular/material/icon";
-import { MatTooltipModule } from "@angular/material/tooltip";
-import { MatTableDataSource, MatTableModule } from "@angular/material/table";
+import { MatInputModule } from "@angular/material/input";
 import { MatPaginator, MatPaginatorModule } from "@angular/material/paginator";
-import { FormsModule } from "@angular/forms";
 import { MatSelectModule } from "@angular/material/select";
-import { MatAutocompleteModule } from "@angular/material/autocomplete";
+import { MatTableDataSource, MatTableModule } from "@angular/material/table";
+import { MatTooltipModule } from "@angular/material/tooltip";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
+import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { NAVIGATION_ACCESSIBLE_DIALOG_CLASS } from "@constants/global.constants";
+import { ApplicationService, ApplicationServiceInterface } from "@services/application/application.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import {
   Machine,
   MachineService,
   MachineServiceInterface,
   TokenApplication,
   TokenApplications
-} from "../../../../services/machine/machine.service";
-import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
-import { ApplicationService, ApplicationServiceInterface } from "../../../../services/application/application.service";
-import { DialogService, DialogServiceInterface } from "../../../../services/dialog/dialog.service";
-import { SimpleConfirmationDialogComponent } from "../../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
-import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
-import { ROUTE_PATHS } from "../../../../route_paths";
-import { CopyButtonComponent } from "../../../shared/copy-button/copy-button.component";
-import { NAVIGATION_ACCESSIBLE_DIALOG_CLASS } from "../../../../constants/global.constants";
+} from "@services/machine/machine.service";
+import { TokenService, TokenServiceInterface } from "@services/token/token.service";
+import { lastValueFrom } from "rxjs";
 
 @Component({
   selector: "app-machine-details-dialog",
@@ -96,7 +96,7 @@ export class MachineDetailsDialogComponent implements OnInit {
       this.dialogRef.backdropClick().subscribe(() => {
         this.close();
       });
-      this.dialogRef.keydownEvents().subscribe(event => {
+      this.dialogRef.keydownEvents().subscribe((event) => {
         if (event.key === "Escape") {
           this.close();
         }
@@ -112,7 +112,7 @@ export class MachineDetailsDialogComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadTokenApplications();
-    this.applicationOptions = Object.keys(this.applicationsDef()).filter(k => k !== "offline");
+    this.applicationOptions = Object.keys(this.applicationsDef()).filter((k) => k !== "offline");
   }
 
   onTokenSerialInput(value: string): void {
@@ -120,16 +120,18 @@ export class MachineDetailsDialogComponent implements OnInit {
   }
 
   loadTokenApplications(): void {
-    this.machineService.getMachineTokens({
-      machineid: this.data.id,
-      resolver: this.data.resolver_name
-    }).subscribe(response => {
-      if (response.result?.value) {
-        this.tokenApplications.set(response.result?.value ?? [] as TokenApplications);
-        this.dataSource.data = response.result?.value;
-        this.dataSource.paginator = this.paginator;
-      }
-    });
+    this.machineService
+      .getMachineTokens({
+        machineid: this.data.id,
+        resolver: this.data.resolver_name
+      })
+      .subscribe((response) => {
+        if (response.result?.value) {
+          this.tokenApplications.set(response.result?.value ?? ([] as TokenApplications));
+          this.dataSource.data = response.result?.value;
+          this.dataSource.paginator = this.paginator;
+        }
+      });
   }
 
   isEditing(tokenId: number): boolean {
@@ -165,17 +167,22 @@ export class MachineDetailsDialogComponent implements OnInit {
   }
 
   detachToken(token: TokenApplication): void {
-    lastValueFrom(this.dialogService.openDialog({
-      component: SimpleConfirmationDialogComponent,
-      data: {
-        title: $localize`Detach Token`,
-        items: [token.serial],
-        itemType: "token",
-        confirmAction: { label: $localize`Detach`, value: true, type: "destruct" }
-      }
-    }).afterClosed()).then(confirmed => {
+    lastValueFrom(
+      this.dialogService
+        .openDialog({
+          component: SimpleConfirmationDialogComponent,
+          data: {
+            title: $localize`Detach Token`,
+            items: [token.serial],
+            itemType: "token",
+            confirmAction: { label: $localize`Detach`, value: true, type: "destruct" }
+          }
+        })
+        .afterClosed()
+    ).then((confirmed) => {
       if (confirmed) {
-        this.machineService.deleteTokenById(token.serial, token.application, token.id.toString())
+        this.machineService
+          .deleteTokenById(token.serial, token.application, token.id.toString())
           .subscribe(() => this.loadTokenApplications());
       }
     });
@@ -186,16 +193,18 @@ export class MachineDetailsDialogComponent implements OnInit {
       return;
     }
 
-    this.machineService.postAssignMachineToToken({
-      serial: this.newTokenSerial,
-      application: this.selectedApplication,
-      machineid: this.data.id,
-      resolver: this.data.resolver_name
-    }).subscribe(() => {
-      this.newTokenSerial = "";
-      this.selectedApplication = "offline";
-      this.loadTokenApplications();
-    });
+    this.machineService
+      .postAssignMachineToToken({
+        serial: this.newTokenSerial,
+        application: this.selectedApplication,
+        machineid: this.data.id,
+        resolver: this.data.resolver_name
+      })
+      .subscribe(() => {
+        this.newTokenSerial = "";
+        this.selectedApplication = "offline";
+        this.loadTokenApplications();
+      });
   }
 
   onTokenClick(serial: string): void {

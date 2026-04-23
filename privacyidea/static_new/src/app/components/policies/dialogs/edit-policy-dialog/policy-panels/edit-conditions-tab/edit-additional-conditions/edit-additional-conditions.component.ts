@@ -17,30 +17,30 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, inject, output, signal, linkedSignal, input } from "@angular/core";
+import { Component, computed, inject, input, linkedSignal, output, signal } from "@angular/core";
 
+import { FormsModule } from "@angular/forms";
+import { MatAutocompleteModule } from "@angular/material/autocomplete";
+import { MatButtonModule, MatIconButton } from "@angular/material/button";
+import { MatCheckboxModule } from "@angular/material/checkbox";
+import { MatDividerModule } from "@angular/material/divider";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MatFormFieldModule } from "@angular/material/form-field";
+import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
 import { MatSelectModule } from "@angular/material/select";
-import { MatCheckboxModule } from "@angular/material/checkbox";
-import { FormsModule } from "@angular/forms";
-import { MatButtonModule, MatIconButton } from "@angular/material/button";
-import { MatIconModule } from "@angular/material/icon";
 import { MatSlideToggleModule } from "@angular/material/slide-toggle";
-import { MatDividerModule } from "@angular/material/divider";
-import { MatAutocompleteModule } from "@angular/material/autocomplete";
 import {
-  PolicyService,
-  PolicyDetail,
-  SECTION_OPTIONS,
-  COMPARATOR_OPTIONS,
-  HANDLE_MISSING_DATA_OPTIONS,
-  SectionOptionKey,
-  ComparatorOptionKey,
-  HandleMissingDataOptionKey,
-  AdditionalCondition
-} from "../../../../../../../services/policies/policies.service";
+    AdditionalCondition,
+    COMPARATOR_OPTIONS,
+    ComparatorOptionKey,
+    HANDLE_MISSING_DATA_OPTIONS,
+    HandleMissingDataOptionKey,
+    PolicyDetail,
+    PolicyService,
+    SECTION_OPTIONS,
+    SectionOptionKey
+} from "@services/policies/policies.service";
 
 @Component({
   selector: "app-edit-additional-conditions",

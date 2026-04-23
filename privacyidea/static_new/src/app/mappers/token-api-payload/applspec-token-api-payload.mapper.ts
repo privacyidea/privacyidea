@@ -16,15 +16,15 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import {
-  BaseApiPayloadMapper,
-  TokenApiPayloadMapper,
-  TokenEnrollmentData,
-  TokenEnrollmentPayload
-} from "./_token-api-payload.mapper";
 import { Injectable } from "@angular/core";
-import { TokenDetails } from "../../services/token/token.service";
-import { parseBooleanValue } from "../../utils/parse-boolean-value";
+import { TokenDetails } from "@services/token/token.service";
+import { parseBooleanValue } from "@utils/parse-boolean-value";
+import {
+    BaseApiPayloadMapper,
+    TokenApiPayloadMapper,
+    TokenEnrollmentData,
+    TokenEnrollmentPayload
+} from "./_token-api-payload.mapper";
 
 // Interface for Application Specific Password enrollment data
 export interface ApplspecEnrollmentData extends TokenEnrollmentData {

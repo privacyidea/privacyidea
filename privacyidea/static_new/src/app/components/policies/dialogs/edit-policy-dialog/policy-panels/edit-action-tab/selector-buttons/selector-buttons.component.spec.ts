@@ -18,9 +18,9 @@
  **/
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { SelectorButtonsComponent } from "./selector-buttons.component";
 import { By } from "@angular/platform-browser";
 import { provideNoopAnimations } from "@angular/platform-browser/animations";
+import { SelectorButtonsComponent } from "./selector-buttons.component";
 
 describe("SelectorButtonsComponent", () => {
   let component: SelectorButtonsComponent<string>;

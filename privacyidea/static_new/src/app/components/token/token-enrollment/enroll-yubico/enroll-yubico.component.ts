@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -19,23 +19,23 @@
 import { Component, computed, effect, EventEmitter, inject, input, OnInit, Output } from "@angular/core";
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { ErrorStateMatcher } from "@angular/material/core";
-import { MatFormField, MatLabel, MatError } from "@angular/material/form-field";
+import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
-import { SystemService, SystemServiceInterface } from "../../../../services/system/system.service";
-import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
+import { SystemService, SystemServiceInterface } from "@services/system/system.service";
+import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 
 import {
-  YubicoApiPayloadMapper,
-  YubicoEnrollmentData
-} from "../../../../mappers/token-api-payload/yubico-token-api-payload.mapper";
+    TokenApiPayloadMapper,
+    TokenEnrollmentData
+} from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import {
-  TokenApiPayloadMapper,
-  TokenEnrollmentData
-} from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
-import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
-import { ROUTE_PATHS } from "../../../../route_paths";
-import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
-import { YUBICO_ID, YUBICO_SECRET, YUBICO_URL } from "../../../../constants/token.constants";
+    YubicoApiPayloadMapper,
+    YubicoEnrollmentData
+} from "@app/mappers/token-api-payload/yubico-token-api-payload.mapper";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { YUBICO_ID, YUBICO_SECRET, YUBICO_URL } from "@constants/token.constants";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 
 export interface YubicoEnrollmentOptions extends TokenEnrollmentData {
   type: "yubico";
@@ -130,11 +130,11 @@ export class EnrollYubicoComponent implements OnInit {
   };
 
   goToYubicoConfig() {
-    this.contentService.router.navigate([ROUTE_PATHS.CONFIGURATION_TOKENTYPES], { fragment: 'yubico' });
+    this.contentService.router.navigate([ROUTE_PATHS.CONFIGURATION_TOKENTYPES], { fragment: "yubico" });
   }
 
   onYubicoConfigKeydown(event: KeyboardEvent) {
-    if (event.key === 'Enter' || event.key === ' ') {
+    if (event.key === "Enter" || event.key === " ") {
       this.goToYubicoConfig();
     }
   }

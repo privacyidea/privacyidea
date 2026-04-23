@@ -17,19 +17,19 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, inject, output, ViewChild, input } from "@angular/core";
+import { Component, computed, inject, input, output, ViewChild } from "@angular/core";
 
 import { AbstractControl, FormControl, FormsModule, ReactiveFormsModule, ValidationErrors } from "@angular/forms";
-import { MatIconModule } from "@angular/material/icon";
-import { MatInputModule } from "@angular/material/input";
 import { MatAutocompleteModule } from "@angular/material/autocomplete";
-import { MatSelect, MatSelectModule } from "@angular/material/select";
 import { MatButtonModule } from "@angular/material/button";
 import { MatExpansionModule } from "@angular/material/expansion";
-import { PolicyService, PolicyDetail } from "../../../../../../../services/policies/policies.service";
-import { RealmServiceInterface, RealmService } from "../../../../../../../services/realm/realm.service";
-import { ResolverService, ResolverServiceInterface } from "../../../../../../../services/resolver/resolver.service";
-import { MultiSelectOnlyComponent } from "../../../../../../shared/multi-select-only/multi-select-only.component";
+import { MatIconModule } from "@angular/material/icon";
+import { MatInputModule } from "@angular/material/input";
+import { MatSelect, MatSelectModule } from "@angular/material/select";
+import { MultiSelectOnlyComponent } from "@components/shared/multi-select-only/multi-select-only.component";
+import { PolicyDetail, PolicyService } from "@services/policies/policies.service";
+import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
+import { ResolverService, ResolverServiceInterface } from "@services/resolver/resolver.service";
 
 @Component({
   selector: "app-edit-admin-conditions",

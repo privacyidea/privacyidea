@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -17,12 +17,12 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { computed, linkedSignal, signal, WritableSignal } from "@angular/core";
-import { AuthData, AuthDetail, AuthRole, AuthServiceInterface, JwtData } from "../../app/services/auth/auth.service";
-import { MockAuthData, MockAuthDetail } from "./mock-validate-service";
-import { MockPiResponse } from "./mock-utils";
-import { of } from "rxjs";
 import { HttpHeaders } from "@angular/common/http";
+import { computed, linkedSignal, signal, WritableSignal } from "@angular/core";
+import { AuthData, AuthDetail, AuthRole, AuthServiceInterface, JwtData } from "@services/auth/auth.service";
+import { of } from "rxjs";
+import { MockPiResponse } from "./mock-utils";
+import { MockAuthData, MockAuthDetail } from "./mock-validate-service";
 
 export class MockAuthService implements AuthServiceInterface {
   // Properties
@@ -124,7 +124,7 @@ export class MockAuthService implements AuthServiceInterface {
     dialog_no_token: false,
     search_on_enter: false,
     timeout_action: "",
-    token_rollover: {"totp": [""]},
+    token_rollover: { totp: [""] },
     hide_welcome: false,
     hide_buttons: false,
     deletion_confirmation: false,

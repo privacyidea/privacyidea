@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,21 +16,21 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { AuditService } from "./audit.service";
-import { ContentService } from "../content/content.service";
-import { TestBed } from "@angular/core/testing";
-import { environment } from "../../../environments/environment";
 import { provideHttpClient } from "@angular/common/http";
-import { AuthService } from "../auth/auth.service";
-import { FilterValue } from "../../core/models/filter_value/filter_value";
-import {
-  MockContentService,
-  MockLocalService,
-  MockNotificationService,
-  MockPiResponse
-} from "../../../testing/mock-services";
-import { MockAuthService } from "../../../testing/mock-services/mock-auth-service";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
+import { TestBed } from "@angular/core/testing";
+import { FilterValue } from "@core/models/filter_value/filter_value";
+import { environment } from "@env/environment";
+import { AuthService } from "@services/auth/auth.service";
+import { ContentService } from "@services/content/content.service";
+import {
+    MockContentService,
+    MockLocalService,
+    MockNotificationService,
+    MockPiResponse
+} from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { AuditService } from "./audit.service";
 
 environment.proxyUrl = "/api";
 
@@ -87,7 +87,7 @@ describe("AuditService (signals & helpers)", () => {
       next: 1,
       prev: 1
     });
-    req.flush(response)
+    req.flush(response);
     await Promise.resolve();
     TestBed.tick();
   });

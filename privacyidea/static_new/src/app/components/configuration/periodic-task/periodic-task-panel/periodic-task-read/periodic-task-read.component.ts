@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,20 +16,17 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, input } from "@angular/core";
-import { EMPTY_PERIODIC_TASK, PeriodicTask } from "../../../../../services/periodic-task/periodic-task.service";
 import { DatePipe } from "@angular/common";
+import { Component, input } from "@angular/core";
 import { MatIcon } from "@angular/material/icon";
-import { parseBooleanValue } from "../../../../../utils/parse-boolean-value";
+import { EMPTY_PERIODIC_TASK, PeriodicTask } from "@services/periodic-task/periodic-task.service";
+import { parseBooleanValue } from "@utils/parse-boolean-value";
 
 @Component({
   selector: "app-periodic-task-read",
   templateUrl: "./periodic-task-read.component.html",
   styleUrl: "./periodic-task-read.component.scss",
-  imports: [
-    DatePipe,
-    MatIcon
-  ]
+  imports: [DatePipe, MatIcon]
 })
 export class PeriodicTaskReadComponent {
   task = input<PeriodicTask>(EMPTY_PERIODIC_TASK);

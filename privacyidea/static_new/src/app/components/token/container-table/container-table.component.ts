@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,36 +16,36 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { animate, state, style, transition, trigger } from "@angular/animations";
 import { Component, ElementRef, ViewChild, WritableSignal, inject, linkedSignal } from "@angular/core";
-import {
-  ContainerDetailData,
-  ContainerService,
-  ContainerServiceInterface
-} from "../../../services/container/container.service";
-import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
 import { MatPaginatorModule, PageEvent } from "@angular/material/paginator";
 import { Sort } from "@angular/material/sort";
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
-import { TableUtilsService, TableUtilsServiceInterface } from "../../../services/table-utils/table-utils.service";
-import { TokenService, TokenServiceInterface } from "../../../services/token/token.service";
-import { animate, state, style, transition, trigger } from "@angular/animations";
+import {
+    ContainerDetailData,
+    ContainerService,
+    ContainerServiceInterface
+} from "@services/container/container.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
+import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 
-import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
-import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
-import { FormsModule } from "@angular/forms";
-import { MatCheckboxModule } from "@angular/material/checkbox";
-import { MatFormFieldModule } from "@angular/material/form-field";
-import { MatInputModule } from "@angular/material/input";
 import { NgClass } from "@angular/common";
-import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
-import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
-import { ContainerTableActionsComponent } from "./container-table-actions/container-table-actions.component";
-import { MatIconModule } from "@angular/material/icon";
+import { FormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
-import { FilterValue } from "../../../core/models/filter_value/filter_value";
-import { MatMenuModule } from "@angular/material/menu";
+import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatDividerModule } from "@angular/material/divider";
+import { MatFormFieldModule } from "@angular/material/form-field";
+import { MatIconModule } from "@angular/material/icon";
+import { MatInputModule } from "@angular/material/input";
+import { MatMenuModule } from "@angular/material/menu";
 import { MatTooltipModule } from "@angular/material/tooltip";
+import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
+import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { FilterValue } from "@core/models/filter_value/filter_value";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { ContainerTableActionsComponent } from "./container-table-actions/container-table-actions.component";
 
 @Component({
   selector: "app-container-table",

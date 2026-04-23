@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -17,16 +17,16 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, input, linkedSignal, output, ViewEncapsulation } from "@angular/core";
-import {
-  LdapMachineResolverData,
-  MachineResolverData
-} from "../../../services/machine-resolver/machine-resolver.service";
-import { MatFormFieldModule } from "@angular/material/form-field";
-import { MatInputModule } from "@angular/material/input";
+import { Component, input, linkedSignal, output, ViewEncapsulation } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { MatCheckboxModule } from "@angular/material/checkbox";
+import { MatFormFieldModule } from "@angular/material/form-field";
+import { MatInputModule } from "@angular/material/input";
 import { MatSelectModule } from "@angular/material/select";
+import {
+    LdapMachineResolverData,
+    MachineResolverData
+} from "@services/machine-resolver/machine-resolver.service";
 
 import { MatButton } from "@angular/material/button";
 

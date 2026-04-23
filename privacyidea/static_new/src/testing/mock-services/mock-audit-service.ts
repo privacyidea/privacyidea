@@ -18,10 +18,10 @@
  **/
 import { linkedSignal, Signal, signal, WritableSignal } from "@angular/core";
 import { Sort } from "@angular/material/sort";
-import { Audit, AuditServiceInterface } from "../../app/services/audit/audit.service";
+import { PiResponse } from "@app/app.component";
+import { FilterValue } from "@core/models/filter_value/filter_value";
+import { Audit, AuditServiceInterface } from "@services/audit/audit.service";
 import { MockHttpResourceRef, MockPiResponse } from "./mock-utils";
-import { PiResponse } from "../../app/app.component";
-import { FilterValue } from "src/app/core/models/filter_value/filter_value";
 
 export class MockAuditService implements AuditServiceInterface {
   apiFilterKeyMap: Record<string, string> = {};

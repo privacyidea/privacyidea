@@ -17,15 +17,10 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { TotpConfigComponent } from "@components/configuration/token-type-config/token-types/totp-config/totp-config.component";
-import { provideRouter } from "@angular/router";
 import { provideAnimations } from "@angular/platform-browser/animations";
-import {
-  TOTP_HASHLIB,
-  TOTP_TIME_SHIFT,
-  TOTP_TIME_STEP,
-  TOTP_TIME_WINDOW
-} from "../../../../../constants/token.constants";
+import { provideRouter } from "@angular/router";
+import { TotpConfigComponent } from "@components/configuration/token-type-config/token-types/totp-config/totp-config.component";
+import { TOTP_HASHLIB, TOTP_TIME_SHIFT, TOTP_TIME_STEP, TOTP_TIME_WINDOW } from "@constants/token.constants";
 
 const mockTotpSteps = ["30", "60"];
 const mockHashLibs = ["sha1", "sha256", "sha512"];
@@ -104,4 +99,3 @@ describe("TotpConfigComponent", () => {
     expect(component.updateFormData).toHaveBeenCalledWith(TOTP_TIME_STEP, "");
   });
 });
-

@@ -16,14 +16,14 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { computed, signal } from "@angular/core";
 import { HttpResourceRef } from "@angular/common/http";
-import { PiResponse } from "../../app/app.component";
+import { computed, signal } from "@angular/core";
+import { PiResponse } from "@app/app.component";
 import {
-  PrivacyideaServer,
-  PrivacyideaServers,
-  PrivacyideaServerServiceInterface
-} from "../../app/services/privacyidea-server/privacyidea-server.service";
+    PrivacyideaServer,
+    PrivacyideaServers,
+    PrivacyideaServerServiceInterface
+} from "@services/privacyidea-server/privacyidea-server.service";
 
 export class MockPrivacyideaServerService implements PrivacyideaServerServiceInterface {
   remoteServerResource: HttpResourceRef<PiResponse<PrivacyideaServers> | undefined> = {

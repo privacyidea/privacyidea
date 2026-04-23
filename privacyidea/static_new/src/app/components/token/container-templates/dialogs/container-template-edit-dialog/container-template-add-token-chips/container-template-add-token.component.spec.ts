@@ -17,12 +17,12 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { ContainerTemplateAddTokenComponent } from "./container-template-add-token.component";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { provideHttpClient } from "@angular/common/http";
+import { provideHttpClientTesting } from "@angular/common/http/testing";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { By } from "@angular/platform-browser";
+import { NoopAnimationsModule } from "@angular/platform-browser/animations";
+import { ContainerTemplateAddTokenComponent } from "./container-template-add-token.component";
 
 describe("ContainerTemplateAddTokenComponent", () => {
   let component: ContainerTemplateAddTokenComponent;

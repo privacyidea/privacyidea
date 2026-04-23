@@ -17,26 +17,26 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  inject,
-  input,
-  linkedSignal,
-  output,
-  signal
-} from "@angular/core";
-import { EventService } from "../../../../../services/event/event.service";
-import { ClearableInputComponent } from "../../../../shared/clearable-input/clearable-input.component";
-import { MatInput, MatLabel } from "@angular/material/input";
-import { FormsModule, ReactiveFormsModule } from "@angular/forms";
-import { MatFormField } from "@angular/material/form-field";
 import { TitleCasePipe } from "@angular/common";
-import { MatTab, MatTabGroup, MatTabLabel } from "@angular/material/tabs";
-import { EventConditionListComponent } from "./event-condition-list/event-condition-list.component";
+import {
+    ChangeDetectionStrategy,
+    Component,
+    computed,
+    inject,
+    input,
+    linkedSignal,
+    output,
+    signal
+} from "@angular/core";
+import { FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { MatCardModule } from "@angular/material/card";
+import { MatFormField } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
+import { MatInput, MatLabel } from "@angular/material/input";
+import { MatTab, MatTabGroup, MatTabLabel } from "@angular/material/tabs";
+import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { EventService } from "@services/event/event.service";
+import { EventConditionListComponent } from "./event-condition-list/event-condition-list.component";
 
 @Component({
   selector: "app-event-conditions-tab",

@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -19,13 +19,13 @@
 
 import { Component, inject } from "@angular/core";
 import { MatExpansionModule } from "@angular/material/expansion";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import {
-  MachineResolverService,
-  MachineResolverServiceInterface
-} from "../../services/machine-resolver/machine-resolver.service";
-import { AuthService, AuthServiceInterface } from "../../services/auth/auth.service";
-import { MachineResolverPanelNewComponent } from "./machine-resolver-panel-new/machine-resolver-panel-new.component";
+    MachineResolverService,
+    MachineResolverServiceInterface
+} from "@services/machine-resolver/machine-resolver.service";
 import { MachineResolverPanelEditComponent } from "./machine-resolver-panel-edit/machine-resolver-panel-edit.component";
+import { MachineResolverPanelNewComponent } from "./machine-resolver-panel-new/machine-resolver-panel-new.component";
 
 @Component({
   selector: "app-machineResolver",

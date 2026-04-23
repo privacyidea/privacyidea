@@ -1,4 +1,4 @@
-@use "../../../../styles" as styles;
+@use "styles";
 
 .token-type-config-container {
   @include styles.main-component-style;
@@ -60,7 +60,8 @@
       border-radius: var(--border-radius);
       padding: 8px;
 
-      th, td {
+      th,
+      td {
         padding: 4px;
         text-align: left;
         background: var(--table-color);

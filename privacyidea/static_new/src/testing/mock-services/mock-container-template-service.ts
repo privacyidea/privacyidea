@@ -18,13 +18,13 @@
  **/
 
 import { HttpResourceRef } from "@angular/common/http";
-import { signal, WritableSignal, Signal } from "@angular/core";
-import { PiResponse } from "src/app/app.component";
+import { signal } from "@angular/core";
+import { PiResponse } from "@app/app.component";
 import {
-  ContainerTemplateServiceInterface,
-  TemplateTokenTypes
-} from "src/app/services/container-template/container-template.service";
-import { ContainerTemplate } from "src/app/services/container/container.service";
+    ContainerTemplateServiceInterface,
+    TemplateTokenTypes
+} from "@services/container-template/container-template.service";
+import { ContainerTemplate } from "@services/container/container.service";
 import { MockHttpResourceRef } from "./mock-utils";
 
 export class MockContainerTemplateService implements ContainerTemplateServiceInterface {

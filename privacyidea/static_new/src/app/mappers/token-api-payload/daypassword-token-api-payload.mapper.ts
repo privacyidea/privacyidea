@@ -17,14 +17,14 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Injectable } from "@angular/core";
+import { TokenDetails } from "@services/token/token.service";
+import { parseBooleanValue } from "@utils/parse-boolean-value";
 import {
-  BaseApiPayloadMapper,
-  TokenApiPayloadMapper,
-  TokenEnrollmentData,
-  TokenEnrollmentPayload
+    BaseApiPayloadMapper,
+    TokenApiPayloadMapper,
+    TokenEnrollmentData,
+    TokenEnrollmentPayload
 } from "./_token-api-payload.mapper";
-import { TokenDetails } from "../../services/token/token.service";
-import { parseBooleanValue } from "../../utils/parse-boolean-value";
 
 // Interface for DayPassword-specific enrollment data
 export interface DaypasswordEnrollmentData extends TokenEnrollmentData {
@@ -74,7 +74,7 @@ export class DaypasswordApiPayloadMapper
       otpLength: payload.otplen !== undefined ? Number(payload.otplen) : undefined,
       hashAlgorithm: payload.hashlib ?? undefined,
       ...(payload.timeStep !== undefined && { timeStep: `${payload.timeStep}` }),
-      ...(payload.genkey !== undefined && { generateOnServer: parseBooleanValue(payload.genkey) }),
+      ...(payload.genkey !== undefined && { generateOnServer: parseBooleanValue(payload.genkey) })
     };
   }
 

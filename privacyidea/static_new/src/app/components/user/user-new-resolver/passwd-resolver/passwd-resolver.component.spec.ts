@@ -16,10 +16,10 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { PasswdResolverComponent } from "./passwd-resolver.component";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { ComponentRef } from "@angular/core";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { NoopAnimationsModule } from "@angular/platform-browser/animations";
+import { PasswdResolverComponent } from "./passwd-resolver.component";
 
 describe("PasswdResolverComponent", () => {
   let component: PasswdResolverComponent;

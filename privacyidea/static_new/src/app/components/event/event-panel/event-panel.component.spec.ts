@@ -17,23 +17,19 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { EventPanelComponent } from "./event-panel.component";
 import { provideHttpClient } from "@angular/common/http";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { MockEventService } from "../../../../testing/mock-services/mock-event-service";
-import { EMPTY_EVENT, EventService } from "../../../services/event/event.service";
-import {
-  MockDialogService,
-  MockNotificationService,
-  MockPendingChangesService
-} from "../../../../testing/mock-services";
-import { NotificationService } from "../../../services/notification/notification.service";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
+import { SaveAndExitDialogResult } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
+import { DialogService } from "@services/dialog/dialog.service";
+import { EMPTY_EVENT, EventService } from "@services/event/event.service";
+import { NotificationService } from "@services/notification/notification.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
+import { MockDialogService, MockNotificationService, MockPendingChangesService } from "@testing/mock-services";
+import { MockEventService } from "@testing/mock-services/mock-event-service";
 import { of, Subject } from "rxjs";
-import { MockMatDialogRef } from "../../../../testing/mock-mat-dialog-ref";
-import { DialogService } from "../../../services/dialog/dialog.service";
-import { SaveAndExitDialogResult } from "../../shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
-import { PendingChangesService } from "../../../services/pending-changes/pending-changes.service";
+import { EventPanelComponent } from "./event-panel.component";
 
 global.IntersectionObserver = class IntersectionObserver {
   constructor() {}

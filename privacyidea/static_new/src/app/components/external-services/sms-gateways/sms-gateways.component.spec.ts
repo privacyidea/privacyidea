@@ -16,19 +16,19 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { SmsGatewaysComponent } from "./sms-gateways.component";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { MatDialog, MatDialogModule } from "@angular/material/dialog";
-import { SmsGatewayService } from "../../../services/sms-gateway/sms-gateway.service";
-import { DialogService } from "../../../services/dialog/dialog.service";
 import { signal } from "@angular/core";
-import { MockDialogService } from "../../../../testing/mock-services";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { MatDialog, MatDialogModule } from "@angular/material/dialog";
+import { NoopAnimationsModule } from "@angular/platform-browser/animations";
+import { SaveAndExitDialogResult } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
+import { DialogService } from "@services/dialog/dialog.service";
+import { SmsGatewayService } from "@services/sms-gateway/sms-gateway.service";
+import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
+import { MockDialogService } from "@testing/mock-services";
 import { Subject } from "rxjs";
-import { MockMatDialogRef } from "../../../../testing/mock-mat-dialog-ref";
-import { SaveAndExitDialogResult } from "../../shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
+import { SmsGatewaysComponent } from "./sms-gateways.component";
 
 describe("SmsGatewaysComponent", () => {
   let component: SmsGatewaysComponent;

@@ -16,23 +16,23 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { NewSmtpServerComponent } from "./new-smtp-server.component";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from "@angular/material/dialog";
-import { of } from "rxjs";
-import { SmtpService } from "../../../../services/smtp/smtp.service";
-import { MockSmtpService } from "../../../../../testing/mock-services/mock-smtp-service";
-import { ContentService } from "../../../../services/content/content.service";
-import { ROUTE_PATHS } from "../../../../route_paths";
 import { signal } from "@angular/core";
-import { SaveAndExitDialogComponent } from "../../../shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
-import { PendingChangesService } from "../../../../services/pending-changes/pending-changes.service";
-import { MockPendingChangesService } from "../../../../../testing/mock-services/mock-pending-changes-service";
-import { DialogService } from "../../../../services/dialog/dialog.service";
-import { MockDialogService } from "../../../../../testing/mock-services";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from "@angular/material/dialog";
+import { NoopAnimationsModule } from "@angular/platform-browser/animations";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
+import { ContentService } from "@services/content/content.service";
+import { DialogService } from "@services/dialog/dialog.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+import { SmtpService } from "@services/smtp/smtp.service";
+import { MockDialogService } from "@testing/mock-services";
+import { MockPendingChangesService } from "@testing/mock-services/mock-pending-changes-service";
+import { MockSmtpService } from "@testing/mock-services/mock-smtp-service";
+import { of } from "rxjs";
+import { NewSmtpServerComponent } from "./new-smtp-server.component";
 
 describe("NewSmtpServerComponent", () => {
   let smtpServiceMock: any;
@@ -78,15 +78,15 @@ describe("NewSmtpServerComponent", () => {
           { provide: SmtpService, useClass: MockSmtpService },
           { provide: ContentService, useValue: contentServiceMock },
           { provide: PendingChangesService, useClass: MockPendingChangesService },
-          { provide: DialogService, useClass: MockDialogService },
+          { provide: DialogService, useClass: MockDialogService }
         ]
-      }).overrideComponent(NewSmtpServerComponent, {
-        add: {
-          providers: [
-            { provide: MatDialog, useValue: dialogMock }
-          ]
-        }
-      }).compileComponents();
+      })
+        .overrideComponent(NewSmtpServerComponent, {
+          add: {
+            providers: [{ provide: MatDialog, useValue: dialogMock }]
+          }
+        })
+        .compileComponents();
 
       smtpServiceMock = TestBed.inject(SmtpService);
       pendingChangesService = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
@@ -251,7 +251,7 @@ describe("NewSmtpServerComponent", () => {
 
         component.onCancel();
 
-        await new Promise(resolve => setTimeout(resolve, 10));
+        await new Promise((resolve) => setTimeout(resolve, 10));
 
         expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
         expect(dialogRefMock.close).toHaveBeenCalled();
@@ -273,7 +273,7 @@ describe("NewSmtpServerComponent", () => {
 
         component.onCancel();
 
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise((resolve) => setTimeout(resolve, 100));
 
         expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
         expect(dialogRefMock.close).toHaveBeenCalled();
@@ -296,7 +296,7 @@ describe("NewSmtpServerComponent", () => {
 
         component.onCancel();
 
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise((resolve) => setTimeout(resolve, 100));
 
         expect(pendingChangesService.clearAllRegistrations).not.toHaveBeenCalled();
         expect(dialogRefMock.close).not.toHaveBeenCalled();
@@ -311,7 +311,7 @@ describe("NewSmtpServerComponent", () => {
 
         component.onCancel();
 
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise((resolve) => setTimeout(resolve, 100));
 
         expect(pendingChangesService.save).not.toHaveBeenCalled();
         expect(pendingChangesService.clearAllRegistrations).not.toHaveBeenCalled();
@@ -333,7 +333,7 @@ describe("NewSmtpServerComponent", () => {
 
         component.onCancel();
 
-        await new Promise(resolve => setTimeout(resolve, 10));
+        await new Promise((resolve) => setTimeout(resolve, 10));
 
         expect(pendingChangesService.clearAllRegistrations).not.toHaveBeenCalled();
         expect(dialogRefMock.close).not.toHaveBeenCalled();
@@ -364,13 +364,13 @@ describe("NewSmtpServerComponent", () => {
           { provide: SmtpService, useClass: MockSmtpService },
           { provide: ContentService, useValue: contentServiceMock }
         ]
-      }).overrideComponent(NewSmtpServerComponent, {
-        add: {
-          providers: [
-            { provide: MatDialog, useValue: dialogMock }
-          ]
-        }
-      }).compileComponents();
+      })
+        .overrideComponent(NewSmtpServerComponent, {
+          add: {
+            providers: [{ provide: MatDialog, useValue: dialogMock }]
+          }
+        })
+        .compileComponents();
 
       editFixture = TestBed.createComponent(NewSmtpServerComponent);
       editComponent = editFixture.componentInstance;

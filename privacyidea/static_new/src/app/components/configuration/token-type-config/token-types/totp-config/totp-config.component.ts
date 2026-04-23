@@ -24,12 +24,7 @@ import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { MatSelectModule } from "@angular/material/select";
 import { ClearButtonComponent } from "@components/shared/clear-button/clear-button.component";
-import {
-  TOTP_HASHLIB,
-  TOTP_TIME_STEP,
-  TOTP_TIME_SHIFT,
-  TOTP_TIME_WINDOW
-} from "../../../../../constants/token.constants";
+import { TOTP_HASHLIB, TOTP_TIME_SHIFT, TOTP_TIME_STEP, TOTP_TIME_WINDOW } from "@constants/token.constants";
 
 @Component({
   selector: "app-totp-config",

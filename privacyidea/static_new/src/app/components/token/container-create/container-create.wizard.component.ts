@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -23,19 +23,19 @@ import { FormsModule } from "@angular/forms";
 import { MatButton, MatIconButton } from "@angular/material/button";
 import { MatDialog } from "@angular/material/dialog";
 import { MatIcon } from "@angular/material/icon";
-import { DomSanitizer } from "@angular/platform-browser";
-import { map } from "rxjs";
-import { ContainerService, ContainerServiceInterface } from "../../../services/container/container.service";
-import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
-import { NotificationService, NotificationServiceInterface } from "../../../services/notification/notification.service";
-import { RealmService, RealmServiceInterface } from "../../../services/realm/realm.service";
-import { TokenService, TokenServiceInterface } from "../../../services/token/token.service";
-import { UserService, UserServiceInterface } from "../../../services/user/user.service";
-import { VersioningService, VersioningServiceInterface } from "../../../services/version/version.service";
-import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
-import { ContainerCreateComponent } from "./container-create.component";
 import { MatTooltip } from "@angular/material/tooltip";
-import { environment } from "../../../../environments/environment";
+import { DomSanitizer } from "@angular/platform-browser";
+import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { environment } from "@env/environment";
+import { ContainerService, ContainerServiceInterface } from "@services/container/container.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
+import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
+import { TokenService, TokenServiceInterface } from "@services/token/token.service";
+import { UserService, UserServiceInterface } from "@services/user/user.service";
+import { VersioningService, VersioningServiceInterface } from "@services/version/version.service";
+import { map } from "rxjs";
+import { ContainerCreateComponent } from "./container-create.component";
 
 @Component({
   selector: "app-container-create-wizard",
@@ -67,7 +67,7 @@ export class ContainerCreateWizardComponent extends ContainerCreateComponent {
     source: () => ({
       registration: this.authService.containerWizard().registration,
       containerType: this.containerService.selectedContainerType()?.containerType,
-      canRegister: this.authService.actionAllowed("container_register"),
+      canRegister: this.authService.actionAllowed("container_register")
     }),
     computation: (source) => source.registration && source.containerType === "smartphone" && source.canRegister
   });
@@ -91,7 +91,8 @@ export class ContainerCreateWizardComponent extends ContainerCreateComponent {
     .get(environment.proxyUrl + this.customizationPath + "container-create.wizard.pre.top.html", {
       responseType: "text"
     })
-    .pipe(map((raw) => ({
+    .pipe(
+      map((raw) => ({
         hasContent: !!raw && raw.trim().length > 0,
         sanitized: this.sanitizer.sanitize(SecurityContext.HTML, raw)
       }))
@@ -111,4 +112,3 @@ export class ContainerCreateWizardComponent extends ContainerCreateComponent {
     super(registrationDialog);
   }
 }
-

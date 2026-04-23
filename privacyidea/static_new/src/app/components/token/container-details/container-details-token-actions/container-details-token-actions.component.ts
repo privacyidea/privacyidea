@@ -17,19 +17,19 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, computed, inject, Input, WritableSignal } from "@angular/core";
-import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
-import {
-  ContainerDetailToken,
-  ContainerService,
-  ContainerServiceInterface
-} from "../../../../services/container/container.service";
-import { MatIcon } from "@angular/material/icon";
 import { MatButton } from "@angular/material/button";
 import { MatDivider } from "@angular/material/divider";
-import { SimpleConfirmationDialogComponent } from "../../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
-import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
+import { MatIcon } from "@angular/material/icon";
 import { MatTableDataSource } from "@angular/material/table";
-import { DialogService, DialogServiceInterface } from "../../../../services/dialog/dialog.service";
+import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import {
+    ContainerDetailToken,
+    ContainerService,
+    ContainerServiceInterface
+} from "@services/container/container.service";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 
 @Component({
   selector: "app-container-details-token-actions",

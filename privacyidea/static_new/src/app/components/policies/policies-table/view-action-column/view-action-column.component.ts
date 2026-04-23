@@ -18,7 +18,7 @@
  **/
 
 import { Component, computed, inject, input } from "@angular/core";
-import { PolicyService, PolicyServiceInterface } from "../../../../services/policies/policies.service";
+import { PolicyService, PolicyServiceInterface } from "@services/policies/policies.service";
 
 @Component({
   selector: "app-view-action-column",

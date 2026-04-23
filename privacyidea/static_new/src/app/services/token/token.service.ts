@@ -19,36 +19,36 @@
 import { HttpClient, HttpParams, httpResource, HttpResourceRef } from "@angular/common/http";
 import { computed, effect, inject, Injectable, linkedSignal, Signal, signal, WritableSignal } from "@angular/core";
 import { Sort } from "@angular/material/sort";
+import { PiResponse } from "@app/app.component";
 import {
-  catchError,
-  forkJoin,
-  Observable,
-  shareReplay,
-  Subject,
-  switchMap,
-  takeUntil,
-  takeWhile,
-  throwError,
-  timer
+    BaseApiPayloadMapper,
+    EnrollmentResponse,
+    EnrollmentResponseDetail,
+    TokenApiPayloadMapper,
+    TokenEnrollmentData
+} from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { FilterValue } from "@core/models/filter_value/filter_value";
+import { environment } from "@env/environment";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
+import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
+import { StringUtils } from "@utils/string.utils";
+import { tokenTypes } from "@utils/token.utils";
+import {
+    catchError,
+    forkJoin,
+    Observable,
+    shareReplay,
+    Subject,
+    switchMap,
+    takeUntil,
+    takeWhile,
+    throwError,
+    timer
 } from "rxjs";
-import { environment } from "../../../environments/environment";
-import { PiResponse } from "../../app.component";
-import {
-  BaseApiPayloadMapper,
-  EnrollmentResponse,
-  EnrollmentResponseDetail,
-  TokenApiPayloadMapper,
-  TokenEnrollmentData
-} from "../../mappers/token-api-payload/_token-api-payload.mapper";
-import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
-import { tokenTypes } from "../../utils/token.utils";
-import { AuthService, AuthServiceInterface } from "../auth/auth.service";
-import { ContentService, ContentServiceInterface } from "../content/content.service";
-import { RealmService, RealmServiceInterface } from "../realm/realm.service";
-import { StringUtils } from "../../utils/string.utils";
-import { DialogService, DialogServiceInterface } from "../dialog/dialog.service";
-import { SimpleConfirmationDialogComponent } from "../../components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
-import { FilterValue } from "src/app/core/models/filter_value/filter_value";
 
 export type TokenTypeKey =
   | "hotp"
@@ -78,7 +78,17 @@ export type TokenTypeKey =
   | "webauthn"
   | "passkey";
 
-const apiFilter = ["serial", "type", "active", "user", "realm", "description", "rollout_state", "tokenrealm", "container_serial"];
+const apiFilter = [
+  "serial",
+  "type",
+  "active",
+  "user",
+  "realm",
+  "description",
+  "rollout_state",
+  "tokenrealm",
+  "container_serial"
+];
 
 const advancedApiFilter = ["infokey & infovalue", "userid", "resolver", "assigned"];
 
@@ -170,7 +180,7 @@ export interface WebAuthnRegisterRequest {
 
 export type LostTokenResponse = PiResponse<LostTokenData>;
 
-export type EnrollTokenArguments = { data: TokenEnrollmentData, mapper: BaseApiPayloadMapper };
+export type EnrollTokenArguments = { data: TokenEnrollmentData; mapper: BaseApiPayloadMapper };
 
 export type TokenEnrollmentDialogData = {
   tokenType: string;
@@ -181,7 +191,7 @@ export type TokenEnrollmentDialogData = {
   onlyAddToRealm?: boolean;
   rollover?: boolean;
   showEnrollData?: boolean;
-}
+};
 
 export interface LostTokenData {
   disable: number;
@@ -344,7 +354,8 @@ export class TokenService implements TokenServiceInterface {
       .filter(([key, v]) => (key === "container_serial" ? true : StringUtils.validFilterValue(v)))
       .map(([key, v]) => [key, plainKeys.has(key) ? v : `*${v}*`] as const);
     return Object.fromEntries(entries) as Record<string, string>;
-  });  userRealm = signal("");
+  });
+  userRealm = signal("");
 
   constructor() {
     effect(() => {
@@ -601,7 +612,7 @@ export class TokenService implements TokenServiceInterface {
   selectedToken: WritableSignal<string | null> = signal(null);
 
   tokenOptions = linkedSignal({
-    source: () => this.tokenSerialResource.hasValue() ? this.tokenSerialResource.value() : undefined,
+    source: () => (this.tokenSerialResource.hasValue() ? this.tokenSerialResource.value() : undefined),
     computation: (tokenSerialResource) => {
       if (!tokenSerialResource) return [];
       return tokenSerialResource.result?.value?.tokens?.map((token) => token.serial) ?? [];
@@ -1002,17 +1013,19 @@ export class TokenService implements TokenServiceInterface {
   getTokenDetails(tokenSerial: string): Observable<PiResponse<Tokens>> {
     const headers = this.authService.getHeaders();
     let params = new HttpParams().set("serial", tokenSerial);
-    return this.http.get<PiResponse<Tokens>>(this.tokenBaseUrl, {
-      headers,
-      params
-    }).pipe(
-      catchError((error) => {
-        console.error("Failed to get token details.", error);
-        const message = error.error?.result?.error?.message || "";
-        this.notificationService.openSnackBar("Failed to get token details. " + message);
-        return throwError(() => error);
+    return this.http
+      .get<PiResponse<Tokens>>(this.tokenBaseUrl, {
+        headers,
+        params
       })
-    );
+      .pipe(
+        catchError((error) => {
+          console.error("Failed to get token details.", error);
+          const message = error.error?.result?.error?.message || "";
+          this.notificationService.openSnackBar("Failed to get token details. " + message);
+          return throwError(() => error);
+        })
+      );
   }
 
   enrollToken<T extends TokenEnrollmentData, R extends EnrollmentResponse>(args: {
@@ -1039,7 +1052,8 @@ export class TokenService implements TokenServiceInterface {
 
   verifyToken(verifyData: TokenEnrollmentData): Observable<PiResponse<boolean, EnrollmentResponseDetail>> {
     const headers = this.authService.getHeaders();
-    return this.http.post<PiResponse<boolean, EnrollmentResponseDetail>>(`${this.tokenBaseUrl}init`, verifyData, { headers })
+    return this.http
+      .post<PiResponse<boolean, EnrollmentResponseDetail>>(`${this.tokenBaseUrl}init`, verifyData, { headers })
       .pipe(
         catchError((error) => {
           console.error("Failed to verify token.", error);

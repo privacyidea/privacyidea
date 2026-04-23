@@ -16,19 +16,19 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { NewPrivacyideaServerComponent } from "./new-privacyidea-server.component";
+
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from "@angular/material/dialog";
+import { SaveAndExitDialogResult } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
+import { DialogService } from "@services/dialog/dialog.service";
+import { PrivacyideaServerService } from "@services/privacyidea-server/privacyidea-server.service";
+import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
+import { MockDialogService, MockPrivacyideaServerService } from "@testing/mock-services";
 import { Subject } from "rxjs";
-import { PrivacyideaServerService } from "../../../../services/privacyidea-server/privacyidea-server.service";
-import { MockPrivacyideaServerService } from "../../../../../testing/mock-services/mock-privacyidea-server-service";
-import { MockDialogService } from "../../../../../testing/mock-services";
-import { DialogService } from "../../../../services/dialog/dialog.service";
-import { SaveAndExitDialogResult } from "../../../shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
-import { MockMatDialogRef } from "../../../../../testing/mock-mat-dialog-ref";
+import { NewPrivacyideaServerComponent } from "./new-privacyidea-server.component";
 
 describe("NewPrivacyideaServerComponent", () => {
   let component: NewPrivacyideaServerComponent;

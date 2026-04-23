@@ -18,25 +18,24 @@
  **/
 
 import { Component, computed, inject, signal } from "@angular/core";
+import { FormsModule } from "@angular/forms";
+import { MatAutocompleteModule } from "@angular/material/autocomplete";
+import { MatButtonModule } from "@angular/material/button";
 import { MatExpansionModule, MatExpansionPanel } from "@angular/material/expansion";
 import { MatIcon, MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
-import { MatAutocompleteModule } from "@angular/material/autocomplete";
 import { MatSelectModule } from "@angular/material/select";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import {
-  MachineResolver,
-  MachineResolverData,
-  MachineResolverService,
-  MachineResolverServiceInterface
-} from "../../../services/machine-resolver/machine-resolver.service";
-
-import { FormsModule } from "@angular/forms";
-import { MatButtonModule } from "@angular/material/button";
-import { DialogService, DialogServiceInterface } from "../../../services/dialog/dialog.service";
+    MachineResolver,
+    MachineResolverData,
+    MachineResolverService,
+    MachineResolverServiceInterface
+} from "@services/machine-resolver/machine-resolver.service";
+import { lastValueFrom } from "rxjs";
+import { SimpleConfirmationDialogComponent } from "../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { MachineResolverHostsTabComponent } from "../machine-resolver-hosts-tab/machine-resolver-hosts-tab.component";
 import { MachineResolverLdapTabComponent } from "../machine-resolver-ldap-tab/machine-resolver-ldap-tab.component";
-import { SimpleConfirmationDialogComponent } from "../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
-import { lastValueFrom } from "rxjs";
 
 @Component({
   selector: "app-machine-resolver-panel-new",

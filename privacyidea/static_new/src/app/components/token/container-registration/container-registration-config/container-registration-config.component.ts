@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -17,12 +17,12 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, computed, effect, EventEmitter, Input, Output, Signal, signal } from "@angular/core";
-import { MatFormField, MatHint, MatLabel, MatSuffix } from "@angular/material/form-field";
-import { MatInput } from "@angular/material/input";
 import { FormsModule } from "@angular/forms";
-import { MatCheckbox } from "@angular/material/checkbox";
-import { MatIconModule } from "@angular/material/icon";
 import { MatButtonModule } from "@angular/material/button";
+import { MatCheckbox } from "@angular/material/checkbox";
+import { MatFormField, MatHint, MatLabel, MatSuffix } from "@angular/material/form-field";
+import { MatIconModule } from "@angular/material/icon";
+import { MatInput } from "@angular/material/input";
 
 @Component({
   selector: "app-container-registration-config",
@@ -68,10 +68,7 @@ export class ContainerRegistrationConfigComponent {
   });
 
   get passphraseMismatch(): boolean {
-    return (
-      !this.userStorePassphrase() &&
-      this.passphraseResponse() !== this.repeatPassphraseResponse()
-    );
+    return !this.userStorePassphrase() && this.passphraseResponse() !== this.repeatPassphraseResponse();
   }
 
   toggleShowPassphrase() {

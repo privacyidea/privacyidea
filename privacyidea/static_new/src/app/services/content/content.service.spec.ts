@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,12 +16,12 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { TestBed } from "@angular/core/testing";
 import { provideHttpClient } from "@angular/common/http";
-import { ContentService } from "./content.service";
-import { ROUTE_PATHS } from "../../route_paths";
+import { TestBed } from "@angular/core/testing";
 import { NavigationEnd, Router } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
 import { Subject } from "rxjs";
+import { ContentService } from "./content.service";
 
 describe("ContentService", () => {
   let service: ContentService;
@@ -50,10 +50,7 @@ describe("ContentService", () => {
     };
 
     TestBed.configureTestingModule({
-      providers: [
-        provideHttpClient(),
-        { provide: Router, useValue: mockRouter }
-      ]
+      providers: [provideHttpClient(), { provide: Router, useValue: mockRouter }]
     });
 
     service = TestBed.inject(ContentService);
@@ -102,9 +99,7 @@ describe("ContentService", () => {
       emitNav("/tokens/containers");
       service.tokenSelected("SER1");
 
-      expect(mockRouter.navigateByUrl).toHaveBeenCalledWith(
-        ROUTE_PATHS.TOKENS_DETAILS + "SER1"
-      );
+      expect(mockRouter.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.TOKENS_DETAILS + "SER1");
       expect(service.tokenSerial()).toBe("SER1");
       expect(service.routeUrl()).toBe(ROUTE_PATHS.TOKENS_DETAILS + "SER1");
       expect(service.previousUrl()).toBe("/tokens/containers");
@@ -116,9 +111,7 @@ describe("ContentService", () => {
       emitNav("/tokens");
       service.containerSelected("C1");
 
-      expect(mockRouter.navigateByUrl).toHaveBeenCalledWith(
-        ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + "C1"
-      );
+      expect(mockRouter.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + "C1");
       expect(service.containerSerial()).toBe("C1");
       expect(service.routeUrl()).toBe(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + "C1");
       expect(service.previousUrl()).toBe("/tokens");

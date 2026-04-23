@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -17,9 +17,9 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component } from "@angular/core";
+import { UserUtilsPanelSelfServiceComponent } from "@components/layout/user-utils-panel/user-utils-panel.self-service.component";
 import { NavigationSelfServiceButtonComponent } from "./navigation-self-service-button/navigation-self-service-button.component";
 import { NavigationSelfServiceComponent } from "./navigation-self-service.component";
-import { UserUtilsPanelSelfServiceComponent } from "@components/layout/user-utils-panel/user-utils-panel.self-service.component";
 
 @Component({
   selector: "app-navigation-self-service-wizard",
@@ -28,5 +28,4 @@ import { UserUtilsPanelSelfServiceComponent } from "@components/layout/user-util
   templateUrl: "./navigation-self-service.wizard.component.html",
   styleUrl: "./navigation-self-service.component.scss"
 })
-export class NavigationSelfServiceWizardComponent extends NavigationSelfServiceComponent {
-}
+export class NavigationSelfServiceWizardComponent extends NavigationSelfServiceComponent {}

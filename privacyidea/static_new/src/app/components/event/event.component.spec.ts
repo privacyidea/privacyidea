@@ -19,10 +19,10 @@
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 
-import { EventComponent } from "./event.component";
 import { provideHttpClient } from "@angular/common/http";
-import { EventHandler, EventService } from "../../services/event/event.service";
-import { MockEventService } from "../../../testing/mock-services/mock-event-service";
+import { EventHandler, EventService } from "@services/event/event.service";
+import { MockEventService } from "@testing/mock-services/mock-event-service";
+import { EventComponent } from "./event.component";
 
 describe("EventComponent", () => {
   let component: EventComponent;
@@ -32,12 +32,8 @@ describe("EventComponent", () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [EventComponent],
-      providers: [
-        provideHttpClient(),
-        { provide: EventService, useClass: MockEventService }
-      ]
-    })
-      .compileComponents();
+      providers: [provideHttpClient(), { provide: EventService, useClass: MockEventService }]
+    }).compileComponents();
 
     fixture = TestBed.createComponent(EventComponent);
     component = fixture.componentInstance;
@@ -322,103 +318,239 @@ describe("EventComponent", () => {
     expect(component.totalLength()).toBe(1); // stays at previous value
   });
 
-  it('should sort event handlers by name ascending', () => {
+  it("should sort event handlers by name ascending", () => {
     const data = [
-      { name: 'Charlie', handlermodule: '', position: '', action: '', options: {}, event: [], conditions: {}, active: true, ordering: 3 },
-      { name: 'Alice', handlermodule: '', position: '', action: '', options: {}, event: [], conditions: {}, active: true, ordering: 1 },
-      { name: 'Bob', handlermodule: '', position: '', action: '', options: {}, event: [], conditions: {}, active: true, ordering: 2 }
+      {
+        name: "Charlie",
+        handlermodule: "",
+        position: "",
+        action: "",
+        options: {},
+        event: [],
+        conditions: {},
+        active: true,
+        ordering: 3
+      },
+      {
+        name: "Alice",
+        handlermodule: "",
+        position: "",
+        action: "",
+        options: {},
+        event: [],
+        conditions: {},
+        active: true,
+        ordering: 1
+      },
+      {
+        name: "Bob",
+        handlermodule: "",
+        position: "",
+        action: "",
+        options: {},
+        event: [],
+        conditions: {},
+        active: true,
+        ordering: 2
+      }
     ];
-    const sorted = (component as any).clientsideSortEventData([...data], { active: 'name', direction: 'asc' });
-    expect(sorted.map((e: any) => e.name)).toEqual(['Alice', 'Bob', 'Charlie']);
+    const sorted = (component as any).clientsideSortEventData([...data], { active: "name", direction: "asc" });
+    expect(sorted.map((e: any) => e.name)).toEqual(["Alice", "Bob", "Charlie"]);
   });
 
-  it('should sort event handlers by name descending', () => {
+  it("should sort event handlers by name descending", () => {
     const data = [
-      { name: 'Charlie', handlermodule: '', position: '', action: '', options: {}, event: [], conditions: {}, active: true, ordering: 3 },
-      { name: 'Alice', handlermodule: '', position: '', action: '', options: {}, event: [], conditions: {}, active: true, ordering: 1 },
-      { name: 'Bob', handlermodule: '', position: '', action: '', options: {}, event: [], conditions: {}, active: true, ordering: 2 }
+      {
+        name: "Charlie",
+        handlermodule: "",
+        position: "",
+        action: "",
+        options: {},
+        event: [],
+        conditions: {},
+        active: true,
+        ordering: 3
+      },
+      {
+        name: "Alice",
+        handlermodule: "",
+        position: "",
+        action: "",
+        options: {},
+        event: [],
+        conditions: {},
+        active: true,
+        ordering: 1
+      },
+      {
+        name: "Bob",
+        handlermodule: "",
+        position: "",
+        action: "",
+        options: {},
+        event: [],
+        conditions: {},
+        active: true,
+        ordering: 2
+      }
     ];
-    const sorted = (component as any).clientsideSortEventData([...data], { active: 'name', direction: 'desc' });
-    expect(sorted.map((e: any) => e.name)).toEqual(['Charlie', 'Bob', 'Alice']);
+    const sorted = (component as any).clientsideSortEventData([...data], { active: "name", direction: "desc" });
+    expect(sorted.map((e: any) => e.name)).toEqual(["Charlie", "Bob", "Alice"]);
   });
 
-  it('should sort event handlers by ordering ascending', () => {
+  it("should sort event handlers by ordering ascending", () => {
     const data = [
-      { name: 'Charlie', handlermodule: '', position: '', action: '', options: {}, event: [], conditions: {}, active: true, ordering: 3 },
-      { name: 'Alice', handlermodule: '', position: '', action: '', options: {}, event: [], conditions: {}, active: true, ordering: 1 },
-      { name: 'Bob', handlermodule: '', position: '', action: '', options: {}, event: [], conditions: {}, active: true, ordering: 2 }
+      {
+        name: "Charlie",
+        handlermodule: "",
+        position: "",
+        action: "",
+        options: {},
+        event: [],
+        conditions: {},
+        active: true,
+        ordering: 3
+      },
+      {
+        name: "Alice",
+        handlermodule: "",
+        position: "",
+        action: "",
+        options: {},
+        event: [],
+        conditions: {},
+        active: true,
+        ordering: 1
+      },
+      {
+        name: "Bob",
+        handlermodule: "",
+        position: "",
+        action: "",
+        options: {},
+        event: [],
+        conditions: {},
+        active: true,
+        ordering: 2
+      }
     ];
-    const sorted = (component as any).clientsideSortEventData([...data], { active: 'ordering', direction: 'asc' });
+    const sorted = (component as any).clientsideSortEventData([...data], { active: "ordering", direction: "asc" });
     expect(sorted.map((e: any) => e.ordering)).toEqual([1, 2, 3]);
   });
 
-  it('should sort event handlers by ordering descending', () => {
+  it("should sort event handlers by ordering descending", () => {
     const data = [
-      { name: 'Charlie', handlermodule: '', position: '', action: '', options: {}, event: [], conditions: {}, active: true, ordering: 3 },
-      { name: 'Alice', handlermodule: '', position: '', action: '', options: {}, event: [], conditions: {}, active: true, ordering: 1 },
-      { name: 'Bob', handlermodule: '', position: '', action: '', options: {}, event: [], conditions: {}, active: true, ordering: 2 }
+      {
+        name: "Charlie",
+        handlermodule: "",
+        position: "",
+        action: "",
+        options: {},
+        event: [],
+        conditions: {},
+        active: true,
+        ordering: 3
+      },
+      {
+        name: "Alice",
+        handlermodule: "",
+        position: "",
+        action: "",
+        options: {},
+        event: [],
+        conditions: {},
+        active: true,
+        ordering: 1
+      },
+      {
+        name: "Bob",
+        handlermodule: "",
+        position: "",
+        action: "",
+        options: {},
+        event: [],
+        conditions: {},
+        active: true,
+        ordering: 2
+      }
     ];
-    const sorted = (component as any).clientsideSortEventData([...data], { active: 'ordering', direction: 'desc' });
+    const sorted = (component as any).clientsideSortEventData([...data], { active: "ordering", direction: "desc" });
     expect(sorted.map((e: any) => e.ordering)).toEqual([3, 2, 1]);
   });
 
-  it('should return original array if no direction is set', () => {
+  it("should return original array if no direction is set", () => {
     const data = [
-      { name: 'Charlie', handlermodule: '', position: '', action: '', options: {}, event: [], conditions: {}, active: true, ordering: 3 },
-      { name: 'Alice', handlermodule: '', position: '', action: '', options: {}, event: [], conditions: {}, active: true, ordering: 1 }
+      {
+        name: "Charlie",
+        handlermodule: "",
+        position: "",
+        action: "",
+        options: {},
+        event: [],
+        conditions: {},
+        active: true,
+        ordering: 3
+      },
+      {
+        name: "Alice",
+        handlermodule: "",
+        position: "",
+        action: "",
+        options: {},
+        event: [],
+        conditions: {},
+        active: true,
+        ordering: 1
+      }
     ];
-    const sorted = (component as any).clientsideSortEventData([...data], { active: 'name', direction: '' });
+    const sorted = (component as any).clientsideSortEventData([...data], { active: "name", direction: "" });
     expect(sorted).toEqual(data);
   });
 
-  it('should handle empty array', () => {
-    const sorted = (component as any).clientsideSortEventData([], { active: 'name', direction: 'asc' });
+  it("should handle empty array", () => {
+    const sorted = (component as any).clientsideSortEventData([], { active: "name", direction: "asc" });
     expect(sorted).toEqual([]);
   });
 
-  it('should handle missing sort key gracefully', () => {
-    const data = [
-      { name: 'Charlie', ordering: 3 },
-      { name: 'Alice' },
-      { name: 'Bob', ordering: 2 }
-    ];
-    const sorted = (component as any).clientsideSortEventData([...data], { active: 'ordering', direction: 'asc' });
+  it("should handle missing sort key gracefully", () => {
+    const data = [{ name: "Charlie", ordering: 3 }, { name: "Alice" }, { name: "Bob", ordering: 2 }];
+    const sorted = (component as any).clientsideSortEventData([...data], { active: "ordering", direction: "asc" });
     expect(sorted.map((e: any) => e.ordering)).toEqual([undefined, 2, 3]);
   });
 
-  it('should call eventService.disableEvent if eventHandler is active', () => {
+  it("should call eventService.disableEvent if eventHandler is active", () => {
     const handler = {
-      id: '123',
-      name: 'Test',
+      id: "123",
+      name: "Test",
       event: [],
-      handlermodule: '',
-      position: '',
-      action: '',
+      handlermodule: "",
+      position: "",
+      action: "",
       options: {},
       conditions: {},
       active: true,
       ordering: 1
     };
-    const spy = jest.spyOn(component['eventService'], 'disableEvent');
+    const spy = jest.spyOn(component["eventService"], "disableEvent");
     component.toggleActive(handler as any);
-    expect(spy).toHaveBeenCalledWith('123');
+    expect(spy).toHaveBeenCalledWith("123");
   });
 
-  it('should call eventService.enableEvent if eventHandler is inactive', () => {
+  it("should call eventService.enableEvent if eventHandler is inactive", () => {
     const handler = {
-      id: '456',
-      name: 'Test',
+      id: "456",
+      name: "Test",
       event: [],
-      handlermodule: '',
-      position: '',
-      action: '',
+      handlermodule: "",
+      position: "",
+      action: "",
       options: {},
       conditions: {},
       active: false,
       ordering: 1
     };
-    const spy = jest.spyOn(component['eventService'], 'enableEvent');
+    const spy = jest.spyOn(component["eventService"], "enableEvent");
     component.toggleActive(handler as any);
-    expect(spy).toHaveBeenCalledWith('456');
+    expect(spy).toHaveBeenCalledWith("456");
   });
 });

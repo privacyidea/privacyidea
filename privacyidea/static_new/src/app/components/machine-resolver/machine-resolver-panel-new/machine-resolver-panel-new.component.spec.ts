@@ -19,17 +19,17 @@
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
+import { DialogService } from "@services/dialog/dialog.service";
 import {
-  HostsMachineResolverData,
-  LdapMachineResolverData,
-  MachineResolverService
-} from "../../../services/machine-resolver/machine-resolver.service";
-import { DialogService } from "../../../services/dialog/dialog.service";
-import { MockDialogService } from "../../../../testing/mock-services/mock-dialog-service";
-import { MockMachineResolverService } from "../../../../testing/mock-services/mock-machine-resolver-service";
-import { MachineResolverPanelNewComponent } from "./machine-resolver-panel-new.component";
-import { MockMatDialogRef } from "../../../../testing/mock-mat-dialog-ref";
+    HostsMachineResolverData,
+    LdapMachineResolverData,
+    MachineResolverService
+} from "@services/machine-resolver/machine-resolver.service";
+import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
+import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
+import { MockMachineResolverService } from "@testing/mock-services/mock-machine-resolver-service";
 import { of } from "rxjs";
+import { MachineResolverPanelNewComponent } from "./machine-resolver-panel-new.component";
 
 describe("MachineResolverPanelNewComponent", () => {
   let component: MachineResolverPanelNewComponent;

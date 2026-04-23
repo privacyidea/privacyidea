@@ -18,8 +18,8 @@
  **/
 import { Component, inject } from "@angular/core";
 
-import { MAT_DIALOG_DATA, MatDialogClose } from "@angular/material/dialog";
 import { MatButton } from "@angular/material/button";
+import { MAT_DIALOG_DATA, MatDialogClose } from "@angular/material/dialog";
 
 export type SubscriptionExpiryItem = {
   application: string;

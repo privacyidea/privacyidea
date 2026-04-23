@@ -17,17 +17,17 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { computed, effect, inject, Injectable, Signal, signal, WritableSignal } from "@angular/core";
-import { ContentService, ContentServiceInterface } from "../content/content.service";
 import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
-import { AuthService, AuthServiceInterface } from "../auth/auth.service";
-import { environment } from "../../../environments/environment";
-import { PiResponse } from "../../app.component";
+import { computed, effect, inject, Injectable, Signal, signal, WritableSignal } from "@angular/core";
+import { PiResponse } from "@app/app.component";
+import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { environment } from "@env/environment";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { NotificationService } from "@services/notification/notification.service";
 import { lastValueFrom, Observable, of, throwError } from "rxjs";
 import { catchError } from "rxjs/operators";
-import { NotificationService } from "../notification/notification.service";
-import { SimpleConfirmationDialogComponent } from "../../components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
-import { DialogServiceInterface, DialogService } from "../dialog/dialog.service";
 
 export type EventHandler = {
   id: string;

@@ -16,13 +16,14 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+
 import { Component, inject } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
-import { MatIconModule } from "@angular/material/icon";
 import { MatDialog, MatDialogModule } from "@angular/material/dialog";
-import { AuthService } from "../../../../services/auth/auth.service";
-import { UserNewResolverComponent } from "../../user-new-resolver/user-new-resolver.component";
-import { Resolver } from "../../../../services/resolver/resolver.service";
+import { MatIconModule } from "@angular/material/icon";
+import { UserNewResolverComponent } from "@components/user/user-new-resolver/user-new-resolver.component";
+import { AuthService } from "@services/auth/auth.service";
+import { Resolver } from "@services/resolver/resolver.service";
 
 @Component({
   selector: "app-resolver-table-actions",

@@ -24,28 +24,28 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MatTableDataSource } from "@angular/material/table";
 import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { NavigationEnd, Router } from "@angular/router";
-import { Subject, of } from "rxjs";
-import { MockMatDialogRef } from "../../../../../testing/mock-mat-dialog-ref";
+import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { AuthService } from "@services/auth/auth.service";
+import { ContainerService } from "@services/container/container.service";
+import { ContentService } from "@services/content/content.service";
+import { DialogService } from "@services/dialog/dialog.service";
+import { NotificationService } from "@services/notification/notification.service";
+import { TableUtilsService } from "@services/table-utils/table-utils.service";
+import { TokenService } from "@services/token/token.service";
+import { UserService } from "@services/user/user.service";
+import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
 import {
-  MockContainerService,
-  MockTokenService,
-  MockTableUtilsService,
-  MockNotificationService,
-  MockDialogService,
-  MockContentService,
-  MockLocalService
-} from "../../../../../testing/mock-services";
-import { MockAuthService } from "../../../../../testing/mock-services/mock-auth-service";
-import { AuthService } from "../../../../services/auth/auth.service";
-import { ContainerService } from "../../../../services/container/container.service";
-import { ContentService } from "../../../../services/content/content.service";
-import { NotificationService } from "../../../../services/notification/notification.service";
-import { TableUtilsService } from "../../../../services/table-utils/table-utils.service";
-import { TokenService } from "../../../../services/token/token.service";
-import { UserService } from "../../../../services/user/user.service";
-import { SimpleConfirmationDialogComponent } from "../../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
+    MockContainerService,
+    MockContentService,
+    MockDialogService,
+    MockLocalService,
+    MockNotificationService,
+    MockTableUtilsService,
+    MockTokenService
+} from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { Subject, of } from "rxjs";
 import { ContainerDetailsTokenTableComponent } from "./container-details-token-table.component";
-import { DialogService } from "../../../../services/dialog/dialog.service";
 
 const routerEvents$ = new Subject<NavigationEnd>();
 routerEvents$.next(new NavigationEnd(1, "/", "/"));

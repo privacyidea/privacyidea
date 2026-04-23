@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -18,12 +18,12 @@
  **/
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { UserAssignmentComponent } from "./user-assignment.component";
 import { FormControl, ReactiveFormsModule } from "@angular/forms";
-import { UserData, UserService } from "../../../services/user/user.service";
-import { RealmService } from "../../../services/realm/realm.service";
-import { MockRealmService, MockUserService } from "../../../../testing/mock-services";
 import { By } from "@angular/platform-browser";
+import { RealmService } from "@services/realm/realm.service";
+import { UserData, UserService } from "@services/user/user.service";
+import { MockRealmService, MockUserService } from "@testing/mock-services";
+import { UserAssignmentComponent } from "./user-assignment.component";
 
 describe("UserAssignmentComponent", () => {
   let component: UserAssignmentComponent;

@@ -17,7 +17,6 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { CommonModule } from "@angular/common";
 import { Component, effect, inject, OnDestroy, OnInit, signal } from "@angular/core";
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
@@ -28,19 +27,19 @@ import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
 import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
 import { Router } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
-import { ROUTE_PATHS } from "src/app/route_paths";
-import { AuthService, AuthServiceInterface } from "src/app/services/auth/auth.service";
-import { ContentService, ContentServiceInterface } from "src/app/services/content/content.service";
-import { DialogService, DialogServiceInterface } from "src/app/services/dialog/dialog.service";
-import { PendingChangesService } from "src/app/services/pending-changes/pending-changes.service";
-import { ClearableInputComponent } from "../../../shared/clearable-input/clearable-input.component";
+import { NAVIGATION_ACCESSIBLE_DIALOG_CLASS } from "@constants/global.constants";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import {
-  PrivacyideaServer,
-  PrivacyideaServerService,
-  PrivacyideaServerServiceInterface
-} from "src/app/services/privacyidea-server/privacyidea-server.service";
-import { NAVIGATION_ACCESSIBLE_DIALOG_CLASS } from "../../../../constants/global.constants";
+    PrivacyideaServer,
+    PrivacyideaServerService,
+    PrivacyideaServerServiceInterface
+} from "@services/privacyidea-server/privacyidea-server.service";
 
 @Component({
   selector: "app-privacyidea-edit-dialog",

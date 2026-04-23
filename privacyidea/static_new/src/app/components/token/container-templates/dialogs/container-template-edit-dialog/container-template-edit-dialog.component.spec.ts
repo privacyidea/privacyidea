@@ -17,20 +17,20 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
-import { ContainerTemplateService } from "../../../../../services/container-template/container-template.service";
-import { MockContainerTemplateService } from "../../../../../../testing/mock-services/mock-container-template-service";
+import { NoopAnimationsModule } from "@angular/platform-browser/animations";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { ContainerTemplateService } from "@services/container-template/container-template.service";
+import { ContentService } from "@services/content/content.service";
+import { DialogService } from "@services/dialog/dialog.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
+import { MockContentService, MockDialogService, MockPendingChangesService } from "@testing/mock-services";
+import { MockContainerTemplateService } from "@testing/mock-services/mock-container-template-service";
 import { ContainerTemplateEditDialogComponent } from "./container-template-edit-dialog.component";
-import { DialogService } from "src/app/services/dialog/dialog.service";
-import { PendingChangesService } from "src/app/services/pending-changes/pending-changes.service";
-import { MockContentService, MockDialogService, MockPendingChangesService } from "src/testing/mock-services";
-import { MockMatDialogRef } from "src/testing/mock-mat-dialog-ref";
-import { ContentService } from "../../../../../services/content/content.service";
-import { ROUTE_PATHS } from "../../../../../route_paths";
 
 describe("ContainerTemplateEditDialogComponent", () => {
   let component: ContainerTemplateEditDialogComponent;

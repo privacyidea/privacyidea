@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,20 +16,20 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { AuthService, AuthServiceInterface } from "../auth/auth.service";
-import { ContentService, ContentServiceInterface } from "../content/content.service";
 import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
 import { computed, effect, inject, Injectable, linkedSignal, Signal, signal, WritableSignal } from "@angular/core";
-import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
-import { catchError, forkJoin, Observable, of, Subject, throwError } from "rxjs";
-import { environment } from "../../../environments/environment";
-import { PiResponse } from "../../app.component";
-import { EnrollmentUrl, TokenEnrollmentPayload } from "../../mappers/token-api-payload/_token-api-payload.mapper";
-import { FilterValue } from "../../core/models/filter_value/filter_value";
 import { Sort } from "@angular/material/sort";
-import { TokenService, TokenServiceInterface } from "../token/token.service";
-import { StringUtils } from "../../utils/string.utils";
-import { UserService, UserServiceInterface } from "../user/user.service";
+import { PiResponse } from "@app/app.component";
+import { EnrollmentUrl, TokenEnrollmentPayload } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { FilterValue } from "@core/models/filter_value/filter_value";
+import { environment } from "@env/environment";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
+import { TokenService, TokenServiceInterface } from "@services/token/token.service";
+import { UserService, UserServiceInterface } from "@services/user/user.service";
+import { StringUtils } from "@utils/string.utils";
+import { catchError, forkJoin, Observable, of, Subject, throwError } from "rxjs";
 
 const apiFilter = ["container_serial", "type", "description", "container_realm"];
 const advancedApiFilter = ["token_serial"];
@@ -387,7 +387,7 @@ export class ContainerService implements ContainerServiceInterface {
   });
 
   containerOptions = linkedSignal({
-    source: () => this.containerResource.hasValue() ? this.containerResource.value() : undefined,
+    source: () => (this.containerResource.hasValue() ? this.containerResource.value() : undefined),
     computation: (containerResource) => {
       if (!containerResource) return [];
       return containerResource.result?.value?.containers.map((container) => container.serial) ?? [];
@@ -400,17 +400,16 @@ export class ContainerService implements ContainerServiceInterface {
   });
 
   containersForTokenType = linkedSignal({
-      source: () => this.containerResource.hasValue() ? this.containerResource.value() : undefined,
-      computation: (containerResource) => {
-        if (!containerResource) return [];
-        return (
-          containerResource.result?.value?.containers
-            .filter((container) => this.compatibleTypes().includes(container.type))
-            .map((container) => container.serial) ?? []
-        );
-      }
+    source: () => (this.containerResource.hasValue() ? this.containerResource.value() : undefined),
+    computation: (containerResource) => {
+      if (!containerResource) return [];
+      return (
+        containerResource.result?.value?.containers
+          .filter((container) => this.compatibleTypes().includes(container.type))
+          .map((container) => container.serial) ?? []
+      );
     }
-  );
+  });
 
   containerSelection: WritableSignal<ContainerDetailData[]> = linkedSignal({
     source: () => ({
@@ -496,7 +495,7 @@ export class ContainerService implements ContainerServiceInterface {
   });
 
   containerDetail: WritableSignal<ContainerDetails> = linkedSignal({
-    source: () => this.containerDetailResource.hasValue() ? this.containerDetailResource.value() : undefined,
+    source: () => (this.containerDetailResource.hasValue() ? this.containerDetailResource.value() : undefined),
     computation: (containerDetailResource, previous) => {
       const containerDetail = containerDetailResource?.result?.value;
       if (containerDetail) {

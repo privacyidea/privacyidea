@@ -18,49 +18,49 @@
  **/
 
 import {
-  AfterViewInit,
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  DestroyRef,
-  effect,
-  ElementRef,
-  inject,
-  linkedSignal,
-  OnDestroy,
-  Renderer2,
-  signal,
-  ViewChild
+    AfterViewInit,
+    ChangeDetectionStrategy,
+    Component,
+    computed,
+    DestroyRef,
+    effect,
+    ElementRef,
+    inject,
+    linkedSignal,
+    OnDestroy,
+    Renderer2,
+    signal,
+    ViewChild
 } from "@angular/core";
-import { MatIcon, MatIconModule } from "@angular/material/icon";
+import { FormsModule, ReactiveFormsModule } from "@angular/forms";
+import { MatAutocompleteModule } from "@angular/material/autocomplete";
 import { MatButton } from "@angular/material/button";
-import { AuthService } from "../../../services/auth/auth.service";
+import { MatChipsModule } from "@angular/material/chips";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
-import { EMPTY_EVENT, EventService } from "../../../services/event/event.service";
+import { MatFormField, MatFormFieldModule, MatHint } from "@angular/material/form-field";
+import { MatIcon, MatIconModule } from "@angular/material/icon";
+import { MatInput, MatLabel } from "@angular/material/input";
+import { MatOption, MatSelect, MatSelectModule } from "@angular/material/select";
+import { AuthService } from "@services/auth/auth.service";
+import { EMPTY_EVENT, EventService } from "@services/event/event.service";
+import { NotificationService } from "@services/notification/notification.service";
+import { deepCopy } from "@utils/deep-copy.utils";
 import { EventActionTabComponent } from "./tabs/event-action-tab/event-action-tab.component";
 import { EventConditionsTabComponent } from "./tabs/event-conditions-tab/event-conditions-tab.component";
-import { MatInput, MatLabel } from "@angular/material/input";
-import { FormsModule, ReactiveFormsModule } from "@angular/forms";
-import { MatFormField, MatFormFieldModule, MatHint } from "@angular/material/form-field";
-import { MatOption, MatSelect, MatSelectModule } from "@angular/material/select";
-import { deepCopy } from "../../../utils/deep-copy.utils";
-import { NotificationService } from "../../../services/notification/notification.service";
-import { MatChipsModule } from "@angular/material/chips";
-import { MatAutocompleteModule } from "@angular/material/autocomplete";
 
-import { EventSelectionComponent } from "./event-selection/event-selection.component";
-import { MatTab, MatTabGroup } from "@angular/material/tabs";
-import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
-import { PendingChangesService } from "../../../services/pending-changes/pending-changes.service";
-import { ROUTE_PATHS } from "../../../route_paths";
-import { ContentService } from "../../../services/content/content.service";
-import { MatSlideToggle } from "@angular/material/slide-toggle";
-import { MatTooltip } from "@angular/material/tooltip";
-import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
-import { DialogService, DialogServiceInterface } from "../../../services/dialog/dialog.service";
-import { SaveAndExitDialogComponent } from "../../shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
-import { NAVIGATION_ACCESSIBLE_DIALOG_CLASS } from "../../../constants/global.constants";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
+import { MatSlideToggle } from "@angular/material/slide-toggle";
+import { MatTab, MatTabGroup } from "@angular/material/tabs";
+import { MatTooltip } from "@angular/material/tooltip";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
+import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
+import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { NAVIGATION_ACCESSIBLE_DIALOG_CLASS } from "@constants/global.constants";
+import { ContentService } from "@services/content/content.service";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+import { EventSelectionComponent } from "./event-selection/event-selection.component";
 
 export type eventTab = "events" | "action" | "conditions";
 

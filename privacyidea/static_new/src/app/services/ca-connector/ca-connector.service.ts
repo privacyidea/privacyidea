@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -18,11 +18,11 @@
  **/
 import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
 import { effect, inject, Injectable, linkedSignal, WritableSignal } from "@angular/core";
-import { environment } from "../../../environments/environment";
-import { PiResponse } from "../../app.component";
-import { AuthService, AuthServiceInterface } from "../auth/auth.service";
-import { ContentService, ContentServiceInterface } from "../content/content.service";
-import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
+import { PiResponse } from "@app/app.component";
+import { environment } from "@env/environment";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { lastValueFrom } from "rxjs";
 
 export interface CaConnector {
@@ -42,16 +42,19 @@ export interface CaConnectorServiceInterface {
 
   deleteCaConnector(connectorname: string): Promise<void>;
 
-  getCaSpecificOptions(catype: string, params: {
-    hostname: any;
-    port?: any;
-    use_ssl?: any;
-    ssl_ca_cert?: any;
-    ssl_client_cert?: any;
-    ssl_client_key?: any;
-    ssl_client_key_password?: any;
-    http_proxy?: any;
-  }): Promise<any>;
+  getCaSpecificOptions(
+    catype: string,
+    params: {
+      hostname: any;
+      port?: any;
+      use_ssl?: any;
+      ssl_ca_cert?: any;
+      ssl_client_cert?: any;
+      ssl_client_key?: any;
+      ssl_client_key_password?: any;
+      http_proxy?: any;
+    }
+  ): Promise<any>;
 }
 
 @Injectable({
@@ -83,7 +86,7 @@ export class CaConnectorService implements CaConnectorServiceInterface {
   });
 
   caConnectors: WritableSignal<CaConnectors> = linkedSignal({
-    source: () => this.caConnectorResource.hasValue() ? this.caConnectorResource.value() : undefined,
+    source: () => (this.caConnectorResource.hasValue() ? this.caConnectorResource.value() : undefined),
     computation: (source, previous) => source?.result?.value ?? previous?.value ?? []
   });
 

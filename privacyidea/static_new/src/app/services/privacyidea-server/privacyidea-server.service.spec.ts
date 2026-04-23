@@ -16,18 +16,18 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { TestBed } from "@angular/core/testing";
-import { PrivacyideaServerService } from "./privacyidea-server.service";
 import { provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
-import { AuthService } from "../auth/auth.service";
-import { NotificationService } from "../notification/notification.service";
-import { environment } from "../../../environments/environment";
-import { ROUTE_PATHS } from "../../route_paths";
-import { MockContentService, MockNotificationService, MockPiResponse } from "../../../testing/mock-services";
+import { TestBed } from "@angular/core/testing";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { environment } from "@env/environment";
+import { AuthService } from "@services/auth/auth.service";
+import { ContentService } from "@services/content/content.service";
+import { NotificationService } from "@services/notification/notification.service";
+import { MockContentService, MockNotificationService, MockPiResponse } from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { lastValueFrom, of } from "rxjs";
-import { ContentService } from "../content/content.service";
-import { MockAuthService } from "../../../testing/mock-services/mock-auth-service";
+import { PrivacyideaServerService } from "./privacyidea-server.service";
 
 describe("PrivacyideaServerService", () => {
   let service: PrivacyideaServerService;
@@ -36,7 +36,6 @@ describe("PrivacyideaServerService", () => {
   let contentService: MockContentService;
 
   beforeEach(() => {
-
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(),
@@ -137,8 +136,9 @@ describe("PrivacyideaServerService", () => {
     const req = httpMock.expectOne(service.privacyideaServerBaseUrl);
     expect(req.request.method).toBe("GET");
     req.flush(MockPiResponse.fromError({ message: "Permission denied" }), {
-        status: 403, statusText: "Permission denied"
-      });
+      status: 403,
+      statusText: "Permission denied"
+    });
     await lastValueFrom(of({})); // Wait for async updates
 
     expect(service.remoteServerOptions()).toEqual([]);

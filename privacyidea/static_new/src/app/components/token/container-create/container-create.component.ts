@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,68 +16,67 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+
 import { CommonModule, NgClass } from "@angular/common";
 import {
-  Component,
-  computed,
-  effect,
-  ElementRef,
-  inject,
-  linkedSignal,
-  Renderer2,
-  signal,
-  untracked,
-  ViewChild,
-  WritableSignal
+    Component,
+    computed,
+    effect,
+    ElementRef,
+    inject,
+    linkedSignal,
+    Renderer2,
+    signal,
+    untracked,
+    ViewChild,
+    WritableSignal
 } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { MatButton, MatIconButton } from "@angular/material/button";
 import { MatCheckbox } from "@angular/material/checkbox";
-import { MatOption } from "@angular/material/core";
 import { MatDialog } from "@angular/material/dialog";
 import {
-  MatAccordion,
-  MatExpansionPanel,
-  MatExpansionPanelHeader,
-  MatExpansionPanelTitle
+    MatAccordion,
+    MatExpansionPanel,
+    MatExpansionPanelHeader,
+    MatExpansionPanelTitle
 } from "@angular/material/expansion";
-import { MatFormField, MatLabel, MatSuffix } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
-import { MatInput } from "@angular/material/input";
-import { MatSelect } from "@angular/material/select";
+import { MatFormField, MatInput, MatLabel, MatSuffix } from "@angular/material/input";
+import { MatOption, MatSelect } from "@angular/material/select";
 import { MatTooltip } from "@angular/material/tooltip";
 import { Router } from "@angular/router";
-import { PiResponse } from "../../../app.component";
-import { ROUTE_PATHS } from "../../../route_paths";
+import { PiResponse } from "@app/app.component";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { ContainerTemplateService } from "@services/container-template/container-template.service";
 import {
-  ContainerCreateData,
-  ContainerRegisterData,
-  ContainerService,
-  ContainerServiceInterface,
-  ContainerType
-} from "../../../services/container/container.service";
-import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
-import { NotificationService, NotificationServiceInterface } from "../../../services/notification/notification.service";
-import { RealmService, RealmServiceInterface } from "../../../services/realm/realm.service";
-import { TokenService, TokenServiceInterface } from "../../../services/token/token.service";
-import { UserService, UserServiceInterface } from "../../../services/user/user.service";
-import { VersioningService, VersioningServiceInterface } from "../../../services/version/version.service";
+    ContainerCreateData,
+    ContainerRegisterData,
+    ContainerService,
+    ContainerServiceInterface,
+    ContainerType
+} from "@services/container/container.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
+import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
+import { TokenService, TokenServiceInterface } from "@services/token/token.service";
+import { UserService, UserServiceInterface } from "@services/user/user.service";
+import { VersioningService, VersioningServiceInterface } from "@services/version/version.service";
+import { ClearButtonComponent } from "../../shared/clear-button/clear-button.component";
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
-import {
-  ContainerCreatedDialogComponent,
-  ContainerCreationDialogData
-} from "./container-created-dialog/container-created-dialog.component";
-import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
 import { ContainerRegistrationConfigComponent } from "../container-registration/container-registration-config/container-registration-config.component";
+import { UserAssignmentComponent } from "../user-assignment/user-assignment.component";
 import {
-  ContainerRegistrationCompletedDialogComponent,
-  ContainerRegistrationCompletedDialogData
+    ContainerCreatedDialogComponent,
+    ContainerCreationDialogData
+} from "./container-created-dialog/container-created-dialog.component";
+import { ContainerCreatedDialogWizardComponent } from "./container-created-dialog/container-created-dialog.wizard.component";
+import {
+    ContainerRegistrationCompletedDialogComponent,
+    ContainerRegistrationCompletedDialogData
 } from "./container-registration-completed-dialog/container-registration-completed-dialog.component";
 import { ContainerRegistrationCompletedDialogWizardComponent } from "./container-registration-completed-dialog/container-registration-completed-dialog.wizard.component";
-import { ContainerCreatedDialogWizardComponent } from "./container-created-dialog/container-created-dialog.wizard.component";
-import { UserAssignmentComponent } from "../user-assignment/user-assignment.component";
-import { ContainerTemplateService } from "../../../services/container-template/container-template.service";
-import { ClearButtonComponent } from "../../shared/clear-button/clear-button.component";
 
 @Component({
   selector: "app-container-create",
@@ -129,7 +128,9 @@ export class ContainerCreateComponent {
   generateQRCode: WritableSignal<boolean> = linkedSignal({
     source: this.containerService.selectedContainerType,
     computation: (containerType?: ContainerType) =>
-      containerType?.containerType === "smartphone" && this.authService.actionAllowed("container_register") && this.authService.actionAllowed("container_create")
+      containerType?.containerType === "smartphone" &&
+      this.authService.actionAllowed("container_register") &&
+      this.authService.actionAllowed("container_create")
   });
   passphrasePrompt = signal("");
   passphraseResponse = signal("");
@@ -188,7 +189,11 @@ export class ContainerCreateComponent {
           this.registrationDialog.closeAll();
           this.containerService.stopPolling();
 
-          if (container?.type === "smartphone" && this.authService.containerWizard().registration && this.authService.actionAllowed("container_register")) {
+          if (
+            container?.type === "smartphone" &&
+            this.authService.containerWizard().registration &&
+            this.authService.actionAllowed("container_register")
+          ) {
             let registrationCompletedDialogComponent: any = ContainerRegistrationCompletedDialogComponent;
             if (this.wizard) {
               registrationCompletedDialogComponent = ContainerRegistrationCompletedDialogWizardComponent;

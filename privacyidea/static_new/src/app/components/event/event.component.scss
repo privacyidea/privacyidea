@@ -1,14 +1,15 @@
-@use "../../../styles";
+@use "styles";
+@use "table";
 @use "@angular/material" as mat;
 
-.events-layout{
+.events-layout {
   display: flex;
   justify-content: center;
 }
 
 .events-table-container {
   @include styles.main-component-style;
-  @include styles.base-table-structure(".event-handler-table", ".event-handler-table-filter", ".table-scroll-container");
+  @include table.base-table-structure(".event-handler-table", ".event-handler-table-filter", ".table-scroll-container");
 }
 
 .event-handler-table {
@@ -24,14 +25,14 @@
   }
 
   td.mat-mdc-cell.detailed-cell,
-  td.mat-mdc-footer-cell.detailed-cell{
+  td.mat-mdc-footer-cell.detailed-cell {
   }
 }
 
 .detailed-cell-container {
-    max-height: 160px;
-    overflow-y: scroll;
-    white-space: normal;
+  max-height: 160px;
+  overflow-y: scroll;
+  white-space: normal;
 }
 
 .break-words {

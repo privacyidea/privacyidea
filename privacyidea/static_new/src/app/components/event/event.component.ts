@@ -17,37 +17,37 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import {
-  Component,
-  computed,
-  ElementRef,
-  inject,
-  linkedSignal,
-  signal,
-  viewChild,
-  ViewChild,
-  WritableSignal
-} from "@angular/core";
-import { ScrollToTopDirective } from "../shared/directives/app-scroll-to-top.directive";
-import { AuthService } from "../../services/auth/auth.service";
-import { EMPTY_EVENT, EventHandler, EventService } from "../../services/event/event.service";
-import { EventPanelComponent } from "./event-panel/event-panel.component";
-import { MatTableDataSource, MatTableModule } from "@angular/material/table";
-import { CommonModule } from "@angular/common";
-import { MatButtonModule } from "@angular/material/button";
-import { MatIcon } from "@angular/material/icon";
 import { animate, state, style, transition, trigger } from "@angular/animations";
-import { MatSlideToggle } from "@angular/material/slide-toggle";
-import { MatTooltip } from "@angular/material/tooltip";
+import { CommonModule } from "@angular/common";
+import {
+    Component,
+    computed,
+    ElementRef,
+    inject,
+    linkedSignal,
+    signal,
+    viewChild,
+    ViewChild,
+    WritableSignal
+} from "@angular/core";
+import { MatButtonModule } from "@angular/material/button";
 import { MatDialog } from "@angular/material/dialog";
-import { Sort } from "@angular/material/sort";
-import { ClearableInputComponent } from "../shared/clearable-input/clearable-input.component";
+import { MatFormField } from "@angular/material/form-field";
+import { MatIcon } from "@angular/material/icon";
 import { MatInput, MatLabel } from "@angular/material/input";
 import { MatPaginator } from "@angular/material/paginator";
-import { TableUtilsService, TableUtilsServiceInterface } from "../../services/table-utils/table-utils.service";
-import { MatFormField } from "@angular/material/form-field";
+import { MatSlideToggle } from "@angular/material/slide-toggle";
+import { Sort } from "@angular/material/sort";
+import { MatTableDataSource, MatTableModule } from "@angular/material/table";
+import { MatTooltip } from "@angular/material/tooltip";
+import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { HighlightPipe } from "@components/shared/pipes/highlight.pipe";
+import { AuthService } from "@services/auth/auth.service";
+import { EMPTY_EVENT, EventHandler, EventService } from "@services/event/event.service";
+import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { of } from "rxjs";
-import { HighlightPipe } from "../shared/pipes/highlight.pipe";
+import { EventPanelComponent } from "./event-panel/event-panel.component";
 
 @Component({
   selector: "app-event",

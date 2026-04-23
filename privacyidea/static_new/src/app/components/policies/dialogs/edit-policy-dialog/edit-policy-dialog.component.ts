@@ -20,14 +20,14 @@
 import { Component, computed, effect, inject, signal } from "@angular/core";
 
 import { ReactiveFormsModule } from "@angular/forms";
-import { DialogWrapperComponent } from "../../../shared/dialog/dialog-wrapper/dialog-wrapper.component";
-import { PolicyDetail, PolicyService, PolicyServiceInterface } from "../../../../services/policies/policies.service";
-import { DialogAction } from "../../../../models/dialog";
-import { PolicyPanelEditComponent } from "./policy-panels/policy-panel-edit/policy-panel-edit.component";
-import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
-import { ROUTE_PATHS } from "../../../../route_paths";
-import { NAVIGATION_ACCESSIBLE_DIALOG_CLASS } from "../../../../constants/global.constants";
+import { ROUTE_PATHS } from "@app/route_paths";
 import { PendingChangesDialogComponent } from "@components/shared/dialog/abstract-dialog/pending-changes-dialog.component";
+import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
+import { NAVIGATION_ACCESSIBLE_DIALOG_CLASS } from "@constants/global.constants";
+import { DialogAction } from "@models/dialog";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { PolicyDetail, PolicyService, PolicyServiceInterface } from "@services/policies/policies.service";
+import { PolicyPanelEditComponent } from "./policy-panels/policy-panel-edit/policy-panel-edit.component";
 
 @Component({
   selector: "app-edit-policy-dialog",

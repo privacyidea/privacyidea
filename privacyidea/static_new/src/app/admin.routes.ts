@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -17,6 +17,25 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Routes } from "@angular/router";
+import { ContainerTemplatesComponent } from "@components/token/container-templates/container-templates.component";
+import { TokenFindSerialComponent } from "@components/token/token-find-serial/token-find-serial.component";
+import { AuditComponent } from "./components/audit/audit.component";
+import { ClientsComponent } from "./components/audit/clients/clients.component";
+import { MachinesComponent } from "./components/configuration/machines/machines.component";
+import { PeriodicTaskComponent } from "./components/configuration/periodic-task/periodic-task.component";
+import { SubscriptionComponent } from "./components/configuration/subscription/subscription.component";
+import { SystemConfigComponent } from "./components/configuration/system/system-config.component";
+import { TokenTypeConfigComponent } from "./components/configuration/token-type-config/token-type-config.component";
+import { EventComponent } from "./components/event/event.component";
+import { CaConnectorsComponent } from "./components/external-services/ca-connectors/ca-connectors.component";
+import { PrivacyideaServersComponent } from "./components/external-services/privacyidea-servers/privacyidea-servers.component";
+import { RadiusServersComponent } from "./components/external-services/radius-servers/radius-servers.component";
+import { ServiceIdsComponent } from "./components/external-services/service-ids/service-ids.component";
+import { SmsGatewaysComponent } from "./components/external-services/sms-gateways/sms-gateways.component";
+import { SmtpServersComponent } from "./components/external-services/smtp-servers/smtp-servers.component";
+import { TokengroupsComponent } from "./components/external-services/tokengroups/tokengroups.component";
+import { MachineResolverComponent } from "./components/machine-resolver/machine-resolver.component";
+import { PoliciesTableComponent } from "./components/policies/policies-table/policies-table.component";
 import { ChallengesTableComponent } from "./components/token/challenges-table/challenges-table.component";
 import { ContainerCreateComponent } from "./components/token/container-create/container-create.component";
 import { ContainerDetailsComponent } from "./components/token/container-details/container-details.component";
@@ -24,32 +43,13 @@ import { ContainerTableComponent } from "./components/token/container-table/cont
 import { TokenApplicationsComponent } from "./components/token/token-applications/token-applications.component";
 import { TokenDetailsComponent } from "./components/token/token-details/token-details.component";
 import { TokenEnrollmentComponent } from "./components/token/token-enrollment/token-enrollment.component";
-import { TokenFindSerialComponent } from "@components/token/token-find-serial/token-find-serial.component";
-import { TokenTableComponent } from "./components/token/token-table/token-table.component";
-import { UserDetailsComponent } from "./components/user/user-details/user-details.component";
-import { UserTableComponent } from "./components/user/user-table/user-table.component";
-import { AuditComponent } from "./components/audit/audit.component";
 import { TokenImportComponent } from "./components/token/token-import/token-import.component";
+import { TokenTableComponent } from "./components/token/token-table/token-table.component";
 import { RealmTableComponent } from "./components/user/realm-table/realm-table.component";
-import { ClientsComponent } from "./components/audit/clients/clients.component";
-import { MachineResolverComponent } from "./components/machine-resolver/machine-resolver.component";
-import { PeriodicTaskComponent } from "./components/configuration/periodic-task/periodic-task.component";
-import { MachinesComponent } from "./components/configuration/machines/machines.component";
-import { SmtpServersComponent } from "./components/external-services/smtp-servers/smtp-servers.component";
-import { RadiusServersComponent } from "./components/external-services/radius-servers/radius-servers.component";
-import { SmsGatewaysComponent } from "./components/external-services/sms-gateways/sms-gateways.component";
-import { PrivacyideaServersComponent } from "./components/external-services/privacyidea-servers/privacyidea-servers.component";
-import { CaConnectorsComponent } from "./components/external-services/ca-connectors/ca-connectors.component";
-import { TokengroupsComponent } from "./components/external-services/tokengroups/tokengroups.component";
-import { ServiceIdsComponent } from "./components/external-services/service-ids/service-ids.component";
+import { UserDetailsComponent } from "./components/user/user-details/user-details.component";
 import { UserResolversComponent } from "./components/user/user-resolver/user-resolver.component";
+import { UserTableComponent } from "./components/user/user-table/user-table.component";
 import { pendingChangesGuard } from "./guards/pending-changes.guard";
-import { PoliciesTableComponent } from "./components/policies/policies-table/policies-table.component";
-import { SubscriptionComponent } from "./components/configuration/subscription/subscription.component";
-import { EventComponent } from "./components/event/event.component";
-import { SystemConfigComponent } from "./components/configuration/system/system-config.component";
-import { TokenTypeConfigComponent } from "./components/configuration/token-type-config/token-type-config.component";
-import { ContainerTemplatesComponent } from "@components/token/container-templates/container-templates.component";
 
 export const routes: Routes = [
   {

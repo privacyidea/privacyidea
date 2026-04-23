@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -17,13 +17,13 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { ClientsComponent } from "./clients.component";
-import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { provideHttpClient } from "@angular/common/http";
-import { MockAuditService, MockContentService, MockPiResponse } from "../../../../testing/mock-services";
-import { ClientsDict } from "../../../services/clients/clients.service";
-import { FilterValue } from "../../../core/models/filter_value/filter_value";
-import { MockAuthService } from "../../../../testing/mock-services/mock-auth-service";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { FilterValue } from "@core/models/filter_value/filter_value";
+import { ClientsDict } from "@services/clients/clients.service";
+import { MockAuditService, MockContentService, MockPiResponse } from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { ClientsComponent } from "./clients.component";
 
 describe("ClientsComponent", () => {
   let fixture: ComponentFixture<ClientsComponent>;

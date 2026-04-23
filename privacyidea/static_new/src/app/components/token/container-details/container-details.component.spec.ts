@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,28 +16,28 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { signal } from "@angular/core";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { of } from "rxjs";
 
-import { ContainerDetailsComponent } from "./container-details.component";
-import { TokenDetailsComponent } from "../token-details/token-details.component";
-import { TokenService } from "../../../services/token/token.service";
-import { ContainerService, ContainerServiceInterface } from "../../../services/container/container.service";
-import { ValidateService } from "../../../services/validate/validate.service";
-import { NotificationService } from "../../../services/notification/notification.service";
-import { UserService, UserServiceInterface } from "../../../services/user/user.service";
+import { ActivatedRoute } from "@angular/router";
+import { TokenDetailsComponent } from "@components/token/token-details/token-details.component";
+import { ContainerService, ContainerServiceInterface } from "@services/container/container.service";
+import { NotificationService } from "@services/notification/notification.service";
+import { TokenService } from "@services/token/token.service";
+import { UserService, UserServiceInterface } from "@services/user/user.service";
+import { ValidateService } from "@services/validate/validate.service";
 import {
   MockContainerService,
   MockNotificationService,
   MockTokenService,
   MockUserService
-} from "../../../../testing/mock-services";
+} from "@testing/mock-services";
+import { ContainerDetailsComponent } from "./container-details.component";
 import { ContainerDetailsSelfServiceComponent } from "./container-details.self-service.component";
-import { ActivatedRoute } from "@angular/router";
 
 class MockValidateService {
   testToken = jest.fn().mockReturnValue(of(null));

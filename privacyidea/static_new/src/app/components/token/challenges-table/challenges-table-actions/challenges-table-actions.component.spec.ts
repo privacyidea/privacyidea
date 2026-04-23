@@ -18,14 +18,14 @@
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 
-import { ChallengesTableActionsComponent } from "./challenges-table-actions.component";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
-import { ChallengesService } from "../../../../services/token/challenges/challenges.service";
-import { NotificationService } from "../../../../services/notification/notification.service";
-import { MockNotificationService } from "../../../../../testing/mock-services";
+import { NotificationService } from "@services/notification/notification.service";
+import { ChallengesService } from "@services/token/challenges/challenges.service";
+import { MockNotificationService } from "@testing/mock-services";
 import { of, throwError } from "rxjs";
+import { ChallengesTableActionsComponent } from "./challenges-table-actions.component";
 
 describe("ChallengesTableActionsComponent", () => {
   let component: ChallengesTableActionsComponent;
@@ -77,7 +77,9 @@ describe("ChallengesTableActionsComponent", () => {
   });
 
   it("should show fallback message when error has no api message", () => {
-    jest.spyOn(challengesService, "deleteExpiredChallenges").mockReturnValue(throwError(() => new Error("Network error")));
+    jest
+      .spyOn(challengesService, "deleteExpiredChallenges")
+      .mockReturnValue(throwError(() => new Error("Network error")));
     const reloadSpy = jest.spyOn(challengesService.challengesResource, "reload");
 
     component.onDeleteExpiredChallenges();

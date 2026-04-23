@@ -16,32 +16,30 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+
 import { Component, EventEmitter, inject, Input, OnInit, Output } from "@angular/core";
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { MatDialogRef } from "@angular/material/dialog";
+import {
+    EnrollmentResponse,
+    EnrollmentResponseDetail,
+    TokenApiPayloadMapper,
+    TokenEnrollmentData
+} from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import {
+    PasskeyApiPayloadMapper,
+    PasskeyEnrollmentData,
+    PasskeyFinalizeApiPayloadMapper,
+    PasskeyFinalizeData
+} from "@app/mappers/token-api-payload/passkey-token-api-payload.mapper";
+import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
+import { TokenEnrollmentFirstStepDialogComponent } from "@components/token/token-enrollment/token-enrollment-firtst-step-dialog/token-enrollment-first-step-dialog.component";
+import { ReopenDialogFn } from "@components/token/token-enrollment/token-enrollment.component";
+import { Base64Service, Base64ServiceInterface } from "@services/base64/base64.service";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
+import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 import { lastValueFrom } from "rxjs";
-import {
-  PasskeyApiPayloadMapper,
-  PasskeyEnrollmentData,
-  PasskeyFinalizeApiPayloadMapper,
-  PasskeyFinalizeData
-} from "../../../../mappers/token-api-payload/passkey-token-api-payload.mapper";
-import { Base64Service, Base64ServiceInterface } from "../../../../services/base64/base64.service";
-import { DialogService, DialogServiceInterface } from "../../../../services/dialog/dialog.service";
-import {
-  NotificationService,
-  NotificationServiceInterface
-} from "../../../../services/notification/notification.service";
-import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
-import { TokenEnrollmentFirstStepDialogComponent } from "../token-enrollment-firtst-step-dialog/token-enrollment-first-step-dialog.component";
-import { ReopenDialogFn } from "../token-enrollment.component";
-import {
-  EnrollmentResponse,
-  EnrollmentResponseDetail,
-  TokenApiPayloadMapper,
-  TokenEnrollmentData
-} from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
-import { AbstractDialogComponent } from "../../../shared/dialog/abstract-dialog/abstract-dialog.component";
 
 @Component({
   selector: "app-enroll-passkey",

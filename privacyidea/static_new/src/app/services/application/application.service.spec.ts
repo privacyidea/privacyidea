@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -19,9 +19,9 @@
 import { TestBed } from "@angular/core/testing";
 
 import { provideHttpClient } from "@angular/common/http";
-import { ApplicationService } from "./application.service";
-import { MockPiResponse } from "../../../testing/mock-services";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
+import { MockPiResponse } from "@testing/mock-services";
+import { ApplicationService } from "./application.service";
 
 describe("ApplicationService", () => {
   let applicationService: ApplicationService;
@@ -44,46 +44,44 @@ describe("ApplicationService", () => {
     TestBed.tick();
     const req = httpMock.expectOne((req) => req.url.includes(applicationService.applicationBaseUrl));
     const apiApplications = {
-      "luks": {
-        "options": {
-          "totp": {
-            "partition": {
-              "type": "str"
+      luks: {
+        options: {
+          totp: {
+            partition: {
+              type: "str"
             },
-            "slot": {
-              "type": "int",
-              "value": [0, 1, 2, 3, 4, 5, 6, 7]
+            slot: {
+              type: "int",
+              value: [0, 1, 2, 3, 4, 5, 6, 7]
             }
           }
         }
       },
-      "offline": {
-        "options": {
-          "hotp": {
-            "count": {
-              "type": "str"
+      offline: {
+        options: {
+          hotp: {
+            count: {
+              type: "str"
             },
-            "rounds": {
-              "type": "str"
+            rounds: {
+              type: "str"
             }
           },
-          "passkey": {},
-          "webauthn": {}
+          passkey: {},
+          webauthn: {}
         }
       },
-      "ssh": {
-        "options": {
-          "sshkey": {
-            "service_id": {
-              "description": "The service ID of the SSH server. Several servers can have the same service ID.",
-              "type": "str",
-              "value": [
-                "testID"
-              ]
+      ssh: {
+        options: {
+          sshkey: {
+            service_id: {
+              description: "The service ID of the SSH server. Several servers can have the same service ID.",
+              type: "str",
+              value: ["testID"]
             },
-            "user": {
-              "description": "The username on the SSH server.",
-              "type": "str"
+            user: {
+              description: "The username on the SSH server.",
+              type: "str"
             }
           }
         }

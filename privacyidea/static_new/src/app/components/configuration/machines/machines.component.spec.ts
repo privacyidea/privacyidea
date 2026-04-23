@@ -16,14 +16,15 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { MachinesComponent } from "./machines.component";
+
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { MatDialog, MatDialogModule } from "@angular/material/dialog";
-import { MachineService } from "../../../services/machine/machine.service";
 import { signal } from "@angular/core";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { MatDialog, MatDialogModule } from "@angular/material/dialog";
+import { NoopAnimationsModule } from "@angular/platform-browser/animations";
+import { MachineService } from "@services/machine/machine.service";
+import { MachinesComponent } from "./machines.component";
 
 describe("MachinesComponent", () => {
   let component: MachinesComponent;
@@ -45,13 +46,13 @@ describe("MachinesComponent", () => {
         provideHttpClientTesting(),
         { provide: MachineService, useValue: machineServiceMock }
       ]
-    }).overrideComponent(MachinesComponent, {
-      set: {
-        providers: [
-          { provide: MatDialog, useValue: { open: jest.fn() } }
-        ]
-      }
-    }).compileComponents();
+    })
+      .overrideComponent(MachinesComponent, {
+        set: {
+          providers: [{ provide: MatDialog, useValue: { open: jest.fn() } }]
+        }
+      })
+      .compileComponents();
 
     fixture = TestBed.createComponent(MachinesComponent);
     component = fixture.componentInstance;

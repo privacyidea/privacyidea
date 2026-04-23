@@ -18,10 +18,10 @@
  **/
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { ContainerTemplatesFilterComponent } from "./container-templates-filter.component";
-import { FilterValueGeneric } from "src/app/core/models/filter_value_generic/filter-value-generic";
 import { By } from "@angular/platform-browser";
+import { NoopAnimationsModule } from "@angular/platform-browser/animations";
+import { FilterValueGeneric } from "@core/models/filter_value_generic/filter-value-generic";
+import { ContainerTemplatesFilterComponent } from "./container-templates-filter.component";
 
 describe("ContainerTemplatesFilterComponent", () => {
   let component: ContainerTemplatesFilterComponent;

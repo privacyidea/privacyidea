@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -20,13 +20,13 @@ import { Component, inject, Signal, WritableSignal } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MAT_DIALOG_DATA, MatDialogContent, MatDialogRef, MatDialogTitle } from "@angular/material/dialog";
 import { MatIcon } from "@angular/material/icon";
-import { PiResponse } from "../../../../app.component";
+import { PiResponse } from "@app/app.component";
 import {
-  ContainerRegisterData,
-  ContainerService,
-  ContainerServiceInterface
-} from "../../../../services/container/container.service";
-import { ContentService } from "../../../../services/content/content.service";
+    ContainerRegisterData,
+    ContainerService,
+    ContainerServiceInterface
+} from "@services/container/container.service";
+import { ContentService } from "@services/content/content.service";
 
 export type ContainerCreationDialogData = {
   response: PiResponse<ContainerRegisterData>;

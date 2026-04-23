@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -30,17 +30,17 @@ import { MatListItem } from "@angular/material/list";
 import { MatPaginator } from "@angular/material/paginator";
 import { MatSelectModule } from "@angular/material/select";
 import { MatCell, MatColumnDef, MatTableModule } from "@angular/material/table";
-import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
-import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
-import { EditButtonsComponent } from "../../shared/edit-buttons/edit-buttons.component";
-import { ContainerDetailsInfoComponent } from "./container-details-info/container-details-info.component";
-import { ContainerDetailsComponent } from "./container-details.component";
-import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
-import { ContainerDetailsTokenTableComponent } from "./container-details-token-table/container-details-token-table.component";
-import { ContainerDetailsActionsComponent } from "./container-details-actions/container-details-actions.component";
-import { ContainerDetailsTokenActionsComponent } from "./container-details-token-actions/container-details-token-actions.component";
-import { RouterLink } from "@angular/router";
 import { MatTooltip } from "@angular/material/tooltip";
+import { RouterLink } from "@angular/router";
+import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
+import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { EditButtonsComponent } from "@components/shared/edit-buttons/edit-buttons.component";
+import { ContainerDetailsActionsComponent } from "./container-details-actions/container-details-actions.component";
+import { ContainerDetailsInfoComponent } from "./container-details-info/container-details-info.component";
+import { ContainerDetailsTokenActionsComponent } from "./container-details-token-actions/container-details-token-actions.component";
+import { ContainerDetailsTokenTableComponent } from "./container-details-token-table/container-details-token-table.component";
+import { ContainerDetailsComponent } from "./container-details.component";
 
 @Component({
   selector: "app-container-details-self-service",
@@ -77,5 +77,4 @@ import { MatTooltip } from "@angular/material/tooltip";
   templateUrl: "./container-details.self-service.component.html",
   styleUrls: ["./container-details.component.scss"]
 })
-export class ContainerDetailsSelfServiceComponent extends ContainerDetailsComponent {
-}
+export class ContainerDetailsSelfServiceComponent extends ContainerDetailsComponent {}

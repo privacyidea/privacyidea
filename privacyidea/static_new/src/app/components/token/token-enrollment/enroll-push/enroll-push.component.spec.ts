@@ -18,19 +18,19 @@
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 
-import { EnrollPushComponent } from "./enroll-push.component";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { EnrollmentResponse } from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
-import { PiResponse } from "../../../../app.component";
-import { MockTokenService } from "../../../../../testing/mock-services";
-import { Tokens, TokenService } from "../../../../services/token/token.service";
-import { DialogService } from "../../../../services/dialog/dialog.service";
-import { PushApiPayloadMapper } from "../../../../mappers/token-api-payload/push-token-api-payload.mapper";
+import { NoopAnimationsModule } from "@angular/platform-browser/animations";
+import { PiResponse } from "@app/app.component";
+import { EnrollmentResponse } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { PushApiPayloadMapper } from "@app/mappers/token-api-payload/push-token-api-payload.mapper";
+import { ReopenDialogFn } from "@components/token/token-enrollment/token-enrollment.component";
+import { DialogService } from "@services/dialog/dialog.service";
+import { Tokens, TokenService } from "@services/token/token.service";
+import { MockTokenService } from "@testing/mock-services";
+import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
 import { lastValueFrom, of } from "rxjs";
-import { ReopenDialogFn } from "../token-enrollment.component";
-import { MockDialogService } from "../../../../../testing/mock-services/mock-dialog-service";
+import { EnrollPushComponent } from "./enroll-push.component";
 
 function makeInitResp(serial = "S-1"): EnrollmentResponse {
   return {

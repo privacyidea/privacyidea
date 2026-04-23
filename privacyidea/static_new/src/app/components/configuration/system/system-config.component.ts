@@ -18,22 +18,22 @@
  */
 import { Component, effect, inject, OnInit, ViewChild } from "@angular/core";
 import { FormsModule, NgForm } from "@angular/forms";
-import { SystemService, SystemServiceInterface } from "../../../services/system/system.service";
-import { SmtpService, SmtpServiceInterface } from "../../../services/smtp/smtp.service";
-import { NotificationService, NotificationServiceInterface } from "../../../services/notification/notification.service";
-import { AuthService } from "../../../services/auth/auth.service";
-import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
+import { MatButton } from "@angular/material/button";
+import { MatCheckbox } from "@angular/material/checkbox";
+import { MatDialog } from "@angular/material/dialog";
 import { MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
+import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
 import { MatOption, MatSelect } from "@angular/material/select";
 import { RouterLink } from "@angular/router";
-import { MatCheckbox } from "@angular/material/checkbox";
-import { MatButton } from "@angular/material/button";
-import { MatIcon } from "@angular/material/icon";
-import { ROUTE_PATHS } from "../../../route_paths";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { AuthService } from "@services/auth/auth.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
+import { SmtpService, SmtpServiceInterface } from "@services/smtp/smtp.service";
+import { SystemService, SystemServiceInterface } from "@services/system/system.service";
+import { isChecked } from "@utils/parse-boolean-value";
 import { SystemDocumentationDialogComponent } from "./system-documentation-dialog/system-documentation-dialog.component";
-import { MatDialog } from "@angular/material/dialog";
-import { isChecked, parseBooleanValue } from "../../../utils/parse-boolean-value";
 
 @Component({
   selector: "app-system-config",
@@ -82,7 +82,7 @@ export class SystemConfigComponent implements OnInit {
           "UiLoginDisplayHelpButton",
           "UiLoginDisplayRealmBox"
         ];
-        booleanKeys.forEach(key => {
+        booleanKeys.forEach((key) => {
           if (this.params[key] !== undefined) {
             this.params[key] = isChecked(this.params[key]);
           }
@@ -93,7 +93,7 @@ export class SystemConfigComponent implements OnInit {
     // Keep SMTP identifiers in sync with the SMTP servers service
     effect(() => {
       const servers = this.smtpService.smtpServers();
-      this.smtpIdentifiers = servers.map(s => s.identifier);
+      this.smtpIdentifiers = servers.map((s) => s.identifier);
     });
   }
 
@@ -151,7 +151,7 @@ export class SystemConfigComponent implements OnInit {
     this.systemService.getDocumentation().subscribe({
       next: (documentation) => {
         this.dialog.open(SystemDocumentationDialogComponent, {
-          data: { documentation },
+          data: { documentation }
         });
       },
       error: (error: any) => {

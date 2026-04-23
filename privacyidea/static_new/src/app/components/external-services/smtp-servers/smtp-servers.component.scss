@@ -1,9 +1,10 @@
-@use "../../../../styles";
+@use "styles";
+@use "table";
 @use "@angular/material" as mat;
 
 .smtp-servers-container {
   @include styles.main-component-style;
-  @include styles.base-table-structure(".smtp-servers-table", ".smtp-table-filter", ".table-scroll-container");
+  @include table.base-table-structure(".smtp-servers-table", ".smtp-table-filter", ".table-scroll-container");
 }
 
 .actions-container {
@@ -21,6 +22,8 @@
   text-decoration: underline;
 }
 
-::ng-deep app-smtp-edit-dialog.mat-mdc-dialog-component-host mat-dialog-content.mat-mdc-dialog-content.mdc-dialog__content.smtp-dialog-content {
+::ng-deep
+  app-smtp-edit-dialog.mat-mdc-dialog-component-host
+  mat-dialog-content.mat-mdc-dialog-content.mdc-dialog__content.smtp-dialog-content {
   max-height: 82vh;
 }

@@ -17,65 +17,68 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
+import { DatePipe, NgClass } from "@angular/common";
 import { Component, computed, inject } from "@angular/core";
-import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
+import { MatFabButton, MatIconButton } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 import { MatTooltip } from "@angular/material/tooltip";
-import { MatFabButton, MatIconButton } from "@angular/material/button";
-import { ThemeSwitcherComponent } from "@components/shared/theme-switcher/theme-switcher.component";
-import { DatePipe, NgClass } from "@angular/common";
 import { Router } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { AuditService, AuditServiceInterface } from "@services/audit/audit.service";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { CaConnectorService, CaConnectorServiceInterface } from "@services/ca-connector/ca-connector.service";
+import { ClientsService, ClientsServiceInterface } from "@services/clients/clients.service";
+import {
+    ContainerTemplateService,
+    ContainerTemplateServiceInterface
+} from "@services/container-template/container-template.service";
+import { ContainerService, ContainerServiceInterface } from "@services/container/container.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import {
+    DocumentationService,
+    DocumentationServiceInterface
+} from "@services/documentation/documentation.service";
+import { EventService, EventServiceInterface } from "@services/event/event.service";
+import {
+    MachineResolverService,
+    MachineResolverServiceInterface
+} from "@services/machine-resolver/machine-resolver.service";
+import { MachineService, MachineServiceInterface } from "@services/machine/machine.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
+import {
+    PendingChangesService,
+    PendingChangesServiceInterface
+} from "@services/pending-changes/pending-changes.service";
+import { PeriodicTaskService } from "@services/periodic-task/periodic-task.service";
+import { PolicyService, PolicyServiceInterface } from "@services/policies/policies.service";
+import {
+    PrivacyideaServerService,
+    PrivacyideaServerServiceInterface
+} from "@services/privacyidea-server/privacyidea-server.service";
+import {
+    RadiusServerService,
+    RadiusServerServiceInterface
+} from "@services/radius-server/radius-server.service";
+import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
+import { ResolverService, ResolverServiceInterface } from "@services/resolver/resolver.service";
+import { ServiceIdService, ServiceIdServiceInterface } from "@services/service-id/service-id.service";
+import {
+    SessionTimerService,
+    SessionTimerServiceInterface
+} from "@services/session-timer/session-timer.service";
+import { SmsGatewayService, SmsGatewayServiceInterface } from "@services/sms-gateway/sms-gateway.service";
+import { SmtpService, SmtpServiceInterface } from "@services/smtp/smtp.service";
+import { SubscriptionService } from "@services/subscription/subscription.service";
+import { SystemService, SystemServiceInterface } from "@services/system/system.service";
+import { ChallengesService, ChallengesServiceInterface } from "@services/token/challenges/challenges.service";
+import { TokenService, TokenServiceInterface } from "@services/token/token.service";
+import { TokengroupService, TokengroupServiceInterface } from "@services/tokengroup/tokengroup.service";
+import { UserService, UserServiceInterface } from "@services/user/user.service";
+import { VersioningService, VersioningServiceInterface } from "@services/version/version.service";
 import { from } from "rxjs";
-import { NotificationService, NotificationServiceInterface } from "../../../services/notification/notification.service";
-import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
-import { TokenService, TokenServiceInterface } from "../../../services/token/token.service";
-import { ContainerService, ContainerServiceInterface } from "../../../services/container/container.service";
-import { ChallengesService, ChallengesServiceInterface } from "../../../services/token/challenges/challenges.service";
-import { MachineService, MachineServiceInterface } from "../../../services/machine/machine.service";
-import { UserService, UserServiceInterface } from "../../../services/user/user.service";
-import { RealmService, RealmServiceInterface } from "../../../services/realm/realm.service";
-import { VersioningService, VersioningServiceInterface } from "../../../services/version/version.service";
-import {
-  DocumentationService,
-  DocumentationServiceInterface
-} from "../../../services/documentation/documentation.service";
-import { AuditService, AuditServiceInterface } from "../../../services/audit/audit.service";
-import { ClientsService, ClientsServiceInterface } from "../../../services/clients/clients.service";
-import { PolicyService, PolicyServiceInterface } from "../../../services/policies/policies.service";
-import { SubscriptionService } from "../../../services/subscription/subscription.service";
-import {
-  MachineResolverService,
-  MachineResolverServiceInterface
-} from "../../../services/machine-resolver/machine-resolver.service";
-import {
-  ContainerTemplateService,
-  ContainerTemplateServiceInterface
-} from "../../../services/container-template/container-template.service";
-import {
-  SessionTimerService,
-  SessionTimerServiceInterface
-} from "../../../services/session-timer/session-timer.service";
-import { ResolverService, ResolverServiceInterface } from "../../../services/resolver/resolver.service";
-import { SmtpService, SmtpServiceInterface } from "../../../services/smtp/smtp.service";
-import { RadiusServerService, RadiusServerServiceInterface } from "../../../services/radius-server/radius-server.service";
-import { SmsGatewayService, SmsGatewayServiceInterface } from "../../../services/sms-gateway/sms-gateway.service";
-import {
-  PrivacyideaServerService,
-  PrivacyideaServerServiceInterface
-} from "../../../services/privacyidea-server/privacyidea-server.service";
-import { TokengroupService, TokengroupServiceInterface } from "../../../services/tokengroup/tokengroup.service";
-import { CaConnectorService, CaConnectorServiceInterface } from "../../../services/ca-connector/ca-connector.service";
-import { ServiceIdService, ServiceIdServiceInterface } from "../../../services/service-id/service-id.service";
-import { PeriodicTaskService } from "../../../services/periodic-task/periodic-task.service";
-import { EventService, EventServiceInterface } from "../../../services/event/event.service";
-import { SystemService, SystemServiceInterface } from "../../../services/system/system.service";
-import { ROUTE_PATHS } from "../../../route_paths";
-import {
-  PendingChangesService,
-  PendingChangesServiceInterface
-} from "../../../services/pending-changes/pending-changes.service";
-import { DialogService, DialogServiceInterface } from "../../../services/dialog/dialog.service";
-import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
+import { SaveAndExitDialogComponent } from "../../shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
+import { ThemeSwitcherComponent } from "../../shared/theme-switcher/theme-switcher.component";
 
 @Component({
   selector: "app-user-utils-panel",

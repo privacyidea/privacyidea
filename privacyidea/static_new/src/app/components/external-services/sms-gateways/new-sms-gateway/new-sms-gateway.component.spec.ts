@@ -16,20 +16,20 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { NewSmsGatewayComponent } from "./new-sms-gateway.component";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from "@angular/material/dialog";
+import { NoopAnimationsModule } from "@angular/platform-browser/animations";
+import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
+import { DialogService } from "@services/dialog/dialog.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+import { SmsGatewayService } from "@services/sms-gateway/sms-gateway.service";
+import { MockDialogService } from "@testing/mock-services";
+import { MockPendingChangesService } from "@testing/mock-services/mock-pending-changes-service";
+import { MockSmsGatewayService } from "@testing/mock-services/mock-sms-gateway-service";
 import { of } from "rxjs";
-import { SmsGatewayService } from "../../../../services/sms-gateway/sms-gateway.service";
-import { MockSmsGatewayService } from "../../../../../testing/mock-services/mock-sms-gateway-service";
-import { SaveAndExitDialogComponent } from "../../../shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
-import { PendingChangesService } from "../../../../services/pending-changes/pending-changes.service";
-import { MockPendingChangesService } from "../../../../../testing/mock-services/mock-pending-changes-service";
-import { DialogService } from "../../../../services/dialog/dialog.service";
-import { MockDialogService } from "../../../../../testing/mock-services";
+import { NewSmsGatewayComponent } from "./new-sms-gateway.component";
 
 describe("NewSmsGatewayComponent", () => {
   let component: NewSmsGatewayComponent;
@@ -49,7 +49,7 @@ describe("NewSmsGatewayComponent", () => {
     };
 
     dialogMock = {
-      open: jest.fn().mockReturnValue({ afterClosed: () => of(true) }),
+      open: jest.fn().mockReturnValue({ afterClosed: () => of(true) })
     };
 
     await TestBed.configureTestingModule({
@@ -61,15 +61,15 @@ describe("NewSmsGatewayComponent", () => {
         { provide: MatDialogRef, useValue: dialogRefMock },
         { provide: SmsGatewayService, useClass: MockSmsGatewayService },
         { provide: PendingChangesService, useClass: MockPendingChangesService },
-        { provide: DialogService, useClass: MockDialogService },
+        { provide: DialogService, useClass: MockDialogService }
       ]
-    }).overrideComponent(NewSmsGatewayComponent, {
-      add: {
-        providers: [
-          { provide: MatDialog, useValue: dialogMock }
-        ]
-      }
-    }).compileComponents();
+    })
+      .overrideComponent(NewSmsGatewayComponent, {
+        add: {
+          providers: [{ provide: MatDialog, useValue: dialogMock }]
+        }
+      })
+      .compileComponents();
 
     smsGatewayServiceMock = TestBed.inject(SmsGatewayService);
     pendingChangesService = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
@@ -186,7 +186,7 @@ describe("NewSmsGatewayComponent", () => {
 
       component.onCancel();
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await new Promise((resolve) => setTimeout(resolve, 0));
 
       expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
       expect(dialogRefMock.close).toHaveBeenCalled();
@@ -206,7 +206,7 @@ describe("NewSmsGatewayComponent", () => {
 
       component.onCancel();
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await new Promise((resolve) => setTimeout(resolve, 0));
 
       expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
       expect(dialogRefMock.close).toHaveBeenCalled();
@@ -227,7 +227,7 @@ describe("NewSmsGatewayComponent", () => {
 
       component.onCancel();
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await new Promise((resolve) => setTimeout(resolve, 0));
 
       expect(pendingChangesService.clearAllRegistrations).not.toHaveBeenCalled();
       expect(dialogRefMock.close).not.toHaveBeenCalled();
@@ -242,7 +242,7 @@ describe("NewSmsGatewayComponent", () => {
 
       component.onCancel();
 
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise((resolve) => setTimeout(resolve, 100));
 
       expect(pendingChangesService.save).not.toHaveBeenCalled();
       expect(pendingChangesService.clearAllRegistrations).not.toHaveBeenCalled();
@@ -262,7 +262,7 @@ describe("NewSmsGatewayComponent", () => {
 
       component.onCancel();
 
-      await new Promise(resolve => setTimeout(resolve, 0));
+      await new Promise((resolve) => setTimeout(resolve, 0));
 
       expect(pendingChangesService.clearAllRegistrations).not.toHaveBeenCalled();
       expect(dialogRefMock.close).not.toHaveBeenCalled();

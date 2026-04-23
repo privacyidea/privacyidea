@@ -16,24 +16,24 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { ContainerDetailsTokenActionsComponent } from "./container-details-token-actions.component";
-import {
-  MockContainerService,
-  MockLocalService,
-  MockNotificationService,
-  MockTokenService
-} from "../../../../../testing/mock-services";
-import { AuthService } from "../../../../services/auth/auth.service";
-import { ContainerDetailToken, ContainerService } from "../../../../services/container/container.service";
-import { TokenService } from "../../../../services/token/token.service";
-import { MatDialog } from "@angular/material/dialog";
-import { SimpleConfirmationDialogComponent } from "../../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
-import { MatTableDataSource } from "@angular/material/table";
-import { signal, WritableSignal } from "@angular/core";
-import { of } from "rxjs";
 import { provideHttpClient } from "@angular/common/http";
-import { MockAuthService } from "../../../../../testing/mock-services/mock-auth-service";
+import { signal, WritableSignal } from "@angular/core";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { MatDialog } from "@angular/material/dialog";
+import { MatTableDataSource } from "@angular/material/table";
+import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { AuthService } from "@services/auth/auth.service";
+import { ContainerDetailToken, ContainerService } from "@services/container/container.service";
+import { TokenService } from "@services/token/token.service";
+import {
+    MockContainerService,
+    MockLocalService,
+    MockNotificationService,
+    MockTokenService
+} from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { of } from "rxjs";
+import { ContainerDetailsTokenActionsComponent } from "./container-details-token-actions.component";
 
 describe("ContainerDetailsTokenActionsComponent", () => {
   let component: ContainerDetailsTokenActionsComponent;

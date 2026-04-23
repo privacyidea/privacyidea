@@ -16,16 +16,16 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import {
-  EventActions,
-  EventCondition,
-  EventHandler,
-  EventServiceInterface
-} from "../../app/services/event/event.service";
-import { computed, signal, Signal, WritableSignal } from "@angular/core";
-import { of } from "rxjs";
 import { HttpResourceRef } from "@angular/common/http";
-import { PiResponse } from "../../app/app.component";
+import { computed, signal, Signal, WritableSignal } from "@angular/core";
+import { PiResponse } from "@app/app.component";
+import {
+    EventActions,
+    EventCondition,
+    EventHandler,
+    EventServiceInterface
+} from "@services/event/event.service";
+import { of } from "rxjs";
 
 export class MockEventService implements EventServiceInterface {
   selectedHandlerModule: WritableSignal<string | null> = signal(null);
@@ -74,7 +74,7 @@ export class MockEventService implements EventServiceInterface {
   moduleActions: Signal<EventActions> = computed(() => ({
     actionA: {
       opt1: { type: "bool", desc: "desc1", required: true },
-      opt2: { type: "int", desc: "desc2", visibleIf: "opt1"},
+      opt2: { type: "int", desc: "desc2", visibleIf: "opt1" },
       opt3: { type: "str", desc: "desc3", visibleIf: "opt2", visibleValue: 3 }
     },
     actionB: {

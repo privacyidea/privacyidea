@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -18,10 +18,10 @@
  **/
 import { inject } from "@angular/core";
 import { CanDeactivateFn } from "@angular/router";
-import { PendingChangesService } from "../services/pending-changes/pending-changes.service";
-import { SaveAndExitDialogComponent } from "../components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
+import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { from, map, of, switchMap } from "rxjs";
-import { DialogService, DialogServiceInterface } from "../services/dialog/dialog.service";
 
 export const pendingChangesGuard: CanDeactivateFn<any> = () => {
   const pendingChangesService = inject(PendingChangesService);

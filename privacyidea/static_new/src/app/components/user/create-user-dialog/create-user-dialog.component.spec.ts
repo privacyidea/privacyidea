@@ -19,21 +19,21 @@
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 
-import { CreateUserDialogComponent } from "./create-user-dialog.component";
-import { UserService } from "../../../services/user/user.service";
-import { Realm, RealmResolver, RealmService } from "../../../services/realm/realm.service";
-import { ResolverService } from "../../../services/resolver/resolver.service";
-import { NotificationService } from "../../../services/notification/notification.service";
-import {
-  MockDialogService,
-  MockNotificationService,
-  MockRealmService,
-  MockUserService
-} from "../../../../testing/mock-services";
-import { MockResolverService } from "../../../../testing/mock-services/mock-resolver-service";
-import { DialogService } from "../../../services/dialog/dialog.service";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
-import { MockMatDialogRef } from "../../../../testing/mock-mat-dialog-ref";
+import { DialogService } from "@services/dialog/dialog.service";
+import { NotificationService } from "@services/notification/notification.service";
+import { Realm, RealmResolver, RealmService } from "@services/realm/realm.service";
+import { ResolverService } from "@services/resolver/resolver.service";
+import { UserService } from "@services/user/user.service";
+import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
+import {
+    MockDialogService,
+    MockNotificationService,
+    MockRealmService,
+    MockUserService
+} from "@testing/mock-services";
+import { MockResolverService } from "@testing/mock-services/mock-resolver-service";
+import { CreateUserDialogComponent } from "./create-user-dialog.component";
 
 describe("CreateUserDialogComponent", () => {
   let component: CreateUserDialogComponent;

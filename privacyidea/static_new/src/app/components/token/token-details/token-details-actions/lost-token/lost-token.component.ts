@@ -21,13 +21,10 @@ import { Component, effect, inject, WritableSignal } from "@angular/core";
 import { MatButton } from "@angular/material/button";
 import { MatCard, MatCardContent } from "@angular/material/card";
 import { MatIcon, MatIconModule } from "@angular/material/icon";
-import {
-  NotificationService,
-  NotificationServiceInterface
-} from "../../../../../services/notification/notification.service";
-import { LostTokenData, TokenService, TokenServiceInterface } from "../../../../../services/token/token.service";
-import { AbstractDialogComponent } from "../../../../shared/dialog/abstract-dialog/abstract-dialog.component";
-import { DialogWrapperComponent } from "../../../../shared/dialog/dialog-wrapper/dialog-wrapper.component";
+import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
+import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
+import { LostTokenData, TokenService, TokenServiceInterface } from "@services/token/token.service";
 
 @Component({
   selector: "app-lost-token",

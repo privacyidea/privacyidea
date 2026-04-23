@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -17,19 +17,19 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, computed, EventEmitter, inject, input, Input, OnInit, Output } from "@angular/core";
-import { FormControl, FormGroup, FormsModule, ReactiveFormsModule } from "@angular/forms";
-import { SystemService, SystemServiceInterface } from "../../../../services/system/system.service";
-import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
+import { FormControl, FormsModule, ReactiveFormsModule } from "@angular/forms";
+import { SystemService, SystemServiceInterface } from "@services/system/system.service";
+import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 
 import {
-  TiqrApiPayloadMapper,
-  TiqrEnrollmentData
-} from "../../../../mappers/token-api-payload/tiqr-token-api-payload.mapper";
+    TokenApiPayloadMapper,
+    TokenEnrollmentData
+} from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import {
-  TokenApiPayloadMapper,
-  TokenEnrollmentData
-} from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
-import { TIQR_INFO_URL, TIQR_LOGO_URL, TIQR_REG_SERVER } from "../../../../constants/token.constants";
+    TiqrApiPayloadMapper,
+    TiqrEnrollmentData
+} from "@app/mappers/token-api-payload/tiqr-token-api-payload.mapper";
+import { TIQR_INFO_URL, TIQR_LOGO_URL, TIQR_REG_SERVER } from "@constants/token.constants";
 
 export interface TiqrEnrollmentOptions extends TokenEnrollmentData {
   type: "tiqr";

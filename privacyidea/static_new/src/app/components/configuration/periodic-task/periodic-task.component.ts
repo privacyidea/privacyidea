@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -17,29 +17,23 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, inject, linkedSignal, WritableSignal } from "@angular/core";
-import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
-import {
-  EMPTY_PERIODIC_TASK,
-  PeriodicTask,
-  PeriodicTaskService
-} from "../../../services/periodic-task/periodic-task.service";
-import { MatAccordion } from "@angular/material/expansion";
-import { PeriodicTaskPanelComponent } from "./periodic-task-panel/periodic-task-panel.component";
-import { PeriodicTaskPanelNewComponent } from "./periodic-task-panel/periodic-task-panel-new.component";
 import { MatDivider } from "@angular/material/divider";
-import { AuthService } from "../../../services/auth/auth.service";
+import { MatAccordion } from "@angular/material/expansion";
+import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { AuthService } from "@services/auth/auth.service";
+import {
+    EMPTY_PERIODIC_TASK,
+    PeriodicTask,
+    PeriodicTaskService
+} from "@services/periodic-task/periodic-task.service";
+import { PeriodicTaskPanelNewComponent } from "./periodic-task-panel/periodic-task-panel-new.component";
+import { PeriodicTaskPanelComponent } from "./periodic-task-panel/periodic-task-panel.component";
 
 @Component({
   selector: "app-periodic-task",
   standalone: true,
   templateUrl: "./periodic-task.component.html",
-  imports: [
-    ScrollToTopDirective,
-    MatAccordion,
-    PeriodicTaskPanelComponent,
-    PeriodicTaskPanelNewComponent,
-    MatDivider
-  ],
+  imports: [ScrollToTopDirective, MatAccordion, PeriodicTaskPanelComponent, PeriodicTaskPanelNewComponent, MatDivider],
   styleUrls: ["./periodic-task.component.scss"]
 })
 export class PeriodicTaskComponent {
@@ -47,7 +41,10 @@ export class PeriodicTaskComponent {
   protected readonly authService = inject(AuthService);
 
   periodicTasks: WritableSignal<PeriodicTask[] | undefined> = linkedSignal({
-    source: () => this.periodicTaskService.periodicTasksResource.hasValue() ? this.periodicTaskService.periodicTasksResource.value() : undefined,
+    source: () =>
+      this.periodicTaskService.periodicTasksResource.hasValue()
+        ? this.periodicTaskService.periodicTasksResource.value()
+        : undefined,
     computation: (periodicTasksResource) => {
       if (!periodicTasksResource) return [];
       return periodicTasksResource.result?.value ?? [];

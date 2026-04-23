@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,19 +16,18 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
-import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
-import { firstValueFrom, of } from "rxjs";
 import { signal } from "@angular/core";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { Router } from "@angular/router";
+import { firstValueFrom, of } from "rxjs";
 
+import { ContainerService } from "@services/container/container.service";
+import { ContentService } from "@services/content/content.service";
 import { ContainerCreatedDialogComponent } from "./container-created-dialog.component";
 import { ContainerCreatedDialogWizardComponent } from "./container-created-dialog.wizard.component";
-import { ContainerService } from "../../../../services/container/container.service";
-import { ContentService } from "../../../../services/content/content.service";
-import { MockAuthService } from "../../../../../testing/mock-services/mock-auth-service";
 
 describe("ContainerCreatedDialogComponent", () => {
   let fixture: ComponentFixture<ContainerCreatedDialogComponent>;

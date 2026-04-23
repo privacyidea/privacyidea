@@ -18,11 +18,11 @@
  **/
 import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
 import { effect, inject, Injectable, linkedSignal, WritableSignal } from "@angular/core";
-import { environment } from "../../../environments/environment";
-import { PiResponse } from "../../app.component";
-import { AuthService, AuthServiceInterface } from "../auth/auth.service";
-import { ContentService, ContentServiceInterface } from "../content/content.service";
-import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
+import { PiResponse } from "@app/app.component";
+import { environment } from "@env/environment";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { lastValueFrom } from "rxjs";
 
 type Tokengroups = {
@@ -76,7 +76,7 @@ export class TokengroupService implements TokengroupServiceInterface {
   });
 
   tokengroups: WritableSignal<Tokengroup[]> = linkedSignal({
-    source: () => this.tokengroupResource.hasValue() ? this.tokengroupResource.value() : undefined,
+    source: () => (this.tokengroupResource.hasValue() ? this.tokengroupResource.value() : undefined),
     computation: (tokengroupResource, previous) => {
       const value = tokengroupResource?.result?.value;
       if (!value) {

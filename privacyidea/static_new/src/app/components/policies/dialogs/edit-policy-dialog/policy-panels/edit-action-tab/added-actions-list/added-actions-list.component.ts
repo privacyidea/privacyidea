@@ -17,14 +17,13 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { CommonModule } from "@angular/common";
-import { Component, input, output, inject } from "@angular/core";
+import { Component, inject, input, output } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MatIconModule } from "@angular/material/icon";
 import { MatSlideToggleModule } from "@angular/material/slide-toggle";
-import { PolicyService, PolicyActionDetail } from "../../../../../../../services/policies/policies.service";
-import { parseBooleanValue } from "../../../../../../../utils/parse-boolean-value";
+import { PolicyActionDetail, PolicyService } from "@services/policies/policies.service";
+import { parseBooleanValue } from "@utils/parse-boolean-value";
 import { PolicyActionItemEditComponent } from "./added-action-edit/policy-action-item-edit.component";
 
 @Component({

@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,24 +16,24 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { ContainerDetailsActionsComponent } from "./container-details-actions.component";
-import {
-  MockContainerService,
-  MockNotificationService,
-  MockContentService,
-  MockLocalService
-} from "../../../../../testing/mock-services";
-import { AuthService } from "../../../../services/auth/auth.service";
-import { ContainerService } from "../../../../services/container/container.service";
-import { NotificationService } from "../../../../services/notification/notification.service";
-import { ContentService } from "../../../../services/content/content.service";
-import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from "@angular/material/dialog";
-import { of, Subject } from "rxjs";
-import { PiResponse } from "../../../../app.component";
 import { provideHttpClient } from "@angular/common/http";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from "@angular/material/dialog";
 import { NavigationEnd, Router } from "@angular/router";
-import { MockAuthService } from "../../../../../testing/mock-services/mock-auth-service";
+import { PiResponse } from "@app/app.component";
+import { AuthService } from "@services/auth/auth.service";
+import { ContainerService } from "@services/container/container.service";
+import { ContentService } from "@services/content/content.service";
+import { NotificationService } from "@services/notification/notification.service";
+import {
+    MockContainerService,
+    MockContentService,
+    MockLocalService,
+    MockNotificationService
+} from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { of, Subject } from "rxjs";
+import { ContainerDetailsActionsComponent } from "./container-details-actions.component";
 
 const routerEvents$ = new Subject<NavigationEnd>();
 routerEvents$.next(new NavigationEnd(1, "/", "/"));

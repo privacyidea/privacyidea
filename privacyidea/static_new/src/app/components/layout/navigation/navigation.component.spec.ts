@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,37 +16,26 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { NavigationComponent } from "./navigation.component";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { ActivatedRoute, provideRouter, Router } from "@angular/router";
 import { provideLocationMocks } from "@angular/common/testing";
-import { of } from "rxjs";
-import { TokenService } from "../../../services/token/token.service";
-import { ContainerService } from "../../../services/container/container.service";
-import { ChallengesService } from "../../../services/token/challenges/challenges.service";
-import { MachineService } from "../../../services/machine/machine.service";
-import { UserService } from "../../../services/user/user.service";
-import { AuditService } from "../../../services/audit/audit.service";
-import { ContentService } from "../../../services/content/content.service";
-import { AuthService } from "../../../services/auth/auth.service";
-import { SessionTimerService } from "../../../services/session-timer/session-timer.service";
-import { NotificationService } from "../../../services/notification/notification.service";
-import {
-  MockAuditService,
-  MockChallengesService,
-  MockContainerService,
-  MockContentService,
-  MockLocalService,
-  MockMachineService,
-  MockNotificationService,
-  MockSessionTimerService,
-  MockTokenService,
-  MockUserService
-} from "../../../../testing/mock-services";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MatSnackBar } from "@angular/material/snack-bar";
-import { MockAuthService } from "../../../../testing/mock-services/mock-auth-service";
+import { provideRouter } from "@angular/router";
+import { AuthService } from "@services/auth/auth.service";
+import { ContentService } from "@services/content/content.service";
+import { NotificationService } from "@services/notification/notification.service";
+import { SessionTimerService } from "@services/session-timer/session-timer.service";
+import { UserService } from "@services/user/user.service";
+import {
+    MockContentService,
+    MockLocalService,
+    MockNotificationService,
+    MockSessionTimerService,
+    MockUserService
+} from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { NavigationComponent } from "./navigation.component";
 
 describe("NavigationComponent (async, no RouterTestingModule, no MatSnackBar)", () => {
   let component: NavigationComponent;

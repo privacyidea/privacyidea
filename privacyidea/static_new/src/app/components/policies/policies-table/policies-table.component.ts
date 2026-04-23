@@ -29,18 +29,18 @@ import { MatTableModule } from "@angular/material/table";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { lastValueFrom } from "rxjs";
 
-import { FilterValueGeneric } from "src/app/core/models/filter_value_generic/filter-value-generic";
-import { FilterOption } from "src/app/core/models/filter_value_generic/filter-option";
-import { AuthService, AuthServiceInterface } from "src/app/services/auth/auth.service";
-import { DialogService, DialogServiceInterface } from "src/app/services/dialog/dialog.service";
-import { PolicyDetail, PolicyService, PolicyServiceInterface } from "src/app/services/policies/policies.service";
-import { TableUtilsService, TableUtilsServiceInterface } from "src/app/services/table-utils/table-utils.service";
-import { EditPolicyDialogComponent } from "../dialogs/edit-policy-dialog/edit-policy-dialog.component";
+import { EditPolicyDialogComponent } from "@components/policies/dialogs/edit-policy-dialog/edit-policy-dialog.component";
+import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
+import { FilterOption } from "@core/models/filter_value_generic/filter-option";
+import { FilterValueGeneric } from "@core/models/filter_value_generic/filter-value-generic";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { PolicyDetail, PolicyService, PolicyServiceInterface } from "@services/policies/policies.service";
+import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { PoliciesTableActionsComponent } from "./policies-table-actions/policies-table-actions.component";
 import { PolicyFilterComponent } from "./policy-filter/policy-filter.component";
-import { ViewConditionsColumnComponent } from "./view-conditions-column/view-conditions-column.component";
 import { ViewActionColumnComponent } from "./view-action-column/view-action-column.component";
-import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
+import { ViewConditionsColumnComponent } from "./view-conditions-column/view-conditions-column.component";
 
 @Component({
   selector: "app-policies-table",

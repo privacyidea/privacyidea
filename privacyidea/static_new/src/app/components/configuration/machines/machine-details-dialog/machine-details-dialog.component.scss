@@ -1,4 +1,4 @@
-@use "../../../../../styles";
+@use "table";
 
 .machine-dialog-content {
   min-width: 600px;
@@ -6,7 +6,7 @@
 }
 
 .machines-container {
-  @include styles.base-table-structure(".tokens-table");
+  @include table.base-table-structure(".tokens-table");
 
   & {
     margin-bottom: 16px;

@@ -18,25 +18,25 @@
  **/
 
 import {
-  Component,
-  computed,
-  effect,
-  ElementRef,
-  inject,
-  input,
-  linkedSignal,
-  output,
-  QueryList,
-  ViewChildren
+    Component,
+    computed,
+    effect,
+    ElementRef,
+    inject,
+    input,
+    linkedSignal,
+    output,
+    QueryList,
+    ViewChildren
 } from "@angular/core";
-import { EventService } from "../../../../../../services/event/event.service";
-import { MatInput } from "@angular/material/input";
 import { FormsModule, ReactiveFormsModule } from "@angular/forms";
+import { MatIconButton } from "@angular/material/button";
 import { MatError, MatFormField } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
-import { MatIconButton } from "@angular/material/button";
+import { MatInput } from "@angular/material/input";
 import { MatOption, MatSelect } from "@angular/material/select";
 import { MatTooltip } from "@angular/material/tooltip";
+import { EventService } from "@services/event/event.service";
 
 @Component({
   selector: "app-event-condition-list",
@@ -67,8 +67,8 @@ export class EventConditionListComponent {
   inputName = input<string>("");
   focusConditionName = input<string | null>(null);
   toolTipText = input<string>("");
-  newConditionValue = output<{ conditionName: string, conditionValue: any }>();
-  actionButtonClicked = output<{ conditionName: string, conditionValue: any }>();
+  newConditionValue = output<{ conditionName: string; conditionValue: any }>();
+  actionButtonClicked = output<{ conditionName: string; conditionValue: any }>();
 
   editConditions = linkedSignal(() => {
     return this.conditions();
@@ -131,7 +131,10 @@ export class EventConditionListComponent {
 
   getMultiValues(value: string | string[]): string[] {
     if (typeof value === "string") {
-      return value.split(",").map(value => value.trim()).filter(value => value.length > 0);
+      return value
+        .split(",")
+        .map((value) => value.trim())
+        .filter((value) => value.length > 0);
     } else if (Array.isArray(value)) {
       return value;
     }

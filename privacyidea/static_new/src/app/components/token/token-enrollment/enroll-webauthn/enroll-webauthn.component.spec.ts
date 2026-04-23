@@ -17,25 +17,22 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { provideHttpClient } from "@angular/common/http";
 import { provideZonelessChangeDetection } from "@angular/core";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
+import { EnrollmentResponse, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import {
+    WebAuthnApiPayloadMapper,
+    WebAuthnFinalizeApiPayloadMapper
+} from "@app/mappers/token-api-payload/webauthn-token-api-payload.mapper";
+import { Base64Service } from "@services/base64/base64.service";
+import { DialogService } from "@services/dialog/dialog.service";
+import { NotificationService } from "@services/notification/notification.service";
+import { TokenService } from "@services/token/token.service";
+import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
 import { lastValueFrom, of, throwError } from "rxjs";
 import { EnrollWebauthnComponent } from "./enroll-webauthn.component";
-import {
-  WebAuthnApiPayloadMapper,
-  WebAuthnFinalizeApiPayloadMapper
-} from "../../../../mappers/token-api-payload/webauthn-token-api-payload.mapper";
-import { NotificationService } from "../../../../services/notification/notification.service";
-import { TokenService } from "../../../../services/token/token.service";
-import { Base64Service } from "../../../../services/base64/base64.service";
-import {
-  EnrollmentResponse,
-  TokenEnrollmentData
-} from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
-import { provideHttpClient } from "@angular/common/http";
-import { DialogService } from "../../../../services/dialog/dialog.service";
-import { MockDialogService } from "../../../../../testing/mock-services/mock-dialog-service";
 
 const makeEnrollInitResponse = () => ({
   detail: {
