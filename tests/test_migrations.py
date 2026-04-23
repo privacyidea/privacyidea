@@ -1,7 +1,47 @@
 """
-Note: Data transformation tests for specific migrations do not belong in this
-file.  See ``tests/README.md`` for the full guide on when a per-migration test
-is required and how to write one.
+Generic, migration-agnostic checks for the Alembic migration chain.
+
+The goal of this file is to catch structural and behavioural regressions in
+the migration history *as a whole*, without knowing what any individual
+migration does. Concretely, it verifies that:
+
+  - The chain is well-formed: a single head, every down_revision points at a
+    real revision, every revision has a non-empty message.
+  - Upgrading from a pinned baseline (START_REVISION, currently v3.9) to head
+    produces every table the SQLAlchemy models declare, and the alembic
+    version stamp matches the script head.
+  - The resulting schema matches the models — columns, types, indexes,
+    constraints — using Alembic autogenerate, modulo a small set of
+    documented dialect false positives.
+  - Every Sequence() declared on a model exists in the live database after
+    upgrade. Alembic autogenerate does not compare sequences, so this is
+    checked separately.
+  - Every migration in the window has a working downgrade(), and every
+    upgrade → downgrade → upgrade round-trip produces the same per-table
+    columns/indexes/foreign-keys/unique-constraints both times. This catches
+    downgrades that forget to drop something (or upgrades that don't fully
+    restore after one).
+  - A default INSERT succeeds against every model-declared table after
+    upgrade-to-head, exercising the auto-PK path. This catches sequence/
+    identity misconfigurations and missing NOT NULL defaults that schema-
+    only checks cannot see.
+  - Downgrading to the baseline does not destroy data in tables that survive
+    the downgrade.
+
+Tests are run against the dialect provided in TEST_DATABASE_URL — the
+project supports MariaDB and PostgreSQL — and use a pre-written seed file
+per dialect (tests/testdata/migrations/) as a complete, on-disk snapshot of
+the database state at START_REVISION. No runtime fixups; the seed is
+authoritative.
+
+Migrations older than START_REVISION are intentionally not covered: the pin
+exists because nothing in the supported window upgrades from older state,
+and exercising those migrations would only burn CI on code paths that no
+real install hits anymore. Bump the pin when keeping it gets in the way.
+
+Data-transformation tests for specific migrations do NOT belong here. They
+live in tests/test_migration_<revision>.py and use MigrationTestBase. See
+tests/README.md for the full guide.
 """
 
 import os
@@ -152,6 +192,15 @@ def _drop_all_tables(engine) -> None:
             conn.execute(text("SET FOREIGN_KEY_CHECKS = 0;"))
             for table in sa_inspect(engine).get_table_names():
                 conn.execute(text(f"DROP TABLE IF EXISTS `{table}`;"))
+            # Drop sequences too — MariaDB exposes them via information_schema
+            # with table_type='SEQUENCE'. The seed CREATE SEQUENCEs would
+            # otherwise collide between tests.
+            sequences = conn.execute(text(
+                "SELECT table_name FROM information_schema.tables "
+                "WHERE table_schema = DATABASE() AND table_type = 'SEQUENCE'"
+            )).fetchall()
+            for (seq,) in sequences:
+                conn.execute(text(f"DROP SEQUENCE IF EXISTS `{seq}`;"))
             conn.execute(text("SET FOREIGN_KEY_CHECKS = 1;"))
         conn.commit()
 
@@ -183,15 +232,9 @@ def _load_seed_db(db_url: str = DB_URL) -> None:
     Load the dialect-specific v3.9 seed SQL file into the database.
 
     Seed files are pre-written for each supported dialect (mariadb, postgresql)
-    so no on-the-fly SQL transformation is needed.
-
-    The seed marks revision 5cb310101a1f as already applied, but its body —
-    which walks model metadata and CREATEs a Sequence for every table with an
-    `id` column whose default is a Sequence — is therefore skipped by
-    flask_upgrade(). Real installs *did* run that body, so we replay its
-    effect here to put the test DB in the same starting state. Without this,
-    tests can't tell the difference between sequences created by the seed
-    revision and sequences a later migration forgot to create.
+    and are complete snapshots of the state at START_REVISION — including any
+    sequences the v3.9 migration body would have created. No runtime fixup
+    needed.
     """
     statements = _read_seed_statements(db_url)
     engine = create_engine(db_url)
@@ -200,35 +243,8 @@ def _load_seed_db(db_url: str = DB_URL) -> None:
             for stmt in statements:
                 conn.execute(text(stmt))
             conn.commit()
-        _replay_seed_revision_sequences(engine)
     finally:
         engine.dispose()
-
-
-def _replay_seed_revision_sequences(engine) -> None:
-    """Mirror the upgrade() body of revision 5cb310101a1f against `engine`."""
-    from sqlalchemy import Sequence
-    from sqlalchemy.schema import CreateSequence
-    from privacyidea.models import db
-
-    if not engine.dialect.supports_sequences:
-        return
-
-    inspector = sa_inspect(engine)
-    existing_tables = set(inspector.get_table_names())
-    with engine.connect() as conn:
-        for tbl in db.metadata.sorted_tables:
-            if tbl.name not in existing_tables or "id" not in tbl.c:
-                continue
-            seq = tbl.c["id"].default
-            if not isinstance(seq, Sequence):
-                continue
-            current_id = conn.execute(
-                text(f"SELECT COALESCE(MAX(id), 0) FROM {tbl.name}")
-            ).scalar() or 0
-            conn.execute(CreateSequence(Sequence(seq.name, start=current_id + 1),
-                                        if_not_exists=True))
-        conn.commit()
 
 
 @pytest.fixture(autouse=True)
