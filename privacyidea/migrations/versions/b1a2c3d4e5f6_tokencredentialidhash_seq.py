@@ -51,3 +51,4 @@ def downgrade():
         op.execute("DROP SEQUENCE IF EXISTS tokencredentialidhash_seq")
     except (OperationalError, ProgrammingError) as ex:
         print(f"Could not drop sequence 'tokencredentialidhash_seq': {ex}")
+        raise
