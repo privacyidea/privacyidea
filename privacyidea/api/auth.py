@@ -366,7 +366,7 @@ def get_auth_token():
         else:
             # Check if the user exists
             g.audit_object.log({"user": user.login, "realm": user.realm, "info": log_used_user(user)})
-            if user.exist():
+            if user.is_resolved():
                 user_auth = True
                 if user.realm in superuser_realms:
                     role = ROLE.ADMIN

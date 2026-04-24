@@ -20,7 +20,8 @@ from privacyidea.lib.user import (User, create_user,
                                   get_user_list,
                                   split_user,
                                   get_user_from_param,
-                                  UserError, get_attributes)
+                                  UserError, get_attributes,
+                                  user_ref, resolve_user)
 from privacyidea.lib.user import log as user_log
 from privacyidea.models import NodeName, db
 from . import ldap3mock
@@ -446,7 +447,40 @@ class UserTestCase(MyTestCase):
     def test_15_user_exist(self):
         root = User("root", resolver=self.resolvername1, realm=self.realm1)
         self.assertTrue(root.exist())
-        delete_realm("realm1")
+        # A user that does not exist in the resolver should return False
+        nonexistent = User("doesnotexist", resolver=self.resolvername1, realm=self.realm1)
+        self.assertFalse(nonexistent.exist())
+        # An unresolved user_ref should return False
+        ref = user_ref("root", realm=self.realm1, resolver=self.resolvername1)
+        self.assertFalse(ref.exist())
+
+    def test_15a_is_resolved(self):
+        # A fully constructed user should be resolved
+        root = User("root", resolver=self.resolvername1, realm=self.realm1)
+        self.assertTrue(root.is_resolved())
+        self.assertIsNotNone(root.uid)
+        self.assertIsNotNone(root.realm_id)
+        # A user_ref should not be resolved (no resolver call)
+        ref = user_ref("root", realm=self.realm1, resolver=self.resolvername1)
+        self.assertFalse(ref.is_resolved())
+        self.assertIsNone(ref.uid)
+        self.assertIsNone(ref.realm_id)
+        # An empty user should not be resolved
+        self.assertFalse(User().is_resolved())
+
+    def test_15b_user_ref_and_resolve_user(self):
+        # user_ref creates a lightweight object without resolver calls
+        ref = user_ref("root", realm=self.realm1, resolver=self.resolvername1)
+        self.assertEqual(ref.login, "root")
+        self.assertEqual(ref.realm, self.realm1)
+        self.assertEqual(ref.resolver, self.resolvername1)
+        self.assertIsNone(ref.uid)
+        self.assertFalse(ref.is_resolved())
+        # resolve_user creates a fully resolved user
+        resolved = resolve_user("root", realm=self.realm1, resolver=self.resolvername1)
+        self.assertTrue(resolved.is_resolved())
+        self.assertIsNotNone(resolved.uid)
+        delete_realm(self.realm1)
 
     def test_16_ordered_resolver(self):
         save_resolver({"resolver": "resolver1",
