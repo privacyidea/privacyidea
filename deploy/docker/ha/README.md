@@ -179,7 +179,7 @@ The `pi-cron` container runs scheduled maintenance automatically. No host cron s
 
 | Schedule | Command | Purpose |
 |----------|---------|---------|
-| Every minute | `pi-manage-cron run_scheduled` | Runs periodic tasks configured in the UI |
+| Every minute | `privacyidea-cron run_scheduled` | Runs periodic tasks configured in the UI |
 | Every hour | `pi-manage challenge cleanup` | Deletes expired authentication challenges |
 | Daily (configurable) | `pi-manage audit rotate` | Trims the audit log |
 
@@ -203,7 +203,7 @@ All settings are optional — the defaults work for most deployments.
 | `PI_CRON_AUDIT_AGE` | _(unset)_ | Delete entries older than N days instead of using watermarks |
 | `PI_CRON_AUDIT_CHUNKSIZE` | _(unset)_ | Delete in chunks to reduce lock contention on large tables |
 | `PI_CRON_CHALLENGE_CLEANUP` | `true` | Enable/disable challenge cleanup |
-| `PI_CRON_PERIODIC_TASKS` | `true` | Enable/disable `pi-manage-cron run_scheduled` |
+| `PI_CRON_PERIODIC_TASKS` | `true` | Enable/disable `privacyidea-cron run_scheduled` |
 
 All variables are commented out with their defaults in `ha-compose.yaml` under the `pi-cron` service.
 

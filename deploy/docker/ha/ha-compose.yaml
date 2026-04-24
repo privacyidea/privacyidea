@@ -123,7 +123,7 @@ services:
 
   # MAINTENANCE / CRON
   # Single replica that runs scheduled maintenance tasks:
-  #   - Every minute : pi-manage-cron run_scheduled (picks up UI-configured periodic tasks)
+  #   - Every minute : privacyidea-cron run_scheduled (picks up UI-configured periodic tasks)
   #   - Every hour   : pi-manage challenge cleanup
   #   - Daily 02:00  : pi-manage audit rotate
   #
@@ -132,7 +132,7 @@ services:
   #
   # Periodic tasks configured in the UI should use node name "pi-cron" to be picked
   # up by this container. Tasks with no node restriction run on all nodes that call
-  # pi-manage-cron — in this setup, only pi-cron does that.
+  # privacyidea-cron — in this setup, only pi-cron does that.
   pi-cron:
     build:
       context: ../../../
@@ -215,7 +215,7 @@ services:
       retries: 3
 
   db-1:
-    image: mariadb:11.4
+    image: mariadb:11.4.4
     restart: unless-stopped
     networks:
       - pi-network
@@ -251,7 +251,7 @@ services:
       start_period: 60s
 
   db-2:
-    image: mariadb:11.4
+    image: mariadb:11.4.4
     restart: unless-stopped
     networks:
       - pi-network

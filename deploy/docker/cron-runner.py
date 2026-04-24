@@ -16,7 +16,7 @@ Configuration via environment variables (all optional):
   PI_CRON_AUDIT_CHUNKSIZE     Delete in chunks to avoid long locks (default: unset)
 
   PI_CRON_CHALLENGE_CLEANUP   Enable/disable challenge cleanup (default: true)
-  PI_CRON_PERIODIC_TASKS      Enable/disable pi-manage-cron run_scheduled (default: true)
+  PI_CRON_PERIODIC_TASKS      Enable/disable privacyidea-cron run_scheduled (default: true)
 """
 import datetime
 import os
@@ -100,7 +100,7 @@ def main() -> None:
 
             # Every minute: run tasks configured via the admin UI
             if ENABLE_PERIODIC_TASKS:
-                run(["pi-manage-cron", "run_scheduled", "--cron"])
+                run(["privacyidea-cron", "run_scheduled", "--cron"])
 
             if now.minute == 0:
                 # Every hour: clean up expired challenge responses

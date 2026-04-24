@@ -1,0 +1,19 @@
+# Test-only override for deploy/docker/ha/ha-compose.yaml.
+#
+# Bind-mounts a passwd-format user file into the pi and pi-init containers so
+# data_generator.py can register a passwdresolver against it and provision
+# the realm used by the failover test.
+#
+# Only intended for use by tests/ha-test/run_failover_test.py. Not for production.
+
+services:
+  pi-init:
+    volumes:
+      # HA_TEST_USERS_FILE is set to an absolute path by run_failover_test.py.
+      # Relative paths in this override are resolved against the *first* -f file's
+      # directory by docker compose, not this file's dir, so we avoid them.
+      - ${HA_TEST_USERS_FILE:?set HA_TEST_USERS_FILE to the absolute path of tests/ha-test/testdata/users}:/etc/privacyidea/test_users:ro
+
+  pi:
+    volumes:
+      - ${HA_TEST_USERS_FILE:?set HA_TEST_USERS_FILE to the absolute path of tests/ha-test/testdata/users}:/etc/privacyidea/test_users:ro
