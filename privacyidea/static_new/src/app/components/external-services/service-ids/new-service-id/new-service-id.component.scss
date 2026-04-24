@@ -1,1 +1,32 @@
-@use "../../../../../styles";
+@use "styles";
+
+.service-id-page-layout {
+  display: flex;
+  justify-content: center;
+}
+
+.service-id-page-container {
+  @include styles.main-component-style;
+  display: grid;
+  position: relative;
+}
+
+.header-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: var(--half-global-padding) var(--global-padding);
+
+  .action-buttons {
+    display: flex;
+    flex-direction: row;
+    gap: var(--global-gap);
+  }
+}
+
+.service-id-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}

@@ -18,18 +18,17 @@
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MachineDetailsDialogComponent } from "./machine-details-dialog.component";
-import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { MachineService } from "../../../../services/machine/machine.service";
 import { ApplicationService } from "../../../../services/application/application.service";
 import { DialogService } from "../../../../services/dialog/dialog.service";
 import { of } from "rxjs";
 import { SimpleConfirmationDialogComponent } from "../../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
-import { signal } from "@angular/core";
+import { computed, signal } from "@angular/core";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { ContentService } from "../../../../services/content/content.service";
 import { ROUTE_PATHS } from "../../../../route_paths";
 import { TokenService } from "../../../../services/token/token.service";
-import { computed } from "@angular/core";
+import { ActivatedRoute, convertToParamMap, Router } from "@angular/router";
 
 describe("MachineDetailsDialogComponent", () => {
   let component: MachineDetailsDialogComponent;
@@ -37,13 +36,16 @@ describe("MachineDetailsDialogComponent", () => {
   let machineServiceMock: any;
   let applicationServiceMock: any;
   let dialogServiceMock: any;
-  let matDialogRefMock: any;
+  let routerMock: any;
   let contentServiceMock: any;
   let tokenServiceMock: any;
 
   const mockMachine = { id: 1, hostname: ["host1"], ip: "1.1.1.1", resolver_name: "res1" };
 
   beforeEach(async () => {
+    // Inject machine data via history state (the way the component reads it)
+    window.history.pushState({ machine: mockMachine }, "");
+
     machineServiceMock = {
       getMachineTokens: jest.fn().mockReturnValue(of({
         result: {
@@ -57,6 +59,7 @@ describe("MachineDetailsDialogComponent", () => {
           }]
         }
       })),
+      machines: signal([mockMachine]),
       deleteTokenById: jest.fn().mockReturnValue(of({})),
       postAssignMachineToToken: jest.fn().mockReturnValue(of({})),
       postTokenOption: jest.fn().mockReturnValue(of({}))
@@ -76,10 +79,8 @@ describe("MachineDetailsDialogComponent", () => {
       })
     };
 
-    matDialogRefMock = {
-      close: jest.fn(),
-      backdropClick: jest.fn().mockReturnValue(of({})),
-      keydownEvents: jest.fn().mockReturnValue(of({}))
+    routerMock = {
+      navigateByUrl: jest.fn()
     };
 
     tokenServiceMock = {
@@ -98,13 +99,21 @@ describe("MachineDetailsDialogComponent", () => {
     await TestBed.configureTestingModule({
       imports: [MachineDetailsDialogComponent, NoopAnimationsModule],
       providers: [
-        { provide: MAT_DIALOG_DATA, useValue: mockMachine },
-        { provide: MatDialogRef, useValue: matDialogRefMock },
         { provide: MachineService, useValue: machineServiceMock },
         { provide: ApplicationService, useValue: applicationServiceMock },
         { provide: DialogService, useValue: dialogServiceMock },
         { provide: ContentService, useValue: contentServiceMock },
-        { provide: TokenService, useValue: tokenServiceMock }
+        { provide: TokenService, useValue: tokenServiceMock },
+        { provide: Router, useValue: routerMock },
+        {
+          provide: ActivatedRoute,
+          useValue: {
+            snapshot: {
+              paramMap: convertToParamMap({ id: "1" }),
+              queryParamMap: convertToParamMap({ resolver: "res1" })
+            }
+          }
+        }
       ]
     }).compileComponents();
 
@@ -150,10 +159,11 @@ describe("MachineDetailsDialogComponent", () => {
     component.startEdit(token);
     component.editedOptions[token.id] = { user: "bob", service_id: "svc2" };
     component.saveOptions(token);
+    const machine = component.data();
     expect(machineServiceMock.postTokenOption).toHaveBeenCalledWith(
       token.hostname,
-      String(component["data"].id),
-      component["data"].resolver_name,
+      String(machine!.id),
+      machine!.resolver_name,
       token.serial,
       token.application,
       String(token.id),
@@ -161,20 +171,13 @@ describe("MachineDetailsDialogComponent", () => {
     );
   });
 
-  it("should close dialog", () => {
-    component.close();
-    expect(matDialogRefMock.close).toHaveBeenCalled();
-  });
-
-  it("should navigate and close when token is clicked", () => {
+  it("should call tokenSelected when token is clicked", () => {
     component.onTokenClick("S1");
     expect(contentServiceMock.tokenSelected).toHaveBeenCalledWith("S1");
-    expect(matDialogRefMock.close).toHaveBeenCalled();
   });
 
-  it("should navigate and close when machine resolver is clicked", () => {
+  it("should call machineResolverSelected when machine resolver is clicked", () => {
     component.onMachineResolverClick("res1");
     expect(contentServiceMock.machineResolverSelected).toHaveBeenCalledWith("res1");
-    expect(matDialogRefMock.close).toHaveBeenCalled();
   });
 });

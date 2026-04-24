@@ -101,7 +101,7 @@ export class ContentService implements ContentServiceInterface {
   onClients = computed(() => this.routeUrl() === ROUTE_PATHS.CLIENTS);
   onTokens = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS);
   onUsers = computed(() => this.routeUrl() === ROUTE_PATHS.USERS);
-  onPolicies = computed(() => this.routeUrl() === ROUTE_PATHS.POLICIES);
+  onPolicies = computed(() => this.routeUrl().startsWith(ROUTE_PATHS.POLICIES));
   onTokenDetails = computed(() => this.routeUrl().startsWith(ROUTE_PATHS.TOKENS_DETAILS));
   onUserDetails = computed(() => this.routeUrl().startsWith(ROUTE_PATHS.USERS_DETAILS + "/"));
   onUserRealms = computed(() => this.routeUrl() === ROUTE_PATHS.USERS_REALMS);
@@ -127,18 +127,50 @@ export class ContentService implements ContentServiceInterface {
     () => this.routeUrl() === ROUTE_PATHS.USERS || this.routeUrl().startsWith(ROUTE_PATHS.USERS + "/")
   );
   onTokensContainersTemplates = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS_CONTAINERS_TEMPLATES);
-  onEvents = computed(() => this.routeUrl() === ROUTE_PATHS.EVENTS);
+  onEvents = computed(() =>
+    this.routeUrl() === ROUTE_PATHS.EVENTS ||
+    this.routeUrl() === ROUTE_PATHS.EVENTS_NEW ||
+    this.routeUrl().startsWith(ROUTE_PATHS.EVENTS_DETAILS)
+  );
   onConfigurationSystem = computed(() => this.routeUrl() === ROUTE_PATHS.CONFIGURATION_SYSTEM);
   onConfigurationTokenTypes = computed(() => this.routeUrl() === ROUTE_PATHS.CONFIGURATION_TOKENTYPES);
-  onConfigurationMachines = computed(() => this.routeUrl() === ROUTE_PATHS.CONFIGURATION_MACHINES);
+  onConfigurationMachines = computed(() => this.routeUrl() === ROUTE_PATHS.CONFIGURATION_MACHINES || this.routeUrl().startsWith(ROUTE_PATHS.CONFIGURATION_MACHINES_DETAILS));
 
-  onExternalSmtp = computed(() => this.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_SMTP);
-  onExternalRadius = computed(() => this.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS);
-  onExternalSms = computed(() => this.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_SMS);
-  onExternalCaConnectors = computed(() => this.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_CA_CONNECTORS);
-  onExternalPrivacyIdea = computed(() => this.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_PRIVACYIDEA);
-  onExternalTokenGroups = computed(() => this.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_TOKENGROUPS);
-  onExternalServiceIds = computed(() => this.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS);
+  onExternalSmtp = computed(() =>
+    this.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_SMTP ||
+    this.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_SMTP_NEW ||
+    this.routeUrl().startsWith(ROUTE_PATHS.EXTERNAL_SERVICES_SMTP_DETAILS)
+  );
+  onExternalRadius = computed(() =>
+    this.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS ||
+    this.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS_NEW ||
+    this.routeUrl().startsWith(ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS_DETAILS)
+  );
+  onExternalSms = computed(() =>
+    this.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_SMS ||
+    this.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_SMS_NEW ||
+    this.routeUrl().startsWith(ROUTE_PATHS.EXTERNAL_SERVICES_SMS_DETAILS)
+  );
+  onExternalCaConnectors = computed(() =>
+    this.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_CA_CONNECTORS ||
+    this.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_CA_CONNECTORS_NEW ||
+    this.routeUrl().startsWith(ROUTE_PATHS.EXTERNAL_SERVICES_CA_CONNECTORS_DETAILS)
+  );
+  onExternalPrivacyIdea = computed(() =>
+    this.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_PRIVACYIDEA ||
+    this.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_PRIVACYIDEA_NEW ||
+    this.routeUrl().startsWith(ROUTE_PATHS.EXTERNAL_SERVICES_PRIVACYIDEA_DETAILS)
+  );
+  onExternalTokenGroups = computed(() =>
+    this.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_TOKENGROUPS ||
+    this.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_TOKENGROUPS_NEW ||
+    this.routeUrl().startsWith(ROUTE_PATHS.EXTERNAL_SERVICES_TOKENGROUPS_DETAILS)
+  );
+  onExternalServiceIds = computed(() =>
+    this.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS ||
+    this.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS_NEW ||
+    this.routeUrl().startsWith(ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS_DETAILS)
+  );
   onUsersResolvers = computed(() => this.routeUrl() === ROUTE_PATHS.USERS_RESOLVERS);
   onConfigurationPeriodicTasks = computed(() => this.routeUrl() === ROUTE_PATHS.CONFIGURATION_PERIODIC_TASKS);
   onConfigurationSubscription = computed(() => this.routeUrl() === ROUTE_PATHS.SUBSCRIPTION);

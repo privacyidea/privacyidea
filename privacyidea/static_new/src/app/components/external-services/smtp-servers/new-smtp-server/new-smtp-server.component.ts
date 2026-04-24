@@ -17,20 +17,28 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, effect, inject, OnDestroy, OnInit, signal } from "@angular/core";
-import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from "@angular/material/dialog";
+import {
+  AfterViewInit,
+  Component,
+  effect,
+  ElementRef,
+  inject,
+  OnDestroy,
+  Renderer2,
+  signal,
+  ViewChild
+} from "@angular/core";
+import { ActivatedRoute, Router } from "@angular/router";
+import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
 import { SmtpServer, SmtpService, SmtpServiceInterface } from "../../../../services/smtp/smtp.service";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatButtonModule } from "@angular/material/button";
-
 import { MatIconModule } from "@angular/material/icon";
 import { MatTooltip } from "@angular/material/tooltip";
 import { ROUTE_PATHS } from "../../../../route_paths";
-import { Router } from "@angular/router";
-import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
 import { PendingChangesService } from "../../../../services/pending-changes/pending-changes.service";
 import { DialogService, DialogServiceInterface } from "../../../../services/dialog/dialog.service";
 import { SaveAndExitDialogComponent } from "../../../shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
@@ -46,7 +54,6 @@ import { NAVIGATION_ACCESSIBLE_DIALOG_CLASS } from "../../../../constants/global
   },
   imports: [
     ReactiveFormsModule,
-    MatDialogModule,
     MatFormFieldModule,
     MatInputModule,
     MatCheckboxModule,
@@ -59,40 +66,55 @@ import { NAVIGATION_ACCESSIBLE_DIALOG_CLASS } from "../../../../constants/global
   templateUrl: "./new-smtp-server.component.html",
   styleUrl: "./new-smtp-server.component.scss"
 })
-export class NewSmtpServerComponent implements OnInit, OnDestroy {
+export class NewSmtpServerComponent implements AfterViewInit, OnDestroy {
   private readonly formBuilder = inject(FormBuilder);
-  private readonly dialogRef = inject(MatDialogRef<NewSmtpServerComponent>);
-  protected readonly data = inject<SmtpServer | null>(MAT_DIALOG_DATA);
   protected readonly smtpService: SmtpServiceInterface = inject(SmtpService);
   private readonly dialogService: DialogServiceInterface = inject(DialogService);
   private readonly router = inject(Router);
-  private readonly contentService: ContentServiceInterface = inject(ContentService);
+  private readonly route = inject(ActivatedRoute);
   private readonly pendingChangesService = inject(PendingChangesService);
+  private readonly renderer = inject(Renderer2);
 
+  protected data: SmtpServer | null = null;
   smtpForm!: FormGroup;
   isEditMode = false;
   isTesting = signal(false);
+  private editIdentifier: string | null = null;
+
+  private _observer!: IntersectionObserver;
+
+  @ViewChild("scrollContainer") scrollContainer!: ElementRef<HTMLElement>;
+  @ViewChild("stickyHeader") stickyHeader!: ElementRef<HTMLElement>;
+  @ViewChild("stickySentinel") stickySentinel!: ElementRef<HTMLElement>;
 
   constructor() {
-    if (this.dialogRef) {
-      this.dialogRef.disableClose = true;
-      this.dialogRef.backdropClick().subscribe(() => {
-        this.onCancel();
-      });
-      this.dialogRef.keydownEvents().subscribe((event) => {
-        if (event.key === "Escape") {
-          this.onCancel();
-        }
-      });
-    }
-
     this.pendingChangesService.registerHasChanges(() => this.hasChanges);
     this.pendingChangesService.registerSave(() => this.save());
     this.pendingChangesService.registerValidChanges(() => this.canSave);
 
+    this.route.paramMap.pipe(takeUntilDestroyed()).subscribe((params) => {
+      const identifier = params.get("identifier");
+      if (identifier) {
+        this.isEditMode = true;
+        this.editIdentifier = identifier;
+        this.data = this.smtpService.smtpServers().find((s) => s.identifier === identifier) ?? null;
+      } else {
+        this.isEditMode = false;
+        this.editIdentifier = null;
+        this.data = null;
+      }
+      this.initForm();
+    });
+
+    // Re-initialize once the async list arrives, but only if the user hasn't started editing yet.
     effect(() => {
-      if (!this.contentService.routeUrl().startsWith(ROUTE_PATHS.EXTERNAL_SERVICES_SMTP)) {
-        this.dialogRef?.close(true);
+      const servers = this.smtpService.smtpServers();
+      if (this.isEditMode && this.editIdentifier && this.smtpForm?.pristine) {
+        const found = servers.find((s) => s.identifier === this.editIdentifier);
+        if (found) {
+          this.data = found;
+          this.initForm();
+        }
       }
     });
   }
@@ -111,8 +133,7 @@ export class NewSmtpServerComponent implements OnInit, OnDestroy {
 
   initialPrivateKeyPassword = this.data?.private_key_password || "";
 
-  ngOnInit(): void {
-    this.isEditMode = !!this.data;
+  private initForm(): void {
     this.smtpForm = this.formBuilder.group({
       identifier: [this.data?.identifier || "", [Validators.required]],
       server: [this.data?.server || "", [Validators.required]],
@@ -131,14 +152,31 @@ export class NewSmtpServerComponent implements OnInit, OnDestroy {
       dont_send_on_error: [this.data?.dont_send_on_error ?? false],
       recipient: [""]
     });
-
     if (this.isEditMode) {
       this.smtpForm.get("identifier")?.disable();
     }
   }
 
+  ngAfterViewInit(): void {
+    if (!this.scrollContainer || !this.stickyHeader || !this.stickySentinel) return;
+    this._observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.rootBounds) return;
+        const shouldFloat = entry.boundingClientRect.top < entry.rootBounds.top;
+        if (shouldFloat) {
+          this.renderer.addClass(this.stickyHeader.nativeElement, "is-sticky");
+        } else {
+          this.renderer.removeClass(this.stickyHeader.nativeElement, "is-sticky");
+        }
+      },
+      { root: this.scrollContainer.nativeElement, threshold: [0, 1] }
+    );
+    this._observer.observe(this.stickySentinel.nativeElement);
+  }
+
   ngOnDestroy(): void {
     this.pendingChangesService.clearAllRegistrations();
+    this._observer?.disconnect();
   }
 
   async save(): Promise<boolean> {
@@ -155,7 +193,8 @@ export class NewSmtpServerComponent implements OnInit, OnDestroy {
 
     try {
       await this.smtpService.postSmtpServer(server);
-      this.dialogRef.close(true);
+      this.pendingChangesService.clearAllRegistrations();
+      this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_SMTP);
       return true;
     } catch (error) {
       return false;
@@ -185,23 +224,15 @@ export class NewSmtpServerComponent implements OnInit, OnDestroy {
         .subscribe(async (result) => {
           if (result === "discard") {
             this.pendingChangesService.clearAllRegistrations();
-            this.closeCurrent();
+            this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_SMTP);
           } else if (result === "save-exit") {
             if (!this.canSave) return;
             const success = await this.pendingChangesService.save();
             if (!success) return;
             this.pendingChangesService.clearAllRegistrations();
-            this.closeCurrent();
+            this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_SMTP);
           }
         });
-    } else {
-      this.closeCurrent();
-    }
-  }
-
-  private closeCurrent(): void {
-    if (this.dialogRef) {
-      this.dialogRef.close();
     } else {
       this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_SMTP);
     }

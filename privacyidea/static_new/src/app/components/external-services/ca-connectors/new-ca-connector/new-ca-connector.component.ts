@@ -16,8 +16,17 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, effect, inject, OnDestroy, OnInit, signal } from "@angular/core";
-import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from "@angular/material/dialog";
+import {
+  AfterViewInit,
+  Component,
+  effect,
+  ElementRef,
+  inject,
+  OnDestroy,
+  Renderer2,
+  signal,
+  ViewChild
+} from "@angular/core";
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
 import {
   CaConnector,
@@ -28,28 +37,23 @@ import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatButtonModule } from "@angular/material/button";
-
 import { MatIconModule } from "@angular/material/icon";
 import { MatProgressSpinnerModule } from "@angular/material/progress-spinner";
 import { SaveAndExitDialogComponent } from "../../../shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { ROUTE_PATHS } from "../../../../route_paths";
-import { Router } from "@angular/router";
-import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
+import { ActivatedRoute, Router } from "@angular/router";
 import { PendingChangesService } from "../../../../services/pending-changes/pending-changes.service";
 import { MatSelectModule } from "@angular/material/select";
-import { DialogServiceInterface, DialogService } from "../../../../services/dialog/dialog.service";
+import { DialogService, DialogServiceInterface } from "../../../../services/dialog/dialog.service";
 import { ClearableInputComponent } from "../../../shared/clearable-input/clearable-input.component";
-import { NAVIGATION_ACCESSIBLE_DIALOG_CLASS } from "../../../../constants/global.constants";
+import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
+import { ScrollToTopDirective } from "../../../shared/directives/app-scroll-to-top.directive";
 
 @Component({
   selector: "app-ca-connector-edit-dialog",
   standalone: true,
-  host: {
-    class: NAVIGATION_ACCESSIBLE_DIALOG_CLASS
-  },
   imports: [
     ReactiveFormsModule,
-    MatDialogModule,
     MatFormFieldModule,
     MatInputModule,
     MatCheckboxModule,
@@ -57,46 +61,62 @@ import { NAVIGATION_ACCESSIBLE_DIALOG_CLASS } from "../../../../constants/global
     MatIconModule,
     MatProgressSpinnerModule,
     MatSelectModule,
-    ClearableInputComponent
+    ClearableInputComponent,
+    ScrollToTopDirective
   ],
   templateUrl: "./new-ca-connector.component.html",
   styleUrl: "./new-ca-connector.component.scss"
 })
-export class NewCaConnectorComponent implements OnInit, OnDestroy {
+export class NewCaConnectorComponent implements AfterViewInit, OnDestroy {
   private readonly formBuilder = inject(FormBuilder);
-  private readonly dialogRef = inject(MatDialogRef<NewCaConnectorComponent>);
-  protected readonly data = inject<CaConnector | null>(MAT_DIALOG_DATA);
   protected readonly caConnectorService: CaConnectorServiceInterface = inject(CaConnectorService);
   private readonly dialogService: DialogServiceInterface = inject(DialogService);
   private readonly router = inject(Router);
-  private readonly contentService: ContentServiceInterface = inject(ContentService);
+  private readonly route = inject(ActivatedRoute);
   private readonly pendingChangesService = inject(PendingChangesService);
+  protected readonly renderer: Renderer2 = inject(Renderer2);
+
+  @ViewChild("stickyHeader") stickyHeader!: ElementRef<HTMLElement>;
+  @ViewChild("stickySentinel") stickySentinel!: ElementRef<HTMLElement>;
+  @ViewChild("scrollContainer") scrollContainer!: ElementRef<HTMLElement>;
+
+  private observer!: IntersectionObserver;
 
   caConnectorForm!: FormGroup;
   isEditMode = false;
   availableCas = signal<string[]>([]);
   isLoadingCas = signal(false);
+  private editConnectorName: string | null = null;
 
   constructor() {
-    if (this.dialogRef) {
-      this.dialogRef.disableClose = true;
-      this.dialogRef.backdropClick().subscribe(() => {
-        this.onCancel();
-      });
-      this.dialogRef.keydownEvents().subscribe((event) => {
-        if (event.key === "Escape") {
-          this.onCancel();
-        }
-      });
-    }
-
     this.pendingChangesService.registerHasChanges(() => this.hasChanges);
     this.pendingChangesService.registerSave(() => this.save());
     this.pendingChangesService.registerValidChanges(() => this.canSave);
 
+    this.route.paramMap.pipe(takeUntilDestroyed()).subscribe((params) => {
+      const connectorName = params.get("name");
+      if (connectorName) {
+        this.isEditMode = true;
+        this.editConnectorName = connectorName;
+        const connector = this.caConnectorService.caConnectors().find((c) => c.connectorname === connectorName);
+        if (connector) {
+          this.initForm(connector);
+        }
+      } else {
+        this.isEditMode = false;
+        this.editConnectorName = null;
+        this.initForm(null);
+      }
+    });
+
+    // Re-initialize once the async list arrives, but only if the user hasn't started editing yet.
     effect(() => {
-      if (!this.contentService.routeUrl().startsWith(ROUTE_PATHS.EXTERNAL_SERVICES_CA_CONNECTORS)) {
-        this.dialogRef?.close(true);
+      const connectors = this.caConnectorService.caConnectors();
+      if (this.isEditMode && this.editConnectorName && this.caConnectorForm?.pristine) {
+        const found = connectors.find((c) => c.connectorname === this.editConnectorName);
+        if (found) {
+          this.initForm(found);
+        }
       }
     });
   }
@@ -109,13 +129,12 @@ export class NewCaConnectorComponent implements OnInit, OnDestroy {
     return this.caConnectorForm.valid;
   }
 
-  ngOnInit(): void {
-    this.isEditMode = !!this.data;
-    const connectorData = this.data?.data || {};
+  private initForm(connector: CaConnector | null): void {
+    const connectorData = connector?.data || {};
 
     this.caConnectorForm = this.formBuilder.group({
-      connectorname: [this.data?.connectorname || "", [Validators.required]],
-      type: [this.data?.type || "local", [Validators.required]],
+      connectorname: [connector?.connectorname || "", [Validators.required]],
+      type: [connector?.type || "local", [Validators.required]],
       // Local CA fields
       cacert: [connectorData["cacert"] || ""],
       cakey: [connectorData["cakey"] || ""],
@@ -142,7 +161,7 @@ export class NewCaConnectorComponent implements OnInit, OnDestroy {
     if (this.isEditMode) {
       this.caConnectorForm.get("connectorname")?.disable();
       this.caConnectorForm.get("type")?.disable();
-      if (this.data?.type === "microsoft") {
+      if (connector?.type === "microsoft") {
         this.loadAvailableCas();
       }
     }
@@ -182,6 +201,28 @@ export class NewCaConnectorComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.pendingChangesService.clearAllRegistrations();
+    this.observer?.disconnect();
+  }
+
+  ngAfterViewInit(): void {
+    if (!this.scrollContainer || !this.stickyHeader || !this.stickySentinel) return;
+
+    const options: IntersectionObserverInit = {
+      root: this.scrollContainer.nativeElement,
+      threshold: [0, 1]
+    };
+
+    this.observer = new IntersectionObserver(([entry]) => {
+      if (!entry.rootBounds) return;
+      const shouldFloat = entry.boundingClientRect.top < entry.rootBounds.top;
+      if (shouldFloat) {
+        this.renderer.addClass(this.stickyHeader.nativeElement, "is-sticky");
+      } else {
+        this.renderer.removeClass(this.stickyHeader.nativeElement, "is-sticky");
+      }
+    }, options);
+
+    this.observer.observe(this.stickySentinel.nativeElement);
   }
 
   loadAvailableCas(): void {
@@ -266,7 +307,8 @@ export class NewCaConnectorComponent implements OnInit, OnDestroy {
 
     try {
       await this.caConnectorService.postCaConnector(connector);
-      this.dialogRef.close(true);
+      this.pendingChangesService.clearAllRegistrations();
+      this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_CA_CONNECTORS);
       return true;
     } catch (error) {
       return false;
@@ -287,25 +329,17 @@ export class NewCaConnectorComponent implements OnInit, OnDestroy {
         .subscribe((result) => {
           if (result === "discard") {
             this.pendingChangesService.clearAllRegistrations();
-            this.closeActual();
+            this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_CA_CONNECTORS);
           } else if (result === "save-exit") {
             if (!this.canSave) return;
             Promise.resolve(this.pendingChangesService.save()).then((success) => {
               if (success) {
                 this.pendingChangesService.clearAllRegistrations();
-                this.closeActual();
+                this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_CA_CONNECTORS);
               }
             });
           }
         });
-    } else {
-      this.closeActual();
-    }
-  }
-
-  private closeActual(): void {
-    if (this.dialogRef) {
-      this.dialogRef.close();
     } else {
       this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_CA_CONNECTORS);
     }

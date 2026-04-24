@@ -21,7 +21,6 @@ import { SmsGatewaysComponent } from "./sms-gateways.component";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { MatDialog, MatDialogModule } from "@angular/material/dialog";
 import { SmsGatewayService } from "../../../services/sms-gateway/sms-gateway.service";
 import { DialogService } from "../../../services/dialog/dialog.service";
 import { signal } from "@angular/core";
@@ -29,6 +28,8 @@ import { MockDialogService } from "../../../../testing/mock-services";
 import { Subject } from "rxjs";
 import { MockMatDialogRef } from "../../../../testing/mock-mat-dialog-ref";
 import { SaveAndExitDialogResult } from "../../shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
+import { provideRouter, Router } from "@angular/router";
+import { ROUTE_PATHS } from "../../../route_paths";
 
 describe("SmsGatewaysComponent", () => {
   let component: SmsGatewaysComponent;
@@ -36,6 +37,7 @@ describe("SmsGatewaysComponent", () => {
   let smsGatewayServiceMock: any;
   let dialogServiceMock: MockDialogService;
   let confirmClosed: Subject<SaveAndExitDialogResult>;
+  let router: Router;
 
   beforeEach(async () => {
     smsGatewayServiceMock = {
@@ -47,23 +49,20 @@ describe("SmsGatewaysComponent", () => {
     };
 
     await TestBed.configureTestingModule({
-      imports: [SmsGatewaysComponent, NoopAnimationsModule, MatDialogModule],
+      imports: [SmsGatewaysComponent, NoopAnimationsModule],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
+        provideRouter([]),
         { provide: SmsGatewayService, useValue: smsGatewayServiceMock },
         { provide: DialogService, useClass: MockDialogService }
       ]
-    })
-      .overrideComponent(SmsGatewaysComponent, {
-        add: {
-          providers: [{ provide: MatDialog, useValue: { open: jest.fn() } }]
-        }
-      })
-      .compileComponents();
+    }).compileComponents();
 
     fixture = TestBed.createComponent(SmsGatewaysComponent);
     dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
+    router = TestBed.inject(Router);
+    jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
     confirmClosed = new Subject();
     let dialogRefMock = new MockMatDialogRef();
     dialogRefMock.afterClosed.mockReturnValue(confirmClosed);
@@ -87,11 +86,15 @@ describe("SmsGatewaysComponent", () => {
     expect(component.smsDataSource().filter).toBe("gw1");
   });
 
-  it("should open edit dialog", () => {
-    const dialog = fixture.debugElement.injector.get(MatDialog);
+  it("should navigate to create page", () => {
+    component.onCreateNewGateway();
+    expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.EXTERNAL_SERVICES_SMS_NEW);
+  });
+
+  it("should navigate to edit page when editing a gateway", () => {
     const gateway = smsGatewayServiceMock.smsGateways()[0];
-    component.openEditDialog(gateway);
-    expect(dialog.open).toHaveBeenCalled();
+    component.onEditGateway(gateway);
+    expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.EXTERNAL_SERVICES_SMS_DETAILS + gateway.name);
   });
 
   it("should delete gateway after confirmation", () => {

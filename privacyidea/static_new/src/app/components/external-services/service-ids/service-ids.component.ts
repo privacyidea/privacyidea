@@ -22,13 +22,11 @@ import { MatPaginator } from "@angular/material/paginator";
 import { MatSort, MatSortModule } from "@angular/material/sort";
 import { MatIconModule } from "@angular/material/icon";
 import { MatButtonModule } from "@angular/material/button";
-import { MatDialog, MatDialogModule } from "@angular/material/dialog";
 import {
   ServiceId,
   ServiceIdService,
   ServiceIdServiceInterface
 } from "../../../services/service-id/service-id.service";
-import { NewServiceIdComponent } from "./new-service-id/new-service-id.component";
 import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
 import { MatTooltipModule } from "@angular/material/tooltip";
 
@@ -39,7 +37,7 @@ import { ClearableInputComponent } from "../../shared/clearable-input/clearable-
 import { TableUtilsService, TableUtilsServiceInterface } from "../../../services/table-utils/table-utils.service";
 import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
 import { ROUTE_PATHS } from "../../../route_paths";
-import { RouterLink } from "@angular/router";
+import { Router, RouterLink } from "@angular/router";
 import { SimpleConfirmationDialogComponent } from "../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
 
 @Component({
@@ -51,7 +49,6 @@ import { SimpleConfirmationDialogComponent } from "../../shared/dialog/confirmat
     MatSortModule,
     MatIconModule,
     MatButtonModule,
-    MatDialogModule,
     MatTooltipModule,
     ScrollToTopDirective,
     MatFormField,
@@ -66,11 +63,11 @@ import { SimpleConfirmationDialogComponent } from "../../shared/dialog/confirmat
 })
 export class ServiceIdsComponent {
   protected readonly serviceIdService: ServiceIdServiceInterface = inject(ServiceIdService);
-  protected readonly dialog: MatDialog = inject(MatDialog);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
+  private readonly router = inject(Router);
   filterString = signal<string>("");
   pageSizeOptions = this.tableUtilsService.pageSizeOptions;
   totalLength: WritableSignal<number> = computed(
@@ -88,13 +85,12 @@ export class ServiceIdsComponent {
     return dataSource;
   });
 
-  openEditDialog(serviceId?: ServiceId): void {
-    this.dialog.open(NewServiceIdComponent, {
-      data: serviceId ? { ...serviceId } : null,
-      width: "auto",
-      maxWidth: "65vw",
-      maxHeight: "90vh"
-    });
+  onCreateNewServiceId(): void {
+    this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS_NEW);
+  }
+
+  onEditServiceId(serviceId: ServiceId): void {
+    this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS_DETAILS + serviceId.servicename);
   }
 
   deleteServiceId(serviceId: ServiceId): void {

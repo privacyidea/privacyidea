@@ -27,12 +27,16 @@ import { MockAuthService } from "src/testing/mock-services/mock-auth-service";
 import { MockPolicyService } from "src/testing/mock-services/mock-policies-service";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { of } from "rxjs";
+import { Router } from "@angular/router";
+import { ROUTE_PATHS } from "../../../../route_paths";
+import { MockRouter } from "../../../../../testing/mock-services";
 
 describe("PoliciesTableActionsComponent", () => {
   let component: PoliciesTableActionsComponent;
   let fixture: ComponentFixture<PoliciesTableActionsComponent>;
   let dialogService: MockDialogService;
   let policyService: MockPolicyService;
+  let router: Router;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -40,7 +44,8 @@ describe("PoliciesTableActionsComponent", () => {
       providers: [
         { provide: DialogService, useClass: MockDialogService },
         { provide: AuthService, useClass: MockAuthService },
-        { provide: PolicyService, useClass: MockPolicyService }
+        { provide: PolicyService, useClass: MockPolicyService },
+        { provide: Router, useClass: MockRouter }
       ]
     }).compileComponents();
 
@@ -48,6 +53,7 @@ describe("PoliciesTableActionsComponent", () => {
     component = fixture.componentInstance;
     dialogService = TestBed.inject(DialogService) as unknown as MockDialogService;
     policyService = TestBed.inject(PolicyService) as unknown as MockPolicyService;
+    router = TestBed.inject(Router);
     fixture.componentRef.setInput("policySelection", new Set(["policy1"]));
     fixture.detectChanges();
   });
@@ -56,10 +62,9 @@ describe("PoliciesTableActionsComponent", () => {
     expect(component).toBeTruthy();
   });
 
-  it("should open create dialog", () => {
-    const spy = jest.spyOn(dialogService, "openDialog");
+  it("should navigate to new policy page on createNewPolicy", () => {
     component.createNewPolicy();
-    expect(spy).toHaveBeenCalled();
+    expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.POLICIES_NEW);
   });
 
   it("should call delete on confirmed policies", async () => {

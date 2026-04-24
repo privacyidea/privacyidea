@@ -1,1 +1,17 @@
 @use "../../../../../styles";
+
+.tokengroup-page-container {
+  @include styles.main-component-style;
+  display: grid;
+  position: relative;
+}
+
+.header-row {
+  display: flex;
+  gap: var(--global-gap);
+  padding: var(--half-global-padding) var(--global-padding);
+}
+
+.tokengroup-content {
+  padding: var(--global-padding);
+}

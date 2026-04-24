@@ -23,15 +23,15 @@ import { MatPaginator } from "@angular/material/paginator";
 import { MatSort, MatSortModule } from "@angular/material/sort";
 import { MatIconModule } from "@angular/material/icon";
 import { MatButtonModule } from "@angular/material/button";
-import { MatDialog, MatDialogModule } from "@angular/material/dialog";
 import {
   PrivacyideaServer,
   PrivacyideaServerService,
   PrivacyideaServerServiceInterface
 } from "../../../services/privacyidea-server/privacyidea-server.service";
-import { NewPrivacyideaServerComponent } from "./new-privacyidea-server/new-privacyidea-server.component";
 import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
 import { MatTooltipModule } from "@angular/material/tooltip";
+import { Router } from "@angular/router";
+import { ROUTE_PATHS } from "../../../route_paths";
 
 import { DialogService, DialogServiceInterface } from "../../../services/dialog/dialog.service";
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
@@ -50,7 +50,6 @@ import { SimpleConfirmationDialogComponent } from "../../shared/dialog/confirmat
     MatSortModule,
     MatIconModule,
     MatButtonModule,
-    MatDialogModule,
     MatTooltipModule,
     ScrollToTopDirective,
     MatFormField,
@@ -64,10 +63,10 @@ import { SimpleConfirmationDialogComponent } from "../../shared/dialog/confirmat
 })
 export class PrivacyideaServersComponent {
   protected readonly privacyideaServerService: PrivacyideaServerServiceInterface = inject(PrivacyideaServerService);
-  protected readonly dialog: MatDialog = inject(MatDialog);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
+  private readonly router = inject(Router);
 
   filterString = signal<string>("");
   pageSizeOptions = this.tableUtilsService.pageSizeOptions;
@@ -90,12 +89,11 @@ export class PrivacyideaServersComponent {
   });
 
   openEditDialog(server?: PrivacyideaServer): void {
-    this.dialog.open(NewPrivacyideaServerComponent, {
-      data: server ? { ...server } : null,
-      width: "auto",
-      maxWidth: "65vw",
-      maxHeight: "90vh"
-    });
+    if (server) {
+      this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_PRIVACYIDEA_DETAILS + server.identifier);
+    } else {
+      this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_PRIVACYIDEA_NEW);
+    }
   }
 
   deleteServer(server: PrivacyideaServer): void {
