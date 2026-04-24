@@ -81,7 +81,8 @@ export class TokenSshMachineAssignDialogComponent extends AbstractDialogComponen
   assignAction: DialogAction<string> = {
     label: "Assign",
     value: "assign",
-    type: "confirm"
+    type: "confirm",
+    primary: true
   };
   onAction(actionValue: string): void {
     if (actionValue === "assign") {

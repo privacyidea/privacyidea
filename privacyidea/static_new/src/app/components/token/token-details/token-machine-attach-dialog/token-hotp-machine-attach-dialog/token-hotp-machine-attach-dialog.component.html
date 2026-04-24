@@ -21,6 +21,7 @@
   title="Attach Offline Machine"
   (onAction)="onAction($event)"
   [actions]="[assignAction]"
+  [showCancelButton]="true"
   (close)="close()">
   <!-- number input field for countControl and roundsControl -->
   <form [formGroup]="formGroup">
