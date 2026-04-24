@@ -129,7 +129,10 @@ def on_test_stop(environment, **kwargs):
 
 
 class ChallengeResponseUser(HttpUser):
-    wait_time = between(1, 2)
+    # 3–6s between auth cycles keeps the stack at ~30–50% capacity on a small
+    # tier F deployment. Tight loops (wait_time=between(1,2)) saturate workers
+    # and conflate failover impact with queuing dynamics.
+    wait_time = between(3, 6)
 
     def on_start(self):
         try:

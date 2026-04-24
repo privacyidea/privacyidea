@@ -231,6 +231,13 @@ services:
     secrets:
       - mariadb_password
       - mariadb_root_password
+      - galera_ca
+      # Per-node cert/key, mounted under a node-agnostic path so the entrypoint
+      # can reference /run/secrets/galera_node_{cert,key} regardless of host.
+      - source: galera_db1_cert
+        target: galera_node_cert
+      - source: galera_db1_key
+        target: galera_node_key
     volumes:
       - db-1-data:/var/lib/mysql
       - ./galera-entrypoint.sh:/usr/local/bin/galera-entrypoint.sh:ro
@@ -267,6 +274,11 @@ services:
     secrets:
       - mariadb_password
       - mariadb_root_password
+      - galera_ca
+      - source: galera_db2_cert
+        target: galera_node_cert
+      - source: galera_db2_key
+        target: galera_node_key
     volumes:
       - db-2-data:/var/lib/mysql
       - ./galera-entrypoint.sh:/usr/local/bin/galera-entrypoint.sh:ro
@@ -301,6 +313,18 @@ secrets:
     file: ./secrets/proxysql_admin_password
   bootstrap_admin_password:
     file: ./secrets/bootstrap_admin_password
+  # TLS materials for Galera cluster communication. Generate with:
+  #   ./scripts/gen-galera-certs.sh
+  galera_ca:
+    file: ./secrets/tls/ca.pem
+  galera_db1_cert:
+    file: ./secrets/tls/db-1.pem
+  galera_db1_key:
+    file: ./secrets/tls/db-1.key
+  galera_db2_cert:
+    file: ./secrets/tls/db-2.pem
+  galera_db2_key:
+    file: ./secrets/tls/db-2.key
 
 volumes:
   db-1-data:

@@ -52,8 +52,6 @@ class Thresholds:
     max_rejoin_s: int = 60                  # docker start → wsrep Synced
 
 
-# ── compose helpers ──────────────────────────────────────────────────────────
-
 def compose(*args: str, check: bool = True, capture: bool = False) -> subprocess.CompletedProcess:
     cmd = ["docker", "compose", *COMPOSE_ARGS, *args]
     return subprocess.run(cmd, check=check, capture_output=capture, text=True)
@@ -90,8 +88,6 @@ def wait_for_sync(node: str, timeout_s: int) -> int | None:
     return None
 
 
-# ── stats parsing ────────────────────────────────────────────────────────────
-
 def parse_aggregated(stats_csv: Path) -> tuple[int, int]:
     """Return (total_requests, total_failures) from the Aggregated row."""
     with open(stats_csv) as f:
@@ -102,39 +98,149 @@ def parse_aggregated(stats_csv: Path) -> tuple[int, int]:
     return 0, 0
 
 
-def longest_failure_window(history_csv: Path) -> int:
-    """Longest run of consecutive 10s buckets where Failures/s > 0, in seconds."""
-    buckets = []
+def _history_snapshots(history_csv: Path) -> list[dict]:
+    """Load cumulative Aggregated snapshots from locust's history CSV.
+
+    The CSV writes one row per second. Columns named "50%", "95%" etc. are
+    cumulative percentiles since test start (not per-window), so we derive
+    per-second stats by taking deltas of the Total* columns instead.
+    """
+    rows = []
     with open(history_csv) as f:
-        reader = csv.DictReader(f)
-        for row in reader:
+        for row in csv.DictReader(f):
             if row.get("Name") != "Aggregated":
                 continue
             try:
-                buckets.append(float(row["Failures/s"]) > 0)
+                rows.append({
+                    "ts": int(row["Timestamp"]),
+                    "total_req": int(row["Total Request Count"]),
+                    "total_fail": int(row["Total Failure Count"]),
+                    "total_avg_ms": float(row["Total Average Response Time"]),
+                })
             except (KeyError, ValueError):
                 continue
+    return rows
+
+
+def _bucket_deltas(snapshots: list[dict]) -> list[dict]:
+    """Turn cumulative snapshots into per-bucket deltas.
+
+    Each bucket represents the activity between two adjacent snapshots:
+    - ts_end: end of bucket window
+    - requests: new requests in the window
+    - failures: new failures in the window
+    - avg_ms: mean response time of requests completed in this window,
+      derived from total cumulative average × count.
+    """
+    buckets = []
+    for prev, curr in zip(snapshots, snapshots[1:]):
+        d_req = curr["total_req"] - prev["total_req"]
+        if d_req <= 0:
+            continue
+        d_fail = curr["total_fail"] - prev["total_fail"]
+        # cumulative_avg * cumulative_count gives total response-time-sum
+        rt_sum_curr = curr["total_avg_ms"] * curr["total_req"]
+        rt_sum_prev = prev["total_avg_ms"] * prev["total_req"]
+        bucket_avg = (rt_sum_curr - rt_sum_prev) / d_req
+        buckets.append({
+            "ts_end": curr["ts"],
+            "requests": d_req,
+            "failures": d_fail,
+            "avg_ms": bucket_avg,
+        })
+    return buckets
+
+
+def longest_failure_window(history_csv: Path) -> int:
+    """Longest run of consecutive 1s buckets where failures occurred, in seconds."""
+    buckets = _bucket_deltas(_history_snapshots(history_csv))
     longest = run = 0
     for b in buckets:
-        if b:
+        if b["failures"] > 0:
             run += 1
             longest = max(longest, run)
         else:
             run = 0
-    return longest * 10  # default locust bucket is 10s
+    return longest  # one bucket per second
 
 
-# ── main orchestration ──────────────────────────────────────────────────────
+@dataclass
+class PhaseStats:
+    name: str
+    buckets: int
+    requests: int
+    failures: int
+    avg_min: float | None      # cheapest bucket in the phase
+    avg_median: float | None   # median bucket avg
+    avg_max: float | None      # worst bucket in the phase
+    avg_weighted: float | None # request-weighted overall avg for the phase
+
+    @property
+    def failure_rate(self) -> float:
+        return self.failures / self.requests if self.requests else 0.0
+
+
+def _median(values: list[float]) -> float | None:
+    if not values:
+        return None
+    vs = sorted(values)
+    n = len(vs)
+    return vs[n // 2] if n % 2 else (vs[n // 2 - 1] + vs[n // 2]) / 2
+
+
+def phase_stats(history_csv: Path, stop_ts: float, start_ts: float,
+                recovery_grace_s: int = 15) -> list[PhaseStats]:
+    """Split the run into pre / during / post phases based on failover event times."""
+    buckets = _bucket_deltas(_history_snapshots(history_csv))
+    during_end = start_ts + recovery_grace_s
+
+    phases = {"pre-failover": [], "during failover": [], "post-recovery": []}
+    for b in buckets:
+        if b["ts_end"] < stop_ts:
+            phases["pre-failover"].append(b)
+        elif b["ts_end"] < during_end:
+            phases["during failover"].append(b)
+        else:
+            phases["post-recovery"].append(b)
+
+    out = []
+    for name, bs in phases.items():
+        avgs = [b["avg_ms"] for b in bs]
+        req_sum = sum(b["requests"] for b in bs)
+        fail_sum = sum(b["failures"] for b in bs)
+        rt_weighted = (
+            sum(b["avg_ms"] * b["requests"] for b in bs) / req_sum if req_sum else None
+        )
+        out.append(PhaseStats(
+            name=name,
+            buckets=len(bs),
+            requests=req_sum,
+            failures=fail_sum,
+            avg_min=min(avgs) if avgs else None,
+            avg_median=_median(avgs),
+            avg_max=max(avgs) if avgs else None,
+            avg_weighted=rt_weighted,
+        ))
+    return out
+
 
 def run_test(args, thresholds: Thresholds) -> int:
     if not COMPOSE_FILE.exists():
         print(f"ERROR: {COMPOSE_FILE} not found.", file=sys.stderr)
         return 2
 
-    if shutil.which("locust") is None:
-        print("ERROR: 'locust' not found on PATH. Install with: "
-              f"pip install -r {SCRIPT_DIR / 'requirements.txt'}", file=sys.stderr)
-        return 2
+    # Locate locust: prefer the one next to sys.executable (repo-local venv),
+    # fall back to PATH. Invoking via sys.executable's sibling keeps the
+    # interpreter consistent with --python overrides.
+    locust_bin = Path(sys.executable).parent / "locust"
+    if not locust_bin.exists():
+        located = shutil.which("locust")
+        if located is None:
+            print("ERROR: 'locust' not found. Install with: "
+                  f"{sys.executable} -m pip install -r {SCRIPT_DIR / 'requirements.txt'}",
+                  file=sys.stderr)
+            return 2
+        locust_bin = Path(located)
 
     env = os.environ.copy()
     host = env.get("PI_BASE_URL", "http://localhost:8000")
@@ -168,7 +274,7 @@ def run_test(args, thresholds: Thresholds) -> int:
     RESULTS_DIR.mkdir(exist_ok=True)
     print(f"[3/7] starting locust headless ({args.duration}s, {args.users} users)")
     locust_cmd = [
-        "locust",
+        str(locust_bin),
         "-f", str(SCRIPT_DIR / "locustfile.py"),
         "--headless",
         "--host", host,
@@ -187,12 +293,14 @@ def run_test(args, thresholds: Thresholds) -> int:
 
     # 5. Kill writer, wait, restart
     print(f"[4/7] stopping {args.target} (writer)")
+    stop_wall = time.time()
     compose("stop", args.target)
 
     print(f"[5/7] waiting {args.downtime}s before restart")
     time.sleep(args.downtime)
 
     print(f"[6/7] starting {args.target}, polling for Synced")
+    start_wall = time.time()
     compose("start", args.target)
     rejoin_s = wait_for_sync(args.target, timeout_s=thresholds.max_rejoin_s * 2)
 
@@ -215,6 +323,7 @@ def run_test(args, thresholds: Thresholds) -> int:
     total, failures = parse_aggregated(stats_csv)
     failure_rate = failures / total if total else 1.0
     window_s = longest_failure_window(history_csv)
+    phases = phase_stats(history_csv, stop_wall, start_wall)
 
     print()
     print("── results ─────────────────────────────────────────")
@@ -226,6 +335,17 @@ def run_test(args, thresholds: Thresholds) -> int:
         print(f"  rejoin time            : DID NOT SYNC within {thresholds.max_rejoin_s * 2}s")
     else:
         print(f"  rejoin time            : {rejoin_s}s (threshold ≤ {thresholds.max_rejoin_s}s)")
+    print()
+    print("  per-phase latency (avg ms, derived from cumulative deltas):")
+    print(f"  {'phase':<18}{'buckets':>8}{'reqs':>8}{'fail%':>8}"
+          f"{'avg (wt)':>10}{'bucket min':>12}{'bucket med':>12}{'bucket max':>12}")
+    def fmt(v: float | None) -> str:
+        return f"{v:.0f}" if v is not None else "—"
+    for p in phases:
+        print(f"  {p.name:<18}{p.buckets:>8}{p.requests:>8}"
+              f"{p.failure_rate:>7.1%} "
+              f"{fmt(p.avg_weighted):>10}{fmt(p.avg_min):>12}"
+              f"{fmt(p.avg_median):>12}{fmt(p.avg_max):>12}")
     print("────────────────────────────────────────────────────")
 
     problems = []
@@ -250,9 +370,13 @@ def run_test(args, thresholds: Thresholds) -> int:
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--users", type=int, default=50, help="Concurrent locust users (default: 50)")
+    ap.add_argument("--users", type=int, default=10,
+                    help="Concurrent locust users (default: 10 — targets ~30–50%% capacity "
+                         "on a single-host tier F stack; raise for saturation testing)")
     ap.add_argument("--duration", type=int, default=90, help="Total locust run time, seconds (default: 90)")
-    ap.add_argument("--warmup", type=int, default=15, help="Seconds of load before killing the writer (default: 15)")
+    ap.add_argument("--warmup", type=int, default=25,
+                    help="Seconds of load before killing the writer (default: 25 — long enough "
+                         "for the pre-failover phase to represent steady state, not ramp-up)")
     ap.add_argument("--downtime", type=int, default=20, help="Seconds to leave the writer down (default: 20)")
     ap.add_argument("--target", default="db-1", help="Galera node to kill/restart (default: db-1)")
     ap.add_argument("--skip-up", action="store_true", help="Skip 'docker compose up'; assume stack is running")
