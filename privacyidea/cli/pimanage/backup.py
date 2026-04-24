@@ -208,7 +208,10 @@ def backup_restore(backup_file, keep_db_uri):
                 )
 
     with tarfile.open(backup_file, "r:gz") as tf:
-        tf.extractall(path="/")
+        if sys.version_info >= (3, 12):
+            tf.extractall(path="/", filter='data')
+        else:
+            tf.extractall(path="/")
     click.echo(60 * "=")
 
     # use Flask config to read in the config file (now restored from backup)
