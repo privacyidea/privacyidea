@@ -135,9 +135,10 @@ class SMTPServer:
             if password == FAILED_TO_DECRYPT_PASSWORD:
                 password = config['password']
             mail.login(config['username'], password)
-        msg = msg.as_bytes()
+        msg = msg.as_string()
         if config.get('smime', False):
             try:
+                msg = msg.encode("utf-8")
                 with open(config['private_key'], "rb") as key_file:
                     private_key = key_file.read()
                 with open(config['certificate'], "rb") as cert_file:
