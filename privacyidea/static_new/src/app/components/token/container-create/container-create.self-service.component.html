@@ -104,7 +104,7 @@
               <mat-option [value]="option">{{ option.name }}</mat-option>
             }
           </mat-select>
-          @if (selectedTemplateName() !== "") {
+          @if (selectedTemplate()) {
             <app-clear-button
               (onClick)="clearTemplateSelection()"
               matSuffix></app-clear-button>

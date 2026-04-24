@@ -46,7 +46,7 @@
     <h3 i18n>Tokens</h3>
     <app-container-template-edit-body
       [template]="template()"
-      [availableTokenTypes]="availableTokenTypes()"
-      (editTemplate)="editTemplate($event)" />
+      (templateChange)="editTemplate($event)"
+      [availableTokenTypes]="availableTokenTypes()" />
   </div>
 </div>

@@ -102,6 +102,7 @@
             <mat-label i18n>Template</mat-label>
             <mat-select
               [(ngModel)]="selectedTemplate"
+              [compareWith]="compareTemplates"
               [value]="selectedTemplate()">
               @for (template of templateOptions(); track template) {
                 <mat-option [value]="template">
@@ -109,23 +110,22 @@
                 </mat-option>
               }
             </mat-select>
-            @if (selectedTemplateName() !== "") {
+            @if (templateIsSelected()) {
               <app-clear-button
                 (onClick)="clearTemplateSelection()"
                 matSuffix></app-clear-button>
             }
           </mat-form-field>
-          @if (selectedTemplate()) {
-            <mat-expansion-panel class="expansion-panel margin-top-8">
-              <mat-expansion-panel-header>
-                <mat-panel-title i18n> Selected Template Details</mat-panel-title>
-              </mat-expansion-panel-header>
-              <!-- <app-container-template-edit-body
-                [template]="selectedTemplate()!"
-                (templateChange)="onTemplateChange($event)"
-                [availableTokenTypes]="availableTokenTypes()" /> -->
-            </mat-expansion-panel>
-          }
+
+          <mat-expansion-panel class="expansion-panel margin-top-8">
+            <mat-expansion-panel-header>
+              <mat-panel-title i18n> Template Details</mat-panel-title>
+            </mat-expansion-panel-header>
+            <app-container-template-edit-body
+              [template]="selectedTemplate()"
+              (templateChange)="onTemplateChange($event)"
+              [availableTokenTypes]="availableTokenTypes()" />
+          </mat-expansion-panel>
         </div>
       }
       <h4 i18n>Assign the Container to a User</h4>

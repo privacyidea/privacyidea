@@ -24,11 +24,6 @@
     &::-webkit-scrollbar {
       display: none;
     }
-
-    ::ng-deep .mdc-evolution-chip-set__chips {
-      display: flex !important;
-      flex-wrap: nowrap !important;
-    }
   }
 
   mat-chip {

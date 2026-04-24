@@ -27,13 +27,13 @@ import { MatSortModule, Sort } from "@angular/material/sort";
 import { MatTableModule } from "@angular/material/table";
 import { FilterOption } from "src/app/core/models/filter_value_generic/filter-option";
 import { FilterValueGeneric } from "src/app/core/models/filter_value_generic/filter-value-generic";
+import { DialogService, DialogServiceInterface } from "src/app/services/dialog/dialog.service";
 import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
 import {
   ContainerTemplateService,
   ContainerTemplateServiceInterface
 } from "../../../services/container-template/container-template.service";
 import { ContainerTemplate } from "../../../services/container/container.service";
-import { DialogService, DialogServiceInterface } from "src/app/services/dialog/dialog.service";
 import { ContainerTemplatesFilterComponent } from "./container-templates-filter/container-templates-filter.component";
 import { ContainerTemplatesTableActionsComponent } from "./container-templates-table-actions/container-templates-table-actions.component";
 import { ContainerTemplateEditDialogComponent } from "./dialogs/container-template-edit-dialog/container-template-edit-dialog.component";
@@ -161,6 +161,12 @@ export class ContainerTemplatesComponent {
 
       if (typeof valueA === "string" && typeof valueB === "string") {
         return valueA.localeCompare(valueB) * modifier;
+      }
+      if (valueA === undefined || valueA === null) {
+        return 1 * modifier; // undefined/null values are sorted last
+      }
+      if (valueB === undefined || valueB === null) {
+        return -1 * modifier; // undefined/null values are sorted last
       }
 
       return (valueA < valueB ? -1 : 1) * modifier;

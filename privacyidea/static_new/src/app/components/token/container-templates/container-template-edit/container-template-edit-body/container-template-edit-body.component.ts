@@ -1,14 +1,15 @@
-import { Component, computed, Input, model, output } from "@angular/core";
-import { ContainerTemplateAddTokenComponent } from "../../dialogs/container-template-edit-dialog/container-template-add-token-chips/container-template-add-token.component";
-import { TemplateAddedTokenRowComponent } from "../../dialogs/container-template-edit-dialog/template-added-token-row/template-added-token-row.component";
+import { Component, computed, model } from "@angular/core";
+import { MatChipsModule } from "@angular/material/chips";
+import { MatIcon } from "@angular/material/icon";
+import { TokenEnrollmentPayload } from "src/app/mappers/token-api-payload/_token-api-payload.mapper";
 import { ContainerTemplate } from "src/app/services/container/container.service";
 import { TokenTypeKey } from "src/app/services/token/token.service";
-import { TokenEnrollmentPayload } from "src/app/mappers/token-api-payload/_token-api-payload.mapper";
+import { TemplateAddedTokenRowComponent } from "../../dialogs/container-template-edit-dialog/template-added-token-row/template-added-token-row.component";
 
 @Component({
   selector: "app-container-template-edit-body",
   standalone: true,
-  imports: [ContainerTemplateAddTokenComponent, TemplateAddedTokenRowComponent],
+  imports: [TemplateAddedTokenRowComponent, MatChipsModule, MatIcon],
   templateUrl: "./container-template-edit-body.component.html",
   styleUrl: "./container-template-edit-body.component.scss"
 })
@@ -18,7 +19,7 @@ export class ContainerTemplateEditBodyComponent {
 
   tokens = computed(() => this.template().template_options?.tokens || []);
 
-  editTemplate = output<Partial<ContainerTemplate>>();
+  // editTemplate = output<Partial<ContainerTemplate>>();
 
   trackByIndex(index: number) {
     return index;
@@ -43,18 +44,23 @@ export class ContainerTemplateEditBodyComponent {
   }
   // --- Private Helper Methods ---
   private updateTokens(tokens: TokenEnrollmentPayload[]) {
-    const editedTemplate: Partial<ContainerTemplate> = {
+    const editedTemplate: ContainerTemplate = {
+      ...this.template(),
       template_options: {
         ...this.template().template_options,
         tokens
       }
     };
     console.log("Emitting edited template:", editedTemplate);
-    this.editTemplate.emit(editedTemplate);
+    this.template.set(editedTemplate);
   }
 
   onAddToken(tokenType: string) {
     const updatedTokens = [...this.tokens(), { type: tokenType as TokenTypeKey }];
     this.updateTokens(updatedTokens);
+  }
+
+  protected _toTitleCase(str: string): string {
+    return str.charAt(0).toUpperCase() + str.slice(1);
   }
 }

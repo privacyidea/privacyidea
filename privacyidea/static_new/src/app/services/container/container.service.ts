@@ -16,19 +16,19 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { AuthService, AuthServiceInterface } from "../auth/auth.service";
-import { ContentService, ContentServiceInterface } from "../content/content.service";
 import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
 import { computed, effect, inject, Injectable, linkedSignal, Signal, signal, WritableSignal } from "@angular/core";
-import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
+import { Sort } from "@angular/material/sort";
 import { catchError, forkJoin, Observable, of, Subject, throwError } from "rxjs";
 import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
-import { EnrollmentUrl, TokenEnrollmentPayload } from "../../mappers/token-api-payload/_token-api-payload.mapper";
 import { FilterValue } from "../../core/models/filter_value/filter_value";
-import { Sort } from "@angular/material/sort";
-import { TokenService, TokenServiceInterface } from "../token/token.service";
+import { EnrollmentUrl, TokenEnrollmentPayload } from "../../mappers/token-api-payload/_token-api-payload.mapper";
 import { StringUtils } from "../../utils/string.utils";
+import { AuthService, AuthServiceInterface } from "../auth/auth.service";
+import { ContentService, ContentServiceInterface } from "../content/content.service";
+import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
+import { TokenService, TokenServiceInterface } from "../token/token.service";
 import { UserService, UserServiceInterface } from "../user/user.service";
 
 const apiFilter = ["container_serial", "type", "description", "container_realm"];
@@ -111,11 +111,12 @@ export interface ContainerType {
 }
 
 export interface ContainerCreateData {
-  container_type: string;
+  type: string;
   description?: string;
   user?: string;
   realm?: string;
-  template_name?: string;
+  name?: string;
+  template?: ContainerTemplate;
 }
 
 export interface ContainerTemplate {
@@ -125,6 +126,7 @@ export interface ContainerTemplate {
   template_options: {
     tokens: Array<TokenEnrollmentPayload>;
   };
+  template_display?: string;
 }
 
 export interface ContainerRegisterData {
@@ -848,20 +850,10 @@ export class ContainerService implements ContainerServiceInterface {
     this.stopPolling$.next();
   }
 
-  createContainer(param: ContainerCreateData): Observable<PiResponse<{ container_serial: string }>> {
+  createContainer(createData: ContainerCreateData): Observable<PiResponse<{ container_serial: string }>> {
     const headers = this.authService.getHeaders();
     return this.http
-      .post<PiResponse<{ container_serial: string }>>(
-        `${this.containerBaseUrl}init`,
-        {
-          type: param.container_type,
-          description: param.description,
-          user: param.user,
-          realm: param.realm,
-          template_name: param.template_name
-        },
-        { headers }
-      )
+      .post<PiResponse<{ container_serial: string }>>(`${this.containerBaseUrl}init`, createData, { headers })
       .pipe(
         catchError((error) => {
           console.error("Failed to create container.", error);

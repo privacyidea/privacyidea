@@ -18,37 +18,30 @@
  **/
 import { AsyncPipe, NgClass, TitleCasePipe } from "@angular/common";
 import { HttpClient } from "@angular/common/http";
-import { Component, effect, inject, linkedSignal, SecurityContext, Signal, WritableSignal } from "@angular/core";
+import { Component, inject, linkedSignal, SecurityContext, Signal, WritableSignal } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { MatButton, MatIconButton } from "@angular/material/button";
-import { MatDialog } from "@angular/material/dialog";
 import { MatIcon } from "@angular/material/icon";
+import { MatTooltip } from "@angular/material/tooltip";
 import { DomSanitizer } from "@angular/platform-browser";
 import { map } from "rxjs";
+import { PiResponse } from "src/app/app.component";
+import { environment } from "../../../../environments/environment";
 import {
   ContainerCreateData,
   ContainerRegisterData,
   ContainerService,
   ContainerServiceInterface
 } from "../../../services/container/container.service";
-import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
 import { NotificationService, NotificationServiceInterface } from "../../../services/notification/notification.service";
-import { RealmService, RealmServiceInterface } from "../../../services/realm/realm.service";
 import { TokenService, TokenServiceInterface } from "../../../services/token/token.service";
 import { UserService, UserServiceInterface } from "../../../services/user/user.service";
-import { VersioningService, VersioningServiceInterface } from "../../../services/version/version.service";
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { ContainerCreateComponent } from "./container-create.component";
-import { MatTooltip } from "@angular/material/tooltip";
-import { environment } from "../../../../environments/environment";
-import { PiResponse } from "src/app/app.component";
-import {
-  ContainerRegistrationCompletedDialogComponent,
-  ContainerRegistrationCompletedDialogData
-} from "./container-registration-completed-dialog/container-registration-completed-dialog.component";
-import { ContainerRegistrationCompletedDialogWizardComponent } from "./container-registration-completed-dialog/container-registration-completed-dialog.wizard.component";
-import { ContainerCreatedDialogWizardComponent } from "./container-created-dialog/container-created-dialog.wizard.component";
 import { ContainerCreationDialogData } from "./container-created-dialog/container-created-dialog.component";
+import { ContainerCreatedDialogWizardComponent } from "./container-created-dialog/container-created-dialog.wizard.component";
+import { ContainerRegistrationCompletedDialogData } from "./container-registration-completed-dialog/container-registration-completed-dialog.component";
+import { ContainerRegistrationCompletedDialogWizardComponent } from "./container-registration-completed-dialog/container-registration-completed-dialog.wizard.component";
 
 @Component({
   selector: "app-container-create-wizard",
@@ -82,10 +75,6 @@ export class ContainerCreateWizardComponent extends ContainerCreateComponent {
       console.log("Computing generateQRCode with source:", source);
       return source.registration && source.containerType === "smartphone" && source.canRegister;
     }
-  });
-  override selectedTemplateName = linkedSignal({
-    source: this.authService.containerWizard,
-    computation: (containerWizard) => containerWizard.template || ""
   });
 
   protected override resetCreateOptions = () => {
@@ -128,15 +117,15 @@ export class ContainerCreateWizardComponent extends ContainerCreateComponent {
     const containerType = this.containerService.selectedContainerType()?.containerType;
     if (!containerType) return;
     const createData: ContainerCreateData = {
-      container_type: containerType,
+      type: containerType,
       description: this.description(),
       user: this.userService.selectionUsernameFilter()
     };
     if (createData.user || this.userAssignmentComponent?.onlyAddToRealm()) {
       createData.realm = this.userService.selectedUserRealm();
     }
-    if (this.selectedTemplateName()) {
-      createData.template_name = this.selectedTemplateName();
+    if (this.selectedTemplate()) {
+      createData.name = this.selectedTemplate()?.name;
     }
     console.log("Creating container with data:", createData);
     this.containerService.createContainer(createData).subscribe({

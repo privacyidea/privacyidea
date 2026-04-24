@@ -1,7 +1,12 @@
 @if (template().container_type) {
-  <app-container-template-add-token
-    [tokenTypes]="availableTokenTypes()"
-    (onAddToken)="onAddToken($event)" />
+  <mat-chip-listbox [multiple]="false">
+    @for (type of availableTokenTypes(); track type) {
+      <mat-chip (click)="onAddToken(type)">
+        {{ _toTitleCase(type) }}
+        <mat-icon matChipTrailingIcon>add</mat-icon>
+      </mat-chip>
+    }
+  </mat-chip-listbox>
 }
 <div class="added-tokens-list">
   @for (token of tokens(); track $index) {
