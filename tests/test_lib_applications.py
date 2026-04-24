@@ -17,7 +17,7 @@ from privacyidea.lib.applications import (get_auth_item,
                                           get_application_types)
 from privacyidea.lib.token import init_token, get_tokens
 from privacyidea.lib.user import User
-import passlib.hash
+from .crypto_helper import pbkdf2_sha512_verify
 import mock
 
 
@@ -146,12 +146,8 @@ class OfflineApplicationTestCase(MyTestCase):
         auth_item = OfflineApplication.get_authentication_item("hotp", serial)
         refilltoken = auth_item.get("refilltoken")
         self.assertEqual(len(refilltoken), REFILLTOKEN_LENGTH * 2)
-        self.assertTrue(passlib.hash.\
-                        pbkdf2_sha512.verify("969429", # count = 3
-                                             auth_item.get("response").get(3)))
-        self.assertTrue(passlib.hash.\
-                        pbkdf2_sha512.verify("399871", # count = 8
-                                             auth_item.get("response").get(8)))
+        self.assertTrue(pbkdf2_sha512_verify("969429", auth_item.get("response").get(3)))  # count = 3
+        self.assertTrue(pbkdf2_sha512_verify("399871", auth_item.get("response").get(8)))  # count = 8
         # The token now contains the refill token information:
         self.assertEqual(refilltoken, tok.get_tokeninfo("refilltoken"))
 
@@ -161,9 +157,7 @@ class OfflineApplicationTestCase(MyTestCase):
         self.assertEqual(tok.token.count, 3 + 100)
         # Assert that we cannot authenticate with the last offline OTP we got
         self.assertEqual(len(auth_item.get("response")), 100)
-        self.assertTrue(passlib.hash.\
-                        pbkdf2_sha512.verify("629694", # count = 102
-                                             auth_item.get("response").get(102)))
+        self.assertTrue(pbkdf2_sha512_verify("629694", auth_item.get("response").get(102)))  # count = 102
         res = tok.check_otp("629694") # count = 102
         self.assertEqual(res, -1)
         res = tok.check_otp("378717")  # count = 103
@@ -172,6 +166,65 @@ class OfflineApplicationTestCase(MyTestCase):
         self.assertRaises(ParameterError,
                           OfflineApplication.get_offline_otps, tok, 'foo', -1)
         self.assertEqual(OfflineApplication.get_offline_otps(tok, 'foo', 0), {})
+
+    def test_02b_offline_otp_hash_format(self):
+        """Hash format regression test for the passlib → hashlib replacement.
+
+        The PAM module / credential provider verifies offline OTP hashes in C,
+        independently of any Python library.  The format must remain exactly:
+            $pbkdf2-sha512$<rounds>$<ab64-salt>$<ab64-hash>
+        where ab64 is standard base64 with '.' instead of '+' and no '=' padding.
+
+        This test pins the format and cross-checks against a hashlib-only
+        re-derivation so it will catch regressions after passlib is removed.
+        """
+        import base64
+        from hashlib import pbkdf2_hmac
+        from privacyidea.lib.applications.offline import ROUNDS
+
+        def ab64_decode(s):
+            """Passlib's ab64 encoding: '.' instead of '+', no '=' padding."""
+            return base64.b64decode(s.replace('.', '+') + '=' * (-len(s) % 4))
+
+        serial = "OATH_FORMAT"
+        self.setUp_user_realms()
+        user = User("cornelius", realm=self.realm1)
+        # Fresh token at counter=0; RFC 4226 test vectors apply for OTPKEY.
+        init_token({"serial": serial, "type": "hotp", "otpkey": OTPKEY}, user=user)
+        tok = get_tokens(serial=serial)[0]
+
+        # RFC 4226 test vectors for OTPKEY (ASCII "12345678901234567890"):
+        known_otps = {0: "755224", 1: "287082", 2: "359152"}
+
+        # Hash with empty PIN so otp_with_pin == otp (PIN prepend/append doesn't matter)
+        otps = OfflineApplication.get_offline_otps(tok, '', len(known_otps), rounds=ROUNDS)
+        self.assertEqual(set(otps.keys()), set(known_otps.keys()))
+
+        for counter, hash_str in otps.items():
+            # 1. Top-level format
+            self.assertRegex(
+                hash_str,
+                r'^\$pbkdf2-sha512\$\d+\$[A-Za-z0-9./]+\$[A-Za-z0-9./]+$',
+                "Hash must follow $pbkdf2-sha512$<rounds>$<ab64-salt>$<ab64-hash>")
+
+            # 2. Parse and validate individual components
+            _, scheme, rounds_str, salt_b64, hash_b64 = hash_str.split('$')
+            self.assertEqual(scheme, 'pbkdf2-sha512')
+            self.assertEqual(int(rounds_str), ROUNDS,
+                             "Rounds embedded in hash must match the ROUNDS constant")
+
+            salt = ab64_decode(salt_b64)
+            hash_bytes = ab64_decode(hash_b64)
+            self.assertEqual(len(salt), 10, "Salt must be 10 bytes (salt_size=10)")
+            self.assertEqual(len(hash_bytes), 64, "SHA-512 digest must be 64 bytes")
+
+            # 3. hashlib-only re-derivation — no passlib.
+            # This is exactly the logic the PAM module implements in C:
+            #   PBKDF2-HMAC-SHA512(password=utf8(otp), salt, iterations)
+            otp = known_otps[counter]
+            derived = pbkdf2_hmac('sha512', otp.encode('utf-8'), salt, int(rounds_str))
+            self.assertEqual(derived, hash_bytes,
+                             "hashlib re-derivation must match stored hash for counter {}".format(counter))
 
     def test_03_get_auth_item_unsupported(self):
         # unsupported token type

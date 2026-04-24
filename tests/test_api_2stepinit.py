@@ -1,7 +1,7 @@
 import binascii
 import base64
 import hashlib
-from passlib.crypto.digest import pbkdf2_hmac
+from hashlib import pbkdf2_hmac
 import time
 
 from privacyidea.lib.policy import set_policy, SCOPE, delete_policy

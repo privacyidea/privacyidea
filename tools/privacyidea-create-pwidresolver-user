@@ -18,7 +18,8 @@
 import sys
 from getopt import getopt, GetoptError
 import getpass
-from passlib.hash import sha512_crypt
+
+import bcrypt as _bcrypt
 
 __version__ = '0.1'
 
@@ -63,9 +64,7 @@ def main():
     if password == "":
         password = getpass.getpass("Please enter a password: ")
 
-    # without salt, the strongest available hash function will be selected
-    # and a random salt is created
-    encrypted_pw = sha512_crypt.hash(password)
+    encrypted_pw = _bcrypt.hashpw(password.encode('utf-8'), _bcrypt.gensalt()).decode('utf-8')
 
     gid = uid
     home = ""

@@ -44,7 +44,7 @@ from ldap3 import Tls
 from ldap3.core.exceptions import LDAPOperationResult
 from ldap3.core.results import RESULT_SIZE_LIMIT_EXCEEDED
 from ldap3.utils.conv import escape_bytes
-from passlib.hash import ldap_salted_sha1
+import base64
 
 from privacyidea.lib import _
 from privacyidea.lib.error import PrivacyIDEAError, ResolverError, ParameterError
@@ -56,6 +56,16 @@ from .UserIdResolver import UserIdResolver
 from ..lifecycle import register_finalizer
 
 log = logging.getLogger(__name__)
+
+
+def _ssha_hash(password, salt_size=4):
+    """Hash a password in LDAP {SSHA} format: {SSHA}base64(SHA1(password+salt)+salt)."""
+    if isinstance(password, str):
+        password = password.encode('utf-8')
+    salt = os.urandom(salt_size)
+    digest = hashlib.sha1(password + salt).digest()
+    return '{SSHA}' + base64.b64encode(digest + salt).decode('ascii')
+
 
 CACHE = {}
 
@@ -1372,11 +1382,11 @@ class IdResolver(UserIdResolver):
                     # so catch the TypeError exception if we get the wrong
                     # variable type
                     try:
-                        pw_hash = ldap_salted_sha1.hash(value[1][0])
+                        pw_hash = _ssha_hash(value[1][0])
                         value[1][0] = pw_hash
                         ldap_attributes[self.map.get(fieldname)] = value
                     except TypeError as _e:
-                        pw_hash = ldap_salted_sha1.hash(value)
+                        pw_hash = _ssha_hash(value)
                         ldap_attributes[self.map.get(fieldname)] = pw_hash
                 else:
                     ldap_attributes[self.map.get(fieldname)] = value

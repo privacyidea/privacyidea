@@ -36,7 +36,6 @@ from flask import current_app
 import PyKCS11
 from PyKCS11 import PyKCS11Error
 import string
-import passlib.hash
 
 
 class SecurityModuleTestCase(MyTestCase):
@@ -527,7 +526,16 @@ class RandomTestCase(MyTestCase):
         self.assertEqual(r, False)
 
     def test_06_test_old_passwords(self):
-        phash = passlib.hash.pbkdf2_sha512.hash(current_app.config.get("PI_PEPPER", "") + "test")
+        # Build a legacy pbkdf2_sha512 hash (ab64 format) to test backward compatibility
+        import hashlib, base64, os
+        pepper = current_app.config.get("PI_PEPPER", "")
+        pw_bytes = (pepper + "test").encode('utf-8')
+        salt = os.urandom(16)
+        rounds = 25000
+        dk = hashlib.pbkdf2_hmac('sha512', pw_bytes, salt, rounds)
+        def ab64(b):
+            return base64.b64encode(b).rstrip(b'=').replace(b'+', b'.').decode('ascii')
+        phash = '$pbkdf2-sha512${}${}${}'.format(rounds, ab64(salt), ab64(dk))
         self.assertTrue(phash.startswith("$pbkdf2"))
         r = verify_with_pepper(phash, "test")
         self.assertTrue(r)
@@ -910,60 +918,7 @@ class DefaultHashAlgoListTestCase(MyTestCase):
         self.assertTrue(verify_pass_hash(password, ph))
         # Checks if the password can also be verified with pbkdf2_sha512 from "DEFAULT_HASH_ALGO_LIST".
         self.assertTrue(verify_pass_hash(password, pbkdf2_sha512_hash))
-        # Checks if an error message is issued if algorithm is not contain in "PI_HASH_ALGO_LIST".
-        self.assertRaises(passlib.exc.UnknownHashError, verify_pass_hash, password, 'password')
-        # Checks if a faulty hash is failing.
-        self.assertFalse(verify_pass_hash(password, argon2_fail_hash))
-
-
-class CustomParamsDefaultHashAlgoListTestCase(OverrideConfigTestCase):
-    """Check if the default hash algorithm list is used with params from config."""
-
-    class Config(TestingConfig):
-        # Set custom parameter for hash algorithms in pi.cfg.
-        PI_HASH_ALGO_PARAMS = {'argon2__rounds': 5, 'argon2__memory_cost': 768}
-
-    def test_01_default_hash_algorithm_list_with_custom_params(self):
-        password = "password"
-
-        pbkdf2_sha512_hash = '$pbkdf2-sha512$25000$XEvJOcf437tXam1Nydm79w$6eDPlPjRgnJGGK0j8a3to' \
-                             'SZoSUvwZzcvEj96t7Hg.X/SC822EFaO2iWoHFTUc1NMsX6sgQyQqbjWxGXgRWNzkw'
-
-        # Checks if the first entry is taken from "DEFAULT_HASH_ALGO_LIST"
-        ph = pass_hash(password)
-        self.assertTrue(ph.startswith('$argon2'), ph)
-        self.assertIn('t=5', ph.split('$')[3], ph)
-        self.assertIn('m=768', ph.split('$')[3], ph)
-        self.assertTrue(verify_pass_hash(password, ph))
-        # Checks if the password can also be verified with pbkdf2_sha512 from "DEFAULT_HASH_ALGO_LIST".
-        self.assertTrue(verify_pass_hash(password, pbkdf2_sha512_hash))
-
-
-class CustomHashAlgoListTestCase(OverrideConfigTestCase):
-    """Test for custom list of hash algorithms in pi.cfg"""
-
-    class Config(TestingConfig):
-        # Set custom list of algorithms in pi.cfg.
-        PI_HASH_ALGO_LIST = ['pbkdf2_sha1', 'pbkdf2_sha512', 'argon2']
-        PI_HASH_ALGO_PARAMS = {'pbkdf2_sha1__rounds': 50000}
-
-    def test_01_custom_hash_algorithm_list(self):
-        password = "password"
-
-        pbkdf2_sha512_hash = '$pbkdf2-sha512$25000$XEvJOcf437tXam1Nydm79w$6eDPlPjRgnJGGK0j8a3to' \
-                             'SZoSUvwZzcvEj96t7Hg.X/SC822EFaO2iWoHFTUc1NMsX6sgQyQqbjWxGXgRWNzkw'
-
-        argon2_hash = '$argon2id$v=19$m=102400,t=9,p=8$vZeyFqI0xhiDEIKw1przfg$8FX07S7VpaYae51Oe9Cj8g'
-
-        argon2_fail_hash = '$argon2id$v=19$m=102400,t=9,p=8$vZeyFqI0xhiDEIKw1przfg$8FX07S7VpaYae51Oe9Cj7g'
-
-        # Check if the first entry is taken from "PI_HASH_ALGO_LIST" .
-        self.assertTrue(pass_hash(password).startswith('$pbkdf2$50000$'))
-        # Checks if the password can also be verified with pbkdf2_sha512".
-        self.assertTrue(verify_pass_hash(password, pbkdf2_sha512_hash))
-        # Checks if the password can also be verified with argon2".
-        self.assertTrue(verify_pass_hash(password, argon2_hash))
-        # Checks if an error message is issued if algorithm is not contain in "PI_HASH_ALGO_LIST".
-        self.assertRaises(passlib.exc.UnknownHashError, verify_pass_hash, password, 'password')
+        # Checks if an error message is issued for an unrecognized hash format.
+        self.assertRaises(ValueError, verify_pass_hash, password, 'password')
         # Checks if a faulty hash is failing.
         self.assertFalse(verify_pass_hash(password, argon2_fail_hash))

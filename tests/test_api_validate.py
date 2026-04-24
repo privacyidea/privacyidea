@@ -15,7 +15,7 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.primitives.asymmetric import rsa, padding
 from dateutil.tz import tzlocal
-from passlib.hash import argon2
+from .crypto_helper import argon2_verify
 from testfixtures import Replace, test_datetime
 from testfixtures import log_capture
 
@@ -2388,7 +2388,7 @@ class ValidateAPITestCase(MyApiTestCase):
         cached_auths = AuthCache.query.filter(AuthCache.username == "cornelius", AuthCache.realm == self.realm1).all()
         found = False
         for cached_auth in cached_auths:
-            if argon2.verify(OTPs[1], cached_auth.authentication):
+            if argon2_verify(OTPs[1], cached_auth.authentication):
                 found = True
                 break
         self.assertTrue(found)

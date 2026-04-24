@@ -22,9 +22,10 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+import base64
+import hashlib
 import logging
-
-from passlib.hash import pbkdf2_sha512
+import os
 
 from privacyidea.lib.applications import MachineApplicationBase
 from privacyidea.lib.config import get_prepend_pin
@@ -38,6 +39,22 @@ from privacyidea.lib.utils import get_computer_name_from_user_agent
 log = logging.getLogger(__name__)
 ROUNDS = 6549
 REFILLTOKEN_LENGTH = 40
+
+
+def _pbkdf2_sha512_hash(password: str, rounds: int, salt_size: int = 10) -> str:
+    """Hash a password using PBKDF2-HMAC-SHA512 in passlib's $pbkdf2-sha512$ format.
+
+    Format: $pbkdf2-sha512$<rounds>$<ab64-salt>$<ab64-hash>
+    ab64: standard base64 with '.' instead of '+' and no '=' padding.
+    This format is verified by the PAM module and credential provider in C.
+    """
+    salt = os.urandom(salt_size)
+    dk = hashlib.pbkdf2_hmac('sha512', password.encode('utf-8'), salt, rounds)
+
+    def ab64_encode(b: bytes) -> str:
+        return base64.b64encode(b).rstrip(b'=').replace(b'+', b'.').decode('ascii')
+
+    return f'$pbkdf2-sha512${rounds}${ab64_encode(salt)}${ab64_encode(dk)}'
 
 
 class MachineApplication(MachineApplicationBase):
@@ -105,7 +122,7 @@ class MachineApplication(MachineApplicationBase):
         for key, otp in otps.items():
             # Return the hash of OTP PIN and OTP values
             otp_with_pin = otppin + otp if prepend_pin else otp + otppin
-            otps[key] = pbkdf2_sha512.using(rounds=rounds, salt_size=10).hash(otp_with_pin)
+            otps[key] = _pbkdf2_sha512_hash(otp_with_pin, rounds)
         # We do not disable the token, so if all offline OTP values
         # are used, the token can be used to authenticate online again.
         # token_obj.enable(False)

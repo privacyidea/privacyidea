@@ -67,7 +67,7 @@ from privacyidea.lib.log import log_with
 from privacyidea.lib.crypto import (aes_decrypt_b64, aes_encrypt_b64, geturandom)
 from bs4 import BeautifulSoup
 import traceback
-from passlib.crypto.digest import pbkdf2_hmac
+from hashlib import pbkdf2_hmac
 import gnupg
 from os import path
 
@@ -437,7 +437,7 @@ def derive_key(xml, password):
     keylength = keymeth.find("keylength").text.strip()
     rounds = keymeth.find("iterationcount").text.strip()
     r = pbkdf2_hmac('sha1', to_utf8(password), base64.b64decode(salt),
-                    rounds=int(rounds), keylen=int(keylength))
+                    int(rounds), dklen=int(keylength))
     return binascii.hexlify(r)
 
 

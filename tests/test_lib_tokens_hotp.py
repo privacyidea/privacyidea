@@ -10,7 +10,7 @@ import warnings
 
 import mock
 from dateutil.tz import tzlocal
-from passlib.crypto.digest import pbkdf2_hmac
+from hashlib import pbkdf2_hmac
 from testfixtures import log_capture
 
 from privacyidea.lib.config import (set_privacyidea_config, set_prepend_pin)

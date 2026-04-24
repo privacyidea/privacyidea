@@ -43,15 +43,35 @@ import os
 import logging
 import codecs
 
-from passlib.context import CryptContext
+import bcrypt as _bcrypt
 
 from privacyidea.lib.utils import convert_column_to_unicode
+from .unix_crypt import verify_sha256_crypt, verify_sha512_crypt, verify_md5_crypt
 from .UserIdResolver import UserIdResolver
 
 log = logging.getLogger(__name__)
 ENCODING = "utf-8"
 
-crypt_ctx = CryptContext(schemes=["sha512_crypt", "sha256_crypt", "bcrypt"])
+
+def _verify_passwd_hash(password, hash_str):
+    """Verify a password against a passwd-file hash (bcrypt, sha256_crypt, sha512_crypt, md5_crypt)."""
+    if isinstance(password, str):
+        password = password.encode('utf-8')
+    pw_str = password.decode('utf-8')
+    if hash_str.startswith(('$2a$', '$2b$', '$2x$', '$2y$')):
+        try:
+            return _bcrypt.checkpw(password, hash_str.encode('utf-8'))
+        except Exception:
+            return False
+    elif hash_str.startswith('$6$'):
+        return verify_sha512_crypt(pw_str, hash_str)
+    elif hash_str.startswith('$5$'):
+        return verify_sha256_crypt(pw_str, hash_str)
+    elif hash_str.startswith('$1$'):
+        return verify_md5_crypt(pw_str, hash_str)
+    else:
+        log.warning("Unsupported password hash format in passwd file: %s", hash_str[:10])
+        return False
 
 
 def tokenise(r):
@@ -200,7 +220,7 @@ class IdResolver (UserIdResolver):
                 err = "Sorry, currently no support for shadow passwords"
                 log.error(f"{err!s}")
                 raise NotImplementedError(err)
-            if crypt_ctx.verify(password, cryptedpasswd):
+            if _verify_passwd_hash(password, cryptedpasswd):
                 log.info(f"successfully authenticated user uid {uid!s}")
                 return True
             else:

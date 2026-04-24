@@ -34,6 +34,9 @@ import logging
 import yaml
 import binascii
 import re
+import base64
+import hmac
+import os
 
 from privacyidea.lib.resolvers.UserIdResolver import UserIdResolver
 
@@ -49,132 +52,122 @@ from privacyidea.lib.utils import (is_true, censor_connect_string,
                                    convert_column_to_unicode)
 from privacyidea.lib.error import ParameterError, ResolverError
 
-# TODO passlib has to be replaced before the next release, this is just a workaround that can not stay
-# passlib 1.7.4 compatibility with modern bcrypt. Two breaking changes:
-# 1. bcrypt 4.1.0 removed __about__.__version__ — passlib uses it for version detection.
-#    https://github.com/pyca/bcrypt/issues/684
-# 2. bcrypt 5.0.0 raises ValueError for passwords > 72 bytes instead of silently
-#    truncating. passlib's wrap-bug detection passes a long password to hashpw during
-#    backend initialization, which crashes and causes all bcrypt verification to silently
-#    return False.
 import bcrypt as _bcrypt
-if not hasattr(_bcrypt, '__about__'):
-    _bcrypt.__about__ = type('__about__', (), {'__version__': _bcrypt.__version__})()
-_orig_hashpw = _bcrypt.hashpw
-def _hashpw_compat(password, salt):
-    if isinstance(password, bytes) and len(password) > 72:
-        password = password[:72]
-    return _orig_hashpw(password, salt)
-_bcrypt.hashpw = _hashpw_compat
 
-# passlib imports must stay below the bcrypt monkey-patch above (E402 suppressed).
-from passlib.context import CryptContext  # noqa: E402
-from passlib.utils import h64  # noqa: E402
-from passlib.utils.compat import uascii_to_str  # noqa: E402
-from passlib.utils.compat import unicode as pl_unicode  # noqa: E402
-from passlib.utils import to_unicode  # noqa: E402
-import passlib.utils.handlers as uh  # noqa: E402
-import passlib.exc as exc  # noqa: E402
-from passlib.registry import register_crypt_handler  # noqa: E402
-from passlib.handlers.ldap_digests import _SaltedBase64DigestHelper  # noqa: E402
-
-
-class phpass_drupal(uh.HasRounds, uh.HasSalt, uh.GenericHandler):  # pragma: no cover
-    """This class implements the PHPass Portable Hash (Drupal version), and follows the
-    :ref:`password-hash-api`.
-    """
-    name = "phpass_drupal"
-    setting_kwds = ("salt", "rounds")
-    checksum_chars = uh.HASH64_CHARS
-    checksum_size = 43
-
-    min_salt_size = max_salt_size = 8
-    salt_chars = uh.HASH64_CHARS
-
-    default_rounds = 19
-    min_rounds = 7
-    max_rounds = 30
-    rounds_cost = "log2"
-
-    ident = '$S$'
-
-    @classmethod
-    def from_string(cls, hash):
-        hash = to_unicode(hash, "ascii", "hash")
-        ident, data = hash[0:3], hash[3:]
-        if ident != cls.ident:
-            raise exc.InvalidHashError()
-        rounds, salt, chk = data[0], data[1:9], data[9:]
-        return cls(
-            rounds=h64.decode_int6(rounds.encode("ascii")),
-            salt=salt,
-            checksum=chk or None,
-        )
-
-    def to_string(self):
-        hash = "{}{}{}{}".format(self.ident,
-                              h64.encode_int6(self.rounds).decode("ascii"),
-                              self.salt,
-                              self.checksum or '')
-        return uascii_to_str(hash)
-
-    def _calc_checksum(self, secret):
-        if isinstance(secret, pl_unicode):
-            secret = secret.encode("utf-8")
-        real_rounds = 1 << self.rounds
-        result = hashlib.sha512(self.salt.encode("ascii") + secret).digest()
-        r = 0
-        while r < real_rounds:
-            result = hashlib.sha512(result + secret).digest()
-            r += 1
-        return h64.encode_bytes(result).decode("ascii")[:self.checksum_size]
-
-
-class ldap_salted_sha256_pi(_SaltedBase64DigestHelper):
-    name = 'ldap_salted_sha256_pi'
-    ident = '{SSHA256}'
-    checksum_size = 32
-    # passlib sets the max_salt_size for SSHA256 to 16:
-    # <https://foss.heptapod.net/python-libs/passlib/-/blob/branch/stable/passlib/handlers/ldap_digests.py#L71>
-    # But we have encountered hashes with longer salt sizes. Since we set this
-    # password hashing function when we create an internal db resolver,
-    # we should be able to verify these hashes as well.
-    max_salt_size = 32
-    _hash_func = hashlib.sha256
-    _hash_regex = re.compile(r"^\{SSHA256\}(?P<tmp>[+/a-zA-Z0-9]{48,}={0,2})$")
-
-
-register_crypt_handler(phpass_drupal)
-register_crypt_handler(ldap_salted_sha256_pi)
-
-
-# The list of supported password hash types for verification (passlib handler)
-pw_ctx = CryptContext(schemes=['phpass',
-                               'phpass_drupal',
-                               'ldap_salted_sha1',
-                               'ldap_salted_sha256_pi',
-                               'ldap_salted_sha512',
-                               'ldap_sha1',
-                               'md5_crypt',
-                               'bcrypt',
-                               'sha512_crypt',
-                               'sha256_crypt',
-                               'hex_sha256',
-                               ])
-
-# List of supported password hash types for hash generation (name to passlib handler id)
-hash_type_dict = {"PHPASS": 'phpass',
-                  "SHA": 'ldap_sha1',
-                  "SSHA": 'ldap_salted_sha1',
-                  "SSHA256": 'ldap_salted_sha256_pi',
-                  "SSHA512": 'ldap_salted_sha512',
-                  "OTRS": 'hex_sha256',
-                  "SHA256CRYPT": 'sha256_crypt',
-                  "SHA512CRYPT": 'sha512_crypt',
-                  "MD5CRYPT": 'md5_crypt',
-                  }
+from .unix_crypt import (verify_sha256_crypt, verify_sha512_crypt, verify_md5_crypt,
+                         generate_sha256_crypt, generate_sha512_crypt, generate_md5_crypt,
+                         _ITOA64, _h64_encode)
 
 log = logging.getLogger(__name__)
+
+# --- phpass ($P$) helpers ---
+# _ITOA64 and _h64_encode are imported from .unix_crypt
+_ATOI64 = {c: i for i, c in enumerate(_ITOA64)}
+
+
+def _phpass_calc(password_bytes, hash_str, checksum_size):
+    """Compute a phpass MD5 hash; returns the full reconstructed hash string."""
+    rounds_char = hash_str[3]
+    if rounds_char not in _ATOI64:
+        return None
+    real_rounds = 1 << _ATOI64[rounds_char]
+    salt = hash_str[4:12].encode('ascii')
+    result = hashlib.md5(salt + password_bytes).digest()
+    for _ in range(real_rounds):
+        result = hashlib.md5(result + password_bytes).digest()
+    return hash_str[:12] + _h64_encode(result)[:checksum_size]
+
+
+def _phpass_verify(password, hash_str):
+    """Verify a phpass $P$ (MD5-based) hash."""
+    if len(hash_str) < 12 or hash_str[:3] != '$P$':
+        return False
+    if isinstance(password, str):
+        password = password.encode('utf-8')
+    try:
+        computed = _phpass_calc(password, hash_str, 22)
+        return computed is not None and hmac.compare_digest(computed, hash_str[:len(computed)])
+    except Exception:
+        return False
+
+
+def _phpass_generate(password):
+    """Generate a new phpass $P$ (MD5-based, 2^11 rounds) hash."""
+    if isinstance(password, str):
+        password = password.encode('utf-8')
+    salt = ''.join(_ITOA64[b & 0x3f] for b in os.urandom(8))
+    return _phpass_calc(password, '$P$' + _ITOA64[11] + salt, 22)
+
+
+# --- LDAP salted digest helpers ---
+
+def _ssha_verify(password_bytes, hash_str, digest_func, digest_size, ident):
+    """Verify an LDAP {SSHAx} salted hash."""
+    try:
+        raw = base64.b64decode(hash_str[len(ident):])
+        return hmac.compare_digest(digest_func(password_bytes + raw[digest_size:]).digest(), raw[:digest_size])
+    except Exception:
+        return False
+
+
+def _ssha_generate(password_bytes, digest_func, ident, salt_size=4):
+    """Generate an LDAP {SSHAx} salted hash."""
+    salt = os.urandom(salt_size)
+    return ident + base64.b64encode(digest_func(password_bytes + salt).digest() + salt).decode('ascii')
+
+
+# --- Verification dispatcher ---
+
+def _verify_sql_hash(password, hash_str):
+    """
+    Verify a password against a hash stored in an SQL user database.
+
+    Supported formats:
+      {SHA}, {SSHA}, {SSHA256}, {SSHA512} — LDAP digest formats
+      $P$                                  — phpass (WordPress)
+      $2a$/$2b$/$2x$/$2y$                 — bcrypt (passwords truncated to 72 bytes)
+      $1$/$5$/$6$                         — md5_crypt/sha256_crypt/sha512_crypt
+      64 lowercase hex chars               — hex_sha256 (OTRS)
+    """
+    if isinstance(password, str):
+        password_bytes = password.encode('utf-8')
+        password_str = password
+    else:
+        password_bytes = password
+        password_str = password.decode('utf-8', errors='replace')
+
+    if hash_str.startswith('{SHA}'):
+        try:
+            return hmac.compare_digest(base64.b64decode(hash_str[5:]), hashlib.sha1(password_bytes).digest())
+        except Exception:
+            return False
+    elif hash_str.startswith('{SSHA}'):
+        return _ssha_verify(password_bytes, hash_str, hashlib.sha1, 20, '{SSHA}')
+    elif hash_str.startswith('{SSHA256}'):
+        return _ssha_verify(password_bytes, hash_str, hashlib.sha256, 32, '{SSHA256}')
+    elif hash_str.startswith('{SSHA512}'):
+        return _ssha_verify(password_bytes, hash_str, hashlib.sha512, 64, '{SSHA512}')
+    elif hash_str.startswith('$P$'):
+        return _phpass_verify(password_bytes, hash_str)
+    elif hash_str[:4] in ('$2a$', '$2b$', '$2x$', '$2y$'):
+        try:
+            return _bcrypt.checkpw(password_bytes[:72], hash_str.encode('utf-8'))
+        except Exception:
+            return False
+    elif hash_str.startswith('$6$'):
+        return verify_sha512_crypt(password_str, hash_str)
+    elif hash_str.startswith('$5$'):
+        return verify_sha256_crypt(password_str, hash_str)
+    elif hash_str.startswith('$1$'):
+        return verify_md5_crypt(password_str, hash_str)
+    elif re.match(r'^[0-9a-f]{64}$', hash_str):
+        return hmac.compare_digest(hashlib.sha256(password_bytes).hexdigest(), hash_str)
+    else:
+        return False
+
+
+_SUPPORTED_HASH_TYPES = ['PHPASS', 'SHA', 'SSHA', 'SSHA256', 'SSHA512', 'OTRS',
+                          'SHA256CRYPT', 'SHA512CRYPT', 'MD5CRYPT']
 
 class IdResolver (UserIdResolver):
 
@@ -271,11 +264,7 @@ class IdResolver (UserIdResolver):
                              lambda match: f'{{{match.group(1).upper()}}}',
                              database_pw)
 
-        try:
-            res = pw_ctx.verify(password, database_pw)
-        except ValueError as _e:
-            # if the hash could not be identified / verified, just return False
-            pass
+        res = _verify_sql_hash(password, database_pw)
 
         return res
 
@@ -789,20 +778,43 @@ class IdResolver (UserIdResolver):
 
 def hash_password(password, hashtype):
     """
-    Hash a password with phppass, SHA, SSHA, SSHA256, SSHA512, OTRS
+    Hash a password for storage in an SQL user database.
 
     :param password: The password in plain text
     :type password: str
-    :param hashtype: One of the hash types as string
+    :param hashtype: One of PHPASS, SHA, SSHA, SSHA256, SSHA512, OTRS,
+                     SHA256CRYPT, SHA512CRYPT, MD5CRYPT
     :type hashtype: str
     :return: The hashed password
     :rtype: str
     """
-    hashtype = hashtype.upper()
-    try:
-        password = pw_ctx.handler(hash_type_dict[hashtype]).hash(password)
-    except KeyError as _e:  # pragma: no cover
-        raise Exception(f"Unsupported password hashtype '{hashtype!s}'. "
-                        f"Use one of {hash_type_dict.keys()!s}.")
+    if isinstance(password, str):
+        password_bytes = password.encode('utf-8')
+        password_str = password
+    else:
+        password_bytes = password
+        password_str = password.decode('utf-8')
 
-    return password
+    hashtype = hashtype.upper()
+
+    if hashtype == 'PHPASS':
+        return _phpass_generate(password_bytes)
+    elif hashtype == 'SHA':
+        return '{SHA}' + base64.b64encode(hashlib.sha1(password_bytes).digest()).decode('ascii')
+    elif hashtype == 'SSHA':
+        return _ssha_generate(password_bytes, hashlib.sha1, '{SSHA}', salt_size=4)
+    elif hashtype == 'SSHA256':
+        return _ssha_generate(password_bytes, hashlib.sha256, '{SSHA256}', salt_size=16)
+    elif hashtype == 'SSHA512':
+        return _ssha_generate(password_bytes, hashlib.sha512, '{SSHA512}', salt_size=16)
+    elif hashtype == 'OTRS':
+        return hashlib.sha256(password_bytes).hexdigest()
+    elif hashtype == 'SHA256CRYPT':
+        return generate_sha256_crypt(password_str)
+    elif hashtype == 'SHA512CRYPT':
+        return generate_sha512_crypt(password_str)
+    elif hashtype == 'MD5CRYPT':
+        return generate_md5_crypt(password_str)
+    else:
+        raise Exception(f"Unsupported password hashtype '{hashtype!s}'. "
+                        f"Use one of {_SUPPORTED_HASH_TYPES!s}.")

@@ -9,7 +9,7 @@ from privacyidea.lib.authcache import (add_to_cache, delete_from_cache,
                                        update_cache, verify_in_cache,
                                        _hash_password,
                                        cleanup)
-from passlib.hash import argon2
+from .crypto_helper import argon2_verify
 from privacyidea.models import AuthCache
 import datetime
 
@@ -32,7 +32,7 @@ class AuthCacheTestCase(MyTestCase):
 
         auth = AuthCache.query.filter(AuthCache.id == r).first()
         self.assertEqual(auth.username, self.username)
-        self.assertTrue(argon2.verify(self.password, auth.authentication))
+        self.assertTrue(argon2_verify(self.password, auth.authentication))
 
         self.assertTrue(auth.first_auth > teststart)
         self.assertEqual(auth.last_auth, auth.first_auth)
