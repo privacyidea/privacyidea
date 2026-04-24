@@ -18,15 +18,15 @@
  **/
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { ContainerTemplatesTableActionsComponent } from "./container-templates-table-actions.component";
+import { By } from "@angular/platform-browser";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { DialogService } from "src/app/services/dialog/dialog.service";
+import { MockContainerTemplateService, MockDialogService } from "src/testing/mock-services";
 import { ContainerTemplateService } from "../../../../services/container-template/container-template.service";
-import { MockDialogService, MockContainerTemplateService } from "src/testing/mock-services";
-import { ContainerTemplateEditDialogComponent } from "../dialogs/container-template-edit-dialog/container-template-edit-dialog.component";
 import { ContainerTemplateCopyDialogComponent } from "../dialogs/container-template-copy-dialog/container-template-copy-dialog.component";
 import { ContainerTemplateDeleteDialogComponent } from "../dialogs/container-template-delete-dialog/container-template-delete-dialog.component";
-import { By } from "@angular/platform-browser";
+import { ContainerTemplateEditDialogComponent } from "../dialogs/container-template-edit-dialog/container-template-edit-dialog.component";
+import { ContainerTemplatesTableActionsComponent } from "./container-templates-table-actions.component";
 
 describe("ContainerTemplatesTableActionsComponent", () => {
   let component: ContainerTemplatesTableActionsComponent;
@@ -80,7 +80,7 @@ describe("ContainerTemplatesTableActionsComponent", () => {
 
   it("should open ContainerTemplateEditDialogComponent when Create is clicked", () => {
     const spy = jest.spyOn(dialogServiceMock, "openDialog");
-    component.openNewTemplateDialog();
+    component.onClickCreateTemplate();
 
     expect(spy).toHaveBeenCalledWith(
       expect.objectContaining({

@@ -14,18 +14,12 @@ import { TemplateAddedTokenRowComponent } from "../../dialogs/container-template
   styleUrl: "./container-template-edit-body.component.scss"
 })
 export class ContainerTemplateEditBodyComponent {
-  template = model.required<ContainerTemplate>();
-  availableTokenTypes = model.required<string[]>();
+  readonly template = model.required<ContainerTemplate>();
+  readonly availableTokenTypes = model.required<string[]>();
 
-  tokens = computed(() => this.template().template_options?.tokens || []);
+  protected readonly tokens = computed(() => this.template().template_options?.tokens || []);
 
-  // editTemplate = output<Partial<ContainerTemplate>>();
-
-  trackByIndex(index: number) {
-    return index;
-  }
-
-  onEditToken(patch: Partial<TokenEnrollmentPayload>, index: number) {
+  protected onEditToken(patch: Partial<TokenEnrollmentPayload>, index: number) {
     const updatedTokens = this.tokens().map((token, i) => {
       if (i !== index) return token;
       const updatedToken = { ...token, ...patch };
@@ -39,7 +33,7 @@ export class ContainerTemplateEditBodyComponent {
     this.updateTokens(updatedTokens);
   }
 
-  onDeleteToken(index: number) {
+  protected onDeleteToken(index: number) {
     this.updateTokens(this.tokens().filter((_, i) => i !== index));
   }
   // --- Private Helper Methods ---
@@ -51,11 +45,10 @@ export class ContainerTemplateEditBodyComponent {
         tokens
       }
     };
-    console.log("Emitting edited template:", editedTemplate);
     this.template.set(editedTemplate);
   }
 
-  onAddToken(tokenType: string) {
+  protected onAddToken(tokenType: string) {
     const updatedTokens = [...this.tokens(), { type: tokenType as TokenTypeKey }];
     this.updateTokens(updatedTokens);
   }

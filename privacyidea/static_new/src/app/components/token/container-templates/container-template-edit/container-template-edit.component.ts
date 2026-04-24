@@ -1,19 +1,17 @@
-import { Component, inject, computed, model } from "@angular/core";
+import { Component, computed, inject, linkedSignal, model, Signal } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { MatCardModule } from "@angular/material/card";
+import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
-import { MatTooltipModule } from "@angular/material/tooltip";
 import { MatInputModule } from "@angular/material/input";
-import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatListModule } from "@angular/material/list";
+import { MatTooltipModule } from "@angular/material/tooltip";
 import { SelectorButtonsComponent } from "@components/policies/dialogs/edit-policy-dialog/policy-panels/edit-action-tab/selector-buttons/selector-buttons.component";
-import { ContainerTemplateAddTokenComponent } from "../dialogs/container-template-edit-dialog/container-template-add-token-chips/container-template-add-token.component";
-import { TemplateAddedTokenRowComponent } from "../dialogs/container-template-edit-dialog/template-added-token-row/template-added-token-row.component";
 
 import {
-  ContainerTemplateServiceInterface,
-  ContainerTemplateService
+  ContainerTemplateService,
+  ContainerTemplateServiceInterface
 } from "src/app/services/container-template/container-template.service";
 import { ContainerTemplate } from "src/app/services/container/container.service";
 import { ContainerTemplateEditBodyComponent } from "./container-template-edit-body/container-template-edit-body.component";
@@ -50,6 +48,14 @@ export class ContainerTemplateEditComponent {
     default: false
   });
 
+  readonly initTemplate: Signal<ContainerTemplate> = linkedSignal({
+    source: this.template,
+    computation: (template, previous) => {
+      if (previous?.value) return previous.value;
+      return template;
+    }
+  });
+
   // --- Computed - General State ---
   readonly containerTypes = computed(() => this.containerTemplateService.availableContainerTypes());
   readonly containerTypesTitleCase = computed(() =>
@@ -64,9 +70,12 @@ export class ContainerTemplateEditComponent {
   readonly hasToken = computed(() => this.tokens().length > 0);
 
   // --- Computed - Validation & Conflict ---
-  readonly nameConflict = computed(() =>
-    this.containerTemplateService.templates().some((t) => t.name === this.template().name && t.name !== this.data?.name)
-  );
+  readonly nameConflict = computed(() => {
+    if (this.template().name == this.initTemplate().name) {
+      return false;
+    }
+    return this.containerTemplateService.templates().some((t) => t.name === this.template().name);
+  });
   readonly canSaveTemplate = computed<boolean>(() => {
     return this.containerTemplateService.canSaveTemplate(this.template()) && !this.nameConflict();
   });
@@ -78,7 +87,4 @@ export class ContainerTemplateEditComponent {
   editTemplate(templateUpdates: Partial<ContainerTemplate>) {
     this.template.set({ ...this.template(), ...templateUpdates });
   }
-
-  // --- Inputs ---
-  data?: ContainerTemplate;
 }

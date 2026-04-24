@@ -17,16 +17,16 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { ContainerTemplatesComponent } from "./container-templates.component";
-import { ContainerTemplateService } from "../../../services/container-template/container-template.service";
-import { AuthService } from "../../../services/auth/auth.service";
-import { DialogService } from "src/app/services/dialog/dialog.service";
 import { signal } from "@angular/core";
-import { ContainerTemplate } from "../../../services/container/container.service";
-import { By } from "@angular/platform-browser";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MatCheckboxChange } from "@angular/material/checkbox";
+import { By } from "@angular/platform-browser";
+import { NoopAnimationsModule } from "@angular/platform-browser/animations";
+import { DialogService } from "src/app/services/dialog/dialog.service";
+import { AuthService } from "../../../services/auth/auth.service";
+import { ContainerTemplateService } from "../../../services/container-template/container-template.service";
+import { ContainerTemplate } from "../../../services/container/container.service";
+import { ContainerTemplatesComponent } from "./container-templates.component";
 
 describe("ContainerTemplatesComponent", () => {
   let component: ContainerTemplatesComponent;
@@ -166,11 +166,11 @@ describe("ContainerTemplatesComponent", () => {
     expect(actionComponent.selectedTemplates()[0].name).toBe("Template-C");
   });
   it("should open edit dialog only if row is not a skeleton row", () => {
-    component.openEditDialog(mockTemplates[0]);
+    component.onClickTemplateName(mockTemplates[0]);
     expect(mockDialogService.openDialog).toHaveBeenCalled();
 
     mockDialogService.openDialog.mockClear();
-    component.openEditDialog({ name: "" } as ContainerTemplate);
+    component.onClickTemplateName({ name: "" } as ContainerTemplate);
     expect(mockDialogService.openDialog).not.toHaveBeenCalled();
   });
 

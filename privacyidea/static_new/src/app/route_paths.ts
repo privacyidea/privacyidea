@@ -35,6 +35,8 @@ export const ROUTE_PATHS = {
   TOKENS_CONTAINERS_CREATE: "/tokens/containers/create",
   TOKENS_CONTAINERS_DETAILS: "/tokens/containers/details/",
   TOKENS_CONTAINERS_TEMPLATES: "/tokens/containers/templates",
+  TOKENS_CONTAINERS_TEMPLATES_CREATE: "/tokens/containers/templates/create",
+  TOKENS_CONTAINERS_TEMPLATES_DETAILS: "/tokens/containers/templates/details/",
   TOKENS_ASSIGN_TOKEN: "/tokens/assign-token",
   USERS_DETAILS: "/users/details",
   TOKENS_WIZARD: "/tokens/wizard",

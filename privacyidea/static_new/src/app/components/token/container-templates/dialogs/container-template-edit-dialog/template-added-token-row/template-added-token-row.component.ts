@@ -17,33 +17,18 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, effect, inject, input, output, signal, DestroyRef, linkedSignal } from "@angular/core";
+import { Component, computed, DestroyRef, effect, inject, input, linkedSignal, output, signal } from "@angular/core";
 
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
-import { MatIconModule } from "@angular/material/icon";
+import { FormControl, FormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
 import { MatExpansionModule } from "@angular/material/expansion";
-import { FormControl, FormsModule } from "@angular/forms";
 import { MatFormFieldModule } from "@angular/material/form-field";
+import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
 import { MatSelectModule } from "@angular/material/select";
 
 // Token Enrollment Components
-import { EnrollHotpComponent } from "../../../../token-enrollment/enroll-hotp/enroll-hotp.component";
-import { EnrollTotpComponent } from "../../../../token-enrollment/enroll-totp/enroll-totp.component";
-import { EnrollSpassComponent } from "../../../../token-enrollment/enroll-spass/enroll-spass.component";
-import { EnrollRemoteComponent } from "../../../../token-enrollment/enroll-remote/enroll-remote.component";
-import { EnrollSmsComponent } from "../../../../token-enrollment/enroll-sms/enroll-sms.component";
-import { EnrollFoureyesComponent } from "../../../../token-enrollment/enroll-foureyes/enroll-foureyes.component";
-import { EnrollApplspecComponent } from "../../../../token-enrollment/enroll-asp/enroll-applspec.component";
-import { EnrollDaypasswordComponent } from "../../../../token-enrollment/enroll-daypassword/enroll-daypassword.component";
-import { EnrollEmailComponent } from "../../../../token-enrollment/enroll-email/enroll-email.component";
-import { EnrollIndexedsecretComponent } from "../../../../token-enrollment/enroll-indexsecret/enroll-indexedsecret.component";
-import { EnrollPaperComponent } from "../../../../token-enrollment/enroll-paper/enroll-paper.component";
-import { EnrollPushComponent } from "../../../../token-enrollment/enroll-push/enroll-push.component";
-import { EnrollRegistrationComponent } from "../../../../token-enrollment/enroll-registration/enroll-registration.component";
-import { EnrollTanComponent } from "../../../../token-enrollment/enroll-tan/enroll-tan.component";
-import { EnrollTiqrComponent } from "../../../../token-enrollment/enroll-tiqr/enroll-tiqr.component";
 import { enrollmentArgsGetterFn } from "@components/token/token-enrollment/token-enrollment.component";
 import {
   TokenApiPayloadMapper,
@@ -51,6 +36,21 @@ import {
   TokenEnrollmentPayload
 } from "src/app/mappers/token-api-payload/_token-api-payload.mapper";
 import { getTokenApiPayloadMapper } from "src/app/mappers/token-api-payload/token-api-payload-mapper-registry";
+import { EnrollApplspecComponent } from "../../../../token-enrollment/enroll-asp/enroll-applspec.component";
+import { EnrollDaypasswordComponent } from "../../../../token-enrollment/enroll-daypassword/enroll-daypassword.component";
+import { EnrollEmailComponent } from "../../../../token-enrollment/enroll-email/enroll-email.component";
+import { EnrollFoureyesComponent } from "../../../../token-enrollment/enroll-foureyes/enroll-foureyes.component";
+import { EnrollHotpComponent } from "../../../../token-enrollment/enroll-hotp/enroll-hotp.component";
+import { EnrollIndexedsecretComponent } from "../../../../token-enrollment/enroll-indexsecret/enroll-indexedsecret.component";
+import { EnrollPaperComponent } from "../../../../token-enrollment/enroll-paper/enroll-paper.component";
+import { EnrollPushComponent } from "../../../../token-enrollment/enroll-push/enroll-push.component";
+import { EnrollRegistrationComponent } from "../../../../token-enrollment/enroll-registration/enroll-registration.component";
+import { EnrollRemoteComponent } from "../../../../token-enrollment/enroll-remote/enroll-remote.component";
+import { EnrollSmsComponent } from "../../../../token-enrollment/enroll-sms/enroll-sms.component";
+import { EnrollSpassComponent } from "../../../../token-enrollment/enroll-spass/enroll-spass.component";
+import { EnrollTanComponent } from "../../../../token-enrollment/enroll-tan/enroll-tan.component";
+import { EnrollTiqrComponent } from "../../../../token-enrollment/enroll-tiqr/enroll-tiqr.component";
+import { EnrollTotpComponent } from "../../../../token-enrollment/enroll-totp/enroll-totp.component";
 
 @Component({
   selector: "app-template-added-token-row",
@@ -145,6 +145,9 @@ export class TemplateAddedTokenRowComponent {
         initialPatch[key] = control.value;
 
         control.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((value) => {
+          if (value === this.tokenEnrollmentData()?.[key]) {
+            return;
+          }
           this.updateToken({ [key]: value });
         });
       }
@@ -178,7 +181,7 @@ export class TemplateAddedTokenRowComponent {
   }
 
   private _initialTokenFill(patch: { [key: string]: Partial<TokenEnrollmentData> }) {
-    const currentToken = this.tokenEnrollmentPayload();
+    const currentToken = this.tokenEnrollmentData();
     const updatedFields: { [key: string]: Partial<TokenEnrollmentData> } = {};
 
     Object.keys(patch).forEach((key) => {

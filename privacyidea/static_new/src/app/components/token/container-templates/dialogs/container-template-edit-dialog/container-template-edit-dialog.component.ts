@@ -17,34 +17,35 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, inject, computed, linkedSignal, effect } from "@angular/core";
+import { Component, computed, DestroyRef, inject, linkedSignal, signal } from "@angular/core";
 
+import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { FormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCardModule } from "@angular/material/card";
+import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
-import { MatTooltipModule } from "@angular/material/tooltip";
 import { MatInputModule } from "@angular/material/input";
-import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatListModule } from "@angular/material/list";
+import { MatTooltipModule } from "@angular/material/tooltip";
+import { ActivatedRoute, Router } from "@angular/router";
+import { SaveAndExitDialogComponent } from "src/app/components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
+import { DialogAction } from "src/app/models/dialog";
+import { DialogService, DialogServiceInterface } from "src/app/services/dialog/dialog.service";
+import {
+  PendingChangesService,
+  PendingChangesServiceInterface
+} from "src/app/services/pending-changes/pending-changes.service";
+import { NAVIGATION_ACCESSIBLE_DIALOG_CLASS } from "../../../../../constants/global.constants";
+import { ROUTE_PATHS } from "../../../../../route_paths";
 import {
   ContainerTemplateService,
   ContainerTemplateServiceInterface
 } from "../../../../../services/container-template/container-template.service";
 import { ContainerTemplate } from "../../../../../services/container/container.service";
-import { deepCopy } from "../../../../../utils/deep-copy.utils";
-import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
-import { SelectorButtonsComponent } from "@components/policies/dialogs/edit-policy-dialog/policy-panels/edit-action-tab/selector-buttons/selector-buttons.component";
-import { DialogAction } from "src/app/models/dialog";
-import { ContainerTemplateAddTokenComponent } from "./container-template-add-token-chips/container-template-add-token.component";
-import { TemplateAddedTokenRowComponent } from "./template-added-token-row/template-added-token-row.component";
-import { PendingChangesDialogComponent } from "@components/shared/dialog/abstract-dialog/pending-changes-dialog.component";
-import { TokenEnrollmentPayload } from "src/app/mappers/token-api-payload/_token-api-payload.mapper";
-import { TokenTypeKey } from "src/app/services/token/token.service";
-import { ROUTE_PATHS } from "../../../../../route_paths";
 import { ContentService, ContentServiceInterface } from "../../../../../services/content/content.service";
-import { NAVIGATION_ACCESSIBLE_DIALOG_CLASS } from "../../../../../constants/global.constants";
+import { deepCopy } from "../../../../../utils/deep-copy.utils";
 import { ContainerTemplateEditComponent } from "../../container-template-edit/container-template-edit.component";
 
 /**
@@ -67,25 +68,28 @@ import { ContainerTemplateEditComponent } from "../../container-template-edit/co
     MatTooltipModule,
     MatFormFieldModule,
     MatListModule,
-    DialogWrapperComponent,
     MatCheckboxModule,
     ContainerTemplateEditComponent
   ],
   templateUrl: "./container-template-edit-dialog.component.html",
   styleUrl: "./container-template-edit-dialog.component.scss"
 })
-export class ContainerTemplateEditDialogComponent extends PendingChangesDialogComponent<
-  ContainerTemplate | undefined,
-  ContainerTemplate
-> {
+export class ContainerTemplateEditDialogComponent {
   // --- Services ---
   readonly containerTemplateService: ContainerTemplateServiceInterface = inject(ContainerTemplateService);
   readonly contentService: ContentServiceInterface = inject(ContentService);
+  readonly dialogService: DialogServiceInterface = inject(DialogService);
+  readonly pendingChangesService: PendingChangesServiceInterface = inject(PendingChangesService);
+  readonly router = inject(Router);
+  readonly route = inject(ActivatedRoute);
+  private readonly destroyRef = inject(DestroyRef);
+
+  initTemplate = signal<ContainerTemplate | null>(null);
 
   // --- State Signals ---
   readonly template = linkedSignal<any, ContainerTemplate>({
     source: () => ({
-      initialData: this.data ?? this.containerTemplateService.emptyContainerTemplate,
+      initialData: this.initTemplate() ?? this.containerTemplateService.emptyContainerTemplate,
       defaultType: this.containerTemplateService.availableContainerTypes()[0] ?? ""
     }),
     computation: (source) => {
@@ -95,32 +99,31 @@ export class ContainerTemplateEditDialogComponent extends PendingChangesDialogCo
   });
 
   constructor() {
-    super();
-
-    // Close dialog if user navigates away from the container templates route (after pending changes guard allows it)
-    effect(() => {
-      if (
-        this.contentService.routeUrl() !== ROUTE_PATHS.TOKENS_CONTAINERS_TEMPLATES &&
-        this.contentService.routeUrl() !== ROUTE_PATHS.TOKENS_CONTAINERS_CREATE
-      ) {
-        console.log(
-          "Effect: Closing the ContainerTemplateEditDialogComponent due to incorrect route: ",
-          this.contentService.routeUrl()
-        );
-        this.dialogRef?.close();
+    this.route.paramMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((params) => {
+      const name = params.get("name");
+      if (!name) {
+        this.initTemplate.set(null);
+        return;
       }
+      const template = this.containerTemplateService.templates().find((p) => p.name === name);
+      if (!template) {
+        console.warn("ContainerTemplateEditDialogComponent: No template found with name ", name);
+        this.initTemplate.set(null);
+        return;
+      }
+      this.initTemplate.set(template);
     });
   }
 
   // --- Pending Changes Implementations ---
-  override readonly canSave = computed(() => this.canSaveTemplate());
-  override readonly isDirty = computed(() => {
+  readonly canSave = computed(() => this.canSaveTemplate());
+  readonly isDirty = computed(() => {
     const current = JSON.stringify(this.template());
-    const base = JSON.stringify(this.data ?? this.containerTemplateService.emptyContainerTemplate);
+    const base = JSON.stringify(this.initTemplate() ?? this.containerTemplateService.emptyContainerTemplate);
     return current !== base;
   });
 
-  override async onSave(): Promise<boolean> {
+  async onSave(): Promise<boolean> {
     try {
       await this.onAction("save");
       return true;
@@ -130,11 +133,13 @@ export class ContainerTemplateEditDialogComponent extends PendingChangesDialogCo
   }
 
   // --- Computed - General State ---
-  readonly isNewTemplate = computed(() => !this.data);
+  readonly isNewTemplate = computed(() => !this.initTemplate());
 
   // --- Computed - Validation & Conflict ---
   readonly nameConflict = computed(() =>
-    this.containerTemplateService.templates().some((t) => t.name === this.template().name && t.name !== this.data?.name)
+    this.containerTemplateService
+      .templates()
+      .some((t) => t.name === this.template().name && t.name !== this.initTemplate()?.name)
   );
   readonly canSaveTemplate = computed<boolean>(() => {
     return this.containerTemplateService.canSaveTemplate(this.template()) && !this.nameConflict();
@@ -158,12 +163,11 @@ export class ContainerTemplateEditDialogComponent extends PendingChangesDialogCo
   async onAction(action: string): Promise<void> {
     if (action === "save") {
       const result = await this._saveTemplate();
-      if (result) {
-        if (this.data && this.data.name !== this.template().name) {
-          await this.containerTemplateService.deleteTemplate(this.data.name);
-        }
-        this.dialogRef.close(this.template());
+      if (!result) return;
+      if (this.initTemplate() && this.initTemplate()?.name !== this.template().name) {
+        await this.containerTemplateService.deleteTemplate(this.initTemplate()!.name);
       }
+      this._navigateBack();
     }
   }
 
@@ -173,5 +177,39 @@ export class ContainerTemplateEditDialogComponent extends PendingChangesDialogCo
       return this.containerTemplateService.postTemplateEdits(this.template());
     }
     return false;
+  }
+
+  onCancel(): void {
+    if (!this.isDirty()) {
+      this._navigateBack();
+      return;
+    }
+    this.dialogService
+      .openDialog({
+        component: SaveAndExitDialogComponent,
+        data: {
+          title: $localize`Discard changes`,
+          allowSaveExit: this.canSave(),
+          saveExitDisabled: !this.canSave()
+        }
+      })
+      .afterClosed()
+      .subscribe((result) => {
+        if (result === "save-exit") {
+          if (!this.canSave()) return;
+          Promise.resolve(this.pendingChangesService.save()).then((success) => {
+            if (success) {
+              this._navigateBack();
+            }
+          });
+        } else if (result === "discard") {
+          this._navigateBack();
+        }
+      });
+  }
+
+  private _navigateBack(): void {
+    this.pendingChangesService.clearAllRegistrations();
+    this.router.navigateByUrl(ROUTE_PATHS.TOKENS_CONTAINERS_TEMPLATES);
   }
 }
