@@ -140,10 +140,6 @@
 
 <ng-template #supportDocs>
   <span class="spacer"></span>
-  <span
-    class="beta-badge margin-right-16"
-    i18n>Beta
-    </span>
   <a
     (click)="openSupport()"
     aria-label="Support"
@@ -166,6 +162,10 @@
     class="docs-button-icon">
     <mat-icon>info_outline</mat-icon>
   </button>
+  <span
+    class="beta-badge margin-right-16"
+    i18n>Beta
+    </span>
 </ng-template>
 
 @if (activeSection() === 'token') {

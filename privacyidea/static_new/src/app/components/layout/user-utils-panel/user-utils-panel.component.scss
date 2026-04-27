@@ -18,10 +18,10 @@ $breakpoint-compact: 1630px;
   flex-direction: row;
   align-items: center;
   gap: 4px;
-  border: solid 1px var(--mat-sys-surface-container-highest);
-  border-radius: var(--border-radius);
-  padding-left: 8px;
-  background: var(--mat-sys-surface-container-low);
+  padding: 12px;
+  background-color: var(--table-color);
+  border-left: 1px solid var(--nav-item-border);
+  border-right: 1px solid var(--nav-item-border);
 }
 
 .utils-group-self-service {
@@ -32,21 +32,10 @@ $breakpoint-compact: 1630px;
   @include mat.elevation(3);
 }
 
-.separator {
-  background-color: var(--table-color);
-  border-radius: var(--border-radius);
-  align-items: center;
-}
-
 .profile-text {
   @include text-label;
   font-weight: bold;
-}
-
-.profile-info {
-  padding: 0 8px;
-  gap: 4px;
-  align-items: center;
+  margin-right: 16px;
 }
 
 .node-text {
