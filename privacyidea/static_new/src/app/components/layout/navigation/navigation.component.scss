@@ -57,10 +57,10 @@ $breakpoint-compact: 1630px;
 }
 
 .toolbar-logo {
-  height: 56px;
-  width: 56px;
+  height: 48px;
+  width: 48px;
   border-radius: 50%;
-  @include mat.elevation(2);
+  @include mat.elevation(3);
 }
 
 .toolbar-logo-text {
@@ -131,7 +131,7 @@ $breakpoint-compact: 1630px;
   flex-wrap: nowrap;
   @include mat.elevation(3);
 
-  a, button {
+  a:not(.overflow-more-btn), button:not(.overflow-more-btn) {
     @include nav-button-base;
     justify-content: center;
     text-decoration: none;

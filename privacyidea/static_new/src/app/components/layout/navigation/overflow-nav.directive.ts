@@ -12,15 +12,7 @@
  * 2. Hide buttons that don't fit with a CSS class
  * 3. Show a "More" button with a mat-menu containing the hidden items
  */
-import {
-  Directive,
-  ElementRef,
-  AfterViewInit,
-  OnDestroy,
-  NgZone,
-  inject,
-  Renderer2
-} from "@angular/core";
+import { AfterViewInit, Directive, ElementRef, inject, NgZone, OnDestroy, Renderer2 } from "@angular/core";
 
 @Directive({
   selector: "[appOverflowNav]",
@@ -53,15 +45,21 @@ export class OverflowNavDirective implements AfterViewInit, OnDestroy {
   private createMoreButton(): void {
     const container = this.el.nativeElement;
 
-    // Create the "More" button — matches the primary nav's mat-button style
-    this.moreButton = this.renderer.createElement("button");
+    // Create the "More" button — matches the subtoolbar's link style
+    this.moreButton = this.renderer.createElement("a");
+    this.renderer.setAttribute(this.moreButton, "role", "button");
+    this.renderer.setAttribute(this.moreButton, "tabindex", "0");
+    this.renderer.setStyle(this.moreButton, "cursor", "pointer");
     this.renderer.addClass(this.moreButton, "overflow-more-btn");
     this.renderer.addClass(this.moreButton, "nav-button");
     this.renderer.addClass(this.moreButton, "mdc-button");
     this.renderer.addClass(this.moreButton, "mat-mdc-button");
 
-    const icon = this.renderer.createElement("span");
+    const icon = this.renderer.createElement("mat-icon");
+    this.renderer.addClass(icon, "mat-icon");
+    this.renderer.addClass(icon, "notranslate");
     this.renderer.addClass(icon, "material-icons");
+    this.renderer.addClass(icon, "mat-ligature-font");
     icon.textContent = "more_horiz";
     this.renderer.appendChild(this.moreButton, icon);
 
@@ -79,6 +77,13 @@ export class OverflowNavDirective implements AfterViewInit, OnDestroy {
     this.renderer.listen(this.moreButton, "click", (e: Event) => {
       e.stopPropagation();
       this.toggleMenu();
+    });
+
+    this.renderer.listen(this.moreButton, "keydown", (e: KeyboardEvent) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        this.toggleMenu();
+      }
     });
 
     // Close on outside click
@@ -114,15 +119,36 @@ export class OverflowNavDirective implements AfterViewInit, OnDestroy {
     // Only react to childList changes on the container itself, not subtree attribute changes
     this.mutationObserver = new MutationObserver((mutations) => {
       if (this.isCalculating) return;
-      // Only recalculate if actual child nodes were added/removed (not our own style/class changes)
-      const hasRelevantChange = mutations.some(m =>
-        m.type === "childList" && (m.addedNodes.length > 0 || m.removedNodes.length > 0)
-      );
+      const hasRelevantChange = mutations.some(m => {
+        // Recalculate if child nodes were added/removed
+        if (m.type === "childList" && (m.addedNodes.length > 0 || m.removedNodes.length > 0)) {
+          return true;
+        }
+        // Recalculate if a nav button's active class changed (e.g. sub-nav-active toggled)
+        if (m.type === "attributes" && m.attributeName === "class") {
+          const el = m.target as HTMLElement;
+          if (el === this.moreButton) return false;
+          if (el.tagName === "A" || el.tagName === "BUTTON") {
+            const oldVal = m.oldValue || "";
+            const newVal = el.className || "";
+            const hadActive = oldVal.includes("sub-nav-active") || oldVal.includes("nav-active");
+            const hasActive = newVal.includes("sub-nav-active") || newVal.includes("nav-active");
+            return hadActive !== hasActive;
+          }
+        }
+        return false;
+      });
       if (hasRelevantChange) {
         this.ngZone.run(() => this.calculateOverflow());
       }
     });
-    this.mutationObserver.observe(container, { childList: true });
+    this.mutationObserver.observe(container, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["class"],
+      attributeOldValue: true
+    });
   }
 
   private calculateOverflow(): void {
@@ -139,80 +165,90 @@ export class OverflowNavDirective implements AfterViewInit, OnDestroy {
         return;
       }
 
-    // First, show all buttons to measure
-    buttons.forEach(btn => {
-      this.renderer.removeStyle(btn, "display");
-      this.renderer.removeClass(btn, "sub-overflow-hidden");
-    });
-    this.renderer.addClass(this.moreButton, "overflow-more-hidden");
-
-    const containerWidth = container.clientWidth;
-
-    // Measure the right-side elements (spacer + support/docs buttons + footer text)
-    let rightWidth = 0;
-    const spacer = container.querySelector(".spacer");
-    if (spacer) {
-      // Measure everything after the spacer
-      let el = spacer.nextElementSibling;
-      while (el) {
-        if (el !== this.moreButton && el !== this.menuContainer) {
-          rightWidth += (el as HTMLElement).offsetWidth + 4;
-        }
-        el = el.nextElementSibling;
-      }
-    }
-
-    // Also account for footer text at the beginning
-    const footerText = container.querySelector(".footer-text");
-    let leftReserved = 0;
-    if (footerText) {
-      leftReserved = (footerText as HTMLElement).offsetWidth + 16;
-    }
-
-    const moreButtonWidth = 72;
-    const gap = 4;
-    const availableForButtons = containerWidth - leftReserved - rightWidth - 32; // 32 for padding
-
-    let usedWidth = 0;
-    let overflowStartIndex = buttons.length;
-
-    for (let i = 0; i < buttons.length; i++) {
-      const btnWidth = buttons[i].offsetWidth + gap;
-      const remaining = buttons.length - i;
-      const needsMore = remaining > 1;
-      const maxWidth = needsMore ? availableForButtons - moreButtonWidth : availableForButtons;
-
-      if (usedWidth + btnWidth <= maxWidth) {
-        usedWidth += btnWidth;
-      } else {
-        overflowStartIndex = i;
-        break;
-      }
-    }
-
-    if (overflowStartIndex < buttons.length) {
-      // Hide overflow buttons
-      for (let i = overflowStartIndex; i < buttons.length; i++) {
-        this.renderer.addClass(buttons[i], "sub-overflow-hidden");
-        this.renderer.setStyle(buttons[i], "display", "none");
-      }
-      // Show More button
-      this.renderer.removeClass(this.moreButton, "overflow-more-hidden");
-      this.updateMenuContent(buttons.slice(overflowStartIndex));
-    } else {
+      // First, show all buttons to measure
+      buttons.forEach(btn => {
+        this.renderer.removeStyle(btn, "display");
+        this.renderer.removeClass(btn, "sub-overflow-hidden");
+      });
       this.renderer.addClass(this.moreButton, "overflow-more-hidden");
-      this.closeMenu();
-    }
 
-    // Check if More button has an active item
-    const hasActiveOverflow = buttons.slice(overflowStartIndex).some(
-      btn => btn.classList.contains("sub-nav-active")
-    );
-    if (hasActiveOverflow) {
-      this.renderer.addClass(this.moreButton, "nav-active");
-    } else {
-      this.renderer.removeClass(this.moreButton, "nav-active");
-    }
+      const containerWidth = container.clientWidth;
+
+      // Measure the right-side elements (spacer + support/docs buttons + footer text)
+      let rightWidth = 0;
+      const spacer = container.querySelector(".spacer");
+      if (spacer) {
+        // Measure everything after the spacer
+        let el = spacer.nextElementSibling;
+        while (el) {
+          if (el !== this.moreButton && el !== this.menuContainer) {
+            const style = window.getComputedStyle(el);
+            if (style.display !== "none" && style.visibility !== "hidden") {
+              rightWidth += (el as HTMLElement).offsetWidth + 8; // 8 for gap
+            }
+          }
+          el = el.nextElementSibling;
+        }
+      }
+
+      // Also account for footer text at the beginning
+      const footerText = container.querySelector(".footer-text");
+      let leftReserved = 0;
+      if (footerText && window.getComputedStyle(footerText).display !== "none") {
+        leftReserved = (footerText as HTMLElement).offsetWidth + 16;
+      }
+
+      const moreButtonWidth = 80;
+      const gap = 8;
+      const availableForButtons = containerWidth - leftReserved - rightWidth - 48; // 48 for safety/padding
+
+      // Find the active button — it must always stay visible (like the top menu)
+      const activeIndex = buttons.findIndex(btn =>
+        btn.classList.contains("sub-nav-active") || btn.classList.contains("nav-active")
+      );
+
+      // Measure which buttons fit, always reserving space for the active button
+      let usedWidth = 0;
+      const visible: boolean[] = new Array(buttons.length).fill(false);
+
+      // First, reserve space for the active button
+      if (activeIndex >= 0) {
+        usedWidth += buttons[activeIndex].offsetWidth + gap;
+        visible[activeIndex] = true;
+      }
+
+      // Then fit as many other buttons as possible (in order)
+      for (let i = 0; i < buttons.length; i++) {
+        if (i === activeIndex) continue;
+        const btnWidth = buttons[i].offsetWidth + gap;
+        // Check if remaining non-visible buttons would need a More button
+        const remainingCount = buttons.filter((_, j) => j > i && j !== activeIndex && !visible[j]).length;
+        const needsMore = remainingCount > 0;
+        const maxWidth = needsMore ? availableForButtons - moreButtonWidth : availableForButtons;
+
+        if (usedWidth + btnWidth <= maxWidth) {
+          usedWidth += btnWidth;
+          visible[i] = true;
+        } else {
+          break;
+        }
+      }
+
+      const hiddenButtons = buttons.filter((_, i) => !visible[i]);
+
+      if (hiddenButtons.length > 0) {
+        // Hide overflow buttons
+        hiddenButtons.forEach(btn => {
+          this.renderer.addClass(btn, "sub-overflow-hidden");
+          this.renderer.setStyle(btn, "display", "none");
+        });
+        // Show More button
+        this.renderer.removeClass(this.moreButton, "overflow-more-hidden");
+        this.updateMenuContent(hiddenButtons);
+      } else {
+        this.renderer.addClass(this.moreButton, "overflow-more-hidden");
+        this.closeMenu();
+      }
     } finally {
       this.isCalculating = false;
     }
@@ -223,7 +259,7 @@ export class OverflowNavDirective implements AfterViewInit, OnDestroy {
     const all = Array.from(container.children) as HTMLElement[];
     return all.filter(el =>
       el !== this.moreButton &&
-      el.tagName === "BUTTON" &&
+      (el.tagName === "BUTTON" || el.tagName === "A") &&
       !el.classList.contains("overflow-more-btn") &&
       !el.closest(".spacer") &&
       // Exclude right-side buttons (after spacer)
@@ -244,9 +280,12 @@ export class OverflowNavDirective implements AfterViewInit, OnDestroy {
     this.menuContainer.innerHTML = "";
 
     hiddenButtons.forEach(btn => {
-      const menuItem = this.renderer.createElement("button");
+      const menuItem = this.renderer.createElement("a");
+      this.renderer.setAttribute(menuItem, "role", "button");
+      this.renderer.setAttribute(menuItem, "tabindex", "0");
+      this.renderer.setStyle(menuItem, "text-decoration", "none");
       this.renderer.addClass(menuItem, "overflow-menu-item");
-      if (btn.classList.contains("sub-nav-active")) {
+      if (btn.classList.contains("sub-nav-active") || btn.classList.contains("nav-active")) {
         this.renderer.addClass(menuItem, "overflow-menu-item-active");
       }
 
@@ -254,7 +293,10 @@ export class OverflowNavDirective implements AfterViewInit, OnDestroy {
       const icon = btn.querySelector("mat-icon");
       if (icon) {
         const iconSpan = this.renderer.createElement("span");
+        this.renderer.addClass(iconSpan, "mat-icon");
+        this.renderer.addClass(iconSpan, "notranslate");
         this.renderer.addClass(iconSpan, "material-icons");
+        this.renderer.addClass(iconSpan, "mat-ligature-font");
         iconSpan.textContent = icon.textContent?.trim() || "";
         // Copy any custom icon classes (e.g. ms--shield-list, mdi--folder-list)
         icon.classList.forEach((cls: string) => {
@@ -270,9 +312,9 @@ export class OverflowNavDirective implements AfterViewInit, OnDestroy {
       let textContent = "";
       spans.forEach(s => {
         if (!s.classList.contains("mat-mdc-button-touch-target") &&
-            !s.classList.contains("mdc-button__label") &&
-            !s.classList.contains("mat-mdc-focus-indicator") &&
-            !s.classList.contains("mat-ripple")) {
+          !s.classList.contains("mdc-button__label") &&
+          !s.classList.contains("mat-mdc-focus-indicator") &&
+          !s.classList.contains("mat-ripple")) {
           const t = s.textContent?.trim();
           if (t) textContent = t;
         }
