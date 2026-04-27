@@ -1309,6 +1309,45 @@ class BaseEventHandlerTestCase(MyTestCase):
         r = uhandler.check_condition(options)
         self.assertFalse(r)
 
+        # Test {now} replacement and time offset in user info condition.
+        # We mock get_specific_info to return a date value and verify that
+        # {now} is correctly replaced and compared.
+        from privacyidea.lib.tokenclass import DATE_FORMAT
+        future_date = (datetime.now(tzlocal()) + timedelta(days=10)).strftime(DATE_FORMAT)
+        past_date = (datetime.now(tzlocal()) - timedelta(days=10)).strftime(DATE_FORMAT)
+
+        # A user info field set to a future date should be > {now}
+        with mock.patch.object(user, 'get_specific_info', return_value={"expiration": future_date}):
+            options["handler_def"] = {"conditions": {CONDITION.USER_INFO: "expiration > {now}"}}
+            r = uhandler.check_condition(options)
+            self.assertTrue(r)
+
+        # A user info field set to a past date should be < {now}
+        with mock.patch.object(user, 'get_specific_info', return_value={"expiration": past_date}):
+            options["handler_def"] = {"conditions": {CONDITION.USER_INFO: "expiration < {now}"}}
+            r = uhandler.check_condition(options)
+            self.assertTrue(r)
+
+        # Test {now} with a time offset: past_date should be < {now}-5d (now minus 5 days)
+        # past_date is 10 days ago, {now}-5d is 5 days ago, so past_date < {now}-5d
+        with mock.patch.object(user, 'get_specific_info', return_value={"expiration": past_date}):
+            options["handler_def"] = {"conditions": {CONDITION.USER_INFO: "expiration < {now}-5d"}}
+            r = uhandler.check_condition(options)
+            self.assertTrue(r)
+
+        # future_date should NOT be < {now}+5d ... actually future_date is +10d, {now}+5d is +5d
+        # so future_date > {now}+5d should be True
+        with mock.patch.object(user, 'get_specific_info', return_value={"expiration": future_date}):
+            options["handler_def"] = {"conditions": {CONDITION.USER_INFO: "expiration > {now}+5d"}}
+            r = uhandler.check_condition(options)
+            self.assertTrue(r)
+
+        # future_date (+10d) should NOT be > {now}+15d
+        with mock.patch.object(user, 'get_specific_info', return_value={"expiration": future_date}):
+            options["handler_def"] = {"conditions": {CONDITION.USER_INFO: "expiration > {now}+15d"}}
+            r = uhandler.check_condition(options)
+            self.assertFalse(r)
+
         remove_token(serial)
 
 

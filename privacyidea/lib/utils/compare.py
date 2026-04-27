@@ -625,9 +625,10 @@ def compare_generic(condition: str, key_method: callable, warning: str) -> bool:
         if not isinstance(left_value, int) and not isinstance(right_value, int):
             # try to convert both values to a timestamp
             try:
-                date1 = left_value if isinstance(left_value, datetime.datetime) else parse(left_value)
-                date2 = right_value if isinstance(right_value, datetime.datetime) else parse(right_value)
+                date1 = parse(left_value)
+                date2 = parse(right_value)
                 if date1 and date2:
+                    # Only use dates, if both values can be converted to dates
                     left_value = date1
                     right_value = date2
             except Exception:
