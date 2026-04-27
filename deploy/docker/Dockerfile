@@ -79,7 +79,9 @@ USER nonroot
 COPY --chown=nonroot:nonroot ./deploy/privacyidea/NetKnights.pem /etc/privacyidea/
 COPY --chown=nonroot:nonroot ./deploy/privacyidea/dictionary* /etc/privacyidea/
 
-VOLUME /etc/privacyidea
+# Note: no VOLUME /etc/privacyidea. Config comes from env vars and /run/secrets/
+# in both the single-container and HA deployments. An anonymous VOLUME here would
+# accumulate stray entries in `docker volume ls` on every `compose up`.
 
 EXPOSE 8080
 
@@ -91,9 +93,12 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 COPY --chown=nonroot:nonroot --from=python-builder /opt/privacyidea/ /opt/privacyidea/
 COPY --chown=nonroot:nonroot --chmod=755 deploy/docker/entrypoint.sh /opt/privacyidea/
 COPY --chown=nonroot:nonroot --chmod=755 deploy/docker/cron-runner.py /opt/privacyidea/
+COPY --chown=nonroot:nonroot --chmod=755 deploy/docker/enckey-canary.py /opt/privacyidea/
 
 ENTRYPOINT ["./entrypoint.sh"]
 
-# Disable health check for now since the container start-up and configuration is not handled yet
-#HEALTHCHECK --interval=60s --timeout=5s --retries=3 \
-#  CMD /opt/privacyidea/bin/python -c "import requests; res = requests.get('http://localhost:80', timeout=3); exit(0 if res.ok else 1);"
+# Uses stdlib urllib (no `requests` dependency) and the /healthz/readyz endpoint
+# on gunicorn's port 8080. Matches the healthcheck used by ha-compose.yaml for
+# the pi service, so standalone-image users get the same behaviour.
+HEALTHCHECK --interval=30s --timeout=5s --retries=3 --start-period=15s \
+    CMD python3 -c "import urllib.request; urllib.request.urlopen('http://localhost:8080/healthz/readyz', timeout=3)"

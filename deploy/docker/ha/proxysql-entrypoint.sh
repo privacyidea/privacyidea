@@ -3,9 +3,7 @@ set -e
 
 # Read secrets from Docker secret files
 MARIADB_PASSWORD=$(cat /run/secrets/mariadb_password)
-MARIADB_ROOT_PASSWORD=$(cat /run/secrets/mariadb_root_password)
-
-# Read admin password from Docker secret file
+MONITOR_PASSWORD=$(cat /run/secrets/proxysql_monitor_password)
 ADMIN_PASSWORD=$(cat /run/secrets/proxysql_admin_password)
 
 # Generate ProxySQL configuration from template with actual passwords
@@ -20,10 +18,11 @@ mysql_variables = {
     max_connections=2048
     interfaces="0.0.0.0:3306"
 
-    # The user ProxySQL uses to ping the databases and check Galera state.
-    # We are using the root user here to guarantee access to information_schema.
-    monitor_username="root"
-    monitor_password="${MARIADB_ROOT_PASSWORD}"
+    # Dedicated minimal-privilege user for ProxySQL cluster monitoring.
+    # Created during db-1 first bootstrap by initdb.d/01-proxysql-monitor.sh.
+    # Grants: USAGE + REPLICATION CLIENT. No data access, no DML/DDL.
+    monitor_username="proxysql_monitor"
+    monitor_password="${MONITOR_PASSWORD}"
 
     # Ping the database every 2 seconds
     monitor_galera_healthcheck_interval=2000

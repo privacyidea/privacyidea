@@ -83,8 +83,27 @@ fi
 
 # PI_INIT_ONLY: run migrations/bootstrap then exit (used by pi-init container)
 if [ "${PI_INIT_ONLY:-false}" = "true" ]; then
+    # Install the enckey canary so pi workers can verify the enckey on every start.
+    # Idempotent — re-running pi-init on an existing deployment leaves the canary
+    # row untouched.
+    echo "Installing enckey canary..."
+    python3 /opt/privacyidea/enckey-canary.py install || echo "WARNING: enckey canary install failed"
+
     echo "Initialization complete. PI_INIT_ONLY is true. Exiting..."
     exit 0
+fi
+
+# Verify the enckey canary before starting gunicorn. Exit 2 = decrypt mismatch
+# (hard fail, enckey is wrong). Exit 1 = canary missing (warn and continue, so
+# deployments that predate the canary still start). Exit 0 = OK.
+echo "Verifying enckey canary..."
+set +e
+python3 /opt/privacyidea/enckey-canary.py verify
+CANARY_RC=$?
+set -e
+if [ "$CANARY_RC" -eq 2 ]; then
+    echo "FATAL: enckey canary verification failed. Refusing to start." >&2
+    exit 2
 fi
 
 # PI_CRON_MODE: run the maintenance task scheduler (used by pi-cron container)

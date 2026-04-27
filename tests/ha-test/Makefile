@@ -14,7 +14,7 @@ export HA_TEST_USERS_FILE := $(USERS_FILE)
 
 COMPOSE := docker compose -f $(BASE) -f $(OVERRIDE)
 
-.PHONY: test fresh stress down status logs clean help
+.PHONY: test fresh stress rebuild recovery-test down status logs clean help
 
 help:
 	@echo "Usage: make <target>"
@@ -23,6 +23,10 @@ help:
 	@echo "  test         Failover test at ~40% capacity (10 users) — clean signal"
 	@echo "  stress       Failover test at saturation (50 users) — worst-case behavior"
 	@echo "  fresh        Wipe volumes first, then run — use after a broken/aborted run"
+	@echo "  rebuild      Wipe volumes AND rebuild images --no-cache, then run —"
+	@echo "               use after Dockerfile / cron-runner.py / entrypoint.sh changes"
+	@echo "  recovery-test  All-nodes-crashed Galera recovery: kill both DBs and run"
+	@echo "               ha-recover-cluster.sh, verify cluster + data are restored"
 	@echo ""
 	@echo "Stack control (with the test override applied):"
 	@echo "  down         Stop and remove containers + volumes"
@@ -43,6 +47,12 @@ stress:
 
 fresh:
 	$(PYTHON) run_failover_test.py --fresh
+
+rebuild:
+	$(PYTHON) run_failover_test.py --fresh --rebuild
+
+recovery-test:
+	$(PYTHON) run_recovery_test.py
 
 down:
 	$(COMPOSE) down -v

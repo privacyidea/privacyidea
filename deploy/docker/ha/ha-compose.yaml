@@ -5,12 +5,16 @@ services:
     restart: unless-stopped
     ports:
       - "8000:8000"
+      - "8443:8443"
       # Stats dashboard — localhost only, not exposed to the network
       - "127.0.0.1:8404:8404"
     networks:
       - pi-network
     volumes:
       - ./haproxy-web.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+      # Default is a self-signed cert from scripts/gen-haproxy-cert.sh.
+      # Replace this file with a production cert at deploy time.
+      - ./secrets/haproxy/cert.pem:/etc/haproxy/cert.pem:ro
     depends_on:
       - pi
     deploy:
@@ -64,6 +68,10 @@ services:
       - PI_CREATE_TABLES=true
       - PI_STARTUP_DELAY=10
       - PI_BOOTSTRAP_ADMIN=${BOOTSTRAP_ADMIN:-admin}
+    # pi-init exits after its one-shot work — disable the image HEALTHCHECK
+    # (which expects gunicorn on :8080) so it doesn't spuriously report unhealthy.
+    healthcheck:
+      disable: true
     deploy:
       resources:
         limits:
@@ -175,6 +183,10 @@ services:
       # Individual task toggles
       #- PI_CRON_CHALLENGE_CLEANUP=true
       #- PI_CRON_PERIODIC_TASKS=true
+    # pi-cron runs the scheduler loop, not gunicorn — disable the image
+    # HEALTHCHECK which probes /healthz/readyz on port 8080.
+    healthcheck:
+      disable: true
     depends_on:
       pi-init:
         condition: service_completed_successfully
@@ -189,8 +201,8 @@ services:
       # Access via: docker exec -it ha-db-proxy-1 mysql -h127.0.0.1 -P6032 -uadmin -p
     secrets:
       - mariadb_password
-      - mariadb_root_password
       - proxysql_admin_password
+      - proxysql_monitor_password
     volumes:
       - ./proxysql-entrypoint.sh:/usr/local/bin/proxysql-entrypoint.sh:ro
       - proxysql-data:/var/lib/proxysql
@@ -231,6 +243,7 @@ services:
     secrets:
       - mariadb_password
       - mariadb_root_password
+      - proxysql_monitor_password
       - galera_ca
       # Per-node cert/key, mounted under a node-agnostic path so the entrypoint
       # can reference /run/secrets/galera_node_{cert,key} regardless of host.
@@ -241,6 +254,9 @@ services:
     volumes:
       - db-1-data:/var/lib/mysql
       - ./galera-entrypoint.sh:/usr/local/bin/galera-entrypoint.sh:ro
+      # Initial-bootstrap-only setup. Scripts here run once when /var/lib/mysql
+      # is empty. Mounted on db-1 only; db-2 picks up the resulting state via SST.
+      - ./initdb.d:/docker-entrypoint-initdb.d:ro
     command: [ "/bin/bash", "/usr/local/bin/galera-entrypoint.sh" ]
     deploy:
       resources:
@@ -311,6 +327,8 @@ secrets:
     file: ./secrets/mariadb_root_password
   proxysql_admin_password:
     file: ./secrets/proxysql_admin_password
+  proxysql_monitor_password:
+    file: ./secrets/proxysql_monitor_password
   bootstrap_admin_password:
     file: ./secrets/bootstrap_admin_password
   # TLS materials for Galera cluster communication. Generate with:

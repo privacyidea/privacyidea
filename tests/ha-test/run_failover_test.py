@@ -255,6 +255,9 @@ def run_test(args, thresholds: Thresholds) -> int:
         if args.fresh:
             print("[1/7] --fresh: docker compose down -v")
             compose("down", "-v", check=False)
+        if args.rebuild:
+            print("[1/7] --rebuild: docker compose build --no-cache pi pi-init pi-cron")
+            compose("build", "--no-cache", "pi", "pi-init", "pi-cron")
         print(f"[1/7] docker compose up -d --wait ({COMPOSE_FILE})")
         compose("up", "-d", "--wait")
     else:
@@ -383,6 +386,9 @@ def main():
     ap.add_argument("--skip-provision", action="store_true", help="Reuse existing test_tokens.json")
     ap.add_argument("--fresh", action="store_true",
                     help="'docker compose down -v' before up — wipes Galera state. Use after a failed run.")
+    ap.add_argument("--rebuild", action="store_true",
+                    help="'docker compose build --no-cache' before up — forces fresh images. "
+                         "Use after changes to Dockerfile or files it COPYs in.")
     ap.add_argument("--max-failure-rate", type=float, default=0.02)
     ap.add_argument("--max-failure-window", type=int, default=10)
     ap.add_argument("--max-rejoin", type=int, default=60)
