@@ -1,6 +1,34 @@
 @use "styles";
 @use "@angular/material" as mat;
 
+$icon-size-sm: 18px;
+$toolbar-padding: 8px 16px;
+$breakpoint-compact: 1630px;
+
+@mixin small-icon {
+  font-size: $icon-size-sm;
+  width: $icon-size-sm;
+  height: $icon-size-sm;
+}
+
+@mixin flex-center {
+  display: flex;
+  align-items: center;
+}
+
+@mixin nav-button-base {
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  border-radius: var(--border-radius);
+  transition: background 200ms ease, color 200ms ease;
+  flex-shrink: 0;
+
+  mat-icon {
+    @include small-icon;
+  }
+}
+
 :host {
   display: block;
   position: sticky;
@@ -9,24 +37,16 @@
 }
 
 .primary-toolbar {
-  display: flex;
-  align-items: center;
+  @include flex-center;
   gap: 8px;
-  padding: 8px 16px;
+  padding: $toolbar-padding;
   background: var(--mat-sys-surface-variant);
-  @include mat.elevation(4);
   min-height: 0;
-
-  ::ng-deep {
-    .mat-toolbar-row, .mat-toolbar-single-row {
-      height: auto;
-    }
-  }
+  @include mat.elevation(4);
 }
 
 .toolbar-brand {
-  display: flex;
-  align-items: center;
+  @include flex-center;
   gap: 16px;
   flex-shrink: 0;
 }
@@ -61,8 +81,7 @@
 }
 
 .main-nav {
-  display: flex;
-  align-items: center;
+  @include flex-center;
   flex: 1;
   justify-content: start;
   flex-wrap: nowrap;
@@ -72,18 +91,7 @@
 }
 
 .nav-button {
-  display: inline-flex;
-  align-items: center;
-  white-space: nowrap;
-  border-radius: var(--border-radius);
-  transition: background 200ms ease, color 200ms ease;
-  flex-shrink: 0;
-
-  mat-icon {
-    font-size: 18px;
-    width: 18px;
-    height: 18px;
-  }
+  @include nav-button-base;
 }
 
 .nav-active {
@@ -96,50 +104,31 @@
 
   &.active {
     background-color: var(--mat-sys-surface-container-lowest);
-    border-left: 1px solid #DDDDDD;
-    border-right: 1px solid #DDDDDD;
+    border-left: 1px solid #ddd;
+    border-right: 1px solid #ddd;
   }
 }
 
 .toolbar-actions {
-  display: flex;
-  align-items: center;
+  @include flex-center;
   gap: 4px;
   flex-shrink: 0;
   margin-left: auto;
 }
 
 .secondary-toolbar {
-  display: flex;
-  align-items: center;
+  @include flex-center;
   gap: 8px;
-  padding: 8px 16px;
+  padding: $toolbar-padding;
   min-height: 44px;
   background: var(--mat-sys-surface-container-lowest);
   overflow: hidden;
   flex-wrap: nowrap;
-
   @include mat.elevation(3);
 
-  ::ng-deep {
-    .mat-toolbar-row, .mat-toolbar-single-row {
-      height: auto;
-    }
-  }
-
   button {
-    display: inline-flex;
-    align-items: center;
+    @include nav-button-base;
     justify-content: center;
-    border-radius: var(--border-radius);
-    white-space: nowrap;
-    flex-shrink: 0;
-
-    mat-icon {
-      font-size: 18px;
-      width: 18px;
-      height: 18px;
-    }
 
     span {
       font-size: 14px;
@@ -216,15 +205,11 @@
   }
 
   mat-icon {
-    display: flex;
-    align-items: center;
+    @include flex-center;
     justify-content: center;
-    font-size: 18px;
-    width: 18px;
-    height: 18px;
+    @include small-icon;
   }
 }
-
 
 .docs-button-icon {
   display: none !important;
@@ -243,7 +228,7 @@
   color: var(--mat-sys-on-primary-container) !important;
 }
 
-@media (max-width: 1630px) {
+@media (max-width: $breakpoint-compact) {
   .toolbar-logo-text {
     display: none;
   }
