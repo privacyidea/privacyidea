@@ -813,7 +813,7 @@ class EventWrapperTestCase(MyApiTestCase):
             # Check warning in log
             expected = "Failed to send a notification email to user {'email': ['pretzel@example.com']}"
             mock_log.assert_called_once_with(expected)
-            msg = smtpmock.get_sent_message().decode('utf-8')
+            msg = smtpmock.get_sent_message()
             self.assertIn('To: pretzel@example.com', msg)
         delete_event(r)
 
@@ -846,7 +846,7 @@ class EventWrapperTestCase(MyApiTestCase):
             expected = "Failed to send a notification email to user {'email': ['donut@example.com']}"
             mock_log.assert_called_once_with(expected)
 
-            msg = smtpmock.get_sent_message().decode('utf-8')
+            msg = smtpmock.get_sent_message()
             self.assertIn('To: donut@example.com', msg)
         delete_event(r)
 
@@ -1073,7 +1073,7 @@ class ContainerHandlerTestCase(MyApiTestCase):
             # Check warning in log
             expected = "Failed to send a notification email to user {'email': ['pretzel@example.com']}"
             mock_log.assert_called_once_with(expected)
-            msg = smtpmock.get_sent_message().decode('utf-8')
+            msg = smtpmock.get_sent_message()
             self.assertIn('To: pretzel@example.com', msg)
             self.assertIn("Container Registration", msg)
         delete_event(r)
@@ -1128,7 +1128,7 @@ class ContainerHandlerTestCase(MyApiTestCase):
             # Check warning in log
             expected = "Failed to send a notification email to user {'email': ['pretzel@example.com']}"
             mock_log.assert_called_once_with(expected)
-            msg = smtpmock.get_sent_message().decode('utf-8')
+            msg = smtpmock.get_sent_message()
             self.assertIn('To: pretzel@example.com', msg)
             self.assertIn("Your container was unregistered.", msg)
         delete_event(r)
@@ -1191,7 +1191,7 @@ class ContainerHandlerTestCase(MyApiTestCase):
             # Check warning in log
             expected = "Failed to send a notification email to user {'email': ['pretzel@example.com']}"
             mock_log.assert_called_once_with(expected)
-            msg = smtpmock.get_sent_message().decode('utf-8')
+            msg = smtpmock.get_sent_message()
             self.assertIn('To: pretzel@example.com', msg)
             self.assertIn("Container Rollover", msg)
         delete_event(r)
@@ -1257,7 +1257,7 @@ class ContainerHandlerTestCase(MyApiTestCase):
             # Check warning in log
             expected = "Failed to send a notification email to user {'email': ['pretzel@example.com']}"
             mock_log.assert_called_once_with(expected)
-            msg = smtpmock.get_sent_message().decode('utf-8')
+            msg = smtpmock.get_sent_message()
             self.assertIn('To: pretzel@example.com', msg)
             self.assertIn("Container Rollover", msg)
 
