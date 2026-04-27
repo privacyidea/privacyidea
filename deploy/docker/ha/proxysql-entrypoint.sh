@@ -28,7 +28,7 @@ mysql_variables = {
     monitor_galera_healthcheck_interval=2000
     monitor_galera_healthcheck_max_timeout_count=3
 }
-
+─
 # Define the physical nodes
 # db-1 starts in writer hostgroup (10), db-2 starts in backup_writer (20)
 mysql_servers = (

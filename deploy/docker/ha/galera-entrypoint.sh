@@ -13,7 +13,7 @@ set -e
 GRASTATE="/var/lib/mysql/grastate.dat"
 TARGET_MESH="gcomm://${CLUSTER_NODES}"
 
-# ── Cluster address: bootstrap vs join ───────────────────────────────────────
+#  Cluster address: bootstrap vs join 
 if [ -f "$GRASTATE" ]; then
     if grep -q 'safe_to_bootstrap: 1' "$GRASTATE"; then
         echo "[Recovery] safe_to_bootstrap: 1. Bootstrapping cluster..."
@@ -32,7 +32,7 @@ else
     fi
 fi
 
-# ── TLS material paths (mounted via docker secrets) ──────────────────────────
+#  TLS material paths (mounted via docker secrets) 
 CA_PATH=/run/secrets/galera_ca
 CERT_PATH=/run/secrets/galera_node_cert
 KEY_PATH=/run/secrets/galera_node_key
@@ -54,7 +54,7 @@ chown -R mysql:mysql /etc/mysql/tls
 chmod 600 /etc/mysql/tls/node.key
 chmod 644 /etc/mysql/tls/ca.pem /etc/mysql/tls/node.pem
 
-# ── wsrep_sst_auth via config file (not CLI) ─────────────────────────────────
+#  wsrep_sst_auth via config file (not CLI) 
 # The auth value used to be passed via --wsrep_sst_auth on the command line,
 # making the root password visible in `ps aux`. Writing it to a protected
 # config file keeps it off the process listing.
@@ -67,11 +67,23 @@ EOF
 chown mysql:mysql "$SST_CNF"
 chmod 600 "$SST_CNF"
 
-# ── Galera provider options ──────────────────────────────────────────────────
+#  Memory tuning
+# Both values must fit within the container memory limit set in ha-compose.yaml,
+# along with mariadbd's ~300 MB baseline overhead. Galera's rule of thumb is
+# innodb_buffer_pool_size ≈ 60-70% of the RAM left after gcache.
+#
+# Defaults sized for the 4 GB container limit:
+#   4 GB - 1 GB gcache - ~300 MB overhead ≈ 2.7 GB available → 2 GB pool.
+# When you bump the container memory limit, raise INNODB_BUFFER_POOL_SIZE
+# proportionally (.env in deploy/docker/ha/ is the override point).
+INNODB_BUFFER_POOL_SIZE="${INNODB_BUFFER_POOL_SIZE:-2G}"
+GCACHE_SIZE="${GCACHE_SIZE:-1G}"
+
+#  Galera provider options 
 # socket.ssl=yes turns on TLS for cluster replication traffic (port 4567,
 # write-set replication and IST on 4568). Every node presents its own cert,
 # signed by the shared CA; peers verify against socket.ssl_ca.
-WSREP_OPTS="gcache.size=1G"
+WSREP_OPTS="gcache.size=${GCACHE_SIZE}"
 WSREP_OPTS="${WSREP_OPTS};socket.ssl=yes"
 WSREP_OPTS="${WSREP_OPTS};socket.ssl_ca=/etc/mysql/tls/ca.pem"
 WSREP_OPTS="${WSREP_OPTS};socket.ssl_cert=/etc/mysql/tls/node.pem"
@@ -97,4 +109,4 @@ exec docker-entrypoint.sh mariadbd \
   --default-storage-engine=InnoDB \
   --innodb_autoinc_lock_mode=2 \
   --innodb_flush_log_at_trx_commit=2 \
-  --innodb_buffer_pool_size=512M
+  --innodb_buffer_pool_size="$INNODB_BUFFER_POOL_SIZE"

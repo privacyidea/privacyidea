@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: CC0-1.0
 
-# ── Stage 1: Build the Angular frontend ──────────────────────────────────────
+#  Stage 1: Build the Angular frontend 
 FROM cgr.dev/chainguard/wolfi-base AS node-builder
 
 ARG NODEJS_VERSION=22
@@ -19,7 +19,7 @@ RUN npm ci
 COPY privacyidea/static_new/ ./
 RUN npm run build
 
-# ── Stage 2: Build the Python virtualenv ─────────────────────────────────────
+#  Stage 2: Build the Python virtualenv 
 FROM cgr.dev/chainguard/wolfi-base AS python-builder
 
 ARG PYTHON_VERSION=3.13
@@ -63,7 +63,7 @@ COPY --from=node-builder /build/privacyidea/static_new/dist/ ./privacyidea/stati
 
 RUN SETUPTOOLS_SCM_PRETEND_VERSION_FOR_PRIVACYIDEA=${GIT_VERSION} pip install --no-cache-dir .
 
-# ── Stage 3: Final slim runtime image ────────────────────────────────────────
+#  Stage 3: Final slim runtime image 
 FROM cgr.dev/chainguard/wolfi-base
 
 ARG PYTHON_VERSION=3.13

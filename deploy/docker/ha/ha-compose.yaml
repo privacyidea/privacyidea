@@ -150,12 +150,14 @@ services:
     deploy:
       replicas: 1
       resources:
+        # 512M leaves headroom for audit-rotation DELETE batches at large
+        # row counts. Use PI_CRON_AUDIT_CHUNKSIZE to bound transient spikes.
         limits:
           cpus: '0.5'
-          memory: 256M
+          memory: 512M
         reservations:
           cpus: '0.1'
-          memory: 64M
+          memory: 128M
     secrets:
       - enckey
       - secret_key
@@ -240,6 +242,10 @@ services:
       NODE_NAME: db-1
       CLUSTER_NODES: db-1,db-2
       BOOTSTRAP_NODE: db-1
+      # Memory tuning — bump these when raising the deploy.resources.limits
+      # memory below. See galera-entrypoint.sh for the sizing rule of thumb.
+      INNODB_BUFFER_POOL_SIZE: ${INNODB_BUFFER_POOL_SIZE:-2G}
+      GCACHE_SIZE: ${GCACHE_SIZE:-1G}
     secrets:
       - mariadb_password
       - mariadb_root_password
@@ -259,13 +265,18 @@ services:
       - ./initdb.d:/docker-entrypoint-initdb.d:ro
     command: [ "/bin/bash", "/usr/local/bin/galera-entrypoint.sh" ]
     deploy:
+      # Sized for a small-to-medium production deployment. Layout at the
+      # 4 GB default: ~2 GB innodb_buffer_pool + 1 GB gcache + ~300 MB
+      # mariadbd overhead, leaving ~700 MB headroom for connections and
+      # query buffers. For high-volume deployments raise memory to 8 GB
+      # (or more) and bump INNODB_BUFFER_POOL_SIZE in .env to ~4-5G.
       resources:
         limits:
           cpus: '2.0'
-          memory: 2G
+          memory: 4G
         reservations:
           cpus: '0.5'
-          memory: 512M
+          memory: 1G
     healthcheck:
       # Dynamically inject the root password from the secret file during the check
       test: [ "CMD-SHELL", "mariadb -h 127.0.0.1 -uroot -p$$(cat /run/secrets/mariadb_root_password) --silent -e \"SELECT VARIABLE_VALUE FROM information_schema.GLOBAL_STATUS WHERE VARIABLE_NAME='wsrep_local_state';\" | grep -q 4 || exit 1" ]
@@ -287,6 +298,8 @@ services:
       NODE_NAME: db-2
       CLUSTER_NODES: db-1,db-2
       BOOTSTRAP_NODE: db-1
+      INNODB_BUFFER_POOL_SIZE: ${INNODB_BUFFER_POOL_SIZE:-2G}
+      GCACHE_SIZE: ${GCACHE_SIZE:-1G}
     secrets:
       - mariadb_password
       - mariadb_root_password
@@ -300,13 +313,18 @@ services:
       - ./galera-entrypoint.sh:/usr/local/bin/galera-entrypoint.sh:ro
     command: [ "/bin/bash", "/usr/local/bin/galera-entrypoint.sh" ]
     deploy:
+      # Sized for a small-to-medium production deployment. Layout at the
+      # 4 GB default: ~2 GB innodb_buffer_pool + 1 GB gcache + ~300 MB
+      # mariadbd overhead, leaving ~700 MB headroom for connections and
+      # query buffers. For high-volume deployments raise memory to 8 GB
+      # (or more) and bump INNODB_BUFFER_POOL_SIZE in .env to ~4-5G.
       resources:
         limits:
           cpus: '2.0'
-          memory: 2G
+          memory: 4G
         reservations:
           cpus: '0.5'
-          memory: 512M
+          memory: 1G
     healthcheck:
       # Dynamically inject the root password from the secret file during the check
       test: [ "CMD-SHELL", "mariadb -h 127.0.0.1 -uroot -p$$(cat /run/secrets/mariadb_root_password) --silent -e \"SELECT VARIABLE_VALUE FROM information_schema.GLOBAL_STATUS WHERE VARIABLE_NAME='wsrep_local_state';\" | grep -q 4 || exit 1" ]
