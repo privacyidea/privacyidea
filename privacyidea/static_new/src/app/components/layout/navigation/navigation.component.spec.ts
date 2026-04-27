@@ -123,8 +123,8 @@ describe("NavigationComponent (async, no RouterTestingModule, no MatSnackBar)", 
     expect(visible[2].section).toBe("audit");
 
     // Overflow should contain items that were displaced or were already there
-    // Indices: 2, 3, 4, 5, 7, 8 (users, policies, events, subscription, external, config)
-    expect(overflow.length).toBe(6);
+    // Indices: 2, 3, 5, 7, 8 (users, policies, subscription, external, config)
+    expect(overflow.length).toBe(5);
     expect(overflow.some(item => item.section === "audit")).toBe(false);
     expect(overflow[0].section).toBe("users");
   });
