@@ -21,9 +21,15 @@ class SMTPServerTestCase(MyApiTestCase):
     test the api.smtpserver endpoints
     """
 
-    @pytest.fixture(autouse=True)
-    def _inject_smtp_mock(self, smtp_mock):
-        self.smtp_mock = smtp_mock
+    def setUp(self):
+        super().setUp()
+        self.smtp_mock = smtpmock
+        self.smtp_mock.start()
+
+    def tearDown(self):
+        self.smtp_mock.stop()
+        self.smtp_mock.reset()
+        super().tearDown()
 
     def _create_server(self, name="server1", extra_data=None):
         """Helper to create an SMTP server via the API."""
