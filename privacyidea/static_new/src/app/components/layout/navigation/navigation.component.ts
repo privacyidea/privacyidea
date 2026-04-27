@@ -55,20 +55,15 @@ export interface NavItem {
   route?: string;
   section: string;
   iconClass?: string;
-  /** For sub-nav: check condition for visibility */
   visible?: () => boolean;
-  /** For sub-nav: check if this is the active sub-item */
   isActive?: () => boolean;
-  /** For items that are always active (e.g. Details when on details page) */
   alwaysActive?: boolean;
-  /** Click handler instead of routerLink */
   action?: () => void;
 }
 
 export interface SubNavSection {
   section: string;
   items: NavItem[];
-  /** Right-side items (support, docs) */
   rightItems?: NavItem[];
 }
 
@@ -124,15 +119,36 @@ export class NavigationComponent implements AfterViewInit, OnDestroy {
   ];
 
   visibleNavCount = signal(this.primaryNavItems.length);
+  private itemWidths = new Map<string, number>();
   private resizeObserver: ResizeObserver | null = null;
   private ngZone = inject(NgZone);
 
   get visibleNavItems(): NavItem[] {
-    return this.getFilteredNavItems().slice(0, this.visibleNavCount());
+    const items = this.getFilteredNavItems();
+    const count = this.visibleNavCount();
+    const activeSection = this.activeSection();
+    const activeIdx = items.findIndex(item => item.section === activeSection);
+
+    if (activeIdx !== -1 && activeIdx >= count) {
+      return [...items.slice(0, count - 1), items[activeIdx]];
+    }
+
+    return items.slice(0, count);
   }
 
   get overflowNavItems(): NavItem[] {
-    return this.getFilteredNavItems().slice(this.visibleNavCount());
+    const items = this.getFilteredNavItems();
+    const count = this.visibleNavCount();
+    const activeSection = this.activeSection();
+    const activeIdx = items.findIndex(item => item.section === activeSection);
+
+    if (activeIdx !== -1 && activeIdx >= count) {
+      const head = items.slice(0, count - 1);
+      const activeItem = items[activeIdx];
+      return items.filter(item => item !== activeItem && !head.includes(item));
+    }
+
+    return items.slice(count);
   }
 
   private getFilteredNavItems(): NavItem[] {
@@ -160,56 +176,50 @@ export class NavigationComponent implements AfterViewInit, OnDestroy {
     });
     this.resizeObserver.observe(navEl);
 
-    // Initial calculation
     setTimeout(() => this.calculateVisibleItems(navEl), 0);
   }
 
   private calculateVisibleItems(navEl: HTMLElement): void {
     const filteredItems = this.getFilteredNavItems();
-    const buttons = Array.from(navEl.querySelectorAll<HTMLElement>(".nav-button"));
-    if (buttons.length === 0) {
-      this.visibleNavCount.set(filteredItems.length);
-      return;
+
+    // Select the nav-item containers instead of buttons to get full width including padding
+    const currentNavItems = Array.from(navEl.querySelectorAll<HTMLElement>(".nav-item[data-section]"));
+
+    // Update stored widths for items currently in the DOM
+    for (const item of currentNavItems) {
+      const section = item.getAttribute("data-section");
+      if (section) {
+        this.itemWidths.set(section, item.offsetWidth);
+      }
     }
 
+    // Try to measure the more button width if it's currently rendered
+    const moreBtn = navEl.querySelector<HTMLElement>(".more-button");
+    const moreBtnContainer = moreBtn?.closest(".nav-item") as HTMLElement;
+    const moreButtonWidth = moreBtnContainer?.offsetWidth || 80;
+
     const navWidth = navEl.clientWidth;
-    const moreButtonWidth = 80; // approximate width of the "More" button (including .nav-item padding)
     const gap = 4;
     let usedWidth = 0;
     let count = 0;
 
-    for (const btn of buttons) {
-      // Temporarily make visible to measure
-      const wasHidden = btn.classList.contains("overflow-hidden");
-      if (wasHidden) {
-        btn.style.position = "absolute";
-        btn.style.visibility = "hidden";
-        btn.style.display = "";
-        btn.classList.remove("overflow-hidden");
-      }
-
-      const btnWidth = btn.offsetWidth + gap;
-
-      if (wasHidden) {
-        btn.classList.add("overflow-hidden");
-        btn.style.position = "";
-        btn.style.visibility = "";
-        btn.style.display = "";
-      }
+    for (const item of filteredItems) {
+      const itemWidth = this.itemWidths.get(item.section) || 120; // Fallback to a reasonable default
 
       const remaining = filteredItems.length - count;
       const needsMore = remaining > 1;
       const availableWidth = needsMore ? navWidth - moreButtonWidth : navWidth;
 
-      if (usedWidth + btnWidth <= availableWidth) {
-        usedWidth += btnWidth;
+      if (usedWidth + itemWidth + gap <= availableWidth) {
+        usedWidth += itemWidth + gap;
         count++;
       } else {
         break;
       }
     }
 
-    // Always show at least 1 item
+    // Update the count. This might cause items to be added or removed from the DOM.
+    // If items are added, they will be measured on the next ResizeObserver trigger.
     this.visibleNavCount.set(Math.max(1, Math.min(count, filteredItems.length)));
   }
 

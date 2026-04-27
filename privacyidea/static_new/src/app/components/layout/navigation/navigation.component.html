@@ -64,6 +64,7 @@
     @for (item of visibleNavItems; track item.section) {
       <div
         class="nav-item"
+        [attr.data-section]="item.section"
         [class.active]="activeSection() === item.section">
         <button
           mat-button
