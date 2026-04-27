@@ -58,26 +58,34 @@
     </a>
   </div>
 
-  <nav class="main-nav" #mainNavRef>
+  <nav
+    class="main-nav"
+    #mainNavRef>
     @for (item of visibleNavItems; track item.section) {
-      <button
-        mat-button
-        [ngClass]="{'nav-active': activeSection() === item.section}"
-        [routerLink]="[item.route]"
-        class="nav-button">
-        <mat-icon [ngClass]="item.iconClass || ''">{{ item.icon }}</mat-icon>
-        <span>{{ item.label }}</span>
-      </button>
+      <div
+        class="nav-item"
+        [class.active]="activeSection() === item.section">
+        <button
+          mat-button
+          [ngClass]="{'nav-active': activeSection() === item.section}"
+          [routerLink]="[item.route]"
+          class="nav-button">
+          <mat-icon [ngClass]="item.iconClass || ''">{{ item.icon }}</mat-icon>
+          <span>{{ item.label }}</span>
+        </button>
+      </div>
     }
     @if (overflowNavItems.length > 0) {
-      <button
-        mat-button
-        class="nav-button more-button"
-        [matMenuTriggerFor]="overflowMenu"
-        [ngClass]="{'nav-active': isOverflowSectionActive()}">
-        <mat-icon>more_horiz</mat-icon>
-        <span i18n>More</span>
-      </button>
+      <div class="nav-item" [class.active]="isOverflowSectionActive()">
+        <button
+          mat-button
+          class="nav-button more-button"
+          [matMenuTriggerFor]="overflowMenu"
+          [ngClass]="{'nav-active': isOverflowSectionActive()}">
+          <mat-icon>more_horiz</mat-icon>
+          <span i18n>More</span>
+        </button>
+      </div>
       <mat-menu #overflowMenu="matMenu">
         @for (item of overflowNavItems; track item.section) {
           <button
@@ -102,7 +110,7 @@
 
 <!-- SECONDARY TOP BAR -->
 <ng-template #footerText>
-  <span class="flex-column margin-right-16 footer-text">
+  <span class="flex-column footer-text">
     <div>   An open-source project
     <a
       href="https://netknights.it/"
@@ -161,7 +169,9 @@
 </ng-template>
 
 @if (activeSection() === 'token') {
-  <mat-toolbar class="secondary-toolbar" appOverflowNav>
+  <mat-toolbar
+    class="secondary-toolbar"
+    appOverflowNav>
     <ng-container *ngTemplateOutlet="footerText"></ng-container>
     <button
       mat-button
@@ -226,7 +236,9 @@
 }
 
 @if (activeSection() === 'container') {
-  <mat-toolbar class="secondary-toolbar" appOverflowNav>
+  <mat-toolbar
+    class="secondary-toolbar"
+    appOverflowNav>
     <ng-container *ngTemplateOutlet="footerText"></ng-container>
     <button
       mat-button
@@ -266,7 +278,9 @@
 }
 
 @if (activeSection() === 'users') {
-  <mat-toolbar class="secondary-toolbar" appOverflowNav>
+  <mat-toolbar
+    class="secondary-toolbar"
+    appOverflowNav>
     <ng-container *ngTemplateOutlet="footerText"></ng-container>
     <button
       mat-button
@@ -301,8 +315,42 @@
   </mat-toolbar>
 }
 
+@if (activeSection() === 'policies') {
+  <mat-toolbar
+    class="secondary-toolbar"
+    appOverflowNav>
+    <ng-container *ngTemplateOutlet="footerText"></ng-container>
+    <button
+      mat-button
+      [ngClass]="contentService.routeUrl() === ROUTE_PATHS.POLICIES ? 'sub-nav-active' : ''"
+      [routerLink]="[ROUTE_PATHS.POLICIES]">
+      <mat-icon>gavel</mat-icon>
+      <span i18n>Overview</span>
+    </button>
+    <ng-container *ngTemplateOutlet="supportDocs"></ng-container>
+  </mat-toolbar>
+}
+
+@if (activeSection() === 'events') {
+  <mat-toolbar
+    class="secondary-toolbar"
+    appOverflowNav>
+    <ng-container *ngTemplateOutlet="footerText"></ng-container>
+    <button
+      mat-button
+      [ngClass]="contentService.routeUrl() === ROUTE_PATHS.EVENTS ? 'sub-nav-active' : ''"
+      [routerLink]="[ROUTE_PATHS.EVENTS]">
+      <mat-icon>flag</mat-icon>
+      <span i18n>Overview</span>
+    </button>
+    <ng-container *ngTemplateOutlet="supportDocs"></ng-container>
+  </mat-toolbar>
+}
+
 @if (activeSection() === 'audit') {
-  <mat-toolbar class="secondary-toolbar" appOverflowNav>
+  <mat-toolbar
+    class="secondary-toolbar"
+    appOverflowNav>
     <ng-container *ngTemplateOutlet="footerText"></ng-container>
     <button
       mat-button
@@ -325,7 +373,9 @@
 }
 
 @if (activeSection() === 'external') {
-  <mat-toolbar class="secondary-toolbar" appOverflowNav>
+  <mat-toolbar
+    class="secondary-toolbar"
+    appOverflowNav>
     <ng-container *ngTemplateOutlet="footerText"></ng-container>
     @if (authService.actionAllowed("smtpserver_read")) {
       <button
@@ -395,7 +445,9 @@
 }
 
 @if (activeSection() === 'config') {
-  <mat-toolbar class="secondary-toolbar" appOverflowNav>
+  <mat-toolbar
+    class="secondary-toolbar"
+    appOverflowNav>
     <ng-container *ngTemplateOutlet="footerText"></ng-container>
     @if (authService.actionAllowed('configread')) {
       <button

@@ -173,7 +173,7 @@ export class NavigationComponent implements AfterViewInit, OnDestroy {
     }
 
     const navWidth = navEl.clientWidth;
-    const moreButtonWidth = 56; // approximate width of the "More" button
+    const moreButtonWidth = 80; // approximate width of the "More" button (including .nav-item padding)
     const gap = 4;
     let usedWidth = 0;
     let count = 0;

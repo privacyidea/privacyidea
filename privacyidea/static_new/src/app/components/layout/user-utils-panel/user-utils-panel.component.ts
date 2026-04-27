@@ -147,6 +147,14 @@ export class UserUtilsPanelComponent {
 
   localNode = computed(() => this.authService.showNode());
 
+  profileTooltip = computed(() => {
+    let tooltip = this.profileText();
+    if (this.localNode()) {
+      tooltip += ' – ' + this.localNode();
+    }
+    return tooltip;
+  });
+
   logout(): void {
     if (this.pendingChangesService.hasChanges) {
       this.dialogService

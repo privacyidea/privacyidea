@@ -13,7 +13,7 @@
   border: solid 1px var(--mat-sys-surface-container-highest);
   border-radius: var(--border-radius);
   padding-left: 8px;
-  background: var(--mat-sys-surface-container);
+  background: var(--mat-sys-surface-container-low);
 }
 
 .utils-group-self-service {
@@ -52,4 +52,11 @@
   white-space: nowrap;
   padding: 2px 6px;
   border-radius: var(--border-radius);
+}
+
+@media (max-width: 1630px) {
+  .profile-text,
+  .node-text {
+    display: none;
+  }
 }

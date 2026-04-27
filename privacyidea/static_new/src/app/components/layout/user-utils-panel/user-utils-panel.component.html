@@ -18,7 +18,7 @@
 -->
 
 <div class="utils-group">
-  <div class="flex-row profile-info">
+  <div class="flex-row profile-info" [matTooltip]="profileTooltip()">
   <span><mat-icon>account_box</mat-icon></span>
   <span class="profile-text">{{ profileText() }}</span>
   @if (localNode()) {
