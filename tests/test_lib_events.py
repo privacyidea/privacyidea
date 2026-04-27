@@ -1312,7 +1312,6 @@ class BaseEventHandlerTestCase(MyTestCase):
         # Test {now} replacement and time offset in user info condition.
         # We mock get_specific_info to return a date value and verify that
         # {now} is correctly replaced and compared.
-        from privacyidea.lib.tokenclass import DATE_FORMAT
         future_date = (datetime.now(tzlocal()) + timedelta(days=10)).strftime(DATE_FORMAT)
         past_date = (datetime.now(tzlocal()) - timedelta(days=10)).strftime(DATE_FORMAT)
 
