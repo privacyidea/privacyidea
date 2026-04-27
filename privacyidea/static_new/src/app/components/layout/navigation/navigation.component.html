@@ -323,20 +323,6 @@
   </mat-toolbar>
 }
 
-@if (activeSection() === 'events') {
-  <mat-toolbar
-    class="secondary-toolbar"
-    appOverflowNav>
-    <ng-container *ngTemplateOutlet="footerText"></ng-container>
-    <a
-      [ngClass]="contentService.routeUrl() === ROUTE_PATHS.EVENTS ? 'sub-nav-active' : ''"
-      [routerLink]="[ROUTE_PATHS.EVENTS]">
-      <mat-icon>flag</mat-icon>
-      <span i18n>Overview</span>
-    </a>
-    <ng-container *ngTemplateOutlet="supportDocs"></ng-container>
-  </mat-toolbar>
-}
 
 @if (activeSection() === 'subscription') {
   <mat-toolbar
@@ -412,6 +398,12 @@
         <span>Machine Resolver</span>
       </a>
     }
+    <a
+      [ngClass]="contentService.routeUrl() === ROUTE_PATHS.EVENTS ? 'sub-nav-active' : ''"
+      [routerLink]="[ROUTE_PATHS.EVENTS]">
+      <mat-icon>flag</mat-icon>
+      <span i18n>Events</span>
+    </a>
     @if (authService.actionAllowed("periodictask_read")) {
       <a
         [ngClass]="contentService.routeUrl() === ROUTE_PATHS.CONFIGURATION_PERIODIC_TASKS ? 'sub-nav-active' : ''"

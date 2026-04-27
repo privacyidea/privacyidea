@@ -122,7 +122,6 @@ export class NavigationComponent implements AfterViewInit, OnDestroy {
     { icon: "folder", label: $localize`Container`, route: ROUTE_PATHS.TOKENS_CONTAINERS, section: "container" },
     { icon: "supervised_user_circle", label: $localize`Users`, route: ROUTE_PATHS.USERS, section: "users" },
     { icon: "gavel", label: $localize`Policies`, route: ROUTE_PATHS.POLICIES, section: "policies" },
-    { icon: "flag", label: $localize`Events`, route: ROUTE_PATHS.EVENTS, section: "events" },
     { icon: "event_repeat", label: $localize`Subscription`, route: ROUTE_PATHS.SUBSCRIPTION, section: "subscription" },
     { icon: "receipt_long", label: $localize`Audit`, route: ROUTE_PATHS.AUDIT, section: "audit" },
     {
@@ -156,11 +155,10 @@ export class NavigationComponent implements AfterViewInit, OnDestroy {
     if (url.includes("containers")) return "container";
     if (url.startsWith(ROUTE_PATHS.USERS)) return "users";
     if (url.startsWith(ROUTE_PATHS.POLICIES)) return "policies";
-    if (url.startsWith(ROUTE_PATHS.EVENTS)) return "events";
     if (url.startsWith(ROUTE_PATHS.SUBSCRIPTION)) return "subscription";
     if (url.startsWith(ROUTE_PATHS.AUDIT) || url.startsWith(ROUTE_PATHS.CLIENTS)) return "audit";
     if (url.startsWith("/external-services")) return "external";
-    if (url.startsWith("/configuration") || url.startsWith(ROUTE_PATHS.MACHINE_RESOLVER)) return "config";
+    if (url.startsWith("/configuration") || url.startsWith(ROUTE_PATHS.MACHINE_RESOLVER) || url.startsWith(ROUTE_PATHS.EVENTS)) return "config";
     if (url.startsWith(ROUTE_PATHS.TOKENS)) return "token";
     return "token";
   });
