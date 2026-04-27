@@ -16,12 +16,22 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, inject, signal, ViewChild, ElementRef, AfterViewInit, OnDestroy, NgZone } from "@angular/core";
+import {
+  AfterViewInit,
+  Component,
+  computed,
+  ElementRef,
+  inject,
+  NgZone,
+  OnDestroy,
+  signal,
+  ViewChild
+} from "@angular/core";
 import { NgClass, NgOptimizedImage, NgTemplateOutlet } from "@angular/common";
 import { MatToolbar } from "@angular/material/toolbar";
 import { MatTabsModule } from "@angular/material/tabs";
 import { ROUTE_PATHS } from "src/app/route_paths";
-import { MatButton, MatIconButton } from "@angular/material/button";
+import { MatIconButton } from "@angular/material/button";
 import { MatIcon, MatIconModule } from "@angular/material/icon";
 import { Router, RouterLink } from "@angular/router";
 import { UserService, UserServiceInterface } from "../../../services/user/user.service";
@@ -72,7 +82,6 @@ export interface SubNavSection {
   imports: [
     MatToolbar,
     MatTabsModule,
-    MatButton,
     MatIconButton,
     MatIconModule,
     NgOptimizedImage,
@@ -104,24 +113,60 @@ export class NavigationComponent implements AfterViewInit, OnDestroy {
   protected readonly configService: ConfigServiceInterface = inject(ConfigService);
   protected readonly router: Router = inject(Router);
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
-
+  private itemWidths = new Map<string, number>();
+  private resizeObserver: ResizeObserver | null = null;
+  private ngZone = inject(NgZone);
   @ViewChild("mainNavRef", { static: false }) mainNavRef!: ElementRef<HTMLElement>;
-
   primaryNavItems: NavItem[] = [
     { icon: "shield", label: $localize`Token`, route: ROUTE_PATHS.TOKENS, section: "token" },
     { icon: "folder", label: $localize`Container`, route: ROUTE_PATHS.TOKENS_CONTAINERS, section: "container" },
     { icon: "supervised_user_circle", label: $localize`Users`, route: ROUTE_PATHS.USERS, section: "users" },
     { icon: "gavel", label: $localize`Policies`, route: ROUTE_PATHS.POLICIES, section: "policies" },
     { icon: "flag", label: $localize`Events`, route: ROUTE_PATHS.EVENTS, section: "events" },
+    { icon: "event_repeat", label: $localize`Subscription`, route: ROUTE_PATHS.SUBSCRIPTION, section: "subscription" },
     { icon: "receipt_long", label: $localize`Audit`, route: ROUTE_PATHS.AUDIT, section: "audit" },
-    { icon: "hub", label: $localize`External Services`, route: ROUTE_PATHS.EXTERNAL_SERVICES_SMTP, section: "external" },
-    { icon: "miscellaneous_services", label: $localize`Configuration`, route: ROUTE_PATHS.CONFIGURATION_SYSTEM, section: "config" },
+    {
+      icon: "hub",
+      label: $localize`External Services`,
+      route: ROUTE_PATHS.EXTERNAL_SERVICES_SMTP,
+      section: "external"
+    },
+    {
+      icon: "miscellaneous_services",
+      label: $localize`Configuration`,
+      route: ROUTE_PATHS.CONFIGURATION_SYSTEM,
+      section: "config"
+    }
   ];
-
   visibleNavCount = signal(this.primaryNavItems.length);
-  private itemWidths = new Map<string, number>();
-  private resizeObserver: ResizeObserver | null = null;
-  private ngZone = inject(NgZone);
+  customLogo = computed(() => {
+    if (!this.configService.config()?.logo) {
+      return null;
+    }
+    return environment.proxyUrl + "/static/public/" + this.configService.config()?.logo;
+  });
+  versionText = computed(() => {
+    if (this.customLogo()) {
+      return $localize`privacyIDEA Version ` + this.versioningService.version();
+    }
+    return $localize`Version ` + this.versioningService.version();
+  });
+  activeSection = computed(() => {
+    const url = this.contentService.routeUrl();
+    if (url.includes("containers")) return "container";
+    if (url.startsWith(ROUTE_PATHS.USERS)) return "users";
+    if (url.startsWith(ROUTE_PATHS.POLICIES)) return "policies";
+    if (url.startsWith(ROUTE_PATHS.EVENTS)) return "events";
+    if (url.startsWith(ROUTE_PATHS.SUBSCRIPTION)) return "subscription";
+    if (url.startsWith(ROUTE_PATHS.AUDIT) || url.startsWith(ROUTE_PATHS.CLIENTS)) return "audit";
+    if (url.startsWith("/external-services")) return "external";
+    if (url.startsWith("/configuration") || url.startsWith(ROUTE_PATHS.MACHINE_RESOLVER)) return "config";
+    if (url.startsWith(ROUTE_PATHS.TOKENS)) return "token";
+    return "token";
+  });
+  isOverflowSectionActive = computed(() => {
+    return this.overflowNavItems.some(item => item.section === this.activeSection());
+  });
 
   get visibleNavItems(): NavItem[] {
     const items = this.getFilteredNavItems();
@@ -151,20 +196,36 @@ export class NavigationComponent implements AfterViewInit, OnDestroy {
     return items.slice(count);
   }
 
-  private getFilteredNavItems(): NavItem[] {
-    return this.primaryNavItems.filter(item => {
-      if (item.section === "policies") return this.authService.actionAllowed("policyread");
-      if (item.section === "events") return this.authService.actionAllowed("eventhandling_read");
-      return true;
-    });
-  }
-
   ngAfterViewInit(): void {
     this.setupOverflowDetection();
   }
 
   ngOnDestroy(): void {
     this.resizeObserver?.disconnect();
+  }
+
+  onSingleHeaderClick(event: MouseEvent, route_path: string): void {
+    event.preventDefault();
+    (event as any).stopImmediatePropagation?.();
+    event.stopPropagation();
+
+    this.router.navigate([route_path]);
+  }
+
+  openSupport(): void {
+    window.open("https://netknights.it/support_link_admin", "_blank");
+  }
+
+  openExternalLink(url: string): void {
+    window.open(url, "_blank");
+  }
+
+  private getFilteredNavItems(): NavItem[] {
+    return this.primaryNavItems.filter(item => {
+      if (item.section === "policies") return this.authService.actionAllowed("policyread");
+      if (item.section === "events") return this.authService.actionAllowed("eventhandling_read");
+      return true;
+    });
   }
 
   private setupOverflowDetection(): void {
@@ -221,52 +282,5 @@ export class NavigationComponent implements AfterViewInit, OnDestroy {
     // Update the count. This might cause items to be added or removed from the DOM.
     // If items are added, they will be measured on the next ResizeObserver trigger.
     this.visibleNavCount.set(Math.max(1, Math.min(count, filteredItems.length)));
-  }
-
-  customLogo = computed(() => {
-    if (!this.configService.config()?.logo) {
-      return null;
-    }
-    return environment.proxyUrl + "/static/public/" + this.configService.config()?.logo;
-  });
-  versionText = computed(() => {
-    if (this.customLogo()) {
-      return $localize`privacyIDEA Version ` + this.versioningService.version();
-    }
-    return $localize`Version ` + this.versioningService.version();
-  });
-
-  activeSection = computed(() => {
-    const url = this.contentService.routeUrl();
-    if (url.includes("containers")) return "container";
-    if (url.startsWith(ROUTE_PATHS.USERS)) return "users";
-    if (url.startsWith(ROUTE_PATHS.POLICIES)) return "policies";
-    if (url.startsWith(ROUTE_PATHS.EVENTS)) return "events";
-    if (url.startsWith(ROUTE_PATHS.AUDIT) || url.startsWith(ROUTE_PATHS.CLIENTS)) return "audit";
-    if (url.startsWith("/external-services")) return "external";
-    if (url.startsWith("/configuration") || url.startsWith(ROUTE_PATHS.SUBSCRIPTION)
-      || url.startsWith(ROUTE_PATHS.MACHINE_RESOLVER)) return "config";
-    if (url.startsWith(ROUTE_PATHS.TOKENS)) return "token";
-    return "token";
-  });
-
-  onSingleHeaderClick(event: MouseEvent, route_path: string): void {
-    event.preventDefault();
-    (event as any).stopImmediatePropagation?.();
-    event.stopPropagation();
-
-    this.router.navigate([route_path]);
-  }
-
-  isOverflowSectionActive = computed(() => {
-    return this.overflowNavItems.some(item => item.section === this.activeSection());
-  });
-
-  openSupport(): void {
-    window.open("https://netknights.it/support_link_admin", "_blank");
-  }
-
-  openExternalLink(url: string): void {
-    window.open(url, "_blank");
   }
 }

@@ -5,12 +5,6 @@ $icon-size-sm: 18px;
 $toolbar-padding: 8px 16px;
 $breakpoint-compact: 1630px;
 
-@mixin small-icon {
-  font-size: $icon-size-sm;
-  width: $icon-size-sm;
-  height: $icon-size-sm;
-}
-
 @mixin flex-center {
   display: flex;
   align-items: center;
@@ -19,14 +13,19 @@ $breakpoint-compact: 1630px;
 @mixin nav-button-base {
   display: inline-flex;
   align-items: center;
+  gap: 8px;
+  padding: 0 16px;
+  height: 40px;
   white-space: nowrap;
   border-radius: var(--border-radius);
   transition: background 200ms ease, color 200ms ease;
   flex-shrink: 0;
-
-  mat-icon {
-    @include small-icon;
-  }
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
 }
 
 :host {
@@ -92,20 +91,26 @@ $breakpoint-compact: 1630px;
 
 .nav-button {
   @include nav-button-base;
+  text-decoration: none;
+  color: inherit;
+
+  &:hover {
+    color: var(--mat-sys-primary-base-active);
+  }
 }
 
 .nav-active {
-  background: var(--mat-sys-primary) !important;
-  color: var(--mat-sys-on-primary) !important;
+  color: var(--mat-sys-primary) !important;
 }
 
 .nav-item {
-  padding: 12px;
+  padding: 12px 0;
+  @include flex-center;
 
   &.active {
     background-color: var(--mat-sys-surface-container-lowest);
-    border-left: 1px solid #ddd;
-    border-right: 1px solid #ddd;
+    border-left: 1px solid var(--nav-item-border);
+    border-right: 1px solid var(--nav-item-border);
   }
 }
 
@@ -126,9 +131,16 @@ $breakpoint-compact: 1630px;
   flex-wrap: nowrap;
   @include mat.elevation(3);
 
-  button {
+  a, button {
     @include nav-button-base;
     justify-content: center;
+    text-decoration: none;
+    color: inherit;
+    padding: 0 12px;
+
+    &:hover {
+      color: var(--mat-sys-primary-base-active);
+    }
 
     span {
       font-size: 14px;
@@ -139,30 +151,14 @@ $breakpoint-compact: 1630px;
 .support-color {
   color: var(--green-brand-base) !important;
 
-  --mat-text-button-state-layer-color: var(--green-brand-base);
-  --mat-text-button-hover-state-layer-opacity: 0;
-  --mat-text-button-pressed-state-layer-opacity: 0;
-  --mat-text-button-focus-state-layer-opacity: 0;
-  --mat-ripple-color: var(--mint-bg);
 
-  &:hover,
-  &:focus,
-  &:active {
-    background-color: var(--mint-bg) !important;
-  }
-
-  ::ng-deep .mat-mdc-button-persistent-ripple::before {
-    background-color: var(--green-brand-base) !important;
-  }
-
-  ::ng-deep .mat-ripple-element {
-    background-color: var(--mint-bg) !important;
+  &:hover {
+    color: var(--green-brand-light) !important;
   }
 }
 
 .sub-nav-active {
-  background: var(--mat-sys-primary) !important;
-  color: var(--mat-sys-on-primary) !important;
+  color: var(--mat-sys-primary) !important;
   font-weight: 500;
 }
 
@@ -174,11 +170,15 @@ $breakpoint-compact: 1630px;
   font-size: 12px;
   color: var(--mat-sys-on-surface-variant);
   white-space: nowrap;
-  margin-right: 21px;
+  margin-right: 9px;
 
   a {
     color: var(--mat-sys-primary);
     text-decoration: none;
+    font-size: 12px;
+    padding: 0;
+    margin-left: 2px;
+    height: 20px;
 
     &:hover {
       text-decoration: underline;
@@ -186,29 +186,14 @@ $breakpoint-compact: 1630px;
   }
 }
 
+.footer-text-height {
+  height: 20px;
+}
+
 .footer-icons {
   display: none;
   align-items: center;
   flex-shrink: 0;
-}
-
-.footer-icon-button {
-  display: inline-flex;
-  border-radius: var(--border-radius);
-  color: var(--mat-sys-on-surface-variant);
-  text-decoration: none;
-  transition: background 200ms ease, color 200ms ease;
-
-  &:hover {
-    background: color-mix(in srgb, var(--mat-sys-primary) 8%, transparent);
-    color: var(--mat-sys-primary);
-  }
-
-  mat-icon {
-    @include flex-center;
-    justify-content: center;
-    @include small-icon;
-  }
 }
 
 .docs-button-icon {
@@ -224,8 +209,7 @@ $breakpoint-compact: 1630px;
 }
 
 .overflow-item-active {
-  background: var(--mat-sys-primary-container) !important;
-  color: var(--mat-sys-on-primary-container) !important;
+  color: var(--mat-sys-primary) !important;
 }
 
 @media (max-width: $breakpoint-compact) {
@@ -239,7 +223,7 @@ $breakpoint-compact: 1630px;
   }
 
   .toolbar-brand {
-    margin-left: 3px;
+    margin-left: 11px;
     gap: 8px;
   }
 

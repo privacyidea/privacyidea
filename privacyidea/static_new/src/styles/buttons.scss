@@ -340,8 +340,8 @@ $button-low-contrast-variant: linear-gradient(
 
 .ms--shield-list {
   display: inline-block;
-  width: 2em !important;
-  height: 2em !important;
+  width: 1.9em !important;
+  height: 1.9em !important;
   --svg: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 36 28'%3E%3Cpath fill='%23000' d='M 19 9 h 14 v 2 H 19 V 9 M 19 13 h 9 v 2 H 19 V 13 M 19 17 h 7 v 2 H 19 v -2 M 9.8 5 L 2.6 8.2 L 2.6 13 C 2.6 17.44 5.672 21.592 9.8 22.6 C 13.928 21.592 17 17.44 17 13 L 17 8.2 L 9.8 5 Z'/%3E%3C/svg%3E");
   background-color: currentColor;
   -webkit-mask-image: var(--svg);

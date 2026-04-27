@@ -66,20 +66,20 @@
         class="nav-item"
         [attr.data-section]="item.section"
         [class.active]="activeSection() === item.section">
-        <button
-          mat-button
+        <a
           [ngClass]="{'nav-active': activeSection() === item.section}"
           [routerLink]="[item.route]"
           class="nav-button">
           <mat-icon [ngClass]="item.iconClass || ''">{{ item.icon }}</mat-icon>
           <span>{{ item.label }}</span>
-        </button>
+        </a>
       </div>
     }
     @if (overflowNavItems.length > 0) {
-      <div class="nav-item" [class.active]="isOverflowSectionActive()">
+      <div
+        class="nav-item"
+        [class.active]="isOverflowSectionActive()">
         <button
-          mat-button
           class="nav-button more-button"
           [matMenuTriggerFor]="overflowMenu"
           [ngClass]="{'nav-active': isOverflowSectionActive()}">
@@ -102,9 +102,6 @@
   </nav>
 
   <div class="toolbar-actions">
-        <span
-          class="beta-badge margin-right-16"
-          i18n>Beta</span>
     <app-user-utils-panel></app-user-utils-panel>
   </div>
 </mat-toolbar>
@@ -112,7 +109,7 @@
 <!-- SECONDARY TOP BAR -->
 <ng-template #footerText>
   <span class="flex-column footer-text">
-    <div>   An open-source project
+    <div class="footer-text-height">   An open-source project
     <a
       href="https://netknights.it/"
       target="_blank">maintained by NetKnights</a>
@@ -143,22 +140,24 @@
 
 <ng-template #supportDocs>
   <span class="spacer"></span>
-  <button
-    mat-button
+  <span
+    class="beta-badge margin-right-16"
+    i18n>Beta
+    </span>
+  <a
     (click)="openSupport()"
     aria-label="Support"
     class="nav-button support-color">
     <mat-icon>support_agent</mat-icon>
     <span i18n>Support</span>
-  </button>
-  <button
-    mat-button
+  </a>
+  <a
     (click)="documentationService.openDocumentation(contentService.routeUrl())"
     aria-label="Documentation"
     class="nav-button docs-button-full">
     <mat-icon>info_outline</mat-icon>
     <span i18n>Documentation</span>
-  </button>
+  </a>
   <button
     mat-icon-button
     (click)="documentationService.openDocumentation(contentService.routeUrl())"
@@ -174,64 +173,57 @@
     class="secondary-toolbar"
     appOverflowNav>
     <ng-container *ngTemplateOutlet="footerText"></ng-container>
-    <button
-      mat-button
+    <a
       [ngClass]="contentService.routeUrl() === ROUTE_PATHS.TOKENS ? 'sub-nav-active' : ''"
       [routerLink]="[ROUTE_PATHS.TOKENS]">
       <mat-icon class="ms--shield-list"></mat-icon>
       <span i18n>Overview</span>
-    </button>
+    </a>
     @if (contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_DETAILS)) {
-      <button
-        mat-button
+      <a
         class="sub-nav-active">
         <mat-icon>privacy_tip</mat-icon>
         <span i18n>Details</span>
-      </button>
+      </a>
     }
     @if (authService.tokenEnrollmentAllowed()) {
-      <button
-        mat-button
+      <a
         [ngClass]="contentService.routeUrl() === ROUTE_PATHS.TOKENS_ENROLLMENT ? 'sub-nav-active' : ''"
         [routerLink]="[ROUTE_PATHS.TOKENS_ENROLLMENT]">
         <mat-icon>add_moderator</mat-icon>
         <span i18n>Enrollment</span>
-      </button>
+      </a>
     }
     @if (authService.actionAllowed("importtokens")) {
-      <button
-        mat-button
+      <a
         [ngClass]="contentService.routeUrl() === ROUTE_PATHS.TOKENS_IMPORT ? 'sub-nav-active' : ''"
         [routerLink]="[ROUTE_PATHS.TOKENS_IMPORT]">
         <mat-icon>input</mat-icon>
         <span i18n>Import</span>
-      </button>
+      </a>
     }
     @if (authService.actionAllowed("getchallenges")) {
-      <button
-        mat-button
+      <a
         [ngClass]="contentService.routeUrl() === ROUTE_PATHS.TOKENS_CHALLENGES ? 'sub-nav-active' : ''"
         [routerLink]="[ROUTE_PATHS.TOKENS_CHALLENGES]">
         <mat-icon>cached</mat-icon>
         <span i18n>Challenges</span>
-      </button>
+      </a>
     }
     @if (authService.actionsAllowed(["machinelist", "manage_machine_tokens"])) {
-      <button
-        mat-button
+      <a
         [ngClass]="contentService.routeUrl() === ROUTE_PATHS.TOKENS_APPLICATIONS ? 'sub-nav-active' : ''"
         [routerLink]="[ROUTE_PATHS.TOKENS_APPLICATIONS]">
         <mat-icon>now_widgets</mat-icon>
         <span i18n>Applications</span>
-      </button>
+      </a>
     }
-    <button
-      mat-button
+    <a
       [ngClass]="contentService.routeUrl() === ROUTE_PATHS.TOKENS_GET_SERIAL ? 'sub-nav-active' : ''"
       [routerLink]="[ROUTE_PATHS.TOKENS_GET_SERIAL]">
       <mat-icon>policy</mat-icon>
       <span i18n>Find Token</span>
-    </button>
+    </a>
     <ng-container *ngTemplateOutlet="supportDocs"></ng-container>
   </mat-toolbar>
 }
@@ -241,38 +233,34 @@
     class="secondary-toolbar"
     appOverflowNav>
     <ng-container *ngTemplateOutlet="footerText"></ng-container>
-    <button
-      mat-button
+    <a
       [ngClass]="contentService.routeUrl() === ROUTE_PATHS.TOKENS_CONTAINERS ? 'sub-nav-active' : ''"
       [routerLink]="[ROUTE_PATHS.TOKENS_CONTAINERS]">
       <mat-icon class="mdi--folder-list"></mat-icon>
       <span i18n>Overview</span>
-    </button>
+    </a>
     @if (contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS)) {
-      <button
-        mat-button
+      <a
         class="sub-nav-active">
         <mat-icon>source</mat-icon>
         <span i18n>Details</span>
-      </button>
+      </a>
     }
     @if (authService.actionAllowed("container_create")) {
-      <button
-        mat-button
+      <a
         [ngClass]="contentService.routeUrl() === ROUTE_PATHS.TOKENS_CONTAINERS_CREATE ? 'sub-nav-active' : ''"
         [routerLink]="[ROUTE_PATHS.TOKENS_CONTAINERS_CREATE]">
         <mat-icon>create_new_folder</mat-icon>
         <span i18n>Create</span>
-      </button>
+      </a>
     }
     @if (authService.oneActionAllowed(["container_template_list", "container_template_create"])) {
-      <button
-        mat-button
+      <a
         [ngClass]="contentService.onTokensContainersTemplates() ? 'sub-nav-active' : ''"
         [routerLink]="[ROUTE_PATHS.TOKENS_CONTAINERS_TEMPLATES]">
         <mat-icon>plagiarism</mat-icon>
         <span i18n>Templates</span>
-      </button>
+      </a>
     }
     <ng-container *ngTemplateOutlet="supportDocs"></ng-container>
   </mat-toolbar>
@@ -283,35 +271,31 @@
     class="secondary-toolbar"
     appOverflowNav>
     <ng-container *ngTemplateOutlet="footerText"></ng-container>
-    <button
-      mat-button
+    <a
       [ngClass]="contentService.routeUrl() === ROUTE_PATHS.USERS ? 'sub-nav-active' : ''"
       [routerLink]="[ROUTE_PATHS.USERS]">
       <mat-icon class="ms--person-list"></mat-icon>
       <span i18n>Overview</span>
-    </button>
+    </a>
     @if (contentService.routeUrl().startsWith(ROUTE_PATHS.USERS_DETAILS)) {
-      <button
-        mat-button
+      <a
         class="sub-nav-active">
         <mat-icon>manage_accounts</mat-icon>
         <span i18n>Details</span>
-      </button>
+      </a>
     }
-    <button
-      mat-button
+    <a
       [ngClass]="contentService.routeUrl() === ROUTE_PATHS.USERS_RESOLVERS ? 'sub-nav-active' : ''"
       [routerLink]="[ROUTE_PATHS.USERS_RESOLVERS]">
       <mat-icon class="ms--database"></mat-icon>
       <span>Resolvers</span>
-    </button>
-    <button
-      mat-button
+    </a>
+    <a
       [ngClass]="contentService.routeUrl() === ROUTE_PATHS.USERS_REALMS ? 'sub-nav-active' : ''"
       [routerLink]="[ROUTE_PATHS.USERS_REALMS]">
       <mat-icon>public</mat-icon>
       <span>Realms</span>
-    </button>
+    </a>
     <ng-container *ngTemplateOutlet="supportDocs"></ng-container>
   </mat-toolbar>
 }
@@ -321,13 +305,12 @@
     class="secondary-toolbar"
     appOverflowNav>
     <ng-container *ngTemplateOutlet="footerText"></ng-container>
-    <button
-      mat-button
+    <a
       [ngClass]="contentService.routeUrl() === ROUTE_PATHS.POLICIES ? 'sub-nav-active' : ''"
       [routerLink]="[ROUTE_PATHS.POLICIES]">
       <mat-icon>gavel</mat-icon>
       <span i18n>Overview</span>
-    </button>
+    </a>
     <ng-container *ngTemplateOutlet="supportDocs"></ng-container>
   </mat-toolbar>
 }
@@ -337,13 +320,27 @@
     class="secondary-toolbar"
     appOverflowNav>
     <ng-container *ngTemplateOutlet="footerText"></ng-container>
-    <button
-      mat-button
+    <a
       [ngClass]="contentService.routeUrl() === ROUTE_PATHS.EVENTS ? 'sub-nav-active' : ''"
       [routerLink]="[ROUTE_PATHS.EVENTS]">
       <mat-icon>flag</mat-icon>
       <span i18n>Overview</span>
-    </button>
+    </a>
+    <ng-container *ngTemplateOutlet="supportDocs"></ng-container>
+  </mat-toolbar>
+}
+
+@if (activeSection() === 'subscription') {
+  <mat-toolbar
+    class="secondary-toolbar"
+    appOverflowNav>
+    <ng-container *ngTemplateOutlet="footerText"></ng-container>
+    <a
+      [ngClass]="contentService.routeUrl() === ROUTE_PATHS.SUBSCRIPTION ? 'sub-nav-active' : ''"
+      [routerLink]="[ROUTE_PATHS.SUBSCRIPTION]">
+      <mat-icon>event_repeat</mat-icon>
+      <span i18n>Overview</span>
+    </a>
     <ng-container *ngTemplateOutlet="supportDocs"></ng-container>
   </mat-toolbar>
 }
@@ -353,21 +350,67 @@
     class="secondary-toolbar"
     appOverflowNav>
     <ng-container *ngTemplateOutlet="footerText"></ng-container>
-    <button
-      mat-button
+    <a
       [ngClass]="contentService.routeUrl() === ROUTE_PATHS.AUDIT ? 'sub-nav-active' : ''"
       [routerLink]="[ROUTE_PATHS.AUDIT]">
       <mat-icon>list_alt</mat-icon>
       <span>Log</span>
-    </button>
+    </a>
     @if (authService.actionAllowed("clienttype")) {
-      <button
-        mat-button
+      <a
         [ngClass]="contentService.routeUrl() === ROUTE_PATHS.CLIENTS ? 'sub-nav-active' : ''"
         [routerLink]="[ROUTE_PATHS.CLIENTS]">
         <mat-icon>recent_actors</mat-icon>
         <span>Known Clients</span>
-      </button>
+      </a>
+    }
+    <ng-container *ngTemplateOutlet="supportDocs"></ng-container>
+  </mat-toolbar>
+}
+
+
+@if (activeSection() === 'config') {
+  <mat-toolbar
+    class="secondary-toolbar"
+    appOverflowNav>
+    <ng-container *ngTemplateOutlet="footerText"></ng-container>
+    @if (authService.actionAllowed('configread')) {
+      <a
+        [ngClass]="contentService.routeUrl() === ROUTE_PATHS.CONFIGURATION_SYSTEM ? 'sub-nav-active' : ''"
+        [routerLink]="[ROUTE_PATHS.CONFIGURATION_SYSTEM]">
+        <mat-icon>build</mat-icon>
+        <span>System</span>
+      </a>
+    }
+    <a
+      [ngClass]="contentService.routeUrl() === ROUTE_PATHS.CONFIGURATION_TOKENTYPES ? 'sub-nav-active' : ''"
+      [routerLink]="[ROUTE_PATHS.CONFIGURATION_TOKENTYPES]">
+      <mat-icon>safety_check</mat-icon>
+      <span>Tokentypes</span>
+    </a>
+    @if (authService.actionAllowed("machinelist")) {
+      <a
+        [ngClass]="contentService.routeUrl() === ROUTE_PATHS.CONFIGURATION_MACHINES ? 'sub-nav-active' : ''"
+        [routerLink]="[ROUTE_PATHS.CONFIGURATION_MACHINES]">
+        <mat-icon>point_of_sale</mat-icon>
+        <span>Machines</span>
+      </a>
+    }
+    @if (authService.actionAllowed("mresolverread")) {
+      <a
+        [ngClass]="contentService.routeUrl() === ROUTE_PATHS.MACHINE_RESOLVER ? 'sub-nav-active' : ''"
+        [routerLink]="[ROUTE_PATHS.MACHINE_RESOLVER]">
+        <mat-icon>lan</mat-icon>
+        <span>Machine Resolver</span>
+      </a>
+    }
+    @if (authService.actionAllowed("periodictask_read")) {
+      <a
+        [ngClass]="contentService.routeUrl() === ROUTE_PATHS.CONFIGURATION_PERIODIC_TASKS ? 'sub-nav-active' : ''"
+        [routerLink]="[ROUTE_PATHS.CONFIGURATION_PERIODIC_TASKS]">
+        <mat-icon>event_repeat</mat-icon>
+        <span>Periodic Tasks</span>
+      </a>
     }
     <ng-container *ngTemplateOutlet="supportDocs"></ng-container>
   </mat-toolbar>
@@ -379,126 +422,60 @@
     appOverflowNav>
     <ng-container *ngTemplateOutlet="footerText"></ng-container>
     @if (authService.actionAllowed("smtpserver_read")) {
-      <button
-        mat-button
+      <a
         [ngClass]="contentService.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_SMTP ? 'sub-nav-active' : ''"
         [routerLink]="[ROUTE_PATHS.EXTERNAL_SERVICES_SMTP]">
         <mat-icon>email</mat-icon>
         <span>SMTP Servers</span>
-      </button>
+      </a>
     }
     @if (authService.actionAllowed("radiusserver_read")) {
-      <button
-        mat-button
+      <a
         [ngClass]="contentService.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS ? 'sub-nav-active' : ''"
         [routerLink]="[ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS]">
         <mat-icon>vpn_lock</mat-icon>
         <span>RADIUS Servers</span>
-      </button>
+      </a>
     }
     @if (authService.actionAllowed("smtpserver_read")) {
-      <button
-        mat-button
+      <a
         [ngClass]="contentService.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_SMS ? 'sub-nav-active' : ''"
         [routerLink]="[ROUTE_PATHS.EXTERNAL_SERVICES_SMS]">
         <mat-icon>sms</mat-icon>
         <span>SMS Gateways</span>
-      </button>
+      </a>
     }
     @if (authService.actionAllowed("caconnectorread")) {
-      <button
-        mat-button
+      <a
         [ngClass]="contentService.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_CA_CONNECTORS ? 'sub-nav-active' : ''"
         [routerLink]="[ROUTE_PATHS.EXTERNAL_SERVICES_CA_CONNECTORS]">
         <mat-icon>assured_workload</mat-icon>
         <span>CA Connectors</span>
-      </button>
+      </a>
     }
     @if (authService.actionAllowed("privacyideaserver_read")) {
-      <button
-        mat-button
+      <a
         [ngClass]="contentService.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_PRIVACYIDEA ? 'sub-nav-active' : ''"
         [routerLink]="[ROUTE_PATHS.EXTERNAL_SERVICES_PRIVACYIDEA]">
         <mat-icon class="mdi--pi-logo"></mat-icon>
         <span>PrivacyIDEA Servers</span>
-      </button>
+      </a>
     }
     @if (authService.actionAllowed("tokengroup_list")) {
-      <button
-        mat-button
+      <a
         [ngClass]="contentService.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_TOKENGROUPS ? 'sub-nav-active' : ''"
         [routerLink]="[ROUTE_PATHS.EXTERNAL_SERVICES_TOKENGROUPS]">
         <mat-icon>local_police</mat-icon>
         <span>Tokengroups</span>
-      </button>
+      </a>
     }
     @if (authService.actionAllowed("serviceid_list")) {
-      <button
-        mat-button
+      <a
         [ngClass]="contentService.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS ? 'sub-nav-active' : ''"
         [routerLink]="[ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS]">
         <mat-icon>storage</mat-icon>
         <span>Service IDs</span>
-      </button>
-    }
-    <ng-container *ngTemplateOutlet="supportDocs"></ng-container>
-  </mat-toolbar>
-}
-
-@if (activeSection() === 'config') {
-  <mat-toolbar
-    class="secondary-toolbar"
-    appOverflowNav>
-    <ng-container *ngTemplateOutlet="footerText"></ng-container>
-    @if (authService.actionAllowed('configread')) {
-      <button
-        mat-button
-        [ngClass]="contentService.routeUrl() === ROUTE_PATHS.CONFIGURATION_SYSTEM ? 'sub-nav-active' : ''"
-        [routerLink]="[ROUTE_PATHS.CONFIGURATION_SYSTEM]">
-        <mat-icon>build</mat-icon>
-        <span>System</span>
-      </button>
-    }
-    <button
-      mat-button
-      [ngClass]="contentService.routeUrl() === ROUTE_PATHS.SUBSCRIPTION ? 'sub-nav-active' : ''"
-      [routerLink]="[ROUTE_PATHS.SUBSCRIPTION]">
-      <mat-icon>event_repeat</mat-icon>
-      <span>Subscription</span>
-    </button>
-    <button
-      mat-button
-      [ngClass]="contentService.routeUrl() === ROUTE_PATHS.CONFIGURATION_TOKENTYPES ? 'sub-nav-active' : ''"
-      [routerLink]="[ROUTE_PATHS.CONFIGURATION_TOKENTYPES]">
-      <mat-icon>safety_check</mat-icon>
-      <span>Tokentypes</span>
-    </button>
-    @if (authService.actionAllowed("machinelist")) {
-      <button
-        mat-button
-        [ngClass]="contentService.routeUrl() === ROUTE_PATHS.CONFIGURATION_MACHINES ? 'sub-nav-active' : ''"
-        [routerLink]="[ROUTE_PATHS.CONFIGURATION_MACHINES]">
-        <mat-icon>point_of_sale</mat-icon>
-        <span>Machines</span>
-      </button>
-    }
-    @if (authService.actionAllowed("mresolverread")) {
-      <button
-        mat-button
-        [ngClass]="contentService.routeUrl() === ROUTE_PATHS.MACHINE_RESOLVER ? 'sub-nav-active' : ''"
-        [routerLink]="[ROUTE_PATHS.MACHINE_RESOLVER]">
-        <mat-icon>lan</mat-icon>
-        <span>Machine Resolver</span>
-      </button>
-    }
-    @if (authService.actionAllowed("periodictask_read")) {
-      <button
-        mat-button
-        [ngClass]="contentService.routeUrl() === ROUTE_PATHS.CONFIGURATION_PERIODIC_TASKS ? 'sub-nav-active' : ''"
-        [routerLink]="[ROUTE_PATHS.CONFIGURATION_PERIODIC_TASKS]">
-        <mat-icon>event_repeat</mat-icon>
-        <span>Periodic Tasks</span>
-      </button>
+      </a>
     }
     <ng-container *ngTemplateOutlet="supportDocs"></ng-container>
   </mat-toolbar>

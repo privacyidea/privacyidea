@@ -107,7 +107,7 @@ describe("NavigationComponent (async, no RouterTestingModule, no MatSnackBar)", 
     const authService = TestBed.inject(AuthService) as unknown as MockAuthService;
     (authService.actionAllowed as jest.Mock).mockReturnValue(true);
 
-    // Set active section to "audit" (index 5 in primaryNavItems)
+    // Set active section to "audit" (index 6 in primaryNavItems)
     contentService.routeUrl.set(ROUTE_PATHS.AUDIT);
 
     // Set visible count to 3
@@ -116,15 +116,15 @@ describe("NavigationComponent (async, no RouterTestingModule, no MatSnackBar)", 
     const visible = component.visibleNavItems;
     const overflow = component.overflowNavItems;
 
-    // Total filtered items = 8 (assuming all are allowed in MockAuthService)
-    // Audit is at index 5. 5 >= 3 is true.
-    // Visible should be [items[0], items[1], items[5]]
+    // Total filtered items = 9 (assuming all are allowed in MockAuthService)
+    // Audit is at index 6. 6 >= 3 is true.
+    // Visible should be [items[0], items[1], items[6]]
     expect(visible.length).toBe(3);
     expect(visible[2].section).toBe("audit");
 
     // Overflow should contain items that were displaced or were already there
-    // Indices: 2, 3, 4, 6, 7 (users, policies, events, external, config)
-    expect(overflow.length).toBe(5);
+    // Indices: 2, 3, 4, 5, 7, 8 (users, policies, events, subscription, external, config)
+    expect(overflow.length).toBe(6);
     expect(overflow.some(item => item.section === "audit")).toBe(false);
     expect(overflow[0].section).toBe("users");
   });
