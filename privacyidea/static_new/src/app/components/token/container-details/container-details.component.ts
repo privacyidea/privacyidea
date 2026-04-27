@@ -57,7 +57,6 @@ import { MatListItem } from "@angular/material/list";
 import { MatSelectModule } from "@angular/material/select";
 import { MatTooltip } from "@angular/material/tooltip";
 import { Router, RouterLink } from "@angular/router";
-import { ContainerTemplateService } from "src/app/services/container-template/container-template.service";
 import { FilterValue } from "../../../core/models/filter_value/filter_value";
 import { ROUTE_PATHS } from "../../../route_paths";
 import { AuditService, AuditServiceInterface } from "../../../services/audit/audit.service";
@@ -142,7 +141,6 @@ export class ContainerDetailsComponent implements OnDestroy {
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly containerService: ContainerServiceInterface = inject(ContainerService);
   private readonly auditService: AuditServiceInterface = inject(AuditService);
-  private readonly templateService: ContainerTemplateService = inject(ContainerTemplateService);
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
   private previousPageSize = 10;
   private router = inject(Router);

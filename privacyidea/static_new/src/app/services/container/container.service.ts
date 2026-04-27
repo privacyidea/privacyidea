@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -19,7 +19,7 @@
 import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
 import { computed, effect, inject, Injectable, linkedSignal, Signal, signal, WritableSignal } from "@angular/core";
 import { Sort } from "@angular/material/sort";
-import { catchError, forkJoin, Observable, of, Subject, throwError } from "rxjs";
+import { catchError, forkJoin, lastValueFrom, Observable, of, Subject, throwError } from "rxjs";
 import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
 import { FilterValue } from "../../core/models/filter_value/filter_value";
@@ -33,6 +33,16 @@ import { UserService, UserServiceInterface } from "../user/user.service";
 
 const apiFilter = ["container_serial", "type", "description", "container_realm"];
 const advancedApiFilter = ["token_serial"];
+
+export interface TemplateComparisonResult {
+  [containerSerial: string]: {
+    tokens: {
+      additional: string[];
+      equal: boolean;
+      missing: string[];
+    };
+  };
+}
 
 export interface ContainerDetails {
   count?: number;
@@ -182,12 +192,8 @@ export interface ContainerServiceInterface {
     states: string[]
   ) => Observable<PiResponse<{ disabled: boolean } | { active: boolean }>>;
   unassignUser: (containerSerial: string, username: string, userRealm: string) => Observable<any>;
-  assignUser: (args: {
-    containerSerial: string;
-    username: string;
-
-    userRealm: string;
-  }) => Observable<any>;
+  assignUser: (args: { containerSerial: string; username: string; userRealm: string }) => Observable<any>;
+  compareWithTemplate: (containerSerial: string, templateName: string) => Promise<PiResponse<TemplateComparisonResult>>;
   setContainerInfos: (containerSerial: string, infos: any) => Observable<Object>[];
   deleteInfo: (containerSerial: string, key: string) => Observable<any>;
   addTokenToContainer: (containerSerial: string, tokenSerial: string) => Observable<any>;
@@ -203,6 +209,7 @@ export interface ContainerServiceInterface {
     passphrase_response: string;
     rollover?: boolean;
   }) => Observable<PiResponse<ContainerRegisterData>>;
+
   unregister: (containerSerial: string) => Observable<PiResponse<any>>;
   containerBelongsToUser: (containerSerial: string) => false | true | undefined;
 
@@ -925,5 +932,23 @@ export class ContainerService implements ContainerServiceInterface {
         this.isRolloverPolling.set(false);
       }
     });
+  }
+
+  async compareWithTemplate(containerSerial: string, templateName: string) {
+    const headers = this.authService.getHeaders();
+    const observable = this.http
+      .post<
+        PiResponse<TemplateComparisonResult>
+      >(`${this.containerBaseUrl}${templateName}/compare`, { container_serial: containerSerial }, { headers })
+      .pipe(
+        catchError((error) => {
+          console.error("Failed to compare with template.", error);
+          const message = error.error?.result?.error?.message || "";
+          this.notificationService.openSnackBar("Failed to compare with template. " + message);
+          return throwError(() => error);
+        })
+      );
+
+    return lastValueFrom(observable);
   }
 }

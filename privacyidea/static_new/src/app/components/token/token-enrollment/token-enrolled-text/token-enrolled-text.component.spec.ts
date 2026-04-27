@@ -63,7 +63,7 @@ describe("TokenEnrolledTextComponent", () => {
     expect(mockContentService.tokenSelected).not.toHaveBeenCalled();
   });
 
-  it("should emit switchRoute and call contentService.containerSelected if containerSerial is set", () => {
+  it("should emit switchRoute and call contentService.navigateContainerDetails if containerSerial is set", () => {
     const switchRouteSpy = jest.fn();
     fixture.componentRef.setInput("containerSerial", "CONT123");
     component.onSwitchRoute.subscribe(switchRouteSpy);

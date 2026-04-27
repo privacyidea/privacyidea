@@ -1,42 +1,22 @@
-/**
- * (c) NetKnights GmbH 2026,  https://netknights.it
- *
- * This code is free software; you can redistribute it and/or
- * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
- * as published by the Free Software Foundation; either
- * version 3 of the License, or any later version.
- *
- * This code is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU AFFERO GENERAL PUBLIC LICENSE for more details.
- *
- * You should have received a copy of the GNU Affero General Public
- * License along with this program.  If not, see <http://www.gnu.org/licenses/>.
- *
- * SPDX-License-Identifier: AGPL-3.0-or-later
- **/
-import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
+import { NgClass } from "@angular/common";
 import {
   Component,
   computed,
-  effect,
+  ElementRef,
   inject,
   Input,
   linkedSignal,
   signal,
   ViewChild,
-  WritableSignal,
-  ElementRef
+  WritableSignal
 } from "@angular/core";
-import {
-  ContainerDetailToken,
-  ContainerService,
-  ContainerServiceInterface
-} from "../../../../services/container/container.service";
-import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
 import { FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { MatIconButton } from "@angular/material/button";
+import { MatFormField, MatLabel } from "@angular/material/form-field";
+import { MatIconModule } from "@angular/material/icon";
+import { MatInput } from "@angular/material/input";
+import { MatPaginator, MatPaginatorModule } from "@angular/material/paginator";
+import { Sort } from "@angular/material/sort";
 import {
   MatCell,
   MatHeaderCell,
@@ -46,25 +26,24 @@ import {
   MatTableDataSource,
   MatTableModule
 } from "@angular/material/table";
-import { MatFormField, MatLabel } from "@angular/material/form-field";
-import { TableUtilsService, TableUtilsServiceInterface } from "../../../../services/table-utils/table-utils.service";
-import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
-
-import { SimpleConfirmationDialogComponent } from "../../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
-import { CopyButtonComponent } from "../../../shared/copy-button/copy-button.component";
-import { MatDialog } from "@angular/material/dialog";
-import { MatPaginator, MatPaginatorModule } from "@angular/material/paginator";
-import { NgClass } from "@angular/common";
-import { MatIconModule } from "@angular/material/icon";
 import { MatTooltipModule } from "@angular/material/tooltip";
-import { MatInput } from "@angular/material/input";
+import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
+import {
+  ContainerDetailToken,
+  ContainerService,
+  ContainerServiceInterface
+} from "../../../../services/container/container.service";
+import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
+import { DialogService, DialogServiceInterface } from "../../../../services/dialog/dialog.service";
 import {
   NotificationService,
   NotificationServiceInterface
 } from "../../../../services/notification/notification.service";
-import { DialogService, DialogServiceInterface } from "../../../../services/dialog/dialog.service";
-import { Sort } from "@angular/material/sort";
-import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { TableUtilsService, TableUtilsServiceInterface } from "../../../../services/table-utils/table-utils.service";
+import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
+import { CopyButtonComponent } from "../../../shared/copy-button/copy-button.component";
+import { SimpleConfirmationDialogComponent } from "../../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
 
 @Component({
   selector: "app-container-details-token-table",
@@ -107,7 +86,7 @@ export class ContainerDetailsTokenTableComponent {
   pageSizeOptions = this.tableUtilsService.pageSizeOptions;
   pageIndex = this.tokenService.pageIndex;
   @Input() containerTokenData!: WritableSignal<MatTableDataSource<ContainerDetailToken, MatPaginator>>;
-  dataSource = new MatTableDataSource<ContainerDetailToken>([]);
+
   filterValue: WritableSignal<string> = signal("");
   containerSerial = this.containerService.containerSerial;
   assignedUser: WritableSignal<{
@@ -131,6 +110,20 @@ export class ContainerDetailsTokenTableComponent {
   apiFilter = this.tokenService.apiFilter;
   @ViewChild("filterInput", { static: false }) filterInput!: ElementRef<HTMLInputElement>;
 
+  protected readonly sortedData = computed(() => {
+    const source = this.containerTokenData();
+    const data = source?.data ?? [];
+    return this.tableUtilsService.clientsideSortTokenData([...data], this.sort());
+  });
+
+  dataSource = linkedSignal<ContainerDetailToken[], MatTableDataSource<ContainerDetailToken>>({
+    source: () => this.sortedData(),
+    computation: (newRows, previous) => {
+      const ds = previous?.value ?? new MatTableDataSource<ContainerDetailToken>([]);
+      ds.data = newRows;
+      return ds;
+    }
+  });
   isAssignableToAllToken = computed<boolean>(() => {
     const assignedUser = this.assignedUser();
     if (assignedUser.user_name === "") {
@@ -145,33 +138,18 @@ export class ContainerDetailsTokenTableComponent {
     return tokens.some((token) => token.username !== "");
   });
 
-  constructor() {
-    effect(() => {
-      if (!this.containerTokenData) {
-        return;
-      }
-      const base = this.containerTokenData().data ?? [];
-      this.dataSource.data = this.tableUtilsService.clientsideSortTokenData(base, this.sort());
-    });
-
-    effect(() => {
-      const s = this.sort();
-      const base = this.dataSource.data ?? [];
-      this.dataSource.data = this.tableUtilsService.clientsideSortTokenData([...base], s);
-    });
-  }
-
   ngAfterViewInit(): void {
-    this.dataSource.paginator = this.paginator;
+    const ds = this.dataSource();
+    ds.paginator = this.paginator;
 
     if (this.containerTokenData) {
       const externalDS = this.containerTokenData();
       externalDS.paginator = this.paginator;
       (externalDS as any)._sort = this.sort;
     }
-    (this.dataSource as any)._sort = this.sort;
+    (ds as any)._sort = this.sort;
 
-    this.dataSource.filterPredicate = (row: ContainerDetailToken, filter: string) => {
+    ds.filterPredicate = (row: ContainerDetailToken, filter: string) => {
       const haystack = [row.serial, row.tokentype, row.username, String(row.active)].join(" ").toLowerCase();
       return haystack.includes(filter);
     };
@@ -182,7 +160,7 @@ export class ContainerDetailsTokenTableComponent {
     const trimmed = raw.trim();
     this.filterValue.set(trimmed);
     const normalised = trimmed.toLowerCase();
-    this.dataSource.filter = normalised;
+    this.dataSource().filter = normalised;
 
     if (this.containerTokenData) {
       this.containerTokenData().filter = normalised;
@@ -191,7 +169,7 @@ export class ContainerDetailsTokenTableComponent {
 
   clearFilter(): void {
     this.filterValue.set("");
-    this.dataSource.filter = "";
+    this.dataSource().filter = "";
 
     if (this.containerTokenData) {
       this.containerTokenData().filter = "";
