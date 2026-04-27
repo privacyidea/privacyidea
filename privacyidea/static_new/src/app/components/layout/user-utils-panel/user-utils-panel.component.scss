@@ -32,14 +32,25 @@ $breakpoint-compact: 1630px;
   @include mat.elevation(3);
 }
 
+.profile-text-wrapper {
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  max-width: 300px;
+}
+
 .profile-text {
   @include text-label;
   font-weight: bold;
   margin-right: 16px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .node-text {
   @include text-label;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .session-timer {

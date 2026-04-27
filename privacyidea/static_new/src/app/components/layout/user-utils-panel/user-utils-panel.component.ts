@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, inject } from "@angular/core";
+import { Component, computed, HostListener, inject, signal } from "@angular/core";
 import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
 import { MatIcon } from "@angular/material/icon";
 import { MatTooltip } from "@angular/material/tooltip";
@@ -120,6 +120,12 @@ export class UserUtilsPanelComponent {
   private readonly dialogService: DialogServiceInterface = inject(DialogService);
   protected readonly router: Router = inject(Router);
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
+  isLargeScreen = signal(window.innerWidth > 1630);
+
+  @HostListener("window:resize")
+  onResize() {
+    this.isLargeScreen.set(window.innerWidth > 1630);
+  }
 
   profileText = computed(() => {
     let profileText = this.authService.username();

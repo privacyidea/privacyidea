@@ -18,15 +18,21 @@
 -->
 
 <div class="utils-group flex-row">
-  <span class="margin-left-8">
-    <mat-icon>account_box</mat-icon>
+  <span
+    class="margin-left-8"
+    [matTooltip]="profileTooltip()"
+    [matTooltipDisabled]="isLargeScreen()">
+    <mat-icon>account_circle</mat-icon>
   </span>
-  <span class="profile-text">
-    {{ profileText() }}
-  </span>
-  @if (localNode()) {
-    <i class="node-text"> {{ localNode() }} </i>
-  }
+  <div
+    class="profile-text-wrapper">
+    <span class="profile-text">
+      {{ profileText() }}
+    </span>
+    @if (localNode()) {
+      <i class="node-text"> {{ localNode() }} </i>
+    }
+  </div>
   <app-theme-switcher></app-theme-switcher>
   <button
     (click)="refreshPage()"

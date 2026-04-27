@@ -143,10 +143,18 @@
   <a
     (click)="openSupport()"
     aria-label="Support"
-    class="nav-button support-color">
+    class="nav-button support-color docs-button-full">
     <mat-icon>support_agent</mat-icon>
     <span i18n>Support</span>
   </a>
+  <button
+    mat-icon-button
+    (click)="openSupport()"
+    aria-label="Support"
+    matTooltip="Support"
+    class="support-color docs-button-icon">
+    <mat-icon>support_agent</mat-icon>
+  </button>
   <a
     (click)="documentationService.openDocumentation(contentService.routeUrl())"
     aria-label="Documentation"

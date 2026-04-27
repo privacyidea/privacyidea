@@ -170,6 +170,7 @@ export class OverflowNavDirective implements AfterViewInit, OnDestroy {
         this.renderer.removeStyle(btn, "display");
         this.renderer.removeClass(btn, "sub-overflow-hidden");
       });
+      this.renderer.removeClass(container, "is-overflowing");
       this.renderer.addClass(this.moreButton, "overflow-more-hidden");
 
       const containerWidth = container.clientWidth;
@@ -191,6 +192,15 @@ export class OverflowNavDirective implements AfterViewInit, OnDestroy {
         }
       }
 
+      // Explicitly check for beta badge if it's not captured (e.g. if it's not after a spacer)
+      const betaBadge = container.querySelector(".beta-badge");
+      if (betaBadge && (!spacer || !(spacer.compareDocumentPosition(betaBadge) & Node.DOCUMENT_POSITION_FOLLOWING))) {
+        const style = window.getComputedStyle(betaBadge);
+        if (style.display !== "none" && style.visibility !== "hidden") {
+          rightWidth += (betaBadge as HTMLElement).offsetWidth + 8;
+        }
+      }
+
       // Also account for footer text at the beginning
       const footerText = container.querySelector(".footer-text");
       let leftReserved = 0;
@@ -198,9 +208,10 @@ export class OverflowNavDirective implements AfterViewInit, OnDestroy {
         leftReserved = (footerText as HTMLElement).offsetWidth + 16;
       }
 
-      const moreButtonWidth = 80;
+      const moreButtonWidth = 100; // Increased from 92
       const gap = 8;
-      const availableForButtons = containerWidth - leftReserved - rightWidth - 48; // 48 for safety/padding
+      const safetyMargin = 80; // Increased from 72
+    const availableForButtons = containerWidth - leftReserved - rightWidth - safetyMargin;
 
       // Find the active button — it must always stay visible (like the top menu)
       const activeIndex = buttons.findIndex(btn =>
@@ -211,32 +222,42 @@ export class OverflowNavDirective implements AfterViewInit, OnDestroy {
       let usedWidth = 0;
       const visible: boolean[] = new Array(buttons.length).fill(false);
 
-      // First, reserve space for the active button
-      if (activeIndex >= 0) {
-        usedWidth += buttons[activeIndex].offsetWidth + gap;
-        visible[activeIndex] = true;
+      // First, check if ALL buttons fit (without More button)
+      let totalWidth = activeIndex >= 0 ? buttons[activeIndex].offsetWidth + gap : 0;
+      for (let i = 0; i < buttons.length; i++) {
+        if (i !== activeIndex) totalWidth += buttons[i].offsetWidth + gap;
       }
 
-      // Then fit as many other buttons as possible (in order)
-      for (let i = 0; i < buttons.length; i++) {
-        if (i === activeIndex) continue;
-        const btnWidth = buttons[i].offsetWidth + gap;
-        // Check if remaining non-visible buttons would need a More button
-        const remainingCount = buttons.filter((_, j) => j > i && j !== activeIndex && !visible[j]).length;
-        const needsMore = remainingCount > 0;
-        const maxWidth = needsMore ? availableForButtons - moreButtonWidth : availableForButtons;
+      if (totalWidth <= availableForButtons) {
+        visible.fill(true);
+      } else {
+        // If not all fit, we need the More button.
+        const maxWidthWithMore = availableForButtons - moreButtonWidth;
 
-        if (usedWidth + btnWidth <= maxWidth) {
-          usedWidth += btnWidth;
-          visible[i] = true;
-        } else {
-          break;
+        // Reserve space for the active button
+        if (activeIndex >= 0) {
+          usedWidth += buttons[activeIndex].offsetWidth + gap;
+          visible[activeIndex] = true;
+        }
+
+        // Fit as many other buttons as possible
+        for (let i = 0; i < buttons.length; i++) {
+          if (i === activeIndex) continue;
+          const btnWidth = buttons[i].offsetWidth + gap;
+
+          if (usedWidth + btnWidth <= maxWidthWithMore) {
+            usedWidth += btnWidth;
+            visible[i] = true;
+          } else {
+            break;
+          }
         }
       }
 
       const hiddenButtons = buttons.filter((_, i) => !visible[i]);
 
       if (hiddenButtons.length > 0) {
+        this.renderer.addClass(container, "is-overflowing");
         // Hide overflow buttons
         hiddenButtons.forEach(btn => {
           this.renderer.addClass(btn, "sub-overflow-hidden");
@@ -246,6 +267,7 @@ export class OverflowNavDirective implements AfterViewInit, OnDestroy {
         this.renderer.removeClass(this.moreButton, "overflow-more-hidden");
         this.updateMenuContent(hiddenButtons);
       } else {
+        this.renderer.removeClass(container, "is-overflowing");
         this.renderer.addClass(this.moreButton, "overflow-more-hidden");
         this.closeMenu();
       }
@@ -274,6 +296,7 @@ export class OverflowNavDirective implements AfterViewInit, OnDestroy {
     // Compare DOM position
     return !!(spacer.compareDocumentPosition(el) & Node.DOCUMENT_POSITION_FOLLOWING);
   }
+
 
   private updateMenuContent(hiddenButtons: HTMLElement[]): void {
     if (!this.menuContainer) return;
