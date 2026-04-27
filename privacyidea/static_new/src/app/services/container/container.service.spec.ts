@@ -343,7 +343,7 @@ describe("ContainerService", () => {
 
   it("filteredContainerOptions respects selectedContainer filter", () => {
     containerService.containerOptions.set(["Alpha", "Serial42", "Beta"]);
-    containerService.selectedContainer.set("se");
+    containerService.selectedContainerSerial.set("se");
     expect(containerService.filteredContainerOptions()).toEqual(["Serial42"]);
   });
 

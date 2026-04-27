@@ -23,7 +23,8 @@
   class="token-enrollment-container">
   <h3
     class="margin-8"
-    i18n>Enroll a New Token
+    i18n>
+    Enroll a New Token
   </h3>
   <form
     (ngSubmit)="enrollToken()"
@@ -33,8 +34,7 @@
       #stickyHeader
       class="sticky-header">
       <div class="sticky-controls ali-center">
-        <mat-form-field
-          class="input-width-xl">
+        <mat-form-field class="input-width-xl">
           <mat-select
             [(ngModel)]="tokenService.selectedTokenType"
             [ngModelOptions]="{ standalone: true }"
@@ -222,16 +222,13 @@
           matInput
           placeholder="Enter description"
           rows="3"></textarea>
-        <mat-hint align="end">{{ descriptionControl.value.length }} / {{ tokenService.maxDescriptionLength }}
+        <mat-hint align="end"
+          >{{ descriptionControl.value.length }} / {{ tokenService.maxDescriptionLength }}
         </mat-hint>
         @if (descriptionControl.hasError("required")) {
-          <mat-error i18n>
-            Description is <strong>required</strong>.
-          </mat-error>
+          <mat-error i18n> Description is <strong>required</strong>. </mat-error>
         } @else if (descriptionControl.hasError("maxlength")) {
-          <mat-error i18n>
-            Description cannot exceed <strong>80 characters</strong>.
-          </mat-error>
+          <mat-error i18n> Description cannot exceed <strong>80 characters</strong>. </mat-error>
         }
       </mat-form-field>
 
@@ -261,11 +258,14 @@
                   matInput />
               </mat-form-field>
             </div>
-            @if (formGroupSignal().hasError("pinMismatch") &&
-            (formGroupSignal().get("setPin")?.touched || formGroupSignal().get("repeatPin")?.touched)) {
+            @if (
+              formGroupSignal().hasError("pinMismatch") &&
+              (formGroupSignal().get("setPin")?.touched || formGroupSignal().get("repeatPin")?.touched)
+            ) {
               <mat-error
                 class="pin-error"
-                i18n>PINs do not match.
+                i18n
+                >PINs do not match.
               </mat-error>
             }
           </div>
@@ -278,7 +278,7 @@
               <mat-label i18n>Enter Container</mat-label>
               <app-clearable-input
                 (onClick)="selectedContainerControl.setValue('')"
-                [showClearButton]="containerService.selectedContainer() !== ''">
+                [showClearButton]="containerService.selectedContainerSerial() !== ''">
                 <input
                   [formControlName]="'selectedContainer'"
                   [formControl]="selectedContainerControl"

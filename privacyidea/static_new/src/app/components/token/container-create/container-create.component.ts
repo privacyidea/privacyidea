@@ -130,7 +130,8 @@ export class ContainerCreateComponent {
   validInput = true;
 
   // Container & Serial
-  containerSerial = this.containerService.containerSerial;
+  // containerSerial = this.containerService.containerSerial;
+  containerSerial = signal("");
   description = signal("");
   userSelected = computed(() => this.userService.selectionUsernameFilter() !== "");
 
@@ -171,7 +172,7 @@ export class ContainerCreateComponent {
 
   // --- Lifecycle ---
   constructor() {
-    this.containerService.containerSerial.set("");
+    this.containerSerial.set("");
     this.containerService.containerDetailResource.set(undefined);
 
     effect(() => {
@@ -180,7 +181,7 @@ export class ContainerCreateComponent {
     });
 
     effect(() => {
-      const serial = this.containerService.containerSerial();
+      const serial = this.containerSerial();
       if (!serial || !this.containerService.containerDetailResource.hasValue()) return;
 
       const containerDetailResource = this.containerService.containerDetailResource.value();
@@ -227,7 +228,6 @@ export class ContainerCreateComponent {
   }
 
   protected onTemplateChange(template: ContainerTemplate) {
-    console.log("Template changed:", template);
     this.selectedTemplate.set(template);
   }
 

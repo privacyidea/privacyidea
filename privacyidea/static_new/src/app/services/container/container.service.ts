@@ -156,7 +156,7 @@ export interface ContainerServiceInterface {
   eventPageSize: number;
   states: WritableSignal<string[]>;
   containerSerial: WritableSignal<string>;
-  selectedContainer: WritableSignal<string | null>;
+  selectedContainerSerial: WritableSignal<string | null>;
   sort: WritableSignal<Sort>;
   containerFilter: WritableSignal<FilterValue>;
   filterParams: Signal<Record<string, string>>;
@@ -244,9 +244,11 @@ export class ContainerService implements ContainerServiceInterface {
   states = signal<string[]>([]);
   containerSerial = this.contentService.containerSerial;
 
-  selectedContainer: WritableSignal<string | null> = linkedSignal({
-    source: () => this.contentService.routeUrl(),
-    computation: (routeUrl, previous) => (this.contentService.onTokensEnrollment() ? (previous?.value ?? "") : "")
+  selectedContainerSerial: WritableSignal<string | null> = linkedSignal({
+    source: () => this.contentService.onTokensEnrollment(),
+    computation: (onTokensEnrollment, previous) => {
+      return onTokensEnrollment ? (previous?.value ?? "") : "";
+    }
   });
 
   sort = signal<Sort>({ active: "serial", direction: "asc" });
@@ -401,7 +403,7 @@ export class ContainerService implements ContainerServiceInterface {
   });
 
   filteredContainerOptions = computed(() => {
-    const filter = (this.selectedContainer() || "").toLowerCase();
+    const filter = (this.selectedContainerSerial() || "").toLowerCase();
     return this.containerOptions().filter((option) => option.toLowerCase().includes(filter));
   });
 

@@ -30,8 +30,7 @@
       #stickyHeader
       class="sticky-header">
       <div class="sticky-controls ali-center">
-        <mat-form-field
-          class="input-width-xl type-select">
+        <mat-form-field class="input-width-xl type-select">
           <mat-select
             [(ngModel)]="tokenService.selectedTokenType"
             [ngModelOptions]="{ standalone: true }"
@@ -211,8 +210,7 @@
             (reopenDialogChange)="updateReopenDialog($event)" />
         }
       }
-      <mat-form-field
-        class="input-width-xl margin-top-16">
+      <mat-form-field class="input-width-xl margin-top-16">
         <mat-label i18n>Description</mat-label>
         <textarea
           [formControl]="descriptionControl"
@@ -220,7 +218,8 @@
           matInput
           placeholder="Enter description"
           rows="3"></textarea>
-        <mat-hint align="end">{{ descriptionControl.value.length }} / {{ tokenService.maxDescriptionLength }}
+        <mat-hint align="end"
+          >{{ descriptionControl.value.length }} / {{ tokenService.maxDescriptionLength }}
         </mat-hint>
       </mat-form-field>
       <div class="gap-16">
@@ -264,11 +263,14 @@
                   matInput />
               </mat-form-field>
             </div>
-            @if (formGroupSignal().hasError("pinMismatch") &&
-            (formGroupSignal().get("setPin")?.touched || formGroupSignal().get("repeatPin")?.touched)) {
+            @if (
+              formGroupSignal().hasError("pinMismatch") &&
+              (formGroupSignal().get("setPin")?.touched || formGroupSignal().get("repeatPin")?.touched)
+            ) {
               <mat-error
                 class="pin-error"
-                i18n>PINs do not match.
+                i18n
+                >PINs do not match.
               </mat-error>
             }
           </div>
@@ -280,7 +282,7 @@
             <mat-form-field class="input-width-l">
               <app-clearable-input
                 (onClick)="selectedContainerControl.setValue('')"
-                [showClearButton]="containerService.selectedContainer() !== ''">
+                [showClearButton]="containerService.selectedContainerSerial() !== ''">
                 <input
                   [formControl]="selectedContainerControl"
                   [matAutocomplete]="containerAuto"

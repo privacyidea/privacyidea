@@ -17,14 +17,14 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { NO_ERRORS_SCHEMA } from '@angular/core';
+import { NO_ERRORS_SCHEMA } from "@angular/core";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
 
-import { TokenEnrolledTextComponent } from './token-enrolled-text.component';
-import { MockContentService } from 'src/testing/mock-services/mock-content-service';
+import { MockContentService } from "src/testing/mock-services/mock-content-service";
 import { ContentService } from "../../../../services/content/content.service";
+import { TokenEnrolledTextComponent } from "./token-enrolled-text.component";
 
-describe('TokenEnrolledTextComponent', () => {
+describe("TokenEnrolledTextComponent", () => {
   let component: TokenEnrolledTextComponent;
   let fixture: ComponentFixture<TokenEnrolledTextComponent>;
   let mockContentService: MockContentService;
@@ -32,9 +32,7 @@ describe('TokenEnrolledTextComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [TokenEnrolledTextComponent],
-      providers: [
-        { provide: ContentService, useClass: MockContentService }
-      ],
+      providers: [{ provide: ContentService, useClass: MockContentService }],
       schemas: [NO_ERRORS_SCHEMA]
     }).compileComponents();
     fixture = TestBed.createComponent(TokenEnrolledTextComponent);
@@ -43,42 +41,42 @@ describe('TokenEnrolledTextComponent', () => {
     fixture.detectChanges();
   });
 
-  it('should create', () => {
+  it("should create", () => {
     expect(component).toBeTruthy();
   });
 
-  it('should emit switchRoute and call contentService.tokenSelected if serial is set', () => {
+  it("should emit switchRoute and call contentService.tokenSelected if serial is set", () => {
     const switchRouteSpy = jest.fn();
     fixture.componentRef.setInput("serial", "SERIAL123");
     fixture.detectChanges();
-    component.switchRoute.subscribe(switchRouteSpy);
+    component.onSwitchRoute.subscribe(switchRouteSpy);
     component.tokenSelected();
     expect(switchRouteSpy).toHaveBeenCalled();
-    expect(mockContentService.tokenSelected).toHaveBeenCalledWith('SERIAL123');
+    expect(mockContentService.tokenSelected).toHaveBeenCalledWith("SERIAL123");
   });
 
-  it('should do nothing if serial is not set', () => {
+  it("should do nothing if serial is not set", () => {
     const switchRouteSpy = jest.fn();
-    component.switchRoute.subscribe(switchRouteSpy);
+    component.onSwitchRoute.subscribe(switchRouteSpy);
     component.tokenSelected();
     expect(switchRouteSpy).not.toHaveBeenCalled();
     expect(mockContentService.tokenSelected).not.toHaveBeenCalled();
   });
 
-  it('should emit switchRoute and call contentService.containerSelected if containerSerial is set', () => {
+  it("should emit switchRoute and call contentService.containerSelected if containerSerial is set", () => {
     const switchRouteSpy = jest.fn();
     fixture.componentRef.setInput("containerSerial", "CONT123");
-    component.switchRoute.subscribe(switchRouteSpy);
-    component.containerSelected();
+    component.onSwitchRoute.subscribe(switchRouteSpy);
+    component.natigateContainerDetails();
     expect(switchRouteSpy).toHaveBeenCalled();
-    expect(mockContentService.containerSelected).toHaveBeenCalledWith('CONT123');
+    expect(mockContentService.navigateContainerDetails).toHaveBeenCalledWith("CONT123");
   });
 
-  it('should do nothing if containerSerial is not set', () => {
+  it("should do nothing if containerSerial is not set", () => {
     const switchRouteSpy = jest.fn();
-    component.switchRoute.subscribe(switchRouteSpy);
-    component.containerSelected();
+    component.onSwitchRoute.subscribe(switchRouteSpy);
+    component.natigateContainerDetails();
     expect(switchRouteSpy).not.toHaveBeenCalled();
-    expect(mockContentService.containerSelected).not.toHaveBeenCalled();
+    expect(mockContentService.navigateContainerDetails).not.toHaveBeenCalled();
   });
 });

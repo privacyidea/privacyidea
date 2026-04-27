@@ -38,8 +38,7 @@
         </button>
       }
     </div>
-    <div
-      class="details-flex-layout responsive-flex-row-1310">
+    <div class="details-flex-layout responsive-flex-row-1310">
       <div>
         <table
           [dataSource]="containerDetailData()"
@@ -58,8 +57,9 @@
           <ng-container matColumnDef="value">
             <td
               *matCellDef="let element"
-              [ngClass]="tableUtilsService.getTdClassForKey(element.keyMap.key)
-              .concat(element.isEditing() ? ['padding-0'] : [])"
+              [ngClass]="
+                tableUtilsService.getTdClassForKey(element.keyMap.key).concat(element.isEditing() ? ['padding-0'] : [])
+              "
               mat-cell>
               @switch (element.keyMap.key) {
                 @case ("states") {
@@ -147,8 +147,9 @@
           <ng-container matColumnDef="value">
             <td
               *matCellDef="let element"
-              [ngClass]="tableUtilsService.getTdClassForKey(element.keyMap.key)
-              .concat(isEditingUser() ? ['padding-0'] : [])"
+              [ngClass]="
+                tableUtilsService.getTdClassForKey(element.keyMap.key).concat(isEditingUser() ? ['padding-0'] : [])
+              "
               mat-cell>
               @switch (element.keyMap.key) {
                 @case ("user_name") {
@@ -246,8 +247,7 @@
           [isEditingUser]="isEditingUser" />
         <mat-divider class="responsive-divider-1310" />
       </div>
-      <div
-        class="flex-column responsive-margin-left-1310">
+      <div class="flex-column responsive-margin-left-1310">
         <app-container-details-token-table [containerTokenData]="containerTokenData" />
         <div class="flex-row gap-32 margin-top-16">
           @if (authService.actionAllowed("container_add_token")) {
@@ -255,8 +255,7 @@
               <h4 class="margin-left-16 margin-bottom-0">Add Token</h4>
               <div class="flex-row filter-paginator-container">
                 <section>
-                  <mat-checkbox
-                    [(ngModel)]="showOnlyTokenNotInContainer">
+                  <mat-checkbox [(ngModel)]="showOnlyTokenNotInContainer">
                     <span i18n> Only display tokens that are not in a container </span>
                   </mat-checkbox>
                 </section>
@@ -312,8 +311,7 @@
           }
         </div>
       </div>
-      <div
-        class="flex-column gap-32 ali-center responsive-margin-left-1310">
+      <div class="flex-column gap-32 ali-center responsive-margin-left-1310">
         <app-container-details-actions
           [containerSerial]="containerSerial()"
           [containerType]="containerType()"></app-container-details-actions>

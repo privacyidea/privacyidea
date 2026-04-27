@@ -19,7 +19,9 @@
 import { computed, Signal, signal, WritableSignal } from "@angular/core";
 import { of, Subject } from "rxjs";
 
+import { Sort } from "@angular/material/sort";
 import { FilterValue } from "src/app/core/models/filter_value/filter_value";
+import { PiResponse } from "../../app/app.component";
 import {
   ContainerDetailData,
   ContainerDetails,
@@ -28,8 +30,6 @@ import {
   ContainerType,
   ContainerTypes
 } from "../../app/services/container/container.service";
-import { PiResponse } from "../../app/app.component";
-import { Sort } from "@angular/material/sort";
 import { MockHttpResourceRef, MockPiResponse } from "./mock-utils";
 
 export class MockContainerService implements ContainerServiceInterface {
@@ -42,7 +42,7 @@ export class MockContainerService implements ContainerServiceInterface {
   eventPageSize: number = 10;
   states = signal<string[]>([]);
   readonly containerSerial = signal("CONT-1");
-  readonly selectedContainer = signal("");
+  readonly selectedContainerSerial = signal("");
   readonly sort = signal<Sort>({ active: "serial", direction: "asc" });
   readonly containerFilter = signal<FilterValue>(new FilterValue());
   readonly filterParams = computed<Record<string, string>>(() =>
@@ -110,9 +110,7 @@ export class MockContainerService implements ContainerServiceInterface {
   deleteContainer = jest.fn().mockReturnValue(of({}));
   deleteAllTokens = jest.fn().mockReturnValue(of(null));
 
-  registerContainer = jest.fn(() =>
-    of(MockPiResponse.fromValue({})) as any
-  );
+  registerContainer = jest.fn(() => of(MockPiResponse.fromValue({})) as any);
 
   readonly unregister = jest.fn().mockReturnValue(of({}));
   containerBelongsToUser = jest.fn().mockReturnValue(false);

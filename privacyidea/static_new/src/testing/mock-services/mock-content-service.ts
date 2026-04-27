@@ -86,7 +86,7 @@ export class MockContentService implements ContentServiceInterface {
   onMachineResolver = computed(() => this.routeUrl() === ROUTE_PATHS.MACHINE_RESOLVER);
 
   tokenSelected = jest.fn();
-  containerSelected = jest.fn();
+  navigateContainerDetails = jest.fn();
   userSelected = jest.fn();
   machineResolverSelected = jest.fn();
 }

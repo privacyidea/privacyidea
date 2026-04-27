@@ -18,8 +18,9 @@
  **/
 import { Component, inject, Signal, WritableSignal } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
-import { MAT_DIALOG_DATA, MatDialogContent, MatDialogRef, MatDialogTitle } from "@angular/material/dialog";
+import { MatDialogContent, MatDialogTitle } from "@angular/material/dialog";
 import { MatIcon } from "@angular/material/icon";
+import { AbstractDialogComponent } from "src/app/components/shared/dialog/abstract-dialog/abstract-dialog.component";
 import { PiResponse } from "../../../../app.component";
 import {
   ContainerRegisterData,
@@ -27,7 +28,6 @@ import {
   ContainerServiceInterface
 } from "../../../../services/container/container.service";
 import { ContentService } from "../../../../services/content/content.service";
-import { AbstractDialogComponent } from "src/app/components/shared/dialog/abstract-dialog/abstract-dialog.component";
 
 export type ContainerCreationDialogData = {
   response: PiResponse<ContainerRegisterData>;
@@ -54,7 +54,7 @@ export class ContainerCreatedDialogComponent extends AbstractDialogComponent<Sig
 
   containerSelected(containerSerial: string) {
     this.dialogRef.close();
-    this.contentService.containerSelected(containerSerial);
+    this.contentService.navigateContainerDetails(containerSerial);
   }
 
   regenerateQRCode() {

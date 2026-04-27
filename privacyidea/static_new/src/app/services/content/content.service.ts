@@ -75,7 +75,7 @@ export interface ContentServiceInterface {
   onMachineResolver: Signal<boolean>;
 
   tokenSelected: (serial: string) => void;
-  containerSelected: (containerSerial: string) => void;
+  navigateContainerDetails: (containerSerial: string) => void;
   userSelected: (username: string, realm: string) => void;
   machineResolverSelected: (resolverName: string) => void;
 }
@@ -204,7 +204,7 @@ export class ContentService implements ContentServiceInterface {
     this.tokenSerial.set(serial);
   }
 
-  containerSelected(containerSerial: string): void {
+  navigateContainerDetails(containerSerial: string): void {
     this.router.navigateByUrl(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + containerSerial);
     this.containerSerial.set(containerSerial);
   }

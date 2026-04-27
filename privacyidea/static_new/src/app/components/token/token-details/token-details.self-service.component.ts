@@ -27,6 +27,9 @@ import { MatInput } from "@angular/material/input";
 import { MatListItem } from "@angular/material/list";
 import { MatSelectModule } from "@angular/material/select";
 import { MatCell, MatColumnDef, MatRow, MatTable, MatTableModule } from "@angular/material/table";
+import { MatTooltip } from "@angular/material/tooltip";
+import { RouterLink } from "@angular/router";
+import { TokenDetailsMachineComponent } from "@components/token/token-details/token-details-machine/token-details-machine.component";
 import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
 import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
 import { EditButtonsComponent } from "../../shared/edit-buttons/edit-buttons.component";
@@ -34,9 +37,6 @@ import { TokenDetailsActionsComponent } from "./token-details-actions/token-deta
 import { TokenDetailsInfoComponent } from "./token-details-info/token-details-info.component";
 import { TokenDetailsUserSelfServiceComponent } from "./token-details-user/token-details-user.self-service.component";
 import { TokenDetailsComponent } from "./token-details.component";
-import { TokenDetailsMachineComponent } from "@components/token/token-details/token-details-machine/token-details-machine.component";
-import { RouterLink } from "@angular/router";
-import { MatTooltip } from "@angular/material/tooltip";
 
 @Component({
   selector: "app-token-details-self-service",

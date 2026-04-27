@@ -17,18 +17,11 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, inject, Signal } from "@angular/core";
-import {
-  MAT_DIALOG_DATA,
-  MatDialogActions,
-  MatDialogClose,
-  MatDialogContent,
-  MatDialogRef,
-  MatDialogTitle
-} from "@angular/material/dialog";
-import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
+import { Component, inject } from "@angular/core";
 import { MatButton } from "@angular/material/button";
+import { MatDialogActions, MatDialogClose, MatDialogContent, MatDialogTitle } from "@angular/material/dialog";
 import { AbstractDialogComponent } from "src/app/components/shared/dialog/abstract-dialog/abstract-dialog.component";
+import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
 
 export type ContainerRegistrationCompletedDialogData = {
   containerSerial: string;
@@ -48,6 +41,6 @@ export class ContainerRegistrationCompletedDialogComponent extends AbstractDialo
 
   containerSelected(containerSerial: string) {
     this.dialogRef.close();
-    this.contentService.containerSelected(containerSerial);
+    this.contentService.navigateContainerDetails(containerSerial);
   }
 }
