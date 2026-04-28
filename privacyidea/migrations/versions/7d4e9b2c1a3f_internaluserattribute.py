@@ -1,7 +1,7 @@
 """Add internaluserattribute table and migrate internal entries out of customuserattribute
 
 Revision ID: 7d4e9b2c1a3f
-Revises: 3cafe2771cdd
+Revises: b1a2c3d4e5f6
 Create Date: 2026-04-28 00:00:00.000000
 
 """
@@ -14,7 +14,7 @@ from sqlalchemy.exc import OperationalError, ProgrammingError
 
 # revision identifiers, used by Alembic.
 revision = '7d4e9b2c1a3f'
-down_revision = '3cafe2771cdd'
+down_revision = 'b1a2c3d4e5f6'
 branch_labels = None
 depends_on = None
 

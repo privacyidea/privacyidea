@@ -41,7 +41,7 @@ def _q(col: str) -> str:
 
 class TestMigration7d4e9b2c1a3f(MigrationTestBase):
     REVISION = "7d4e9b2c1a3f"
-    PARENT_REVISION = "3cafe2771cdd"
+    PARENT_REVISION = "b1a2c3d4e5f6"
 
     # ---- helpers ----------------------------------------------------------
 
