@@ -44,7 +44,7 @@ import { EnrollVascoComponent } from "../../token/token-enrollment/enroll-vasco/
 import { EnrollWebauthnComponent } from "../../token/token-enrollment/enroll-webauthn/enroll-webauthn.component";
 import { EnrollYubicoComponent } from "../../token/token-enrollment/enroll-yubico/enroll-yubico.component";
 import { EnrollYubikeyComponent } from "../../token/token-enrollment/enroll-yubikey/enroll-yubikey.component";
-import {
+import type {
   enrollmentArgsGetterFn,
   OnEnrollmentResponseFn,
   ReopenDialogFn
@@ -79,8 +79,7 @@ import {
     EnrollU2fComponent,
     EnrollVascoComponent,
     EnrollWebauthnComponent,
-    EnrollPasskeyComponent,
-    EnrollYubikeyComponent
+    EnrollPasskeyComponent
   ],
   templateUrl: "./enroll-token-type-switch.component.html"
 })
