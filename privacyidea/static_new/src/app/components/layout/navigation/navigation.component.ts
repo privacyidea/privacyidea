@@ -221,7 +221,6 @@ export class NavigationComponent implements AfterViewInit, OnDestroy {
   private getFilteredNavItems(): NavItem[] {
     return this.primaryNavItems.filter(item => {
       if (item.section === "policies") return this.authService.actionAllowed("policyread");
-      if (item.section === "events") return this.authService.actionAllowed("eventhandling_read");
       return true;
     });
   }

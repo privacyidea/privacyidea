@@ -398,12 +398,14 @@
         <span>Machine Resolver</span>
       </a>
     }
-    <a
-      [ngClass]="contentService.routeUrl() === ROUTE_PATHS.EVENTS ? 'sub-nav-active' : ''"
-      [routerLink]="[ROUTE_PATHS.EVENTS]">
-      <mat-icon>flag</mat-icon>
-      <span i18n>Events</span>
-    </a>
+    @if (authService.actionAllowed("eventhandling_read")) {
+      <a
+        [ngClass]="contentService.routeUrl() === ROUTE_PATHS.EVENTS ? 'sub-nav-active' : ''"
+        [routerLink]="[ROUTE_PATHS.EVENTS]">
+        <mat-icon>flag</mat-icon>
+        <span i18n>Events</span>
+      </a>
+    }
     @if (authService.actionAllowed("periodictask_read")) {
       <a
         [ngClass]="contentService.routeUrl() === ROUTE_PATHS.CONFIGURATION_PERIODIC_TASKS ? 'sub-nav-active' : ''"
