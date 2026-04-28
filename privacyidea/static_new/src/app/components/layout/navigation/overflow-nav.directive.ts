@@ -159,6 +159,8 @@ export class OverflowNavDirective implements AfterViewInit, OnDestroy {
         return;
       }
 
+      this.renderer.setStyle(container, "overflow", "visible");
+
       buttons.forEach(btn => {
         this.renderer.removeStyle(btn, "display");
         this.renderer.removeClass(btn, "sub-overflow-hidden");
@@ -183,23 +185,17 @@ export class OverflowNavDirective implements AfterViewInit, OnDestroy {
         }
       }
 
-      const betaBadge = container.querySelector(".beta-badge");
-      if (betaBadge && (!spacer || !(spacer.compareDocumentPosition(betaBadge) & Node.DOCUMENT_POSITION_FOLLOWING))) {
-        const style = window.getComputedStyle(betaBadge);
-        if (style.display !== "none" && style.visibility !== "hidden") {
-          rightWidth += (betaBadge as HTMLElement).offsetWidth + 8;
-        }
-      }
-
       const footerText = container.querySelector(".footer-text");
       let leftReserved = 0;
       if (footerText && window.getComputedStyle(footerText).display !== "none") {
         leftReserved = (footerText as HTMLElement).offsetWidth + 16;
       }
 
+      this.renderer.setStyle(container, "overflow", "hidden");
+
       const moreButtonWidth = 100;
       const gap = 8;
-      const safetyMargin = 80;
+      const safetyMargin = 120;
       const availableForButtons = containerWidth - leftReserved - rightWidth - safetyMargin;
 
       const activeIndex = buttons.findIndex(btn =>

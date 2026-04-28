@@ -203,16 +203,6 @@ $breakpoint-compact: 1630px;
   display: none !important;
 }
 
-.secondary-toolbar.is-overflowing {
-  .docs-button-full {
-    display: none !important;
-  }
-
-  .docs-button-icon {
-    display: inline-flex !important;
-  }
-}
-
 .more-button {
   flex-shrink: 0;
 }
