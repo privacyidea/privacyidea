@@ -144,7 +144,7 @@ describe("ContainerService", () => {
         }
       ]
     };
-    containerService.containerDetail.set(details);
+    containerService.containerDetails.set(details);
 
     const res = await lastValueFrom(containerService.toggleAll("activate"));
 
@@ -171,7 +171,7 @@ describe("ContainerService", () => {
         }
       ]
     };
-    containerService.containerDetail.set(details);
+    containerService.containerDetails.set(details);
     const r = await lastValueFrom(containerService.toggleAll("activate"));
     expect(r).toBeNull();
     expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith("No tokens for action.");
@@ -192,7 +192,7 @@ describe("ContainerService", () => {
         }
       ]
     };
-    containerService.containerDetail.set(details);
+    containerService.containerDetails.set(details);
     const r = await lastValueFrom(containerService.removeAll("c3"));
     expect(r?.result).toBeTruthy();
     expect(postSpy).toHaveBeenCalledWith(
@@ -261,7 +261,7 @@ describe("ContainerService", () => {
     containerService.containerSerial.set("SMPH1");
 
     const valueSpy = jest
-      .spyOn(containerService.containerDetailResource, "value")
+      .spyOn(containerService.containerDetailsResource, "value")
       .mockReturnValueOnce(undefined as any)
       .mockReturnValue({
         result: {
@@ -271,7 +271,7 @@ describe("ContainerService", () => {
           }
         }
       } as any);
-    jest.spyOn(containerService.containerDetailResource, "hasValue").mockReturnValue(true);
+    jest.spyOn(containerService.containerDetailsResource, "hasValue").mockReturnValue(true);
 
     containerService.startPolling("SMPH1");
     TestBed.tick();
@@ -279,9 +279,9 @@ describe("ContainerService", () => {
     TestBed.tick();
 
     expect(valueSpy).toHaveBeenCalled();
-    expect(containerService.containerDetailResource.value()?.result?.value?.containers[0].info.registration_state).toBe(
-      "registered"
-    );
+    expect(
+      containerService.containerDetailsResource.value()?.result?.value?.containers[0].info.registration_state
+    ).toBe("registered");
     expect(containerService.isPollingActive()).toBe(false);
     expect(notificationServiceMock.openSnackBar).not.toHaveBeenCalled();
   });
@@ -291,7 +291,7 @@ describe("ContainerService", () => {
     containerService.containerSerial.set("SMPH1");
 
     const valueSpy = jest
-      .spyOn(containerService.containerDetailResource, "value")
+      .spyOn(containerService.containerDetailsResource, "value")
       .mockReturnValueOnce(undefined as any)
       .mockReturnValue({
         result: {
@@ -301,7 +301,7 @@ describe("ContainerService", () => {
           }
         }
       } as any);
-    jest.spyOn(containerService.containerDetailResource, "hasValue").mockReturnValue(true);
+    jest.spyOn(containerService.containerDetailsResource, "hasValue").mockReturnValue(true);
 
     containerService.startPolling("SMPH1");
     TestBed.tick();
@@ -309,9 +309,9 @@ describe("ContainerService", () => {
     TestBed.tick();
 
     expect(valueSpy).toHaveBeenCalled();
-    expect(containerService.containerDetailResource.value()?.result?.value?.containers[0].info.registration_state).toBe(
-      "registered"
-    );
+    expect(
+      containerService.containerDetailsResource.value()?.result?.value?.containers[0].info.registration_state
+    ).toBe("registered");
     expect(containerService.isPollingActive()).toBe(false);
     expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith("Container registered successfully.");
   });
@@ -349,7 +349,7 @@ describe("ContainerService", () => {
 
   it("removeAll returns null when no tokens array", async () => {
     notificationServiceMock.openSnackBar.mockClear();
-    containerService.containerDetail.set({
+    containerService.containerDetails.set({
       count: 1,
       containers: [{} as any]
     });
@@ -360,7 +360,7 @@ describe("ContainerService", () => {
 
   it("toggleAll returns null when containerDetail invalid", async () => {
     notificationServiceMock.openSnackBar.mockClear();
-    containerService.containerDetail.set({
+    containerService.containerDetails.set({
       count: 1,
       containers: [{} as any]
     });
@@ -438,7 +438,7 @@ describe("ContainerService", () => {
   });
 
   it("toggleAll deactivates active tokens", async () => {
-    containerService.containerDetail.set({
+    containerService.containerDetails.set({
       count: 1,
       containers: [
         {
@@ -460,7 +460,7 @@ describe("ContainerService", () => {
 
   it("removeAll early-returns when tokens array empty", async () => {
     notificationServiceMock.openSnackBar.mockClear();
-    containerService.containerDetail.set({
+    containerService.containerDetails.set({
       count: 1,
       containers: [{ serial: "c9", tokens: [] } as any]
     });
@@ -708,7 +708,7 @@ describe("ContainerService", () => {
 
   describe("containerDetails", () => {
     it("containerDetail falls back to default when resource empty", () => {
-      expect(containerService.containerDetail()).toEqual({
+      expect(containerService.containerDetails()).toEqual({
         containers: [],
         count: 0
       });
@@ -733,7 +733,7 @@ describe("ContainerService", () => {
       );
       await Promise.resolve();
 
-      expect(containerService.containerDetail()).toEqual({
+      expect(containerService.containerDetails()).toEqual({
         count: 1,
         containers: [{ serial: "c1", type: "typeA", realms: [], states: [], tokens: [], users: [] }]
       });
@@ -755,7 +755,7 @@ describe("ContainerService", () => {
       });
       await Promise.resolve();
 
-      expect(containerService.containerDetail()).toEqual({ containers: [], count: 0 });
+      expect(containerService.containerDetails()).toEqual({ containers: [], count: 0 });
     });
   });
 

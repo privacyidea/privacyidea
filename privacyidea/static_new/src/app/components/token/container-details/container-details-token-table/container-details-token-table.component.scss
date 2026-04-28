@@ -8,6 +8,20 @@
     ".table-scroll-container"
   );
 
+  .container-details-token-table {
+    .mat-mdc-row {
+      &.comparison-status-excess {
+        background-color: color-mix(in srgb, var(--yellow-light), transparent 40%);
+        // color: var(--mat-sys-on-primary);
+      }
+
+      &.comparison-status-missing {
+        background-color: color-mix(in srgb, var(--red-light), transparent 40%);
+        // color: var(--mat-sys-on-primary);
+      }
+    }
+  }
+
   .container-details-action-row {
     padding: 0 16px 0 32px;
     display: flex;

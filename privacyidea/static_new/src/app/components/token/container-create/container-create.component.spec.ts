@@ -20,10 +20,10 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { of } from "rxjs";
 
-import { ContainerCreateComponent } from "./container-create.component";
-import { MatDialog } from "@angular/material/dialog";
-import { NotificationService } from "../../../services/notification/notification.service";
 import { HttpClient, provideHttpClient } from "@angular/common/http";
+import { Renderer2, signal } from "@angular/core";
+import { MatDialog } from "@angular/material/dialog";
+import { Router } from "@angular/router";
 import {
   MockContainerService,
   MockContentService,
@@ -33,20 +33,20 @@ import {
   MockTokenService,
   MockUserService
 } from "../../../../testing/mock-services";
-import { Router } from "@angular/router";
+import { MockAuthService } from "../../../../testing/mock-services/mock-auth-service";
+import { ROUTE_PATHS } from "../../../route_paths";
 import { AuthService } from "../../../services/auth/auth.service";
 import { ContainerService } from "../../../services/container/container.service";
 import { ContentService } from "../../../services/content/content.service";
+import { NotificationService } from "../../../services/notification/notification.service";
 import { RealmService } from "../../../services/realm/realm.service";
 import { TokenService } from "../../../services/token/token.service";
 import { UserService } from "../../../services/user/user.service";
 import { VersioningService } from "../../../services/version/version.service";
-import { Renderer2, signal } from "@angular/core";
+import { ContainerCreateComponent } from "./container-create.component";
 import { ContainerCreateSelfServiceComponent } from "./container-create.self-service.component";
 import { ContainerCreateWizardComponent } from "./container-create.wizard.component";
 import { ContainerCreatedDialogWizardComponent } from "./container-created-dialog/container-created-dialog.wizard.component";
-import { ROUTE_PATHS } from "../../../route_paths";
-import { MockAuthService } from "../../../../testing/mock-services/mock-auth-service";
 
 class MockIntersectionObserver {
   observe = jest.fn();
@@ -263,7 +263,7 @@ describe("ContainerCreateComponent", () => {
 
     const stopPollingSpy = jest.spyOn(containerServiceMock, "stopPolling");
 
-    jest.spyOn(containerServiceMock.containerDetailResource, "value").mockReturnValue({
+    jest.spyOn(containerServiceMock.containerDetailsResource, "value").mockReturnValue({
       result: { value: { containers: [{ type: "smartphone", info: { registration_state: "registered" } }] } }
     } as any);
 
@@ -285,7 +285,7 @@ describe("ContainerCreateComponent", () => {
     const openSpy = jest.spyOn(dialog, "open");
     const stopPollingSpy = jest.spyOn(containerServiceMock, "stopPolling");
 
-    jest.spyOn(containerServiceMock.containerDetailResource, "value").mockReturnValue({
+    jest.spyOn(containerServiceMock.containerDetailsResource, "value").mockReturnValue({
       result: { value: { containers: [{ info: { registration_state: "client_wait" } }] } }
     } as any);
 
@@ -339,7 +339,7 @@ describe("ContainerCreateComponent", () => {
     const registerSpy = jest.spyOn(dialog, "open");
     const stopPollingSpy = jest.spyOn(containerServiceMock, "stopPolling");
 
-    jest.spyOn(containerServiceMock.containerDetailResource, "value").mockReturnValue({
+    jest.spyOn(containerServiceMock.containerDetailsResource, "value").mockReturnValue({
       result: { value: { containers: [{ type: "smartphone", info: { registration_state: "registered" } }] } }
     } as any);
 
@@ -365,7 +365,7 @@ describe("ContainerCreateComponent", () => {
     const registerSpy = jest.spyOn(dialog, "open");
     const stopPollingSpy = jest.spyOn(containerServiceMock, "stopPolling");
 
-    jest.spyOn(containerServiceMock.containerDetailResource, "value").mockReturnValue({
+    jest.spyOn(containerServiceMock.containerDetailsResource, "value").mockReturnValue({
       result: { value: { containers: [{ type: "smartphone", info: { registration_state: "registered" } }] } }
     } as any);
 
@@ -508,7 +508,7 @@ describe("ContainerCreateComponent", () => {
       const dialog = TestBed.inject(MatDialog) as any;
       const openSpy = jest.spyOn(dialog, "open");
 
-      jest.spyOn(containerServiceMock.containerDetailResource, "value").mockReturnValue({
+      jest.spyOn(containerServiceMock.containerDetailsResource, "value").mockReturnValue({
         result: { value: { containers: [{ type: "generic", info: {} }] } }
       } as any);
 
@@ -536,7 +536,7 @@ describe("ContainerCreateComponent", () => {
       const dialog = TestBed.inject(MatDialog);
       const openSpy = jest.spyOn(dialog, "open");
 
-      jest.spyOn(containerServiceMock.containerDetailResource, "value").mockReturnValue({
+      jest.spyOn(containerServiceMock.containerDetailsResource, "value").mockReturnValue({
         result: { value: { containers: [{ type: "smartphone", info: { registration_state: "registered" } }] } }
       } as any);
 

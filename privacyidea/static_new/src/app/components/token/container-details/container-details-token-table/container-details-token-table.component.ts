@@ -45,6 +45,14 @@ import { TokenService, TokenServiceInterface } from "../../../../services/token/
 import { CopyButtonComponent } from "../../../shared/copy-button/copy-button.component";
 import { SimpleConfirmationDialogComponent } from "../../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
 
+type ComparisonStatus = "excess" | "missing" | "correct";
+
+type ContainerDetailTokenData = {
+  token: ContainerDetailToken;
+  columnKey: string;
+  status: ComparisonStatus;
+};
+
 @Component({
   selector: "app-container-details-token-table",
   imports: [
@@ -89,13 +97,14 @@ export class ContainerDetailsTokenTableComponent {
 
   filterValue: WritableSignal<string> = signal("");
   containerSerial = this.containerService.containerSerial;
+
   assignedUser: WritableSignal<{
     user_realm: string;
     user_name: string;
     user_resolver: string;
     user_id: string;
   }> = linkedSignal({
-    source: () => this.containerService.containerDetail(),
+    source: () => this.containerService.containerDetails(),
     computation: (source) =>
       source.containers[0]?.users[0] ?? {
         user_realm: "",
@@ -116,14 +125,69 @@ export class ContainerDetailsTokenTableComponent {
     return this.tableUtilsService.clientsideSortTokenData([...data], this.sort());
   });
 
-  dataSource = linkedSignal<ContainerDetailToken[], MatTableDataSource<ContainerDetailToken>>({
-    source: () => this.sortedData(),
-    computation: (newRows, previous) => {
-      const ds = previous?.value ?? new MatTableDataSource<ContainerDetailToken>([]);
-      ds.data = newRows;
+  dataSource: WritableSignal<MatTableDataSource<ContainerDetailTokenData>> = linkedSignal({
+    source: () => {
+      return {
+        sortedData: this.sortedData(),
+        comparison: this.containerService.templateComparison(),
+        containerSerial: this.containerService.containerSerial()
+      };
+    },
+    computation: (source, previous) => {
+      const { sortedData, comparison, containerSerial } = source;
+      const ds = previous?.value ?? new MatTableDataSource<ContainerDetailTokenData>([]);
+      const comp = comparison?.[containerSerial];
+
+      if (!comp || comp.tokens.equal) {
+        ds.data = sortedData.map((token) => ({ token, columnKey: token.serial, status: "correct" }));
+        return ds;
+      }
+
+      const actualCounts = new Map<string, number>();
+      sortedData.forEach((t) => actualCounts.set(t.tokentype, (actualCounts.get(t.tokentype) ?? 0) + 1));
+
+      const trackedCounts = new Map<string, number>();
+      const mappedData: ContainerDetailTokenData[] = sortedData.map((token) => {
+        const type = token.tokentype;
+        const currentCount = (trackedCounts.get(type) ?? 0) + 1;
+        trackedCounts.set(type, currentCount);
+
+        let status: ComparisonStatus = "correct";
+        const excessCountForType = comp.tokens.additional.filter((t) => t === type).length;
+        const totalActualForType = actualCounts.get(type) ?? 0;
+
+        if (currentCount > totalActualForType - excessCountForType) {
+          status = "excess";
+        }
+        return { token, columnKey: token.serial, status };
+      });
+
+      comp.tokens.missing.forEach((missingType) => {
+        mappedData.push({
+          token: { tokentype: missingType, serial: "MISSING" } as ContainerDetailToken,
+          columnKey: missingType,
+          status: "missing"
+        });
+      });
+
+      const statusPriority: Record<ComparisonStatus, number> = {
+        missing: 1,
+        excess: 2,
+        correct: 3
+      };
+
+      mappedData.sort((a, b) => {
+        if (statusPriority[a.status] !== statusPriority[b.status]) {
+          return statusPriority[a.status] - statusPriority[b.status];
+        }
+        return a.token.tokentype.localeCompare(b.token.tokentype);
+      });
+
+      ds.data = mappedData;
       return ds;
     }
   });
+
   isAssignableToAllToken = computed<boolean>(() => {
     const assignedUser = this.assignedUser();
     if (assignedUser.user_name === "") {
@@ -149,7 +213,8 @@ export class ContainerDetailsTokenTableComponent {
     }
     (ds as any)._sort = this.sort;
 
-    ds.filterPredicate = (row: ContainerDetailToken, filter: string) => {
+    ds.filterPredicate = (data: ContainerDetailTokenData, filter: string) => {
+      const row = data.token;
       const haystack = [row.serial, row.tokentype, row.username, String(row.active)].join(" ").toLowerCase();
       return haystack.includes(filter);
     };
@@ -193,7 +258,7 @@ export class ContainerDetailsTokenTableComponent {
           if (result) {
             this.containerService.removeTokenFromContainer(containerSerial, tokenSerial).subscribe({
               next: () => {
-                this.containerService.containerDetailResource.reload();
+                this.containerService.containerDetailsResource.reload();
               }
             });
           }
@@ -210,14 +275,14 @@ export class ContainerDetailsTokenTableComponent {
   toggleActive(token: ContainerDetailToken): void {
     this.tokenService.toggleActive(token.serial, token.active).subscribe({
       next: () => {
-        this.containerService.containerDetailResource.reload();
+        this.containerService.containerDetailsResource.reload();
       }
     });
   }
 
   deleteAllTokens() {
     const serialList = this.containerTokenData().data.map((token) => token.serial);
-    this.tokenService.bulkDeleteWithConfirmDialog(serialList, this.containerService.containerDetailResource.reload);
+    this.tokenService.bulkDeleteWithConfirmDialog(serialList, this.containerService.containerDetailsResource.reload);
   }
 
   deleteTokenFromContainer(tokenSerial: string) {
@@ -237,7 +302,7 @@ export class ContainerDetailsTokenTableComponent {
           if (result) {
             this.tokenService.deleteToken(tokenSerial).subscribe({
               next: () => {
-                this.containerService.containerDetailResource.reload();
+                this.containerService.containerDetailsResource.reload();
               }
             });
           }

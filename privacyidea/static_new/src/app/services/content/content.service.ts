@@ -205,6 +205,7 @@ export class ContentService implements ContentServiceInterface {
   }
 
   navigateContainerDetails(containerSerial: string): void {
+    console.log("Navigating to container details for serial:", containerSerial);
     this.router.navigateByUrl(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + containerSerial);
     this.containerSerial.set(containerSerial);
   }

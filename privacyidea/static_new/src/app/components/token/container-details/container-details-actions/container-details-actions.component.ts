@@ -75,7 +75,7 @@ export class ContainerDetailsActionsComponent {
   userStorePW: boolean = false;
   dialogData = signal<ContainerRegisterFinalizeData | undefined>(undefined);
   registrationState = computed(() => {
-    return this.containerService.containerDetail()?.containers[0]?.info?.registration_state ?? "";
+    return this.containerService.containerDetails()?.containers[0]?.info?.registration_state ?? "";
   });
 
   registrationAllowed = computed(() => {
@@ -150,8 +150,8 @@ export class ContainerDetailsActionsComponent {
   }
 
   openRegisterInitDialog(rollover: boolean) {
-    const container = this.containerService.containerDetailResource.hasValue()
-      ? this.containerService.containerDetailResource.value()?.result?.value?.containers?.[0]
+    const container = this.containerService.containerDetailsResource.hasValue()
+      ? this.containerService.containerDetailsResource.value()?.result?.value?.containers?.[0]
       : undefined;
     this.dialogService.openDialog({
       component: ContainerRegistrationInitDialogComponent,
@@ -203,7 +203,7 @@ export class ContainerDetailsActionsComponent {
         } else {
           this.notificationService.openSnackBar("Failed to unregister container.");
         }
-        this.containerService.containerDetailResource.reload();
+        this.containerService.containerDetailsResource.reload();
       });
   }
 

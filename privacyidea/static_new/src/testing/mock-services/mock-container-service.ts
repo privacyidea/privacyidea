@@ -75,7 +75,7 @@ export class MockContainerService implements ContainerServiceInterface {
     ];
   });
   selectedContainerType = signal<ContainerType | undefined>(undefined);
-  containerDetailResource = new MockHttpResourceRef(
+  containerDetailsResource = new MockHttpResourceRef(
     MockPiResponse.fromValue({
       containers: [
         {
@@ -93,7 +93,7 @@ export class MockContainerService implements ContainerServiceInterface {
       count: 1
     })
   );
-  containerDetail = signal<ContainerDetails>({ containers: [], count: 0 });
+  containerDetails = signal<ContainerDetails>({ containers: [], count: 0 });
   addToken = jest.fn().mockReturnValue(of(null));
   removeToken = jest.fn().mockReturnValue(of(null));
   setContainerRealm = jest.fn().mockReturnValue(of(null));

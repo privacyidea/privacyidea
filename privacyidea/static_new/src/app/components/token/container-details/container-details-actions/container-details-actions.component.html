@@ -38,8 +38,21 @@
         <mat-icon>add_moderator</mat-icon>
         Enroll Token
       </button>
+      @if (containerService.containerDetail()?.template) {
+        <button
+          (click)="containerService.compareWithTemplate()"
+          class="action-button-secondary button-width-m"
+          i18n
+          mat-stroked-button>
+          <mat-icon>compare</mat-icon>
+          Compare
+        </button>
+      }
       @if (containerType === "smartphone") {
-        @if (authService.actionAllowed("container_delete") && (registrationAllowed() || rolloverAllowed() || unregisterAllowed())) {
+        @if (
+          authService.actionAllowed("container_delete") &&
+          (registrationAllowed() || rolloverAllowed() || unregisterAllowed())
+        ) {
           <mat-divider class="margin-top-8 margin-bottom-8"></mat-divider>
         }
         @if (registrationAllowed()) {

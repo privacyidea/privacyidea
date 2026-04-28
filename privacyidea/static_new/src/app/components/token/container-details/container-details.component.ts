@@ -171,7 +171,7 @@ export class ContainerDetailsComponent implements OnDestroy {
       return previous?.value ?? 0;
     }
   });
-  containerDetailResource = this.containerService.containerDetailResource;
+  containerDetailResource = this.containerService.containerDetailsResource;
   containerDetails: WritableSignal<ContainerDetailData> = linkedSignal({
     source: this.containerDetailResource.value,
     computation: (containerDetailResourceValue, previous) => {
@@ -300,6 +300,11 @@ export class ContainerDetailsComponent implements OnDestroy {
   constructor() {
     this.previousPageSize = this.tokenService.pageSize();
     this.tokenService.pageSize.set(5);
+
+    effect(() => {
+      console.log("Serial im Effekt:", this.containerSerial());
+      console.log("Detail im Effekt:", this.containerService.containerDetail());
+    });
 
     effect(() => {
       this.showOnlyTokenNotInContainer();

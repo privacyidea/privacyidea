@@ -173,7 +173,7 @@ export class ContainerCreateComponent {
   // --- Lifecycle ---
   constructor() {
     this.containerSerial.set("");
-    this.containerService.containerDetailResource.set(undefined);
+    this.containerService.containerDetailsResource.set(undefined);
 
     effect(() => {
       this.containerService.selectedContainerType();
@@ -182,9 +182,9 @@ export class ContainerCreateComponent {
 
     effect(() => {
       const serial = this.containerSerial();
-      if (!serial || !this.containerService.containerDetailResource.hasValue()) return;
+      if (!serial || !this.containerService.containerDetailsResource.hasValue()) return;
 
-      const containerDetailResource = this.containerService.containerDetailResource.value();
+      const containerDetailResource = this.containerService.containerDetailsResource.value();
       if (!containerDetailResource?.result?.value) return;
 
       const container = containerDetailResource.result.value.containers[0];

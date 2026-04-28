@@ -166,6 +166,7 @@ export interface ContainerServiceInterface {
   eventPageSize: number;
   states: WritableSignal<string[]>;
   containerSerial: WritableSignal<string>;
+  containerDetail: Signal<ContainerDetailData | null>;
   selectedContainerSerial: WritableSignal<string | null>;
   sort: WritableSignal<Sort>;
   containerFilter: WritableSignal<FilterValue>;
@@ -181,8 +182,9 @@ export interface ContainerServiceInterface {
   containerTypesResource: HttpResourceRef<PiResponse<ContainerTypes> | undefined>;
   containerTypeOptions: Signal<ContainerType[]>;
   selectedContainerType: Signal<ContainerType | undefined>;
-  containerDetailResource: HttpResourceRef<PiResponse<ContainerDetails> | undefined>;
-  containerDetail: WritableSignal<ContainerDetails>;
+  containerDetailsResource: HttpResourceRef<PiResponse<ContainerDetails> | undefined>;
+  containerDetails: WritableSignal<ContainerDetails>;
+  templateComparison: WritableSignal<TemplateComparisonResult | null>;
   addToken: (tokenSerial: string, containerSerial: string) => Observable<any>;
   removeToken: (tokenSerial: string, containerSerial: string) => Observable<any>;
   setContainerRealm: (containerSerial: string, value: string[]) => Observable<any>;
@@ -193,7 +195,7 @@ export interface ContainerServiceInterface {
   ) => Observable<PiResponse<{ disabled: boolean } | { active: boolean }>>;
   unassignUser: (containerSerial: string, username: string, userRealm: string) => Observable<any>;
   assignUser: (args: { containerSerial: string; username: string; userRealm: string }) => Observable<any>;
-  compareWithTemplate: (containerSerial: string, templateName: string) => Promise<PiResponse<TemplateComparisonResult>>;
+  compareWithTemplate: () => void;
   setContainerInfos: (containerSerial: string, infos: any) => Observable<Object>[];
   deleteInfo: (containerSerial: string, key: string) => Observable<any>;
   addTokenToContainer: (containerSerial: string, tokenSerial: string) => Observable<any>;
@@ -246,10 +248,20 @@ export class ContainerService implements ContainerServiceInterface {
 
   stopPolling$ = new Subject<void>();
   containerBaseUrl = environment.proxyUrl + "/container/";
+  containerTemplateBaseUrl = environment.proxyUrl + "/container/template/";
   eventPageSize = 10;
 
   states = signal<string[]>([]);
   containerSerial = this.contentService.containerSerial;
+  containerDetail = computed(() => {
+    const details = this.containerDetails();
+    const serial = this.containerSerial();
+    console.log("Computing containerDetail with serial:", serial, "and details:", details);
+    if (!details || !serial) {
+      return null;
+    }
+    return details.containers.find((container) => container.serial === serial) ?? null;
+  });
 
   selectedContainerSerial: WritableSignal<string | null> = linkedSignal({
     source: () => this.contentService.onTokensEnrollment(),
@@ -491,7 +503,7 @@ export class ContainerService implements ContainerServiceInterface {
     }
   });
 
-  containerDetailResource = httpResource<PiResponse<ContainerDetails>>(() => {
+  containerDetailsResource = httpResource<PiResponse<ContainerDetails>>(() => {
     const serial = this.containerSerial();
     this.pollingTrigger();
     this.isPollingActive();
@@ -509,8 +521,8 @@ export class ContainerService implements ContainerServiceInterface {
     };
   });
 
-  containerDetail: WritableSignal<ContainerDetails> = linkedSignal({
-    source: () => (this.containerDetailResource.hasValue() ? this.containerDetailResource.value() : undefined),
+  containerDetails: WritableSignal<ContainerDetails> = linkedSignal({
+    source: () => (this.containerDetailsResource.hasValue() ? this.containerDetailsResource.value() : undefined),
     computation: (containerDetailResource, previous) => {
       const containerDetail = containerDetailResource?.result?.value;
       if (containerDetail) {
@@ -708,7 +720,7 @@ export class ContainerService implements ContainerServiceInterface {
   }
 
   toggleAll(action: "activate" | "deactivate"): Observable<(PiResponse<boolean> | null)[] | null> {
-    const data = this.containerDetail();
+    const data = this.containerDetails();
 
     if (!data || !Array.isArray(data.containers[0].tokens)) {
       this.notificationService.openSnackBar("No valid tokens array found in data.");
@@ -739,7 +751,7 @@ export class ContainerService implements ContainerServiceInterface {
   }
 
   removeAll(containerSerial: string): Observable<PiResponse<boolean> | null> {
-    const data = this.containerDetail();
+    const data = this.containerDetails();
 
     if (!data || !Array.isArray(data.containers[0].tokens)) {
       console.error("No valid tokens array found in data.", data);
@@ -887,7 +899,7 @@ export class ContainerService implements ContainerServiceInterface {
 
   constructor() {
     effect(() => {
-      this.notificationService.handleResourceError(this.containerDetailResource.error(), "container details");
+      this.notificationService.handleResourceError(this.containerDetailsResource.error(), "container details");
     });
     effect(() => {
       this.notificationService.handleResourceError(this.containerResource.error(), "containers");
@@ -905,11 +917,11 @@ export class ContainerService implements ContainerServiceInterface {
       const onAllowedRoute =
         this.contentService.onTokensContainersCreate() || this.contentService.onTokensContainersDetails();
 
-      if (!active || !serial || !this.containerDetailResource.hasValue() || !onAllowedRoute) {
+      if (!active || !serial || !this.containerDetailsResource.hasValue() || !onAllowedRoute) {
         return;
       }
 
-      const resourceValue = this.containerDetailResource.value();
+      const resourceValue = this.containerDetailsResource.value();
       if (!resourceValue?.result?.value) {
         return;
       }
@@ -934,21 +946,37 @@ export class ContainerService implements ContainerServiceInterface {
     });
   }
 
-  async compareWithTemplate(containerSerial: string, templateName: string) {
+  async compareWithTemplate() {
+    const serial = this.containerSerial();
+    const details = this.containerDetails();
+
+    const container = details?.containers.find((c) => c.serial === serial);
+    const templateName = container?.template;
+
+    if (!serial || !templateName) {
+      console.warn("Missing serial or template for comparison");
+      return;
+    }
+
     const headers = this.authService.getHeaders();
     const observable = this.http
-      .post<
+      .get<
         PiResponse<TemplateComparisonResult>
-      >(`${this.containerBaseUrl}${templateName}/compare`, { container_serial: containerSerial }, { headers })
+      >(`${this.containerTemplateBaseUrl}${templateName}/compare?container_serial=${serial}`, { headers })
       .pipe(
         catchError((error) => {
-          console.error("Failed to compare with template.", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.openSnackBar("Failed to compare with template. " + message);
+          this.notificationService.openSnackBar("Failed to compare: " + message);
           return throwError(() => error);
         })
       );
 
-    return lastValueFrom(observable);
+    const result = await lastValueFrom(observable);
+    this.templateComparison.set(result?.result?.value ?? null);
   }
+
+  readonly templateComparison = linkedSignal<string, TemplateComparisonResult | null>({
+    source: () => this.containerSerial(),
+    computation: () => null
+  });
 }
