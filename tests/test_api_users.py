@@ -8,7 +8,7 @@ from privacyidea.lib.realm import set_realm
 from privacyidea.lib.resolver import save_resolver, get_resolver_object
 from privacyidea.lib.token import init_token, remove_token
 from privacyidea.lib.user import User
-from privacyidea.lib.users.custom_user_attributes import InternalCustomUserAttributes, INTERNAL_USAGE
+from privacyidea.lib.users.custom_user_attributes import InternalCustomUserAttributes
 from .base import MyApiTestCase
 
 PWFILE = "tests/testdata/passwd"
@@ -653,8 +653,9 @@ class APIUsersTestCase(MyApiTestCase):
 
         # set an internal attribute
         user = User("hans", self.realm1)
-        user.set_attribute(f"{InternalCustomUserAttributes.LAST_USED_TOKEN}_privacyIDEA-cp", "push",
-                           INTERNAL_USAGE)
+        # Seed a legacy/orphaned internal-prefix row in customuserattribute to verify the admin
+        # API can still delete such entries (the prefix is now reserved but old rows may exist).
+        user.set_attribute(f"{InternalCustomUserAttributes.LAST_USED_TOKEN}_privacyIDEA-cp", "push")
         # Delete internal attribute is allowed
         with self.app.test_request_context(
                 f"/user/attribute/{InternalCustomUserAttributes.LAST_USED_TOKEN}_privacyIDEA-cp/hans/{self.realm1}",

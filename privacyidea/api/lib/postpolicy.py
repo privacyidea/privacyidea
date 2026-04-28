@@ -390,8 +390,8 @@ def preferred_client_mode(request, response):
     last_used_token_type = None
     if client_mode_per_user_pol:
         user_agent, __, __ = get_plugin_info_from_useragent(request.user_agent.string)
-        user_attributes = user.attributes
-        last_used_token_type = user_attributes.get(f"{InternalCustomUserAttributes.LAST_USED_TOKEN}_{user_agent}")
+        last_used_map = user.internal_attributes.get(InternalCustomUserAttributes.LAST_USED_TOKEN) or {}
+        last_used_token_type = last_used_map.get(user_agent)
 
     if content.get("detail"):
         detail = content.get("detail")

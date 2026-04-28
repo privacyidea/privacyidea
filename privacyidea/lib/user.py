@@ -53,7 +53,7 @@ import traceback
 from sqlalchemy import select, delete
 
 from privacyidea.lib.error import ParameterError, ResolverError, UserError
-from privacyidea.models import CustomUserAttribute, db
+from privacyidea.models import CustomUserAttribute, InternalUserAttribute, db
 from .config import get_from_config, SYSCONF
 from .log import log_with
 from .realm import (get_realms, realm_is_defined,
@@ -379,6 +379,57 @@ class User:
                                                      realm_id=self.realm_id)
         if attribute_key:
             stmt = stmt.filter_by(Key=attribute_key)
+        result = db.session.execute(stmt)
+        db.session.commit()
+        return result.rowcount
+
+    @property
+    def internal_attributes(self) -> dict:
+        """
+        Returns all internal user attributes for this user as a dict.
+        Internal attributes are written by privacyIDEA itself (e.g. cached
+        FIDO2 user IDs, last-used token per client) and are NOT meant to be
+        used in policy conditions. Use :meth:`attributes` for admin-facing data.
+        """
+        return get_internal_attributes(self.uid, self.resolver, self.realm_id)
+
+    @log_with(log)
+    def set_internal_attribute(self, key: str, value, node: str = None) -> int:
+        """
+        Set an internal attribute for this user. ``value`` may be any
+        JSON-serializable Python object. ``node`` is reserved for future
+        node-local state and should be left as None for global values.
+        """
+        stmt = select(InternalUserAttribute).filter_by(
+            user_id=self.uid,
+            resolver=self.resolver,
+            realm_id=self.realm_id,
+            Key=key,
+        )
+        existing = db.session.execute(stmt).scalar_one_or_none()
+        if existing:
+            existing.Value = value
+            existing.node = node
+            attribute_id = existing.id
+        else:
+            new_attribute = InternalUserAttribute(user_id=self.uid, resolver=self.resolver,
+                                                  realm_id=self.realm_id, Key=key, Value=value, node=node)
+            db.session.add(new_attribute)
+            db.session.flush()
+            attribute_id = new_attribute.id
+        db.session.commit()
+        return attribute_id
+
+    @log_with(log)
+    def delete_internal_attribute(self, key: str = None) -> int:
+        """
+        Delete an internal attribute. If ``key`` is None, all internal
+        attributes for this user are deleted.
+        """
+        stmt = delete(InternalUserAttribute).filter_by(user_id=self.uid, resolver=self.resolver,
+                                                       realm_id=self.realm_id)
+        if key:
+            stmt = stmt.filter_by(Key=key)
         result = db.session.execute(stmt)
         db.session.commit()
         return result.rowcount
@@ -911,6 +962,15 @@ def get_attributes(uid: str, resolver: str, realm_id: int, requested_attributes:
     attributes = db.session.scalars(stmt).all()
     custom_attributes = {attribute.Key: attribute.Value for attribute in attributes}
     return custom_attributes
+
+
+def get_internal_attributes(uid: str, resolver: str, realm_id: int) -> dict:
+    """
+    Returns all internal attributes for the given user as a single dict.
+    """
+    stmt = select(InternalUserAttribute).filter_by(user_id=uid, resolver=resolver, realm_id=realm_id)
+    rows = db.session.scalars(stmt).all()
+    return {row.Key: row.Value for row in rows}
 
 
 def is_attribute_at_all() -> bool:

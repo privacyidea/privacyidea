@@ -1,5 +1,3 @@
-INTERNAL_USAGE = "pi_internal"
-
 class InternalCustomUserAttributes:
     LAST_USED_TOKEN = "last_used_token"
 

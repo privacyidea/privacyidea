@@ -42,6 +42,7 @@ from .challenge import Challenge, cleanup_challenges
 from .config import (Config, NodeName, Admin, PasswordReset,
                      save_config_timestamp, PRIVACYIDEA_TIMESTAMP)
 from .customuserattribute import CustomUserAttribute
+from .internaluserattribute import InternalUserAttribute
 from .event import EventHandler, EventHandlerOption, EventHandlerCondition
 from .eventcounter import EventCounter
 from .machine import (MachineResolver, MachineResolverConfig, MachineToken,
