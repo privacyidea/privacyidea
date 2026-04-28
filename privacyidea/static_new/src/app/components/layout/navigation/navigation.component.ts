@@ -240,10 +240,8 @@ export class NavigationComponent implements AfterViewInit, OnDestroy {
   private calculateVisibleItems(navEl: HTMLElement): void {
     const filteredItems = this.getFilteredNavItems();
 
-    // Select the nav-item containers instead of buttons to get full width including padding
     const currentNavItems = Array.from(navEl.querySelectorAll<HTMLElement>(".nav-item[data-section]"));
 
-    // Update stored widths for items currently in the DOM
     for (const item of currentNavItems) {
       const section = item.getAttribute("data-section");
       if (section) {
@@ -251,7 +249,6 @@ export class NavigationComponent implements AfterViewInit, OnDestroy {
       }
     }
 
-    // Try to measure the more button width if it's currently rendered
     const moreBtn = navEl.querySelector<HTMLElement>(".more-button");
     const moreBtnContainer = moreBtn?.closest(".nav-item") as HTMLElement;
     const moreButtonWidth = moreBtnContainer?.offsetWidth || 80;
@@ -276,8 +273,6 @@ export class NavigationComponent implements AfterViewInit, OnDestroy {
       }
     }
 
-    // Update the count. This might cause items to be added or removed from the DOM.
-    // If items are added, they will be measured on the next ResizeObserver trigger.
     this.visibleNavCount.set(Math.max(1, Math.min(count, filteredItems.length)));
   }
 }
