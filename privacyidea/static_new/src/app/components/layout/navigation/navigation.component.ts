@@ -255,15 +255,22 @@ export class NavigationComponent implements AfterViewInit, OnDestroy {
 
     const navWidth = navEl.clientWidth;
     const gap = 4;
+    const totalWidth = filteredItems.reduce((sum, item) => {
+      const itemWidth = this.itemWidths.get(item.section) || 120;
+      return sum + itemWidth + gap;
+    }, 0);
+
+    if (totalWidth <= navWidth) {
+      this.visibleNavCount.set(filteredItems.length);
+      return;
+    }
+
     let usedWidth = 0;
     let count = 0;
+    const availableWidth = navWidth - moreButtonWidth;
 
     for (const item of filteredItems) {
-      const itemWidth = this.itemWidths.get(item.section) || 120; // Fallback to a reasonable default
-
-      const remaining = filteredItems.length - count;
-      const needsMore = remaining > 1;
-      const availableWidth = needsMore ? navWidth - moreButtonWidth : navWidth;
+      const itemWidth = this.itemWidths.get(item.section) || 120;
 
       if (usedWidth + itemWidth + gap <= availableWidth) {
         usedWidth += itemWidth + gap;
