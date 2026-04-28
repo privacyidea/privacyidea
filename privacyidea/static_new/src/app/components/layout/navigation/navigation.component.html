@@ -140,13 +140,14 @@
 
 <ng-template #supportDocs>
   <span class="spacer"></span>
-  <a
+  <button
+    type="button"
     (click)="openSupport()"
     aria-label="Support"
     class="nav-button support-color docs-button-full">
     <mat-icon>support_agent</mat-icon>
     <span i18n>Support</span>
-  </a>
+  </button>
   <button
     mat-icon-button
     (click)="openSupport()"
@@ -155,13 +156,14 @@
     class="support-color docs-button-icon">
     <mat-icon>support_agent</mat-icon>
   </button>
-  <a
+  <button
+    type="button"
     (click)="documentationService.openDocumentation(contentService.routeUrl())"
     aria-label="Documentation"
     class="nav-button docs-button-full">
     <mat-icon>info_outline</mat-icon>
     <span i18n>Documentation</span>
-  </a>
+  </button>
   <button
     mat-icon-button
     (click)="documentationService.openDocumentation(contentService.routeUrl())"
@@ -189,6 +191,7 @@
     </a>
     @if (contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_DETAILS)) {
       <a
+        href="javascript:void(0)"
         class="sub-nav-active">
         <mat-icon>privacy_tip</mat-icon>
         <span i18n>Details</span>
@@ -249,6 +252,7 @@
     </a>
     @if (contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS)) {
       <a
+        href="javascript:void(0)"
         class="sub-nav-active">
         <mat-icon>source</mat-icon>
         <span i18n>Details</span>
@@ -287,6 +291,7 @@
     </a>
     @if (contentService.routeUrl().startsWith(ROUTE_PATHS.USERS_DETAILS)) {
       <a
+        href="javascript:void(0)"
         class="sub-nav-active">
         <mat-icon>manage_accounts</mat-icon>
         <span i18n>Details</span>

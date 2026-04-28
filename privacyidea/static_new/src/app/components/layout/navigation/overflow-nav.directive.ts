@@ -48,9 +48,8 @@ export class OverflowNavDirective implements AfterViewInit, OnDestroy {
   private createMoreButton(): void {
     const container = this.el.nativeElement;
 
-    this.moreButton = this.renderer.createElement("a");
-    this.renderer.setAttribute(this.moreButton, "role", "button");
-    this.renderer.setAttribute(this.moreButton, "tabindex", "0");
+    this.moreButton = this.renderer.createElement("button");
+    this.renderer.setAttribute(this.moreButton, "type", "button");
     this.renderer.setStyle(this.moreButton, "cursor", "pointer");
     this.renderer.addClass(this.moreButton, "overflow-more-btn");
     this.renderer.addClass(this.moreButton, "nav-button");
@@ -278,9 +277,8 @@ export class OverflowNavDirective implements AfterViewInit, OnDestroy {
     this.menuContainer.innerHTML = "";
 
     hiddenButtons.forEach(btn => {
-      const menuItem = this.renderer.createElement("a");
-      this.renderer.setAttribute(menuItem, "role", "button");
-      this.renderer.setAttribute(menuItem, "tabindex", "0");
+      const menuItem = this.renderer.createElement("button");
+      this.renderer.setAttribute(menuItem, "type", "button");
       this.renderer.setStyle(menuItem, "text-decoration", "none");
       this.renderer.addClass(menuItem, "overflow-menu-item");
       if (btn.classList.contains("sub-nav-active") || btn.classList.contains("nav-active")) {
@@ -289,18 +287,18 @@ export class OverflowNavDirective implements AfterViewInit, OnDestroy {
 
       const icon = btn.querySelector("mat-icon");
       if (icon) {
-        const iconSpan = this.renderer.createElement("span");
-        this.renderer.addClass(iconSpan, "mat-icon");
-        this.renderer.addClass(iconSpan, "notranslate");
-        this.renderer.addClass(iconSpan, "material-icons");
-        this.renderer.addClass(iconSpan, "mat-ligature-font");
-        iconSpan.textContent = icon.textContent?.trim() || "";
+        const iconElem = this.renderer.createElement("mat-icon");
+        this.renderer.addClass(iconElem, "mat-icon");
+        this.renderer.addClass(iconElem, "notranslate");
+        this.renderer.addClass(iconElem, "material-icons");
+        this.renderer.addClass(iconElem, "mat-ligature-font");
+        iconElem.textContent = icon.textContent?.trim() || "";
         icon.classList.forEach((cls: string) => {
           if (cls.startsWith("ms--") || cls.startsWith("mdi--")) {
-            this.renderer.addClass(iconSpan, cls);
+            this.renderer.addClass(iconElem, cls);
           }
         });
-        this.renderer.appendChild(menuItem, iconSpan);
+        this.renderer.appendChild(menuItem, iconElem);
       }
 
       const spans = btn.querySelectorAll("span");
@@ -348,7 +346,6 @@ export class OverflowNavDirective implements AfterViewInit, OnDestroy {
     this.renderer.setStyle(this.menuContainer, "top", `${rect.bottom + 4}px`);
     this.renderer.setStyle(this.menuContainer, "left", `${rect.left}px`);
     this.renderer.setStyle(this.menuContainer, "display", "block");
-    this.renderer.setStyle(this.menuContainer, "z-index", "1000");
     this.isMenuOpen = true;
   }
 

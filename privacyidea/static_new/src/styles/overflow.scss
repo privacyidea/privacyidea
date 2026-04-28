@@ -92,28 +92,16 @@
     background: var(--mat-sys-surface-container-high, #f0f0f0);
   }
 
+  .mat-icon,
+  .material-icons,
   mat-icon {
-    font-family: "Material Icons";
     font-size: 18px;
     width: 18px;
     height: 18px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    font-weight: normal;
-    font-style: normal;
-    line-height: 1;
-    letter-spacing: normal;
-    text-transform: none;
-    white-space: nowrap;
-    word-wrap: normal;
-    direction: ltr;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    text-rendering: optimizeLegibility;
-    font-feature-settings: "liga";
     flex-shrink: 0;
-    overflow: hidden;
   }
 
   > span {
@@ -153,6 +141,7 @@
   }
 
   .material-icons,
+  .mat-icon,
   mat-icon {
     font-size: 24px !important;
     width: 24px !important;

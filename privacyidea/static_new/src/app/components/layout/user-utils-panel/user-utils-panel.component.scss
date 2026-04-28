@@ -2,7 +2,7 @@
 @use "@angular/material" as mat;
 
 $font-size-default: 14px;
-$breakpoint-compact: 1630px;
+$breakpoint-compact: 1530px;
 
 @mixin text-label {
   font-size: $font-size-default;
