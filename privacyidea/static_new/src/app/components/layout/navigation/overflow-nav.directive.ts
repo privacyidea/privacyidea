@@ -32,6 +32,8 @@ export class OverflowNavDirective implements AfterViewInit, OnDestroy {
   private menuContainer: HTMLElement | null = null;
   private isMenuOpen = false;
   private isCalculating = false;
+  private unlisteners: (() => void)[] = [];
+  private menuItemUnlisteners: (() => void)[] = [];
 
   ngAfterViewInit(): void {
     this.createMoreButton();
@@ -42,6 +44,8 @@ export class OverflowNavDirective implements AfterViewInit, OnDestroy {
   ngOnDestroy(): void {
     this.resizeObserver?.disconnect();
     this.mutationObserver?.disconnect();
+    this.unlisteners.forEach(fn => fn());
+    this.menuItemUnlisteners.forEach(fn => fn());
     this.removeMenu();
   }
 
@@ -65,7 +69,7 @@ export class OverflowNavDirective implements AfterViewInit, OnDestroy {
     this.renderer.appendChild(this.moreButton, icon);
 
     const label = this.renderer.createElement("span");
-    label.textContent = "More";
+    label.textContent = $localize`:@@overflowNavMoreLabel:More`;
     this.renderer.appendChild(this.moreButton, label);
     this.renderer.addClass(this.moreButton, "overflow-more-hidden");
     this.renderer.setStyle(this.moreButton, "flex-shrink", "0");
@@ -74,23 +78,29 @@ export class OverflowNavDirective implements AfterViewInit, OnDestroy {
     this.renderer.addClass(this.menuContainer, "overflow-dropdown");
     this.renderer.setStyle(this.menuContainer, "display", "none");
 
-    this.renderer.listen(this.moreButton, "click", (e: Event) => {
-      e.stopPropagation();
-      this.toggleMenu();
-    });
-
-    this.renderer.listen(this.moreButton, "keydown", (e: KeyboardEvent) => {
-      if (e.key === "Enter" || e.key === " ") {
-        e.preventDefault();
+    this.unlisteners.push(
+      this.renderer.listen(this.moreButton, "click", (e: Event) => {
+        e.stopPropagation();
         this.toggleMenu();
-      }
-    });
+      })
+    );
 
-    this.renderer.listen("document", "click", () => {
-      if (this.isMenuOpen) {
-        this.closeMenu();
-      }
-    });
+    this.unlisteners.push(
+      this.renderer.listen(this.moreButton, "keydown", (e: KeyboardEvent) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          this.toggleMenu();
+        }
+      })
+    );
+
+    this.unlisteners.push(
+      this.renderer.listen("document", "click", () => {
+        if (this.isMenuOpen) {
+          this.closeMenu();
+        }
+      })
+    );
 
     const spacer = container.querySelector(".spacer");
     if (spacer) {
@@ -204,9 +214,9 @@ export class OverflowNavDirective implements AfterViewInit, OnDestroy {
       let usedWidth = 0;
       const visible: boolean[] = new Array(buttons.length).fill(false);
 
-      let totalWidth = activeIndex >= 0 ? buttons[activeIndex].offsetWidth + gap : 0;
-      for (let i = 0; i < buttons.length; i++) {
-        if (i !== activeIndex) totalWidth += buttons[i].offsetWidth + gap;
+      let totalWidth = buttons.reduce((sum, btn) => sum + btn.offsetWidth, 0);
+      if (buttons.length > 0) {
+        totalWidth += (buttons.length - 1) * gap;
       }
 
       if (totalWidth <= availableForButtons) {
@@ -274,6 +284,10 @@ export class OverflowNavDirective implements AfterViewInit, OnDestroy {
 
   private updateMenuContent(hiddenButtons: HTMLElement[]): void {
     if (!this.menuContainer) return;
+
+    this.menuItemUnlisteners.forEach(fn => fn());
+    this.menuItemUnlisteners = [];
+
     this.menuContainer.innerHTML = "";
 
     hiddenButtons.forEach(btn => {
@@ -320,11 +334,13 @@ export class OverflowNavDirective implements AfterViewInit, OnDestroy {
       label.textContent = textContent;
       this.renderer.appendChild(menuItem, label);
 
-      this.renderer.listen(menuItem, "click", (e: Event) => {
-        e.stopPropagation();
-        btn.click();
-        this.closeMenu();
-      });
+      this.menuItemUnlisteners.push(
+        this.renderer.listen(menuItem, "click", (e: Event) => {
+          e.stopPropagation();
+          btn.click();
+          this.closeMenu();
+        })
+      );
 
       this.renderer.appendChild(this.menuContainer, menuItem);
     });

@@ -108,7 +108,7 @@
 
 <!-- SECONDARY TOP BAR -->
 <ng-template #footerText>
-  <span class="flex-column footer-text">
+  <div class="flex-column footer-text">
     <div class="footer-text-height">   An open-source project
     <a
       href="https://netknights.it/"
@@ -119,8 +119,8 @@
       href="https://github.com/privacyidea/privacyidea"
       target="_blank">community contributors</a>
   </div>
- </span>
-  <span class="footer-icons">
+ </div>
+  <div class="footer-icons">
     <button
       mat-icon-button
       (click)="openExternalLink('https://netknights.it/')"
@@ -135,7 +135,7 @@
       matTooltip="Community contributors on GitHub">
       <mat-icon class="mdi--github"></mat-icon>
     </button>
-  </span>
+  </div>
 </ng-template>
 
 <ng-template #supportDocs>

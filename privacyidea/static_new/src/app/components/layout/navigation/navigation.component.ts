@@ -29,7 +29,6 @@ import {
 } from "@angular/core";
 import { NgClass, NgOptimizedImage, NgTemplateOutlet } from "@angular/common";
 import { MatToolbar } from "@angular/material/toolbar";
-import { MatTabsModule } from "@angular/material/tabs";
 import { ROUTE_PATHS } from "src/app/route_paths";
 import { MatIconButton } from "@angular/material/button";
 import { MatIcon, MatIconModule } from "@angular/material/icon";
@@ -81,7 +80,6 @@ export interface SubNavSection {
   selector: "app-navigation",
   imports: [
     MatToolbar,
-    MatTabsModule,
     MatIconButton,
     MatIconModule,
     NgOptimizedImage,
@@ -255,9 +253,9 @@ export class NavigationComponent implements AfterViewInit, OnDestroy {
 
     const navWidth = navEl.clientWidth;
     const gap = 4;
-    const totalWidth = filteredItems.reduce((sum, item) => {
+    const totalWidth = filteredItems.reduce((sum, item, idx) => {
       const itemWidth = this.itemWidths.get(item.section) || 120;
-      return sum + itemWidth + gap;
+      return sum + itemWidth + (idx < filteredItems.length - 1 ? gap : 0);
     }, 0);
 
     if (totalWidth <= navWidth) {
