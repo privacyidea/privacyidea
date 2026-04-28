@@ -53,10 +53,16 @@ def upgrade():
     bind = op.get_bind()
     is_postgres = bind.dialect.name == 'postgresql'
 
+    # The model declares Sequence('internaluserattribute_seq'), so SQLAlchemy
+    # emits SELECT nextval(...) on every ORM insert. Create the sequence on
+    # any backend that supports CREATE SEQUENCE (Postgres + MariaDB 10.3+).
+    if bind.dialect.supports_sequences:
+        op.execute("CREATE SEQUENCE IF NOT EXISTS internaluserattribute_seq")
+
     try:
         if is_postgres:
-            # Create the sequence up-front so the column default can reference it.
-            op.execute("CREATE SEQUENCE IF NOT EXISTS internaluserattribute_seq")
+            # Postgres needs the column default wired to the sequence so raw
+            # INSERTs (e.g. our data-migration block below) get an id.
             id_column = sa.Column(
                 'id', sa.Integer(), nullable=False,
                 server_default=sa.text("nextval('internaluserattribute_seq')"),
@@ -73,7 +79,7 @@ def upgrade():
             sa.Column('Value', sa.JSON(), nullable=True),
             sa.Column('last_modified', sa.DateTime(), nullable=True),
             sa.Column('node', sa.Unicode(length=120), nullable=True),
-            sa.ForeignKeyConstraint(['realm_id'], ['realm.id']),
+            sa.ForeignKeyConstraint(['realm_id'], ['realm.id'], ondelete='CASCADE'),
             sa.PrimaryKeyConstraint('id'),
             sa.UniqueConstraint('user_id', 'resolver', 'realm_id', 'Key',
                                 name='uq_internaluserattribute_user_key'),
@@ -186,7 +192,7 @@ def downgrade():
     try:
         op.drop_index('ix_internaluserattribute_user', table_name='internaluserattribute')
         op.drop_table('internaluserattribute')
-        if op.get_bind().dialect.name == 'postgresql':
+        if op.get_bind().dialect.supports_sequences:
             op.execute("DROP SEQUENCE IF EXISTS internaluserattribute_seq")
     except (OperationalError, ProgrammingError) as ex:
         msg = str(ex.orig).lower()
