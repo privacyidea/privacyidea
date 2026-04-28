@@ -27,10 +27,12 @@ import { of } from "rxjs";
 import { FilterValueGeneric } from "src/app/core/models/filter_value_generic/filter-value-generic";
 import { PolicyDetail, PolicyService } from "src/app/services/policies/policies.service";
 import { TableUtilsService } from "src/app/services/table-utils/table-utils.service";
-import { MockPolicyService, MockDialogService, MockTableUtilsService } from "src/testing/mock-services";
+import { MockDialogService, MockPolicyService, MockRouter, MockTableUtilsService } from "src/testing/mock-services";
 import { MockAuthService } from "src/testing/mock-services/mock-auth-service";
 import { PoliciesTableComponent } from "./policies-table.component";
 import { PolicyFilterComponent } from "./policy-filter/policy-filter.component";
+import { Router } from "@angular/router";
+import { ROUTE_PATHS } from "../../../route_paths";
 
 @Component({ selector: "app-policy-filter", template: "", standalone: true })
 class MockPolicyFilterComponent {
@@ -46,6 +48,7 @@ describe("PoliciesTableComponent", () => {
   let fixture: ComponentFixture<PoliciesTableComponent>;
   let mockPolicyService: MockPolicyService;
   let mockDialogService: MockDialogService;
+  let router: MockRouter;
 
   const mockPolicies: PolicyDetail[] = [
     { name: "Policy-C", priority: 30, scope: "admin", active: true } as PolicyDetail,
@@ -61,7 +64,8 @@ describe("PoliciesTableComponent", () => {
         { provide: DialogService, useClass: MockDialogService },
         { provide: AuthService, useClass: MockAuthService },
         { provide: TableUtilsService, useClass: MockTableUtilsService },
-        { provide: PolicyFilterComponent, useClass: MockPolicyFilterComponent }
+        { provide: PolicyFilterComponent, useClass: MockPolicyFilterComponent },
+        { provide: Router, useClass: MockRouter }
       ]
     })
       .overrideComponent(PoliciesTableComponent, {
@@ -72,6 +76,7 @@ describe("PoliciesTableComponent", () => {
 
     mockPolicyService = TestBed.inject(PolicyService) as unknown as MockPolicyService;
     mockDialogService = TestBed.inject(DialogService) as unknown as MockDialogService;
+    router = TestBed.inject(Router) as unknown as MockRouter;
 
     mockPolicyService.allPolicies.set(mockPolicies);
 
@@ -126,11 +131,11 @@ describe("PoliciesTableComponent", () => {
     } as any);
 
     component.editPolicy(mockPolicies[0]);
-    expect(dialogSpy).toHaveBeenCalled();
+    expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.POLICIES_DETAILS + mockPolicies[0].name);
 
-    dialogSpy.mockClear();
+    jest.clearAllMocks();
     component.editPolicy({ name: "" } as PolicyDetail);
-    expect(dialogSpy).not.toHaveBeenCalled();
+    expect(router.navigateByUrl).not.toHaveBeenCalled();
   });
 
   it("should filter items", () => {

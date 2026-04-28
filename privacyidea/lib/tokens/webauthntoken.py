@@ -39,8 +39,6 @@ from webauthn.helpers.structs import (AttestationFormat, AttestationConveyancePr
                                       AuthenticatorTransport, PublicKeyCredentialCreationOptions)
 from webauthn.registration.verify_registration_response import VerifiedRegistration
 
-from privacyidea.lib.params import (attestation_certificate_allowed, get_required_one_of,
-                                       get_optional_one_of, get_optional, get_required)
 from privacyidea.lib import _, lazy_gettext
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.config import get_from_config
@@ -52,10 +50,13 @@ from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction
 from privacyidea.lib.fido2.token_info import FIDO2TokenInfo
 from privacyidea.lib.fido2.util import hash_credential_id, save_credential_id_hash
 from privacyidea.lib.log import log_with
+from privacyidea.lib.params import (attestation_certificate_allowed, get_required_one_of,
+                                    get_optional_one_of, get_optional, get_required)
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import SCOPE, GROUP
 from privacyidea.lib.token import get_tokens
-from privacyidea.lib.tokenclass import TokenClass, ClientMode, RolloutState
+from privacyidea.lib.tokenclass import TokenClass, ClientMode
+from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.tokens.webauthn import (CoseAlgorithm, webauthn_b64_encode, webauthn_b64_decode, TRANSPORTS,
                                              WebAuthnUser, AuthenticationRejectedException,
                                              UserVerificationLevel, AttestationLevel)

@@ -14,14 +14,15 @@ from testfixtures import LogCapture
 
 from privacyidea.lib.caconnector import save_caconnector
 from privacyidea.lib.caconnectors.baseca import AvailableCAConnectors
-from privacyidea.lib.caconnectors.localca import LocalCAConnector  # noqa: F401  registers "local" in AvailableCAConnectors
+from privacyidea.lib.caconnectors.localca import \
+    LocalCAConnector  # noqa: F401  registers "local" in AvailableCAConnectors
 from privacyidea.lib.caconnectors.msca import ATTR as MS_ATTR
 from privacyidea.lib.caconnectors.msca import MSCAConnector
 from privacyidea.lib.error import ParameterError, PrivacyIDEAError
 from privacyidea.lib.policy import set_policy, delete_policy, PolicyClass, SCOPE
 from privacyidea.lib.token import get_tokens, remove_token, import_tokens
 from privacyidea.lib.token import init_token
-from privacyidea.lib.tokenclass import RolloutState
+from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.tokens.certificatetoken import (parse_chainfile, ACTION,
                                                      verify_certificate_path,
                                                      CertificateTokenClass)

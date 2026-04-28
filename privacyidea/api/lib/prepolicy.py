@@ -63,7 +63,6 @@ Wrapping the functions in a decorator class enables easy modular testing.
 The functions of this module are tested in tests/test_api_lib_policy.py
 """
 
-from flask_babel import _
 import functools
 import importlib
 import logging
@@ -72,6 +71,7 @@ from dataclasses import replace
 
 import jwt
 from flask import g, current_app, Request
+from flask_babel import _
 
 from privacyidea.api.lib.policyhelper import (get_init_tokenlabel_parameters,
                                               get_pushtoken_add_config,
@@ -96,7 +96,7 @@ from privacyidea.lib.policy import SCOPE, REMOTE_USER
 from privacyidea.lib.token import get_one_token
 from privacyidea.lib.token import (get_tokens, get_realms_of_token, get_token_type,
                                    get_token_owner)
-from privacyidea.lib.tokenclass import RolloutState
+from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.tokens.certificatetoken import ACTION as CERTIFICATE_ACTION
 from privacyidea.lib.tokens.indexedsecrettoken import PIIXACTION
 from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
@@ -122,7 +122,6 @@ from privacyidea.lib.utils import (parse_timedelta, is_true,
                                    determine_logged_in_userparams, parse_string_to_dict)
 
 log = logging.getLogger(__name__)
-
 
 
 class prepolicy:

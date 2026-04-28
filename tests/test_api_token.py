@@ -50,7 +50,7 @@ from privacyidea.lib.token import (get_tokens, remove_token, get_one_token,
                                    check_serial_pass, unassign_token, init_token,
                                    assign_token, token_exist, add_tokeninfo)
 from privacyidea.lib.tokenclass import DATE_FORMAT
-from privacyidea.lib.tokenclass import RolloutState
+from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.tokens.hotptoken import VERIFY_ENROLLMENT_MESSAGE
 from privacyidea.lib.tokens.smstoken import SMSAction
 from privacyidea.lib.user import User
@@ -4286,7 +4286,7 @@ class APIRolloutState(MyApiTestCase):
         serial1 = r.token.serial
 
         r = init_token({"genkey": 1})
-        self.assertEqual(r.rollout_state, "")
+        self.assertEqual(r.rollout_state, RolloutState.ENROLLED)
 
         # There are two tokens enrolled
         with self.app.test_request_context('/token/',
@@ -4314,7 +4314,7 @@ class APIRolloutState(MyApiTestCase):
 
         # Test wildcard rollout_state filter
         r = init_token({"genkey": 1})
-        self.assertEqual(r.rollout_state, "")
+        self.assertEqual(r.rollout_state, RolloutState.ENROLLED)
         serial3 = r.token.serial
         # Set a dummy rollout state
         r.token.rollout_state = "special"
@@ -4329,12 +4329,7 @@ class APIRolloutState(MyApiTestCase):
             self.assertTrue(res.status_code == 200, res)
             result = res.json.get("result")
             # we have two tokens
-            self.assertEqual(2, result.get("value").get("count"))
-            # We are not sure about the ordering. But one is serial1 and the other is serial3.
-            tok = result.get("value").get("tokens")[0]
-            self.assertIn(tok.get("serial"), [serial1, serial3])
-            tok = result.get("value").get("tokens")[1]
-            self.assertIn(tok.get("serial"), [serial1, serial3])
+            self.assertEqual(3, result.get("value").get("count"))
 
 
 @unittest.skipUnless("privacyidea.lib.caconnectors.msca.MSCAConnector" in AvailableCAConnectors,

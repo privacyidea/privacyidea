@@ -197,10 +197,17 @@ Glossary
 
         - Enrolled
 
+          The token has finished enrollment and is ready for use. This is the value
+          that any check for "this token is ready" should compare against.
+
         - Failed
 
-        .. note:: Not all tokens have the rollout state "enrolled" set consistently.
-           An empty rollout state means "enrolled".
+        .. versionchanged:: 3.14
+           Fully enrolled tokens now consistently have ``rollout_state = "enrolled"``.
+           Previously the value could be an empty string for tokens that completed
+           enrollment in a single step. A database migration rewrites empty/NULL
+           values to ``enrolled``. External integrations that compared against the
+           empty string must be updated.
 
    Custom User Attributes
         The table ``“customuserattribute”`` is used to store additional, custom attributes for users.

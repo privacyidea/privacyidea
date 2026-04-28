@@ -1,8 +1,11 @@
 @use "../../../../../styles";
 
-.machine-dialog-content {
-  min-width: 600px;
-  max-width: 100%;
+.machine-details-layout {
+  @include styles.main-component-style();
+}
+
+.machine-title {
+  margin: 16px 0;
 }
 
 .machines-container {

@@ -16,8 +16,9 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, effect, inject, OnDestroy, OnInit } from "@angular/core";
-import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from "@angular/material/dialog";
+import { Component, effect, inject, OnDestroy } from "@angular/core";
+import { ActivatedRoute, Router } from "@angular/router";
+import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
 import {
   Tokengroup,
@@ -27,27 +28,18 @@ import {
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { MatButtonModule } from "@angular/material/button";
-
 import { MatIconModule } from "@angular/material/icon";
-
 import { ROUTE_PATHS } from "../../../../route_paths";
-import { Router } from "@angular/router";
-import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
 import { PendingChangesService } from "../../../../services/pending-changes/pending-changes.service";
 import { SaveAndExitDialogComponent } from "../../../shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { DialogService, DialogServiceInterface } from "../../../../services/dialog/dialog.service";
 import { ClearableInputComponent } from "../../../shared/clearable-input/clearable-input.component";
-import { NAVIGATION_ACCESSIBLE_DIALOG_CLASS } from "../../../../constants/global.constants";
 
 @Component({
   selector: "app-new-tokengroup",
   standalone: true,
-  host: {
-    class: NAVIGATION_ACCESSIBLE_DIALOG_CLASS
-  },
   imports: [
     ReactiveFormsModule,
-    MatDialogModule,
     MatFormFieldModule,
     MatInputModule,
     MatButtonModule,
@@ -57,39 +49,47 @@ import { NAVIGATION_ACCESSIBLE_DIALOG_CLASS } from "../../../../constants/global
   templateUrl: "./new-tokengroup.component.html",
   styleUrl: "./new-tokengroup.component.scss"
 })
-export class NewTokengroupComponent implements OnInit, OnDestroy {
+export class NewTokengroupComponent implements OnDestroy {
   private readonly formBuilder = inject(FormBuilder);
-  private readonly dialogRef = inject(MatDialogRef<NewTokengroupComponent>);
-  protected readonly data = inject<Tokengroup | null>(MAT_DIALOG_DATA);
   protected readonly tokengroupService: TokengroupServiceInterface = inject(TokengroupService);
   private readonly dialogService: DialogServiceInterface = inject(DialogService);
   private readonly router = inject(Router);
-  private readonly contentService: ContentServiceInterface = inject(ContentService);
+  private readonly route = inject(ActivatedRoute);
   private readonly pendingChangesService = inject(PendingChangesService);
 
+  protected data: Tokengroup | null = null;
   tokengroupForm!: FormGroup;
   isEditMode = false;
+  private editGroupName: string | null = null;
 
   constructor() {
-    if (this.dialogRef) {
-      this.dialogRef.disableClose = true;
-      this.dialogRef.backdropClick().subscribe(() => {
-        this.onCancel();
-      });
-      this.dialogRef.keydownEvents().subscribe((event) => {
-        if (event.key === "Escape") {
-          this.onCancel();
-        }
-      });
-    }
-
     this.pendingChangesService.registerHasChanges(() => this.hasChanges);
     this.pendingChangesService.registerSave(() => this.save());
     this.pendingChangesService.registerValidChanges(() => this.canSave);
 
+    this.route.paramMap.pipe(takeUntilDestroyed()).subscribe((params) => {
+      const name = params.get("name");
+      if (name) {
+        this.isEditMode = true;
+        this.editGroupName = name;
+        this.data = this.tokengroupService.tokengroups().find((g) => g.groupname === name) ?? null;
+      } else {
+        this.isEditMode = false;
+        this.editGroupName = null;
+        this.data = null;
+      }
+      this.initForm();
+    });
+
+    // Re-initialize once the async list arrives, but only if the user hasn't started editing yet.
     effect(() => {
-      if (!this.contentService.routeUrl().startsWith(ROUTE_PATHS.EXTERNAL_SERVICES_TOKENGROUPS)) {
-        this.dialogRef?.close(true);
+      const tokengroups = this.tokengroupService.tokengroups();
+      if (this.isEditMode && this.editGroupName && this.tokengroupForm?.pristine) {
+        const found = tokengroups.find((g) => g.groupname === this.editGroupName);
+        if (found) {
+          this.data = found;
+          this.initForm();
+        }
       }
     });
   }
@@ -102,13 +102,11 @@ export class NewTokengroupComponent implements OnInit, OnDestroy {
     return this.tokengroupForm.valid;
   }
 
-  ngOnInit(): void {
-    this.isEditMode = !!this.data;
+  private initForm(): void {
     this.tokengroupForm = this.formBuilder.group({
       groupname: [this.data?.groupname || "", [Validators.required]],
       description: [this.data?.description || ""]
     });
-
     if (this.isEditMode) {
       this.tokengroupForm.get("groupname")?.disable();
     }
@@ -128,7 +126,8 @@ export class NewTokengroupComponent implements OnInit, OnDestroy {
 
     try {
       await this.tokengroupService.postTokengroup(group);
-      this.dialogRef.close(true);
+      this.pendingChangesService.clearAllRegistrations();
+      this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_TOKENGROUPS);
       return true;
     } catch (error) {
       return false;
@@ -149,24 +148,16 @@ export class NewTokengroupComponent implements OnInit, OnDestroy {
         .subscribe((result) => {
           if (result === "discard") {
             this.pendingChangesService.clearAllRegistrations();
-            this.closeCurrent();
+            this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_TOKENGROUPS);
           } else if (result === "save-exit") {
             if (!this.canSave) return;
             Promise.resolve(this.pendingChangesService.save()).then((success) => {
               if (!success) return;
               this.pendingChangesService.clearAllRegistrations();
-              this.closeCurrent();
+              this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_TOKENGROUPS);
             });
           }
         });
-    } else {
-      this.closeCurrent();
-    }
-  }
-
-  private closeCurrent(): void {
-    if (this.dialogRef) {
-      this.dialogRef.close();
     } else {
       this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_TOKENGROUPS);
     }

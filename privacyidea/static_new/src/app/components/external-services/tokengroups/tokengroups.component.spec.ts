@@ -21,7 +21,6 @@ import { TokengroupsComponent } from "./tokengroups.component";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { MatDialog, MatDialogModule } from "@angular/material/dialog";
 import { TokengroupService } from "../../../services/tokengroup/tokengroup.service";
 import { DialogService } from "../../../services/dialog/dialog.service";
 import { signal } from "@angular/core";
@@ -29,6 +28,8 @@ import { MockDialogService } from "../../../../testing/mock-services/mock-dialog
 import { Subject } from "rxjs";
 import { MockMatDialogRef } from "../../../../testing/mock-mat-dialog-ref";
 import { SaveAndExitDialogResult } from "../../shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
+import { provideRouter, Router } from "@angular/router";
+import { ROUTE_PATHS } from "../../../route_paths";
 
 describe("TokengroupsComponent", () => {
   let component: TokengroupsComponent;
@@ -36,6 +37,7 @@ describe("TokengroupsComponent", () => {
   let tokengroupServiceMock: any;
   let dialogServiceMock: MockDialogService;
   let confirmClosed: Subject<SaveAndExitDialogResult>;
+  let router: Router;
 
   beforeEach(async () => {
     tokengroupServiceMock = {
@@ -47,23 +49,20 @@ describe("TokengroupsComponent", () => {
     };
 
     await TestBed.configureTestingModule({
-      imports: [TokengroupsComponent, NoopAnimationsModule, MatDialogModule],
+      imports: [TokengroupsComponent, NoopAnimationsModule],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
+        provideRouter([]),
         { provide: TokengroupService, useValue: tokengroupServiceMock },
         { provide: DialogService, useClass: MockDialogService }
       ]
-    })
-      .overrideComponent(TokengroupsComponent, {
-        add: {
-          providers: [{ provide: MatDialog, useValue: { open: jest.fn() } }]
-        }
-      })
-      .compileComponents();
+    }).compileComponents();
 
     fixture = TestBed.createComponent(TokengroupsComponent);
     dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
+    router = TestBed.inject(Router);
+    jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
     confirmClosed = new Subject();
     let dialogRefMock = new MockMatDialogRef();
     dialogRefMock.afterClosed.mockReturnValue(confirmClosed);
@@ -86,11 +85,15 @@ describe("TokengroupsComponent", () => {
     expect(component.tokengroupDataSource().filter).toBe("group1");
   });
 
-  it("should open edit dialog", () => {
-    const dialog = fixture.debugElement.injector.get(MatDialog);
+  it("should navigate to create page", () => {
+    component.onCreateNewTokengroup();
+    expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.EXTERNAL_SERVICES_TOKENGROUPS_NEW);
+  });
+
+  it("should navigate to edit page when editing a group", () => {
     const group = tokengroupServiceMock.tokengroups()[0];
-    component.openEditDialog(group);
-    expect(dialog.open).toHaveBeenCalled();
+    component.onEditTokengroup(group);
+    expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.EXTERNAL_SERVICES_TOKENGROUPS_DETAILS + group.groupname);
   });
 
   it("should delete group after confirmation", () => {

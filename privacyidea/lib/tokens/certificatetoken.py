@@ -36,32 +36,32 @@ The code is tested in test_lib_tokens_certificate.py.
 
 import logging
 import pathlib
-from cryptography import x509
-from cryptography.x509 import (load_pem_x509_certificate, load_pem_x509_csr,
-                               Certificate)
-from cryptography.hazmat.primitives.asymmetric import padding, rsa
-from cryptography.hazmat.primitives import serialization, hashes
-from cryptography.hazmat.primitives.serialization import pkcs12, BestAvailableEncryption
-from cryptography.exceptions import InvalidSignature
 import secrets
 import traceback
 
-from privacyidea.lib.utils import b64encode_and_unicode, to_byte_string
-from privacyidea.lib.tokenclass import TokenClass, RolloutState
+from cryptography import x509
+from cryptography.exceptions import InvalidSignature
+from cryptography.hazmat.primitives import serialization, hashes
+from cryptography.hazmat.primitives.asymmetric import padding, rsa
+from cryptography.hazmat.primitives.serialization import pkcs12, BestAvailableEncryption
+from cryptography.x509 import (load_pem_x509_certificate, load_pem_x509_csr,
+                               Certificate)
+
+from privacyidea.lib import _
+from privacyidea.lib.caconnector import get_caconnector_object, get_caconnector_list
+from privacyidea.lib.decorators import check_token_locked
+from privacyidea.lib.error import PrivacyIDEAError, CSRError, CSRPending, CAError
 from privacyidea.lib.log import log_with
 from privacyidea.lib.params import get_optional, get_required
-from privacyidea.lib.caconnector import get_caconnector_object, get_caconnector_list
-from privacyidea.lib.user import get_user_from_param
-from privacyidea.lib.utils import determine_logged_in_userparams
-from privacyidea.lib.decorators import check_token_locked
-from privacyidea.lib import _
-from privacyidea.lib.policy import SCOPE, GROUP, Match
 from privacyidea.lib.policies.actions import PolicyAction as BASE_ACTION
-from privacyidea.lib.error import PrivacyIDEAError, CSRError, CSRPending, CAError
-
+from privacyidea.lib.policy import SCOPE, GROUP, Match
+from privacyidea.lib.tokenclass import TokenClass
+from privacyidea.lib.tokenrolloutstate import RolloutState
+from privacyidea.lib.user import get_user_from_param
+from privacyidea.lib.utils import b64encode_and_unicode, to_byte_string
+from privacyidea.lib.utils import determine_logged_in_userparams
 
 log = logging.getLogger(__name__)
-
 
 DEFAULT_CA_PATH = ["/etc/privacyidea/trusted_attestation_ca"]
 # This is the key of the tokeninfo, where the request Id of a pending certificate is stored
@@ -290,7 +290,7 @@ class CertificateTokenClass(TokenClass):
                                 'Token.'),
                'init': {},
                'config': {},
-               'user':  ['enroll'],
+               'user': ['enroll'],
                # This tokentype is enrollable in the UI for...
                'ui_enroll': ["admin", "user"],
                'policy': {
@@ -433,7 +433,7 @@ class CertificateTokenClass(TokenClass):
         :return: None
         """
         # Remove genkey and otpkey from params to avoid generating an otpkey
-        token_params = {k:v for k, v in param.items() if k not in ["genkey", "otpkey"]}
+        token_params = {k: v for k, v in param.items() if k not in ["genkey", "otpkey"]}
         TokenClass.update(self, token_params)
 
         request = get_optional(param, "request")

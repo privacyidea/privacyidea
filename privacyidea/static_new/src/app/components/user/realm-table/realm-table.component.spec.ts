@@ -20,18 +20,20 @@ import { TestBed } from "@angular/core/testing";
 import { of } from "rxjs";
 
 import { RealmTableComponent } from "./realm-table.component";
-import { RealmService, Realms } from "../../../services/realm/realm.service";
+import { Realms, RealmService } from "../../../services/realm/realm.service";
 import { TableUtilsService } from "../../../services/table-utils/table-utils.service";
 import { ContentService } from "../../../services/content/content.service";
 import { SystemService } from "../../../services/system/system.service";
 import { NotificationService } from "../../../services/notification/notification.service";
 import { MatDialog } from "@angular/material/dialog";
+import { Router } from "@angular/router";
 import {
   MockContentService,
   MockHttpResourceRef,
   MockNotificationService,
   MockPiResponse,
   MockRealmService,
+  MockRouter,
   MockSystemService,
   MockTableUtilsService
 } from "../../../../testing/mock-services";
@@ -39,7 +41,7 @@ import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { ResolverService } from "../../../services/resolver/resolver.service";
 import { MockResolverService } from "../../../../testing/mock-services/mock-resolver-service";
-import { UserNewResolverComponent } from "../user-new-resolver/user-new-resolver.component";
+import { ROUTE_PATHS } from "../../../route_paths";
 
 class LocalMockMatDialog {
   result$ = of(true);
@@ -56,6 +58,7 @@ describe("RealmTableComponent", () => {
   let notificationService: MockNotificationService;
   let dialog: LocalMockMatDialog;
   let resolverService: MockResolverService;
+  let router: Router;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -69,7 +72,8 @@ describe("RealmTableComponent", () => {
         { provide: ContentService, useClass: MockContentService },
         { provide: NotificationService, useClass: MockNotificationService },
         { provide: MatDialog, useClass: LocalMockMatDialog },
-        { provide: ResolverService, useClass: MockResolverService }
+        { provide: ResolverService, useClass: MockResolverService },
+        { provide: Router, useClass: MockRouter }
       ]
     }).compileComponents();
 
@@ -81,6 +85,7 @@ describe("RealmTableComponent", () => {
     notificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;
     dialog = TestBed.inject(MatDialog) as unknown as LocalMockMatDialog;
     resolverService = TestBed.inject(ResolverService) as unknown as MockResolverService;
+    router = TestBed.inject(Router);
 
     fixture.detectChanges();
   });
@@ -461,7 +466,7 @@ describe("RealmTableComponent", () => {
     expect(callNode[1]).toBe("node-1");
     expect(callNode[2]).toEqual([{ name: "res3", priority: 7 }]);
 
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith('Realm "realmA" updated.');
+    expect(notificationService.openSnackBar).toHaveBeenCalledWith("Realm \"realmA\" updated.");
     expect(component.editingRealmName()).toBeNull();
     expect(component.isSavingEditedRealm()).toBe(false);
     expect(realmService.realmResource.reload).toHaveBeenCalled();
@@ -480,7 +485,7 @@ describe("RealmTableComponent", () => {
 
     expect(dialog.open).toHaveBeenCalled();
     expect(realmService.deleteRealm).toHaveBeenCalledWith("realmA");
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith('Realm "realmA" deleted.');
+    expect(notificationService.openSnackBar).toHaveBeenCalledWith("Realm \"realmA\" deleted.");
     expect(realmService.realmResource.reload).toHaveBeenCalled();
   });
 
@@ -505,24 +510,18 @@ describe("RealmTableComponent", () => {
     component.onSetDefaultRealm(row);
 
     expect(realmService.setDefaultRealm).toHaveBeenCalledWith("realmA");
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith('Realm "realmA" set as default.');
+    expect(notificationService.openSnackBar).toHaveBeenCalledWith("Realm \"realmA\" set as default.");
     expect(realmService.realmResource.reload).toHaveBeenCalled();
     expect(realmService.defaultRealmResource.reload).toHaveBeenCalled();
   });
 
-  it("onClickResolver should open UserNewResolverComponent with resolver data", () => {
+  it("onClickResolver should redirect to resolver details page", () => {
     const resolver = { resolvername: "res1", type: "ldapresolver" } as any;
     resolverService.setResolvers([resolver]);
 
     component.onClickResolver("res1");
 
-    expect(dialog.open).toHaveBeenCalledWith(UserNewResolverComponent, {
-      data: { resolver },
-      width: "auto",
-      height: "auto",
-      maxWidth: "100vw",
-      maxHeight: "100vh"
-    });
+    expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.USERS_RESOLVERS_DETAILS + "res1");
   });
 
   it("onClickResolver should do nothing if resolver not found", () => {

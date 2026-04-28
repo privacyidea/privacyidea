@@ -35,6 +35,7 @@ from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway
 from privacyidea.lib.token import (get_one_token, get_tokens_from_serial_or_user,
                                    get_tokeninfo, get_tokens)
 from privacyidea.lib.token import init_token, get_tokens_paginate, unassign_token
+from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.tokens.papertoken import PAPERACTION
 from privacyidea.lib.tokens.pushtoken import PushAction
 from privacyidea.lib.tokens.tantoken import TANAction
@@ -602,8 +603,8 @@ class APIContainerTemplate(APIContainerTest):
         self.assertEqual(5, len(tokens))
         token_results = result["result"]["value"]["tokens"]
         for token in tokens:
-            self.assertTrue("verify", token.rollout_state)
-            self.assertEqual("verify", token_results[token.get_serial()]["rollout_state"])
+            self.assertTrue(RolloutState.VERIFY_PENDING, token.rollout_state)
+            self.assertEqual(RolloutState.VERIFY_PENDING, token_results[token.get_serial()]["rollout_state"])
             self.assertTrue(isinstance(token_results[token.get_serial()]["verify"], dict))
 
         # cleanup
@@ -647,9 +648,9 @@ class APIContainerTemplate(APIContainerTest):
         tokens = container.get_tokens()
         for token in tokens:
             if token.get_type() == "hotp":
-                self.assertEqual("clientwait", token.rollout_state)
+                self.assertEqual(RolloutState.CLIENTWAIT, token.rollout_state)
             else:
-                self.assertEqual("", token.rollout_state)
+                self.assertEqual(RolloutState.ENROLLED, token.rollout_state)
 
         # cleanup
         [token.delete_token() for token in tokens]

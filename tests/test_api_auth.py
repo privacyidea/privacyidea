@@ -21,7 +21,8 @@ from privacyidea.lib.realm import (set_realm, set_default_realm, delete_realm,
                                    get_default_realm)
 from privacyidea.lib.resolver import save_resolver, delete_resolver
 from privacyidea.lib.token import get_tokens, remove_token, init_token, get_one_token
-from privacyidea.lib.tokenclass import FAILCOUNTER_EXCEEDED, DATE_FORMAT, FAILCOUNTER_CLEAR_TIMEOUT, RolloutState
+from privacyidea.lib.tokenclass import FAILCOUNTER_EXCEEDED, DATE_FORMAT, FAILCOUNTER_CLEAR_TIMEOUT
+from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import to_unicode, AUTH_RESPONSE
 from privacyidea.models import Realm, NodeName, db
@@ -941,7 +942,7 @@ class AuthApiTestCase(MyApiTestCase):
         set_policy("login-mode", scope=SCOPE.WEBUI, action=f"{PolicyAction.LOGINMODE}=privacyIDEA")
         set_policy("verify", scope=SCOPE.ENROLL, action=f"{PolicyAction.VERIFY_ENROLLMENT}=hotp")
         event_id = set_event("delete_verify", event="auth", handlermodule="Token", action="delete",
-                             conditions={"rollout_state": "verify"}, position="pre")
+                             conditions={"rollout_state": RolloutState.VERIFY_PENDING}, position="pre")
         self.setUp_user_realms()
 
         with self.app.test_request_context('/auth',
@@ -967,7 +968,7 @@ class AuthApiTestCase(MyApiTestCase):
             self.assertIsNotNone(serial, result)
 
         first_token = get_one_token(serial=serial)
-        self.assertEqual("verify", first_token.rollout_state)
+        self.assertEqual(RolloutState.VERIFY_PENDING, first_token.rollout_state)
 
         # New authentication succeeds
         with self.app.test_request_context('/auth',
@@ -997,7 +998,7 @@ class AuthApiTestCase(MyApiTestCase):
             self.assertIsNotNone(serial, result)
 
         new_token = get_one_token(serial=serial)
-        self.assertEqual("verify", new_token.rollout_state)
+        self.assertEqual(RolloutState.VERIFY_PENDING, new_token.rollout_state)
 
         # verify token
         with self.app.test_request_context('/token/init',
@@ -1009,7 +1010,7 @@ class AuthApiTestCase(MyApiTestCase):
             result = res.json.get("result")
             self.assertTrue(result.get("status"), result)
 
-        self.assertEqual("enrolled", new_token.rollout_state)
+        self.assertEqual(RolloutState.ENROLLED, new_token.rollout_state)
 
         # auth without token now fails
         with self.app.test_request_context('/auth',

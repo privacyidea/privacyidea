@@ -4,7 +4,8 @@ from sqlalchemy import select
 from webauthn import base64url_to_bytes
 
 from privacyidea.lib.token import create_tokenclass_object, log, get_tokens
-from privacyidea.lib.tokenclass import RolloutState, TokenClass
+from privacyidea.lib.tokenclass import TokenClass
+from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.user import User
 from privacyidea.models import TokenInfo, Token, Challenge, TokenCredentialIdHash, db
 

@@ -23,6 +23,8 @@ import { EventComponent } from "./event.component";
 import { provideHttpClient } from "@angular/common/http";
 import { EventHandler, EventService } from "../../services/event/event.service";
 import { MockEventService } from "../../../testing/mock-services/mock-event-service";
+import { provideRouter } from "@angular/router";
+import { Router } from "@angular/router";
 
 describe("EventComponent", () => {
   let component: EventComponent;
@@ -34,6 +36,7 @@ describe("EventComponent", () => {
       imports: [EventComponent],
       providers: [
         provideHttpClient(),
+        provideRouter([]),
         { provide: EventService, useClass: MockEventService }
       ]
     })
@@ -87,9 +90,11 @@ describe("EventComponent", () => {
     expect(ds.filter).toBe("test");
   });
 
-  it("should open dialog for edit event handler", () => {
-    const spy = jest.spyOn(component["dialog"], "open");
+  it("onEditEventHandler should navigate to edit event handler route", () => {
+    const router = TestBed.inject(Router);
+    const spy = jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
     const handler = {
+      id: 1,
       name: "foo",
       event: [],
       handlermodule: "",
@@ -104,8 +109,9 @@ describe("EventComponent", () => {
     expect(spy).toHaveBeenCalled();
   });
 
-  it("should open dialog for create new event handler", () => {
-    const spy = jest.spyOn(component["dialog"], "open");
+  it("should navigate to create new event handler route", () => {
+    const router = TestBed.inject(Router);
+    const spy = jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
     component.onCreateNewEventHandler();
     expect(spy).toHaveBeenCalled();
   });

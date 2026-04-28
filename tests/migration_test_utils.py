@@ -57,15 +57,42 @@ def drop_all_tables(engine) -> None:
             conn.execute(text("SET FOREIGN_KEY_CHECKS = 0"))
             for table in sa_inspect(engine).get_table_names():
                 conn.execute(text(f"DROP TABLE IF EXISTS `{table}`"))
+            # Drop sequences too — the v3.9 seed creates them and they
+            # would otherwise survive between tests and collide on reload.
+            sequences = conn.execute(text(
+                "SELECT table_name FROM information_schema.tables "
+                "WHERE table_schema = DATABASE() AND table_type = 'SEQUENCE'"
+            )).fetchall()
+            for (seq,) in sequences:
+                conn.execute(text(f"DROP SEQUENCE IF EXISTS `{seq}`"))
             conn.execute(text("SET FOREIGN_KEY_CHECKS = 1"))
         conn.commit()
 
 
+def read_seed_statements(seed_revision: str = START_REVISION, db_url: str = DB_URL) -> list[str]:
+    """
+    Read the dialect-specific seed SQL file and split it into individual
+    statements (split on semicolons), discarding empty / comment-only chunks.
+    """
+    path = get_seed_path(seed_revision, db_url)
+    sql = path.read_text(encoding="utf-8")
+    statements = []
+    for chunk in sql.split(";"):
+        stripped = chunk.strip()
+        if not stripped:
+            continue
+        non_comment_lines = [
+            line for line in stripped.splitlines()
+            if line.strip() and not line.strip().startswith("--")
+        ]
+        if non_comment_lines:
+            statements.append(stripped)
+    return statements
+
+
 def load_seed(seed_revision: str = START_REVISION, db_url: str = DB_URL) -> None:
     """Load the dialect-specific seed SQL for *seed_revision* into the database."""
-    path = get_seed_path(seed_revision, db_url)
-    raw = path.read_text(encoding="utf-8")
-    statements = [s.strip() for s in raw.split(";") if s.strip()]
+    statements = read_seed_statements(seed_revision, db_url)
     engine = create_engine(db_url)
     try:
         with engine.connect() as conn:
@@ -134,9 +161,7 @@ class MigrationTestBase:
         After this call the database is in the state immediately before the
         migration under test.  The caller is responsible for disposing *engine*.
         """
-        path = get_seed_path()
-        raw = path.read_text(encoding="utf-8")
-        statements = [s.strip() for s in raw.split(";") if s.strip()]
+        statements = read_seed_statements()
         with engine.connect() as conn:
             for stmt in statements:
                 conn.execute(text(stmt))

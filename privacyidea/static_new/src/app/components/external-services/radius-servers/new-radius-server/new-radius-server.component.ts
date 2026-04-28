@@ -16,83 +16,104 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, effect, inject, OnDestroy, OnInit, signal } from "@angular/core";
-import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from "@angular/material/dialog";
+import {
+  AfterViewInit,
+  Component,
+  effect,
+  ElementRef,
+  inject,
+  OnDestroy,
+  Renderer2,
+  signal,
+  ViewChild
+} from "@angular/core";
+import { ActivatedRoute, Router } from "@angular/router";
+import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
-import { RadiusServer, RadiusServerService, RadiusServerServiceInterface } from "../../../../services/radius-server/radius-server.service";
+import {
+  RadiusServer,
+  RadiusServerService,
+  RadiusServerServiceInterface
+} from "../../../../services/radius-server/radius-server.service";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatButtonModule } from "@angular/material/button";
-
 import { MatIconModule } from "@angular/material/icon";
 import { MatTooltip } from "@angular/material/tooltip";
-
 import { ROUTE_PATHS } from "../../../../route_paths";
-import { Router } from "@angular/router";
-import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
 import { PendingChangesService } from "../../../../services/pending-changes/pending-changes.service";
 import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
 import { SaveAndExitDialogComponent } from "../../../shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { DialogService, DialogServiceInterface } from "../../../../services/dialog/dialog.service";
 import { ClearableInputComponent } from "../../../shared/clearable-input/clearable-input.component";
-import { NAVIGATION_ACCESSIBLE_DIALOG_CLASS } from "../../../../constants/global.constants";
+import { ScrollToTopDirective } from "../../../shared/directives/app-scroll-to-top.directive";
 
 @Component({
   selector: "app-new-radius-server",
   standalone: true,
-  host: {
-    class: NAVIGATION_ACCESSIBLE_DIALOG_CLASS
-  },
   imports: [
     ReactiveFormsModule,
-    MatDialogModule,
     MatFormFieldModule,
     MatInputModule,
     MatCheckboxModule,
     MatButtonModule,
     MatIconModule,
     MatTooltip,
-    ClearableInputComponent
+    ClearableInputComponent,
+    ScrollToTopDirective
   ],
   templateUrl: "./new-radius-server.component.html",
   styleUrl: "./new-radius-server.component.scss"
 })
-export class NewRadiusServerComponent implements OnInit, OnDestroy {
+export class NewRadiusServerComponent implements AfterViewInit, OnDestroy {
   private readonly formBuilder = inject(FormBuilder);
-  private readonly dialogRef = inject(MatDialogRef<NewRadiusServerComponent>);
-  protected readonly data = inject<RadiusServer | null>(MAT_DIALOG_DATA);
   protected readonly radiusService: RadiusServerServiceInterface = inject(RadiusServerService);
   private readonly dialogService: DialogServiceInterface = inject(DialogService);
   private readonly router = inject(Router);
-  private readonly contentService: ContentServiceInterface = inject(ContentService);
+  private readonly route = inject(ActivatedRoute);
   private readonly pendingChangesService = inject(PendingChangesService);
   private readonly authService: AuthServiceInterface = inject(AuthService);
+  protected readonly renderer: Renderer2 = inject(Renderer2);
+
+  @ViewChild("stickyHeader") stickyHeader!: ElementRef<HTMLElement>;
+  @ViewChild("stickySentinel") stickySentinel!: ElementRef<HTMLElement>;
+  @ViewChild("scrollContainer") scrollContainer!: ElementRef<HTMLElement>;
+
+  private observer!: IntersectionObserver;
 
   radiusForm!: FormGroup;
   isEditMode = false;
   isTesting = signal(false);
+  private editIdentifier: string | null = null;
 
   constructor() {
-    if (this.dialogRef) {
-      this.dialogRef.disableClose = true;
-      this.dialogRef.backdropClick().subscribe(() => {
-        this.onCancel();
-      });
-      this.dialogRef.keydownEvents().subscribe((event) => {
-        if (event.key === "Escape") {
-          this.onCancel();
-        }
-      });
-    }
-
     this.pendingChangesService.registerHasChanges(() => this.hasChanges);
     this.pendingChangesService.registerSave(() => this.save());
     this.pendingChangesService.registerValidChanges(() => this.canSave);
 
+    this.route.paramMap.pipe(takeUntilDestroyed()).subscribe((params) => {
+      const identifier = params.get("identifier");
+      if (identifier) {
+        this.isEditMode = true;
+        this.editIdentifier = identifier;
+        const server = this.radiusService.radiusServers().find((s) => s.identifier === identifier);
+        this.initForm(server ?? null);
+      } else {
+        this.isEditMode = false;
+        this.editIdentifier = null;
+        this.initForm(null);
+      }
+    });
+
+    // Re-initialize once the async list arrives, but only if the user hasn't started editing yet.
     effect(() => {
-      if (!this.contentService.routeUrl().startsWith(ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS)) {
-        this.dialogRef?.close(true);
+      const servers = this.radiusService.radiusServers();
+      if (this.isEditMode && this.editIdentifier && this.radiusForm?.pristine) {
+        const found = servers.find((s) => s.identifier === this.editIdentifier);
+        if (found) {
+          this.initForm(found);
+        }
       }
     });
   }
@@ -105,18 +126,44 @@ export class NewRadiusServerComponent implements OnInit, OnDestroy {
     return this.authService.actionAllowed("radiusserver_write") && this.radiusForm.valid;
   }
 
-  ngOnInit(): void {
-    this.isEditMode = !!this.data;
+
+  ngAfterViewInit(): void {
+    if (!this.scrollContainer || !this.stickyHeader || !this.stickySentinel) return;
+
+    const options: IntersectionObserverInit = {
+      root: this.scrollContainer.nativeElement,
+      threshold: [0, 1]
+    };
+
+    this.observer = new IntersectionObserver(([entry]) => {
+      if (!entry.rootBounds) return;
+      const shouldFloat = entry.boundingClientRect.top < entry.rootBounds.top;
+      if (shouldFloat) {
+        this.renderer.addClass(this.stickyHeader.nativeElement, "is-sticky");
+      } else {
+        this.renderer.removeClass(this.stickyHeader.nativeElement, "is-sticky");
+      }
+    }, options);
+
+    this.observer.observe(this.stickySentinel.nativeElement);
+  }
+
+  ngOnDestroy(): void {
+    this.pendingChangesService.clearAllRegistrations();
+    this.observer?.disconnect();
+  }
+
+  private initForm(data: RadiusServer | null): void {
     this.radiusForm = this.formBuilder.group({
-      identifier: [this.data?.identifier || "", [Validators.required]],
-      server: [this.data?.server || "", [Validators.required]],
-      port: [this.data?.port || 1812],
-      timeout: [this.data?.timeout || 5],
-      retries: [this.data?.retries || 3],
-      secret: [this.data?.secret || "", [Validators.required]],
-      message_authenticator: [this.data?.options?.message_authenticator ?? true],
-      dictionary: [this.data?.dictionary || ""],
-      description: [this.data?.description || ""],
+      identifier: [data?.identifier || "", [Validators.required]],
+      server: [data?.server || "", [Validators.required]],
+      port: [data?.port || 1812],
+      timeout: [data?.timeout || 5],
+      retries: [data?.retries || 3],
+      secret: [data?.secret || "", [Validators.required]],
+      message_authenticator: [data?.options?.message_authenticator ?? true],
+      dictionary: [data?.dictionary || ""],
+      description: [data?.description || ""],
       username: [""],
       password: [""]
     });
@@ -124,10 +171,6 @@ export class NewRadiusServerComponent implements OnInit, OnDestroy {
     if (this.isEditMode) {
       this.radiusForm.get("identifier")?.disable();
     }
-  }
-
-  ngOnDestroy(): void {
-    this.pendingChangesService.clearAllRegistrations();
   }
 
   async save(): Promise<boolean> {
@@ -150,7 +193,8 @@ export class NewRadiusServerComponent implements OnInit, OnDestroy {
     };
     try {
       await this.radiusService.postRadiusServer(server);
-      this.dialogRef.close(true);
+      this.pendingChangesService.clearAllRegistrations();
+      this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS);
       return true;
     } catch (error) {
       return false;
@@ -187,24 +231,16 @@ export class NewRadiusServerComponent implements OnInit, OnDestroy {
         .subscribe((result) => {
           if (result === "discard") {
             this.pendingChangesService.clearAllRegistrations();
-            this.closeCurrent();
+            this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS);
           } else if (result === "save-exit") {
             if (!this.canSave) return;
             Promise.resolve(this.pendingChangesService.save()).then((success) => {
               if (!success) return;
               this.pendingChangesService.clearAllRegistrations();
-              this.closeCurrent();
+              this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS);
             });
           }
         });
-    } else {
-      this.closeCurrent();
-    }
-  }
-
-  private closeCurrent(): void {
-    if (this.dialogRef) {
-      this.dialogRef.close();
     } else {
       this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS);
     }

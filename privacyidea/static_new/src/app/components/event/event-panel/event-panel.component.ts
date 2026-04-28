@@ -22,7 +22,6 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
-  DestroyRef,
   effect,
   ElementRef,
   inject,
@@ -35,7 +34,8 @@ import {
 import { MatIcon, MatIconModule } from "@angular/material/icon";
 import { MatButton } from "@angular/material/button";
 import { AuthService } from "../../../services/auth/auth.service";
-import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
+import { ActivatedRoute, Router } from "@angular/router";
+import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { EMPTY_EVENT, EventService } from "../../../services/event/event.service";
 import { EventActionTabComponent } from "./tabs/event-action-tab/event-action-tab.component";
 import { EventConditionsTabComponent } from "./tabs/event-conditions-tab/event-conditions-tab.component";
@@ -47,20 +47,14 @@ import { deepCopy } from "../../../utils/deep-copy.utils";
 import { NotificationService } from "../../../services/notification/notification.service";
 import { MatChipsModule } from "@angular/material/chips";
 import { MatAutocompleteModule } from "@angular/material/autocomplete";
-
 import { EventSelectionComponent } from "./event-selection/event-selection.component";
 import { MatTab, MatTabGroup } from "@angular/material/tabs";
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { PendingChangesService } from "../../../services/pending-changes/pending-changes.service";
 import { ROUTE_PATHS } from "../../../route_paths";
-import { ContentService } from "../../../services/content/content.service";
 import { MatSlideToggle } from "@angular/material/slide-toggle";
 import { MatTooltip } from "@angular/material/tooltip";
 import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
-import { DialogService, DialogServiceInterface } from "../../../services/dialog/dialog.service";
-import { SaveAndExitDialogComponent } from "../../shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
-import { NAVIGATION_ACCESSIBLE_DIALOG_CLASS } from "../../../constants/global.constants";
-import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 
 export type eventTab = "events" | "action" | "conditions";
 
@@ -95,9 +89,6 @@ export type eventTab = "events" | "action" | "conditions";
     CopyButtonComponent
   ],
   standalone: true,
-  host: {
-    class: NAVIGATION_ACCESSIBLE_DIALOG_CLASS
-  },
   templateUrl: "./event-panel.component.html",
   styleUrl: "./event-panel.component.scss",
   changeDetection: ChangeDetectionStrategy.OnPush
@@ -107,12 +98,9 @@ export class EventPanelComponent implements AfterViewInit, OnDestroy {
   protected readonly authService = inject(AuthService);
   protected readonly notificationService = inject(NotificationService);
   private readonly pendingChangesService = inject(PendingChangesService);
-  private readonly dialogService: DialogServiceInterface = inject(DialogService);
-  public readonly data = inject(MAT_DIALOG_DATA, { optional: false });
+  private readonly router = inject(Router);
+  private readonly route = inject(ActivatedRoute);
   protected readonly renderer: Renderer2 = inject(Renderer2);
-  private readonly contentService = inject(ContentService);
-  public readonly dialogRef = inject(MatDialogRef<EventPanelComponent>, { optional: true });
-  private readonly destroyRef = inject(DestroyRef);
 
   private observer!: IntersectionObserver;
 
@@ -128,52 +116,59 @@ export class EventPanelComponent implements AfterViewInit, OnDestroy {
   editEvent = signal(EMPTY_EVENT);
   isNewEvent = signal(false);
   hasChanges = signal(false);
+  private editEventId: string | null = null;
 
   selectedEvents = linkedSignal(() => this.event().event);
 
-  constructor() {
-    this.event.set(deepCopy(this.data.eventHandler ?? EMPTY_EVENT));
-    this.editEvent.set(deepCopy(this.data.eventHandler ?? EMPTY_EVENT));
-    this.isNewEvent.set(this.data.isNewEvent ?? false);
+  readonly title = computed(() =>
+    this.isNewEvent() ? $localize`Create New Event Handler` : $localize`Edit Event Handler`
+  );
 
-    // Avoid closing the dialog with pending changes (when clicking next to the dialog or pressing ESC)
-    if (this.dialogRef) {
-      this.dialogRef.disableClose = true;
-      this.dialogRef
-        .backdropClick()
-        .pipe(takeUntilDestroyed(this.destroyRef))
-        .subscribe(() => {
-          this.cancelEdit();
-        });
-      this.dialogRef
-        .keydownEvents()
-        .pipe(takeUntilDestroyed(this.destroyRef))
-        .subscribe((event) => {
-          if (event.key === "Escape") {
-            this.cancelEdit();
-          }
-        });
-    }
+  constructor() {
+    // Determine new vs edit mode from route
+    this.route.paramMap.pipe(takeUntilDestroyed()).subscribe((params) => {
+      const id = params.get("id");
+      if (id) {
+        this.isNewEvent.set(false);
+        this.editEventId = id;
+        const handler = (this.eventService.eventHandlers() ?? []).find((h) => String(h.id) === id);
+        if (handler) {
+          this.event.set(deepCopy(handler));
+          this.editEvent.set(deepCopy(handler));
+          this.eventService.selectedHandlerModule.set(handler.handlermodule);
+        }
+      } else {
+        this.isNewEvent.set(true);
+        this.editEventId = null;
+        this.event.set(deepCopy(EMPTY_EVENT));
+        this.editEvent.set(deepCopy(EMPTY_EVENT));
+        const modules = this.eventService.eventHandlerModules();
+        if (modules.length > 0) {
+          this.eventService.selectedHandlerModule.set(modules[0]);
+        }
+      }
+    });
+
+    // Re-initialize once the async list arrives, but only if the user hasn't started editing yet.
+    effect(() => {
+      const handlers = this.eventService.eventHandlers() ?? [];
+      if (!this.isNewEvent() && this.editEventId && !this.hasChanges()) {
+        const found = handlers.find((h) => String(h.id) === this.editEventId);
+        if (found) {
+          this.event.set(deepCopy(found));
+          this.editEvent.set(deepCopy(found));
+          this.eventService.selectedHandlerModule.set(found.handlermodule);
+        }
+      }
+    });
 
     this.pendingChangesService.registerHasChanges(() => this.hasChanges());
     this.pendingChangesService.registerSave(this.saveEvent.bind(this));
-    this.pendingChangesService.registerValidChanges(this.canSave.bind(this));
-
-    // Close the dialog when navigating away from the events route
-    // However, changing the route is disabled via the pendingChangesGuard when there are unsaved changes. This effect
-    // will only be triggered when there are no unsaved changes or when the user confirmed discarding them.
-    effect(() => {
-      if (!this.contentService.routeUrl().startsWith(ROUTE_PATHS.EVENTS)) {
-        this.dialogRef?.close(true);
-      }
-    });
+    this.pendingChangesService.registerValidChanges(() => this.canSave());
   }
 
   ngAfterViewInit(): void {
-    // Setup for sticky header
-    if (!this.scrollContainer || !this.stickyHeader || !this.stickySentinel) {
-      return;
-    }
+    if (!this.scrollContainer || !this.stickyHeader || !this.stickySentinel) return;
 
     const options: IntersectionObserverInit = {
       root: this.scrollContainer.nativeElement,
@@ -197,64 +192,18 @@ export class EventPanelComponent implements AfterViewInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.pendingChangesService.clearAllRegistrations();
-    if (this.observer) {
-      this.observer.disconnect();
-    }
+    this.observer?.disconnect();
   }
 
-  // effect to notify the event service to reload handler module related data
-  protected readonly setHandlerModuleEffect = effect(() => {
-    if (this.event().handlermodule) {
-      this.eventService.selectedHandlerModule.set(this.event().handlermodule);
-    } else if (this.isNewEvent()) {
-      const modules = this.eventService.eventHandlerModules();
-      if (modules.length > 0 && !this.eventService.selectedHandlerModule()) {
-        this.eventService.selectedHandlerModule.set(modules[0]);
-      }
-    }
-  });
 
   cancelEdit(): void {
-    if (this.hasChanges()) {
-      this.dialogService
-        .openDialog({
-          component: SaveAndExitDialogComponent,
-          data: {
-            title: $localize`Discard changes`,
-            allowSaveExit: true,
-            saveExitDisabled: false,
-            message: $localize`You have unsaved changes. Do you want to discard them and exit?`
-          }
-        })
-        .afterClosed()
-        .subscribe((result) => {
-          if (result === "save-exit") {
-            this.saveEvent();
-          } else if (result === "discard") {
-            this.closeCurrent();
-          }
-        });
-    } else {
-      this.closeCurrent();
-    }
-  }
-
-  private closeCurrent(): void {
-    this.editEvent.set(this.event());
-    this.eventService.selectedHandlerModule.set(this.eventService.eventHandlerModules()[0] || "");
-    if (this.dialogRef) {
-      this.dialogRef.close();
-    }
+    this.router.navigateByUrl(ROUTE_PATHS.EVENTS);
   }
 
   validConditionsDefinition = computed(() => {
-    if (!this.editEvent().conditions) {
-      return true;
-    }
+    if (!this.editEvent().conditions) return true;
     for (const conditionValue of Object.values(this.editEvent().conditions)) {
-      if (conditionValue === null || conditionValue === undefined || conditionValue === "") {
-        return false;
-      }
+      if (conditionValue === null || conditionValue === undefined || conditionValue === "") return false;
     }
     return true;
   });
@@ -275,17 +224,17 @@ export class EventPanelComponent implements AfterViewInit, OnDestroy {
   canSave = computed(() => Object.values(this.sectionValidity()).every((value: boolean) => value));
 
   setNewAction(action: string): void {
-    this.editEvent.set({ ...this.editEvent(), action: action });
+    this.editEvent.set({ ...this.editEvent(), action });
     this.hasChanges.set(true);
   }
 
   setNewOptions(options: any): void {
-    this.editEvent.set({ ...this.editEvent(), options: options });
+    this.editEvent.set({ ...this.editEvent(), options });
     this.hasChanges.set(true);
   }
 
   setNewConditions(conditions: any): void {
-    this.editEvent.set({ ...this.editEvent(), conditions: conditions });
+    this.editEvent.set({ ...this.editEvent(), conditions });
     this.hasChanges.set(true);
   }
 
@@ -300,7 +249,6 @@ export class EventPanelComponent implements AfterViewInit, OnDestroy {
   }
 
   updateEventHandler(key: string, value: any): void {
-    // Update function to trigger change detection
     this.editEvent.set({ ...this.editEvent(), [key]: value });
     this.hasChanges.set(true);
   }
@@ -320,27 +268,24 @@ export class EventPanelComponent implements AfterViewInit, OnDestroy {
     return new Promise((resolve) => {
       let eventParams = this.getSaveParameters();
       if (this.isNewEvent()) {
-        // new event handler do not yet have an ID
         delete eventParams["id"];
       }
       this.eventService.saveEventHandler(eventParams).subscribe({
         next: (response) => {
           if (response?.result?.value !== undefined) {
             this.eventService.allEventsResource.reload();
-            this.dialogRef?.close();
-            if (this.isNewEvent()) {
-              this.notificationService.openSnackBar("Event handler created successfully.");
-            } else {
-              this.notificationService.openSnackBar("Event handler updated successfully.");
-            }
+            this.pendingChangesService.clearAllRegistrations();
+            this.router.navigateByUrl(ROUTE_PATHS.EVENTS);
+            const message = this.isNewEvent()
+              ? $localize`Event handler created successfully.`
+              : $localize`Event handler updated successfully.`;
+            this.notificationService.openSnackBar(message);
             resolve(true);
           } else {
             resolve(false);
           }
         },
-        error: () => {
-          resolve(false);
-        }
+        error: () => resolve(false)
       });
     });
   }
@@ -351,9 +296,7 @@ export class EventPanelComponent implements AfterViewInit, OnDestroy {
   }
 
   toggleActive(activate: boolean): void {
-    if (!this.editEvent()) {
-      return;
-    }
+    if (!this.editEvent()) return;
     this.editEvent()!.active = activate;
     if (activate) {
       this.eventService.enableEvent(this.event()!.id);
