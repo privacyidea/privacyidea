@@ -489,4 +489,4 @@ class PasskeyTokenClass(TokenClass):
         super().import_token(token_information)
         if self.user:
             self.user.set_internal_attribute(FIDO2TokenInfo.USER_ID,
-                                             self.token.get_tokeninfo(FIDO2TokenInfo.USER_ID, default=""))
+                                             self.get_tokeninfo(FIDO2TokenInfo.USER_ID, default=""))

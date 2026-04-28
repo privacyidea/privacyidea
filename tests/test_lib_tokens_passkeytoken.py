@@ -29,6 +29,7 @@ from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.error import EnrollmentError, ParameterError, ResourceNotFoundError
 from privacyidea.lib.fido2.challenge import create_fido2_challenge, verify_fido2_challenge
 from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction, PasskeyAction
+from privacyidea.lib.fido2.token_info import FIDO2TokenInfo
 from privacyidea.lib.fido2.util import get_credential_ids_for_user, get_fido2_token_by_credential_id, hash_credential_id
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import SCOPE
@@ -437,19 +438,26 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
                                    'beq8b0Voavnu4YF5bCM7PtnsPcCsvfL5DahPGSfpc9YyANG49OQBOZolNF3MBKKrspOAI7RfW0JSQY0NU'
                                    'nWFYx9hxFbNuYsKFN4NblJ/Zz9tMk1YYSkTJ6VfxHTo5tfIcaLfZ1dIrMeY12+WevjMufFW/qB4ErY5Gj'
                                    'ft3cbiZBELmbQ9QLUyLX78lHiLC9pJIg==-----END CERTIFICATE-----')
+        fido2_user_id = ('UpXCQyj0vXH06j3QRgKrOVYfaB7pstU9apV57SeHMUOtq3HLcbfzZx2mGdWxD4OF8-_0BEFUf_7qe-Lf'
+                         'HAptag')
         token_data = [{
             "serial": 'PIPK0004EFE2',
             "type": 'passkey',
             "description": 'Yubico U2F EE Serial 2109467376',
             "otpkey": 'T9TJpDbUuq0TIdIpErltERuboEdR1GBa7pVtdYMQYTQZ582wmBwp5TWuZ_sE_Ag4',
             "issuer": "privacyIDEA",
+            "user": {
+                "login": self.user.login,
+                "realm": self.user.realm,
+                "resolver": self.user.resolver,
+            },
             "info_list": {
                 'aaguid': '2fc0579f-8113-47ea-b116-bb5a8db9202a',
                 'attestation_certificate': attestation_certificate,
                 'backed_up': 'False',
                 'credential_id_hash': '80a8d88c16b2808e9f52b9d14354432fd5205af665ea9a0878035c2b6cdba259',
                 'device_type': 'single_device',
-                'fido2_user_id': 'UpXCQyj0vXH06j3QRgKrOVYfaB7pstU9apV57SeHMUOtq3HLcbfzZx2mGdWxD4OF8-_0BEFUf_7qe-LfHAptag',
+                'fido2_user_id': fido2_user_id,
                 'public_key': 'pQECAyYgASFYIE_UyaQ21LqtEyHSKRJpShO-wOGDv7qDWURk30_U26xtIlgglAzzrE4UkAFqhrNdg2OToNFk6it8EAzLuZwfWM8neyc',
                 'relying_party_id': 'cool.nils',
                 'relying_party_name': 'cool.nils',
@@ -468,6 +476,9 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
         self.assertEqual(token.type, token_data[0]["type"])
         self.assertEqual(token.token.description, token_data[0]["description"])
         self.assertEqual(token.token.get_otpkey().getKey().decode("utf-8"), token_data[0]["otpkey"])
+        # The fido2_user_id from the imported token info should be cached as an internal user
+        # attribute so the next passkey enrollment for this user reuses the same id.
+        self.assertEqual(self.user.internal_attributes.get(FIDO2TokenInfo.USER_ID), fido2_user_id)
 
         # Check that the token actually works
         challenge = self._initialize_authentication()

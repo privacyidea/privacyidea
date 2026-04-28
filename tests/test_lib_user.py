@@ -876,6 +876,41 @@ class UserTestCase(MyTestCase):
         delete_realm(self.realm1)
         delete_resolver(self.resolvername1)
 
+    def test_51_internal_user_attributes(self):
+        save_resolver({"resolver": self.resolvername1, "type": "passwdresolver",
+                       "fileName": PWFILE})
+        set_realm(self.realm1, [{'name': self.resolvername1}])
+        user = User(login="root", realm=self.realm1)
+
+        # Set + read JSON-typed values (dict and scalar string)
+        user.set_internal_attribute("last_used_token", {"app-a": "hotp"})
+        user.set_internal_attribute("fido2_user_id", "abc123")
+        attrs = user.internal_attributes
+        self.assertEqual(attrs.get("last_used_token"), {"app-a": "hotp"})
+        self.assertEqual(attrs.get("fido2_user_id"), "abc123")
+
+        # Overwrite an existing key
+        user.set_internal_attribute("last_used_token", {"app-a": "totp", "app-b": "push"})
+        self.assertEqual(user.internal_attributes.get("last_used_token"),
+                         {"app-a": "totp", "app-b": "push"})
+
+        # Delete a single key
+        r = user.delete_internal_attribute("fido2_user_id")
+        self.assertEqual(r, 1)
+        attrs = user.internal_attributes
+        self.assertIsNone(attrs.get("fido2_user_id"))
+        self.assertIn("last_used_token", attrs)
+
+        # Delete-all clears the rest
+        user.set_internal_attribute("misc", "x")
+        r = user.delete_internal_attribute()
+        self.assertEqual(r, 2)
+        self.assertEqual(user.internal_attributes, {})
+
+        # Cleanup
+        delete_realm(self.realm1)
+        delete_resolver(self.resolvername1)
+
 
 class HidePasswordInDebugLogTestCase(OverrideConfigTestCase):
     class Config(TestingConfig):
