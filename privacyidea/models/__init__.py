@@ -69,7 +69,7 @@ from .tokengroup import Tokengroup, TokenTokengroup
 __all__ = ["db", "Audit", "audit_column_length", "AuthCache", "UserCache",
            "CAConnector", "CAConnectorConfig", "Challenge", "cleanup_challenges",
            "Config", "NodeName", "Admin", "PasswordReset", "save_config_timestamp",
-           "PRIVACYIDEA_TIMESTAMP", "CustomUserAttribute",
+           "PRIVACYIDEA_TIMESTAMP", "CustomUserAttribute", "InternalUserAttribute",
            "EventHandler", "EventHandlerOption", "EventHandlerCondition", "EventCounter",
            "MachineResolver", "MachineResolverConfig", "MachineToken",
            "MachineTokenOptions", "get_machineresolver_id", "get_machinetoken_ids",

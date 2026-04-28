@@ -17,7 +17,6 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import logging
 from datetime import datetime, timezone
-from typing import Optional
 
 from sqlalchemy import (
     JSON,
@@ -59,18 +58,18 @@ class InternalUserAttribute(MethodsMixin, db.Model):
     )
 
     id: Mapped[int] = mapped_column(Integer, Sequence("internaluserattribute_seq"), primary_key=True)
-    user_id: Mapped[Optional[str]] = mapped_column(Unicode(320), default='')
-    resolver: Mapped[Optional[str]] = mapped_column(Unicode(120), default='')
-    realm_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey('realm.id'))
+    user_id: Mapped[str | None] = mapped_column(Unicode(320), default='')
+    resolver: Mapped[str | None] = mapped_column(Unicode(120), default='')
+    realm_id: Mapped[int | None] = mapped_column(Integer, ForeignKey('realm.id'))
     Key: Mapped[str] = mapped_column(Unicode(255), nullable=False)
-    Value: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
-    last_modified: Mapped[Optional[datetime]] = mapped_column(
+    Value: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    last_modified: Mapped[datetime | None] = mapped_column(
         DateTime,
         default=lambda: datetime.now(timezone.utc),
         onupdate=lambda: datetime.now(timezone.utc),
     )
     # Reserved for future HA use: NULL means the value is global (valid on any node).
-    node: Mapped[Optional[str]] = mapped_column(Unicode(120), nullable=True, default=None)
+    node: Mapped[str | None] = mapped_column(Unicode(120), nullable=True, default=None)
 
     def __init__(self, user_id, resolver, realm_id, Key, Value=None, node=None):
         self.user_id = user_id
