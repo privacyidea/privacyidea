@@ -188,7 +188,7 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
   }
 
   get canSave(): boolean {
-    const nameValid = this.resolverName.trim().length > 0;
+    const nameValid = this.resolverName.trim().length > 0 && /^[a-zA-Z0-9._-]*$/.test(this.resolverName);
     return nameValid && !!this.resolverType && !this.isAdditionalFieldsInvalid && !this.isSaving();
   }
 

@@ -83,6 +83,9 @@
             @if (caConnectorForm.get('connectorname')?.hasError('required')) {
               <mat-error i18n>Connector Name is <strong>required</strong></mat-error>
             }
+            @if (caConnectorForm.get('connectorname')?.hasError('pattern')) {
+              <mat-error i18n>Connector Name contains <strong>invalid characters</strong>. Only alphanumeric characters, dots, underscores and hyphens are allowed.</mat-error>
+            }
           </mat-form-field>
 
           <mat-form-field

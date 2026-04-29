@@ -172,7 +172,7 @@ export class EventService implements EventServiceInterface {
     }
     const headers = this.authService.getHeaders();
     return lastValueFrom(
-      this.http.post(this.eventBaseUrl + "/enable/" + eventId, {}, { headers: headers }).pipe(
+      this.http.post(this.eventBaseUrl + "/enable/" + encodeURIComponent(eventId), {}, { headers: headers }).pipe(
         catchError((error) => {
           console.log("Failed to enable event handler:", error);
           this.allEventsResource.reload();
@@ -191,7 +191,7 @@ export class EventService implements EventServiceInterface {
     }
     const headers = this.authService.getHeaders();
     return lastValueFrom(
-      this.http.post(this.eventBaseUrl + "/disable/" + eventId, {}, { headers: headers }).pipe(
+      this.http.post(this.eventBaseUrl + "/disable/" + encodeURIComponent(eventId), {}, { headers: headers }).pipe(
         catchError((error) => {
           console.log("Failed to disable event handler:", error);
           this.allEventsResource.reload();
@@ -206,7 +206,7 @@ export class EventService implements EventServiceInterface {
   deleteEvent(eventId: number): Observable<PiResponse<number, any>> {
     const headers = this.authService.getHeaders();
 
-    return this.http.delete<PiResponse<number, any>>(this.eventBaseUrl + "/" + eventId, { headers }).pipe(
+    return this.http.delete<PiResponse<number, any>>(this.eventBaseUrl + "/" + encodeURIComponent(eventId), { headers }).pipe(
       catchError((error) => {
         console.error("Failed to delete event handler.", error);
         const message = error.error?.result?.error?.message || "";
@@ -297,7 +297,7 @@ export class EventService implements EventServiceInterface {
       return undefined;
     }
     return {
-      url: this.eventBaseUrl + "/positions/" + this.selectedHandlerModule(),
+      url: this.eventBaseUrl + "/positions/" + encodeURIComponent(this.selectedHandlerModule() || ""),
       method: "GET",
       headers: this.authService.getHeaders()
     };
@@ -317,7 +317,7 @@ export class EventService implements EventServiceInterface {
       return undefined;
     }
     return {
-      url: this.eventBaseUrl + "/actions/" + this.selectedHandlerModule(),
+      url: this.eventBaseUrl + "/actions/" + encodeURIComponent(this.selectedHandlerModule() || ""),
       method: "GET",
       headers: this.authService.getHeaders()
     };
@@ -337,7 +337,7 @@ export class EventService implements EventServiceInterface {
       return undefined;
     }
     return {
-      url: this.eventBaseUrl + "/conditions/" + this.selectedHandlerModule(),
+      url: this.eventBaseUrl + "/conditions/" + encodeURIComponent(this.selectedHandlerModule() || ""),
       method: "GET",
       headers: this.authService.getHeaders()
     };

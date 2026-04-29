@@ -592,10 +592,10 @@ describe("ContainerService", () => {
   });
 
   it("unregister posts to the correct endpoint and returns result", async () => {
-    jest.spyOn(http, "post").mockReturnValue(of({ result: { value: { container_serial: "CONT1234" } } } as any));
-    const r = await lastValueFrom(containerService.unregister("CONT1234"));
+    jest.spyOn(http, "post").mockReturnValue(of({ result: { value: { container_serial: "CONT/1234" } } } as any));
+    const r = await lastValueFrom(containerService.unregister("CONT/1234"));
     expect(http.post).toHaveBeenCalledWith(
-      `${containerService.containerBaseUrl}register/CONT1234/terminate`,
+      `${containerService.containerBaseUrl}register/${encodeURIComponent("CONT/1234")}/terminate`,
       {},
       expect.objectContaining({ headers: expect.anything() })
     );

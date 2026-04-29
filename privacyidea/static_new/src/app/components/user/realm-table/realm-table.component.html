@@ -251,9 +251,15 @@
                     subscriptSizing="dynamic">
                     <mat-label i18n>Realm Name</mat-label>
                     <input
+                      #newRealmNameInput="ngModel"
                       (input)="newRealmName.set($any($event.target).value)"
-                      [value]="newRealmName()"
-                      matInput />
+                      [ngModel]="newRealmName()"
+                      matInput
+                      pattern="^[a-zA-Z0-9._-]*$"
+                      required />
+                    @if (newRealmNameInput.errors?.['pattern']) {
+                      <mat-error i18n>Invalid characters.</mat-error>
+                    }
                   </mat-form-field>
                 }
                 @case ("resolvers") {

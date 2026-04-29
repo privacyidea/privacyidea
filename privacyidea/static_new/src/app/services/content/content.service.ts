@@ -177,17 +177,17 @@ export class ContentService implements ContentServiceInterface {
   onMachineResolver = computed(() => this.routeUrl() === ROUTE_PATHS.MACHINE_RESOLVER);
 
   tokenSelected(serial: string): void {
-    this.router.navigateByUrl(ROUTE_PATHS.TOKENS_DETAILS + serial);
+    this.router.navigateByUrl(ROUTE_PATHS.TOKENS_DETAILS + encodeURIComponent(serial));
     this.tokenSerial.set(serial);
   }
 
   containerSelected(containerSerial: string): void {
-    this.router.navigateByUrl(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + containerSerial);
+    this.router.navigateByUrl(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + encodeURIComponent(containerSerial));
     this.containerSerial.set(containerSerial);
   }
 
   userSelected(username: string, realm: string): void {
-    this.router.navigateByUrl(ROUTE_PATHS.USERS_DETAILS + "/" + username + `?realm=${encodeURIComponent(realm ?? "")}`);
+    this.router.navigateByUrl(ROUTE_PATHS.USERS_DETAILS + "/" + encodeURIComponent(username) + `?realm=${encodeURIComponent(realm ?? "")}`);
     this.detailsUsername.set(username);
   }
 

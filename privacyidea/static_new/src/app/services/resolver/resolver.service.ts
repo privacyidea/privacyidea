@@ -216,7 +216,7 @@ export class ResolverService implements ResolverServiceInterface {
       return undefined;
     }
     return {
-      url: this.resolverBaseUrl + resolverName,
+      url: this.resolverBaseUrl + encodeURIComponent(resolverName),
       method: "GET",
       headers: this.authService.getHeaders()
     };
@@ -300,7 +300,7 @@ export class ResolverService implements ResolverServiceInterface {
 
   postResolver(resolverName: string, data: any): Observable<PiResponse<any, any>> {
     return this.http
-      .post<PiResponse<any, any>>(this.resolverBaseUrl + resolverName, data, { headers: this.authService.getHeaders() })
+      .post<PiResponse<any, any>>(this.resolverBaseUrl + encodeURIComponent(resolverName), data, { headers: this.authService.getHeaders() })
       .pipe(
         catchError((error) => {
           console.error(`Error during posting resolver ${resolverName}:`, error);
@@ -313,7 +313,7 @@ export class ResolverService implements ResolverServiceInterface {
 
   deleteResolver(resolverName: string): Observable<PiResponse<any, any>> {
     return this.http
-      .delete<PiResponse<any, any>>(this.resolverBaseUrl + resolverName, { headers: this.authService.getHeaders() })
+      .delete<PiResponse<any, any>>(this.resolverBaseUrl + encodeURIComponent(resolverName), { headers: this.authService.getHeaders() })
       .pipe(
         catchError((error) => {
           console.error(`Error during deleting resolver ${resolverName}:`, error);
@@ -328,7 +328,7 @@ export class ResolverService implements ResolverServiceInterface {
     return this.http
       .get<
         PiResponse<any, any>
-      >(this.resolverBaseUrl + resolverType + "/default", { headers: this.authService.getHeaders() })
+      >(this.resolverBaseUrl + encodeURIComponent(resolverType) + "/default", { headers: this.authService.getHeaders() })
       .pipe(
         catchError((error) => {
           console.error(`Error during getting default resolver config for ${resolverType}:`, error);

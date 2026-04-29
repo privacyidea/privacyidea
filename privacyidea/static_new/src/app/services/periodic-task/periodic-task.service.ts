@@ -154,7 +154,7 @@ export class PeriodicTaskService implements PeriodicTaskServiceInterface {
   enablePeriodicTask(taskId: number) {
     const headers = this.authService.getHeaders();
     return lastValueFrom(
-      this.http.post(this.periodicTaskBaseUrl + "enable/" + taskId, {}, { headers: headers }).pipe(
+      this.http.post(this.periodicTaskBaseUrl + "enable/" + encodeURIComponent(taskId), {}, { headers: headers }).pipe(
         catchError((error) => {
           this.periodicTasksResource.reload();
           const message = error.error?.result?.error?.message || "";
@@ -167,7 +167,7 @@ export class PeriodicTaskService implements PeriodicTaskServiceInterface {
 
   disablePeriodicTask(taskId: number) {
     const headers = this.authService.getHeaders();
-    const response$ = this.http.post(this.periodicTaskBaseUrl + "disable/" + taskId, {}, { headers: headers }).pipe(
+    const response$ = this.http.post(this.periodicTaskBaseUrl + "disable/" + encodeURIComponent(taskId), {}, { headers: headers }).pipe(
       catchError((error) => {
         this.periodicTasksResource.reload();
         const message = error.error?.result?.error?.message || "";
@@ -181,7 +181,7 @@ export class PeriodicTaskService implements PeriodicTaskServiceInterface {
   deletePeriodicTask(taskId: number): Observable<PiResponse<number, any>> {
     const headers = this.authService.getHeaders();
 
-    return this.http.delete<PiResponse<number, any>>(this.periodicTaskBaseUrl + taskId, { headers }).pipe(
+    return this.http.delete<PiResponse<number, any>>(this.periodicTaskBaseUrl + encodeURIComponent(taskId), { headers }).pipe(
       catchError((error) => {
         console.error("Failed to delete periodic task.", error);
         const message = error.error?.result?.error?.message || "";
@@ -261,7 +261,7 @@ export class PeriodicTaskService implements PeriodicTaskServiceInterface {
 
   fetchAllModuleOptions() {
     const requests = PERIODIC_TASK_MODULES.map((module) =>
-      this.http.get<PiResponse<Record<string, PeriodicTaskOption>>>(this.periodicTaskBaseUrl + "options/" + module, {
+      this.http.get<PiResponse<Record<string, PeriodicTaskOption>>>(this.periodicTaskBaseUrl + "options/" + encodeURIComponent(module), {
         headers: this.authService.getHeaders()
       })
     );

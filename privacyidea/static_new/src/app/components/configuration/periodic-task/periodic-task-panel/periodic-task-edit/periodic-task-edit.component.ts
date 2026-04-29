@@ -105,7 +105,7 @@ export class PeriodicTaskEditComponent {
   });
 
   get allowSave() {
-    if (this.editTask().name === "") return false;
+    if (this.editTask().name === "" || !/^[a-zA-Z0-9._-]*$/.test(this.editTask().name)) return false;
     if (this.editTask().taskmodule === "") return false;
     if (this.editTask().interval === "") return false;
     if (this.editTask().nodes.length === 0) return false;

@@ -152,9 +152,9 @@ describe("TokenService", () => {
   it("deleteToken delegates to HttpClient.delete", () => {
     deleteSpy.mockReturnValue(of({ success: true } as any));
 
-    tokenService.deleteToken("DEL1").subscribe();
+    tokenService.deleteToken("DEL/1").subscribe();
 
-    expect(deleteSpy).toHaveBeenCalledWith(`${tokenService.tokenBaseUrl}DEL1`, {
+    expect(deleteSpy).toHaveBeenCalledWith(`${tokenService.tokenBaseUrl}${encodeURIComponent("DEL/1")}`, {
       headers: authService.getHeaders()
     });
   });
@@ -189,20 +189,20 @@ describe("TokenService", () => {
     beforeEach(() => postSpy.mockClear());
 
     it("routes special keys via /set and others via /info", () => {
-      const infos = { hashlib: "sha1", custom: "foo" };
+      const infos = { hashlib: "sha1", "custom/1": "foo" };
       postSpy.mockReturnValue(of({ success: true } as any));
 
-      tokenService.setTokenInfos("serial", infos).subscribe();
+      tokenService.setTokenInfos("serial/1", infos).subscribe();
 
       expect(postSpy).toHaveBeenNthCalledWith(
         1,
         `${tokenService.tokenBaseUrl}set`,
-        { serial: "serial", hashlib: "sha1" },
+        { serial: "serial/1", hashlib: "sha1" },
         { headers: authService.getHeaders() }
       );
       expect(postSpy).toHaveBeenNthCalledWith(
         2,
-        `${tokenService.tokenBaseUrl}info/serial/custom`,
+        `${tokenService.tokenBaseUrl}info/${encodeURIComponent("serial/1")}/${encodeURIComponent("custom/1")}`,
         { value: "foo" },
         { headers: authService.getHeaders() }
       );

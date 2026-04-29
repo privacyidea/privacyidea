@@ -293,7 +293,7 @@ export class RealmTableComponent {
 
   // --- Create Handlers ---
   canSubmitNewRealm(): boolean {
-    return this.newRealmName().trim().length > 0 && !this.isCreatingRealm();
+    return this.newRealmName().trim().length > 0 && /^[a-zA-Z0-9._-]*$/.test(this.newRealmName()) && !this.isCreatingRealm();
   }
 
   resetCreateForm(): void {

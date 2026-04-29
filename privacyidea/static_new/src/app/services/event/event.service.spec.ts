@@ -102,7 +102,7 @@ describe("EventService", () => {
   it("should enable an event handler", async () => {
     const eventId = 123;
     const promise = service.enableEvent(eventId);
-    const req = httpMock.expectOne(service.eventBaseUrl + "/enable/" + eventId);
+    const req = httpMock.expectOne(service.eventBaseUrl + "/enable/" + encodeURIComponent(eventId));
     expect(req.request.method).toBe("POST");
     req.flush({});
     await expect(promise).resolves.toBeDefined();
@@ -112,7 +112,7 @@ describe("EventService", () => {
     service.allEventsResource.reload = jest.fn();
     const eventId = 123;
     const promise = service.enableEvent(eventId);
-    const req = httpMock.expectOne(service.eventBaseUrl + "/enable/" + eventId);
+    const req = httpMock.expectOne(service.eventBaseUrl + "/enable/" + encodeURIComponent(eventId));
     expect(req.request.method).toBe("POST");
     req.flush({}, { status: 500, statusText: "Server Error" });
     await expect(promise).resolves.toBeUndefined();
@@ -125,7 +125,7 @@ describe("EventService", () => {
   it("should disable an event handler", async () => {
     const eventId = 123;
     const promise = service.disableEvent(eventId);
-    const req = httpMock.expectOne(service.eventBaseUrl + "/disable/" + eventId);
+    const req = httpMock.expectOne(service.eventBaseUrl + "/disable/" + encodeURIComponent(eventId));
     expect(req.request.method).toBe("POST");
     req.flush({});
     await expect(promise).resolves.toBeDefined();
@@ -134,7 +134,7 @@ describe("EventService", () => {
   it("should handle error when disabling an event handler", async () => {
     const eventId = 456;
     const promise = service.disableEvent(eventId);
-    const req = httpMock.expectOne(service.eventBaseUrl + "/disable/" + eventId);
+    const req = httpMock.expectOne(service.eventBaseUrl + "/disable/" + encodeURIComponent(eventId));
     expect(req.request.method).toBe("POST");
     req.flush({}, { status: 500, statusText: "Server Error" });
     await expect(promise).resolves.toBeUndefined();
@@ -149,7 +149,7 @@ describe("EventService", () => {
       expect(response).toBeTruthy();
       expect(response.result).toBeDefined();
     });
-    const req = httpMock.expectOne(service.eventBaseUrl + "/" + eventId);
+    const req = httpMock.expectOne(service.eventBaseUrl + "/" + encodeURIComponent(eventId));
     expect(req.request.method).toBe("DELETE");
     req.flush({ result: { value: 1 } });
   });
@@ -168,7 +168,7 @@ describe("EventService", () => {
         done();
       }
     });
-    const req = httpMock.expectOne(service.eventBaseUrl + "/" + eventId);
+    const req = httpMock.expectOne(service.eventBaseUrl + "/" + encodeURIComponent(eventId));
     expect(req.request.method).toBe("DELETE");
     req.flush({ result: { error: { message: "Delete error" } } }, { status: 500, statusText: "Server Error" });
   });

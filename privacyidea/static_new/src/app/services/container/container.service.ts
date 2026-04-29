@@ -18,7 +18,7 @@
  **/
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
-import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
+import { HttpClient, HttpErrorResponse, httpResource, HttpResourceRef } from "@angular/common/http";
 import { computed, effect, inject, Injectable, linkedSignal, Signal, signal, WritableSignal } from "@angular/core";
 import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
 import { catchError, forkJoin, Observable, of, Subject, throwError } from "rxjs";
@@ -809,7 +809,7 @@ export class ContainerService implements ContainerServiceInterface {
     return this.http
       .post<
         PiResponse<ContainerUnregisterData>
-      >(`${this.containerBaseUrl}register/${containerSerial}/terminate`, {}, { headers })
+      >(`${this.containerBaseUrl}register/${encodeURIComponent(containerSerial)}/terminate`, {}, { headers })
       .pipe(
         catchError((error) => {
           console.error("Failed to unregister container.", error);
@@ -883,13 +883,18 @@ export class ContainerService implements ContainerServiceInterface {
 
   constructor() {
     effect(() => {
-      this.notificationService.handleResourceError(this.containerDetailResource.error(), "container details");
+      if (this.containerDetailResource.error()) {
+        const containerDetailError = this.containerDetailResource.error() as HttpErrorResponse;
+        console.error("Failed to get container details.", containerDetailError.message);
+        const message = containerDetailError.error?.result?.error?.message || containerDetailError.message;
+        this.notificationService.openSnackBar("Failed to get container details." + message);
+      }
     });
     effect(() => {
-      this.notificationService.handleResourceError(this.containerResource.error(), "containers");
-    });
-    effect(() => {
-      this.notificationService.handleResourceError(this.containerTypesResource.error(), "container types");
+      if (this.containerResource.error()) {
+        const error = this.containerResource.error() as HttpErrorResponse;
+        this.notificationService.openSnackBar(error.message);
+      }
     });
 
     effect(() => {
