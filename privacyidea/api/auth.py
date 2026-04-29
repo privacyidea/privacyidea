@@ -347,6 +347,8 @@ def get_auth_token():
             "user": user.login,
             "realm": user.realm,
             "resolver": user.resolver,
+            "serial": token.get_serial(),
+            "token_type": token.get_type(),
             "info": log_used_user(user)
         })
     # Check if the remote user is allowed
