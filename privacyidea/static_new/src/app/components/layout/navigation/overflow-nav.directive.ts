@@ -155,7 +155,7 @@ export class OverflowNavDirective implements AfterViewInit, OnDestroy {
   }
 
   private calculateOverflow(): void {
-    if (this.isCalculating) return;
+    if (this.isCalculating || !this.moreButton) return;
     this.isCalculating = true;
 
     try {
@@ -179,7 +179,25 @@ export class OverflowNavDirective implements AfterViewInit, OnDestroy {
 
       const containerWidth = container.clientWidth;
 
-      let rightWidth = 0;
+      const getWidthWithMargins = (el: HTMLElement) => {
+        const style = window.getComputedStyle(el);
+        const marginLeft = parseFloat(style.marginLeft) || 0;
+        const marginRight = parseFloat(style.marginRight) || 0;
+        return el.offsetWidth + marginLeft + marginRight;
+      };
+
+      let leftReserved = 16;
+      const firstNavButton = buttons[0];
+      let currentEl = container.firstElementChild as HTMLElement;
+      while (currentEl && currentEl !== firstNavButton && currentEl !== this.moreButton && !currentEl.classList.contains("spacer")) {
+        const style = window.getComputedStyle(currentEl);
+        if (style.display !== "none" && style.visibility !== "hidden") {
+          leftReserved += getWidthWithMargins(currentEl) + 8; // width + gap
+        }
+        currentEl = currentEl.nextElementSibling as HTMLElement;
+      }
+
+      let rightWidth = 16;
       const spacer = container.querySelector(".spacer");
       if (spacer) {
         let el = spacer.nextElementSibling;
@@ -187,25 +205,24 @@ export class OverflowNavDirective implements AfterViewInit, OnDestroy {
           if (el !== this.moreButton && el !== this.menuContainer) {
             const style = window.getComputedStyle(el);
             if (style.display !== "none" && style.visibility !== "hidden") {
-              rightWidth += (el as HTMLElement).offsetWidth + 8;
+              rightWidth += getWidthWithMargins(el as HTMLElement) + 8;
             }
           }
           el = el.nextElementSibling;
         }
       }
 
-      const footerText = container.querySelector(".footer-text");
-      let leftReserved = 0;
-      if (footerText && window.getComputedStyle(footerText).display !== "none") {
-        leftReserved = (footerText as HTMLElement).offsetWidth + 16;
-      }
-
       this.renderer.setStyle(container, "overflow", "hidden");
 
-      const moreButtonWidth = 100;
+      const wasHidden = this.moreButton.classList.contains("overflow-more-hidden");
+      this.renderer.removeClass(this.moreButton, "overflow-more-hidden");
+      const moreButtonWidth = getWidthWithMargins(this.moreButton) || 160;
+      if (wasHidden) {
+        this.renderer.addClass(this.moreButton, "overflow-more-hidden");
+      }
+
       const gap = 8;
-      const safetyMargin = 120;
-      const availableForButtons = containerWidth - leftReserved - rightWidth - safetyMargin;
+      const availableForButtons = containerWidth - leftReserved - rightWidth - 40;
 
       const activeIndex = buttons.findIndex(btn =>
         btn.classList.contains("sub-nav-active") || btn.classList.contains("nav-active")
@@ -225,8 +242,11 @@ export class OverflowNavDirective implements AfterViewInit, OnDestroy {
         const maxWidthWithMore = availableForButtons - moreButtonWidth;
 
         if (activeIndex >= 0) {
-          usedWidth += buttons[activeIndex].offsetWidth + gap;
-          visible[activeIndex] = true;
+          const activeBtnWidth = buttons[activeIndex].offsetWidth + gap;
+          if (activeBtnWidth <= maxWidthWithMore) {
+            usedWidth += activeBtnWidth;
+            visible[activeIndex] = true;
+          }
         }
 
         for (let i = 0; i < buttons.length; i++) {

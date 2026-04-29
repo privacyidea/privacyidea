@@ -170,7 +170,7 @@ export class NavigationComponent implements AfterViewInit, OnDestroy {
     const activeSection = this.activeSection();
     const activeIdx = items.findIndex(item => item.section === activeSection);
 
-    if (activeIdx !== -1 && activeIdx >= count) {
+    if (activeIdx !== -1 && activeIdx >= count && count > 0) {
       return [...items.slice(0, count - 1), items[activeIdx]];
     }
 
@@ -183,7 +183,7 @@ export class NavigationComponent implements AfterViewInit, OnDestroy {
     const activeSection = this.activeSection();
     const activeIdx = items.findIndex(item => item.section === activeSection);
 
-    if (activeIdx !== -1 && activeIdx >= count) {
+    if (activeIdx !== -1 && activeIdx >= count && count > 0) {
       const head = items.slice(0, count - 1);
       const activeItem = items[activeIdx];
       return items.filter(item => item !== activeItem && !head.includes(item));
@@ -237,6 +237,8 @@ export class NavigationComponent implements AfterViewInit, OnDestroy {
 
   private calculateVisibleItems(navEl: HTMLElement): void {
     const filteredItems = this.getFilteredNavItems();
+    const activeSection = this.activeSection();
+    const activeIdx = filteredItems.findIndex(item => item.section === activeSection);
 
     const currentNavItems = Array.from(navEl.querySelectorAll<HTMLElement>(".nav-item[data-section]"));
 
@@ -249,35 +251,46 @@ export class NavigationComponent implements AfterViewInit, OnDestroy {
 
     const moreBtn = navEl.querySelector<HTMLElement>(".more-button");
     const moreBtnContainer = moreBtn?.closest(".nav-item") as HTMLElement;
-    const moreButtonWidth = moreBtnContainer?.offsetWidth || 80;
+    // Increased fallback width and added more safety margin
+    const moreButtonWidth = moreBtnContainer?.offsetWidth || 180;
 
     const navWidth = navEl.clientWidth;
-    const gap = 4;
+    const gap = 8; // Increased gap for safety
+    const safetyBuffer = 30;
+
     const totalWidth = filteredItems.reduce((sum, item, idx) => {
-      const itemWidth = this.itemWidths.get(item.section) || 120;
+      const itemWidth = this.itemWidths.get(item.section) || 200;
       return sum + itemWidth + (idx < filteredItems.length - 1 ? gap : 0);
     }, 0);
 
-    if (totalWidth <= navWidth) {
+    if (totalWidth <= navWidth - 10) {
       this.visibleNavCount.set(filteredItems.length);
       return;
     }
 
-    let usedWidth = 0;
     let count = 0;
-    const availableWidth = navWidth - moreButtonWidth;
+    const availableWidth = navWidth - moreButtonWidth - safetyBuffer;
 
-    for (const item of filteredItems) {
-      const itemWidth = this.itemWidths.get(item.section) || 120;
+    for (let c = 1; c <= filteredItems.length; c++) {
+      let currentItems: NavItem[] = [];
+      if (activeIdx !== -1 && activeIdx >= c) {
+        currentItems = [...filteredItems.slice(0, c - 1), filteredItems[activeIdx]];
+      } else {
+        currentItems = filteredItems.slice(0, c);
+      }
 
-      if (usedWidth + itemWidth + gap <= availableWidth) {
-        usedWidth += itemWidth + gap;
-        count++;
+      const width = currentItems.reduce((sum, item, idx) => {
+        const w = this.itemWidths.get(item.section) || 200;
+        return sum + w + (idx < currentItems.length - 1 ? gap : 0);
+      }, 0);
+
+      if (width <= availableWidth) {
+        count = c;
       } else {
         break;
       }
     }
 
-    this.visibleNavCount.set(Math.max(1, Math.min(count, filteredItems.length)));
+    this.visibleNavCount.set(count);
   }
 }
