@@ -258,7 +258,9 @@ export class EventPanelComponent implements AfterViewInit, OnDestroy {
     for (const [optionKey, optionValue] of Object.entries(eventParams["options"] || {})) {
       eventParams["option." + optionKey] = optionValue;
     }
-    eventParams["id"] = eventParams["id"].toString();
+    if (eventParams["id"] != null) {
+      eventParams["id"] = eventParams["id"].toString();
+    }
     eventParams["handlermodule"] = this.eventService.selectedHandlerModule();
     delete eventParams["options"];
     return eventParams;
@@ -296,7 +298,9 @@ export class EventPanelComponent implements AfterViewInit, OnDestroy {
   }
 
   toggleActive(activate: boolean): void {
-    if (!this.editEvent()) return;
+    if (!this.editEvent() || this.event()!.id == null) {
+      return;
+    }
     this.editEvent()!.active = activate;
     if (activate) {
       this.eventService.enableEvent(this.event()!.id);

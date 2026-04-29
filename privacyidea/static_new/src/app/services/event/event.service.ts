@@ -30,7 +30,7 @@ import { SimpleConfirmationDialogComponent } from "../../components/shared/dialo
 import { DialogServiceInterface, DialogService } from "../dialog/dialog.service";
 
 export type EventHandler = {
-  id: string;
+  id: number | null;
   name: string;
   active: boolean;
   handlermodule: string;
@@ -43,7 +43,7 @@ export type EventHandler = {
 };
 
 export const EMPTY_EVENT: EventHandler = {
-  id: "",
+  id: null,
   name: "",
   active: true,
   handlermodule: "",
@@ -83,11 +83,11 @@ export interface EventServiceInterface {
 
   saveEventHandler(event: Record<string, any>): Observable<PiResponse<number, any> | undefined>;
 
-  enableEvent(eventId: string): Promise<Object | undefined>;
+  enableEvent(eventId: number | null): Promise<Object | undefined>;
 
-  disableEvent(eventId: string): Promise<Object | undefined>;
+  disableEvent(eventId: number | null): Promise<Object | undefined>;
 
-  deleteEvent(eventId: string): Observable<PiResponse<number, any>>;
+  deleteEvent(eventId: number): Observable<PiResponse<number, any>>;
 
   deleteWithConfirmDialog(event: EventHandler, dialog: any, afterDelete?: () => void): void;
 
@@ -152,7 +152,7 @@ export class EventService implements EventServiceInterface {
   saveEventHandler(event: Record<string, any>): Observable<PiResponse<number, any> | undefined> {
     const headers = this.authService.getHeaders();
     let params = { ...event } as any;
-    if (!params.id) {
+    if (params.id == null) {
       delete params.id;
     }
     return this.http.post<PiResponse<number, any>>(this.eventBaseUrl, params, { headers }).pipe(
@@ -165,7 +165,11 @@ export class EventService implements EventServiceInterface {
     );
   }
 
-  enableEvent(eventId: string) {
+  enableEvent(eventId: number | null) {
+    if (eventId === null) {
+      this.notificationService.openSnackBar("Can not enable event handler due to missing ID");
+      return Promise.resolve(undefined);
+    }
     const headers = this.authService.getHeaders();
     return lastValueFrom(
       this.http.post(this.eventBaseUrl + "/enable/" + eventId, {}, { headers: headers }).pipe(
@@ -180,7 +184,11 @@ export class EventService implements EventServiceInterface {
     );
   }
 
-  disableEvent(eventId: string) {
+  disableEvent(eventId: number | null) {
+    if (eventId === null) {
+      this.notificationService.openSnackBar("Can not disable event handler due to missing ID");
+      return Promise.resolve(undefined);
+    }
     const headers = this.authService.getHeaders();
     return lastValueFrom(
       this.http.post(this.eventBaseUrl + "/disable/" + eventId, {}, { headers: headers }).pipe(
@@ -195,7 +203,7 @@ export class EventService implements EventServiceInterface {
     );
   }
 
-  deleteEvent(eventId: string): Observable<PiResponse<number, any>> {
+  deleteEvent(eventId: number): Observable<PiResponse<number, any>> {
     const headers = this.authService.getHeaders();
 
     return this.http.delete<PiResponse<number, any>>(this.eventBaseUrl + "/" + eventId, { headers }).pipe(
@@ -226,6 +234,10 @@ export class EventService implements EventServiceInterface {
       return;
     }
     try {
+      if (event.id == null) {
+        this.notificationService.openSnackBar("Failed to delete event handler: Missing ID.");
+        return;
+      }
       const result = await lastValueFrom(this.deleteEvent(event.id));
 
       this.notificationService.openSnackBar("Successfully deleted event handler.");
