@@ -154,6 +154,15 @@ describe("NavigationComponent (async, no RouterTestingModule, no MatSnackBar)", 
     item2.setAttribute("data-section", "container");
     Object.defineProperty(item2, "offsetWidth", { value: 100, configurable: true });
 
+    // Mock the "more" button to avoid using the large default fallback (180)
+    const moreBtn = document.createElement("div");
+    moreBtn.className = "nav-item";
+    const moreBtnInner = document.createElement("button");
+    moreBtnInner.className = "more-button";
+    moreBtn.appendChild(moreBtnInner);
+    Object.defineProperty(moreBtn, "offsetWidth", { value: 50, configurable: true });
+    navEl.appendChild(moreBtn);
+
     navEl.appendChild(item1);
     navEl.appendChild(item2);
 
@@ -166,10 +175,11 @@ describe("NavigationComponent (async, no RouterTestingModule, no MatSnackBar)", 
 
     expect(component.visibleNavCount()).toBe(2);
 
-    // Shrink navWidth - should trigger overflow earlier because items are wider than just buttons
-    Object.defineProperty(navEl, "clientWidth", { value: 150, configurable: true });
+    // Shrink navWidth - should trigger overflow
+    // To fit 1 item (100px) with more button (50px) and safety buffer (30px), we need at least 180px.
+    Object.defineProperty(navEl, "clientWidth", { value: 200, configurable: true });
     (component as any).calculateVisibleItems(navEl);
-    // item1(100) + gap(4) = 104. 104 > (150 - 80) = 70.
+    // item1(100) fits in availableWidth (200 - 50 - 30 = 120).
     expect(component.visibleNavCount()).toBe(1);
   });
 
