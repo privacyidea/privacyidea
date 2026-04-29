@@ -1,0 +1,4136 @@
+# Translations template for PROJECT.
+# Copyright (C) 2026 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2026.
+# BoneNI <bounkirdni@gmail.com>, 2026.
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: translations@privacyidea.org\n"
+"POT-Creation-Date: 2026-03-13 11:14+0100\n"
+"PO-Revision-Date: 2026-04-26 16:10+0000\n"
+"Last-Translator: BoneNI <bounkirdni@gmail.com>\n"
+"Language-Team: Lao <https://hosted.weblate.org/projects/privacyidea/"
+"privacyidea-server/lo/>\n"
+"Language: lo\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"X-Generator: Weblate 5.17.1-dev\n"
+"Generated-By: Babel 2.17.0\n"
+
+#: api/auth.py:260
+msgid "Authentication with passkey disabled."
+msgstr "ການຢືນຢັນຕົວຕົນດ້ວຍແພສຄີຖືກປິດໄວ້."
+
+#: api/auth.py:265
+msgid "Authentication failure. The passkey is not registered."
+msgstr "ການຢືນຢັນຕົວຕົນຜິດພາດ. ແພສຄີນີ້ບໍ່ໄດ້ລົງທະບຽນໄວ້."
+
+#: api/auth.py:277
+msgid "Authentication failure. Token has no user."
+msgstr "ການຢືນຢັນຕົວຕົນຜິດພາດ. ໂທເຄັນບໍ່ມີຜູ້ໃຊ້ງານ."
+
+#: api/auth.py:281
+#, python-brace-format
+msgid "Authentication failure. The token type {token_type} is disabled."
+msgstr "ການຢືນຢັນຕົວຕົນຜິດພາດ. ໂທເຄັນປະເພດ {token_type} ຖືກປິດໄວ້."
+
+#: api/auth.py:287
+#, python-brace-format
+msgid ""
+"Authentication failure. Last authentication policy check failed for token"
+" {serial}"
+msgstr ""
+"ການຢືນຢັນຕົວຕົນຜິດພາດ. ການກວດສອບນະໂຍບາຍການຢືນຢັນຕົວຕົນຄັ້ງຫຼ້າສຸດສຳລັບໂທເຄັນ {serial} ບໍ່ສຳເລັດ"
+
+#: api/auth.py:300
+msgid "Authentication failure using passkey."
+msgstr "ການຢືນຢັນຕົວຕົນຜິດພາດໂດຍໃຊ້ແພສຄີ."
+
+#: api/auth.py:305
+msgid "Authentication failure. Unknown realm:"
+msgstr "ການຢືນຢັນຕົວຕົນຜິດພາດ. ບໍ່ຮູ້ຈັກເຣມ:"
+
+#: api/auth.py:309
+msgid "Authentication failure. Missing Username"
+msgstr "ການຢືນຢັນຕົວຕົນຜິດພາດ. ບໍ່ມີຊື່ຜູ້ໃຊ້"
+
+#: api/auth.py:443
+msgid "Authentication failure. Wrong credentials"
+msgstr "ການຢືນຢັນຕົວຕົນຜິດພາດ. ຂໍ້ມູນຢືນຢັນຕົວຕົນບໍ່ຖືກຕ້ອງ"
+
+#: api/before_after.py:518 api/lib/postpolicy.py:977 api/validate.py:606
+msgid "Authentication failed."
+msgstr "ການຢືນຢັນຕົວຕົນຜິດພາດ."
+
+#: api/container.py:203
+msgid "Missing parameter 'realm', 'resolver', and/or 'user_id'"
+msgstr "ພາຣາມິເຕີ 'realm', 'resolver', ແລະ/ຫຼື 'user_id' ບໍ່ຄົບ"
+
+#: api/container.py:1148
+msgid "'template_options' must be a dictionary!"
+msgstr "'template_options' ຕ້ອງເປັນດິກຊັນນະລີ!"
+
+#: api/periodictask.py:152
+msgid "nodes: expected at least one node"
+msgstr "ໂນດ: ຄາດຫວັງຢ່າງໜ້ອຍໜຶ່ງໂນດ"
+
+#: api/periodictask.py:155
+#, python-brace-format
+msgid "Unknown task module: {!r}"
+msgstr ""
+
+#: api/periodictask.py:163
+#, python-brace-format
+msgid "options: expected dictionary, got {!r}"
+msgstr ""
+
+#: api/policy.py:438 api/token.py:1136
+msgid "Unable to convert file contents. Binary data is not supported"
+msgstr "ບໍ່ສາມາດແປງເນື້ອຫາໄຟລ໌ໄດ້. ບໍ່ຮອງຮັບຂໍ້ມູນໄບນາຣີ"
+
+#: api/policy.py:443
+msgid "Error loading policy. File empty!"
+msgstr "ເກີດຂໍ້ຜິດພາດໃນການໂຫຼດນະໂຍບາຍ. ໄຟລ໌ຫວ່າງເປົ່າ!"
+
+#: api/realm.py:530
+msgid "The given node does not exist!"
+msgstr "ໂນດທີ່ໃຫ້ມາບໍ່ມີຢູ່!"
+
+#: api/realm.py:536 api/realm.py:546
+msgid "Could not verify data in request!"
+msgstr "ບໍ່ສາມາດກວດສອບຂໍ້ມູນໃນຄຳຮ້ອງຂໍໄດ້!"
+
+#: api/register.py:124
+msgid "No SMTP server configuration specified!"
+msgstr "ບໍ່ໄດ້ລະບຸການຕັ້ງຄ່າເຊີບເວີ SMTP!"
+
+#: api/register.py:138
+msgid "No resolver specified to register in!"
+msgstr "ບໍ່ໄດ້ລະບຸຣີຊອລເວີເພື່ອລົງທະບຽນ!"
+
+#: api/register.py:145
+msgid "The username is already registered!"
+msgstr "ຊື່ຜູ້ໃຊ້ນີ້ຖືກລົງທະບຽນໄປແລ້ວ!"
+
+#: api/register.py:176
+msgid "Failed to send email!"
+msgstr "ສົ່ງອີເມວບໍ່ສຳເລັດ!"
+
+#: api/system.py:325
+#, python-brace-format
+msgid "Usage: {0!s}"
+msgstr "ວິທີໃຊ້: {0!s}"
+
+#: api/system.py:343
+msgid "You need to provide the config key to delete."
+msgstr "ທ່ານຕ້ອງລະບຸຄີການຕັ້ງຄ່າເພື່ອລຶບ."
+
+#: api/token.py:1115
+msgid ""
+"The Pre Shared Key must be 128 Bit hex encoded. It must be 32 characters "
+"long!"
+msgstr ""
+"Pre Shared Key ຕ້ອງເປັນການເຂົ້າລະຫັດແບບ hex 128 ບິດ ແລະ ຕ້ອງມີຄວາມຍາວ 32 ຕົວອັກສອນ!"
+
+#: api/token.py:1140
+msgid "Error loading token file. File empty!"
+msgstr "ເກີດຂໍ້ຜິດພາດໃນການໂຫຼດໄຟລ໌ໂທເຄັນ. ໄຟລ໌ຫວ່າງເປົ່າ!"
+
+#: api/token.py:1146
+#, python-brace-format
+msgid "Unknown file type: '{file_type}'. Supported file types are: {known_types}"
+msgstr ""
+"ບໍ່ຮູ້ຈັກປະເພດໄຟລ໌: '{file_type}'. ປະເພດໄຟລ໌ທີ່ຮອງຮັບແມ່ນ: {known_types}"
+
+#: api/token.py:1258
+#, python-brace-format
+msgid "The user {0!r} does not own the token {1!s}"
+msgstr "ຜູ້ໃຊ້ {0!r} ບໍ່ໄດ້ເປັນເຈົ້າຂອງໂທເຄັນ {1!s}"
+
+#: api/user.py:154
+#, python-brace-format
+msgid ""
+"Invalid attribute name! The name shall not start with {prefix}. This is "
+"an internally used prefix."
+msgstr ""
+"ຊື່ແອັດທຣີບິວບໍ່ຖືກຕ້ອງ! ຊື່ບໍ່ຄວນຂຶ້ນຕົ້ນດ້ວຍ {prefix}. ນີ້ແມ່ນພຣີຟິກທີ່ໃຊ້ພາຍໃນ."
+
+#: api/validate.py:219
+msgid "The token does not exist"
+msgstr "ໂທເຄັນນີ້ບໍ່ມີຢູ່"
+
+#: api/validate.py:226
+msgid "The token is not valid."
+msgstr "ໂທເຄັນບໍ່ຖືກຕ້ອງ."
+
+#: api/validate.py:239
+msgid "Machine can not be identified by user agent!"
+msgstr "ບໍ່ສາມາດລະບຸເຄື່ອງໄດ້ໂດຍໃຊ້ຢູເຊີເອເຈນ!"
+
+#: api/validate.py:255
+msgid "Token is not an offline token or refill token is incorrect"
+msgstr "ໂທເຄັນບໍ່ແມ່ນໂທເຄັນແບບອອບໄລນ໌ ຫຼື ໂທເຄັນຣີຟິວບໍ່ຖືກຕ້ອງ"
+
+#: api/validate.py:495
+msgid "Cancelled enrollment via multichallenge"
+msgstr "ຍົກເລີກການລົງທະບຽນຜ່ານມັລຕິແຊລເລນຈ໌ແລ້ວ"
+
+#: api/validate.py:496
+msgid "Cancelled enrollment via multichallenge for transaction_id "
+msgstr "ຍົກເລີກການລົງທະບຽນຜ່ານມັລຕິແຊລເລນຈ໌ສຳລັບ transaction_id "
+
+#: api/validate.py:498
+msgid "Failed to cancel enrollment via multichallenge"
+msgstr "ຍົກເລີກການລົງທະບຽນຜ່ານມັລຕິແຊລເລນຈ໌ບໍ່ສຳເລັດ"
+
+#: api/validate.py:499
+msgid "Failed to cancel enrollment via multichallenge for transaction_id "
+msgstr "ຍົກເລີກການລົງທະບຽນຜ່ານມັລຕິແຊລເລນຈ໌ສຳລັບ transaction_id ບໍ່ສຳເລັດ "
+
+#: api/validate.py:536 api/validate.py:996
+msgid "The authentication method is not available."
+msgstr "ວິທີການຢືນຢັນຕົວຕົນນີ້ບໍ່ສາມາດໃຊ້ໄດ້."
+
+#: api/validate.py:577
+#, python-brace-format
+msgid "Last authentication policy check failed for token {serial}"
+msgstr ""
+"ການກວດສອບນະໂຍບາຍການຢືນຢັນຕົວຕົນຄັ້ງຫຼ້າສຸດສຳລັບໂທເຄັນ {serial} ບໍ່ສຳເລັດ"
+
+#: api/validate.py:601 lib/token.py:2678
+msgid "Found matching challenge"
+msgstr "ພົບແຊລເລນຈ໌ທີ່ກົງກັນ"
+
+#: api/validate.py:622 api/validate.py:624
+msgid "Given serial does not belong to given user!"
+msgstr "ເລກຊີຣຽນທີ່ໃຫ້ມາບໍ່ໄດ້ເປັນຂອງຜູ້ໃຊ້ທີ່ກຳນົດໄວ້!"
+
+#: api/validate.py:1013
+#, python-brace-format
+msgid "Unsupported token type '{token_type}' for authentication initialization!"
+msgstr "ບໍ່ຮອງຮັບໂທເຄັນປະເພດ '{token_type}' ສຳລັບການເລີ່ມຕົ້ນການຢືນຢັນຕົວຕົນ!"
+
+#: api/lib/postpolicy.py:98
+#, python-brace-format
+msgid ""
+"\n"
+"<--- Please describe your Problem in detail --->\n"
+"\n"
+"<--- Please provide as much additional information as possible --->\n"
+"\n"
+"privacyIDEA Version: {version}\n"
+"Subscriber: {subscriber_name}\n"
+"Subscriptions: {subscriptions}\n"
+msgstr ""
+"\n"
+"<--- ກະລຸນາອະທິບາຍບັນຫາຂອງທ່ານຢ່າງລະອຽດ --->\n"
+"\n"
+"<--- ກະລຸນາໃຫ້ຂໍ້ມູນເພີ່ມເຕີມຫຼາຍເທົ່າທີ່ຈະຫຼາຍໄດ້ --->\n"
+"\n"
+"ເວີຊັນ privacyIDEA: {version}\n"
+"ຜູ້ສະໝັກໃຊ້: {subscriber_name}\n"
+"ການສະໝັກໃຊ້: {subscriptions}\n"
+
+#: api/lib/postpolicy.py:910
+msgid "Please scan the QR code to register the container."
+msgstr "ກະລຸນາສະແກນ QR ໂຄດເພື່ອລົງທະບຽນຄອນເທນເນີ."
+
+#: api/lib/prepolicy.py:2608 api/lib/prepolicy.py:2644
+#, python-brace-format
+msgid "Description required for {type_value} token."
+msgstr "ຕ້ອງການຄຳອະທິບາຍສຳລັບໂທເຄັນ {type_value}."
+
+#: api/lib/prepolicy.py:2877
+msgid ""
+"Authentication failure. The account has exceeded the authentication time "
+"limit!"
+msgstr "ການຢືນຢັນຕົວຕົນຜິດພາດ. ບັນຊີນີ້ໄດ້ເກີນກຳນົດເວລາຢືນຢັນຕົວຕົນແລ້ວ!"
+
+#: api/lib/utils.py:402
+msgid "Authentication failure. Missing Authorization header."
+msgstr "ການຢືນຢັນຕົວຕົນຜິດພາດ. ບໍ່ມີ Authorization header."
+
+#: api/lib/utils.py:407 api/lib/utils.py:438
+msgid "Authentication failure. Error decoding the Authorization token:"
+msgstr "ການຢືນຢັນຕົວຕົນຜິດພາດ. ເກີດຂໍ້ຜິດພາດໃນການຖອດລະຫັດໂທເຄັນ Authorization:"
+
+#: api/lib/utils.py:431 api/lib/utils.py:441
+msgid "Authentication failure. Your token has expired:"
+msgstr "ການຢືນຢັນຕົວຕົນຜິດພາດ. ໂທເຄັນຂອງທ່ານໝົດອາຍຸແລ້ວ:"
+
+#: api/lib/utils.py:444
+#, python-brace-format
+msgid ""
+"Authentication failure. The username {wrong_username} is not allowed to "
+"impersonate via JWT."
+msgstr ""
+"ການຢືນຢັນຕົວຕົນຜິດພາດ. ຊື່ຜູ້ໃຊ້ {wrong_username} ບໍ່ໄດ້ຮັບອະນຸຍາດໃຫ້ສວມຮອຍຜ່ານ JWT."
+
+#: api/lib/utils.py:449
+#, python-brace-format
+msgid ""
+"Authentication failure. You do not have the necessary role "
+"({required_role}) to access this resource!"
+msgstr ""
+"ການຢືນຢັນຕົວຕົນຜິດພາດ. ທ່ານບໍ່ມີບົດບາດ ({required_role}) ທີ່ຈຳເປັນເພື່ອເຂົ້າເຖິງຊັບພະຍາກອນນີ້!"
+
+#: api/lib/utils.py:466
+msgid "Invalid policy name:"
+msgstr "ຊື່ນະໂຍບາຍບໍ່ຖືກຕ້ອງ:"
+
+#: api/lib/utils.py:469
+msgid "The name of the policy may only contain the characters a-zA-Z0-9_. -"
+msgstr "ຊື່ຂອງນະໂຍບາຍຄວນມີພຽງແຕ່ຕົວອັກສອນ a-zA-Z0-9_. -"
+
+#: lib/challengeresponsedecorators.py:150
+msgid "Please enter the new PIN again"
+msgstr "ກະລຸນາປ້ອນ PIN ໃໝ່ອີກຄັ້ງ"
+
+#: lib/challengeresponsedecorators.py:164
+msgid "Please enter a new PIN"
+msgstr "ກະລຸນາປ້ອນ PIN ໃໝ່"
+
+#: lib/challengeresponsedecorators.py:202
+msgid "To resync your token, please enter the next OTP value"
+msgstr "ເພື່ອຣີຊິ້ງໂທເຄັນຂອງທ່ານ, ກະລຸນາປ້ອນຄ່າ OTP ຖັດໄປ"
+
+#: lib/containerclass.py:919
+msgid "General purpose container that can hold any type and any number of token."
+msgstr "ຄອນເທນເນີອະເນກປະສົງທີ່ສາມາດບັນຈຸໂທເຄັນໄດ້ທຸກປະເພດ ແລະ ທຸກຈຳນວນ."
+
+#: lib/decorators.py:44 lib/token.py:2526
+msgid "This action is not possible, since the token is locked"
+msgstr "ການກະທຳນີ້ເປັນໄປບໍ່ໄດ້, ເນື່ອງຈາກໂທເຄັນຖືກລັອກໄວ້"
+
+#: lib/decorators.py:87
+msgid "You either need to provide user or serial"
+msgstr "ທ່ານຈຳເປັນຕ້ອງລະບຸຜູ້ໃຊ້ ຫຼື ເລກຊີຣຽນ"
+
+#: lib/decorators.py:116
+msgid "You need to specify a serial, user or credential_id."
+msgstr "ທ່ານຕ້ອງລະບຸເລກຊີຣຽນ, ຜູ້ໃຊ້ ຫຼື credential_id."
+
+#: lib/decorators.py:118
+msgid "Invalid serial number."
+msgstr "ເລກຊີຣຽນບໍ່ຖືກຕ້ອງ."
+
+#: lib/decorators.py:120
+msgid "Invalid user."
+msgstr "ຜູ້ໃຊ້ບໍ່ຖືກຕ້ອງ."
+
+#: lib/policy.py:218
+msgid ""
+"Note: If you use a comma in the message, you need to escape it with a "
+"backslash."
+msgstr ""
+"ໝາຍເຫດ: ຖ້າທ່ານໃຊ້ເຄື່ອງໝາຍຈຸດໃນຂໍ້ຄວາມ, ທ່ານຕ້ອງໃຊ້ backslash ເພື່ອເຣັດມັນ."
+
+#: lib/policy.py:1227
+msgid "Policy does not exist:"
+msgstr "ນະໂຍບາຍບໍ່ມີຢູ່:"
+
+#: lib/policy.py:1230
+msgid "Policy already exists:"
+msgstr "ນະໂຍບາຍມີຢູ່ແລ້ວ:"
+
+#: lib/policy.py:1396
+msgid "Invalid client definition!"
+msgstr "ຄຳນິຍາມໄຄລ໌ເອັນບໍ່ຖືກຕ້ອງ!"
+
+#: lib/policy.py:1649
+msgid "Define in which resolver the user should be registered."
+msgstr "ກຳນົດວ່າຜູ້ໃຊ້ຄວນລົງທະບຽນໃນຣີຊອລເວີໃດ."
+
+#: lib/policy.py:1653
+msgid "Define in which realm the user should be registered."
+msgstr "ກຳນົດວ່າຜູ້ໃຊ້ຄວນລົງທະບຽນໃນເຣມໃດ."
+
+#: lib/policy.py:1657
+msgid ""
+"The SMTP server configuration, that should be used to send the "
+"registration email."
+msgstr "ການຕັ້ງຄ່າເຊີບເວີ SMTP ທີ່ຄວນໃຊ້ເພື່ອສົ່ງອີເມວລົງທະບຽນ."
+
+#: lib/policy.py:1661
+msgid ""
+"Only users with this email address are allowed to register. This is a "
+"regular expression."
+msgstr ""
+"ມີພຽງຜູ້ໃຊ້ທີ່ມີທີ່ຢູອີເມວນີ້ເທົ່ານັ້ນທີ່ໄດ້ຮັບອະນຸຍາດໃຫ້ລົງທະບຽນ. ນີ້ແມ່ນເຣກູລ້າເອກສ໌ເພຣສຊັນ (regular "
+"expression)."
+
+#: lib/policy.py:1666
+#, python-brace-format
+msgid ""
+"The body of the registration email. Use '{regkey}' as tag for the "
+"registration key."
+msgstr "ເນື້ອຫາຂອງອີເມວລົງທະບຽນ. ໃຊ້ '{regkey}' ເປັນແທັກສຳລັບຄີລົງທະບຽນ."
+
+#: lib/policy.py:1670
+msgid "Enable to return an unspecific error message for failed registrations."
+msgstr ""
+"ເປີດໃຊ້ເພື່ອສົ່ງກັບຂໍ້ຄວາມສະແດງຂໍ້ຜິດພາດແບບບໍ່ສະເພາະເຈາະຈົງສຳລັບການລົງທະບຽນທີ່ລົ້ມເຫຼວ."
+
+#: lib/policy.py:1676
+msgid "Admin is allowed to enable tokens."
+msgstr "ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ເປີດໃຊ້ງານໂທເຄັນ."
+
+#: lib/policy.py:1680
+msgid "Admin is allowed to disable tokens."
+msgstr "ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ປິດໃຊ້ງານໂທເຄັນ."
+
+#: lib/policy.py:1685
+msgid "Admin is allowed to set token properties."
+msgstr "ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ຕັ້ງຄ່າຄຸນສົມບັດຂອງໂທເຄັນ."
+
+#: lib/policy.py:1689
+msgid "The admin is allowed to set the token description."
+msgstr "ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ຕັ້ງຄຳອະທິບາຍໂທເຄັນ."
+
+#: lib/policy.py:1694
+msgid "Admin is allowed to set the OTP PIN of tokens."
+msgstr "ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ຕັ້ງ OTP PIN ຂອງໂທເຄັນ."
+
+#: lib/policy.py:1699
+msgid "Admin is allowed to set a random OTP PIN of tokens."
+msgstr "ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ຕັ້ງ OTP PIN ແບບສຸ່ມຂອງໂທເຄັນ."
+
+#: lib/policy.py:1703
+msgid "Admin is allowed to manually set and delete token info."
+msgstr "ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ຕັ້ງຄ່າ ແລະ ລຶບຂໍ້ມູນໂທເຄັນດ້ວຍຕົນເອງ."
+
+#: lib/policy.py:1707
+msgid "Admin is allowed to set the OTP PIN during enrollment."
+msgstr "ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ຕັ້ງ OTP PIN ໃນລະຫວ່າງການລົງທະບຽນ."
+
+#: lib/policy.py:1712
+msgid "Admin is allowed to resync tokens."
+msgstr "ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ຣີຊິ້ງໂທເຄັນ."
+
+#: lib/policy.py:1717
+msgid "Admin is allowed to reset the Failcounter of a token."
+msgstr "ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ຣີເຊັດ Failcounter ຂອງໂທເຄັນ."
+
+#: lib/policy.py:1722
+msgid "Admin is allowed to revoke a token"
+msgstr "ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ຖອນຄືນໂທເຄັນ"
+
+#: lib/policy.py:1727
+msgid "Admin is allowed to assign a token to a user."
+msgstr "ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ມອບໝາຍໂທເຄັນໃຫ້ຜູ້ໃຊ້."
+
+#: lib/policy.py:1733
+msgid "Admin is allowed to remove the token from a user, i.e. unassign a token."
+msgstr ""
+"ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ເອົາໂທເຄັນອອກຈາກຜູ້ໃຊ້, ເຊັ່ນ: ຍົກເລີກການມອບໝາຍໂທເຄັນ."
+
+#: lib/policy.py:1739
+msgid "Admin is allowed to import token files."
+msgstr "ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ນຳເຂົ້າໄຟລ໌ໂທເຄັນ."
+
+#: lib/policy.py:1744
+msgid "Admin is allowed to remove tokens from the database."
+msgstr "ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ລຶບໂທເຄັນອອກຈາກຖານຂໍ້ມູນ."
+
+#: lib/policy.py:1750
+msgid "Admin is allowed to view the list of the users."
+msgstr "ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ເບິ່ງລາຍຊື່ຜູ້ໃຊ້."
+
+#: lib/policy.py:1755
+msgid "The Admin is allowed to list the machines."
+msgstr "ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ສະແດງລາຍຊື່ເຄື່ອງ."
+
+#: lib/policy.py:1760
+msgid "The Admin is allowed to attach and detach tokens to machines."
+msgstr "ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ຕິດ ແລະ ປົດໂທເຄັນອອກຈາກເຄື່ອງ."
+
+#: lib/policy.py:1767
+msgid ""
+"The Admin is allowed to fetch authentication items of tokens assigned to "
+"machines."
+msgstr ""
+"ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ດຶງຂໍ້ມູນການຢືນຢັນຕົວຕົນຂອງໂທເຄັນທີ່ມອບໝາຍໃຫ້ກັບເຄື່ອງ."
+
+#: lib/policy.py:1772
+msgid "Admin is allowed to manage the realms of a token."
+msgstr "ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ຈັດການເຣມຂອງໂທເຄັນ."
+
+#: lib/policy.py:1777
+msgid "Admin is allowed to list tokens."
+msgstr "ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ສະແດງລາຍຊື່ໂທເຄັນ."
+
+#: lib/policy.py:1781
+msgid "Admin is allowed to retrieve a serial for a given OTP value."
+msgstr "ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ດຶງເລກຊີຣຽນສຳລັບຄ່າ OTP ທີ່ໃຫ້ມາ."
+
+#: lib/policy.py:1786
+msgid "Admin is allowed to retrieve random keys from privacyIDEA."
+msgstr "ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ດຶງຄີສຸ່ມຈາກ privacyIDEA."
+
+#: lib/policy.py:1791
+msgid "Admin is allowed to copy the PIN of one token to another token."
+msgstr "ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ຄັດລອກ PIN ຈາກໂທເຄັນໜຶ່ງໄປຫາອີກໂທເຄັນໜຶ່ງ."
+
+#: lib/policy.py:1796
+msgid ""
+"Admin is allowed to copy the assigned user to another token, i.e. assign "
+"a user to another token."
+msgstr ""
+"ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ຄັດລອກຜູ້ໃຊ້ທີ່ມອບໝາຍໄວ້ໄປຫາໂທເຄັນອື່ນ, ເຊັ່ນ: ມອບໝາຍຜູ້ໃຊ້ໃຫ້ໂທເຄັນອື່ນ."
+
+#: lib/policy.py:1801
+msgid "Admin is allowed to trigger the lost token workflow."
+msgstr "ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ກະຕຸ້ນຂະບວນການເຮັດວຽກຂອງໂທເຄັນທີ່ເສຍຫາຍ."
+
+#: lib/policy.py:1807
+msgid "Admin is allowed to write and modify the system configuration."
+msgstr "ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ຂຽນ ແລະ ດັດແກ້ການຕັ້ງຄ່າລະບົບ."
+
+#: lib/policy.py:1812
+msgid "Admin is allowed to delete keys in the system configuration."
+msgstr "ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ລຶບຄີໃນການຕັ້ງຄ່າລະບົບ."
+
+#: lib/policy.py:1818
+msgid "Admin is allowed to read basic system configuration."
+msgstr "ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ອ່ານການຕັ້ງຄ່າລະບົບພື້ນຖານ."
+
+#: lib/policy.py:1823
+msgid ""
+"Admin is allowed to export a documentation of the complete configuration "
+"including resolvers and realm."
+msgstr ""
+"ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ສົ່ງອອກເອກະສານການຕັ້ງຄ່າທັງໝົດລວມທັງຣີຊອລເວີ ແລະ ເຣມ."
+
+#: lib/policy.py:1831
+msgid "Admin is allowed to write and modify the policies."
+msgstr "ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ຂຽນ ແລະ ດັດແກ້ນະໂຍບາຍ."
+
+#: lib/policy.py:1836
+msgid "Admin is allowed to delete policies."
+msgstr "ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ລຶບນະໂຍບາຍ."
+
+#: lib/policy.py:1841
+msgid "Admin is allowed to read policies."
+msgstr "ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ອ່ານນະໂຍບາຍ."
+
+#: lib/policy.py:1845
+msgid "Admin is allowed to write and modify the resolver and realm configuration."
+msgstr "ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ຂຽນ ແລະ ດັດແກ້ການຕັ້ງຄ່າຣີຊອລເວີ ແລະ ເຣມ."
+
+#: lib/policy.py:1852
+msgid "Admin is allowed to delete resolvers and realms."
+msgstr "ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ລຶບຣີຊອລເວີ ແລະ ເຣມ."
+
+#: lib/policy.py:1857
+msgid "Admin is allowed to read resolvers."
+msgstr "ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ອ່ານຣີຊອລເວີ."
+
+#: lib/policy.py:1861
+msgid ""
+"Admin is allowed to create new CA Connector definitions and modify "
+"existing ones."
+msgstr ""
+"ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ສ້າງຄຳນິຍາມ CA Connector ໃໝ່ ແລະ ດັດແກ້ທີ່ມີຢູ່."
+
+#: lib/policy.py:1867
+msgid "Admin is allowed to delete CA Connector definitions."
+msgstr "ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ລຶບຄຳນິຍາມ CA Connector."
+
+#: lib/policy.py:1872
+msgid "Admin is allowed to read CA Connector definitions."
+msgstr "ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ອ່ານຄຳນິຍາມ CA Connector."
+
+#: lib/policy.py:1877
+msgid "Admin is allowed to write and modify the machine resolvers."
+msgstr "ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ຂຽນ ແລະ ດັດແກ້ຣີຊອລເວີເຄື່ອງ."
+
+#: lib/policy.py:1883
+msgid "Admin is allowed to delete machine resolvers."
+msgstr "ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ລຶບຣີຊອລເວີເຄື່ອງ."
+
+#: lib/policy.py:1889
+msgid "Admin is allowed to read machine resolvers."
+msgstr "ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ອ່ານຣີຊອລເວີເຄື່ອງ."
+
+#: lib/policy.py:1896 lib/policy.py:2241
+msgid "Set the maximum allowed length of the OTP PIN."
+msgstr "ຕັ້ງຄ່າຄວາມຍາວສູງສຸດທີ່ອະນຸຍາດຂອງ OTP PIN."
+
+#: lib/policy.py:1901 lib/policy.py:2245
+msgid "Set the minimum required length of the OTP PIN."
+msgstr "ຕັ້ງຄ່າຄວາມຍາວຂັ້ນຕໍ່າທີ່ຕ້ອງການຂອງ OTP PIN."
+
+#: lib/policy.py:1905 lib/policy.py:2249
+msgid ""
+"Specify the required contents of the OTP PIN. (c)haracters, (n)umeric, "
+"(s)pecial. Use modifiers +/- or a list of allowed characters [1234567890]"
+msgstr ""
+"ລະບຸເນື້ອຫາທີ່ຕ້ອງການຂອງ OTP PIN. (c)haracters, (n)umeric, (s)pecial. ໃຊ້ຕົວດັດແປງ "
+"+/- ຫຼື ລາຍການຕົວອັກສອນທີ່ອະນຸຍາດ [1234567890]"
+
+#: lib/policy.py:1914
+msgid "The length of a random PIN set by the administrator."
+msgstr "ຄວາມຍາວຂອງ PIN ແບບສຸ່ມທີ່ຕັ້ງໂດຍຜູ້ດູແລລະບົບ."
+
+#: lib/policy.py:1917
+msgid "Admin is allowed to view the Audit log."
+msgstr "ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ເບິ່ງບັນທຶກການກວດສອບ (Audit log)."
+
+#: lib/policy.py:1921
+msgid "The admin will only see audit entries of the last 10d, 3m or 2y."
+msgstr ""
+"ຜູ້ດູແລລະບົບຈະເຫັນພຽງແຕ່ລາຍການກວດສອບຂອງ 10 ວັນ, 3 ເດືອນ ຫຼື 2 ປີທີ່ຜ່ານມາ."
+
+#: lib/policy.py:1926
+msgid "The admin will not see the specified columns in the audit."
+msgstr "ຜູ້ດູແລລະບົບຈະບໍ່ເຫັນຄໍລຳທີ່ລະບຸໄວ້ໃນການກວດສອບ."
+
+#: lib/policy.py:1931
+msgid "The admin is allowed to download the complete auditlog."
+msgstr "ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ດາວໂຫຼດບັນທຶກການກວດສອບທັງໝົດ."
+
+#: lib/policy.py:1936
+msgid "Admin is allowed to add users in a userstore/UserIdResolver."
+msgstr "ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ເພີ່ມຜູ້ໃຊ້ໃນ userstore/UserIdResolver."
+
+#: lib/policy.py:1941
+msgid "Admin is allowed to update the users data in a userstore."
+msgstr "ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ອັບເດດຂໍ້ມູນຜູ້ໃຊ້ໃນ userstore."
+
+#: lib/policy.py:1946
+msgid "Admin is allowed to delete a user object in a userstore."
+msgstr "ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ລຶບວັດຖຸຜູ້ໃຊ້ໃນ userstore."
+
+#: lib/policy.py:1951
+msgid "Admin is allowed to set the password of the HSM/Security Module."
+msgstr "ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ຕັ້ງລະຫັດຜ່ານຂອງ HSM/Security Module."
+
+#: lib/policy.py:1955
+msgid "Admin is allowed to retrieve the list of active challenges."
+msgstr "ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ດຶງລາຍຊື່ແຊລເລນຈ໌ທີ່ໃຊ້ງານຢູ່."
+
+#: lib/policy.py:1961
+msgid "Admin is allowed to write new SMTP server definitions."
+msgstr "ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ຂຽນຄຳນິຍາມເຊີບເວີ SMTP ໃໝ່."
+
+#: lib/policy.py:1966
+msgid "Admin is allowed to read SMTP server definitions."
+msgstr "ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ອ່ານຄຳນິຍາມເຊີບເວີ SMTP."
+
+#: lib/policy.py:1971
+msgid "Admin is allowed to write new RADIUS server definitions."
+msgstr "ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ຂຽນຄຳນິຍາມເຊີບເວີ RADIUS ໃໝ່."
+
+#: lib/policy.py:1977
+msgid "Admin is allowed to read RADIUS server definitions."
+msgstr "ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ອ່ານຄຳນິຍາມເຊີບເວີ RADIUS."
+
+#: lib/policy.py:1982
+msgid "Admin is allowed to write remote privacyIDEA server definitions."
+msgstr "ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ຂຽນຄຳນິຍາມເຊີບເວີ privacyIDEA ທາງໄກ."
+
+#: lib/policy.py:1989
+msgid "Admin is allowed to read remote privacyIDEA server definitions."
+msgstr "ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ອ່ານຄຳນິຍາມເຊີບເວີ privacyIDEA ທາງໄກ."
+
+#: lib/policy.py:1996
+msgid "Admin is allowed to write periodic task definitions."
+msgstr "ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ຂຽນຄຳນິຍາມວຽກງານຕາມກຳນົດເວລາ."
+
+#: lib/policy.py:2001
+msgid "Admin is allowed to read periodic task definitions."
+msgstr "ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ອ່ານຄຳນິຍາມວຽກງານຕາມກຳນົດເວລາ."
+
+#: lib/policy.py:2006
+msgid "Admin is allowed to read statistics data."
+msgstr "ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ອ່ານຂໍ້ມູນສະຖິຕິ."
+
+#: lib/policy.py:2009
+msgid "Admin is allowed to delete statistics data."
+msgstr "ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ລຶບຂໍ້ມູນສະຖິຕິ."
+
+#: lib/policy.py:2012
+msgid "Admin is allowed to write and modify the event handling configuration."
+msgstr "ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ຂຽນ ແລະ ດັດແກ້ການຕັ້ງຄ່າການຈັດການເຫດການ."
+
+#: lib/policy.py:2018
+msgid "Admin is allowed to read event handling configuration."
+msgstr "ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ອ່ານການຕັ້ງຄ່າການຈັດການເຫດການ."
+
+#: lib/policy.py:2023
+msgid "Admin is allowed to write and modify SMS gateway definitions."
+msgstr "ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ຂຽນ ແລະ ດັດແກ້ຄຳນິຍາມ SMS gateway."
+
+#: lib/policy.py:2029
+msgid "Admin is allowed to read SMS gateway definitions."
+msgstr "ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ອ່ານຄຳນິຍາມ SMS gateway."
+
+#: lib/policy.py:2034
+msgid "Admin is allowed to get the list of authenticated clients and their types."
+msgstr ""
+"ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ເອົາລາຍຊື່ໄຄລ໌ເອັນທີ່ຢືນຢັນຕົວຕົນແລ້ວ ແລະ ປະເພດຂອງມັນ."
+
+#: lib/policy.py:2041
+msgid "Admin is allowed to add and delete component subscriptions."
+msgstr "ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ເພີ່ມ ແລະ ລຶບການສະໝັກໃຊ້ສ່ວນປະກອບ."
+
+#: lib/policy.py:2047
+msgid "The Admin is allowed to trigger a challenge for e.g. SMS OTP token."
+msgstr "ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ກະຕຸ້ນແຊລເລນຈ໌ ເຊັ່ນ: ສຳລັບໂທເຄັນ SMS OTP."
+
+#: lib/policy.py:2053
+msgid ""
+"The Admin is allowed to set certain custom user attributes. If the Admin "
+"should be allowed to set any attribute, set this to '*:*'. For more "
+"details, check the documentation."
+msgstr ""
+"ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ຕັ້ງແອັດທຣີບິວຜູ້ໃຊ້ແບບກຳນົດເອງບາງຢ່າງ. ຖ້າຜູ້ດູແລລະບົບຄວນໄດ້ຮັບອະນຸຍາດໃຫ້ຕັ້ງ"
+"ແອັດທຣີບິວໃດກໍໄດ້, ໃຫ້ຕັ້ງເປັນ '*:*'. ສຳລັບລາຍລະອຽດເພີ່ມເຕີມ, ໃຫ້ກວດສອບເອກະສານ."
+
+#: lib/policy.py:2061
+msgid ""
+"The Admin is allowed to delete certain custom user attributes. If the "
+"Admin should be allowed to delete any attribute, set this to '*'. For "
+"more details, check the documentation."
+msgstr ""
+"ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ລຶບແອັດທຣີບິວຜູ້ໃຊ້ແບບກຳນົດເອງບາງຢ່າງ. ຖ້າຜູ້ດູແລລະບົບຄວນໄດ້ຮັບອະນຸຍາດໃຫ້ລຶບ"
+"ແອັດທຣີບິວໃດກໍໄດ້, ໃຫ້ຕັ້ງເປັນ '*'. ສຳລັບລາຍລະອຽດເພີ່ມເຕີມ, ໃຫ້ກວດສອບເອກະສານ."
+
+#: lib/policy.py:2069
+msgid ""
+"A whitespace-separated list of tokeninfo fields which are not displayed "
+"to the admin."
+msgstr ""
+"ລາຍການຟິວ tokeninfo ທີ່ແຍກດ້ວຍຊ່ອງຫວ່າງ ເຊິ່ງຈະບໍ່ຖືກສະແດງໃຫ້ຜູ້ດູແລລະບົບເຫັນ."
+
+#: lib/policy.py:2074
+msgid "The Admin is allowed list the available tokengroups."
+msgstr "ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ສະແດງລາຍຊື່ tokengroups ທີ່ມີຢູ່."
+
+#: lib/policy.py:2079
+msgid "The Admin is allowed to add a new tokengroup."
+msgstr "ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ເພີ່ມ tokengroup ໃໝ່."
+
+#: lib/policy.py:2084
+msgid "The Admin is allowed delete a tokengroup."
+msgstr "ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ລຶບ tokengroup."
+
+#: lib/policy.py:2089
+msgid "The Admin is allowed list the available service ID definitions."
+msgstr "ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ສະແດງລາຍຊື່ຄຳນິຍາມ service ID ທີ່ມີຢູ່."
+
+#: lib/policy.py:2094
+msgid "The Admin is allowed to add a new service ID definition."
+msgstr "ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ເພີ່ມຄຳນິຍາມ service ID ໃໝ່."
+
+#: lib/policy.py:2099
+msgid "The Admin is allowed delete a service ID definition."
+msgstr "ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ລຶບຄຳນິຍາມ service ID."
+
+#: lib/policy.py:2104
+msgid "The Admin is allowed to manage the tokengroups of a token."
+msgstr "ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ຈັດການ tokengroups ຂອງໂທເຄັນ."
+
+#: lib/policy.py:2108
+msgid "Admin is allowed to edit the container info."
+msgstr "ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ແກ້ໄຂຂໍ້ມູນຄອນເທນເນີ."
+
+#: lib/policy.py:2112
+msgid "Admin is allowed to edit the container state."
+msgstr "ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ແກ້ໄຂສະຖານະຄອນເທນເນີ."
+
+#: lib/policy.py:2116
+msgid "Admin is allowed to edit the container description."
+msgstr "ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ແກ້ໄຂຄຳອະທິບາຍຄອນເທນເນີ."
+
+#: lib/policy.py:2120
+msgid "Admin is allowed to create containers."
+msgstr "ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ສ້າງຄອນເທນເນີ."
+
+#: lib/policy.py:2124
+msgid "Admin is allowed to delete containers."
+msgstr "ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ລຶບຄອນເທນເນີ."
+
+#: lib/policy.py:2128
+msgid "Admin is allowed to add tokens to containers."
+msgstr "ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ເພີ່ມໂທເຄັນໃສ່ຄອນເທນເນີ."
+
+#: lib/policy.py:2132
+msgid "Admin is allowed to remove tokens from containers."
+msgstr "ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ເອົາໂທເຄັນອອກຈາກຄອນເທນເນີ."
+
+#: lib/policy.py:2136
+msgid "Admin is allowed to assign users to containers."
+msgstr "ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ມອບໝາຍຜູ້ໃຊ້ໃຫ້ຄອນເທນເນີ."
+
+#: lib/policy.py:2140
+msgid "Admin is allowed to unassign users from containers."
+msgstr "ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ຍົກເລີກການມອບໝາຍຜູ້ໃຊ້ຈາກຄອນເທນເນີ."
+
+#: lib/policy.py:2144
+msgid "Admin is allowed to set the realm of containers."
+msgstr "ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ຕັ້ງເຣມຂອງຄອນເທນເນີ."
+
+#: lib/policy.py:2148
+msgid "Admin is allowed to list containers."
+msgstr "ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ສະແດງລາຍຊື່ຄອນເທນເນີ."
+
+#: lib/policy.py:2152
+msgid "Admin is allowed to register containers."
+msgstr "ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ລົງທະບຽນຄອນເທນເນີ."
+
+#: lib/policy.py:2156
+msgid "Admin is allowed to unregister containers."
+msgstr "ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ຍົກເລີກການລົງທະບຽນຄອນເທນເນີ."
+
+#: lib/policy.py:2160
+msgid ""
+"Admin is allowed to perform a container rollover including a rollover of "
+"all contained tokens."
+msgstr ""
+"ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ດຳເນີນການຄອນເທນເນີໂຣລໂອເວີ ລວມທັງການໂຣລໂອເວີໂທເຄັນທັງໝົດທີ່ບັນຈຸຢູ່."
+
+#: lib/policy.py:2166
+msgid "Admin is allowed to create and edit container templates."
+msgstr "ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ສ້າງ ແລະ ແກ້ໄຂເທມເພລດຄອນເທນເນີ."
+
+#: lib/policy.py:2170
+msgid "Admin is allowed to delete templates."
+msgstr "ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ລຶບເທມເພລດ."
+
+#: lib/policy.py:2175
+msgid "Admin is allowed to list templates and view their details."
+msgstr "ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ສະແດງລາຍຊື່ເທມເພລດ ແລະ ເບິ່ງລາຍລະອຽດຂອງມັນ."
+
+#: lib/policy.py:2180
+msgid ""
+"A whitespace-separated list of container info keys that shall not be "
+"displayed to the admin."
+msgstr ""
+"ລາຍການຄີຂໍ້ມູນຄອນເທນເນີທີ່ແຍກດ້ວຍຊ່ອງຫວ່າງ ເຊິ່ງຈະບໍ່ຖືກສະແດງໃຫ້ຜູ້ດູແລລະບົບເຫັນ."
+
+#: lib/policy.py:2187
+msgid ""
+"The user is allowed to assign an existing token that is not yet assigned "
+"using the token serial number."
+msgstr ""
+"ຜູ້ໃຊ້ໄດ້ຮັບອະນຸຍາດໃຫ້ມອບໝາຍໂທເຄັນທີ່ມີຢູ່ແລ້ວເຊິ່ງຍັງບໍ່ໄດ້ມອບໝາຍ ໂດຍໃຊ້ເລກຊີຣຽນຂອງໂທເຄັນ."
+
+#: lib/policy.py:2193
+msgid "The user is allowed to disable his own tokens."
+msgstr "ຜູ້ໃຊ້ໄດ້ຮັບອະນຸຍາດໃຫ້ປິດໃຊ້ງານໂທເຄັນຂອງຕົນເອງ."
+
+#: lib/policy.py:2197
+msgid "The user is allowed to enable his own tokens."
+msgstr "ຜູ້ໃຊ້ໄດ້ຮັບອະນຸຍາດໃຫ້ເປີດໃຊ້ງານໂທເຄັນຂອງຕົນເອງ."
+
+#: lib/policy.py:2201
+msgid "The user is allowed to delete his own tokens."
+msgstr "ຜູ້ໃຊ້ໄດ້ຮັບອະນຸຍາດໃຫ້ລຶບໂທເຄັນຂອງຕົນເອງ."
+
+#: lib/policy.py:2205
+msgid "The user is allowed to unassign his own tokens."
+msgstr "ຜູ້ໃຊ້ໄດ້ຮັບອະນຸຍາດໃຫ້ຍົກເລີກການມອບໝາຍໂທເຄັນຂອງຕົນເອງ."
+
+#: lib/policy.py:2209
+msgid "The user is allowed to resynchronize his tokens."
+msgstr "ຜູ້ໃຊ້ໄດ້ຮັບອະນຸຍາດໃຫ້ຣີຊິ້ງໂທເຄັນຂອງຕົນເອງ."
+
+#: lib/policy.py:2213
+msgid "The user is allowed to revoke a token"
+msgstr "ຜູ້ໃຊ້ໄດ້ຮັບອະນຸຍາດໃຫ້ຖອນຄືນໂທເຄັນ"
+
+#: lib/policy.py:2217
+msgid "The user is allowed to reset the failcounter of his tokens."
+msgstr "ຜູ້ໃຊ້ໄດ້ຮັບອະນຸຍາດໃຫ້ຣີເຊັດ failcounter ຂອງໂທເຄັນຂອງຕົນເອງ."
+
+#: lib/policy.py:2221
+msgid "The user is allowed to set the OTP PIN of his tokens."
+msgstr "ຜູ້ໃຊ້ໄດ້ຮັບອະນຸຍາດໃຫ້ຕັ້ງ OTP PIN ຂອງໂທເຄັນຂອງຕົນເອງ."
+
+#: lib/policy.py:2225
+msgid "The user is allowed to set a random OTP PIN of his tokens."
+msgstr "ຜູ້ໃຊ້ໄດ້ຮັບອະນຸຍາດໃຫ້ຕັ້ງ OTP PIN ແບບສຸ່ມຂອງໂທເຄັນຂອງຕົນເອງ."
+
+#: lib/policy.py:2230
+msgid "The length of a random PIN set by the user."
+msgstr "ຄວາມຍາວຂອງ PIN ແບບສຸ່ມທີ່ຕັ້ງໂດຍຜູ້ໃຊ້."
+
+#: lib/policy.py:2233
+msgid "The user is allowed to set the token description."
+msgstr "ຜູ້ໃຊ້ໄດ້ຮັບອະນຸຍາດໃຫ້ຕັ້ງຄຳອະທິບາຍໂທເຄັນ."
+
+#: lib/policy.py:2237
+msgid "The user is allowed to set the OTP PIN during enrollment."
+msgstr "ຜູ້ໃຊ້ໄດ້ຮັບອະນຸຍາດໃຫ້ຕັ້ງ OTP PIN ໃນລະຫວ່າງການລົງທະບຽນ."
+
+#: lib/policy.py:2255
+msgid "Allow the user to view his own token history."
+msgstr "ອະນຸຍາດໃຫ້ຜູ້ໃຊ້ເບິ່ງປະຫວັດໂທເຄັນຂອງຕົນເອງ."
+
+#: lib/policy.py:2258
+msgid "The user will only see audit entries of the last 10d, 3m or 2y."
+msgstr "ຜູ້ໃຊ້ຈະເຫັນພຽງແຕ່ລາຍການກວດສອບຂອງ 10 ວັນ, 3 ເດືອນ ຫຼື 2 ປີທີ່ຜ່ານມາ."
+
+#: lib/policy.py:2261
+msgid "The user will not see the specified columns in the audit."
+msgstr "ຜູ້ໃຊ້ຈະບໍ່ເຫັນຄໍລຳທີ່ລະບຸໄວ້ໃນການກວດສອບ."
+
+#: lib/policy.py:2265
+msgid "The user is allowed to view his own user information."
+msgstr "ຜູ້ໃຊ້ໄດ້ຮັບອະນຸຍາດໃຫ້ເບິ່ງຂໍ້ມູນຜູ້ໃຊ້ຂອງຕົນເອງ."
+
+#: lib/policy.py:2268
+msgid ""
+"The user is allowed to update his own user information, like changing his"
+" password."
+msgstr ""
+"ຜູ້ໃຊ້ໄດ້ຮັບອະນຸຍາດໃຫ້ອັບເດດຂໍ້ມູນຜູ້ໃຊ້ຂອງຕົນເອງ ເຊັ່ນ: ການປ່ຽນລະຫັດຜ່ານ."
+
+#: lib/policy.py:2273
+msgid "The user is allowed to do a password reset in an editable UserIdResolver."
+msgstr "ຜູ້ໃຊ້ໄດ້ຮັບອະນຸຍາດໃຫ້ຣີເຊັດລະຫັດຜ່ານໃນ UserIdResolver ທີ່ແກ້ໄຂໄດ້."
+
+#: lib/policy.py:2278
+msgid ""
+"The user is allowed to set certain custom user attributes. If the user "
+"should be allowed to set any attribute, set this to '*:*'. Use '*' with "
+"CAUTION! For more details, check the documentation."
+msgstr ""
+"ຜູ້ໃຊ້ໄດ້ຮັບອະນຸຍາດໃຫ້ຕັ້ງແອັດທຣີບິວຜູ້ໃຊ້ແບບກຳນົດເອງບາງຢ່າງ. ຖ້າຜູ້ໃຊ້ຄວນໄດ້ຮັບອະນຸຍາດໃຫ້ຕັ້ງແອັດທຣີບິວໃດກໍ"
+"ໄດ້, ໃຫ້ຕັ້ງເປັນ '*:*'. ໃຊ້ '*' ດ້ວຍຄວາມລະມັດລະວັງ! ສຳລັບລາຍລະອຽດເພີ່ມເຕີມ, ໃຫ້ກວດສອບເອກະສາ"
+"ນ."
+
+#: lib/policy.py:2285
+msgid ""
+"The user is allowed to delete certain custom user attributes. If the user"
+" should be allowed to delete any attribute, set this to '*'. Use '*' with"
+" CAUTION! For more details, check the documentation."
+msgstr ""
+"ຜູ້ໃຊ້ໄດ້ຮັບອະນຸຍາດໃຫ້ລຶບແອັດທຣີບິວຜູ້ໃຊ້ແບບກຳນົດເອງບາງຢ່າງ. ຖ້າຜູ້ໃຊ້ຄວນໄດ້ຮັບອະນຸຍາດໃຫ້ລຶບແອັດທຣີບິວໃດກໍ"
+"ໄດ້, ໃຫ້ຕັ້ງເປັນ '*'. ໃຊ້ '*' ດ້ວຍຄວາມລະມັດລະວັງ! ສຳລັບລາຍລະອຽດເພີ່ມເຕີມ, ໃຫ້ກວດສອບເອກະສານ."
+
+#: lib/policy.py:2293
+msgid ""
+"A whitespace-separated list of tokeninfo fields which are not displayed "
+"to the user."
+msgstr ""
+"ລາຍການຟິວ tokeninfo ທີ່ແຍກດ້ວຍຊ່ອງຫວ່າງ ເຊິ່ງຈະບໍ່ຖືກສະແດງໃຫ້ຜູ້ໃຊ້ເຫັນ."
+
+#: lib/policy.py:2299
+msgid "Users are allowed to edit the state of their own containers."
+msgstr "ຜູ້ໃຊ້ໄດ້ຮັບອະນຸຍາດໃຫ້ແກ້ໄຂສະຖານະຄອນເທນເນີຂອງຕົນເອງ."
+
+#: lib/policy.py:2304
+msgid "Users are allowed to edit the description of their own containers."
+msgstr "ຜູ້ໃຊ້ໄດ້ຮັບອະນຸຍາດໃຫ້ແກ້ໄຂຄຳອະທິບາຍຄອນເທນເນີຂອງຕົນເອງ."
+
+#: lib/policy.py:2308
+msgid "Users are allowed to create containers."
+msgstr "ຜູ້ໃຊ້ໄດ້ຮັບອະນຸຍາດໃຫ້ສ້າງຄອນເທນເນີ."
+
+#: lib/policy.py:2312
+msgid "Users are allowed to delete their own containers."
+msgstr "ຜູ້ໃຊ້ໄດ້ຮັບອະນຸຍາດໃຫ້ລຶບຄອນເທນເນີຂອງຕົນເອງ."
+
+#: lib/policy.py:2317
+msgid "Users are allowed to add their own tokens to their own containers."
+msgstr "ຜູ້ໃຊ້ໄດ້ຮັບອະນຸຍາດໃຫ້ເພີ່ມໂທເຄັນຂອງຕົນເອງໃສ່ຄອນເທນເນີຂອງຕົນເອງ."
+
+#: lib/policy.py:2322
+msgid "Users are allowed to remove their own tokens from their own containers."
+msgstr "ຜູ້ໃຊ້ໄດ້ຮັບອະນຸຍາດໃຫ້ເອົາໂທເຄັນຂອງຕົນເອງອອກຈາກຄອນເທນເນີຂອງຕົນເອງ."
+
+#: lib/policy.py:2328
+msgid "Users are allowed to assign themselves to containers without an owner."
+msgstr "ຜູ້ໃຊ້ໄດ້ຮັບອະນຸຍາດໃຫ້ມອບໝາຍຕົນເອງໃຫ້ກັບຄອນເທນເນີທີ່ບໍ່ມີເຈົ້າຂອງ."
+
+#: lib/policy.py:2334
+msgid "Users are allowed to unassign themselves from containers."
+msgstr "ຜູ້ໃຊ້ໄດ້ຮັບອະນຸຍາດໃຫ້ຍົກເລີກການມອບໝາຍຕົນເອງຈາກຄອນເທນເນີ."
+
+#: lib/policy.py:2338
+msgid "Users are allowed to list their own containers."
+msgstr "ຜູ້ໃຊ້ໄດ້ຮັບອະນຸຍາດໃຫ້ສະແດງລາຍຊື່ຄອນເທນເນີຂອງຕົນເອງ."
+
+#: lib/policy.py:2343
+msgid "Users are allowed to register their own containers."
+msgstr "ຜູ້ໃຊ້ໄດ້ຮັບອະນຸຍາດໃຫ້ລົງທະບຽນຄອນເທນເນີຂອງຕົນເອງ."
+
+#: lib/policy.py:2347
+msgid "Users are allowed to unregister containers."
+msgstr "ຜູ້ໃຊ້ໄດ້ຮັບອະນຸຍາດໃຫ້ຍົກເລີກການລົງທະບຽນຄອນເທນເນີ."
+
+#: lib/policy.py:2352
+msgid ""
+"Users are allowed to perform a container rollover of their own "
+"containers. This includes a rollover of all contained tokens even if the "
+"user is not the owner of a contained token."
+msgstr ""
+"ຜູ້ໃຊ້ໄດ້ຮັບອະນຸຍາດໃຫ້ດຳເນີນການຄອນເທນເນີໂຣລໂອເວີຂອງຕົນເອງ. ນີ້ລວມທັງການໂຣລໂອເວີໂທເຄັນທັງໝົດທີ່ບັນຈຸ"
+"ຢູ່ ເຖິງແມ່ນວ່າຜູ້ໃຊ້ຈະບໍ່ແມ່ນເຈົ້າຂອງໂທເຄັນທີ່ບັນຈຸຢູ່ນັ້ນກໍຕາມ."
+
+#: lib/policy.py:2359
+msgid "Users are allowed to create and edit container templates."
+msgstr "ຜູ້ໃຊ້ໄດ້ຮັບອະນຸຍາດໃຫ້ສ້າງ ແລະ ແກ້ໄຂເທມເພລດຄອນເທນເນີ."
+
+#: lib/policy.py:2363
+msgid "Users are allowed to delete templates."
+msgstr "ຜູ້ໃຊ້ໄດ້ຮັບອະນຸຍາດໃຫ້ລຶບເທມເພລດ."
+
+#: lib/policy.py:2368
+msgid "Users are allowed to list templates and view their details."
+msgstr "ຜູ້ໃຊ້ໄດ້ຮັບອະນຸຍາດໃຫ້ສະແດງລາຍຊື່ເທມເພລດ ແລະ ເບິ່ງລາຍລະອຽດຂອງມັນ."
+
+#: lib/policy.py:2373
+msgid ""
+"A whitespace-separated list of container info keys that shall not be "
+"displayed to the users."
+msgstr ""
+"ລາຍການຄີຂໍ້ມູນຄອນເທນເນີທີ່ແຍກດ້ວຍຊ່ອງຫວ່າງ ເຊິ່ງຈະບໍ່ຖືກສະແດງໃຫ້ຜູ້ໃຊ້ເຫັນ."
+
+#: lib/policy.py:2380
+msgid "Limit the number of allowed tokens in a realm."
+msgstr "ຈຳກັດຈຳນວນໂທເຄັນທີ່ອະນຸຍາດໃນເຣມ."
+
+#: lib/policy.py:2384
+msgid ""
+"During the rollout process, this policy makes the description required "
+"for all selected tokentypes."
+msgstr ""
+"ໃນລະຫວ່າງຂະບວນການໂຣລເອົາ, ນະໂຍບາຍນີ້ເຮັດໃຫ້ຄຳອະທິບາຍມີຄວາມຈຳເປັນສຳລັບທຸກປະເພດໂທເຄັນທີ່ເລືອກ."
+
+#: lib/policy.py:2392
+msgid "Limit the number of tokens a user may have assigned."
+msgstr "ຈຳກັດຈຳນວນໂທເຄັນທີ່ຜູ້ໃຊ້ສາມາດມອບໝາຍໄດ້."
+
+#: lib/policy.py:2397
+msgid "Limit the number of active tokens a user may have assigned."
+msgstr "ຈຳກັດຈຳນວນໂທເຄັນທີ່ໃຊ້ງານຢູ່ທີ່ຜູ້ໃຊ້ສາມາດມອບໝາຍໄດ້."
+
+#: lib/policy.py:2402
+msgid ""
+"Set a random OTP PIN with this length for a token during the enrollment "
+"process."
+msgstr ""
+"ຕັ້ງຄ່າ OTP PIN ແບບສຸ່ມດ້ວຍຄວາມຍາວນີ້ສຳລັບໂທເຄັນໃນລະຫວ່າງຂະບວນການລົງທະບຽນ."
+
+#: lib/policy.py:2407
+msgid "In case of a random OTP PIN use this python module to process the PIN."
+msgstr "ໃນກໍລະນີທີ່ເປັນ OTP PIN ແບບສຸ່ມ ໃຫ້ໃຊ້ໂມດູນໄພທອນນີ້ເພື່ອປະມວນຜົນ PIN."
+
+#: lib/policy.py:2412
+msgid ""
+"If the administrator sets the OTP PIN during enrollment or later, the "
+"user will have to change the PIN during first use."
+msgstr ""
+"ຖ້າຜູ້ດູແລລະບົບຕັ້ງ OTP PIN ໃນລະຫວ່າງການລົງທະບຽນ ຫຼື ພາຍຫຼັງ, ຜູ້ໃຊ້ຈະຕ້ອງປ່ຽນ PIN ໃນລະຫວ່າງການໃ"
+"ຊ້ງານຄັ້ງທຳອິດ."
+
+#: lib/policy.py:2419
+msgid ""
+"The user needs to change his PIN on a regular basis. To change the PIN "
+"every 180 days, enter '180d'."
+msgstr ""
+"ຜູ້ໃຊ້ຈຳເປັນຕ້ອງປ່ຽນ PIN ຂອງຕົນເອງເປັນປະຈຳ. ເພື່ອປ່ຽນ PIN ທຸກໆ 180 ວັນ, ໃຫ້ປ້ອນ '180d'."
+
+#: lib/policy.py:2426
+msgid ""
+"The OTP PIN can be hashed or encrypted. Hashing the PIN is the default "
+"behaviour."
+msgstr "OTP PIN ສາມາດຖືກແຮຊ ຫຼື ເຂົ້າລະຫັດ. ການແຮຊ PIN ແມ່ນພຶດຕິກຳເລີ່ມຕົ້ນ."
+
+#: lib/policy.py:2431
+#, python-brace-format
+msgid ""
+"The label for a new enrolled Smartphone token. Possible tags are "
+"<code>{user}</code>, <code>{realm}</code>, <code>{serial}</code>, "
+"<code>{givenname}</code> and <code>{surname}</code>."
+msgstr ""
+"ປ້າຍກຳກັບສຳລັບໂທເຄັນສະມາດໂຟນທີ່ລົງທະບຽນໃໝ່. ແທັກທີ່ເປັນໄປໄດ້ຄື <code>{user}</code>, <code>"
+"{realm}</code>, <code>{serial}</code>, <code>{givenname}</code> ແລະ <code>"
+"{surname}</code>."
+
+#: lib/policy.py:2437
+#, python-brace-format
+msgid ""
+"The issuer label for new enrolled Smartphone token.Possible tags are "
+"<code>{user}</code>, <code>{realm}</code>, <code>{serial}</code>, "
+"<code>{givenname}</code> and <code>{surname}</code>."
+msgstr ""
+"ປ້າຍກຳກັບຜູ້ອອກສຳລັບໂທເຄັນສະມາດໂຟນທີ່ລົງທະບຽນໃໝ່. ແທັກທີ່ເປັນໄປໄດ້ຄື <code>{user}</code>, "
+"<code>{realm}</code>, <code>{serial}</code>, <code>{givenname}</code> ແລະ "
+"<code>{surname}</code>."
+
+#: lib/policy.py:2444
+msgid ""
+"This is the URL to the token image for the privacyIDEA Authenticator and "
+"some other apps like FreeOTP (supported file formats: PNG, JPG and GIF)."
+msgstr ""
+"ນີ້ແມ່ນ URL ໄປຫາຮູບໂທເຄັນສຳລັບ privacyIDEA Authenticator ແລະ ແອັບອື່ນໆ ເຊັ່ນ FreeOTP (ຮອ"
+"ງຮັບຟໍແມັດໄຟລ໌: PNG, JPG ແລະ GIF)."
+
+#: lib/policy.py:2451
+msgid ""
+"Users can assign a token just by using the unassigned token to "
+"authenticate."
+msgstr ""
+"ຜູ້ໃຊ້ສາມາດມອບໝາຍໂທເຄັນໄດ້ໂດຍພຽງແຕ່ໃຊ້ໂທເຄັນທີ່ບໍ່ໄດ້ມອບໝາຍໃນການຢືນຢັນຕົວຕົນ."
+
+#: lib/policy.py:2457
+msgid "The length of the password in case of temporary token (lost token)."
+msgstr "ຄວາມຍາວຂອງລະຫັດຜ່ານໃນກໍລະນີໂທເຄັນຊົ່ວຄາວ (ໂທເຄັນທີ່ເສຍຫາຍ)."
+
+#: lib/policy.py:2461
+msgid ""
+"The contents of the temporary password, described by the characters C, c,"
+" n, s, 8."
+msgstr "ເນື້ອຫາຂອງລະຫັດຜ່ານຊົ່ວຄາວ, ອະທິບາຍໂດຍຕົວອັກສອນ C, c, n, s, 8."
+
+#: lib/policy.py:2466
+msgid "The length of the validity for the temporary token (in days)."
+msgstr "ຄວາມຍາວຂອງຄວາມຖືກຕ້ອງສຳລັບໂທເຄັນຊົ່ວຄາວ (ເປັນວັນ)."
+
+#: lib/policy.py:2471
+msgid "Set the length of registration codes."
+msgstr "ຕັ້ງຄ່າຄວາມຍາວຂອງລະຫັດລົງທະບຽນ."
+
+#: lib/policy.py:2475
+msgid ""
+"Specify the required contents of the registration code. (c)haracters, "
+"(n)umeric, (s)pecial. Use modifiers +/- or a list of allowed characters "
+"[1234567890]"
+msgstr ""
+"ລະບຸເນື້ອຫາທີ່ຕ້ອງການຂອງລະຫັດລົງທະບຽນ. (c)haracters, (n)umeric, (s)pecial. ໃຊ້ຕົວດັດແປງ "
+"+/- ຫຼື ລາຍການຕົວອັກສອນທີ່ອະນຸຍາດ [1234567890]"
+
+#: lib/policy.py:2484
+msgid "Set the length of the password of generated password tokens."
+msgstr "ຕັ້ງຄ່າຄວາມຍາວຂອງລະຫັດຜ່ານຂອງໂທເຄັນລະຫັດຜ່ານທີ່ຖືກສ້າງຂຶ້ນ."
+
+#: lib/policy.py:2488
+msgid ""
+"Specify the required contents of the password of a password token. "
+"(c)haracters, (n)umeric, (s)pecial. Use modifiers +/- or a list of "
+"allowed characters [1234567890]"
+msgstr ""
+"ລະບຸເນື້ອຫາທີ່ຕ້ອງການຂອງລະຫັດຜ່ານຂອງໂທເຄັນລະຫັດຜ່ານ. (c)haracters, (n)umeric, (s)"
+"pecial. ໃຊ້ຕົວດັດແປງ +/- ຫຼື ລາຍການຕົວອັກສອນທີ່ອະນຸຍາດ [1234567890]"
+
+#: lib/policy.py:2496
+msgid ""
+"Specify the email validator that should be used to validate email "
+"addresses during enrollment."
+msgstr "ລະບຸຕົວຢືນຢັນອີເມວທີ່ຄວນໃຊ້ເພື່ອຢືນຢັນທີ່ຢູອີເມວໃນລະຫວ່າງການລົງທະບຽນ."
+
+#: lib/policy.py:2502
+msgid "Specify the list of token types, that must be verified during enrollment."
+msgstr "ລະບຸລາຍການປະເພດໂທເຄັນ ທີ່ຕ້ອງຖືກຢືນຢັນໃນລະຫວ່າງການລົງທະບຽນ."
+
+#: lib/policy.py:2515
+msgid ""
+"Either use the Token PIN , use the Userstore Password or use no fixed "
+"password component."
+msgstr ""
+"ໃຊ້ Token PIN, ໃຊ້ລະຫັດຜ່ານ Userstore ຫຼື ບໍ່ໃຊ້ສ່ວນປະກອບລະຫັດຜ່ານຄົງທີ່."
+
+#: lib/policy.py:2520
+msgid ""
+"Specify the list of token types, that must be used with challenge "
+"response."
+msgstr "ລະບຸລາຍການປະເພດໂທເຄັນ ທີ່ຕ້ອງຖືກໃຊ້ກັບ challenge response."
+
+#: lib/policy.py:2528
+msgid ""
+"Use an alternative challenge text for telling the user to enter an OTP "
+"value. You can also use tags for automated replacement. Check out the "
+"documentation for more details."
+msgstr ""
+"ໃຊ້ຂໍ້ຄວາມແຊລເລນຈ໌ທາງເລືອກເພື່ອບອກຜູ້ໃຊ້ໃຫ້ປ້ອນຄ່າ OTP. ທ່ານຍັງສາມາດໃຊ້ແທັກເພື່ອການແທນທີ່ແບບອັດຕະໂນ"
+"ມັດໄດ້. ກວດສອບເອກະສານສຳລັບລາຍລະອຽດເພີ່ມເຕີມ."
+
+#: lib/policy.py:2535
+msgid ""
+"If there are several different challenges, this text precedes the list of"
+" the challenge texts."
+msgstr ""
+"ຖ້າມີແຊລເລນຈ໌ທີ່ແຕກຕ່າງກັນຫຼາຍຢ່າງ, ຂໍ້ຄວາມນີ້ຈະຢູ່ໜ້າລາຍການຂອງຂໍ້ຄວາມແຊລເລນຈ໌."
+
+#: lib/policy.py:2540
+msgid ""
+"If there are several different challenges, this text follows the list of "
+"the challenge texts."
+msgstr ""
+"ຖ້າມີແຊລເລນຈ໌ທີ່ແຕກຕ່າງກັນຫຼາຍຢ່າງ, ຂໍ້ຄວາມນີ້ຈະຢູ່ຫຼັງລາຍການຂອງຂໍ້ຄວາມແຊລເລນຈ໌."
+
+#: lib/policy.py:2545
+msgid ""
+"If the PIN of a token is to be changed, this will allow the user to "
+"change the PIN during a validate/check request via challenge / response."
+msgstr ""
+"ຖ້າ PIN ຂອງໂທເຄັນຈະຖືກປ່ຽນ, ສິ່ງນີ້ຈະອະນຸຍາດໃຫ້ຜູ້ໃຊ້ປ່ຽນ PIN ໃນລະຫວ່າງຄຳຮ້ອງຂໍ validate/"
+"check ຜ່ານ challenge / response."
+
+#: lib/policy.py:2550
+msgid "Specify the list of token types, that can not be used for authentication."
+msgstr "ລະບຸລາຍການປະເພດໂທເຄັນ ທີ່ບໍ່ສາມາດໃຊ້ໃນການຢືນຢັນຕົວຕົນ."
+
+#: lib/policy.py:2557
+msgid ""
+"The autoresync of a token can be done via a challenge response "
+"message.You need to activate 'Automatic resync' in the general settings!"
+msgstr ""
+"ການຣີຊິ້ງອັດຕະໂນມັດຂອງໂທເຄັນສາມາດເຮັດໄດ້ຜ່ານຂໍ້ຄວາມ challenge response. ທ່ານຈຳເປັນຕ້ອງເປີດໃ"
+"ຊ້ 'Automatic resync' ໃນການຕັ້ງຄ່າທົ່ວໄປ!"
+
+#: lib/policy.py:2562
+msgid ""
+"In case of a successful authentication the following token or container "
+"type is enrolled. The maximum number of tokens for a user is checked."
+msgstr ""
+"ໃນກໍລະນີທີ່ການຢືນຢັນຕົວຕົນສຳເລັດ, ໂທເຄັນ ຫຼື ປະເພດຄອນເທນເນີຕໍ່ໄປນີ້ຈະຖືກລົງທະບຽນ. ຈຳນວນໂທເຄັນສູງສຸດ"
+"ສຳລັບຜູ້ໃຊ້ຈະຖືກກວດສອບ."
+
+#: lib/policy.py:2568
+msgid "Change the default text that is shown during enrolling a token."
+msgstr "ປ່ຽນຂໍ້ຄວາມເລີ່ມຕົ້ນທີ່ສະແດງໃນລະຫວ່າງການລົງທະບຽນໂທເຄັນ."
+
+#: lib/policy.py:2573
+msgid ""
+"Select the template to use for the enrollment of a smartphone container "
+"via multichallenge."
+msgstr ""
+"ເລືອກເທມເພລດທີ່ຈະໃຊ້ສຳລັບການລົງທະບຽນຄອນເທນເນີສະມາດໂຟນຜ່ານ multichallenge."
+
+#: lib/policy.py:2579
+msgid ""
+"If enabled, the user can choose to skip enrollment of the token during "
+"authentication. If disabled, the user must enroll a token. This is also "
+"the default behavior."
+msgstr ""
+"ຖ້າເປີດໃຊ້, ຜູ້ໃຊ້ສາມາດເລືອກຂ້າມການລົງທະບຽນໂທເຄັນໃນລະຫວ່າງການຢືນຢັນຕົວຕົນໄດ້. ຖ້າປິດໃຊ້, ຜູ້ໃຊ້ຕ້ອງລົ"
+"ງທະບຽນໂທເຄັນ. ນີ້ຍັງເປັນພຶດຕິກຳເລີ່ມຕົ້ນອີກດ້ວຍ."
+
+#: lib/policy.py:2584
+msgid ""
+"If enabled, a successful registration with the enroll_via_multichallenge "
+"action for passkeys will directly mark the token for offline use and send"
+" the offline data."
+msgstr ""
+"ຖ້າເປີດໃຊ້, ການລົງທະບຽນທີ່ສຳເລັດດ້ວຍການປະຕິບັດງານ enroll_via_multichallenge ສຳລັບແພສຄີ ຈະ"
+"ໝາຍໂທເຄັນສຳລັບການໃຊ້ງານອອບໄລນ໌ໂດຍກົງ ແລະ ສົ່ງຂໍ້ມູນອອບໄລນ໌."
+
+#: lib/policy.py:2590
+msgid ""
+"If set, the user in this realm will be authenticated against the "
+"userstore or against the given RADIUS config, if the user has no tokens "
+"assigned."
+msgstr ""
+"ຖ້າຕັ້ງໄວ້, ຜູ້ໃຊ້ໃນເຣມນີ້ຈະຖືກຢືນຢັນຕົວຕົນທຽບກັບ userstore ຫຼື ທຽບກັບການຕັ້ງຄ່າ RADIUS ທີ່ໃຫ້ມາ, ຖ້າຜູ້"
+"ໃຊ້ບໍ່ມີໂທເຄັນມອບໝາຍ."
+
+#: lib/policy.py:2597
+msgid ""
+"This allows to automatically assign a Token within privacyIDEA, if the "
+"user was authenticated via passthru against a RADIUS server. The OTP "
+"value is used to find the unassigned token in privacyIDEA. Enter the "
+"length of the OTP value and where the PIN is set like 8:pin or pin:6."
+msgstr ""
+"ສິ່ງນີ້ອະນຸຍາດໃຫ້ມອບໝາຍໂທເຄັນໂດຍອັດຕະໂນມັດພາຍໃນ privacyIDEA, ຖ້າຜູ້ໃຊ້ຖືກຢືນຢັນຕົວຕົນຜ່ານ "
+"passthru ທຽບກັບເຊີບເວີ RADIUS. ຄ່າ OTP ຖືກໃຊ້ເພື່ອຊອກຫາໂທເຄັນທີ່ບໍ່ໄດ້ມອບໝາຍໃນ "
+"privacyIDEA. ປ້ອນຄວາມຍາວຂອງຄ່າ OTP ແລະ ບ່ອນທີ່ຕັ້ງ PIN ເຊັ່ນ 8:pin ຫຼື pin:6."
+
+#: lib/policy.py:2604
+msgid ""
+"If the user has no token, the authentication request for this user will "
+"always be true."
+msgstr ""
+"ຖ້າຜູ້ໃຊ້ບໍ່ມີໂທເຄັນ, ຄຳຮ້ອງຂໍການຢືນຢັນຕົວຕົນສຳລັບຜູ້ໃຊ້ນີ້ຈະເປັນຈິງສະເໝີ."
+
+#: lib/policy.py:2609
+msgid ""
+"If the user user does not exist, the authentication request for this non-"
+"existing user will always be true."
+msgstr ""
+"ຖ້າຜູ້ໃຊ້ບໍ່ມີຢູ່, ຄຳຮ້ອງຂໍການຢືນຢັນຕົວຕົນສຳລັບຜູ້ໃຊ້ທີ່ບໍ່ມີຢູ່ນີ້ຈະເປັນຈິງສະເໝີ."
+
+#: lib/policy.py:2615
+msgid ""
+"Can be used to modify the parameters pass, user and realm in an "
+"authentication request. See the documentation for an example."
+msgstr ""
+"ສາມາດໃຊ້ເພື່ອດັດແກ້ພາຣາມິເຕີ pass, user ແລະ realm ໃນຄຳຮ້ອງຂໍການຢືນຢັນຕົວຕົນ. ເບິ່ງເອກະສານສຳລັ"
+"ບຕົວຢ່າງ."
+
+#: lib/policy.py:2622
+msgid ""
+"In authentication requests, sets or overwrites the realm parameter. It "
+"takes precedence over the mangle and setrealm policies."
+msgstr ""
+"ໃນຄຳຮ້ອງຂໍການຢືນຢັນຕົວຕົນ, ຈະຕັ້ງຄ່າ ຫຼື ຂຽນທັບພາຣາມິເຕີ realm. ມັນມີຄວາມສຳຄັນເໜືອກວ່ານະໂຍບາຍ "
+"mangle ແລະ setrealm."
+
+#: lib/policy.py:2627
+msgid ""
+"If a user authenticates successfully reset the failcounter of all of his "
+"tokens."
+msgstr ""
+"ຖ້າຜູ້ໃຊ້ຢືນຢັນຕົວຕົນສຳເລັດ ໃຫ້ຣີເຊັດ failcounter ຂອງໂທເຄັນທັງໝົດຂອງລາວ."
+
+#: lib/policy.py:2632
+msgid ""
+"Increase the failcounter for all the tokens, for which a challenge has "
+"been triggered."
+msgstr "ເພີ່ມ failcounter ສຳລັບໂທເຄັນທັງໝົດທີ່ຖືກກະຕຸ້ນແຊລເລນຈ໌."
+
+#: lib/policy.py:2636
+msgid ""
+"Cache the password used for authentication and allow authentication with "
+"the same credentials for a certain amount of time. Specify timeout like "
+"4h or 4h/5m."
+msgstr ""
+"ແຄຊລະຫັດຜ່ານທີ່ໃຊ້ສຳລັບການຢືນຢັນຕົວຕົນ ແລະ ອະນຸຍາດໃຫ້ຢືນຢັນຕົວຕົນດ້ວຍຂໍ້ມູນດຽວກັນເປັນເວລາໃດໜຶ່ງ. ລະບຸເ"
+"ວລາໝົດອາຍຸເຊັ່ນ 4h ຫຼື 4h/5m."
+
+#: lib/policy.py:2643
+msgid ""
+"You can set the client modes in the order that you prefer. For example: "
+"\"interactive webauthn poll u2f\". Accepted values are: <code>interactive"
+" webauthn poll u2f</code>"
+msgstr ""
+"ທ່ານສາມາດຕັ້ງຄ່າຮູບແບບໄຄລ໌ເອັນຕາມລຳດັບທີ່ທ່ານຕ້ອງການ. ຕົວຢ່າງ: \"interactive webauthn poll "
+"u2f\". ຄ່າທີ່ຍອມຮັບໄດ້ຄື: <code>interactive webauthn poll u2f</code>"
+
+#: lib/policy.py:2649
+msgid ""
+"When enabled, authentication attempts will be interpreted as either the "
+"PIN or the answer to a challenge. PIN concatenated with OTP can not be "
+"used anymore! Does only work when authenticating with a username."
+msgstr ""
+"ເມື່ອເປີດໃຊ້, ຄວາມພະຍາຍາມໃນການຢືນຢັນຕົວຕົນຈະຖືກຕີຄວາມໝາຍວ່າເປັນ PIN ຫຼື ຄຳຕອບຂອງແຊລເລນຈ໌. "
+"PIN ທີ່ເຊື່ອມກັບ OTP ຈະບໍ່ສາມາດໃຊ້ໄດ້ອີກຕໍ່ໄປ! ໃຊ້ໄດ້ສະເພາະເມື່ອຢືນຢັນຕົວຕົນດ້ວຍຊື່ຜູ້ໃຊ້."
+
+#: lib/policy.py:2655
+msgid ""
+"Store the last used token type per user and application in the custom "
+"user attributes. For the next authentication the last used token type is "
+"used to identify the preferred client mode."
+msgstr ""
+"ຈັດເກັບປະເພດໂທເຄັນທີ່ໃຊ້ຫຼ້າສຸດຕໍ່ຜູ້ໃຊ້ ແລະ ແອັບພລິເຄຊັນໃນແອັດທຣີບິວຜູ້ໃຊ້ແບບກຳນົດເອງ. ສຳລັບການຢືນຢັນຕົວ"
+"ຕົນຄັ້ງຕໍ່ໄປ ປະເພດໂທເຄັນທີ່ໃຊ້ຫຼ້າສຸດຈະຖືກໃຊ້ເພື່ອລະບຸຮູບແບບໄຄລ໌ເອັນທີ່ຕ້ອງການ."
+
+#: lib/policy.py:2661
+msgid "Enable to return an unspecific error message for failed authentications."
+msgstr ""
+"ເປີດໃຊ້ເພື່ອສົ່ງກັບຂໍ້ຄວາມສະແດງຂໍ້ຜິດພາດແບບບໍ່ສະເພາະເຈາະຈົງສຳລັບການຢືນຢັນຕົວຕົນທີ່ລົ້ມເຫຼວ."
+
+#: lib/policy.py:2667
+#, python-brace-format
+msgid ""
+"Allow the user to authenticate (default). If set to '{0!s}', the "
+"authentication of the user will be denied."
+msgstr ""
+"ອະນຸຍາດໃຫ້ຜູ້ໃຊ້ຢືນຢັນຕົວຕົນ (ເລີ່ມຕົ້ນ). ຖ້າຕັ້ງເປັນ '{0!s}', ການຢືນຢັນຕົວຕົນຂອງຜູ້ໃຊ້ຈະຖືກປະຕິເສດ."
+
+#: lib/policy.py:2674
+msgid ""
+"Allow the application to choose which token types should be used for "
+"authentication. Application may set the parameter 'type' in the request. "
+"Works with validate/check, validate/samlcheck and "
+"validate/triggerchallenge."
+msgstr ""
+"ອະນຸຍາດໃຫ້ແອັບພລິເຄຊັນເລືອກປະເພດໂທເຄັນທີ່ຈະໃຊ້ສຳລັບການຢືນຢັນຕົວຕົນ. ແອັບພລິເຄຊັນອາດຈະຕັ້ງພາຣາມິເຕີ "
+"'type' ໃນຄຳຮ້ອງຂໍ. ໃຊ້ງານໄດ້ກັບ validate/check, validate/samlcheck ແລະ validate/"
+"triggerchallenge."
+
+#: lib/policy.py:2681
+msgid ""
+"You can specify how many successful authentication requests a user is "
+"allowed to do in a given time. Specify like 1/5s, 2/10m, 10/1h - s, m, h "
+"being second, minute and hour."
+msgstr ""
+"ທ່ານສາມາດລະບຸຈຳນວນຄຳຮ້ອງຂໍການຢືນຢັນຕົວຕົນທີ່ສຳເລັດທີ່ຜູ້ໃຊ້ໄດ້ຮັບອະນຸຍາດໃຫ້ເຮັດໃນເວລາທີ່ກຳນົດ. ລະບຸເຊັ່"
+"ນ 1/5s, 2/10m, 10/1h - s, m, h ແມ່ນວິນາທີ, ນາທີ ແລະ ຊົ່ວໂມງ."
+
+#: lib/policy.py:2689
+msgid ""
+"You can specify how many failed authentication requests a user is allowed"
+" to do in a given time. Specify like 1/5s, 2/10m, 10/1h - s, m, h being "
+"second, minute and hour."
+msgstr ""
+"ທ່ານສາມາດລະບຸຈຳນວນຄຳຮ້ອງຂໍການຢືນຢັນຕົວຕົນທີ່ລົ້ມເຫຼວທີ່ຜູ້ໃຊ້ໄດ້ຮັບອະນຸຍາດໃຫ້ເຮັດໃນເວລາທີ່ກຳນົດ. ລະບຸເຊັ່"
+"ນ 1/5s, 2/10m, 10/1h - s, m, h ແມ່ນວິນາທີ, ນາທີ ແລະ ຊົ່ວໂມງ."
+
+#: lib/policy.py:2697
+msgid ""
+"You can specify in which time frame the user needs to authenticate again "
+"with this token. If the user authenticates later, authentication will "
+"fail. Specify like 30h, 7d or 1y."
+msgstr ""
+"ທ່ານສາມາດລະບຸຂອບເວລາທີ່ຜູ້ໃຊ້ຈຳເປັນຕ້ອງຢືນຢັນຕົວຕົນອີກຄັ້ງດ້ວຍໂທເຄັນນີ້. ຖ້າຜູ້ໃຊ້ຢືນຢັນຕົວຕົນພາຍຫຼັງ, ການຢື"
+"ນຢັນຕົວຕົນຈະລົ້ມເຫຼວ. ລະບຸເຊັ່ນ 30h, 7d ຫຼື 1y."
+
+#: lib/policy.py:2705
+msgid "The user will only be authenticated with this very tokentype."
+msgstr "ຜູ້ໃຊ້ຈະຖືກຢືນຢັນຕົວຕົນດ້ວຍປະເພດໂທເຄັນນີ້ເທົ່ານັ້ນ."
+
+#: lib/policy.py:2712
+msgid ""
+"The user will only be authenticated if the serial number of the token "
+"matches this regexp."
+msgstr "ຜູ້ໃຊ້ຈະຖືກຢືນຢັນຕົວຕົນກໍຕໍ່ເມື່ອເລກຊີຣຽນຂອງໂທເຄັນກົງກັບ regexp ນີ້."
+
+#: lib/policy.py:2718
+msgid ""
+"The user will only be authenticated if the tokeninfo field matches the "
+"regexp (key/&lt;regexp&gt;/)."
+msgstr ""
+"ຜູ້ໃຊ້ຈະຖືກຢືນຢັນຕົວຕົນກໍຕໍ່ເມື່ອຟິວ tokeninfo ກົງກັບ regexp (key/&lt;regexp&gt;/)."
+
+#: lib/policy.py:2725
+msgid ""
+"The Realm of the user is set to this very realm. This is important if the"
+" user is not contained in the default realm and can not pass his realm."
+msgstr ""
+"ເຣມຂອງຜູ້ໃຊ້ຖືກຕັ້ງເປັນເຣມນີ້. ສິ່ງນີ້ສຳຄັນຖ້າຜູ້ໃຊ້ບໍ່ໄດ້ຢູ່ໃນເຣມເລີ່ມຕົ້ນ ແລະ ບໍ່ສາມາດສົ່ງເຣມຂອງຕົນເອງໄດ້."
+
+#: lib/policy.py:2732
+msgid ""
+"In case of successful authentication additional no detail information "
+"will be returned."
+msgstr "ໃນກໍລະນີທີ່ການຢືນຢັນຕົວຕົນສຳເລັດ ຈະບໍ່ມີຂໍ້ມູນລະອຽດເພີ່ມເຕີມຖືກສົ່ງກັບ."
+
+#: lib/policy.py:2739
+msgid ""
+"In case of failed authentication additional no detail information will be"
+" returned."
+msgstr ""
+"ໃນກໍລະນີທີ່ການຢືນຢັນຕົວຕົນລົ້ມເຫຼວ ຈະບໍ່ມີຂໍ້ມູນລະອຽດເພີ່ມເຕີມຖືກສົ່ງກັບ."
+
+#: lib/policy.py:2746
+msgid ""
+"In case of successful authentication user data will be added in the "
+"detail branch of the authentication response."
+msgstr ""
+"ໃນກໍລະນີທີ່ການຢືນຢັນຕົວຕົນສຳເລັດ ຂໍ້ມູນຜູ້ໃຊ້ຈະຖືກເພີ່ມໃນສາຂາລາຍລະອຽດຂອງຄຳຕອບການຢືນຢັນຕົວຕົນ."
+
+#: lib/policy.py:2753
+msgid ""
+"In case of successful authentication the user resolver and realm will be "
+"added in the detail branch of the authentication response."
+msgstr ""
+"ໃນກໍລະນີທີ່ການຢືນຢັນຕົວຕົນສຳເລັດ ຣີຊອລເວີຜູ້ໃຊ້ ແລະ ເຣມຈະຖືກເພີ່ມໃນສາຂາລາຍລະອຽດຂອງຄຳຕອບການຢືນຢັນ"
+"ຕົວຕົນ."
+
+#: lib/policy.py:2760
+msgid ""
+"The sending of an API Auth Key is required during authentication. This "
+"avoids rogue authenticate requests against the /validate/check interface."
+msgstr ""
+"ການສົ່ງ API Auth Key ແມ່ນຈຳເປັນໃນລະຫວ່າງການຢືນຢັນຕົວຕົນ. ສິ່ງນີ້ຈະຊ່ວຍຫຼີກເວັ້ນຄຳຮ້ອງຂໍການຢືນຢັນຕົວຕົ"
+"ນທີ່ບໍ່ຕ້ອງການຕໍ່ອິນເຕີເຟດ /validate/check."
+
+#: lib/policy.py:2767
+msgid ""
+"If set, the /healthz/resolversz endpoint requires a valid admin "
+"authentication token to include the status of each resolver individually."
+msgstr ""
+"ຖ້າຕັ້ງໄວ້, ເອັນພອຍ /healthz/resolversz ຕ້ອງການໂທເຄັນການຢືນຢັນຕົວຕົນຂອງຜູ້ດູແລລະບົບທີ່ຖືກຕ້ອງ ເພື່"
+"ອລວມສະຖານະຂອງແຕ່ລະຣີຊອລເວີແຍກກັນ."
+
+#: lib/policy.py:2775
+msgid ""
+"If set, administrators will see a dashboard as start screen when logging "
+"in to privacyIDEA WebUI."
+msgstr ""
+"ຖ້າຕັ້ງໄວ້, ຜູ້ດູແລລະບົບຈະເຫັນແດຊບອດເປັນໜ້າຈໍເລີ່ມຕົ້ນເມື່ອເຂົ້າສູ່ລະບົບ privacyIDEA WebUI."
+
+#: lib/policy.py:2781
+msgid ""
+"If set to \"privacyIDEA\" the users and admins need to authenticate "
+"against privacyIDEA when they log in to the Web UI. Defaults to "
+"\"userstore\"."
+msgstr ""
+"ຖ້າຕັ້ງເປັນ \"privacyIDEA\" ຜູ້ໃຊ້ ແລະ ຜູ້ດູແລລະບົບຈະຕ້ອງຢືນຢັນຕົວຕົນກັບ privacyIDEA ເມື່ອເຂົ້າສູ່ລະ"
+"ບົບ Web UI. ຄ່າເລີ່ມຕົ້ນແມ່ນ \"userstore\"."
+
+#: lib/policy.py:2789
+msgid ""
+"An alternative text to display on the WebUI login dialog instead of "
+"\"Please sign in\"."
+msgstr ""
+"ຂໍ້ຄວາມທາງເລືອກເພື່ອສະແດງໃນໄດອາລອກເຂົ້າສູ່ລະບົບ WebUI ແທນ \"Please sign in\"."
+
+#: lib/policy.py:2793
+msgid ""
+"When searching in the user list, the search will only performed when "
+"pressing enter."
+msgstr "ເມື່ອຄົ້ນຫາໃນລາຍຊື່ຜູ້ໃຊ້, ການຄົ້ນຫາຈະດຳເນີນການກໍຕໍ່ເມື່ອກົດປຸ່ມ Enter."
+
+#: lib/policy.py:2798
+msgid ""
+"The action taken when a user is idle beyond the logout_time limit. "
+"Defaults to \"lockscreen\"."
+msgstr ""
+"ການກະທຳທີ່ເກີດຂຶ້ນເມື່ອຜູ້ໃຊ້ບໍ່ເຄື່ອນໄຫວເກີນກຳນົດເວລາ logout_time. ຄ່າເລີ່ມຕົ້ນແມ່ນ "
+"\"lockscreen\"."
+
+#: lib/policy.py:2806
+msgid ""
+"The REMOTE_USER set by the webserver can be used to login to privacyIDEA "
+"or it will be ignored. Defaults to \"disable\"."
+msgstr ""
+"REMOTE_USER ທີ່ຕັ້ງໂດຍເວັບເຊີບເວີສາມາດຖືກໃຊ້ເພື່ອເຂົ້າສູ່ລະບົບ privacyIDEA ຫຼື ມັນຈະຖືກລະເລີຍ. ຄ່າເ"
+"ລີ່ມຕົ້ນແມ່ນ \"disable\"."
+
+#: lib/policy.py:2812
+msgid ""
+"Set the time in seconds after which the user will be logged out from the "
+"WebUI. Default: 120"
+msgstr "ຕັ້ງເວລາເປັນວິນາທີທີ່ຜູ້ໃຊ້ຈະຖືກອອກຈາກລະບົບ WebUI. ເລີ່ມຕົ້ນ: 120"
+
+#: lib/policy.py:2817
+msgid ""
+"privacyIDEA issues a JWT when the user or admins logs in to the WebUI. "
+"The default validity is 1 hour. You can specify different validity times "
+"in seconds."
+msgstr ""
+"privacyIDEA ອອກ JWT ເມື່ອຜູ້ໃຊ້ ຫຼື ຜູ້ດູແລລະບົບເຂົ້າສູ່ລະບົບ WebUI. ຄວາມຖືກຕ້ອງເລີ່ມຕົ້ນແມ່ນ 1 ຊົ່ວໂມ"
+"ງ. ທ່ານສາມາດລະບຸເວລາຄວາມຖືກຕ້ອງທີ່ແຕກຕ່າງກັນເປັນວິນາທີ."
+
+#: lib/policy.py:2822
+msgid "Set how many tokens should be displayed in the token view on one page."
+msgstr "ຕັ້ງຄ່າຈຳນວນໂທເຄັນທີ່ຈະສະແດງໃນມຸມມອງໂທເຄັນໃນໜຶ່ງໜ້າ."
+
+#: lib/policy.py:2827
+msgid "Set how many users should be displayed in the user view on one page."
+msgstr "ຕັ້ງຄ່າຈຳນວນຜູ້ໃຊ້ທີ່ຈະສະແດງໃນມຸມມອງຜູ້ໃຊ້ໃນໜຶ່ງໜ້າ."
+
+#: lib/policy.py:2832
+msgid ""
+"Set how many audit entries should be displayed in the audit view on one "
+"page."
+msgstr "ຕັ້ງຄ່າຈຳນວນລາຍການກວດສອບທີ່ຈະສະແດງໃນມຸມມອງການກວດສອບໃນໜຶ່ງໜ້າ."
+
+#: lib/policy.py:2837
+msgid "Use your own html template for the web UI menu."
+msgstr "ໃຊ້ເທມເພລດ html ຂອງທ່ານເອງສຳລັບເມນູ web UI."
+
+#: lib/policy.py:2841
+msgid "Use your own html template for the web UI baseline/footer."
+msgstr "ໃຊ້ເທມເພລດ html ຂອງທ່ານເອງສຳລັບ baseline/footer ຂອງ web UI."
+
+#: lib/policy.py:2845
+msgid "Link your privacy statement to be displayed in the baseline/footer."
+msgstr "ເຊື່ອມຕໍ່ໃບປະກາດຄວາມເປັນສ່ວນຕົວຂອງທ່ານເພື່ອສະແດງໃນ baseline/footer."
+
+#: lib/policy.py:2849
+msgid ""
+"Whether the user ID and the resolver should be displayed in the token "
+"list."
+msgstr "ບໍ່ວ່າ ID ຜູ້ໃຊ້ ແລະ ຣີຊອລເວີຄວນຈະຖືກສະແດງໃນລາຍຊື່ໂທເຄັນຫຼືບໍ່."
+
+#: lib/policy.py:2854
+msgid ""
+"The URL of a repository, where the policy templates can be found.  "
+"(Default /static/policy-templates/"
+msgstr ""
+"URL ຂອງຣີພອສິທໍຣີ, ບ່ອນທີ່ສາມາດພົບເທມເພລດນະໂຍບາຍໄດ້. (ເລີ່ມຕົ້ນ /static/policy-templates/"
+
+#: lib/policy.py:2860
+msgid ""
+"The URL of an SSO provider for redirect at logout.(The URL must start "
+"with http:// or https://)"
+msgstr ""
+"URL ຂອງຜູ້ໃຫ້ບໍລິການ SSO ສຳລັບການຣີໄດຣັກເມື່ອອອກຈາກລະບົບ. (URL ຕ້ອງຂຶ້ນຕົ້ນດ້ວຍ http:// ຫຼື "
+"https://)"
+
+#: lib/policy.py:2865
+msgid "As long as a user has no token, he will only see a token wizard in the UI."
+msgstr "ຕາບໃດທີ່ຜູ້ໃຊ້ບໍ່ມີໂທເຄັນ, ລາວຈະເຫັນພຽງແຕ່ຕົວຊ່ວຍໂທເຄັນໃນ UI."
+
+#: lib/policy.py:2871
+msgid ""
+"The tokenwizard will be displayed in the token menu, even if the user "
+"already has a token."
+msgstr ""
+"ຕົວຊ່ວຍໂທເຄັນຈະຖືກສະແດງໃນເມນູໂທເຄັນ, ເຖິງແມ່ນວ່າຜູ້ໃຊ້ຈະມີໂທເຄັນແລ້ວກໍຕາມ."
+
+#: lib/policy.py:2877
+msgid ""
+"This is a whitespace separated list of tokentypes, for which a rollover "
+"button is displayed in the token details."
+msgstr ""
+"ນີ້ແມ່ນລາຍການປະເພດໂທເຄັນທີ່ແຍກດ້ວຍຊ່ອງຫວ່າງ, ເຊິ່ງຈະມີປຸ່ມໂຣລໂອເວີສະແດງໃນລາຍລະອຽດໂທເຄັນ."
+
+#: lib/policy.py:2884
+msgid "The welcome dialog will be displayed if the user has no tokens assigned."
+msgstr "ໄດອາລອກຕ້ອນຮັບຈະຖືກສະແດງຖ້າຜູ້ໃຊ້ບໍ່ມີໂທເຄັນມອບໝາຍ."
+
+#: lib/policy.py:2888
+msgid "This is the default token type in the token enrollment dialog."
+msgstr "ນີ້ແມ່ນປະເພດໂທເຄັນເລີ່ມຕົ້ນໃນໄດອາລອກການລົງທະບຽນໂທເຄັນ."
+
+#: lib/policy.py:2894
+msgid "This is the default container type in the container create dialog."
+msgstr "ນີ້ແມ່ນປະເພດຄອນເທນເນີເລີ່ມຕົ້ນໃນໄດອາລອກສ້າງຄອນເທນເນີ."
+
+#: lib/policy.py:2899
+msgid ""
+"A list of realm names, which are displayed in a drop down menu in the "
+"WebUI login screen. Realms are separated by white spaces."
+msgstr ""
+"ລາຍຊື່ຊື່ເຣມ, ເຊິ່ງຈະຖືກສະແດງໃນເມນູແບບເລື່ອນລົງໃນໜ້າຈໍເຂົ້າສູ່ລະບົບ WebUI. ເຣມຖືກແຍກດ້ວຍຊ່ອງຫວ່າງ."
+
+#: lib/policy.py:2905
+msgid ""
+"If this is checked, the administrator will not see the welcome dialog "
+"anymore."
+msgstr "ຖ້າເລືອກອັນນີ້, ຜູ້ດູແລລະບົບຈະບໍ່ເຫັນໄດອາລອກຕ້ອນຮັບອີກຕໍ່ໄປ."
+
+#: lib/policy.py:2910
+msgid ""
+"Per default disabled actions result in disabled buttons. When checking "
+"this action, buttons of disabled actions are hidden."
+msgstr ""
+"ໂດຍເລີ່ມຕົ້ນ ການກະທຳທີ່ຖືກປິດໃຊ້ງານຈະສົ່ງຜົນໃຫ້ປຸ່ມຖືກປິດໃຊ້ງານ. ເມື່ອເລືອກການກະທຳນີ້, ປຸ່ມຂອງການກະທຳທີ່"
+"ຖືກປິດໃຊ້ງານຈະຖືກຊ່ອນໄວ້."
+
+#: lib/policy.py:2915
+msgid ""
+"If this is checked, there will be a confirmation prompt when deleting "
+"policies, events, mresolver, resolver or periodic tasks!"
+msgstr ""
+"ຖ້າເລືອກອັນນີ້, ຈະມີການເຕືອນໃຫ້ຢືນຢັນເມື່ອລຶບນະໂຍບາຍ, ເຫດການ, mresolver, ຣີຊອລເວີ ຫຼື ວຽກງານຕາ"
+"ມກຳນົດເວລາ!"
+
+#: lib/policy.py:2920
+msgid "If this is checked, the seed will be displayed as text during enrollment."
+msgstr ""
+"ຖ້າເລືອກອັນນີ້, ເມັດພັນ (seed) ຈະຖືກສະແດງເປັນຂໍ້ຄວາມໃນລະຫວ່າງການລົງທະບຽນ."
+
+#: lib/policy.py:2925
+msgid ""
+"If this is checked, the privacyIDEA Node name will be displayed in the "
+"menu bar."
+msgstr "ຖ້າເລືອກອັນນີ້, ຊື່ privacyIDEA Node ຈະຖືກສະແດງໃນແຖບເມນູ."
+
+#: lib/policy.py:2930
+msgid ""
+"If this is checked, the enrollment page for HOTP, TOTP and Push tokens "
+"will contain a QR code that leads to the privacyIDEA Authenticator in the"
+" Google Play Store."
+msgstr ""
+"ຖ້າເລືອກອັນນີ້, ໜ້າການລົງທະບຽນສຳລັບໂທເຄັນ HOTP, TOTP ແລະ Push ຈະມີ QR ໂຄດທີ່ນຳໄປສູ່ "
+"privacyIDEA Authenticator ໃນ Google Play Store."
+
+#: lib/policy.py:2937
+msgid ""
+"If this is checked, the enrollment page for HOTP, TOTP and Push tokens "
+"will contain a QR code that leads to the privacyIDEA Authenticator in the"
+" iOS App Store."
+msgstr ""
+"ຖ້າເລືອກອັນນີ້, ໜ້າການລົງທະບຽນສຳລັບໂທເຄັນ HOTP, TOTP ແລະ Push ຈະມີ QR ໂຄດທີ່ນຳໄປສູ່ "
+"privacyIDEA Authenticator ໃນ iOS App Store."
+
+#: lib/policy.py:2944
+msgid ""
+"This action adds a QR code in the enrollment page for HOTP, TOTP and Push"
+" tokens, that lead to this given URL."
+msgstr ""
+"ການກະທຳນີ້ເພີ່ມ QR ໂຄດໃນໜ້າການລົງທະບຽນສຳລັບໂທເຄັນ HOTP, TOTP ແລະ Push, ເຊິ່ງນຳໄປສູ່ URL ທີ່"
+"ໃຫ້ມານີ້."
+
+#: lib/policy.py:2949
+msgid ""
+"The RSS feeds fetched for the user defined in the format: "
+"<code>'Title':'URL'-'Title':'URL'</code> "
+msgstr ""
+"RSS feeds ທີ່ດຶງຂໍ້ມູນສຳລັບຜູ້ໃຊ້ທີ່ກຳນົດໄວ້ໃນຟໍແມັດ: <code>'Title':'URL'-'Title':'URL'</"
+"code> "
+
+#: lib/policy.py:2953
+msgid ""
+"The age of the RSS feed entries in days. Use <code>0</code> to hide the "
+"news feed. For admins the default is 180 days and for users 0 days."
+msgstr ""
+"ອາຍຸຂອງລາຍການ RSS feed ເປັນວັນ. ໃຊ້ <code>0</code> ເພື່ອຊ່ອນ news feed. ສຳລັບຜູ້ດູແລລະບົບ"
+"ຄ່າເລີ່ມຕົ້ນແມ່ນ 180 ວັນ ແລະ ສຳລັບຜູ້ໃຊ້ແມ່ນ 0 ວັນ."
+
+#: lib/policy.py:2958
+msgid ""
+"Container type to be created with the container wizard. It is required to"
+" set at least this option to enable the container wizard. As long as the "
+"user has no container assigned he will only see the container wizard in "
+"the UI."
+msgstr ""
+"ປະເພດຄອນເທນເນີທີ່ຈະສ້າງດ້ວຍຕົວຊ່ວຍຄອນເທນເນີ. ມັນຈຳເປັນຕ້ອງຕັ້ງຄ່າທາງເລືອກນີ້ຢ່າງໜ້ອຍເພື່ອເປີດໃຊ້ຕົວຊ່ວ"
+"ຍຄອນເທນເນີ. ຕາບໃດທີ່ຜູ້ໃຊ້ບໍ່ມີຄອນເທນເນີມອບໝາຍ, ລາວຈະເຫັນພຽງແຕ່ຕົວຊ່ວຍຄອນເທນເນີໃນ UI."
+
+#: lib/policy.py:2965
+msgid ""
+"Name of the container template to be used to create a container in the "
+"container wizard (optional). Note that the template must be of the same "
+"type as selected in the container_wizard_type."
+msgstr ""
+"ຊື່ຂອງເທມເພລດຄອນເທນເນີທີ່ຈະໃຊ້ສ້າງຄອນເທນເນີໃນຕົວຊ່ວຍຄອນເທນເນີ (ທາງເລືອກ). ໝາຍເຫດວ່າເທມເພລດ"
+"ຕ້ອງເປັນປະເພດດຽວກັນກັບທີ່ເລືອກໃນ container_wizard_type."
+
+#: lib/policy.py:2972
+msgid ""
+"In the container wizard, a QR code will be generated to register the new "
+"container on the smartphone. (Only applicable for smartphone containers)"
+msgstr ""
+"ໃນຕົວຊ່ວຍຄອນເທນເນີ, QR ໂຄດຈະຖືກສ້າງຂຶ້ນເພື່ອລົງທະບຽນຄອນເທນເນີໃໝ່ໃນສະມາດໂຟນ. (ໃຊ້ໄດ້ກັບຄອນເທນ"
+"ເນີສະມາດໂຟນເທົ່ານັ້ນ)"
+
+#: lib/policy.py:2978
+msgid "Show or hide the passkey login button on the login screen."
+msgstr "ສະແດງ ຫຼື ຊ່ອນປຸ່ມເຂົ້າສູ່ລະບົບແພສຄີໃນໜ້າຈໍເຂົ້າສູ່ລະບົບ."
+
+#: lib/policy.py:2984
+msgid ""
+"The URL of your privacyIDEA server, e.g. <code>https://pi/</code>. It is "
+"used to build URLs the container can contact for registration and "
+"synchronization."
+msgstr ""
+"URL ຂອງເຊີບເວີ privacyIDEA ຂອງທ່ານ, ເຊັ່ນ <code>https://pi/</code>. ມັນຖືກໃຊ້ເພື່ອສ້າງ "
+"URL ທີ່ຄອນເທນເນີສາມາດຕິດຕໍ່ໄດ້ສຳລັບການລົງທະບຽນ ແລະ ການຣີຊິ້ງ."
+
+#: lib/policy.py:2990
+msgid ""
+"The time in minutes the client has to do the second step of the "
+"registration. The default is ten minutes."
+msgstr ""
+"ເວລາເປັນນາທີທີ່ໄຄລ໌ເອັນມີເພື່ອເຮັດຂັ້ນຕອນທີສອງຂອງການລົງທະບຽນ. ເລີ່ມຕົ້ນແມ່ນສິບນາທີ."
+
+#: lib/policy.py:2996
+msgid ""
+"After the client (a registered container) has challenged an action such "
+"as synchronization or unregistration, this defines the time in minutes "
+"the client has to complete the action. The default is two minutes."
+msgstr ""
+"ຫຼັງຈາກໄຄລ໌ເອັນ (ຄອນເທນເນີທີ່ລົງທະບຽນແລ້ວ) ໄດ້ກະຕຸ້ນແຊລເລນຈ໌ການກະທຳ ເຊັ່ນ: ການຣີຊິ້ງ ຫຼື ການຍົກເລີກ"
+"ການລົງທະບຽນ, ສິ່ງນີ້ຈະກຳນົດເວລາເປັນນາທີທີ່ໄຄລ໌ເອັນຕ້ອງເຮັດການກະທຳໃຫ້ສຳເລັດ. ເລີ່ມຕົ້ນແມ່ນສອງນາທີ."
+
+#: lib/policy.py:3005
+msgid ""
+"The container needs to verify the SSL certificate of the privacyIDEA "
+"server during registration and synchronization. (default True)"
+msgstr ""
+"ຄອນເທນເນີຈຳເປັນຕ້ອງຢືນຢັນ SSL ໃບຢັ້ງຢືນຂອງເຊີບເວີ privacyIDEA ໃນລະຫວ່າງການລົງທະບຽນ ແລະ ກາ"
+"ນຣີຊິ້ງ. (ເລີ່ມຕົ້ນ True)"
+
+#: lib/policy.py:3012
+msgid ""
+"The client is allowed to perform a rollover of the container and the "
+"included tokens."
+msgstr ""
+"ໄຄລ໌ເອັນໄດ້ຮັບອະນຸຍາດໃຫ້ດຳເນີນການໂຣລໂອເວີຂອງຄອນເທນເນີ ແລະ ໂທເຄັນທີ່ບັນຈຸຢູ່."
+
+#: lib/policy.py:3017
+msgid ""
+"During the first synchronization, the server automatically adds the "
+"clients tokens existing in privacyIDEA to the container. This allows to "
+"register devices with existing tokens as container without having to "
+"manually add the tokens on the device to the container."
+msgstr ""
+"ໃນລະຫວ່າງການຣີຊິ້ງຄັ້ງທຳອິດ, ເຊີບເວີຈະເພີ່ມໂທເຄັນໄຄລ໌ເອັນທີ່ມີຢູ່ໃນ privacyIDEA ໃສ່ຄອນເທນເນີໂດຍອັດຕ"
+"ະໂນມັດ. ສິ່ງນີ້ອະນຸຍາດໃຫ້ລົງທະບຽນອຸປະກອນດ້ວຍໂທເຄັນທີ່ມີຢູ່ເປັນຄອນເທນເນີ ໂດຍບໍ່ຕ້ອງເພີ່ມໂທເຄັນໃນອຸປະກອນ"
+"ໃສ່ຄອນເທນເນີດ້ວຍຕົນເອງ."
+
+#: lib/policy.py:3024
+msgid "The user is not allowed to delete tokens locally on the smartphone."
+msgstr "ຜູ້ໃຊ້ບໍ່ໄດ້ຮັບອະນຸຍາດໃຫ້ລຶບໂທເຄັນໃນສະມາດໂຟນໂດຍທ້ອງຖິ່ນ."
+
+#: lib/policy.py:3029
+msgid ""
+"The client is not allowed to unregister the container. The user can not "
+"delete the container locally on the smartphone."
+msgstr ""
+"ໄຄລ໌ເອັນບໍ່ໄດ້ຮັບອະນຸຍາດໃຫ້ຍົກເລີກການລົງທະບຽນຄອນເທນເນີ. ຜູ້ໃຊ້ບໍ່ສາມາດລຶບຄອນເທນເນີໃນສະມາດໂຟນໂດຍທ້"
+"ອງຖິ່ນໄດ້."
+
+#: lib/policy.py:3036
+msgid ""
+"Enable to return an unspecific error message for failures in the "
+"authentication-free container endpoints."
+msgstr ""
+"ເປີດໃຊ້ເພື່ອສົ່ງກັບຂໍ້ຄວາມສະແດງຂໍ້ຜິດພາດແບບບໍ່ສະເພາະເຈາະຈົງສຳລັບຄວາມລົ້ມເຫຼວໃນເອັນພອຍຄອນເທນເນີທີ່ບໍ່ມີກ"
+"ານຢືນຢັນຕົວຕົນ."
+
+#: lib/policy.py:3042
+msgid ""
+"This action makes the description required for all selected tokentypes, "
+"during the editing process."
+msgstr ""
+"ການກະທຳນີ້ເຮັດໃຫ້ຄຳອະທິບາຍມີຄວາມຈຳເປັນສຳລັບທຸກປະເພດໂທເຄັນທີ່ເລືອກ, ໃນລະຫວ່າງຂະບວນການແກ້ໄຂ."
+
+#: lib/policy.py:3051
+msgid ""
+"Enable to return an unspecific error message for failures in the special "
+"token endpoints /ttype/*."
+msgstr ""
+"ເປີດໃຊ້ເພື່ອສົ່ງກັບຂໍ້ຄວາມສະແດງຂໍ້ຜິດພາດແບບບໍ່ສະເພາະເຈາະຈົງສຳລັບຄວາມລົ້ມເຫຼວໃນເອັນພອຍໂທເຄັນພິເສດ /"
+"ttype/*."
+
+#: lib/policy.py:3055
+msgid ""
+"Enable to return an unspecific error message for failed offline token "
+"refills."
+msgstr ""
+"ເປີດໃຊ້ເພື່ອສົ່ງກັບຂໍ້ຄວາມສະແດງຂໍ້ຜິດພາດແບບບໍ່ສະເພາະເຈາະຈົງສຳລັບການຣີຟິວໂທເຄັນອອບໄລນ໌ທີ່ລົ້ມເຫຼວ."
+
+#: lib/policy.py:3101
+msgid ""
+"The policy only matches if certain conditions on the user info are "
+"fulfilled."
+msgstr "ນະໂຍບາຍຈະກົງກັນກໍຕໍ່ເມື່ອເງື່ອນໄຂບາງຢ່າງກ່ຽວກັບຂໍ້ມູນຜູ້ໃຊ້ຖືກຕອບສະໜອງ."
+
+#: lib/policy.py:3104
+msgid ""
+"The policy only matches if certain conditions of the token attributes are"
+" fulfilled."
+msgstr "ນະໂຍບາຍຈະກົງກັນກໍຕໍ່ເມື່ອເງື່ອນໄຂບາງຢ່າງຂອງແອັດທຣີບິວໂທເຄັນຖືກຕອບສະໜອງ."
+
+#: lib/policy.py:3107
+msgid ""
+"The policy only matches if certain conditions on the token info are "
+"fulfilled."
+msgstr "ນະໂຍບາຍຈະກົງກັນກໍຕໍ່ເມື່ອເງື່ອນໄຂບາງຢ່າງກ່ຽວກັບຂໍ້ມູນໂທເຄັນຖືກຕອບສະໜອງ."
+
+#: lib/policy.py:3110
+msgid ""
+"The policy only matches if certain conditions on the HTTP Request header "
+"are fulfilled."
+msgstr ""
+"ນະໂຍບາຍຈະກົງກັນກໍຕໍ່ເມື່ອເງື່ອນໄຂບາງຢ່າງກ່ຽວກັບ HTTP Request header ຖືກຕອບສະໜອງ."
+
+#: lib/policy.py:3113
+msgid ""
+"The policy only matches if certain conditions on the HTTP Environment are"
+" fulfilled."
+msgstr ""
+"ນະໂຍບາຍຈະກົງກັນກໍຕໍ່ເມື່ອເງື່ອນໄຂບາງຢ່າງກ່ຽວກັບ HTTP Environment ຖືກຕອບສະໜອງ."
+
+#: lib/policy.py:3116
+msgid ""
+"The policy only matches if certain conditions on the container attributes"
+" are fulfilled."
+msgstr ""
+"ນະໂຍບາຍຈະກົງກັນກໍຕໍ່ເມື່ອເງື່ອນໄຂບາງຢ່າງກ່ຽວກັບແອັດທຣີບິວຄອນເທນເນີຖືກຕອບສະໜອງ."
+
+#: lib/policy.py:3119
+msgid ""
+"The policy only matches if certain conditions on the container info are "
+"fulfilled."
+msgstr ""
+"ນະໂຍບາຍຈະກົງກັນກໍຕໍ່ເມື່ອເງື່ອນໄຂບາງຢ່າງກ່ຽວກັບຂໍ້ມູນຄອນເທນເນີຖືກຕອບສະໜອງ."
+
+#: lib/policy.py:3122
+msgid ""
+"The policy only matches if certain conditions on the request data are "
+"fulfilled."
+msgstr ""
+"ນະໂຍບາຍຈະກົງກັນກໍຕໍ່ເມື່ອເງື່ອນໄຂບາງຢ່າງກ່ຽວກັບຂໍ້ມູນຄຳຮ້ອງຂໍຖືກຕອບສະໜອງ."
+
+#: lib/radiusserver.py:263
+msgid "The RADIUS secret is too long"
+msgstr "RADIUS secret ຍາວເກີນໄປ"
+
+#: lib/subscriptions.py:44
+msgid "My subscription has expired."
+msgstr "ການສະໝັກໃຊ້ຂອງຂ້ອຍໝົດອາຍຸແລ້ວ."
+
+#: lib/token.py:166
+#, python-brace-format
+msgid "create_tokenclass_object failed: {0!r}"
+msgstr "create_tokenclass_object ລົ້ມເຫຼວ: {0!r}"
+
+#: lib/token.py:351
+msgid "I can only create SQL filters from tokeninfo of length 1."
+msgstr "ຂ້ອຍສາມາດສ້າງ SQL filters ຈາກ tokeninfo ທີ່ມີຄວາມຍາວ 1 ເທົ່ານັ້ນ."
+
+#: lib/token.py:774
+msgid "The requested token could not be found."
+msgstr "ບໍ່ພົບໂທເຄັນທີ່ຕ້ອງການ."
+
+#: lib/token.py:779
+msgid "More than one matching token was found."
+msgstr "ພົບໂທເຄັນທີ່ກົງກັນຫຼາຍກວ່າໜຶ່ງ."
+
+#: lib/token.py:1083
+msgid "multiple tokens are matching this OTP value!"
+msgstr "ມີໂທເຄັນຫຼາຍອັນທີ່ກົງກັບຄ່າ OTP ນີ້!"
+
+#: lib/token.py:1307
+msgid "init token failed. Unknown token type:"
+msgstr "init token ລົ້ມເຫຼວ. ບໍ່ຮູ້ຈັກປະເພດໂທເຄັນ:"
+
+#: lib/token.py:1327
+#, python-brace-format
+msgid ""
+"Token {serial} already exists with type {old_type}. Can not initialize "
+"token with new type {token_type}"
+msgstr ""
+"ໂທເຄັນ {serial} ມີຢູ່ແລ້ວດ້ວຍປະເພດ {old_type}. ບໍ່ສາມາດເລີ່ມຕົ້ນໂທເຄັນດ້ວຍປະເພດໃໝ່ "
+"{token_type}"
+
+#: lib/token.py:1331
+msgid "init token failed:"
+msgstr "init token ລົ້ມເຫຼວ:"
+
+#: lib/token.py:1513
+#, python-brace-format
+msgid "Token already assigned to user {old_user!r}"
+msgstr "ໂທເຄັນຖືກມອບໝາຍໃຫ້ຜູ້ໃຊ້ {old_user!r} ແລ້ວ"
+
+#: lib/token.py:1527
+#, python-brace-format
+msgid "Token assign failed for {0!r}/{1!s} : {2!r}"
+msgstr "ການມອບໝາຍໂທເຄັນລົ້ມເຫຼວສຳລັບ {0!r}/{1!s} : {2!r}"
+
+#: lib/token.py:1557
+msgid "Token unassign failed for"
+msgstr "ການຍົກເລີກການມອບໝາຍໂທເຄັນລົ້ມເຫຼວສຳລັບ"
+
+#: lib/token.py:1637
+msgid "Parameter user must not be a string:"
+msgstr "ພາຣາມິເຕີຜູ້ໃຊ້ຕ້ອງບໍ່ແມ່ນສະຕຣິງ:"
+
+#: lib/token.py:2192
+msgid "You can only define a lost token for an assigned token."
+msgstr "ທ່ານສາມາດກຳນົດໂທເຄັນທີ່ເສຍຫາຍສຳລັບໂທເຄັນທີ່ມອບໝາຍແລ້ວເທົ່ານັ້ນ."
+
+#: lib/token.py:2218
+#, python-brace-format
+msgid "temporary replacement for {0!s}"
+msgstr "ການທົດແທນຊົ່ວຄາວສຳລັບ {0!s}"
+
+#: lib/token.py:2273
+msgid "There is no active and assigned token in this realm"
+msgstr "ບໍ່ມີໂທເຄັນທີ່ໃຊ້ງານຢູ່ ແລະ ຖືກມອບໝາຍໃນເຣມນີ້"
+
+#: lib/token.py:2285
+#, python-brace-format
+msgid ""
+"There is no active and assigned token in this realm, included types: "
+"{0!s}, excluded types: {1!s}"
+msgstr ""
+"ບໍ່ມີໂທເຄັນທີ່ໃຊ້ງານຢູ່ ແລະ ຖືກມອບໝາຍໃນເຣມນີ້, ປະເພດທີ່ລວມຢູ່: {0!s}, ປະເພດທີ່ຍົກເວັ້ນ: {1!s}"
+
+#: lib/token.py:2338
+msgid "OTP verification failed."
+msgstr "ການຢືນຢັນ OTP ລົ້ມເຫຼວ."
+
+#: lib/token.py:2372
+msgid "The user has no tokens assigned"
+msgstr "ຜູ້ໃຊ້ບໍ່ມີໂທເຄັນມອບໝາຍ"
+
+#: lib/token.py:2620
+#, python-brace-format
+msgid "matching {0:d} tokens"
+msgstr "ກົງກັບ {0:d} ໂທເຄັນ"
+
+#: lib/token.py:2668
+msgid "Challenge matches, but token is not fit for challenge"
+msgstr "ແຊລເລນຈ໌ກົງກັນ, ແຕ່ໂທເຄັນບໍ່ເໝາະສົມສຳລັບແຊລເລນຈ໌"
+
+#: lib/token.py:2719
+msgid "Response did not match the challenge."
+msgstr "ຄຳຕອບບໍ່ກົງກັບແຊລເລນຈ໌."
+
+#: lib/token.py:2721
+#, python-brace-format
+msgid "Response did not match for {0!s} tokens."
+msgstr "ຄຳຕອບບໍ່ກົງສຳລັບ {0!s} ໂທເຄັນ."
+
+#: lib/token.py:2728
+msgid "No active challenge response token found"
+msgstr "ບໍ່ພົບໂທເຄັນແຊລເລນຈ໌ຄຳຕອບທີ່ໃຊ້ງານຢູ່"
+
+#: lib/token.py:2744
+msgid "wrong otp value"
+msgstr "ຄ່າ otp ບໍ່ຖືກຕ້ອງ"
+
+#: lib/token.py:2751
+msgid ". previous otp used again"
+msgstr ". otp ກ່ອນໜ້ານີ້ຖືກໃຊ້ງານອີກຄັ້ງ"
+
+#: lib/token.py:2765
+msgid "wrong otp pin"
+msgstr "otp pin ບໍ່ຖືກຕ້ອງ"
+
+#: lib/token.py:2777
+msgid "No suitable token found for authentication."
+msgstr "ບໍ່ພົບໂທເຄັນທີ່ເໝາະສົມສຳລັບການຢືນຢັນຕົວຕົນ."
+
+#: lib/token.py:2805
+#, python-brace-format
+msgid "Admin is allowed to initialize {0!s} tokens."
+msgstr "ຜູ້ດູແລລະບົບໄດ້ຮັບອະນຸຍາດໃຫ້ເລີ່ມຕົ້ນ {0!s} ໂທເຄັນ."
+
+#: lib/token.py:2814
+#, python-brace-format
+msgid "The user is allowed to enroll a {0!s} token."
+msgstr "ຜູ້ໃຊ້ໄດ້ຮັບອະນຸຍາດໃຫ້ລົງທະບຽນໂທເຄັນ {0!s}."
+
+#: lib/token.py:2846
+#, python-brace-format
+msgid "Set the maximum allowed PIN length of the {0!s} token."
+msgstr "ຕັ້ງຄ່າຄວາມຍາວ PIN ສູງສຸດທີ່ອະນຸຍາດຂອງໂທເຄັນ {0!s}."
+
+#: lib/token.py:2852
+#, python-brace-format
+msgid "Set the minimum required PIN length of the {0!s} token."
+msgstr "ຕັ້ງຄ່າຄວາມຍາວ PIN ຂັ້ນຕໍ່າທີ່ຕ້ອງການຂອງໂທເຄັນ {0!s}."
+
+#: lib/token.py:2857
+#, python-brace-format
+msgid ""
+"Specify the required PIN contents of the {0!s} token. (c)haracters, "
+"(n)umeric, (s)pecial, (o)thers. [+/-]!"
+msgstr ""
+"ລະບຸເນື້ອຫາ PIN ທີ່ຕ້ອງການຂອງໂທເຄັນ {0!s}. (c)haracters, (n)umeric, (s)pecial, (o)"
+"thers. [+/-]!"
+
+#: lib/token.py:2900 lib/token.py:2916 lib/tokenclass.py:274
+msgid "The tokengroup does not exist."
+msgstr "tokengroup ບໍ່ມີຢູ່."
+
+#: lib/token.py:2981
+#, python-brace-format
+msgid " Please press: {presence_answer}"
+msgstr " ກະລຸນາກົດ: {presence_answer}"
+
+#: lib/tokenclass.py:171
+msgid "Force the key to be generated on the server."
+msgstr "ບັງຄັບໃຫ້ຄີຖືກສ້າງຂຶ້ນເທິງເຊີບເວີ."
+
+#: lib/tokenclass.py:1841
+msgid "please enter otp: "
+msgstr "ກະລຸນາປ້ອນ otp: "
+
+#: lib/applications/ssh.py:105
+msgid "The username on the SSH server."
+msgstr "ຊື່ຜູ້ໃຊ້ໃນເຊີບເວີ SSH."
+
+#: lib/applications/ssh.py:107
+msgid ""
+"The service ID of the SSH server. Several servers can have the same "
+"service ID."
+msgstr "service ID ຂອງເຊີບເວີ SSH. ເຊີບເວີຫຼາຍອັນສາມາດມີ service ID ດຽວກັນ."
+
+#: lib/containers/smartphone.py:126
+msgid "A smartphone that uses an authenticator app."
+msgstr "ສະມາດໂຟນທີ່ໃຊ້ແອັບຢືນຢັນຕົວຕົນ."
+
+#: lib/containers/smartphone.py:239
+msgid "URL for privacyIDEA Container Registration"
+msgstr "URL ສຳລັບການລົງທະບຽນຄອນເທນເນີ privacyIDEA"
+
+#: lib/containers/yubikey.py:62
+msgid "Yubikey hardware device that can hold HOTP, certificate and webauthn token"
+msgstr "ອຸປະກອນຮາດແວ Yubikey ທີ່ສາມາດບັນຈຸ HOTP, ໃບຢັ້ງຢືນ ແລະ ໂທເຄັນ webauthn"
+
+#: lib/eventhandler/base.py:181
+msgid ""
+"The challenge session matches the string or regular expression (like "
+"'challenge_declined' or 'enrollment')"
+msgstr ""
+"ເຊສຊັ່ນການທ້າທາຍກົງກັບຂໍ້ຄວາມ ຫຼື ນິພົດປົກກະຕິ (ເຊັ່ນ 'challenge_declined' ຫຼື 'enrollment')"
+
+#: lib/eventhandler/base.py:188
+msgid "The challenge of a token during the authentication process is expired."
+msgstr "ການທ້າທາຍຂອງໂທເຄັນໃນລະຫວ່າງຂະບວນການຢັ້ງຢືນຕົວຕົນໄດ້ໝົດອາຍຸແລ້ວ."
+
+#: lib/eventhandler/base.py:196
+msgid ""
+"The rollout_state of the token has a certain value like 'clientwait' or "
+"'enrolled'."
+msgstr ""
+"ສະຖານະການຕິດຕັ້ງ (rollout_state) ຂອງໂທເຄັນມີຄ່າສະເພາະເຊັ່ນ 'clientwait' ຫຼື 'enrolled'."
+
+#: lib/eventhandler/base.py:202
+msgid "The realm of the user, for which this event should apply."
+msgstr "ເລມ (realm) ຂອງຜູ້ໃຊ້, ທີ່ເຫດການນີ້ຄວນນຳໃຊ້."
+
+#: lib/eventhandler/base.py:209
+msgid "The resolver of the user, for which this event should apply."
+msgstr "ຣີໂຊລເວີ (resolver) ຂອງຜູ້ໃຊ້, ທີ່ເຫດການນີ້ຄວນນຳໃຊ້."
+
+#: lib/eventhandler/base.py:216
+msgid "The realm of the token, for which this event should apply."
+msgstr "ເລມ (realm) ຂອງໂທເຄັນ, ທີ່ເຫດການນີ້ຄວນນຳໃຊ້."
+
+#: lib/eventhandler/base.py:224
+msgid "The resolver of the token, for which this event should apply."
+msgstr "ຣີໂຊລເວີ (resolver) ຂອງໂທເຄັນ, ທີ່ເຫດການນີ້ຄວນນຳໃຊ້."
+
+#: lib/eventhandler/base.py:232
+msgid "The type of the token."
+msgstr "ປະເພດຂອງໂທເຄັນ."
+
+#: lib/eventhandler/base.py:239
+msgid "The logged in user is of the following type."
+msgstr "ຜູ້ໃຊ້ທີ່ເຂົ້າສູ່ລະບົບເປັນປະເພດດັ່ງຕໍ່ໄປນີ້."
+
+#: lib/eventhandler/base.py:246
+msgid "The result.value within the response is True or False."
+msgstr "ຄ່າ result.value ພາຍໃນການຕອບກັບແມ່ນ True ຫຼື False."
+
+#: lib/eventhandler/base.py:254
+msgid "The result.status within the response is True or False."
+msgstr "ສະຖານະ result.status ພາຍໃນການຕອບກັບແມ່ນ True ຫຼື False."
+
+#: lib/eventhandler/base.py:262
+msgid "The result.authentication within the response is the given value."
+msgstr "ການຢັ້ງຢືນ result.authentication ພາຍໃນການຕອບກັບແມ່ນຄ່າທີ່ກຳນົດໃຫ້."
+
+#: lib/eventhandler/base.py:270
+msgid "Check if the max failcounter of the token is reached."
+msgstr "ກວດສອບວ່າຕົວນັບຄວາມຜິດພາດສູງສຸດຂອງໂທເຄັນຖືກບັນລຸແລ້ວຫຼືບໍ່."
+
+#: lib/eventhandler/base.py:278
+msgid "The token has a user assigned."
+msgstr "ໂທເຄັນມີຜູ້ໃຊ້ທີ່ຖືກມອບໝາຍ."
+
+#: lib/eventhandler/base.py:285
+msgid ""
+"The token has a user assigned, but the user does not exist in the "
+"userstore anymore."
+msgstr ""
+"ໂທເຄັນມີຜູ້ໃຊ້ທີ່ຖືກມອບໝາຍ, ແຕ່ຜູ້ໃຊ້ນັ້ນບໍ່ມີຢູ່ໃນບ່ອນເກັບຂໍ້ມູນຜູ້ໃຊ້ (userstore) ອີກຕໍ່ໄປ."
+
+#: lib/eventhandler/base.py:293
+msgid "Check if the token is within its validity period."
+msgstr "ກວດສອບວ່າໂທເຄັນຢູ່ໃນໄລຍະເວລາທີ່ມີຜົນບັງຄັບໃຊ້ຫຼືບໍ່."
+
+#: lib/eventhandler/base.py:300
+msgid "Action is triggered, if the serial matches this regular expression."
+msgstr "ການກະທຳຈະຖືກກະຕຸ້ນ, ຖ້າຫາກເລກຊີຣຽນກົງກັບນິພົດປົກກະຕິນີ້."
+
+#: lib/eventhandler/base.py:307
+msgid "The token is in a container."
+msgstr "ໂທເຄັນຢູ່ໃນຄອນເທນເນີ."
+
+#: lib/eventhandler/base.py:314
+msgid ""
+"Action is triggered if the user has this number of tokens assigned. > and"
+" < can be used, like <8."
+msgstr ""
+"ການກະທຳຈະຖືກກະຕຸ້ນຖ້າຜູ້ໃຊ້ມີຈຳນວນໂທເຄັນທີ່ຖືກມອບໝາຍເທົ່ານີ້. ສາມາດໃຊ້ > ແລະ < ໄດ້, ເຊັ່ນ <8."
+
+#: lib/eventhandler/base.py:321
+msgid ""
+"Action is triggered if the number of containers assigned to the user "
+"matches the condition. The condition should start with a comparator such "
+"as '==', '<', '>', followed by a number, e.g. '==0', '>3'."
+msgstr ""
+"ການກະທຳຈະຖືກກະຕຸ້ນຖ້າຈຳນວນຄອນເທນເນີທີ່ມອບໝາຍໃຫ້ຜູ້ໃຊ້ກົງກັບເງື່ອນໄຂ. ເງື່ອນໄຂຄວນເລີ່ມຕົ້ນດ້ວຍຕົວປຽບທ"
+"ຽບເຊັ່ນ '==', '<', '>', ຕາມດ້ວຍຕົວເລກ, ເຊັ່ນ '==0', '>3'."
+
+#: lib/eventhandler/base.py:329
+msgid ""
+"Action is triggered, if the counter of the token equals this setting. Can"
+" also be '>100' or '<99' for no exact match."
+msgstr ""
+"ການກະທຳຈະຖືກກະຕຸ້ນ, ຖ້າຕົວນັບຂອງໂທເຄັນເທົ່າກັບການຕັ້ງຄ່ານີ້. ສາມາດເປັນ '>100' ຫຼື '<99' ສຳລັບການ"
+"ບໍ່ກົງກັນແບບແນ່ນອນ."
+
+#: lib/eventhandler/base.py:337
+msgid ""
+"Action is triggered, if the last authentication of the token is older "
+"than 7h, 10d or 1y."
+msgstr ""
+"ການກະທຳຈະຖືກກະຕຸ້ນ, ຖ້າການຢັ້ງຢືນຕົວຕົນຄັ້ງຫຼ້າສຸດຂອງໂທເຄັນເກົ່າກວ່າ 7 ຊົ່ວໂມງ, 10 ມື້ ຫຼື 1 ປີ."
+
+#: lib/eventhandler/base.py:344
+msgid ""
+"This can be '>100', '<99', or '=100', to trigger the action, if the "
+"tokeninfo field 'count_auth' is bigger than 100, less than 99 or exactly "
+"100."
+msgstr ""
+"ນີ້ສາມາດເປັນ '>100', '<99', ຫຼື '=100', ເພື່ອກະຕຸ້ນການກະທຳ, ຖ້າຊ່ອງຂໍ້ມູນ tokeninfo "
+"'count_auth' ໃຫຍ່ກວ່າ 100, ນ້ອຍກວ່າ 99 ຫຼື ເທົ່າກັບ 100 ພໍດີ."
+
+#: lib/eventhandler/base.py:352
+msgid ""
+"This can be '>100', '<99', or '=100', to trigger the action, if the "
+"tokeninfo field 'count_auth_success' is bigger than 100, less than 99 or "
+"exactly 100."
+msgstr ""
+"ນີ້ສາມາດເປັນ '>100', '<99', ຫຼື '=100', ເພື່ອກະຕຸ້ນການກະທຳ, ຖ້າຊ່ອງຂໍ້ມູນ tokeninfo "
+"'count_auth_success' ໃຫຍ່ກວ່າ 100, ນ້ອຍກວ່າ 99 ຫຼື ເທົ່າກັບ 100 ພໍດີ."
+
+#: lib/eventhandler/base.py:361
+msgid ""
+"This can be '>100', '<99', or '=100', to trigger the action, if the "
+"difference between the tokeninfo field 'count_auth' and "
+"'count_auth_success is bigger than 100, less than 99 or exactly 100."
+msgstr ""
+"ນີ້ສາມາດເປັນ '>100', '<99', ຫຼື '=100', ເພື່ອກະຕຸ້ນການກະທຳ, ຖ້າຄວາມແຕກຕ່າງລະຫວ່າງຊ່ອງຂໍ້ມູນ "
+"tokeninfo 'count_auth' ແລະ 'count_auth_success' ໃຫຍ່ກວ່າ 100, ນ້ອຍກວ່າ 99 ຫຼື ເທົ່າກັ"
+"ບ 100 ພໍດີ."
+
+#: lib/eventhandler/base.py:370
+msgid ""
+"This can be '>9', '<9', or '=10', to trigger the action, if the "
+"failcounter of a token matches this value. Note that the failcounter "
+"stops increasing, if the max_failcount is reached."
+msgstr ""
+"ນີ້ສາມາດເປັນ '>9', '<9', ຫຼື '=10', ເພື່ອກະຕຸ້ນການກະທຳ, ຖ້າຕົວນັບຄວາມຜິດພາດຂອງໂທເຄັນກົງກັບຄ່າ"
+"ນີ້. ໝາຍເຫດວ່າຕົວນັບຄວາມຜິດພາດຈະຢຸດເພີ່ມ, ຖ້າຫາກບັນລຸ max_failcount."
+
+#: lib/eventhandler/base.py:379
+msgid ""
+"This condition can check any arbitrary tokeninfo field. You need to enter"
+" something like '<fieldname> == <fieldvalue>', '<fieldname> > "
+"<fieldvalue>' or '<fieldname> < <fieldvalue>'."
+msgstr ""
+"ເງື່ອນໄຂນີ້ສາມາດກວດສອບຊ່ອງຂໍ້ມູນ tokeninfo ໃດກໍໄດ້ຕາມໃຈມັກ. ທ່ານຈຳເປັນຕ້ອງໃສ່ຂໍ້ມູນເຊັ່ນ "
+"'<fieldname> == <fieldvalue>', '<fieldname> > <fieldvalue>' ຫຼື '<fieldname> < "
+"<fieldvalue>'."
+
+#: lib/eventhandler/base.py:388
+msgid ""
+"This condition can check the value of an arbitrary event counter and "
+"compare it like 'myCounter == 1000', 'myCounter > 1000' or 'myCounter < "
+"1000'."
+msgstr ""
+"ເງື່ອນໄຂນີ້ສາມາດກວດສອບຄ່າຂອງຕົວນັບເຫດການໃດກໍໄດ້ ແລະ ປຽບທຽບມັນເຊັ່ນ 'myCounter == 1000', "
+"'myCounter > 1000' ຫຼື 'myCounter < 1000'."
+
+#: lib/eventhandler/base.py:396
+msgid ""
+"Here you can enter a regular expression. The condition only applies if "
+"the regular expression matches the detail->error->message in the "
+"response."
+msgstr ""
+"ທີ່ນີ້ທ່ານສາມາດໃສ່ນິພົດປົກກະຕິ. ເງື່ອນໄຂຈະນຳໃຊ້ກໍຕໍ່ເມື່ອນິພົດປົກກະຕິກົງກັບ detail->error->message ໃນ"
+"ການຕອບກັບ."
+
+#: lib/eventhandler/base.py:404
+msgid ""
+"Here you can enter a regular expression. The condition only applies if "
+"the regular expression matches the detail->message in the response."
+msgstr ""
+"ທີ່ນີ້ທ່ານສາມາດໃສ່ນິພົດປົກກະຕິ. ເງື່ອນໄຂຈະນຳໃຊ້ກໍຕໍ່ເມື່ອນິພົດປົກກະຕິກົງກັບ detail->message ໃນການຕອບກັ"
+"ບ."
+
+#: lib/eventhandler/base.py:412
+msgid "Trigger the action, if the client IP matches."
+msgstr "ກະຕຸ້ນການກະທຳ, ຖ້າໄອພີຂອງລູກຄ້າກົງກັນ."
+
+#: lib/eventhandler/base.py:418
+msgid ""
+"The container is in the specified states, but can additionally be in "
+"other states."
+msgstr "ຄອນເທນເນີຢູ່ໃນສະຖານະທີ່ລະບຸ, ແຕ່ຍັງສາມາດຢູ່ໃນສະຖານະອື່ນໆເພີ່ມເຕີມໄດ້."
+
+#: lib/eventhandler/base.py:425
+msgid "The container is only in the specified states."
+msgstr "ຄອນເທນເນີຢູ່ໃນສະຖານະທີ່ລະບຸເທົ່ານັ້ນ."
+
+#: lib/eventhandler/base.py:432
+msgid "The container has a user assigned."
+msgstr "ຄອນເທນເນີມີຜູ້ໃຊ້ທີ່ຖືກມອບໝາຍ."
+
+#: lib/eventhandler/base.py:439
+msgid "The container has at least one token assigned."
+msgstr "ຄອນເທນເນີມີໂທເຄັນທີ່ຖືກມອບໝາຍຢ່າງໜ້ອຍໜຶ່ງອັນ."
+
+#: lib/eventhandler/base.py:446
+msgid "The container is of a certain type."
+msgstr "ຄອນເທນເນີເປັນປະເພດໃດໜຶ່ງ."
+
+#: lib/eventhandler/base.py:453
+msgid ""
+"The container is in this realm or in no realm at all. If multiple realms "
+"are selected, the condition is fulfilled if the container is in at least "
+"one realm of the list. The condition is not checked if the container has "
+"no realm, hence the action would be triggered."
+msgstr ""
+"ຄອນເທນເນີຢູ່ໃນເລມນີ້ ຫຼື ບໍ່ມີເລມເລີຍ. ຖ້າເລືອກຫຼາຍເລມ, ເງື່ອນໄຂຈະຖືກຕື່ມເຕັມຖ້າຄອນເທນເນີຢູ່ໃນເລມຢ່າງໜ້"
+"ອຍໜຶ່ງອັນຂອງລາຍການ. ເງື່ອນໄຂຈະບໍ່ຖືກກວດສອບຖ້າຄອນເທນເນີບໍ່ມີເລມ, ສະນັ້ນການກະທຳຈະຖືກກະຕຸ້ນ."
+
+#: lib/eventhandler/base.py:463
+msgid ""
+"An owner of the container is in this resolver. If multiple resolvers are "
+"selected, the condition is fulfilled if at least one owner is in one "
+"resolver. The condition is not checked if the container has no owner, "
+"hence the action would be triggered."
+msgstr ""
+"ເຈົ້າຂອງຄອນເທນເນີຢູ່ໃນຣີໂຊລເວີນີ້. ຖ້າເລືອກຫຼາຍຣີໂຊລເວີ, ເງື່ອນໄຂຈະຖືກຕື່ມເຕັມຖ້າມີເຈົ້າຂອງຢ່າງໜ້ອຍໜຶ່ງຄົນ"
+"ຢູ່ໃນໜຶ່ງຣີໂຊລເວີ. ເງື່ອນໄຂຈະບໍ່ຖືກກວດສອບຖ້າຄອນເທນເນີບໍ່ມີເຈົ້າຂອງ, ສະນັ້ນການກະທຳຈະຖືກກະຕຸ້ນ."
+
+#: lib/eventhandler/base.py:472
+msgid ""
+"This condition can check any arbitrary container info field. You need to "
+"enter something like 'fieldname == fieldvalue', 'fieldname > fieldvalue' "
+"or 'fieldname < fieldvalue'."
+msgstr ""
+"ເງື່ອນໄຂນີ້ສາມາດກວດສອບຊ່ອງຂໍ້ມູນຄອນເທນເນີໃດກໍໄດ້ຕາມໃຈມັກ. ທ່ານຈຳເປັນຕ້ອງໃສ່ຂໍ້ມູນເຊັ່ນ 'fieldname "
+"== fieldvalue', 'fieldname > fieldvalue' ຫຼື 'fieldname < fieldvalue'."
+
+#: lib/eventhandler/base.py:481
+msgid ""
+"Action is triggered, if the last authentication of the container is older"
+" than the specified time. The time value has to be an integer followed by"
+" a time unit. Supported units are 'y' (years), 'd' (days), 'h' (hours), "
+"'m' (minutes), 's' (seconds). Only one unit is allowed. Examples: '8h', "
+"'7d', '1y'"
+msgstr ""
+"ການກະທຳຈະຖືກກະຕຸ້ນ, ຖ້າການຢັ້ງຢືນຕົວຕົນຄັ້ງຫຼ້າສຸດຂອງຄອນເທນເນີເກົ່າກວ່າເວລາທີ່ລະບຸ. ຄ່າເວລາຕ້ອງເປັນຈຳ"
+"ນວນເຕັມຕາມດ້ວຍໜ່ວຍເວລາ. ໜ່ວຍທີ່ຮອງຮັບແມ່ນ 'y' (ປີ), 'd' (ມື້), 'h' (ຊົ່ວໂມງ), 'm' (ນາທີ), "
+"'s' (ວິນາທີ). ອະນຸຍາດໃຫ້ໃຊ້ໄດ້ພຽງໜຶ່ງໜ່ວຍເທົ່ານັ້ນ. ຕົວຢ່າງ: '8h', '7d', '1y'"
+
+#: lib/eventhandler/base.py:492
+msgid ""
+"Action is triggered, if the last synchronization of the container is "
+"older than the specified time. The time value has to be an integer "
+"followed by a time unit. Supported units are 'y' (years), 'd' (days), 'h'"
+" (hours), 'm' (minutes), 's' (seconds). Only one unit is allowed. "
+"Examples: '8h', '7d', '1y'"
+msgstr ""
+"ການກະທຳຈະຖືກກະຕຸ້ນ, ຖ້າການຊິງໂຄຣໄນຄັ້ງຫຼ້າສຸດຂອງຄອນເທນເນີເກົ່າກວ່າເວລາທີ່ລະບຸ. ຄ່າເວລາຕ້ອງເປັນຈຳນ"
+"ວນເຕັມຕາມດ້ວຍໜ່ວຍເວລາ. ໜ່ວຍທີ່ຮອງຮັບແມ່ນ 'y' (ປີ), 'd' (ມື້), 'h' (ຊົ່ວໂມງ), 'm' (ນາທີ), "
+"'s' (ວິນາທີ). ອະນຸຍາດໃຫ້ໃຊ້ໄດ້ພຽງໜຶ່ງໜ່ວຍເທົ່ານັ້ນ. ຕົວຢ່າງ: '8h', '7d', '1y'"
+
+#: lib/eventhandler/containerhandler.py:89
+#, python-brace-format
+msgid "Set the state {state}"
+msgstr "ຕັ້ງຄ່າສະຖານະ {state}"
+
+#: lib/eventhandler/containerhandler.py:96
+msgid "Container type to create"
+msgstr "ປະເພດຄອນເທນເນີທີ່ຈະສ້າງ"
+
+#: lib/eventhandler/containerhandler.py:102
+#: lib/eventhandler/containerhandler.py:124
+msgid "Description of the container"
+msgstr "ຄຳອະທິບາຍຂອງຄອນເທນເນີ"
+
+#: lib/eventhandler/containerhandler.py:107
+msgid "Assign container to user in request or to token/container owner"
+msgstr "ມອບໝາຍຄອນເທນເນີໃຫ້ຜູ້ໃຊ້ໃນຄຳຮ້ອງຂໍ ຫຼື ໃຫ້ເຈົ້າຂອງໂທເຄັນ/ຄອນເທນເນີ"
+
+#: lib/eventhandler/containerhandler.py:112
+msgid "Add token from request to container"
+msgstr "ເພີ່ມໂທເຄັນຈາກຄຳຮ້ອງຂໍເຂົ້າໃນຄອນເທນເນີ"
+
+#: lib/eventhandler/containerhandler.py:132
+msgid "Set this container info key (deletes all existing keys)."
+msgstr "ຕັ້ງຄ່າຄີຂໍ້ມູນຄອນເທນເນີນ້ີ (ຈະລຶບຄີທີ່ມີຢູ່ທັງໝົດ)."
+
+#: lib/eventhandler/containerhandler.py:136
+#: lib/eventhandler/containerhandler.py:146
+msgid "Set the value for the key above."
+msgstr "ຕັ້ງຄ່າສຳລັບຄີຂ້າງເທິງ."
+
+#: lib/eventhandler/containerhandler.py:142
+msgid "Add this key to the container info."
+msgstr "ເພີ່ມຄີນີ້ເຂົ້າໃນຂໍ້ມູນຄອນເທນເນີ."
+
+#: lib/eventhandler/counterhandler.py:67 lib/eventhandler/counterhandler.py:72
+#: lib/eventhandler/counterhandler.py:80
+msgid "The identifier/key of the counter."
+msgstr "ຕົວລະບຸ/ຄີຂອງຕົວນັບ."
+
+#: lib/eventhandler/counterhandler.py:75
+msgid "Don't stop counter if it reaches zero."
+msgstr "ຢ່າຢຸດຕົວນັບຖ້າມັນຮອດສູນ."
+
+#: lib/eventhandler/customuserattributeshandler.py:80
+msgid "The user for whom the custom attribute should be set."
+msgstr "ຜູ້ໃຊ້ທີ່ຄວນຕັ້ງຄ່າຄຸນລັກສະນະແບບກຳນົດເອງໃຫ້."
+
+#: lib/eventhandler/customuserattributeshandler.py:87
+msgid "The key of the custom user attribute that should be set."
+msgstr "ຄີຂອງຄຸນລັກສະນະຜູ້ໃຊ້ແບບກຳນົດເອງທີ່ຄວນຕັ້ງຄ່າ."
+
+#: lib/eventhandler/customuserattributeshandler.py:90
+msgid "The value of the custom user attribute."
+msgstr "ຄ່າຂອງຄຸນລັກສະນະຜູ້ໃຊ້ແບບກຳນົດເອງ."
+
+#: lib/eventhandler/customuserattributeshandler.py:96
+msgid "The user from which the custom attribute should be deleted."
+msgstr "ຜູ້ໃຊ້ທີ່ຄວນລຶບຄຸນລັກສະນະແບບກຳນົດເອງອອກ."
+
+#: lib/eventhandler/customuserattributeshandler.py:103
+msgid "The key of the custom user attribute that should be deleted."
+msgstr "ຄີຂອງຄຸນລັກສະນະຜູ້ໃຊ້ແບບກຳນົດເອງທີ່ຄວນລຶບອອກ."
+
+#: lib/eventhandler/federationhandler.py:74
+msgid "The remote/child privacyIDEA Server."
+msgstr "ເຊີບເວີ privacyIDEA ທາງໄກ/ລູກ."
+
+#: lib/eventhandler/federationhandler.py:79
+msgid "Change the realm name to a realm on the child privacyIDEA system."
+msgstr "ປ່ຽນຊື່ເລມໃຫ້ເປັນເລມໃນລະບົບ privacyIDEA ລູກ."
+
+#: lib/eventhandler/federationhandler.py:85
+msgid "Change the resolver name to a resolver on the child privacyIDEA system."
+msgstr "ປ່ຽນຊື່ຣີໂຊລເວີໃຫ້ເປັນຣີໂຊລເວີໃນລະບົບ privacyIDEA ລູກ."
+
+#: lib/eventhandler/federationhandler.py:91
+msgid ""
+"Forward the client IP to the child privacyIDEA server. Otherwise this "
+"server will be the client."
+msgstr ""
+"ສົ່ງຕໍ່ໄອພີຂອງລູກຄ້າໄປຍັງເຊີບເວີ privacyIDEA ລູກ. ບໍ່ດັ່ງນັ້ນເຊີບເວີນີ້ຈະກາຍເປັນລູກຄ້າເອງ."
+
+#: lib/eventhandler/federationhandler.py:98
+msgid ""
+"Forward the authorization header. This allows to also forward request "
+"like token- and system-requests."
+msgstr ""
+"ສົ່ງຕໍ່ສ່ວນຫົວ (header) ການອະນຸຍາດ. ສິ່ງນີ້ຊ່ວຍໃຫ້ສາມາດສົ່ງຕໍ່ຄຳຮ້ອງຂໍເຊັ່ນ ຄຳຮ້ອງຂໍໂທເຄັນ ແລະ ຄຳຮ້ອງຂໍ"
+"ລະບົບ ໄດ້ນຳ."
+
+#: lib/eventhandler/logginghandler.py:85
+msgid "The name of the logging facility"
+msgstr "ຊື່ຂອງສິ່ງອຳນວຍຄວາມສະດວກໃນການບັນທຶກເຫດການ (logging facility)"
+
+#: lib/eventhandler/logginghandler.py:91
+msgid "The string to write to the log"
+msgstr "ຂໍ້ຄວາມທີ່ຈະຂຽນລົງໃນບົດບັນທຶກ (log)"
+
+#: lib/eventhandler/logginghandler.py:97
+msgid "The logging level for this logging notification"
+msgstr "ລະດັບການບັນທຶກສຳລັບການແຈ້ງເຕືອນການບັນທຶກນີ້"
+
+#: lib/eventhandler/requestmangler.py:87
+msgid "The parameter that should be deleted."
+msgstr "ພາຣາມິເຕີທີ່ຄວນລຶບອອກ."
+
+#: lib/eventhandler/requestmangler.py:93
+msgid "The parameter that should be added or modified."
+msgstr "ພາຣາມິເຕີທີ່ຄວນເພີ່ມ ຫຼື ແກ້ໄຂ."
+
+#: lib/eventhandler/requestmangler.py:98
+#, python-brace-format
+msgid ""
+"The new value of the parameter. Can contain tags like {0}, {1} for the "
+"matched sub strings."
+msgstr ""
+"ຄ່າໃໝ່ຂອງພາຣາມິເຕີ. ສາມາດບັນຈຸແທັກເຊັ່ນ {0}, {1} ສຳລັບສະຕຣິງຍ່ອຍທີ່ກົງກັນ."
+
+#: lib/eventhandler/requestmangler.py:103
+msgid "The parameter, that should match some values."
+msgstr "ພາຣາມິເຕີ, ທີ່ຄວນກົງກັບບາງຄ່າ."
+
+#: lib/eventhandler/requestmangler.py:107
+msgid ""
+"The value of the match_parameter. It can contain a regular expression and"
+" '()' to transfer values to the new parameter."
+msgstr ""
+"ຄ່າຂອງ match_parameter. ມັນສາມາດບັນຈຸນິພົດປົກກະຕິ ແລະ '()' ເພື່ອໂອນຄ່າໄປຍັງພາຣາມິເຕີໃໝ່."
+
+#: lib/eventhandler/requestmangler.py:112
+msgid ""
+"If the parameter is 'username', 'user' or 'realm', the user will be "
+"reset. This can have an effect on any further actions on the user!"
+msgstr ""
+"ຖ້າພາຣາມິເຕີແມ່ນ 'username', 'user' ຫຼື 'realm', ຜູ້ໃຊ້ຈະຖືກຣີເຊັດ. ສິ່ງນີ້ສາມາດມີຜົນກະທົບຕໍ່ການກະ"
+"ທຳໃດໆຕໍ່ໄປກ່ຽວກັບຜູ້ໃຊ້ນີ້!"
+
+#: lib/eventhandler/responsemangler.py:79
+msgid ""
+"The JSON pointer (key) that should be deleted. Please specify in the "
+"format '/detail/message'."
+msgstr "JSON pointer (ຄີ) ທີ່ຄວນລຶບອອກ. ກະລຸນາລະບຸໃນຮູບແບບ '/detail/message'."
+
+#: lib/eventhandler/responsemangler.py:86
+msgid ""
+"The JSON pointer (key) that should be set. Please specify in the format "
+"'/detail/message'."
+msgstr "JSON pointer (ຄີ) ທີ່ຄວນຕັ້ງຄ່າ. ກະລຸນາລະບຸໃນຮູບແບບ '/detail/message'."
+
+#: lib/eventhandler/responsemangler.py:92
+msgid "The type of the value."
+msgstr "ປະເພດຂອງຄ່າ."
+
+#: lib/eventhandler/responsemangler.py:98
+msgid "The value of the JSON key that should be set."
+msgstr "ຄ່າຂອງຄີ JSON ທີ່ຄວນຕັ້ງ."
+
+#: lib/eventhandler/scripthandler.py:92
+#: lib/smsprovider/ScriptSMSProvider.py:121
+msgid ""
+"Wait for script to complete or run script in background. This will either"
+" return the HTTP request early or could also block the request."
+msgstr ""
+"ລໍຖ້າໃຫ້ສະຄຣິບເຮັດວຽກສຳເລັດ ຫຼື ຣັນສະຄຣິບໃນພື້ນຫຼັງ. ສິ່ງນີ້ຈະສົ່ງຄືນຄຳຮ້ອງຂໍ HTTP ໂດຍໄວ ຫຼື ອາດຈະຂັດຂວ"
+"າງຄຳຮ້ອງຂໍກໍໄດ້."
+
+#: lib/eventhandler/scripthandler.py:100
+msgid "On script error raise exception in HTTP request."
+msgstr "ເມື່ອສະຄຣິບຜິດພາດ ໃຫ້ຍົກຂໍ້ຍົກເວັ້ນ (exception) ໃນຄຳຮ້ອງຂໍ HTTP."
+
+#: lib/eventhandler/scripthandler.py:104
+msgid ""
+"Finish current transaction before running the script. This is useful if "
+"changes to the database should be made available to the script or the "
+"running request."
+msgstr ""
+"ສຳເລັດທຸລະກຳປັດຈຸບັນກ່ອນທີ່ຈະຣັນສະຄຣິບ. ສິ່ງນີ້ມີປະໂຫຍດຖ້າການປ່ຽນແປງໃນຖານຂໍ້ມູນຄວນຖືກເຮັດໃຫ້ສະຄຣິບ ຫຼື "
+"ຄຳຮ້ອງຂໍທີ່ກຳລັງເຮັດວຽກຢູ່ສາມາດນຳໃຊ້ໄດ້."
+
+#: lib/eventhandler/scripthandler.py:111
+msgid "Add '--serial <serial number>' as script parameter."
+msgstr "ເພີ່ມ '--serial <serial number>' ເປັນພາຣາມິເຕີຂອງສະຄຣິບ."
+
+#: lib/eventhandler/scripthandler.py:116
+msgid "Add '--user <username>' as script parameter."
+msgstr "ເພີ່ມ '--user <username>' ເປັນພາຣາມິເຕີຂອງສະຄຣິບ."
+
+#: lib/eventhandler/scripthandler.py:121
+msgid "Add '--realm <realm>' as script parameter."
+msgstr "ເພີ່ມ '--realm <realm>' ເປັນພາຣາມິເຕີຂອງສະຄຣິບ."
+
+#: lib/eventhandler/scripthandler.py:126
+msgid ""
+"Add the username of the logged in user as script parameter like '--"
+"logged_in_user <username>'."
+msgstr ""
+"ເພີ່ມຊື່ຜູ້ໃຊ້ຂອງຜູ້ໃຊ້ທີ່ເຂົ້າສູ່ລະບົບເປັນພາຣາມິເຕີຂອງສະຄຣິບເຊັ່ນ '--logged_in_user <username>'."
+
+#: lib/eventhandler/scripthandler.py:132
+msgid ""
+"Add the role (either admin or user) of the logged in user as script "
+"parameter like '--logged_in_role <role>'."
+msgstr ""
+"ເພີ່ມບົດບາດ (admin ຫຼື user) ຂອງຜູ້ໃຊ້ທີ່ເຂົ້າສູ່ລະບົບເປັນພາຣາມິເຕີຂອງສະຄຣິບເຊັ່ນ '--"
+"logged_in_role <role>'."
+
+#: lib/eventhandler/tokenhandler.py:144
+msgid "set a new realm of the token"
+msgstr "ຕັ້ງຄ່າເລມໃໝ່ຂອງໂທເຄັນ"
+
+#: lib/eventhandler/tokenhandler.py:150
+msgid ""
+"The new realm will be the only realm of the token. I.e. all other realms "
+"will be removed from this token. If disabled, the realm will be added to "
+"the token."
+msgstr ""
+"ເລມໃໝ່ຈະເປັນເລມດຽວຂອງໂທເຄັນ. ກໍຄືເລມອື່ນທັງໝົດຈະຖືກລຶບອອກຈາກໂທເຄັນນີ້. ຖ້າປິດໃຊ້ງານ, ເລມຈະຖືກເພີ່"
+"ມເຂົ້າໃນໂທເຄັນ."
+
+#: lib/eventhandler/tokenhandler.py:167
+msgid "set the PIN of the token to a random PIN of this length."
+msgstr "ຕັ້ງຄ່າ PIN ຂອງໂທເຄັນໃຫ້ເປັນ PIN ແບບສຸ່ມທີ່ມີຄວາມຍາວເທົ່ານີ້."
+
+#: lib/eventhandler/tokenhandler.py:177
+msgid "Token type to create"
+msgstr "ປະເພດໂທເຄັນທີ່ຈະສ້າງ"
+
+#: lib/eventhandler/tokenhandler.py:183
+msgid "Assign token to user in request or to tokenowner."
+msgstr "ມອບໝາຍໂທເຄັນໃຫ້ຜູ້ໃຊ້ໃນຄຳຮ້ອງຂໍ ຫຼື ໃຫ້ເຈົ້າຂອງໂທເຄັນ."
+
+#: lib/eventhandler/tokenhandler.py:190
+msgid "Set the realm of the newly created token."
+msgstr "ຕັ້ງຄ່າເລມຂອງໂທເຄັນທີ່ສ້າງຂຶ້ນໃໝ່."
+
+#: lib/eventhandler/tokenhandler.py:199
+msgid "Dynamically read the mobile number from the user store."
+msgstr "ອ່ານເບີມືຖືຈາກບ່ອນເກັບຂໍ້ມູນຜູ້ໃຊ້ແບບໄດນາມິກ."
+
+#: lib/eventhandler/tokenhandler.py:207
+msgid "Dynamically read the email address from the user store."
+msgstr "ອ່ານທີ່ຢູ່ອີເມວຈາກບ່ອນເກັບຂໍ້ມູນຜູ້ໃຊ້ແບບໄດນາມິກ."
+
+#: lib/eventhandler/tokenhandler.py:215
+msgid "Use a specific SMTP server configuration for this token."
+msgstr "ໃຊ້ການຕັ້ງຄ່າເຊີບເວີ SMTP ສະເພາະສຳລັບໂທເຄັນນີ້."
+
+#: lib/eventhandler/tokenhandler.py:223
+msgid "Use a specific SMS gateway configuration for this token."
+msgstr "ໃຊ້ການຕັ້ງຄ່າປະຕູ SMS ສະເພາະສຳລັບໂທເຄັນນີ້."
+
+#: lib/eventhandler/tokenhandler.py:229
+msgid "A dictionary of additional init parameters."
+msgstr "ວັດຈະນານຸກົມຂອງພາຣາມິເຕີເລີ່ມຕົ້ນເພີ່ມເຕີມ."
+
+#: lib/eventhandler/tokenhandler.py:236
+msgid ""
+"Set the MOTP PIN of the MOTP token during enrollment. This is a required "
+"value for enrolling MOTP tokens."
+msgstr ""
+"ຕັ້ງຄ່າ MOTP PIN ຂອງໂທເຄັນ MOTP ໃນລະຫວ່າງການລົງທະບຽນ. ນີ້ແມ່ນຄ່າທີ່ຈຳເປັນສຳລັບການລົງທະບຽນໂທເ"
+"ຄັນ MOTP."
+
+#: lib/eventhandler/tokenhandler.py:244
+msgid ""
+"Add the token to the container if there is one identifiable in the "
+"request."
+msgstr "ເພີ່ມໂທເຄັນເຂົ້າໃນຄອນເທນເນີຖ້າມີອັນທີ່ລະບຸໄດ້ໃນຄຳຮ້ອງຂໍ."
+
+#: lib/eventhandler/tokenhandler.py:252
+msgid "The new description of the token."
+msgstr "ຄຳອະທິບາຍໃໝ່ຂອງໂທເຄັນ."
+
+#: lib/eventhandler/tokenhandler.py:261
+msgid ""
+"The token will be valid starting at the given date. Can be a fixed date "
+"or an offset like +10m, +24h, +7d."
+msgstr ""
+"ໂທເຄັນຈະມີຜົນບັງຄັບໃຊ້ເລີ່ມແຕ່ວັນທີທີ່ກຳນົດ. ສາມາດເປັນວັນທີທີ່ແນ່ນອນ ຫຼື ໄລຍະເວລາຊົດເຊີຍເຊັ່ນ +10m, "
+"+24h, +7d."
+
+#: lib/eventhandler/tokenhandler.py:269
+msgid ""
+"The token will be valid until the given date. Can be a fixed date or an "
+"offset like +10m, +24h, +7d."
+msgstr ""
+"ໂທເຄັນຈະມີຜົນບັງຄັບໃຊ້ຈົນຮອດວັນທີທີ່ກຳນົດ. ສາມາດເປັນວັນທີທີ່ແນ່ນອນ ຫຼື ໄລຍະເວລາຊົດເຊີຍເຊັ່ນ +10m, "
+"+24h, +7d."
+
+#: lib/eventhandler/tokenhandler.py:283
+msgid "Set the new count window of the token."
+msgstr "ຕັ້ງຄ່າໜ້າຕ່າງການນັບໃໝ່ຂອງໂທເຄັນ."
+
+#: lib/eventhandler/tokenhandler.py:293
+msgid "Set the failcounter of the token."
+msgstr "ຕັ້ງຄ່າຕົວນັບຄວາມຜິດພາດຂອງໂທເຄັນ."
+
+#: lib/eventhandler/tokenhandler.py:303
+msgid ""
+"Increase or decrease the fail counter of the token. Values of +n, -n with"
+" n being an integer are accepted."
+msgstr ""
+"ເພີ່ມ ຫຼື ຫຼຸດຕົວນັບຄວາມຜິດພາດຂອງໂທເຄັນ. ຄ່າ +n, -n ໂດຍທີ່ n ເປັນຈຳນວນເຕັມແມ່ນໄດ້ຮັບການຍອມຮັບ."
+
+#: lib/eventhandler/tokenhandler.py:313
+msgid "Set the maximum failcounter of the token."
+msgstr "ຕັ້ງຄ່າຕົວນັບຄວາມຜິດພາດສູງສຸດຂອງໂທເຄັນ."
+
+#: lib/eventhandler/tokenhandler.py:322
+msgid "Set this tokeninfo key."
+msgstr "ຕັ້ງຄ່າຄີ tokeninfo ນີ້."
+
+#: lib/eventhandler/tokenhandler.py:327
+msgid "Set the above key to this value."
+msgstr "ຕັ້ງຄ່າຄີຂ້າງເທິງໃຫ້ເປັນຄ່ານີ້."
+
+#: lib/eventhandler/tokenhandler.py:337
+msgid ""
+"Interpret the tokeninfo as 'int' and increase the tokeninfo value by the "
+"given offset."
+msgstr ""
+"ຕີຄວາມໝາຍ tokeninfo ເປັນ 'int' ແລະ ເພີ່ມຄ່າ tokeninfo ຕາມໄລຍະຊົດເຊີຍທີ່ກຳນົດ."
+
+#: lib/eventhandler/tokenhandler.py:343
+msgid ""
+"The increment the tokeninfo key should be increased. Can be positive or "
+"negative, s.th. like +1 or -7."
+msgstr ""
+"ການເພີ່ມຂຶ້ນທີ່ຄີ tokeninfo ຄວນໄດ້ຮັບ. ສາມາດເປັນຄ່າບວກ ຫຼື ລົບ, ເຊັ່ນ +1 ຫຼື -7."
+
+#: lib/eventhandler/tokenhandler.py:353
+msgid "Delete this tokeninfo key."
+msgstr "ລຶບຄີ tokeninfo ນີ້ອອກ."
+
+#: lib/eventhandler/tokenhandler.py:362
+msgid "Add a tokengroup to the token."
+msgstr "ເພີ່ມກຸ່ມໂທເຄັນ (tokengroup) ເຂົ້າໃນໂທເຄັນ."
+
+#: lib/eventhandler/tokenhandler.py:372
+msgid "Remove a tokengroup from the token."
+msgstr "ເອົາກຸ່ມໂທເຄັນອອກຈາກໂທເຄັນ."
+
+#: lib/eventhandler/tokenhandler.py:382
+msgid "The ID of the machine you want to attach the token to"
+msgstr "ID ຂອງເຄື່ອງທີ່ທ່ານຕ້ອງການຕິດໂທເຄັນໃສ່"
+
+#: lib/eventhandler/tokenhandler.py:389
+msgid "Set the service_id for an SSH application."
+msgstr "ຕັ້ງຄ່າ service_id ສຳລັບແອັບພລິເຄຊັ່ນ SSH."
+
+#: lib/eventhandler/tokenhandler.py:398
+msgid ""
+"Set a token application like 'offline' or 'SSH'. Note: Not all tokens "
+"work well with all applications!"
+msgstr ""
+"ຕັ້ງຄ່າແອັບພລິເຄຊັ່ນໂທເຄັນເຊັ່ນ 'offline' ຫຼື 'SSH'. ໝາຍເຫດ: ບໍ່ແມ່ນທຸກໂທເຄັນຈະເຮັດວຽກໄດ້ດີກັບທຸກແອັ"
+"ບພລິເຄຊັ່ນ!"
+
+#: lib/eventhandler/tokenhandler.py:408
+msgid "The number of offline OTP values available"
+msgstr "ຈຳນວນຄ່າ OTP ແບບອອບລາຍທີ່ມີໃຫ້"
+
+#: lib/eventhandler/tokenhandler.py:416
+msgid "The number of rounds for password hashing"
+msgstr "ຈຳນວນຮອບສຳລັບການແຮຊລະຫັດຜ່ານ"
+
+#: lib/eventhandler/usernotification.py:147
+msgid "Send notification email via this email server."
+msgstr "ສົ່ງອີເມວແຈ້ງເຕືອນຜ່ານເຊີບເວີອີເມວນີ."
+
+#: lib/eventhandler/usernotification.py:151
+msgid "Either send email as plain text or HTML."
+msgstr "ສົ່ງອີເມວເປັນຂໍ້ຄວາມທຳມະດາ ຫຼື HTML."
+
+#: lib/eventhandler/usernotification.py:155
+msgid "Send QR-Code image as an attachment (cid URL: token_image)"
+msgstr "ສົ່ງຮູບພາບ QR-Code ເປັນໄຟລ໌ແນບ (cid URL: token_image)"
+
+#: lib/eventhandler/usernotification.py:160
+msgid "The subject of the mail that is sent."
+msgstr "ຫົວຂໍ້ຂອງອີເມວທີ່ຖືກສົ່ງ."
+
+#: lib/eventhandler/usernotification.py:164
+msgid "The Reply-To header in the sent email."
+msgstr "ສ່ວນຫົວ Reply-To ໃນອີເມວທີ່ສົ່ງ."
+
+#: lib/eventhandler/usernotification.py:186
+#: lib/eventhandler/usernotification.py:239
+msgid "Any email address, to which the notification should be sent."
+msgstr "ທີ່ຢູ່ອີເມວໃດກໍໄດ້, ທີ່ຄວນສົ່ງການແຈ້ງເຕືອນໄປຫາ."
+
+#: lib/eventhandler/usernotification.py:193
+#: lib/eventhandler/usernotification.py:200
+#: lib/eventhandler/usernotification.py:246
+#: lib/eventhandler/usernotification.py:253
+msgid ""
+"You can enter a user attribute here to use an email address other than "
+"the default."
+msgstr ""
+"ທ່ານສາມາດໃສ່ຄຸນລັກສະນະຜູ້ໃຊ້ທີ່ນີ້ເພື່ອໃຊ້ທີ່ຢູ່ອີເມວອື່ນນອກເໜືອຈາກຄ່າເລີ່ມຕົ້ນ."
+
+#: lib/eventhandler/usernotification.py:207
+#, python-brace-format
+msgid ""
+"The template of the mail body that will be sent. It may contain the "
+"following tags as specified in the documentation: <code>{admin}, {realm},"
+" {action}, {serial}, {url}, {user}, {givenname}, {surname}, {username}, "
+"{userrealm}, {tokentype}, {tokendescription}, {registrationcode}, "
+"{recipient_givenname}, {recipient_surname}, {googleurl_value}, "
+"{googleurl_img}, {pushurl_value}, {pushurl_img}, {container_url_value}, "
+"{container_url_img}, {time}, {date}, {client_ip}, {ua_browser}, "
+"{ua_string}, {pin}.</code>"
+msgstr ""
+"ແມ່ແບບຂອງເນື້ອຫາອີເມວທີ່ຈະຖືກສົ່ງ. ມັນອາດຈະບັນຈຸແທັກດັ່ງຕໍ່ໄປນີ້ຕາມທີ່ລະບຸໄວ້ໃນເອກະສານ: <code>"
+"{admin}, {realm}, {action}, {serial}, {url}, {user}, {givenname}, {surname}, "
+"{username}, {userrealm}, {tokentype}, {tokendescription}, {registrationcode}"
+", {recipient_givenname}, {recipient_surname}, {googleurl_value}, "
+"{googleurl_img}, {pushurl_value}, {pushurl_img}, {container_url_value}, "
+"{container_url_img}, {time}, {date}, {client_ip}, {ua_browser}, {ua_string}, "
+"{pin}.</code>"
+
+#: lib/eventhandler/usernotification.py:218
+#: lib/eventhandler/usernotification.py:277
+msgid "Send notification to this user."
+msgstr "ສົ່ງການແຈ້ງເຕືອນຫາຜູ້ໃຊ້ນີ້."
+
+#: lib/eventhandler/usernotification.py:262
+msgid "Send the user notification via a predefined SMS gateway."
+msgstr "ສົ່ງການແຈ້ງເຕືອນຜູ້ໃຊ້ຜ່ານປະຕູ SMS ທີ່ກຳນົດໄວ້ລ່ວງໜ້າ."
+
+#: lib/eventhandler/usernotification.py:267
+#, python-brace-format
+msgid ""
+"The text template of the SMS. It may contain the following tags as "
+"specified in the documentation: <code>{admin}, {realm}, {action}, "
+"{serial}, {url}, {user}, {givenname}, {surname}, {username}, {userrealm},"
+" {tokentype}, {tokendescription}, {registrationcode}, "
+"{recipient_givenname}, {recipient_surname}, {googleurl_value}, "
+"{googleurl_img}, {pushurl_value}, {pushurl_img}, {container_url_value}, "
+"{container_url_img}, {time}, {date}, {client_ip}, {ua_browser}, "
+"{ua_string}, {pin}.</code>"
+msgstr ""
+"ແມ່ແບບຂໍ້ຄວາມຂອງ SMS. ມັນອາດຈະບັນຈຸແທັກດັ່ງຕໍ່ໄປນີ້ຕາມທີ່ລະບຸໄວ້ໃນເອກະສານ: <code>{admin}, "
+"{realm}, {action}, {serial}, {url}, {user}, {givenname}, {surname}, "
+"{username}, {userrealm}, {tokentype}, {tokendescription}, {registrationcode}"
+", {recipient_givenname}, {recipient_surname}, {googleurl_value}, "
+"{googleurl_img}, {pushurl_value}, {pushurl_img}, {container_url_value}, "
+"{container_url_img}, {time}, {date}, {client_ip}, {ua_browser}, {ua_string}, "
+"{pin}.</code>"
+
+#: lib/eventhandler/usernotification.py:284
+#, python-brace-format
+msgid ""
+"This is the template content of the new file. It may contain the "
+"following tags as specified in the documentation: <code>{admin}, {realm},"
+" {action}, {serial}, {url}, {user}, {givenname}, {surname}, {username}, "
+"{userrealm}, {tokentype}, {tokendescription}, {registrationcode}, "
+"{recipient_givenname}, {recipient_surname}, {googleurl_value}, "
+"{googleurl_img}, {pushurl_value}, {pushurl_img}, {container_url_value}, "
+"{container_url_img}, {time}, {date}, {client_ip}, {ua_browser}, "
+"{ua_string}, {pin}.</code>"
+msgstr ""
+"ນີ້ແມ່ນເນື້ອຫາແມ່ແບບຂອງໄຟລ໌ໃໝ່. ມັນອາດຈະບັນຈຸແທັກດັ່ງຕໍ່ໄປນີ້ຕາມທີ່ລະບຸໄວ້ໃນເອກະສານ: <code>{admin}"
+", {realm}, {action}, {serial}, {url}, {user}, {givenname}, {surname}, "
+"{username}, {userrealm}, {tokentype}, {tokendescription}, {registrationcode}"
+", {recipient_givenname}, {recipient_surname}, {googleurl_value}, "
+"{googleurl_img}, {pushurl_value}, {pushurl_img}, {container_url_value}, "
+"{container_url_img}, {time}, {date}, {client_ip}, {ua_browser}, {ua_string}, "
+"{pin}.</code>"
+
+#: lib/eventhandler/usernotification.py:295
+#, python-brace-format
+msgid ""
+"The filename of the notification. Existing files are overwritten. The "
+"name can contain tags as specified in the documentation and can also "
+"contain the tag {random}."
+msgstr ""
+"ຊື່ໄຟລ໌ຂອງການແຈ້ງເຕືອນ. ໄຟລ໌ທີ່ມີຢູ່ຈະຖືກຂຽນທັບ. ຊື່ສາມາດບັນຈຸແທັກຕາມທີ່ລະບຸໄວ້ໃນເອກະສານ ແລະ ຍັງສາມາ"
+"ດບັນຈຸແທັກ {random} ໄດ້ນຳ."
+
+#: lib/eventhandler/webhookeventhandler.py:93
+msgid "The URL the WebHook is posted to"
+msgstr "URL ທີ່ WebHook ຖືກໂພສໄປຫາ"
+
+#: lib/eventhandler/webhookeventhandler.py:98
+msgid ""
+"The MIME type (Content-Type) used for the WebHook payload, for example "
+"application/json or application/x-www-form-urlencoded"
+msgstr ""
+"ປະເພດ MIME (Content-Type) ທີ່ໃຊ້ສຳລັບ WebHook payload, ຕົວຢ່າງເຊັ່ນ application/json "
+"ຫຼື application/x-www-form-urlencoded"
+
+#: lib/eventhandler/webhookeventhandler.py:107
+#, python-brace-format
+msgid ""
+"You can use the following placeholders: {logged_in_user}, {realm}, "
+"{surname}, {token_owner}, {user_realm}, {token_serial}. However, tag "
+"availability is depending on the endpoint."
+msgstr ""
+"ທ່ານສາມາດໃຊ້ຕົວແທນ (placeholder) ຕໍ່ໄປນີ້ໄດ້: {logged_in_user}, {realm}, {surname}, "
+"{token_owner}, {user_realm}, {token_serial}. ແນວໃດກໍຕາມ, ຄວາມພ້ອມໃຊ້ຂອງແທັກແມ່ນຂຶ້ນຢູ່"
+"ກັບປາຍທາງ (endpoint)."
+
+#: lib/eventhandler/webhookeventhandler.py:114
+msgid "The data posted in the WebHook"
+msgstr "ຂໍ້ມູນທີ່ຖືກໂພສໃນ WebHook"
+
+#: lib/machines/ldap.py:371
+#, python-brace-format
+msgid ""
+"Your LDAP machine resolver configuration seems to be OK, {0!s} machine "
+"objects found in {1:.4f}s."
+msgstr ""
+"ການຕັ້ງຄ່າຣີໂຊລເວີເຄື່ອງ LDAP ຂອງທ່ານເບິ່ງຄືວ່າປົກກະຕິ, ພົບວັດຖຸເຄື່ອງ {0!s} ອັນໃນ {1:.4f} ວິນາທີ."
+
+#: lib/policies/conditions.py:97
+msgid ""
+"Raise an error if the data that is required to check the condition is not"
+" available."
+msgstr "ຍົກຂໍ້ຜິດພາດຖ້າຂໍ້ມູນທີ່ຈຳເປັນໃນການກວດສອບເງື່ອນໄຂບໍ່ມີໃຫ້."
+
+#: lib/policies/conditions.py:102
+msgid ""
+"If the required data is not available, the condition is considered to be "
+"true. Hence, the policy is applied."
+msgstr ""
+"ຖ້າຂໍ້ມູນທີ່ຈຳເປັນບໍ່ມີໃຫ້, ເງື່ອນໄຂຈະຖືກພິຈາລະນາວ່າເປັນຈິງ. ສະນັ້ນ, ນະໂຍບາຍຈະຖືກນຳໃຊ້."
+
+#: lib/policies/conditions.py:108
+msgid ""
+"If the required data is not available, the condition is considered to be "
+"false. Hence, the policy is not applied."
+msgstr ""
+"ຖ້າຂໍ້ມູນທີ່ຈຳເປັນບໍ່ມີໃຫ້, ເງື່ອນໄຂຈະຖືກພິຈາລະນາວ່າເປັນເທັດ. ສະນັ້ນ, ນະໂຍບາຍຈະບໍ່ຖືກນຳໃຊ້."
+
+#: lib/resolvers/LDAPIdResolver.py:1284
+#, python-brace-format
+msgid ""
+"Your LDAP config found {0!s} user objects in {2:.4f}s, but only {1!s} "
+"with the specified uidtype."
+msgstr ""
+"ການຕັ້ງຄ່າ LDAP ຂອງທ່ານພົບວັດຖຸຜູ້ໃຊ້ {0!s} ອັນໃນ {2:.4f} ວິນາທີ, ແຕ່ພົບພຽງ {1!s} ອັນທີ່ມີ "
+"uidtype ທີ່ລະບຸ."
+
+#: lib/resolvers/LDAPIdResolver.py:1288
+#, python-brace-format
+msgid "Your LDAP config seems to be OK, {0!s} user objects found in {1:.4f}s."
+msgstr ""
+"ການຕັ້ງຄ່າ LDAP ຂອງທ່ານເບິ່ງຄືວ່າປົກກະຕິ, ພົບວັດຖຸຜູ້ໃຊ້ {0!s} ອັນໃນ {1:.4f} ວິນາທີ."
+
+#: lib/smsprovider/FirebaseProvider.py:204
+msgid ""
+"The filename of the JSON config file, that allows privacyIDEA to talk to "
+"the Firebase REST API."
+msgstr ""
+"ຊື່ໄຟລ໌ຂອງໄຟລ໌ຕັ້ງຄ່າ JSON, ທີ່ຊ່ວຍໃຫ້ privacyIDEA ສາມາດຕິດຕໍ່ກັບ Firebase REST API."
+
+#: lib/smsprovider/FirebaseProvider.py:209
+msgid "Proxy setting for HTTPS connections to googleapis.com."
+msgstr "ການຕັ້ງຄ່າພຣັອກຊີສຳລັບການເຊື່ອມຕໍ່ HTTPS ໄປຍັງ googleapis.com."
+
+#: lib/smsprovider/HttpSMSProvider.py:249
+msgid "The base URL of the HTTP Gateway"
+msgstr "URL ຫຼັກຂອງປະຕູ HTTP"
+
+#: lib/smsprovider/HttpSMSProvider.py:252
+msgid "Should the HTTP Gateway be connected via an HTTP GET or POST request."
+msgstr "ປະຕູ HTTP ຄວນຖືກເຊື່ອມຕໍ່ຜ່ານຄຳຮ້ອງຂໍ HTTP GET ຫຼື POST."
+
+#: lib/smsprovider/HttpSMSProvider.py:257
+msgid ""
+"Specify a substring, that indicates, that the SMS was delivered "
+"successfully."
+msgstr "ລະບຸສະຕຣິງຍ່ອຍ, ທີ່ສະແດງໃຫ້ເຫັນວ່າ SMS ຖືກສົ່ງສຳເລັດແລ້ວ."
+
+#: lib/smsprovider/HttpSMSProvider.py:261
+msgid "Specify a substring, that indicates, that the SMS failed to be delivered."
+msgstr "ລະບຸສະຕຣິງຍ່ອຍ, ທີ່ສະແດງໃຫ້ເຫັນວ່າ SMS ສົ່ງບໍ່ສຳເລັດ."
+
+#: lib/smsprovider/HttpSMSProvider.py:265
+msgid "Username in case of basic authentication."
+msgstr "ຊື່ຜູ້ໃຊ້ໃນກໍລະນີການຢັ້ງຢືນຕົວຕົນແບບພື້ນຖານ."
+
+#: lib/smsprovider/HttpSMSProvider.py:269
+msgid "Password in case of basic authentication."
+msgstr "ລະຫັດຜ່ານໃນກໍລະນີການຢັ້ງຢືນຕົວຕົນແບບພື້ນຖານ."
+
+#: lib/smsprovider/HttpSMSProvider.py:274
+msgid "Should the SSL certificate be verified."
+msgstr "ໃບຢັ້ງຢືນ SSL ຄວນຖືກກວດສອບຫຼືບໍ່."
+
+#: lib/smsprovider/HttpSMSProvider.py:280
+msgid "Should the data in a POST Request be sent as JSON."
+msgstr "ຂໍ້ມູນໃນຄຳຮ້ອງຂໍ POST ຄວນຖືກສົ່ງເປັນ JSON ຫຼືບໍ່."
+
+#: lib/smsprovider/HttpSMSProvider.py:287
+msgid ""
+"An optional proxy string. DEPRECATED. Do not use this anymore. Rather use"
+" HTTP_PROXY for http connections and HTTPS_PROXY for https connection. "
+"The PROXY option will be removed in future."
+msgstr ""
+"ສະຕຣິງພຣັອກຊີທາງເລືອກ. ຖືກຍົກເລີກແລ້ວ. ຢ່າໃຊ້ສິ່ງນີ້ອີກຕໍ່ໄປ. ໃຫ້ໃຊ້ HTTP_PROXY ສຳລັບການເຊື່ອມຕໍ່ "
+"http ແລະ HTTPS_PROXY ສຳລັບການເຊື່ອມຕໍ່ https ແທນ. ຕົວເລືອກ PROXY ຈະຖືກລຶບອອກໃນອະນາຄົດ."
+
+#: lib/smsprovider/HttpSMSProvider.py:292
+msgid "Proxy setting for HTTP connections."
+msgstr "ການຕັ້ງຄ່າພຣັອກຊີສຳລັບການເຊື່ອມຕໍ່ HTTP."
+
+#: lib/smsprovider/HttpSMSProvider.py:293
+msgid "Proxy setting for HTTPS connections."
+msgstr "ການຕັ້ງຄ່າພຣັອກຊີສຳລັບການເຊື່ອມຕໍ່ HTTPS."
+
+#: lib/smsprovider/HttpSMSProvider.py:294
+msgid "The timeout in seconds."
+msgstr "ເວລາໝົດ (timeout) ເປັນວິນາທີ."
+
+#: lib/smsprovider/SMSProvider.py:76
+msgid ""
+"Regular expression to modify the phone number to make it compatible with "
+"the provider. For example to remove pluses and slashes enter something "
+"like '/[\\+/]//'."
+msgstr ""
+"ນິພົດປົກກະຕິເພື່ອແກ້ໄຂເບີໂທລະສັບໃຫ້ເຂົ້າກັນໄດ້ກັບຜູ້ໃຫ້ບໍລິການ. ຕົວຢ່າງເພື່ອລຶບເຄື່ອງໝາຍບວກ ແລະ ເຄື່ອງໝາຍທັ"
+"ບອອກ ໃຫ້ໃສ່ເຊັ່ນ '/[\\+/]//'."
+
+#: lib/smsprovider/ScriptSMSProvider.py:113
+msgid ""
+"The script in script directory PI_SCRIPT_SMSPROVIDER_DIRECTORY to call. "
+"Expects phone as the parameter and the message from stdin."
+msgstr ""
+"ສະຄຣິບໃນໄດເຣັກທໍຣີສະຄຣິບ PI_SCRIPT_SMSPROVIDER_DIRECTORY ທີ່ຈະເອີ້ນໃຊ້. ຄາດຫວັງເບີໂທລະສັບເ"
+"ປັນພາຣາມິເຕີ ແລະ ຂໍ້ຄວາມຈາກ stdin."
+
+#: lib/smsprovider/SmppSMSProvider.py:125
+msgid "SMSC Host IP"
+msgstr "ໄອພີໂຮສ SMSC"
+
+#: lib/smsprovider/SmppSMSProvider.py:128
+msgid "SMSC Port"
+msgstr "ພອດ SMSC"
+
+#: lib/smsprovider/SmppSMSProvider.py:130
+msgid "SMSC Service ID"
+msgstr "ID ບໍລິການ SMSC"
+
+#: lib/smsprovider/SmppSMSProvider.py:132
+msgid "Password for authentication on SMSC"
+msgstr "ລະຫັດຜ່ານສຳລັບການຢັ້ງຢືນຕົວຕົນໃນ SMSC"
+
+#: lib/smsprovider/SmppSMSProvider.py:134
+msgid "SOURCE_ADDR_TON Special Flag"
+msgstr "ທຸງພິເສດ SOURCE_ADDR_TON"
+
+#: lib/smsprovider/SmppSMSProvider.py:136
+msgid "S_ADDR_NPI Special Flag"
+msgstr "ທຸງພິເສດ S_ADDR_NPI"
+
+#: lib/smsprovider/SmppSMSProvider.py:138
+msgid "Source address (SMS sender)"
+msgstr "ທີ່ຢູ່ຜູ້ສົ່ງ (ຜູ້ສົ່ງ SMS)"
+
+#: lib/smsprovider/SmppSMSProvider.py:139
+msgid "DESTINATION_ADDR_TON Special Flag"
+msgstr "ທຸງພິເສດ DESTINATION_ADDR_TON"
+
+#: lib/smsprovider/SmppSMSProvider.py:140
+msgid "D_ADDR_NPI Special Flag"
+msgstr "ທຸງພິເສດ D_ADDR_NPI"
+
+#: lib/task/eventcounter.py:41
+msgid "The name of the event counter to read."
+msgstr "ຊື່ຂອງຕົວນັບເຫດການທີ່ຈະອ່ານ."
+
+#: lib/task/eventcounter.py:46
+msgid "The name of the stats key to write to the MonitoringStats table."
+msgstr "ຊື່ຂອງຄີສະຖິຕິທີ່ຈະຂຽນລົງໃນຕາຕະລາງ MonitoringStats."
+
+#: lib/task/eventcounter.py:52
+msgid ""
+"Whether to reset the event_counter, if it is read and written to the "
+"MonitoringStats table."
+msgstr ""
+"ຈະຣີເຊັດ event_counter ຫຼືບໍ່, ຖ້າມັນຖືກອ່ານ ແລະ ຂຽນລົງໃນຕາຕະລາງ MonitoringStats."
+
+#: lib/task/simplestats.py:46
+msgid "Total number of tokens"
+msgstr "ຈຳນວນໂທເຄັນທັງໝົດ"
+
+#: lib/task/simplestats.py:49
+msgid "Total number of hardware tokens"
+msgstr "ຈຳນວນໂທເຄັນຮາດແວທັງໝົດ"
+
+#: lib/task/simplestats.py:52
+msgid "Total number of software tokens"
+msgstr "ຈຳນວນໂທເຄັນຊອບແວທັງໝົດ"
+
+#: lib/task/simplestats.py:55
+msgid "Number of hardware tokens not assigned to a user"
+msgstr "ຈຳນວນໂທເຄັນຮາດແວທີ່ບໍ່ໄດ້ມອບໝາຍໃຫ້ຜູ້ໃຊ້"
+
+#: lib/task/simplestats.py:58
+msgid "Number of tokens assigned to users"
+msgstr "ຈຳນວນໂທເຄັນທີ່ມອບໝາຍໃຫ້ຜູ້ໃຊ້"
+
+#: lib/task/simplestats.py:61
+msgid "Number of users with tokens assigned"
+msgstr "ຈຳນວນຜູ້ໃຊ້ທີ່ມີໂທເຄັນມອບໝາຍ"
+
+#: lib/tokens/applicationspecificpasswordtoken.py:75
+msgid ""
+"Application Specific Password: A token with a fixed password. Can be used"
+" for certain applications or services."
+msgstr ""
+"ລະຫັດຜ່ານສະເພາະແອັບພລິເຄຊັ່ນ: ໂທເຄັນທີ່ມີລະຫັດຜ່ານຖາວອນ. ສາມາດໃຊ້ສຳລັບແອັບພລິເຄຊັ່ນ ຫຼື ບໍລິການບາງຢ່"
+"າງ."
+
+#: lib/tokens/applicationspecificpasswordtoken.py:94
+msgid ""
+"The user may only have this maximum number of application specific "
+"password tokens assigned."
+msgstr ""
+"ຜູ້ໃຊ້ອາດມີໂທເຄັນລະຫັດຜ່ານສະເພາະແອັບພລິເຄຊັ່ນມອບໝາຍໃຫ້ໄດ້ສູງສຸດເທົ່ານີ້."
+
+#: lib/tokens/applicationspecificpasswordtoken.py:100
+msgid ""
+"The user may only have this maximum number of active application specific"
+" password tokens assigned."
+msgstr ""
+"ຜູ້ໃຊ້ອາດມີໂທເຄັນລະຫັດຜ່ານສະເພາະແອັບພລິເຄຊັ່ນທີ່ໃຊ້ງານຢູ່ມອບໝາຍໃຫ້ໄດ້ສູງສຸດເທົ່ານີ້."
+
+#: lib/tokens/certificatetoken.py:291
+msgid "Certificate: Enroll an x509 Certificate Token."
+msgstr "ໃບຢັ້ງຢືນ: ລົງທະບຽນໂທເຄັນໃບຢັ້ງຢືນ x509."
+
+#: lib/tokens/certificatetoken.py:302
+msgid "The user may only have this maximum number of certificates assigned."
+msgstr "ຜູ້ໃຊ້ອາດມີໃບຢັ້ງຢືນມອບໝາຍໃຫ້ໄດ້ສູງສຸດເທົ່ານີ້."
+
+#: lib/tokens/certificatetoken.py:307
+msgid ""
+"The user may only have this maximum number of active certificates "
+"assigned."
+msgstr "ຜູ້ໃຊ້ອາດມີໃບຢັ້ງຢືນທີ່ໃຊ້ງານຢູ່ມອບໝາຍໃຫ້ໄດ້ສູງສຸດເທົ່ານີ້."
+
+#: lib/tokens/certificatetoken.py:312
+msgid ""
+"Enrolling a certificate token can require an attestation certificate. "
+"(Default: ignore)"
+msgstr ""
+"ການລົງທະບຽນໂທເຄັນໃບຢັ້ງຢືນອາດຕ້ອງການໃບຢັ້ງຢືນການຮັບຮອງ. (ຄ່າເລີ່ມຕົ້ນ: ເມີນເສີຍ)"
+
+#: lib/tokens/certificatetoken.py:321
+msgid "The CA connector that should be used during certificate enrollment."
+msgstr "ຕົວເຊື່ອມຕໍ່ CA ທີ່ຄວນໃຊ້ໃນລະຫວ່າງການລົງທະບຽນໃບຢັ້ງຢືນ."
+
+#: lib/tokens/certificatetoken.py:327
+msgid "The template that should be used to issue a certificate."
+msgstr "ແມ່ແບບທີ່ຄວນໃຊ້ເພື່ອອອກໃບຢັ້ງຢືນ."
+
+#: lib/tokens/certificatetoken.py:332
+msgid ""
+"This takes a space separated list of elements to be added to the subject."
+" Can be 'email' and 'realm'."
+msgstr ""
+"ນີ້ຮັບລາຍການອົງປະກອບທີ່ແຍກດ້ວຍຊ່ອງຫວ່າງເພື່ອເພີ່ມເຂົ້າໃນຫົວຂໍ້. ສາມາດເປັນ 'email' ແລະ 'realm'."
+
+#: lib/tokens/certificatetoken.py:340 lib/tokens/certificatetoken.py:347
+msgid "The directory containing attestation certificate chains."
+msgstr "ໄດເຣັກທໍຣີທີ່ບັນຈຸສາຍໃບຢັ້ງຢືນການຮັບຮອງ."
+
+#: lib/tokens/daplugtoken.py:126
+msgid "event based OTP token using the HOTP algorithm"
+msgstr "ໂທເຄັນ OTP ຕາມເຫດການທີ່ໃຊ້ວິທີການ HOTP"
+
+#: lib/tokens/daplugtoken.py:132
+msgid "The user may only have this maximum number of daplug tokens assigned."
+msgstr "ຜູ້ໃຊ້ອາດມີໂທເຄັນ daplug ມອບໝາຍໃຫ້ໄດ້ສູງສຸດເທົ່ານີ້."
+
+#: lib/tokens/daplugtoken.py:137
+msgid ""
+"The user may only have this maximum number of active daplug tokens "
+"assigned."
+msgstr "ຜູ້ໃຊ້ອາດມີໂທເຄັນ daplug ທີ່ໃຊ້ງານຢູ່ມອບໝາຍໃຫ້ໄດ້ສູງສຸດເທົ່ານີ້."
+
+#: lib/tokens/daypasswordtoken.py:36
+msgid "Specify the time step of the DayPassword token. For example: \"24h\""
+msgstr "ລະບຸຂັ້ນຕອນເວລາຂອງໂທເຄັນ DayPassword. ຕົວຢ່າງ: \"24h\""
+
+#: lib/tokens/daypasswordtoken.py:84
+msgid ""
+"DayPassword: A time-based token with a variable timestep and the "
+"possibility to use the OTP more than once."
+msgstr ""
+"DayPassword: ໂທເຄັນຕາມເວລາທີ່ມີຂັ້ນຕອນເວລາທີ່ປ່ຽນແປງໄດ້ ແລະ ມີຄວາມເປັນໄປໄດ້ທີ່ຈະໃຊ້ OTP ຫຼາຍກວ່"
+"າໜຶ່ງຄັ້ງ."
+
+#: lib/tokens/daypasswordtoken.py:121 lib/tokens/hotptoken.py:172
+#: lib/tokens/totptoken.py:161
+msgid "Enforce setting an app pin for the privacyIDEA Authenticator App"
+msgstr "ບັງຄັບໃຫ້ຕັ້ງ PIN ແອັບສຳລັບແອັບ privacyIDEA Authenticator"
+
+#: lib/tokens/daypasswordtoken.py:129 lib/tokens/hotptoken.py:181
+#: lib/tokens/pushtoken.py:423 lib/tokens/totptoken.py:170
+msgid ""
+"Enforces the privacyIDEA Authenticator App that the token has to be "
+"unlocked with pin or biometric. This needs the privacyIDEA Authenticator "
+"app 4.6.1 or higher."
+msgstr ""
+"ບັງຄັບໃຫ້ແອັບ privacyIDEA Authenticator ຕ້ອງປົດລັອກໂທເຄັນດ້ວຍ PIN ຫຼື ຂໍ້ມູນຊີວະມິຕິ. ສິ່ງນີ້ຕ້ອງກາ"
+"ນແອັບ privacyIDEA Authenticator ເວີຊັ່ນ 4.6.1 ຫຼື ສູງກວ່າ."
+
+#: lib/tokens/daypasswordtoken.py:134
+msgid "The user may only have this maximum number of daypassword tokens assigned."
+msgstr "ຜູ້ໃຊ້ອາດມີໂທເຄັນ daypassword ມອບໝາຍໃຫ້ໄດ້ສູງສຸດເທົ່ານີ້."
+
+#: lib/tokens/daypasswordtoken.py:140
+msgid ""
+"The user may only have this maximum number of active daypassword tokens "
+"assigned."
+msgstr "ຜູ້ໃຊ້ອາດມີໂທເຄັນ daypassword ທີ່ໃຊ້ງານຢູ່ມອບໝາຍໃຫ້ໄດ້ສູງສຸດເທົ່ານີ້."
+
+#: lib/tokens/emailtoken.py:157
+msgid "EMail Token"
+msgstr "ໂທເຄັນອີເມວ"
+
+#: lib/tokens/emailtoken.py:159
+msgid "EMail: Send a One Time Password to the users email address."
+msgstr "ອີເມວ: ສົ່ງລະຫັດຜ່ານໃຊ້ຄັ້ງດຽວໄປຍັງທີ່ຢູ່ອີເມວຂອງຜູ້ໃຊ້."
+
+#: lib/tokens/emailtoken.py:167
+#, python-brace-format
+msgid ""
+"The text that will be sent via EMail for an EMail-token. Several tags "
+"like {otp} and {serial} can be used as parameters. You may also specify a"
+" filename as email template starting with \"file:\"."
+msgstr ""
+"ຂໍ້ຄວາມທີ່ຈະສົ່ງຜ່ານອີເມວສຳລັບໂທເຄັນອີເມວ. ແທັກຫຼາຍຢ່າງເຊັ່ນ {otp} ແລະ {serial} ສາມາດໃຊ້ເປັນພາຣ"
+"າມິເຕີໄດ້. ທ່ານຍັງສາມາດລະບຸຊື່ໄຟລ໌ເປັນແມ່ແບບອີເມວໂດຍເລີ່ມຕົ້ນດ້ວຍ \"file:\"."
+
+#: lib/tokens/emailtoken.py:176
+#, python-brace-format
+msgid ""
+"The subject of the EMail for an EMail token. Use tags like {otp} and "
+"{serial} as parameters."
+msgstr ""
+"ຫົວຂໍ້ຂອງອີເມວສຳລັບໂທເຄັນອີເມວ. ໃຊ້ແທັກເຊັ່ນ {otp} ແລະ {serial} ເປັນພາຣາມິເຕີ."
+
+#: lib/tokens/emailtoken.py:181
+msgid ""
+"If set, a new EMail OTP will be sent after successful authentication with"
+" one EMail OTP."
+msgstr ""
+"ຖ້າຕັ້ງຄ່າ, OTP ອີເມວໃໝ່ຈະຖືກສົ່ງຫຼັງຈາກການຢັ້ງຢືນຕົວຕົນສຳເລັດດ້ວຍ OTP ອີເມວອັນໜຶ່ງ."
+
+#: lib/tokens/emailtoken.py:186
+msgid ""
+"Use an alternative challenge text for telling the user to enter the code "
+"from the e-mail. You can also use tags for automated replacement. Check "
+"out the documentation for more details."
+msgstr ""
+"ໃຊ້ຂໍ້ຄວາມທ້າທາຍທາງເລືອກເພື່ອບອກໃຫ້ຜູ້ໃຊ້ໃສ່ລະຫັດຈາກອີເມວ. ທ່ານຍັງສາມາດໃຊ້ແທັກເພື່ອການປ່ຽນແທນອັດຕະໂ"
+"ນມັດໄດ້. ກວດສອບເອກະສານສຳລັບລາຍລະອຽດເພີ່ມເຕີມ."
+
+#: lib/tokens/emailtoken.py:196
+msgid "The user may only have this maximum number of email tokens assigned."
+msgstr "ຜູ້ໃຊ້ອາດມີໂທເຄັນອີເມວມອບໝາຍໃຫ້ໄດ້ສູງສຸດເທົ່ານີ້."
+
+#: lib/tokens/emailtoken.py:201
+msgid ""
+"The user may only have this maximum number of active email tokens "
+"assigned."
+msgstr "ຜູ້ໃຊ້ອາດມີໂທເຄັນອີເມວທີ່ໃຊ້ງານຢູ່ມອບໝາຍໃຫ້ໄດ້ສູງສຸດເທົ່ານີ້."
+
+#: lib/tokens/emailtoken.py:283
+msgid "Enter the OTP from the Email"
+msgstr "ໃສ່ OTP ຈາກອີເມວ"
+
+#: lib/tokens/emailtoken.py:325
+msgid "The PIN was correct, but the EMail could not be sent!"
+msgstr "PIN ຖືກຕ້ອງ, ແຕ່ບໍ່ສາມາດສົ່ງອີເມວໄດ້!"
+
+#: lib/tokens/emailtoken.py:563
+msgid "Please enter your new email address!"
+msgstr "ກະລຸນາໃສ່ທີ່ຢູ່ອີເມວໃໝ່ຂອງທ່ານ!"
+
+#: lib/tokens/emailtoken.py:603
+msgid "The email address is not valid!"
+msgstr "ທີ່ຢູ່ອີເມວບໍ່ຖືກຕ້ອງ!"
+
+#: lib/tokens/foureyestoken.py:131
+msgid "4Eyes Token: Use tokens of two or more users to authenticate"
+msgstr ""
+"ໂທເຄັນ 4Eyes: ໃຊ້ໂທເຄັນຂອງຜູ້ໃຊ້ສອງຄົນ ຫຼື ຫຼາຍກວ່ານັ້ນເພື່ອຢັ້ງຢືນຕົວຕົນ"
+
+#: lib/tokens/foureyestoken.py:142
+msgid "The user may only have this maximum number of 4eyes tokens assigned."
+msgstr "ຜູ້ໃຊ້ອາດມີໂທເຄັນ 4eyes ມອບໝາຍໃຫ້ໄດ້ສູງສຸດເທົ່ານີ້."
+
+#: lib/tokens/foureyestoken.py:147
+msgid ""
+"The user may only have this maximum number of active 4eyes tokens "
+"assigned."
+msgstr "ຜູ້ໃຊ້ອາດມີໂທເຄັນ 4eyes ທີ່ໃຊ້ງານຢູ່ມອບໝາຍໃຫ້ໄດ້ສູງສຸດເທົ່ານີ້."
+
+#: lib/tokens/hotptoken.py:84
+msgid "Please enter a valid OTP value of the new token."
+msgstr "ກະລຸນາໃສ່ຄ່າ OTP ທີ່ຖືກຕ້ອງຂອງໂທເຄັນໃໝ່."
+
+#: lib/tokens/hotptoken.py:97
+msgid "Specify the hashing function to be used. Can be SHA1, SHA256 or SHA512."
+msgstr "ລະບຸຟັງຊັ່ນການແຮຊທີ່ຈະໃຊ້. ສາມາດເປັນ SHA1, SHA256 ຫຼື SHA512."
+
+#: lib/tokens/hotptoken.py:99
+msgid "Specify the OTP length to be used. Can be 6 or 8 digits."
+msgstr "ລະບຸຄວາມຍາວ OTP ທີ່ຈະໃຊ້. ສາມາດເປັນ 6 ຫຼື 8 ຕົວເລກ."
+
+#: lib/tokens/hotptoken.py:100
+msgid "Specify whether users are allowed or forced to use two-step enrollment."
+msgstr "ລະບຸວ່າຜູ້ໃຊ້ໄດ້ຮັບອະນຸຍາດ ຫຼື ຖືກບັງຄັບໃຫ້ໃຊ້ການລົງທະບຽນສອງຂັ້ນຕອນ."
+
+#: lib/tokens/hotptoken.py:102
+msgid "Specify whether admins are allowed or forced to use two-step enrollment."
+msgstr ""
+"ລະບຸວ່າຜູ້ບໍລິຫານໄດ້ຮັບອະນຸຍາດ ຫຼື ຖືກບັງຄັບໃຫ້ໃຊ້ການລົງທະບຽນສອງຂັ້ນຕອນ."
+
+#: lib/tokens/hotptoken.py:139
+msgid "HOTP: Event based One Time Passwords."
+msgstr "HOTP: ລະຫັດຜ່ານໃຊ້ຄັ້ງດຽວຕາມເຫດການ."
+
+#: lib/tokens/hotptoken.py:147
+msgid "The user may only have this maximum number of HOTP tokens assigned."
+msgstr "ຜູ້ໃຊ້ອາດມີໂທເຄັນ HOTP ມອບໝາຍໃຫ້ໄດ້ສູງສຸດເທົ່ານີ້."
+
+#: lib/tokens/hotptoken.py:152
+msgid "The user may only have this maximum number of active HOTP tokens assigned."
+msgstr "ຜູ້ໃຊ້ອາດມີໂທເຄັນ HOTP ທີ່ໃຊ້ງານຢູ່ມອບໝາຍໃຫ້ໄດ້ສູງສຸດເທົ່ານີ້."
+
+#: lib/tokens/hotptoken.py:157 lib/tokens/totptoken.py:150
+msgid "The size of the OTP seed part contributed by the client (in bytes)"
+msgstr "ຂະໜາດຂອງສ່ວນ OTP seed ທີ່ປະກອບສ່ວນໂດຍລູກຄ້າ (ເປັນໄບຕ໌)"
+
+#: lib/tokens/hotptoken.py:162 lib/tokens/totptoken.py:153
+msgid "The size of the OTP seed part contributed by the server (in bytes)"
+msgstr "ຂະໜາດຂອງສ່ວນ OTP seed ທີ່ປະກອບສ່ວນໂດຍເຊີບເວີ (ເປັນໄບຕ໌)"
+
+#: lib/tokens/hotptoken.py:167 lib/tokens/totptoken.py:156
+msgid ""
+"The difficulty factor used for the OTP seed generation (should be at "
+"least 10000)"
+msgstr "ປັດໄຈຄວາມຍາກທີ່ໃຊ້ສຳລັບການສ້າງ OTP seed (ຄວນເປັນຢ່າງໜ້ອຍ 10000)"
+
+#: lib/tokens/hotptoken.py:291
+msgid "URL for google Authenticator"
+msgstr "URL ສຳລັບ google Authenticator"
+
+#: lib/tokens/hotptoken.py:305
+msgid "URL for OATH token"
+msgstr "URL ສຳລັບໂທເຄັນ OATH"
+
+#: lib/tokens/hotptoken.py:861
+msgid "Please scan the QR code and enter the OTP value!"
+msgstr "ກະລຸນາສະແກນ QR code ແລະ ໃສ່ຄ່າ OTP!"
+
+#: lib/tokens/indexedsecrettoken.py:51
+#, python-brace-format
+msgid "Please enter the positions {0!s} from your secret."
+msgstr "ກະລຸນາໃສ່ຕຳແໜ່ງ {0!s} ຈາກລະຫັດລັບຂອງທ່ານ."
+
+#: lib/tokens/indexedsecrettoken.py:100
+msgid "Indexed Secret Token"
+msgstr "ໂທເຄັນລະຫັດລັບແບບດັດຊະນີ"
+
+#: lib/tokens/indexedsecrettoken.py:102
+msgid "IndexedSecret: Request certain positions of a shared secret from the user."
+msgstr "IndexedSecret: ຮ້ອງຂໍຕຳແໜ່ງບາງຢ່າງຂອງລະຫັດລັບຮ່ວມຈາກຜູ້ໃຊ້."
+
+#: lib/tokens/indexedsecrettoken.py:110
+msgid ""
+"Use an alternative challenge text for telling the user which positions of"
+" the secret he should enter. You can also use tags for automated "
+"replacement. Check out the documentation for more details."
+msgstr ""
+"ໃຊ້ຂໍ້ຄວາມທ້າທາຍທາງເລືອກເພື່ອບອກຜູ້ໃຊ້ວ່າຄວນໃສ່ຕຳແໜ່ງໃດຂອງລະຫັດລັບ. ທ່ານຍັງສາມາດໃຊ້ແທັກເພື່ອການປ່ຽນ"
+"ແທນອັດຕະໂນມັດໄດ້. ກວດສອບເອກະສານສຳລັບລາຍລະອຽດເພີ່ມເຕີມ."
+
+#: lib/tokens/indexedsecrettoken.py:118
+msgid "Number of necessary positions to be answered by the user."
+msgstr "ຈຳນວນຕຳແໜ່ງທີ່ຈຳເປັນຕ້ອງໄດ້ຮັບຄຳຕອບຈາກຜູ້ໃຊ້."
+
+#: lib/tokens/indexedsecrettoken.py:125
+msgid "Preset the enrollment with the value of the given attribute."
+msgstr "ກຳນົດຄ່າການລົງທະບຽນລ່ວງໜ້າດ້ວຍຄ່າຂອງຄຸນລັກສະນະທີ່ກຳນົດ."
+
+#: lib/tokens/indexedsecrettoken.py:132 lib/tokens/indexedsecrettoken.py:139
+msgid "The attribute whose value should be force set during enrollment."
+msgstr "ຄຸນລັກສະນະທີ່ມີຄ່າຄວນຖືກບັງຄັບໃຫ້ຕັ້ງໃນລະຫວ່າງການລົງທະບຽນ."
+
+#: lib/tokens/indexedsecrettoken.py:146
+msgid ""
+"The user may only have this maximum number of indexed secret tokens "
+"assigned."
+msgstr "ຜູ້ໃຊ້ອາດມີໂທເຄັນລະຫັດລັບແບບດັດຊະນີມອບໝາຍໃຫ້ໄດ້ສູງສຸດເທົ່ານີ້."
+
+#: lib/tokens/indexedsecrettoken.py:151
+msgid ""
+"The user may only have this maximum number of active indexed secret "
+"tokens assigned."
+msgstr ""
+"ຜູ້ໃຊ້ອາດມີໂທເຄັນລະຫັດລັບແບບດັດຊະນີທີ່ໃຊ້ງານຢູ່ມອບໝາຍໃຫ້ໄດ້ສູງສຸດເທົ່ານີ້."
+
+#: lib/tokens/motptoken.py:87
+msgid "mOTP: Classical mobile One Time Passwords."
+msgstr "mOTP: ລະຫັດຜ່ານໃຊ້ຄັ້ງດຽວຜ່ານມືຖືແບບຄລາສສິກ."
+
+#: lib/tokens/motptoken.py:113
+msgid "The user may only have this maximum number of mOTP tokens assigned."
+msgstr "ຜູ້ໃຊ້ອາດມີໂທເຄັນ mOTP ມອບໝາຍໃຫ້ໄດ້ສູງສຸດເທົ່ານີ້."
+
+#: lib/tokens/motptoken.py:118
+msgid "The user may only have this maximum number of active mOTP tokens assigned."
+msgstr "ຜູ້ໃຊ້ອາດມີໂທເຄັນ mOTP ທີ່ໃຊ້ງານຢູ່ມອບໝາຍໃຫ້ໄດ້ສູງສຸດເທົ່ານີ້."
+
+#: lib/tokens/motptoken.py:160
+msgid "URL for mOTP token"
+msgstr "URL ສຳລັບໂທເຄັນ mOTP"
+
+#: lib/tokens/ocratoken.py:90
+msgid "OCRA: Enroll an OCRA token."
+msgstr "OCRA: ລົງທະບຽນໂທເຄັນ OCRA."
+
+#: lib/tokens/ocratoken.py:100
+msgid "The user may only have this maximum number of OCRA tokens assigned."
+msgstr "ຜູ້ໃຊ້ອາດມີໂທເຄັນ OCRA ມອບໝາຍໃຫ້ໄດ້ສູງສຸດເທົ່ານີ້."
+
+#: lib/tokens/ocratoken.py:105
+msgid "The user may only have this maximum number of active OCRA tokens assigned."
+msgstr "ຜູ້ໃຊ້ອາດມີໂທເຄັນ OCRA ທີ່ໃຊ້ງານຢູ່ມອບໝາຍໃຫ້ໄດ້ສູງສຸດເທົ່ານີ້."
+
+#: lib/tokens/papertoken.py:94
+msgid "PPR: One Time Passwords printed on a sheet of paper."
+msgstr "PPR: ລະຫັດຜ່ານໃຊ້ຄັ້ງດຽວທີ່ພິມໃສ່ເຈ້ຍ."
+
+#: lib/tokens/papertoken.py:105 lib/tokens/tantoken.py:107
+msgid "The number of OTP values, which are printed on the paper."
+msgstr "ຈຳນວນຄ່າ OTP, ທີ່ຖືກພິມໃສ່ໃນເຈ້ຍ."
+
+#: lib/tokens/papertoken.py:110
+msgid "The user may only have this maximum number of paper tokens assigned."
+msgstr "ຜູ້ໃຊ້ອາດມີໂທເຄັນເຈ້ຍມອບໝາຍໃຫ້ໄດ້ສູງສຸດເທົ່ານີ້."
+
+#: lib/tokens/papertoken.py:115
+msgid ""
+"The user may only have this maximum number of active paper tokens "
+"assigned."
+msgstr "ຜູ້ໃຊ້ອາດມີໂທເຄັນເຈ້ຍທີ່ໃຊ້ງານຢູ່ມອບໝາຍໃຫ້ໄດ້ສູງສຸດເທົ່ານີ້."
+
+#: lib/tokens/passkeytoken.py:94
+msgid "Passkey: A secret stored on a device, unlocked with biometrics."
+msgstr "Passkey: ລະຫັດລັບທີ່ເກັບໄວ້ໃນອຸປະກອນ, ປົດລັອກດ້ວຍຂໍ້ມູນຊີວະມິຕິ."
+
+#: lib/tokens/passkeytoken.py:103
+msgid ""
+"Alternative challenge message to use when authenticating with a "
+"passkey.You can also use tags for replacement, check the documentation "
+"for more details."
+msgstr ""
+"ຂໍ້ຄວາມທ້າທາຍທາງເລືອກທີ່ຈະໃຊ້ເມື່ອຢັ້ງຢືນຕົວຕົນດ້ວຍ passkey. ທ່ານຍັງສາມາດໃຊ້ແທັກເພື່ອການປ່ຽນແທນ, ກວ"
+"ດສອບເອກະສານສຳລັບລາຍລະອຽດເພີ່ມເຕີມ."
+
+#: lib/tokens/passkeytoken.py:109
+msgid ""
+"When enabled, passkey token can be triggered with the PIN or via the "
+"/validate/triggerchallenge endpoint. For privacyIDEA plugins, this is not"
+" recommended. It is advised to use a condition, for example on a user-"
+"agent, with this policy."
+msgstr ""
+"ເມື່ອເປີດໃຊ້, ໂທເຄັນ passkey ສາມາດຖືກກະຕຸ້ນດ້ວຍ PIN ຫຼື ຜ່ານປາຍທາງ /validate/"
+"triggerchallenge. ສຳລັບປລັກອິນ privacyIDEA, ສິ່ງນີ້ບໍ່ໄດ້ຖືກແນະນຳ. ແນະນຳໃຫ້ໃຊ້ເງື່ອນໄຂ, ຕົວຢ່າ"
+"ງເຊັ່ນໃນ user-agent, ກັບນະໂຍບາຍນີ້."
+
+#: lib/tokens/passkeytoken.py:118
+msgid ""
+"Request attestation from the authenticator during the registration. The "
+"attestation certificate will be saved in the token info. The default "
+"value is 'none'."
+msgstr ""
+"ຮ້ອງຂໍການຮັບຮອງຈາກຕົວຢັ້ງຢືນຕົວຕົນໃນລະຫວ່າງການລົງທະບຽນ. ໃບຢັ້ງຢືນການຮັບຮອງຈະຖືກບັນທຶກໄວ້ໃນຂໍ້ມູນໂທເ"
+"ຄັນ. ຄ່າເລີ່ມຕົ້ນແມ່ນ 'none'."
+
+#: lib/tokens/passkeytoken.py:407
+msgid "Please authenticate with your passkey!"
+msgstr "ກະລຸນາຢັ້ງຢືນຕົວຕົນດ້ວຍ passkey ຂອງທ່ານ!"
+
+#: lib/tokens/passkeytoken.py:411
+msgid "Please confirm the registration with your passkey!"
+msgstr "ກະລຸນາຢືນຢັນການລົງທະບຽນດ້ວຍ passkey ຂອງທ່ານ!"
+
+#: lib/tokens/passwordtoken.py:115
+msgid ""
+"A token with a fixed password. Can be combined  with the OTP PIN. Is used"
+" for the lost token scenario."
+msgstr ""
+"ໂທເຄັນທີ່ມີລະຫັດຜ່ານຖາວອນ. ສາມາດລວມກັບ OTP PIN ໄດ້. ໃຊ້ສຳລັບສະຖານະການໂທເຄັນຫາຍ."
+
+#: lib/tokens/passwordtoken.py:127
+msgid "The user may only have this maximum number of password tokens assigned."
+msgstr "ຜູ້ໃຊ້ອາດມີໂທເຄັນລະຫັດຜ່ານມອບໝາຍໃຫ້ໄດ້ສູງສຸດເທົ່ານີ້."
+
+#: lib/tokens/passwordtoken.py:132
+msgid ""
+"The user may only have this maximum number of active password tokens "
+"assigned."
+msgstr "ຜູ້ໃຊ້ອາດມີໂທເຄັນລະຫັດຜ່ານທີ່ໃຊ້ງານຢູ່ມອບໝາຍໃຫ້ໄດ້ສູງສຸດເທົ່ານີ້."
+
+#: lib/tokens/pushtoken.py:78
+msgid "Please confirm the authentication on your mobile device!"
+msgstr "ກະລຸນາຢືນຢັນການຢັ້ງຢືນຕົວຕົນໃນອຸປະກອນມືຖືຂອງທ່ານ!"
+
+#: lib/tokens/pushtoken.py:79
+msgid ""
+"Use the polling feature of your privacyIDEA Authenticator App to check "
+"for a new Login request."
+msgstr ""
+"ໃຊ້ຟີເຈີການພໍລລິງ (polling) ຂອງແອັບ privacyIDEA Authenticator ຂອງທ່ານເພື່ອຊອກຫາຄຳຮ້ອງຂໍກ"
+"ານເຂົ້າສູ່ລະບົບໃໝ່."
+
+#: lib/tokens/pushtoken.py:81
+msgid "Do you want to confirm the login?"
+msgstr "ທ່ານຕ້ອງການຢືນຢັນການເຂົ້າສູ່ລະບົບຫຼືບໍ່?"
+
+#: lib/tokens/pushtoken.py:82
+msgid "Enter the code to log in"
+msgstr "ໃສ່ລະຫັດເພື່ອເຂົ້າສູ່ລະບົບ"
+
+#: lib/tokens/pushtoken.py:369
+msgid "PUSH Token"
+msgstr "ໂທເຄັນ PUSH"
+
+#: lib/tokens/pushtoken.py:371
+msgid "PUSH: Send a push notification to a smartphone."
+msgstr "PUSH: ສົ່ງການແຈ້ງເຕືອນພຸດ (push) ໄປຍັງສະມາດໂຟນ."
+
+#: lib/tokens/pushtoken.py:380
+msgid "The configuration of your Firebase application."
+msgstr "ການຕັ້ງຄ່າຂອງແອັບພລິເຄຊັ່ນ Firebase ຂອງທ່ານ."
+
+#: lib/tokens/pushtoken.py:388
+msgid ""
+"The URL the Push App should contact in the second enrollment step. "
+"Usually it is the endpoint /ttype/push of the privacyIDEA server."
+msgstr ""
+"URL ທີ່ແອັບພຸດ (Push App) ຄວນຕິດຕໍ່ໃນຂັ້ນຕອນການລົງທະບຽນທີສອງ. ປົກກະຕິມັນແມ່ນປາຍທາງ /ttype/"
+"push ຂອງເຊີບເວີ privacyIDEA."
+
+#: lib/tokens/pushtoken.py:394
+msgid ""
+"The second enrollment step must be completed within this time (in "
+"minutes)."
+msgstr "ຂັ້ນຕອນການລົງທະບຽນທີສອງຕ້ອງສຳເລັດພາຍໃນເວລານີ້ (ເປັນນາທີ)."
+
+#: lib/tokens/pushtoken.py:398
+msgid "The smartphone needs to verify SSL during the enrollment. (default 1)"
+msgstr "ສະມາດໂຟນຕ້ອງກວດສອບ SSL ໃນລະຫວ່າງການລົງທະບຽນ. (ຄ່າເລີ່ມຕົ້ນ 1)"
+
+#: lib/tokens/pushtoken.py:404
+msgid "The user may only have this maximum number of Push tokens assigned."
+msgstr "ຜູ້ໃຊ້ອາດມີໂທເຄັນ Push ມອບໝາຍໃຫ້ໄດ້ສູງສຸດເທົ່ານີ້."
+
+#: lib/tokens/pushtoken.py:409
+msgid "The user may only have this maximum number of active Push tokens assigned."
+msgstr "ຜູ້ໃຊ້ອາດມີໂທເຄັນ Push ທີ່ໃຊ້ງານຢູ່ມອບໝາຍໃຫ້ໄດ້ສູງສຸດເທົ່ານີ້."
+
+#: lib/tokens/pushtoken.py:415
+msgid "Require to unlock the Smartphone before Push requests can be accepted"
+msgstr ""
+"ຕ້ອງການການປົດລັອກສະມາດໂຟນກ່ອນທີ່ຄຳຮ້ອງຂໍພຸດ (Push requests) ຈະໄດ້ຮັບການຍອມຮັບ"
+
+#: lib/tokens/pushtoken.py:428
+msgid ""
+"Use the privacyIDEA app URL scheme 'pia' in the enroll URL for push "
+"tokens to open the privacyIDEA app."
+msgstr ""
+"ໃຊ້ URL scheme 'pia' ຂອງແອັບ privacyIDEA ໃນ URL ການລົງທະບຽນສຳລັບໂທເຄັນພຸດເພື່ອເປີດແອັບ "
+"privacyIDEA."
+
+#: lib/tokens/pushtoken.py:437
+#, python-brace-format
+msgid ""
+"The question the user sees on his mobile phone. Several tags like "
+"{serial} and {client_ip} can be used as parameters."
+msgstr ""
+"ຄຳຖາມທີ່ຜູ້ໃຊ້ເຫັນໃນໂທລະສັບມືຖືຂອງລາວ. ແທັກຫຼາຍຢ່າງເຊັ່ນ {serial} ແລະ {client_ip} ສາມາດໃຊ້ເປັ"
+"ນພາຣາມິເຕີໄດ້."
+
+#: lib/tokens/pushtoken.py:443
+msgid "The title of the notification, the user sees on his mobile phone."
+msgstr "ຫົວຂໍ້ຂອງການແຈ້ງເຕືອນ, ທີ່ຜູ້ໃຊ້ເຫັນໃນໂທລະສັບມືຖືຂອງລາວ."
+
+#: lib/tokens/pushtoken.py:448
+msgid "The smartphone needs to verify SSL during authentication. (default 1)"
+msgstr "ສະມາດໂຟນຕ້ອງກວດສອບ SSL ໃນລະຫວ່າງການຢັ້ງຢືນຕົວຕົນ. (ຄ່າເລີ່ມຕົ້ນ 1)"
+
+#: lib/tokens/pushtoken.py:454
+msgid "Require the user to confirm the login with a presence check."
+msgstr ""
+"ຕ້ອງການໃຫ້ຜູ້ໃຊ້ຢືນຢັນການເຂົ້າສູ່ລະບົບດ້ວຍການກວດສອບການມີຢູ່ (presence check)."
+
+#: lib/tokens/pushtoken.py:459
+msgid ""
+"Require the user to confirm the login with an OTP that is received in the"
+" smartphone app. push_require_presence has precedence over this. It is "
+"not compatible with push_wait."
+msgstr ""
+"ຕ້ອງການໃຫ້ຜູ້ໃຊ້ຢືນຢັນການເຂົ້າສູ່ລະບົບດ້ວຍ OTP ທີ່ໄດ້ຮັບໃນແອັບສະມາດໂຟນ. push_require_presence ມີ"
+"ລຳດັບຄວາມສຳຄັນເໜືອກວ່ານີ້. ມັນບໍ່ເຂົ້າກັນໄດ້ກັບ push_wait."
+
+#: lib/tokens/pushtoken.py:466
+msgid "The message that is shown above the code on the smartphone."
+msgstr "ຂໍ້ຄວາມທີ່ສະແດງຢູ່ເໜືອລະຫັດໃນສະມາດໂຟນ."
+
+#: lib/tokens/pushtoken.py:471
+#, python-brace-format
+msgid ""
+"The options that can be presented to the user to confirm the login. "
+"<code>ALPHABETIC</code>: A-Z, <code>NUMERIC</code>: 01-99, "
+"<code>CUSTOM</code>: user defined. Does only apply if <em>{0!s}</em> is "
+"set."
+msgstr ""
+"ຕົວເລືອກທີ່ສາມາດສະແດງໃຫ້ຜູ້ໃຊ້ເພື່ອຢືນຢັນການເຂົ້າສູ່ລະບົບ. <code>ALPHABETIC</code>: A-Z, "
+"<code>NUMERIC</code>: 01-99, <code>CUSTOM</code>: ຜູ້ໃຊ້ກຳນົດເອງ. ນຳໃຊ້ກໍຕໍ່ເມື່ອ <em>"
+"{0!s}</em> ຖືກຕັ້ງໄວ້."
+
+#: lib/tokens/pushtoken.py:481
+#, python-brace-format
+msgid ""
+"Custom options that can be presented to the user to confirm the login. "
+"The string must contain at least 2 options and should be unique. The "
+"options are separated by <code>:</code>. e.g.: "
+"<code>01:02:03:1A:1B:1C</code>. Does only apply if <em>{0!s}</em> is set "
+"to <code>CUSTOM</code>."
+msgstr ""
+"ຕົວເລືອກກຳນົດເອງທີ່ສາມາດສະແດງໃຫ້ຜູ້ໃຊ້ເພື່ອຢືນຢັນການເຂົ້າສູ່ລະບົບ. ສະຕຣິງຕ້ອງບັນຈຸຢ່າງໜ້ອຍ 2 ຕົວເລືອກ ແ"
+"ລະ ຄວນເປັນເອກະລັກ. ຕົວເລືອກຕ່າງໆຖືກແຍກດ້ວຍ <code>:</code>. ຕົວຢ່າງ: <code>"
+"01:02:03:1A:1B:1C</code>. ນຳໃຊ້ກໍຕໍ່ເມື່ອ <em>{0!s}</em> ຖືກຕັ້ງເປັນ <code>CUSTOM</"
+"code>."
+
+#: lib/tokens/pushtoken.py:491
+#, python-brace-format
+msgid ""
+"The number of options the user is presented with to confirm the login. "
+"Does only apply if <em>{0!s}</em> is set."
+msgstr ""
+"ຈຳນວນຕົວເລືອກທີ່ຜູ້ໃຊ້ຖືກສະແດງໃຫ້ເພື່ອຢືນຢັນການເຂົ້າສູ່ລະບົບ. ນຳໃຊ້ກໍຕໍ່ເມື່ອ <em>{0!s}</em> ຖືກຕັ້ງໄວ້."
+
+#: lib/tokens/pushtoken.py:499
+msgid ""
+"Wait for number of seconds for the user to confirm the challenge in the "
+"first request."
+msgstr "ລໍຖ້າຈຳນວນວິນາທີເພື່ອໃຫ້ຜູ້ໃຊ້ຢືນຢັນການທ້າທາຍໃນຄຳຮ້ອງຂໍທຳອິດ."
+
+#: lib/tokens/pushtoken.py:505
+msgid "Configure whether to allow push tokens to poll for challenges"
+msgstr "ຕັ້ງຄ່າວ່າຈະອະນຸຍາດໃຫ້ໂທເຄັນພຸດສາມາດພໍລ (poll) ເພື່ອຫາການທ້າທາຍຫຼືບໍ່"
+
+#: lib/tokens/pushtoken.py:649
+msgid "URL for privacyIDEA Push Token"
+msgstr "URL ສຳລັບໂທເຄັນ privacyIDEA Push"
+
+#: lib/tokens/pushtoken.py:1156
+msgid "Please enter the code displayed on your smartphone."
+msgstr "ກະລຸນາໃສ່ລະຫັດທີ່ສະແດງຢູ່ໃນສະມາດໂຟນຂອງທ່ານ."
+
+#: lib/tokens/pushtoken.py:1394
+msgid "Please scan the QR code!"
+msgstr "ກະລຸນາສະແກນ QR code!"
+
+#: lib/tokens/questionnairetoken.py:97
+msgid "Questionnaire: Enroll Questions for the user."
+msgstr "ແບບສອບຖາມ: ລົງທະບຽນຄຳຖາມສຳລັບຜູ້ໃຊ້."
+
+#: lib/tokens/questionnairetoken.py:108
+msgid "The user has to answer this number of questions during authentication."
+msgstr "ຜູ້ໃຊ້ຕ້ອງຕອບຄຳຖາມຈຳນວນເທົ່ານີ້ໃນລະຫວ່າງການຢັ້ງຢືນຕົວຕົນ."
+
+#: lib/tokens/questionnairetoken.py:116
+msgid ""
+"The user may only have this maximum number of questionaire tokens "
+"assigned."
+msgstr "ຜູ້ໃຊ້ອາດມີໂທເຄັນແບບສອບຖາມມອບໝາຍໃຫ້ໄດ້ສູງສຸດເທົ່ານີ້."
+
+#: lib/tokens/questionnairetoken.py:121
+msgid ""
+"The user may only have this maximum number of active questionaire tokens "
+"assigned."
+msgstr "ຜູ້ໃຊ້ອາດມີໂທເຄັນແບບສອບຖາມທີ່ໃຊ້ງານຢູ່ມອບໝາຍໃຫ້ໄດ້ສູງສຸດເທົ່ານີ້."
+
+#: lib/tokens/questionnairetoken.py:165
+#, python-format
+msgid "You need to provide at least %s answers."
+msgstr "ທ່ານຈຳເປັນຕ້ອງໃຫ້ຄຳຕອບຢ່າງໜ້ອຍ %s ຄຳຕອບ."
+
+#: lib/tokens/radiustoken.py:105
+msgid "RADIUS: Forward authentication request to a RADIUS server."
+msgstr "RADIUS: ສົ່ງຕໍ່ຄຳຮ້ອງຂໍການຢັ້ງຢືນຕົວຕົນໄປຍັງເຊີບເວີ RADIUS."
+
+#: lib/tokens/radiustoken.py:114
+msgid "The user may only have this maximum number of RADIUS tokens assigned."
+msgstr "ຜູ້ໃຊ້ອາດມີໂທເຄັນ RADIUS ມອບໝາຍໃຫ້ໄດ້ສູງສຸດເທົ່ານີ້."
+
+#: lib/tokens/radiustoken.py:120
+msgid ""
+"The user may only have this maximum number of active RADIUS tokens "
+"assigned."
+msgstr "ຜູ້ໃຊ້ອາດມີໂທເຄັນ RADIUS ທີ່ໃຊ້ງານຢູ່ມອບໝາຍໃຫ້ໄດ້ສູງສຸດເທົ່ານີ້."
+
+#: lib/tokens/registrationtoken.py:128
+msgid ""
+"Registration: A token that creates a registration code that can be used "
+"as a second factor once."
+msgstr ""
+"ການລົງທະບຽນ: ໂທເຄັນທີ່ສ້າງລະຫັດລົງທະບຽນທີ່ສາມາດໃຊ້ເປັນປັດໄຈທີສອງໄດ້ຄັ້ງດຽວ."
+
+#: lib/tokens/registrationtoken.py:140
+msgid ""
+"The user may only have this maximum number of registration tokens "
+"assigned."
+msgstr "ຜູ້ໃຊ້ອາດມີໂທເຄັນການລົງທະບຽນມອບໝາຍໃຫ້ໄດ້ສູງສຸດເທົ່ານີ້."
+
+#: lib/tokens/registrationtoken.py:146
+msgid ""
+"The user may only have this maximum number of active registration tokens "
+"assigned."
+msgstr "ຜູ້ໃຊ້ອາດມີໂທເຄັນການລົງທະບຽນທີ່ໃຊ້ງານຢູ່ມອບໝາຍໃຫ້ໄດ້ສູງສຸດເທົ່ານີ້."
+
+#: lib/tokens/remotetoken.py:113
+msgid "Remote Token: Forward authentication request to another server."
+msgstr "ໂທເຄັນທາງໄກ: ສົ່ງຕໍ່ຄຳຮ້ອງຂໍການຢັ້ງຢືນຕົວຕົນໄປຍັງເຊີບເວີອື່ນ."
+
+#: lib/tokens/remotetoken.py:122 lib/tokens/totptoken.py:175
+msgid "The user may only have this maximum number of remote tokens assigned."
+msgstr "ຜູ້ໃຊ້ອາດມີໂທເຄັນທາງໄກມອບໝາຍໃຫ້ໄດ້ສູງສຸດເທົ່ານີ້."
+
+#: lib/tokens/remotetoken.py:128 lib/tokens/totptoken.py:181
+msgid ""
+"The user may only have this maximum number of active remote tokens "
+"assigned."
+msgstr "ຜູ້ໃຊ້ອາດມີໂທເຄັນທາງໄກທີ່ໃຊ້ງານຢູ່ມອບໝາຍໃຫ້ໄດ້ສູງສຸດເທົ່ານີ້."
+
+#: lib/tokens/smstoken.py:196
+msgid "SMS Token"
+msgstr "ໂທເຄັນ SMS"
+
+#: lib/tokens/smstoken.py:198
+msgid "SMS: Send a One Time Password to the users mobile phone."
+msgstr "SMS: ສົ່ງລະຫັດຜ່ານໃຊ້ຄັ້ງດຽວໄປຍັງໂທລະສັບມືຖືຂອງຜູ້ໃຊ້."
+
+#: lib/tokens/smstoken.py:207
+#, python-brace-format
+msgid ""
+"The text that will be send via SMS for an SMS token. Use tags like {otp} "
+"and {serial} as parameters."
+msgstr ""
+"ຂໍ້ຄວາມທີ່ຈະສົ່ງຜ່ານ SMS ສຳລັບໂທເຄັນ SMS. ໃຊ້ແທັກເຊັ່ນ {otp} ແລະ {serial} ເປັນພາຣາມິເຕີ."
+
+#: lib/tokens/smstoken.py:214
+msgid ""
+"If set, a new SMS OTP will be sent after successful authentication with "
+"one SMS OTP."
+msgstr ""
+"ຖ້າຕັ້ງຄ່າ, OTP SMS ໃໝ່ຈະຖືກສົ່ງຫຼັງຈາກການຢັ້ງຢືນຕົວຕົນສຳເລັດດ້ວຍ OTP SMS ອັນໜຶ່ງ."
+
+#: lib/tokens/smstoken.py:219
+msgid ""
+"Use an alternative challenge text for telling the user to enter the code "
+"from the SMS. You can also use tags for automated replacement. Check out "
+"the documentation for more details."
+msgstr ""
+"ໃຊ້ຂໍ້ຄວາມທ້າທາຍທາງເລືອກເພື່ອບອກໃຫ້ຜູ້ໃຊ້ໃສ່ລະຫັດຈາກ SMS. ທ່ານຍັງສາມາດໃຊ້ແທັກເພື່ອການປ່ຽນແທນອັດຕະໂ"
+"ນມັດໄດ້. ກວດສອບເອກະສານສຳລັບລາຍລະອຽດເພີ່ມເຕີມ."
+
+#: lib/tokens/smstoken.py:230
+msgid "Choose the gateways the administrator is allowed to set."
+msgstr "ເລືອກປະຕູທີ່ຜູ້ບໍລິຫານໄດ້ຮັບອະນຸຍາດໃຫ້ຕັ້ງຄ່າ."
+
+#: lib/tokens/smstoken.py:238
+msgid "Choose the gateways the user is allowed to set."
+msgstr "ເລືອກປະຕູທີ່ຜູ້ໃຊ້ໄດ້ຮັບອະນຸຍາດໃຫ້ຕັ້ງຄ່າ."
+
+#: lib/tokens/smstoken.py:245
+msgid "The user may only have this maximum number of SMS tokens assigned."
+msgstr "ຜູ້ໃຊ້ອາດມີໂທເຄັນ SMS ມອບໝາຍໃຫ້ໄດ້ສູງສຸດເທົ່ານີ້."
+
+#: lib/tokens/smstoken.py:251
+msgid "The user may only have this maximum number of active SMS tokens assigned."
+msgstr "ຜູ້ໃຊ້ອາດມີໂທເຄັນ SMS ທີ່ໃຊ້ງານຢູ່ມອບໝາຍໃຫ້ໄດ້ສູງສຸດເທົ່ານີ້."
+
+#: lib/tokens/smstoken.py:327
+msgid "Enter the OTP from the SMS:"
+msgstr "ໃສ່ OTP ຈາກ SMS:"
+
+#: lib/tokens/smstoken.py:361
+msgid "The PIN was correct, but the SMS could not be sent!"
+msgstr "PIN ຖືກຕ້ອງ, ແຕ່ບໍ່ສາມາດສົ່ງ SMS ໄດ້!"
+
+#: lib/tokens/smstoken.py:612
+msgid "Please enter your new phone number!"
+msgstr "ກະລຸນາໃສ່ເບີໂທລະສັບໃໝ່ຂອງທ່ານ!"
+
+#: lib/tokens/spasstoken.py:87
+msgid "SPass: Simple Pass token. Static passwords."
+msgstr "SPass: ໂທເຄັນລະຫັດຜ່ານງ່າຍ. ລະຫັດຜ່ານຄົງທີ່."
+
+#: lib/tokens/spasstoken.py:99
+msgid "The user may only have this maximum number of SPASS tokens assigned."
+msgstr "ຜູ້ໃຊ້ອາດມີໂທເຄັນ SPASS ມອບໝາຍໃຫ້ໄດ້ສູງສຸດເທົ່ານີ້."
+
+#: lib/tokens/spasstoken.py:105
+msgid ""
+"The user may only have this maximum number of active SPASS tokens "
+"assigned."
+msgstr "ຜູ້ໃຊ້ອາດມີໂທເຄັນ SPASS ທີ່ໃຊ້ງານຢູ່ມອບໝາຍໃຫ້ໄດ້ສູງສຸດເທົ່ານີ້."
+
+#: lib/tokens/sshkeytoken.py:83
+msgid "SSH Public Key: The public SSH key."
+msgstr "SSH Public Key: ກະແຈສາທາລະນະ SSH."
+
+#: lib/tokens/sshkeytoken.py:92
+msgid "The user may only have this maximum number of SSH keys assigned."
+msgstr "ຜູ້ໃຊ້ອາດມີກະແຈ SSH ມອບໝາຍໃຫ້ໄດ້ສູງສຸດເທົ່ານີ້."
+
+#: lib/tokens/sshkeytoken.py:98
+msgid "The user may only have this maximum number of active SSH keys assigned."
+msgstr "ຜູ້ໃຊ້ອາດມີກະແຈ SSH ທີ່ໃຊ້ງານຢູ່ມອບໝາຍໃຫ້ໄດ້ສູງສຸດເທົ່ານີ້."
+
+#: lib/tokens/tantoken.py:97
+msgid "TAN: TANs printed on a sheet of paper."
+msgstr "TAN: TANs ທີ່ພິມໃສ່ເຈ້ຍ."
+
+#: lib/tokens/tantoken.py:112
+msgid "The user may only have this maximum number of TAN tokens assigned."
+msgstr "ຜູ້ໃຊ້ອາດມີໂທເຄັນ TAN ມອບໝາຍໃຫ້ໄດ້ສູງສຸດເທົ່ານີ້."
+
+#: lib/tokens/tantoken.py:118
+msgid "The user may only have this maximum number of active TAN tokens assigned."
+msgstr "ຜູ້ໃຊ້ອາດມີໂທເຄັນ TAN ທີ່ໃຊ້ງານຢູ່ມອບໝາຍໃຫ້ໄດ້ສູງສຸດເທົ່ານີ້."
+
+#: lib/tokens/tiqrtoken.py:157
+msgid "TiQR: Enroll a TiQR token."
+msgstr "TiQR: ລົງທະບຽນໂທເຄັນ TiQR."
+
+#: lib/tokens/tiqrtoken.py:167
+msgid "The user may only have this maximum number of TiQR tokens assigned."
+msgstr "ຜູ້ໃຊ້ອາດມີໂທເຄັນ TiQR ມອບໝາຍໃຫ້ໄດ້ສູງສຸດເທົ່ານີ້."
+
+#: lib/tokens/tiqrtoken.py:173
+msgid "The user may only have this maximum number of active TiQR tokens assigned."
+msgstr "ຜູ້ໃຊ້ອາດມີໂທເຄັນ TiQR ທີ່ໃຊ້ງານຢູ່ມອບໝາຍໃຫ້ໄດ້ສູງສຸດເທົ່ານີ້."
+
+#: lib/tokens/tiqrtoken.py:237
+msgid "URL for TiQR enrollment"
+msgstr "URL ສຳລັບການລົງທະບຽນ TiQR"
+
+#: lib/tokens/tiqrtoken.py:395
+msgid "Please scan the QR Code"
+msgstr "ກະລຸນາສະແກນ QR Code"
+
+#: lib/tokens/totptoken.py:60
+msgid "Specify the time step of the time-based OTP token."
+msgstr "ລະບຸຂັ້ນຕອນເວລາຂອງໂທເຄັນ OTP ຕາມເວລາ."
+
+#: lib/tokens/totptoken.py:107
+msgid "TOTP: Time based One Time Passwords."
+msgstr "TOTP: ລະຫັດຜ່ານໃຊ້ຄັ້ງດຽວຕາມເວລາ."
+
+#: lib/tokens/u2ftoken.py:250
+msgid "U2F: Enroll a U2F token."
+msgstr "U2F: ລົງທະບຽນໂທເຄັນ U2F."
+
+#: lib/tokens/u2ftoken.py:260
+msgid "This is a list of FQDN hostnames trusting the registered U2F tokens."
+msgstr "ນີ້ແມ່ນລາຍການຂອງຊື່ໂຮສ FQDN ທີ່ໄວ້ວາງໃຈໂທເຄັນ U2F ທີ່ລົງທະບຽນແລ້ວ."
+
+#: lib/tokens/u2ftoken.py:264
+msgid ""
+"Use an alternative challenge text for telling the user to confirm with "
+"his U2F device. You can also use tags for automated replacement. Check "
+"out the documentation for more details."
+msgstr ""
+"ໃຊ້ຂໍ້ຄວາມທ້າທາຍທາງເລືອກເພື່ອບອກໃຫ້ຜູ້ໃຊ້ຢືນຢັນດ້ວຍອຸປະກອນ U2F ຂອງລາວ. ທ່ານຍັງສາມາດໃຊ້ແທັກເພື່ອການ"
+"ປ່ຽນແທນອັດຕະໂນມັດໄດ້. ກວດສອບເອກະສານສຳລັບລາຍລະອຽດເພີ່ມເຕີມ."
+
+#: lib/tokens/u2ftoken.py:274
+msgid "Only specified U2F tokens are authorized."
+msgstr "ໂທເຄັນ U2F ທີ່ລະບຸເທົ່ານັ້ນທີ່ໄດ້ຮັບອະນຸຍາດ."
+
+#: lib/tokens/u2ftoken.py:282
+msgid "Only specified U2F tokens are allowed to be registered."
+msgstr "ໂທເຄັນ U2F ທີ່ລະບຸເທົ່ານັ້ນທີ່ໄດ້ຮັບອະນຸຍາດໃຫ້ລົງທະບຽນ."
+
+#: lib/tokens/u2ftoken.py:287
+msgid "Do not verify the U2F attestation certificate."
+msgstr "ຢ່າກວດສອບໃບຢັ້ງຢືນການຮັບຮອງ U2F."
+
+#: lib/tokens/u2ftoken.py:292
+msgid "The user may only have this maximum number of U2F tokens assigned."
+msgstr "ຜູ້ໃຊ້ອາດມີໂທເຄັນ U2F ມອບໝາຍໃຫ້ໄດ້ສູງສຸດເທົ່ານີ້."
+
+#: lib/tokens/u2ftoken.py:298
+msgid "The user may only have this maximum number of active U2F tokens assigned."
+msgstr "ຜູ້ໃຊ້ອາດມີໂທເຄັນ U2F ທີ່ໃຊ້ງານຢູ່ມອບໝາຍໃຫ້ໄດ້ສູງສຸດເທົ່ານີ້."
+
+#: lib/tokens/u2ftoken.py:382
+msgid "You need to define the appId in the token config!"
+msgstr "ທ່ານຈຳເປັນຕ້ອງກຳນົດ appId ໃນການຕັ້ງຄ່າໂທເຄັນ!"
+
+#: lib/tokens/u2ftoken.py:446
+#, python-brace-format
+msgid "Please confirm with your U2F token ({0!s})"
+msgstr "ກະລຸນາຍືນຢັນດ້ວຍໂທເຄັນ U2F ຂອງທ່ານ ({0!s})"
+
+#: lib/tokens/vascotoken.py:100
+msgid "VASCO Token: Authentication using VASCO tokens"
+msgstr "ໂທເຄັນ VASCO: ການຢັ້ງຢືນຕົວຕົນໂດຍໃຊ້ໂທເຄັນ VASCO"
+
+#: lib/tokens/vascotoken.py:109
+msgid "The user may only have this maximum number of Vasco tokens assigned."
+msgstr "ຜູ້ໃຊ້ອາດມີໂທເຄັນ Vasco ມອບໝາຍໃຫ້ໄດ້ສູງສຸດເທົ່ານີ້."
+
+#: lib/tokens/vascotoken.py:115
+msgid ""
+"The user may only have this maximum number of active Vasco tokens "
+"assigned."
+msgstr "ຜູ້ໃຊ້ອາດມີໂທເຄັນ Vasco ທີ່ໃຊ້ງານຢູ່ມອບໝາຍໃຫ້ໄດ້ສູງສຸດເທົ່ານີ້."
+
+#: lib/tokens/webauthntoken.py:465
+msgid "Generic WebAuthn Token"
+msgstr "ໂທເຄັນ WebAuthn ທົ່ວໄປ"
+
+#: lib/tokens/webauthntoken.py:475
+#, python-brace-format
+msgid "Please confirm with your WebAuthn token ({0!s})"
+msgstr "ກະລຸນາຍືນຢັນດ້ວຍໂທເຄັນ WebAuthn ຂອງທ່ານ ({0!s})"
+
+#: lib/tokens/webauthntoken.py:476
+msgid "Please confirm with your WebAuthn token"
+msgstr "ກະລຸນາຍືນຢັນດ້ວຍໂທເຄັນ WebAuthn ຂອງທ່ານ"
+
+#: lib/tokens/webauthntoken.py:557
+msgid "WebAuthn: Enroll a Web Authentication token."
+msgstr "WebAuthn: ລົງທະບຽນໂທເຄັນ Web Authentication."
+
+#: lib/tokens/webauthntoken.py:567
+msgid ""
+"A list of transports to prefer to communicate with WebAuthn tokens. "
+"Default: usb ble nfc internal (All standard transports)"
+msgstr ""
+"ລາຍການຂອງການຂົນສົ່ງ (transport) ທີ່ມັກໃຊ້ເພື່ອຕິດຕໍ່ສື່ສານກັບໂທເຄັນ WebAuthn. ຄ່າເລີ່ມຕົ້ນ: usb "
+"ble nfc internal (ການຂົນສົ່ງມາດຕະຖານທັງໝົດ)"
+
+#: lib/tokens/webauthntoken.py:572
+msgid ""
+"The time in seconds the user has to confirm authorization on his WebAuthn"
+" token. Note: You will want to increase the ChallengeValidityTime along "
+"with this. Default: 60"
+msgstr ""
+"ເວລາເປັນວິນາທີທີ່ຜູ້ໃຊ້ມີເພື່ອຢືນຢັນການອະນຸຍາດໃນໂທເຄັນ WebAuthn ຂອງລາວ. ໝາຍເຫດ: ທ່ານອາດຈະຕ້ອງກ"
+"ານເພີ່ມ ChallengeValidityTime ໄປພ້ອມກັບສິ່ງນີ້. ຄ່າເລີ່ມຕົ້ນ: 60"
+
+#: lib/tokens/webauthntoken.py:578
+msgid ""
+"Whether the user's identity should be verified when authenticating with a"
+" WebAuthn token. Default: preferred (verify the user if supported by the "
+"token)"
+msgstr ""
+"ຕົວຕົນຂອງຜູ້ໃຊ້ຄວນຖືກຢັ້ງຢືນຫຼືບໍ່ເມື່ອຢັ້ງຢືນຕົວຕົນດ້ວຍໂທເຄັນ WebAuthn. ຄ່າເລີ່ມຕົ້ນ: preferred (ຢັ້ງຢືນຜູ້ໃ"
+"ຊ້ຖ້າໂທເຄັນຮອງຮັບ)"
+
+#: lib/tokens/webauthntoken.py:588
+msgid ""
+"Use an alternative challenge text for telling the user to confirm the "
+"login with his WebAuthn token. You can also use tags for automated "
+"replacement. Check out the documentation for more details."
+msgstr ""
+"ໃຊ້ຂໍ້ຄວາມທ້າທາຍທາງເລືອກເພື່ອບອກໃຫ້ຜູ້ໃຊ້ຢືນຢັນການເຂົ້າສູ່ລະບົບດ້ວຍໂທເຄັນ WebAuthn ຂອງລາວ. ທ່ານຍັງສ"
+"າມາດໃຊ້ແທັກເພື່ອການປ່ຽນແທນອັດຕະໂນມັດໄດ້. ກວດສອບເອກະສານສຳລັບລາຍລະອຽດເພີ່ມເຕີມ."
+
+#: lib/tokens/webauthntoken.py:597
+msgid ""
+"A list of WebAuthn authenticators acceptable for authorization, given as "
+"a space-separated list of AAGUIDs. Per default all authenticators are "
+"acceptable."
+msgstr ""
+"ລາຍການຂອງຕົວຢັ້ງຢືນຕົວຕົນ WebAuthn ທີ່ຍອມຮັບໄດ້ສຳລັບການອະນຸຍາດ, ໃຫ້ໄວ້ເປັນລາຍການ AAGUIDs ທີ່ແຍ"
+"ກດ້ວຍຊ່ອງຫວ່າງ. ໂດຍຄ່າເລີ່ມຕົ້ນ, ຕົວຢັ້ງຢືນຕົວຕົນທັງໝົດແມ່ນຍອມຮັບໄດ້."
+
+#: lib/tokens/webauthntoken.py:603
+msgid "Only the specified WebAuthn-tokens are authorized."
+msgstr "ໂທເຄັນ WebAuthn ທີ່ລະບຸເທົ່ານັ້ນທີ່ໄດ້ຮັບອະນຸຍາດ."
+
+#: lib/tokens/webauthntoken.py:610
+msgid "One webauthn token can not be registered to a user more than once."
+msgstr "ໂທເຄັນ webauthn ດຽວບໍ່ສາມາດລົງທະບຽນໃຫ້ຜູ້ໃຊ້ຫຼາຍກວ່າໜຶ່ງຄັ້ງ."
+
+#: lib/tokens/webauthntoken.py:615
+msgid "A human-readable name for the organization rolling out WebAuthn tokens."
+msgstr "ຊື່ທີ່ມະນຸດອ່ານເຂົ້າໃຈໄດ້ສຳລັບອົງກອນທີ່ກຳລັງເປີດໃຊ້ໂທເຄັນ WebAuthn."
+
+#: lib/tokens/webauthntoken.py:620
+msgid ""
+"A domain name that is a subset of the respective FQDNs for all the "
+"webservices the users should be able to sign in to using WebAuthn tokens."
+msgstr ""
+"ຊື່ໂດເມນທີ່ເປັນສ່ວນຍ່ອຍຂອງ FQDN ທີ່ກ່ຽວຂ້ອງສຳລັບເວັບບໍລິການທັງໝົດທີ່ຜູ້ໃຊ້ຄວນສາມາດເຂົ້າສູ່ລະບົບໂດຍໃຊ້ໂທເຄັ"
+"ນ WebAuthn."
+
+#: lib/tokens/webauthntoken.py:626
+msgid ""
+"The time in seconds the user has to confirm enrollment on his WebAuthn "
+"token. Note: You will want to increase the ChallengeValidityTime along "
+"with this. Default: 60"
+msgstr ""
+"ເວລາເປັນວິນາທີທີ່ຜູ້ໃຊ້ມີເພື່ອຢືນຢັນການລົງທະບຽນໃນໂທເຄັນ WebAuthn ຂອງລາວ. ໝາຍເຫດ: ທ່ານອາດຈະຕ້ອງ"
+"ການເພີ່ມ ChallengeValidityTime ໄປພ້ອມກັບສິ່ງນີ້. ຄ່າເລີ່ມຕົ້ນ: 60"
+
+#: lib/tokens/webauthntoken.py:633
+msgid ""
+"Whether to limit roll out of WebAuthn tokens to either only platform "
+"authenticators, or only cross-platform authenticators. Default: either"
+msgstr ""
+"ຈະຈຳກັດການເປີດໃຊ້ໂທເຄັນ WebAuthn ໃຫ້ເປັນພຽງຕົວຢັ້ງຢືນຕົວຕົນແພລັດຟອມເທົ່ານັ້ນ, ຫຼື ຕົວຢັ້ງຢືນຕົວຕົນຂ້າມແ"
+"ພລັດຟອມເທົ່ານັ້ນ. ຄ່າເລີ່ມຕົ້ນ: either (ຢ່າງໃດຢ່າງໜຶ່ງ)"
+
+#: lib/tokens/webauthntoken.py:644
+msgid ""
+"A list of WebAuthn authenticators acceptable for enrollment, given as a "
+"space-separated list of AAGUIDs. Per default all authenticators are "
+"acceptable."
+msgstr ""
+"ລາຍການຂອງຕົວຢັ້ງຢືນຕົວຕົນ WebAuthn ທີ່ຍອມຮັບໄດ້ສຳລັບການລົງທະບຽນ, ໃຫ້ໄວ້ເປັນລາຍການ AAGUIDs ທີ່ແ"
+"ຍກດ້ວຍຊ່ອງຫວ່າງ. ໂດຍຄ່າເລີ່ມຕົ້ນ, ຕົວຢັ້ງຢືນຕົວຕົນທັງໝົດແມ່ນຍອມຮັບໄດ້."
+
+#: lib/tokens/webauthntoken.py:650
+msgid ""
+"Whether the user's identity should be verified when rolling out a new "
+"WebAuthn token. Default: preferred (verify the user if supported by the "
+"token)"
+msgstr ""
+"ຕົວຕົນຂອງຜູ້ໃຊ້ຄວນຖືກຢັ້ງຢືນຫຼືບໍ່ເມື່ອເປີດໃຊ້ໂທເຄັນ WebAuthn ໃໝ່. ຄ່າເລີ່ມຕົ້ນ: preferred (ຢັ້ງຢືນຜູ້ໃຊ້ຖ້າ"
+"ໂທເຄັນຮອງຮັບ)"
+
+#: lib/tokens/webauthntoken.py:661
+#, python-brace-format
+msgid ""
+"Which algorithm are available to use for creating public key credentials "
+"for WebAuthn tokens. (Default: [{0!s}], Order: [{1!s}])"
+msgstr ""
+"ອະລະກໍຣິດໃດທີ່ມີໃຫ້ໃຊ້ສຳລັບການສ້າງໃບຢັ້ງຢືນກະແຈສາທາລະນະສຳລັບໂທເຄັນ WebAuthn. (ຄ່າເລີ່ມຕົ້ນ: ["
+"{0!s}], ລຳດັບ: [{1!s}])"
+
+#: lib/tokens/webauthntoken.py:671
+msgid ""
+"Whether to request attestation data when enrolling a new WebAuthn token. "
+"Note: for u2f_req to work with WebAuthn, this cannot be set to none. "
+"Default: direct (ask for non-anonymized attestation data)"
+msgstr ""
+"ຈະຮ້ອງຂໍຂໍ້ມູນການຮັບຮອງຫຼືບໍ່ເມື່ອລົງທະບຽນໂທເຄັນ WebAuthn ໃໝ່. ໝາຍເຫດ: ເພື່ອໃຫ້ u2f_req ເຮັດວຽກກັ"
+"ບ WebAuthn ໄດ້, ສິ່ງນີ້ບໍ່ສາມາດຕັ້ງເປັນ none ໄດ້. ຄ່າເລີ່ມຕົ້ນ: direct (ຂໍຂໍ້ມູນການຮັບຮອງແບບບໍ່ປິດບັງຕົ"
+"ວຕົນ)"
+
+#: lib/tokens/webauthntoken.py:683
+msgid ""
+"Whether and how strictly to check authenticator attestation data. Note: "
+"If the attestation form is none, the attestation level needs to also be "
+"none. Default: untrusted (attestation is required, but can be unknown or "
+"self-signed)"
+msgstr ""
+"ຈະກວດສອບຂໍ້ມູນການຮັບຮອງຂອງຕົວຢັ້ງຢືນຕົວຕົນຢ່າງເຂັ້ມງວດພຽງໃດ. ໝາຍເຫດ: ຖ້າຮູບແບບການຮັບຮອງແມ່ນ "
+"none, ລະດັບການຮັບຮອງກໍຕ້ອງເປັນ none ເຊັ່ນກັນ. ຄ່າເລີ່ມຕົ້ນ: untrusted (ຕ້ອງການການຮັບຮອງ, ແຕ່ສ"
+"າມາດເປັນ unknown ຫຼື self-signed)"
+
+#: lib/tokens/webauthntoken.py:695
+msgid "Only the specified WebAuthn-tokens are allowed to be registered."
+msgstr "ໂທເຄັນ WebAuthn ທີ່ລະບຸເທົ່ານັ້ນທີ່ໄດ້ຮັບອະນຸຍາດໃຫ້ລົງທະບຽນ."
+
+#: lib/tokens/webauthntoken.py:700
+msgid "The user may only have this number of WebAuthn tokens assigned."
+msgstr "ຜູ້ໃຊ້ອາດມີໂທເຄັນ WebAuthn ຈຳນວນເທົ່ານີ້ມອບໝາຍໃຫ້."
+
+#: lib/tokens/webauthntoken.py:705
+msgid "The user may only have this number of active WebAuthn tokens assigned."
+msgstr "ຜູ້ໃຊ້ອາດມີໂທເຄັນ WebAuthn ທີ່ໃຊ້ງານຢູ່ຈຳນວນເທົ່ານີ້ມອບໝາຍໃຫ້."
+
+#: lib/tokens/webauthntoken.py:710
+msgid ""
+"Use an alternative challenge text for telling the user to confirm the "
+"enrollment with his WebAuthn device. You can also use tags for automated "
+"replacement. Check out the documentation for more details."
+msgstr ""
+"ໃຊ້ຂໍ້ຄວາມທ້າທາຍທາງເລືອກເພື່ອບອກໃຫ້ຜູ້ໃຊ້ຢືນຢັນການລົງທະບຽນກັບອຸປະກອນ WebAuthn ຂອງລາວ. ທ່ານຍັງສາ"
+"ມາດໃຊ້ແທັກເພື່ອການປ່ຽນແທນອັດຕະໂນມັດໄດ້. ກວດສອບເອກະສານສຳລັບລາຍລະອຽດເພີ່ມເຕີມ."
+
+#: lib/tokens/yubicotoken.py:105
+msgid "Yubikey Cloud mode: Forward authentication request to YubiCloud."
+msgstr "ໂໝດ Yubikey Cloud: ສົ່ງຕໍ່ຄຳຮ້ອງຂໍການຢັ້ງຢືນຕົວຕົນໄປຍັງ YubiCloud."
+
+#: lib/tokens/yubicotoken.py:114
+msgid "The user may only have this maximum number of Yubico tokens assigned."
+msgstr "ຜູ້ໃຊ້ອາດມີໂທເຄັນ Yubico ມອບໝາຍໃຫ້ໄດ້ສູງສຸດເທົ່ານີ້."
+
+#: lib/tokens/yubicotoken.py:120
+msgid ""
+"The user may only have this maximum number of active Yubico tokens "
+"assigned."
+msgstr "ຜູ້ໃຊ້ອາດມີໂທເຄັນ Yubico ທີ່ໃຊ້ງານຢູ່ມອບໝາຍໃຫ້ໄດ້ສູງສຸດເທົ່ານີ້."
+
+#: lib/tokens/yubikeytoken.py:168
+msgid "Yubikey AES mode: One Time Passwords with Yubikey."
+msgstr "ໂໝດ Yubikey AES: ລະຫັດຜ່ານໃຊ້ຄັ້ງດຽວດ້ວຍ Yubikey."
+
+#: lib/tokens/yubikeytoken.py:177
+msgid "The user may only have this maximum number of Yubikey tokens assigned."
+msgstr "ຜູ້ໃຊ້ອາດມີໂທເຄັນ Yubikey ມອບໝາຍໃຫ້ໄດ້ສູງສຸດເທົ່ານີ້."
+
+#: lib/tokens/yubikeytoken.py:183
+msgid ""
+"The user may only have this maximum number of active Yubikey tokens "
+"assigned."
+msgstr "ຜູ້ໃຊ້ອາດມີໂທເຄັນ Yubikey ທີ່ໃຊ້ງານຢູ່ມອບໝາຍໃຫ້ໄດ້ສູງສຸດເທົ່ານີ້."
+
+#: lib/tokens/yubikeytoken.py:188
+msgid ""
+"The Yubikey access code can be read by an enrollment client to initialize"
+" Yubikeys."
+msgstr ""
+"ລະຫັດເຂົ້າໃຊ້ Yubikey ສາມາດອ່ານໄດ້ໂດຍໄຄລ໌ອັນການລົງທະບຽນເພື່ອເລີ່ມຕົ້ນ Yubikeys."
+
+#: lib/utils/compare.py:373
+msgid "True if the value of the left attribute is equal to the right value"
+msgstr "True ຖ້າຄ່າຂອງຄຸນລັກສະນະຊ້າຍເທົ່າກັບຄ່າຂວາ"
+
+#: lib/utils/compare.py:375
+msgid "False if the value of the left attribute is equal to the right value"
+msgstr "False ຖ້າຄ່າຂອງຄຸນລັກສະນະຊ້າຍເທົ່າກັບຄ່າຂວາ"
+
+#: lib/utils/compare.py:377
+msgid "True if the list of the left attribute contains the right value"
+msgstr "True ຖ້າລາຍການຂອງຄຸນລັກສະນະຊ້າຍມີຄ່າຂວາຢູ່"
+
+#: lib/utils/compare.py:379
+msgid "False if the list of the left attribute contains the right value"
+msgstr "False ຖ້າລາຍການຂອງຄຸນລັກສະນະຊ້າຍມີຄ່າຂວາຢູ່"
+
+#: lib/utils/compare.py:381
+msgid ""
+"True if the value of the left attribute completely matches the given "
+"regular expression pattern on the right"
+msgstr ""
+"True ຖ້າຄ່າຂອງຄຸນລັກສະນະຊ້າຍກົງກັບຮູບແບບນິພົດປົກກະຕິທີ່ໃຫ້ໄວ້ທາງຂວາຢ່າງສົມບູນ"
+
+#: lib/utils/compare.py:384
+msgid ""
+"False if the value of the left attribute completely matches the given "
+"regular expression pattern on the right"
+msgstr ""
+"False ຖ້າຄ່າຂອງຄຸນລັກສະນະຊ້າຍກົງກັບຮູບແບບນິພົດປົກກະຕິທີ່ໃຫ້ໄວ້ທາງຂວາຢ່າງສົມບູນ"
+
+#: lib/utils/compare.py:387
+msgid ""
+"True if the value of the left attribute is contained in the comma-"
+"separated list on the right"
+msgstr "True ຖ້າຄ່າຂອງຄຸນລັກສະນະຊ້າຍຖືກບັນຈຸຢູ່ໃນລາຍການທີ່ແຍກດ້ວຍຈຸດທາງຂວາ"
+
+#: lib/utils/compare.py:390
+msgid ""
+"False if the value of the left attribute is contained in the comma-"
+"separated list on the right"
+msgstr "False ຖ້າຄ່າຂອງຄຸນລັກສະນະຊ້າຍຖືກບັນຈຸຢູ່ໃນລາຍການທີ່ແຍກດ້ວຍຈຸດທາງຂວາ"
+
+#: lib/utils/compare.py:393
+msgid ""
+"True if the integer value of the left attribute is smaller than the right"
+" integer value"
+msgstr "True ຖ້າຄ່າຈຳນວນເຕັມຂອງຄຸນລັກສະນະຊ້າຍນ້ອຍກວ່າຄ່າຈຳນວນເຕັມທາງຂວາ"
+
+#: lib/utils/compare.py:398
+msgid ""
+"True if the integer value of the left attribute is bigger than the right "
+"integer value"
+msgstr "True ຖ້າຄ່າຈຳນວນເຕັມຂອງຄຸນລັກສະນະຊ້າຍໃຫຍ່ກວ່າຄ່າຈຳນວນເຕັມທາງຂວາ"
+
+#: lib/utils/compare.py:402
+msgid ""
+"True if the date and time of the left attribute is before the date and "
+"time of the right attribute"
+msgstr ""
+"True ຖ້າວັນທີ ແລະ ເວລາຂອງຄຸນລັກສະນະຊ້າຍກ່ອນວັນທີ ແລະ ເວລາຂອງຄຸນລັກສະນະທາງຂວາ"
+
+#: lib/utils/compare.py:405
+msgid ""
+"True if the date and time of the left attribute is after the date and "
+"time of the right attribute"
+msgstr ""
+"True ຖ້າວັນທີ ແລະ ເວລາຂອງຄຸນລັກສະນະຊ້າຍຫຼັງວັນທີ ແລະ ເວລາຂອງຄຸນລັກສະນະທາງຂວາ"
+
+#: lib/utils/compare.py:408
+msgid ""
+"True if the date and time of the left attribute is within the past "
+"duration of the right attribute. The right attribute should be a duration"
+" such as '1y', '7d', '6h', '15m'."
+msgstr ""
+"True ຖ້າວັນທີ ແລະ ເວລາຂອງຄຸນລັກສະນະຊ້າຍຢູ່ໃນໄລຍະເວລາຜ່ານມາຂອງຄຸນລັກສະນະທາງຂວາ. ຄຸນລັກສະນະທ"
+"າງຂວາຄວນເປັນໄລຍະເວລາເຊັ່ນ '1y', '7d', '6h', '15m'."
+
+#: lib/utils/compare.py:412
+msgid ""
+"False if the date and time of the left attribute is within the past "
+"duration of the right attribute. The right attribute should be a duration"
+" such as '1y', '7d', '6h', '15m'."
+msgstr ""
+"False ຖ້າວັນທີ ແລະ ເວລາຂອງຄຸນລັກສະນະຊ້າຍຢູ່ໃນໄລຍະເວລາຜ່ານມາຂອງຄຸນລັກສະນະທາງຂວາ. ຄຸນລັກສະນະ"
+"ທາງຂວາຄວນເປັນໄລຍະເວລາເຊັ່ນ '1y', '7d', '6h', '15m'."
+
+#: lib/utils/compare.py:416
+msgid ""
+"True if the value of the left attribute contains the right value (case-"
+"insensitive)"
+msgstr "True ຖ້າຄ່າຂອງຄຸນລັກສະນະຊ້າຍບັນຈຸຄ່າທາງຂວາ (ບໍ່ສົນໃຈຕົວພິມນ້ອຍ-ໃຫຍ່)"
+
+#: lib/utils/compare.py:419
+msgid ""
+"False if the value of the left attribute contains the right value (case-"
+"insensitive)"
+msgstr "False ຖ້າຄ່າຂອງຄຸນລັກສະນະຊ້າຍບັນຈຸຄ່າທາງຂວາ (ບໍ່ສົນໃຈຕົວພິມນ້ອຍ-ໃຫຍ່)"
