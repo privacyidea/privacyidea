@@ -107,7 +107,6 @@ import {
   styleUrl: "./container-create.component.scss"
 })
 export class ContainerCreateComponent {
-  // --- Injections ---
   protected readonly userService: UserServiceInterface = inject(UserService);
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
   protected readonly containerTemplateService: ContainerTemplateService = inject(ContainerTemplateService);
@@ -118,24 +117,19 @@ export class ContainerCreateComponent {
   protected readonly renderer: Renderer2 = inject(Renderer2);
   private readonly router = inject(Router);
 
-  // --- ViewChilds ---
   @ViewChild("scrollContainer") scrollContainer!: ElementRef<HTMLElement>;
   @ViewChild("stickyHeader") stickyHeader!: ElementRef<HTMLElement>;
   @ViewChild("stickySentinel") stickySentinel!: ElementRef<HTMLElement>;
   @ViewChild(UserAssignmentComponent) userAssignmentComponent!: UserAssignmentComponent;
   @ViewChild(ContainerRegistrationConfigComponent) registrationConfigComponent!: ContainerRegistrationConfigComponent;
 
-  // --- Properties & Signals ---
   private observer!: IntersectionObserver;
   validInput = true;
 
-  // Container & Serial
-  // containerSerial = this.containerService.containerSerial;
   containerSerial = signal("");
   description = signal("");
   userSelected = computed(() => this.userService.selectionUsernameFilter() !== "");
 
-  // Template Logic
   templateOptions = this.containerTemplateService.templates;
   selectedTemplate: WritableSignal<ContainerTemplate> = linkedSignal({
     source: this.containerService.selectedContainerType,
@@ -153,7 +147,6 @@ export class ContainerCreateComponent {
     return containerType ? this.containerTemplateService.getTokenTypesForContainerType(containerType) : [];
   });
 
-  // Registration & UI States
   generateQRCode: WritableSignal<boolean> = linkedSignal({
     source: this.containerService.selectedContainerType,
     computation: (containerType?: ContainerType) =>
@@ -170,7 +163,6 @@ export class ContainerCreateComponent {
   pollResponse = signal<any>(null);
   public dialogData = signal<ContainerCreationDialogData | null>(null);
 
-  // --- Lifecycle ---
   constructor() {
     this.containerSerial.set("");
     this.containerService.containerDetailsResource.set(undefined);
@@ -222,7 +214,6 @@ export class ContainerCreateComponent {
     this.containerService.stopPolling();
   }
 
-  // --- Public / Protected Methods ---
   protected onValidInputChange(isValid: boolean) {
     this.validInput = isValid;
   }
@@ -239,7 +230,7 @@ export class ContainerCreateComponent {
     return t1?.name === t2?.name;
   };
 
-  protected createContainer() {
+  createContainer() {
     this.registerResponse.set(null);
     const containerType = this.containerService.selectedContainerType()?.containerType;
     if (!containerType) return;
@@ -272,11 +263,15 @@ export class ContainerCreateComponent {
         if (this.generateQRCode()) {
           this.registerContainer(containerSerial);
         } else {
-          this.router.navigateByUrl(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + containerSerial);
-          this.containerSerial.set(containerSerial);
+          this.onCreationSuccess(containerSerial);
         }
       }
     });
+  }
+
+  protected onCreationSuccess(serial: string) {
+    this.containerService.containerSerial.set(serial);
+    this.router.navigateByUrl(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + serial);
   }
 
   protected registerContainer(serial: string, regenerate: boolean = false) {
@@ -298,11 +293,11 @@ export class ContainerCreateComponent {
       });
   }
 
-  protected reopenEnrollmentDialog() {
+  reopenEnrollmentDialog() {
     const currentResponse = this.registerResponse();
     if (currentResponse) {
       this.openRegistrationDialog(currentResponse);
-      this.containerService.startPolling(this.containerSerial());
+      this.containerService.startPolling(this.containerService.containerSerial());
     }
   }
 
@@ -335,7 +330,6 @@ export class ContainerCreateComponent {
     this.clearTemplateSelection();
   };
 
-  // --- Private Helpers ---
   private _getEmptyTemplate(): ContainerTemplate {
     return {
       container_type: this.containerService.selectedContainerType()?.containerType ?? "",

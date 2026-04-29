@@ -28,7 +28,8 @@ import {
   ContainerServiceInterface,
   ContainerTemplate,
   ContainerType,
-  ContainerTypes
+  ContainerTypes,
+  TemplateComparisonResult
 } from "../../app/services/container/container.service";
 import { MockHttpResourceRef, MockPiResponse } from "./mock-utils";
 
@@ -94,6 +95,8 @@ export class MockContainerService implements ContainerServiceInterface {
     })
   );
   containerDetails = signal<ContainerDetails>({ containers: [], count: 0 });
+  containerDetail = signal<ContainerDetailData | null>(null);
+  templateComparison: WritableSignal<TemplateComparisonResult | null> = signal(null);
   addToken = jest.fn().mockReturnValue(of(null));
   removeToken = jest.fn().mockReturnValue(of(null));
   setContainerRealm = jest.fn().mockReturnValue(of(null));

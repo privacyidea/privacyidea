@@ -20,12 +20,13 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { By } from "@angular/platform-browser";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
+import { Router } from "@angular/router";
 import { DialogService } from "src/app/services/dialog/dialog.service";
+import { ROUTE_PATHS } from "src/app/route_paths";
 import { MockContainerTemplateService, MockDialogService } from "src/testing/mock-services";
 import { ContainerTemplateService } from "../../../../services/container-template/container-template.service";
 import { ContainerTemplateCopyDialogComponent } from "../dialogs/container-template-copy-dialog/container-template-copy-dialog.component";
 import { ContainerTemplateDeleteDialogComponent } from "../dialogs/container-template-delete-dialog/container-template-delete-dialog.component";
-import { ContainerTemplateEditDialogComponent } from "../dialogs/container-template-edit-dialog/container-template-edit-dialog.component";
 import { ContainerTemplatesTableActionsComponent } from "./container-templates-table-actions.component";
 
 describe("ContainerTemplatesTableActionsComponent", () => {
@@ -44,7 +45,8 @@ describe("ContainerTemplatesTableActionsComponent", () => {
       imports: [ContainerTemplatesTableActionsComponent, NoopAnimationsModule],
       providers: [
         { provide: DialogService, useClass: MockDialogService },
-        { provide: ContainerTemplateService, useClass: MockContainerTemplateService }
+        { provide: ContainerTemplateService, useClass: MockContainerTemplateService },
+        { provide: Router, useValue: { navigateByUrl: jest.fn() } }
       ]
     }).compileComponents();
 
@@ -78,15 +80,11 @@ describe("ContainerTemplatesTableActionsComponent", () => {
     expect(buttons[2].nativeElement.disabled).toBeFalsy();
   });
 
-  it("should open ContainerTemplateEditDialogComponent when Create is clicked", () => {
-    const spy = jest.spyOn(dialogServiceMock, "openDialog");
+  it("should navigate to create route when Create is clicked", () => {
+    const router = TestBed.inject(Router);
+    const navigateSpy = jest.spyOn(router, "navigateByUrl");
     component.onClickCreateTemplate();
-
-    expect(spy).toHaveBeenCalledWith(
-      expect.objectContaining({
-        component: ContainerTemplateEditDialogComponent
-      })
-    );
+    expect(navigateSpy).toHaveBeenCalledWith(ROUTE_PATHS.TOKENS_CONTAINERS_TEMPLATES_CREATE);
   });
 
   it("should open Copy dialog and call service for each selected template", async () => {

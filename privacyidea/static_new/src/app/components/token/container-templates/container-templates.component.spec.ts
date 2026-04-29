@@ -22,7 +22,9 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MatCheckboxChange } from "@angular/material/checkbox";
 import { By } from "@angular/platform-browser";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
+import { Router } from "@angular/router";
 import { DialogService } from "src/app/services/dialog/dialog.service";
+import { ROUTE_PATHS } from "src/app/route_paths";
 import { AuthService } from "../../../services/auth/auth.service";
 import { ContainerTemplateService } from "../../../services/container-template/container-template.service";
 import { ContainerTemplate } from "../../../services/container/container.service";
@@ -59,7 +61,8 @@ describe("ContainerTemplatesComponent", () => {
       providers: [
         { provide: ContainerTemplateService, useValue: mockContainerTemplateService },
         { provide: AuthService, useValue: mockAuthService },
-        { provide: DialogService, useValue: mockDialogService }
+        { provide: DialogService, useValue: mockDialogService },
+        { provide: Router, useValue: { navigateByUrl: jest.fn() } }
       ]
     }).compileComponents();
 
@@ -165,13 +168,16 @@ describe("ContainerTemplatesComponent", () => {
     expect(actionComponent.selectedTemplates().length).toBe(1);
     expect(actionComponent.selectedTemplates()[0].name).toBe("Template-C");
   });
-  it("should open edit dialog only if row is not a skeleton row", () => {
-    component.onClickTemplateName(mockTemplates[0]);
-    expect(mockDialogService.openDialog).toHaveBeenCalled();
+  it("should navigate to details route only if row is not a skeleton row", () => {
+    const router = TestBed.inject(Router);
+    const navigateSpy = jest.spyOn(router, "navigateByUrl");
 
-    mockDialogService.openDialog.mockClear();
+    component.onClickTemplateName(mockTemplates[0]);
+    expect(navigateSpy).toHaveBeenCalledWith(ROUTE_PATHS.TOKENS_CONTAINERS_TEMPLATES_DETAILS + mockTemplates[0].name);
+
+    navigateSpy.mockClear();
     component.onClickTemplateName({ name: "" } as ContainerTemplate);
-    expect(mockDialogService.openDialog).not.toHaveBeenCalled();
+    expect(navigateSpy).not.toHaveBeenCalled();
   });
 
   it("should filter items and update totalLength", () => {

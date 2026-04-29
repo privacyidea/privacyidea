@@ -814,4 +814,24 @@ describe("ContainerService", () => {
       expect(containerService.containersForTokenType()).toEqual([]);
     });
   });
+
+  describe("templateComparison", () => {
+    it("resets to null when containerSerial changes", () => {
+      containerService.containerSerial.set("CONT-A");
+      containerService.templateComparison.set({ "CONT-A": { tokens: { additional: [], equal: true, missing: [] } } });
+      expect(containerService.templateComparison()).not.toBeNull();
+
+      containerService.containerSerial.set("CONT-B");
+      expect(containerService.templateComparison()).toBeNull();
+    });
+
+    it("retains value while containerSerial is unchanged", () => {
+      containerService.containerSerial.set("CONT-A");
+      const result = { "CONT-A": { tokens: { additional: ["tok1"], equal: false, missing: [] } } };
+      containerService.templateComparison.set(result);
+
+      containerService.containerSerial.set("CONT-A");
+      expect(containerService.templateComparison()).toEqual(result);
+    });
+  });
 });

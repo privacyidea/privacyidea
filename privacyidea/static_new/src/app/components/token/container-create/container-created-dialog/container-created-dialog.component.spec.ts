@@ -37,8 +37,8 @@ describe("ContainerCreatedDialogComponent", () => {
   const stopPolling = jest.fn();
   const containerServiceMock = { stopPolling };
 
-  const containerSelected = jest.fn();
-  const contentServiceMock = { containerSelected };
+  const navigateContainerDetails = jest.fn();
+  const contentServiceMock = { navigateContainerDetails };
 
   const dialogClose = jest.fn();
   const dialogAfterClosed = jest.fn(() => of(true));
@@ -83,7 +83,7 @@ describe("ContainerCreatedDialogComponent", () => {
   it("containerSelected closes dialog and forwards selection", () => {
     component.containerSelected("C-777");
     expect(dialogClose).toHaveBeenCalled();
-    expect(containerSelected).toHaveBeenCalledWith("C-777");
+    expect(navigateContainerDetails).toHaveBeenCalledWith("C-777");
   });
 
   it("regenerateQRCode calls registerContainer with current serial and regenerate flag", () => {
@@ -102,8 +102,8 @@ describe("ContainerCreatedDialogWizardComponent", () => {
   const stopPolling = jest.fn();
   const containerServiceMock = { stopPolling };
 
-  const containerSelected = jest.fn();
-  const contentServiceMock = { containerSelected };
+  const navigateContainerDetails = jest.fn();
+  const contentServiceMock = { navigateContainerDetails };
 
   const dialogClose = jest.fn();
   const dialogAfterClosed = jest.fn(() => of(true));

@@ -28,7 +28,6 @@ import { map } from "rxjs";
 import { PiResponse } from "src/app/app.component";
 import { environment } from "../../../../environments/environment";
 import {
-  ContainerCreateData,
   ContainerRegisterData,
   ContainerService,
   ContainerServiceInterface
@@ -42,7 +41,6 @@ import { ContainerCreationDialogData } from "./container-created-dialog/containe
 import { ContainerCreatedDialogWizardComponent } from "./container-created-dialog/container-created-dialog.wizard.component";
 import { ContainerRegistrationCompletedDialogData } from "./container-registration-completed-dialog/container-registration-completed-dialog.component";
 import { ContainerRegistrationCompletedDialogWizardComponent } from "./container-registration-completed-dialog/container-registration-completed-dialog.wizard.component";
-
 @Component({
   selector: "app-container-create-wizard",
   imports: [
@@ -71,10 +69,7 @@ export class ContainerCreateWizardComponent extends ContainerCreateComponent {
       containerType: this.containerService.selectedContainerType()?.containerType,
       canRegister: this.authService.actionAllowed("container_register")
     }),
-    computation: (source) => {
-      console.log("Computing generateQRCode with source:", source);
-      return source.registration && source.containerType === "smartphone" && source.canRegister;
-    }
+    computation: (source) => source.registration && source.containerType === "smartphone" && source.canRegister
   });
 
   protected override resetCreateOptions = () => {
@@ -85,7 +80,6 @@ export class ContainerCreateWizardComponent extends ContainerCreateComponent {
     this.description.set("");
   };
 
-  // TODO: Get custom path from pi.cfg
   customizationPath = "/static/public/customize/";
 
   readonly preTopHtml$ = this.http
@@ -112,40 +106,11 @@ export class ContainerCreateWizardComponent extends ContainerCreateComponent {
     super();
   }
 
-  override createContainer() {
-    this.registerResponse.set(null);
-    const containerType = this.containerService.selectedContainerType()?.containerType;
-    if (!containerType) return;
-    const createData: ContainerCreateData = {
-      type: containerType,
-      description: this.description(),
-      user: this.userService.selectionUsernameFilter()
-    };
-    if (createData.user || this.userAssignmentComponent?.onlyAddToRealm()) {
-      createData.realm = this.userService.selectedUserRealm();
-    }
-    if (this.selectedTemplate()) {
-      createData.name = this.selectedTemplate()?.name;
-    }
-    console.log("Creating container with data:", createData);
-    this.containerService.createContainer(createData).subscribe({
-      next: (
-        response: PiResponse<{
-          container_serial: string;
-        }>
-      ) => {
-        const containerSerial = response.result?.value?.container_serial;
-        if (!containerSerial) {
-          this.notificationService.openSnackBar("Container creation failed. No container serial returned.");
-          return;
-        }
-        if (this.generateQRCode()) {
-          this.registerContainer(containerSerial);
-        } else {
-          this.containerSerial.set(containerSerial);
-        }
-      }
-    });
+  protected override onCreationSuccess(serial: string) {
+    this.containerSerial.set(serial);
+    this.openRegistrationDialog({
+      result: { value: { container_serial: serial } }
+    } as any);
   }
 
   protected override openRegistrationDialog(response: PiResponse<ContainerRegisterData>) {

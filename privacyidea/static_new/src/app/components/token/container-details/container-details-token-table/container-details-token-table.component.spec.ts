@@ -146,7 +146,7 @@ describe("ContainerDetailsTokenTableComponent", () => {
     component.handleFilterInput(mockEvent);
 
     expect(component.filterValue()).toBe("testFilter");
-    expect(component.dataSource.filter).toBe("testfilter");
+    expect(component.dataSource().filter).toBe("testfilter");
     expect(component.containerTokenData().filter).toBe("testfilter");
   });
 
