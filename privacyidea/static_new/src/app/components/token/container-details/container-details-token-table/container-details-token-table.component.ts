@@ -41,7 +41,7 @@ import {
   NotificationServiceInterface
 } from "../../../../services/notification/notification.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "../../../../services/table-utils/table-utils.service";
-import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
+import { TokenDetails, TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 import { CopyButtonComponent } from "../../../shared/copy-button/copy-button.component";
 import { SimpleConfirmationDialogComponent } from "../../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
 
@@ -306,6 +306,22 @@ export class ContainerDetailsTokenTableComponent {
               }
             });
           }
+        }
+      });
+  }
+
+  assignUserToToken(token: TokenDetails): void {
+    const user = this.assignedUser();
+    this.tokenService
+      .assignUser({
+        tokenSerial: token.serial,
+        username: user.user_name,
+        realm: user.user_realm
+      })
+      .subscribe({
+        next: () => {
+          this.notificationService.openSnackBar("User assigned to token");
+          this.containerService.containerDetailsResource.reload();
         }
       });
   }

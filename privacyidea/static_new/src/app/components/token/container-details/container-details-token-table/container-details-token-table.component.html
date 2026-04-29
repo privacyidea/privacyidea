@@ -100,13 +100,27 @@
                   }
                 }
                 @case ("username") {
-                  @if (element.status !== "missing") {
-                    <a
-                      (click)="contentService.userSelected(element.token[column.key], element.token['user_realm'])"
-                      attr.aria-label="{{ column.label }} Link">
-                      {{ element.token[column.key] }}
-                    </a>
-                  }
+                  <div class="flex-row ali-center">
+                    @if (element.status !== "missing") {
+                      @if (element.token[column.key]) {
+                        <a
+                          (click)="contentService.userSelected(element.token[column.key], element.token['user_realm'])"
+                          attr.aria-label="{{ column.label }} Link"
+                          class="cursor-pointer">
+                          {{ element.token[column.key] }}
+                        </a>
+                      } @else if (containerService.containerDetails().containers[0]?.users?.length === 1) {
+                        <button
+                          mat-icon-button
+                          color="primary"
+                          (click)="assignUserToToken(element.token)"
+                          matTooltip="Assign Owner"
+                          i18n-matTooltip>
+                          <mat-icon>person_add</mat-icon>
+                        </button>
+                      }
+                    }
+                  </div>
                 }
                 @default {
                   @if (element.status !== "missing") {
