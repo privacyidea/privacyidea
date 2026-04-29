@@ -82,6 +82,7 @@ test = [
     "pyparsing",
     "pytest",
     "pytest-cov",
+    "pytest-xdist",
     "responses",
     "testfixtures"
 ]

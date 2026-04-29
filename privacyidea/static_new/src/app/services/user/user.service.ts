@@ -136,6 +136,20 @@ export class UserService implements UserServiceInterface {
       // Ensure the users are loaded for the autocomplete on allowed routes.
       this.selectionFilteredUsernames();
     });
+
+    effect(() => {
+      this.notificationService.handleResourceError(this.userResource.error(), "user details");
+    });
+
+    effect(() => {
+      this.notificationService.handleResourceError(this.usersResource.error(), "users");
+    });
+    effect(() => {
+      this.notificationService.handleResourceError(this.editableAttributesResource.error(), "editable attributes");
+    });
+    effect(() => {
+      this.notificationService.handleResourceError(this.userAttributesResource.error(), "user attributes");
+    });
   }
 
   readonly apiFilter = apiFilter;
@@ -457,7 +471,14 @@ export class UserService implements UserServiceInterface {
     return this.http.post<PiResponse<number>>(this.baseUrl + "attribute", null, {
       headers: this.authService.getHeaders(),
       params
-    });
+    }).pipe(
+      catchError((error) => {
+        console.error("Failed to set user attribute.", error);
+        const message = error.error?.result?.error?.message || "";
+        this.notificationService.openSnackBar($localize`Failed to set user attribute. ` + message);
+        return of(undefined as any);
+      })
+    );
   }
 
   deleteUserAttribute(key: string) {
@@ -466,7 +487,14 @@ export class UserService implements UserServiceInterface {
     const url =
       this.baseUrl +
       `attribute/${encodeURIComponent(key)}/${encodeURIComponent(username)}/${encodeURIComponent(realm)}`;
-    return this.http.delete<PiResponse<any>>(url, { headers: this.authService.getHeaders() });
+    return this.http.delete<PiResponse<any>>(url, { headers: this.authService.getHeaders() }).pipe(
+      catchError((error) => {
+        console.error("Failed to delete user attribute.", error);
+        const message = error.error?.result?.error?.message || "";
+        this.notificationService.openSnackBar($localize`Failed to delete user attribute. ` + message);
+        return of(undefined as any);
+      })
+    );
   }
 
   createUser(resolver: string, userData: EditUserData) {

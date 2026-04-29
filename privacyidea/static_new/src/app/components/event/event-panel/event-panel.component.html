@@ -20,158 +20,147 @@
   #scrollContainer
   appScrollToTop
   aria-label="Event Handler Editor"
-  class="edit-event-handler-container"
+  class="edit-event-handler-layout"
   i18n-aria-label>
+  <div class="edit-event-handler-container">
 
-  <h3 class="margin-8 flex-row flex-nowrap ali-center">
-    @if (isNewEvent()) {
-      <span i18n>Create New Event Handler</span>
-    } @else {
-      <span i18n>Edit Event Handler:&nbsp;</span>
-      <span class="event-name-color">{{ editEvent().name }}</span>
-      <app-copy-button [copyText]="editEvent().name"></app-copy-button>
-    }
-  </h3>
+    <h3 class="margin-8 flex-row flex-nowrap ali-center">
+      {{ title() }}
+      @if (!isNewEvent()) {
+        <span>:&nbsp;</span>
+        <span class="event-name-color">{{ editEvent().name }}</span>
+        <app-copy-button [copyText]="editEvent().name"></app-copy-button>
+      }
+    </h3>
 
-  <div
-    #stickySentinel
-    class="sticky-sentinel"></div>
+    <div
+      #stickySentinel
+      class="sticky-sentinel"></div>
 
-  <div
-    #stickyHeader
-    class="header-row sticky-header">
-    <div class="action-buttons">
-      <mat-slide-toggle
-        (change)="updateEventHandler('active', $event.checked)"
-        [checked]="editEvent().active"
-        [disableRipple]="true"
-        [disabled]="!authService.actionAllowed('eventhandling_write')"
-        labelPosition="before"
-        matTooltip="Toggle Active Status">
-        @if (editEvent().active) {
-          <span i18n>Active</span>
-        } @else {
-          <span i18n>Inactive</span>
-        }
-      </mat-slide-toggle>
-      <button
-        (click)="$event.stopPropagation(); saveEvent();"
-        [disabled]="!canSave()"
-        class="action-button-primary button-width-s"
-        mat-stroked-button>
-        <mat-icon>save</mat-icon>
-        <span i18n>Save</span>
-      </button>
-      <button
-        (click)="$event.stopPropagation(); cancelEdit()"
-        class="action-button-secondary button-width-s"
-        mat-stroked-button>
-        <span i18n>Cancel</span>
-      </button>
+    <div
+      #stickyHeader
+      class="header-row sticky-header">
+      <div class="action-buttons">
+        <mat-slide-toggle
+          (change)="updateEventHandler('active', $event.checked)"
+          [checked]="editEvent().active"
+          [disableRipple]="true"
+          [disabled]="!authService.actionAllowed('eventhandling_write')"
+          labelPosition="before"
+          matTooltip="Toggle Active Status">
+          @if (editEvent().active) {
+            <span i18n>Active</span>
+          } @else {
+            <span i18n>Inactive</span>
+          }
+        </mat-slide-toggle>
+        <button
+          (click)="$event.stopPropagation(); saveEvent();"
+          [disabled]="!canSave()"
+          class="action-button-primary button-width-s"
+          mat-stroked-button>
+          <mat-icon>save</mat-icon>
+          <span i18n>Save</span>
+        </button>
+        <button
+          (click)="$event.stopPropagation(); cancelEdit()"
+          class="action-button-secondary button-width-s"
+          mat-stroked-button>
+          <span i18n>Cancel</span>
+        </button>
+      </div>
     </div>
-  </div>
 
-  <div class="flex-column just-center">
-    @if (isNewEvent()) {
-      <div class="flex-row gap-16">
-        <mat-form-field
-          class="input-width-l">
-          <mat-label i18n>Name</mat-label>
-          <input
-            (ngModelChange)="updateEventHandler('name', $event)"
-            [(ngModel)]="editEvent().name"
-            matInput
-            required
-            type="text" />
-          <mat-error i18n>
-            Name is <strong>required</strong>.
-          </mat-error>
-        </mat-form-field>
-        <mat-form-field
-          class="input-width-l">
-          <mat-label i18n>Handler Module</mat-label>
+    <div class="flex-column just-center">
+      @if (isNewEvent()) {
+        <div class="flex-row gap-16">
+          <mat-form-field class="input-width-l">
+            <mat-label i18n>Name</mat-label>
+            <input
+              (ngModelChange)="updateEventHandler('name', $event)"
+              [(ngModel)]="editEvent().name"
+              matInput
+              required
+              type="text" />
+            <mat-error i18n>
+              Name is <strong>required</strong>.
+            </mat-error>
+          </mat-form-field>
+          <mat-form-field class="input-width-l">
+            <mat-label i18n>Handler Module</mat-label>
+            <mat-select
+              (ngModelChange)="setNewHandlerModule($event)"
+              [ngModel]="eventService.selectedHandlerModule()"
+              required>
+              @for (module of eventService.eventHandlerModules(); track module) {
+                <mat-option [value]="module">{{ module }}</mat-option>
+              }
+            </mat-select>
+            <mat-error i18n>
+              Selecting a handler module is <strong>required</strong>.
+            </mat-error>
+          </mat-form-field>
+        </div>
+      }
+
+      <div class="flex-row gap-16 margin-bottom-32">
+        <mat-form-field class="input-width-l">
+          <mat-label i18n>Position</mat-label>
           <mat-select
-            (ngModelChange)="setNewHandlerModule($event)"
-            [ngModel]="eventService.selectedHandlerModule()"
+            (selectionChange)="updateEventHandler('position', $event.value)"
+            [ngModel]="editEvent().position"
             required>
-            @for (module of eventService.eventHandlerModules(); track module) {
-              <mat-option [value]="module">
-                {{ module }}
-              </mat-option>
+            @for (position of eventService.modulePositions(); track position) {
+              <mat-option [value]="position">{{ position }}</mat-option>
             }
           </mat-select>
-          <mat-error i18n>
-            Selecting a handler module is <strong>required</strong>.
-          </mat-error>
+          <mat-hint i18n>Whether the action should be taken before (pre) or after (post) the actual event.</mat-hint>
+          <mat-error i18n>Selecting a position is <strong>required</strong>.</mat-error>
+        </mat-form-field>
+        <mat-form-field class="input-width-l">
+          <mat-label i18n>Ordering</mat-label>
+          <input
+            (ngModelChange)="updateEventHandler('ordering', $event)"
+            [(ngModel)]="editEvent().ordering"
+            matInput
+            required
+            type="number" />
+          <mat-hint i18n>Event handlers with lower ordering number are executed first.</mat-hint>
+          <mat-error i18n>Ordering is <strong>required</strong>.</mat-error>
         </mat-form-field>
       </div>
-    }
 
-    <div class="flex-row gap-16 margin-bottom-32">
-      <mat-form-field
-        class="input-width-l">
-        <mat-label i18n>Position</mat-label>
-        <mat-select
-          (selectionChange)="updateEventHandler('position', $event.value)"
-          [ngModel]="editEvent().position"
-          required>
-          @for (position of eventService.modulePositions(); track position) {
-            <mat-option [value]="position">
-              {{ position }}
-            </mat-option>
-          }
-        </mat-select>
-        <mat-hint i18n>Whether the action should be taken before (pre) or after (post) the actual event.
-        </mat-hint>
-        <mat-error i18n>
-          Selecting a position is <strong>required</strong>.
-        </mat-error>
-      </mat-form-field>
-      <mat-form-field
-        class="input-width-l">
-        <mat-label i18n>Ordering</mat-label>
-        <input
-          (ngModelChange)="updateEventHandler('ordering', $event)"
-          [(ngModel)]="editEvent().ordering"
-          matInput
-          required
-          type="number" />
-        <mat-hint i18n>Event handlers with lower ordering number are executed first.</mat-hint>
-        <mat-error i18n>
-          Ordering is <strong>required</strong>.
-        </mat-error>
-      </mat-form-field>
+      <app-event-selection
+        (newEvents)="setNewEvents($event)"
+        [events]="editEvent().event"></app-event-selection>
     </div>
 
-    <app-event-selection
-      (newEvents)="setNewEvents($event)"
-      [events]="editEvent().event"></app-event-selection>
-  </div>
+    <mat-tab-group
+      animationDuration="0ms"
+      mat-align-tabs="start"
+      mat-stretch-tabs="false">
+      @for (tab of availableTabs; track tab) {
+        <mat-tab [label]="tab.toUpperCase()">
+          <div class="tab-container">
+            @switch (tab) {
+              @case ("action") {
+                <app-event-action-tab
+                  (newAction)="setNewAction($event)"
+                  (newOptions)="setNewOptions($event)"
+                  (optionsValid)="validOptions.set($event)"
+                  [action]="event().action || ''"
+                  [options]="event().options || {}"></app-event-action-tab>
+              }
+              @case ("conditions") {
+                <app-event-conditions-tab
+                  (newConditions)="setNewConditions($event)"
+                  [conditions]="event().conditions"></app-event-conditions-tab>
+              }
+            }
+          </div>
+        </mat-tab>
+      }
+    </mat-tab-group>
 
-  <mat-tab-group
-    animationDuration="0ms"
-    mat-align-tabs="start"
-    mat-stretch-tabs="false">
-    @for (tab of availableTabs; track tab) {
-      <mat-tab [label]="tab.toUpperCase()">
-        <div class="tab-container">
-          @switch (tab) {
-            @case ("action") {
-              <app-event-action-tab
-                (newAction)="setNewAction($event)"
-                (newOptions)="setNewOptions($event)"
-                (optionsValid)="validOptions.set($event)"
-                [action]="event().action || ''"
-                [options]="event().options || {}"></app-event-action-tab>
-            }
-            @case ("conditions") {
-              <app-event-conditions-tab
-                (newConditions)="setNewConditions($event)"
-                [conditions]="event().conditions"></app-event-conditions-tab>
-            }
-          }
-        </div>
-      </mat-tab>
-    }
-  </mat-tab-group>
+  </div>
 </div>

@@ -57,7 +57,7 @@ import {
 } from "../../../services/session-timer/session-timer.service";
 import { ResolverService, ResolverServiceInterface } from "../../../services/resolver/resolver.service";
 import { SmtpService, SmtpServiceInterface } from "../../../services/smtp/smtp.service";
-import { RadiusService, RadiusServiceInterface } from "../../../services/radius/radius.service";
+import { RadiusServerService, RadiusServerServiceInterface } from "../../../services/radius-server/radius-server.service";
 import { SmsGatewayService, SmsGatewayServiceInterface } from "../../../services/sms-gateway/sms-gateway.service";
 import {
   PrivacyideaServerService,
@@ -104,7 +104,7 @@ export class UserUtilsPanelComponent {
   protected readonly sessionTimerService: SessionTimerServiceInterface = inject(SessionTimerService);
   private readonly resolverService: ResolverServiceInterface = inject(ResolverService);
   private readonly smtpService: SmtpServiceInterface = inject(SmtpService);
-  private readonly radiusService: RadiusServiceInterface = inject(RadiusService);
+  private readonly radiusService: RadiusServerServiceInterface = inject(RadiusServerService);
   private readonly smsGatewayService: SmsGatewayServiceInterface = inject(SmsGatewayService);
   private readonly privacyideaService: PrivacyideaServerServiceInterface = inject(PrivacyideaServerService);
   private readonly tokengroupService: TokengroupServiceInterface = inject(TokengroupService);

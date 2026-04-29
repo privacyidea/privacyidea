@@ -17,11 +17,12 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { httpResource, HttpResourceRef } from "@angular/common/http";
-import { computed, inject, Injectable, linkedSignal, signal, WritableSignal } from "@angular/core";
+import { computed, effect, inject, Injectable, linkedSignal, signal, WritableSignal } from "@angular/core";
 import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
+import { NotificationService } from "../notification/notification.service";
 
 import { FilterValue } from "../../core/models/filter_value/filter_value";
 import { StringUtils } from "../../utils/string.utils";
@@ -136,7 +137,14 @@ export interface AuditServiceInterface {
 export class AuditService implements AuditServiceInterface {
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
+  private readonly notificationService = inject(NotificationService);
   sort = signal({ active: "serial", direction: "asc" } as Sort);
+
+  constructor() {
+    effect(() => {
+      this.notificationService.handleResourceError(this.auditResource.error(), "audit data");
+    });
+  }
 
   readonly apiFilter = apiFilter;
   readonly apiFilterKeyMap = apiFilterKeyMap;

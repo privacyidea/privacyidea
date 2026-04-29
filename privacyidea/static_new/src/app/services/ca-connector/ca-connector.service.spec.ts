@@ -39,6 +39,7 @@ describe("CaConnectorService", () => {
     };
     const notificationServiceMock = {
       openSnackBar: jest.fn(),
+      handleResourceError: jest.fn(),
     };
 
     TestBed.configureTestingModule({

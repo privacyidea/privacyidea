@@ -244,12 +244,16 @@ th:nth-child(even) {
   height: 51px;
 }
 
-.height-126 {
-  height: 126px;
+.height-115 {
+  height: 115px;
 }
 
-.height-127 {
-  height: 127px;
+.height-136 {
+  height: 136px;
+}
+
+.height-137 {
+  height: 137px;
 }
 
 .height-77 {
@@ -329,8 +333,8 @@ th:nth-child(even) {
     overflow-wrap: anywhere;
     padding-right: 16px;
     align-items: center;
+    overflow-y: auto;
     white-space: normal;
-    height: 96px;
   }
 
   .details-scrollable-container {

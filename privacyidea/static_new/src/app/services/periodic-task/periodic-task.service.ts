@@ -18,7 +18,7 @@
  **/
 
 import { HttpResourceRef, HttpClient, httpResource } from "@angular/common/http";
-import { WritableSignal, Injectable, inject, signal } from "@angular/core";
+import { WritableSignal, Injectable, inject, signal, effect } from "@angular/core";
 import { Observable, lastValueFrom, catchError, of, throwError, forkJoin } from "rxjs";
 import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
@@ -117,6 +117,15 @@ export class PeriodicTaskService implements PeriodicTaskServiceInterface {
 
   private periodicTaskBaseUrl = environment.proxyUrl + "/periodictask/";
 
+  constructor() {
+    effect(() => {
+      this.notificationService.handleResourceError(this.periodicTasksResource.error(), "periodic tasks");
+    });
+    effect(() => {
+      this.notificationService.handleResourceError(this.periodicTaskModuleResource.error(), "periodic task modules");
+    });
+  }
+
   periodicTasksResource = httpResource<PiResponse<PeriodicTask[]>>(() => {
     if (
       this.contentService.routeUrl() !== ROUTE_PATHS.CONFIGURATION_PERIODIC_TASKS ||
@@ -148,7 +157,8 @@ export class PeriodicTaskService implements PeriodicTaskServiceInterface {
       this.http.post(this.periodicTaskBaseUrl + "enable/" + taskId, {}, { headers: headers }).pipe(
         catchError((error) => {
           this.periodicTasksResource.reload();
-          this.notificationService.openSnackBar("Failed to enable periodic task!");
+          const message = error.error?.result?.error?.message || "";
+          this.notificationService.openSnackBar("Failed to enable periodic task! " + message);
           return of(undefined);
         })
       )
@@ -160,7 +170,8 @@ export class PeriodicTaskService implements PeriodicTaskServiceInterface {
     const response$ = this.http.post(this.periodicTaskBaseUrl + "disable/" + taskId, {}, { headers: headers }).pipe(
       catchError((error) => {
         this.periodicTasksResource.reload();
-        this.notificationService.openSnackBar("Failed to disable periodic task!");
+        const message = error.error?.result?.error?.message || "";
+        this.notificationService.openSnackBar("Failed to disable periodic task! " + message);
         return of(undefined);
       })
     );
@@ -173,7 +184,7 @@ export class PeriodicTaskService implements PeriodicTaskServiceInterface {
     return this.http.delete<PiResponse<number, any>>(this.periodicTaskBaseUrl + taskId, { headers }).pipe(
       catchError((error) => {
         console.error("Failed to delete periodic task.", error);
-        const message = error.result?.error?.message || "";
+        const message = error.error?.result?.error?.message || "";
         this.notificationService.openSnackBar("Failed to delete periodic task. " + message);
         return throwError(() => error);
       })

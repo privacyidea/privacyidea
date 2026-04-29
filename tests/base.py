@@ -187,7 +187,8 @@ class MyTestCase(unittest.TestCase):
         self.assertTrue(rid > 0, rid)
 
         (added, failed) = set_realm(self.realm4,
-                                    [{'name': self.resolvername1}, {'name': self.resolvername3}])
+                                    [{'name': self.resolvername1, 'priority': 1},
+                                     {'name': self.resolvername3, 'priority': 2}])
         self.assertTrue(len(failed) == 0)
         self.assertTrue(len(added) == 2)
 

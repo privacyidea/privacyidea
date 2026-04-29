@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { inject, Injectable, signal } from "@angular/core";
+import { effect, inject, Injectable, signal } from "@angular/core";
 import { HttpClient, httpResource } from "@angular/common/http";
 import { AuthService } from "../auth/auth.service";
 import { ContentService } from "../content/content.service";
@@ -59,7 +59,13 @@ export class SubscriptionService {
   private notificationService = inject(NotificationService);
 
   private baseUrl = environment.proxyUrl + "/subscriptions";
-  
+
+  constructor() {
+    effect(() => {
+      this.notificationService.handleResourceError(this.subscriptionsResource.error(), "subscriptions");
+    });
+  }
+
   private reloadTrigger = signal(0);
 
   subscriptionsResource = httpResource<PiResponse<Record<string, Subscription>>>(() => {

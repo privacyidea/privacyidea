@@ -41,7 +41,7 @@ import { EnrollTokenTypeSwitchComponent } from "../../shared/enroll-token-type-s
 import { TokenEnrollmentComponent } from "./token-enrollment.component";
 import { AuthService } from "../../../services/auth/auth.service";
 import { tokenTypes } from "../../../utils/token.utils";
-import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
+import { MatFormField, MatHint, MatInput, MatLabel } from "@angular/material/input";
 import { environment } from "../../../../environments/environment";
 import { TokenEnrollmentLastStepDialogWizardComponent } from "./token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.wizard.component";
 import { MatError } from "@angular/material/form-field";
@@ -64,6 +64,7 @@ import { MatError } from "@angular/material/form-field";
     MatInput,
     MatLabel,
     MatError,
+    MatHint,
     EnrollTokenTypeSwitchComponent
   ],
   templateUrl: "./token-enrollment.wizard.component.html",

@@ -16,402 +16,414 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-@if (isEditMode) {
-  <h3
-    class="margin-8 external-service-dialog-title"
-    i18n>
-    Edit SMS Gateway
-  </h3>
-} @else {
-  <h3
-    class="margin-8 external-service-dialog-title"
-    i18n>
-    Create SMS Gateway
-  </h3>
-}
+<div class="sms-gateway-page-layout">
+  <div
+    #scrollContainer
+    class="sms-gateway-page-container">
+    @if (isEditMode) {
+      <h3
+        class="margin-8"
+        i18n>
+        Edit SMS Gateway
+      </h3>
+    } @else {
+      <h3
+        class="margin-8"
+        i18n>
+        Create SMS Gateway
+      </h3>
+    }
 
-<mat-dialog-content class="sms-gateway-dialog-content">
-  <form
-    [formGroup]="smsForm"
-    class="sms-gateway-form">
+    <div
+      #stickySentinel
+      class="sticky-sentinel"></div>
 
-    <div class="flex-row gap-16 margin-bottom-16">
-      <mat-form-field
-        appearance="fill"
-        class="input-width-l">
-        <mat-label i18n>Name</mat-label>
-        <app-clearable-input
-          (onClick)="smsForm.get('name')?.setValue('')"
-          [showClearButton]="!isEditMode && !!smsForm.get('name')?.value">
-          <input
-            formControlName="name"
-            matInput
-            placeholder="mySmsGateway"
-            required />
-        </app-clearable-input>
-        @if (smsForm.get('name')?.hasError('required')) {
-          <mat-error i18n>Name is <strong>required</strong></mat-error>
-        }
-      </mat-form-field>
-
-      <mat-form-field
-        appearance="fill"
-        class="input-width-l">
-        <mat-label i18n>Provider Module</mat-label>
-        <mat-select
-          formControlName="providermodule"
-          required>
-          @for (provider of providerEntries(); track provider.key) {
-            <mat-option [value]="provider.key">
-              {{ provider.key.split('.').pop() }}
-            </mat-option>
-          }
-        </mat-select>
-        @if (smsForm.get('providermodule')?.hasError('required')) {
-          <mat-error i18n>Provider Module is <strong>required</strong></mat-error>
-        }
-      </mat-form-field>
+    <div
+      #stickyHeader
+      class="sticky-header">
+      <div class="sticky-controls ali-center">
+        <button
+          (click)="onCancel()"
+          class="action-button-secondary button-width-s"
+          mat-stroked-button>
+          <span i18n>Cancel</span>
+        </button>
+        <button
+          (click)="save()"
+          [disabled]="smsForm.invalid || parametersForm.invalid"
+          class="action-button-primary button-width-s"
+          mat-stroked-button>
+          <mat-icon>save</mat-icon>
+          <span i18n>Save</span>
+        </button>
+      </div>
     </div>
 
-    <mat-form-field
-      appearance="fill"
-      class="input-width-xl">
-      <mat-label i18n>Description</mat-label>
-      <app-clearable-input
-        (onClick)="smsForm.get('description')?.setValue('')"
-        [showClearButton]="!!smsForm.get('description')?.value">
-        <input
-          formControlName="description"
-          matInput
-          placeholder="some wise words" />
-      </app-clearable-input>
-    </mat-form-field>
-  </form>
+    <div class="sms-gateway-content">
+      <form
+        [formGroup]="smsForm"
+        class="sms-gateway-form">
 
-  @if (selectedProvider()) {
-    <h3 i18n>Parameters</h3>
-    <form
-      [formGroup]="parametersForm"
-      class="parameters-form">
-      @for (param of parameterEntries(); track param.key) {
-        <mat-form-field
-          [class.input-width-l]="param.key !== 'REGEXP' && param.value.type !== 'text'"
-          [class.input-width-xl]="param.key === 'REGEXP' || param.value.type === 'text'"
-          [class.margin-bottom-64]="param.key === 'PROXY' && providermoduleSignal()
-            === 'privacyidea.lib.smsprovider.HttpSMSProvider.HttpSMSProvider'"
-          appearance="fill"
-          class="margin-bottom-16">
-          <mat-label>{{ param.key }}</mat-label>
+        <div class="flex-row gap-16 margin-bottom-16">
+          <mat-form-field
+            appearance="fill"
+            class="input-width-l">
+            <mat-label i18n>Name</mat-label>
+            <app-clearable-input
+              (onClick)="smsForm.get('name')?.setValue('')"
+              [showClearButton]="!isEditMode && !!smsForm.get('name')?.value">
+              <input
+                formControlName="name"
+                matInput
+                placeholder="mySmsGateway"
+                required />
+            </app-clearable-input>
+            @if (smsForm.get('name')?.hasError('required')) {
+              <mat-error i18n>Name is <strong>required</strong></mat-error>
+            }
+          </mat-form-field>
 
-          @if (param.value.values) {
+          <mat-form-field
+            appearance="fill"
+            class="input-width-l">
+            <mat-label i18n>Provider Module</mat-label>
             <mat-select
-              [formControlName]="param.key"
-              [required]="param.value.required">
-              @for (val of param.value.values; track val) {
-                <mat-option [value]="val">
-                  {{ val }}
+              formControlName="providermodule"
+              required>
+              @for (provider of providerEntries(); track provider.key) {
+                <mat-option [value]="provider.key">
+                  {{ provider.key.split('.').pop() }}
                 </mat-option>
               }
             </mat-select>
-          }
+            @if (smsForm.get('providermodule')?.hasError('required')) {
+              <mat-error i18n>Provider Module is <strong>required</strong></mat-error>
+            }
+          </mat-form-field>
+        </div>
 
-          @if (!param.value.values && param.value.type === 'text') {
-            <textarea
-              [formControlName]="param.key"
-              [required]="param.value.required"
+        <mat-form-field
+          appearance="fill"
+          class="input-width-xl">
+          <mat-label i18n>Description</mat-label>
+          <app-clearable-input
+            (onClick)="smsForm.get('description')?.setValue('')"
+            [showClearButton]="!!smsForm.get('description')?.value">
+            <input
+              formControlName="description"
               matInput
-              rows="2"></textarea>
-          }
-
-          @if (!param.value.values && param.value.type !== 'text') {
-            <app-clearable-input
-              (onClick)="parametersForm.get(param.key)?.setValue('')"
-              [showClearButton]="!!parametersForm.get(param.key)?.value">
-              <input
-                [formControlName]="param.key"
-                [required]="param.value.required"
-                matInput />
-            </app-clearable-input>
-          }
-
-          <mat-hint>{{ param.value.description }}</mat-hint>
-
-          @if (parametersForm.get(param.key)?.hasError('required')) {
-            <mat-error i18n>{{ param.key }} is <strong>required</strong></mat-error>
-          }
+              placeholder="some wise words" />
+          </app-clearable-input>
         </mat-form-field>
+      </form>
+
+      @if (selectedProvider()) {
+        <h3 i18n>Parameters</h3>
+        <form
+          [formGroup]="parametersForm"
+          class="parameters-form">
+          @for (param of parameterEntries(); track param.key) {
+            <mat-form-field
+              [class.input-width-l]="param.key !== 'REGEXP' && param.value.type !== 'text'"
+              [class.input-width-xl]="param.key === 'REGEXP' || param.value.type === 'text'"
+              [class.margin-bottom-64]="param.key === 'PROXY' && providermoduleSignal()
+            === 'privacyidea.lib.smsprovider.HttpSMSProvider.HttpSMSProvider'"
+              appearance="fill"
+              class="margin-bottom-16">
+              <mat-label>{{ param.key }}</mat-label>
+
+              @if (param.value.values) {
+                <mat-select
+                  [formControlName]="param.key"
+                  [required]="param.value.required">
+                  @for (val of param.value.values; track val) {
+                    <mat-option [value]="val">
+                      {{ val }}
+                    </mat-option>
+                  }
+                </mat-select>
+              }
+
+              @if (!param.value.values && param.value.type === 'text') {
+                <textarea
+                  [formControlName]="param.key"
+                  [required]="param.value.required"
+                  matInput
+                  rows="2"></textarea>
+              }
+
+              @if (!param.value.values && param.value.type !== 'text') {
+                <app-clearable-input
+                  (onClick)="parametersForm.get(param.key)?.setValue('')"
+                  [showClearButton]="!!parametersForm.get(param.key)?.value">
+                  <input
+                    [formControlName]="param.key"
+                    [required]="param.value.required"
+                    matInput />
+                </app-clearable-input>
+              }
+
+              <mat-hint>{{ param.value.description }}</mat-hint>
+
+              @if (parametersForm.get(param.key)?.hasError('required')) {
+                <mat-error i18n>{{ param.key }} is <strong>required</strong></mat-error>
+              }
+            </mat-form-field>
+          }
+        </form>
       }
-    </form>
-  }
 
-  @if (selectedProvider()?.options_allowed) {
-    <h3 i18n>Options</h3>
+      @if (selectedProvider()?.options_allowed) {
+        <h3 i18n>Options</h3>
 
-    <div class="table-wrapper">
-      <table
-        [dataSource]="optionRows"
-        class="width-100 mat-elevation-z0"
-        mat-table>
-        <ng-container matColumnDef="key">
-          <th
-            *matHeaderCellDef
-            i18n
-            mat-header-cell>
-            Key
-          </th>
-          <td
-            *matCellDef="let row"
-            mat-cell>
-            {{ row.key }}
-          </td>
-        </ng-container>
+        <div class="table-wrapper">
+          <table
+            [dataSource]="optionRows"
+            class="width-100 mat-elevation-z0"
+            mat-table>
+            <ng-container matColumnDef="key">
+              <th
+                *matHeaderCellDef
+                i18n
+                mat-header-cell>
+                Key
+              </th>
+              <td
+                *matCellDef="let row"
+                mat-cell>
+                {{ row.key }}
+              </td>
+            </ng-container>
 
-        <ng-container matColumnDef="value">
-          <th
-            *matHeaderCellDef
-            i18n
-            mat-header-cell>
-            Value
-          </th>
-          <td
-            *matCellDef="let row"
-            mat-cell>
-            {{ row.value }}
-          </td>
-        </ng-container>
+            <ng-container matColumnDef="value">
+              <th
+                *matHeaderCellDef
+                i18n
+                mat-header-cell>
+                Value
+              </th>
+              <td
+                *matCellDef="let row"
+                mat-cell>
+                {{ row.value }}
+              </td>
+            </ng-container>
 
-        <ng-container matColumnDef="actions">
-          <th
-            *matHeaderCellDef
-            i18n
-            mat-header-cell>
-            Actions
-          </th>
-          <td
-            *matCellDef="let row"
-            class="actions-cell"
-            mat-cell>
-            <button
-              (click)="deleteOption(row.key)"
-              color="warn"
-              mat-icon-button>
-              <mat-icon>delete</mat-icon>
-            </button>
-          </td>
-        </ng-container>
+            <ng-container matColumnDef="actions">
+              <th
+                *matHeaderCellDef
+                i18n
+                mat-header-cell>
+                Actions
+              </th>
+              <td
+                *matCellDef="let row"
+                class="actions-cell"
+                mat-cell>
+                <button
+                  (click)="deleteOption(row.key)"
+                  color="warn"
+                  mat-icon-button>
+                  <mat-icon>delete</mat-icon>
+                </button>
+              </td>
+            </ng-container>
 
-        <tr
-          *matHeaderRowDef="optionDisplayedColumns"
-          mat-header-row></tr>
-        <tr
-          *matRowDef="let row; columns: optionDisplayedColumns"
-          mat-row></tr>
+            <tr
+              *matHeaderRowDef="optionDisplayedColumns"
+              mat-header-row></tr>
+            <tr
+              *matRowDef="let row; columns: optionDisplayedColumns"
+              mat-row></tr>
 
-        <ng-container matColumnDef="footerKey">
-          <td
-            *matFooterCellDef
-            mat-footer-cell>
-            <mat-form-field
-              appearance="fill"
-              class="input-width-m">
-              <mat-label i18n>Option Name</mat-label>
-              <app-clearable-input
-                (onClick)="newOptionKey = ''"
-                [showClearButton]="!!newOptionKey">
-                <input
-                  [(ngModel)]="newOptionKey"
-                  matInput />
-              </app-clearable-input>
-            </mat-form-field>
-          </td>
-        </ng-container>
+            <ng-container matColumnDef="footerKey">
+              <td
+                *matFooterCellDef
+                mat-footer-cell>
+                <mat-form-field
+                  appearance="fill"
+                  class="input-width-m">
+                  <mat-label i18n>Option Name</mat-label>
+                  <app-clearable-input
+                    (onClick)="newOptionKey = ''"
+                    [showClearButton]="!!newOptionKey">
+                    <input
+                      [(ngModel)]="newOptionKey"
+                      matInput />
+                  </app-clearable-input>
+                </mat-form-field>
+              </td>
+            </ng-container>
 
-        <ng-container matColumnDef="footerValue">
-          <td
-            *matFooterCellDef
-            mat-footer-cell>
-            <mat-form-field
-              appearance="fill"
-              class="input-width-m">
-              <mat-label i18n>Value</mat-label>
-              <app-clearable-input
-                (onClick)="newOptionValue = ''"
-                [showClearButton]="!!newOptionValue">
-                <input
-                  [(ngModel)]="newOptionValue"
-                  matInput />
-              </app-clearable-input>
-            </mat-form-field>
-          </td>
-        </ng-container>
+            <ng-container matColumnDef="footerValue">
+              <td
+                *matFooterCellDef
+                mat-footer-cell>
+                <mat-form-field
+                  appearance="fill"
+                  class="input-width-m">
+                  <mat-label i18n>Value</mat-label>
+                  <app-clearable-input
+                    (onClick)="newOptionValue = ''"
+                    [showClearButton]="!!newOptionValue">
+                    <input
+                      [(ngModel)]="newOptionValue"
+                      matInput />
+                  </app-clearable-input>
+                </mat-form-field>
+              </td>
+            </ng-container>
 
-        <ng-container matColumnDef="footerActions">
-          <td
-            *matFooterCellDef
-            mat-footer-cell>
-            <div class="add-button">
-              <button
-                (click)="addOption()"
-                [disabled]="!newOptionKey"
-                color="primary"
-                mat-icon-button>
-                <mat-icon>add</mat-icon>
-              </button>
-            </div>
-          </td>
-        </ng-container>
+            <ng-container matColumnDef="footerActions">
+              <td
+                *matFooterCellDef
+                mat-footer-cell>
+                <div class="add-button">
+                  <button
+                    (click)="addOption()"
+                    [disabled]="!newOptionKey"
+                    color="primary"
+                    mat-icon-button>
+                    <mat-icon>add</mat-icon>
+                  </button>
+                </div>
+              </td>
+            </ng-container>
 
-        <tr
-          *matFooterRowDef="optionFooterColumns"
-          class="add-footer-row"
-          mat-footer-row></tr>
-      </table>
+            <tr
+              *matFooterRowDef="optionFooterColumns"
+              class="add-footer-row"
+              mat-footer-row></tr>
+          </table>
+        </div>
+      }
+
+      @if (selectedProvider()?.headers_allowed) {
+        <h3 i18n>Headers</h3>
+
+        <div class="table-wrapper">
+          <table
+            [dataSource]="headerRows"
+            class="width-100 mat-elevation-z0 sms-kv-table"
+            mat-table>
+            <ng-container matColumnDef="key">
+              <th
+                *matHeaderCellDef
+                i18n
+                mat-header-cell>
+                Key
+              </th>
+              <td
+                *matCellDef="let row"
+                mat-cell>
+                {{ row.key }}
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="value">
+              <th
+                *matHeaderCellDef
+                i18n
+                mat-header-cell>
+                Value
+              </th>
+              <td
+                *matCellDef="let row"
+                mat-cell>
+                {{ row.value }}
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="actions">
+              <th
+                *matHeaderCellDef
+                i18n
+                mat-header-cell>
+                Actions
+              </th>
+              <td
+                *matCellDef="let row"
+                class="actions-cell"
+                mat-cell>
+                <button
+                  (click)="deleteHeader(row.key)"
+                  color="warn"
+                  mat-icon-button>
+                  <mat-icon>delete</mat-icon>
+                </button>
+              </td>
+            </ng-container>
+
+            <tr
+              *matHeaderRowDef="headerDisplayedColumns"
+              mat-header-row></tr>
+            <tr
+              *matRowDef="let row; columns: headerDisplayedColumns"
+              mat-row></tr>
+
+            <ng-container matColumnDef="footerKey">
+              <td
+                *matFooterCellDef
+                mat-footer-cell>
+                <mat-form-field
+                  appearance="fill"
+                  class="input-width-m">
+                  <mat-label i18n>Header Name</mat-label>
+                  <app-clearable-input
+                    (onClick)="newHeaderKey = ''"
+                    [showClearButton]="!!newHeaderKey">
+                    <input
+                      [(ngModel)]="newHeaderKey"
+                      matInput />
+                  </app-clearable-input>
+                </mat-form-field>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="footerValue">
+              <td
+                *matFooterCellDef
+                mat-footer-cell>
+                <mat-form-field
+                  appearance="fill"
+                  class="input-width-m">
+                  <mat-label i18n>Value</mat-label>
+                  <app-clearable-input
+                    (onClick)="newHeaderValue = ''"
+                    [showClearButton]="!!newHeaderValue">
+                    <input
+                      [(ngModel)]="newHeaderValue"
+                      matInput />
+                  </app-clearable-input>
+                </mat-form-field>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="footerActions">
+              <td
+                *matFooterCellDef
+                mat-footer-cell>
+                <div class="flex ali-center just-center">
+                  <button
+                    (click)="addHeader()"
+                    [disabled]="!newHeaderKey"
+                    color="primary"
+                    mat-icon-button>
+                    <mat-icon>add</mat-icon>
+                  </button>
+                </div>
+              </td>
+            </ng-container>
+
+            <tr
+              *matFooterRowDef="headerFooterColumns"
+              class="add-footer-row"
+              mat-footer-row></tr>
+          </table>
+        </div>
+      }
     </div>
-  }
+  </div>
+</div>
 
-  @if (selectedProvider()?.headers_allowed) {
-    <h3 i18n>Headers</h3>
 
-    <div class="table-wrapper">
-      <table
-        [dataSource]="headerRows"
-        class="width-100 mat-elevation-z0 sms-kv-table"
-        mat-table>
-        <ng-container matColumnDef="key">
-          <th
-            *matHeaderCellDef
-            i18n
-            mat-header-cell>
-            Key
-          </th>
-          <td
-            *matCellDef="let row"
-            mat-cell>
-            {{ row.key }}
-          </td>
-        </ng-container>
-
-        <ng-container matColumnDef="value">
-          <th
-            *matHeaderCellDef
-            i18n
-            mat-header-cell>
-            Value
-          </th>
-          <td
-            *matCellDef="let row"
-            mat-cell>
-            {{ row.value }}
-          </td>
-        </ng-container>
-
-        <ng-container matColumnDef="actions">
-          <th
-            *matHeaderCellDef
-            i18n
-            mat-header-cell>
-            Actions
-          </th>
-          <td
-            *matCellDef="let row"
-            class="actions-cell"
-            mat-cell>
-            <button
-              (click)="deleteHeader(row.key)"
-              color="warn"
-              mat-icon-button>
-              <mat-icon>delete</mat-icon>
-            </button>
-          </td>
-        </ng-container>
-
-        <tr
-          *matHeaderRowDef="headerDisplayedColumns"
-          mat-header-row></tr>
-        <tr
-          *matRowDef="let row; columns: headerDisplayedColumns"
-          mat-row></tr>
-
-        <ng-container matColumnDef="footerKey">
-          <td
-            *matFooterCellDef
-            mat-footer-cell>
-            <mat-form-field
-              appearance="fill"
-              class="input-width-m">
-              <mat-label i18n>Header Name</mat-label>
-              <app-clearable-input
-                (onClick)="newHeaderKey = ''"
-                [showClearButton]="!!newHeaderKey">
-                <input
-                  [(ngModel)]="newHeaderKey"
-                  matInput />
-              </app-clearable-input>
-            </mat-form-field>
-          </td>
-        </ng-container>
-
-        <ng-container matColumnDef="footerValue">
-          <td
-            *matFooterCellDef
-            mat-footer-cell>
-            <mat-form-field
-              appearance="fill"
-              class="input-width-m">
-              <mat-label i18n>Value</mat-label>
-              <app-clearable-input
-                (onClick)="newHeaderValue = ''"
-                [showClearButton]="!!newHeaderValue">
-                <input
-                  [(ngModel)]="newHeaderValue"
-                  matInput />
-              </app-clearable-input>
-            </mat-form-field>
-          </td>
-        </ng-container>
-
-        <ng-container matColumnDef="footerActions">
-          <td
-            *matFooterCellDef
-            mat-footer-cell>
-            <div class="flex ali-center just-center">
-              <button
-                (click)="addHeader()"
-                [disabled]="!newHeaderKey"
-                color="primary"
-                mat-icon-button>
-                <mat-icon>add</mat-icon>
-              </button>
-            </div>
-          </td>
-        </ng-container>
-
-        <tr
-          *matFooterRowDef="headerFooterColumns"
-          class="add-footer-row"
-          mat-footer-row></tr>
-      </table>
-    </div>
-  }
-</mat-dialog-content>
-
-<mat-dialog-actions
-  align="end"
-  class="margin-8 external-service-dialog-actions">
-  <button
-    (click)="onCancel()"
-    class="action-button-secondary button-width-s"
-    i18n
-    mat-stroked-button>
-    Cancel
-  </button>
-  <button
-    (click)="save()"
-    [disabled]="smsForm.invalid || parametersForm.invalid"
-    class="action-button-primary button-width-s"
-    i18n
-    mat-stroked-button>
-    <mat-icon>save</mat-icon>
-    Save
-  </button>
-</mat-dialog-actions>

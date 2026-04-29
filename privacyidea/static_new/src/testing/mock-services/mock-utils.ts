@@ -18,6 +18,7 @@
  **/
 import { HttpHeaders, HttpProgressEvent, HttpResourceRef } from "@angular/common/http";
 import { Resource, ResourceStatus, Signal, signal, WritableSignal } from "@angular/core";
+import { of } from "rxjs";
 
 export function makeResource<T>(initial: T) {
   return {
@@ -93,7 +94,13 @@ export class MockPiResponse<Value, Detail = unknown> {
 
   constructor(args: {
     detail?: Detail;
-    result?: { authentication?: "CHALLENGE" | "POLL" | "PUSH"; status: boolean; value?: Value; init?: any; error?: { code: number; message: string } };
+    result?: {
+      authentication?: "CHALLENGE" | "POLL" | "PUSH";
+      status: boolean;
+      value?: Value;
+      init?: any;
+      error?: { code: number; message: string }
+    };
     error?: { code: number; message: string };
     id?: number;
     jsonrpc?: string;
@@ -117,8 +124,19 @@ export class MockPiResponse<Value, Detail = unknown> {
     return new MockPiResponse<Value, Detail>({ detail, result: { status: true, value, init } });
   }
 
-  static fromError<Value = unknown, Detail = unknown>(error: { code?: number; message: string }, detail: Detail = {} as Detail): MockPiResponse<Value, Detail> {
+  static fromError<Value = unknown, Detail = unknown>(error: {
+    code?: number;
+    message: string
+  }, detail: Detail = {} as Detail): MockPiResponse<Value, Detail> {
     const errorWithCode = { code: error.code ?? 0, message: error.message };
     return new MockPiResponse<Value, Detail>({ detail, result: { status: false, error: errorWithCode } });
   }
+}
+
+
+export class MockRouter {
+  navigate = jest.fn();
+  navigateByUrl = jest.fn();
+  events = of();
+  url = "";
 }

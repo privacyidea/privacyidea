@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { computed, inject, Injectable, linkedSignal, Signal, WritableSignal } from "@angular/core";
+import { computed, effect, inject, Injectable, linkedSignal, Signal, WritableSignal } from "@angular/core";
 import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
 import { PiResponse } from "../../app.component";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
@@ -81,6 +81,15 @@ export class ContainerTemplateService implements ContainerTemplateServiceInterfa
   readonly notificationService: NotificationServiceInterface = inject(NotificationService);
 
   // --- Resources ---
+
+  constructor() {
+    effect(() => {
+      this.notificationService.handleResourceError(this.templatesResource.error(), "container templates");
+    });
+    effect(() => {
+      this.notificationService.handleResourceError(this.templateTokenTypesResource.error(), "template token types");
+    });
+  }
   readonly templatesResource = httpResource<PiResponse<{ templates: ContainerTemplate[] }>>(() => {
     if (!this.authService.actionAllowed("container_template_list")) return undefined;
     if (!this.contentService.onTokensContainersCreate() && !this.contentService.onTokensContainersTemplates())

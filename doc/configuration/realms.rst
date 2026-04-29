@@ -160,13 +160,40 @@ Resolver Priority
 
 .. index:: resolver priority
 
-Within a realm you can give each resolver a priority. The priority is used to
-find a user that is located in several resolvers. If a user is located in
-more than one resolver, the user will be taken from the resolver with the
-lowest number in the priority.
+Within a realm you can give each resolver a priority. The priority determines
+the order in which resolvers are searched when looking up a user.
+If a user with the same login name exists in more than one resolver, the user
+will be taken from the resolver with the lowest priority number (i.e. the
+highest priority).
 
 Priorities are numbers between 1 and 999. The lower the number the higher the
-priority.
+priority. If no priority is set, the resolver defaults to priority 1000.
+
+If two resolvers share the same priority, they are ordered alphabetically by
+resolver name. To avoid ambiguity, it is recommended to assign a distinct
+priority to each resolver.
+
+.. note:: A resolver has a priority per realm. I.e. the same resolver can have
+   a different priority in each realm it belongs to.
+
+User Masking
+^^^^^^^^^^^^
+
+When a realm contains multiple resolvers, the resolver priority determines
+which users are visible. If a user with the same login name exists in more
+than one resolver, only the user from the highest-priority resolver is
+visible. The user in the lower-priority resolver is **masked** (hidden).
+
+This affects:
+
+* **Authentication**: The user always authenticates against the
+  highest-priority resolver.
+* **User list**: The user list (in the Web UI and via the API) only shows
+  the user from the highest-priority resolver. The duplicate in the
+  lower-priority resolver is suppressed.
+* **Policies**: By default, policies only match the resolver where the
+  user was found (the highest-priority one). See the ``check_all_resolvers``
+  option in :ref:`policies` to also match lower-priority resolvers.
 
 **Example**:
 
@@ -176,14 +203,10 @@ Active Directory users. And the "administrator" is located in a resolver
 Admins" from the very same domain. Both resolvers are in the realm
 "AD", "admins" with priority 1 and "users" with priority 2.
 
-Thus the user "administrator@AD" will always resolve to the user located in
-resolver "admins".
-
-This is useful to create policies for the security group "Domain
-Admins".
-
-.. note:: A resolver has a priority per realm. I.e. a resolver can have a
-   different priority in each realm.
+The user "administrator@AD" will always resolve to the user in resolver
+"admins". The duplicate entry in "users" is masked and will not appear in the
+user list. This is useful to create separate policies for members of the
+security group "Domain Admins".
 
 .. _autocreate_realm:
 

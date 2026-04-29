@@ -47,7 +47,7 @@
   </div>
   <div class="actions-container">
     <button
-      (click)="openEditDialog()"
+      (click)="onCreateNewTokengroup()"
       class="action-button-primary button-width-l"
       i18n
       mat-stroked-button>
@@ -87,7 +87,7 @@
         mat-cell>
         <div class="flex-row flex-nowrap ali-center">
           <a
-            (click)="openEditDialog(group)"
+            (click)="onEditTokengroup(group)"
             class="flex ali-center">
             {{ group.groupname }}
           </a>

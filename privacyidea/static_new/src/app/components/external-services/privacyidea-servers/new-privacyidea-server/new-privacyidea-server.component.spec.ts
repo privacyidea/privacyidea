@@ -21,44 +21,43 @@ import { NewPrivacyideaServerComponent } from "./new-privacyidea-server.componen
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from "@angular/material/dialog";
-import { Subject } from "rxjs";
+import { ActivatedRoute, convertToParamMap, ParamMap, provideRouter, Router } from "@angular/router";
+import { BehaviorSubject } from "rxjs";
 import { PrivacyideaServerService } from "../../../../services/privacyidea-server/privacyidea-server.service";
 import { MockPrivacyideaServerService } from "../../../../../testing/mock-services/mock-privacyidea-server-service";
 import { MockDialogService } from "../../../../../testing/mock-services";
 import { DialogService } from "../../../../services/dialog/dialog.service";
-import { SaveAndExitDialogResult } from "../../../shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
-import { MockMatDialogRef } from "../../../../../testing/mock-mat-dialog-ref";
+import { ROUTE_PATHS } from "../../../../route_paths";
+import { signal } from "@angular/core";
 
 describe("NewPrivacyideaServerComponent", () => {
   let component: NewPrivacyideaServerComponent;
   let fixture: ComponentFixture<NewPrivacyideaServerComponent>;
   let privacyideaServerServiceMock: any;
-  let dialogRefMock: MockMatDialogRef<any, any>;
-  let confirmClosed: Subject<SaveAndExitDialogResult>;
   let dialogServiceMock: MockDialogService;
+  let router: Router;
+  let paramMapSubject: BehaviorSubject<ParamMap>;
 
   beforeEach(async () => {
+    paramMapSubject = new BehaviorSubject(convertToParamMap({}));
+
     await TestBed.configureTestingModule({
       imports: [NewPrivacyideaServerComponent, NoopAnimationsModule],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
-        { provide: MAT_DIALOG_DATA, useValue: null },
-        { provide: MatDialogRef, useClass: MockMatDialogRef },
+        provideRouter([]),
         { provide: PrivacyideaServerService, useClass: MockPrivacyideaServerService },
-        { provide: DialogService, useClass: MockDialogService }
+        { provide: DialogService, useClass: MockDialogService },
+        { provide: ActivatedRoute, useValue: { paramMap: paramMapSubject.asObservable() } }
       ]
     }).compileComponents();
 
     privacyideaServerServiceMock = TestBed.inject(PrivacyideaServerService);
+    router = TestBed.inject(Router);
 
     fixture = TestBed.createComponent(NewPrivacyideaServerComponent);
     dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
-    confirmClosed = new Subject();
-    dialogRefMock = TestBed.inject(MatDialogRef) as unknown as MockMatDialogRef<any, any>;
-    dialogRefMock.afterClosed.mockReturnValue(confirmClosed);
-    dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });
@@ -72,27 +71,14 @@ describe("NewPrivacyideaServerComponent", () => {
     expect(component.privacyideaForm.get("identifier")?.value).toBe("");
   });
 
-  it("should initialize form for edit mode", async () => {
-    TestBed.resetTestingModule();
-    await TestBed.configureTestingModule({
-      imports: [NewPrivacyideaServerComponent, NoopAnimationsModule],
-      providers: [
-        provideHttpClient(),
-        provideHttpClientTesting(),
-        { provide: MAT_DIALOG_DATA, useValue: { identifier: "test", url: "http://test", tls: true } },
-        { provide: MatDialogRef, useClass: MockMatDialogRef },
-        { provide: PrivacyideaServerService, useClass: MockPrivacyideaServerService }
-      ]
-    })
-      .overrideComponent(NewPrivacyideaServerComponent, {
-        add: {
-          providers: [{ provide: DialogService, useClass: MockDialogService }]
-        }
-      })
-      .compileComponents();
+  it("should initialize form for edit mode", () => {
+    privacyideaServerServiceMock.remoteServerOptions = signal([
+      { identifier: "test", url: "http://test", tls: true }
+    ]);
 
-    privacyideaServerServiceMock = TestBed.inject(PrivacyideaServerService);
+    paramMapSubject.next(convertToParamMap({ identifier: "test" }));
 
+    fixture.destroy();
     fixture = TestBed.createComponent(NewPrivacyideaServerComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
@@ -108,25 +94,21 @@ describe("NewPrivacyideaServerComponent", () => {
   });
 
   it("should call save when form is valid", async () => {
+    const navigateSpy = jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
     component.privacyideaForm.patchValue({ identifier: "test", url: "http://test" });
     const success = await component.save();
     expect(success).toBe(true);
     expect(privacyideaServerServiceMock.postPrivacyideaServer).toHaveBeenCalled();
-    confirmClosed.next("save-exit");
-    confirmClosed.complete();
-    expect(dialogRefMock.close).toHaveBeenCalledWith(true);
+    expect(navigateSpy).toHaveBeenCalledWith(ROUTE_PATHS.EXTERNAL_SERVICES_PRIVACYIDEA);
   });
 
-  it("save should keep dialog open on error", async () => {
+  it("save should return false on error", async () => {
     component.privacyideaForm.patchValue({ identifier: "test", url: "http://test" });
     privacyideaServerServiceMock.postPrivacyideaServer = jest.fn().mockRejectedValue(new Error("post-failed"));
-    // Clear any previous calls to close from setup
-    dialogRefMock.close.mockClear();
 
     const success = await component.save();
     expect(success).toBe(false);
     expect(privacyideaServerServiceMock.postPrivacyideaServer).toHaveBeenCalled();
-    expect(dialogRefMock.close).not.toHaveBeenCalled();
   });
 
   it("should call test when form is valid", async () => {
@@ -135,11 +117,10 @@ describe("NewPrivacyideaServerComponent", () => {
     expect(privacyideaServerServiceMock.testPrivacyideaServer).toHaveBeenCalled();
   });
 
-  it("should close dialog on cancel without changes", () => {
+  it("should navigate back on cancel without changes", () => {
+    const navigateSpy = jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
     component.onCancel();
-    confirmClosed.next("discard");
-    confirmClosed.complete();
-    expect(dialogRefMock.close).toHaveBeenCalled();
+    expect(navigateSpy).toHaveBeenCalledWith(ROUTE_PATHS.EXTERNAL_SERVICES_PRIVACYIDEA);
   });
 
   it("should show confirmation dialog on cancel with changes", () => {

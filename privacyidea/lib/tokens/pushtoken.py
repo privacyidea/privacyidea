@@ -47,7 +47,6 @@ from cryptography.hazmat.primitives.asymmetric import padding
 from dateutil.parser import isoparse
 
 from privacyidea.api.lib.policyhelper import get_pushtoken_add_config, get_init_tokenlabel_parameters
-from privacyidea.lib.params import get_optional, get_required
 from privacyidea.lib import _, lazy_gettext
 from privacyidea.lib.apps import _construct_extra_parameters
 from privacyidea.lib.challenge import get_challenges
@@ -58,13 +57,15 @@ from privacyidea.lib.error import ParameterError
 from privacyidea.lib.error import (ResourceNotFoundError, ValidateError,
                                    PrivacyIDEAError, ConfigAdminError, PolicyError)
 from privacyidea.lib.log import log_with
+from privacyidea.lib.params import get_optional, get_required
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import (SCOPE, GROUP, Match,
                                     get_action_values_from_options)
 from privacyidea.lib.smsprovider.SMSProvider import get_smsgateway, create_sms_instance
 from privacyidea.lib.token import get_one_token, init_token
 from privacyidea.lib.tokenclass import (TokenClass, AuthenticationMode, ClientMode,
-                                        RolloutState, ChallengeSession)
+                                        ChallengeSession)
+from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.tokens.push_types import (PushMode, PushPresenceOptions,
                                                PushAction, PushAllowPolling,
                                                CODE_TO_PHONE_DISPLAY_CODE_LENGTH)
@@ -893,7 +894,6 @@ class PushTokenClass(TokenClass):
             "correct_answer": correct_presence_option
         }
         return data, current_presence_options, correct_presence_option
-
 
     @classmethod
     def _api_endpoint_get(cls, g: Any, request_data: dict) -> list:
