@@ -17,17 +17,17 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { computed, effect, inject, Injectable, Signal, signal, WritableSignal } from "@angular/core";
-import { ContentService, ContentServiceInterface } from "../content/content.service";
 import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
-import { AuthService, AuthServiceInterface } from "../auth/auth.service";
-import { environment } from "../../../environments/environment";
-import { PiResponse } from "../../app.component";
+import { computed, effect, inject, Injectable, Signal, signal, WritableSignal } from "@angular/core";
 import { lastValueFrom, Observable, of, throwError } from "rxjs";
 import { catchError } from "rxjs/operators";
-import { NotificationService } from "../notification/notification.service";
+import { environment } from "../../../environments/environment";
+import { PiResponse } from "../../app.component";
 import { SimpleConfirmationDialogComponent } from "../../components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
-import { DialogServiceInterface, DialogService } from "../dialog/dialog.service";
+import { AuthService, AuthServiceInterface } from "../auth/auth.service";
+import { ContentService, ContentServiceInterface } from "../content/content.service";
+import { DialogService, DialogServiceInterface } from "../dialog/dialog.service";
+import { NotificationService } from "../notification/notification.service";
 
 export type EventHandler = {
   id: number | null;
@@ -167,7 +167,7 @@ export class EventService implements EventServiceInterface {
 
   enableEvent(eventId: number | null) {
     if (eventId === null) {
-      this.notificationService.openSnackBar("Can not enable event handler due to missing ID");
+      this.notificationService.error("Can not enable event handler due to missing ID");
       return Promise.resolve(undefined);
     }
     const headers = this.authService.getHeaders();
@@ -204,14 +204,16 @@ export class EventService implements EventServiceInterface {
   deleteEvent(eventId: number): Observable<PiResponse<number, any>> {
     const headers = this.authService.getHeaders();
 
-    return this.http.delete<PiResponse<number, any>>(this.eventBaseUrl + "/" + encodeURIComponent(eventId), { headers }).pipe(
-      catchError((error) => {
-        console.error("Failed to delete event handler.", error);
-        const message = error.error?.result?.error?.message || "";
-        this.notificationService.error("Failed to delete event handler. " + message);
-        return throwError(() => error);
-      })
-    );
+    return this.http
+      .delete<PiResponse<number, any>>(this.eventBaseUrl + "/" + encodeURIComponent(eventId), { headers })
+      .pipe(
+        catchError((error) => {
+          console.error("Failed to delete event handler.", error);
+          const message = error.error?.result?.error?.message || "";
+          this.notificationService.error("Failed to delete event handler. " + message);
+          return throwError(() => error);
+        })
+      );
   }
 
   async deleteWithConfirmDialog(event: EventHandler): Promise<PiResponse<number, any> | undefined> {
@@ -233,7 +235,7 @@ export class EventService implements EventServiceInterface {
     }
     try {
       if (event.id == null) {
-        this.notificationService.openSnackBar("Failed to delete event handler: Missing ID.");
+        this.notificationService.error("Failed to delete event handler: Missing ID.");
         return;
       }
       const result = await lastValueFrom(this.deleteEvent(event.id));

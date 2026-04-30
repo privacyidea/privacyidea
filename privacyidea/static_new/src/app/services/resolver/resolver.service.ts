@@ -292,7 +292,7 @@ export class ResolverService implements ResolverServiceInterface {
         catchError((error) => {
           console.error("Error during resolver test:", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.openSnackBar("Failed to test resolver. " + message);
+          this.notificationService.error("Failed to test resolver. " + message);
           return throwError(() => error);
         })
       );
@@ -305,7 +305,7 @@ export class ResolverService implements ResolverServiceInterface {
         catchError((error) => {
           console.error(`Error during posting resolver ${resolverName}:`, error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.openSnackBar("Failed to save resolver. " + message);
+          this.notificationService.error("Failed to save resolver. " + message);
           return throwError(() => error);
         })
       );
@@ -318,7 +318,7 @@ export class ResolverService implements ResolverServiceInterface {
         catchError((error) => {
           console.error(`Error during deleting resolver ${resolverName}:`, error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.openSnackBar("Failed to delete resolver. " + message);
+          this.notificationService.error("Failed to delete resolver. " + message);
           return throwError(() => error);
         })
       );
@@ -333,7 +333,7 @@ export class ResolverService implements ResolverServiceInterface {
         catchError((error) => {
           console.error(`Error during getting default resolver config for ${resolverType}:`, error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.openSnackBar("Failed to get default resolver config. " + message);
+          this.notificationService.error("Failed to get default resolver config. " + message);
           return throwError(() => error);
         })
       );

@@ -475,7 +475,7 @@ export class UserService implements UserServiceInterface {
       catchError((error) => {
         console.error("Failed to set user attribute.", error);
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.openSnackBar($localize`Failed to set user attribute. ` + message);
+        this.notificationService.error($localize`Failed to set user attribute. ` + message);
         return of(undefined as any);
       })
     );
@@ -491,7 +491,7 @@ export class UserService implements UserServiceInterface {
       catchError((error) => {
         console.error("Failed to delete user attribute.", error);
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.openSnackBar($localize`Failed to delete user attribute. ` + message);
+        this.notificationService.error($localize`Failed to delete user attribute. ` + message);
         return of(undefined as any);
       })
     );
