@@ -79,14 +79,25 @@ def get_credential_ids_for_user(user: User) -> list:
     Get a list of credential ids of passkey or webauthn token for a user.
     Can be used to avoid double registration of an authenticator.
 
+    Tokens that are still in CLIENTWAIT (enrollment unfinished) or that have been
+    revoked are skipped: the credential is either not yet bound or intentionally
+    retired, so the user must be allowed to enroll a fresh credential on the same
+    authenticator. Disabled tokens are still included, since disabling is reversible.
+
     :param user: The user object
-    :return: A list of credential ids
+    :return: A list of credential ids (base64url-encoded)
     """
     credential_ids = []
-    for token in get_tokens(user=user, token_type_list=["passkey"]):
-        if token.token.rollout_state != RolloutState.CLIENTWAIT:
+    for token in get_tokens(user=user, token_type_list=["passkey", "webauthn"]):
+        if token.token.rollout_state == RolloutState.CLIENTWAIT:
+            continue
+        if token.token.revoked:
+            continue
+        if token.type.lower() == "webauthn":
+            cred_id = token.decrypt_otpkey()
+        else:
             cred_id = token.token.get_otpkey().getKey().decode("utf-8")
-            credential_ids.append(cred_id)
+        credential_ids.append(cred_id)
     return credential_ids
 
 

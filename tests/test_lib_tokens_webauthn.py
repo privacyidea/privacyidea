@@ -69,7 +69,9 @@ from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction
 from privacyidea.lib.fido2.token_info import FIDO2TokenInfo
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import set_policy, SCOPE, delete_policy
-from privacyidea.lib.token import init_token, check_user_pass, remove_token, import_tokens, get_tokens
+from privacyidea.lib.fido2.util import get_credential_ids_for_user
+from privacyidea.lib.token import (init_token, check_user_pass, remove_token, import_tokens, get_tokens,
+                                   enable_token, revoke_token)
 from privacyidea.lib.tokens.webauthn import (CoseAlgorithm, RegistrationRejectedException,
                                              WebAuthnMakeCredentialOptions, AuthenticationRejectedException,
                                              webauthn_b64_decode, webauthn_b64_encode,
@@ -360,6 +362,29 @@ class WebAuthnTokenTestCase(MyTestCase):
         # Now the excludeCredentials is contained
         self.assertIn("excludeCredentials", web_authn_register_request)
         temp_token.delete_token()
+
+    def test_03c_get_credential_ids_for_user_skips_revoked(self):
+        """
+        A revoked webauthn token must not appear in the excludeCredentials list — the
+        user has to be able to enroll a fresh credential on the same authenticator.
+        A merely disabled token should still appear, since disabling is reversible.
+        """
+        self._setup_token()
+        cred_id = self.token.decrypt_otpkey()
+
+        # Enrolled + active: included
+        self.assertIn(cred_id, get_credential_ids_for_user(self.user))
+
+        # Disabled: still included
+        enable_token(self.token.get_serial(), enable=False)
+        self.assertFalse(self.token.token.active)
+        self.assertFalse(self.token.token.revoked)
+        self.assertIn(cred_id, get_credential_ids_for_user(self.user))
+
+        # Revoked: excluded
+        revoke_token(self.token.get_serial())
+        self.assertTrue(self.token.token.revoked)
+        self.assertNotIn(cred_id, get_credential_ids_for_user(self.user))
 
     def test_04_authentication(self):
         reply_dict = self._create_challenge()
