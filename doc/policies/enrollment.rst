@@ -795,6 +795,9 @@ type: ``bool``
 If this policy is set, a user or an admin can not register the same webauthn
 token to a user more than once.
 However, the same webauthn token could be registered to a different user.
+Revoked tokens are not counted: once a webauthn token has been revoked, the
+same authenticator can be re-enrolled for the same user. Merely disabled
+tokens still block re-registration, since disabling is reversible.
 
 
 .. _require_attestation:

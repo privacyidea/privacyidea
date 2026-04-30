@@ -958,9 +958,12 @@ class WebAuthnTokenClass(TokenClass):
                 # Get the other webauthn tokens of the user and add their credential_ids to the exclude list
                 webauthn_tokens = get_tokens(tokentype=self.type, user=self.user)
                 for token in webauthn_tokens:
-                    if token.token.rollout_state != RolloutState.CLIENTWAIT:
-                        credential_id = token.decrypt_otpkey()
-                        exclude_credential_ids.append(credential_id)
+                    if token.token.rollout_state == RolloutState.CLIENTWAIT:
+                        continue
+                    if token.token.revoked:
+                        continue
+                    credential_id = token.decrypt_otpkey()
+                    exclude_credential_ids.append(credential_id)
 
             credential_options = WebAuthnMakeCredentialOptions(
                 challenge=webauthn_b64_encode(nonce),

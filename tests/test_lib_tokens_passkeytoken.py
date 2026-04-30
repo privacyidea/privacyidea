@@ -32,7 +32,8 @@ from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction, PasskeyAction
 from privacyidea.lib.fido2.util import get_credential_ids_for_user, get_fido2_token_by_credential_id, hash_credential_id
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import SCOPE
-from privacyidea.lib.token import (init_token, remove_token, unassign_token, import_tokens, get_tokens)
+from privacyidea.lib.token import (init_token, remove_token, unassign_token, import_tokens, get_tokens,
+                                   enable_token, revoke_token)
 from privacyidea.lib.tokenclass import RolloutState, TokenClass
 from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
 from privacyidea.lib.user import User
@@ -396,6 +397,37 @@ class PasskeyTokenTestCase(PasskeyTestBase, MyTestCase):
             TokenCredentialIdHash.credential_id_hash == credential_id_hash).one()
         self.assertTrue(tcih)
         self.assertEqual(tcih.token_id, token2.token.id)
+
+    def test_09c_get_credential_ids_for_user_skips_revoked(self):
+        """
+        get_credential_ids_for_user is used to populate excludeCredentials during passkey
+        enrollment. A revoked token's credential id should not be in that list (the user
+        should be able to enroll a fresh credential on the same authenticator), while a
+        merely disabled token still should be (disabling is reversible).
+        """
+        # Earlier tests in this class may have left tokens with the shared test
+        # credential_id assigned to this user — start from a clean slate.
+        for stale in get_tokens(user=self.user, token_type_list=["passkey"]):
+            remove_token(serial=stale.get_serial())
+
+        token = self._create_token()
+        cred_id = token.token.get_otpkey().getKey().decode("utf-8")
+
+        # Enrolled + active: included
+        self.assertIn(cred_id, get_credential_ids_for_user(self.user))
+
+        # Disabled: still included, since the user may re-enable
+        enable_token(token.get_serial(), enable=False)
+        self.assertFalse(token.token.active)
+        self.assertFalse(token.token.revoked)
+        self.assertIn(cred_id, get_credential_ids_for_user(self.user))
+
+        # Revoked: excluded
+        revoke_token(token.get_serial())
+        self.assertTrue(token.token.revoked)
+        self.assertNotIn(cred_id, get_credential_ids_for_user(self.user))
+
+        remove_token(serial=token.get_serial())
 
     def test_10_passkey_token_export(self):
         # Set up the passkey token for testing
