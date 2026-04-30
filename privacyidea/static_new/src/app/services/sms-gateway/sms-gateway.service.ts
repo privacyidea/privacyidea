@@ -111,7 +111,7 @@ export class SmsGatewayService implements SmsGatewayServiceInterface {
   }
 
   async deleteSmsGateway(name: string): Promise<void> {
-    const request = this.http.delete<PiResponse<any>>(`${this.baseUrl}/${name}`, {
+    const request = this.http.delete<PiResponse<any>>(`${this.baseUrl}/${encodeURIComponent(name)}`, {
       headers: this.authService.getHeaders()
     });
     return lastValueFrom(request)

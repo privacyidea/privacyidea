@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { computed, inject, Injectable, Signal } from "@angular/core";
+import { computed, effect, inject, Injectable, Signal } from "@angular/core";
 import { environment } from "../../../environments/environment";
 import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
@@ -99,6 +99,12 @@ export class MachineResolverService implements MachineResolverServiceInterface {
   readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   readonly http: HttpClient = inject(HttpClient);
 
+  constructor() {
+    effect(() => {
+      this.notificationService.handleResourceError(this.machineResolverResource.error(), "machine resolvers");
+    });
+  }
+
   readonly machineResolverResource = httpResource<PiResponse<MachineResolvers>>(() => {
     if (!this.contentService.onMachineResolver()) {
       return undefined;
@@ -127,7 +133,7 @@ export class MachineResolverService implements MachineResolverServiceInterface {
       this.notificationService.error("You are not allowed to update Machine Resolvers.");
       throw new Error("not-allowed");
     }
-    const url = `${this.machineResolverBaseUrl}${resolver.resolvername}`;
+    const url = `${this.machineResolverBaseUrl}${encodeURIComponent(resolver.resolvername)}`;
     const request = this.http.post<PiResponse<any>>(url, resolver.data, { headers: this.authService.getHeaders() });
 
     return lastValueFrom(request)
@@ -164,7 +170,7 @@ export class MachineResolverService implements MachineResolverServiceInterface {
       this.notificationService.error("You are not allowed to delete Machine Resolvers.");
       throw new Error("not-allowed");
     }
-    const request = this.http.delete<PiResponse<any>>(`${this.machineResolverBaseUrl}${name}`, {
+    const request = this.http.delete<PiResponse<any>>(`${this.machineResolverBaseUrl}${encodeURIComponent(name)}`, {
       headers: this.authService.getHeaders()
     });
     return lastValueFrom(request)

@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { computed, inject, Injectable, Signal, signal, WritableSignal } from "@angular/core";
+import { computed, effect, inject, Injectable, Signal, signal, WritableSignal } from "@angular/core";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
 import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
@@ -30,7 +30,7 @@ import { SimpleConfirmationDialogComponent } from "../../components/shared/dialo
 import { DialogServiceInterface, DialogService } from "../dialog/dialog.service";
 
 export type EventHandler = {
-  id: string;
+  id: number | null;
   name: string;
   active: boolean;
   handlermodule: string;
@@ -43,7 +43,7 @@ export type EventHandler = {
 };
 
 export const EMPTY_EVENT: EventHandler = {
-  id: "",
+  id: null,
   name: "",
   active: true,
   handlermodule: "",
@@ -83,11 +83,11 @@ export interface EventServiceInterface {
 
   saveEventHandler(event: Record<string, any>): Observable<PiResponse<number, any> | undefined>;
 
-  enableEvent(eventId: string): Promise<Object | undefined>;
+  enableEvent(eventId: number | null): Promise<Object | undefined>;
 
-  disableEvent(eventId: string): Promise<Object | undefined>;
+  disableEvent(eventId: number | null): Promise<Object | undefined>;
 
-  deleteEvent(eventId: string): Observable<PiResponse<number, any>>;
+  deleteEvent(eventId: number): Observable<PiResponse<number, any>>;
 
   deleteWithConfirmDialog(event: EventHandler, dialog: any, afterDelete?: () => void): void;
 
@@ -152,7 +152,7 @@ export class EventService implements EventServiceInterface {
   saveEventHandler(event: Record<string, any>): Observable<PiResponse<number, any> | undefined> {
     const headers = this.authService.getHeaders();
     let params = { ...event } as any;
-    if (!params.id) {
+    if (params.id == null) {
       delete params.id;
     }
     return this.http.post<PiResponse<number, any>>(this.eventBaseUrl, params, { headers }).pipe(
@@ -165,10 +165,14 @@ export class EventService implements EventServiceInterface {
     );
   }
 
-  enableEvent(eventId: string) {
+  enableEvent(eventId: number | null) {
+    if (eventId === null) {
+      this.notificationService.openSnackBar("Can not enable event handler due to missing ID");
+      return Promise.resolve(undefined);
+    }
     const headers = this.authService.getHeaders();
     return lastValueFrom(
-      this.http.post(this.eventBaseUrl + "/enable/" + eventId, {}, { headers: headers }).pipe(
+      this.http.post(this.eventBaseUrl + "/enable/" + encodeURIComponent(eventId), {}, { headers: headers }).pipe(
         catchError((error) => {
           console.log("Failed to enable event handler:", error);
           this.allEventsResource.reload();
@@ -179,10 +183,14 @@ export class EventService implements EventServiceInterface {
     );
   }
 
-  disableEvent(eventId: string) {
+  disableEvent(eventId: number | null) {
+    if (eventId === null) {
+      this.notificationService.warning("Can not disable event handler due to missing ID");
+      return Promise.resolve(undefined);
+    }
     const headers = this.authService.getHeaders();
     return lastValueFrom(
-      this.http.post(this.eventBaseUrl + "/disable/" + eventId, {}, { headers: headers }).pipe(
+      this.http.post(this.eventBaseUrl + "/disable/" + encodeURIComponent(eventId), {}, { headers: headers }).pipe(
         catchError((error) => {
           console.log("Failed to disable event handler:", error);
           this.allEventsResource.reload();
@@ -193,13 +201,13 @@ export class EventService implements EventServiceInterface {
     );
   }
 
-  deleteEvent(eventId: string): Observable<PiResponse<number, any>> {
+  deleteEvent(eventId: number): Observable<PiResponse<number, any>> {
     const headers = this.authService.getHeaders();
 
-    return this.http.delete<PiResponse<number, any>>(this.eventBaseUrl + "/" + eventId, { headers }).pipe(
+    return this.http.delete<PiResponse<number, any>>(this.eventBaseUrl + "/" + encodeURIComponent(eventId), { headers }).pipe(
       catchError((error) => {
         console.error("Failed to delete event handler.", error);
-        const message = error.result?.error?.message || "";
+        const message = error.error?.result?.error?.message || "";
         this.notificationService.error("Failed to delete event handler. " + message);
         return throwError(() => error);
       })
@@ -224,6 +232,10 @@ export class EventService implements EventServiceInterface {
       return;
     }
     try {
+      if (event.id == null) {
+        this.notificationService.openSnackBar("Failed to delete event handler: Missing ID.");
+        return;
+      }
       const result = await lastValueFrom(this.deleteEvent(event.id));
 
       this.notificationService.success("Successfully deleted event handler.");
@@ -283,7 +295,7 @@ export class EventService implements EventServiceInterface {
       return undefined;
     }
     return {
-      url: this.eventBaseUrl + "/positions/" + this.selectedHandlerModule(),
+      url: this.eventBaseUrl + "/positions/" + encodeURIComponent(this.selectedHandlerModule() || ""),
       method: "GET",
       headers: this.authService.getHeaders()
     };
@@ -303,7 +315,7 @@ export class EventService implements EventServiceInterface {
       return undefined;
     }
     return {
-      url: this.eventBaseUrl + "/actions/" + this.selectedHandlerModule(),
+      url: this.eventBaseUrl + "/actions/" + encodeURIComponent(this.selectedHandlerModule() || ""),
       method: "GET",
       headers: this.authService.getHeaders()
     };
@@ -323,7 +335,7 @@ export class EventService implements EventServiceInterface {
       return undefined;
     }
     return {
-      url: this.eventBaseUrl + "/conditions/" + this.selectedHandlerModule(),
+      url: this.eventBaseUrl + "/conditions/" + encodeURIComponent(this.selectedHandlerModule() || ""),
       method: "GET",
       headers: this.authService.getHeaders()
     };
@@ -349,4 +361,25 @@ export class EventService implements EventServiceInterface {
     }
     return conditions;
   });
+
+  constructor() {
+    effect(() => {
+      this.notificationService.handleResourceError(this.allEventsResource.error(), "event handlers");
+    });
+    effect(() => {
+      this.notificationService.handleResourceError(this.eventHandlerModulesResource.error(), "event handler modules");
+    });
+    effect(() => {
+      this.notificationService.handleResourceError(this.availableEventsResource.error(), "available events");
+    });
+    effect(() => {
+      this.notificationService.handleResourceError(this.modulePositionsResource.error(), "module positions");
+    });
+    effect(() => {
+      this.notificationService.handleResourceError(this.moduleActionsResource.error(), "module actions");
+    });
+    effect(() => {
+      this.notificationService.handleResourceError(this.moduleConditionsResource.error(), "module conditions");
+    });
+  }
 }

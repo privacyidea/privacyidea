@@ -160,7 +160,7 @@ export class SystemService implements SystemServiceInterface {
   }
 
   deleteSystemConfig(key: string): Observable<PiResponse<any>> {
-    return this.http.delete<PiResponse<any>>(`${this.systemBaseUrl}${key}`, { headers: this.authService.getHeaders() });
+    return this.http.delete<PiResponse<any>>(`${this.systemBaseUrl}${encodeURIComponent(key)}`, { headers: this.authService.getHeaders() });
   }
 
   deleteUserCache(): Observable<PiResponse<any>> {

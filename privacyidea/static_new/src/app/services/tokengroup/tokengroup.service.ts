@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
-import { inject, Injectable, linkedSignal, WritableSignal } from "@angular/core";
+import { effect, inject, Injectable, linkedSignal, WritableSignal } from "@angular/core";
 import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
@@ -58,6 +58,12 @@ export class TokengroupService implements TokengroupServiceInterface {
 
   private readonly tokengroupBaseUrl = environment.proxyUrl + "/tokengroup/";
 
+  constructor() {
+    effect(() => {
+      this.notificationService.handleResourceError(this.tokengroupResource.error(), "tokengroups");
+    });
+  }
+
   tokengroupResource = httpResource<PiResponse<Tokengroups>>(() => {
     if (!this.contentService.onExternalTokenGroups()) {
       return undefined;
@@ -85,7 +91,7 @@ export class TokengroupService implements TokengroupServiceInterface {
   });
 
   async postTokengroup(tokengroup: Tokengroup): Promise<void> {
-    const url = `${this.tokengroupBaseUrl}${tokengroup.groupname}`;
+    const url = `${this.tokengroupBaseUrl}${encodeURIComponent(tokengroup.groupname)}`;
     const request = this.http.post<PiResponse<any>>(url, tokengroup, { headers: this.authService.getHeaders() });
 
     return lastValueFrom(request)
@@ -101,7 +107,7 @@ export class TokengroupService implements TokengroupServiceInterface {
   }
 
   async deleteTokengroup(groupname: string): Promise<void> {
-    const request = this.http.delete<PiResponse<any>>(`${this.tokengroupBaseUrl}${groupname}`, {
+    const request = this.http.delete<PiResponse<any>>(`${this.tokengroupBaseUrl}${encodeURIComponent(groupname)}`, {
       headers: this.authService.getHeaders()
     });
     return lastValueFrom(request)

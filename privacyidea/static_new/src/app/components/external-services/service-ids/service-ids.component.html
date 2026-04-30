@@ -47,7 +47,7 @@
   </div>
   <div class="actions-container margin-bottom-16">
     <button
-      (click)="openEditDialog()"
+      (click)="onCreateNewServiceId()"
       class="action-button-primary button-width-l"
       i18n
       mat-stroked-button>
@@ -97,7 +97,7 @@
         mat-cell>
         <div class="flex-row flex-nowrap ali-center">
           <a
-            (click)="openEditDialog(service)"
+            (click)="onEditServiceId(service)"
             class="flex ali-center">
             {{ service.servicename }}
           </a>

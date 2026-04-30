@@ -77,9 +77,9 @@ describe("SmsGatewayService", () => {
   });
 
   it("should delete SMS gateway", async () => {
-    const promise = service.deleteSmsGateway("test");
+    const promise = service.deleteSmsGateway("test/1");
 
-    const req = httpMock.expectOne(`${environment.proxyUrl}/smsgateway/test`);
+    const req = httpMock.expectOne(`${environment.proxyUrl}/smsgateway/${encodeURIComponent("test/1")}`);
     expect(req.request.method).toBe("DELETE");
     req.flush({ result: { status: true } });
 

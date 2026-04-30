@@ -47,7 +47,7 @@
   </div>
   <div class="actions-container">
     <button
-      (click)="openEditDialog()"
+      (click)="onCreateNewGateway()"
       class="action-button-primary button-width-l"
       i18n
       mat-stroked-button>
@@ -73,7 +73,7 @@
         mat-cell>
         <div class="flex-row flex-nowrap ali-center">
           <a
-            (click)="openEditDialog(gateway)"
+            (click)="onEditGateway(gateway)"
             class="flex ali-center">
             {{ gateway.name }}
           </a>

@@ -22,12 +22,13 @@ import { Component, inject, input } from "@angular/core";
 import { MatIconModule } from "@angular/material/icon";
 import { MatButtonModule } from "@angular/material/button";
 import { lastValueFrom } from "rxjs";
+import { Router } from "@angular/router";
 import { DialogService } from "../../../../services/dialog/dialog.service";
 import { AuthService } from "../../../../services/auth/auth.service";
-import { PolicyDetail, PolicyService } from "../../../../services/policies/policies.service";
-import { EditPolicyDialogComponent } from "../../dialogs/edit-policy-dialog/edit-policy-dialog.component";
+import { PolicyService } from "../../../../services/policies/policies.service";
 import { SimpleConfirmationDialogComponent } from "../../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { CopyPolicyDialogComponent } from "@components/policies/dialogs/copy-policy-dialog/copy-policy-dialog.component";
+import { ROUTE_PATHS } from "../../../../route_paths";
 
 @Component({
   selector: "app-policies-table-actions",
@@ -42,12 +43,10 @@ export class PoliciesTableActionsComponent {
   readonly dialogService = inject(DialogService);
   readonly authService = inject(AuthService);
   readonly policyService = inject(PolicyService);
+  private readonly router = inject(Router);
 
   createNewPolicy(): void {
-    this.dialogService.openDialog({
-      component: EditPolicyDialogComponent,
-      data: { mode: "create", policyDetail: this.policyService.getEmptyPolicy() }
-    });
+    this.router.navigateByUrl(ROUTE_PATHS.POLICIES_NEW);
   }
 
   async deleteSelectedPolicies(): Promise<void> {

@@ -178,14 +178,14 @@ describe("ResolverService", () => {
   describe("userAttributes signal", () => {
     it("should return attribute keys for ldapresolver  with stringified mapping", async () => {
       const mockResolvers = {
-        ldap1: { data: { USERINFO: "{ \"surname\": \"sn\", \"givenname\": \"givenName\" }" }, type: "ldapresolver" }
+        "ldap/1": { data: { USERINFO: "{ \"surname\": \"sn\", \"givenname\": \"givenName\" }" }, type: "ldapresolver" }
       };
-      (resolverService as any).selectedResolverName.set("ldap1");
+      (resolverService as any).selectedResolverName.set("ldap/1");
       const mockResponse = MockPiResponse.fromValue(mockResolvers);
 
       TestBed.tick();
       httpMock.expectOne(resolverService.resolverBaseUrl); // accept initial load of all resolvers;
-      const req = httpMock.expectOne(resolverService.resolverBaseUrl + "ldap1");
+      const req = httpMock.expectOne(resolverService.resolverBaseUrl + encodeURIComponent("ldap/1"));
       expect(req.request.method).toBe("GET");
       req.flush(mockResponse);
       await lastValueFrom(of({})); // Wait for async updates
@@ -195,14 +195,14 @@ describe("ResolverService", () => {
 
     it("should return empty attributes list for invalid JSON string", async () => {
       const mockResolvers = {
-        ldap1: { data: { USERINFO: "{ 'surname': 'sn', 'givenname': 'givenName' " }, type: "ldapresolver" }
+        "ldap/1": { data: { USERINFO: "{ 'surname': 'sn', 'givenname': 'givenName' " }, type: "ldapresolver" }
       };
-      (resolverService as any).selectedResolverName.set("ldap1");
+      (resolverService as any).selectedResolverName.set("ldap/1");
       const mockResponse = MockPiResponse.fromValue(mockResolvers);
 
       TestBed.tick();
       httpMock.expectOne(resolverService.resolverBaseUrl); // accept initial load of all resolvers;
-      const req = httpMock.expectOne(resolverService.resolverBaseUrl + "ldap1");
+      const req = httpMock.expectOne(resolverService.resolverBaseUrl + encodeURIComponent("ldap/1"));
       expect(req.request.method).toBe("GET");
       req.flush(mockResponse);
       await lastValueFrom(of({})); // Wait for async updates
@@ -212,14 +212,14 @@ describe("ResolverService", () => {
 
     it("should return attribute keys for sqlresolver", async () => {
       const mockResolvers = {
-        sql1: { data: { Map: { givenname: "displayname", email: "mail" } }, type: "sqlresolver" }
+        "sql/1": { data: { Map: { givenname: "displayname", email: "mail" } }, type: "sqlresolver" }
       };
       const mockResponse = MockPiResponse.fromValue(mockResolvers);
-      (resolverService as any).selectedResolverName.set("sql1");
+      (resolverService as any).selectedResolverName.set("sql/1");
 
       TestBed.tick();
       httpMock.expectOne(resolverService.resolverBaseUrl); // accept initial load of all resolvers;
-      const req = httpMock.expectOne(resolverService.resolverBaseUrl + "sql1");
+      const req = httpMock.expectOne(resolverService.resolverBaseUrl + encodeURIComponent("sql/1"));
       expect(req.request.method).toBe("GET");
       req.flush(mockResponse);
       await lastValueFrom(of({})); // Wait for async updates

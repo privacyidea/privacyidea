@@ -33,6 +33,7 @@ import { MockAuthService } from "../../../../testing/mock-services/mock-auth-ser
 import { MockTableUtilsService } from "src/testing/mock-services/mock-table-utils-service";
 import { ContentService } from "../../../services/content/content.service";
 import { MockContentService } from "../../../../testing/mock-services/mock-content-service";
+import { ROUTE_PATHS } from "../../../route_paths";
 
 class LocalMockMatDialog {
   result$ = of(true);
@@ -143,16 +144,7 @@ describe("UserSourcesComponent", () => {
     const resolver = { resolvername: "res1", type: "sqlresolver", censor_keys: [], data: {} } as Resolver;
     component.onEditResolver(resolver);
 
-    expect(dialog.open).toHaveBeenCalledWith(
-      expect.any(Function),
-      expect.objectContaining({
-        data: { resolver },
-        height: "auto",
-        maxHeight: "100vh",
-        maxWidth: "100vw",
-        width: "auto"
-      })
-    );
+    expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.USERS_RESOLVERS_DETAILS + "res1");
   });
 
   it("onDeleteResolver should delete after confirmation", () => {

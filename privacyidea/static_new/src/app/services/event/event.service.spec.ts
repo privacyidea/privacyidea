@@ -100,9 +100,9 @@ describe("EventService", () => {
   });
 
   it("should enable an event handler", async () => {
-    const eventId = "123";
+    const eventId = 123;
     const promise = service.enableEvent(eventId);
-    const req = httpMock.expectOne(service.eventBaseUrl + "/enable/" + eventId);
+    const req = httpMock.expectOne(service.eventBaseUrl + "/enable/" + encodeURIComponent(eventId));
     expect(req.request.method).toBe("POST");
     req.flush({});
     await expect(promise).resolves.toBeDefined();
@@ -110,9 +110,9 @@ describe("EventService", () => {
 
   it("should handle error when enabling an event handler", async () => {
     service.allEventsResource.reload = jest.fn();
-    const eventId = "err123";
+    const eventId = 123;
     const promise = service.enableEvent(eventId);
-    const req = httpMock.expectOne(service.eventBaseUrl + "/enable/" + eventId);
+    const req = httpMock.expectOne(service.eventBaseUrl + "/enable/" + encodeURIComponent(eventId));
     expect(req.request.method).toBe("POST");
     req.flush({}, { status: 500, statusText: "Server Error" });
     await expect(promise).resolves.toBeUndefined();
@@ -123,18 +123,18 @@ describe("EventService", () => {
   });
 
   it("should disable an event handler", async () => {
-    const eventId = "123";
+    const eventId = 123;
     const promise = service.disableEvent(eventId);
-    const req = httpMock.expectOne(service.eventBaseUrl + "/disable/" + eventId);
+    const req = httpMock.expectOne(service.eventBaseUrl + "/disable/" + encodeURIComponent(eventId));
     expect(req.request.method).toBe("POST");
     req.flush({});
     await expect(promise).resolves.toBeDefined();
   });
 
   it("should handle error when disabling an event handler", async () => {
-    const eventId = "err456";
+    const eventId = 456;
     const promise = service.disableEvent(eventId);
-    const req = httpMock.expectOne(service.eventBaseUrl + "/disable/" + eventId);
+    const req = httpMock.expectOne(service.eventBaseUrl + "/disable/" + encodeURIComponent(eventId));
     expect(req.request.method).toBe("POST");
     req.flush({}, { status: 500, statusText: "Server Error" });
     await expect(promise).resolves.toBeUndefined();
@@ -144,18 +144,18 @@ describe("EventService", () => {
   });
 
   it("should delete an event handler", () => {
-    const eventId = "123";
+    const eventId = 123;
     service.deleteEvent(eventId).subscribe((response) => {
       expect(response).toBeTruthy();
       expect(response.result).toBeDefined();
     });
-    const req = httpMock.expectOne(service.eventBaseUrl + "/" + eventId);
+    const req = httpMock.expectOne(service.eventBaseUrl + "/" + encodeURIComponent(eventId));
     expect(req.request.method).toBe("DELETE");
     req.flush({ result: { value: 1 } });
   });
 
   it("should handle error when deleting an event handler", (done) => {
-    const eventId = "err789";
+    const eventId = 789;
     service.deleteEvent(eventId).subscribe({
       next: () => {
         // Should not be called
@@ -168,7 +168,7 @@ describe("EventService", () => {
         done();
       }
     });
-    const req = httpMock.expectOne(service.eventBaseUrl + "/" + eventId);
+    const req = httpMock.expectOne(service.eventBaseUrl + "/" + encodeURIComponent(eventId));
     expect(req.request.method).toBe("DELETE");
     req.flush({ result: { error: { message: "Delete error" } } }, { status: 500, statusText: "Server Error" });
   });
@@ -177,7 +177,7 @@ describe("EventService", () => {
     let event: any;
 
     beforeEach(() => {
-      event = { id: "1", name: "Test Event" } as any;
+      event = { id: 1, name: "Test Event" } as any;
     });
 
     it("should open confirmation dialog and call delete on success", async () => {
@@ -222,7 +222,7 @@ describe("EventService", () => {
       const req = httpMock.expectOne(`${service.eventBaseUrl}/`);
       const eventHandlers = [
         {
-          id: "1",
+          id: 1,
           name: "test",
           active: true,
           handlermodule: "testModule",

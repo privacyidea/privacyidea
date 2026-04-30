@@ -24,9 +24,10 @@ import { AuthService } from "../auth/auth.service";
 import { NotificationService } from "../notification/notification.service";
 import { environment } from "../../../environments/environment";
 import { ROUTE_PATHS } from "../../route_paths";
-import { MockContentService, MockPiResponse } from "../../../testing/mock-services";
+import { MockContentService, MockNotificationService, MockPiResponse } from "../../../testing/mock-services";
 import { lastValueFrom, of } from "rxjs";
 import { ContentService } from "../content/content.service";
+import { MockAuthService } from "../../../testing/mock-services/mock-auth-service";
 
 describe("PrivacyideaServerService", () => {
   let service: PrivacyideaServerService;
@@ -39,15 +40,15 @@ describe("PrivacyideaServerService", () => {
       getHeaders: jest.fn().mockReturnValue({})
     };
     const notificationServiceMock = {
-      success: jest.fn(), error: jest.fn(), warning: jest.fn()
+      success: jest.fn(), error: jest.fn(), warning: jest.fn(), handleResourceError: jest.fn()
     };
 
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
-        { provide: AuthService, useValue: authServiceMock },
-        { provide: NotificationService, useValue: notificationServiceMock },
+        { provide: AuthService, useClass: MockAuthService },
+        { provide: NotificationService, useClass: MockNotificationService },
         { provide: ContentService, useClass: MockContentService }
       ]
     });

@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-__doc__="""The SSHKeyTokenClass provides a TokenClass that stores the public
+__doc__ = """The SSHKeyTokenClass provides a TokenClass that stores the public
 SSH key. This can be used to manage SSH keys and retrieve the public ssh key
 to import it to authorized keys files.
 
@@ -24,17 +24,17 @@ The code is tested in tests/test_lib_tokens_ssh
 """
 
 import logging
+
 from privacyidea.lib import _
-from privacyidea.lib.params import get_required
 from privacyidea.lib.error import TokenAdminError
 from privacyidea.lib.log import log_with
-from privacyidea.lib.tokenclass import TokenClass, RolloutState, AuthenticationMode
-from privacyidea.lib.policy import SCOPE, GROUP
+from privacyidea.lib.params import get_required
 from privacyidea.lib.policies.actions import PolicyAction
+from privacyidea.lib.policy import SCOPE, GROUP
+from privacyidea.lib.tokenclass import TokenClass, AuthenticationMode
+from privacyidea.lib.tokenrolloutstate import RolloutState
 
 log = logging.getLogger(__name__)
-
-
 
 
 ##TODO: We should save a fingerprint of the SSH Key in the encrypted OTP

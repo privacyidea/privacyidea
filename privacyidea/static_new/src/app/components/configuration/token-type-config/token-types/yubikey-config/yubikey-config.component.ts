@@ -61,7 +61,8 @@ export class YubikeyConfigComponent {
   newYubikeyGenKey = signal(true);
 
   createNewKey() {
-    if (this.newYubikeyApiId()) {
+    const apiId = this.newYubikeyApiId();
+    if (apiId && /^[a-zA-Z0-9._-]*$/.test(apiId)) {
       const newKeyData = {
         apiId: this.newYubikeyApiId(),
         apiKey: this.newYubikeyApiKey(),

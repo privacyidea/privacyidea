@@ -19,6 +19,7 @@
 import { inject, Injectable } from "@angular/core";
 import { MatSnackBar, MatSnackBarRef } from "@angular/material/snack-bar";
 import { Subscription, timer } from "rxjs";
+import { HttpErrorResponse } from "@angular/common/http";
 
 export interface NotificationServiceInterface {
   remainingTime: number;
@@ -28,6 +29,7 @@ export interface NotificationServiceInterface {
   success(message: string, options?: { duration?: number }): void;
   error(message: string, options?: { duration?: number }): void;
   warning(message: string, options?: { duration?: number }): void;
+  handleResourceError(error: Error | undefined, subject: string): void;
 }
 
 @Injectable({
@@ -95,6 +97,14 @@ export class NotificationService implements NotificationServiceInterface {
     if (this.remainingTime > 0) {
       this.startTime = Date.now();
       this._startTimer(snackBarRef);
+    }
+  }
+
+  handleResourceError(error: Error | undefined, subject: string): void {
+    if (error) {
+      const err = error as HttpErrorResponse;
+      const message = err.error?.result?.error?.message || error.message;
+      this.error(`Failed to get ${subject}. ${message}`);
     }
   }
 }

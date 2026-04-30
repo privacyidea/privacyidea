@@ -21,13 +21,14 @@ import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { signal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { MatDialog, MatDialogModule } from "@angular/material/dialog";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
+import { provideRouter, Router } from "@angular/router";
 import { Subject } from "rxjs";
 import { MockMatDialogRef } from "../../../../testing/mock-mat-dialog-ref";
 import { MockDialogService } from "../../../../testing/mock-services";
 import { DialogService } from "../../../services/dialog/dialog.service";
 import { PrivacyideaServerService } from "../../../services/privacyidea-server/privacyidea-server.service";
+import { ROUTE_PATHS } from "../../../route_paths";
 import { PrivacyideaServersComponent } from "./privacyidea-servers.component";
 
 describe("PrivacyideaServersComponent", () => {
@@ -36,7 +37,7 @@ describe("PrivacyideaServersComponent", () => {
   let privacyideaServerServiceMock: any;
   let dialogServiceMock: MockDialogService;
   let confirmClosed: Subject<boolean>;
-  let dialog: MatDialog;
+  let router: Router;
 
   beforeEach(async () => {
     privacyideaServerServiceMock = {
@@ -52,23 +53,19 @@ describe("PrivacyideaServersComponent", () => {
     };
 
     await TestBed.configureTestingModule({
-      imports: [PrivacyideaServersComponent, NoopAnimationsModule, MatDialogModule],
+      imports: [PrivacyideaServersComponent, NoopAnimationsModule],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
+        provideRouter([]),
         { provide: PrivacyideaServerService, useValue: privacyideaServerServiceMock },
         { provide: DialogService, useClass: MockDialogService }
       ]
-    })
-      .overrideComponent(PrivacyideaServersComponent, {
-        add: {
-          providers: [{ provide: MatDialog, useValue: { open: jest.fn() } }]
-        }
-      })
-      .compileComponents();
+    }).compileComponents();
 
     fixture = TestBed.createComponent(PrivacyideaServersComponent);
     dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
+    router = TestBed.inject(Router);
     confirmClosed = new Subject();
     let dialogRefMock = new MockMatDialogRef();
     dialogRefMock.afterClosed.mockReturnValue(confirmClosed);
@@ -98,11 +95,17 @@ describe("PrivacyideaServersComponent", () => {
     expect(component.privacyideaDataSource().filter).toBe("");
   });
 
-  it("should open edit dialog", () => {
-    const dialog = fixture.debugElement.injector.get(MatDialog);
-    const server = privacyideaServerServiceMock.privacyideaServers()[0];
+  it("should navigate to new server route on openEditDialog without server", () => {
+    const spy = jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
+    component.openEditDialog();
+    expect(spy).toHaveBeenCalledWith(ROUTE_PATHS.EXTERNAL_SERVICES_PRIVACYIDEA_NEW);
+  });
+
+  it("should navigate to details route on openEditDialog with server", () => {
+    const spy = jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
+    const server = privacyideaServerServiceMock.remoteServerOptions()[0];
     component.openEditDialog(server);
-    expect(dialog.open).toHaveBeenCalled();
+    expect(spy).toHaveBeenCalledWith(ROUTE_PATHS.EXTERNAL_SERVICES_PRIVACYIDEA_DETAILS + server.identifier);
   });
 
   it("should delete server after confirmation", () => {

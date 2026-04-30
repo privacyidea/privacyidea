@@ -90,6 +90,8 @@ from sqlalchemy import select, delete
 from privacyidea.lib import _
 from privacyidea.lib.crypto import (decryptPassword,
                                     generate_otpkey, encryptPassword)
+from privacyidea.lib.params import get_optional, get_required
+from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.utils import (is_true, decode_base32check,
                                    to_unicode, create_img, parse_timedelta,
                                    parse_legacy_time, split_pin_pass)
@@ -102,7 +104,6 @@ from .log import log_with
 from .policies.actions import PolicyAction
 from .policydecorators import libpolicy, auth_otppin, challenge_response_allowed
 from .user import (User)
-from privacyidea.lib.params import get_optional, get_required
 from ..models import (TokenOwner, TokenTokengroup, Challenge, cleanup_challenges, TokenInfo, db, TokenRealm, Realm,
                       Tokengroup, TokenCredentialIdHash)
 
@@ -142,18 +143,6 @@ class ClientMode:
     INTERACTIVE = 'interactive'
     POLL = 'poll'
     WEBAUTHN = 'webauthn'
-
-
-class RolloutState:
-    CLIENTWAIT = 'clientwait'
-    # The rollout is pending in the backend, like CSRs that need to be approved
-    PENDING = 'pending'
-    # This means the user needs to authenticate to verify that the token was successfully enrolled.
-    VERIFY_PENDING = 'verify'
-    ENROLLED = 'enrolled'
-    BROKEN = 'broken'
-    FAILED = 'failed'
-    DENIED = 'denied'
 
 
 class TokenClass:
@@ -373,7 +362,7 @@ class TokenClass:
         user_info = user.get_specific_info(["givenname", "surname"])
         user_identifier = f"{user.login!s}_{user.realm!s}"
         user_displayname = "{!s} {!s}".format(user_info.get("givenname", "."),
-                                                user_info.get("surname", "."))
+                                              user_info.get("surname", "."))
         return user_identifier, user_displayname
 
     @check_token_locked

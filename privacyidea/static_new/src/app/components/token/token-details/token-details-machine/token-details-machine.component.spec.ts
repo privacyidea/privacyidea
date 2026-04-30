@@ -39,7 +39,7 @@ describe("TokenDetailsInfoComponent", () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: MachineService, useClass: MockMachineService },
-        { provide: ContentService, useValue: MockContainerService }
+        { provide: ContentService, useClass: MockContainerService }
       ]
     }).compileComponents();
 

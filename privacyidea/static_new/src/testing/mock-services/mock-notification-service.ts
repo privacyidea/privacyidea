@@ -26,4 +26,6 @@ export class MockNotificationService implements NotificationServiceInterface {
   remainingTime: number = 0;
   timerSub: Subscription = new Subscription();
   startTime: number = 0;
+
+  handleResourceError = jest.fn();
 }

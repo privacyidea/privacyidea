@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { CommonModule, NgOptimizedImage } from "@angular/common";
+import { NgOptimizedImage } from "@angular/common";
 import {
   Component,
   computed,
@@ -82,6 +82,7 @@ export class LoginComponent implements OnDestroy {
   @ViewChild("otpInput") otpInput!: ElementRef<HTMLInputElement>;
   username = signal<string>("");
   password = signal<string>("");
+  hidePassword = signal<boolean>(true);
   otp = signal<string>("");
   authMessage = signal<string[]>([]); // messages returned from the auth endpoint
   errorMessage = signal<string>("");
@@ -228,6 +229,7 @@ export class LoginComponent implements OnDestroy {
     this.showOtpField.set(false);
     this.otp.set("");
     this.password.set("");
+    this.hidePassword.set(true);
   }
 
   ngOnDestroy(): void {
@@ -362,6 +364,7 @@ export class LoginComponent implements OnDestroy {
 
     if (context === "password") {
       this.password.set("");
+      this.hidePassword.set(true);
       if (this.showOtpField()) {
         // Empty the value and focus again
         this.otp.set("");

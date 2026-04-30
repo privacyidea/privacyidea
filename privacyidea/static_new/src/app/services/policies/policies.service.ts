@@ -428,7 +428,9 @@ export class PolicyService implements PolicyServiceInterface {
 
     const headers = this.authService.getHeaders();
     return lastValueFrom(
-      this.http.post<PiResponse<any>>(`${this.policyBaseUrl}${policyData.name}`, policyData, { headers })
+      this.http.post<PiResponse<any>>(`${this.policyBaseUrl}${encodeURIComponent(policyData.name)}`, policyData, {
+        headers
+      })
     );
   }
 
@@ -445,7 +447,7 @@ export class PolicyService implements PolicyServiceInterface {
     // Do request
     const headers = this.authService.getHeaders();
     const result = await lastValueFrom(
-      this.http.delete<PiResponse<number>>(`${this.policyBaseUrl}${name}`, { headers })
+      this.http.delete<PiResponse<number>>(`${this.policyBaseUrl}${encodeURIComponent(name)}`, { headers })
     );
     // Reload policies to ensure state is correct
     if (result && !result.result?.error) {
@@ -459,12 +461,16 @@ export class PolicyService implements PolicyServiceInterface {
 
   enablePolicy(name: string): Promise<PiResponse<any>> {
     const headers = this.authService.getHeaders();
-    return lastValueFrom(this.http.post<PiResponse<any>>(`${this.policyBaseUrl}enable/${name}`, {}, { headers }));
+    return lastValueFrom(
+      this.http.post<PiResponse<any>>(`${this.policyBaseUrl}enable/${encodeURIComponent(name)}`, {}, { headers })
+    );
   }
 
   disablePolicy(name: string): Promise<PiResponse<any>> {
     const headers = this.authService.getHeaders();
-    return lastValueFrom(this.http.post<PiResponse<any>>(`${this.policyBaseUrl}disable/${name}`, {}, { headers }));
+    return lastValueFrom(
+      this.http.post<PiResponse<any>>(`${this.policyBaseUrl}disable/${encodeURIComponent(name)}`, {}, { headers })
+    );
   }
 
   isScopeChangeable(policy: PolicyDetail): boolean {
@@ -640,7 +646,9 @@ export class PolicyService implements PolicyServiceInterface {
     this.allPolicies.set(lastStableState.map((p) => (p.name === originalPolicyName ? { ...p, ...updatedPolicy } : p)));
 
     try {
-      await lastValueFrom(this.http.post(`${this.policyBaseUrl}${originalPolicyName}`, updatedPolicy, { headers }));
+      await lastValueFrom(
+        this.http.post(`${this.policyBaseUrl}${encodeURIComponent(originalPolicyName)}`, updatedPolicy, { headers })
+      );
 
       lastStableState = lastStableState.map((p) =>
         p.name === originalPolicyName ? { ...p, ...updatedPolicy, name: originalPolicyName } : p
@@ -648,7 +656,11 @@ export class PolicyService implements PolicyServiceInterface {
 
       if (hasNameChange) {
         await lastValueFrom(
-          this.http.patch(`${this.policyBaseUrl}${originalPolicyName}`, { name: updatedPolicy.name }, { headers })
+          this.http.patch(
+            `${this.policyBaseUrl}${encodeURIComponent(originalPolicyName)}`,
+            { name: updatedPolicy.name },
+            { headers }
+          )
         );
       }
 

@@ -82,7 +82,7 @@ export class CaConnectorService implements CaConnectorServiceInterface {
   });
 
   async postCaConnector(connector: CaConnector): Promise<void> {
-    const url = `${this.caConnectorBaseUrl}${connector.connectorname}`;
+    const url = `${this.caConnectorBaseUrl}${encodeURIComponent(connector.connectorname)}`;
     const request = this.http.post<PiResponse<any>>(url, connector.data, { headers: this.authService.getHeaders() });
 
     return lastValueFrom(request)
@@ -98,7 +98,7 @@ export class CaConnectorService implements CaConnectorServiceInterface {
   }
 
   async deleteCaConnector(connectorname: string): Promise<void> {
-    const request = this.http.delete<PiResponse<any>>(`${this.caConnectorBaseUrl}${connectorname}`, {
+    const request = this.http.delete<PiResponse<any>>(`${this.caConnectorBaseUrl}${encodeURIComponent(connectorname)}`, {
       headers: this.authService.getHeaders()
     });
     return lastValueFrom(request)
@@ -115,7 +115,7 @@ export class CaConnectorService implements CaConnectorServiceInterface {
 
   async getCaSpecificOptions(catype: string, params: any): Promise<any> {
     const pstring = new URLSearchParams(params).toString();
-    const url = `${this.caConnectorBaseUrl}specific/${catype}?${pstring}`;
+    const url = `${this.caConnectorBaseUrl}specific/${encodeURIComponent(catype)}?${pstring}`;
     const request = this.http.get<PiResponse<any>>(url, { headers: this.authService.getHeaders() });
 
     return lastValueFrom(request)

@@ -1,7 +1,34 @@
-@use "../../../../../styles";
+@use "styles";
 
-.ca-connector-dialog-content {
-  width: 664px;
+.ca-connector-page-layout {
+  display: flex;
+  justify-content: center;
+}
+
+.ca-connector-page-container {
+  @include styles.main-component-style;
+  display: grid;
+  position: relative;
+}
+
+.header-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 1rem;
+
+  .action-buttons {
+    display: flex;
+    flex-direction: row;
+    gap: var(--global-padding);
+  }
+}
+
+.ca-connector-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 1rem;
 }
 
 .gap-1 {

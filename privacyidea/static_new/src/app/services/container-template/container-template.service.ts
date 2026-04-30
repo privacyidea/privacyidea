@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { computed, inject, Injectable, linkedSignal, Signal, WritableSignal } from "@angular/core";
+import { computed, effect, inject, Injectable, linkedSignal, Signal, WritableSignal } from "@angular/core";
 import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
 import { PiResponse } from "../../app.component";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
@@ -81,6 +81,15 @@ export class ContainerTemplateService implements ContainerTemplateServiceInterfa
   readonly notificationService: NotificationServiceInterface = inject(NotificationService);
 
   // --- Resources ---
+
+  constructor() {
+    effect(() => {
+      this.notificationService.handleResourceError(this.templatesResource.error(), "container templates");
+    });
+    effect(() => {
+      this.notificationService.handleResourceError(this.templateTokenTypesResource.error(), "template token types");
+    });
+  }
   readonly templatesResource = httpResource<PiResponse<{ templates: ContainerTemplate[] }>>(() => {
     if (!this.authService.actionAllowed("container_template_list")) return undefined;
     if (!this.contentService.onTokensContainersCreate() && !this.contentService.onTokensContainersTemplates())
@@ -129,6 +138,7 @@ export class ContainerTemplateService implements ContainerTemplateServiceInterfa
   // --- Public Methods ---
   canSaveTemplate(template: ContainerTemplate): boolean {
     if (template.name.trim().length === 0) return false;
+    if (!/^[a-zA-Z0-9._-]*$/.test(template.name)) return false;
     if (template.container_type.trim().length === 0) return false;
     if (template.template_options.tokens.length === 0) return false;
     return true;
@@ -185,7 +195,7 @@ export class ContainerTemplateService implements ContainerTemplateServiceInterfa
   }
 
   async postTemplateEdits(template: ContainerTemplate): Promise<boolean> {
-    const url = environment.proxyUrl + `/container/${template.container_type}/template/${template.name}`;
+    const url = environment.proxyUrl + `/container/${encodeURIComponent(template.container_type)}/template/${encodeURIComponent(template.name)}`;
     try {
       await lastValueFrom(this.http.post<PiResponse<any>>(url, template, { headers: this.authService.getHeaders() }));
       this.templatesResource.reload();
@@ -202,7 +212,7 @@ export class ContainerTemplateService implements ContainerTemplateServiceInterfa
   // --- Private Methods ---
   private _performDeleteRequest(name: string) {
     return this.http
-      .delete<PiResponse<any>>(`${environment.proxyUrl}/container/template/${name}`, {
+      .delete<PiResponse<any>>(`${environment.proxyUrl}/container/template/${encodeURIComponent(name)}`, {
         headers: this.authService.getHeaders()
       })
       .pipe(
