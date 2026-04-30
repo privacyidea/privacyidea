@@ -10,7 +10,6 @@ import logging
 import socket
 import ssl
 import threading
-from typing import Optional
 
 import ldap3
 from cryptography import x509
@@ -40,7 +39,7 @@ def invalidate_certificate_cache() -> None:
         _CACHE.clear()
 
 
-def _classify(days_remaining: Optional[int]) -> str:
+def _classify(days_remaining: int | None) -> str:
     if days_remaining is None:
         return "error"
     if days_remaining <= 0:
@@ -136,7 +135,7 @@ def _check_ldap_resolvers() -> list:
     return results
 
 
-def _check_server_cert(server_host: Optional[str], server_port: Optional[int],
+def _check_server_cert(server_host: str | None, server_port: int | None,
                        https: bool) -> dict:
     entry = {"source": "privacyidea-server",
              "name": server_host or "privacyidea",
@@ -159,8 +158,8 @@ def _check_server_cert(server_host: Optional[str], server_port: Optional[int],
     return entry
 
 
-def get_certificate_status(server_host: Optional[str] = None,
-                           server_port: Optional[int] = None,
+def get_certificate_status(server_host: str | None = None,
+                           server_port: int | None = None,
                            https: bool = False,
                            refresh: bool = False) -> list:
     """Return certificate expiry info for configured LDAP resolvers and the server cert.

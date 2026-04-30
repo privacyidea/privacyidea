@@ -2,8 +2,9 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 """Periodic task that drops aged-out rows from ``metric_aggregate``.
 
-Recommended cadence: every hour. Each run deletes rows whose ``window_start``
-is older than ``older_than_hours`` hours (default 24).
+Each run deletes rows whose ``window_start`` is older than ``older_than_hours``
+hours (default 24). A daily cadence is recommended, matching the natural rhythm
+of the 24h retention; each run is a single indexed ``DELETE``.
 """
 import logging
 

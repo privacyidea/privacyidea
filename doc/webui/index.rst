@@ -135,9 +135,10 @@ node, so per-request overhead stays low.
 
 The table grows unbounded unless an operator schedules the
 ``MetricsCleanup`` periodic task under *Config -> Tasks*. The task takes
-one option, ``older_than_hours`` (default ``24``); an hourly schedule is
-recommended. Skip it and the table will keep all metric rows
-indefinitely.
+one option, ``older_than_hours`` (default ``24``); a daily schedule is
+recommended, which keeps the table at roughly two days' worth of rows.
+Each run is a single indexed ``DELETE``, so cost is negligible. Skip the
+task entirely and the table will keep all metric rows indefinitely.
 
 .. _news:
 
