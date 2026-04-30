@@ -1,21 +1,8 @@
 import email
 
-import pytest
-
 from privacyidea.lib.crypto import encryptPassword
 from . import smtpmock
 from .base import MyApiTestCase
-
-
-@pytest.fixture()
-def smtp_mock():
-    """Fixture that activates and resets the SMTP mock."""
-    smtpmock.start()
-    yield smtpmock
-    smtpmock.stop()
-    smtpmock.reset()
-
-
 class SMTPServerTestCase(MyApiTestCase):
     """
     test the api.smtpserver endpoints
