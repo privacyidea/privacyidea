@@ -1,0 +1,167 @@
+<!--
+ (c) NetKnights GmbH 2026,  https://netknights.it
+
+ This code is free software; you can redistribute it and/or
+ modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
+ as published by the Free Software Foundation; either
+ version 3 of the License, or any later version.
+
+ This code is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ GNU AFFERO GENERAL PUBLIC LICENSE for more details.
+
+ You should have received a copy of the GNU Affero General Public
+ License along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+ SPDX-License-Identifier: AGPL-3.0-or-later
+-->
+@switch (tokenTypeKey) {
+  @case ("hotp") {
+    <app-enroll-hotp
+      (additionalFormFieldsChange)="additionalFormFieldsChange.emit($event)"
+      (enrollmentArgsGetterChange)="enrollmentArgsGetterChange.emit($event)"
+      [wizard]="wizard" />
+  }
+  @case ("totp") {
+    <app-enroll-totp
+      (additionalFormFieldsChange)="additionalFormFieldsChange.emit($event)"
+      (enrollmentArgsGetterChange)="enrollmentArgsGetterChange.emit($event)"
+      [wizard]="wizard" />
+  }
+  @case ("spass") {
+    <app-enroll-spass
+      (additionalFormFieldsChange)="additionalFormFieldsChange.emit($event)"
+      (enrollmentArgsGetterChange)="enrollmentArgsGetterChange.emit($event)"
+      [wizard]="wizard" />
+  }
+  @case ("motp") {
+    <app-enroll-motp
+      (additionalFormFieldsChange)="additionalFormFieldsChange.emit($event)"
+      (enrollmentArgsGetterChange)="enrollmentArgsGetterChange.emit($event)"
+      [wizard]="wizard" />
+  }
+  @case ("sshkey") {
+    <app-enroll-sshkey
+      (additionalFormFieldsChange)="additionalFormFieldsChange.emit($event)"
+      (enrollmentArgsGetterChange)="enrollmentArgsGetterChange.emit($event)" />
+  }
+  @case ("yubikey") {
+    <app-enroll-yubikey
+      (additionalFormFieldsChange)="additionalFormFieldsChange.emit($event)"
+      (enrollmentArgsGetterChange)="enrollmentArgsGetterChange.emit($event)" />
+  }
+  @case ("remote") {
+    <app-enroll-remote
+      (additionalFormFieldsChange)="additionalFormFieldsChange.emit($event)"
+      (enrollmentArgsGetterChange)="enrollmentArgsGetterChange.emit($event)" />
+  }
+  @case ("yubico") {
+    <app-enroll-yubico
+      (additionalFormFieldsChange)="additionalFormFieldsChange.emit($event)"
+      (enrollmentArgsGetterChange)="enrollmentArgsGetterChange.emit($event)" />
+  }
+  @case ("radius") {
+    <app-enroll-radius
+      (additionalFormFieldsChange)="additionalFormFieldsChange.emit($event)"
+      (enrollmentArgsGetterChange)="enrollmentArgsGetterChange.emit($event)"
+      [wizard]="wizard" />
+  }
+  @case ("sms") {
+    <app-enroll-sms
+      (additionalFormFieldsChange)="additionalFormFieldsChange.emit($event)"
+      (enrollmentArgsGetterChange)="enrollmentArgsGetterChange.emit($event)"
+      [wizard]="wizard" />
+  }
+  @case ("4eyes") {
+    <app-enroll-foureyes
+      (additionalFormFieldsChange)="additionalFormFieldsChange.emit($event)"
+      (enrollmentArgsGetterChange)="enrollmentArgsGetterChange.emit($event)" />
+  }
+  @case ("applspec") {
+    <app-enroll-applspec
+      (additionalFormFieldsChange)="additionalFormFieldsChange.emit($event)"
+      (enrollmentArgsGetterChange)="enrollmentArgsGetterChange.emit($event)"
+      [wizard]="wizard" />
+  }
+  @case ("daypassword") {
+    <app-enroll-daypassword
+      (additionalFormFieldsChange)="additionalFormFieldsChange.emit($event)"
+      (enrollmentArgsGetterChange)="enrollmentArgsGetterChange.emit($event)"
+      [wizard]="wizard" />
+  }
+  @case ("certificate") {
+    <app-enroll-certificate
+      (additionalFormFieldsChange)="additionalFormFieldsChange.emit($event)"
+      (enrollmentArgsGetterChange)="enrollmentArgsGetterChange.emit($event)" />
+  }
+  @case ("email") {
+    <app-enroll-email
+      (additionalFormFieldsChange)="additionalFormFieldsChange.emit($event)"
+      (enrollmentArgsGetterChange)="enrollmentArgsGetterChange.emit($event)" />
+  }
+  @case ("indexedsecret") {
+    <app-enroll-indexedsecret
+      (additionalFormFieldsChange)="additionalFormFieldsChange.emit($event)"
+      (enrollmentArgsGetterChange)="enrollmentArgsGetterChange.emit($event)" />
+  }
+  @case ("paper") {
+    <app-enroll-paper
+      (additionalFormFieldsChange)="additionalFormFieldsChange.emit($event)"
+      (enrollmentArgsGetterChange)="enrollmentArgsGetterChange.emit($event)"
+      [wizard]="wizard" />
+  }
+  @case ("push") {
+    <app-enroll-push
+      (additionalFormFieldsChange)="additionalFormFieldsChange.emit($event)"
+      (enrollmentArgsGetterChange)="enrollmentArgsGetterChange.emit($event)"
+      (onEnrollmentResponseChange)="onEnrollmentResponseChange.emit($event)"
+      (reopenDialogChange)="reopenDialogChange.emit($event)" />
+  }
+  @case ("question") {
+    <app-enroll-question
+      (additionalFormFieldsChange)="additionalFormFieldsChange.emit($event)"
+      (enrollmentArgsGetterChange)="enrollmentArgsGetterChange.emit($event)" />
+  }
+  @case ("registration") {
+    <app-enroll-registration
+      (additionalFormFieldsChange)="additionalFormFieldsChange.emit($event)"
+      (enrollmentArgsGetterChange)="enrollmentArgsGetterChange.emit($event)" />
+  }
+  @case ("tan") {
+    <app-enroll-tan
+      (additionalFormFieldsChange)="additionalFormFieldsChange.emit($event)"
+      (enrollmentArgsGetterChange)="enrollmentArgsGetterChange.emit($event)"
+      [wizard]="wizard" />
+  }
+  @case ("tiqr") {
+    <app-enroll-tiqr
+      (additionalFormFieldsChange)="additionalFormFieldsChange.emit($event)"
+      (enrollmentArgsGetterChange)="enrollmentArgsGetterChange.emit($event)"
+      [wizard]="wizard" />
+  }
+  @case ("u2f") {
+    <app-enroll-u2f
+      (additionalFormFieldsChange)="additionalFormFieldsChange.emit($event)"
+      (enrollmentArgsGetterChange)="enrollmentArgsGetterChange.emit($event)" />
+  }
+  @case ("vasco") {
+    <app-enroll-vasco
+      (additionalFormFieldsChange)="additionalFormFieldsChange.emit($event)"
+      (enrollmentArgsGetterChange)="enrollmentArgsGetterChange.emit($event)" />
+  }
+  @case ("webauthn") {
+    <app-enroll-webauthn
+      (additionalFormFieldsChange)="additionalFormFieldsChange.emit($event)"
+      (enrollmentArgsGetterChange)="enrollmentArgsGetterChange.emit($event)"
+      (onEnrollmentResponseChange)="onEnrollmentResponseChange.emit($event)" />
+  }
+  @case ("passkey") {
+    <app-enroll-passkey
+      (additionalFormFieldsChange)="additionalFormFieldsChange.emit($event)"
+      (enrollmentArgsGetterChange)="enrollmentArgsGetterChange.emit($event)"
+      (onEnrollmentResponseChange)="onEnrollmentResponseChange.emit($event)"
+      (reopenDialogChange)="reopenDialogChange.emit($event)" />
+  }
+}
+

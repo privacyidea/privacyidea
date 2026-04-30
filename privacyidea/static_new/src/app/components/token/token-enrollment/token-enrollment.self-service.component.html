@@ -77,224 +77,65 @@
         <p>{{ tokenTypeDescription() }}</p>
       </div>
       <h4 i18n>Token Configuration</h4>
-      @switch (tokenService.selectedTokenType().key) {
-        @case ("hotp") {
-          <app-enroll-hotp
-            (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-            (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-        }
-        @case ("totp") {
-          <app-enroll-totp
-            (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-            (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-        }
-        @case ("spass") {
-          <app-enroll-spass
-            (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-            (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-        }
-        @case ("motp") {
-          <app-enroll-motp
-            (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-            (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-        }
-        @case ("sshkey") {
-          <app-enroll-sshkey
-            (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-            (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-        }
-        @case ("yubikey") {
-          <app-enroll-yubikey
-            (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-            (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-        }
-        @case ("remote") {
-          <app-enroll-remote
-            (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-            (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-        }
-        @case ("yubico") {
-          <app-enroll-yubico
-            (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-            (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-        }
-        @case ("radius") {
-          <app-enroll-radius
-            (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-            (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-        }
-        @case ("sms") {
-          <app-enroll-sms
-            (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-            (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-        }
-        @case ("4eyes") {
-          <app-enroll-foureyes
-            (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-            (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-        }
-        @case ("applspec") {
-          <app-enroll-applspec
-            (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-            (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-        }
-        @case ("daypassword") {
-          <app-enroll-daypassword
-            (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-            (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-        }
-        @case ("certificate") {
-          <app-enroll-certificate
-            (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-            (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-        }
-        @case ("email") {
-          <app-enroll-email
-            (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-            (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-        }
-        @case ("indexedsecret") {
-          <app-enroll-indexedsecret
-            (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-            (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-        }
-        @case ("paper") {
-          <app-enroll-paper
-            (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-            (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-        }
-        @case ("push") {
-          <app-enroll-push
-            (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-            (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)"
-            (reopenDialogChange)="updateReopenDialog($event)"
-            (onEnrollmentResponseChange)="updateOnEnrollmentResponse($event)" />
-        }
-        @case ("question") {
-          <app-enroll-question
-            (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-            (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-        }
-        @case ("registration") {
-          <app-enroll-registration
-            (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-            (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-        }
-        @case ("tan") {
-          <app-enroll-tan
-            (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-            (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-        }
-        @case ("tiqr") {
-          <app-enroll-tiqr
-            (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-            (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-        }
-        @case ("u2f") {
-          <app-enroll-u2f
-            (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-            (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-        }
-        @case ("vasco") {
-          <app-enroll-vasco
-            (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-            (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)" />
-        }
-        @case ("webauthn") {
-          <app-enroll-webauthn
-            (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-            (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)"
-            (onEnrollmentResponseChange)="updateOnEnrollmentResponse($event)" />
-        }
-        @case ("passkey") {
-          <app-enroll-passkey
-            (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
-            (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)"
-            (reopenDialogChange)="updateReopenDialog($event)"
-            (onEnrollmentResponseChange)="updateOnEnrollmentResponse($event)" />
-        }
+      <app-enroll-token-type-switch
+        [tokenTypeKey]="tokenService.selectedTokenType().key"
+        (additionalFormFieldsChange)="updateAdditionalFormFields($event)"
+        (enrollmentArgsGetterChange)="updateEnrollmentArgsGetter($event)"
+        (onEnrollmentResponseChange)="updateOnEnrollmentResponse($event)"
+        (reopenDialogChange)="updateReopenDialog($event)" />
+    <mat-form-field class="input-width-xl margin-top-16">
+      <mat-label i18n>Description</mat-label>
+      <textarea
+        [formControl]="descriptionControl"
+        [maxlength]="80"
+        matInput
+        placeholder="Enter description"
+        rows="3"></textarea>
+      <mat-hint align="end">{{ descriptionControl.value.length }} / {{ tokenService.maxDescriptionLength }}
+      </mat-hint>
+      @if (descriptionControl.hasError("required")) {
+        <mat-error i18n>
+          Description is <strong>required</strong>.
+        </mat-error>
+      } @else if (descriptionControl.hasError("maxlength")) {
+        <mat-error i18n>
+          Description cannot exceed <strong>80 characters</strong>.
+        </mat-error>
       }
-      <mat-form-field class="input-width-xl margin-top-16">
-        <mat-label i18n>Description</mat-label>
-        <textarea
-          [formControl]="descriptionControl"
-          [maxlength]="80"
-          matInput
-          placeholder="Enter description"
-          rows="3"></textarea>
-        <mat-hint align="end">{{ descriptionControl.value.length }} / {{ tokenService.maxDescriptionLength }}
-        </mat-hint>
-        @if (descriptionControl.hasError("required")) {
-          <mat-error i18n>
-            Description is <strong>required</strong>.
-          </mat-error>
-        } @else if (descriptionControl.hasError("maxlength")) {
-          <mat-error i18n>
-            Description cannot exceed <strong>80 characters</strong>.
-          </mat-error>
-        }
-      </mat-form-field>
+    </mat-form-field>
 
-      <div class="flex-row gap-16">
-        @if (tokenService.selectedTokenType().key !== "passkey" && authService.actionAllowed("enrollpin")) {
-          <div class="flex-column margin-bottom-16">
-            <h4 i18n>Set PIN</h4>
-            <input
-              style="display: none"
-              type="text" />
-            <input
-              style="display: none"
-              type="password" />
-            <div class="flex-column">
-              <mat-form-field class="input-width-l">
-                <mat-label i18n>PIN</mat-label>
-                <input
-                  [formControl]="setPinControl"
-                  [type]="'password'"
-                  matInput />
-              </mat-form-field>
-              <mat-form-field class="input-width-l">
-                <mat-label i18n>Repeat PIN</mat-label>
-                <input
-                  [formControl]="repeatPinControl"
-                  [type]="'password'"
-                  matInput />
-              </mat-form-field>
-            </div>
-            @if (formGroupSignal().hasError("pinMismatch") &&
-            (formGroupSignal().get("setPin")?.touched || formGroupSignal().get("repeatPin")?.touched)) {
-              <mat-error
-                class="pin-error"
-                i18n>PINs do not match.
-              </mat-error>
-            }
-          </div>
-        }
+    <div class="flex-row gap-16">
+      @if (tokenService.selectedTokenType().key !== "passkey" && authService.actionAllowed("enrollpin")) {
+        <app-enrollment-pin
+          [setPinControl]="setPinControl"
+          [repeatPinControl]="repeatPinControl"
+          [formGroup]="formGroupSignal()" />
+      }
 
-        @if (authService.actionAllowed("container_list")) {
-          <div class="flex-column width-100">
-            <h4 i18n>Add Token to a Container</h4>
-            <mat-form-field class="input-width-l">
-              <mat-label i18n>Enter Container</mat-label>
-              <app-clearable-input
-                (onClick)="selectedContainerControl.setValue('')"
-                [showClearButton]="containerService.selectedContainer() !== ''">
-                <input
-                  [formControlName]="'selectedContainer'"
-                  [formControl]="selectedContainerControl"
-                  [matAutocomplete]="containerAuto"
-                  matInput />
-              </app-clearable-input>
-              <mat-label i18n>Container Serial</mat-label>
-              <mat-autocomplete #containerAuto="matAutocomplete">
-                @for (option of containerService.filteredContainerOptions(); track option) {
-                  <mat-option [value]="option">{{ option }}</mat-option>
-                }
-              </mat-autocomplete>
-            </mat-form-field>
-          </div>
-        }
-      </div>
+      @if (authService.actionAllowed("container_list")) {
+        <div class="flex-column width-100">
+          <h4 i18n>Add Token to a Container</h4>
+          <mat-form-field class="input-width-l">
+            <mat-label i18n>Enter Container</mat-label>
+            <app-clearable-input
+              (onClick)="selectedContainerControl.setValue('')"
+              [showClearButton]="containerService.selectedContainer() !== ''">
+              <input
+                [formControlName]="'selectedContainer'"
+                [formControl]="selectedContainerControl"
+                [matAutocomplete]="containerAuto"
+                matInput />
+            </app-clearable-input>
+            <mat-label i18n>Container Serial</mat-label>
+            <mat-autocomplete #containerAuto="matAutocomplete">
+              @for (option of containerService.filteredContainerOptions(); track option) {
+                <mat-option [value]="option">{{ option }}</mat-option>
+              }
+            </mat-autocomplete>
+          </mat-form-field>
+        </div>
+      }
     </div>
-  </form>
+  </div>
+</form>
 </div>
