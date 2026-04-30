@@ -24,6 +24,8 @@ import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
 import { finalize, Subscription } from "rxjs";
 import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
+import { DialogService, DialogServiceInterface } from "../dialog/dialog.service";
+import { AuditDownloadDialogComponent } from "../../components/audit/audit-download-dialog/audit-download-dialog.component";
 
 import { FilterValue } from "../../core/models/filter_value/filter_value";
 import { StringUtils } from "../../utils/string.utils";
@@ -142,6 +144,7 @@ export class AuditService implements AuditServiceInterface {
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
+  private readonly dialogService: DialogServiceInterface = inject(DialogService);
   private readonly http: HttpClient = inject(HttpClient);
   readonly apiFilterKeyMap = apiFilterKeyMap;
   readonly apiFilter = apiFilter;
@@ -214,6 +217,17 @@ export class AuditService implements AuditServiceInterface {
     if (this.isDownloading()) {
       return;
     }
+
+    this.dialogService.openDialog({
+      component: AuditDownloadDialogComponent
+    }).afterClosed().subscribe(result => {
+      if (result) {
+        this.executeDownload();
+      }
+    });
+  }
+
+  private executeDownload(): void {
     this.isDownloading.set(true);
     const params = new HttpParams({ fromObject: this.filterParams() });
     this.downloadSubscription = this.http.get(this.auditBaseUrl + "audit.csv", {
