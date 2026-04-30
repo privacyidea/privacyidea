@@ -29,7 +29,7 @@
     class="sticky-header">
     <div class="sticky-controls ali-center">
       <mat-form-field
-        class="input-width-xl">
+        class="input-width-xl type-select">
         <mat-select
           [(ngModel)]="containerService.selectedContainerType"
           [ngModelOptions]="{ standalone: true }"
@@ -44,11 +44,11 @@
           }
         </mat-select>
       </mat-form-field>
-      <div class="enroll-button-container">
+      <div class="enroll-button-container margin-left-auto">
         <button
           (click)="createContainer()"
           [disabled]="!validInput"
-          class="action-button-primary button-width-m margin-left-auto"
+          class="action-button-primary button-width-m"
           mat-stroked-button>
           <mat-icon>create_new_folder</mat-icon>
           Create Container

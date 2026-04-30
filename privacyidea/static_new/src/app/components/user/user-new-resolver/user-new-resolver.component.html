@@ -40,7 +40,7 @@
 
     <div
       #leftColumn
-      class="flex-row margin-bottom-0 margin-left-16 margin-top-16">
+      class="flex-row margin-bottom-0 margin-left-16 margin-top-16 container-template-fix">
       <mat-form-field class="input-width-l">
         <mat-label i18n>Resolver Name</mat-label>
         <mat-hint>
@@ -70,7 +70,7 @@
         }
       </mat-form-field>
 
-      <mat-form-field class="input-width-l margin-left-16">
+      <mat-form-field class="input-width-l resolver-type-select">
         <mat-label i18n>Type</mat-label>
         <mat-select
           (ngModelChange)="onTypeChange($event)"

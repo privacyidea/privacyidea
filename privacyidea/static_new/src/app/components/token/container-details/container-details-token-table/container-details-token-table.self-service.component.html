@@ -51,7 +51,7 @@
         [pageSize]="pageSize" />
     </div>
   </div>
-  <div [ngClass]="[overflowService.isWidthOverflowing('body', 1580) ? 'flex-column' : 'flex-row']">
+  <div class="responsive-flex-row-1580">
     <table
       [dataSource]="dataSource"
       aria-label="Token of Container Data Table"

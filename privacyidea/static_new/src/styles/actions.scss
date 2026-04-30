@@ -11,7 +11,7 @@ This file contains all styles for actions as used e.g. in policies, event handle
   flex-direction: column;
   gap: calc(var(--global-gap) / 2);
   min-width: 0;
-  overflow: scroll;
+  overflow: auto;
   padding: var(--three-quarters-global-padding);
 }
 

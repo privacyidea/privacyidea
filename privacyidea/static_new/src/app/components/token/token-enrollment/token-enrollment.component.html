@@ -31,7 +31,7 @@
       class="sticky-header">
       <div class="sticky-controls ali-center">
         <mat-form-field
-          class="input-width-xl">
+          class="input-width-xl type-select">
           <mat-select
             [(ngModel)]="tokenService.selectedTokenType"
             [ngModelOptions]="{ standalone: true }"
@@ -49,10 +49,10 @@
             }
           </mat-select>
         </mat-form-field>
-        <div class="enroll-button-container">
+        <div class="enroll-button-container margin-left-auto">
           <button
             [disabled]="formGroupSignal().invalid || !tokenService.selectedTokenType()"
-            class="action-button-primary button-width-m margin-left-auto"
+            class="action-button-primary button-width-m"
             mat-stroked-button
             type="submit">
             <mat-icon>add_moderator</mat-icon>
@@ -69,8 +69,8 @@
         </div>
       </div>
     </div>
-    <div class="margin-left-16">
-      <div class="width-880 margin-bottom-0">
+    <div class="responsive-margin-left-1310">
+      <div class="width-884 margin-bottom-0">
         <p>{{ tokenTypeDescription() }}</p>
       </div>
       <h4 i18n>Token Configuration</h4>
@@ -220,6 +220,8 @@
           matInput
           placeholder="Enter description"
           rows="3"></textarea>
+        <mat-hint align="end">{{ descriptionControl.value.length }} / {{ tokenService.maxDescriptionLength }}
+        </mat-hint>
       </mat-form-field>
       <div class="gap-16">
         @if (authService.actionAllowed("userlist")) {
@@ -264,7 +266,10 @@
             </div>
             @if (formGroupSignal().hasError("pinMismatch") &&
             (formGroupSignal().get("setPin")?.touched || formGroupSignal().get("repeatPin")?.touched)) {
-              <mat-error class="pin-error" i18n>PINs do not match.</mat-error>
+              <mat-error
+                class="pin-error"
+                i18n>PINs do not match.
+              </mat-error>
             }
           </div>
         }

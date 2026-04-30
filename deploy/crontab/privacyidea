@@ -1,5 +1,14 @@
 # Run the privacyidea-cron runner every 5 minutes
-*/5 * * * *	privacyidea	privacyidea-cron run_scheduled -c
+*/5 * * * *	privacyidea	/opt/privacyidea/bin/privacyidea-cron run_scheduled -c
 
-# Audit rotate 
-#1 2 * * *	privacyidea	pi-manage audit rotate_audit --age 360
+# Audit rotation example: once a week at 00:00 on Sunday
+#0 0 * * 0	privacyidea	/opt/privacyidea/bin/pi-manage audit rotate --age 360
+
+# Challenge cleanup: every day at 01:00
+0 1 * * *    privacyidea     /opt/privacyidea/bin/pi-manage config challenge cleanup > /dev/null 2>&1
+
+# Run a backup once a day at 2:15 am including the encryption key
+#15 2 * * *	privacyidea	/opt/privacyidea/bin/pi-manage backup create -e
+
+# Only keep backups of the last 7 days
+#15 1 * * *	privacyidea	find /var/lib/privacyidea/backup/ -atime +7 -delete

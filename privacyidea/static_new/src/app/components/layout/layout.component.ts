@@ -24,7 +24,6 @@ import { AuthService, AuthServiceInterface } from "../../services/auth/auth.serv
 import { LoadingService, LoadingServiceInterface } from "../../services/loading/loading-service";
 import { MatDrawer, MatDrawerContainer, MatDrawerContent } from "@angular/material/sidenav";
 import { NavigationComponent } from "./navigation/navigation.component";
-import { OverflowService, OverflowServiceInterface } from "../../services/overflow/overflow.service";
 import { ContentService, ContentServiceInterface } from "../../services/content/content.service";
 import { NavigationSelfServiceComponent } from "./navigation-self-service/navigation-self-service.component";
 import { NavigationSelfServiceWizardComponent } from "./navigation-self-service/navigation-self-service.wizard.component";
@@ -39,18 +38,15 @@ import { NavigationSelfServiceWizardComponent } from "./navigation-self-service/
 export class LayoutComponent {
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly loadingService: LoadingServiceInterface = inject(LoadingService);
-  protected readonly overflowService: OverflowServiceInterface = inject(OverflowService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   private readonly renderer = inject(Renderer2);
   private readonly document = inject(DOCUMENT);
   showProgressBar = signal(false);
   loadingUrls = signal<{ key: string; url: string }[]>([]);
-  isTokenDrawerOverflowing = signal(false);
 
   constructor() {
     effect(() => {
       this.contentService.routeUrl();
-      this.updateOverflowState();
       this.updateBodyClasses();
     });
   }
@@ -58,27 +54,11 @@ export class LayoutComponent {
   updateBodyClasses() {
     if (this.authService.role() === "admin") {
       this.renderer.addClass(this.document.body, "admin-layout");
-      this.renderer.removeClass(this.document.body, "selfservice-layout");
+      this.renderer.removeClass(this.document.body, "self-service-layout");
     } else {
-      this.renderer.addClass(this.document.body, "selfservice-layout");
+      this.renderer.addClass(this.document.body, "self-service-layout");
       this.renderer.removeClass(this.document.body, "admin-layout");
     }
-  }
-
-  ngAfterViewInit() {
-    window.addEventListener("resize", this.updateOverflowState.bind(this));
-    this.updateOverflowState();
-  }
-
-  updateOverflowState() {
-    setTimeout(() => {
-      this.isTokenDrawerOverflowing.set(
-        this.overflowService.isHeightOverflowing({
-          selector: ".token-layout",
-          thresholdSelector: ".drawer"
-        })
-      );
-    }, 400);
   }
 
   ngOnInit(): void {
@@ -90,8 +70,7 @@ export class LayoutComponent {
 
   ngOnDestroy(): void {
     this.renderer.removeClass(this.document.body, "admin-layout");
-    this.renderer.removeClass(this.document.body, "selfservice-layout");
+    this.renderer.removeClass(this.document.body, "self-service-layout");
     this.loadingService.removeListener("layout");
-    window.removeEventListener("resize", this.updateOverflowState);
   }
 }

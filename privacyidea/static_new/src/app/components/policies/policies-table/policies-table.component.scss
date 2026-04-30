@@ -19,14 +19,13 @@
 }
 
 .policies-table-layout {
-  @include table.table-container-styles;
+  @include styles.main-component-style;
   @include table.base-table-structure(".policies-table", ".policies-table-filter", ".table-scroll-container");
-  min-width: calc(100% - var(--global-padding) * 2);
-  max-width: calc(100% - var(--global-padding) * 2);
-  max-height: calc(100% - var(--global-padding) * 2);
-  display: flex;
-  flex-direction: column;
-  overflow: auto;
+
+  & {
+    display: flex;
+    flex-direction: column;
+  }
 
   .policies-table-filter {
     max-width: 932px;
@@ -112,6 +111,7 @@
         align-items: center;
         display: flex;
         flex-direction: row;
+        flex-wrap: nowrap;
       }
     }
 

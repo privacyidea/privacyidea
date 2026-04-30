@@ -8,14 +8,7 @@ updates:
     cooldown:
       default-days: 7
 
-  # Python dependencies are fully pinned pip-compile lock files with hashes.
-  # Dependabot cannot regenerate them correctly (it patches individual pins without
-  # re-solving the graph). Vulnerability detection is handled by pip-audit manually.
-
-  - package-ecosystem: "npm"
-    # New Angular frontend — dependabot can update package.json ranges correctly
-    directory: "/privacyidea/static_new"
-    schedule:
-      interval: "weekly"
-    cooldown:
-      default-days: 7
+  # Python and npm dependencies are updated manually on our schedule.
+  # Dependabot PRs for these ecosystems tend to fail CI and create noise
+  # without saving work. Vulnerability detection is covered by pip-audit
+  # (Python) and osv-scanner (npm/Python).

@@ -1,10 +1,7 @@
 @use "../../../../styles" as styles;
 
 .token-type-config-container {
-  @include styles.table-container-styles;
-  max-width: 100%;
-  max-height: var(--max-height);
-  overflow: auto;
+  @include styles.main-component-style;
 
   h2 {
     margin-bottom: 20px;

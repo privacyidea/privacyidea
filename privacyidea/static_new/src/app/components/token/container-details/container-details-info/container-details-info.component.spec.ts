@@ -22,13 +22,11 @@ import { of } from "rxjs";
 
 import { ContainerDetailsInfoComponent, ContainerInfoDetail } from "./container-details-info.component";
 import { ContainerService } from "../../../../services/container/container.service";
-import { OverflowService } from "../../../../services/overflow/overflow.service";
 import { AuthService } from "../../../../services/auth/auth.service";
 import {
   MockContainerService,
   MockLocalService,
-  MockNotificationService,
-  MockOverflowService
+  MockNotificationService
 } from "../../../../../testing/mock-services";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
@@ -60,7 +58,6 @@ describe("ContainerDetailsInfoComponent", () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: ContainerService, useClass: MockContainerService },
-        { provide: OverflowService, useClass: MockOverflowService },
         { provide: AuthService, useClass: MockAuthService },
         MockLocalService,
         MockNotificationService

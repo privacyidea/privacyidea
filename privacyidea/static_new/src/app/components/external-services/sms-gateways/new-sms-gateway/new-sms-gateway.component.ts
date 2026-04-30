@@ -16,20 +16,29 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { CommonModule } from "@angular/common";
-import { Component, computed, effect, inject, OnDestroy, OnInit, signal, untracked } from "@angular/core";
-import { toSignal } from "@angular/core/rxjs-interop";
+import {
+  AfterViewInit,
+  Component,
+  computed,
+  effect,
+  ElementRef,
+  inject,
+  OnDestroy,
+  Renderer2,
+  signal,
+  untracked,
+  ViewChild
+} from "@angular/core";
+import { ActivatedRoute, Router } from "@angular/router";
+import { takeUntilDestroyed, toSignal } from "@angular/core/rxjs-interop";
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
 import { MatOptionModule } from "@angular/material/core";
-import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from "@angular/material/dialog";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
 import { MatSelectModule } from "@angular/material/select";
 import { MatTableModule } from "@angular/material/table";
-import { Router } from "@angular/router";
-import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
 import {
   SmsGateway,
   SmsGatewayService,
@@ -41,20 +50,16 @@ import { ROUTE_PATHS } from "../../../../route_paths";
 import { SaveAndExitDialogComponent } from "../../../shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { DialogService, DialogServiceInterface } from "../../../../services/dialog/dialog.service";
 import { ClearableInputComponent } from "../../../shared/clearable-input/clearable-input.component";
-import { NAVIGATION_ACCESSIBLE_DIALOG_CLASS } from "../../../../constants/global.constants";
+import { CommonModule } from "@angular/common";
 
 type KeyValueRow = { key: string; value: string };
 
 @Component({
   selector: "app-sms-edit-dialog",
   standalone: true,
-  host: {
-    class: NAVIGATION_ACCESSIBLE_DIALOG_CLASS
-  },
   imports: [
     ReactiveFormsModule,
     FormsModule,
-    MatDialogModule,
     MatFormFieldModule,
     MatInputModule,
     MatButtonModule,
@@ -62,27 +67,29 @@ type KeyValueRow = { key: string; value: string };
     MatSelectModule,
     MatOptionModule,
     MatTableModule,
-    ClearableInputComponent
+    ClearableInputComponent,
+    CommonModule
   ],
   templateUrl: "./new-sms-gateway.component.html",
   styleUrl: "./new-sms-gateway.component.scss"
 })
-export class NewSmsGatewayComponent implements OnInit, OnDestroy {
+export class NewSmsGatewayComponent implements AfterViewInit, OnDestroy {
   private readonly formBuilder = inject(FormBuilder);
-  private readonly dialogRef = inject(MatDialogRef<NewSmsGatewayComponent>);
-  protected readonly data = inject<SmsGateway | null>(MAT_DIALOG_DATA);
   protected readonly smsGatewayService: SmsGatewayServiceInterface = inject(SmsGatewayService);
   private readonly dialogService: DialogServiceInterface = inject(DialogService);
   private readonly router = inject(Router);
-  private readonly contentService: ContentServiceInterface = inject(ContentService);
+  private readonly route = inject(ActivatedRoute);
   private readonly pendingChangesService = inject(PendingChangesService);
+  private readonly renderer = inject(Renderer2);
+
+  protected data: SmsGateway | null = null;
+  private gatewayName: string | null = null;
 
   smsForm: FormGroup = this.formBuilder.group({
-    name: [this.data?.name || "", [Validators.required]],
-    providermodule: [this.data?.providermodule || "", [Validators.required]],
-    description: [this.data?.description || ""]
+    name: ["", [Validators.required]],
+    providermodule: ["", [Validators.required]],
+    description: [""]
   });
-
   parametersForm: FormGroup = this.formBuilder.group({});
   isEditMode = false;
 
@@ -111,29 +118,30 @@ export class NewSmsGatewayComponent implements OnInit, OnDestroy {
     initialValue: this.data?.providermodule || ""
   });
 
+  private _observer!: IntersectionObserver;
+
+  @ViewChild("scrollContainer") scrollContainer!: ElementRef<HTMLElement>;
+  @ViewChild("stickyHeader") stickyHeader!: ElementRef<HTMLElement>;
+  @ViewChild("stickySentinel") stickySentinel!: ElementRef<HTMLElement>;
+
   constructor() {
-    if (this.dialogRef) {
-      this.dialogRef.disableClose = true;
-
-      this.dialogRef.backdropClick().subscribe(() => {
-        this.onCancel();
-      });
-
-      this.dialogRef.keydownEvents().subscribe((event) => {
-        if (event.key === "Escape") {
-          this.onCancel();
-        }
-      });
-    }
-
     this.pendingChangesService.registerHasChanges(() => this.hasChanges);
     this.pendingChangesService.registerSave(() => this.save());
     this.pendingChangesService.registerValidChanges(() => this.canSave);
 
-    effect(() => {
-      if (!this.contentService.routeUrl().startsWith(ROUTE_PATHS.EXTERNAL_SERVICES_SMS)) {
-        this.dialogRef?.close(true);
+    this.route.paramMap.pipe(takeUntilDestroyed()).subscribe((params) => {
+      this.gatewayName = params.get("name");
+      this.isEditMode = !!this.gatewayName;
+
+      // Load data for editing existing gateway
+      if (this.isEditMode && this.gatewayName) {
+        const gateways = this.smsGatewayService.smsGateways();
+        const gatewayData = gateways.find((g) => g.name === this.gatewayName);
+        if (gatewayData) {
+          this.data = gatewayData;
+        }
       }
+      this.initForm();
     });
 
     effect(() => {
@@ -143,6 +151,32 @@ export class NewSmsGatewayComponent implements OnInit, OnDestroy {
         untracked(() => this.onProviderChange(module));
       }
     });
+
+    // Re-initialize once the async list arrives, but only if the user hasn't started editing yet.
+    effect(() => {
+      const gateways = this.smsGatewayService.smsGateways();
+      if (this.isEditMode && this.gatewayName && this.smsForm?.pristine) {
+        const found = gateways.find((g) => g.name === this.gatewayName);
+        if (found) {
+          this.data = found;
+          this.initForm();
+        }
+      }
+    });
+  }
+
+  private initForm(): void {
+    this.smsForm.patchValue({
+      name: this.data?.name || "",
+      providermodule: this.data?.providermodule || "",
+      description: this.data?.description || ""
+    });
+    if (this.isEditMode) {
+      this.smsForm.get("name")?.disable();
+    } else {
+      this.smsForm.get("name")?.enable();
+    }
+    this.smsForm.markAsPristine();
   }
 
   get optionRows(): KeyValueRow[] {
@@ -178,13 +212,6 @@ export class NewSmsGatewayComponent implements OnInit, OnDestroy {
 
   get canSave(): boolean {
     return this.smsForm.valid;
-  }
-
-  ngOnInit(): void {
-    this.isEditMode = !!this.data;
-    if (this.isEditMode) {
-      this.smsForm.get("name")?.disable();
-    }
   }
 
   onProviderChange(module: string): void {
@@ -229,8 +256,26 @@ export class NewSmsGatewayComponent implements OnInit, OnDestroy {
     }
   }
 
+  ngAfterViewInit(): void {
+    if (!this.scrollContainer || !this.stickyHeader || !this.stickySentinel) return;
+    this._observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.rootBounds) return;
+        const shouldFloat = entry.boundingClientRect.top < entry.rootBounds.top;
+        if (shouldFloat) {
+          this.renderer.addClass(this.stickyHeader.nativeElement, "is-sticky");
+        } else {
+          this.renderer.removeClass(this.stickyHeader.nativeElement, "is-sticky");
+        }
+      },
+      { root: this.scrollContainer.nativeElement, threshold: [0, 1] }
+    );
+    this._observer.observe(this.stickySentinel.nativeElement);
+  }
+
   ngOnDestroy(): void {
     this.pendingChangesService.clearAllRegistrations();
+    this._observer?.disconnect();
   }
 
   async save(): Promise<boolean> {
@@ -264,7 +309,8 @@ export class NewSmsGatewayComponent implements OnInit, OnDestroy {
 
     try {
       await this.smsGatewayService.postSmsGateway(payload);
-      this.dialogRef.close(true);
+      this.pendingChangesService.clearAllRegistrations();
+      this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_SMS);
       return true;
     } catch (error) {
       return false;
@@ -285,18 +331,18 @@ export class NewSmsGatewayComponent implements OnInit, OnDestroy {
         .subscribe((result) => {
           if (result === "discard") {
             this.pendingChangesService.clearAllRegistrations();
-            this.closeCurrent();
+            this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_SMS);
           } else if (result === "save-exit") {
             if (!this.canSave) return;
             Promise.resolve(this.pendingChangesService.save()).then((success) => {
               if (!success) return;
               this.pendingChangesService.clearAllRegistrations();
-              this.closeCurrent();
+              this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_SMS);
             });
           }
         });
     } else {
-      this.closeCurrent();
+      this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_SMS);
     }
   }
 
@@ -332,13 +378,5 @@ export class NewSmsGatewayComponent implements OnInit, OnDestroy {
   deleteHeader(key: string): void {
     const { [key]: _, ...rest } = this.customHeaders;
     this.customHeaders = rest;
-  }
-
-  private closeCurrent(): void {
-    if (this.dialogRef) {
-      this.dialogRef.close();
-    } else {
-      this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_SMS);
-    }
   }
 }

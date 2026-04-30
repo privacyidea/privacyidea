@@ -3,8 +3,8 @@ This test file tests the lib.config
 
 The lib.config only depends on the database model.
 """
-from privacyidea.models import Config, save_config_timestamp, db, NodeName
-from .base import MyTestCase
+import importlib
+
 from privacyidea.lib.config import (get_resolver_list,
                                     get_resolver_classes,
                                     get_resolver_class_dict,
@@ -24,17 +24,19 @@ from privacyidea.lib.config import (get_resolver_list,
                                     this, get_config_object, invalidate_config_object,
                                     get_multichallenge_enrollable_types,
                                     get_email_validators,
-                                    check_node_uuid_exists, get_enrollable_token_types)
+                                    check_node_uuid_exists)
 from privacyidea.lib.resolvers.PasswdIdResolver import IdResolver as PWResolver
 from privacyidea.lib.tokens.hotptoken import HotpTokenClass
 from privacyidea.lib.tokens.totptoken import TotpTokenClass
-import importlib
+from privacyidea.models import Config, save_config_timestamp, db, NodeName
+from .base import MyTestCase
 
 
 class ConfigTestCase(MyTestCase):
     """
     Test the config on the database level
     """
+
     def test_00_get_config(self):
         # set the config
         set_privacyidea_config(key="Hallo", value="What?", typ="string",
@@ -101,7 +103,7 @@ class ConfigTestCase(MyTestCase):
         self.assertTrue('privacyidea.lib.resolvers.PasswdIdResolver'
                         '.IdResolver' in types, types)
         self.assertTrue(types.get('privacyidea.lib.resolvers.PasswdIdResolver'
-                        '.IdResolver') == "passwdresolver", types)
+                                  '.IdResolver') == "passwdresolver", types)
 
         # With calling 'get_resolver_classes()' the resolver types will also be cached
         self.assertTrue("pi_resolver_types" in this.config, this.config)
@@ -120,9 +122,9 @@ class ConfigTestCase(MyTestCase):
         module = importlib.import_module(mod_name)
         self.assertTrue(module in mlist, mlist)
 
-#        r = get_resolver_classes()
-#        self.assertTrue(UserResolver in r, r)
-#        self.assertTrue(PWResolver in r, r)
+        #        r = get_resolver_classes()
+        #        self.assertTrue(UserResolver in r, r)
+        #        self.assertTrue(PWResolver in r, r)
 
         # get_token_class_dict
         (classes, types) = get_token_class_dict()
@@ -298,19 +300,3 @@ class ConfigTestCase(MyTestCase):
         validate_email = get_email_validators().get("privacyidea.lib.utils.emailvalidation")
         self.assertTrue(validate_email("valid@email.com"))
         self.assertFalse(validate_email("invalid@email.k"))
-
-    def test_12_enrollable_token_types(self):
-        enrollable_types = get_enrollable_token_types()
-        self.assertNotIn("u2f", enrollable_types, enrollable_types)
-        self.assertIn("hotp", enrollable_types, enrollable_types)
-        self.assertIn("totp", enrollable_types, enrollable_types)
-        self.assertIn("push", enrollable_types, enrollable_types)
-
-        # re-activate u2f
-        with self.app_context:
-            self.app.config['PI_ENABLE_TOKEN_TYPE_ENROLLMENT'] = ['u2f']
-        enrollable_types = get_enrollable_token_types()
-        self.assertIn("u2f", enrollable_types, enrollable_types)
-        self.assertIn("hotp", enrollable_types, enrollable_types)
-        self.assertIn("totp", enrollable_types, enrollable_types)
-        self.assertIn("push", enrollable_types, enrollable_types)

@@ -41,7 +41,6 @@ import { MatTooltip } from "@angular/material/tooltip";
 import { NgClass } from "@angular/common";
 import { ContainerDetailToken } from "../../../../services/container/container.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "../../../../services/table-utils/table-utils.service";
-import { OverflowService, OverflowServiceInterface } from "../../../../services/overflow/overflow.service";
 import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
 import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
 import { TokenDetails, TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
@@ -77,7 +76,6 @@ import { UserService, UserServiceInterface } from "../../../../services/user/use
 })
 export class UserDetailsTokenTableComponent {
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
-  protected readonly overflowService: OverflowServiceInterface = inject(OverflowService);
   protected readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);

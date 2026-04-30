@@ -43,6 +43,7 @@ from privacyidea.lib.config import get_config_object
 from privacyidea.lib.error import DatabaseError, UserError
 from privacyidea.lib.utils import sanity_name_check, fetch_one_resource, is_true
 from privacyidea.lib.utils.export import (register_import, register_export)
+from .framework import get_app_config_value
 from .log import log_with
 from ..models import (Realm,
                       ResolverRealm,
@@ -335,3 +336,47 @@ def import_realms(data, name=None):
             set_default_realm(realm)
         log.info(f'realm: {realm!s:<15} resolver added: {added!s} '
                  f'failed: {failed!s}')
+
+
+def get_realms_of_resolver(resolver_name: str) -> list[str]:
+    """
+    Return a list of realm names that contain the given resolver.
+
+    :param resolver_name: The name of the resolver
+    :return: list of realm names
+    """
+    all_realms = get_realms()
+    return [
+        realm_name
+        for realm_name, realm_conf in all_realms.items()
+        if any(r.get("name") == resolver_name for r in realm_conf.get("resolver", []))
+    ]
+
+
+@log_with(log)
+def get_ordered_resolvers(realm: str) -> list[str]:
+    """
+    Return the resolvers of the given realm ordered by priority (lowest priority number first).
+    Resolvers with the same priority are ordered alphabetically by name. Resolvers pinned to a node
+    are filtered to the local node (``PI_NODE_UUID``). Duplicate resolver names are removed while
+    preserving order.
+
+    :param realm: The name of the realm
+    :return: list of resolver names
+    """
+    resolver_tuples = []
+    realm_config = get_realms(realm)
+    resolvers_in_realm = realm_config.get(realm, {}).get("resolver", [])
+    for resolver in resolvers_in_realm:
+        resolver_tuples.append((resolver.get("name"),
+                                resolver.get("priority") or 1000,
+                                resolver.get("node")))
+
+    # sort the resolvers first by priority and then alphabetically by name
+    sorted_resolvers = sorted(resolver_tuples, key=lambda res: (res[1], res[0] or ""))
+    # if the resolver contains a node setting, we only add it if it is on the correct node
+    local_node_uuid = get_app_config_value("PI_NODE_UUID")
+    resolvers = [r[0] for r in sorted_resolvers if not r[2] or r[2] == local_node_uuid]
+    # remove duplicate resolver names but keeping the order
+    seen = set()
+    return [x for x in resolvers if not (x in seen or seen.add(x))]

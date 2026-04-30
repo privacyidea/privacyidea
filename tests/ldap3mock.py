@@ -1,3 +1,5 @@
+# SPDX-FileCopyrightText: 2024 NetKnights GmbH <https://netknights.it>
+# SPDX-License-Identifier: AGPL-3.0-or-later
 """
 2020-09-07 Cornelius Kölbel <cornelius.koelbel@netknights.it>
            Add exception
@@ -37,6 +39,7 @@ See the License for the specific language governing permissions and
 limitations under the License.
 """
 import datetime
+import os
 
 from passlib.hash import ldap_salted_sha1
 from ast import literal_eval
@@ -54,7 +57,15 @@ from collections.abc import Sequence, Sized
 
 from privacyidea.lib.utils import to_bytes, to_unicode
 
-DIRECTORY = "tests/testdata/tmp_directory"
+# Each pytest-xdist worker gets its own scratch file, otherwise concurrent
+# writes to tmp_directory from parallel workers silently clobber each other's
+# mock LDAP state — producing spurious LDAP auth failures in tests that rely
+# on the mock being stable across ``_on_Connection`` reloads. See the
+# ``setLDAPDirectory`` / ``_on_Connection._load_data`` round trip below.
+DIRECTORY = "tests/testdata/tmp_directory" + (
+    "_" + os.environ["PYTEST_XDIST_WORKER"]
+    if os.environ.get("PYTEST_XDIST_WORKER") else ""
+)
 
 Call = namedtuple('Call', ['request', 'response'])
 

@@ -4,8 +4,11 @@
 .application-table-container {
   @include table.table-container-styles;
   @include table.base-table-structure(".token-table", ".token-table-filter", ".table-scroll-container");
-  padding: unset;
-  box-shadow: unset;
+
+  & {
+    padding: unset;
+    box-shadow: unset;
+  }
 
   .application-table-filter {
     width: 32.7rem;

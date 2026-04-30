@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { HttpClient, HttpParams, httpResource, HttpResourceRef } from "@angular/common/http";
-import { computed, inject, Injectable, linkedSignal, signal, WritableSignal } from "@angular/core";
+import { computed, effect, inject, Injectable, linkedSignal, signal, WritableSignal } from "@angular/core";
 import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
@@ -144,7 +144,13 @@ export class AuditService implements AuditServiceInterface {
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly http: HttpClient = inject(HttpClient);
   readonly apiFilterKeyMap = apiFilterKeyMap;
-  readonly apiFilter = apiFilter;
+
+  constructor() {
+    effect(() => {
+      this.notificationService.handleResourceError(this.auditResource.error(), "audit data");
+    });
+  }
+
   readonly advancedApiFilter = advancedApiFilter;
   auditFilter = signal(new FilterValue());
   filterParams = computed<Record<string, string>>(() => {

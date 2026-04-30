@@ -4,7 +4,7 @@ This depends on lib.tokenclass
 """
 from privacyidea.lib.error import TokenAdminError
 from privacyidea.lib.token import init_token, import_tokens, get_tokens
-from privacyidea.lib.tokenclass import RolloutState
+from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.tokens.sshkeytoken import SSHkeyTokenClass
 from privacyidea.models import Token
 from .base import MyTestCase

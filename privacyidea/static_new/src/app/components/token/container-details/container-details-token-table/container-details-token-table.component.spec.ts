@@ -29,7 +29,6 @@ import { MockMatDialogRef } from "../../../../../testing/mock-mat-dialog-ref";
 import {
   MockContainerService,
   MockTokenService,
-  MockOverflowService,
   MockTableUtilsService,
   MockNotificationService,
   MockDialogService,
@@ -40,14 +39,13 @@ import { MockAuthService } from "../../../../../testing/mock-services/mock-auth-
 import { AuthService } from "../../../../services/auth/auth.service";
 import { ContainerService } from "../../../../services/container/container.service";
 import { ContentService } from "../../../../services/content/content.service";
-import { DialogService } from "../../../../services/dialog/dialog.service";
 import { NotificationService } from "../../../../services/notification/notification.service";
-import { OverflowService } from "../../../../services/overflow/overflow.service";
 import { TableUtilsService } from "../../../../services/table-utils/table-utils.service";
 import { TokenService } from "../../../../services/token/token.service";
 import { UserService } from "../../../../services/user/user.service";
 import { SimpleConfirmationDialogComponent } from "../../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { ContainerDetailsTokenTableComponent } from "./container-details-token-table.component";
+import { DialogService } from "../../../../services/dialog/dialog.service";
 
 const routerEvents$ = new Subject<NavigationEnd>();
 routerEvents$.next(new NavigationEnd(1, "/", "/"));
@@ -63,7 +61,6 @@ describe("ContainerDetailsTokenTableComponent", () => {
 
   let containerServiceMock: MockContainerService;
   let tokenServiceMock: MockTokenService;
-  const overflowServiceMock = new MockOverflowService();
   const tableUtilsMock = new MockTableUtilsService();
   const notificationServiceMock = new MockNotificationService();
   let dialogServiceMock: MockDialogService;
@@ -80,7 +77,6 @@ describe("ContainerDetailsTokenTableComponent", () => {
         { provide: ContainerService, useClass: MockContainerService },
         { provide: TokenService, useClass: MockTokenService },
         { provide: TableUtilsService, useValue: tableUtilsMock },
-        { provide: OverflowService, useValue: overflowServiceMock },
         { provide: NotificationService, useValue: notificationServiceMock },
         { provide: Router, useValue: routerMock },
         { provide: UserService, useClass: class {} },

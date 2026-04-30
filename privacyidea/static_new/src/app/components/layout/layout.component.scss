@@ -4,7 +4,7 @@
 
 .layout {
   --max-height: calc(100vh - 64px - var(--global-padding) * 2);
-  --drawer-width: 298px;
+  --drawer-width: var(--drawer-width-admin);
 }
 
 .progress-bar {
@@ -32,8 +32,9 @@
   opacity: 0.33;
 }
 
-.drawer-container {
+.admin-layout {
   height: 100vh;
+  --drawer-width: var(--drawer-width-admin);
 }
 
 .drawer {
@@ -64,10 +65,11 @@
   gap: 20px;
 }
 
-.selfservice-layout {
+.self-service-layout {
   display: flex;
   justify-content: center;
   align-items: flex-start;
+  --drawer-width: var(--drawer-width-self-service);
 }
 
 .selfservice-content-container {

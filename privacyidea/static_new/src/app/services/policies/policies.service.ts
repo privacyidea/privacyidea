@@ -18,7 +18,7 @@
  **/
 
 import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
-import { computed, inject, Injectable, linkedSignal, Signal } from "@angular/core";
+import { computed, effect, inject, Injectable, linkedSignal, Signal } from "@angular/core";
 import { lastValueFrom } from "rxjs";
 import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
@@ -236,6 +236,15 @@ export class PolicyService implements PolicyServiceInterface {
   readonly policyBaseUrl = environment.proxyUrl + "/policy/";
   private readonly http: HttpClient = inject(HttpClient);
   private readonly authService: AuthServiceInterface = inject(AuthService);
+
+  constructor() {
+    effect(() => {
+      this.notificationService.handleResourceError(this.allPoliciesResource.error(), "policies");
+    });
+    effect(() => {
+      this.notificationService.handleResourceError(this.policyActionResource.error(), "policy actions");
+    });
+  }
   readonly policyActionResource = httpResource<PiResponse<ScopedPolicyActions>>(() => {
     // Only load policy definitions on the policies route.
     if (!this.contentService.onPolicies()) {
@@ -442,29 +451,49 @@ export class PolicyService implements PolicyServiceInterface {
     const updatedPolicies = allPolicies.filter((p) => p.name !== name);
     this.allPolicies.set(updatedPolicies);
 
-    // Do request
-    const headers = this.authService.getHeaders();
-    const result = await lastValueFrom(
-      this.http.delete<PiResponse<number>>(`${this.policyBaseUrl}${name}`, { headers })
-    );
-    // Reload policies to ensure state is correct
-    if (result && !result.result?.error) {
-      this.allPoliciesResource.reload();
-    } else {
+    try {
+      // Do request
+      const headers = this.authService.getHeaders();
+      const result = await lastValueFrom(
+        this.http.delete<PiResponse<number>>(`${this.policyBaseUrl}${name}`, { headers })
+      );
+      // Reload policies to ensure state is correct
+      if (result && !result.result?.error) {
+        this.allPoliciesResource.reload();
+      } else {
+        // Rollback optimistic update
+        this.allPolicies.set(allPolicies);
+      }
+      return result;
+    } catch (error: any) {
       // Rollback optimistic update
       this.allPolicies.set(allPolicies);
+      const errorMessage = error?.error?.result?.error?.message || "";
+      this.notificationService.openSnackBar($localize`Failed to delete policy. ` + errorMessage);
+      throw error;
     }
-    return result;
   }
 
   enablePolicy(name: string): Promise<PiResponse<any>> {
     const headers = this.authService.getHeaders();
-    return lastValueFrom(this.http.post<PiResponse<any>>(`${this.policyBaseUrl}enable/${name}`, {}, { headers }));
+    return lastValueFrom(this.http.post<PiResponse<any>>(`${this.policyBaseUrl}enable/${name}`, {}, { headers })).catch(
+      (error: any) => {
+        const errorMessage = error?.error?.result?.error?.message || "";
+        this.notificationService.openSnackBar($localize`Failed to enable policy. ` + errorMessage);
+        throw error;
+      }
+    );
   }
 
   disablePolicy(name: string): Promise<PiResponse<any>> {
     const headers = this.authService.getHeaders();
-    return lastValueFrom(this.http.post<PiResponse<any>>(`${this.policyBaseUrl}disable/${name}`, {}, { headers }));
+    return lastValueFrom(
+      this.http.post<PiResponse<any>>(`${this.policyBaseUrl}disable/${name}`, {}, { headers })
+    ).catch((error: any) => {
+      const errorMessage = error?.error?.result?.error?.message || "";
+      this.notificationService.openSnackBar($localize`Failed to disable policy. ` + errorMessage);
+      throw error;
+    });
   }
 
   isScopeChangeable(policy: PolicyDetail): boolean {
@@ -624,6 +653,7 @@ export class PolicyService implements PolicyServiceInterface {
     action.catch((error) => {
       // Rollback optimistic update
       this.allPolicies.set(currentPolicies);
+      // Error notification already handled in enablePolicy/disablePolicy
       console.error("Error toggling policy active state: ", error);
     });
     // Reload policies to ensure state is correct (in case other properties changed)
