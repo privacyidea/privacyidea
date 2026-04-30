@@ -16,17 +16,17 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { TestBed } from "@angular/core/testing";
-import { RadiusServerService } from "./radius-server.service";
 import { provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
-import { AuthService } from "../auth/auth.service";
-import { NotificationService } from "../notification/notification.service";
-import { environment } from "../../../environments/environment";
-import { MockAuthService } from "../../../testing/mock-services/mock-auth-service";
-import { MockContentService, MockPiResponse } from "../../../testing/mock-services";
-import { ContentService } from "../content/content.service";
 import { signal } from "@angular/core";
+import { TestBed } from "@angular/core/testing";
+import { environment } from "../../../environments/environment";
+import { MockContentService, MockNotificationService, MockPiResponse } from "../../../testing/mock-services";
+import { MockAuthService } from "../../../testing/mock-services/mock-auth-service";
+import { AuthService } from "../auth/auth.service";
+import { ContentService } from "../content/content.service";
+import { NotificationService } from "../notification/notification.service";
+import { RadiusServerService } from "./radius-server.service";
 
 describe("RadiusServerService", () => {
   let service: RadiusServerService;
@@ -34,18 +34,15 @@ describe("RadiusServerService", () => {
   let notificationService: NotificationService;
   let authServiceMock: MockAuthService;
   let contentServiceMock: MockContentService;
+  let notificationServiceMock: MockNotificationService;
 
   beforeEach(() => {
-    const notificationServiceMock = {
-      success: jest.fn(), error: jest.fn(), warning: jest.fn(), handleResourceError: jest.fn()
-    };
-
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: AuthService, useClass: MockAuthService },
-        { provide: NotificationService, useValue: notificationServiceMock },
+        { provide: NotificationService, useClass: MockNotificationService },
         { provide: ContentService, useClass: MockContentService }
       ]
     });
@@ -97,7 +94,7 @@ describe("RadiusServerService", () => {
 
     const result = await promise;
     expect(result).toBe(true);
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith("RADIUS request successful.");
+    expect(notificationService.success).toHaveBeenCalledWith("RADIUS request successful.");
   });
 
   describe("radiusServers", () => {
@@ -130,7 +127,8 @@ describe("RadiusServerService", () => {
 
       let req = httpMock.expectOne(`${environment.proxyUrl}/radiusserver/`);
       req.flush(MockPiResponse.fromError({ message: "Permission denied" }), {
-        status: 403, statusText: "Permission denied"
+        status: 403,
+        statusText: "Permission denied"
       });
       await Promise.resolve();
 

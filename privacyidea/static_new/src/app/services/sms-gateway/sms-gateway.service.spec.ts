@@ -16,16 +16,16 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { TestBed } from "@angular/core/testing";
-import { SmsGatewayService } from "./sms-gateway.service";
 import { provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
-import { AuthService } from "../auth/auth.service";
-import { NotificationService } from "../notification/notification.service";
-import { environment } from "../../../environments/environment";
 import { signal } from "@angular/core";
+import { TestBed } from "@angular/core/testing";
+import { environment } from "../../../environments/environment";
 import { MockContentService, MockPiResponse } from "../../../testing/mock-services";
+import { AuthService } from "../auth/auth.service";
 import { ContentService } from "../content/content.service";
+import { NotificationService } from "../notification/notification.service";
+import { SmsGatewayService } from "./sms-gateway.service";
 
 describe("SmsGatewayService", () => {
   let service: SmsGatewayService;
@@ -38,7 +38,9 @@ describe("SmsGatewayService", () => {
       getHeaders: jest.fn().mockReturnValue({})
     };
     const notificationServiceMock = {
-      success: jest.fn(), error: jest.fn(), warning: jest.fn()
+      success: jest.fn(),
+      error: jest.fn(),
+      warning: jest.fn()
     };
 
     TestBed.configureTestingModule({
@@ -84,11 +86,10 @@ describe("SmsGatewayService", () => {
     req.flush({ result: { status: true } });
 
     await promise;
-    expect(notificationService.success).toHaveBeenCalledWith("Successfully deleted SMS gateway: test.");
+    expect(notificationService.success).toHaveBeenCalledWith("Successfully deleted SMS gateway: test/1.");
   });
 
   describe("smsGateways", () => {
-
     it("smsGateways falls back to default when resource empty", () => {
       expect(service.smsGateways()).toEqual([]);
     });
@@ -115,7 +116,8 @@ describe("SmsGatewayService", () => {
       const req = httpMock.expectOne((r) => r.url === "/smsgateway/");
       expect(req.request.method).toBe("GET");
       req.flush(MockPiResponse.fromError({ message: "Permission denied" }), {
-        status: 403, statusText: "Permission denied"
+        status: 403,
+        statusText: "Permission denied"
       });
       await Promise.resolve();
 

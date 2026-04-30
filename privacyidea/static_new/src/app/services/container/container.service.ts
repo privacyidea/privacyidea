@@ -16,19 +16,19 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { AuthService, AuthServiceInterface } from "../auth/auth.service";
-import { ContentService, ContentServiceInterface } from "../content/content.service";
 import { HttpClient, HttpErrorResponse, httpResource, HttpResourceRef } from "@angular/common/http";
 import { computed, effect, inject, Injectable, linkedSignal, Signal, signal, WritableSignal } from "@angular/core";
-import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
+import { Sort } from "@angular/material/sort";
 import { catchError, forkJoin, Observable, of, Subject, throwError } from "rxjs";
 import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
-import { EnrollmentUrl, TokenEnrollmentPayload } from "../../mappers/token-api-payload/_token-api-payload.mapper";
 import { FilterValue } from "../../core/models/filter_value/filter_value";
-import { Sort } from "@angular/material/sort";
-import { TokenService, TokenServiceInterface } from "../token/token.service";
+import { EnrollmentUrl, TokenEnrollmentPayload } from "../../mappers/token-api-payload/_token-api-payload.mapper";
 import { StringUtils } from "../../utils/string.utils";
+import { AuthService, AuthServiceInterface } from "../auth/auth.service";
+import { ContentService, ContentServiceInterface } from "../content/content.service";
+import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
+import { TokenService, TokenServiceInterface } from "../token/token.service";
 import { UserService, UserServiceInterface } from "../user/user.service";
 
 const apiFilter = ["container_serial", "type", "description", "container_realm"];
@@ -387,7 +387,7 @@ export class ContainerService implements ContainerServiceInterface {
   });
 
   containerOptions = linkedSignal({
-    source: () => this.containerResource.hasValue() ? this.containerResource.value() : undefined,
+    source: () => (this.containerResource.hasValue() ? this.containerResource.value() : undefined),
     computation: (containerResource) => {
       if (!containerResource) return [];
       return containerResource.result?.value?.containers.map((container) => container.serial) ?? [];
@@ -400,17 +400,16 @@ export class ContainerService implements ContainerServiceInterface {
   });
 
   containersForTokenType = linkedSignal({
-      source: () => this.containerResource.hasValue() ? this.containerResource.value() : undefined,
-      computation: (containerResource) => {
-        if (!containerResource) return [];
-        return (
-          containerResource.result?.value?.containers
-            .filter((container) => this.compatibleTypes().includes(container.type))
-            .map((container) => container.serial) ?? []
-        );
-      }
+    source: () => (this.containerResource.hasValue() ? this.containerResource.value() : undefined),
+    computation: (containerResource) => {
+      if (!containerResource) return [];
+      return (
+        containerResource.result?.value?.containers
+          .filter((container) => this.compatibleTypes().includes(container.type))
+          .map((container) => container.serial) ?? []
+      );
     }
-  );
+  });
 
   containerSelection: WritableSignal<ContainerDetailData[]> = linkedSignal({
     source: () => ({
@@ -496,7 +495,7 @@ export class ContainerService implements ContainerServiceInterface {
   });
 
   containerDetail: WritableSignal<ContainerDetails> = linkedSignal({
-    source: () => this.containerDetailResource.hasValue() ? this.containerDetailResource.value() : undefined,
+    source: () => (this.containerDetailResource.hasValue() ? this.containerDetailResource.value() : undefined),
     computation: (containerDetailResource, previous) => {
       const containerDetail = containerDetailResource?.result?.value;
       if (containerDetail) {
@@ -514,7 +513,9 @@ export class ContainerService implements ContainerServiceInterface {
   addToken(tokenSerial: string, containerSerial: string): Observable<any> {
     const headers = this.authService.getHeaders();
     return this.http
-      .post<PiResponse<boolean>>(`${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/add`, { serial: tokenSerial }, { headers })
+      .post<
+        PiResponse<boolean>
+      >(`${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/add`, { serial: tokenSerial }, { headers })
       .pipe(
         catchError((error) => {
           console.error("Failed to assign container.", error);
@@ -545,7 +546,11 @@ export class ContainerService implements ContainerServiceInterface {
     const headers = this.authService.getHeaders();
     const valueString = value ? value.join(",") : "";
     return this.http
-      .post(`${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/realms`, { realms: valueString }, { headers })
+      .post(
+        `${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/realms`,
+        { realms: valueString },
+        { headers }
+      )
       .pipe(
         catchError((error) => {
           console.error("Failed to set container realm.", error);
@@ -559,7 +564,11 @@ export class ContainerService implements ContainerServiceInterface {
   setContainerDescription(containerSerial: string, value: string): Observable<any> {
     const headers = this.authService.getHeaders();
     return this.http
-      .post(`${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/description`, { description: value }, { headers })
+      .post(
+        `${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/description`,
+        { description: value },
+        { headers }
+      )
       .pipe(
         catchError((error) => {
           console.error("Failed to set container description.", error);
@@ -606,7 +615,11 @@ export class ContainerService implements ContainerServiceInterface {
   unassignUser(containerSerial: string, username: string, userRealm: string): Observable<any> {
     const headers = this.authService.getHeaders();
     return this.http
-      .post(`${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/unassign`, { user: username, realm: userRealm }, { headers })
+      .post(
+        `${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/unassign`,
+        { user: username, realm: userRealm },
+        { headers }
+      )
       .pipe(
         catchError((error) => {
           console.error("Failed to unassign user.", error);
@@ -669,20 +682,26 @@ export class ContainerService implements ContainerServiceInterface {
 
   addTokenToContainer(containerSerial: string, tokenSerial: string): Observable<any> {
     const headers = this.authService.getHeaders();
-    return this.http.post(`${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/add`, { serial: tokenSerial }, { headers }).pipe(
-      catchError((error) => {
-        console.error("Failed to add token to container.", error);
-        const message = error.error?.result?.error?.message || "";
-        this.notificationService.error("Failed to add token to container. " + message);
-        return throwError(() => error);
-      })
-    );
+    return this.http
+      .post(`${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/add`, { serial: tokenSerial }, { headers })
+      .pipe(
+        catchError((error) => {
+          console.error("Failed to add token to container.", error);
+          const message = error.error?.result?.error?.message || "";
+          this.notificationService.error("Failed to add token to container. " + message);
+          return throwError(() => error);
+        })
+      );
   }
 
   removeTokenFromContainer(containerSerial: string, tokenSerial: string): Observable<any> {
     const headers = this.authService.getHeaders();
     return this.http
-      .post(`${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/remove`, { serial: tokenSerial }, { headers })
+      .post(
+        `${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/remove`,
+        { serial: tokenSerial },
+        { headers }
+      )
       .pipe(
         catchError((error) => {
           console.error("Failed to remove token from container.", error);
@@ -772,7 +791,11 @@ export class ContainerService implements ContainerServiceInterface {
   deleteAllTokens(param: { containerSerial: string; serialList: string }): Observable<any> {
     const headers = this.authService.getHeaders();
     return this.http
-      .post(`${this.containerBaseUrl}${encodeURIComponent(param.containerSerial)}/removeall`, { serial: param.serialList }, { headers })
+      .post(
+        `${this.containerBaseUrl}${encodeURIComponent(param.containerSerial)}/removeall`,
+        { serial: param.serialList },
+        { headers }
+      )
       .pipe(
         catchError((error) => {
           console.error("Failed to delete all tokens.", error);
