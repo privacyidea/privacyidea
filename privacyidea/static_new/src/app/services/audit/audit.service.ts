@@ -144,6 +144,8 @@ export class AuditService implements AuditServiceInterface {
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   private readonly http: HttpClient = inject(HttpClient);
   readonly apiFilterKeyMap = apiFilterKeyMap;
+  readonly apiFilter = apiFilter;
+  readonly advancedApiFilter = advancedApiFilter;
 
   constructor() {
     effect(() => {
@@ -151,7 +153,6 @@ export class AuditService implements AuditServiceInterface {
     });
   }
 
-  readonly advancedApiFilter = advancedApiFilter;
   auditFilter = signal(new FilterValue());
   filterParams = computed<Record<string, string>>(() => {
     const allowed = [...this.apiFilter, ...this.advancedApiFilter];

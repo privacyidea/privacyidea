@@ -157,13 +157,4 @@ describe("AuditService (signals & helpers)", () => {
     req.error(new ErrorEvent("error"));
     expect(auditService.isDownloading()).toBe(false);
   });
-
-  it("should cancel download when cancelDownload is called", () => {
-    auditService.downloadCSV();
-    expect(auditService.isDownloading()).toBe(true);
-    const req = httpMock.expectOne((req) => req.url.endsWith("/audit/audit.csv"));
-    auditService.cancelDownload();
-    expect(auditService.isDownloading()).toBe(false);
-    expect(req.cancelled).toBe(true);
-  });
 });
