@@ -236,6 +236,7 @@ export interface TokenServiceInterface {
   selectedToken: WritableSignal<string | null>;
   tokenOptions: Signal<string[]>;
   filteredTokenOptions: Signal<string[]>;
+  maxDescriptionLength: number;
 
   clearFilter(): void;
 
@@ -326,6 +327,7 @@ export class TokenService implements TokenServiceInterface {
   readonly apiFilterKeyMap = apiFilterKeyMap;
   stopPolling$ = new Subject<void>();
   tokenBaseUrl = environment.proxyUrl + "/token/";
+  maxDescriptionLength = 80;
   eventPageSize = 10;
   userRealm = signal("");
   tokenSerial = this.contentService.tokenSerial;
