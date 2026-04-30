@@ -345,7 +345,7 @@
   </mat-toolbar>
 }
 
-@if (authService.actionAllowed("auditlog") || authService.actionAllowed("clienttype")) {
+@if (activeSection() === 'audit') {
   <mat-toolbar
     class="secondary-toolbar"
     appOverflowNav>
