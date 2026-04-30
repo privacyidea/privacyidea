@@ -3,6 +3,8 @@ import email
 from privacyidea.lib.crypto import encryptPassword
 from . import smtpmock
 from .base import MyApiTestCase
+
+
 class SMTPServerTestCase(MyApiTestCase):
     """
     test the api.smtpserver endpoints
