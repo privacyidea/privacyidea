@@ -25,6 +25,7 @@ from urllib.parse import urlparse
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes, serialization
 from cryptography.hazmat.primitives.serialization import pkcs7
+from flask import current_app
 from sqlalchemy import select
 
 from privacyidea.lib.crypto import (decryptPassword, encryptPassword,
@@ -48,6 +49,13 @@ log = logging.getLogger(__name__)
 TIMEOUT = 10
 
 SEND_EMAIL_JOB_NAME = "smtpserver.send_email"
+
+
+def _get_mail_debug_level():
+    try:
+        return int(current_app.config.get("PI_MAIL_DEBUG_LEVEL", 0))
+    except (RuntimeError, ValueError, TypeError):
+        return 0
 
 
 class SMTPServer:
@@ -120,6 +128,9 @@ class SMTPServer:
             mail = smtplib.SMTP(smtp_url.hostname,
                                 port=smtp_url.port or int(config['port']),
                                 timeout=config.get('timeout', TIMEOUT))
+        debug_level = _get_mail_debug_level()
+        if debug_level:
+            mail.set_debuglevel(debug_level)
         log.debug("submitting message to {!s}".format(msg["To"]))
         log.debug("Saying EHLO to mailserver {!s}".format(config['server']))
         r = mail.ehlo()
