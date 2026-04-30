@@ -69,6 +69,8 @@ import { ContainerDetailsActionsComponent } from "./container-details-actions/co
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { ContainerDetailsTokenActionsComponent } from "./container-details-token-actions/container-details-token-actions.component";
 import { FilterValue } from "../../../core/models/filter_value/filter_value";
+import { DetailsHeaderComponent } from "@components/shared/details-shared/details-header/details-header.component";
+import { ContainerAddTokenComponent } from "../../shared/container-add-token/container-add-token.component";
 
 export const containerDetailsKeyMap = [
   { key: "type", label: "Type" },
@@ -118,17 +120,13 @@ interface TokenOption {
     MatIconButton,
     ContainerDetailsInfoComponent,
     ContainerDetailsTokenTableComponent,
-    MatPaginator,
     MatDivider,
-    MatCheckbox,
-    CopyButtonComponent,
-    ClearableInputComponent,
-    MatTooltip,
     ClearableInputComponent,
     ContainerDetailsActionsComponent,
     ScrollToTopDirective,
     ContainerDetailsTokenActionsComponent,
-    RouterLink
+    DetailsHeaderComponent,
+    ContainerAddTokenComponent
   ],
   templateUrl: "./container-details.component.html",
   styleUrls: ["./container-details.component.scss"]

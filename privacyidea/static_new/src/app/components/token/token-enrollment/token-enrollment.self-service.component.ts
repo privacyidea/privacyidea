@@ -38,32 +38,8 @@ import { UserService, UserServiceInterface } from "../../../services/user/user.s
 import { VersioningService, VersioningServiceInterface } from "../../../services/version/version.service";
 import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
-import { EnrollApplspecComponent } from "./enroll-asp/enroll-applspec.component";
-import { EnrollCertificateComponent } from "./enroll-certificate/enroll-certificate.component";
-import { EnrollDaypasswordComponent } from "./enroll-daypassword/enroll-daypassword.component";
-import { EnrollEmailComponent } from "./enroll-email/enroll-email.component";
-import { EnrollFoureyesComponent } from "./enroll-foureyes/enroll-foureyes.component";
-import { EnrollHotpComponent } from "./enroll-hotp/enroll-hotp.component";
-import { EnrollIndexedsecretComponent } from "./enroll-indexsecret/enroll-indexedsecret.component";
-import { EnrollMotpComponent } from "./enroll-motp/enroll-motp.component";
-import { EnrollPaperComponent } from "./enroll-paper/enroll-paper.component";
-import { EnrollPasskeyComponent } from "./enroll-passkey/enroll-passkey.component";
-import { EnrollPushComponent } from "./enroll-push/enroll-push.component";
-import { EnrollQuestionComponent } from "./enroll-questionnaire/enroll-question.component";
-import { EnrollRadiusComponent } from "./enroll-radius/enroll-radius.component";
-import { EnrollRegistrationComponent } from "./enroll-registration/enroll-registration.component";
-import { EnrollRemoteComponent } from "./enroll-remote/enroll-remote.component";
-import { EnrollSmsComponent } from "./enroll-sms/enroll-sms.component";
-import { EnrollSpassComponent } from "./enroll-spass/enroll-spass.component";
-import { EnrollSshkeyComponent } from "./enroll-sshkey/enroll-sshkey.component";
-import { EnrollTanComponent } from "./enroll-tan/enroll-tan.component";
-import { EnrollTiqrComponent } from "./enroll-tiqr/enroll-tiqr.component";
-import { EnrollTotpComponent } from "./enroll-totp/enroll-totp.component";
-import { EnrollU2fComponent } from "./enroll-u2f/enroll-u2f.component";
-import { EnrollVascoComponent } from "./enroll-vasco/enroll-vasco.component";
-import { EnrollWebauthnComponent } from "./enroll-webauthn/enroll-webauthn.component";
-import { EnrollYubicoComponent } from "./enroll-yubico/enroll-yubico.component";
-import { EnrollYubikeyComponent } from "./enroll-yubikey/enroll-yubikey.component";
+import { EnrollTokenTypeSwitchComponent } from "../../shared/enroll-token-type-switch/enroll-token-type-switch.component";
+import { EnrollmentPinComponent } from "../../shared/enrollment-pin/enrollment-pin.component";
 import {
   CUSTOM_DATE_FORMATS,
   CUSTOM_TOOLTIP_OPTIONS,
@@ -81,7 +57,6 @@ import { EnrollmentResponse } from "../../../mappers/token-api-payload/_token-ap
     MatOption,
     ReactiveFormsModule,
     FormsModule,
-    EnrollHotpComponent,
     MatInput,
     MatLabel,
     MatAutocomplete,
@@ -90,38 +65,15 @@ import { EnrollmentResponse } from "../../../mappers/token-api-payload/_token-ap
     MatDatepickerModule,
     MatButton,
     MatIcon,
-    EnrollTotpComponent,
     MatIconButton,
-    EnrollSpassComponent,
-    EnrollMotpComponent,
     NgClass,
-    EnrollSshkeyComponent,
-    EnrollYubikeyComponent,
-    EnrollRemoteComponent,
-    EnrollYubicoComponent,
-    EnrollRadiusComponent,
-    EnrollSmsComponent,
-    EnrollFoureyesComponent,
-    EnrollApplspecComponent,
-    EnrollDaypasswordComponent,
-    EnrollCertificateComponent,
-    EnrollEmailComponent,
-    EnrollIndexedsecretComponent,
-    EnrollPaperComponent,
-    EnrollPushComponent,
-    EnrollQuestionComponent,
-    EnrollRegistrationComponent,
-    EnrollTanComponent,
-    EnrollTiqrComponent,
-    EnrollU2fComponent,
-    EnrollVascoComponent,
-    EnrollWebauthnComponent,
-    EnrollPasskeyComponent,
     MatError,
     MatTooltip,
     ClearableInputComponent,
     ScrollToTopDirective,
-    MatHint
+    MatHint,
+    EnrollTokenTypeSwitchComponent,
+    EnrollmentPinComponent
   ],
   templateUrl: "./token-enrollment.self-service.component.html",
   styleUrl: "./token-enrollment.component.scss",

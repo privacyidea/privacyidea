@@ -109,17 +109,19 @@
 <!-- SECONDARY TOP BAR -->
 <ng-template #footerText>
   <div class="flex-column footer-text">
-    <div class="footer-text-height">   An open-source project
-    <a
-      href="https://netknights.it/"
-      target="_blank">maintained by NetKnights</a>
-   </div>
+    <div class="footer-text-height"> An open-source project
+      <a
+        href="https://netknights.it/"
+        target="_blank">maintained by NetKnights
+      </a>
+    </div>
     <div> in collaboration with
-    <a
-      href="https://github.com/privacyidea/privacyidea"
-      target="_blank">community contributors</a>
+      <a
+        href="https://github.com/privacyidea/privacyidea"
+        target="_blank">community contributors
+      </a>
+    </div>
   </div>
- </div>
   <div class="footer-icons">
     <button
       mat-icon-button
@@ -328,7 +330,6 @@
   </mat-toolbar>
 }
 
-
 @if (activeSection() === 'subscription') {
   <mat-toolbar
     class="secondary-toolbar"
@@ -344,17 +345,19 @@
   </mat-toolbar>
 }
 
-@if (activeSection() === 'audit') {
+@if (authService.actionAllowed("auditlog") || authService.actionAllowed("clienttype")) {
   <mat-toolbar
     class="secondary-toolbar"
     appOverflowNav>
     <ng-container *ngTemplateOutlet="footerText"></ng-container>
-    <a
-      [ngClass]="contentService.routeUrl() === ROUTE_PATHS.AUDIT ? 'sub-nav-active' : ''"
-      [routerLink]="[ROUTE_PATHS.AUDIT]">
-      <mat-icon>list_alt</mat-icon>
-      <span>Log</span>
-    </a>
+    @if (authService.actionAllowed("auditlog")) {
+      <a
+        [ngClass]="contentService.routeUrl() === ROUTE_PATHS.AUDIT ? 'sub-nav-active' : ''"
+        [routerLink]="[ROUTE_PATHS.AUDIT]">
+        <mat-icon>list_alt</mat-icon>
+        <span>Log</span>
+      </a>
+    }
     @if (authService.actionAllowed("clienttype")) {
       <a
         [ngClass]="contentService.routeUrl() === ROUTE_PATHS.CLIENTS ? 'sub-nav-active' : ''"
@@ -366,7 +369,6 @@
     <ng-container *ngTemplateOutlet="supportDocs"></ng-container>
   </mat-toolbar>
 }
-
 
 @if (activeSection() === 'config') {
   <mat-toolbar
