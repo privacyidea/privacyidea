@@ -211,7 +211,7 @@ def backup_restore(backup_file, keep_db_uri):
         if sys.version_info >= (3, 12):
             tf.extractall(path="/", filter='data')
         else:
-            tf.extractall(path="/")
+            tf.extractall(path="/", members=_safe_members(tf, "/"))
     click.echo(60 * "=")
 
     # use Flask config to read in the config file (now restored from backup)
@@ -268,6 +268,32 @@ def backup_restore(backup_file, keep_db_uri):
     else:
         print(f"unsupported SQL syntax: {sqltype}")
         sys.exit(2)
+
+
+def _safe_members(tf, dest):
+    """Filter tarfile members to prevent path traversal and reject dangerous entry types (pre-3.12)."""
+    dest = pathlib.Path(dest).resolve()
+    for member in tf.getmembers():
+        member_path = (dest / member.name).resolve()
+        # Block path traversal
+        if not str(member_path).startswith(str(dest)):
+            click.secho(f"Skipping unsafe path: {member.name}", fg="yellow")
+            continue
+        # Block special files (devices, fifos, etc.) – only allow regular files, dirs, symlinks, hardlinks
+        if not (member.isfile() or member.isdir() or member.issym() or member.islnk()):
+            click.secho(f"Skipping special file: {member.name}", fg="yellow")
+            continue
+        # For symlinks/hardlinks, ensure the target doesn't escape the destination
+        if member.issym() or member.islnk():
+            link_target = pathlib.Path(member.linkname)
+            if not link_target.is_absolute():
+                link_target = (member_path.parent / link_target).resolve()
+            else:
+                link_target = link_target.resolve()
+            if not str(link_target).startswith(str(dest)):
+                click.secho(f"Skipping link escaping destination: {member.name} -> {member.linkname}", fg="yellow")
+                continue
+        yield member
 
 
 def _write_mysql_defaults(defaults_file, parsed_sqluri):
