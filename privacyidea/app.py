@@ -309,10 +309,30 @@ def create_app(config_name="development",
         if request.path.startswith("/static/public/customize"):
             return send_html("")
         elif request.path.startswith("/app/v2/"):
+            instance = request.script_root
+            if instance == "/":
+                instance = ""
+            static_folder = app.static_folder
+            if not os.path.isabs(static_folder):
+                static_folder = os.path.join(app.root_path, static_folder)
+            new_ui_index = os.path.join(static_folder, "dist/privacyidea-webui/browser/index.html")
+            if os.path.isfile(new_ui_index):
+                with open(new_ui_index) as f:
+                    content = f.read()
+                old_base = "/static/dist/privacyidea-webui/browser/"
+                content = content.replace(
+                    f'<base href="{old_base}"',
+                    f'<base href="{instance}{old_base}"',
+                    1
+                )
+                content = content.replace(
+                    "</head>",
+                    f"<script>window.__PI_SCRIPT_ROOT__={json.dumps(instance)};</script></head>",
+                    1
+                )
+                return send_html(content)
             index_html = app.config.get("PI_INDEX_HTML") or "index.html"
-            return send_html(
-                render_template(
-                    index_html))
+            return send_html(render_template(index_html))
         return jsonify(error="Not found"), 404
 
     # Overwrite default config with environment setting

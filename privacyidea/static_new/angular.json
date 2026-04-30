@@ -32,7 +32,7 @@
             "allowedCommonJsDependencies": [
               "crypto-js"
             ],
-            "outputPath": "dist/privacyidea-webui",
+            "outputPath": "../static/dist/privacyidea-webui",
             "index": "src/index.html",
             "browser": "src/main.ts",
             "polyfills": [
@@ -68,8 +68,7 @@
                   "maximumError": "100MB"
                 }
               ],
-              "outputHashing": "all",
-              "deployUrl": "/static/dist/privacyidea-webui/browser/"
+              "outputHashing": "all"
             },
             "development": {
               "optimization": false,
