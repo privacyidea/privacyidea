@@ -19,7 +19,6 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { AuditDownloadDialogComponent } from "./audit-download-dialog.component";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { MockMatDialogRef } from "../../../../testing/mock-mat-dialog-ref";
 
 describe("AuditDownloadDialogComponent", () => {
@@ -29,7 +28,7 @@ describe("AuditDownloadDialogComponent", () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [NoopAnimationsModule, AuditDownloadDialogComponent],
+      imports: [AuditDownloadDialogComponent],
       providers: [
         { provide: MatDialogRef, useClass: MockMatDialogRef },
         { provide: MAT_DIALOG_DATA, useValue: {} }
@@ -57,7 +56,7 @@ describe("AuditDownloadDialogComponent", () => {
 
   it("should close the dialog with true when the Start Download button is clicked", () => {
     const buttons = fixture.nativeElement.querySelectorAll("button");
-    const downloadButton = Array.from(buttons).find((b: any) => b.textContent.includes("Start Download")) as HTMLButtonElement;
+    const downloadButton = Array.from(buttons).find((b: any) => b.textContent.includes("Proceed")) as HTMLButtonElement;
     expect(downloadButton).toBeTruthy();
     downloadButton.click();
     fixture.detectChanges();
