@@ -18,16 +18,16 @@
  **/
 import { AsyncPipe } from "@angular/common";
 import { HttpClient } from "@angular/common/http";
-import { Component, computed, inject, SecurityContext, Signal } from "@angular/core";
-import { MatDialogActions, MatDialogClose, MatDialogContent, MatDialogRef } from "@angular/material/dialog";
+import { Component, computed, inject, SecurityContext } from "@angular/core";
+import { MatButton } from "@angular/material/button";
+import { MatDialogActions, MatDialogClose, MatDialogContent } from "@angular/material/dialog";
 import { DomSanitizer } from "@angular/platform-browser";
 import { catchError, map, of } from "rxjs";
-import { MatButton } from "@angular/material/button";
-import { ContainerService, ContainerServiceInterface } from "../../../../services/container/container.service";
-import { ContainerCreatedDialogComponent } from "./container-created-dialog.component";
-import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
-import { StringUtils } from "../../../../utils/string.utils";
 import { environment } from "../../../../../environments/environment";
+import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
+import { ContainerService, ContainerServiceInterface } from "../../../../services/container/container.service";
+import { StringUtils } from "../../../../utils/string.utils";
+import { ContainerCreatedDialogComponent } from "./container-created-dialog.component";
 
 @Component({
   selector: "app-container-created-wizard-dialog",
@@ -37,7 +37,6 @@ import { environment } from "../../../../../environments/environment";
 })
 export class ContainerCreatedDialogWizardComponent extends ContainerCreatedDialogComponent {
   protected override readonly containerService: ContainerServiceInterface = inject(ContainerService);
-  // protected override readonly dialogRef: MatDialogRef<ContainerCreatedDialogWizardComponent> = inject(MatDialogRef);
   public readonly authService: AuthServiceInterface = inject(AuthService);
   tagData = computed<Record<string, string>>(() => {
     const data = this.data();
@@ -52,7 +51,6 @@ export class ContainerCreatedDialogWizardComponent extends ContainerCreatedDialo
     };
   });
 
-  // TODO: Get custom path from pi.cfg
   customizationPath = "/static/public/customize/";
 
   readonly postTopHtml$ = this.http

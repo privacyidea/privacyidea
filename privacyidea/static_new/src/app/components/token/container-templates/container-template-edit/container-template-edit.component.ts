@@ -35,10 +35,8 @@ import { ContainerTemplateEditBodyComponent } from "./container-template-edit-bo
   styleUrl: "./container-template-edit.component.scss"
 })
 export class ContainerTemplateEditComponent {
-  // --- Services ---
   readonly containerTemplateService: ContainerTemplateServiceInterface = inject(ContainerTemplateService);
 
-  // --- State Signals ---
   readonly template = model<ContainerTemplate>({
     container_type: "",
     name: "",
@@ -56,7 +54,6 @@ export class ContainerTemplateEditComponent {
     }
   });
 
-  // --- Computed - General State ---
   readonly containerTypes = computed(() => this.containerTemplateService.availableContainerTypes());
   readonly containerTypesTitleCase = computed(() =>
     this.containerTemplateService.availableContainerTypes().map((type) => type.charAt(0).toUpperCase() + type.slice(1))
@@ -65,11 +62,9 @@ export class ContainerTemplateEditComponent {
     this.containerTemplateService.getTokenTypesForContainerType(this.template().container_type)
   );
 
-  // --- Computed - Tokens ---
   readonly tokens = computed(() => this.template().template_options.tokens);
   readonly hasToken = computed(() => this.tokens().length > 0);
 
-  // --- Computed - Validation & Conflict ---
   readonly nameConflict = computed(() => {
     if (this.template().name == this.initTemplate().name) {
       return false;
@@ -83,7 +78,6 @@ export class ContainerTemplateEditComponent {
     isErrorState: () => this.nameConflict()
   };
 
-  // --- Data Modification Methods ---
   editTemplate(templateUpdates: Partial<ContainerTemplate>) {
     this.template.set({ ...this.template(), ...templateUpdates });
   }

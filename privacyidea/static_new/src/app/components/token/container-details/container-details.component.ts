@@ -302,11 +302,6 @@ export class ContainerDetailsComponent implements OnDestroy {
     this.tokenService.pageSize.set(5);
 
     effect(() => {
-      console.log("Serial im Effekt:", this.containerSerial());
-      console.log("Detail im Effekt:", this.containerService.containerDetail());
-    });
-
-    effect(() => {
       this.showOnlyTokenNotInContainer();
       // do not focus if showOnlyTokenNotInContainer is deselected to ensure the hint is visible
       if (this.filterHTMLInputElement && this.showOnlyTokenNotInContainer()) {

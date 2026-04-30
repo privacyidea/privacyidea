@@ -256,7 +256,6 @@ export class ContainerService implements ContainerServiceInterface {
   containerDetail = computed(() => {
     const details = this.containerDetails();
     const serial = this.containerSerial();
-    console.log("Computing containerDetail with serial:", serial, "and details:", details);
     if (!details || !serial) {
       return null;
     }

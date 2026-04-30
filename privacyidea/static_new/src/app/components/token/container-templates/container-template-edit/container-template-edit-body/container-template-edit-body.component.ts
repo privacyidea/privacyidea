@@ -30,14 +30,20 @@ export class ContainerTemplateEditBodyComponent {
       });
       return updatedToken;
     });
-    this.updateTokens(updatedTokens);
+    this._updateTokens(updatedTokens);
   }
 
   protected onDeleteToken(index: number) {
-    this.updateTokens(this.tokens().filter((_, i) => i !== index));
+    this._updateTokens(this.tokens().filter((_, i) => i !== index));
   }
-  // --- Private Helper Methods ---
-  private updateTokens(tokens: TokenEnrollmentPayload[]) {
+
+  protected onAddToken(tokenType: string) {
+    const updatedTokens = [...this.tokens(), { type: tokenType as TokenTypeKey }];
+    this._updateTokens(updatedTokens);
+  }
+
+  // ---  Helper Methods ---
+  private _updateTokens(tokens: TokenEnrollmentPayload[]) {
     const editedTemplate: ContainerTemplate = {
       ...this.template(),
       template_options: {
@@ -46,11 +52,6 @@ export class ContainerTemplateEditBodyComponent {
       }
     };
     this.template.set(editedTemplate);
-  }
-
-  protected onAddToken(tokenType: string) {
-    const updatedTokens = [...this.tokens(), { type: tokenType as TokenTypeKey }];
-    this.updateTokens(updatedTokens);
   }
 
   protected _toTitleCase(str: string): string {

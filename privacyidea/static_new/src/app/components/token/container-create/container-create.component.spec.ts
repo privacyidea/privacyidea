@@ -505,18 +505,15 @@ describe("ContainerCreateComponent", () => {
     it("container wizard opens create dialog for non-smartphone", () => {
       const openDialogSpy = jest.spyOn(dialogServiceMock, "openDialog");
 
-      // 1. Setup: Wizard für Generic Container ohne Registrierungs-Zwang
       authService.authData.set({
         ...authService.authData()!,
         container_wizard: { enabled: true, type: "generic", registration: false, template: null }
       });
 
-      // 2. Mock createContainer: Muss synchron feuern
       jest
         .spyOn(containerServiceMock, "createContainer")
         .mockReturnValue(of({ result: { value: { container_serial: "CONT-GENERIC" } } } as any));
 
-      // 3. Resource Mock: Neutral halten (kein 'registered'!)
       jest.spyOn(containerServiceMock.containerDetailsResource, "hasValue").mockReturnValue(true);
       jest.spyOn(containerServiceMock.containerDetailsResource, "value").mockReturnValue({
         result: { value: { containers: [{ type: "generic", info: {} }] } }
@@ -524,14 +521,11 @@ describe("ContainerCreateComponent", () => {
 
       containerServiceMock.selectedContainerType.set({ containerType: "generic", description: "", token_types: [] });
 
-      // 4. Act: Den Prozess starten
       wizardComponent.createContainer();
 
-      // 5. Sync: Signale und Effects verarbeiten
       wizardFixture.detectChanges();
       (TestBed as any).flushEffects();
 
-      // 6. Assert: Jetzt passt Erwartung und Realität zusammen
       expect(openDialogSpy).toHaveBeenCalledWith(
         expect.objectContaining({
           component: ContainerCreatedDialogWizardComponent

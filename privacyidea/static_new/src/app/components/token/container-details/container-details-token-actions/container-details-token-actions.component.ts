@@ -66,15 +66,8 @@ export class ContainerDetailsTokenActionsComponent {
     return tokens.some((token) => token.username && token.username !== "");
   });
 
-  anyActiveTokens = computed(() => {
-    return this.tokenData().data.some((token) => token.active);
-  });
-
-  anyDisabledTokens = computed(() => {
-    // explicitly check to be false to exclude undefined states
-    return this.tokenData().data.some((token) => token.active === false);
-  });
-
+  anyActiveTokens = computed(() => this.tokenData().data.some((token) => token.active));
+  anyDisabledTokens = computed(() => this.tokenData().data.some((token) => token.active === false));
   unassignFromAllToken() {
     const tokenToUnassign = this.tokenData().data.filter((token) => token.username !== "");
     if (tokenToUnassign.length === 0) {
