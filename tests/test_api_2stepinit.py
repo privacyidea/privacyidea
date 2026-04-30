@@ -1,17 +1,17 @@
-import binascii
 import base64
+import binascii
 import hashlib
-from passlib.crypto.digest import pbkdf2_hmac
 import time
 
-from privacyidea.lib.policy import set_policy, SCOPE, delete_policy
+from passlib.crypto.digest import pbkdf2_hmac
+
 from privacyidea.lib.policies.actions import PolicyAction
+from privacyidea.lib.policy import set_policy, SCOPE, delete_policy
 from privacyidea.lib.token import init_token
-from privacyidea.lib.tokenclass import RolloutState
+from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.tokens.HMAC import HmacOtp
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import b32encode_and_unicode
-
 from .base import MyApiTestCase
 
 
@@ -406,7 +406,7 @@ class TwoStepInitTestCase(MyApiTestCase):
             serial = detail.get("serial")
             otpkey_url = detail.get("otpkey", {}).get("value")
             otpkey_bin = binascii.unhexlify(otpkey_url.split("/")[2])
-            self.assertEqual(detail.get("rollout_state"), "")
+            self.assertEqual(detail.get("rollout_state"), RolloutState.ENROLLED)
 
         # Now try to authenticate
         otp_value = HmacOtp().generate(key=otpkey_bin, counter=1)

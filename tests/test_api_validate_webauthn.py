@@ -8,7 +8,7 @@ from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import SCOPE, set_policy, delete_policy, delete_policies
 from privacyidea.lib.token import (get_tokens, init_token, remove_token,
                                    get_one_token)
-from privacyidea.lib.tokenclass import RolloutState
+from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.tokens.webauthn import webauthn_b64_decode
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import hexlify_and_unicode

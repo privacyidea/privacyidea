@@ -277,7 +277,7 @@ describe("EventComponent", () => {
     // Simulate eventHandlers signal update
     const eventHandlers: EventHandler[] = [
       {
-        id: "1",
+        id: 1,
         name: "a",
         event: [],
         handlermodule: "",
@@ -289,7 +289,7 @@ describe("EventComponent", () => {
         ordering: 1
       },
       {
-        id: "2",
+        id: 2,
         name: "b",
         event: [],
         handlermodule: "",
@@ -310,7 +310,7 @@ describe("EventComponent", () => {
   it("should return previous value for totalLength if eventHandlers is null/undefined", () => {
     const eventHandlers: EventHandler[] = [
       {
-        id: "1",
+        id: 1,
         name: "a",
         event: [],
         handlermodule: "",

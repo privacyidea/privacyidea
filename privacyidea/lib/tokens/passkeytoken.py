@@ -36,7 +36,6 @@ from webauthn.helpers.structs import (AttestationConveyancePreference, Authentic
                                       PublicKeyCredentialCreationOptions)
 from webauthn.registration.verify_registration_response import VerifiedRegistration
 
-from privacyidea.lib.params import get_optional, get_required, get_required_one_of, get_optional_one_of
 from privacyidea.lib import _, fido2
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.config import get_from_config
@@ -47,9 +46,11 @@ from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction, PasskeyAction
 from privacyidea.lib.fido2.token_info import FIDO2TokenInfo
 from privacyidea.lib.fido2.util import hash_credential_id, save_credential_id_hash
 from privacyidea.lib.log import log_with
+from privacyidea.lib.params import get_optional, get_required, get_required_one_of, get_optional_one_of
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import SCOPE
-from privacyidea.lib.tokenclass import TokenClass, RolloutState, ClientMode, AuthenticationMode
+from privacyidea.lib.tokenclass import TokenClass, ClientMode, AuthenticationMode
+from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.models import Challenge
 
 log = logging.getLogger(__name__)

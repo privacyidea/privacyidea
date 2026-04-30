@@ -71,10 +71,14 @@ export class PeriodicTaskPanelComponent {
     }
     this.task()!.active = activate;
     if (!this.isEditMode()) {
+      const taskId = this.task()!.id;
+      if (taskId == null) {
+        return;
+      }
       if (activate) {
-        this.periodicTaskService.enablePeriodicTask(this.task()!.id);
+        this.periodicTaskService.enablePeriodicTask(taskId);
       } else {
-        this.periodicTaskService.disablePeriodicTask(this.task()!.id);
+        this.periodicTaskService.disablePeriodicTask(taskId);
       }
     }
   }

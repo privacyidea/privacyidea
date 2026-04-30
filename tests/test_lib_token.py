@@ -19,29 +19,25 @@ import datetime
 import hashlib
 import json
 import logging
-import warnings
 
 import mock
 from dateutil import parser
 from dateutil.tz import tzlocal
 from sqlalchemy import select
-from testfixtures import log_capture, LogCapture
+from testfixtures import log_capture
 
 from privacyidea.lib.challenge import get_challenges
-from privacyidea.lib.config import (set_privacyidea_config, get_token_types,
-                                    delete_privacyidea_config)
+from privacyidea.lib.config import (set_privacyidea_config, get_token_types)
 from privacyidea.lib.container import (init_container, add_token_to_container,
                                        find_container_by_serial)
-from privacyidea.lib.error import PolicyError, UserError
 from privacyidea.lib.error import (TokenAdminError, ParameterError,
                                    PrivacyIDEAError, ResourceNotFoundError)
+from privacyidea.lib.error import UserError
 from privacyidea.lib.framework import get_app_config
 from privacyidea.lib.policies.actions import PolicyAction
-from privacyidea.lib.policy import (set_policy, SCOPE, PolicyClass,
-                                    delete_policy)
+from privacyidea.lib.policy import (set_policy, SCOPE, delete_policy)
 from privacyidea.lib.token import (create_tokenclass_object,
-                                   get_tokens, list_tokengroups,
-                                   get_token_type, check_serial,
+                                   get_tokens, get_token_type, check_serial,
                                    get_num_tokens_in_realm,
                                    get_realms_of_token,
                                    token_exist, get_token_owner, is_token_owner,
@@ -67,20 +63,16 @@ from privacyidea.lib.token import (create_tokenclass_object,
                                    set_validity_period_end,
                                    set_validity_period_start, remove_token, delete_tokeninfo,
                                    import_token, get_one_token, get_tokens_from_serial_or_user,
-                                   get_tokens_paginated_generator, assign_tokengroup, unassign_tokengroup,
-                                   set_tokengroups)
+                                   get_tokens_paginated_generator)
 from privacyidea.lib.token import log as token_log
 from privacyidea.lib.token import weigh_token_type, import_tokens, export_tokens
-from privacyidea.lib.tokenclass import DATE_FORMAT, RolloutState
-from privacyidea.lib.tokenclass import (TokenClass, Tokenkind,
-                                        FAILCOUNTER_EXCEEDED,
-                                        FAILCOUNTER_CLEAR_TIMEOUT)
-from privacyidea.lib.tokengroup import set_tokengroup, delete_tokengroup
+from privacyidea.lib.tokenclass import (TokenClass, Tokenkind)
+from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.tokens.totptoken import TotpTokenClass
 from privacyidea.lib.user import (User)
 from privacyidea.lib.utils import b32encode_and_unicode, hexlify_and_unicode
-from privacyidea.models import (db, Token, Challenge, TokenRealm, Tokengroup)
-from .base import MyTestCase, FakeAudit, FakeFlaskG
+from privacyidea.models import (db, Token, Challenge, TokenRealm)
+from .base import MyTestCase
 
 PWFILE = "tests/testdata/passwords"
 OTPKEY = "3132333435363738393031323334353637383930"
@@ -462,7 +454,7 @@ class TokenTestCase(MyTestCase):
             self.assertEqual(token.get_realms(), ['realm1'], token.get_realms())
             mock_log.assert_called_with(f'The realms ({self.realm1}) of assigned users cannot be removed from the '
                                         f'token {serial}.')
-            
+
         # Deleting the token also deletes the token realm relationship
         token_id = token.token.id
         token.delete_token()
