@@ -157,7 +157,7 @@ export class NewPrivacyideaServerComponent implements AfterViewInit, OnDestroy {
 
   private initForm(server: PrivacyideaServer | null): void {
     this.privacyideaForm = this.formBuilder.group({
-      identifier: [server?.identifier || "", [Validators.required]],
+      identifier: [server?.identifier || "", [Validators.required, Validators.pattern(/^[a-zA-Z0-9._-]*$/)]],
       url: [server?.url || "", [Validators.required]],
       tls: [server?.tls ?? true],
       description: [server?.description || ""],

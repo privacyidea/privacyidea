@@ -100,7 +100,7 @@ export class SmtpService implements SmtpServiceInterface {
   });
 
   async postSmtpServer(server: SmtpServer): Promise<void> {
-    const url = `${this.smtpServerBaseUrl}${server.identifier}`;
+    const url = `${this.smtpServerBaseUrl}${encodeURIComponent(server.identifier)}`;
     const request = this.http.post<PiResponse<any>>(url, server, { headers: this.authService.getHeaders() });
 
     try {
@@ -132,7 +132,7 @@ export class SmtpService implements SmtpServiceInterface {
   }
 
   async deleteSmtpServer(identifier: string): Promise<void> {
-    const request = this.http.delete<PiResponse<any>>(`${this.smtpServerBaseUrl}${identifier}`, {
+    const request = this.http.delete<PiResponse<any>>(`${this.smtpServerBaseUrl}${encodeURIComponent(identifier)}`, {
       headers: this.authService.getHeaders()
     });
     try {
