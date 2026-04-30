@@ -4,7 +4,9 @@
 * A new pre-aggregated `metric_aggregate` table backs the *Resolver Timing* and *Notification Delivery*
   dashboard panels. The schema migration creates the table empty; nothing breaks if you skip the next step,
   but the table grows unbounded over time. After the upgrade, go to *Config → Tasks* and schedule the new
-  **MetricsCleanup** periodic task (option `older_than_hours`, default `24`; daily cadence recommended).
+  **MetricsCleanup** periodic task (option `older_than_hours`, default `24`; daily cadence recommended). If you
+  prefer not to record metrics at all, set `PI_NO_INTERNAL_METRICS = True` in `pi.cfg` — the dashboard panels
+  will show no data and the table stays empty.
   The dashboard panels read the last hour by default, so anything older than ~24 h is dead weight.
 
 * The `u2f` token has been removed. It no longer functions. If you have any tokens of this type left,

@@ -140,6 +140,11 @@ recommended, which keeps the table at roughly two days' worth of rows.
 Each run is a single indexed ``DELETE``, so cost is negligible. Skip the
 task entirely and the table will keep all metric rows indefinitely.
 
+If you need to turn the whole feature off, set ``PI_NO_INTERNAL_METRICS = True``
+in ``pi.cfg``. With that flag every ``observe`` / ``inc`` call short-circuits
+before touching the database; the dashboard panels will simply show no data.
+Reads remain available, and the ``MetricsCleanup`` task continues to work.
+
 .. _news:
 
 News

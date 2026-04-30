@@ -3,7 +3,7 @@
 """Tests for ``privacyidea.lib.health`` certificate-status helpers."""
 import datetime
 import threading
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
@@ -13,6 +13,11 @@ from cryptography.x509.oid import NameOID
 
 from privacyidea.lib import health
 from tests.base import MyTestCase
+
+
+def _cm(value):
+    """Build an object that doubles as a context manager yielding ``value``."""
+    return MagicMock(__enter__=lambda self: value, __exit__=lambda *a: None)
 
 
 def _make_cert(days_until_expiry: int, subject_cn: str = "test.example.com",
@@ -283,3 +288,120 @@ class ResolverHookTest(MyTestCase):
             # (that needs full DB fixtures); the source-level assertion above
             # is the lightweight equivalent.
             invalidate.assert_not_called()
+
+
+class FetchLdapsCertTest(MyTestCase):
+    """Cover ``_fetch_ldaps_cert`` with the socket / ssl layer faked out.
+
+    The real probe needs an actual TLS endpoint, which is too heavy for unit
+    tests. We instead inject a synthetic DER-encoded certificate at the
+    ``getpeercert`` boundary and assert the function parses it and returns the
+    matching ``x509.Certificate``.
+    """
+
+    def test_returns_cert_loaded_from_peer_der(self):
+        cert = _make_cert(days_until_expiry=42)
+        der = cert.public_bytes(serialization.Encoding.DER)
+
+        ssock = MagicMock()
+        ssock.getpeercert = MagicMock(return_value=der)
+
+        ssl_ctx = MagicMock()
+        ssl_ctx.wrap_socket = MagicMock(return_value=_cm(ssock))
+
+        with patch.object(health.ssl, "create_default_context", return_value=ssl_ctx), \
+                patch.object(health.socket, "create_connection", return_value=_cm(MagicMock())):
+            result = health._fetch_ldaps_cert("ldap.example", 636, 5.0)
+
+        self.assertEqual(result.serial_number, cert.serial_number)
+        # Make sure we requested the binary form (DER), not the parsed dict form,
+        # so we can hand it straight to x509.load_der_x509_certificate.
+        ssock.getpeercert.assert_called_with(binary_form=True)
+        # And the SSL context must opt out of hostname/peer verification - we
+        # are inspecting the cert, not authenticating to the peer.
+        self.assertFalse(ssl_ctx.check_hostname)
+        # ssl.CERT_NONE; compare loosely so the test doesn't pin to the int value.
+        import ssl as _ssl
+        self.assertEqual(ssl_ctx.verify_mode, _ssl.CERT_NONE)
+        # And it pins TLS 1.2 minimum (added to silence CodeQL).
+        self.assertEqual(ssl_ctx.minimum_version, _ssl.TLSVersion.TLSv1_2)
+
+
+class FetchStartTLSCertTest(MyTestCase):
+    """Cover ``_fetch_starttls_cert``, including the unbind-cleanup branch."""
+
+    def _patch_ldap3(self, fake_conn):
+        # ldap3.Tls / Server are constructors with side-effecting validation; we
+        # only care about the Connection. Patch all three to keep them inert.
+        return [
+            patch.object(health.ldap3, "Tls"),
+            patch.object(health.ldap3, "Server"),
+            patch.object(health.ldap3, "Connection", return_value=fake_conn),
+        ]
+
+    def test_returns_cert_and_unbinds_on_success(self):
+        cert = _make_cert(days_until_expiry=15)
+        der = cert.public_bytes(serialization.Encoding.DER)
+
+        fake_conn = MagicMock()
+        fake_conn.start_tls.return_value = True
+        fake_conn.socket = MagicMock()
+        fake_conn.socket.getpeercert = MagicMock(return_value=der)
+
+        patches = self._patch_ldap3(fake_conn)
+        try:
+            for p in patches:
+                p.start()
+            result = health._fetch_starttls_cert("ldap.example", 389, 5.0)
+        finally:
+            for p in patches:
+                p.stop()
+
+        self.assertEqual(result.serial_number, cert.serial_number)
+        # Connection must be opened, then upgraded with start_tls, then unbound.
+        fake_conn.open.assert_called_once_with(read_server_info=False)
+        fake_conn.start_tls.assert_called_once_with(read_server_info=False)
+        fake_conn.unbind.assert_called_once()
+
+    def test_raises_when_start_tls_fails(self):
+        # If start_tls() returns False, we must raise so the caller flips the
+        # status to "error". The finally block must still attempt unbind.
+        fake_conn = MagicMock()
+        fake_conn.start_tls.return_value = False
+        fake_conn.result = {"description": "server refused TLS"}
+
+        patches = self._patch_ldap3(fake_conn)
+        try:
+            for p in patches:
+                p.start()
+            with self.assertRaises(RuntimeError) as ctx:
+                health._fetch_starttls_cert("ldap.example", 389, 5.0)
+        finally:
+            for p in patches:
+                p.stop()
+
+        self.assertIn("server refused TLS", str(ctx.exception))
+        fake_conn.unbind.assert_called_once()
+
+    def test_unbind_failure_is_swallowed_after_successful_probe(self):
+        # The cert was already read; an unbind that throws must not mask the
+        # successful return value. This covers the # nosec B110 branch.
+        cert = _make_cert(days_until_expiry=200)
+        der = cert.public_bytes(serialization.Encoding.DER)
+
+        fake_conn = MagicMock()
+        fake_conn.start_tls.return_value = True
+        fake_conn.socket = MagicMock()
+        fake_conn.socket.getpeercert = MagicMock(return_value=der)
+        fake_conn.unbind.side_effect = RuntimeError("connection already closed")
+
+        patches = self._patch_ldap3(fake_conn)
+        try:
+            for p in patches:
+                p.start()
+            result = health._fetch_starttls_cert("ldap.example", 389, 5.0)
+        finally:
+            for p in patches:
+                p.stop()
+
+        self.assertEqual(result.serial_number, cert.serial_number)

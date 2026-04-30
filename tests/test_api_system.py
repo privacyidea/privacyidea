@@ -1575,8 +1575,6 @@ class HealthEndpointsTestCase(MyApiTestCase):
         db.session.commit()
         health.invalidate_certificate_cache()
 
-    # /system/health/certificates ----------------------------------------------------
-
     def test_certificates_requires_auth(self):
         with self.app.test_request_context('/system/health/certificates', method='GET'):
             res = self.app.full_dispatch_request()
@@ -1612,8 +1610,6 @@ class HealthEndpointsTestCase(MyApiTestCase):
                 self.assertEqual(res.status_code, 200, res.data)
         self.assertTrue(gcs.call_args.kwargs.get("refresh"))
 
-    # /system/health/resolver_timing -------------------------------------------------
-
     def test_resolver_timing_requires_auth(self):
         with self.app.test_request_context('/system/health/resolver_timing', method='GET'):
             res = self.app.full_dispatch_request()
@@ -1644,8 +1640,6 @@ class HealthEndpointsTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200, res.data)
             self.assertEqual(res.json["result"]["value"], [])
-
-    # /system/health/notification_delivery -------------------------------------------
 
     def test_notification_delivery_requires_auth(self):
         with self.app.test_request_context('/system/health/notification_delivery', method='GET'):

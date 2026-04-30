@@ -67,6 +67,10 @@ def _fetch_ldaps_cert(host: str, port: int, timeout: float) -> x509.Certificate:
     ctx = ssl.create_default_context()
     ctx.check_hostname = False
     ctx.verify_mode = ssl.CERT_NONE
+    # We never authenticate the peer here - the goal is to read the certificate so we
+    # can report on its validity. Pin TLS 1.2+ anyway to avoid CodeQL flagging the
+    # default context as accepting TLSv1 / TLSv1.1.
+    ctx.minimum_version = ssl.TLSVersion.TLSv1_2
     with socket.create_connection((host, port), timeout=timeout) as sock:
         with ctx.wrap_socket(sock, server_hostname=host) as ssock:
             der = ssock.getpeercert(binary_form=True)
@@ -83,10 +87,12 @@ def _fetch_starttls_cert(host: str, port: int, timeout: float) -> x509.Certifica
             raise RuntimeError(f"StartTLS failed: {conn.result.get('description')}")
         der = conn.socket.getpeercert(binary_form=True)
     finally:
+        # Cleanup-only: the cert was already read in the try block, so a failure
+        # to unbind shouldn't mask the result. Log for diagnostics.
         try:
             conn.unbind()
-        except Exception:
-            pass
+        except Exception as e:  # nosec B110 - cleanup, swallow on purpose
+            log.debug(f"unbind after cert probe failed for {host}:{port}: {e}")
     return x509.load_der_x509_certificate(der)
 
 

@@ -1,6 +1,6 @@
 # SPDX-FileCopyrightText: 2026 NetKnights GmbH <https://netknights.it>
 # SPDX-License-Identifier: AGPL-3.0-or-later
-"""Tests for ``privacyidea.lib.metrics`` substrate."""
+"""Tests for ``privacyidea.lib.metrics``."""
 import datetime
 from unittest.mock import patch
 
@@ -303,10 +303,35 @@ class FailureSafetyTest(MyTestCase):
     def test_observe_swallows_db_errors(self):
         with patch.object(metrics, "_get_or_create_row",
                           side_effect=RuntimeError("db gone")):
-            # Should not raise even though the substrate explodes.
+            # Should not raise even though the underlying call explodes.
             observe("safe_test", 0.1)
 
     def test_inc_swallows_db_errors(self):
         with patch.object(metrics, "_get_or_create_row",
                           side_effect=RuntimeError("db gone")):
             inc("safe_test")
+
+
+class KillSwitchTest(MyTestCase):
+    """``PI_NO_INTERNAL_METRICS`` short-circuits writes but leaves reads alone."""
+
+    def setUp(self):
+        _wipe_metrics()
+
+    def test_disabled_skips_observe_and_inc(self):
+        # When the flag is set, writes never reach the DB and the helper that
+        # would create / fetch a row must not be called.
+        with (patch.object(metrics, "_metrics_disabled", return_value=True),
+              patch.object(metrics, "_get_or_create_row") as get_or_create):
+            observe("kill_test", 0.05)
+            inc("kill_test")
+        get_or_create.assert_not_called()
+        # And nothing landed in the table.
+        rows = db.session.execute(select(MetricAggregate)).scalars().all()
+        self.assertEqual(rows, [])
+
+    def test_enabled_by_default(self):
+        # No PI_NO_INTERNAL_METRICS in the test config - writes should land.
+        inc("kill_test")
+        rows = db.session.execute(select(MetricAggregate)).scalars().all()
+        self.assertEqual(len(rows), 1)

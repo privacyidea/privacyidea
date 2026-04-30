@@ -1,6 +1,6 @@
 # SPDX-FileCopyrightText: 2026 NetKnights GmbH <https://netknights.it>
 # SPDX-License-Identifier: AGPL-3.0-or-later
-"""In-process metrics substrate backed by ``metric_aggregate``.
+"""In-process metrics module backed by the ``metric_aggregate`` table.
 
 Two primitives:
 
@@ -22,10 +22,21 @@ import time
 from sqlalchemy import select, delete
 
 from privacyidea.lib.config import get_privacyidea_node
+from privacyidea.lib.framework import get_app_config_value
+from privacyidea.lib.utils import is_true
 from privacyidea.models import db
 from privacyidea.models.metric_aggregate import MetricAggregate
 
 log = logging.getLogger(__name__)
+
+
+def _metrics_disabled() -> bool:
+    """Operator kill switch. Set ``PI_NO_INTERNAL_METRICS = True`` in pi.cfg to
+    short-circuit every ``observe`` / ``inc`` call.
+
+    Reads stay open (the panels just show no data). The cleanup task still works.
+    """
+    return is_true(get_app_config_value("PI_NO_INTERNAL_METRICS", False))
 
 WINDOW_SECONDS = 300            # 5-minute aggregation buckets.
 DEFAULT_QUERY_WINDOW = 3600     # Reads return the last hour by default.
@@ -132,6 +143,8 @@ def observe(name: str, value: float, labels: dict | None = None) -> None:
     no explicit commit here, so callers in non-request contexts must commit
     themselves (the periodic-task framework already does).
     """
+    if _metrics_disabled():
+        return
     try:
         node = get_privacyidea_node() or ""
         labels_key = _labels_key(labels)
@@ -152,6 +165,8 @@ def observe(name: str, value: float, labels: dict | None = None) -> None:
 
 def inc(name: str, labels: dict | None = None, by: int = 1) -> None:
     """Increment a counter by ``by`` (default 1)."""
+    if _metrics_disabled():
+        return
     try:
         node = get_privacyidea_node() or ""
         labels_key = _labels_key(labels)
@@ -253,8 +268,8 @@ def track_resolver_op(op_name: str):
                     if hasattr(self, "getResolverType"):
                         try:
                             resolver_type = self.getResolverType() or "unknown"
-                        except Exception:
-                            pass
+                        except Exception as e:  # nosec B110 - degrade to "unknown"
+                            log.debug(f"getResolverType() raised: {e}")
                     resolver_name = (getattr(self, "name", None)
                                      or getattr(self, "resolverId", None)
                                      or "?")
@@ -263,9 +278,8 @@ def track_resolver_op(op_name: str):
                         "resolver_type": str(resolver_type),
                         "op": op_name,
                     })
-                except Exception:
-                    # Metrics must not affect resolver behavior.
-                    pass
+                except Exception as e:  # nosec B110 - metrics must not affect resolver behavior
+                    log.debug(f"track_resolver_op({op_name!r}) failed: {e}")
         return wrapper
     return decorator
 

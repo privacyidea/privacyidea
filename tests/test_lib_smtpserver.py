@@ -5,13 +5,15 @@ import binascii
 import email
 from email.mime.image import MIMEImage
 from smtplib import SMTPException
+from unittest.mock import patch
 
 from privacyidea.lib.crypto import encryptPassword, decryptPassword
 from privacyidea.lib.error import ResourceNotFoundError
 from privacyidea.lib.queue import get_job_queue
 from privacyidea.lib.smtpserver import (get_smtpservers, add_smtpserver,
                                         delete_smtpserver, get_smtpserver,
-                                        SMTPServer)
+                                        SMTPServer, send_email_identifier,
+                                        send_email_data)
 from tests.queuemock import MockQueueTestCase
 from . import smtpmock
 from .base import MyTestCase
@@ -283,3 +285,83 @@ class SMTPServerQueueTestCase(MockQueueTestCase):
         self.assertEqual(queue.enqueued_jobs, [])
 
         delete_smtpserver("myserver")
+
+
+class SendEmailMetricsTestCase(MyTestCase):
+    """Cover the metric-recording wrappers around ``send_email_identifier`` and
+    ``send_email_data`` - especially the exception re-raise path that codecov
+    flagged as untested.
+    """
+
+    def setUp(self):
+        from privacyidea.models import db as _db
+        from privacyidea.models.metric_aggregate import MetricAggregate
+        _db.session.query(MetricAggregate).delete()
+        _db.session.commit()
+
+    def _read_counter(self, identifier, result):
+        from privacyidea.lib.metrics import get_metrics
+        rows = get_metrics(name="email_send_total")
+        match = [r for r in rows if r["labels"].get("result") == result
+                 and r["labels"].get("identifier") == identifier]
+        return sum(r["count"] for r in match)
+
+    def _read_duration_count(self, identifier):
+        from privacyidea.lib.metrics import get_metrics
+        rows = [r for r in get_metrics(name="email_send_duration_seconds")
+                if r["labels"].get("identifier") == identifier]
+        return sum(r["count"] for r in rows)
+
+    def test_send_email_identifier_success_records_ok(self):
+        add_smtpserver(identifier="metric-srv", server="mail.example", port=25)
+        try:
+            with patch("privacyidea.lib.smtpserver.SMTPServer.send_email", return_value=True):
+                self.assertTrue(send_email_identifier("metric-srv", "to@example.com",
+                                                     "subj", "body"))
+            self.assertEqual(self._read_counter("metric-srv", "ok"), 1)
+            self.assertEqual(self._read_duration_count("metric-srv"), 1)
+        finally:
+            delete_smtpserver("metric-srv")
+
+    def test_send_email_identifier_returning_false_records_failed(self):
+        add_smtpserver(identifier="metric-srv", server="mail.example", port=25)
+        try:
+            with patch("privacyidea.lib.smtpserver.SMTPServer.send_email", return_value=False):
+                self.assertFalse(send_email_identifier("metric-srv", "to@example.com",
+                                                      "subj", "body"))
+            self.assertEqual(self._read_counter("metric-srv", "failed"), 1)
+            self.assertEqual(self._read_counter("metric-srv", "ok"), 0)
+        finally:
+            delete_smtpserver("metric-srv")
+
+    def test_send_email_identifier_exception_records_error_and_reraises(self):
+        # The path codecov flagged: send_email raises, we record the duration +
+        # error counter, then re-raise so the caller still sees the exception.
+        add_smtpserver(identifier="metric-srv", server="mail.example", port=25)
+        try:
+            with patch("privacyidea.lib.smtpserver.SMTPServer.send_email",
+                       side_effect=SMTPException("connection refused")):
+                with self.assertRaises(SMTPException):
+                    send_email_identifier("metric-srv", "to@example.com", "subj", "body")
+            self.assertEqual(self._read_counter("metric-srv", "error"), 1)
+            self.assertEqual(self._read_counter("metric-srv", "ok"), 0)
+            self.assertEqual(self._read_duration_count("metric-srv"), 1)
+        finally:
+            delete_smtpserver("metric-srv")
+
+    def test_send_email_data_exception_records_error_under_emailtoken_label(self):
+        # send_email_data uses the synthetic identifier "emailtoken", which the
+        # endpoint folds into its own row in the Notification Delivery panel.
+        with patch("privacyidea.lib.smtpserver.SMTPServer.send_email",
+                   side_effect=SMTPException("nope")):
+            with self.assertRaises(SMTPException):
+                send_email_data("mail.example", "subj", "body",
+                                "from@example.com", ["to@example.com"])
+        self.assertEqual(self._read_counter("emailtoken", "error"), 1)
+        self.assertEqual(self._read_duration_count("emailtoken"), 1)
+
+    def test_send_email_data_success_records_ok_under_emailtoken_label(self):
+        with patch("privacyidea.lib.smtpserver.SMTPServer.send_email", return_value=True):
+            self.assertTrue(send_email_data("mail.example", "subj", "body",
+                                            "from@example.com", ["to@example.com"]))
+        self.assertEqual(self._read_counter("emailtoken", "ok"), 1)
