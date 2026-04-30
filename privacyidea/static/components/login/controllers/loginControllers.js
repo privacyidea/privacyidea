@@ -157,6 +157,19 @@ angular.module("privacyideaApp")
                     };
                 });
 
+            // Auth guard: pages other than the login/recovery/register flows
+            // require an active JWT. Without one, controllers that gate
+            // everything behind checkRight() render a blank shell instead of
+            // surfacing the missing-auth state, so we redirect explicitly.
+            const PUBLIC_STATES = ['login', 'initial_login', 'recovery', 'register'];
+            $transitions.onBefore({}, function (transition) {
+                const target = transition.to().name;
+                if (PUBLIC_STATES.indexOf(target) !== -1) return;
+                if (!AuthFactory.getAuthToken()) {
+                    return transition.router.stateService.target('login');
+                }
+            });
+
             // When transitioning to the login state (e.g. after a 4305 JWT expiry redirect),
             // reset the login form so the realm dropdown is populated with the correct values.
             $transitions.onSuccess({to: 'login'}, function () {
@@ -485,6 +498,20 @@ angular.module("privacyideaApp")
                 }
                 $scope.backend_log_level = data.result.value.log_level;
                 $scope.backend_debug_passwords = data.result.value.debug_passwords;
+                // Debug-banner dismissal: per-session, sessionStorage clears
+                // when the tab closes so the reminder comes back next time.
+                try {
+                    $scope.debugBannerDismissed =
+                        sessionStorage.getItem("piDebugBannerDismissed") === "1";
+                } catch (e) {
+                    $scope.debugBannerDismissed = false;
+                }
+                $scope.dismissDebugBanner = function () {
+                    $scope.debugBannerDismissed = true;
+                    try {
+                        sessionStorage.setItem("piDebugBannerDismissed", "1");
+                    } catch (e) { /* private mode etc. - in-memory only */ }
+                };
                 $scope.privacyideaVersionNumber = data.versionnumber;
                 const lang = gettextCatalog.getCurrentLanguage();
                 if (data.result.value.hasOwnProperty("supportmail")) {

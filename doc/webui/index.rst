@@ -40,6 +40,105 @@ access is displayed in the dashboard.
 .. figure:: images/dashboard.png
    :width: 500
 
+Certificate health
+~~~~~~~~~~~~~~~~~~
+
+.. index:: certificate health, certificate expiry
+
+The dashboard also shows a *Certificates* panel listing TLS certificates that are
+relevant to the running privacyIDEA instance:
+
+* The certificate of every configured LDAP resolver that uses ``ldaps://`` or
+  ``START_TLS``. Each entry links to the corresponding resolver detail page.
+* The privacyIDEA server certificate, probed against the host and port the
+  admin used to reach the WebUI. This entry is only populated when the
+  request reaches privacyIDEA over HTTPS - if a reverse proxy terminates TLS
+  it must forward the original ``Host`` header (e.g. via ``ProxyFix``) for
+  the probe to target the right endpoint.
+
+Each row is classified by remaining validity and color-coded:
+
+* ``ok`` (green): more than 30 days remaining.
+* ``warning`` (yellow): 30 days or less remaining.
+* ``critical`` (red): 7 days or less remaining.
+* ``expired`` (red): the certificate has already expired.
+* ``error`` (yellow): the probe failed (timeout, connection refused, ...).
+* ``not_configured`` (grey): the endpoint cannot be probed, for example
+  because the WebUI was reached over plain HTTP.
+
+The probe results are cached for ``PI_CERT_CHECK_CACHE_SECONDS`` seconds
+(default ``3600``). The cache is invalidated automatically when an admin
+saves or deletes a resolver, and can be bypassed manually via the refresh
+button on the panel. Hit the panel data via ``GET /system/health/certificates``;
+add ``?refresh=1`` to skip the cache.
+
+Resolver timing
+~~~~~~~~~~~~~~~
+
+.. index:: resolver timing, dashboard metrics
+
+The dashboard also shows a *Resolver Timing* panel that summarises the
+latency of every public ``UserIdResolver`` operation - ``checkPass``,
+``getUserList``, ``getUserId``, and so on - across LDAP, SQL, HTTP-based
+(EntraID, Keycloak), and passwd resolvers. One row per resolver, sorted
+worst p95 first. The columns ``Avg`` / ``p95`` / ``Max`` are color-coded
+green below ``100 ms``, yellow below ``500 ms``, and red above. p95 is
+suppressed (``-``) for resolvers with fewer than 20 samples in the
+window, where bucket-bound rounding would not be meaningful.
+
+p95 readings are approximated from prom-style cumulative histogram
+buckets and so always round up to the next bucket boundary. The active
+bucket boundaries are ``50 ms``, ``100 ms``, ``150 ms``, ``200 ms``,
+``250 ms``, ``500 ms``, ``1 s``, ``2 s``, ``5 s``; anything above ``5 s``
+is reported in the ``+inf`` tail. The same boundaries are listed in the
+panel's tooltip.
+
+The data is read from ``GET /system/health/resolver_timing`` (default
+window ``since_seconds=3600``) and aggregates across all privacyIDEA
+nodes.
+
+Notification delivery
+~~~~~~~~~~~~~~~~~~~~~
+
+.. index:: notification delivery, dashboard metrics
+
+The *Notification Delivery* panel summarises outbound message delivery
+across the three notification channels:
+
+* **Push** - per Firebase provider.
+* **SMS** - per configured SMS gateway identifier (HTTP, SMPP, Sipgate,
+  SMTP-to-SMS, script).
+* **Email** - per configured SMTP server identifier.
+
+Each row shows the OK count, the failed count (transient send-failures
+plus exceptions), and the p95 send duration. The failed cell is
+color-coded green below 1%, yellow below 5%, and red above 5%, computed
+against the channel row's total. Reads ``GET
+/system/health/notification_delivery`` (default ``since_seconds=3600``).
+
+.. note::
+
+   When the SMTP job queue is enabled (``enqueue_job=True`` on the SMTP
+   configuration), the email metric records dispatch success rather than
+   final delivery: the synchronous return value is ``True`` once the
+   job has been queued, regardless of what the worker eventually does.
+
+Storage and cleanup
+~~~~~~~~~~~~~~~~~~~
+
+.. index:: MetricsCleanup, metric_aggregate
+
+The Resolver Timing and Notification Delivery panels both read from a
+single pre-aggregated table (``metric_aggregate``). Each row holds a
+counter or histogram for a 5-minute window, partitioned by the writing
+node, so per-request overhead stays low.
+
+The table grows unbounded unless an operator schedules the
+``MetricsCleanup`` periodic task under *Config -> Tasks*. The task takes
+one option, ``older_than_hours`` (default ``24``); an hourly schedule is
+recommended. Skip it and the table will keep all metric rows
+indefinitely.
+
 .. _news:
 
 News

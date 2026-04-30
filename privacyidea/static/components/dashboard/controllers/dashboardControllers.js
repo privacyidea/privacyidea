@@ -27,6 +27,14 @@ myApp.controller("dashboardController", ["ConfigFactory", "TokenFactory",
                                                    $scope, $location, AuthFactory) {
 
     $scope.tokens = {"total": 0, "hardware": 0};
+    $scope.certificates = {"entries": [], "summary": {"ok": 0, "warning": 0,
+                                                      "critical": 0, "expired": 0,
+                                                      "error": 0, "not_configured": 0},
+                           "loading": false};
+    $scope.resolverTiming = {"entries": [], "loading": false, "since_seconds": 3600};
+    $scope.notificationDelivery = {"push": [], "sms": [], "email": [],
+                                   "loading": false, "since_seconds": 3600,
+                                   "totals": {"push": 0, "sms": 0, "email": 0}};
     $scope.policies = {"active": [], "num_active": 0,
                        "inactive": [], "num_inactive": 0};
     $scope.events = {"active": [], "num_active": 0,
@@ -164,6 +172,166 @@ $scope.getAuthentication = function () {
              });
      };
 
+     $scope.getCertificateHealth = function (refresh) {
+         $scope.certificates.loading = true;
+         ConfigFactory.getCertificateHealth(refresh, function (data) {
+             var entries = (data && data.result && data.result.value) || [];
+             var summary = {"ok": 0, "warning": 0, "critical": 0,
+                            "expired": 0, "error": 0, "not_configured": 0};
+             angular.forEach(entries, function (e) {
+                 if (summary[e.status] !== undefined) {
+                     summary[e.status] += 1;
+                 }
+             });
+             // Sort: most urgent first, then by days remaining ascending.
+             var order = {"expired": 0, "critical": 1, "error": 2, "warning": 3,
+                          "not_configured": 4, "ok": 5};
+             entries.sort(function (a, b) {
+                 var oa = order[a.status] !== undefined ? order[a.status] : 99;
+                 var ob = order[b.status] !== undefined ? order[b.status] : 99;
+                 if (oa !== ob) return oa - ob;
+                 var da = a.days_remaining === null ? Infinity : a.days_remaining;
+                 var db = b.days_remaining === null ? Infinity : b.days_remaining;
+                 return da - db;
+             });
+             $scope.certificates.entries = entries;
+             $scope.certificates.summary = summary;
+             $scope.certificates.loading = false;
+         });
+     };
+
+     // p95 latency thresholds (seconds) for the resolver timing panel.
+     // Below LATENCY_OK_S: green; below LATENCY_WARN_S: yellow; above: red.
+     var LATENCY_OK_S = 0.1;
+     var LATENCY_WARN_S = 0.5;
+
+     // Map resolver_type -> ui-router state for the resolver detail link.
+     var RESOLVER_DETAIL_STATE = {
+         "ldapresolver": "config.resolvers.editldapresolver",
+         "sqlresolver": "config.resolvers.editsqlresolver",
+         "httpresolver": "config.resolvers.edithttpresolver",
+         "entraidresolver": "config.resolvers.editentraidresolver",
+         "keycloakresolver": "config.resolvers.editkeycloakresolver",
+         "passwdresolver": "config.resolvers.editpasswdresolver"
+     };
+
+     $scope.getResolverTiming = function () {
+         $scope.resolverTiming.loading = true;
+         ConfigFactory.getResolverTiming($scope.resolverTiming.since_seconds, function (data) {
+             var raw = (data && data.result && data.result.value) || [];
+             // Group by (resolver, resolver_type): roll up per-op rows into a
+             // per-resolver total plus a by_op breakdown.
+             var byKey = {};
+             angular.forEach(raw, function (e) {
+                 var resolver = (e.labels && e.labels.resolver) || "?";
+                 var type = (e.labels && e.labels.resolver_type) || "?";
+                 var op = (e.labels && e.labels.op) || "?";
+                 var key = type + "|" + resolver;
+                 if (!byKey[key]) {
+                     byKey[key] = {
+                         "resolver": resolver,
+                         "resolver_type": type,
+                         "detail_state": RESOLVER_DETAIL_STATE[type] || null,
+                         "count": 0,
+                         "max": 0,
+                         "p95_max": null,        // worst per-op p95 we've seen
+                         "avg_weighted_sum": 0,  // sum(avg * count) for weighted avg
+                         "by_op": []
+                     };
+                 }
+                 var r = byKey[key];
+                 r.count += e.count || 0;
+                 if (e.max !== null && e.max > r.max) r.max = e.max;
+                 if (e.p95 !== null && (r.p95_max === null || e.p95 > r.p95_max)) {
+                     r.p95_max = e.p95;
+                 }
+                 if (e.avg !== null) r.avg_weighted_sum += e.avg * (e.count || 0);
+                 r.by_op.push({"op": op, "count": e.count, "avg": e.avg,
+                               "p50": e.p50, "p95": e.p95, "max": e.max});
+             });
+             var entries = [];
+             angular.forEach(byKey, function (r) {
+                 r.avg = r.count > 0 ? (r.avg_weighted_sum / r.count) : null;
+                 entries.push(r);
+             });
+             // Sort: highest p95 first, then by count desc.
+             entries.sort(function (a, b) {
+                 var ap = a.p95_max === null ? -1 : a.p95_max;
+                 var bp = b.p95_max === null ? -1 : b.p95_max;
+                 if (ap !== bp) return bp - ap;
+                 return b.count - a.count;
+             });
+             $scope.resolverTiming.entries = entries;
+             $scope.resolverTiming.loading = false;
+         });
+     };
+
+     $scope.getNotificationDelivery = function () {
+         $scope.notificationDelivery.loading = true;
+         ConfigFactory.getNotificationDelivery($scope.notificationDelivery.since_seconds, function (data) {
+             var v = (data && data.result && data.result.value) || {};
+             ["push", "sms", "email"].forEach(function (channel) {
+                 var entries = v[channel] || [];
+                 var total = 0;
+                 entries.forEach(function (e) { total += e.total || 0; });
+                 $scope.notificationDelivery[channel] = entries;
+                 $scope.notificationDelivery.totals[channel] = total;
+             });
+             $scope.notificationDelivery.loading = false;
+         });
+     };
+
+     // Failure-rate color: green <1%, yellow <5%, red >=5%. No data => muted.
+     $scope.deliveryFailureClass = function (entry) {
+         if (!entry || !entry.total) return "text-muted";
+         var failed = (entry.failed || 0) + (entry.error || 0);
+         var rate = failed / entry.total;
+         if (rate < 0.01) return "text-success";
+         if (rate < 0.05) return "text-warning";
+         return "text-danger";
+     };
+
+     // Short label shown next to the resolver name (e.g. "ldap", "sql").
+     $scope.resolverTypeLabel = function (resolverType) {
+         if (!resolverType) return "";
+         return resolverType.replace(/resolver$/, "");
+     };
+
+     $scope.resolverLatencyClass = function (seconds) {
+         if (seconds === null || seconds === undefined) return "text-muted";
+         if (seconds < LATENCY_OK_S) return "text-success";
+         if (seconds < LATENCY_WARN_S) return "text-warning";
+         return "text-danger";
+     };
+
+     // Render a duration in the most readable unit.
+     $scope.formatDuration = function (seconds) {
+         if (seconds === null || seconds === undefined) return "-";
+         if (seconds < 1) return Math.round(seconds * 1000) + " ms";
+         return seconds.toFixed(2) + " s";
+     };
+
+     $scope.certificateTextClass = function (status) {
+         return {"expired": "text-danger", "critical": "text-danger",
+                 "warning": "text-warning", "error": "text-warning",
+                 "not_configured": "text-muted", "ok": "text-success"}[status] || "";
+     };
+
+     $scope.certificateStatusIcon = function (status) {
+         // Returns a map of glyphicon class + bootstrap text color for the status icon.
+         var icon = {"expired": "glyphicon-exclamation-sign",
+                     "critical": "glyphicon-exclamation-sign",
+                     "warning": "glyphicon-warning-sign",
+                     "error": "glyphicon-warning-sign",
+                     "not_configured": "glyphicon-minus-sign",
+                     "ok": "glyphicon-ok-sign"}[status] || "glyphicon-question-sign";
+         var color = $scope.certificateTextClass(status);
+         var classes = {};
+         classes[icon] = true;
+         if (color) classes[color] = true;
+         return classes;
+     };
+
      $scope.compare_auditentries = function (a, b) {
         if (a.date < b.date ) return 1;
         if (b.date < a.date ) return -1;
@@ -188,6 +356,11 @@ $scope.getAuthentication = function () {
         $scope.getAuthentication();
         $scope.getAdministration();
     }
+    if (AuthFactory.checkRight('configread')) {
+        $scope.getCertificateHealth(false);
+        $scope.getResolverTiming();
+        $scope.getNotificationDelivery();
+    }
 
         // listen to the reload broadcast
     $scope.$on("piReload", function() {
@@ -208,6 +381,16 @@ $scope.getAuthentication = function () {
         if (AuthFactory.checkRight('auditlog')) {
             $scope.getAuthentication();
             $scope.getAdministration();
+        }
+        if (AuthFactory.checkRight('configread')) {
+            $scope.getCertificateHealth(false);
+            $scope.getResolverTiming();
+            $scope.getNotificationDelivery();
+            // The other panels' init calls may indirectly trigger resolver
+            // operations that won't have committed by the time the first
+            // timing fetch returns. Re-fetch shortly after to catch anything
+            // recorded during the init storm.
+            $timeout(function () { $scope.getResolverTiming(); }, 1500);
         }
     });
 }]);

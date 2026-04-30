@@ -43,7 +43,12 @@
        <div class="col-lg-3">
              <div class="panel panel-default"
                   ng-show="checkRight('auditlog')">
-                 <div class="panel-heading" translate>Authentications</div>
+                 <div class="panel-heading">
+                    <a ui-sref="audit.log">
+                        <span class="glyphicon glyphicon-log-in" aria-hidden="true"></span>
+                        <span translate>Authentications</span>
+                    </a>
+                 </div>
                  <div class="panel-body">
                      <div translate>Authentications in the last 24 hours</div>
                      <table class="table">
@@ -106,7 +111,213 @@
            </div>
        </div>
    </div>
-   <div class="row">
+   <div class="row"> <!-- health monitoring: act-now data -->
+       <div class="col-lg-6">
+             <div class="panel panel-default"
+                  ng-show="checkRight('configread')">
+                 <div class="panel-heading">
+                    <span class="glyphicon glyphicon-lock" aria-hidden="true"></span>
+                    <span translate>Certificates</span>
+                    <button type="button" class="btn btn-xs btn-default pull-right"
+                            ng-click="getCertificateHealth(true)"
+                            ng-disabled="certificates.loading"
+                            title="{{ 'Refresh (bypass cache)' | translate }}">
+                        <span class="glyphicon glyphicon-refresh"></span>
+                    </button>
+                 </div>
+                 <div class="panel-body">
+                    <div ng-if="certificates.loading" translate>Checking...</div>
+                    <div ng-if="!certificates.loading && certificates.entries.length === 0" translate>
+                        No TLS-enabled LDAP resolvers configured and PI_SERVER_CERT_FILE not set.
+                    </div>
+                    <table class="table table-condensed" ng-if="certificates.entries.length > 0">
+                        <thead>
+                            <tr>
+                                <th translate>Source</th>
+                                <th translate>Expires</th>
+                                <th translate>Days until Expiry</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr ng-repeat="cert in certificates.entries"
+                                title="{{ cert.error || cert.subject }}">
+                                <td>
+                                    <span class="glyphicon"
+                                          ng-class="certificateStatusIcon(cert.status)"
+                                          aria-hidden="true"></span>
+                                    <a ng-if="cert.source === 'ldap-resolver'"
+                                       ui-sref="config.resolvers.editldapresolver({resolvername: cert.name})">
+                                        <strong>{{ cert.name }}</strong>
+                                    </a>
+                                    <strong ng-if="cert.source !== 'ldap-resolver'">{{ cert.name }}</strong>
+                                    <br>
+                                    <small>{{ cert.host }}</small>
+                                </td>
+                                <td>
+                                    <span ng-if="cert.not_after">{{ cert.not_after | date: "y-MM-dd" }}</span>
+                                    <span ng-if="!cert.not_after">{{ cert.status }}</span>
+                                </td>
+                                <td ng-class="certificateTextClass(cert.status)">
+                                    <span ng-if="cert.days_remaining !== null">{{ cert.days_remaining }}</span>
+                                    <span ng-if="cert.days_remaining === null">-</span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                 </div>
+             </div>
+       </div>
+       <div class="col-lg-6">
+             <div class="panel panel-default"
+                  ng-show="checkRight('configread')">
+                 <div class="panel-heading">
+                    <span class="glyphicon glyphicon-time" aria-hidden="true"></span>
+                    <a ui-sref="config.resolvers.list" translate>Resolver</a>
+                    <span class="text-muted">/</span>
+                    <a ui-sref="config.realms" translate>Realm</a>
+                    <span translate>Timing</span>
+                    <small class="text-muted">
+                        (<span translate>last hour</span>)
+                    </small>
+                    <button type="button" class="btn btn-xs btn-default pull-right"
+                            ng-click="getResolverTiming()"
+                            ng-disabled="resolverTiming.loading"
+                            title="{{ 'Refresh' | translate }}">
+                        <span class="glyphicon glyphicon-refresh"></span>
+                    </button>
+                 </div>
+                 <div class="panel-body">
+                    <div ng-if="resolverTiming.loading" translate>Loading...</div>
+                    <div ng-if="!resolverTiming.loading && resolverTiming.entries.length === 0" translate>
+                        No resolver operations recorded in the selected window.
+                    </div>
+                    <table class="table table-condensed" ng-if="resolverTiming.entries.length > 0">
+                        <thead>
+                            <tr>
+                                <th translate>Resolver</th>
+                                <th translate>Requests</th>
+                                <th translate>Avg</th>
+                                <th>
+                                    <span translate>p95</span>
+                                    <span class="glyphicon glyphicon-info-sign text-muted"
+                                          style="cursor: help;"
+                                          title="{{ 'p95 means 95% of requests were faster than this value. The reading is rounded up to the next histogram bucket boundary, so it can appear larger than the exact maximum - that is expected, not a bug. Bucket boundaries: 50ms, 100ms, 150ms, 200ms, 250ms, 500ms, 1s, 2s, 5s.' | translate }}"
+                                          aria-hidden="true"></span>
+                                </th>
+                                <th translate>Max</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr ng-repeat="r in resolverTiming.entries">
+                                <td>
+                                    <a ng-if="r.detail_state"
+                                       ui-sref="{{ r.detail_state }}({resolvername: r.resolver})">
+                                        <strong>{{ r.resolver }}</strong>
+                                    </a>
+                                    <strong ng-if="!r.detail_state">{{ r.resolver }}</strong>
+                                    <span class="label label-default">{{ resolverTypeLabel(r.resolver_type) }}</span>
+                                    <br>
+                                    <small class="text-muted">
+                                        <span ng-repeat="o in r.by_op">
+                                            {{ !$first ? "| " : "" }}{{ o.op }}: {{ o.count }}
+                                        </span>
+                                    </small>
+                                </td>
+                                <td>{{ r.count }}</td>
+                                <td ng-class="resolverLatencyClass(r.avg)">
+                                    {{ formatDuration(r.avg) }}
+                                </td>
+                                <td ng-class="resolverLatencyClass(r.p95_max)"
+                                    title="{{ r.count < 20 ? ('Approximate - need more samples for a meaningful p95.' | translate) : '' }}">
+                                    <span ng-if="r.count >= 20">{{ formatDuration(r.p95_max) }}</span>
+                                    <span ng-if="r.count < 20" class="text-muted">—</span>
+                                </td>
+                                <td ng-class="resolverLatencyClass(r.max)">
+                                    {{ formatDuration(r.max) }}
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                 </div>
+             </div>
+       </div>
+   </div>
+   <div class="row"> <!-- service delivery: notification channels -->
+       <div class="col-lg-12">
+             <div class="panel panel-default"
+                  ng-show="checkRight('configread')">
+                 <div class="panel-heading">
+                    <span class="glyphicon glyphicon-send" aria-hidden="true"></span>
+                    <span translate>Notification Delivery</span>
+                    <small class="text-muted">
+                        (<span translate>last hour</span>)
+                    </small>
+                    <button type="button" class="btn btn-xs btn-default pull-right"
+                            ng-click="getNotificationDelivery()"
+                            ng-disabled="notificationDelivery.loading"
+                            title="{{ 'Refresh' | translate }}">
+                        <span class="glyphicon glyphicon-refresh"></span>
+                    </button>
+                 </div>
+                 <div class="panel-body">
+                    <div ng-if="notificationDelivery.loading" translate>Loading...</div>
+                    <div ng-if="!notificationDelivery.loading
+                                && notificationDelivery.totals.push === 0
+                                && notificationDelivery.totals.sms === 0
+                                && notificationDelivery.totals.email === 0" translate>
+                        No notification deliveries recorded in the selected window.
+                    </div>
+                    <div class="row" ng-if="!notificationDelivery.loading
+                                            && (notificationDelivery.totals.push
+                                                + notificationDelivery.totals.sms
+                                                + notificationDelivery.totals.email) > 0">
+                        <div class="col-md-4" ng-repeat="channel in ['push', 'sms', 'email']">
+                            <h4 style="text-transform: capitalize;">
+                                {{ channel | translate }}
+                                <small class="text-muted">
+                                    {{ notificationDelivery.totals[channel] }}
+                                    <span translate>total</span>
+                                </small>
+                            </h4>
+                            <div ng-if="notificationDelivery[channel].length === 0"
+                                 class="text-muted">
+                                <small translate>No deliveries</small>
+                            </div>
+                            <table class="table table-condensed"
+                                   ng-if="notificationDelivery[channel].length > 0">
+                                <thead>
+                                    <tr>
+                                        <th translate>Target</th>
+                                        <th translate>OK</th>
+                                        <th translate>Failed</th>
+                                        <th translate>p95</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr ng-repeat="entry in notificationDelivery[channel]">
+                                        <td><strong>{{ entry.key }}</strong></td>
+                                        <td class="text-success">{{ entry.ok || 0 }}</td>
+                                        <td ng-class="deliveryFailureClass(entry)">
+                                            {{ (entry.failed || 0) + (entry.error || 0) }}
+                                        </td>
+                                        <td>
+                                            <span ng-if="entry.duration_count >= 20">
+                                                {{ formatDuration(entry.p95) }}
+                                            </span>
+                                            <span ng-if="!entry.duration_count || entry.duration_count < 20"
+                                                  class="text-muted"
+                                                  title="{{ 'Approximate - need more samples for a meaningful p95.' | translate }}">—</span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                 </div>
+             </div>
+       </div>
+   </div>
+   <div class="row"> <!-- configuration reference -->
        <div class="col-lg-4">
            <div class="panel panel-default"
                 ng-show="checkRight('policyread')">
@@ -152,7 +363,12 @@
        <div class="col-lg-4">
              <div class="panel panel-default"
                   ng-show="checkRight('eventhandling_read')">
-                 <div class="panel-heading" translate>Events</div>
+                 <div class="panel-heading">
+                    <a ui-sref="config.events.list">
+                        <span class="glyphicon glyphicon-flash" aria-hidden="true"></span>
+                        <span translate>Events</span>
+                    </a>
+                 </div>
                  <div class="panel-body">
                     <table class="table">
                         <tbody>

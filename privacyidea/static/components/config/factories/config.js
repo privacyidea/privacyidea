@@ -710,6 +710,54 @@ myApp.factory("ConfigFactory", ["AuthFactory", "$http", "$state", "$rootScope",
                     AuthFactory.authError(error.data)
                 });
             },
+            getCertificateHealth: function (refresh, callback) {
+                var url = systemUrl + "/health/certificates";
+                if (refresh) {
+                    url += "?refresh=1";
+                }
+                $http.get(url, {
+                    headers: {
+                        'PI-Authorization': AuthFactory.getAuthToken(),
+                        'Content-Type': 'application/json'
+                    }
+                }).then(function (response) {
+                    callback(response.data)
+                }, function (error) {
+                    AuthFactory.authError(error.data)
+                });
+            },
+            getResolverTiming: function (sinceSeconds, callback) {
+                var url = systemUrl + "/health/resolver_timing";
+                if (sinceSeconds) {
+                    url += "?since_seconds=" + encodeURIComponent(sinceSeconds);
+                }
+                $http.get(url, {
+                    headers: {
+                        'PI-Authorization': AuthFactory.getAuthToken(),
+                        'Content-Type': 'application/json'
+                    }
+                }).then(function (response) {
+                    callback(response.data)
+                }, function (error) {
+                    AuthFactory.authError(error.data)
+                });
+            },
+            getNotificationDelivery: function (sinceSeconds, callback) {
+                var url = systemUrl + "/health/notification_delivery";
+                if (sinceSeconds) {
+                    url += "?since_seconds=" + encodeURIComponent(sinceSeconds);
+                }
+                $http.get(url, {
+                    headers: {
+                        'PI-Authorization': AuthFactory.getAuthToken(),
+                        'Content-Type': 'application/json'
+                    }
+                }).then(function (response) {
+                    callback(response.data)
+                }, function (error) {
+                    AuthFactory.authError(error.data)
+                });
+            },
             getRandom: function (len, encode, callback) {
                 $http.get(systemUrl +
                     encodeURI("/random?len=" + len + "&encode=" + encode), {

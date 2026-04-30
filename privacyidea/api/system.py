@@ -58,8 +58,10 @@ from privacyidea.lib.importotp import GPGImport
 from privacyidea.lib.policy import PolicyClass
 from privacyidea.lib.realm import get_realms
 from privacyidea.lib.resolver import get_resolver_list
+from privacyidea.lib.health import get_certificate_status
+from privacyidea.lib.metrics import get_metrics
 from privacyidea.lib.usercache import delete_user_cache
-from privacyidea.lib.utils import hexlify_and_unicode, b64encode_and_unicode
+from privacyidea.lib.utils import hexlify_and_unicode, b64encode_and_unicode, is_true
 from .auth import admin_required
 from .lib.utils import (getLowerParams,
                         send_result, send_file)
@@ -485,6 +487,155 @@ def list_nodes():
     nodes = get_privacyidea_nodes()
     g.audit_object.log({"success": True})
     return send_result(nodes)
+
+
+@system_blueprint.route("/health/certificates", methods=['GET'])
+@admin_required
+@log_with(log)
+def get_health_certificates():
+    """
+    Return certificate expiry information for all configured LDAP resolvers
+    (where the resolver uses ldaps:// or START_TLS) and for the privacyIDEA
+    server certificate.
+
+    The privacyIDEA server certificate is probed by opening a TLS connection
+    back to the host/port the admin used to reach this endpoint (Flask's
+    ``request.host``, which honors ``X-Forwarded-Host`` when configured).
+    This works uniformly for apache+uwsgi, nginx+gunicorn and the flask dev
+    server, since the actual cert is whatever is terminating TLS in front
+    of privacyIDEA.
+
+    The result is cached for ``PI_CERT_CHECK_CACHE_SECONDS`` seconds
+    (default 3600). Pass ``?refresh=1`` to bypass the cache.
+
+    Each entry has a ``status`` of ``ok`` (>30 days), ``warning`` (<=30 days),
+    ``critical`` (<=7 days), ``expired`` (<=0 days), ``error`` (could not
+    fetch), or ``not_configured`` (server cert can only be checked over HTTPS).
+
+    :queryparam refresh: If truthy, bypass the cache and re-check.
+    :>json list value: List of certificate status entries.
+    :reqheader PI-Authorization: The authorization token
+    """
+    refresh = is_true(get_optional(request.all_data, "refresh"))
+    https = request.scheme == "https"
+    server_port = request.host.split(":")[-1] if ":" in request.host else (443 if https else 80)
+    server_host = request.host.split(":")[0]
+    try:
+        server_port = int(server_port)
+    except (TypeError, ValueError):
+        server_port = 443 if https else 80
+    result = get_certificate_status(server_host=server_host, server_port=server_port,
+                                    https=https, refresh=refresh)
+    g.audit_object.log({"success": True})
+    return send_result(result)
+
+
+@system_blueprint.route("/health/resolver_timing", methods=['GET'])
+@admin_required
+@log_with(log)
+def get_health_resolver_timing():
+    """
+    Return rolling resolver-operation timing aggregates per resolver and op.
+
+    Reads pre-aggregated counters/buckets stored by
+    :func:`privacyidea.lib.metrics.observe` calls wrapped around every
+    ``UserIdResolver`` public method (``get_user_info``, ``get_user_list``,
+    ``check_pass``, ``add_user``, ``update_user``, ``delete_user``,
+    ``get_user_id``, ``get_username``). Covers all resolver types
+    uniformly (LDAP, SQL, HTTP, EntraID, Keycloak, passwd).
+
+    The returned ``count``, ``avg``, ``p50``, ``p95``, ``max`` are summed
+    across all privacyIDEA nodes and 5-minute windows that fall within
+    the requested window.
+
+    :queryparam since_seconds: Window length in seconds. Default 3600 (1h).
+    :>json list value: One entry per ``(resolver, resolver_type, op)`` triple.
+    :reqheader PI-Authorization: The authorization token
+    """
+    try:
+        since_seconds = int(get_optional(request.all_data, "since_seconds") or 3600)
+    except (TypeError, ValueError):
+        since_seconds = 3600
+    raw = get_metrics(name="resolver_op_duration_seconds", since_seconds=since_seconds)
+    g.audit_object.log({"success": True})
+    return send_result(raw)
+
+
+def _aggregate_delivery_channel(counter_name, duration_name, key_label, since_seconds):
+    """Fold counter rows by their key label into one entry per key.
+
+    Counter rows are grouped by the value of ``key_label`` (e.g. ``"provider"``,
+    ``"gateway"``, ``"identifier"``). Each group's outcome counts (ok / failed /
+    error) come from ``counter_name``; latency stats come from
+    ``duration_name`` rows with the same key.
+    """
+    counters = get_metrics(name=counter_name, since_seconds=since_seconds)
+    durations = get_metrics(name=duration_name, since_seconds=since_seconds)
+
+    by_key = {}
+    for c in counters:
+        labels = c.get("labels") or {}
+        key = labels.get(key_label, "?")
+        result = labels.get("result", "?")
+        entry = by_key.setdefault(key, {
+            "key": key, "ok": 0, "failed": 0, "error": 0, "total": 0,
+        })
+        cnt = c.get("count") or 0
+        if result in ("ok", "failed", "error"):
+            entry[result] += cnt
+        entry["total"] += cnt
+
+    for d in durations:
+        labels = d.get("labels") or {}
+        key = labels.get(key_label, "?")
+        entry = by_key.setdefault(key, {
+            "key": key, "ok": 0, "failed": 0, "error": 0, "total": 0,
+        })
+        entry["avg"] = d.get("avg")
+        entry["p50"] = d.get("p50")
+        entry["p95"] = d.get("p95")
+        entry["max"] = d.get("max")
+        entry["duration_count"] = d.get("count") or 0
+
+    return sorted(by_key.values(), key=lambda e: e["total"], reverse=True)
+
+
+@system_blueprint.route("/health/notification_delivery", methods=['GET'])
+@admin_required
+@log_with(log)
+def get_health_notification_delivery():
+    """
+    Return rolling delivery counters and latency for the three notification
+    channels (push, SMS, email).
+
+    Each channel folds rows by its primary label dimension:
+
+    * push: ``provider`` (only ``firebase`` today)
+    * sms: ``gateway`` (the SMS gateway identifier)
+    * email: ``identifier`` (the SMTP server identifier)
+
+    :queryparam since_seconds: Window length in seconds. Default 3600 (1h).
+    :reqheader PI-Authorization: The authorization token
+    """
+    try:
+        since_seconds = int(get_optional(request.all_data, "since_seconds") or 3600)
+    except (TypeError, ValueError):
+        since_seconds = 3600
+
+    result = {
+        "push": _aggregate_delivery_channel(
+            "push_delivery_total", "push_delivery_duration_seconds",
+            "provider", since_seconds),
+        "sms": _aggregate_delivery_channel(
+            "sms_send_total", "sms_send_duration_seconds",
+            "gateway", since_seconds),
+        "email": _aggregate_delivery_channel(
+            "email_send_total", "email_send_duration_seconds",
+            "identifier", since_seconds),
+        "since_seconds": since_seconds,
+    }
+    g.audit_object.log({"success": True})
+    return send_result(result)
 
 
 @system_blueprint.route("/user-cache", methods=['DELETE'])

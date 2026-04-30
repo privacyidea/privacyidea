@@ -49,6 +49,7 @@ from passlib.hash import ldap_salted_sha1
 from privacyidea.lib import _
 from privacyidea.lib.error import PrivacyIDEAError, ResolverError, ParameterError
 from privacyidea.lib.framework import get_app_local_store, get_app_config_value
+from privacyidea.lib.metrics import track_resolver_op
 from privacyidea.lib.log import log_with
 from privacyidea.lib.utils import (is_true, to_bytes, to_unicode,
                                    convert_column_to_unicode)
@@ -314,6 +315,7 @@ class IdResolver(UserIdResolver):
         ldap3.set_config_parameter("POOLING_LOOP_TIMEOUT", pooling_loop_timeout)
 
     @log_with(log, hide_args=[2])
+    @track_resolver_op("check_pass")
     def checkPass(self, uid, password):
         """
         This function checks the password for a given uid.
@@ -612,6 +614,7 @@ class IdResolver(UserIdResolver):
         return tls_context
 
     @cache
+    @track_resolver_op("get_user_info")
     def get_user_info(self, user_id: int or str, attributes: list[str] = None) -> dict:
         """
         This function returns all user info for a given userid/object.
@@ -731,6 +734,7 @@ class IdResolver(UserIdResolver):
 
         return user_info
 
+    @track_resolver_op("get_username")
     def getUsername(self, user_id):
         """
         Returns the username/loginname for a given user_id
@@ -744,6 +748,7 @@ class IdResolver(UserIdResolver):
         return info.get('username', "")
 
     @cache
+    @track_resolver_op("get_user_id")
     def getUserId(self, login_name):
         """
         resolve the loginname to the userid.
@@ -822,6 +827,7 @@ class IdResolver(UserIdResolver):
         search_filter += ")"
         return search_filter
 
+    @track_resolver_op("get_user_list")
     def getUserList(self, search_dict: dict = None, attributes: list[str] = None) -> list[dict]:
         """
         :param search_dict: A dictionary with search parameters
@@ -857,7 +863,6 @@ class IdResolver(UserIdResolver):
                                                                             paged_size=100,
                                                                             size_limit=self.sizelimit,
                                                                             generator=True)
-            log.debug(f"LDAP paged search operation took {self.connection.usage.elapsed_time}")
         except Exception as e:
             log.error(f"Error performing paged search: {e}")
             raise ResolverError(f"Error performing paged search: {e}")
@@ -882,6 +887,11 @@ class IdResolver(UserIdResolver):
         except Exception as ex:  # pragma: no cover
             log.error(f"Error during LDAP paged search: {ex}")
             raise ResolverError(f"Error during LDAP paged search: {ex}")
+        # Record only after the generator is fully consumed - paged_search()
+        # with generator=True does not perform the actual LDAP traffic until
+        # the iterator is walked, so capturing usage.elapsed_time earlier
+        # would only reflect the preceding bind.
+        log.debug(f"LDAP paged search operation took {self.connection.usage.elapsed_time}")
 
         return user_list
 
@@ -1293,6 +1303,7 @@ class IdResolver(UserIdResolver):
 
         return success, message
 
+    @track_resolver_op("add_user")
     def add_user(self, attributes: dict = None) -> str:
         """
         Add a new user to the LDAP directory.
@@ -1335,6 +1346,7 @@ class IdResolver(UserIdResolver):
 
         return self.getUserId(attributes.get("username"))
 
+    @track_resolver_op("delete_user")
     def delete_user(self, uid):
         """
         Delete a user from the LDAP Directory.
@@ -1407,6 +1419,7 @@ class IdResolver(UserIdResolver):
 
         return modify_changes
 
+    @track_resolver_op("update_user")
     def update_user(self, uid, attributes=None):
         """
         Update an existing user.

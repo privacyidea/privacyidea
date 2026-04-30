@@ -1,0 +1,279 @@
+# SPDX-FileCopyrightText: 2026 NetKnights GmbH <https://netknights.it>
+# SPDX-License-Identifier: AGPL-3.0-or-later
+"""In-process metrics substrate backed by ``metric_aggregate``.
+
+Two primitives:
+
+* :func:`observe` - record a value (e.g. operation duration in seconds).
+  Updates count / sum / max / histogram buckets for the active 5-minute window.
+* :func:`inc` - increment a counter.
+
+Reads via :func:`get_metrics` aggregate across nodes and time windows. Multi-node
+setups partition writes by ``PI_NODE`` so workers don't contend on the same row.
+
+This module never raises out of ``observe``/``inc``: failing to record a metric
+must not break the operation being measured. Errors are logged at debug level.
+"""
+import datetime
+import functools
+import logging
+import time
+
+from sqlalchemy import select, delete
+
+from privacyidea.lib.config import get_privacyidea_node
+from privacyidea.models import db
+from privacyidea.models.metric_aggregate import MetricAggregate
+
+log = logging.getLogger(__name__)
+
+WINDOW_SECONDS = 300            # 5-minute aggregation buckets.
+DEFAULT_QUERY_WINDOW = 3600     # Reads return the last hour by default.
+RETENTION_SECONDS = 86400       # Cleanup deletes rows older than 24h.
+
+# Bucket boundaries in seconds, paired with the column they map to.
+# Order matters: ascending. ``+inf`` is implicit (= total ``count``).
+#
+# The set is tuned for the resolver-timing use case: we don't care to
+# distinguish a 1 ms SQL hit from a 49 ms LDAP search (both are "fine"),
+# but we do care about the 50-250 ms zone where HTTP-based resolvers and
+# slow LDAP calls live. Anything above 5 s is "broken" - one bucket is
+# enough.
+#
+# When changing this list, also update:
+#   - the column declarations in ``models/metric_aggregate.py``
+#   - the migration in ``migrations/versions/c2d3e4f5a6b7_metric_aggregate.py``
+#   - the ``Bucket boundaries: ...`` text in the p95 info tooltip in
+#     ``static/components/dashboard/views/dashboard.html`` (the only place
+#     the user-facing list of boundaries is enumerated).
+_BUCKETS = (
+    (0.05,   "bucket_le_50ms"),
+    (0.1,    "bucket_le_100ms"),
+    (0.15,   "bucket_le_150ms"),
+    (0.2,    "bucket_le_200ms"),
+    (0.25,   "bucket_le_250ms"),
+    (0.5,    "bucket_le_500ms"),
+    (1.0,    "bucket_le_1s"),
+    (2.0,    "bucket_le_2s"),
+    (5.0,    "bucket_le_5s"),
+)
+
+
+def _labels_key(labels: dict | None) -> str:
+    if not labels:
+        return ""
+    return ",".join(f"{k}={labels[k]}" for k in sorted(labels))
+
+
+def _parse_labels_key(labels_key: str) -> dict:
+    if not labels_key:
+        return {}
+    out = {}
+    for part in labels_key.split(","):
+        if "=" in part:
+            k, _, v = part.partition("=")
+            out[k] = v
+    return out
+
+
+def _window_start(now: datetime.datetime) -> datetime.datetime:
+    epoch = int(now.replace(tzinfo=datetime.timezone.utc).timestamp())
+    bucket_epoch = epoch - (epoch % WINDOW_SECONDS)
+    return datetime.datetime.utcfromtimestamp(bucket_epoch)
+
+
+def _get_or_create_row(metric_name: str, labels_key: str,
+                       node: str, window: datetime.datetime) -> MetricAggregate:
+    stmt = select(MetricAggregate).where(
+        MetricAggregate.metric_name == metric_name,
+        MetricAggregate.labels_key == labels_key,
+        MetricAggregate.node == node,
+        MetricAggregate.window_start == window,
+    )
+    row = db.session.execute(stmt).scalar_one_or_none()
+    if row is None:
+        row = MetricAggregate(
+            metric_name=metric_name, labels_key=labels_key, node=node,
+            window_start=window, count=0, sum_value=0.0, max_value=0.0,
+        )
+        db.session.add(row)
+        try:
+            db.session.flush()
+        except Exception:
+            # Race: another worker inserted the same (metric, labels, node,
+            # window) row between our SELECT and INSERT. Roll back the failed
+            # insert and re-fetch so the caller updates the existing row.
+            db.session.rollback()
+            row = db.session.execute(stmt).scalar_one()
+    return row
+
+
+def _commit_metric() -> None:
+    """Persist the metric write independently of the caller's transaction.
+
+    LDAP operations are recorded from inside arbitrary request handlers,
+    including read endpoints that never call ``db.session.commit()`` (and
+    so would discard our flushed row at session teardown). We therefore
+    commit unconditionally; on commit failure we roll back so the surrounding
+    request keeps a clean session.
+    """
+    try:
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        raise
+
+
+def observe(name: str, value: float, labels: dict | None = None) -> None:
+    """Record a numeric observation (seconds for timings) for histogram ``name``.
+
+    Updates count / sum / max plus the cumulative bucket whose upper bound
+    contains ``value``. The flush relies on the surrounding request commit -
+    no explicit commit here, so callers in non-request contexts must commit
+    themselves (the periodic-task framework already does).
+    """
+    try:
+        node = get_privacyidea_node() or ""
+        labels_key = _labels_key(labels)
+        window = _window_start(datetime.datetime.utcnow())
+        row = _get_or_create_row(name, labels_key, node, window)
+        row.count += 1
+        row.sum_value = float(row.sum_value) + float(value)
+        if value > row.max_value:
+            row.max_value = float(value)
+        # Increment every bucket whose upper bound is >= value (cumulative).
+        for boundary, column in _BUCKETS:
+            if value <= boundary:
+                setattr(row, column, getattr(row, column) + 1)
+        _commit_metric()
+    except Exception as e:
+        log.debug(f"metrics.observe({name!r}) failed: {e}")
+
+
+def inc(name: str, labels: dict | None = None, by: int = 1) -> None:
+    """Increment a counter by ``by`` (default 1)."""
+    try:
+        node = get_privacyidea_node() or ""
+        labels_key = _labels_key(labels)
+        window = _window_start(datetime.datetime.utcnow())
+        row = _get_or_create_row(name, labels_key, node, window)
+        row.count += by
+        _commit_metric()
+    except Exception as e:
+        log.debug(f"metrics.inc({name!r}) failed: {e}")
+
+
+def _percentile_from_buckets(buckets: dict, count: int, q: float) -> float | None:
+    """Approximate quantile from prom-style cumulative bucket counts.
+
+    Returns the upper bound of the first bucket whose cumulative count
+    crosses ``q * count``. Returns ``None`` for an empty histogram.
+    Resolution is limited by the bucket boundaries.
+    """
+    if not count:
+        return None
+    target = q * count
+    for boundary, column in _BUCKETS:
+        if buckets.get(column, 0) >= target:
+            return boundary
+    return None  # Above the largest bucket - reported as ">10s" by callers.
+
+
+def get_metrics(name: str | None = None, since_seconds: int = DEFAULT_QUERY_WINDOW) -> list:
+    """Aggregate stored metric rows across nodes and windows.
+
+    Returns a list of dicts, one per ``(metric_name, labels)`` group::
+
+        {"metric": "ldap_op_duration_seconds",
+         "labels": {"resolver": "openldap", "op": "bind"},
+         "count": 120, "avg": 0.024, "p50": 0.025, "p95": 0.1,
+         "max": 0.34, "since_seconds": 3600}
+    """
+    cutoff = datetime.datetime.utcnow() - datetime.timedelta(seconds=since_seconds)
+    stmt = select(MetricAggregate).where(MetricAggregate.window_start >= cutoff)
+    if name is not None:
+        stmt = stmt.where(MetricAggregate.metric_name == name)
+    rows = db.session.execute(stmt).scalars().all()
+
+    # Group by (metric_name, labels_key); fold over nodes and windows.
+    groups: dict = {}
+    for r in rows:
+        key = (r.metric_name, r.labels_key)
+        g = groups.setdefault(key, {
+            "count": 0, "sum": 0.0, "max": 0.0,
+            "buckets": {col: 0 for _, col in _BUCKETS},
+        })
+        g["count"] += r.count
+        g["sum"] += float(r.sum_value)
+        if r.max_value > g["max"]:
+            g["max"] = float(r.max_value)
+        for _, col in _BUCKETS:
+            g["buckets"][col] += getattr(r, col)
+
+    out = []
+    for (metric_name, labels_key), g in groups.items():
+        count = g["count"]
+        avg = (g["sum"] / count) if count else None
+        p50 = _percentile_from_buckets(g["buckets"], count, 0.50)
+        p95 = _percentile_from_buckets(g["buckets"], count, 0.95)
+        out.append({
+            "metric": metric_name,
+            "labels": _parse_labels_key(labels_key),
+            "count": count,
+            "avg": avg,
+            "p50": p50,
+            "p95": p95,
+            "max": g["max"] if count else None,
+            "since_seconds": since_seconds,
+        })
+    return out
+
+
+def track_resolver_op(op_name: str):
+    """Decorator that records a UserIdResolver public-method timing.
+
+    Apply to the public methods of resolver subclasses (``getUserList``,
+    ``get_user_info``, ``checkPass``, etc.). Records elapsed time under the
+    ``resolver_op_duration_seconds`` histogram with labels
+    ``{resolver, resolver_type, op}``.
+
+    The decorator never raises; if metric recording fails the underlying
+    method's return value is preserved.
+    """
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(self, *args, **kwargs):
+            start = time.perf_counter()
+            try:
+                return func(self, *args, **kwargs)
+            finally:
+                try:
+                    elapsed = time.perf_counter() - start
+                    resolver_type = "unknown"
+                    if hasattr(self, "getResolverType"):
+                        try:
+                            resolver_type = self.getResolverType() or "unknown"
+                        except Exception:
+                            pass
+                    resolver_name = (getattr(self, "name", None)
+                                     or getattr(self, "resolverId", None)
+                                     or "?")
+                    observe("resolver_op_duration_seconds", elapsed, {
+                        "resolver": str(resolver_name),
+                        "resolver_type": str(resolver_type),
+                        "op": op_name,
+                    })
+                except Exception:
+                    # Metrics must not affect resolver behavior.
+                    pass
+        return wrapper
+    return decorator
+
+
+def cleanup_old_metrics(older_than_seconds: int = RETENTION_SECONDS) -> int:
+    """Delete metric rows older than ``older_than_seconds``. Returns row count."""
+    cutoff = datetime.datetime.utcnow() - datetime.timedelta(seconds=older_than_seconds)
+    stmt = delete(MetricAggregate).where(MetricAggregate.window_start < cutoff)
+    result = db.session.execute(stmt)
+    db.session.commit()
+    return result.rowcount or 0
