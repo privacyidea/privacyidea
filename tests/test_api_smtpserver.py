@@ -1,6 +1,19 @@
+import email
+
+import pytest
+
 from privacyidea.lib.crypto import encryptPassword
 from . import smtpmock
 from .base import MyApiTestCase
+
+
+@pytest.fixture()
+def smtp_mock():
+    """Fixture that activates and resets the SMTP mock."""
+    smtpmock.start()
+    yield smtpmock
+    smtpmock.stop()
+    smtpmock.reset()
 
 
 class SMTPServerTestCase(MyApiTestCase):
@@ -8,139 +21,178 @@ class SMTPServerTestCase(MyApiTestCase):
     test the api.smtpserver endpoints
     """
 
-    def test_01_create_server(self):
-        # create and list server
+    def setUp(self):
+        super().setUp()
+        self.smtp_mock = smtpmock
+        self.smtp_mock.start()
 
-        # Unauthorized
-        with self.app.test_request_context('/smtpserver/server1',
-                                           method='POST',
-                                           data={"username": "cornelius",
-                                                 "password": "secret",
-                                                 "port": "123",
-                                                 "server": "1.2.3.4",
-                                                 "description": "myServer"}):
+    def tearDown(self):
+        self.smtp_mock.stop()
+        self.smtp_mock.reset()
+        super().tearDown()
+
+    def _create_server(self, name="server1", extra_data=None):
+        """Helper to create an SMTP server via the API."""
+        data = {
+            "username": "cornelius",
+            "password": "secret",
+            "port": "123",
+            "server": "1.2.3.4",
+            "sender": "privacyidea@local",
+            "description": "myServer",
+        }
+        if extra_data:
+            data.update(extra_data)
+        with self.app.test_request_context(
+                f'/smtpserver/{name}',
+                method='POST',
+                data=data,
+                headers={'Authorization': self.at},
+        ):
             res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 401, res)
+        return res
 
-        with self.app.test_request_context('/smtpserver/server1',
-                                           method='POST',
-                                           data={"username": "cornelius",
-                                                 "password": "secret",
-                                                 "port": "123",
-                                                 "server": "1.2.3.4",
-                                                 "sender": "privacyidea@local",
-                                                 "description": "myServer"},
-                                           headers={'Authorization': self.at}):
+    def _list_servers(self):
+        """Helper to list SMTP servers."""
+        with self.app.test_request_context(
+                '/smtpserver/',
+                method='GET',
+                headers={'Authorization': self.at},
+        ):
             res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 200, res)
-            data = res.json
-            self.assertEqual(data.get("result").get("value"), True)
+        return res
 
-        # list servers
-        with self.app.test_request_context('/smtpserver/',
-                                           method='GET',
-                                           headers={'Authorization': self.at}):
+    def _delete_server(self, name="server1"):
+        """Helper to delete an SMTP server."""
+        with self.app.test_request_context(
+                f'/smtpserver/{name}',
+                method='DELETE',
+                headers={'Authorization': self.at},
+        ):
             res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 200, res)
-            data = res.json
-            server_list = data.get("result").get("value")
-            self.assertEqual(len(server_list), 1)
-            server1 = server_list.get("server1")
-            self.assertEqual(server1.get("server"), "1.2.3.4")
-            self.assertEqual(server1.get("sender"), "privacyidea@local")
-            self.assertEqual(server1.get("username"), "cornelius")
-            self.assertEqual(server1.get("password"), "secret")
+        return res
 
-        # delete server
-        with self.app.test_request_context('/smtpserver/server1',
-                                           method='DELETE',
-                                           headers={'Authorization': self.at}):
+    def _send_test_email(self, extra_data=None):
+        """Helper to send a test email via the API."""
+        data = {
+            "identifier": "someServer",
+            "username": "cornelius",
+            "password": encryptPassword("secret"),
+            "port": "123",
+            "server": "1.2.3.4",
+            "sender": "privacyidea@local",
+            "recipient": "recp@example.com",
+            "description": "myServer",
+        }
+        if extra_data:
+            data.update(extra_data)
+        with self.app.test_request_context(
+                '/smtpserver/send_test_email',
+                method='POST',
+                data=data,
+                headers={'Authorization': self.at},
+        ):
             res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 200, res)
+        return res
 
-        # list servers, No server left
-        with self.app.test_request_context('/smtpserver/',
-                                           method='GET',
-                                           headers={'Authorization': self.at}):
+    def test_create_server_unauthorized(self):
+        """Creating a server without auth returns 401."""
+        with self.app.test_request_context(
+                '/smtpserver/server1',
+                method='POST',
+                data={
+                    "username": "cornelius",
+                    "password": "secret",
+                    "port": "123",
+                    "server": "1.2.3.4",
+                    "description": "myServer",
+                },
+        ):
             res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 200, res)
-            data = res.json
-            server_list = data.get("result").get("value")
-            self.assertEqual(len(server_list), 0)
+            assert res.status_code == 401
 
-    @smtpmock.activate
-    def test_02_send_test_email(self):
-        smtpmock.setdata(response={"recp@example.com": (200, "OK")})
+    def test_create_server(self):
+        """Creating a server returns success."""
+        res = self._create_server()
+        assert res.status_code == 200
+        assert res.json["result"]["value"] is True
 
-        with self.app.test_request_context('/smtpserver/send_test_email',
-                                           method='POST',
-                                           data={"identifier": "someServer",
-                                                 "username": "cornelius",
-                                                 "password": encryptPassword("secret"),
-                                                 "port": "123",
-                                                 "server": "1.2.3.4",
-                                                 "sender": "privacyidea@local",
-                                                 "recipient":
-                                                     "recp@example.com",
-                                                 "description": "myServer"},
-                                           headers={'Authorization': self.at}):
-            res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 200, res)
-            data = res.json
-            self.assertEqual(data.get("result").get("value"), True)
+    def test_list_servers(self):
+        """After creating a server, it appears in the list."""
+        self._create_server()
+        res = self._list_servers()
+        assert res.status_code == 200
+        server_list = res.json["result"]["value"]
+        assert len(server_list) == 1
+        server1 = server_list["server1"]
+        assert server1["server"] == "1.2.3.4"
+        assert server1["sender"] == "privacyidea@local"
+        assert server1["username"] == "cornelius"
+        assert server1["password"] == "secret"
 
-    @smtpmock.activate
-    def test_03_send_smime_email(self):
-        smtpmock.setdata(response={"recp@example.com": (200, "OK")})
+    def test_delete_server(self):
+        """After deleting a server, the list is empty."""
+        self._create_server()
+        res = self._delete_server()
+        assert res.status_code == 200
 
-        with self.app.test_request_context('/smtpserver/send_test_email',
-                                           method='POST',
-                                           data={"identifier": "someServer",
-                                                 "username": "cornelius",
-                                                 "password": encryptPassword("secret"),
-                                                 "port": "123",
-                                                 "server": "1.2.3.4",
-                                                 "sender": "privacyidea@local",
-                                                 "recipient":
-                                                     "recp@example.com",
-                                                 "description": "myServer",
-                                                 "smime": True,
-                                                 "private_key": 'tests/testdata/ca/cakey.pem',
-                                                 "certificate": 'tests/testdata/ca/cacert.pem'},
-                                           headers={'Authorization': self.at}):
-            res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 200, res)
-            data = res.json
-            self.assertEqual(data.get("result").get("value"), True)
+        res = self._list_servers()
+        assert res.status_code == 200
+        assert len(res.json["result"]["value"]) == 0
 
-            msg = smtpmock.get_sent_message().decode('utf-8')
-            self.assertTrue("application/x-pkcs7-signature" in msg)
-            self.assertTrue("smime.p7s" in msg)
+    def test_send_test_email(self):
+        """Sending a test email succeeds."""
+        self.smtp_mock.setdata(response={"recp@example.com": (200, "OK")})
+        res = self._send_test_email()
+        assert res.status_code == 200
+        assert res.json["result"]["value"] is True
 
-    @smtpmock.activate
-    def test_04_dont_send_email_on_smime_error(self):
-        smtpmock.setdata(response={"recp@example.com": (200, "OK")})
+    def test_send_smime_email(self):
+        """Sending an S/MIME signed test email succeeds."""
+        self.smtp_mock.setdata(response={"recp@example.com": (200, "OK")})
+        res = self._send_test_email(extra_data={
+            "smime": True,
+            "private_key": "tests/testdata/ca/cakey.pem",
+            "certificate": "tests/testdata/ca/cacert.pem",
+        })
+        assert res.status_code == 200
+        assert res.json["result"]["value"] is True
 
-        with self.app.test_request_context('/smtpserver/send_test_email',
-                                           method='POST',
-                                           data={"identifier": "someServer",
-                                                 "username": "cornelius",
-                                                 "password": encryptPassword("secret"),
-                                                 "port": "123",
-                                                 "server": "1.2.3.4",
-                                                 "sender": "privacyidea@local",
-                                                 "recipient":
-                                                     "recp@example.com",
-                                                 "description": "myServer",
-                                                 "smime": True,
-                                                 "dont_send_on_error": True,
-                                                 "private_key": 'tests/testdata/ca/cakey.pem',
-                                                 "certificate": 'tests/testdata/ca'},
-                                           headers={'Authorization': self.at}):
-            res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 200, res)
-            data = res.json
-            self.assertEqual(data.get("result").get("value"), False)
+        msg = self.smtp_mock.get_sent_message().decode('utf-8')
+        assert "application/x-pkcs7-signature" in msg
+        assert "smime.p7s" in msg
 
-            msg = smtpmock.get_sent_message()
-            self.assertIsNone(msg)
+    def test_dont_send_email_on_smime_error(self):
+        """When S/MIME signing fails with dont_send_on_error, no email is sent."""
+        self.smtp_mock.setdata(response={"recp@example.com": (200, "OK")})
+        res = self._send_test_email(extra_data={
+            "smime": True,
+            "dont_send_on_error": True,
+            "private_key": "tests/testdata/ca/cakey.pem",
+            "certificate": "tests/testdata/ca",
+        })
+        assert res.status_code == 200
+        assert res.json["result"]["value"] is False
+        assert self.smtp_mock.get_sent_message() is None
+
+    def test_sent_email_text_content(self):
+        """Verify the sender, recipient, subject and body passed to smtplib.sendmail."""
+        self.smtp_mock.setdata(response={"recp@example.com": (200, "OK")})
+        res = self._send_test_email()
+        assert res.status_code == 200
+        assert res.json["result"]["value"] is True
+
+        # Check the envelope sender and recipient passed to smtplib.SMTP.sendmail
+        assert self.smtp_mock.get_sent_sender() == "privacyidea@local"
+        assert "recp@example.com" in self.smtp_mock.get_sent_recipient()
+
+        # Check the actual email message content passed to smtplib.SMTP.sendmail
+        raw_msg = self.smtp_mock.get_sent_message()
+        parsed = email.message_from_string(raw_msg)
+        assert parsed["Subject"] == "Test Email from privacyIDEA"
+        assert parsed["From"] == "privacyidea@local"
+        assert parsed["To"] == "recp@example.com"
+
+        body = parsed.get_payload(decode=True).decode("utf-8")
+        assert "This is a test email from privacyIDEA." in body
+        assert "The configuration someServer is working." in body

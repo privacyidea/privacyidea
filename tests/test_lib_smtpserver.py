@@ -90,7 +90,7 @@ class SMTPServerTestCase(MyTestCase):
     def test_03_updateserver(self):
         # Initial create
         smtp_id = add_smtpserver(identifier="myserver", server="100.2.3.4", smime=True, private_key="123",
-                           private_key_password="top_secret", certificate="cert")
+                                 private_key_password="top_secret", certificate="cert")
         self.assertGreater(smtp_id, 0)
         server_list = get_smtpservers(identifier="myserver")
         server = server_list[0].config
@@ -128,7 +128,6 @@ class SMTPServerTestCase(MyTestCase):
         server = server_list[0].config
         self.assertEqual("", server.private_key_password)
 
-
     def test_04_missing_configuration(self):
         self.assertRaises(ResourceNotFoundError, get_smtpserver, "notExisting")
 
@@ -153,7 +152,7 @@ class SMTPServerTestCase(MyTestCase):
                                   "This is a test email from privacyIDEA. "
                                   "The configuration %s is working." % identifier)
         self.assertTrue(r)
-        parsed_email = email.message_from_string(smtpmock.get_sent_message().decode('utf-8'))
+        parsed_email = email.message_from_string(smtpmock.get_sent_message())
         self.assertEqual(parsed_email.get_content_type(), 'text/plain', parsed_email)
         self.assertEqual(parsed_email.get('To'), recipient, parsed_email)
         self.assertEqual(parsed_email.get('Subject'), "Test Email from privacyIDEA", parsed_email)
@@ -163,7 +162,7 @@ class SMTPServerTestCase(MyTestCase):
         r = SMTPServer.test_email(s, recipient, "Test Email with image",
                                   msg)
         self.assertTrue(r)
-        parsed_email = email.message_from_string(smtpmock.get_sent_message().decode('utf-8'))
+        parsed_email = email.message_from_string(smtpmock.get_sent_message())
         self.assertEqual(parsed_email.get_content_type(), 'image/png', parsed_email)
         self.assertEqual(parsed_email.get('To'), recipient, parsed_email)
         self.assertEqual(parsed_email.get('Subject'), "Test Email with image", parsed_email)
@@ -191,7 +190,7 @@ class SMTPServerTestCase(MyTestCase):
                                   "This is a test email from privacyIDEA. "
                                   "The configuration %s is working." % identifier)
         self.assertTrue(r)
-        parsed_email = email.message_from_string(smtpmock.get_sent_message().decode('utf-8'))
+        parsed_email = email.message_from_string(smtpmock.get_sent_message())
         self.assertEqual(parsed_email.get_content_type(), 'text/plain', parsed_email)
         self.assertEqual(parsed_email.get('To'), recipient, parsed_email)
         self.assertEqual(parsed_email.get('Subject'), "Test Email from privacyIDEA", parsed_email)
@@ -201,7 +200,7 @@ class SMTPServerTestCase(MyTestCase):
         r = SMTPServer.test_email(s, recipient, "Test Email with image",
                                   msg)
         self.assertTrue(r)
-        parsed_email = email.message_from_string(smtpmock.get_sent_message().decode('utf-8'))
+        parsed_email = email.message_from_string(smtpmock.get_sent_message())
         self.assertEqual(parsed_email.get_content_type(), 'image/png', parsed_email)
         self.assertEqual(parsed_email.get('To'), recipient, parsed_email)
         self.assertEqual(parsed_email.get('Subject'), "Test Email with image", parsed_email)
