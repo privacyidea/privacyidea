@@ -226,7 +226,7 @@ export class ContainerCreateComponent {
     this.selectedTemplate.set(this._getEmptyTemplate());
   }
 
-  protected compareTemplates = (t1: any, t2: any): boolean => {
+  protected compareTemplates = (t1: ContainerTemplate | null, t2: ContainerTemplate | null): boolean => {
     return t1?.name === t2?.name;
   };
 

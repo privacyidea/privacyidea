@@ -42,7 +42,6 @@ export class ContainerTemplateEditBodyComponent {
     this._updateTokens(updatedTokens);
   }
 
-  // ---  Helper Methods ---
   private _updateTokens(tokens: TokenEnrollmentPayload[]) {
     const editedTemplate: ContainerTemplate = {
       ...this.template(),
