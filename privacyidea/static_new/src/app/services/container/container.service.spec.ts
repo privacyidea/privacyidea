@@ -280,7 +280,7 @@ describe("ContainerService", () => {
 
     expect(valueSpy).toHaveBeenCalled();
     expect(
-      containerService.containerDetailsResource.value()?.result?.value?.containers[0].info.registration_state
+      containerService.containerDetailsResource.value()?.result?.value?.containers[0].info?.registration_state
     ).toBe("registered");
     expect(containerService.isPollingActive()).toBe(false);
     expect(notificationServiceMock.openSnackBar).not.toHaveBeenCalled();
@@ -310,7 +310,7 @@ describe("ContainerService", () => {
 
     expect(valueSpy).toHaveBeenCalled();
     expect(
-      containerService.containerDetailsResource.value()?.result?.value?.containers[0].info.registration_state
+      containerService.containerDetailsResource.value()?.result?.value?.containers[0].info?.registration_state
     ).toBe("registered");
     expect(containerService.isPollingActive()).toBe(false);
     expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith("Container registered successfully.");
@@ -862,14 +862,10 @@ describe("ContainerService", () => {
 
       jest
         .spyOn(http, "get")
-        .mockReturnValue(
-          throwError(() => ({ error: { result: { error: { message: "Comparison failed" } } } }))
-        );
+        .mockReturnValue(throwError(() => ({ error: { result: { error: { message: "Comparison failed" } } } })));
 
       await expect(containerService.compareWithTemplate()).rejects.toBeDefined();
-      expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith(
-        "Failed to compare: Comparison failed"
-      );
+      expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith("Failed to compare: Comparison failed");
     });
   });
 
