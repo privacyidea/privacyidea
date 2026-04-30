@@ -157,10 +157,13 @@ describe("ContainerTemplateEditDialogComponent", () => {
   });
 
   it("should navigate back when onCancel is called and not dirty", () => {
+    const pendingChangesService = TestBed.inject(PendingChangesService);
+    const clearAllSpy = jest.spyOn(pendingChangesService, "clearAllRegistrations");
     const navigateSpy = jest.spyOn(router, "navigateByUrl");
     expect(component.isDirty()).toBeFalsy();
     component.onCancel();
     expect(navigateSpy).toHaveBeenCalledWith(ROUTE_PATHS.TOKENS_CONTAINERS_TEMPLATES);
+    expect(clearAllSpy).toHaveBeenCalled();
   });
 
   it("should open confirmation dialog when onCancel is called and dirty", () => {
@@ -173,6 +176,29 @@ describe("ContainerTemplateEditDialogComponent", () => {
     component.onCancel();
 
     expect(openDialogSpy).toHaveBeenCalled();
+  });
+
+  it("should call pendingChangesService.save and navigate on save-exit choice in onCancel dialog", async () => {
+    const pendingChangesService = TestBed.inject(PendingChangesService);
+    const saveSpy = jest.spyOn(pendingChangesService, "save").mockReturnValue(true as any);
+    const clearAllSpy = jest.spyOn(pendingChangesService, "clearAllRegistrations");
+    const navigateSpy = jest.spyOn(router, "navigateByUrl");
+
+    jest.spyOn(containerTemplateServiceMock, "canSaveTemplate").mockReturnValue(true);
+    component.template.update((t) => ({ ...t, name: "DirtyName" }));
+
+    const dialogService = TestBed.inject(DialogService);
+    const openDialogSpy = jest.spyOn(dialogService, "openDialog");
+    component.onCancel();
+
+    const dialogRef = openDialogSpy.mock.results[0].value;
+    dialogRef.close("save-exit");
+
+    await Promise.resolve();
+
+    expect(saveSpy).toHaveBeenCalled();
+    expect(navigateSpy).toHaveBeenCalledWith(ROUTE_PATHS.TOKENS_CONTAINERS_TEMPLATES);
+    expect(clearAllSpy).toHaveBeenCalled();
   });
 
   it("should not call deleteTemplate when save fails even if template was renamed", async () => {

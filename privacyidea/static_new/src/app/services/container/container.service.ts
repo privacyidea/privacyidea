@@ -505,8 +505,7 @@ export class ContainerService implements ContainerServiceInterface {
   containerDetailsResource = httpResource<PiResponse<ContainerDetails>>(() => {
     const serial = this.containerSerial();
     this.pollingTrigger();
-    this.isPollingActive();
-
+    console.log("Polling container details for serial:", serial);
     if (serial === "") {
       return undefined;
     }
@@ -524,6 +523,7 @@ export class ContainerService implements ContainerServiceInterface {
     source: () => (this.containerDetailsResource.hasValue() ? this.containerDetailsResource.value() : undefined),
     computation: (containerDetailResource, previous) => {
       const containerDetail = containerDetailResource?.result?.value;
+      console.log("Received container details:", containerDetail);
       if (containerDetail) {
         return containerDetail;
       }
@@ -865,6 +865,7 @@ export class ContainerService implements ContainerServiceInterface {
   }
 
   stopPolling(): void {
+    console.log("Stopping polling.");
     clearTimeout(this.pollingTimeoutId);
     this.isPollingActive.set(false);
     this.stopPolling$.next();

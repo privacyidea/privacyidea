@@ -81,6 +81,7 @@ describe("ContainerTemplateEditComponent", () => {
   it("canSaveTemplate delegates to service.canSaveTemplate and respects nameConflict", () => {
     serviceMock.canSaveTemplate.mockReturnValue(true);
     expect(component.canSaveTemplate()).toBe(true);
+    expect(serviceMock.canSaveTemplate).toHaveBeenCalledWith(component.template());
 
     serviceMock.templates.set([{ name: "Conflict", container_type: "generic", default: false, template_options: { tokens: [] } }]);
     component.editTemplate({ name: "Conflict" });

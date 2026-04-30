@@ -34,6 +34,7 @@ import {
 } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { MatButton, MatIconButton } from "@angular/material/button";
+import { MatCheckbox } from "@angular/material/checkbox";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MatIcon } from "@angular/material/icon";
 import { MatFormField, MatInputModule, MatSuffix } from "@angular/material/input";
@@ -74,6 +75,7 @@ import {
   selector: "app-container-create",
   imports: [
     MatButton,
+    MatCheckbox,
     MatFormField,
     MatIcon,
     MatOption,
@@ -162,16 +164,12 @@ export class ContainerCreateComponent {
     });
 
     effect(() => {
-      const serial = this.containerSerial();
-      if (!serial || !this.containerService.containerDetailsResource.hasValue()) return;
+      const containerDetail = this.containerService.containerDetail();
+      if (!containerDetail) return;
 
-      const containerDetailResource = this.containerService.containerDetailsResource.value();
-      if (!containerDetailResource?.result?.value) return;
-
-      const container = containerDetailResource.result.value.containers[0];
-      if (container?.info?.registration_state === "registered") {
+      if (containerDetail?.info?.registration_state === "registered") {
+        const serial = containerDetail.serial;
         this.dialogService.closeAllDialogs();
-        this.containerService.stopPolling();
         this.openRegistrationCompletedDialog(serial);
       }
     });
@@ -276,8 +274,7 @@ export class ContainerCreateComponent {
         if (regenerate) {
           this.dialogData.update((data) => (data ? { ...data, response: registerResponse } : data));
         } else {
-          this.openRegistrationDialog(registerResponse);
-          this.containerService.startPolling(serial);
+          this.openRegistrationDialog(registerResponse, serial);
         }
       });
   }
@@ -285,22 +282,24 @@ export class ContainerCreateComponent {
   reopenEnrollmentDialog() {
     const currentResponse = this.registerResponse();
     if (currentResponse) {
-      this.openRegistrationDialog(currentResponse);
-      this.containerService.startPolling(this.containerService.containerSerial());
+      this.openRegistrationDialog(currentResponse, this.containerService.containerSerial());
     }
   }
 
-  protected openRegistrationDialog(response: PiResponse<ContainerRegisterData>) {
+  protected openRegistrationDialog(response: PiResponse<ContainerRegisterData>, serial: string) {
     this.dialogData.set({
       response: response,
       containerSerial: this.containerSerial,
       registerContainer: this.registerContainer.bind(this)
     });
 
-    this.dialogService.openDialog({
+    const dialogRef = this.dialogService.openDialog({
       component: ContainerCreatedDialogComponent,
       data: this.dialogData as Signal<ContainerCreationDialogData>
     });
+
+    this.containerService.startPolling(serial);
+    dialogRef.afterClosed().subscribe(() => this.containerService.stopPolling());
   }
 
   protected openRegistrationCompletedDialog(serial: string) {

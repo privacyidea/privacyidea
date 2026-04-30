@@ -815,6 +815,64 @@ describe("ContainerService", () => {
     });
   });
 
+  describe("compareWithTemplate", () => {
+    const containerWithTemplate = (serial: string, template: string | undefined) => ({
+      count: 1,
+      containers: [{ serial, type: "", tokens: [], users: [], realms: [], states: [], template } as any]
+    });
+
+    it("returns early when serial is empty", async () => {
+      containerService.containerSerial.set("");
+      const consoleSpy = jest.spyOn(console, "warn").mockImplementation();
+      await containerService.compareWithTemplate();
+      expect(consoleSpy).toHaveBeenCalled();
+      expect(containerService.templateComparison()).toBeNull();
+      consoleSpy.mockRestore();
+    });
+
+    it("returns early when container has no template", async () => {
+      containerService.containerSerial.set("CONT-1");
+      containerService.containerDetails.set(containerWithTemplate("CONT-1", undefined));
+      const consoleSpy = jest.spyOn(console, "warn").mockImplementation();
+      await containerService.compareWithTemplate();
+      expect(consoleSpy).toHaveBeenCalled();
+      expect(containerService.templateComparison()).toBeNull();
+      consoleSpy.mockRestore();
+    });
+
+    it("fetches comparison result and sets templateComparison", async () => {
+      containerService.containerSerial.set("CONT-1");
+      containerService.containerDetails.set(containerWithTemplate("CONT-1", "myTemplate"));
+
+      const comparisonResult = { "CONT-1": { tokens: { additional: [], equal: true, missing: [] } } };
+      jest.spyOn(http, "get").mockReturnValue(of({ result: { value: comparisonResult } } as any));
+
+      await containerService.compareWithTemplate();
+
+      expect(http.get).toHaveBeenCalledWith(
+        expect.stringContaining("myTemplate/compare?container_serial=CONT-1"),
+        expect.anything()
+      );
+      expect(containerService.templateComparison()).toEqual(comparisonResult);
+    });
+
+    it("shows snackbar on HTTP error", async () => {
+      containerService.containerSerial.set("CONT-1");
+      containerService.containerDetails.set(containerWithTemplate("CONT-1", "myTemplate"));
+
+      jest
+        .spyOn(http, "get")
+        .mockReturnValue(
+          throwError(() => ({ error: { result: { error: { message: "Comparison failed" } } } }))
+        );
+
+      await expect(containerService.compareWithTemplate()).rejects.toBeDefined();
+      expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith(
+        "Failed to compare: Comparison failed"
+      );
+    });
+  });
+
   describe("templateComparison", () => {
     it("resets to null when containerSerial changes", () => {
       containerService.containerSerial.set("CONT-A");

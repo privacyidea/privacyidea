@@ -109,13 +109,26 @@ describe("ContainerTemplatesTableActionsComponent", () => {
     );
     expect(serviceSpy).toHaveBeenCalledTimes(2);
     expect(serviceSpy).toHaveBeenCalledWith(mockTemplates[0], "Template1_Copy");
+    expect(serviceSpy).toHaveBeenCalledWith(mockTemplates[1], "Template2_Copy");
   });
 
-  it("should not call copyTemplate if dialog is cancelled or name is unchanged", async () => {
+  it("should not call copyTemplate if dialog is cancelled (null result)", async () => {
     fixture.componentRef.setInput("selectedTemplates", [mockTemplates[0]]);
     fixture.detectChanges();
 
     jest.spyOn(dialogServiceMock, "openDialogAsync").mockResolvedValue(null);
+    const serviceSpy = jest.spyOn(containerTemplateServiceMock, "copyTemplate");
+
+    await component.openCopyTemplateDialog();
+
+    expect(serviceSpy).not.toHaveBeenCalled();
+  });
+
+  it("should not call copyTemplate if returned name equals the original name", async () => {
+    fixture.componentRef.setInput("selectedTemplates", [mockTemplates[0]]);
+    fixture.detectChanges();
+
+    jest.spyOn(dialogServiceMock, "openDialogAsync").mockResolvedValue("Template1");
     const serviceSpy = jest.spyOn(containerTemplateServiceMock, "copyTemplate");
 
     await component.openCopyTemplateDialog();
@@ -144,12 +157,12 @@ describe("ContainerTemplatesTableActionsComponent", () => {
     expect(serviceSpy).toHaveBeenCalledWith(["Template1", "Template2"]);
   });
 
-  it("should not call deleteTemplate if deletion is not confirmed", async () => {
+  it("should not call deleteTemplates if deletion is not confirmed", async () => {
     fixture.componentRef.setInput("selectedTemplates", [mockTemplates[0]]);
     fixture.detectChanges();
 
     jest.spyOn(dialogServiceMock, "openDialogAsync").mockResolvedValue(false);
-    const serviceSpy = jest.spyOn(containerTemplateServiceMock, "deleteTemplate");
+    const serviceSpy = jest.spyOn(containerTemplateServiceMock, "deleteTemplates");
 
     await component.openDeleteTemplateDialog();
 

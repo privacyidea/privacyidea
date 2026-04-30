@@ -57,6 +57,8 @@ describe("ContainerTemplateEditBodyComponent", () => {
     (component as any).onAddToken("hotp");
     expect(component["tokens"]().length).toBe(before + 1);
     expect((component["tokens"]()[before] as any).type).toBe("hotp");
+    expect(component.template().template_options.tokens.length).toBe(before + 1);
+    expect((component.template().template_options.tokens[before] as any).type).toBe("hotp");
   });
 
   it("onDeleteToken removes the token at the given index", () => {
@@ -64,16 +66,21 @@ describe("ContainerTemplateEditBodyComponent", () => {
     (component as any).onDeleteToken(0);
     expect(component["tokens"]().length).toBe(before - 1);
     expect((component["tokens"]()[0] as any).type).toBe("totp");
+    expect(component.template().template_options.tokens.length).toBe(before - 1);
+    expect((component.template().template_options.tokens[0] as any).type).toBe("totp");
   });
 
   it("onEditToken merges a patch into the token at the given index", () => {
     (component as any).onEditToken({ description: "Edited" }, 0);
     expect((component["tokens"]()[0] as any).description).toBe("Edited");
     expect((component["tokens"]()[0] as any).type).toBe("hotp");
+    expect((component.template().template_options.tokens[0] as any).description).toBe("Edited");
+    expect((component.template().template_options.tokens[0] as any).type).toBe("hotp");
   });
 
   it("onEditToken removes undefined keys from the patched token", () => {
     (component as any).onEditToken({ type: undefined }, 0);
     expect("type" in component["tokens"]()[0]).toBe(false);
+    expect("type" in component.template().template_options.tokens[0]).toBe(false);
   });
 });
