@@ -48,20 +48,19 @@ import { EditableElement, EditButtonsComponent } from "../../shared/edit-buttons
 
 import { NgClass } from "@angular/common";
 import { MatIconButton } from "@angular/material/button";
-import { MatCheckbox } from "@angular/material/checkbox";
 import { MatDivider } from "@angular/material/divider";
 import { MatFormField } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
 import { MatListItem } from "@angular/material/list";
 import { MatSelectModule } from "@angular/material/select";
-import { MatTooltip } from "@angular/material/tooltip";
-import { Router, RouterLink } from "@angular/router";
+import { Router } from "@angular/router";
+import { DetailsHeaderComponent } from "@components/shared/details-shared/details-header/details-header.component";
 import { FilterValue } from "../../../core/models/filter_value/filter_value";
 import { ROUTE_PATHS } from "../../../route_paths";
 import { AuditService, AuditServiceInterface } from "../../../services/audit/audit.service";
 import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
-import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
+import { ContainerAddTokenComponent } from "../../shared/container-add-token/container-add-token.component";
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { infoDetailsKeyMap } from "../token-details/token-details.component";
 import { ContainerDetailsActionsComponent } from "./container-details-actions/container-details-actions.component";
@@ -117,17 +116,13 @@ interface TokenOption {
     MatIconButton,
     ContainerDetailsInfoComponent,
     ContainerDetailsTokenTableComponent,
-    MatPaginator,
     MatDivider,
-    MatCheckbox,
-    CopyButtonComponent,
-    ClearableInputComponent,
-    MatTooltip,
     ClearableInputComponent,
     ContainerDetailsActionsComponent,
     ScrollToTopDirective,
     ContainerDetailsTokenActionsComponent,
-    RouterLink
+    DetailsHeaderComponent,
+    ContainerAddTokenComponent
   ],
   templateUrl: "./container-details.component.html",
   styleUrls: ["./container-details.component.scss"]

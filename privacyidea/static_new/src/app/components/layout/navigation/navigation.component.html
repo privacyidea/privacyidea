@@ -371,36 +371,41 @@
       </mat-expansion-panel>
     }
 
-    <mat-expansion-panel [expanded]="router.url.startsWith(ROUTE_PATHS.AUDIT)">
-      <mat-expansion-panel-header (click)="router.navigate([ROUTE_PATHS.AUDIT])">
-        <mat-panel-title>
-          <mat-icon>receipt_long</mat-icon>
-          Audit
-        </mat-panel-title>
-      </mat-expansion-panel-header>
-      <mat-list>
-        <mat-list-item>
-          <button
-            [ngClass]="contentService.routeUrl() === ROUTE_PATHS.AUDIT ? 'card-button-active' : 'card-button-1'"
-            [routerLink]="[ROUTE_PATHS.AUDIT]"
-            mat-stroked-button>
-            <mat-icon>list_alt</mat-icon>
-            Log
-          </button>
-        </mat-list-item>
-        @if (authService.actionAllowed("clienttype")) {
-          <mat-list-item>
-            <button
-              [ngClass]="contentService.routeUrl() === ROUTE_PATHS.CLIENTS ? 'card-button-active' : 'card-button-1'"
-              [routerLink]="[ROUTE_PATHS.CLIENTS]"
-              mat-stroked-button>
-              <mat-icon>recent_actors</mat-icon>
-              Known Clients
-            </button>
-          </mat-list-item>
-        }
-      </mat-list>
-    </mat-expansion-panel>
+    @if (authService.actionAllowed("auditlog") || authService.actionAllowed("clienttype")) {
+      <mat-expansion-panel [expanded]="router.url.startsWith(ROUTE_PATHS.AUDIT)">
+        <mat-expansion-panel-header
+          (click)="router.navigate([authService.actionAllowed('auditlog') ? ROUTE_PATHS.AUDIT : ROUTE_PATHS.CLIENTS])">
+          <mat-panel-title>
+            <mat-icon>receipt_long</mat-icon>
+            Audit
+          </mat-panel-title>
+        </mat-expansion-panel-header>
+        <mat-list>
+          @if (authService.actionAllowed("auditlog")) {
+            <mat-list-item>
+              <button
+                [ngClass]="contentService.routeUrl() === ROUTE_PATHS.AUDIT ? 'card-button-active' : 'card-button-1'"
+                [routerLink]="[ROUTE_PATHS.AUDIT]"
+                mat-stroked-button>
+                <mat-icon>list_alt</mat-icon>
+                Log
+              </button>
+            </mat-list-item>
+          }
+          @if (authService.actionAllowed("clienttype")) {
+            <mat-list-item>
+              <button
+                [ngClass]="contentService.routeUrl() === ROUTE_PATHS.CLIENTS ? 'card-button-active' : 'card-button-1'"
+                [routerLink]="[ROUTE_PATHS.CLIENTS]"
+                mat-stroked-button>
+                <mat-icon>recent_actors</mat-icon>
+                Known Clients
+              </button>
+            </mat-list-item>
+          }
+        </mat-list>
+      </mat-expansion-panel>
+    }
 
     <mat-expansion-panel [expanded]="router.url.startsWith('/external-services')">
       <mat-expansion-panel-header>

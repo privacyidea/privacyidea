@@ -27,8 +27,7 @@ import { MatInput } from "@angular/material/input";
 import { MatListItem } from "@angular/material/list";
 import { MatSelectModule } from "@angular/material/select";
 import { MatCell, MatColumnDef, MatRow, MatTable, MatTableModule } from "@angular/material/table";
-import { MatTooltip } from "@angular/material/tooltip";
-import { RouterLink } from "@angular/router";
+import { DetailsHeaderComponent } from "@components/shared/details-shared/details-header/details-header.component";
 import { TokenDetailsMachineComponent } from "@components/token/token-details/token-details-machine/token-details-machine.component";
 import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
 import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
@@ -65,8 +64,7 @@ import { TokenDetailsComponent } from "./token-details.component";
     CopyButtonComponent,
     ClearableInputComponent,
     TokenDetailsMachineComponent,
-    RouterLink,
-    MatTooltip
+    DetailsHeaderComponent
   ],
   templateUrl: "./token-details.self-service.component.html",
   styleUrls: ["./token-details.component.scss"]

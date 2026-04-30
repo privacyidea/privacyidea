@@ -35,8 +35,7 @@ import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
 import { MatListItem } from "@angular/material/list";
 import { MatSelectModule } from "@angular/material/select";
-import { MatTooltip } from "@angular/material/tooltip";
-import { RouterLink } from "@angular/router";
+import { DetailsHeaderComponent } from "@components/shared/details-shared/details-header/details-header.component";
 import { FilterValue } from "../../../core/models/filter_value/filter_value";
 import { ROUTE_PATHS } from "../../../route_paths";
 import { AuditService, AuditServiceInterface } from "../../../services/audit/audit.service";
@@ -118,9 +117,7 @@ export const infoDetailsKeyMap = [{ key: "info", label: "Information" }];
     CopyButtonComponent,
     ClearableInputComponent,
     TokenDetailsMachineComponent,
-    MatTooltip,
-    RouterLink,
-    MatTooltip
+    DetailsHeaderComponent
   ],
   templateUrl: "./token-details.component.html",
   styleUrls: ["./token-details.component.scss"]

@@ -34,15 +34,9 @@ import {
 } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { MatButton, MatIconButton } from "@angular/material/button";
-import { MatCheckbox } from "@angular/material/checkbox";
-import {
-  MatAccordion,
-  MatExpansionPanel,
-  MatExpansionPanelHeader,
-  MatExpansionPanelTitle
-} from "@angular/material/expansion";
+import { MatExpansionModule } from "@angular/material/expansion";
 import { MatIcon } from "@angular/material/icon";
-import { MatFormField, MatInput, MatLabel, MatSuffix } from "@angular/material/input";
+import { MatFormField, MatInputModule, MatSuffix } from "@angular/material/input";
 import { MatOption, MatSelect } from "@angular/material/select";
 import { MatTooltip } from "@angular/material/tooltip";
 import { Router } from "@angular/router";
@@ -85,23 +79,18 @@ import {
     MatOption,
     MatSelect,
     FormsModule,
-    MatInput,
-    MatLabel,
-    MatCheckbox,
     MatIconButton,
-    MatAccordion,
-    MatExpansionPanel,
-    MatExpansionPanelTitle,
-    MatExpansionPanelHeader,
     MatTooltip,
     ScrollToTopDirective,
     NgClass,
     CommonModule,
-    ContainerRegistrationConfigComponent,
     UserAssignmentComponent,
     MatSuffix,
     ClearButtonComponent,
-    ContainerTemplateEditBodyComponent
+    ContainerTemplateEditBodyComponent,
+    MatInputModule,
+    MatExpansionModule,
+    ContainerRegistrationConfigComponent
   ],
   templateUrl: "./container-create.component.html",
   styleUrl: "./container-create.component.scss"
