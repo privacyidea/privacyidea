@@ -92,10 +92,20 @@ angular.module("privacyideaApp")
                         username: $scope.User.username,
                         password: $scope.User.password
                     }, function (data) {
-                        inform.add(gettextCatalog.getString("Password set successfully."),
-                            {type: "info"});
-                        $scope.User.password = "";
-                        $scope.password2 = "";
+                        // The backend returns the standard PI envelope: success
+                        // is `data.result.value === true`. The previous handler
+                        // unconditionally announced success, so an LDAP/policy
+                        // failure surfaced as a misleading "Password set
+                        // successfully" toast (#5181).
+                        if (data.result && data.result.value) {
+                            inform.add(gettextCatalog.getString("Password set successfully."),
+                                {type: "info"});
+                            $scope.User.password = "";
+                            $scope.password2 = "";
+                        } else {
+                            inform.add(gettextCatalog.getString("Failed to set Password"),
+                                {type: "danger"});
+                        }
                     });
             };
 
