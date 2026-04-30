@@ -47,5 +47,4 @@ export class MockAuditService implements AuditServiceInterface {
     this.auditFilter.set(new FilterValue({ value: inputElement.value }));
   });
   downloadCSV = jest.fn();
-  cancelDownload = jest.fn();
 }

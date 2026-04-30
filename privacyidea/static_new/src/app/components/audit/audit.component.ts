@@ -104,7 +104,6 @@ const columnKeysMap = [
     RouterLink,
     ScrollToTopDirective,
     ClearableInputComponent,
-    RouterLink,
     MatIcon,
     MatButtonModule,
     MatIconModule

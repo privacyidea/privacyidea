@@ -57,15 +57,6 @@
         <mat-icon>download</mat-icon>
         Download
       </button>
-      @if (auditService.isDownloading()) {
-        <button
-          (click)="auditService.cancelDownload()"
-          class="action-button-delete-secondary margin-left-8"
-          i18n
-          mat-stroked-button>
-          Cancel
-        </button>
-      }
     }
   </div>
   <table

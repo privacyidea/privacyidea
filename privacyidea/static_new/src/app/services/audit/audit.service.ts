@@ -133,8 +133,6 @@ export interface AuditServiceInterface {
   handleFilterInput($event: Event): void;
 
   downloadCSV(): void;
-
-  cancelDownload(): void;
 }
 
 @Injectable({
@@ -227,16 +225,9 @@ export class AuditService implements AuditServiceInterface {
         a.click();
         window.URL.revokeObjectURL(url);
       },
-      error: (error) => {
+      error: (_) => {
         this.notificationService.openSnackBar($localize`Failed to download audit log.`);
       }
     });
-  }
-
-  cancelDownload(): void {
-    if (this.downloadSubscription) {
-      this.downloadSubscription.unsubscribe();
-      this.isDownloading.set(false);
-    }
   }
 }

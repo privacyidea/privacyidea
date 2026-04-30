@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { HttpHeaders, HttpProgressEvent, HttpResourceRef } from "@angular/common/http";
-import { Resource, ResourceStatus, Signal, signal, WritableSignal } from "@angular/core";
+import { computed, Resource, ResourceSnapshot, ResourceStatus, Signal, signal, WritableSignal } from "@angular/core";
 
 export function makeResource<T>(initial: T) {
   return {
@@ -44,8 +44,9 @@ export class MockHttpResourceRef<T> implements HttpResourceRef<T> {
       reload: this.reload,
       error: this.error,
       hasValue: this.hasValue.bind(this),
-      status: signal("resolved"),
-      isLoading: signal(false)
+      status: this.status,
+      isLoading: this.isLoading,
+      snapshot: this.snapshot
     } as any;
   }
 
@@ -59,10 +60,18 @@ export class MockHttpResourceRef<T> implements HttpResourceRef<T> {
 
   destroy(): void {}
 
+  snapshot: Signal<ResourceSnapshot<T>> = computed(() => {
+    const status = this.status();
+    if (status === 'error') {
+      return { status, error: this.error()! } as ResourceSnapshot<T>;
+    }
+    return { status, value: this.value() } as ResourceSnapshot<T>;
+  });
+
   status: Signal<ResourceStatus> = signal("resolved");
   error = signal<Error | undefined>(undefined);
   isLoading: Signal<boolean> = signal(false);
-  reload = jest.fn();
+  reload = jest.fn().mockReturnValue(true);
 
   constructor(initial: T) {
     this.value = signal(initial) as WritableSignal<T>;
