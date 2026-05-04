@@ -24,6 +24,8 @@
     &::-webkit-scrollbar {
       display: none;
     }
+
+    --chip-listbox-flex-flow: row nowrap;
   }
 
   mat-chip {
@@ -37,11 +39,5 @@
     font-size: 20px;
     width: 20px;
     height: 20px;
-  }
-
-  ::ng-deep {
-    .mdc-evolution-chip__action--presentational {
-      cursor: pointer !important;
-    }
   }
 }
