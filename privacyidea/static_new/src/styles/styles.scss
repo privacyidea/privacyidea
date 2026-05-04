@@ -566,12 +566,20 @@ body.self-service-layout {
 
 .multi-column-panel.mat-mdc-select-panel {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(2, minmax(260px, 308px));
   max-height: unset;
   column-gap: var(--third-global-padding);
   padding: var(--three-quarters-global-padding);
   padding-bottom: var(--global-padding);
   overflow-y: auto;
+}
+
+@media (max-width: 1302px) {
+  .multi-column-panel.mat-mdc-select-panel {
+    grid-template-columns: minmax(260px, 308px);
+    width: fit-content !important;
+    min-width: unset !important;
+  }
 }
 
 .single-column-panel.mat-mdc-select-panel {
@@ -720,7 +728,6 @@ mat-chip.mat-mdc-chip {
 
 .mdc-list-item.mdc-list-item--with-one-line {
   height: auto !important;
-  padding-left: 220;
   padding-right: 0;
   padding-bottom: 8px;
 }

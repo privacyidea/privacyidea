@@ -4,6 +4,7 @@
 .container-create-container {
   @include styles.main-component-style;
   display: grid;
+  min-width: 616px;
 }
 
 .container-type-hint {
@@ -12,11 +13,13 @@
 }
 
 .type-select {
-  width: 616px;
+  flex: 0 0 calc(2 * 308px + var(--third-global-padding) + 2 * var(--three-quarters-global-padding));
+  width: calc(2 * 308px + var(--third-global-padding) + 2 * var(--three-quarters-global-padding));
 }
 
-@media (max-width: 1040px) {
+@media (max-width: 1302px) {
   .type-select {
-    width: 100%;
+    flex: 0 0 calc(308px + 2 * var(--three-quarters-global-padding));
+    width: calc(308px + 2 * var(--three-quarters-global-padding));
   }
 }
