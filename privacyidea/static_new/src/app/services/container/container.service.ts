@@ -455,7 +455,6 @@ export class ContainerService implements ContainerServiceInterface {
       this.contentService.onTokensContainersWizard() ||
       this.contentService.onTokensEnrollment() ||
       this.contentService.onTokenDetails();
-
     if (!onAllowedRoute) {
       return undefined;
     }
@@ -505,10 +504,7 @@ export class ContainerService implements ContainerServiceInterface {
   containerDetailsResource = httpResource<PiResponse<ContainerDetails>>(() => {
     const serial = this.containerSerial();
     this.pollingTrigger();
-    console.log("Polling container details for serial:", serial);
-    if (serial === "") {
-      return undefined;
-    }
+    if (serial === "") return undefined;
     return {
       url: this.containerBaseUrl,
       method: "GET",
@@ -523,10 +519,7 @@ export class ContainerService implements ContainerServiceInterface {
     source: () => (this.containerDetailsResource.hasValue() ? this.containerDetailsResource.value() : undefined),
     computation: (containerDetailResource, previous) => {
       const containerDetail = containerDetailResource?.result?.value;
-      console.log("Received container details:", containerDetail);
-      if (containerDetail) {
-        return containerDetail;
-      }
+      if (containerDetail) return containerDetail;
       return (
         previous?.value ?? {
           containers: [],
@@ -889,7 +882,6 @@ export class ContainerService implements ContainerServiceInterface {
   }
 
   stopPolling(): void {
-    console.log("Stopping polling.");
     clearTimeout(this.pollingTimeoutId);
     this.isPollingActive.set(false);
     this.stopPolling$.next();

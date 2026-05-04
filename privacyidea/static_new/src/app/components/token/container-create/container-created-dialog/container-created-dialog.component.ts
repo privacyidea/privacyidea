@@ -41,7 +41,9 @@ export type ContainerCreationDialogData = {
   templateUrl: "./container-created-dialog.component.html",
   styleUrl: "./container-created-dialog.component.scss"
 })
-export class ContainerCreatedDialogComponent extends AbstractDialogComponent<Signal<ContainerCreationDialogData>> {
+export class ContainerCreatedDialogComponent extends AbstractDialogComponent<
+  Signal<ContainerCreationDialogData | null>
+> {
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
   private contentService = inject(ContentService);
 
@@ -52,7 +54,7 @@ export class ContainerCreatedDialogComponent extends AbstractDialogComponent<Sig
     });
   }
 
-  containerSelected(containerSerial: string) {
+  navigateContainerDetails(containerSerial: string) {
     this.dialogRef.close();
     this.contentService.navigateContainerDetails(containerSerial);
   }

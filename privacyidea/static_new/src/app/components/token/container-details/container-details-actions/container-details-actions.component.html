@@ -42,10 +42,9 @@
         <button
           (click)="containerService.compareWithTemplate()"
           class="action-button-secondary button-width-m"
-          i18n
           mat-stroked-button>
           <mat-icon>compare</mat-icon>
-          Compare
+          <span i18n>Compare</span>
         </button>
       }
       @if (containerType === "smartphone") {

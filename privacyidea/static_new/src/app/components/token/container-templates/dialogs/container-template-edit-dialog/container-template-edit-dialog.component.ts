@@ -48,11 +48,6 @@ import { ContentService, ContentServiceInterface } from "../../../../../services
 import { deepCopy } from "../../../../../utils/deep-copy.utils";
 import { ContainerTemplateEditComponent } from "../../container-template-edit/container-template-edit.component";
 
-/**
- * Dialog component for editing container templates. Used for both creating new templates and editing existing ones.
- * When the dialog closes with the "Save" action, the edited template is saved via the ContainerTemplateService and returned as the dialog result.
- * When the edit was cancelled, the dialog simply closes without saving, and no data is returned.
- */
 @Component({
   selector: "app-container-template-edit-dialog",
   standalone: true,

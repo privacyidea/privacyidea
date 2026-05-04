@@ -239,6 +239,12 @@ describe("ContainerCreateComponent", () => {
     (component as any).registerContainer("C-001");
     fixture.detectChanges();
 
+    expect(containerServiceMock.registerContainer).toHaveBeenCalledWith({
+      container_serial: "C-001",
+      passphrase_user: false,
+      passphrase_response: "",
+      passphrase_prompt: ""
+    });
     expect(openDialogSpy).toHaveBeenCalled();
     expect(pollSpy).toHaveBeenCalledWith("C-001");
   });
@@ -291,8 +297,6 @@ describe("ContainerCreateComponent", () => {
     } as any);
 
     fixture.detectChanges();
-
-    TestBed.flushEffects();
 
     expect(closeAllSpy).toHaveBeenCalled();
     expect(openDialogSpy).toHaveBeenCalled();
@@ -354,6 +358,57 @@ describe("ContainerCreateComponent", () => {
 
     lastIO!.trigger([{ rootBounds: { top: 0 }, boundingClientRect: { top: 1 } } as any]);
     expect(removeClass).toHaveBeenCalledWith((component as any).stickyHeader.nativeElement, "is-sticky");
+  });
+
+  it("smartphone without registration wizard policy does not open registration completed dialog", () => {
+    wizardFixture.destroy();
+    selfFixture.destroy();
+    authService.authData.set({
+      ...authService.authData()!,
+      container_wizard: { ...authService.authData()!.container_wizard, registration: false }
+    });
+
+    const dialog = TestBed.inject(MatDialog);
+    const registerSpy = jest.spyOn(dialog, "open");
+    const stopPollingSpy = jest.spyOn(containerServiceMock, "stopPolling");
+
+    jest.spyOn(containerServiceMock.containerDetailsResource, "value").mockReturnValue({
+      result: { value: { containers: [{ type: "smartphone", info: { registration_state: "registered" } }] } }
+    } as any);
+
+    containerServiceMock.containerSerial.set("CONT-NO-REG");
+
+    fixture.detectChanges();
+    TestBed.tick();
+
+    expect(stopPollingSpy).toHaveBeenCalled();
+    expect(registerSpy).not.toHaveBeenCalled();
+  });
+
+  it("smartphone with registration wizard policy but without register right does not open registration completed dialog", () => {
+    wizardFixture.destroy();
+    selfFixture.destroy();
+    authService.authData.set({
+      ...authService.authData()!,
+      container_wizard: { ...authService.authData()!.container_wizard, registration: true }
+    });
+    authService.actionAllowed.mockImplementation((action: string) => action !== "container_register");
+
+    const dialog = TestBed.inject(MatDialog);
+    const registerSpy = jest.spyOn(dialog, "open");
+    const stopPollingSpy = jest.spyOn(containerServiceMock, "stopPolling");
+
+    jest.spyOn(containerServiceMock.containerDetailsResource, "value").mockReturnValue({
+      result: { value: { containers: [{ type: "smartphone", info: { registration_state: "registered" } }] } }
+    } as any);
+
+    containerServiceMock.containerSerial.set("CONT-NO-RIGHT");
+
+    fixture.detectChanges();
+    TestBed.tick();
+
+    expect(stopPollingSpy).toHaveBeenCalled();
+    expect(registerSpy).not.toHaveBeenCalled();
   });
 
   describe("wizard", () => {
@@ -472,12 +527,8 @@ describe("ContainerCreateComponent", () => {
         .mockReturnValue(of({ result: { value: { container_serial: "CONT-GENERIC" } } } as any));
 
       containerServiceMock.selectedContainerType.set({ containerType: "generic", description: "", token_types: [] });
-
       wizardComponent.createContainer();
-
       wizardFixture.detectChanges();
-      (TestBed as any).flushEffects();
-
       expect(openDialogSpy).toHaveBeenCalledWith(
         expect.objectContaining({
           component: ContainerCreatedDialogWizardComponent
@@ -529,8 +580,6 @@ describe("ContainerCreateComponent", () => {
       } as any);
 
       wizardFixture.detectChanges();
-      (TestBed as any).flushEffects();
-
       expect(openDialogSpy).toHaveBeenCalledWith(
         expect.objectContaining({
           component: ContainerRegistrationCompletedDialogWizardComponent,

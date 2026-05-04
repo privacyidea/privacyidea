@@ -16,18 +16,18 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
-import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
-import { firstValueFrom, of, Subject } from "rxjs";
 import { signal } from "@angular/core";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { Router } from "@angular/router";
+import { firstValueFrom, Subject } from "rxjs";
 
-import { ContainerCreatedDialogComponent } from "./container-created-dialog.component";
-import { ContainerCreatedDialogWizardComponent } from "./container-created-dialog.wizard.component";
 import { ContainerService } from "../../../../services/container/container.service";
 import { ContentService } from "../../../../services/content/content.service";
+import { ContainerCreatedDialogComponent } from "./container-created-dialog.component";
+import { ContainerCreatedDialogWizardComponent } from "./container-created-dialog.wizard.component";
 
 describe("ContainerCreatedDialogComponent", () => {
   let fixture: ComponentFixture<ContainerCreatedDialogComponent>;
@@ -83,8 +83,13 @@ describe("ContainerCreatedDialogComponent", () => {
     expect(stopPolling).toHaveBeenCalledTimes(1);
   });
 
+  it("displays the container serial number in the dialog content", () => {
+    const content = fixture.nativeElement.textContent as string;
+    expect(content).toContain("C-001");
+  });
+
   it("containerSelected closes dialog and forwards selection", () => {
-    component.containerSelected("C-777");
+    component.navigateContainerDetails("C-777");
     expect(dialogClose).toHaveBeenCalled();
     expect(navigateContainerDetails).toHaveBeenCalledWith("C-777");
   });

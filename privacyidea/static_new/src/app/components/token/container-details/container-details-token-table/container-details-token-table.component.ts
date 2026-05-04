@@ -222,17 +222,17 @@ export class ContainerDetailsTokenTableComponent {
   });
 
   ngAfterViewInit(): void {
-    const ds = this.dataSource();
-    ds.paginator = this.paginator;
+    const dataSource = this.dataSource();
+    dataSource.paginator = this.paginator;
 
     if (this.containerTokenData) {
-      const externalDS = this.containerTokenData();
-      externalDS.paginator = this.paginator;
-      (externalDS as any)._sort = this.sort;
+      const externalDataSource = this.containerTokenData();
+      externalDataSource.paginator = this.paginator;
+      (externalDataSource as any)._sort = this.sort;
     }
-    (ds as any)._sort = this.sort;
+    (dataSource as any)._sort = this.sort;
 
-    ds.filterPredicate = (data: ContainerDetailTokenData, filter: string) => {
+    dataSource.filterPredicate = (data: ContainerDetailTokenData, filter: string) => {
       const row = data.token;
       const haystack = [row.serial, row.tokentype, row.username, String(row.active)].join(" ").toLowerCase();
       return haystack.includes(filter);

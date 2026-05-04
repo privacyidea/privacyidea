@@ -27,7 +27,6 @@ import {
   linkedSignal,
   Renderer2,
   signal,
-  Signal,
   untracked,
   ViewChild,
   WritableSignal
@@ -108,8 +107,8 @@ export class ContainerCreateComponent {
   private observer!: IntersectionObserver;
   validInput = true;
 
-  containerSerial = signal("");
   description = signal("");
+  containerSerial = this.containerService.containerSerial;
   selectedUser = this.userService.selectionUsernameFilter;
   selectedUserRealm = this.userService.selectedUserRealm;
   isUserSelected = computed(() => this.userService.selectionUsernameFilter() !== "");
@@ -286,7 +285,7 @@ export class ContainerCreateComponent {
 
     const dialogRef = this.dialogService.openDialog({
       component: ContainerCreatedDialogComponent,
-      data: this.dialogData as Signal<ContainerCreationDialogData>
+      data: this.dialogData
     });
 
     this.containerService.startPolling(serial);
