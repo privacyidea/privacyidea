@@ -174,7 +174,6 @@ mat-chip-listbox {
 mat-chip {
   --mat-chip-container-shape-radius: var(--border-radius);
   white-space: nowrap;
-  cursor: pointer !important;
   flex: 0 0 auto !important;
 }
 
@@ -182,10 +181,4 @@ mat-icon {
   font-size: 20px;
   width: 20px;
   height: 20px;
-}
-
-::ng-deep {
-  .mdc-evolution-chip__action--presentational {
-    cursor: pointer !important;
-  }
 }

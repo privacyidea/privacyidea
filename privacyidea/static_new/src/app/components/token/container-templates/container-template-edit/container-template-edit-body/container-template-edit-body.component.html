@@ -20,7 +20,9 @@
 @if (template().container_type) {
   <mat-chip-listbox [multiple]="false">
     @for (type of availableTokenTypes(); track type) {
-      <mat-chip (click)="onAddToken(type)">
+      <mat-chip
+        class="clickable-chip"
+        (click)="onAddToken(type)">
         {{ _toTitleCase(type) }}
         <mat-icon matChipTrailingIcon>add</mat-icon>
       </mat-chip>
