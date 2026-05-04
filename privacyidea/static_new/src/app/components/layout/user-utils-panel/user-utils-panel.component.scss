@@ -30,6 +30,19 @@ $breakpoint-compact: 1701px;
   background-color: var(--mat-sys-surface-container-low);
   border-radius: var(--border-radius);
   @include mat.elevation(3);
+
+  &.utils {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-around;
+    align-items: center;
+  }
+
+  .session-timer {
+    width: auto;
+    text-align: right;
+    white-space: break-spaces;
+  }
 }
 
 .profile-text-wrapper {
