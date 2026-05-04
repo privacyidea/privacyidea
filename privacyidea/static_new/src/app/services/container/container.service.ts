@@ -137,7 +137,6 @@ export interface ContainerTemplate {
   template_options: {
     tokens: Array<TokenEnrollmentPayload>;
   };
-  template_display?: string;
 }
 
 export interface ContainerRegisterData {

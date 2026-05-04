@@ -19,13 +19,16 @@
 import { NgClass } from "@angular/common";
 import { Component, inject } from "@angular/core";
 import { FormsModule } from "@angular/forms";
-import { MatIconButton } from "@angular/material/button";
+import { MatButtonModule } from "@angular/material/button";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
 import { MatPaginatorModule } from "@angular/material/paginator";
 import { MatTableModule } from "@angular/material/table";
+import { Router } from "@angular/router";
+import { ROUTE_PATHS } from "src/app/route_paths";
+import { AuthService, AuthServiceInterface } from "src/app/services/auth/auth.service";
 import { NotificationService, NotificationServiceInterface } from "src/app/services/notification/notification.service";
 import { ContainerService, ContainerServiceInterface } from "../../../services/container/container.service";
 import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
@@ -50,7 +53,7 @@ import { ContainerTableComponent } from "./container-table.component";
     MatCheckboxModule,
     FormsModule,
     MatIcon,
-    MatIconButton,
+    MatButtonModule,
     ScrollToTopDirective
   ],
   templateUrl: "./container-table.self-service.component.html",
@@ -63,6 +66,13 @@ export class ContainerTableSelfServiceComponent extends ContainerTableComponent 
   protected override readonly contentService: ContentServiceInterface = inject(ContentService);
   protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
+  protected override readonly authService: AuthServiceInterface = inject(AuthService);
+  protected readonly router = inject(Router);
+  protected readonly ROUTE_PATHS = ROUTE_PATHS;
+
+  navigateToCreate(): void {
+    this.router.navigateByUrl(ROUTE_PATHS.TOKENS_CONTAINERS_CREATE);
+  }
 
   readonly columnKeysMapSelfService = [
     { key: "serial", label: "Serial" },

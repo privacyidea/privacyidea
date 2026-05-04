@@ -34,10 +34,8 @@ import {
 } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { MatButton, MatIconButton } from "@angular/material/button";
-import { MatCheckbox } from "@angular/material/checkbox";
-import { MatExpansionModule } from "@angular/material/expansion";
 import { MatIcon } from "@angular/material/icon";
-import { MatFormField, MatInputModule, MatSuffix } from "@angular/material/input";
+import { MatFormField } from "@angular/material/input";
 import { MatOption, MatSelect } from "@angular/material/select";
 import { MatTooltip } from "@angular/material/tooltip";
 import { Router } from "@angular/router";
@@ -57,10 +55,9 @@ import { DialogService, DialogServiceInterface } from "src/app/services/dialog/d
 import { NotificationService, NotificationServiceInterface } from "src/app/services/notification/notification.service";
 import { TokenService, TokenServiceInterface } from "src/app/services/token/token.service";
 import { UserService, UserServiceInterface } from "src/app/services/user/user.service";
-import { ClearButtonComponent } from "../../shared/clear-button/clear-button.component";
+import { ContainerCreateFormComponent } from "../../shared/container-create-form/container-create-form.component";
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { ContainerRegistrationConfigComponent } from "../container-registration/container-registration-config/container-registration-config.component";
-import { ContainerTemplateEditBodyComponent } from "../container-templates/container-template-edit/container-template-edit-body/container-template-edit-body.component";
 import { UserAssignmentComponent } from "../user-assignment/user-assignment.component";
 import {
   ContainerCreatedDialogComponent,
@@ -75,7 +72,6 @@ import {
   selector: "app-container-create",
   imports: [
     MatButton,
-    MatCheckbox,
     MatFormField,
     MatIcon,
     MatOption,
@@ -87,12 +83,7 @@ import {
     NgClass,
     CommonModule,
     UserAssignmentComponent,
-    MatSuffix,
-    ClearButtonComponent,
-    ContainerTemplateEditBodyComponent,
-    MatInputModule,
-    MatExpansionModule,
-    ContainerRegistrationConfigComponent
+    ContainerCreateFormComponent
   ],
   templateUrl: "./container-create.component.html",
   styleUrl: "./container-create.component.scss"
@@ -119,7 +110,9 @@ export class ContainerCreateComponent {
 
   containerSerial = signal("");
   description = signal("");
-  userSelected = computed(() => this.userService.selectionUsernameFilter() !== "");
+  selectedUser = this.userService.selectionUsernameFilter;
+  selectedUserRealm = this.userService.selectedUserRealm;
+  isUserSelected = computed(() => this.userService.selectionUsernameFilter() !== "");
 
   templateOptions = this.containerTemplateService.templates;
   selectedTemplate: WritableSignal<ContainerTemplate> = linkedSignal({
@@ -229,15 +222,13 @@ export class ContainerCreateComponent {
     };
 
     if (createData.user || this.userAssignmentComponent?.onlyAddToRealm()) {
-      createData.realm = this.userService.selectedUserRealm();
+      createData.realm = this.selectedUserRealm();
     }
 
     const template = this.selectedTemplate();
     if (template && template.template_options.tokens.length > 0) {
       createData.name = template.name;
       createData.template = template;
-      createData.template.template_display = template.name != "" ? template.name + ": " : "";
-      createData.template.template_display += template.template_options.tokens.map((token) => token.type).join(", ");
     }
 
     this.containerService.createContainer(createData).subscribe({

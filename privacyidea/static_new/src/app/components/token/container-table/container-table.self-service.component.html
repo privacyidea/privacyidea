@@ -22,7 +22,22 @@
   class="container-table-container"
   i18n-aria-label>
   <div class="filter-paginator-container">
-    <h3 class="selfservice-paginator-label">Your Containers</h3>
+    <h3
+      class="selfservice-paginator-label"
+      i18n>
+      Your Containers
+    </h3>
+    @if (authService.rights().includes("container_create")) {
+      <button
+        mat-stroked-button
+        class="action-button-primary button-width-m"
+        (click)="navigateToCreate()"
+        aria-label="Create Container"
+        i18n-aria-label>
+        <mat-icon>create_new_folder</mat-icon>
+        <span i18n>Create Container</span>
+      </button>
+    }
     <mat-paginator
       (page)="onPageEvent($event)"
       [length]="total()"
