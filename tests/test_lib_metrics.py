@@ -39,11 +39,17 @@ class LabelKeyTest(MyTestCase):
     def test_sorted_serialization(self):
         # Keys are emitted in sorted order so the same dict always hashes
         # to the same row, regardless of the caller's insertion order.
-        self.assertEqual(_labels_key({"b": "2", "a": "1"}), "a=1,b=2")
-        self.assertEqual(_labels_key({"a": "1", "b": "2"}), "a=1,b=2")
+        self.assertEqual(_labels_key({"b": "2", "a": "1"}), '{"a":"1","b":"2"}')
+        self.assertEqual(_labels_key({"a": "1", "b": "2"}), '{"a":"1","b":"2"}')
 
     def test_round_trip(self):
         labels = {"resolver": "ldap1", "op": "checkPass", "node": "n1"}
+        self.assertEqual(_parse_labels_key(_labels_key(labels)), labels)
+
+    def test_round_trip_with_special_characters(self):
+        # Gateway / resolver identifiers can legally contain commas, equals
+        # signs, quotes and unicode. Round-trip must survive all of them.
+        labels = {"gateway": 'a,b="c"=d', "resolver": "ümläut"}
         self.assertEqual(_parse_labels_key(_labels_key(labels)), labels)
 
 
@@ -264,29 +270,32 @@ class RaceToleranceTest(MyTestCase):
         db.session.add(existing)
         db.session.commit()
 
-        # The path that handles the IntegrityError is exercised when the
-        # SELECT inside _get_or_create_row misses despite the row existing.
-        # We simulate that by patching the first SELECT to return None.
+        # Drive the helper directly with a session whose first SELECT lies and
+        # returns None. This forces the INSERT branch, which trips the unique
+        # constraint - the path we're verifying handles cleanly.
         from privacyidea.lib import metrics as metrics_mod
-        real_execute = db.session.execute
-        first_call = {"done": False}
+        session = metrics_mod._metric_session()
+        try:
+            real_execute = session.execute
+            first_call = {"done": False}
 
-        def selective_execute(stmt, *args, **kwargs):
-            # Force the *first* SELECT inside the helper to return None so
-            # that the INSERT path runs and trips the unique constraint.
-            if not first_call["done"]:
-                first_call["done"] = True
+            def selective_execute(stmt, *args, **kwargs):
+                if not first_call["done"]:
+                    first_call["done"] = True
 
-                class _NullScalarResult:
-                    def scalar_one_or_none(self_inner):
-                        return None
-                return _NullScalarResult()
-            return real_execute(stmt, *args, **kwargs)
+                    class _NullScalarResult:
+                        def scalar_one_or_none(self_inner):
+                            return None
+                    return _NullScalarResult()
+                return real_execute(stmt, *args, **kwargs)
 
-        with patch.object(db.session, "execute", side_effect=selective_execute):
-            row = metrics_mod._get_or_create_row("race_test", "", "", now)
-        # Refetched the existing row, did not create a duplicate.
-        self.assertEqual(row.count, 11)
+            with patch.object(session, "execute", side_effect=selective_execute):
+                row = metrics_mod._get_or_create_row(session, "race_test",
+                                                    "", "", now)
+            # Refetched the existing row, did not create a duplicate.
+            self.assertEqual(row.count, 11)
+        finally:
+            session.close()
 
         rows = db.session.execute(
             select(MetricAggregate).where(MetricAggregate.metric_name == "race_test")

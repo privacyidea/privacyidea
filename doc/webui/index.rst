@@ -50,11 +50,33 @@ relevant to the running privacyIDEA instance:
 
 * The certificate of every configured LDAP resolver that uses ``ldaps://`` or
   ``START_TLS``. Each entry links to the corresponding resolver detail page.
-* The privacyIDEA server certificate, probed against the host and port the
-  admin used to reach the WebUI. This entry is only populated when the
-  request reaches privacyIDEA over HTTPS - if a reverse proxy terminates TLS
-  it must forward the original ``Host`` header (e.g. via ``ProxyFix``) for
-  the probe to target the right endpoint.
+* Optionally, the privacyIDEA server certificate. Two opt-in sources can be
+  configured in ``pi.cfg``; both are off by default.
+
+To check the privacyIDEA server certificate, set one or both of:
+
+* ``PI_SERVER_CERT_FILE`` - absolute path to a PEM (or DER) certificate file
+  on disk that the privacyIDEA process can read. Useful when the same
+  process serves TLS, or when an operator has shared the reverse-proxy's
+  cert with the privacyIDEA user::
+
+    PI_SERVER_CERT_FILE = "/etc/letsencrypt/live/auth.example.com/fullchain.pem"
+
+* ``PI_HEALTH_CERT_PROBES`` - list of ``{"host": "...", "port": int}``
+  endpoints that privacyIDEA opens a TLS connection to and reads the served
+  certificate from. Targets must be reachable from the privacyIDEA process.
+  Typical values:
+
+  * **Apache + uwsgi (Ubuntu deb package):** ``[{"host": "127.0.0.1", "port": 443}]``
+    - probes Apache over loopback and reads the cert it actually serves.
+  * **Docker (nginx + gunicorn):** ``[{"host": "nginx", "port": 443}]`` or
+    whatever the docker-compose service name resolves to inside the network.
+
+  A single probe target may also be given as a bare dict
+  (``{"host": "...", "port": ...}``) instead of a one-element list.
+
+  Both keys are admin-controlled: probe targets are **never** derived from
+  request headers, to keep the endpoint from being usable as an SSRF primitive.
 
 Each row is classified by remaining validity and color-coded:
 
@@ -62,9 +84,8 @@ Each row is classified by remaining validity and color-coded:
 * ``warning`` (yellow): 30 days or less remaining.
 * ``critical`` (red): 7 days or less remaining.
 * ``expired`` (red): the certificate has already expired.
-* ``error`` (yellow): the probe failed (timeout, connection refused, ...).
-* ``not_configured`` (grey): the endpoint cannot be probed, for example
-  because the WebUI was reached over plain HTTP.
+* ``error`` (yellow): the probe failed (file not readable, timeout,
+  connection refused, ...).
 
 The probe results are cached for ``PI_CERT_CHECK_CACHE_SECONDS`` seconds
 (default ``3600``). The cache is invalidated automatically when an admin

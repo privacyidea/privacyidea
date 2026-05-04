@@ -47,7 +47,6 @@ import datetime
 import logging
 import re
 import socket
-from urllib.parse import urlsplit
 
 from flask import (Blueprint,
                    request)
@@ -499,36 +498,31 @@ def get_health_certificates():
     (where the resolver uses ldaps:// or START_TLS) and for the privacyIDEA
     server certificate.
 
-    The privacyIDEA server certificate is probed by opening a TLS connection
-    back to the host/port the admin used to reach this endpoint (Flask's
-    ``request.host``, which honors ``X-Forwarded-Host`` when configured).
-    This works uniformly for apache+uwsgi, nginx+gunicorn and the flask dev
-    server, since the actual cert is whatever is terminating TLS in front
-    of privacyIDEA.
+    Server-certificate sources are admin-configured via two pi.cfg keys:
+
+    * ``PI_SERVER_CERT_FILE`` - path to a cert file on disk to read.
+    * ``PI_HEALTH_CERT_PROBES`` - list of ``{"host": "...", "port": int}``
+      dicts naming TLS endpoints to probe over the network.
+
+    Both are opt-in. With neither configured, only LDAP resolver entries
+    are returned. The endpoint never derives probe targets from request
+    headers - that would be an SSRF primitive.
 
     The result is cached for ``PI_CERT_CHECK_CACHE_SECONDS`` seconds
     (default 3600). Pass ``?refresh=1`` to bypass the cache.
 
     Each entry has a ``status`` of ``ok`` (>30 days), ``warning`` (<=30 days),
-    ``critical`` (<=7 days), ``expired`` (<=0 days), ``error`` (could not
-    fetch), or ``not_configured`` (server cert can only be checked over HTTPS).
+    ``critical`` (<=7 days), ``expired`` (<=0 days), or ``error`` (probe failed).
 
     :queryparam refresh: If truthy, bypass the cache and re-check.
     :>json list value: List of certificate status entries.
     :reqheader PI-Authorization: The authorization token
     """
     refresh = is_true(get_optional(request.all_data, "refresh"))
-    https = request.scheme == "https"
-    # Werkzeug exposes parsed forms; falls back to defaults if the header was
-    # malformed. Handles IPv6 ("[::1]:443") and hostnames-with-colons safely.
-    server_host = request.host_url and urlsplit(request.host_url).hostname
-    server_port = request.host_url and urlsplit(request.host_url).port
-    if not server_host:
-        server_host = request.host.split(":")[0].strip("[]")
-    if not server_port:
-        server_port = 443 if https else 80
-    result = get_certificate_status(server_host=server_host, server_port=server_port,
-                                    https=https, refresh=refresh)
+    # Server-cert sources are admin-configured (PI_SERVER_CERT_FILE /
+    # PI_HEALTH_CERT_PROBES); never derived from the request, so a crafted
+    # Host header can't be used as an SSRF primitive.
+    result = get_certificate_status(refresh=refresh)
     g.audit_object.log({"success": True})
     return send_result(result)
 

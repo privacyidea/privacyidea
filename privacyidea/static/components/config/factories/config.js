@@ -723,7 +723,7 @@ myApp.factory("ConfigFactory", ["AuthFactory", "$http", "$state", "$rootScope",
                     AuthFactory.authError(error.data)
                 });
             },
-            getCertificateHealth: function (refresh, callback) {
+            getCertificateHealth: function (refresh, callback, errorCallback) {
                 var url = systemUrl + "/health/certificates";
                 if (refresh) {
                     url += "?refresh=1";
@@ -736,10 +736,11 @@ myApp.factory("ConfigFactory", ["AuthFactory", "$http", "$state", "$rootScope",
                 }).then(function (response) {
                     callback(response.data)
                 }, function (error) {
+                    if (errorCallback) errorCallback(error);
                     AuthFactory.authError(error.data)
                 });
             },
-            getResolverTiming: function (sinceSeconds, callback) {
+            getResolverTiming: function (sinceSeconds, callback, errorCallback) {
                 var url = systemUrl + "/health/resolver_timing";
                 if (sinceSeconds) {
                     url += "?since_seconds=" + encodeURIComponent(sinceSeconds);
@@ -752,10 +753,11 @@ myApp.factory("ConfigFactory", ["AuthFactory", "$http", "$state", "$rootScope",
                 }).then(function (response) {
                     callback(response.data)
                 }, function (error) {
+                    if (errorCallback) errorCallback(error);
                     AuthFactory.authError(error.data)
                 });
             },
-            getNotificationDelivery: function (sinceSeconds, callback) {
+            getNotificationDelivery: function (sinceSeconds, callback, errorCallback) {
                 var url = systemUrl + "/health/notification_delivery";
                 if (sinceSeconds) {
                     url += "?since_seconds=" + encodeURIComponent(sinceSeconds);
@@ -768,6 +770,7 @@ myApp.factory("ConfigFactory", ["AuthFactory", "$http", "$state", "$rootScope",
                 }).then(function (response) {
                     callback(response.data)
                 }, function (error) {
+                    if (errorCallback) errorCallback(error);
                     AuthFactory.authError(error.data)
                 });
             },

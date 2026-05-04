@@ -220,6 +220,8 @@ $scope.getAuthentication = function () {
              $scope.certificates.entries = entries;
              $scope.certificates.summary = summary;
              $scope.certificates.loading = false;
+         }, function () {
+             $scope.certificates.loading = false;
          });
      };
 
@@ -286,6 +288,8 @@ $scope.getAuthentication = function () {
              });
              $scope.resolverTiming.entries = entries;
              $scope.resolverTiming.loading = false;
+         }, function () {
+             $scope.resolverTiming.loading = false;
          });
      };
 
@@ -300,6 +304,8 @@ $scope.getAuthentication = function () {
                  $scope.notificationDelivery[channel] = entries;
                  $scope.notificationDelivery.totals[channel] = total;
              });
+             $scope.notificationDelivery.loading = false;
+         }, function () {
              $scope.notificationDelivery.loading = false;
          });
          ConfigFactory.getSMSGateways(null, function (data) {

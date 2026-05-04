@@ -16,10 +16,13 @@ must not break the operation being measured. Errors are logged at debug level.
 """
 import datetime
 import functools
+import json
 import logging
 import time
 
 from sqlalchemy import select, delete
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import sessionmaker
 
 from privacyidea.lib.config import get_privacyidea_node
 from privacyidea.lib.framework import get_app_config_value
@@ -71,20 +74,23 @@ _BUCKETS = (
 
 
 def _labels_key(labels: dict | None) -> str:
+    # JSON with sorted keys gives a lossless round-trip even when label values
+    # contain commas, equals signs, quotes or unicode (gateway and resolver
+    # identifiers are unrestricted Unicode(255), so a hand-rolled k=v,k=v
+    # encoding would collide on those characters).
     if not labels:
         return ""
-    return ",".join(f"{k}={labels[k]}" for k in sorted(labels))
+    return json.dumps({k: labels[k] for k in sorted(labels)},
+                      separators=(",", ":"), ensure_ascii=False)
 
 
 def _parse_labels_key(labels_key: str) -> dict:
     if not labels_key:
         return {}
-    out = {}
-    for part in labels_key.split(","):
-        if "=" in part:
-            k, _, v = part.partition("=")
-            out[k] = v
-    return out
+    try:
+        return json.loads(labels_key)
+    except (TypeError, ValueError):
+        return {}
 
 
 def _window_start(now: datetime.datetime) -> datetime.datetime:
@@ -93,7 +99,22 @@ def _window_start(now: datetime.datetime) -> datetime.datetime:
     return datetime.datetime.utcfromtimestamp(bucket_epoch)
 
 
-def _get_or_create_row(metric_name: str, labels_key: str,
+# Metric writes happen on a dedicated session so they cannot piggyback on
+# the caller's transaction (committing it early) and cannot be rolled back
+# by a later failure in the caller. The session is bound to the same engine
+# as ``db.session``, so reads through ``db.session`` see committed writes.
+_metric_sessionmaker: sessionmaker | None = None
+
+
+def _metric_session():
+    """Return a fresh SQLAlchemy session for an isolated metric write."""
+    global _metric_sessionmaker
+    if _metric_sessionmaker is None:
+        _metric_sessionmaker = sessionmaker(bind=db.engine, expire_on_commit=False)
+    return _metric_sessionmaker()
+
+
+def _get_or_create_row(session, metric_name: str, labels_key: str,
                        node: str, window: datetime.datetime) -> MetricAggregate:
     stmt = select(MetricAggregate).where(
         MetricAggregate.metric_name == metric_name,
@@ -101,47 +122,32 @@ def _get_or_create_row(metric_name: str, labels_key: str,
         MetricAggregate.node == node,
         MetricAggregate.window_start == window,
     )
-    row = db.session.execute(stmt).scalar_one_or_none()
+    row = session.execute(stmt).scalar_one_or_none()
     if row is None:
         row = MetricAggregate(
             metric_name=metric_name, labels_key=labels_key, node=node,
             window_start=window, count=0, sum_value=0.0, max_value=0.0,
         )
-        db.session.add(row)
+        session.add(row)
         try:
-            db.session.flush()
-        except Exception:
+            session.flush()
+        except IntegrityError:
             # Race: another worker inserted the same (metric, labels, node,
             # window) row between our SELECT and INSERT. Roll back the failed
             # insert and re-fetch so the caller updates the existing row.
-            db.session.rollback()
-            row = db.session.execute(stmt).scalar_one()
+            # Other exceptions (missing table, connection failure, ...) bubble
+            # up to the caller's try/except in observe()/inc().
+            session.rollback()
+            row = session.execute(stmt).scalar_one()
     return row
-
-
-def _commit_metric() -> None:
-    """Persist the metric write independently of the caller's transaction.
-
-    LDAP operations are recorded from inside arbitrary request handlers,
-    including read endpoints that never call ``db.session.commit()`` (and
-    so would discard our flushed row at session teardown). We therefore
-    commit unconditionally; on commit failure we roll back so the surrounding
-    request keeps a clean session.
-    """
-    try:
-        db.session.commit()
-    except Exception:
-        db.session.rollback()
-        raise
 
 
 def observe(name: str, value: float, labels: dict | None = None) -> None:
     """Record a numeric observation (seconds for timings) for histogram ``name``.
 
     Updates count / sum / max plus the cumulative bucket whose upper bound
-    contains ``value``. The metric row is committed explicitly via
-    ``_commit_metric()`` so read-only request paths (which never commit
-    themselves) don't lose the write at session teardown.
+    contains ``value``. The write happens on its own session and commit so
+    it can't piggyback on (or be rolled back by) the caller's transaction.
     """
     if _metrics_disabled():
         return
@@ -149,31 +155,42 @@ def observe(name: str, value: float, labels: dict | None = None) -> None:
         node = get_privacyidea_node() or ""
         labels_key = _labels_key(labels)
         window = _window_start(datetime.datetime.utcnow())
-        row = _get_or_create_row(name, labels_key, node, window)
-        row.count += 1
-        row.sum_value = float(row.sum_value) + float(value)
-        if value > row.max_value:
-            row.max_value = float(value)
-        # Increment every bucket whose upper bound is >= value (cumulative).
-        for boundary, column in _BUCKETS:
-            if value <= boundary:
-                setattr(row, column, getattr(row, column) + 1)
-        _commit_metric()
+        session = _metric_session()
+        try:
+            row = _get_or_create_row(session, name, labels_key, node, window)
+            row.count += 1
+            row.sum_value = float(row.sum_value) + float(value)
+            if value > row.max_value:
+                row.max_value = float(value)
+            # Increment every bucket whose upper bound is >= value (cumulative).
+            for boundary, column in _BUCKETS:
+                if value <= boundary:
+                    setattr(row, column, getattr(row, column) + 1)
+            session.commit()
+        finally:
+            session.close()
     except Exception as e:
         log.debug(f"metrics.observe({name!r}) failed: {e}")
 
 
 def inc(name: str, labels: dict | None = None, by: int = 1) -> None:
-    """Increment a counter by ``by`` (default 1)."""
+    """Increment a counter by ``by`` (default 1).
+
+    Same isolation guarantees as :func:`observe`: own session, own commit.
+    """
     if _metrics_disabled():
         return
     try:
         node = get_privacyidea_node() or ""
         labels_key = _labels_key(labels)
         window = _window_start(datetime.datetime.utcnow())
-        row = _get_or_create_row(name, labels_key, node, window)
-        row.count += by
-        _commit_metric()
+        session = _metric_session()
+        try:
+            row = _get_or_create_row(session, name, labels_key, node, window)
+            row.count += by
+            session.commit()
+        finally:
+            session.close()
     except Exception as e:
         log.debug(f"metrics.inc({name!r}) failed: {e}")
 

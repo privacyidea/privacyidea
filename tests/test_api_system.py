@@ -1713,7 +1713,7 @@ class HealthEndpointsTestCase(MyApiTestCase):
         # in the past, bypassing the bucket-rounding in inc()/observe().
         row = MetricAggregate(
             metric_name="sms_send_total",
-            labels_key="gateway=x,result=ok",
+            labels_key='{"gateway":"x","result":"ok"}',
             window_start=datetime.datetime.utcnow() - datetime.timedelta(hours=hours_ago),
             count=1)
         db.session.add(row)

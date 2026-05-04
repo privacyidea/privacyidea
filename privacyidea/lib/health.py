@@ -140,53 +140,99 @@ def _check_ldap_resolvers() -> list:
     return results
 
 
-def _check_server_cert(server_host: str | None, server_port: int | None,
-                       https: bool) -> dict:
-    entry = {"source": "privacyidea-server",
-             "name": server_host or "privacyidea",
-             "host": f"{server_host}:{server_port}" if server_host and server_port else None,
-             "tls_mode": "ldaps"}  # plain TLS wrap, same as ldaps probe
-    if not https or not server_host or not server_port:
-        entry.update({"subject": None, "issuer": None, "not_after": None,
-                      "days_remaining": None, "status": "not_configured",
-                      "error": "The privacyIDEA server certificate can only be "
-                               "checked when this endpoint is reached over HTTPS."})
-        return entry
+def _check_server_cert_file(path: str) -> dict:
+    """Read a server certificate from a configured file path on disk."""
+    entry = {"source": "privacyidea-server-file",
+             "name": path,
+             "host": path,
+             "tls_mode": "file"}
     try:
-        cert = _fetch_ldaps_cert(server_host, server_port, timeout=5.0)
+        with open(path, "rb") as f:
+            data = f.read()
+        # PEM is the common case; fall back to DER if the bytes don't start
+        # with the BEGIN CERTIFICATE marker.
+        if b"BEGIN CERTIFICATE" in data:
+            cert = x509.load_pem_x509_certificate(data)
+        else:
+            cert = x509.load_der_x509_certificate(data)
         entry.update(_cert_info(cert, datetime.datetime.now(tz=datetime.timezone.utc)))
         entry["error"] = None
     except Exception as e:
-        log.info(f"Failed to fetch server certificate from {server_host}:{server_port}: {e}")
+        log.info(f"Failed to read server certificate from {path}: {e}")
         entry.update({"subject": None, "issuer": None, "not_after": None,
                       "days_remaining": None, "status": "error", "error": str(e)})
     return entry
 
 
-def get_certificate_status(server_host: str | None = None,
-                           server_port: int | None = None,
-                           https: bool = False,
-                           refresh: bool = False) -> list:
-    """Return certificate expiry info for configured LDAP resolvers and the server cert.
+def _check_server_cert_probe(host: str, port: int, timeout: float = 5.0) -> dict:
+    """Open a TLS connection to a configured (host, port) and read the cert."""
+    entry = {"source": "privacyidea-server-probe",
+             "name": f"{host}:{port}",
+             "host": f"{host}:{port}",
+             "tls_mode": "ldaps"}  # plain TLS wrap, same as ldaps probe
+    try:
+        cert = _fetch_ldaps_cert(host, port, timeout=timeout)
+        entry.update(_cert_info(cert, datetime.datetime.now(tz=datetime.timezone.utc)))
+        entry["error"] = None
+    except Exception as e:
+        log.info(f"Failed to fetch server certificate from {host}:{port}: {e}")
+        entry.update({"subject": None, "issuer": None, "not_after": None,
+                      "days_remaining": None, "status": "error", "error": str(e)})
+    return entry
 
-    The privacyIDEA server certificate is fetched by opening a TLS connection to
-    ``server_host:server_port`` (typically derived from the incoming admin
-    request, so we probe whatever endpoint the admin actually reached us on -
-    works uniformly for apache+uwsgi, nginx+gunicorn or the flask dev server).
 
-    Results are cached per (host, port) for ``PI_CERT_CHECK_CACHE_SECONDS``
-    seconds (default 3600). Pass ``refresh=True`` to bypass the cache.
+def _server_cert_entries() -> list:
+    """Build the server-cert section of the response from admin config.
+
+    Two opt-in sources, both safe (no client-controlled input):
+
+    * ``PI_SERVER_CERT_FILE`` - one path on disk.
+    * ``PI_HEALTH_CERT_PROBES`` - list of ``{"host": "...", "port": int}``
+      dicts naming TLS endpoints to probe.
+
+    Both unset -> empty list (panel shows just LDAP resolver entries).
+    """
+    entries: list = []
+    cert_file = get_app_config_value("PI_SERVER_CERT_FILE")
+    if cert_file:
+        entries.append(_check_server_cert_file(cert_file))
+    probes = get_app_config_value("PI_HEALTH_CERT_PROBES") or []
+    # Accept a single {"host": ..., "port": ...} dict as a convenience for
+    # the common case of one probe target; iteration below normalises.
+    if isinstance(probes, dict):
+        probes = [probes]
+    for probe in probes:
+        try:
+            host = str(probe["host"])
+            port = int(probe["port"])
+        except (KeyError, TypeError, ValueError) as e:
+            log.warning(f"Ignoring malformed PI_HEALTH_CERT_PROBES entry "
+                        f"{probe!r}: {e}")
+            continue
+        entries.append(_check_server_cert_probe(host, port))
+    return entries
+
+
+def get_certificate_status(refresh: bool = False) -> list:
+    """Return certificate expiry info for configured LDAP resolvers and any
+    admin-configured server certificates.
+
+    Server certificate sources are opt-in via two config keys (see
+    :func:`_server_cert_entries`); nothing is auto-probed from request headers.
+
+    Results are cached for ``PI_CERT_CHECK_CACHE_SECONDS`` seconds (default
+    3600). Pass ``refresh=True`` to bypass the cache.
     """
     ttl = int(get_app_config_value("PI_CERT_CHECK_CACHE_SECONDS", 3600))
     now = datetime.datetime.now(tz=datetime.timezone.utc)
-    cache_key = (server_host, server_port, https)
+    cache_key = "certificates"
     with _CACHE_LOCK:
         cached = _CACHE.get(cache_key)
         if not refresh and cached and (now - cached[0]).total_seconds() < ttl:
             return cached[1]
 
     results = _check_ldap_resolvers()
-    results.append(_check_server_cert(server_host, server_port, https))
+    results.extend(_server_cert_entries())
 
     with _CACHE_LOCK:
         _CACHE[cache_key] = (now, results)

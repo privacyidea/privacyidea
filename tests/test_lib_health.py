@@ -100,39 +100,26 @@ class CacheTest(MyTestCase):
         # First call populates the cache, subsequent call within the TTL must
         # not re-invoke the resolver/server probes.
         with (patch.object(health, "_check_ldap_resolvers", return_value=[]) as ldap_mock,
-              patch.object(health, "_check_server_cert",
-                           return_value={"source": "privacyidea-server", "status": "ok"}) as srv_mock):
-            health.get_certificate_status(server_host="pi.example", server_port=443, https=True)
-            health.get_certificate_status(server_host="pi.example", server_port=443, https=True)
+              patch.object(health, "_server_cert_entries", return_value=[]) as srv_mock):
+            health.get_certificate_status()
+            health.get_certificate_status()
             self.assertEqual(ldap_mock.call_count, 1)
             self.assertEqual(srv_mock.call_count, 1)
 
     def test_refresh_bypasses_cache(self):
         with (patch.object(health, "_check_ldap_resolvers", return_value=[]) as ldap_mock,
-              patch.object(health, "_check_server_cert",
-                           return_value={"source": "privacyidea-server", "status": "ok"}) as srv_mock):
-            health.get_certificate_status(server_host="pi.example", server_port=443, https=True)
-            health.get_certificate_status(server_host="pi.example", server_port=443, https=True, refresh=True)
+              patch.object(health, "_server_cert_entries", return_value=[]) as srv_mock):
+            health.get_certificate_status()
+            health.get_certificate_status(refresh=True)
             self.assertEqual(ldap_mock.call_count, 2)
             self.assertEqual(srv_mock.call_count, 2)
 
     def test_invalidate_drops_cache(self):
         with (patch.object(health, "_check_ldap_resolvers", return_value=[]) as ldap_mock,
-              patch.object(health, "_check_server_cert",
-                           return_value={"source": "privacyidea-server", "status": "ok"})):
-            health.get_certificate_status(server_host="pi.example", server_port=443, https=True)
+              patch.object(health, "_server_cert_entries", return_value=[])):
+            health.get_certificate_status()
             health.invalidate_certificate_cache()
-            health.get_certificate_status(server_host="pi.example", server_port=443, https=True)
-            self.assertEqual(ldap_mock.call_count, 2)
-
-    def test_different_host_uses_separate_cache_entry(self):
-        # The cache key includes (host, port, https). A request for a different host must trigger a fresh
-        # probe even if the previous result is still within its TTL.
-        with (patch.object(health, "_check_ldap_resolvers", return_value=[]) as ldap_mock,
-              patch.object(health, "_check_server_cert",
-                           return_value={"source": "privacyidea-server", "status": "ok"})):
-            health.get_certificate_status(server_host="a.example", server_port=443, https=True)
-            health.get_certificate_status(server_host="b.example", server_port=443, https=True)
+            health.get_certificate_status()
             self.assertEqual(ldap_mock.call_count, 2)
 
     def test_invalidate_is_thread_safe(self):
@@ -147,39 +134,86 @@ class CacheTest(MyTestCase):
         self.assertEqual(health._CACHE, {})
 
 
-class ServerCertTest(MyTestCase):
-    """``_check_server_cert`` not_configured / error paths."""
+class ServerCertEntriesTest(MyTestCase):
+    """``_server_cert_entries`` reads admin config (file + probe list)."""
 
-    def test_not_configured_when_not_https(self):
-        entry = health._check_server_cert(server_host="pi.example", server_port=80,
-                                          https=False)
-        self.assertEqual(entry["status"], "not_configured")
-        self.assertIsNone(entry["not_after"])
+    def test_empty_when_nothing_configured(self):
+        with patch.object(health, "get_app_config_value", return_value=None):
+            self.assertEqual(health._server_cert_entries(), [])
 
-    def test_not_configured_when_host_missing(self):
-        entry = health._check_server_cert(server_host=None, server_port=443, https=True)
-        self.assertEqual(entry["status"], "not_configured")
-
-    def test_not_configured_when_port_missing(self):
-        entry = health._check_server_cert(server_host="pi.example", server_port=None,
-                                          https=True)
-        self.assertEqual(entry["status"], "not_configured")
-
-    def test_error_when_probe_fails(self):
-        with patch.object(health, "_fetch_ldaps_cert",
-                          side_effect=ConnectionRefusedError("nope")):
-            entry = health._check_server_cert(server_host="pi.example", server_port=443,
-                                              https=True)
-        self.assertEqual(entry["status"], "error")
-        self.assertIn("nope", entry["error"])
-
-    def test_ok_when_probe_succeeds(self):
+    def test_file_path_reads_pem(self):
         cert = _make_cert(days_until_expiry=365)
-        with patch.object(health, "_fetch_ldaps_cert", return_value=cert):
-            entry = health._check_server_cert(server_host="pi.example", server_port=443,
-                                              https=True)
-        self.assertEqual(entry["status"], "ok")
-        self.assertIsNone(entry["error"])
+        pem = cert.public_bytes(encoding=__import__("cryptography").hazmat.primitives.serialization.Encoding.PEM)
+        from unittest.mock import mock_open
+        config = {"PI_SERVER_CERT_FILE": "/etc/ssl/srv.pem", "PI_HEALTH_CERT_PROBES": None}
+        with (patch.object(health, "get_app_config_value",
+                           side_effect=lambda k, *a, **kw: config.get(k)),
+              patch("builtins.open", mock_open(read_data=pem))):
+            entries = health._server_cert_entries()
+        self.assertEqual(len(entries), 1)
+        self.assertEqual(entries[0]["source"], "privacyidea-server-file")
+        self.assertEqual(entries[0]["status"], "ok")
+
+    def test_file_error_surfaces(self):
+        config = {"PI_SERVER_CERT_FILE": "/no/such/file", "PI_HEALTH_CERT_PROBES": None}
+        with patch.object(health, "get_app_config_value",
+                          side_effect=lambda k, *a, **kw: config.get(k)):
+            entries = health._server_cert_entries()
+        self.assertEqual(entries[0]["status"], "error")
+        self.assertIsNotNone(entries[0]["error"])
+
+    def test_probe_list_runs_each_target(self):
+        cert = _make_cert(days_until_expiry=365)
+        config = {"PI_SERVER_CERT_FILE": None,
+                  "PI_HEALTH_CERT_PROBES": [{"host": "127.0.0.1", "port": 443},
+                                            {"host": "nginx", "port": 443}]}
+        with (patch.object(health, "get_app_config_value",
+                           side_effect=lambda k, *a, **kw: config.get(k)),
+              patch.object(health, "_fetch_ldaps_cert", return_value=cert) as fetch):
+            entries = health._server_cert_entries()
+        self.assertEqual(len(entries), 2)
+        self.assertEqual(fetch.call_count, 2)
+        self.assertEqual(entries[0]["source"], "privacyidea-server-probe")
+        self.assertEqual(entries[0]["host"], "127.0.0.1:443")
+        self.assertEqual(entries[1]["host"], "nginx:443")
+
+    def test_probe_error_status(self):
+        config = {"PI_SERVER_CERT_FILE": None,
+                  "PI_HEALTH_CERT_PROBES": [{"host": "127.0.0.1", "port": 443}]}
+        with (patch.object(health, "get_app_config_value",
+                           side_effect=lambda k, *a, **kw: config.get(k)),
+              patch.object(health, "_fetch_ldaps_cert",
+                           side_effect=ConnectionRefusedError("nope"))):
+            entries = health._server_cert_entries()
+        self.assertEqual(entries[0]["status"], "error")
+        self.assertIn("nope", entries[0]["error"])
+
+    def test_single_probe_dict_is_accepted(self):
+        # Convenience: a bare dict (not wrapped in a list) is treated as one entry.
+        cert = _make_cert(days_until_expiry=365)
+        config = {"PI_SERVER_CERT_FILE": None,
+                  "PI_HEALTH_CERT_PROBES": {"host": "pi.example", "port": 5000}}
+        with (patch.object(health, "get_app_config_value",
+                           side_effect=lambda k, *a, **kw: config.get(k)),
+              patch.object(health, "_fetch_ldaps_cert", return_value=cert)):
+            entries = health._server_cert_entries()
+        self.assertEqual(len(entries), 1)
+        self.assertEqual(entries[0]["host"], "pi.example:5000")
+
+    def test_malformed_probe_entry_is_skipped(self):
+        # A bad entry must not break the rest of the list.
+        cert = _make_cert(days_until_expiry=365)
+        config = {"PI_SERVER_CERT_FILE": None,
+                  "PI_HEALTH_CERT_PROBES": [{"host": "ok", "port": 443},
+                                            {"host": "bad"},  # missing port
+                                            {"host": "ok2", "port": "not-a-number"}]}
+        with (patch.object(health, "get_app_config_value",
+                           side_effect=lambda k, *a, **kw: config.get(k)),
+              patch.object(health, "_fetch_ldaps_cert", return_value=cert)):
+            entries = health._server_cert_entries()
+        # Only the well-formed entry made it through.
+        self.assertEqual(len(entries), 1)
+        self.assertEqual(entries[0]["host"], "ok:443")
 
 
 class LdapEndpointCheckTest(MyTestCase):
@@ -274,9 +308,8 @@ class ResolverHookTest(MyTestCase):
         with patch.object(health, "invalidate_certificate_cache") as invalidate:
             # Pre-populate the cache so we can prove it would be cleared.
             with (patch.object(health, "_check_ldap_resolvers", return_value=[]),
-                  patch.object(health, "_check_server_cert",
-                               return_value={"source": "privacyidea-server", "status": "ok"})):
-                health.get_certificate_status(server_host="pi.example", server_port=443, https=True)
+                  patch.object(health, "_server_cert_entries", return_value=[])):
+                health.get_certificate_status()
             # Confirm the resolver module imports invalidate_certificate_cache
             # at the bottom of save_resolver / delete_resolver.
             import inspect
