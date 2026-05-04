@@ -126,7 +126,7 @@ export class NavigationComponent implements AfterViewInit, OnDestroy {
       icon: "hub",
       label: $localize`External Services`,
       route: ROUTE_PATHS.EXTERNAL_SERVICES_SMTP,
-      section: "external"
+      section: "external_services"
     },
     {
       icon: "miscellaneous_services",
@@ -150,13 +150,13 @@ export class NavigationComponent implements AfterViewInit, OnDestroy {
   });
   activeSection = computed(() => {
     const url = this.contentService.routeUrl();
-    if (url.includes("containers")) return "container";
+    if (url.startsWith(ROUTE_PATHS.TOKENS_CONTAINERS)) return "container";
     if (url.startsWith(ROUTE_PATHS.USERS)) return "users";
     if (url.startsWith(ROUTE_PATHS.POLICIES)) return "policies";
     if (url.startsWith(ROUTE_PATHS.SUBSCRIPTION)) return "subscription";
-    if (url.startsWith(ROUTE_PATHS.AUDIT) || url.startsWith(ROUTE_PATHS.CLIENTS)) return "audit";
-    if (url.startsWith("/external-services")) return "external";
-    if (url.startsWith("/configuration") || url.startsWith(ROUTE_PATHS.MACHINE_RESOLVER) || url.startsWith(ROUTE_PATHS.EVENTS)) return "config";
+    if (url.startsWith(ROUTE_PATHS.AUDIT)) return "audit";
+    if (url.startsWith(ROUTE_PATHS.EXTERNAL_SERVICES)) return "external_services";
+    if (url.startsWith(ROUTE_PATHS.CONFIGURATION) || url.startsWith(ROUTE_PATHS.EVENTS)) return "config";
     if (url.startsWith(ROUTE_PATHS.TOKENS)) return "token";
     return "token";
   });
