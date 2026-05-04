@@ -190,7 +190,6 @@
     </a>
     @if (contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_DETAILS)) {
       <a
-        href="javascript:void(0)"
         class="sub-nav-active">
         <mat-icon>privacy_tip</mat-icon>
         <span i18n>Details</span>
@@ -251,7 +250,6 @@
     </a>
     @if (contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS)) {
       <a
-        href="javascript:void(0)"
         class="sub-nav-active">
         <mat-icon>source</mat-icon>
         <span i18n>Details</span>
@@ -300,13 +298,13 @@
       [ngClass]="contentService.routeUrl() === ROUTE_PATHS.USERS_RESOLVERS ? 'sub-nav-active' : ''"
       [routerLink]="[ROUTE_PATHS.USERS_RESOLVERS]">
       <mat-icon class="ms--database"></mat-icon>
-      <span>Resolvers</span>
+      <span i18n>Resolvers</span>
     </a>
     <a
       [ngClass]="contentService.routeUrl() === ROUTE_PATHS.USERS_REALMS ? 'sub-nav-active' : ''"
       [routerLink]="[ROUTE_PATHS.USERS_REALMS]">
       <mat-icon>public</mat-icon>
-      <span>Realms</span>
+      <span i18n>Realms</span>
     </a>
     <ng-container *ngTemplateOutlet="supportDocs"></ng-container>
   </mat-toolbar>
@@ -352,7 +350,7 @@
         [ngClass]="contentService.routeUrl() === ROUTE_PATHS.AUDIT ? 'sub-nav-active' : ''"
         [routerLink]="[ROUTE_PATHS.AUDIT]">
         <mat-icon>list_alt</mat-icon>
-        <span>Log</span>
+        <span i18n>Log</span>
       </a>
     }
     @if (authService.actionAllowed("clienttype")) {
@@ -360,7 +358,7 @@
         [ngClass]="contentService.routeUrl() === ROUTE_PATHS.CLIENTS ? 'sub-nav-active' : ''"
         [routerLink]="[ROUTE_PATHS.CLIENTS]">
         <mat-icon>recent_actors</mat-icon>
-        <span>Known Clients</span>
+        <span i18n>Known Clients</span>
       </a>
     }
     <ng-container *ngTemplateOutlet="supportDocs"></ng-container>
@@ -377,21 +375,21 @@
         [ngClass]="contentService.routeUrl() === ROUTE_PATHS.CONFIGURATION_SYSTEM ? 'sub-nav-active' : ''"
         [routerLink]="[ROUTE_PATHS.CONFIGURATION_SYSTEM]">
         <mat-icon>build</mat-icon>
-        <span>System</span>
+        <span i18n>System</span>
       </a>
     }
     <a
       [ngClass]="contentService.routeUrl() === ROUTE_PATHS.CONFIGURATION_TOKENTYPES ? 'sub-nav-active' : ''"
       [routerLink]="[ROUTE_PATHS.CONFIGURATION_TOKENTYPES]">
       <mat-icon>safety_check</mat-icon>
-      <span>Tokentypes</span>
+      <span i18n>Tokentypes</span>
     </a>
     @if (authService.actionAllowed("machinelist")) {
       <a
         [ngClass]="contentService.routeUrl() === ROUTE_PATHS.CONFIGURATION_MACHINES ? 'sub-nav-active' : ''"
         [routerLink]="[ROUTE_PATHS.CONFIGURATION_MACHINES]">
         <mat-icon>point_of_sale</mat-icon>
-        <span>Machines</span>
+        <span i18n>Machines</span>
       </a>
     }
     @if (authService.actionAllowed("mresolverread")) {
@@ -399,7 +397,7 @@
         [ngClass]="contentService.routeUrl() === ROUTE_PATHS.MACHINE_RESOLVER ? 'sub-nav-active' : ''"
         [routerLink]="[ROUTE_PATHS.MACHINE_RESOLVER]">
         <mat-icon>lan</mat-icon>
-        <span>Machine Resolver</span>
+        <span i18n>Machine Resolver</span>
       </a>
     }
     @if (authService.actionAllowed("eventhandling_read")) {
@@ -415,7 +413,7 @@
         [ngClass]="contentService.routeUrl() === ROUTE_PATHS.CONFIGURATION_PERIODIC_TASKS ? 'sub-nav-active' : ''"
         [routerLink]="[ROUTE_PATHS.CONFIGURATION_PERIODIC_TASKS]">
         <mat-icon>event_repeat</mat-icon>
-        <span>Periodic Tasks</span>
+        <span i18n>Periodic Tasks</span>
       </a>
     }
     <ng-container *ngTemplateOutlet="supportDocs"></ng-container>
@@ -432,7 +430,7 @@
         [ngClass]="contentService.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_SMTP ? 'sub-nav-active' : ''"
         [routerLink]="[ROUTE_PATHS.EXTERNAL_SERVICES_SMTP]">
         <mat-icon>email</mat-icon>
-        <span>SMTP Servers</span>
+        <span i18n>SMTP Servers</span>
       </a>
     }
     @if (authService.actionAllowed("radiusserver_read")) {
@@ -440,7 +438,7 @@
         [ngClass]="contentService.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS ? 'sub-nav-active' : ''"
         [routerLink]="[ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS]">
         <mat-icon>vpn_lock</mat-icon>
-        <span>RADIUS Servers</span>
+        <span i18n>RADIUS Servers</span>
       </a>
     }
     @if (authService.actionAllowed("smtpserver_read")) {
@@ -448,7 +446,7 @@
         [ngClass]="contentService.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_SMS ? 'sub-nav-active' : ''"
         [routerLink]="[ROUTE_PATHS.EXTERNAL_SERVICES_SMS]">
         <mat-icon>sms</mat-icon>
-        <span>SMS Gateways</span>
+        <span i18n>SMS Gateways</span>
       </a>
     }
     @if (authService.actionAllowed("caconnectorread")) {
@@ -456,7 +454,7 @@
         [ngClass]="contentService.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_CA_CONNECTORS ? 'sub-nav-active' : ''"
         [routerLink]="[ROUTE_PATHS.EXTERNAL_SERVICES_CA_CONNECTORS]">
         <mat-icon>assured_workload</mat-icon>
-        <span>CA Connectors</span>
+        <span i18n>CA Connectors</span>
       </a>
     }
     @if (authService.actionAllowed("privacyideaserver_read")) {
@@ -464,7 +462,7 @@
         [ngClass]="contentService.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_PRIVACYIDEA ? 'sub-nav-active' : ''"
         [routerLink]="[ROUTE_PATHS.EXTERNAL_SERVICES_PRIVACYIDEA]">
         <mat-icon class="mdi--pi-logo"></mat-icon>
-        <span>PrivacyIDEA Servers</span>
+        <span i18n>PrivacyIDEA Servers</span>
       </a>
     }
     @if (authService.actionAllowed("tokengroup_list")) {
@@ -472,7 +470,7 @@
         [ngClass]="contentService.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_TOKENGROUPS ? 'sub-nav-active' : ''"
         [routerLink]="[ROUTE_PATHS.EXTERNAL_SERVICES_TOKENGROUPS]">
         <mat-icon>local_police</mat-icon>
-        <span>Tokengroups</span>
+        <span i18n>Tokengroups</span>
       </a>
     }
     @if (authService.actionAllowed("serviceid_list")) {
@@ -480,7 +478,7 @@
         [ngClass]="contentService.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS ? 'sub-nav-active' : ''"
         [routerLink]="[ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS]">
         <mat-icon>storage</mat-icon>
-        <span>Service IDs</span>
+        <span i18n>Service IDs</span>
       </a>
     }
     <ng-container *ngTemplateOutlet="supportDocs"></ng-container>
