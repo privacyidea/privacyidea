@@ -49,7 +49,7 @@ export class ChallengesTableActionsComponent {
       },
       error: (err) => {
         const message = err?.error?.result?.error?.message ?? "Failed to delete expired challenges.";
-        this.notificationService.openSnackBar(message);
+        this.notificationService.error(message);
       }
     });
   }

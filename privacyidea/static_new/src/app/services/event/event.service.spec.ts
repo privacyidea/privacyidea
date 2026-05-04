@@ -90,7 +90,7 @@ describe("EventService", () => {
     const event = { name: "fail", handlermodule: "mod" };
     service.saveEventHandler(event).subscribe((response) => {
       expect(response).toBeUndefined();
-      expect(notificationMock.openSnackBar).toHaveBeenCalledWith(
+      expect(notificationMock.error).toHaveBeenCalledWith(
         expect.stringContaining("Failed to save event handler.")
       );
     });
@@ -116,7 +116,7 @@ describe("EventService", () => {
     expect(req.request.method).toBe("POST");
     req.flush({}, { status: 500, statusText: "Server Error" });
     await expect(promise).resolves.toBeUndefined();
-    expect(notificationMock.openSnackBar).toHaveBeenCalledWith(
+    expect(notificationMock.error).toHaveBeenCalledWith(
       expect.stringContaining("Failed to enable event handler!")
     );
     expect(service.allEventsResource.reload).toHaveBeenCalled();
@@ -138,7 +138,7 @@ describe("EventService", () => {
     expect(req.request.method).toBe("POST");
     req.flush({}, { status: 500, statusText: "Server Error" });
     await expect(promise).resolves.toBeUndefined();
-    expect(notificationMock.openSnackBar).toHaveBeenCalledWith(
+    expect(notificationMock.error).toHaveBeenCalledWith(
       expect.stringContaining("Failed to disable event handler!")
     );
   });
@@ -162,7 +162,7 @@ describe("EventService", () => {
         fail("Expected error, but got success response");
       },
       error: (err) => {
-        expect(notificationMock.openSnackBar).toHaveBeenCalledWith(
+        expect(notificationMock.error).toHaveBeenCalledWith(
           expect.stringContaining("Failed to delete event handler.")
         );
         done();
@@ -191,7 +191,7 @@ describe("EventService", () => {
       await expect(deletePromise).resolves.toEqual(response);
 
       expect(deleteSpy).toHaveBeenCalledWith(event.id);
-      expect(notificationMock.openSnackBar).toHaveBeenCalledWith("Successfully deleted event handler.");
+      expect(notificationMock.success).toHaveBeenCalledWith("Successfully deleted event handler.");
     });
 
     it("should open confirmation dialog and do nothing on cancel", async () => {
@@ -204,7 +204,7 @@ describe("EventService", () => {
 
       expect(dialogServiceMock.openDialog).toHaveBeenCalled();
       expect(deleteSpy).not.toHaveBeenCalled();
-      expect(notificationMock.openSnackBar).not.toHaveBeenCalled();
+      expect(notificationMock.warning).not.toHaveBeenCalled();
     });
   });
 

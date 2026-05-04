@@ -230,7 +230,7 @@ export class RealmService implements RealmServiceInterface {
       catchError((error) => {
         console.error("Failed to create realm.", error);
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.openSnackBar("Failed to create realm. " + message);
+        this.notificationService.error("Failed to create realm. " + message);
         return throwError(() => error);
       })
     );
@@ -246,7 +246,7 @@ export class RealmService implements RealmServiceInterface {
       catchError((error) => {
         console.error("Failed to delete realm.", error);
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.openSnackBar("Failed to delete realm. " + message);
+        this.notificationService.error("Failed to delete realm. " + message);
         return throwError(() => error);
       })
     );
@@ -260,7 +260,7 @@ export class RealmService implements RealmServiceInterface {
       catchError((error) => {
         console.error("Failed to set default realm.", error);
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.openSnackBar("Failed to set default realm. " + message);
+        this.notificationService.error("Failed to set default realm. " + message);
         return throwError(() => error);
       })
     );

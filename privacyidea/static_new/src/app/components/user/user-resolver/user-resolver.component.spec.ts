@@ -155,7 +155,7 @@ describe("UserSourcesComponent", () => {
 
     expect(dialog.open).toHaveBeenCalled();
     expect(resolverService.deleteResolver).toHaveBeenCalledWith("res1");
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith(expect.stringContaining("deleted"));
+    expect(notificationService.success).toHaveBeenCalledWith(expect.stringContaining("deleted"));
   });
 
   it("onDeleteResolver should not delete if cancelled", () => {
@@ -177,7 +177,7 @@ describe("UserSourcesComponent", () => {
 
     component.onDeleteResolver(resolver);
 
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith(expect.stringContaining("Delete failed"));
+    expect(notificationService.error).toHaveBeenCalledWith(expect.stringContaining("Delete failed"));
   });
 
   it("onDeleteResolver should show error message from response if delete fails", () => {
@@ -198,6 +198,6 @@ describe("UserSourcesComponent", () => {
 
     component.onDeleteResolver(resolver);
 
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith(expect.stringContaining("Server error message"));
+    expect(notificationService.error).toHaveBeenCalledWith(expect.stringContaining("Server error message"));
   });
 });

@@ -339,7 +339,7 @@ export class AuthService implements AuthServiceInterface {
     this.jwtData.set(null);
     this.localService.removeData(BEARER_TOKEN_STORAGE_KEY);
     this.authenticationAccepted.set(false);
-    this.router.navigate(["login"]).then(() => this.notificationService.openSnackBar($localize`Logout successful.`));
+    this.router.navigate(["login"]).then(() => this.notificationService.success($localize`Logout successful.`));
   }
 
   actionAllowed(action: PolicyAction): boolean {

@@ -37,8 +37,7 @@ import { MockMatDialogRef } from "../../../testing/mock-mat-dialog-ref";
 import { signal } from "@angular/core";
 
 class MockNotificationService {
-  openSnackBar = jest.fn();
-  handleResourceError = jest.fn();
+  success = jest.fn(); error = jest.fn(); warning = jest.fn(); handleResourceError = jest.fn();
 }
 
 describe("TokenService", () => {
@@ -130,7 +129,7 @@ describe("TokenService", () => {
         },
         error: (err) => {
           expect(err).toBe(error);
-          expect(notificationService.openSnackBar).toHaveBeenCalledWith("Failed to toggle active. boom");
+          expect(notificationService.error).toHaveBeenCalledWith("Failed to toggle active. boom");
           done();
         }
       });
@@ -281,7 +280,7 @@ describe("TokenService", () => {
       await Promise.resolve();
 
       expect(errors[0]).toBe(boom);
-      expect(notificationService.openSnackBar).toHaveBeenCalledWith("Failed to poll token state. poll-error");
+      expect(notificationService.error).toHaveBeenCalledWith("Failed to poll token state. poll-error");
     });
     jest.useRealTimers();
   });
@@ -365,7 +364,7 @@ describe("TokenService", () => {
       tokenService.revokeToken("serial").subscribe({
         error: (e) => {
           expect(e).toBe(boom);
-          expect(notificationService.openSnackBar).toHaveBeenCalledWith("Failed to revoke token. rvk");
+          expect(notificationService.error).toHaveBeenCalledWith("Failed to revoke token. rvk");
           done();
         }
       });
@@ -477,7 +476,7 @@ describe("TokenService", () => {
         error: { result: { error: { message: "boom" } } }
       });
 
-      expect(notificationService.openSnackBar).toHaveBeenCalledWith(expected);
+      expect(notificationService.error).toHaveBeenCalledWith(expected);
     });
 
     it("assignUserToAll stops on first error and shows snackbar", (done) => {
@@ -496,7 +495,7 @@ describe("TokenService", () => {
           next: () => fail("should error"),
           error: (e) => {
             expect(e.error.result.error.message).toBe("first");
-            expect(notificationService.openSnackBar).toHaveBeenCalledWith("Failed to assign user to all tokens. first");
+            expect(notificationService.error).toHaveBeenCalledWith("Failed to assign user to all tokens. first");
             done();
           }
         });
@@ -512,7 +511,7 @@ describe("TokenService", () => {
         next: () => fail("should error"),
         error: (e) => {
           expect(e.error.result.error.message).toBe("oops");
-          expect(notificationService.openSnackBar).toHaveBeenCalledWith(
+          expect(notificationService.error).toHaveBeenCalledWith(
             "Failed to unassign user from all tokens. oops"
           );
           done();
@@ -548,7 +547,7 @@ describe("TokenService", () => {
         error: (e) => {
           expect(e).toBe(boom);
           // service reads error.result?.error?.message; keep assertion loose
-          expect(notificationService.openSnackBar).toHaveBeenCalledWith(
+          expect(notificationService.error).toHaveBeenCalledWith(
             expect.stringContaining("Failed to delete tokens.")
           );
           done();
@@ -587,7 +586,7 @@ describe("TokenService", () => {
 
       expect(bulkDeleteSpy).toHaveBeenCalledWith(["S1"]);
       setTimeout(() => {
-        expect(notificationService.openSnackBar).toHaveBeenCalledWith("Successfully deleted 1 token.");
+        expect(notificationService.success).toHaveBeenCalledWith("Successfully deleted 1 token.");
         expect(afterDeleteCallback).toHaveBeenCalled();
         done();
       }, 0);
@@ -608,7 +607,7 @@ describe("TokenService", () => {
       tokenService.bulkDeleteWithConfirmDialog(["S1", "TOKEN1", "TOKEN2"]);
 
       setTimeout(() => {
-        expect(notificationService.openSnackBar).toHaveBeenCalledWith(
+        expect(notificationService.success).toHaveBeenCalledWith(
           "Successfully deleted 1 token.\nThe following tokens failed to delete: TOKEN1\nYou are not authorized to delete the following tokens: TOKEN2"
         );
         done();
@@ -625,7 +624,7 @@ describe("TokenService", () => {
       tokenService.bulkDeleteWithConfirmDialog(["S1"]);
 
       setTimeout(() => {
-        expect(notificationService.openSnackBar).toHaveBeenCalledWith("An error occurred while deleting tokens.");
+        expect(notificationService.error).toHaveBeenCalledWith("An error occurred while deleting tokens.");
         done();
       }, 0);
     });
@@ -651,7 +650,7 @@ describe("TokenService", () => {
       tokenService.deleteInfo("SER", "infokey").subscribe({
         error: (e) => {
           expect(e).toBe(boom);
-          expect(notificationService.openSnackBar).toHaveBeenCalledWith("Failed to delete token info. di");
+          expect(notificationService.error).toHaveBeenCalledWith("Failed to delete token info. di");
           done();
         }
       });
@@ -669,7 +668,7 @@ describe("TokenService", () => {
       tokenService.unassignUser("SER").subscribe({
         error: (e) => {
           expect(e).toBe(boom);
-          expect(notificationService.openSnackBar).toHaveBeenCalledWith("Failed to unassign user. uu");
+          expect(notificationService.error).toHaveBeenCalledWith("Failed to unassign user. uu");
           done();
         }
       });
@@ -687,7 +686,7 @@ describe("TokenService", () => {
       tokenService.assignUser({ tokenSerial: "S", username: "u", realm: "r" }).subscribe({
         error: (e) => {
           expect(e).toBe(boom);
-          expect(notificationService.openSnackBar).toHaveBeenCalledWith("Failed to assign user. au");
+          expect(notificationService.error).toHaveBeenCalledWith("Failed to assign user. au");
           done();
         }
       });
@@ -705,7 +704,7 @@ describe("TokenService", () => {
       tokenService.resetFailCount("SER").subscribe({
         error: (e) => {
           expect(e).toBe(boom);
-          expect(notificationService.openSnackBar).toHaveBeenCalledWith("Failed to reset fail count. rf");
+          expect(notificationService.error).toHaveBeenCalledWith("Failed to reset fail count. rf");
           done();
         }
       });
@@ -723,7 +722,7 @@ describe("TokenService", () => {
       tokenService.setTokengroup("SER", ["g"]).subscribe({
         error: (e) => {
           expect(e).toBe(boom);
-          expect(notificationService.openSnackBar).toHaveBeenCalledWith("Failed to set token group. stg");
+          expect(notificationService.error).toHaveBeenCalledWith("Failed to set token group. stg");
           done();
         }
       });
@@ -742,7 +741,7 @@ describe("TokenService", () => {
       tokenService.setTokenInfos("SER", { hashlib: "sha1", custom: "x" }).subscribe({
         next: () => fail("expected error"),
         error: (e) => {
-          expect(notificationService.openSnackBar).toHaveBeenCalledWith("Failed to set token info. oops");
+          expect(notificationService.error).toHaveBeenCalledWith("Failed to set token info. oops");
           done();
         }
       });
@@ -772,7 +771,7 @@ describe("TokenService", () => {
       tokenService.getSerial("111111", new HttpParams()).subscribe({
         error: (e) => {
           expect(e).toBe(boom);
-          expect(notificationService.openSnackBar).toHaveBeenCalledWith("Failed to get count. cnt");
+          expect(notificationService.error).toHaveBeenCalledWith("Failed to get count. cnt");
           done();
         }
       });
@@ -812,7 +811,7 @@ describe("TokenService", () => {
       tokenService.getTokengroups().subscribe({
         error: (e) => {
           expect(e).toBe(boom);
-          expect(notificationService.openSnackBar).toHaveBeenCalledWith("Failed to get tokengroups. tg");
+          expect(notificationService.error).toHaveBeenCalledWith("Failed to get tokengroups. tg");
           done();
         }
       });
@@ -830,7 +829,7 @@ describe("TokenService", () => {
       tokenService.saveTokenDetail("S", "description", "d").subscribe({
         error: (e) => {
           expect(e).toBe(boom);
-          expect(notificationService.openSnackBar).toHaveBeenCalledWith("Failed to set token detail. std");
+          expect(notificationService.error).toHaveBeenCalledWith("Failed to set token detail. std");
           done();
         }
       });

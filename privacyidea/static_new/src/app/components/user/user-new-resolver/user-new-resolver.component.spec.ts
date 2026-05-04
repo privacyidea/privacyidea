@@ -250,9 +250,7 @@ describe("UserNewResolverComponent", () => {
 
     component.onSave();
 
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith(
-      expect.stringContaining("Unable to connect to database.")
-    );
+    expect(notificationService.error).toHaveBeenCalledWith(expect.stringContaining("Unable to connect to database."));
     expect(router.navigateByUrl).not.toHaveBeenCalled();
     expect(component.resolverName).toBe(resolverName);
   });
@@ -278,7 +276,7 @@ describe("UserNewResolverComponent", () => {
 
     component.onTest();
 
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith(expect.stringContaining("Connection test failed."));
+    expect(notificationService.error).toHaveBeenCalledWith(expect.stringContaining("Connection test failed."));
   });
 
   it("should show success on save and navigate to resolvers list", async () => {
@@ -296,7 +294,7 @@ describe("UserNewResolverComponent", () => {
     const success = await component.onSave();
 
     expect(success).toBe(true);
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith(expect.stringContaining("created"));
+    expect(notificationService.success).toHaveBeenCalledWith(expect.stringContaining("created"));
     expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.USERS_RESOLVERS);
   });
 
@@ -325,7 +323,7 @@ describe("UserNewResolverComponent", () => {
     const success = await component.onSave();
 
     expect(success).toBe(true);
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith(expect.stringContaining("updated"));
+    expect(notificationService.success).toHaveBeenCalledWith(expect.stringContaining("updated"));
     expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.USERS_RESOLVERS);
   });
 
@@ -345,7 +343,7 @@ describe("UserNewResolverComponent", () => {
     const success = await component.onSave();
 
     expect(success).toBe(false);
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith(expect.stringContaining("Detailed error"));
+    expect(notificationService.error).toHaveBeenCalledWith(expect.stringContaining("Detailed error"));
   });
 
   it("should validate before save", async () => {
@@ -354,22 +352,20 @@ describe("UserNewResolverComponent", () => {
     component.resolverName = "";
     let success = await component.onSave();
     expect(success).toBe(false);
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith(expect.stringContaining("enter a resolver name"));
+    expect(notificationService.warning).toHaveBeenCalledWith(expect.stringContaining("enter a resolver name"));
 
     component.resolverName = "res";
     component.resolverType = "" as any;
     success = await component.onSave();
     expect(success).toBe(false);
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith(expect.stringContaining("select a resolver type"));
+    expect(notificationService.warning).toHaveBeenCalledWith(expect.stringContaining("select a resolver type"));
 
     component.resolverType = "passwdresolver";
     await detectChangesStable();
     component.passwdResolver()?.filenameControl.setValue("");
     success = await component.onSave();
     expect(success).toBe(false);
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith(
-      expect.stringContaining("fill in all required fields")
-    );
+    expect(notificationService.warning).toHaveBeenCalledWith(expect.stringContaining("fill in all required fields"));
   });
 
   it("should include additional fields in save payload", async () => {
@@ -399,16 +395,14 @@ describe("UserNewResolverComponent", () => {
     const notificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;
 
     component.onTest();
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith(
-      expect.stringContaining("Resolver test executed:"),
-      20000
-    );
+    expect(notificationService.success).toHaveBeenCalledWith(expect.stringContaining("Resolver test executed:"), {
+      duration: 20000
+    });
 
     component.onQuickTest();
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith(
-      expect.stringContaining("Resolver test executed:"),
-      20000
-    );
+    expect(notificationService.success).toHaveBeenCalledWith(expect.stringContaining("Resolver test executed:"), {
+      duration: 20000
+    });
   });
 
   it("should show error on test when subscription fails", async () => {
@@ -423,7 +417,7 @@ describe("UserNewResolverComponent", () => {
 
     component.onTest();
 
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith(expect.stringContaining("Network error"));
+    expect(notificationService.error).toHaveBeenCalledWith(expect.stringContaining("Network error"));
   });
 
   it("should validate before test", async () => {
@@ -431,15 +425,13 @@ describe("UserNewResolverComponent", () => {
 
     component.resolverType = "" as any;
     component.onTest();
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith(expect.stringContaining("select a resolver type"));
+    expect(notificationService.warning).toHaveBeenCalledWith(expect.stringContaining("select a resolver type"));
 
     component.resolverType = "passwdresolver";
     await detectChangesStable();
     component.passwdResolver()?.filenameControl.setValue("");
     component.onTest();
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith(
-      expect.stringContaining("fill in all required fields")
-    );
+    expect(notificationService.warning).toHaveBeenCalledWith(expect.stringContaining("fill in all required fields"));
   });
 
   it("should include resolver name in test payload when in edit mode", async () => {
