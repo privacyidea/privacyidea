@@ -16,15 +16,14 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, ElementRef, Inject, inject, ViewChild, AfterViewInit, ViewEncapsulation } from "@angular/core";
-import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from "@angular/material/dialog";
+import { CdkTextareaAutosize } from "@angular/cdk/text-field";
+import { AfterViewInit, Component, ElementRef, Inject, ViewChild } from "@angular/core";
 import { FormsModule } from "@angular/forms";
+import { MatButton } from "@angular/material/button";
+import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from "@angular/material/dialog";
 import { MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
-import { MatButton } from "@angular/material/button";
-import { CdkTextareaAutosize } from "@angular/cdk/text-field";
 import { CopyButtonComponent } from "../../../shared/copy-button/copy-button.component";
-import { SystemService } from "../../../../services/system/system.service";
 
 @Component({
   selector: "app-system-documentation-dialog",
@@ -40,8 +39,7 @@ import { SystemService } from "../../../../services/system/system.service";
     MatButton,
     CdkTextareaAutosize,
     CopyButtonComponent
-  ],
-  encapsulation: ViewEncapsulation.Emulated
+  ]
 })
 export class SystemDocumentationDialogComponent implements AfterViewInit {
   @ViewChild("autosize", { read: ElementRef }) textareaElement!: ElementRef<HTMLTextAreaElement>;
