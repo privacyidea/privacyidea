@@ -44,7 +44,6 @@ Wrapping the functions in a decorator class enables easy modular testing.
 
 The functions of this module are tested in tests/test_api_lib_policy.py
 """
-from flask_babel import _, lazy_gettext
 import copy
 import datetime
 import functools
@@ -55,6 +54,7 @@ import traceback
 from urllib.parse import quote
 
 from flask import g, current_app, make_response, Request
+from flask_babel import _, lazy_gettext
 
 from privacyidea.api.lib.utils import get_all_params
 from privacyidea.config import ConfigKey
@@ -72,7 +72,8 @@ from privacyidea.lib.subscriptions import (subscription_status,
                                            SubscriptionError,
                                            EXPIRE_MESSAGE)
 from privacyidea.lib.token import get_tokens, assign_token, get_one_token, init_token
-from privacyidea.lib.tokenclass import RolloutState, ChallengeSession
+from privacyidea.lib.tokenclass import ChallengeSession
+from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
 from privacyidea.lib.utils import (create_img, get_version, AUTH_RESPONSE,
                                    get_plugin_info_from_useragent)

@@ -1,7 +1,19 @@
 @use "../../../../../styles";
 @use "@angular/material" as mat;
 
-.sms-gateway-dialog-content {
+.sms-gateway-page-layout {
+  display: flex;
+  justify-content: center;
+}
+
+.sms-gateway-page-container {
+  @include styles.main-component-style;
+  display: grid;
+  position: relative;
+}
+
+
+.sms-gateway-content {
   width: 664px;
 }
 

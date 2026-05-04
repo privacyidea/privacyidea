@@ -21,19 +21,13 @@ import { EventPanelComponent } from "./event-panel.component";
 import { provideHttpClient } from "@angular/common/http";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MockEventService } from "../../../../testing/mock-services/mock-event-service";
-import { EMPTY_EVENT, EventService } from "../../../services/event/event.service";
-import {
-  MockDialogService,
-  MockNotificationService,
-  MockPendingChangesService
-} from "../../../../testing/mock-services";
+import { EMPTY_EVENT, EventHandler, EventService } from "../../../services/event/event.service";
+import { MockNotificationService, MockPendingChangesService, MockRouter } from "../../../../testing/mock-services";
 import { NotificationService } from "../../../services/notification/notification.service";
-import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
-import { of, Subject } from "rxjs";
-import { MockMatDialogRef } from "../../../../testing/mock-mat-dialog-ref";
-import { DialogService } from "../../../services/dialog/dialog.service";
-import { SaveAndExitDialogResult } from "../../shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
+import { ActivatedRoute, convertToParamMap, Router } from "@angular/router";
+import { BehaviorSubject } from "rxjs";
 import { PendingChangesService } from "../../../services/pending-changes/pending-changes.service";
+import { ROUTE_PATHS } from "../../../route_paths";
 
 global.IntersectionObserver = class IntersectionObserver {
   constructor() {}
@@ -44,67 +38,63 @@ global.IntersectionObserver = class IntersectionObserver {
 
   unobserve() {}
 
-  takeRecords() {
-    return [];
-  }
+  takeRecords() { return []; }
 } as any;
 
-describe("EventPanelComponent", () => {
+const mockEventHandler: EventHandler = {
+  id: "1",
+  name: "TestHandler",
+  handlermodule: "mockModule",
+  active: true,
+  event: ["eventA", "eventB"],
+  action: "actionB",
+  options: { opt3: "true" },
+  conditions: { condA: true },
+  position: "post",
+  ordering: 0
+};
+
+describe("EventPanelComponent — edit mode", () => {
   let component: EventPanelComponent;
   let fixture: ComponentFixture<EventPanelComponent>;
   let mockEventService: MockEventService;
   let mockNotificationService: MockNotificationService;
-  let dialogServiceMock: MockDialogService;
-  let confirmClosed: Subject<SaveAndExitDialogResult | boolean | undefined>;
+  let mockRouter: MockRouter;
+  let mockPendingChangesService: MockPendingChangesService;
+  let paramMap$: BehaviorSubject<ReturnType<typeof convertToParamMap>>;
 
   beforeEach(async () => {
+    paramMap$ = new BehaviorSubject(convertToParamMap({ id: mockEventHandler.id }));
+
     await TestBed.configureTestingModule({
       imports: [EventPanelComponent],
       providers: [
         provideHttpClient(),
         { provide: EventService, useClass: MockEventService },
         { provide: NotificationService, useClass: MockNotificationService },
-        { provide: DialogService, useClass: MockDialogService },
         { provide: PendingChangesService, useClass: MockPendingChangesService },
-        {
-          provide: MatDialogRef,
+        { provide: Router, useClass: MockRouter },
+        { provide: ActivatedRoute,
           useValue: {
-            close: jest.fn(),
-            backdropClick: jest.fn().mockReturnValue(of()),
-            keydownEvents: jest.fn().mockReturnValue(of())
-          }
-        },
-
-        {
-          provide: MAT_DIALOG_DATA,
-          useValue: {
-            eventHandler: {
-              id: 1,
-              name: "TestHandler",
-              handlermodule: "mockModule",
-              active: true,
-              event: ["eventA", "eventB"],
-              action: "actionB",
-              options: { opt3: "true" },
-              conditions: { condA: true },
-              position: 0
-            }
+            paramMap: paramMap$.asObservable(),
+            snapshot: { paramMap: convertToParamMap({ id: mockEventHandler.id }) }
           }
         }
       ]
     }).compileComponents();
 
-    fixture = TestBed.createComponent(EventPanelComponent);
-    component = fixture.componentInstance;
+    // Inject services and set up data BEFORE creating the component
+    // so the constructor's paramMap subscription finds the handler immediately
     mockEventService = TestBed.inject(EventService) as unknown as MockEventService;
     mockNotificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;
+    mockRouter = TestBed.inject(Router) as unknown as MockRouter;
+    mockPendingChangesService = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
 
-    dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
-    confirmClosed = new Subject();
-    let dialogRefMock = new MockMatDialogRef();
-    dialogRefMock.afterClosed.mockReturnValue(confirmClosed);
-    dialogServiceMock.openDialog.mockReturnValue(dialogRefMock);
+    mockEventService.eventHandlers.set([mockEventHandler]);
+    mockEventService.selectedHandlerModule.set(mockEventHandler.handlermodule);
 
+    fixture = TestBed.createComponent(EventPanelComponent);
+    component = fixture.componentInstance;
     fixture.detectChanges();
   });
 
@@ -112,10 +102,18 @@ describe("EventPanelComponent", () => {
     expect(component).toBeTruthy();
   });
 
-  it("should initialize event from dialog data and set selected handler module in service", () => {
-    expect(component.editEvent().id).toBe(1);
+  it("should initialize editEvent from the event handlers list and set selected handler module", () => {
+    expect(component.editEvent().id).toBe(mockEventHandler.id);
     expect(component.editEvent().name).toBe("TestHandler");
     expect(mockEventService.selectedHandlerModule()).toBe("mockModule");
+  });
+
+  it("should set isNewEvent to false in edit mode", () => {
+    expect(component.isNewEvent()).toBe(false);
+  });
+
+  it("should show 'Edit Event Handler' as title", () => {
+    expect(component.title()).toEqual("Edit Event Handler");
   });
 
   it("should set new action using setNewAction", () => {
@@ -259,65 +257,29 @@ describe("EventPanelComponent", () => {
     expect(component.canSave()).toBe(false);
   });
 
-  it("should discard changes", () => {
-    // Simulate unsaved changes
-    component.updateEventHandler("name", "Changed");
-
-    // Call cancelEdit
+  it("cancelEdit should navigate back to events list", () => {
     component.cancelEdit();
-
-    // Mock dialog with clicked button discard changes
-    confirmClosed.next("discard");
-    confirmClosed.complete();
-
-    // The editEvent should be reset to the original event (from this.event())
-    expect(component.editEvent().name).toBe(component.event().name);
-    expect(dialogServiceMock.openDialog).toHaveBeenCalled();
+    expect(mockRouter.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.EVENTS);
   });
 
-  it("should cancel discard", () => {
-    // Simulate unsaved changes
-    component.updateEventHandler("name", "Changed");
-
-    // Call cancelEdit
-    component.cancelEdit();
-    // Mock dialog with clicked button cancel
-    confirmClosed.next(undefined);
-    confirmClosed.complete();
-
-    // Nothing should happen
-    expect(component.editEvent().name).toBe("Changed");
-    expect(dialogServiceMock.openDialog).toHaveBeenCalled();
+  it("should register hasChanges, save and validChanges with PendingChangesService on init", () => {
+    expect(mockPendingChangesService.registerHasChanges).toHaveBeenCalled();
+    expect(mockPendingChangesService.registerSave).toHaveBeenCalled();
+    expect(mockPendingChangesService.registerValidChanges).toHaveBeenCalled();
   });
 
-  it("should save and exit", () => {
-    // Simulate unsaved changes
+  it("hasChanges should be false initially and true after a modification", () => {
+    expect(component.hasChanges()).toBe(false);
     component.updateEventHandler("name", "Changed");
-    const saveEventSpy = jest.spyOn(component, "saveEvent");
-
-    // Call cancelEdit
-    component.cancelEdit();
-
-    // Mock dialog with clicked button save and exit
-    confirmClosed.next("save-exit");
-    confirmClosed.complete();
-
-    // Nothing should happen
-    expect(component.editEvent().name).toBe("Changed");
-    expect(saveEventSpy).toHaveBeenCalled();
-    expect(dialogServiceMock.openDialog).toHaveBeenCalled();
+    expect(component.hasChanges()).toBe(true);
   });
 
-  it("should save event and reload events", () => {
+  it("should save event, reload events and navigate back", () => {
     const reloadSpy = jest.spyOn(mockEventService.allEventsResource, "reload");
     const snackBarSpy = jest.spyOn(mockNotificationService, "openSnackBar");
-    // ensure effect is triggered to set the selected handler module in the service
-    fixture.detectChanges();
 
-    // act
     component.saveEvent();
 
-    // id converted to string and converted options in ugly format
     const convertedParams = {
       id: "1",
       name: "TestHandler",
@@ -327,36 +289,36 @@ describe("EventPanelComponent", () => {
       action: "actionB",
       "option.opt3": "true",
       conditions: { condA: true },
-      position: 0
+      position: "post",
+      ordering: 0
     };
     expect(mockEventService.saveEventHandler).toHaveBeenCalledWith(convertedParams);
     expect(reloadSpy).toHaveBeenCalled();
     expect(snackBarSpy).toHaveBeenCalledWith("Event handler updated successfully.");
+    expect(mockRouter.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.EVENTS);
   });
 
   it("should delete event and reload events", async () => {
     const reloadSpy = jest.spyOn(mockEventService.allEventsResource, "reload");
-    const confirmationPromise = component.deleteEvent();
-    confirmClosed.next(true);
-    confirmClosed.complete();
-    await confirmationPromise;
+    await component.deleteEvent();
     expect(mockEventService.deleteWithConfirmDialog).toHaveBeenCalled();
     expect(reloadSpy).toHaveBeenCalled();
   });
 
   it("should toggle active and call enable/disable on service", () => {
     component.toggleActive(true);
-    expect(mockEventService.enableEvent).toHaveBeenCalledWith(1);
+    expect(mockEventService.enableEvent).toHaveBeenCalledWith(mockEventHandler.id);
     component.toggleActive(false);
-    expect(mockEventService.disableEvent).toHaveBeenCalledWith(1);
+    expect(mockEventService.disableEvent).toHaveBeenCalledWith(mockEventHandler.id);
   });
 });
 
-describe("CreateNewEventHandler", () => {
+describe("EventPanelComponent — create new mode", () => {
   let component: EventPanelComponent;
   let fixture: ComponentFixture<EventPanelComponent>;
   let mockEventService: MockEventService;
   let mockNotificationService: MockNotificationService;
+  let mockRouter: MockRouter;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -365,19 +327,12 @@ describe("CreateNewEventHandler", () => {
         provideHttpClient(),
         { provide: EventService, useClass: MockEventService },
         { provide: NotificationService, useClass: MockNotificationService },
-        {
-          provide: MatDialogRef,
+        { provide: PendingChangesService, useClass: MockPendingChangesService },
+        { provide: Router, useClass: MockRouter },
+        { provide: ActivatedRoute,
           useValue: {
-            close: jest.fn(),
-            backdropClick: jest.fn().mockReturnValue(of()),
-            keydownEvents: jest.fn().mockReturnValue(of())
-          }
-        },
-        {
-          provide: MAT_DIALOG_DATA,
-          useValue: {
-            eventHandler: EMPTY_EVENT,
-            isNewEvent: true
+            paramMap: new BehaviorSubject(convertToParamMap({})).asObservable(),
+            snapshot: { paramMap: convertToParamMap({}) }
           }
         }
       ]
@@ -387,15 +342,29 @@ describe("CreateNewEventHandler", () => {
     component = fixture.componentInstance;
     mockEventService = TestBed.inject(EventService) as unknown as MockEventService;
     mockNotificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;
+    mockRouter = TestBed.inject(Router) as unknown as MockRouter;
+
     fixture.detectChanges();
   });
 
-  it("should set selectedHandlerModule to first module", () => {
+  it("should set isNewEvent to true", () => {
+    expect(component.isNewEvent()).toBe(true);
+  });
+
+  it("should show 'Create New Event Handler' as title", () => {
+    expect(component.title()).toContain("Create");
+  });
+
+  it("should initialize editEvent to EMPTY_EVENT", () => {
+    expect(component.editEvent().name).toBe(EMPTY_EVENT.name);
+    expect(component.editEvent().event).toEqual(EMPTY_EVENT.event);
+  });
+
+  it("should set selectedHandlerModule to first available module", () => {
     expect(mockEventService.selectedHandlerModule()).toBe("mockModule");
   });
 
-  it("should save new event and reload events", () => {
-    // set params for new event handler
+  it("should save new event without id and navigate back", () => {
     mockEventService.selectedHandlerModule.set("mockModule");
     component.setNewAction("actionB");
     component.setNewOptions({ opt3: "true" });
@@ -406,7 +375,9 @@ describe("CreateNewEventHandler", () => {
 
     const reloadSpy = jest.spyOn(mockEventService.allEventsResource, "reload");
     const snackBarSpy = jest.spyOn(mockNotificationService, "openSnackBar");
+
     component.saveEvent();
+
     const convertedParams = {
       name: "TestHandler",
       handlermodule: "mockModule",
@@ -421,5 +392,6 @@ describe("CreateNewEventHandler", () => {
     expect(mockEventService.saveEventHandler).toHaveBeenCalledWith(convertedParams);
     expect(reloadSpy).toHaveBeenCalled();
     expect(snackBarSpy).toHaveBeenCalledWith("Event handler created successfully.");
+    expect(mockRouter.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.EVENTS);
   });
 });

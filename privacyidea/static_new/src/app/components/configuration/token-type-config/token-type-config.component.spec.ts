@@ -45,7 +45,7 @@ describe("TokenTypeConfigComponent", () => {
             smtpServerResource: { value: () => ({ result: { value: {} } }) }
           }
         },
-        { provide: NotificationService, useValue: { openSnackBar: jest.fn() } }
+        { provide: NotificationService, useValue: { openSnackBar: jest.fn(), handleResourceError: jest.fn() } }
       ]
     }).compileComponents();
 

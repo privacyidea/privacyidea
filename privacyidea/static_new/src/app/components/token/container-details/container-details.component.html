@@ -22,22 +22,14 @@
   class="details-container"
   i18n-aria-label>
   <div class="details-flex-layout flex-column">
-    <div class="details-header">
-      <h3 i18n>Details for Container:</h3>
-      <div class="flex-row flex-nowrap ali-center">
-        <h3 class="token-serial">{{ containerSerial() }}</h3>
-        <app-copy-button [copyText]="containerSerial()"></app-copy-button>
-      </div>
-      @if (authService.actionAllowed("auditlog")) {
-        <button
-          (click)="showContainerAuditLog()"
-          [routerLink]="[ROUTE_PATHS.AUDIT]"
-          mat-icon-button
-          matTooltip="Show container in audit log">
-          <mat-icon>receipt_long</mat-icon>
-        </button>
-      }
-    </div>
+    <app-details-header
+      [serial]="containerSerial()"
+      entityLabel="Container"
+      [showAuditButton]="authService.actionAllowed('auditlog')"
+      [auditRoute]="ROUTE_PATHS.AUDIT"
+      auditTooltip="Show container in audit log"
+      (auditClick)="showContainerAuditLog()">
+    </app-details-header>
     <div
       class="details-flex-layout responsive-flex-row-1310">
       <div>
@@ -278,66 +270,20 @@
         class="flex-column responsive-margin-left-1310">
         <app-container-details-token-table [containerTokenData]="containerTokenData" />
         <div class="flex-row gap-32">
-          @if (authService.actionAllowed("container_add_token")) {
-            <div class="flex-column width-100">
-              <h4 class="margin-left-16 margin-bottom-0">Add Token</h4>
-              <div class="flex-row filter-paginator-container">
-                <section>
-                  <mat-checkbox
-                    [(ngModel)]="showOnlyTokenNotInContainer">
-                    <span i18n> Only display tokens that are not in a container </span>
-                  </mat-checkbox>
-                </section>
-                <mat-paginator
-                  (page)="onPageEvent($event)"
-                  [hidePageSize]="true"
-                  [length]="total()"
-                  [pageIndex]="pageIndex()"
-                  [pageSize]="pageSize()"></mat-paginator>
-              </div>
-              <mat-form-field class="margin-bottom-16 input-width-xl">
-                <mat-label i18n>Add Token to Container</mat-label>
-                <app-clearable-input
-                  (onClick)="tokenService.clearFilter()"
-                  [showClearButton]="tokenService.tokenFilter().isNotEmpty">
-                  <input
-                    #filterHTMLInputElement
-                    #tokenAutoTrigger="matAutocompleteTrigger"
-                    (input)="tokenService.handleFilterInput($event)"
-                    [matAutocomplete]="tokenAuto"
-                    [value]="tokenService.tokenFilter().filterString"
-                    i18n-placeholder
-                    matInput
-                    placeholder="Example query: 'type: hotp serial: 123'" />
-                </app-clearable-input>
-                @if (!showOnlyTokenNotInContainer()) {
-                  <mat-hint> Adding a token removes it from its previous container</mat-hint>
-                }
-                <mat-autocomplete #tokenAuto="matAutocomplete">
-                  @for (option of tokenDataSource().data; track option) {
-                    <mat-option
-                      (click)="addTokenToContainer(option)"
-                      class="token-option">
-                      <span class="token-option-span"> {{ option["serial"] }} </span>
-                      <span class="token-option-span">
-                        {{ option["tokentype"] }}
-                      </span>
-                      <span
-                        [ngClass]="option['active'] ? 'highlight-true' : 'highlight-false'"
-                        class="token-option-span"
-                        i18n>
-                        {{ option["active"] ? "active" : "deactivated" }}
-                      </span>
-                      <span class="token-option-span">
-                        {{ option["username"] }}
-                      </span>
-                      <mat-icon>add</mat-icon>
-                    </mat-option>
-                  }
-                </mat-autocomplete>
-              </mat-form-field>
-            </div>
-          }
+          <app-container-add-token
+            [authService]="authService"
+            [showOnlyTokenNotInContainer]="showOnlyTokenNotInContainer"
+            [total]="total()"
+            [pageIndex]="pageIndex()"
+            [pageSize]="pageSize()"
+            [filterValue]="tokenService.tokenFilter().filterString"
+            [filterIsNotEmpty]="tokenService.tokenFilter().isNotEmpty"
+            [tokenOptions]="tokenDataSource().data"
+            (pageEvent)="onPageEvent($event)"
+            (filterInput)="tokenService.handleFilterInput($event)"
+            (clearFilter)="tokenService.clearFilter()"
+            (addToken)="addTokenToContainer($event)">
+          </app-container-add-token>
         </div>
       </div>
       <div

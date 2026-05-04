@@ -9,7 +9,6 @@ import json
 import logging
 from datetime import datetime, timedelta
 
-import jwt
 from dateutil.tz import tzlocal
 from flask import Request, g, current_app, jsonify
 from passlib.hash import pbkdf2_sha512
@@ -29,84 +28,27 @@ from privacyidea.api.lib.postpolicy import (check_serial, check_tokentype,
                                             mangle_challenge_response, is_authorized,
                                             check_verify_enrollment, preferred_client_mode,
                                             multichallenge_enroll_via_validate)
-from privacyidea.api.lib.prepolicy import (check_token_upload,
-                                           check_base_action, check_token_init,
-                                           check_max_token_user,
-                                           check_anonymous_user,
-                                           check_max_token_realm, set_realm,
-                                           init_tokenlabel, init_random_pin, set_random_pin,
-                                           init_token_defaults, _generate_pin_from_policy,
-                                           encrypt_pin, check_otp_pin,
-                                           enroll_pin,
-                                           init_token_length_contents,
-                                           check_external, api_key_required,
-                                           mangle, is_remote_user_allowed,
-                                           required_email, auditlog_age, hide_audit_columns,
-                                           papertoken_count,
-                                           tantoken_count, sms_identifiers,
-                                           pushtoken_add_config, pushtoken_validate,
-                                           indexedsecret_force_attribute,
-                                           check_admin_tokenlist, pushtoken_disable_wait,
-                                           fido2_auth, webauthntoken_authz,
-                                           fido2_enroll, webauthntoken_request,
-                                           check_application_tokentype,
-                                           required_piv_attestation, check_custom_user_attributes,
-                                           hide_tokeninfo, init_ca_template, init_ca_connector,
-                                           init_subject_components, increase_failcounter_on_challenge,
-                                           require_description, check_container_action,
-                                           check_token_action, check_user_params,
-                                           check_client_container_action, container_registration_config,
-                                           smartphone_config, check_client_container_disabled_action, rss_age,
-                                           hide_container_info, force_server_generate_key, verify_enrollment)
-from privacyidea.lib.auth import ROLE
+from privacyidea.api.lib.prepolicy import (init_token_defaults, verify_enrollment)
 from privacyidea.lib.config import set_privacyidea_config, SYSCONF
 from privacyidea.lib.container import (init_container, find_container_by_serial, create_container_template,
                                        get_all_containers, delete_container_template)
 from privacyidea.lib.containers.container_info import RegistrationState, TokenContainerInfoData
-from privacyidea.lib.error import PolicyError, RegistrationError, ValidateError
-from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction
+from privacyidea.lib.error import PolicyError, ValidateError
 from privacyidea.lib.machine import attach_token
 from privacyidea.lib.machineresolver import save_resolver
 from privacyidea.lib.policies.actions import PolicyAction
-from privacyidea.lib.policies.helper import get_jwt_validity
-from privacyidea.lib.policy import (set_policy, delete_policy, enable_policy,
-                                    PolicyClass, SCOPE, REMOTE_USER,
-                                    AUTOASSIGNVALUE, AUTHORIZED,
+from privacyidea.lib.policy import (set_policy, delete_policy, PolicyClass, SCOPE, AUTOASSIGNVALUE, AUTHORIZED,
                                     DEFAULT_ANDROID_APP_URL, DEFAULT_IOS_APP_URL)
-from privacyidea.lib.realm import delete_realm
-from privacyidea.lib.realm import set_realm as create_realm
 from privacyidea.lib.subscriptions import EXPIRE_MESSAGE
 from privacyidea.lib.token import (init_token, get_tokens, remove_token,
-                                   set_realms, check_user_pass, unassign_token,
-                                   enable_token)
+                                   check_user_pass, unassign_token)
 from privacyidea.lib.tokenclass import DATE_FORMAT
-from privacyidea.lib.tokens.certificatetoken import ACTION as CERTIFICATE_ACTION
 from privacyidea.lib.tokens.indexedsecrettoken import PIIXACTION
-from privacyidea.lib.tokens.papertoken import PAPERACTION
-from privacyidea.lib.tokens.pushtoken import PushAction
-from privacyidea.lib.tokens.registrationtoken import DEFAULT_LENGTH, DEFAULT_CONTENTS
-from privacyidea.lib.tokens.smstoken import SMSAction
-from privacyidea.lib.tokens.tantoken import TANAction
-from privacyidea.lib.tokens.webauthn import (webauthn_b64_decode, AuthenticatorAttachmentType,
-                                             AttestationLevel, AttestationForm,
-                                             UserVerificationLevel)
-from privacyidea.lib.tokens.webauthntoken import (DEFAULT_ALLOWED_TRANSPORTS,
-                                                  WebAuthnTokenClass, DEFAULT_CHALLENGE_TEXT_AUTH,
-                                                  PUBLIC_KEY_CREDENTIAL_ALGORITHMS,
-                                                  DEFAULT_PUBLIC_KEY_CREDENTIAL_ALGORITHM_PREFERENCE,
-                                                  DEFAULT_AUTHENTICATOR_ATTESTATION_LEVEL,
-                                                  DEFAULT_AUTHENTICATOR_ATTESTATION_FORM,
-                                                  DEFAULT_CHALLENGE_TEXT_ENROLL, DEFAULT_TIMEOUT,
-                                                  DEFAULT_USER_VERIFICATION_REQUIREMENT,
-                                                  PUBKEY_CRED_ALGORITHMS_ORDER)
 from privacyidea.lib.user import User
 from privacyidea.lib.users.custom_user_attributes import InternalCustomUserAttributes, INTERNAL_USAGE
-from privacyidea.lib.utils import (create_img, generate_charlists_from_pin_policy,
-                                   CHARLIST_CONTENTPOLICY, check_pin_contents)
-from privacyidea.lib.utils import hexlify_and_unicode, AUTH_RESPONSE
+from privacyidea.lib.utils import AUTH_RESPONSE
+from privacyidea.lib.utils import (create_img)
 from .base import (MyApiTestCase)
-from .test_lib_tokens_webauthn import (ALLOWED_TRANSPORTS, CRED_ID, ASSERTION_RESPONSE_TMPL,
-                                       ASSERTION_CHALLENGE, RP_ID, RP_NAME, ORIGIN)
 
 HOSTSFILE = "tests/testdata/hosts"
 SSHKEY = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDO1rx366cmSSs/89j" \
@@ -139,6 +81,7 @@ XjcD3ygUfTVbCzPYBmLPwvt+80AxgT2Nd6E612L/fbI9clv5DsvMwnVeSvlP1wXo
 5BampVY4p5CQRFLlCQa9fGWZrT+ArC9Djo0mHf32x6pEsSz0zMOlmjHrh+ChVkAs
 tA==
 -----END CERTIFICATE REQUEST-----"""
+
 
 class PostPolicyDecoratorTestCase(MyApiTestCase):
 
@@ -1432,7 +1375,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
         req.User = User("autoassignuser", self.realm1)
         # The response contains the token type HOTP, enrollment
         from privacyidea.lib.tokens.hotptoken import VERIFY_ENROLLMENT_MESSAGE
-        from privacyidea.lib.tokenclass import RolloutState
+        from privacyidea.lib.tokenrolloutstate import RolloutState
         res = {"jsonrpc": "2.0",
                "result": {"status": True,
                           "value": True},
@@ -1486,7 +1429,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
 
     def test_20c_verify_enrollment_missing_verify_param(self):
         """Test verify_enrollment prepolicy with token in verify_pending but no verify param - should raise an error"""
-        from privacyidea.lib.tokenclass import RolloutState
+        from privacyidea.lib.tokenrolloutstate import RolloutState
         from privacyidea.lib.error import ParameterError
 
         serial = "HOTP_VERIFY_PENDING"
@@ -1516,7 +1459,7 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
 
     def test_20d_verify_enrollment_wrong_verify_value(self):
         """Test verify_enrollment prepolicy with wrong verify value - should raise error"""
-        from privacyidea.lib.tokenclass import RolloutState
+        from privacyidea.lib.tokenrolloutstate import RolloutState
         from privacyidea.lib.error import ParameterError
 
         serial = "HOTP_VERIFY_WRONG"
@@ -1545,15 +1488,13 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
 
     def test_20e_verify_enrollment_not_in_verify_pending_state(self):
         """Test verify_enrollment prepolicy with token not in verify_pending state - should exit early"""
-        from privacyidea.lib.tokenclass import RolloutState
+        from privacyidea.lib.tokenrolloutstate import RolloutState
 
         serial = "HOTP_NOT_VERIFY_PENDING"
         tok = init_token({"serial": serial,
                           "type": "hotp",
                           "otpkey": "31323334353637383940"})
-        # Token that are enrolled directly without verify or 2step have the empty enrollment state
-        # TODO should be unified
-        self.assertEqual(tok.token.rollout_state, "")
+        self.assertEqual(tok.token.rollout_state, RolloutState.ENROLLED)
 
         builder = EnvironBuilder(method='POST', data={}, headers={})
         env = builder.get_environ()
@@ -1566,12 +1507,12 @@ class PostPolicyDecoratorTestCase(MyApiTestCase):
 
         # Token should still be empty (unchanged)
         tok = get_tokens(serial=serial)[0]
-        self.assertEqual(tok.token.rollout_state, "")
+        self.assertEqual(tok.token.rollout_state, RolloutState.ENROLLED)
         remove_token(serial)
 
     def test_20f_verify_enrollment_success(self):
         """Test verify_enrollment prepolicy happy path - successful verification"""
-        from privacyidea.lib.tokenclass import RolloutState
+        from privacyidea.lib.tokenrolloutstate import RolloutState
 
         otpkey_hex = ("5287c8247735148e48cc66412e8510de0414eb996da86edf18d944dd9844d13f9b804fce48a4c6d3f43f27788f70122b"
                       "457dffc12563e8d319c23c8b6fac5395")

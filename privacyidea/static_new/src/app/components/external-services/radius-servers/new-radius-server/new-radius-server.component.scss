@@ -1,34 +1,34 @@
-@use "../../../../../styles";
-@use "@angular/material" as mat;
+@use "styles";
 
-.radius-dialog-content {
-  min-width: 664px
-}
-
-.row {
+.radius-server-page-layout {
   display: flex;
-  gap: 16px;
-  width: 100%;
+  justify-content: center;
 }
 
-.col-8 {
-  flex: 2;
+.radius-server-page-container {
+  @include styles.main-component-style;
+  display: grid;
+  position: relative;
 }
 
-.col-5 {
-  flex: 5;
+.header-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 1rem;
+
+  .action-buttons {
+    display: flex;
+    flex-direction: row;
+    gap: var(--global-gap);
+  }
 }
 
-.col-4 {
-  flex: 1;
-}
-
-.col-2 {
-  flex: 1;
-}
-
-.col-6 {
-  flex: 1;
+.radius-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 1rem;
 }
 
 .checkbox-group {

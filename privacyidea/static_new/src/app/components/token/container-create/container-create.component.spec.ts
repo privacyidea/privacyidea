@@ -95,7 +95,7 @@ const dialogCloseAll = jest.fn();
 const matDialogMock = { open: dialogOpen, closeAll: dialogCloseAll };
 
 const snack = jest.fn();
-const notificationMock = { openSnackBar: snack };
+const notificationMock = { openSnackBar: snack, handleResourceError: jest.fn() };
 
 const navigateByUrl = jest.fn().mockResolvedValue(true);
 const routerMock = { navigateByUrl } as unknown as Router;

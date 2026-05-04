@@ -1,5 +1,6 @@
 # Update Notes
 ## Update from 3.13 to 3.14
+
 * The `u2f` token has been removed. It no longer functions. If you have any tokens of this type left,
   the schema update will flip them to `tokentype='deprecated'` and disable them, preserving the
   original type in `tokeninfo['original_tokentype']`. The migration logs a loud warning with the
@@ -8,12 +9,30 @@
 
       pi-tokenjanitor deprecated delete u2f
 
+* The `rollout_state` of fully enrolled tokens has changed. Previously, tokens that completed enrollment could have an
+  empty string (`""`) as their `rollout_state`. Now, fully enrolled tokens have the `rollout_state` set to `enrolled`.
+  A database migration script updates all existing tokens with an empty or `NULL` `rollout_state` to `enrolled`.
+  If you have custom code or external tools that check the `rollout_state` of tokens (e.g. by comparing against
+  an empty string), you need to update those checks to also handle the value `enrolled`.
+
+  **Event handlers** that use the `rollout_state` condition with an empty string (`""`) to mean
+  "fully enrolled" will silently stop matching after the migration. Update any such conditions to
+  use `enrolled` instead. You can find affected event handlers in the WebUI under *Config → Events*
+  by reviewing handlers whose conditions reference `rollout_state`.
+
+## Update from 3.13 to 3.14
+* Resolvers within a realm that share the same priority are now sorted **alphabetically by name**.
+  Previously, the order was undefined and depended on the database insertion order, which could
+  differ between SQLite, PostgreSQL and MariaDB. If you rely on a specific resolver ordering
+  within a realm, make sure each resolver has an explicit, distinct priority.
 
 ## Update from 3.12 to 3.13
+
 * `enrollpin` right enforcement has been made stricter. If you try to enroll a token with a PIN but do not have the
   the right, the enrollment will be denied with a PolicyError.
 
 ## Update from 3.11 to 3.12
+
 * To enable the preview of the new WebUI, edit `pi.cfg` and add the following two lines:
 
   `PI_STATIC_FOLDER = "static_new/"`
@@ -34,6 +53,7 @@
   of the migration steps for potential problems.
 
 ## Update from 3.10 to 3.11
+
 * To improve consistency of conditions for policies and eventhandlers, tokens that are not in any realm will not be
   listed for users with access restricted to a realm (i.e. helpdesk admins). The user with access restricted to a realm
   will now only be able to see the token that are in that realm. Users whose access is not restricted to any realm will
@@ -43,12 +63,12 @@
 * The webauthn JavaScript submodule was removed and replaced with a static file.
   When using a Git-Checkout you probably need to remove the directory/submodule before updating.
 * Deprecation:
-  * `/validate/samlcheck`: The endpoint will be removed in the future version **3.12**.
-    This also removes the `Include SAML attributes in the authentication response` configuration option.
-    If you are using that endpoint for one of your applications, please start using `validate/check` with the policies
-    `add_user_in_response` and/or `add_resolver_in_response`.
-  * Authorization Policies `no_detail_on_fail` and `no_detail_on_success` since they
-    break challenge-response authentication.
+    * `/validate/samlcheck`: The endpoint will be removed in the future version **3.12**.
+      This also removes the `Include SAML attributes in the authentication response` configuration option.
+      If you are using that endpoint for one of your applications, please start using `validate/check` with the policies
+      `add_user_in_response` and/or `add_resolver_in_response`.
+    * Authorization Policies `no_detail_on_fail` and `no_detail_on_success` since they
+      break challenge-response authentication.
 
 ## Update from 3.9 to 3.10
 
@@ -140,7 +160,7 @@ Be sure to run the schema update script!
 ## Update from 3.4 to 3.5
 
 * The audit log table now also records the start date and the duration
-  of a request.  If you are running the Audit table on a different
+  of a request. If you are running the Audit table on a different
   database, then you need to add this column manually!
 
 * The authcache database table gets a longer column "authentication"

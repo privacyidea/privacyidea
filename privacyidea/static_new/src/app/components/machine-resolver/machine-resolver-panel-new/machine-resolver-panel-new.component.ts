@@ -87,7 +87,7 @@ export class MachineResolverPanelNewComponent {
 
   readonly canSaveMachineResolver = computed(() => {
     const current = this.newMachineResolver();
-    if (!current.resolvername.trim()) return false;
+    if (!current.resolvername.trim() || !/^[a-zA-Z0-9._-]*$/.test(current.resolvername)) return false;
 
     const dataValidator = this.dataValidatorSignal();
     return dataValidator(current.data);

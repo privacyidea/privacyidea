@@ -92,6 +92,7 @@ from privacyidea.lib.event import event
 from privacyidea.lib.importotp import (parseOATHcsv, parseSafeNetXML,
                                        parseYubicoCSV, parsePSKCdata, GPGImport)
 from privacyidea.lib.subscriptions import CheckSubscription
+from privacyidea.lib.tokenrolloutstate import RolloutState
 from .lib.utils import send_result, send_csv_result, get_optional, get_required
 from ..lib.container import find_container_by_serial, add_token_to_container
 from ..lib.fido2.util import get_credential_ids_for_user
@@ -109,7 +110,6 @@ from ..lib.token import (init_token, get_tokens_paginate, assign_token,
                          set_validity_period_end, set_validity_period_start, add_tokeninfo,
                          delete_tokeninfo, import_token,
                          assign_tokengroup, unassign_tokengroup, set_tokengroups, get_one_token)
-from ..lib.tokenclass import RolloutState
 from ..lib.tokens.passkeytoken import PasskeyTokenClass
 from ..lib.tokens.webauthntoken import WebAuthnTokenClass
 from ..lib.user import get_user_from_param, User
@@ -1013,18 +1013,18 @@ def set_api(serial=None):
 
     if count_auth_success_max is not None:
         g.audit_object.add_to_log({'action_detail':
-            f"count_auth_success_max={count_auth_success_max!r}, "})
+                                       f"count_auth_success_max={count_auth_success_max!r}, "})
         res += set_count_auth(serial, count_auth_success_max, user=user,
                               max=True, success=True)
 
     if validity_period_end is not None:
         g.audit_object.add_to_log({'action_detail':
-            f"validity_period_end={validity_period_end!r}, "})
+                                       f"validity_period_end={validity_period_end!r}, "})
         res += set_validity_period_end(serial, user, validity_period_end)
 
     if validity_period_start is not None:
         g.audit_object.add_to_log({'action_detail':
-            f"validity_period_start={validity_period_start!r}, "})
+                                       f"validity_period_start={validity_period_start!r}, "})
         res += set_validity_period_start(serial, user, validity_period_start)
 
     g.audit_object.log({"success": True})

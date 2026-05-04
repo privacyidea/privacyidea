@@ -37,6 +37,7 @@ import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.
 import { ContainerCreateComponent } from "./container-create.component";
 import { ContainerRegistrationConfigComponent } from "../container-registration/container-registration-config/container-registration-config.component";
 import { ClearButtonComponent } from "../../shared/clear-button/clear-button.component";
+import { ContainerCreateFormComponent } from "../../shared/container-create-form/container-create-form.component";
 
 @Component({
   selector: "app-container-create-self-service",
@@ -47,20 +48,11 @@ import { ClearButtonComponent } from "../../shared/clear-button/clear-button.com
     MatOption,
     MatSelect,
     FormsModule,
-    MatInput,
-    MatLabel,
-    MatCheckbox,
     MatIconButton,
-    MatAccordion,
-    MatExpansionPanel,
-    MatExpansionPanelTitle,
-    MatExpansionPanelHeader,
     MatTooltip,
     ScrollToTopDirective,
     NgClass,
-    ContainerRegistrationConfigComponent,
-    ClearButtonComponent,
-    MatSuffix
+    ContainerCreateFormComponent
   ],
   templateUrl: "./container-create.self-service.component.html",
   styleUrl: "./container-create.component.scss"

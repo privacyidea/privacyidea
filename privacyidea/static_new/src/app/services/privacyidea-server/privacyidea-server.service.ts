@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
-import { computed, inject, Injectable, Signal } from "@angular/core";
+import { computed, effect, inject, Injectable, Signal } from "@angular/core";
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
 
@@ -65,6 +65,12 @@ export class PrivacyideaServerService implements PrivacyideaServerServiceInterfa
 
   readonly privacyideaServerBaseUrl = environment.proxyUrl + "/privacyideaserver/";
 
+  constructor() {
+    effect(() => {
+      this.notificationService.handleResourceError(this.remoteServerResource.error(), "privacyIDEA servers");
+    });
+  }
+
   remoteServerResource = httpResource<PiResponse<PrivacyideaServers>>(() => {
     if (!this.contentService.onExternalPrivacyIdea() && !this.contentService.onTokenEnrollmentLikely()) {
       return undefined;
@@ -91,7 +97,7 @@ export class PrivacyideaServerService implements PrivacyideaServerServiceInterfa
   });
 
   async postPrivacyideaServer(server: PrivacyideaServer): Promise<void> {
-    const url = `${this.privacyideaServerBaseUrl}${server.identifier}`;
+    const url = `${this.privacyideaServerBaseUrl}${encodeURIComponent(server.identifier)}`;
     const request = this.http.post<PiResponse<any>>(url, server, { headers: this.authService.getHeaders() });
 
     return lastValueFrom(request)
@@ -107,7 +113,7 @@ export class PrivacyideaServerService implements PrivacyideaServerServiceInterfa
   }
 
   async deletePrivacyideaServer(identifier: string): Promise<void> {
-    const request = this.http.delete<PiResponse<any>>(`${this.privacyideaServerBaseUrl}${identifier}`, {
+    const request = this.http.delete<PiResponse<any>>(`${this.privacyideaServerBaseUrl}${encodeURIComponent(identifier)}`, {
       headers: this.authService.getHeaders()
     });
     return lastValueFrom(request)

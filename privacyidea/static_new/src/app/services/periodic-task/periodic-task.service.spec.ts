@@ -66,7 +66,7 @@ describe("PeriodicTaskService", () => {
 
   it("should enable a periodic task", async () => {
     const mockResponse = { result: { status: true, value: "4" } };
-    const promise = service.enablePeriodicTask("4");
+    const promise = service.enablePeriodicTask(4);
     const req = httpTestingController.expectOne(
       r => r.url.includes("periodictask/enable/4") && r.method === "POST"
     );
@@ -78,18 +78,18 @@ describe("PeriodicTaskService", () => {
 
   it("should handle error when enabling a periodic task", async () => {
     service.periodicTasksResource.reload = jest.fn();
-    const promise = service.enablePeriodicTask("4");
+    const promise = service.enablePeriodicTask(4);
     const req = httpTestingController.expectOne(r => r.url.includes("periodictask/enable/4"));
     req.flush(null, { status: 401, statusText: "Enabling periodic task not allowed" });
     const result = await promise;
-    expect(notificationMock.openSnackBar).toHaveBeenCalledWith("Failed to enable periodic task!");
+    expect(notificationMock.openSnackBar).toHaveBeenCalledWith("Failed to enable periodic task! ");
     expect(service.periodicTasksResource.reload).toHaveBeenCalled();
     expect(result).toBeUndefined();
   });
 
   it("should disable a periodic task", async () => {
     const mockResponse = { result: { status: true, value: "4" } };
-    const promise = service.disablePeriodicTask("6");
+    const promise = service.disablePeriodicTask(6);
     const req = httpTestingController.expectOne(r => r.url.includes("periodictask/disable/6"));
     expect(req.request.body).toEqual({});
     req.flush(mockResponse);
@@ -99,18 +99,18 @@ describe("PeriodicTaskService", () => {
 
   it("should handle error when disabling a periodic task", async () => {
     service.periodicTasksResource.reload = jest.fn();
-    const promise = service.disablePeriodicTask("6");
+    const promise = service.disablePeriodicTask(6);
     const req = httpTestingController.expectOne(r => r.url.includes("periodictask/disable/6"));
     req.flush(null, { status: 500, statusText: "Server Error" });
     const result = await promise;
-    expect(notificationMock.openSnackBar).toHaveBeenCalledWith("Failed to disable periodic task!");
+    expect(notificationMock.openSnackBar).toHaveBeenCalledWith("Failed to disable periodic task! ");
     expect(service.periodicTasksResource.reload).toHaveBeenCalled();
     expect(result).toBeUndefined();
   });
 
   it("should delete a periodic task", (done) => {
     const mockResponse = { status: true, value: "4" };
-    service.deletePeriodicTask("4").subscribe((res) => {
+    service.deletePeriodicTask(4).subscribe((res) => {
       expect(res).toEqual(mockResponse);
       done();
     });
@@ -119,9 +119,9 @@ describe("PeriodicTaskService", () => {
   });
 
   it("should handle error when deleting a periodic task", (done) => {
-    service.deletePeriodicTask("4").subscribe({
+    service.deletePeriodicTask(4).subscribe({
       error: (err) => {
-        expect(notificationMock.openSnackBar).toHaveBeenCalledWith("Failed to delete periodic task. ");
+        expect(notificationMock.openSnackBar).toHaveBeenCalledWith("Failed to delete periodic task. fail");
         done();
       }
     });

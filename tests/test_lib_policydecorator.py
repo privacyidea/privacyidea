@@ -28,7 +28,7 @@ from privacyidea.lib.realm import set_realm, delete_realm
 from privacyidea.lib.resolver import save_resolver, delete_resolver
 from privacyidea.lib.token import (init_token, remove_token, check_user_pass,
                                    get_tokens)
-from privacyidea.lib.tokenclass import RolloutState
+from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import AUTH_RESPONSE
 from privacyidea.models import AuthCache

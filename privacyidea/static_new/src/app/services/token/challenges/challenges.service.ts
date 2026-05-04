@@ -124,7 +124,7 @@ export class ChallengesService implements ChallengesServiceInterface {
     }
 
     const { params: filterParams, serial } = this.filterParams();
-    const url = serial ? `${this.tokenBaseUrl}challenges/${serial}` : `${this.tokenBaseUrl}challenges/`;
+    const url = serial ? `${this.tokenBaseUrl}challenges/${encodeURIComponent(serial)}` : `${this.tokenBaseUrl}challenges/`;
 
     return {
       url,

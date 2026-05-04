@@ -206,7 +206,6 @@ export interface TokenImportResult {
 }
 
 export interface TokenServiceInterface {
-  maxDescriptionLength: number;
   apiFilterKeyMap: Record<string, string>;
   stopPolling$: Subject<void>;
   tokenBaseUrl: string;
@@ -237,6 +236,7 @@ export interface TokenServiceInterface {
   selectedToken: WritableSignal<string | null>;
   tokenOptions: Signal<string[]>;
   filteredTokenOptions: Signal<string[]>;
+  maxDescriptionLength: number;
 
   clearFilter(): void;
 
@@ -324,12 +324,14 @@ export class TokenService implements TokenServiceInterface {
   private readonly realmService: RealmServiceInterface = inject(RealmService);
 
   readonly hiddenApiFilter = hiddenApiFilter;
-  readonly maxDescriptionLength = 80;
   readonly apiFilterKeyMap = apiFilterKeyMap;
   stopPolling$ = new Subject<void>();
   tokenBaseUrl = environment.proxyUrl + "/token/";
+  maxDescriptionLength = 80;
   eventPageSize = 10;
+  userRealm = signal("");
   tokenSerial = this.contentService.tokenSerial;
+  detailsUsername = this.contentService.detailsUsername;
   filterParams = computed<Record<string, string>>(() => {
     const allowed = [...this.apiFilter, ...this.advancedApiFilter, ...this.hiddenApiFilter, "infokey", "infovalue"];
 
@@ -344,7 +346,20 @@ export class TokenService implements TokenServiceInterface {
       .filter(([key, v]) => (key === "container_serial" ? true : StringUtils.validFilterValue(v)))
       .map(([key, v]) => [key, plainKeys.has(key) ? v : `*${v}*`] as const);
     return Object.fromEntries(entries) as Record<string, string>;
-  });  userRealm = signal("");
+  });
+
+  tokenSerialResource = httpResource<PiResponse<Tokens>>(() => {
+    const filter = this.selectedToken();
+    if (!filter || filter.length < 1) {
+      return undefined;
+    }
+    return {
+      url: this.tokenBaseUrl,
+      method: "GET",
+      headers: this.authService.getHeaders(),
+      params: { serial: `*${filter}*` }
+    };
+  });
 
   constructor() {
     effect(() => {
@@ -362,21 +377,6 @@ export class TokenService implements TokenServiceInterface {
       }
     });
   }
-
-  detailsUsername = this.contentService.detailsUsername;
-
-  tokenSerialResource = httpResource<PiResponse<Tokens>>(() => {
-    const filter = this.selectedToken();
-    if (!filter || filter.length < 1) {
-      return undefined;
-    }
-    return {
-      url: this.tokenBaseUrl,
-      method: "GET",
-      headers: this.authService.getHeaders(),
-      params: { serial: `*${filter}*` }
-    };
-  });
 
   selectedTokenType = linkedSignal({
     source: () => ({
@@ -757,7 +757,7 @@ export class TokenService implements TokenServiceInterface {
   ): Observable<PiResponse<{ count: number; serial?: string | undefined }, unknown>> {
     const headers = this.authService.getHeaders();
     return this.http
-      .get<PiResponse<{ count: number; serial?: string }>>(`${this.tokenBaseUrl}getserial/${otp}`, {
+      .get<PiResponse<{ count: number; serial?: string }>>(`${this.tokenBaseUrl}getserial/${encodeURIComponent(otp)}`, {
         params: params,
         headers: headers
       })
@@ -801,7 +801,7 @@ export class TokenService implements TokenServiceInterface {
           [infoKey]: infoValue
         });
       } else {
-        return postRequest(`${info_url}/${tokenSerial}/${infoKey}`, {
+        return postRequest(`${info_url}/${encodeURIComponent(tokenSerial)}/${encodeURIComponent(infoKey)}`, {
           value: infoValue
         });
       }
@@ -811,7 +811,7 @@ export class TokenService implements TokenServiceInterface {
 
   deleteToken(tokenSerial: string): Observable<Object> {
     const headers = this.authService.getHeaders();
-    return this.http.delete(this.tokenBaseUrl + tokenSerial, { headers });
+    return this.http.delete(this.tokenBaseUrl + encodeURIComponent(tokenSerial), { headers });
   }
 
   revokeToken(tokenSerial: string): Observable<any> {
@@ -829,7 +829,7 @@ export class TokenService implements TokenServiceInterface {
   deleteInfo(tokenSerial: string, infoKey: string): Observable<Object> {
     const headers = this.authService.getHeaders();
     return this.http
-      .delete(`${this.tokenBaseUrl}info/` + tokenSerial + "/" + infoKey, {
+      .delete(`${this.tokenBaseUrl}info/${encodeURIComponent(tokenSerial)}/${encodeURIComponent(infoKey)}`, {
         headers
       })
       .pipe(
@@ -1037,7 +1037,7 @@ export class TokenService implements TokenServiceInterface {
 
   lostToken(tokenSerial: string): Observable<LostTokenResponse> {
     const headers = this.authService.getHeaders();
-    return this.http.post<LostTokenResponse>(`${this.tokenBaseUrl}lost/` + tokenSerial, {}, { headers }).pipe(
+    return this.http.post<LostTokenResponse>(`${this.tokenBaseUrl}lost/${encodeURIComponent(tokenSerial)}`, {}, { headers }).pipe(
       catchError((error) => {
         console.error("Failed to mark token as lost.", error);
         const message = error.error?.result?.error?.message || "";
@@ -1075,7 +1075,7 @@ export class TokenService implements TokenServiceInterface {
 
     return this.http
       .post<PiResponse<boolean>>(
-        `${this.tokenBaseUrl}realm/` + tokenSerial,
+        `${this.tokenBaseUrl}realm/${encodeURIComponent(tokenSerial)}`,
         {
           realms: value
         },
@@ -1113,7 +1113,7 @@ export class TokenService implements TokenServiceInterface {
         : [value];
     return this.http
       .post(
-        `${this.tokenBaseUrl}group/` + tokenSerial,
+        `${this.tokenBaseUrl}group/${encodeURIComponent(tokenSerial)}`,
         {
           groups: valueArray
         },
@@ -1132,7 +1132,7 @@ export class TokenService implements TokenServiceInterface {
   importTokens(fileName: string, params: Record<string, any>): Observable<PiResponse<TokenImportResult>> {
     const headers = this.authService.getHeaders();
     return this.http
-      .post<PiResponse<TokenImportResult>>(`${this.tokenBaseUrl}load/${fileName}`, params, {
+      .post<PiResponse<TokenImportResult>>(`${this.tokenBaseUrl}load/${encodeURIComponent(fileName)}`, params, {
         headers: headers
       })
       .pipe(

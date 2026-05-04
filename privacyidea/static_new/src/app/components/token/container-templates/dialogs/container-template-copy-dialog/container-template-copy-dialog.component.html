@@ -45,6 +45,11 @@
       @if (nameConflict()) {
         <mat-error i18n>A template with this name already exists.</mat-error>
       }
+      @if (isNameDirty() && template().name.length > 0 && nameInvalidPattern()) {
+        <mat-error
+          i18n>Template name contains <strong>invalid characters</strong>. Only alphanumeric characters, dots, underscores and hyphens are allowed.
+        </mat-error>
+      }
     </mat-form-field>
   </div>
 </app-dialog-wrapper>

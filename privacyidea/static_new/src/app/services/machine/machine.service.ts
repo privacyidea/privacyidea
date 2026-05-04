@@ -298,7 +298,7 @@ export class MachineService implements MachineServiceInterface {
   deleteAssignMachineToToken(args: { serial: string; application: string; mtid: string }): Observable<any> {
     const headers = this.authService.getHeaders();
     return this.http
-      .delete(`${this.baseUrl}token/${args.serial}/${args.application}/${args.mtid}`, { headers })
+      .delete(`${this.baseUrl}token/${encodeURIComponent(args.serial)}/${encodeURIComponent(args.application)}/${encodeURIComponent(args.mtid)}`, { headers })
       .pipe(shareReplay(1));
   }
 
@@ -334,7 +334,7 @@ export class MachineService implements MachineServiceInterface {
     const headers = this.authService.getHeaders();
     let params = new HttpParams().set("challenge", challenge).set("hostname", hostname);
     return this.http
-      .get(application ? `${this.baseUrl}authitem/${application}` : `${this.baseUrl}authitem`, {
+      .get(application ? `${this.baseUrl}authitem/${encodeURIComponent(application)}` : `${this.baseUrl}authitem`, {
         headers,
         params
       })
@@ -380,13 +380,13 @@ export class MachineService implements MachineServiceInterface {
   deleteToken(serial: string, machineid: string, resolver: string, application: string): Observable<any> {
     const headers = this.authService.getHeaders();
     return this.http
-      .delete(`${this.baseUrl}token/${serial}/${machineid}/${resolver}/${application}`, { headers })
+      .delete(`${this.baseUrl}token/${encodeURIComponent(serial)}/${encodeURIComponent(machineid)}/${encodeURIComponent(resolver)}/${encodeURIComponent(application)}`, { headers })
       .pipe(shareReplay(1));
   }
 
   deleteTokenById(serial: string, application: string, id: string): Observable<any> {
     const headers = this.authService.getHeaders();
-    return this.http.delete(`${this.baseUrl}token/${serial}/${application}/${id}`, { headers }).pipe(shareReplay(1));
+    return this.http.delete(`${this.baseUrl}token/${encodeURIComponent(serial)}/${encodeURIComponent(application)}/${encodeURIComponent(id)}`, { headers }).pipe(shareReplay(1));
   }
 
   getMachineTokens(args: { machineid: number; resolver: string }): Observable<PiResponse<TokenApplications>> {

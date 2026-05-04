@@ -107,9 +107,9 @@ describe("PolicyService", () => {
       service.allPolicies.set([policy]);
 
       const changes = { description: "updated description" };
-      service.savePolicyEdits(policyName, { ...policy, ...changes });
+      service.savePolicyEdits("test/policy", { ...policy, ...changes, name: "test/policy" });
 
-      const req = httpTestingController.expectOne(`${service.policyBaseUrl}${policyName}`);
+      const req = httpTestingController.expectOne(`${service.policyBaseUrl}${encodeURIComponent("test/policy")}`);
 
       expect(req.request.method).toBe("POST");
       expect(req.request.body).toMatchObject(changes);
@@ -117,18 +117,18 @@ describe("PolicyService", () => {
       req.flush(MockPiResponse.fromValue({}));
     });
     it("should toggle policy active state optimistically", () => {
-      const policy: PolicyDetail = { ...service.getEmptyPolicy(), name: "test", active: true };
+      const policy: PolicyDetail = { ...service.getEmptyPolicy(), name: "test/1", active: true };
       service.allPolicies.set([policy]);
       service.togglePolicyActive(policy);
       expect(service.allPolicies()[0].active).toBeFalsy();
-      const req = httpTestingController.expectOne(`${service.policyBaseUrl}disable/test`);
+      const req = httpTestingController.expectOne(`${service.policyBaseUrl}disable/${encodeURIComponent("test/1")}`);
       req.flush(MockPiResponse.fromValue({}));
     });
     it("should delete a policy and update the signal", async () => {
-      const policy = { ...service.getEmptyPolicy(), name: "to-delete" };
+      const policy = { ...service.getEmptyPolicy(), name: "to/delete" };
       service.allPolicies.set([policy]);
-      const deletePromise = service.deletePolicy("to-delete");
-      const req = httpTestingController.expectOne(`${service.policyBaseUrl}to-delete`);
+      const deletePromise = service.deletePolicy("to/delete");
+      const req = httpTestingController.expectOne(`${service.policyBaseUrl}${encodeURIComponent("to/delete")}`);
       expect(req.request.method).toBe("DELETE");
       req.flush(MockPiResponse.fromValue(1));
       const response = await deletePromise;
@@ -168,7 +168,7 @@ describe("PolicyService", () => {
 
       const savePromise = service.saveNewPolicy(newPolicy);
 
-      const req = httpTestingController.expectOne(`${service.policyBaseUrl}${newPolicy.name}`);
+      const req = httpTestingController.expectOne(`${service.policyBaseUrl}${encodeURIComponent(newPolicy.name)}`);
       expect(req.request.method).toBe("POST");
       expect(req.request.body).toMatchObject(newPolicy);
       req.flush(MockPiResponse.fromValue({ status: true }));
@@ -188,7 +188,7 @@ describe("PolicyService", () => {
 
       const savePromise = service.saveNewPolicy(newPolicy);
 
-      const req = httpTestingController.expectOne(`${service.policyBaseUrl}${newPolicy.name}`);
+      const req = httpTestingController.expectOne(`${service.policyBaseUrl}${encodeURIComponent(newPolicy.name)}`);
       req.flush(MockPiResponse.fromError({ message: errorMessage }));
 
       const result = await savePromise;
@@ -207,7 +207,7 @@ describe("PolicyService", () => {
 
       const savePromise = service.saveNewPolicy(newPolicy);
 
-      const req = httpTestingController.expectOne(`${service.policyBaseUrl}${newPolicy.name}`);
+      const req = httpTestingController.expectOne(`${service.policyBaseUrl}${encodeURIComponent(newPolicy.name)}`);
       const errorBody = {
         result: {
           error: {
@@ -234,7 +234,7 @@ describe("PolicyService", () => {
 
       const savePromise = service.saveNewPolicy(newPolicy);
 
-      const req = httpTestingController.expectOne(`${service.policyBaseUrl}${newPolicy.name}`);
+      const req = httpTestingController.expectOne(`${service.policyBaseUrl}${encodeURIComponent(newPolicy.name)}`);
       req.flush(null, {
         status: 0,
         statusText: "Unknown Error"

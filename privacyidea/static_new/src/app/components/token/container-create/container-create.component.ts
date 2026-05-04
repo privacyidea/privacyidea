@@ -78,6 +78,7 @@ import { ContainerCreatedDialogWizardComponent } from "./container-created-dialo
 import { UserAssignmentComponent } from "../user-assignment/user-assignment.component";
 import { ContainerTemplateService } from "../../../services/container-template/container-template.service";
 import { ClearButtonComponent } from "../../shared/clear-button/clear-button.component";
+import { ContainerCreateFormComponent } from "../../shared/container-create-form/container-create-form.component";
 
 @Component({
   selector: "app-container-create",
@@ -88,22 +89,13 @@ import { ClearButtonComponent } from "../../shared/clear-button/clear-button.com
     MatOption,
     MatSelect,
     FormsModule,
-    MatInput,
-    MatLabel,
-    MatCheckbox,
     MatIconButton,
-    MatAccordion,
-    MatExpansionPanel,
-    MatExpansionPanelTitle,
-    MatExpansionPanelHeader,
     MatTooltip,
     ScrollToTopDirective,
     NgClass,
     CommonModule,
-    ContainerRegistrationConfigComponent,
     UserAssignmentComponent,
-    MatSuffix,
-    ClearButtonComponent
+    ContainerCreateFormComponent
   ],
   templateUrl: "./container-create.component.html",
   styleUrl: "./container-create.component.scss"

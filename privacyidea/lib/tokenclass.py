@@ -91,6 +91,7 @@ from privacyidea.lib import _
 from privacyidea.lib.crypto import (decryptPassword,
                                     generate_otpkey, encryptPassword)
 from privacyidea.lib.params import get_optional, get_required
+from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.utils import (is_true, decode_base32check,
                                    to_unicode, create_img, parse_timedelta,
                                    parse_legacy_time, split_pin_pass)
@@ -142,22 +143,6 @@ class ClientMode:
     INTERACTIVE = 'interactive'
     POLL = 'poll'
     WEBAUTHN = 'webauthn'
-
-
-class RolloutState:
-    CLIENTWAIT = 'clientwait'
-    # The rollout is pending in the backend, like CSRs that need to be approved
-    PENDING = 'pending'
-    # This means the user needs to authenticate to verify that the token was successfully enrolled.
-    VERIFY_PENDING = 'verify'
-    ENROLLED = 'enrolled'
-    BROKEN = 'broken'
-    FAILED = 'failed'
-    DENIED = 'denied'
-
-    @classmethod
-    def all_states(cls):
-        return [v for k, v in vars(cls).items() if not k.startswith('_') and isinstance(v, str)]
 
 
 class TokenClass:
