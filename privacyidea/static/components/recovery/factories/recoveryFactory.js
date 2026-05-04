@@ -1,7 +1,7 @@
 myApp.factory("RecoveryFactory", ['$http', '$state', '$rootScope',
-                                  'recoveryUrl',
+                                  'recoveryUrl', 'AuthFactory',
                                   function ($http, $state, $rootScope,
-                                            recoveryUrl) {
+                                            recoveryUrl, AuthFactory) {
     /**
      Each service - just like this service factory - is a singleton.
      */

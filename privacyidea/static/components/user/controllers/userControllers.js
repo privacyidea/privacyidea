@@ -92,10 +92,15 @@ angular.module("privacyideaApp")
                         username: $scope.User.username,
                         password: $scope.User.password
                     }, function (data) {
-                        inform.add(gettextCatalog.getString("Password set successfully."),
-                            {type: "info"});
-                        $scope.User.password = "";
-                        $scope.password2 = "";
+                        if (data.result.value) {
+                            inform.add(gettextCatalog.getString("Password set successfully."),
+                                {type: "info"});
+                            $scope.User.password = "";
+                            $scope.password2 = "";
+                        } else {
+                            inform.add(gettextCatalog.getString("Failed to set password."),
+                                {type: "danger"});
+                        }
                     });
             };
 
