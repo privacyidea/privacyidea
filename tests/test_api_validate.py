@@ -2394,7 +2394,7 @@ class ValidateAPITestCase(MyApiTestCase):
             detail = res.json.get("detail")
             self.assertEqual(detail.get("messages")[0], _("Enter the OTP from the Email"))
             # check the send message
-            sent_message = smtpmock.get_sent_message().decode('utf-8')
+            sent_message = smtpmock.get_sent_message()
             self.assertTrue("RGVpbiAyODcwODI=" in sent_message)
             self.assertTrue("Subject: Dein OTP" in sent_message)
 
