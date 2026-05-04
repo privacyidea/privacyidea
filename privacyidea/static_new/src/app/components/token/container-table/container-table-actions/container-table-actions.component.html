@@ -44,7 +44,9 @@
     <mat-icon> filter_list</mat-icon>
     More Filter
   </button>
-  <mat-menu #advancedFilterMenu="matMenu" class="button-width-m">
+  <mat-menu
+    #advancedFilterMenu="matMenu"
+    class="button-width-m">
     @for (keyword of containerService.advancedApiFilter; track keyword) {
       <button
         (click)="onAdvancedFilterClick(keyword)"

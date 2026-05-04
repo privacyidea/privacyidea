@@ -3,7 +3,6 @@
 
 .pi-dialog {
   background-color: var(--mat-sys-surface-container-lowest);
-  border-radius: var(--border-radius);
   overflow: auto;
 
   // subtract double global padding to preserve margin around the component
@@ -28,7 +27,7 @@
     justify-content: flex-end;
     flex-wrap: wrap;
     padding: 16px;
-    gap: 8px
+    gap: 8px;
   }
 
   .pi-dialog-body {
