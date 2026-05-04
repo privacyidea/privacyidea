@@ -59,7 +59,7 @@ from privacyidea.lib.policy import PolicyClass
 from privacyidea.lib.realm import get_realms
 from privacyidea.lib.resolver import get_resolver_list
 from privacyidea.lib.health import get_certificate_status
-from privacyidea.lib.metrics import get_metrics
+from privacyidea.lib.metrics import get_metrics, cleanup_old_metrics
 from privacyidea.lib.usercache import delete_user_cache
 from privacyidea.lib.utils import hexlify_and_unicode, b64encode_and_unicode, is_true
 from .auth import admin_required
@@ -610,7 +610,7 @@ def get_health_notification_delivery():
 
     Each channel folds rows by its primary label dimension:
 
-    * push: ``provider`` (only ``firebase`` today)
+    * push: ``gateway`` (the SMS gateway identifier configured for Firebase)
     * sms: ``gateway`` (the SMS gateway identifier)
     * email: ``identifier`` (the SMTP server identifier)
 
@@ -625,7 +625,7 @@ def get_health_notification_delivery():
     result = {
         "push": _aggregate_delivery_channel(
             "push_delivery_total", "push_delivery_duration_seconds",
-            "provider", since_seconds),
+            "gateway", since_seconds),
         "sms": _aggregate_delivery_channel(
             "sms_send_total", "sms_send_duration_seconds",
             "gateway", since_seconds),
@@ -667,3 +667,28 @@ def delete_user_cache_api():
     row_count = delete_user_cache()
     g.audit_object.log({"success": True, "info": f"Deleted {row_count} entries from user cache"})
     return send_result({"status": True, "deleted": row_count})
+
+
+@system_blueprint.route("/metricscleanup", methods=['POST'])
+@admin_required
+@log_with(log)
+def metricscleanup_api():
+    """
+    Delete metric_aggregate rows older than ``older_than_hours`` hours.
+    Mirrors what the ``MetricsCleanup`` periodic task does, but on demand.
+
+    :jsonparam older_than_hours: retention threshold in hours. Default 24.
+                                 Values < 1 are clamped to 1 to prevent wiping
+                                 the live (in-progress) bucket.
+    :reqheader PI-Authorization: The authorization token
+    """
+    try:
+        hours = int(get_optional(request.all_data, "older_than_hours") or 24)
+    except (TypeError, ValueError):
+        hours = 24
+    if hours < 1:
+        hours = 1
+    deleted = cleanup_old_metrics(older_than_seconds=hours * 3600)
+    g.audit_object.log({"success": True,
+                        "info": f"Deleted {deleted} metric_aggregate row(s) older than {hours}h"})
+    return send_result({"status": True, "deleted": deleted, "older_than_hours": hours})

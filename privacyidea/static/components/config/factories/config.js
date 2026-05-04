@@ -710,6 +710,19 @@ myApp.factory("ConfigFactory", ["AuthFactory", "$http", "$state", "$rootScope",
                     AuthFactory.authError(error.data)
                 });
             },
+            cleanupMetrics: function (olderThanHours, callback) {
+                $http.post(systemUrl + "/metricscleanup",
+                           {"older_than_hours": olderThanHours}, {
+                    headers: {
+                        'PI-Authorization': AuthFactory.getAuthToken(),
+                        'Content-Type': 'application/json'
+                    }
+                }).then(function (response) {
+                    callback(response.data)
+                }, function (error) {
+                    AuthFactory.authError(error.data)
+                });
+            },
             getCertificateHealth: function (refresh, callback) {
                 var url = systemUrl + "/health/certificates";
                 if (refresh) {

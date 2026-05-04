@@ -21,10 +21,12 @@
 
 myApp.controller("dashboardController", ["ConfigFactory", "TokenFactory",
                                          "SubscriptionFactory", "AuditFactory",
-                                         "$scope", "$location", "AuthFactory",
+                                         "$scope", "$location", "AuthFactory", "$timeout",
+                                         "InfoFactory",
                                          function (ConfigFactory, TokenFactory,
                                                    SubscriptionFactory, AuditFactory,
-                                                   $scope, $location, AuthFactory) {
+                                                   $scope, $location, AuthFactory, $timeout,
+                                                   InfoFactory) {
 
     $scope.tokens = {"total": 0, "hardware": 0};
     $scope.certificates = {"entries": [], "summary": {"ok": 0, "warning": 0,
@@ -35,12 +37,33 @@ myApp.controller("dashboardController", ["ConfigFactory", "TokenFactory",
     $scope.notificationDelivery = {"push": [], "sms": [], "email": [],
                                    "loading": false, "since_seconds": 3600,
                                    "totals": {"push": 0, "sms": 0, "email": 0}};
+    // Lookup populated alongside the notification delivery panel so push/sms
+    // target names can link to their gateway edit page (the route needs id).
+    $scope.smsGatewayIdByName = {};
     $scope.policies = {"active": [], "num_active": 0,
                        "inactive": [], "num_inactive": 0};
     $scope.events = {"active": [], "num_active": 0,
                      "inactive": [], "num_inactive": 0};
     $scope.subscriptions = {};
     $scope.authentications = {"success": 0, "fail": 0};
+    $scope.latestNews = null;
+
+    $scope.getLatestNews = function () {
+        InfoFactory.getRSS(function (rss) {
+            // rss is { source: [items, ...], ... }; pick the first item of the
+            // first source - matches what the news page shows at the top.
+            for (var source in rss) {
+                if (rss.hasOwnProperty(source) && rss[source] && rss[source].length) {
+                    var item = rss[source][0];
+                    // RFC-822 pub_date string -> Date so the date filter works.
+                    if (item.pub_date) item.pub_date = new Date(item.pub_date);
+                    $scope.latestNews = item;
+                    return;
+                }
+            }
+            $scope.latestNews = null;
+        });
+    };
 
     $scope.get_total_token_number = function () {
         // We call getTokens with pagesize=0, so that we do
@@ -279,6 +302,14 @@ $scope.getAuthentication = function () {
              });
              $scope.notificationDelivery.loading = false;
          });
+         ConfigFactory.getSMSGateways(null, function (data) {
+             var gateways = (data && data.result && data.result.value) || [];
+             var map = {};
+             angular.forEach(gateways, function (gw) {
+                 if (gw && gw.name) map[gw.name] = gw.id;
+             });
+             $scope.smsGatewayIdByName = map;
+         });
      };
 
      // Failure-rate color: green <1%, yellow <5%, red >=5%. No data => muted.
@@ -361,6 +392,7 @@ $scope.getAuthentication = function () {
         $scope.getResolverTiming();
         $scope.getNotificationDelivery();
     }
+    $scope.getLatestNews();
 
         // listen to the reload broadcast
     $scope.$on("piReload", function() {
@@ -392,5 +424,6 @@ $scope.getAuthentication = function () {
             // recorded during the init storm.
             $timeout(function () { $scope.getResolverTiming(); }, 1500);
         }
+        $scope.getLatestNews();
     });
 }]);

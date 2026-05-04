@@ -161,17 +161,18 @@ class FirebaseProvider(ISMSProvider):
         with open(file_path) as config_file:
             server_config = json.load(config_file)
         url = FIREBASE_URL_SEND.format(server_config["project_id"])
+        labels = {"gateway": self.smsgateway.identifier}
         start = time.monotonic()
         response = authed_session.post(url, data=json.dumps(fcm_message), headers=headers, proxies=proxies)
-        observe("push_delivery_duration_seconds", time.monotonic() - start, {"provider": "firebase"})
+        observe("push_delivery_duration_seconds", time.monotonic() - start, labels)
 
         if response.status_code == 200:
             log.debug("Message sent successfully to Firebase service.")
             res = True
-            inc("push_delivery_total", {"provider": "firebase", "result": "ok"})
+            inc("push_delivery_total", {**labels, "result": "ok"})
         else:
             log.warning(f"Failed to send message to firebase service: {response.text}")
-            inc("push_delivery_total", {"provider": "firebase", "result": "failed"})
+            inc("push_delivery_total", {**labels, "result": "failed"})
 
         return res
 

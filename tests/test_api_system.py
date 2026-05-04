@@ -1660,10 +1660,10 @@ class HealthEndpointsTestCase(MyApiTestCase):
         self.assertEqual(value["since_seconds"], 3600)
 
     def test_notification_delivery_folds_each_channel_by_key_label(self):
-        # Push: two ok, one failed - same provider, so they all collapse into one row.
-        inc("push_delivery_total", {"provider": "firebase", "result": "ok"}, by=2)
-        inc("push_delivery_total", {"provider": "firebase", "result": "failed"})
-        observe("push_delivery_duration_seconds", 0.1, {"provider": "firebase"})
+        # Push: two ok, one failed - same gateway, so they all collapse into one row.
+        inc("push_delivery_total", {"gateway": "firebase", "result": "ok"}, by=2)
+        inc("push_delivery_total", {"gateway": "firebase", "result": "failed"})
+        observe("push_delivery_duration_seconds", 0.1, {"gateway": "firebase"})
 
         # SMS across two gateways; the response orders by total desc.
         inc("sms_send_total", {"gateway": "primary", "result": "ok"}, by=4)
@@ -1680,7 +1680,7 @@ class HealthEndpointsTestCase(MyApiTestCase):
             self.assertEqual(res.status_code, 200, res.data)
             value = res.json["result"]["value"]
 
-        # Push: one row with provider=firebase, ok=2, failed=1, total=3.
+        # Push: one row with gateway=firebase, ok=2, failed=1, total=3.
         self.assertEqual(len(value["push"]), 1)
         push = value["push"][0]
         self.assertEqual(push["key"], "firebase")
@@ -1707,3 +1707,59 @@ class HealthEndpointsTestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200, res.data)
             self.assertEqual(res.json["result"]["value"]["since_seconds"], 60)
+
+    def _seed_metric_at(self, hours_ago):
+        # Insert one MetricAggregate row whose window_start is `hours_ago` hours
+        # in the past, bypassing the bucket-rounding in inc()/observe().
+        row = MetricAggregate(
+            metric_name="sms_send_total",
+            labels_key="gateway=x,result=ok",
+            window_start=datetime.datetime.utcnow() - datetime.timedelta(hours=hours_ago),
+            count=1)
+        db.session.add(row)
+        db.session.commit()
+
+    def test_metricscleanup_default_24h_retains_recent_drops_old(self):
+        self._seed_metric_at(hours_ago=1)    # recent - kept
+        self._seed_metric_at(hours_ago=48)   # old - dropped
+        with self.app.test_request_context('/system/metricscleanup',
+                                           method='POST',
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res.data)
+            value = res.json["result"]["value"]
+        self.assertEqual(value["deleted"], 1)
+        self.assertEqual(value["older_than_hours"], 24)
+        self.assertEqual(db.session.query(MetricAggregate).count(), 1)
+
+    def test_metricscleanup_custom_hours(self):
+        self._seed_metric_at(hours_ago=2)
+        self._seed_metric_at(hours_ago=10)
+        with self.app.test_request_context('/system/metricscleanup',
+                                           method='POST',
+                                           data={'older_than_hours': '5'},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res.data)
+            value = res.json["result"]["value"]
+        self.assertEqual(value["deleted"], 1)
+        self.assertEqual(value["older_than_hours"], 5)
+
+    def test_metricscleanup_invalid_hours_falls_back_to_default(self):
+        with self.app.test_request_context('/system/metricscleanup',
+                                           method='POST',
+                                           data={'older_than_hours': 'not-a-number'},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res.data)
+            self.assertEqual(res.json["result"]["value"]["older_than_hours"], 24)
+
+    def test_metricscleanup_clamps_low_hours(self):
+        # Negative or zero would otherwise wipe the in-progress bucket.
+        with self.app.test_request_context('/system/metricscleanup',
+                                           method='POST',
+                                           data={'older_than_hours': '0'},
+                                           headers={'Authorization': self.at}):
+            res = self.app.full_dispatch_request()
+            self.assertEqual(res.status_code, 200, res.data)
+            self.assertEqual(res.json["result"]["value"]["older_than_hours"], 1)

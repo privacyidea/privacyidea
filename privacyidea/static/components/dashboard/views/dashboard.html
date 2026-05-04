@@ -1,5 +1,22 @@
 <div class="well">
 
+    <div class="row" ng-if="latestNews">
+       <div class="col-lg-12">
+           <div class="panel panel-default">
+               <div class="panel-heading">
+                   <a ui-sref="info.rss">
+                       <span class="glyphicon glyphicon-bullhorn" aria-hidden="true"></span>
+                       <span translate>News</span>
+                   </a>
+               </div>
+               <div class="panel-body">
+                   {{ latestNews.title }}
+                   <small class="text-muted pull-right">{{ latestNews.pub_date | date:'medium' }}</small>
+               </div>
+           </div>
+       </div>
+    </div>
+
     <div class="row">  <!-- upper row -->
        <div class="col-lg-4">
            <div class="panel panel-default"
@@ -295,7 +312,17 @@
                                 </thead>
                                 <tbody>
                                     <tr ng-repeat="entry in notificationDelivery[channel]">
-                                        <td><strong>{{ entry.key }}</strong></td>
+                                        <td>
+                                            <a ng-if="channel === 'email'"
+                                               ui-sref="config.smtp.edit({identifier: entry.key})">
+                                                <strong>{{ entry.key }}</strong>
+                                            </a>
+                                            <a ng-if="channel !== 'email' && smsGatewayIdByName[entry.key]"
+                                               ui-sref="config.smsgateway.edit({gateway_id: smsGatewayIdByName[entry.key]})">
+                                                <strong>{{ entry.key }}</strong>
+                                            </a>
+                                            <strong ng-if="channel !== 'email' && !smsGatewayIdByName[entry.key]">{{ entry.key }}</strong>
+                                        </td>
                                         <td class="text-success">{{ entry.ok || 0 }}</td>
                                         <td ng-class="deliveryFailureClass(entry)">
                                             {{ (entry.failed || 0) + (entry.error || 0) }}
@@ -313,6 +340,12 @@
                             </table>
                         </div>
                     </div>
+                    <p class="text-muted small" style="margin-top: 1em;">
+                        <span translate>Dashboard metrics accumulate over time. Configure a</span>
+                        <a ui-sref="config.periodictasks.list" translate>MetricsCleanup periodic task</a>
+                        <span translate>to drop old rows automatically, or trigger a one-off cleanup on the</span>
+                        <a ui-sref="config.system" translate>system configuration page</a>.
+                    </p>
                  </div>
              </div>
        </div>
