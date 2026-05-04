@@ -165,11 +165,11 @@ export class TokenDetailsActionsComponent {
     this.validateService.authenticatePasskey({ isTest: true }).subscribe({
       next: (checkResponse) => {
         if (checkResponse.result?.value) {
-          this.notificationService.openSnackBar(
+          this.notificationService.success(
             "Test successful. You would have been logged in as: " + (checkResponse.detail?.username ?? "Unknown User")
           );
         } else {
-          this.notificationService.openSnackBar("No user found.");
+          this.notificationService.warning("No user found.");
         }
       }
     });

@@ -155,24 +155,24 @@ export class ContainerTemplateService implements ContainerTemplateServiceInterfa
 
   async deleteTemplate(name: string) {
     if (!this.authService.actionAllowed("container_template_delete")) {
-      this.notificationService.openSnackBar("You are not allowed to delete container templates.");
+      this.notificationService.error("You are not allowed to delete container templates.");
       throw new Error("Permission denied");
     }
 
     try {
       await lastValueFrom(this._performDeleteRequest(name));
       this.templatesResource.reload();
-      this.notificationService.openSnackBar("Successfully deleted template.");
+      this.notificationService.success("Successfully deleted template.");
     } catch (error: any) {
       const message = error.error?.result?.error?.message || "";
-      this.notificationService.openSnackBar("Failed to delete template. " + message);
+      this.notificationService.error("Failed to delete template. " + message);
       throw error;
     }
   }
 
   async deleteTemplates(names: string[]) {
     if (!this.authService.actionAllowed("container_template_delete")) {
-      this.notificationService.openSnackBar("You are not allowed to delete container templates.");
+      this.notificationService.error("You are not allowed to delete container templates.");
       throw new Error("Permission denied");
     }
 
@@ -181,10 +181,10 @@ export class ContainerTemplateService implements ContainerTemplateServiceInterfa
         await lastValueFrom(this._performDeleteRequest(n));
       }
       this.templatesResource.reload();
-      this.notificationService.openSnackBar("Successfully deleted templates.");
+      this.notificationService.success("Successfully deleted templates.");
     } catch (error: any) {
       const message = error.error?.result?.error?.message || "";
-      this.notificationService.openSnackBar("Failed to delete templates. " + message);
+      this.notificationService.error("Failed to delete templates. " + message);
       throw error;
     }
   }
@@ -199,12 +199,12 @@ export class ContainerTemplateService implements ContainerTemplateServiceInterfa
     try {
       await lastValueFrom(this.http.post<PiResponse<any>>(url, template, { headers: this.authService.getHeaders() }));
       this.templatesResource.reload();
-      this.notificationService.openSnackBar(`Successfully saved template edits.`);
+      this.notificationService.success(`Successfully saved template edits.`);
       return true;
     } catch (error: any) {
       console.warn("Failed to save template edits:", error);
       const message = error.error?.result?.error?.message || "";
-      this.notificationService.openSnackBar("Failed to save template edits. " + message);
+      this.notificationService.error("Failed to save template edits. " + message);
       return false;
     }
   }

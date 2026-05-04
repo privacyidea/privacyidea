@@ -63,7 +63,7 @@ export class SubscriptionComponent {
     let fileList: FileList | null = element.files;
     if (fileList && fileList.length > 0) {
       this.subscriptionService.uploadSubscriptionFile(fileList[0]).subscribe(() => {
-        this.notificationService.openSnackBar("File uploaded successfully.");
+        this.notificationService.success("File uploaded successfully.");
         this.subscriptionService.reload();
       });
     }
@@ -84,7 +84,7 @@ export class SubscriptionComponent {
       .subscribe((result) => {
         if (result) {
           this.subscriptionService.deleteSubscription(application).subscribe(() => {
-            this.notificationService.openSnackBar("Subscription deleted successfully.");
+            this.notificationService.success("Subscription deleted successfully.");
             this.subscriptionService.reload();
           });
         }

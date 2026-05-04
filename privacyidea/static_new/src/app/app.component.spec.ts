@@ -74,7 +74,7 @@ describe("AppComponent", () => {
 
     TestBed.createComponent(AppComponent).detectChanges();
 
-    expect(note.openSnackBar).toHaveBeenCalledWith("User is already logged in.");
+    expect(note.warning).toHaveBeenCalledWith("User is already logged in.");
   });
 
   it("resets & restarts timer on user interaction", () => {

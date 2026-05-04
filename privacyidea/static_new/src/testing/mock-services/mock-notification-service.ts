@@ -20,10 +20,12 @@ import { NotificationServiceInterface } from "../../app/services/notification/no
 import { Subscription } from "rxjs";
 
 export class MockNotificationService implements NotificationServiceInterface {
+  success = jest.fn();
+  error = jest.fn();
+  warning = jest.fn();
   remainingTime: number = 0;
   timerSub: Subscription = new Subscription();
   startTime: number = 0;
 
-  openSnackBar = jest.fn();
   handleResourceError = jest.fn();
 }

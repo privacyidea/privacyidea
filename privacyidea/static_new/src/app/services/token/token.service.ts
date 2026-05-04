@@ -78,7 +78,17 @@ export type TokenTypeKey =
   | "webauthn"
   | "passkey";
 
-const apiFilter = ["serial", "type", "active", "user", "realm", "description", "rollout_state", "tokenrealm", "container_serial"];
+const apiFilter = [
+  "serial",
+  "type",
+  "active",
+  "user",
+  "realm",
+  "description",
+  "rollout_state",
+  "tokenrealm",
+  "container_serial"
+];
 
 const advancedApiFilter = ["infokey & infovalue", "userid", "resolver", "assigned"];
 
@@ -170,7 +180,7 @@ export interface WebAuthnRegisterRequest {
 
 export type LostTokenResponse = PiResponse<LostTokenData>;
 
-export type EnrollTokenArguments = { data: TokenEnrollmentData, mapper: BaseApiPayloadMapper };
+export type EnrollTokenArguments = { data: TokenEnrollmentData; mapper: BaseApiPayloadMapper };
 
 export type TokenEnrollmentDialogData = {
   tokenType: string;
@@ -181,7 +191,7 @@ export type TokenEnrollmentDialogData = {
   onlyAddToRealm?: boolean;
   rollover?: boolean;
   showEnrollData?: boolean;
-}
+};
 
 export interface LostTokenData {
   disable: number;
@@ -366,14 +376,14 @@ export class TokenService implements TokenServiceInterface {
       if (this.tokenResource.error()) {
         const tokensResourceError = this.tokenResource.error() as HttpErrorResponse;
         console.error("Failed to get token data.", tokensResourceError.error.result.error.message);
-        this.notificationService.openSnackBar(tokensResourceError.error.result.error.message);
+        this.notificationService.error(tokensResourceError.error.result.error.message);
       }
     });
     effect(() => {
       if (this.tokenTypesResource.error()) {
         const tokenTypesResourceError = this.tokenTypesResource.error() as HttpErrorResponse;
         console.error("Failed to get token type data.", tokenTypesResourceError.error.result.error.message);
-        this.notificationService.openSnackBar(tokenTypesResourceError.error.result.error.message);
+        this.notificationService.error(tokenTypesResourceError.error.result.error.message);
       }
     });
   }
@@ -600,7 +610,7 @@ export class TokenService implements TokenServiceInterface {
   selectedToken: WritableSignal<string | null> = signal(null);
 
   tokenOptions = linkedSignal({
-    source: () => this.tokenSerialResource.hasValue() ? this.tokenSerialResource.value() : undefined,
+    source: () => (this.tokenSerialResource.hasValue() ? this.tokenSerialResource.value() : undefined),
     computation: (tokenSerialResource) => {
       if (!tokenSerialResource) return [];
       return tokenSerialResource.result?.value?.tokens?.map((token) => token.serial) ?? [];
@@ -626,7 +636,7 @@ export class TokenService implements TokenServiceInterface {
         catchError((error) => {
           console.error("Failed to unassign tokens.", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.openSnackBar("Failed to unassign tokens. " + message);
+          this.notificationService.error("Failed to unassign tokens. " + message);
           return throwError(() => error);
         })
       );
@@ -640,7 +650,7 @@ export class TokenService implements TokenServiceInterface {
       catchError((error) => {
         console.error("Failed to delete tokens.", error);
         const message = error.result?.error?.message || "";
-        this.notificationService.openSnackBar("Failed to delete tokens. " + message);
+        this.notificationService.error("Failed to delete tokens. " + message);
         return throwError(() => error);
       })
     );
@@ -688,7 +698,7 @@ export class TokenService implements TokenServiceInterface {
               }
 
               if (messages.length > 0) {
-                this.notificationService.openSnackBar(messages.join("\n"));
+                this.notificationService.success(messages.join("\n"));
               }
 
               if (afterDelete) {
@@ -700,7 +710,7 @@ export class TokenService implements TokenServiceInterface {
               if (err.error?.result?.error?.message) {
                 message = err.error.result.error.message;
               }
-              this.notificationService.openSnackBar(message);
+              this.notificationService.error(message);
             }
           });
         }
@@ -716,7 +726,7 @@ export class TokenService implements TokenServiceInterface {
         catchError((error) => {
           console.error("Failed to toggle active.", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.openSnackBar("Failed to toggle active. " + message);
+          this.notificationService.error("Failed to toggle active. " + message);
           return throwError(() => error);
         })
       );
@@ -728,7 +738,7 @@ export class TokenService implements TokenServiceInterface {
       catchError((error) => {
         console.error("Failed to reset fail count.", error);
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.openSnackBar("Failed to reset fail count. " + message);
+        this.notificationService.error("Failed to reset fail count. " + message);
         return throwError(() => error);
       })
     );
@@ -745,7 +755,7 @@ export class TokenService implements TokenServiceInterface {
       catchError((error) => {
         console.error("Failed to set token detail.", error);
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.openSnackBar("Failed to set token detail. " + message);
+        this.notificationService.error("Failed to set token detail. " + message);
         return throwError(() => error);
       })
     );
@@ -765,7 +775,7 @@ export class TokenService implements TokenServiceInterface {
         catchError((error) => {
           console.error("Failed to get count.", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.openSnackBar("Failed to get count. " + message);
+          this.notificationService.error("Failed to get count. " + message);
           return throwError(() => error);
         })
       );
@@ -781,7 +791,7 @@ export class TokenService implements TokenServiceInterface {
         catchError((error) => {
           console.error("Failed to set token info.", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.openSnackBar("Failed to set token info. " + message);
+          this.notificationService.error("Failed to set token info. " + message);
           return throwError(() => error);
         })
       );
@@ -820,7 +830,7 @@ export class TokenService implements TokenServiceInterface {
       catchError((error) => {
         console.error("Failed to revoke token.", error);
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.openSnackBar("Failed to revoke token. " + message);
+        this.notificationService.error("Failed to revoke token. " + message);
         return throwError(() => error);
       })
     );
@@ -836,7 +846,7 @@ export class TokenService implements TokenServiceInterface {
         catchError((error) => {
           console.error("Failed to delete token info.", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.openSnackBar("Failed to delete token info. " + message);
+          this.notificationService.error("Failed to delete token info. " + message);
           return throwError(() => error);
         })
       );
@@ -854,7 +864,7 @@ export class TokenService implements TokenServiceInterface {
       catchError((error) => {
         console.error("Failed to unassign user from all tokens.", error);
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.openSnackBar("Failed to unassign user from all tokens. " + message);
+        this.notificationService.error("Failed to unassign user from all tokens. " + message);
         return throwError(() => error);
       })
     );
@@ -868,7 +878,7 @@ export class TokenService implements TokenServiceInterface {
         catchError((error) => {
           console.error("Failed to unassign user.", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.openSnackBar("Failed to unassign user. " + message);
+          this.notificationService.error("Failed to unassign user. " + message);
           return throwError(() => error);
         })
       );
@@ -893,7 +903,7 @@ export class TokenService implements TokenServiceInterface {
       catchError((error) => {
         console.error("Failed to assign user to all tokens.", error);
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.openSnackBar("Failed to assign user to all tokens. " + message);
+        this.notificationService.error("Failed to assign user to all tokens. " + message);
         return throwError(() => error);
       })
     );
@@ -922,7 +932,7 @@ export class TokenService implements TokenServiceInterface {
         catchError((error) => {
           console.error("Failed to assign user.", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.openSnackBar("Failed to assign user. " + message);
+          this.notificationService.error("Failed to assign user. " + message);
           return throwError(() => error);
         })
       );
@@ -943,7 +953,7 @@ export class TokenService implements TokenServiceInterface {
         catchError((error) => {
           console.error("Failed to set PIN.", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.openSnackBar("Failed to set PIN. " + message);
+          this.notificationService.error("Failed to set PIN. " + message);
           return throwError(() => error);
         })
       );
@@ -963,7 +973,7 @@ export class TokenService implements TokenServiceInterface {
         catchError((error) => {
           console.error("Failed to set random PIN.", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.openSnackBar("Failed to set random PIN. " + message);
+          this.notificationService.error("Failed to set random PIN. " + message);
           return throwError(() => error);
         })
       );
@@ -985,7 +995,7 @@ export class TokenService implements TokenServiceInterface {
         catchError((error) => {
           console.error("Failed to resync OTP token.", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.openSnackBar("Failed to resync OTP token. " + message);
+          this.notificationService.error("Failed to resync OTP token. " + message);
           return throwError(() => error);
         })
       );
@@ -1016,7 +1026,7 @@ export class TokenService implements TokenServiceInterface {
         catchError((error) => {
           console.error("Failed to enroll token.", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.openSnackBar("Failed to enroll token. " + message);
+          this.notificationService.error("Failed to enroll token. " + message);
           return throwError(() => error);
         })
       );
@@ -1024,12 +1034,13 @@ export class TokenService implements TokenServiceInterface {
 
   verifyToken(verifyData: TokenEnrollmentData): Observable<PiResponse<boolean, EnrollmentResponseDetail>> {
     const headers = this.authService.getHeaders();
-    return this.http.post<PiResponse<boolean, EnrollmentResponseDetail>>(`${this.tokenBaseUrl}init`, verifyData, { headers })
+    return this.http
+      .post<PiResponse<boolean, EnrollmentResponseDetail>>(`${this.tokenBaseUrl}init`, verifyData, { headers })
       .pipe(
         catchError((error) => {
           console.error("Failed to verify token.", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.openSnackBar("Failed to verify token. " + message);
+          this.notificationService.error("Failed to verify token. " + message);
           return throwError(() => error);
         })
       );
@@ -1041,7 +1052,7 @@ export class TokenService implements TokenServiceInterface {
       catchError((error) => {
         console.error("Failed to mark token as lost.", error);
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.openSnackBar("Failed to mark token as lost. " + message);
+        this.notificationService.error("Failed to mark token as lost. " + message);
         return throwError(() => error);
       })
     );
@@ -1063,7 +1074,7 @@ export class TokenService implements TokenServiceInterface {
       catchError((error) => {
         console.error("Failed to poll token state.", error);
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.openSnackBar("Failed to poll token state. " + message);
+        this.notificationService.error("Failed to poll token state. " + message);
         return throwError(() => error);
       }),
       shareReplay({ bufferSize: 1, refCount: true })
@@ -1085,7 +1096,7 @@ export class TokenService implements TokenServiceInterface {
         catchError((error) => {
           console.error("Failed to set token realm.", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.openSnackBar("Failed to set token realm. " + message);
+          this.notificationService.error("Failed to set token realm. " + message);
           return throwError(() => error);
         })
       );
@@ -1097,7 +1108,7 @@ export class TokenService implements TokenServiceInterface {
       catchError((error) => {
         console.error("Failed to get token groups.", error);
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.openSnackBar("Failed to get tokengroups. " + message);
+        this.notificationService.error("Failed to get tokengroups. " + message);
         return throwError(() => error);
       })
     );
@@ -1123,7 +1134,7 @@ export class TokenService implements TokenServiceInterface {
         catchError((error) => {
           console.error("Failed to set token group.", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.openSnackBar("Failed to set token group. " + message);
+          this.notificationService.error("Failed to set token group. " + message);
           return throwError(() => error);
         })
       );
@@ -1139,7 +1150,7 @@ export class TokenService implements TokenServiceInterface {
         catchError((error) => {
           console.error("Failed to import tokens.", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.openSnackBar("Failed to import tokens. " + message);
+          this.notificationService.error("Failed to import tokens. " + message);
           return throwError(() => error);
         })
       );

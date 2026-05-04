@@ -96,12 +96,12 @@ export class TokengroupService implements TokengroupServiceInterface {
 
     return lastValueFrom(request)
       .then(() => {
-        this.notificationService.openSnackBar($localize`Successfully saved tokengroup.`);
+        this.notificationService.success($localize`Successfully saved tokengroup.`);
         this.tokengroupResource.reload();
       })
       .catch((error) => {
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.openSnackBar($localize`Failed to save tokengroup. ` + message);
+        this.notificationService.error($localize`Failed to save tokengroup. ` + message);
         throw new Error("post-failed");
       });
   }
@@ -112,12 +112,12 @@ export class TokengroupService implements TokengroupServiceInterface {
     });
     return lastValueFrom(request)
       .then(() => {
-        this.notificationService.openSnackBar($localize`Successfully deleted tokengroup: ${groupname}.`);
+        this.notificationService.success($localize`Successfully deleted tokengroup: ${groupname}.`);
         this.tokengroupResource.reload();
       })
       .catch((error) => {
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.openSnackBar($localize`Failed to delete tokengroup. ` + message);
+        this.notificationService.error($localize`Failed to delete tokengroup. ` + message);
         throw new Error("delete-failed");
       });
   }

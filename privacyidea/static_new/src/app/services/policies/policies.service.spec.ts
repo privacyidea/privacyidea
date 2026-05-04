@@ -159,7 +159,7 @@ describe("PolicyService", () => {
         action: { "test-action": true }
       };
       // Reset notification service mock
-      notificationService.openSnackBar.mockClear();
+      notificationService.warning.mockClear();
     });
 
     it("should return true and show success notification when policy is created successfully", async () => {
@@ -175,7 +175,7 @@ describe("PolicyService", () => {
 
       const result = await savePromise;
       expect(result).toBe(true);
-      expect(notificationService.openSnackBar).toHaveBeenCalledWith(
+      expect(notificationService.success).toHaveBeenCalledWith(
         expect.stringContaining("Policy created successfully")
       );
       expect(reloadSpy).toHaveBeenCalled();
@@ -193,10 +193,10 @@ describe("PolicyService", () => {
 
       const result = await savePromise;
       expect(result).toBe(false);
-      expect(notificationService.openSnackBar).toHaveBeenCalledWith(
+      expect(notificationService.error).toHaveBeenCalledWith(
         expect.stringContaining(`Creating policy failed: ${errorMessage}`)
       );
-      expect(notificationService.openSnackBar).toHaveBeenCalledWith(expect.stringContaining(errorMessage));
+      expect(notificationService.error).toHaveBeenCalledWith(expect.stringContaining(errorMessage));
       expect(reloadSpy).toHaveBeenCalled();
     });
 
@@ -223,7 +223,7 @@ describe("PolicyService", () => {
       const result = await savePromise;
 
       expect(result).toBe(false);
-      expect(notificationService.openSnackBar).toHaveBeenCalledWith(
+      expect(notificationService.error).toHaveBeenCalledWith(
         expect.stringContaining(`Creating policy failed: ${errorMessage}`)
       );
       expect(reloadSpy).toHaveBeenCalled();
@@ -243,7 +243,7 @@ describe("PolicyService", () => {
       const result = await savePromise;
 
       expect(result).toBe(false);
-      expect(notificationService.openSnackBar).toHaveBeenCalledWith(
+      expect(notificationService.error).toHaveBeenCalledWith(
         expect.stringContaining("Creating policy failed")
       );
     });
@@ -265,7 +265,7 @@ describe("PolicyService", () => {
         action: { "updated-action": true }
       };
       service.allPolicies.set([originalPolicy]);
-      notificationService.openSnackBar.mockClear();
+      notificationService.success.mockClear();
     });
 
     describe("Update policy without name change", () => {
@@ -285,7 +285,7 @@ describe("PolicyService", () => {
         const result = await savePromise;
         expect(result).toBe(true);
         expect(reloadSpy).toHaveBeenCalled();
-        expect(notificationService.openSnackBar).toHaveBeenCalledWith(
+        expect(notificationService.success).toHaveBeenCalledWith(
           expect.stringContaining("Policy updated successfully")
         );
       });
@@ -312,7 +312,7 @@ describe("PolicyService", () => {
         expect(result).toBe(false);
         // Verify rollback - should still have original policy
         expect(service.allPolicies()[0].action).toEqual({ "test-action": true });
-        expect(notificationService.openSnackBar).toHaveBeenCalledWith(
+        expect(notificationService.error).toHaveBeenCalledWith(
           expect.stringContaining(`Saving policy failed: ${errorMessage}`)
         );
       });
@@ -354,7 +354,7 @@ describe("PolicyService", () => {
         const result = await savePromise;
         expect(result).toBe(true);
         expect(reloadSpy).toHaveBeenCalled();
-        expect(notificationService.openSnackBar).toHaveBeenCalledWith(
+        expect(notificationService.success).toHaveBeenCalledWith(
           expect.stringContaining("Policy updated successfully")
         );
       });
@@ -381,7 +381,7 @@ describe("PolicyService", () => {
         // Verify rollback - should have original policy with original name
         expect(service.allPolicies()[0].name).toBe("existing-policy");
         expect(service.allPolicies()[0].action).toEqual({ "test-action": true });
-        expect(notificationService.openSnackBar).toHaveBeenCalledWith(
+        expect(notificationService.error).toHaveBeenCalledWith(
           expect.stringContaining("Saving policy failed: " + errorMessage)
         );
       });
@@ -412,7 +412,7 @@ describe("PolicyService", () => {
         // Verify rollback - should have updated action but original name (last stable state after POST)
         expect(service.allPolicies()[0].name).toBe("existing-policy");
         expect(service.allPolicies()[0].action).toEqual({ "updated-action": true });
-        expect(notificationService.openSnackBar).toHaveBeenCalledWith(
+        expect(notificationService.error).toHaveBeenCalledWith(
           expect.stringContaining("Saving policy failed: " + errorMessage)
         );
       });
@@ -430,7 +430,7 @@ describe("PolicyService", () => {
         expect(result).toBe(false);
         // Verify rollback
         expect(service.allPolicies()[0].action).toEqual({ "test-action": true });
-        expect(notificationService.openSnackBar).toHaveBeenCalledWith(
+        expect(notificationService.error).toHaveBeenCalledWith(
           expect.stringContaining("Saving policy failed")
         );
       });
@@ -443,7 +443,7 @@ describe("PolicyService", () => {
 
         const result = await savePromise;
         expect(result).toBe(false);
-        expect(notificationService.openSnackBar).toHaveBeenCalledWith("Saving policy failed");
+        expect(notificationService.error).toHaveBeenCalledWith("Saving policy failed");
       });
     });
   });

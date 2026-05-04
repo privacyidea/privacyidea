@@ -123,7 +123,7 @@ describe("AuthGuard class", () => {
     expect(routerMock.navigate).toHaveBeenCalledWith(["/login"]);
 
     await flushPromises();
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith("Navigation blocked by AuthGuard!");
+    expect(notificationService.warning).toHaveBeenCalledWith("Navigation blocked by AuthGuard!");
   });
 
   it("calls navigate and shows snackbar twice when both canActivate + canActivateChild deny access", async () => {
@@ -139,9 +139,9 @@ describe("AuthGuard class", () => {
 
     await flushPromises(); // resolve both .then handlers
 
-    expect(notificationService.openSnackBar).toHaveBeenCalledTimes(2);
-    expect(notificationService.openSnackBar).toHaveBeenNthCalledWith(1, "Navigation blocked by AuthGuard!");
-    expect(notificationService.openSnackBar).toHaveBeenNthCalledWith(2, "Navigation blocked by AuthGuard!");
+    expect(notificationService.warning).toHaveBeenCalledTimes(2);
+    expect(notificationService.warning).toHaveBeenNthCalledWith(1, "Navigation blocked by AuthGuard!");
+    expect(notificationService.warning).toHaveBeenNthCalledWith(2, "Navigation blocked by AuthGuard!");
   });
 
   it("does not show snackbar if router.navigate never resolves (simulates failure without unhandled rejection)", async () => {
@@ -154,6 +154,6 @@ describe("AuthGuard class", () => {
 
     await flushPromises();
 
-    expect(notificationService.openSnackBar).not.toHaveBeenCalled();
+    expect(notificationService.warning).not.toHaveBeenCalled();
   });
 });

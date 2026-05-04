@@ -96,7 +96,7 @@ export class ValidateService implements ValidateServiceInterface {
         catchError((error: any) => {
           console.error("Failed to test token.", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.openSnackBar("Failed to test token. " + message);
+          this.notificationService.error("Failed to test token. " + message);
           return throwError(() => error);
         })
       );
@@ -104,7 +104,7 @@ export class ValidateService implements ValidateServiceInterface {
 
   authenticatePasskey(args?: { isTest?: boolean }): Observable<AuthResponse> {
     if (!window.PublicKeyCredential) {
-      this.notificationService.openSnackBar("WebAuthn is not supported by this browser.");
+      this.notificationService.error("WebAuthn is not supported by this browser.");
       return throwError(() => new Error("WebAuthn is not supported by this browser."));
     }
     return from(PublicKeyCredential.isConditionalMediationAvailable()).pipe(
@@ -145,7 +145,7 @@ export class ValidateService implements ValidateServiceInterface {
       catchError((error: any) => {
         console.error("Error during passkey authentication", error);
         const errorMessage = error.error?.result?.error?.message || error.message || "Error during authentication";
-        this.notificationService.openSnackBar(errorMessage);
+        this.notificationService.error(errorMessage);
         return throwError(() => new Error(errorMessage));
       })
     );
@@ -158,7 +158,7 @@ export class ValidateService implements ValidateServiceInterface {
     isTest?: boolean;
   }): Observable<AuthResponse> {
     if (!window.PublicKeyCredential) {
-      this.notificationService.openSnackBar("WebAuthn is not supported by this browser.");
+      this.notificationService.error("WebAuthn is not supported by this browser.");
       return throwError(() => new Error("WebAuthn is not supported by this browser."));
     }
 
@@ -198,14 +198,14 @@ export class ValidateService implements ValidateServiceInterface {
           console.error("Error during WebAuthn authentication", error);
           const errorMessage =
             error.error?.result?.error?.message || error.message || "Error during WebAuthn authentication";
-          this.notificationService.openSnackBar(errorMessage);
+          this.notificationService.error(errorMessage);
           return throwError(() => new Error(errorMessage));
         })
       );
     } catch (e) {
       const message = "Invalid WebAuthn challenge data received from server.";
       console.error(message, e);
-      this.notificationService.openSnackBar(message);
+      this.notificationService.error(message);
       return throwError(() => new Error(message));
     }
   }
@@ -226,7 +226,7 @@ export class ValidateService implements ValidateServiceInterface {
         catchError((error: any) => {
           console.error("Failed to poll transaction.", error);
           const message = error.error?.result?.error?.message || "Polling for transaction failed.";
-          this.notificationService.openSnackBar(message);
+          this.notificationService.error(message);
           return throwError(() => error);
         })
       );
