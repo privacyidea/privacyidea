@@ -218,8 +218,38 @@ export class NavigationComponent implements AfterViewInit, OnDestroy {
 
   private getFilteredNavItems(): NavItem[] {
     return this.primaryNavItems.filter(item => {
-      if (item.section === "policies") return this.authService.actionAllowed("policyread");
-      return true;
+      switch (item.section) {
+        case "token":
+          return this.authService.anyTokenActionAllowed();
+        case "container":
+          return this.authService.anyContainerActionAllowed();
+        case "users":
+          return this.authService.actionAllowed("userlist");
+        case "policies":
+          return this.authService.actionAllowed("policyread");
+        case "subscription":
+          return this.authService.actionAllowed("managesubscription");
+        case "audit":
+          return this.authService.actionAllowed("auditlog");
+        case "external_services":
+          return this.authService.oneActionAllowed([
+            "smtpserver_read",
+            "radiusserver_read",
+            "privacyideaserver_read",
+            "smsgateway_read"
+          ]);
+        case "config":
+          return this.authService.oneActionAllowed([
+            "configread",
+            "resolverread",
+            "mresolverread",
+            "caconnectorread",
+            "periodictask_read",
+            "eventhandling_read"
+          ]);
+        default:
+          return true;
+      }
     });
   }
 
