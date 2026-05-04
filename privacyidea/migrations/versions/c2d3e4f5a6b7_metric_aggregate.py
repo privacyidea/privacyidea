@@ -29,9 +29,10 @@ _BUCKET_COLUMNS = [
 def upgrade():
     try:
         op.execute(sa.schema.CreateSequence(sa.Sequence("metric_aggregate_seq")))
-    except (OperationalError, ProgrammingError, Exception):
+    except (OperationalError, ProgrammingError):
         # Some dialects (sqlite, mysql) don't have sequences - SQLAlchemy
-        # falls back to autoincrement, which is fine.
+        # falls back to autoincrement, which is fine. Other failures
+        # (permissions, connection issues) bubble up so the operator sees them.
         pass
 
     columns = [
@@ -60,5 +61,6 @@ def downgrade():
     op.drop_table("metric_aggregate")
     try:
         op.execute(sa.schema.DropSequence(sa.Sequence("metric_aggregate_seq")))
-    except (OperationalError, ProgrammingError, Exception):
+    except (OperationalError, ProgrammingError):
+        # Same dialect-feature swallow as in upgrade(); real failures surface.
         pass

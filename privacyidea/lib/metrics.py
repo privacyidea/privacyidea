@@ -208,7 +208,9 @@ def _percentile_from_buckets(buckets: dict, count: int, q: float) -> float | Non
     for boundary, column in _BUCKETS:
         if buckets.get(column, 0) >= target:
             return boundary
-    return None  # Above the largest bucket - reported as ">10s" by callers.
+    # Above the largest bucket boundary (5s) - the dashboard shows this as
+    # the dash placeholder rather than an exact value.
+    return None
 
 
 def get_metrics(name: str | None = None, since_seconds: int = DEFAULT_QUERY_WINDOW) -> list:
@@ -225,7 +227,14 @@ def get_metrics(name: str | None = None, since_seconds: int = DEFAULT_QUERY_WIND
     stmt = select(MetricAggregate).where(MetricAggregate.window_start >= cutoff)
     if name is not None:
         stmt = stmt.where(MetricAggregate.metric_name == name)
-    rows = db.session.execute(stmt).scalars().all()
+    # Read on the dedicated metric session: a request-bound ``db.session``
+    # could already be in a REPEATABLE READ snapshot that predates a
+    # just-committed metric write (visible on SQLite, hidden on MariaDB).
+    session = _metric_session()
+    try:
+        rows = session.execute(stmt).scalars().all()
+    finally:
+        session.close()
 
     # Group by (metric_name, labels_key); fold over nodes and windows.
     groups: dict = {}
@@ -305,6 +314,12 @@ def cleanup_old_metrics(older_than_seconds: int = RETENTION_SECONDS) -> int:
     """Delete metric rows older than ``older_than_seconds``. Returns row count."""
     cutoff = datetime.datetime.utcnow() - datetime.timedelta(seconds=older_than_seconds)
     stmt = delete(MetricAggregate).where(MetricAggregate.window_start < cutoff)
-    result = db.session.execute(stmt)
-    db.session.commit()
-    return result.rowcount or 0
+    # Run on the dedicated metric session so the cleanup commit can't promote
+    # unrelated pending writes in the caller's ``db.session``.
+    session = _metric_session()
+    try:
+        result = session.execute(stmt)
+        session.commit()
+        return result.rowcount or 0
+    finally:
+        session.close()

@@ -27,7 +27,9 @@ class MetricAggregate(db.Model):
     id: Mapped[int] = mapped_column(Integer, Sequence("metric_aggregate_seq"),
                                     primary_key=True)
     metric_name: Mapped[str] = mapped_column(Unicode(128), nullable=False, index=True)
-    # Sorted "k=v,k=v" form; empty string when no labels.
+    # JSON object with sorted keys (compact separators), e.g.
+    # ``{"gateway":"firebase","result":"ok"}``. Empty string when no labels.
+    # Encoded by ``privacyidea.lib.metrics._labels_key``.
     labels_key: Mapped[str] = mapped_column(Unicode(255), nullable=False, default="")
     node: Mapped[str] = mapped_column(Unicode(255), nullable=False, default="")
     # Naive UTC datetime, truncated to the 5-minute window boundary.

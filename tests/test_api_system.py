@@ -1730,6 +1730,9 @@ class HealthEndpointsTestCase(MyApiTestCase):
             value = res.json["result"]["value"]
         self.assertEqual(value["deleted"], 1)
         self.assertEqual(value["older_than_hours"], 24)
+        # End db.session's REPEATABLE READ snapshot (taken when we seeded) so
+        # the cleanup commit issued on the dedicated metric session is visible.
+        db.session.commit()
         self.assertEqual(db.session.query(MetricAggregate).count(), 1)
 
     def test_metricscleanup_custom_hours(self):
