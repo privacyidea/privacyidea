@@ -161,7 +161,14 @@ angular.module("privacyideaApp")
             // require an active JWT. Without one, controllers that gate
             // everything behind checkRight() render a blank shell instead of
             // surfacing the missing-auth state, so we redirect explicitly.
-            const PUBLIC_STATES = ['login', 'initial_login', 'recovery', 'register'];
+            // States that must remain reachable without a JWT:
+            // - login / initial_login: where the JWT is obtained
+            // - recovery / reset: password recovery flow
+            // - register: self-registration
+            // - response / pinchange: mid-login challenge response / forced PIN change
+            // - offline: offline-mode landing page
+            const PUBLIC_STATES = ['login', 'initial_login', 'recovery', 'reset',
+                                   'register', 'response', 'pinchange', 'offline'];
             $transitions.onBefore({}, function (transition) {
                 const target = transition.to().name;
                 if (PUBLIC_STATES.indexOf(target) !== -1) return;

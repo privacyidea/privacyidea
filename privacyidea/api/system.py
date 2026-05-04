@@ -47,6 +47,7 @@ import datetime
 import logging
 import re
 import socket
+from urllib.parse import urlsplit
 
 from flask import (Blueprint,
                    request)
@@ -518,11 +519,13 @@ def get_health_certificates():
     """
     refresh = is_true(get_optional(request.all_data, "refresh"))
     https = request.scheme == "https"
-    server_port = request.host.split(":")[-1] if ":" in request.host else (443 if https else 80)
-    server_host = request.host.split(":")[0]
-    try:
-        server_port = int(server_port)
-    except (TypeError, ValueError):
+    # Werkzeug exposes parsed forms; falls back to defaults if the header was
+    # malformed. Handles IPv6 ("[::1]:443") and hostnames-with-colons safely.
+    server_host = request.host_url and urlsplit(request.host_url).hostname
+    server_port = request.host_url and urlsplit(request.host_url).port
+    if not server_host:
+        server_host = request.host.split(":")[0].strip("[]")
+    if not server_port:
         server_port = 443 if https else 80
     result = get_certificate_status(server_host=server_host, server_port=server_port,
                                     https=https, refresh=refresh)

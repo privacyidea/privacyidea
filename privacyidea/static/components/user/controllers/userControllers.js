@@ -456,14 +456,19 @@ angular.module("privacyideaApp")
                     $scope.usersLoading = true;
                     UserFactory.getUsers(params,
                         function (data) {
-                            //debug: console.log("success");
                             // The endpoint returns the complete list of users; we cache it
                             // and paginate client-side so paging through doesn't refetch.
                             $scope._allUsers = data.result.value || [];
                             $scope.userCount = $scope._allUsers.length;
                             $scope._applyPaging();
                             $scope.usersLoading = false;
-                            //debug: console.log($scope.userlist);
+                        },
+                        function (error) {
+                            // Cancelled in-flight requests come through here too
+                            // (status -1); a follow-up call will re-set the flag.
+                            if (error && error.status !== -1) {
+                                $scope.usersLoading = false;
+                            }
                         });
                 }
             };

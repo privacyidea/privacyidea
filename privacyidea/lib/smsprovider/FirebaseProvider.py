@@ -163,7 +163,16 @@ class FirebaseProvider(ISMSProvider):
         url = FIREBASE_URL_SEND.format(server_config["project_id"])
         labels = {"gateway": self.smsgateway.identifier}
         start = time.monotonic()
-        response = authed_session.post(url, data=json.dumps(fcm_message), headers=headers, proxies=proxies)
+        try:
+            response = authed_session.post(url, data=json.dumps(fcm_message),
+                                           headers=headers, proxies=proxies)
+        except Exception:
+            # Network-level failure (timeout, DNS, TLS, ...) - record duration
+            # and an error counter so the dashboard surfaces these at all,
+            # then re-raise so the caller's existing error handling runs.
+            observe("push_delivery_duration_seconds", time.monotonic() - start, labels)
+            inc("push_delivery_total", {**labels, "result": "error"})
+            raise
         observe("push_delivery_duration_seconds", time.monotonic() - start, labels)
 
         if response.status_code == 200:

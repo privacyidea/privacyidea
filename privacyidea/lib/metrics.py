@@ -139,9 +139,9 @@ def observe(name: str, value: float, labels: dict | None = None) -> None:
     """Record a numeric observation (seconds for timings) for histogram ``name``.
 
     Updates count / sum / max plus the cumulative bucket whose upper bound
-    contains ``value``. The flush relies on the surrounding request commit -
-    no explicit commit here, so callers in non-request contexts must commit
-    themselves (the periodic-task framework already does).
+    contains ``value``. The metric row is committed explicitly via
+    ``_commit_metric()`` so read-only request paths (which never commit
+    themselves) don't lose the write at session teardown.
     """
     if _metrics_disabled():
         return

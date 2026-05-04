@@ -26,7 +26,6 @@ CRITICAL_DAYS = 7
 
 _CACHE: dict = {}
 _CACHE_LOCK = threading.Lock()
-_CACHE_KEY = "certificates"
 
 
 def invalidate_certificate_cache() -> None:

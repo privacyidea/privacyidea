@@ -34,6 +34,10 @@ class MetricsCleanupTask(BaseTask):
             hours = int(params.get("older_than_hours") or 24)
         except (TypeError, ValueError):
             hours = 24
+        # Clamp to >=1h so the in-progress 5-minute window is never wiped.
+        # Same protection as the on-demand /system/metricscleanup endpoint.
+        if hours < 1:
+            hours = 1
         deleted = cleanup_old_metrics(older_than_seconds=hours * 3600)
         log.info(f"MetricsCleanup deleted {deleted} metric_aggregate row(s) "
                  f"older than {hours}h.")
