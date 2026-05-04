@@ -7,7 +7,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--global-gap);
-  width: 1456px;
+  width: 100%;
   height: 64vh;
   overflow-y: auto;
 }
@@ -71,41 +71,4 @@
   flex-direction: column;
   gap: var(--half-global-gap);
   padding: var(--half-global-padding);
-}
-
-.flex-column {
-  display: flex;
-  flex-direction: column;
-  gap: var(--global-gap);
-  width: 1456px;
-  height: 64vh;
-  overflow-y: auto;
-}
-
-.default-template-card-row {
-  display: flex;
-  flex-direction: row;
-  padding: 0 var(--global-padding);
-  border-radius: var(--border-radius);
-
-  mat-form-field {
-    --mat-form-field-filled-container-color: transparent;
-    flex: 1;
-  }
-
-  mat-card-content {
-    padding: 0 !important;
-    display: flex;
-    align-items: center;
-    flex: 0 0 auto;
-  }
-
-  mat-checkbox {
-    white-space: nowrap;
-  }
-}
-
-.template-type-select-container {
-  display: flex;
-  align-items: center;
 }

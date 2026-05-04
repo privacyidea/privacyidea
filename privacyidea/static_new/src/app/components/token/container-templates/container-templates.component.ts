@@ -18,7 +18,7 @@
  **/
 
 import { CommonModule, KeyValuePipe } from "@angular/common";
-import { Component, computed, inject, linkedSignal, signal } from "@angular/core";
+import { Component, computed, inject, linkedSignal, signal, viewChild } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCheckbox, MatCheckboxChange } from "@angular/material/checkbox";
 import { MatIconModule } from "@angular/material/icon";
@@ -103,6 +103,7 @@ export class ContainerTemplatesComponent {
   readonly authService: AuthServiceInterface = inject(AuthService);
   readonly dialogService: DialogServiceInterface = inject(DialogService);
   readonly router = inject(Router);
+  readonly filterComponent = viewChild(ContainerTemplatesFilterComponent);
 
   readonly columns = {
     name: { label: $localize`Name`, filterable: true, sortable: true },
@@ -259,6 +260,7 @@ export class ContainerTemplatesComponent {
 
   onClickFilter(filterKey: string): void {
     this.onFilterChange(this.filter().toggleKey(filterKey));
+    this.filterComponent()?.focusInput();
   }
 
   getFilterIconName(columnKey: string): string {
