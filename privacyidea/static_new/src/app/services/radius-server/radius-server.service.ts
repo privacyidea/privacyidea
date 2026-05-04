@@ -90,7 +90,7 @@ export class RadiusServerService implements RadiusServerServiceInterface {
   });
 
   async postRadiusServer(server: RadiusServer): Promise<void> {
-    const url = `${this.radiusServerBaseUrl}${server.identifier}`;
+    const url = `${this.radiusServerBaseUrl}${encodeURIComponent(server.identifier)}`;
     const request = this.http.post<PiResponse<any>>(url, server, { headers: this.authService.getHeaders() });
 
     return lastValueFrom(request)
@@ -126,7 +126,7 @@ export class RadiusServerService implements RadiusServerServiceInterface {
   }
 
   async deleteRadiusServer(identifier: string): Promise<void> {
-    const request = this.http.delete<PiResponse<any>>(`${this.radiusServerBaseUrl}${identifier}`, {
+    const request = this.http.delete<PiResponse<any>>(`${this.radiusServerBaseUrl}${encodeURIComponent(identifier)}`, {
       headers: this.authService.getHeaders()
     });
     return lastValueFrom(request)

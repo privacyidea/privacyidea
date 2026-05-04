@@ -133,7 +133,7 @@ export class NewCaConnectorComponent implements AfterViewInit, OnDestroy {
     const connectorData = connector?.data || {};
 
     this.caConnectorForm = this.formBuilder.group({
-      connectorname: [connector?.connectorname || "", [Validators.required]],
+      connectorname: [connector?.connectorname || "", [Validators.required, Validators.pattern(/^[a-zA-Z0-9._-]*$/)]],
       type: [connector?.type || "local", [Validators.required]],
       // Local CA fields
       cacert: [connectorData["cacert"] || ""],

@@ -133,6 +133,7 @@ export class ContainerTemplateEditDialogComponent extends PendingChangesDialogCo
   readonly hasToken = computed(() => this.tokens().length > 0);
 
   // --- Computed - Validation & Conflict ---
+  readonly nameInvalidPattern = computed(() => !/^[a-zA-Z0-9._-]*$/.test(this.template().name));
   readonly nameConflict = computed(() =>
     this.containerTemplateService.templates().some((t) => t.name === this.template().name && t.name !== this.data?.name)
   );
@@ -140,7 +141,7 @@ export class ContainerTemplateEditDialogComponent extends PendingChangesDialogCo
     return this.containerTemplateService.canSaveTemplate(this.template()) && !this.nameConflict();
   });
   readonly nameErrorMatcher = {
-    isErrorState: () => this.nameConflict()
+    isErrorState: () => this.nameConflict() || (this.template().name.length > 0 && this.nameInvalidPattern())
   };
 
   // --- Computed - Dialog Actions ---

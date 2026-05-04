@@ -74,7 +74,7 @@ export class EditPolicyDialogComponent implements AfterViewInit, OnDestroy {
   readonly editedPolicy = computed(() => ({ ...this.policy(), ...this.policyEdits() }));
   readonly isPolicyEdited = computed(() => Object.keys(this.policyEdits()).length > 0);
   readonly isDirty = this.isPolicyEdited;
-  readonly canSave = computed(() => this.isPolicyEdited() && !!this.editedPolicy().name?.trim());
+  readonly canSave = computed(() => this.isPolicyEdited() && !!this.editedPolicy().name?.trim() && /^[a-zA-Z0-9._-]*$/.test(this.editedPolicy().name));
   readonly title = computed(() => this.mode() === "edit" ? $localize`Edit Policy` : $localize`Create Policy`);
 
   constructor() {

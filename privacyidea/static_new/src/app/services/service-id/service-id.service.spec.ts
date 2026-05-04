@@ -39,8 +39,7 @@ describe("ServiceIdService", () => {
       getHeaders: jest.fn().mockReturnValue({})
     };
     const notificationServiceMock = {
-      openSnackBar: jest.fn(),
-      handleResourceError: jest.fn()
+      openSnackBar: jest.fn()
     };
     TestBed.configureTestingModule({
       providers: [
@@ -66,10 +65,10 @@ describe("ServiceIdService", () => {
   });
 
   it("should post service ID", async () => {
-    const serviceId = { servicename: "test", description: "desc" };
+    const serviceId = { servicename: "test/1", description: "desc" };
     const promise = service.postServiceId(serviceId);
 
-    const req = httpMock.expectOne(`${environment.proxyUrl}/serviceid/test`);
+    const req = httpMock.expectOne(`${environment.proxyUrl}/serviceid/${encodeURIComponent("test/1")}`);
     expect(req.request.method).toBe("POST");
     req.flush({ result: { status: true } });
 
@@ -78,14 +77,14 @@ describe("ServiceIdService", () => {
   });
 
   it("should delete service ID", async () => {
-    const promise = service.deleteServiceId("test");
+    const promise = service.deleteServiceId("test/1");
 
-    const req = httpMock.expectOne(`${environment.proxyUrl}/serviceid/test`);
+    const req = httpMock.expectOne(`${environment.proxyUrl}/serviceid/${encodeURIComponent("test/1")}`);
     expect(req.request.method).toBe("DELETE");
     req.flush({ result: { status: true } });
 
     await promise;
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith("Successfully deleted service ID: test.");
+    expect(notificationService.openSnackBar).toHaveBeenCalledWith(`Successfully deleted service ID: test/1.`);
   });
 
   it("serviceIdResource should not do request and return undefined on unexpected route", () => {

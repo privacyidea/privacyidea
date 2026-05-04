@@ -18,7 +18,7 @@
  **/
 
 import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
-import { computed, effect, inject, Injectable, linkedSignal, Signal } from "@angular/core";
+import { computed, inject, Injectable, linkedSignal, Signal } from "@angular/core";
 import { lastValueFrom } from "rxjs";
 import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
@@ -236,15 +236,6 @@ export class PolicyService implements PolicyServiceInterface {
   readonly policyBaseUrl = environment.proxyUrl + "/policy/";
   private readonly http: HttpClient = inject(HttpClient);
   private readonly authService: AuthServiceInterface = inject(AuthService);
-
-  constructor() {
-    effect(() => {
-      this.notificationService.handleResourceError(this.allPoliciesResource.error(), "policies");
-    });
-    effect(() => {
-      this.notificationService.handleResourceError(this.policyActionResource.error(), "policy actions");
-    });
-  }
   readonly policyActionResource = httpResource<PiResponse<ScopedPolicyActions>>(() => {
     // Only load policy definitions on the policies route.
     if (!this.contentService.onPolicies()) {
@@ -437,7 +428,9 @@ export class PolicyService implements PolicyServiceInterface {
 
     const headers = this.authService.getHeaders();
     return lastValueFrom(
-      this.http.post<PiResponse<any>>(`${this.policyBaseUrl}${policyData.name}`, policyData, { headers })
+      this.http.post<PiResponse<any>>(`${this.policyBaseUrl}${encodeURIComponent(policyData.name)}`, policyData, {
+        headers
+      })
     );
   }
 
@@ -451,49 +444,33 @@ export class PolicyService implements PolicyServiceInterface {
     const updatedPolicies = allPolicies.filter((p) => p.name !== name);
     this.allPolicies.set(updatedPolicies);
 
-    try {
-      // Do request
-      const headers = this.authService.getHeaders();
-      const result = await lastValueFrom(
-        this.http.delete<PiResponse<number>>(`${this.policyBaseUrl}${name}`, { headers })
-      );
-      // Reload policies to ensure state is correct
-      if (result && !result.result?.error) {
-        this.allPoliciesResource.reload();
-      } else {
-        // Rollback optimistic update
-        this.allPolicies.set(allPolicies);
-      }
-      return result;
-    } catch (error: any) {
+    // Do request
+    const headers = this.authService.getHeaders();
+    const result = await lastValueFrom(
+      this.http.delete<PiResponse<number>>(`${this.policyBaseUrl}${encodeURIComponent(name)}`, { headers })
+    );
+    // Reload policies to ensure state is correct
+    if (result && !result.result?.error) {
+      this.allPoliciesResource.reload();
+    } else {
       // Rollback optimistic update
       this.allPolicies.set(allPolicies);
-      const errorMessage = error?.error?.result?.error?.message || "";
-      this.notificationService.openSnackBar($localize`Failed to delete policy. ` + errorMessage);
-      throw error;
     }
+    return result;
   }
 
   enablePolicy(name: string): Promise<PiResponse<any>> {
     const headers = this.authService.getHeaders();
-    return lastValueFrom(this.http.post<PiResponse<any>>(`${this.policyBaseUrl}enable/${name}`, {}, { headers })).catch(
-      (error: any) => {
-        const errorMessage = error?.error?.result?.error?.message || "";
-        this.notificationService.openSnackBar($localize`Failed to enable policy. ` + errorMessage);
-        throw error;
-      }
+    return lastValueFrom(
+      this.http.post<PiResponse<any>>(`${this.policyBaseUrl}enable/${encodeURIComponent(name)}`, {}, { headers })
     );
   }
 
   disablePolicy(name: string): Promise<PiResponse<any>> {
     const headers = this.authService.getHeaders();
     return lastValueFrom(
-      this.http.post<PiResponse<any>>(`${this.policyBaseUrl}disable/${name}`, {}, { headers })
-    ).catch((error: any) => {
-      const errorMessage = error?.error?.result?.error?.message || "";
-      this.notificationService.openSnackBar($localize`Failed to disable policy. ` + errorMessage);
-      throw error;
-    });
+      this.http.post<PiResponse<any>>(`${this.policyBaseUrl}disable/${encodeURIComponent(name)}`, {}, { headers })
+    );
   }
 
   isScopeChangeable(policy: PolicyDetail): boolean {
@@ -653,7 +630,6 @@ export class PolicyService implements PolicyServiceInterface {
     action.catch((error) => {
       // Rollback optimistic update
       this.allPolicies.set(currentPolicies);
-      // Error notification already handled in enablePolicy/disablePolicy
       console.error("Error toggling policy active state: ", error);
     });
     // Reload policies to ensure state is correct (in case other properties changed)
@@ -670,7 +646,9 @@ export class PolicyService implements PolicyServiceInterface {
     this.allPolicies.set(lastStableState.map((p) => (p.name === originalPolicyName ? { ...p, ...updatedPolicy } : p)));
 
     try {
-      await lastValueFrom(this.http.post(`${this.policyBaseUrl}${originalPolicyName}`, updatedPolicy, { headers }));
+      await lastValueFrom(
+        this.http.post(`${this.policyBaseUrl}${encodeURIComponent(originalPolicyName)}`, updatedPolicy, { headers })
+      );
 
       lastStableState = lastStableState.map((p) =>
         p.name === originalPolicyName ? { ...p, ...updatedPolicy, name: originalPolicyName } : p
@@ -678,7 +656,11 @@ export class PolicyService implements PolicyServiceInterface {
 
       if (hasNameChange) {
         await lastValueFrom(
-          this.http.patch(`${this.policyBaseUrl}${originalPolicyName}`, { name: updatedPolicy.name }, { headers })
+          this.http.patch(
+            `${this.policyBaseUrl}${encodeURIComponent(originalPolicyName)}`,
+            { name: updatedPolicy.name },
+            { headers }
+          )
         );
       }
 

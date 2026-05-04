@@ -68,8 +68,13 @@
               required />
           </app-clearable-input>
           <mat-hint i18n>This is the unique identifying name for this group definition.</mat-hint>
-          @if (tokengroupForm.get('groupname')?.invalid && tokengroupForm.get('groupname')?.touched) {
+          @if (tokengroupForm.get('groupname')?.hasError('required')) {
             <mat-error i18n>Identifier is <strong>required</strong>.</mat-error>
+          }
+          @if (tokengroupForm.get('groupname')?.hasError('pattern')) {
+            <mat-error
+              i18n>Identifier contains <strong>invalid characters</strong>. Only alphanumeric characters, dots, underscores and hyphens are allowed.
+            </mat-error>
           }
         </mat-form-field>
 

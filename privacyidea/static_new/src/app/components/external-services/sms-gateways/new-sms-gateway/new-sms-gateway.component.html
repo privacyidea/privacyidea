@@ -81,6 +81,9 @@
             @if (smsForm.get('name')?.hasError('required')) {
               <mat-error i18n>Name is <strong>required</strong></mat-error>
             }
+            @if (smsForm.get('name')?.hasError('pattern')) {
+              <mat-error i18n>Name contains <strong>invalid characters</strong>. Only alphanumeric characters, dots, underscores and hyphens are allowed.</mat-error>
+            }
           </mat-form-field>
 
           <mat-form-field

@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
-import { effect, inject, Injectable, linkedSignal, WritableSignal } from "@angular/core";
+import { inject, Injectable, linkedSignal, WritableSignal } from "@angular/core";
 import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
@@ -58,12 +58,6 @@ export class ServiceIdService implements ServiceIdServiceInterface {
 
   private readonly serviceIdBaseUrl = environment.proxyUrl + "/serviceid/";
 
-  constructor() {
-    effect(() => {
-      this.notificationService.handleResourceError(this.serviceIdResource.error(), "service IDs");
-    });
-  }
-
   serviceIdResource = httpResource<PiResponse<ServiceIds>>(() => {
     if (!this.contentService.onExternalServiceIds() && !this.contentService.onTokenEnrollmentLikely()) {
       return undefined;
@@ -91,7 +85,7 @@ export class ServiceIdService implements ServiceIdServiceInterface {
   });
 
   async postServiceId(serviceId: ServiceId): Promise<void> {
-    const url = `${this.serviceIdBaseUrl}${serviceId.servicename}`;
+    const url = `${this.serviceIdBaseUrl}${encodeURIComponent(serviceId.servicename)}`;
     const request = this.http.post<PiResponse<any>>(url, serviceId, { headers: this.authService.getHeaders() });
 
     return lastValueFrom(request)
@@ -107,7 +101,7 @@ export class ServiceIdService implements ServiceIdServiceInterface {
   }
 
   async deleteServiceId(servicename: string): Promise<void> {
-    const request = this.http.delete<PiResponse<any>>(`${this.serviceIdBaseUrl}${servicename}`, {
+    const request = this.http.delete<PiResponse<any>>(`${this.serviceIdBaseUrl}${encodeURIComponent(servicename)}`, {
       headers: this.authService.getHeaders()
     });
     return lastValueFrom(request)

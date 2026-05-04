@@ -39,7 +39,6 @@ describe("CaConnectorService", () => {
     };
     const notificationServiceMock = {
       openSnackBar: jest.fn(),
-      handleResourceError: jest.fn(),
     };
 
     TestBed.configureTestingModule({
@@ -67,10 +66,10 @@ describe("CaConnectorService", () => {
   });
 
   it("should post CA connector", async () => {
-    const connector = { connectorname: "test", type: "local", data: {} } as any;
+    const connector = { connectorname: "test/1", type: "local", data: {} } as any;
     const promise = service.postCaConnector(connector);
 
-    const req = httpMock.expectOne(`${environment.proxyUrl}/caconnector/test`);
+    const req = httpMock.expectOne(`${environment.proxyUrl}/caconnector/${encodeURIComponent("test/1")}`);
     expect(req.request.method).toBe("POST");
     req.flush({ result: { status: true } });
 
@@ -79,20 +78,20 @@ describe("CaConnectorService", () => {
   });
 
   it("should delete CA connector", async () => {
-    const promise = service.deleteCaConnector("test");
+    const promise = service.deleteCaConnector("test/1");
 
-    const req = httpMock.expectOne(`${environment.proxyUrl}/caconnector/test`);
+    const req = httpMock.expectOne(`${environment.proxyUrl}/caconnector/${encodeURIComponent("test/1")}`);
     expect(req.request.method).toBe("DELETE");
     req.flush({ result: { status: true } });
 
     await promise;
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith("Successfully deleted CA connector: test.");
+    expect(notificationService.openSnackBar).toHaveBeenCalledWith(`Successfully deleted CA connector: test/1.`);
   });
 
   it("should get CA specific options", async () => {
-    const promise = service.getCaSpecificOptions("microsoft", { hostname: "test" });
+    const promise = service.getCaSpecificOptions("microsoft/1", { hostname: "test" });
 
-    const req = httpMock.expectOne(`${environment.proxyUrl}/caconnector/specific/microsoft?hostname=test`);
+    const req = httpMock.expectOne(`${environment.proxyUrl}/caconnector/specific/${encodeURIComponent("microsoft/1")}?hostname=test`);
     expect(req.request.method).toBe("GET");
     req.flush({ result: { value: { available_cas: ["CA1"] } } });
 

@@ -97,7 +97,7 @@ export class PrivacyideaServerService implements PrivacyideaServerServiceInterfa
   });
 
   async postPrivacyideaServer(server: PrivacyideaServer): Promise<void> {
-    const url = `${this.privacyideaServerBaseUrl}${server.identifier}`;
+    const url = `${this.privacyideaServerBaseUrl}${encodeURIComponent(server.identifier)}`;
     const request = this.http.post<PiResponse<any>>(url, server, { headers: this.authService.getHeaders() });
 
     return lastValueFrom(request)
@@ -113,7 +113,7 @@ export class PrivacyideaServerService implements PrivacyideaServerServiceInterfa
   }
 
   async deletePrivacyideaServer(identifier: string): Promise<void> {
-    const request = this.http.delete<PiResponse<any>>(`${this.privacyideaServerBaseUrl}${identifier}`, {
+    const request = this.http.delete<PiResponse<any>>(`${this.privacyideaServerBaseUrl}${encodeURIComponent(identifier)}`, {
       headers: this.authService.getHeaders()
     });
     return lastValueFrom(request)

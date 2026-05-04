@@ -248,7 +248,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
   enrolledDialogData: WritableSignal<TokenEnrollmentDialogData | null> = signal(null);
   descriptionControl = new FormControl<string>("", {
     nonNullable: true,
-    validators: [Validators.maxLength(80)]
+    validators: [Validators.maxLength(this.tokenService.maxDescriptionLength)]
   });
 
   descriptionRequired = computed(() => {

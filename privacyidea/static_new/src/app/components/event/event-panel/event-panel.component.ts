@@ -214,7 +214,7 @@ export class EventPanelComponent implements AfterViewInit, OnDestroy {
     const validity: Record<string, any> = {};
     validity["events"] = this.editEvent().event.length > 0;
     validity["action"] = !!this.editEvent().action && this.validOptions();
-    validity["name"] = this.editEvent().name !== "";
+    validity["name"] = this.editEvent().name !== "" && /^[a-zA-Z0-9._-]*$/.test(this.editEvent().name);
     validity["handlerModule"] =
       this.eventService.selectedHandlerModule() !== null && this.eventService.selectedHandlerModule() !== "";
     validity["position"] = this.editEvent().position !== null && this.editEvent().position !== "";

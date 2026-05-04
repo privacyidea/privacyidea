@@ -60,6 +60,8 @@ export class ContainerTemplateCopyDialogComponent extends PendingChangesDialogCo
   });
 
   // --- Computed & Matchers ---
+  readonly nameInvalidPattern = computed(() => !/^[a-zA-Z0-9._-]*$/.test(this.template().name));
+
   readonly actions = computed<DialogAction<string>[]>(() => [
     {
       label: $localize`Copy Template`,
@@ -72,7 +74,7 @@ export class ContainerTemplateCopyDialogComponent extends PendingChangesDialogCo
   readonly canSave = computed(() => {
     const newName = this.template().name.trim();
     const originalName = this.data;
-    return newName.length > 0 && !this.nameConflict() && newName !== originalName;
+    return newName.length > 0 && !this.nameConflict() && !this.nameInvalidPattern() && newName !== originalName;
   });
 
   readonly isDirty = computed(() => {
@@ -85,7 +87,7 @@ export class ContainerTemplateCopyDialogComponent extends PendingChangesDialogCo
   });
 
   readonly nameErrorMatcher = {
-    isErrorState: () => this.nameConflict()
+    isErrorState: () => this.nameConflict() || (this.isNameDirty() && this.template().name.length > 0 && this.nameInvalidPattern())
   };
 
   // --- Methods ---
