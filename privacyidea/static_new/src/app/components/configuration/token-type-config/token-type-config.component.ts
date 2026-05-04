@@ -221,7 +221,7 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit, OnDestro
 
   addQuestion(text: string) {
     if (!text) {
-      this.notificationService.openSnackBar($localize`Please enter a question.`);
+      this.notificationService.warning($localize`Please enter a question.`);
       return;
     }
     const index = this.nextQuestionIndex();
@@ -278,7 +278,7 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit, OnDestro
     const generateKey = apiKeyData.generateKey;
 
     if (!apiId) {
-      this.notificationService.openSnackBar($localize`Please enter a Client ID.`);
+      this.notificationService.warning($localize`Please enter a Client ID.`);
       return;
     }
 
@@ -296,7 +296,7 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit, OnDestro
           }));
         }
       } catch (e) {
-        this.notificationService.openSnackBar($localize`Failed to generate API key.`);
+        this.notificationService.error($localize`Failed to generate API key.`);
       }
     } else {
       this.formData.update((f) => ({
@@ -321,16 +321,16 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit, OnDestro
       }
       const response = await lastValueFrom(saveCall);
       if (response?.result?.status) {
-        this.notificationService.openSnackBar($localize`Token configuration saved successfully.`);
+        this.notificationService.success($localize`Token configuration saved successfully.`);
         this.pendingDeletes.set(new Set());
         this.systemService.systemConfigResource.reload();
         return true;
       } else {
-        this.notificationService.openSnackBar($localize`Failed to save token configuration.`);
+        this.notificationService.error($localize`Failed to save token configuration.`);
         return false;
       }
     } catch (e) {
-      this.notificationService.openSnackBar($localize`Error saving token configuration.`);
+      this.notificationService.error($localize`Error saving token configuration.`);
       return false;
     }
   }

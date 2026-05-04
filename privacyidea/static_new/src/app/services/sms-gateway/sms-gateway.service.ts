@@ -100,12 +100,12 @@ export class SmsGatewayService implements SmsGatewayServiceInterface {
     const request = this.http.post<PiResponse<any>>(this.baseUrl, gateway, { headers: this.authService.getHeaders() });
     return lastValueFrom(request)
       .then(() => {
-        this.notificationService.openSnackBar($localize`Successfully saved SMS gateway.`);
+        this.notificationService.success($localize`Successfully saved SMS gateway.`);
         this.smsGatewayResource.reload();
       })
       .catch((error) => {
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.openSnackBar($localize`Failed to save SMS gateway. ` + message);
+        this.notificationService.error($localize`Failed to save SMS gateway. ` + message);
         throw new Error("post-failed");
       });
   }
@@ -116,12 +116,12 @@ export class SmsGatewayService implements SmsGatewayServiceInterface {
     });
     return lastValueFrom(request)
       .then(() => {
-        this.notificationService.openSnackBar($localize`Successfully deleted SMS gateway: ${name}.`);
+        this.notificationService.success($localize`Successfully deleted SMS gateway: ${name}.`);
         this.smsGatewayResource.reload();
       })
       .catch((error) => {
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.openSnackBar($localize`Failed to delete SMS gateway. ` + message);
+        this.notificationService.error($localize`Failed to delete SMS gateway. ` + message);
         throw new Error("delete-failed");
       });
   }

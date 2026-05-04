@@ -116,7 +116,7 @@ describe("TokenGetSerialComponent", () => {
   it("countTokens: guards invalid states", () => {
     component.currentStep.set("searching");
     component.countTokens();
-    expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith("Invalid action.");
+    expect(notificationServiceMock.warning).toHaveBeenCalledWith("Invalid action.");
     expect(tokenServiceMock.getSerial as jest.Mock).not.toHaveBeenCalled();
   });
 
@@ -193,7 +193,7 @@ describe("TokenGetSerialComponent", () => {
   it("findSerial: guards invalid state", () => {
     component.currentStep.set("init");
     component.findSerial();
-    expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith("Invalid action.");
+    expect(notificationServiceMock.warning).toHaveBeenCalledWith("Invalid action.");
     expect(tokenServiceMock.getSerial as jest.Mock).not.toHaveBeenCalled();
   });
 

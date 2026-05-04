@@ -124,7 +124,7 @@ describe("CreateUserDialogComponent", () => {
     component.resolverControl.setValue("");
     fixture.detectChanges();
     component.create();
-    expect(mockNotificationService.openSnackBar).toHaveBeenCalledWith(
+    expect(mockNotificationService.warning).toHaveBeenCalledWith(
       expect.stringContaining("Please fill in all required fields")
     );
   });

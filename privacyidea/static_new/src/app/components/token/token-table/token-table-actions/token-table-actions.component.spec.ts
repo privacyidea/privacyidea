@@ -187,7 +187,7 @@ describe("TokenTableActionsComponent", () => {
         hasBackdrop: true
       });
       expect(bulkUnassignSpy).toHaveBeenCalledWith(mockTokens);
-      expect(notificationService.openSnackBar).toHaveBeenCalledWith("Successfully unassigned 1 token.");
+      expect(notificationService.success).toHaveBeenCalledWith("Successfully unassigned 1 token.");
       expect(reloadSpy).toHaveBeenCalled();
     });
   });

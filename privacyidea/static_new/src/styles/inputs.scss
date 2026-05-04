@@ -84,14 +84,16 @@ $input-focus-outline: theme.$focus-outline;
   max-width: 932px;
 }
 
-::ng-deep mat-form-field:has(input):not(.sticky-header *):not(.filter-paginator-container *):not(td *):not(.condition-value-container *):not(.login-form *) {
+mat-form-field:has(input):not(.sticky-header *):not(.filter-paginator-container *):not(td *):not(
+    .condition-value-container *
+  ):not(.login-form *) {
   height: 76.5px;
 }
 
-::ng-deep .mat-mdc-form-field-required .mdc-floating-label {
+.mat-mdc-form-field-required .mdc-floating-label {
   font-weight: bold;
 }
 
-::ng-deep .mat-mdc-form-field-required-marker {
+.mat-mdc-form-field-required-marker {
   font-weight: bold;
 }

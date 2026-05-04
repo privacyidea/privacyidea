@@ -90,7 +90,7 @@ export class SubscriptionService {
       catchError((error) => {
         console.error("Failed to delete subscription.", error);
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.openSnackBar("Failed to delete subscription. " + message);
+        this.notificationService.error("Failed to delete subscription. " + message);
         return throwError(() => error);
       })
     );
@@ -105,7 +105,7 @@ export class SubscriptionService {
       catchError((error) => {
         console.error("Failed to upload subscription file.", error);
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.openSnackBar("Failed to upload subscription file. " + message);
+        this.notificationService.error("Failed to upload subscription file. " + message);
         return throwError(() => error);
       })
     );

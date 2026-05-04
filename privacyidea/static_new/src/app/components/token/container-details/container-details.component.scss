@@ -30,11 +30,3 @@ $gap-small: 8px;
   table-layout: auto;
   border-collapse: collapse;
 }
-
-::ng-deep .cdk-overlay-container div.mat-mdc-autocomplete-panel {
-  max-height: 265px;
-
-  &.user-selection-autocomplete {
-    max-height: 256px;
-  }
-}

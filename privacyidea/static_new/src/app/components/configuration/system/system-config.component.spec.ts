@@ -110,7 +110,7 @@ describe("SystemConfigComponent", () => {
 
   it("should save system config successfully", () => {
     const saveSpy = jest.spyOn(systemService, "saveSystemConfig");
-    const notificationSpy = jest.spyOn(notificationService, "openSnackBar");
+    const notificationSpy = jest.spyOn(notificationService, "success");
 
     component.saveSystemConfig();
 
@@ -119,10 +119,10 @@ describe("SystemConfigComponent", () => {
   });
 
   it("should handle save system config error", () => {
-    jest.spyOn(systemService, "saveSystemConfig").mockReturnValueOnce(
-      of(new MockPiResponse<{ status: boolean }>({ result: { status: false } }))
-    );
-    const notificationSpy = jest.spyOn(notificationService, "openSnackBar");
+    jest
+      .spyOn(systemService, "saveSystemConfig")
+      .mockReturnValueOnce(of(new MockPiResponse<{ status: boolean }>({ result: { status: false } })));
+    const notificationSpy = jest.spyOn(notificationService, "error");
 
     component.saveSystemConfig();
 
@@ -131,7 +131,7 @@ describe("SystemConfigComponent", () => {
 
   it("should delete user cache successfully", () => {
     const deleteSpy = jest.spyOn(systemService, "deleteUserCache");
-    const notificationSpy = jest.spyOn(notificationService, "openSnackBar");
+    const notificationSpy = jest.spyOn(notificationService, "success");
 
     component.deleteUserCache();
 
@@ -140,10 +140,10 @@ describe("SystemConfigComponent", () => {
   });
 
   it("should handle delete user cache error", () => {
-    jest.spyOn(systemService, "deleteUserCache").mockReturnValueOnce(
-      of(new MockPiResponse<{ status: boolean }>({ result: { status: false } }))
-    );
-    const notificationSpy = jest.spyOn(notificationService, "openSnackBar");
+    jest
+      .spyOn(systemService, "deleteUserCache")
+      .mockReturnValueOnce(of(new MockPiResponse<{ status: boolean }>({ result: { status: false } })));
+    const notificationSpy = jest.spyOn(notificationService, "error");
 
     component.deleteUserCache();
 

@@ -16,30 +16,29 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, computed, effect, inject, Input, signal, WritableSignal } from "@angular/core";
-import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
-import { ContainerRegistrationInitDialogComponent } from "../../container-registration/container-registration-init-dialog/container-registration-init-dialog.component";
+import { Component, computed, effect, inject, Input, signal } from "@angular/core";
+import { MatButton } from "@angular/material/button";
+import { MatDivider } from "@angular/material/divider";
+import { MatIcon } from "@angular/material/icon";
+import { Router } from "@angular/router";
 import { PiResponse } from "../../../../app.component";
+import { ROUTE_PATHS } from "../../../../route_paths";
+import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
 import {
   ContainerRegisterData,
   ContainerService,
   ContainerServiceInterface,
   ContainerUnregisterData
 } from "../../../../services/container/container.service";
-import { ContainerRegistrationFinalizeDialogComponent } from "../../container-registration/container-registration-finalize-dialog/container-registration-finalize-dialog.component";
-import { MatDialog } from "@angular/material/dialog";
+import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
+import { DialogService, DialogServiceInterface } from "../../../../services/dialog/dialog.service";
 import {
   NotificationService,
   NotificationServiceInterface
 } from "../../../../services/notification/notification.service";
-import { MatButton } from "@angular/material/button";
-import { MatIcon } from "@angular/material/icon";
-import { ROUTE_PATHS } from "../../../../route_paths";
-import { Router } from "@angular/router";
-import { MatDivider } from "@angular/material/divider";
-import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
-import { DialogService, DialogServiceInterface } from "../../../../services/dialog/dialog.service";
 import { SimpleConfirmationDialogComponent } from "../../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { ContainerRegistrationFinalizeDialogComponent } from "../../container-registration/container-registration-finalize-dialog/container-registration-finalize-dialog.component";
+import { ContainerRegistrationInitDialogComponent } from "../../container-registration/container-registration-init-dialog/container-registration-init-dialog.component";
 
 export type ContainerRegisterFinalizeData = {
   response: PiResponse<ContainerRegisterData>;
@@ -140,6 +139,7 @@ export class ContainerDetailsActionsComponent {
         if (result) {
           this.containerService.deleteContainer(this.containerSerial).subscribe(() => {
             const prev = this.contentService.previousUrl();
+            this.notificationService.success($localize`Container deleted successfully.`);
             if (prev.startsWith(ROUTE_PATHS.TOKENS_DETAILS)) {
               this.router.navigateByUrl(prev);
             } else {
@@ -200,9 +200,9 @@ export class ContainerDetailsActionsComponent {
       .unregister(this.containerSerial)
       .subscribe((unregisterResponse: PiResponse<ContainerUnregisterData>) => {
         if (unregisterResponse?.result?.value?.success) {
-          this.notificationService.openSnackBar("Container unregistered successfully.");
+          this.notificationService.success("Container unregistered successfully.");
         } else {
-          this.notificationService.openSnackBar("Failed to unregister container.");
+          this.notificationService.error("Failed to unregister container.");
         }
         this.containerService.containerDetailResource.reload();
       });

@@ -87,31 +87,29 @@ table {
   background-color: $table-bg;
 }
 
-::ng-deep {
-  .mdc-checkbox
+.mdc-checkbox
   .mdc-checkbox__native-control:not(.mdc-checkbox--selected):not([aria-checked="mixed"])
   ~ .mdc-checkbox__background {
-    border: 2px solid #999;
-  }
+  border: 2px solid #999;
+}
 
-  .mat-mdc-paginator-page-size {
-    margin-right: 0;
-  }
+.mat-mdc-paginator-page-size {
+  margin-right: 0;
+}
 
-  .mat-mdc-paginator-page-size-label {
-    margin: 0;
-    white-space: nowrap;
-  }
+.mat-mdc-paginator-page-size-label {
+  margin: 0;
+  white-space: nowrap;
+}
 
-  .mat-mdc-paginator-range-label {
-    margin: 0 var(--global-padding);
-    white-space: nowrap;
-  }
+.mat-mdc-paginator-range-label {
+  margin: 0 var(--global-padding);
+  white-space: nowrap;
+}
 
-  .mat-mdc-paginator-container {
-    padding: 0 0 0 var(--global-padding);
-    flex-wrap: nowrap !important;
-  }
+.mat-mdc-paginator-container {
+  padding: 0 0 0 var(--global-padding);
+  flex-wrap: nowrap !important;
 }
 
 a {
@@ -291,11 +289,9 @@ th:nth-child(even) {
   width: 42px;
 }
 
-::ng-deep {
-  .cdk-overlay-pane {
-    position: absolute !important;
-    z-index: 1;
-  }
+.cdk-overlay-pane {
+  position: absolute !important;
+  z-index: 1;
 }
 
 .details-container {
@@ -356,24 +352,22 @@ th:nth-child(even) {
     margin-top: 7px;
   }
 
-  ::ng-deep {
-    .container-details-token-table-layout .mat-mdc-text-field-wrapper,
-    .add-token .mat-mdc-text-field-wrapper {
-      padding-left: 16px !important;
-    }
+  .container-details-token-table-layout .mat-mdc-text-field-wrapper,
+  .add-token .mat-mdc-text-field-wrapper {
+    padding-left: 16px !important;
+  }
 
-    .details-table .mat-mdc-form-field-infix {
-      padding-bottom: 10px;
-      margin-bottom: -6px;
-    }
+  .details-table .mat-mdc-form-field-infix {
+    padding-bottom: 10px;
+    margin-bottom: -6px;
+  }
 
-    // .details-table .description .mat-mdc-form-field-infix {
-    //   padding-top: 0;
-    // }
+  // .details-table .description .mat-mdc-form-field-infix {
+  //   padding-top: 0;
+  // }
 
-    .mat-mdc-row {
-      font-size: 14px;
-    }
+  .mat-mdc-row {
+    font-size: 14px;
   }
 }
 
@@ -396,7 +390,7 @@ th:nth-child(even) {
   margin-right: 8px;
 }
 
-::ng-deep .mat-mdc-option.mdc-list-item.token-option .mdc-list-item__primary-text {
+.mat-mdc-option.mdc-list-item.token-option .mdc-list-item__primary-text {
   height: 28px;
   display: flex;
   align-items: center;

@@ -59,7 +59,7 @@ export class VerifyEnrollmentComponent {
       next: (response) => {
         this.tokenService.tokenDetailResource.reload();
         if (response?.result?.status && response?.detail?.rollout_state === "enrolled") {
-          this.notificationService.openSnackBar($localize`Token verified successfully!`);
+          this.notificationService.success($localize`Token verified successfully!`);
         }
       }
     });

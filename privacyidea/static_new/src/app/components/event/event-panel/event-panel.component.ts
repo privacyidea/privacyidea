@@ -281,7 +281,7 @@ export class EventPanelComponent implements AfterViewInit, OnDestroy {
             const message = this.isNewEvent()
               ? $localize`Event handler created successfully.`
               : $localize`Event handler updated successfully.`;
-            this.notificationService.openSnackBar(message);
+            this.notificationService.success(message);
             resolve(true);
           } else {
             resolve(false);

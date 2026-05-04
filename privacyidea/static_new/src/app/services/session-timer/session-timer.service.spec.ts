@@ -131,7 +131,7 @@ describe("SessionTimerService", () => {
     service.startTimer();
 
     jest.advanceTimersByTime(2000);
-    expect(notify.openSnackBar).toHaveBeenCalledWith(
+    expect(notify.warning).toHaveBeenCalledWith(
       "Your session has expired. You will be logged out and redirected to the login page.");
     jest.advanceTimersByTime(1500);
     expect(authService.logout).toHaveBeenCalled();
@@ -169,7 +169,7 @@ describe("SessionTimerService", () => {
     authService.logoutTimeS.set(31);
     service.startTimer();
 
-    const snackSpy = jest.spyOn((service as any).notificationService, "openSnackBar");
+    const snackSpy = jest.spyOn((service as any).notificationService, "warning");
 
     const t = Date.now();
     (service as any).startTime.set(t);

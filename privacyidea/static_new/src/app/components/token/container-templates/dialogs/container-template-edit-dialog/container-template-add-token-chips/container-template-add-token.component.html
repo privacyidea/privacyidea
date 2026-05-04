@@ -21,7 +21,9 @@
   <mat-card-content>
     <mat-chip-listbox [multiple]="false">
       @for (type of tokenTypes(); track type) {
-        <mat-chip (click)="addToken(type)">
+        <mat-chip
+          class="clickable-chip"
+          (click)="addToken(type)">
           {{ _toTitleCase(type) }}
           <mat-icon matChipTrailingIcon>add</mat-icon>
         </mat-chip>

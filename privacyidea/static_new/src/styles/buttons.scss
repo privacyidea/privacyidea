@@ -458,7 +458,6 @@ $button-low-contrast-variant: linear-gradient(
   width: 24px;
 }
 
-
 %action-button-base {
   border-radius: var(--border-radius);
   border-style: solid;
@@ -482,7 +481,16 @@ $button-low-contrast-variant: linear-gradient(
   }
 }
 
-@mixin action-button($bg, $color, $hover-bg, $ripple: null, $ripple-mdc: null, $layer: null, $border: true, $primary: false) {
+@mixin action-button(
+  $bg,
+  $color,
+  $hover-bg,
+  $ripple: null,
+  $ripple-mdc: null,
+  $layer: null,
+  $border: true,
+  $primary: false
+) {
   @extend %action-button-base;
   background-color: $bg;
 
@@ -526,44 +534,44 @@ $button-low-contrast-variant: linear-gradient(
 
 .action-button-primary {
   @include action-button(
-                  var(--mat-sys-primary),
-                  var(--mat-sys-surface-container-lowest),
-                  var(--mat-sys-primary-base-active),
-                  $border: false,
-                  $primary: true
+    var(--mat-sys-primary),
+    var(--mat-sys-surface-container-lowest),
+    var(--mat-sys-primary-base-active),
+    $border: false,
+    $primary: true
   );
 }
 
 .action-button-secondary {
   @include action-button(
-                  var(--mat-sys-surface-container-lowest),
-                  var(--mat-sys-primary),
-                  var(--sky-blue),
-                  $ripple-mdc: var(--sky-bg)
+    var(--mat-sys-surface-container-lowest),
+    var(--mat-sys-primary),
+    var(--sky-blue),
+    $ripple-mdc: var(--sky-bg)
   );
 }
 
 .action-button-delete-primary {
   @include action-button(
-                  var(--red-base),
-                  var(--mat-sys-surface-container-lowest),
-                  var(--red-light),
-                  $ripple: var(--red-light-active),
-                  $ripple-mdc: var(--rose-bg),
-                  $layer: var(--rose-bg),
-                  $border: false,
-                  $primary: true
+    var(--red-base),
+    var(--mat-sys-surface-container-lowest),
+    var(--red-light),
+    $ripple: var(--red-light-active),
+    $ripple-mdc: var(--rose-bg),
+    $layer: var(--rose-bg),
+    $border: false,
+    $primary: true
   );
 }
 
 .action-button-delete-secondary {
   @include action-button(
-                  var(--mat-sys-surface-container-lowest),
-                  var(--red-base),
-                  var(--rose-bg),
-                  $ripple: var(--rose-ripple),
-                  $ripple-mdc: var(--rose-bg),
-                  $layer: var(--rose-bg)
+    var(--mat-sys-surface-container-lowest),
+    var(--red-base),
+    var(--rose-bg),
+    $ripple: var(--rose-ripple),
+    $ripple-mdc: var(--rose-bg),
+    $layer: var(--rose-bg)
   );
 }
 
@@ -694,7 +702,7 @@ $button-low-contrast-variant: linear-gradient(
   width: 24px;
 }
 
-::ng-deep mat-icon {
+mat-icon {
   display: flex !important;
   align-items: center !important;
 }
