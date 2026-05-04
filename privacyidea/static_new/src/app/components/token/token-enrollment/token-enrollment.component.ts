@@ -248,7 +248,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
   enrolledDialogData: WritableSignal<TokenEnrollmentDialogData | null> = signal(null);
   descriptionControl = new FormControl<string>("", {
     nonNullable: true,
-    validators: [Validators.maxLength(80)]
+    validators: [Validators.maxLength(this.tokenService.maxDescriptionLength)]
   });
 
   descriptionRequired = computed(() => {
@@ -466,7 +466,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     const currentTokenType = this.tokenService.selectedTokenType();
     let everythingIsValid = true;
     if (!currentTokenType) {
-      this.notificationService.openSnackBar("Please select a token type.");
+      this.notificationService.warning("Please select a token type.");
       return;
     }
 
@@ -481,12 +481,12 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     }
 
     if (!everythingIsValid) {
-      this.notificationService.openSnackBar("Please fill in all required fields or correct invalid entries.");
+      this.notificationService.warning("Please fill in all required fields or correct invalid entries.");
       return;
     }
 
     if (!this.enrollmentArgsGetter) {
-      this.notificationService.openSnackBar("Enrollment action is not available for the selected token type.");
+      this.notificationService.warning("Enrollment action is not available for the selected token type.");
       return;
     }
 
@@ -528,7 +528,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
 
     enrollPromise.catch((error) => {
       const message = error.error?.result?.error?.message || "";
-      this.notificationService.openSnackBar(`Failed to enroll token: ${message || error.message || error}`);
+      this.notificationService.error(`Failed to enroll token: ${message || error.message || error}`);
     });
     let enrollmentResponse: EnrollmentResponse | null = await enrollPromise;
 
@@ -610,7 +610,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
 
   protected openLastStepDialog(response: EnrollmentResponse | null): void {
     if (!response) {
-      this.notificationService.openSnackBar("No enrollment response available.");
+      this.notificationService.warning("No enrollment response available.");
       return;
     }
 
@@ -634,7 +634,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     }
 
     if (this.isUserRequired() && !this.userService.selectedUser() && !this.enrolledDialogData()?.rollover) {
-      this.notificationService.openSnackBar("User is required for this token type, but no user was provided.");
+      this.notificationService.warning("User is required for this token type, but no user was provided.");
       return;
     }
 

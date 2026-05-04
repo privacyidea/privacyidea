@@ -128,9 +128,9 @@ describe("MachineService (with mock classes)", () => {
   it("getAuthItem chooses URL with and without application", () => {
     httpStub.get.mockReturnValue(of({}));
 
-    machineService.getAuthItem("ch", "h", "ssh").subscribe();
+    machineService.getAuthItem("ch", "h", "ssh/1").subscribe();
     const [, optsA] = httpStub.get.mock.calls.at(-1);
-    expect(httpStub.get).toHaveBeenLastCalledWith("/api/machine/authitem/ssh", expect.any(Object));
+    expect(httpStub.get).toHaveBeenLastCalledWith(`/api/machine/authitem/${encodeURIComponent("ssh/1")}`, expect.any(Object));
     expect(optsA.params.get("challenge")).toBe("ch");
     expect(optsA.params.get("hostname")).toBe("h");
 
@@ -164,12 +164,12 @@ describe("MachineService (with mock classes)", () => {
 
   it("deleteToken & deleteTokenMtid craft correct URLs", async () => {
     httpStub.delete.mockReturnValue(of({}));
-    await lastValueFrom(machineService.deleteToken("S", "M", "R", "ssh"));
+    await lastValueFrom(machineService.deleteToken("S/1", "M/1", "R/1", "ssh/1"));
     const [url] = (httpStub.delete as jest.Mock).mock.calls[0];
-    expect(url).toBe("/api/machine/token/S/M/R/ssh");
-    await lastValueFrom(machineService.deleteTokenById("S2", "offline", "MT"));
+    expect(url).toBe(`/api/machine/token/${encodeURIComponent("S/1")}/${encodeURIComponent("M/1")}/${encodeURIComponent("R/1")}/${encodeURIComponent("ssh/1")}`);
+    await lastValueFrom(machineService.deleteTokenById("S2/1", "offline/1", "MT/1"));
     const [url2] = (httpStub.delete as jest.Mock).mock.calls[1];
-    expect(url2).toBe("/api/machine/token/S2/offline/MT");
+    expect(url2).toBe(`/api/machine/token/${encodeURIComponent("S2/1")}/${encodeURIComponent("offline/1")}/${encodeURIComponent("MT/1")}`);
   });
 
   it("getMachineTokens calls /machine/token with machineid and resolver", async () => {

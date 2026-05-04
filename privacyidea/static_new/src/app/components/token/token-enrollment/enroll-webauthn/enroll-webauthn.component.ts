@@ -18,6 +18,13 @@
  **/
 import { Component, EventEmitter, inject, Input, OnInit, Output } from "@angular/core";
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule } from "@angular/forms";
+import { MatDialogRef } from "@angular/material/dialog";
+import { firstValueFrom } from "rxjs";
+import {
+  EnrollmentResponse,
+  TokenApiPayloadMapper,
+  TokenEnrollmentData
+} from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
 import {
   WebAuthnApiPayloadMapper,
   WebAuthnEnrollmentData,
@@ -32,16 +39,9 @@ import {
   NotificationServiceInterface
 } from "../../../../services/notification/notification.service";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
-import { ReopenDialogFn } from "../token-enrollment.component";
-import {
-  EnrollmentResponse,
-  TokenApiPayloadMapper,
-  TokenEnrollmentData
-} from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
-import { firstValueFrom } from "rxjs";
-import { TokenEnrollmentFirstStepDialogComponent } from "../token-enrollment-firtst-step-dialog/token-enrollment-first-step-dialog.component";
-import { MatDialogRef } from "@angular/material/dialog";
 import { AbstractDialogComponent } from "../../../shared/dialog/abstract-dialog/abstract-dialog.component";
+import { TokenEnrollmentFirstStepDialogComponent } from "../token-enrollment-firtst-step-dialog/token-enrollment-first-step-dialog.component";
+import { ReopenDialogFn } from "../token-enrollment.component";
 
 @Component({
   selector: "app-enroll-webauthn",
@@ -89,7 +89,7 @@ export class EnrollWebauthnComponent implements OnInit {
   } | null => {
     if (!navigator.credentials?.create) {
       const errorMsg = "WebAuthn is not supported by this browser.";
-      this.notificationService.openSnackBar(errorMsg);
+      this.notificationService.error(errorMsg);
       return null;
     }
 
@@ -109,12 +109,12 @@ export class EnrollWebauthnComponent implements OnInit {
     enrollmentData: TokenEnrollmentData
   ): Promise<EnrollmentResponse | null> {
     if (!(enrollmentResponse as any)?.detail) {
-      this.notificationService.openSnackBar(
+      this.notificationService.error(
         "Failed to initiate WebAuthn registration: Invalid server response or missing details."
       );
       return null;
     } else if (!(enrollmentResponse as any)?.detail?.webAuthnRegisterRequest) {
-      this.notificationService.openSnackBar(
+      this.notificationService.error(
         "Failed to initiate WebAuthn registration: Missing WebAuthn registration request data."
       );
       return null;
@@ -147,7 +147,7 @@ export class EnrollWebauthnComponent implements OnInit {
     const request = enrollmentResponse.detail?.webAuthnRegisterRequest;
 
     if (!request) {
-      this.notificationService.openSnackBar("Invalid WebAuthn registration request data.");
+      this.notificationService.warning("Invalid WebAuthn registration request data.");
       return null;
     }
 
@@ -182,7 +182,7 @@ export class EnrollWebauthnComponent implements OnInit {
         publicKey: publicKeyOptions
       });
     } catch (browserOrCredentialError: any) {
-      this.notificationService.openSnackBar(
+      this.notificationService.error(
         `WebAuthn credential creation failed: ${browserOrCredentialError.message || "Unknown error"}`
       );
       publicKeyCred = null;
@@ -231,7 +231,7 @@ export class EnrollWebauthnComponent implements OnInit {
     const { webauthnEnrollmentData, webauthnEnrollmentResponse } = args;
 
     if (!webauthnEnrollmentResponse || !webauthnEnrollmentResponse.detail) {
-      this.notificationService.openSnackBar("Enrollment response or its detail is missing for finalization.");
+      this.notificationService.warning("Enrollment response or its detail is missing for finalization.");
       return null;
     }
 
@@ -239,7 +239,7 @@ export class EnrollWebauthnComponent implements OnInit {
     const webAuthnRegisterRequest = detail?.webAuthnRegisterRequest;
 
     if (!webAuthnRegisterRequest || !webAuthnRegisterRequest.transaction_id || !detail.serial) {
-      this.notificationService.openSnackBar(
+      this.notificationService.warning(
         "Invalid transaction ID or serial number in enrollment detail for finalization."
       );
       return null;
@@ -277,7 +277,7 @@ export class EnrollWebauthnComponent implements OnInit {
       return { ...response };
     } catch (error: any) {
       const errMsg = `WebAuthn finalization failed: ${error.message || error}`;
-      this.notificationService.openSnackBar(errMsg);
+      this.notificationService.error(errMsg);
       return null;
     }
   }

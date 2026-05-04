@@ -7,7 +7,10 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "jest",
-    "start-hmr": "ng serve --hmr --port 4200"
+    "start-hmr": "ng serve --hmr --port 4200",
+    "lint": "ng lint",
+    "format:check": "prettier --check \"src/**/*.{ts,html,scss,css,json}\"",
+    "format:write": "prettier --write \"src/**/*.{ts,html,scss,css,json}\""
   },
   "private": true,
   "dependencies": {
@@ -34,11 +37,15 @@
     "@angular/cli": "21.2.7",
     "@angular/compiler-cli": "21.2.8",
     "@angular/localize": "21.2.8",
+    "@eslint/js": "^10.0.1",
     "@types/crypto-js": "^4.2.2",
     "@types/jest": "^30.0.0",
+    "angular-eslint": "21.3.1",
+    "eslint": "^10.0.3",
     "jest": "^30.3.0",
     "jest-environment-jsdom": "^30.3.0",
     "prettier": "3.8.1",
-    "typescript": "~5.9.3"
+    "typescript": "~5.9.3",
+    "typescript-eslint": "8.56.1"
   }
 }

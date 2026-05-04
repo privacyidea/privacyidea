@@ -104,7 +104,7 @@ describe("LoginComponent", () => {
       const loggedInFixture = TestBed.createComponent(LoginComponent);
       loggedInFixture.detectChanges();
 
-      expect(notificationService.openSnackBar).toHaveBeenCalledWith("User is already logged in.");
+      expect(notificationService.warning).toHaveBeenCalledWith("User is already logged in.");
       expect(warn).toHaveBeenCalledWith("User is already logged in.");
 
       warn.mockRestore();
@@ -542,7 +542,7 @@ describe("LoginComponent", () => {
     it("remoteLogin should show error if remote_user is not set", () => {
       configService.config.set({ ...configService.config(), remote_user: "" });
       fixture.detectChanges();
-      const spy = jest.spyOn(notificationService, "openSnackBar");
+      const spy = jest.spyOn(notificationService, "warning");
       component.remoteLogin();
       expect(spy).toHaveBeenCalledWith(expect.stringContaining("Remote user not available"));
     });

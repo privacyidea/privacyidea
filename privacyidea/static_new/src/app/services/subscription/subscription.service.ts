@@ -86,11 +86,11 @@ export class SubscriptionService {
 
   deleteSubscription(application: string): Observable<PiResponse<boolean>> {
     const headers = this.authService.getHeaders();
-    return this.http.delete<PiResponse<boolean>>(`${this.baseUrl}/${application}`, { headers }).pipe(
+    return this.http.delete<PiResponse<boolean>>(`${this.baseUrl}/${encodeURIComponent(application)}`, { headers }).pipe(
       catchError((error) => {
         console.error("Failed to delete subscription.", error);
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.openSnackBar("Failed to delete subscription. " + message);
+        this.notificationService.error("Failed to delete subscription. " + message);
         return throwError(() => error);
       })
     );
@@ -105,7 +105,7 @@ export class SubscriptionService {
       catchError((error) => {
         console.error("Failed to upload subscription file.", error);
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.openSnackBar("Failed to upload subscription file. " + message);
+        this.notificationService.error("Failed to upload subscription file. " + message);
         return throwError(() => error);
       })
     );

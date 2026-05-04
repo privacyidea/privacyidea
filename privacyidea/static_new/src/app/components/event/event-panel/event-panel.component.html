@@ -77,14 +77,19 @@
           <mat-form-field class="input-width-l">
             <mat-label i18n>Name</mat-label>
             <input
+              #nameInput="ngModel"
               (ngModelChange)="updateEventHandler('name', $event)"
               [(ngModel)]="editEvent().name"
               matInput
+              pattern="^[a-zA-Z0-9._-]*$"
               required
               type="text" />
-            <mat-error i18n>
-              Name is <strong>required</strong>.
-            </mat-error>
+            @if (nameInput.errors?.['required'] && (nameInput.dirty || nameInput.touched)) {
+              <mat-error i18n>Name is <strong>required</strong>.</mat-error>
+            }
+            @if (nameInput.errors?.['pattern'] && (nameInput.dirty || nameInput.touched)) {
+              <mat-error i18n>Name contains <strong>invalid characters</strong>. Only alphanumeric characters, dots, underscores and hyphens are allowed.</mat-error>
+            }
           </mat-form-field>
           <mat-form-field class="input-width-l">
             <mat-label i18n>Handler Module</mat-label>

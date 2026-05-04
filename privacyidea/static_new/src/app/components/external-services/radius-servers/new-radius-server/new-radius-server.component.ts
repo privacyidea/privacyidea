@@ -155,7 +155,7 @@ export class NewRadiusServerComponent implements AfterViewInit, OnDestroy {
 
   private initForm(data: RadiusServer | null): void {
     this.radiusForm = this.formBuilder.group({
-      identifier: [data?.identifier || "", [Validators.required]],
+      identifier: [data?.identifier || "", [Validators.required, Validators.pattern(/^[a-zA-Z0-9._-]*$/)]],
       server: [data?.server || "", [Validators.required]],
       port: [data?.port || 1812],
       timeout: [data?.timeout || 5],

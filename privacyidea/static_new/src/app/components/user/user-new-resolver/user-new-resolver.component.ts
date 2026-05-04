@@ -183,7 +183,7 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
   }
 
   get canSave(): boolean {
-    const nameValid = this.resolverName.trim().length > 0;
+    const nameValid = this.resolverName.trim().length > 0 && /^[a-zA-Z0-9._-]*$/.test(this.resolverName);
     return nameValid && !!this.resolverType && !this.isAdditionalFieldsInvalid && !this.isSaving();
   }
 
@@ -258,15 +258,15 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
   async onSave(): Promise<boolean> {
     const name = this.resolverName.trim();
     if (!name) {
-      this._notificationService.openSnackBar($localize`Please enter a resolver name.`);
+      this._notificationService.warning($localize`Please enter a resolver name.`);
       return false;
     }
     if (!this.resolverType) {
-      this._notificationService.openSnackBar($localize`Please select a resolver type.`);
+      this._notificationService.warning($localize`Please select a resolver type.`);
       return false;
     }
     if (this.isAdditionalFieldsInvalid) {
-      this._notificationService.openSnackBar($localize`Please fill in all required fields.`);
+      this._notificationService.warning($localize`Please fill in all required fields.`);
       return false;
     }
 
@@ -284,7 +284,7 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
         .subscribe({
           next: (res) => {
             if (res.result?.status === true && (res.result.value ?? 0) >= 0) {
-              this._notificationService.openSnackBar(
+              this._notificationService.success(
                 this.isEditMode ? $localize`Resolver "${name}" updated.` : $localize`Resolver "${name}" created.`
               );
               this._resolverService.resolversResource.reload?.();
@@ -355,12 +355,12 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
 
   private _runTest(quick: boolean): void {
     if (!this.resolverType) {
-      this._notificationService.openSnackBar($localize`Please select a resolver type.`);
+      this._notificationService.warning($localize`Please select a resolver type.`);
       return;
     }
 
     if (this.isAdditionalFieldsInvalid) {
-      this._notificationService.openSnackBar($localize`Please fill in all required fields.`);
+      this._notificationService.warning($localize`Please fill in all required fields.`);
       return;
     }
 
@@ -389,7 +389,7 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
         next: (res) => {
           if (res.result?.status === true && (res.result.value ?? 0) >= 0) {
             const detail = res.detail?.description || "";
-            this._notificationService.openSnackBar($localize`Resolver test executed: ${detail}`, 20000);
+            this._notificationService.success($localize`Resolver test executed: ${detail}`, { duration: 20000 });
           } else {
             this._notifyError($localize`Failed to test resolver.`, res, "Connection test failed.");
           }
@@ -408,13 +408,13 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
       $localize`Unknown server error.`;
 
     if (detail.includes("Detailed error")) {
-      this._notificationService.openSnackBar(detail);
+      this._notificationService.error(detail);
     } else if (testFallback && detail.includes(testFallback)) {
-      this._notificationService.openSnackBar(detail);
+      this._notificationService.error(detail);
     } else if (testFallback && detail === $localize`Unknown server error.`) {
-      this._notificationService.openSnackBar(`${prefix} ${testFallback}`);
+      this._notificationService.error(`${prefix} ${testFallback}`);
     } else {
-      this._notificationService.openSnackBar(`${prefix} ${detail}`);
+      this._notificationService.error(`${prefix} ${detail}`);
     }
   }
 

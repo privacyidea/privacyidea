@@ -244,7 +244,7 @@ export class ContainerCreateComponent {
       next: (response: PiResponse<{ container_serial: string }>) => {
         const containerSerial = response.result?.value?.container_serial;
         if (!containerSerial) {
-          this.notificationService.openSnackBar("Container creation failed. No container serial returned.");
+          this.notificationService.error("Container creation failed. No container serial returned.");
           return;
         }
         if (this.generateQRCode()) {

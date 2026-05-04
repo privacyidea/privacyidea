@@ -58,14 +58,22 @@
             [(ngModel)]="resolverName"
             [disabled]="isEditMode"
             matInput
+            pattern="^[a-zA-Z0-9._-]*$"
             placeholder="resolver1"
             required />
         </app-clearable-input>
-        @if (nameInput.invalid && (nameInput.dirty || nameInput.touched)) {
+        @if (nameInput.errors?.['required'] && (nameInput.dirty || nameInput.touched)) {
           <mat-error i18n>
             Resolver name is
             <strong>required</strong>
             .
+          </mat-error>
+        }
+        @if (nameInput.errors?.['pattern'] && (nameInput.dirty || nameInput.touched)) {
+          <mat-error i18n>
+            Resolver name contains
+            <strong>invalid characters</strong>
+            . Only alphanumeric characters, dots, underscores and hyphens are allowed.
           </mat-error>
         }
       </mat-form-field>

@@ -339,7 +339,7 @@ export class ContainerDetailsTokenTableComponent {
       })
       .subscribe({
         next: () => {
-          this.notificationService.openSnackBar("User assigned to token");
+          this.notificationService.success("User assigned to token");
           this.containerService.containerDetailsResource.reload();
         }
       });

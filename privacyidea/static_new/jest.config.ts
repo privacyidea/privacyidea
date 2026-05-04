@@ -47,7 +47,7 @@ const config: Config = {
   coverageReporters: [
     //   "json",
     "text",
-    //   "lcov",
+    "lcov",
     //   "clover"
     "html"
   ],

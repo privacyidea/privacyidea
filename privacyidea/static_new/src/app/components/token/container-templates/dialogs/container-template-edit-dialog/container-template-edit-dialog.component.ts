@@ -136,6 +136,7 @@ export class ContainerTemplateEditDialogComponent {
   readonly isNewTemplate = computed(() => !this.initTemplate());
 
   // --- Computed - Validation & Conflict ---
+  readonly nameInvalidPattern = computed(() => !/^[a-zA-Z0-9._-]*$/.test(this.template().name));
   readonly nameConflict = computed(() =>
     this.containerTemplateService
       .templates()
@@ -145,7 +146,7 @@ export class ContainerTemplateEditDialogComponent {
     return this.containerTemplateService.canSaveTemplate(this.template()) && !this.nameConflict();
   });
   readonly nameErrorMatcher = {
-    isErrorState: () => this.nameConflict()
+    isErrorState: () => this.nameConflict() || (this.template().name.length > 0 && this.nameInvalidPattern())
   };
 
   // --- Computed - Dialog Actions ---

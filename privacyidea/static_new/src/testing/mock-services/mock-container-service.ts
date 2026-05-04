@@ -34,6 +34,8 @@ import {
 import { MockHttpResourceRef, MockPiResponse } from "./mock-utils";
 
 export class MockContainerService implements ContainerServiceInterface {
+  containersForTokenType: Signal<string[]> = signal([]);
+  compareWithTemplate: Signal<() => void> = signal(() => {});
   compatibleWithSelectedTokenType = signal<string | null>(null);
   isPollingActive: Signal<boolean> = signal(false);
   apiFilter: string[] = [];

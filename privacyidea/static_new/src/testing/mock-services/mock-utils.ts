@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { HttpHeaders, HttpProgressEvent, HttpResourceRef } from "@angular/common/http";
-import { Resource, ResourceStatus, Signal, signal, WritableSignal } from "@angular/core";
+import { Resource, ResourceSnapshot, ResourceStatus, Signal, signal, WritableSignal } from "@angular/core";
 import { of } from "rxjs";
 
 export function makeResource<T>(initial: T) {
@@ -53,6 +53,7 @@ export class MockHttpResourceRef<T> implements HttpResourceRef<T> {
   headers: Signal<HttpHeaders | undefined> = signal(undefined);
   statusCode: Signal<number | undefined> = signal(undefined);
   progress: Signal<HttpProgressEvent | undefined> = signal(undefined);
+  snapshot: Signal<ResourceSnapshot<T>> = signal({ status: "resolved", value: undefined as T });
 
   hasValue(): this is HttpResourceRef<Exclude<T, undefined>> {
     return this.value() !== undefined;

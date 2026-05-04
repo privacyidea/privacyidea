@@ -77,10 +77,14 @@
           #apiIdInput="ngModel"
           [ngModelOptions]="{ standalone: true }"
           matInput
+          pattern="^[a-zA-Z0-9._-]*$"
           placeholder="Client ID"
           required>
         @if (apiIdInput.errors?.['required']) {
           <mat-error i18n>Client ID is <strong>required</strong></mat-error>
+        }
+        @if (apiIdInput.errors?.['pattern']) {
+          <mat-error i18n>Invalid characters. Only alphanumeric, dots, underscores and hyphens are allowed.</mat-error>
         }
       </mat-form-field>
 

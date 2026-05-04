@@ -83,6 +83,11 @@
             @if (privacyideaForm.get('identifier')?.hasError('required')) {
               <mat-error i18n>Identifier is <strong>required</strong></mat-error>
             }
+            @if (privacyideaForm.get('identifier')?.hasError('pattern')) {
+              <mat-error
+                i18n>Identifier contains <strong>invalid characters</strong>. Only alphanumeric characters, dots, underscores and hyphens are allowed.
+              </mat-error>
+            }
             <mat-hint i18n>This is the unique identifying name of the privacyIDEA server definition.</mat-hint>
           </mat-form-field>
 

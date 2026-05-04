@@ -39,8 +39,7 @@ describe("SmtpService", () => {
       getHeaders: jest.fn().mockReturnValue({})
     };
     const notificationServiceMock = {
-      openSnackBar: jest.fn(),
-      handleResourceError: jest.fn()
+      success: jest.fn(), error: jest.fn(), warning: jest.fn(), handleResourceError: jest.fn()
     };
 
     TestBed.configureTestingModule({
@@ -75,7 +74,18 @@ describe("SmtpService", () => {
     req.flush({ result: { status: true } });
 
     await promise;
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith("Successfully saved SMTP server.");
+    expect(notificationService.success).toHaveBeenCalledWith("Successfully saved SMTP server.");
+  });
+
+  it("should show error notification when posting SMTP server fails", async () => {
+    const server = { identifier: "test", server: "smtp.test.com" } as any;
+    const promise = service.postSmtpServer(server);
+
+    const req = httpMock.expectOne(`${environment.proxyUrl}/smtpserver/test`);
+    req.flush(MockPiResponse.fromError({ message: "Something went wrong" }), { status: 400, statusText: "Bad Request" });
+
+    await expect(promise).rejects.toThrow();
+    expect(notificationService.error).toHaveBeenCalledWith("Failed to save SMTP server. Something went wrong");
   });
 
   it("should delete SMTP server", async () => {
@@ -86,7 +96,17 @@ describe("SmtpService", () => {
     req.flush({ result: { status: true } });
 
     await promise;
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith("Successfully deleted SMTP server: test.");
+    expect(notificationService.success).toHaveBeenCalledWith("Successfully deleted SMTP server: test.");
+  });
+
+  it("should show error notification when deleting SMTP server fails", async () => {
+    const promise = service.deleteSmtpServer("test");
+
+    const req = httpMock.expectOne(`${environment.proxyUrl}/smtpserver/test`);
+    req.flush(MockPiResponse.fromError({ message: "Something went wrong" }), { status: 400, statusText: "Bad Request" });
+
+    await expect(promise).rejects.toThrow();
+    expect(notificationService.error).toHaveBeenCalledWith("Failed to delete SMTP server. Something went wrong");
   });
 
   it("should test SMTP server", async () => {
@@ -99,7 +119,19 @@ describe("SmtpService", () => {
 
     const result = await promise;
     expect(result).toBe(true);
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith("Test email sent successfully.");
+    expect(notificationService.success).toHaveBeenCalledWith("Test email sent successfully.");
+  });
+
+  it("should show error notification when SMTP test request fails", async () => {
+    const params = { sender: "test@test.com" };
+    const promise = service.testSmtpServer(params);
+
+    const req = httpMock.expectOne(`${environment.proxyUrl}/smtpserver/send_test_email`);
+    req.flush(MockPiResponse.fromError({ message: "Something went wrong" }), { status: 400, statusText: "Bad Request" });
+
+    const result = await promise;
+    expect(result).toBe(false);
+    expect(notificationService.error).toHaveBeenCalledWith("Failed to send test email. Something went wrong");
   });
 
   describe("smtpServers", () => {

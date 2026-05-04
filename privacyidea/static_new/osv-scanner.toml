@@ -1,0 +1,14 @@
+# Suppressions for osv-scanner. Revisit suppressions periodically — `ignoreUntil`
+# is advisory, not enforced by the scanner.
+
+[[IgnoredVulns]]
+id = "GHSA-w5hq-g745-h8pq"
+ignoreUntil = 2026-10-23
+reason = """
+uuid CVE affects only v7() UUID generation under a specific weak-RNG fallback.
+We use v4() exclusively (grep 'from "uuid"' in src/), and the only transitive
+instance is webpack-dev-server -> sockjs -> uuid@8.3.2, which is a dev-only
+dependency never bundled into the shipped application.
+Upgrading uuid to ^14 is out of scope for the current CI branch; re-evaluate
+when touching frontend dependencies.
+"""

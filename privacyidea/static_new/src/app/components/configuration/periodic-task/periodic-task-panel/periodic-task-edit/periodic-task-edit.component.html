@@ -21,11 +21,19 @@
     <mat-form-field>
       <mat-label i18n>Name</mat-label>
       <input
+        #nameInput="ngModel"
         matInput
         [(ngModel)]="editTask().name"
         (ngModelChange)="emitAllowSave()"
+        pattern="^[a-zA-Z0-9._-]*$"
         required />
       <mat-hint i18n>Unique name of the periodic task.</mat-hint>
+      @if (nameInput.errors?.['required'] && (nameInput.dirty || nameInput.touched)) {
+        <mat-error i18n>Name is <strong>required</strong>.</mat-error>
+      }
+      @if (nameInput.errors?.['pattern'] && (nameInput.dirty || nameInput.touched)) {
+        <mat-error i18n>Name contains <strong>invalid characters</strong>. Only alphanumeric characters, dots, underscores and hyphens are allowed.</mat-error>
+      }
     </mat-form-field>
     <mat-form-field subscriptSizing="dynamic">
       <mat-label i18n>Task Module</mat-label>

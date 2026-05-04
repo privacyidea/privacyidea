@@ -167,7 +167,7 @@ export class TokenTableActionsComponent {
           if (err.error?.result?.error?.message) {
             message = err.error.result.error.message;
           }
-          this.notificationService.openSnackBar(message);
+          this.notificationService.error(message);
           return EMPTY;
         })
       )
@@ -212,7 +212,7 @@ export class TokenTableActionsComponent {
                 }
 
                 if (messages.length > 0) {
-                  this.notificationService.openSnackBar(messages.join("\n"));
+                  this.notificationService.success(messages.join("\n"));
                 }
                 this.tokenService.tokenResource.reload();
               },
@@ -221,7 +221,7 @@ export class TokenTableActionsComponent {
                 if (err.error?.result?.error?.message) {
                   message = err.error.result.error.message;
                 }
-                this.notificationService.openSnackBar(message);
+                this.notificationService.error(message);
               }
             });
           }

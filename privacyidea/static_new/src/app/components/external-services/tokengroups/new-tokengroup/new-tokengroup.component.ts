@@ -104,7 +104,7 @@ export class NewTokengroupComponent implements OnDestroy {
 
   private initForm(): void {
     this.tokengroupForm = this.formBuilder.group({
-      groupname: [this.data?.groupname || "", [Validators.required]],
+      groupname: [this.data?.groupname || "", [Validators.required, Validators.pattern(/^[a-zA-Z0-9._-]*$/)]],
       description: [this.data?.description || ""]
     });
     if (this.isEditMode) {

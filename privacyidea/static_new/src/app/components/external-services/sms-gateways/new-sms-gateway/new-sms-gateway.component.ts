@@ -86,7 +86,7 @@ export class NewSmsGatewayComponent implements AfterViewInit, OnDestroy {
   private gatewayName: string | null = null;
 
   smsForm: FormGroup = this.formBuilder.group({
-    name: ["", [Validators.required]],
+    name: ["", [Validators.required, Validators.pattern(/^[a-zA-Z0-9._-]*$/)]],
     providermodule: ["", [Validators.required]],
     description: [""]
   });

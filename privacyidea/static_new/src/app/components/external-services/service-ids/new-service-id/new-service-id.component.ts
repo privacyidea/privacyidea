@@ -106,7 +106,7 @@ export class NewServiceIdComponent implements OnDestroy {
 
   private initForm(data: ServiceId | null): void {
     this.serviceIdForm = this.formBuilder.group({
-      servicename: [data?.servicename || "", [Validators.required]],
+      servicename: [data?.servicename || "", [Validators.required, Validators.pattern(/^[a-zA-Z0-9._-]*$/)]],
       description: [data?.description || ""]
     });
 

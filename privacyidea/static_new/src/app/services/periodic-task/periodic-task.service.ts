@@ -154,11 +154,10 @@ export class PeriodicTaskService implements PeriodicTaskServiceInterface {
   enablePeriodicTask(taskId: number) {
     const headers = this.authService.getHeaders();
     return lastValueFrom(
-      this.http.post(this.periodicTaskBaseUrl + "enable/" + taskId, {}, { headers: headers }).pipe(
+      this.http.post(this.periodicTaskBaseUrl + "enable/" + encodeURIComponent(taskId), {}, { headers: headers }).pipe(
         catchError((error) => {
           this.periodicTasksResource.reload();
-          const message = error.error?.result?.error?.message || "";
-          this.notificationService.openSnackBar("Failed to enable periodic task! " + message);
+          this.notificationService.error("Failed to enable periodic task!");
           return of(undefined);
         })
       )
@@ -167,11 +166,10 @@ export class PeriodicTaskService implements PeriodicTaskServiceInterface {
 
   disablePeriodicTask(taskId: number) {
     const headers = this.authService.getHeaders();
-    const response$ = this.http.post(this.periodicTaskBaseUrl + "disable/" + taskId, {}, { headers: headers }).pipe(
+    const response$ = this.http.post(this.periodicTaskBaseUrl + "disable/" + encodeURIComponent(taskId), {}, { headers: headers }).pipe(
       catchError((error) => {
         this.periodicTasksResource.reload();
-        const message = error.error?.result?.error?.message || "";
-        this.notificationService.openSnackBar("Failed to disable periodic task! " + message);
+        this.notificationService.error("Failed to disable periodic task!");
         return of(undefined);
       })
     );
@@ -181,11 +179,11 @@ export class PeriodicTaskService implements PeriodicTaskServiceInterface {
   deletePeriodicTask(taskId: number): Observable<PiResponse<number, any>> {
     const headers = this.authService.getHeaders();
 
-    return this.http.delete<PiResponse<number, any>>(this.periodicTaskBaseUrl + taskId, { headers }).pipe(
+    return this.http.delete<PiResponse<number, any>>(this.periodicTaskBaseUrl + encodeURIComponent(taskId), { headers }).pipe(
       catchError((error) => {
         console.error("Failed to delete periodic task.", error);
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.openSnackBar("Failed to delete periodic task. " + message);
+        this.notificationService.error("Failed to delete periodic task. " + message);
         return throwError(() => error);
       })
     );
@@ -210,12 +208,12 @@ export class PeriodicTaskService implements PeriodicTaskServiceInterface {
     }
     try {
       if (task.id == null) {
-        this.notificationService.openSnackBar("Failed to delete periodic task: Missing ID.");
+        this.notificationService.error("Failed to delete periodic task: Missing ID.");
         return;
       }
       const response = await lastValueFrom(this.deletePeriodicTask(task.id));
       if (response?.result?.value !== undefined) {
-        this.notificationService.openSnackBar("Successfully deleted periodic task.");
+        this.notificationService.success("Successfully deleted periodic task.");
       }
       return response;
     } catch (error) {
@@ -251,7 +249,7 @@ export class PeriodicTaskService implements PeriodicTaskServiceInterface {
       catchError((error) => {
         console.error("Failed to save periodic task.", error.error);
         const message = error.error.result?.error?.message || "";
-        this.notificationService.openSnackBar("Failed to save periodic task. " + message);
+        this.notificationService.error("Failed to save periodic task. " + message);
         return of(undefined);
       })
     );
@@ -261,7 +259,7 @@ export class PeriodicTaskService implements PeriodicTaskServiceInterface {
 
   fetchAllModuleOptions() {
     const requests = PERIODIC_TASK_MODULES.map((module) =>
-      this.http.get<PiResponse<Record<string, PeriodicTaskOption>>>(this.periodicTaskBaseUrl + "options/" + module, {
+      this.http.get<PiResponse<Record<string, PeriodicTaskOption>>>(this.periodicTaskBaseUrl + "options/" + encodeURIComponent(module), {
         headers: this.authService.getHeaders()
       })
     );
@@ -279,7 +277,7 @@ export class PeriodicTaskService implements PeriodicTaskServiceInterface {
         this.moduleOptions.set(optionsDict);
       },
       error: () => {
-        this.notificationService.openSnackBar("Failed to fetch module options.");
+        this.notificationService.error("Failed to fetch module options.");
       }
     });
   }

@@ -135,7 +135,7 @@ export class NewSmtpServerComponent implements AfterViewInit, OnDestroy {
 
   private initForm(): void {
     this.smtpForm = this.formBuilder.group({
-      identifier: [this.data?.identifier || "", [Validators.required]],
+      identifier: [this.data?.identifier || "", [Validators.required, Validators.pattern(/^[a-zA-Z0-9._-]*$/)]],
       server: [this.data?.server || "", [Validators.required]],
       port: [this.data?.port || 25],
       timeout: [this.data?.timeout || 10],

@@ -46,7 +46,7 @@ export class AuthGuard implements CanActivate, CanActivateChild {
     } else {
       this.router.navigate(["/login"]).then((r) => {
         console.warn("Navigation blocked by AuthGuard!", r);
-        this.notificationService.openSnackBar("Navigation blocked by AuthGuard!");
+        this.notificationService.warning("Navigation blocked by AuthGuard!");
       });
       return false;
     }

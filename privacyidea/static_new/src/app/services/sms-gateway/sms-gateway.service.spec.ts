@@ -16,16 +16,16 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { TestBed } from "@angular/core/testing";
-import { SmsGatewayService } from "./sms-gateway.service";
 import { provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
-import { AuthService } from "../auth/auth.service";
-import { NotificationService } from "../notification/notification.service";
-import { environment } from "../../../environments/environment";
 import { signal } from "@angular/core";
+import { TestBed } from "@angular/core/testing";
+import { environment } from "../../../environments/environment";
 import { MockContentService, MockPiResponse } from "../../../testing/mock-services";
+import { AuthService } from "../auth/auth.service";
 import { ContentService } from "../content/content.service";
+import { NotificationService } from "../notification/notification.service";
+import { SmsGatewayService } from "./sms-gateway.service";
 
 describe("SmsGatewayService", () => {
   let service: SmsGatewayService;
@@ -38,8 +38,9 @@ describe("SmsGatewayService", () => {
       getHeaders: jest.fn().mockReturnValue({})
     };
     const notificationServiceMock = {
-      openSnackBar: jest.fn(),
-      handleResourceError: jest.fn(),
+      success: jest.fn(),
+      error: jest.fn(),
+      warning: jest.fn()
     };
 
     TestBed.configureTestingModule({
@@ -74,22 +75,42 @@ describe("SmsGatewayService", () => {
     req.flush({ result: { status: true } });
 
     await promise;
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith("Successfully saved SMS gateway.");
+    expect(notificationService.success).toHaveBeenCalledWith("Successfully saved SMS gateway.");
+  });
+
+  it("should show error notification when posting SMS gateway fails", async () => {
+    const gateway = { name: "test", providermodule: "mod" } as any;
+    const promise = service.postSmsGateway(gateway);
+
+    const req = httpMock.expectOne(`${environment.proxyUrl}/smsgateway`);
+    req.flush(MockPiResponse.fromError({ message: "Something went wrong" }), { status: 400, statusText: "Bad Request" });
+
+    await expect(promise).rejects.toThrow();
+    expect(notificationService.error).toHaveBeenCalledWith("Failed to save SMS gateway. Something went wrong");
   });
 
   it("should delete SMS gateway", async () => {
-    const promise = service.deleteSmsGateway("test");
+    const promise = service.deleteSmsGateway("test/1");
 
-    const req = httpMock.expectOne(`${environment.proxyUrl}/smsgateway/test`);
+    const req = httpMock.expectOne(`${environment.proxyUrl}/smsgateway/${encodeURIComponent("test/1")}`);
     expect(req.request.method).toBe("DELETE");
     req.flush({ result: { status: true } });
 
     await promise;
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith("Successfully deleted SMS gateway: test.");
+    expect(notificationService.success).toHaveBeenCalledWith("Successfully deleted SMS gateway: test/1.");
+  });
+
+  it("should show error notification when deleting SMS gateway fails", async () => {
+    const promise = service.deleteSmsGateway("test/1");
+
+    const req = httpMock.expectOne(`${environment.proxyUrl}/smsgateway/${encodeURIComponent("test/1")}`);
+    req.flush(MockPiResponse.fromError({ message: "Something went wrong" }), { status: 400, statusText: "Bad Request" });
+
+    await expect(promise).rejects.toThrow();
+    expect(notificationService.error).toHaveBeenCalledWith("Failed to delete SMS gateway. Something went wrong");
   });
 
   describe("smsGateways", () => {
-
     it("smsGateways falls back to default when resource empty", () => {
       expect(service.smsGateways()).toEqual([]);
     });
@@ -116,7 +137,8 @@ describe("SmsGatewayService", () => {
       const req = httpMock.expectOne((r) => r.url === "/smsgateway/");
       expect(req.request.method).toBe("GET");
       req.flush(MockPiResponse.fromError({ message: "Permission denied" }), {
-        status: 403, statusText: "Permission denied"
+        status: 403,
+        statusText: "Permission denied"
       });
       await Promise.resolve();
 

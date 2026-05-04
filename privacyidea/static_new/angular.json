@@ -25,19 +25,13 @@
           "builder": "@angular-devkit/build-angular:application",
           "options": {
             "stylePreprocessorOptions": {
-              "includePaths": [
-                "src/styles"
-              ]
+              "includePaths": ["src/styles"]
             },
-            "allowedCommonJsDependencies": [
-              "crypto-js"
-            ],
+            "allowedCommonJsDependencies": ["crypto-js"],
             "outputPath": "dist/privacyidea-webui",
             "index": "src/index.html",
             "browser": "src/main.ts",
-            "polyfills": [
-              "@angular/localize/init"
-            ],
+            "polyfills": ["@angular/localize/init"],
             "tsConfig": "tsconfig.app.json",
             "assets": [
               {
@@ -45,10 +39,7 @@
                 "input": "public"
               }
             ],
-            "styles": [
-              "@angular/material/prebuilt-themes/azure-blue.css",
-              "src/styles/styles.scss"
-            ],
+            "styles": ["@angular/material/prebuilt-themes/azure-blue.css", "src/styles/styles.scss"],
             "scripts": [],
             "optimization": true
           },
@@ -107,17 +98,20 @@
           "options": {
             "configPath": "./jest.config.ts",
             "tsConfig": "tsconfig.spec.json",
-            "codeCoverageExclude": [
-              "src/main.ts",
-              "src/polyfills.ts",
-              "src/testing/**"
-            ]
+            "codeCoverageExclude": ["src/main.ts", "src/polyfills.ts", "src/testing/**"]
+          }
+        },
+        "lint": {
+          "builder": "@angular-eslint/builder:lint",
+          "options": {
+            "lintFilePatterns": ["src/**/*.ts", "src/**/*.html"]
           }
         }
       }
     }
   },
   "cli": {
-    "analytics": false
+    "analytics": false,
+    "schematicCollections": ["angular-eslint"]
   }
 }

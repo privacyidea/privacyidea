@@ -132,11 +132,11 @@ describe("ContainerDetailsActionsComponent", () => {
   it("should call unregisterContainer and show notification", () => {
     const unregisterResponse = { result: { value: { success: true } } } as PiResponse<any>;
     mockContainerService.unregister.mockReturnValue(of(unregisterResponse));
-    jest.spyOn(mockNotificationService, "openSnackBar");
+    jest.spyOn(mockNotificationService, "success");
     jest.spyOn(mockContainerService.containerDetailsResource, "reload");
     component.unregisterContainer();
     expect(mockContainerService.unregister).toHaveBeenCalledWith("SMPH-1");
-    expect(mockNotificationService.openSnackBar).toHaveBeenCalledWith("Container unregistered successfully.");
+    expect(mockNotificationService.success).toHaveBeenCalledWith("Container unregistered successfully.");
     expect(mockContainerService.containerDetailsResource.reload).toHaveBeenCalled();
   });
 });

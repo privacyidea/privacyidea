@@ -89,7 +89,7 @@ export class EnrollPasskeyComponent implements OnInit {
   } | null => {
     if (!navigator.credentials?.create) {
       const errorMsg = "Passkey/WebAuthn is not supported by this browser.";
-      this.notificationService.openSnackBar(errorMsg);
+      this.notificationService.error(errorMsg);
       throw new Error(errorMsg);
     }
 
@@ -118,7 +118,7 @@ export class EnrollPasskeyComponent implements OnInit {
     const detail = enrollmentResponse.detail;
     const passkeyRegOptions = detail?.passkey_registration;
     if (!passkeyRegOptions) {
-      this.notificationService.openSnackBar("Failed to initiate Passkey registration: Invalid server response.");
+      this.notificationService.error("Failed to initiate Passkey registration: Invalid server response.");
       throw new Error("Invalid server response for Passkey initiation.");
     }
     this.openStepOneDialog({
@@ -177,7 +177,7 @@ export class EnrollPasskeyComponent implements OnInit {
     const detail = responseStepOne.detail;
     const passkeyRegOptions = detail?.passkey_registration;
     if (!passkeyRegOptions) {
-      this.notificationService.openSnackBar("Failed to initiate Passkey registration: Invalid server response.");
+      this.notificationService.error("Failed to initiate Passkey registration: Invalid server response.");
       return null;
     }
     const excludedCredentials = passkeyRegOptions.excludeCredentials.map((cred: any) => ({
@@ -203,7 +203,7 @@ export class EnrollPasskeyComponent implements OnInit {
     const publicKeyCred = await navigator.credentials
       .create({ publicKey: publicKeyOptions })
       .catch((browserOrCredentialError) => {
-        this.notificationService.openSnackBar(
+        this.notificationService.error(
           `Passkey credential creation failed: ${browserOrCredentialError.message}`
         );
         return null;
@@ -243,16 +243,16 @@ export class EnrollPasskeyComponent implements OnInit {
       })
     )
       .catch(async (errorStep3) => {
-        this.notificationService.openSnackBar(
+        this.notificationService.error(
           "Error during final Passkey registration step. Attempting to clean up token."
         );
         await lastValueFrom(this.tokenService.deleteToken(detail.serial)).catch(() => {
-          this.notificationService.openSnackBar(
+          this.notificationService.error(
             `Failed to delete token ${detail.serial} after registration error. Please check manually.`
           );
           throw new Error(errorStep3);
         }),
-          this.notificationService.openSnackBar(`Token ${detail.serial} deleted due to registration error.`);
+          this.notificationService.error(`Token ${detail.serial} deleted due to registration error.`);
         throw Error(errorStep3);
       })
       .then((finalResponse) => {
