@@ -1,9 +1,9 @@
 @use "@angular/material" as mat;
 
 .mat-mdc-dialog-surface {
-  border-radius: var(--border-radius);
-  box-shadow: var(--box-dialog-shadow);
-  background-color: var(--mat-sys-surface-container-lowest);
+  border-radius: var(--border-radius) !important;
+  box-shadow: var(--box-dialog-shadow) !important;
+  background-color: var(--mat-sys-surface-container-lowest) !important;
 }
 
 @mixin dialog-container-styles {

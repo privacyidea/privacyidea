@@ -24,14 +24,6 @@
   }
 }
 
-// I see no difference removeing this. I tried to see the sticky header but it seems to be not working. With or without this.
-// ::ng-deep {
-//   .mat-mdc-header-row.mat-mdc-table-sticky .mat-mdc-header-cell {
-//     background-color: var(--table-color) !important;
-//     z-index: 100;
-//   }
-// }
-
 .username-header {
   color: var(--mat-sys-primary);
 }
