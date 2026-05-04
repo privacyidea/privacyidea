@@ -76,6 +76,17 @@ describe("TokengroupService", () => {
     expect(notificationService.success).toHaveBeenCalledWith("Successfully saved tokengroup.");
   });
 
+  it("should show error notification when posting tokengroup fails", async () => {
+    const group = { groupname: "test", description: "desc" };
+    const promise = service.postTokengroup(group);
+
+    const req = httpMock.expectOne(`${environment.proxyUrl}/tokengroup/test`);
+    req.flush(MockPiResponse.fromError({ message: "Something went wrong" }), { status: 400, statusText: "Bad Request" });
+
+    await expect(promise).rejects.toThrow();
+    expect(notificationService.error).toHaveBeenCalledWith("Failed to save tokengroup. Something went wrong");
+  });
+
   it("should delete tokengroup", async () => {
     const promise = service.deleteTokengroup("test");
 
@@ -85,6 +96,16 @@ describe("TokengroupService", () => {
 
     await promise;
     expect(notificationService.success).toHaveBeenCalledWith("Successfully deleted tokengroup: test.");
+  });
+
+  it("should show error notification when deleting tokengroup fails", async () => {
+    const promise = service.deleteTokengroup("test");
+
+    const req = httpMock.expectOne(`${environment.proxyUrl}/tokengroup/test`);
+    req.flush(MockPiResponse.fromError({ message: "Something went wrong" }), { status: 400, statusText: "Bad Request" });
+
+    await expect(promise).rejects.toThrow();
+    expect(notificationService.error).toHaveBeenCalledWith("Failed to delete tokengroup. Something went wrong");
   });
 
   describe("tokengroupResource / tokengroups", () => {

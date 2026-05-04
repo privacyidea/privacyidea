@@ -78,6 +78,17 @@ describe("PrivacyideaServerService", () => {
     expect(notificationService.success).toHaveBeenCalledWith("Successfully saved privacyIDEA server.");
   });
 
+  it("should show error notification when posting privacyIDEA server fails", async () => {
+    const server = { identifier: "test", url: "http://test", tls: true } as any;
+    const promise = service.postPrivacyideaServer(server);
+
+    const req = httpMock.expectOne(`${environment.proxyUrl}/privacyideaserver/test`);
+    req.flush(MockPiResponse.fromError({ message: "Something went wrong" }), { status: 400, statusText: "Bad Request" });
+
+    await expect(promise).rejects.toThrow();
+    expect(notificationService.error).toHaveBeenCalledWith("Failed to save privacyIDEA server. Something went wrong");
+  });
+
   it("should delete privacyIDEA server", async () => {
     const promise = service.deletePrivacyideaServer("test");
 
@@ -87,6 +98,16 @@ describe("PrivacyideaServerService", () => {
 
     await promise;
     expect(notificationService.success).toHaveBeenCalledWith("Successfully deleted privacyIDEA server: test.");
+  });
+
+  it("should show error notification when deleting privacyIDEA server fails", async () => {
+    const promise = service.deletePrivacyideaServer("test");
+
+    const req = httpMock.expectOne(`${environment.proxyUrl}/privacyideaserver/test`);
+    req.flush(MockPiResponse.fromError({ message: "Something went wrong" }), { status: 400, statusText: "Bad Request" });
+
+    await expect(promise).rejects.toThrow();
+    expect(notificationService.error).toHaveBeenCalledWith("Failed to delete privacyIDEA server. Something went wrong");
   });
 
   it("should test privacyIDEA server", async () => {
@@ -100,6 +121,30 @@ describe("PrivacyideaServerService", () => {
     const result = await promise;
     expect(result).toBe(true);
     expect(notificationService.success).toHaveBeenCalledWith("Test request successful.");
+  });
+
+  it("should show error notification when privacyIDEA test returns false", async () => {
+    const params = { url: "http://test" };
+    const promise = service.testPrivacyideaServer(params);
+
+    const req = httpMock.expectOne(`${environment.proxyUrl}/privacyideaserver/test_request`);
+    req.flush({ result: { value: false } });
+
+    const result = await promise;
+    expect(result).toBe(false);
+    expect(notificationService.error).toHaveBeenCalledWith("Test request failed.");
+  });
+
+  it("should show error notification when privacyIDEA test request fails", async () => {
+    const params = { url: "http://test" };
+    const promise = service.testPrivacyideaServer(params);
+
+    const req = httpMock.expectOne(`${environment.proxyUrl}/privacyideaserver/test_request`);
+    req.flush(MockPiResponse.fromError({ message: "Something went wrong" }), { status: 400, statusText: "Bad Request" });
+
+    const result = await promise;
+    expect(result).toBe(false);
+    expect(notificationService.error).toHaveBeenCalledWith("Failed to send test request. Something went wrong");
   });
 
   it("privacyideaServerResource should not do request and return undefined on unexpected route", () => {

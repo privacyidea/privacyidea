@@ -78,6 +78,17 @@ describe("ServiceIdService", () => {
     expect(notificationService.success).toHaveBeenCalledWith("Successfully saved service ID.");
   });
 
+  it("should show error notification when posting service ID fails", async () => {
+    const serviceId = { servicename: "test/1", description: "desc" };
+    const promise = service.postServiceId(serviceId);
+
+    const req = httpMock.expectOne(`${environment.proxyUrl}/serviceid/${encodeURIComponent("test/1")}`);
+    req.flush(MockPiResponse.fromError({ message: "Something went wrong" }), { status: 400, statusText: "Bad Request" });
+
+    await expect(promise).rejects.toThrow();
+    expect(notificationService.error).toHaveBeenCalledWith("Failed to save service ID. Something went wrong");
+  });
+
   it("should delete service ID", async () => {
     const promise = service.deleteServiceId("test/1");
 
@@ -87,6 +98,16 @@ describe("ServiceIdService", () => {
 
     await promise;
     expect(notificationService.success).toHaveBeenCalledWith("Successfully deleted service ID: test/1.");
+  });
+
+  it("should show error notification when deleting service ID fails", async () => {
+    const promise = service.deleteServiceId("test/1");
+
+    const req = httpMock.expectOne(`${environment.proxyUrl}/serviceid/${encodeURIComponent("test/1")}`);
+    req.flush(MockPiResponse.fromError({ message: "Something went wrong" }), { status: 400, statusText: "Bad Request" });
+
+    await expect(promise).rejects.toThrow();
+    expect(notificationService.error).toHaveBeenCalledWith("Failed to delete service ID. Something went wrong");
   });
 
   it("serviceIdResource should not do request and return undefined on unexpected route", () => {
