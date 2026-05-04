@@ -613,8 +613,11 @@ class IdResolver(UserIdResolver):
 
         return tls_context
 
-    @cache
+    # @track_resolver_op must wrap @cache so cache hits are counted too
+    # (otherwise LDAP undercounts vs. uncached resolver types). Hits show as
+    # near-zero latency, which is the operator signal we want.
     @track_resolver_op("get_user_info")
+    @cache
     def get_user_info(self, user_id: int or str, attributes: list[str] = None) -> dict:
         """
         This function returns all user info for a given userid/object.
@@ -747,8 +750,8 @@ class IdResolver(UserIdResolver):
         info = self.get_user_info(user_id, attributes=["username"])
         return info.get('username', "")
 
-    @cache
     @track_resolver_op("get_user_id")
+    @cache
     def getUserId(self, login_name):
         """
         resolve the loginname to the userid.

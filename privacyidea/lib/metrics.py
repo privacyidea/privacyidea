@@ -16,6 +16,7 @@ must not break the operation being measured. Errors are logged at debug level.
 """
 import datetime
 import functools
+import hashlib
 import json
 import logging
 import time
@@ -93,6 +94,12 @@ def _parse_labels_key(labels_key: str) -> dict:
         return {}
 
 
+def _labels_hash(labels_key: str) -> str:
+    # Fixed-size SHA-256 hex digest used by the unique constraint, so the
+    # composite index doesn't grow with labels_key length.
+    return hashlib.sha256(labels_key.encode("utf-8")).hexdigest()
+
+
 def _window_start(now: datetime.datetime) -> datetime.datetime:
     epoch = int(now.replace(tzinfo=datetime.timezone.utc).timestamp())
     bucket_epoch = epoch - (epoch % WINDOW_SECONDS)
@@ -116,17 +123,19 @@ def _metric_session():
 
 def _get_or_create_row(session, metric_name: str, labels_key: str,
                        node: str, window: datetime.datetime) -> MetricAggregate:
+    labels_hash = _labels_hash(labels_key)
     stmt = select(MetricAggregate).where(
         MetricAggregate.metric_name == metric_name,
-        MetricAggregate.labels_key == labels_key,
+        MetricAggregate.labels_hash == labels_hash,
         MetricAggregate.node == node,
         MetricAggregate.window_start == window,
     )
     row = session.execute(stmt).scalar_one_or_none()
     if row is None:
         row = MetricAggregate(
-            metric_name=metric_name, labels_key=labels_key, node=node,
-            window_start=window, count=0, sum_value=0.0, max_value=0.0,
+            metric_name=metric_name, labels_key=labels_key,
+            labels_hash=labels_hash, node=node, window_start=window,
+            count=0, sum_value=0.0, max_value=0.0,
         )
         session.add(row)
         try:

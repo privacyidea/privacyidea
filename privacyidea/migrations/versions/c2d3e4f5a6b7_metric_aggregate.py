@@ -38,7 +38,13 @@ def upgrade():
     columns = [
         sa.Column("id", sa.Integer(), primary_key=True, autoincrement=True),
         sa.Column("metric_name", sa.Unicode(length=128), nullable=False),
-        sa.Column("labels_key", sa.Unicode(length=255), nullable=False, server_default=""),
+        # Full label payload: JSON blob with sorted keys; can be arbitrarily
+        # long (resolver names + types + ops + identifiers etc).
+        sa.Column("labels_key", sa.Text(), nullable=False, server_default=""),
+        # Fixed-size hex digest (SHA-256) of labels_key, used by the unique
+        # constraint so the composite index stays under MySQL's 3072-byte
+        # limit regardless of how long labels_key grows.
+        sa.Column("labels_hash", sa.String(length=64), nullable=False, server_default=""),
         sa.Column("node", sa.Unicode(length=255), nullable=False, server_default=""),
         sa.Column("window_start", sa.DateTime(timezone=False), nullable=False),
         sa.Column("count", sa.BigInteger(), nullable=False, server_default="0"),
@@ -47,7 +53,7 @@ def upgrade():
     ]
     for bucket in _BUCKET_COLUMNS:
         columns.append(sa.Column(bucket, sa.BigInteger(), nullable=False, server_default="0"))
-    columns.append(sa.UniqueConstraint("metric_name", "labels_key", "node",
+    columns.append(sa.UniqueConstraint("metric_name", "labels_hash", "node",
                                        "window_start", name="metricagg_uix"))
 
     op.create_table("metric_aggregate", *columns)
