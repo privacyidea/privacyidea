@@ -1473,8 +1473,11 @@ myApp.controller("HTTPResolverController", ["$scope", "ConfigFactory", "$state",
                     $scope.advancedParams["realm"] = params["realm"];
                 }
 
-                if (params["config_get_user_groups"]) {
+                if (angular.isObject(params["config_get_user_groups"]) && !angular.isArray(params["config_get_user_groups"])) {
                     $scope.groups_config = params["config_get_user_groups"];
+                    if ($scope.groups_config.method) {
+                        $scope.groups_config.method = $scope.groups_config.method.toLowerCase();
+                    }
                 }
             } else {
                 $scope.params = params;
