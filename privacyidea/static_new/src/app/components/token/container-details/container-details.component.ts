@@ -72,7 +72,8 @@ export const containerDetailsKeyMap = [
   { key: "type", label: "Type" },
   { key: "states", label: "Status" },
   { key: "description", label: "Description" },
-  { key: "realms", label: "Realms" }
+  { key: "realms", label: "Realms" },
+  { key: "template", label: "Template" }
 ];
 
 const containerUserDetailsKeyMap = [

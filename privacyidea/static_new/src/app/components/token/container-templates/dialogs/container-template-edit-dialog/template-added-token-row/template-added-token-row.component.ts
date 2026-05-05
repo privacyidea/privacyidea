@@ -22,6 +22,7 @@ import { Component, computed, DestroyRef, effect, inject, input, linkedSignal, o
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { FormControl, FormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
+import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
@@ -58,6 +59,7 @@ import { EnrollTotpComponent } from "../../../../token-enrollment/enroll-totp/en
   imports: [
     MatIconModule,
     MatButtonModule,
+    MatCheckboxModule,
     MatExpansionModule,
     FormsModule,
     MatFormFieldModule,
@@ -93,6 +95,8 @@ export class TemplateAddedTokenRowComponent {
   readonly onRemoveToken = output<number>();
 
   // State Signals
+  readonly userAssign = linkedSignal(() => this.tokenEnrollmentPayload().user === true);
+
   readonly formControls = signal<{ [key: string]: FormControl<any> }>({});
   readonly childHadNoForm = computed(() => Object.keys(this.formControls()).length === 0);
 
@@ -154,6 +158,11 @@ export class TemplateAddedTokenRowComponent {
     });
 
     this._initialTokenFill(initialPatch);
+  }
+
+  toggleUserAssign(checked: boolean) {
+    this.userAssign.set(checked);
+    this.onEditToken.emit({ user: checked });
   }
 
   removeToken() {
