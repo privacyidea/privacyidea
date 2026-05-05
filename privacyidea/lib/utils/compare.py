@@ -304,11 +304,13 @@ def negate(func: callable) -> callable:
     :param func: a comparison function taking the two values to compare as arguments
     :return: a comparison function taking the two values to compare as arguments
     """
+
     @wraps(func)
     def negated(left: any, right: any) -> bool:
         return not func(left, right)
 
     return negated
+
 
 # In order to add a comparator to this module, add a suitable member to PrimaryComparators and add an entry in the
 # COMPARATORS dictionary to map the name to the corresponding Comparator object containing the related function and
@@ -442,6 +444,7 @@ COMPARATORS = {PrimaryComparators.EQUALS: equals, "=": equals, "==": equals, "==
 COMPARATOR_DESCRIPTIONS = {comparator: COMPARATORS[comparator].description for comparator in
                            PrimaryComparators.get_all_comparators()}
 
+
 def get_all_type_restricted_comparators() -> list[str]:
     """
     Return a list of all type-restricted comparators.
@@ -566,7 +569,7 @@ def compare_ints(condition: str, value: str | int) -> bool:
     # Compare the values, but fail silent
     try:
         result = compare_values(value, condition.comparator, condition_value)
-    except CompareError as error: # pragma no cover
+    except CompareError as error:  # pragma no cover
         log.debug(f"Error during comparison: {error}")
         return False
     return result
@@ -635,7 +638,7 @@ def compare_generic(condition: str, key_method: callable, warning: str) -> bool:
     try:
         # append "_any" to the comparator to indicate that we want to compare any type of value
         result = compare_values(left_value, comparator, right_value)
-    except CompareError as error:   # pragma no cover
+    except CompareError as error:  # pragma no cover
         log.debug(f"Error during comparison: {error}")
         return False
 
