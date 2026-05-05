@@ -53,8 +53,9 @@ from privacyidea.lib.cache.redis import (
     get_redis,
 )
 from privacyidea.lib.challenge import get_challenges, get_challenges_paginate
+from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.framework import get_app_local_store
-from privacyidea.lib.token import create_challenge, init_token
+from privacyidea.lib.token import create_challenge, init_token, remove_token
 from privacyidea.models import Challenge, db
 from privacyidea.models.utils import utc_now
 
@@ -69,6 +70,7 @@ class FakeRedis:
     def __init__(self):
         self._data: dict[str, str] = {}  # key → value
         self._sets: dict[str, set] = {}  # key → set of members
+        self._ttls: dict[str, int] = {}  # key → ttl seconds (last set)
         self.ping_raises = False
 
     def ping(self):
@@ -77,6 +79,7 @@ class FakeRedis:
 
     def setex(self, key, ttl, value):
         self._data[key] = value
+        self._ttls[key] = ttl
 
     def get(self, key):
         return self._data.get(key)
@@ -88,6 +91,7 @@ class FakeRedis:
         for k in keys:
             self._data.pop(k, None)
             self._sets.pop(k, None)
+            self._ttls.pop(k, None)
 
     def sadd(self, key, *values):
         self._sets.setdefault(key, set()).update(values)
@@ -99,8 +103,27 @@ class FakeRedis:
     def smembers(self, key):
         return set(self._sets.get(key, set()))
 
-    def expire(self, key, ttl):
-        pass  # TTL management not needed for unit tests
+    def expire(self, key, ttl, nx=False, xx=False, gt=False, lt=False):
+        # Mirror the Redis 7 EXPIRE flag semantics we rely on (NX, GT). The key
+        # must exist (as a value or a set) for any of these to apply.
+        if key not in self._data and key not in self._sets:
+            return 0
+        current = self._ttls.get(key)
+        if nx and current is not None:
+            return 0
+        if xx and current is None:
+            return 0
+        if gt and current is not None and ttl <= current:
+            return 0
+        if lt and current is not None and ttl >= current:
+            return 0
+        self._ttls[key] = ttl
+        return 1
+
+    def ttl(self, key):
+        if key not in self._data and key not in self._sets:
+            return -2
+        return self._ttls.get(key, -1)
 
     def pipeline(self):
         return _FakePipeline(self)
@@ -129,8 +152,8 @@ class _FakePipeline:
         self._cmds.append(('srem', key, *values))
         return self
 
-    def expire(self, key, ttl):
-        self._cmds.append(('expire', key, ttl))
+    def expire(self, key, ttl, nx=False, xx=False, gt=False, lt=False):
+        self._cmds.append(('expire', key, ttl, nx, xx, gt, lt))
         return self
 
     def execute(self):
@@ -237,6 +260,18 @@ class TestChallengeDTO(MyTestCase):
         dto.set_session("enrollment")
         self.assertEqual(dto.get_session(), "enrollment")
 
+    def test_get_transaction_id(self):
+        dto = _make_dto(txn='txn-getter')
+        self.assertEqual(dto.get_transaction_id(), 'txn-getter')
+
+    def test_get_challenge(self):
+        dto = _make_dto(challenge='nonce-xyz')
+        self.assertEqual(dto.get_challenge(), 'nonce-xyz')
+
+    def test_get_session_after_set(self):
+        dto = _make_dto(session='preset')
+        self.assertEqual(dto.get_session(), 'preset')
+
     def test_get_returns_expected_keys(self):
         dto = _make_dto()
         result = dto.get(timestamp=True)
@@ -336,6 +371,33 @@ class TestRedisCacheOperations(MyTestCase):
         txn_ids = {c.transaction_id for c in result}
         self.assertEqual(txn_ids, {'txn-rcache-004a', 'txn-rcache-004b'})
 
+    def test_serial_set_ttl_not_shrunk_by_shorter_challenge(self):
+        # Regression: writing a shorter-lived challenge after a longer-lived
+        # one for the same serial used to reset the shared serial-set TTL to
+        # the shorter value, which then expired the set before the longer
+        # challenge's own key — so get_challenges(serial=...) silently lost
+        # still-valid challenges. The fix uses EXPIRE NX + GT so the set TTL
+        # only ever grows.
+        fake = FakeRedis()
+        long_dto = _make_dto(serial='RCACHE_TTL', txn='txn-long', offset_seconds=600)
+        short_dto = _make_dto(serial='RCACHE_TTL', txn='txn-short', offset_seconds=30)
+
+        self._write_dto(fake, long_dto)
+        ttl_after_long = fake.ttl(f'pi:challenge:serial:RCACHE_TTL')
+        self._write_dto(fake, short_dto)
+        ttl_after_short = fake.ttl(f'pi:challenge:serial:RCACHE_TTL')
+
+        # The shorter write must not have shrunk the set TTL.
+        self.assertGreaterEqual(ttl_after_short, ttl_after_long)
+        # Sanity: the kept TTL is the longer one (plus the buffer).
+        self.assertGreaterEqual(ttl_after_short, 600)
+
+        # And the reverse order must still extend the TTL up to the longer one.
+        fake2 = FakeRedis()
+        self._write_dto(fake2, _make_dto(serial='RCACHE_TTL2', txn='txn-s', offset_seconds=30))
+        self._write_dto(fake2, _make_dto(serial='RCACHE_TTL2', txn='txn-l', offset_seconds=600))
+        self.assertGreaterEqual(fake2.ttl('pi:challenge:serial:RCACHE_TTL2'), 600)
+
     def test_dto_save_updates_cache(self):
         fake = FakeRedis()
         dto = _make_dto(serial='RCACHE5', txn='txn-rcache-005')
@@ -380,6 +442,136 @@ class TestRedisCacheOperations(MyTestCase):
             after_delete = get_challenges_from_cache(transaction_id='txn-rcache-007')
 
         self.assertIsNone(after_delete)
+
+    def test_cache_and_evict_no_op_when_feature_disabled(self):
+        # Both write paths must short-circuit without ever calling into the
+        # injected client when the per-feature flag is off.
+        from privacyidea.lib.cache import evict_challenge
+        fake = FakeRedis()
+        with fake_redis_in_store(fake, enable_challenges=False):
+            cache_challenge(serial='RCACHE_OFF', transaction_id='txn-off',
+                            challenge='c', data='', session='',
+                            timestamp=utc_now(), expiration=utc_now() + timedelta(seconds=120))
+            evict_challenge('txn-off', 'RCACHE_OFF')
+        # Nothing should have been written.
+        self.assertEqual(fake._data, {})
+        self.assertEqual(fake._sets, {})
+
+    def test_evict_disables_redis_on_error(self):
+        from privacyidea.lib.cache import evict_challenge
+        fake = FakeRedis()
+
+        def boom(*a, **kw):
+            raise ConnectionError("simulated pipeline failure")
+
+        fake.pipeline = boom
+        with fake_redis_in_store(fake):
+            evict_challenge('txn-err', 'RCACHE_ERR')
+            self.assertIsNone(get_redis())
+
+    def test_get_from_cache_disables_redis_on_error(self):
+        fake = FakeRedis()
+
+        def boom(*a, **kw):
+            raise ConnectionError("simulated get failure")
+
+        fake.get = boom
+        with fake_redis_in_store(fake):
+            self.assertIsNone(get_challenges_from_cache(transaction_id='whatever'))
+            self.assertIsNone(get_redis())
+
+    def test_get_from_cache_filters_by_challenge_value(self):
+        # Two challenges on the same serial; query must apply the
+        # ``challenge=`` filter and return only the matching one.
+        fake = FakeRedis()
+        self._write_dto(fake, _make_dto(serial='RCACHE_F', txn='txn-f-1', challenge='alpha'))
+        self._write_dto(fake, _make_dto(serial='RCACHE_F', txn='txn-f-2', challenge='beta'))
+        with fake_redis_in_store(fake):
+            result = get_challenges_from_cache(serial='RCACHE_F', challenge='beta')
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].transaction_id, 'txn-f-2')
+
+    def test_dto_save_no_op_when_feature_disabled(self):
+        # _update_challenge_in_cache's flag-disabled early return.
+        fake = FakeRedis()
+        dto = _make_dto(serial='RCACHE_SOFF', txn='txn-soff')
+        self._write_dto(fake, dto)
+        original = fake._data['pi:challenge:txn:txn-soff']
+        with fake_redis_in_store(fake, enable_challenges=False):
+            cached_dto = ChallengeDTO(
+                transaction_id='txn-soff', serial='RCACHE_SOFF',
+                challenge='c', data='', session='',
+                timestamp=utc_now(), expiration=utc_now() + timedelta(seconds=120),
+            )
+            cached_dto.set_otp_status(True)
+            cached_dto.save()  # must short-circuit; key untouched
+        self.assertEqual(fake._data['pi:challenge:txn:txn-soff'], original)
+
+    def test_save_disables_redis_on_error(self):
+        fake = FakeRedis()
+        dto = _make_dto(serial='RCACHE_SAVE_ERR', txn='txn-save-err')
+        self._write_dto(fake, dto)
+
+        def boom(*a, **kw):
+            raise ConnectionError("simulated setex failure")
+
+        fake.setex = boom
+        with fake_redis_in_store(fake):
+            cached = get_challenges_from_cache(transaction_id='txn-save-err')[0]
+            cached.set_otp_status(True)
+            cached.save()  # _update_challenge_in_cache hits boom → _disable_redis
+            self.assertIsNone(get_redis())
+
+    def test_evict_for_serial_no_op_when_feature_disabled(self):
+        from privacyidea.lib.cache import evict_challenges_for_serial
+        fake = FakeRedis()
+        with fake_redis_in_store(fake, enable_challenges=False):
+            evict_challenges_for_serial('RCACHE_DISABLED')  # must not raise / touch Redis
+
+    def test_evict_for_serial_disables_redis_on_error(self):
+        from privacyidea.lib.cache import evict_challenges_for_serial
+        fake = FakeRedis()
+
+        def boom(*a, **kw):
+            raise ConnectionError("simulated smembers failure")
+
+        fake.smembers = boom
+
+        with fake_redis_in_store(fake):
+            evict_challenges_for_serial('RCACHE_BOOM')
+            self.assertIsNone(get_redis())
+
+    def test_get_from_cache_returns_none_when_all_keys_expired(self):
+        # Serial set has members, but the per-transaction keys have already
+        # expired and evaporated → caller must see a cache miss, not an
+        # empty success.
+        fake = FakeRedis()
+        fake._sets['pi:challenge:serial:RCACHE_GHOST'] = {'gone-1', 'gone-2'}
+        with fake_redis_in_store(fake):
+            self.assertIsNone(get_challenges_from_cache(serial='RCACHE_GHOST'))
+
+    def test_get_from_cache_returns_none_on_corrupt_payload(self):
+        fake = FakeRedis()
+        fake._data['pi:challenge:txn:txn-corrupt'] = '{"not": "a valid challenge"'  # truncated JSON
+        with fake_redis_in_store(fake):
+            self.assertIsNone(get_challenges_from_cache(transaction_id='txn-corrupt'))
+
+    def test_save_short_circuits_when_already_expired(self):
+        fake = FakeRedis()
+        dto = _make_dto(serial='RCACHE_EXP', txn='txn-rcache-exp', offset_seconds=120)
+        self._write_dto(fake, dto)
+        with fake_redis_in_store(fake):
+            cached = get_challenges_from_cache(transaction_id='txn-rcache-exp')[0]
+            # Force the DTO into the past so _update_challenge_in_cache hits
+            # the "already expired" early return without re-writing the key.
+            # Push expiration past the TTL buffer so the early-return fires.
+            cached.expiration = utc_now() - timedelta(seconds=120)
+            existing_payload = fake._data['pi:challenge:txn:txn-rcache-exp']
+            cached.set_otp_status(True)
+            cached.save()
+        # Key must be unchanged — the save() should not have re-written an
+        # already-expired challenge.
+        self.assertEqual(fake._data['pi:challenge:txn:txn-rcache-exp'], existing_payload)
 
     def test_redis_disabled_on_operation_error(self):
         """If a Redis operation raises, the client must be disabled for this worker."""
@@ -624,6 +816,28 @@ class TestCreateChallengeIntegration(MyTestCase):
         self.assertEqual(result['count'], 1)
         self.assertEqual(result['challenges'][0]['transaction_id'], txn_id)
 
+    def test_paginate_falls_back_to_natural_order_on_unsortable_field(self):
+        # Sorting by a field whose value is None on some entries (here:
+        # `session` is empty for one challenge and a string for another)
+        # raises TypeError under Python 3 comparisons. The paginator must
+        # swallow the TypeError and return results in natural order rather
+        # than failing the request.
+        fake = FakeRedis()
+        with fake_redis_in_store(fake):
+            ch1 = create_challenge(self.serial, challenge='ord1', session='b', validitytime=120)
+            ch2 = create_challenge(self.serial, challenge='ord2', validitytime=120)
+            # Mutate one DTO's session to None to provoke the comparator failure.
+            cached = get_challenges_from_cache(serial=self.serial)
+            for c in cached:
+                if c.transaction_id == ch2.transaction_id:
+                    c.session = None
+                    c.save()
+            result = get_challenges_paginate(serial=self.serial, sortby='session')
+
+        self.assertEqual(result['count'], 2)
+        returned = {c['transaction_id'] for c in result['challenges']}
+        self.assertEqual(returned, {ch1.transaction_id, ch2.transaction_id})
+
     def test_get_challenges_paginate_unfiltered_empty_with_redis(self):
         """Unfiltered paginate always queries the DB — empty when Redis is active."""
         fake = FakeRedis()
@@ -761,3 +975,60 @@ class TestRealRedisIntegration(MyTestCase):
 
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].transaction_id, txn_id)
+
+    def test_cancel_enrollment_via_multichallenge_no_attribute_error(self):
+        """Regression: cancel_enrollment_via_multichallenge() used to log
+        challenge.id, which doesn't exist on Redis-backed ChallengeDTOs and
+        raised AttributeError instead of returning False on the early-out
+        log paths."""
+        from privacyidea.lib.challenge import cancel_enrollment_via_multichallenge
+        with self._real_redis():
+            # No data on the challenge — hits the "No data found" log/return path.
+            ch = create_challenge(self.serial, challenge='no_data', validitytime=120)
+            self.assertFalse(cancel_enrollment_via_multichallenge(ch.transaction_id))
+
+            # Data present but optional flag is False — hits the
+            # "does not have the action ... set to True" log/return path.
+            ch2 = create_challenge(self.serial, challenge='opt_false', validitytime=120,
+                                   data={
+                                       PolicyAction.ENROLL_VIA_MULTICHALLENGE: "HOTP",
+                                       PolicyAction.ENROLL_VIA_MULTICHALLENGE_OPTIONAL: False,
+                                   })
+            self.assertFalse(cancel_enrollment_via_multichallenge(ch2.transaction_id))
+
+    def test_remove_token_evicts_redis_challenges(self):
+        """Regression: deleting a token must drop its Redis-cached challenges
+        so transaction IDs cannot keep resolving until TTL expiry."""
+        serial = 'SE_REAL_REDIS_LIFECYCLE'
+        init_token({"genkey": 1, "serial": serial, "pin": "pin"})
+        try:
+            with self._real_redis():
+                ch = create_challenge(serial, challenge='will_be_orphaned', validitytime=600)
+                txn_id = ch.transaction_id
+                # Sanity: transaction is resolvable from the cache pre-deletion.
+                self.assertEqual(len(get_challenges(serial=serial, transaction_id=txn_id)), 1)
+
+                remove_token(serial)
+
+                # Both the per-transaction key and the serial set must be gone.
+                self.assertIsNone(self._real_client.get(f"pi:challenge:txn:{txn_id}"))
+                self.assertEqual(self._real_client.smembers(f"pi:challenge:serial:{serial}"), set())
+        finally:
+            # remove_token() above is the cleanup; nothing left to do.
+            Challenge.query.filter_by(serial=serial).delete()
+            db.session.commit()
+
+    def test_serial_set_ttl_not_shrunk_by_shorter_challenge(self):
+        """Regression: shorter-lived challenge must not shrink the shared serial-set TTL."""
+        serial_key = f"pi:challenge:serial:{self.serial}"
+        with self._real_redis():
+            create_challenge(self.serial, challenge='long_lived', validitytime=600)
+            ttl_after_long = self._real_client.ttl(serial_key)
+            self.assertGreaterEqual(ttl_after_long, 600)
+
+            create_challenge(self.serial, challenge='short_lived', validitytime=30)
+            ttl_after_short = self._real_client.ttl(serial_key)
+
+        # Set TTL must not have been pulled down to ~30s by the shorter write.
+        self.assertGreaterEqual(ttl_after_short, ttl_after_long - 5)
+        self.assertGreater(ttl_after_short, 60)

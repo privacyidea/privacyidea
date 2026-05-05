@@ -104,7 +104,7 @@ from .log import log_with
 from .policies.actions import PolicyAction
 from .policydecorators import libpolicy, auth_otppin, challenge_response_allowed
 from .user import (User)
-from ..models import (TokenOwner, TokenTokengroup, Challenge, cleanup_challenges, TokenInfo, db, TokenRealm, Realm,
+from ..models import (TokenOwner, TokenTokengroup, cleanup_challenges, TokenInfo, db, TokenRealm, Realm,
                       Tokengroup, TokenCredentialIdHash)
 
 DATE_FORMAT = '%Y-%m-%dT%H:%M%z'
@@ -746,8 +746,11 @@ class TokenClass:
         delete_stmt_token_realm = delete(TokenRealm).where(TokenRealm.token_id == self.token.id)
         db.session.execute(delete_stmt_token_realm)
 
-        delete_stmt_challenge = delete(Challenge).where(Challenge.serial == self.token.serial)
-        db.session.execute(delete_stmt_challenge)
+        # Routed through delete_challenges() so Redis-cached challenges
+        # for this serial are invalidated alongside any DB rows; otherwise
+        # transaction IDs would keep resolving until their TTL expires.
+        from privacyidea.lib.challenge import delete_challenges
+        delete_challenges(serial=self.token.serial)
 
         if self.get_tokentype().lower() in ["webauthn", "passkey"]:
             delete_stmt_token_credential = delete(TokenCredentialIdHash).where(

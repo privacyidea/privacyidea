@@ -225,7 +225,13 @@ def cache_challenge(serial: str, transaction_id: str, challenge: str, data: str,
         pipe = r.pipeline()
         pipe.setex(_TXN_KEY.format(transaction_id), ttl, payload)
         pipe.sadd(_SERIAL_KEY.format(serial), transaction_id)
-        pipe.expire(_SERIAL_KEY.format(serial), ttl)
+        # The serial set is shared across all open challenges for the token, so
+        # its TTL must cover the longest-lived member. NX seeds the TTL on the
+        # first write; GT extends it only when the new TTL is larger, so a
+        # shorter-lived challenge added later cannot shrink it and expire
+        # still-valid siblings early. Both flags require Redis 7+.
+        pipe.expire(_SERIAL_KEY.format(serial), ttl, nx=True)
+        pipe.expire(_SERIAL_KEY.format(serial), ttl, gt=True)
         pipe.execute()
     except Exception as e:
         _disable_redis(e)
@@ -243,6 +249,30 @@ def evict_challenge(transaction_id: str, serial: str):
         pipe = r.pipeline()
         pipe.delete(_TXN_KEY.format(transaction_id))
         pipe.srem(_SERIAL_KEY.format(serial), transaction_id)
+        pipe.execute()
+    except Exception as e:
+        _disable_redis(e)
+
+
+def evict_challenges_for_serial(serial: str):
+    """
+    Remove every cached challenge belonging to ``serial`` from Redis.
+
+    Used when a token or container is deleted so that in-flight transaction
+    IDs cannot continue to resolve against the cache after their owning
+    object is gone. Iterates the serial-set and deletes each per-transaction
+    key plus the set itself.
+    """
+    if not redis_feature_enabled("challenges"):
+        return
+    r = get_redis()
+    try:
+        serial_key = _SERIAL_KEY.format(serial)
+        txn_ids = r.smembers(serial_key)
+        pipe = r.pipeline()
+        for tid in txn_ids:
+            pipe.delete(_TXN_KEY.format(tid))
+        pipe.delete(serial_key)
         pipe.execute()
     except Exception as e:
         _disable_redis(e)

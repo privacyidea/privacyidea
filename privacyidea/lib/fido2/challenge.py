@@ -64,9 +64,9 @@ def create_fido2_challenge(rp_id: str, user_verification: str = "preferred", tra
     # uniformly without knowing about the raw "user_verification" string.
     data = {FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT: user_verification}
 
-    db_challenge = Challenge(serial or "", transaction_id=transaction_id, challenge=nonce,
-                             data=json.dumps(data), validitytime=validity)
-    db_challenge.save()
+    from privacyidea.lib.token import create_challenge
+    db_challenge = create_challenge(serial=serial or "", transaction_id=transaction_id,
+                                    challenge=nonce, data=data, validitytime=validity)
     transaction_id = db_challenge.transaction_id
     return {
         "transaction_id": transaction_id,

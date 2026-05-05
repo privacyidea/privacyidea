@@ -224,6 +224,9 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
                 }
                 if ($scope.loggedInUser.role === "admin") {
                     $scope.changeApplication();
+                    if (AuthFactory.checkRight("getchallenges")) {
+                        $scope.getChallenges();
+                    }
                 }
                 if ($scope.token.container_serial || $scope.token.container_serial !== "") {
                     $scope.tokenIsInContainer = true;
@@ -536,6 +539,33 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
             $scope.pageChanged = function () {
                 //debug: console.log('Page changed to: ' + $scope.params.page);
                 $scope.getMachines();
+            };
+
+            // Active challenges for this token. Queried by exact serial so the
+            // Redis cache fast-path (when enabled) hits — wildcards would
+            // bypass it. Empty most of the time since challenges live 2–5 min.
+            $scope.challengesPerPage = 15;
+            $scope.challengeParams = {page: 1};
+
+            $scope.getChallenges = function () {
+                TokenFactory.getChallenges(function (data) {
+                    $scope.challengedata = data.result.value;
+                }, $scope.tokenSerial, {
+                    page: $scope.challengeParams.page,
+                    pagesize: $scope.challengesPerPage,
+                    sortby: "timestamp",
+                    sortdir: "desc"
+                });
+            };
+
+            $scope.challengePageChanged = function () {
+                $scope.getChallenges();
+            };
+
+            $scope.cancelChallenge = function (transactionId) {
+                TokenFactory.cancelChallenge(function () {
+                    $scope.getChallenges();
+                }, transactionId);
             };
 
             $scope.changeApplication = function () {

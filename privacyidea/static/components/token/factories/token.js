@@ -382,6 +382,18 @@ angular.module("TokenModule", ["privacyideaAuth"])
                         AuthFactory.authError(error.data)
                     });
                 },
+                cancelChallenge: function (callback, transactionId) {
+                    $http.delete(tokenUrl + "/challenges/transaction/" + transactionId, {
+                        headers: {
+                            'PI-Authorization': AuthFactory.getAuthToken(),
+                            'Content-Type': 'application/json'
+                        }
+                    }).then(function (response) {
+                        callback(response.data)
+                    }, function (error) {
+                        AuthFactory.authError(error.data)
+                    });
+                },
                 deleteExpiredChallenges: function (callback) {
                     $http.delete(tokenUrl + "/challenges/expired", {
                         headers: {

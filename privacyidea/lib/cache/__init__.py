@@ -3,6 +3,7 @@ from privacyidea.lib.cache.redis import (  # noqa: F401
     redis_feature_enabled,
     cache_challenge,
     evict_challenge,
+    evict_challenges_for_serial,
     get_challenges_from_cache,
     ChallengeDTO,
 )

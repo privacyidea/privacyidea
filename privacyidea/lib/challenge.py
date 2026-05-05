@@ -34,7 +34,7 @@ import sqlalchemy
 from sqlalchemy import select, delete
 from sqlalchemy.sql import Select
 
-from .cache import get_challenges_from_cache, redis_feature_enabled
+from .cache import evict_challenge, evict_challenges_for_serial, get_challenges_from_cache, redis_feature_enabled
 from .log import log_with
 from .policies.actions import PolicyAction
 from .sqlutils import delete_matching_rows
@@ -116,8 +116,10 @@ def get_challenges_paginate(serial=None, transaction_id=None,
             try:
                 cached = sorted(cached, key=lambda c: getattr(c, sort_key, c.timestamp),
                                 reverse=reverse)
-            except Exception:
-                pass  # unsortable field — leave in natural order
+            except TypeError as e:
+                # Mixed/incomparable types under sort_key — fall back to the
+                # natural insertion order rather than failing the request.
+                log.debug("Cannot sort cached challenges by %r: %s", sort_key, e)
 
             total = len(cached)
             start = (page - 1) * psize
@@ -198,12 +200,31 @@ def extract_answered_challenges(challenges):
 
 def delete_challenges(serial: str = None, transaction_id: str = None) -> int:
     """
-    This function deletes challenges from the database.
+    Delete challenges from both the Redis cache (when active) and the
+    database. With Redis enabled there are no SQL rows for new challenges,
+    so callers that want a token's or container's challenges fully cleared
+    on deletion must reach into both stores — this function does so.
 
     :param serial: challenges for this very serial number
     :param transaction_id: challenges with this very transaction id
-    :return: number of deleted challenges
+    :return: number of challenges removed across both stores
     """
+    removed = 0
+    if redis_feature_enabled("challenges"):
+        if transaction_id is not None:
+            cached = get_challenges_from_cache(transaction_id=transaction_id) or []
+            # Apply the optional serial filter the same way the SQL DELETE would.
+            if serial is not None:
+                cached = [c for c in cached if c.serial == serial]
+            for dto in cached:
+                evict_challenge(dto.transaction_id, dto.serial)
+                removed += 1
+        elif serial is not None:
+            # Iterate the serial-set so we can count removed entries.
+            cached = get_challenges_from_cache(serial=serial) or []
+            evict_challenges_for_serial(serial)
+            removed += len(cached)
+
     delete_stmt = delete(Challenge)
     if serial is not None:
         delete_stmt = delete_stmt.where(Challenge.serial == serial)
@@ -211,7 +232,16 @@ def delete_challenges(serial: str = None, transaction_id: str = None) -> int:
         delete_stmt = delete_stmt.where(Challenge.transaction_id == transaction_id)
     result = db.session.execute(delete_stmt)
     db.session.commit()
-    return result.rowcount
+    return removed + result.rowcount
+
+
+def cancel_challenge(transaction_id: str) -> int:
+    """
+    Cancel a single challenge identified by ``transaction_id``, removing it
+    from both Redis (if cached) and the database. Returns the number of
+    challenges actually removed across both stores.
+    """
+    return delete_challenges(transaction_id=transaction_id)
 
 
 def _build_challenge_criterion(age: int = None) -> 'sqlalchemy.sql.expression.ColumnElement':
@@ -263,7 +293,7 @@ def cancel_enrollment_via_multichallenge(transaction_id: str) -> bool:
     data = challenge.get_data()
 
     if not data or not isinstance(data, dict):
-        log.warning("No data found in challenge %s for transaction_id %s", challenge.id, transaction_id)
+        log.warning("No data found in challenge for transaction_id %s", transaction_id)
         return False
 
     if PolicyAction.ENROLL_VIA_MULTICHALLENGE not in data:
@@ -282,8 +312,8 @@ def cancel_enrollment_via_multichallenge(transaction_id: str) -> bool:
 
     if not data[PolicyAction.ENROLL_VIA_MULTICHALLENGE_OPTIONAL]:
         log.warning(
-            "Challenge %s for transaction_id %s does not have the action %s set to True",
-            challenge.id, transaction_id, PolicyAction.ENROLL_VIA_MULTICHALLENGE_OPTIONAL
+            "Challenge for transaction_id %s does not have the action %s set to True",
+            transaction_id, PolicyAction.ENROLL_VIA_MULTICHALLENGE_OPTIONAL
         )
         return False
 
