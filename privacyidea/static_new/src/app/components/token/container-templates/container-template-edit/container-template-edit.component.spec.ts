@@ -92,4 +92,50 @@ describe("ContainerTemplateEditComponent", () => {
     serviceMock.canSaveTemplate.mockReturnValue(false);
     expect(component.canSaveTemplate()).toBe(false);
   });
+
+  it("containerTypes returns service availableContainerTypes", () => {
+    serviceMock.availableContainerTypes.set(["generic", "smartphone"]);
+    expect(component.containerTypes()).toEqual(["generic", "smartphone"]);
+  });
+
+  it("containerTypesTitleCase title-cases each container type", () => {
+    serviceMock.availableContainerTypes.set(["generic", "smartphone", "yubikey"]);
+    expect(component.containerTypesTitleCase()).toEqual(["Generic", "Smartphone", "Yubikey"]);
+  });
+
+  it("availableTokenTypes delegates to service for the current container_type", () => {
+    serviceMock.getTokenTypesForContainerType.mockReturnValue(["hotp", "totp"]);
+    component.editTemplate({ container_type: "smartphone" });
+    expect(component.availableTokenTypes()).toEqual(["hotp", "totp"]);
+    expect(serviceMock.getTokenTypesForContainerType).toHaveBeenCalledWith("smartphone");
+  });
+
+  it("hasToken is false when no tokens are defined", () => {
+    expect(component.hasToken()).toBe(false);
+  });
+
+  it("hasToken is true when tokens are present", () => {
+    component.editTemplate({ template_options: { tokens: [{ type: "hotp" } as any] } });
+    expect(component.hasToken()).toBe(true);
+  });
+
+  it("initTemplate is frozen to the first template value (linkedSignal previous caching)", () => {
+    const initial = component.template();
+    const initSnapshot = component.initTemplate();
+    expect(initSnapshot).toEqual(initial);
+
+    component.editTemplate({ name: "Changed" });
+    expect(component.initTemplate()).toEqual(initial);
+  });
+
+  it("nameErrorMatcher.isErrorState returns true on conflict", () => {
+    serviceMock.templates.set([{ name: "Taken", container_type: "generic", default: false, template_options: { tokens: [] } }]);
+    component.editTemplate({ name: "Taken" });
+    expect(component.nameErrorMatcher.isErrorState()).toBe(true);
+  });
+
+  it("nameErrorMatcher.isErrorState returns false when no conflict", () => {
+    component.editTemplate({ name: "Unique" });
+    expect(component.nameErrorMatcher.isErrorState()).toBe(false);
+  });
 });

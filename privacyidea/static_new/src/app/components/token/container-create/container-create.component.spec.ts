@@ -226,6 +226,23 @@ describe("ContainerCreateComponent", () => {
     expect(regSpy).toHaveBeenCalledWith("C-001");
   });
 
+  it("registerContainer: sets containerSerial signal before opening dialog", () => {
+    (component as any).registrationConfigComponent = {
+      userStorePassphrase: signal(false),
+      passphraseResponse: signal(""),
+      passphrasePrompt: signal("")
+    };
+
+    let serialAtDialogOpen = "";
+    jest.spyOn(component as any, "openRegistrationDialog").mockImplementation(() => {
+      serialAtDialogOpen = containerServiceMock.containerSerial();
+    });
+
+    (component as any).registerContainer("C-SET-SERIAL");
+
+    expect(serialAtDialogOpen).toBe("C-SET-SERIAL");
+  });
+
   it("registerContainer: stores response, opens dialog, and starts polling", () => {
     const pollSpy = jest.spyOn(containerServiceMock, "startPolling");
     const openDialogSpy = jest.spyOn(dialogServiceMock, "openDialog");
@@ -483,6 +500,23 @@ describe("ContainerCreateComponent", () => {
       expect(createSpy).toHaveBeenCalled();
       expect(wizardComponent.generateQRCode()).toBe(false);
       expect(registerSpy).not.toHaveBeenCalled();
+    });
+
+    it("wizard registerContainer sets containerSerial before openRegistrationDialog is called", () => {
+      (wizardComponent as any).registrationConfigComponent = {
+        userStorePassphrase: signal(false),
+        passphraseResponse: signal(""),
+        passphrasePrompt: signal("")
+      };
+
+      let serialAtDialogOpen = "";
+      jest.spyOn(wizardComponent as any, "openRegistrationDialog").mockImplementation(() => {
+        serialAtDialogOpen = containerServiceMock.containerSerial();
+      });
+
+      (wizardComponent as any).registerContainer("W-SERIAL");
+
+      expect(serialAtDialogOpen).toBe("W-SERIAL");
     });
 
     it("container wizard creates generic container without template and without registration", () => {

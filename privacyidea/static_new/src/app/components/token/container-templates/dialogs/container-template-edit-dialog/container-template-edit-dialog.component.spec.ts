@@ -201,6 +201,62 @@ describe("ContainerTemplateEditDialogComponent", () => {
     expect(clearAllSpy).toHaveBeenCalled();
   });
 
+  it("isNewTemplate is true when no initTemplate is set", () => {
+    expect(component.isNewTemplate()).toBe(true);
+  });
+
+  it("isNewTemplate is false when initTemplate is set", () => {
+    component.initTemplate.set({ name: "Existing", container_type: "generic", default: false, template_options: { tokens: [] } });
+    expect(component.isNewTemplate()).toBe(false);
+  });
+
+  it("nameInvalidPattern is false for valid names (letters, digits, dots, dashes, underscores)", () => {
+    component.template.update((t) => ({ ...t, name: "valid-Name_1.0" }));
+    expect(component.nameInvalidPattern()).toBe(false);
+  });
+
+  it("nameInvalidPattern is true when name contains special characters", () => {
+    component.template.update((t) => ({ ...t, name: "invalid name!" }));
+    expect(component.nameInvalidPattern()).toBe(true);
+  });
+
+  it("nameInvalidPattern is true for names with spaces", () => {
+    component.template.update((t) => ({ ...t, name: "has space" }));
+    expect(component.nameInvalidPattern()).toBe(true);
+  });
+
+  it("nameErrorMatcher.isErrorState returns true on name conflict", () => {
+    containerTemplateServiceMock.templates.set([{ name: "Taken", container_type: "generic", default: false, template_options: { tokens: [] } }]);
+    component.template.update((t) => ({ ...t, name: "Taken" }));
+    expect(component.nameErrorMatcher.isErrorState()).toBe(true);
+  });
+
+  it("nameErrorMatcher.isErrorState returns true when pattern is invalid and name is non-empty", () => {
+    component.template.update((t) => ({ ...t, name: "bad!" }));
+    expect(component.nameErrorMatcher.isErrorState()).toBe(true);
+  });
+
+  it("nameErrorMatcher.isErrorState returns false for empty name (pattern not flagged)", () => {
+    component.template.update((t) => ({ ...t, name: "" }));
+    expect(component.nameErrorMatcher.isErrorState()).toBe(false);
+  });
+
+  it("actions contains a Save action that is disabled when there is a name conflict", () => {
+    containerTemplateServiceMock.templates.set([{ name: "Taken", container_type: "generic", default: false, template_options: { tokens: [] } }]);
+    component.template.update((t) => ({ ...t, name: "Taken" }));
+    const save = component.actions().find((a) => a.value === "save")!;
+    expect(save).toBeDefined();
+    expect(save.disabled).toBe(true);
+  });
+
+  it("actions Save action is not disabled when name is valid and no conflict exists", () => {
+    jest.spyOn(containerTemplateServiceMock, "canSaveTemplate").mockReturnValue(true);
+    containerTemplateServiceMock.templates.set([]);
+    component.template.update((t) => ({ ...t, name: "UniqueValid" }));
+    const save = component.actions().find((a) => a.value === "save")!;
+    expect(save.disabled).toBe(false);
+  });
+
   it("should not call deleteTemplate when save fails even if template was renamed", async () => {
     const oldData = { name: "OldName", container_type: "type1", template_options: { tokens: [] }, default: false };
     component.initTemplate.set(oldData);

@@ -133,4 +133,48 @@ describe("TokenEnrollmentDataComponent", () => {
     component.regenerateQRCode();
     expect(mockNotificationService.warning).toHaveBeenCalledWith("Enrollment parameters are missing. Cannot regenerate token.");
   });
+
+  it("uses pushurl for QR code and URL when googleurl is absent (push token)", () => {
+    fixture.componentRef.setInput("tokenType", "push");
+    fixture.componentRef.setInput("enrolledInputData", {
+      serial: "PUSH001",
+      pushurl: { img: "push-qr-img", value: "push://enroll-url", description: "" }
+    });
+    fixture.detectChanges();
+    expect(component["qrCode"]()).toBe("push-qr-img");
+    expect(component["url"]()).toBe("push://enroll-url");
+  });
+
+  it("hasEnrollmentData is false for NO_QR_CODE type even when otpkey img is present (indexedsecret)", () => {
+    fixture.componentRef.setInput("tokenType", "indexedsecret");
+    fixture.componentRef.setInput("enrolledInputData", {
+      serial: "IDX001",
+      otpkey: { img: "some-qr-img", value: "hexkey", value_b32: "BASE32KEY", description: "" }
+    });
+    fixture.detectChanges();
+    expect(component["hasEnrollmentData"]()).toBe(false);
+  });
+
+  it("hasEnrollmentData is false for spass (no QR, no otpkey, no otps)", () => {
+    fixture.componentRef.setInput("tokenType", "spass");
+    fixture.componentRef.setInput("enrolledInputData", { serial: "SPASS001" });
+    fixture.detectChanges();
+    expect(component["hasEnrollmentData"]()).toBe(false);
+  });
+
+  it("hasEnrollmentData is false for email token", () => {
+    fixture.componentRef.setInput("tokenType", "email");
+    fixture.componentRef.setInput("enrolledInputData", { serial: "EMAIL001" });
+    fixture.detectChanges();
+    expect(component["hasEnrollmentData"]()).toBe(false);
+  });
+
+  it("shows fallback serial message when no enrollment data is available", () => {
+    fixture.componentRef.setInput("tokenType", "spass");
+    fixture.componentRef.setInput("enrolledInputData", { serial: "SPASS001" });
+    fixture.detectChanges();
+    const text = fixture.nativeElement.textContent as string;
+    expect(text).toContain("SPASS001");
+    expect(text).toContain("successfully enrolled");
+  });
 });
