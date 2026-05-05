@@ -247,7 +247,7 @@ export class AuditService implements AuditServiceInterface {
         window.URL.revokeObjectURL(url);
       },
       error: (_) => {
-        this.notificationService.openSnackBar($localize`Failed to download audit log.`);
+        this.notificationService.error($localize`Failed to download audit log.`);
       }
     });
   }
