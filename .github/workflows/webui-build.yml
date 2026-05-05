@@ -9,6 +9,9 @@ on:
       - 'branch-*'
     paths:
       - 'privacyidea/static_new/**'
+  schedule:
+    # Nightly at 01:00 UTC
+    - cron: '0 1 * * *'
 
 permissions:
   contents: read
