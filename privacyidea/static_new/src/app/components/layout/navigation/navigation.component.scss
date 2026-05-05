@@ -41,7 +41,6 @@ $breakpoint-compact: 1822px;
   padding: $toolbar-padding;
   background: var(--mat-sys-surface-variant);
   min-height: 0;
-  @include mat.elevation(4);
 }
 
 .toolbar-brand {
@@ -118,6 +117,8 @@ $breakpoint-compact: 1822px;
     background-color: var(--mat-sys-surface-container-lowest);
     border-left: 1px solid var(--nav-item-border);
     border-right: 1px solid var(--nav-item-border);
+    border-top-right-radius: var(--border-radius);
+    border-top-left-radius: var(--border-radius);
   }
 }
 
@@ -137,6 +138,7 @@ $breakpoint-compact: 1822px;
   overflow: hidden;
   flex-wrap: nowrap;
   @include mat.elevation(3);
+  border-radius: var(--border-radius);
 
   a:not(.overflow-more-btn), button:not(.overflow-more-btn) {
     @include nav-button-base;

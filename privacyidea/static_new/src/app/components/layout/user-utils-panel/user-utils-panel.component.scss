@@ -22,6 +22,8 @@ $breakpoint-compact: 1701px;
   background-color: var(--table-color);
   border-left: 1px solid var(--nav-item-border);
   border-right: 1px solid var(--nav-item-border);
+  border-top-right-radius: var(--border-radius);
+  border-top-left-radius: var(--border-radius);
 }
 
 .utils-group-self-service {
