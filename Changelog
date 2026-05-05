@@ -1,5 +1,9 @@
 Version 3.13.1, 2026-05-05
 
+  * The new WebUI beta has been updated to the current state of development. The menu is now back to the known top
+    side menu with slightly optimized menu structure, because having the horizontal space is better for displaying our
+    tables. The layout has been mostly flattened.
+
   Fixes:
   * Fixed PIN policies preventing passkey enrollment by allowing to set PIN for passkeys during enrollment (#5269)
   * Added the passkey serial to the audit log for /auth requests (#5264)
