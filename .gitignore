@@ -36,3 +36,4 @@ dist/
 *.swp
 /.vscode/
 /ca/
+/privacyidea/static/public/assets/*
