@@ -70,7 +70,7 @@ export class SubscriptionService {
 
   subscriptionsResource = httpResource<PiResponse<Record<string, Subscription>>>(() => {
     this.reloadTrigger();
-    if (!this.contentService.onConfigurationSubscription()) {
+    if (!this.contentService.onSubscription()) {
       return undefined;
     }
     return {

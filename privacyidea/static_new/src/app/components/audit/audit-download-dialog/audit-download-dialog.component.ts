@@ -17,20 +17,20 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component } from "@angular/core";
-import { DialogWrapperComponent } from "../../../shared/dialog/dialog-wrapper/dialog-wrapper.component";
-import { AbstractDialogComponent } from "../../../shared/dialog/abstract-dialog/abstract-dialog.component";
-import { DialogAction } from "../../../../models/dialog";
+import { DialogWrapperComponent } from "../../shared/dialog/dialog-wrapper/dialog-wrapper.component";
+import { AbstractDialogComponent } from "../../shared/dialog/abstract-dialog/abstract-dialog.component";
+import { DialogAction } from "../../../models/dialog";
 
 @Component({
-  selector: "app-search-token-dialog",
-  templateUrl: "./search-token-dialog.html",
-  styleUrl: "./search-token-dialog.scss",
+  selector: "app-audit-download-dialog",
+  templateUrl: "./audit-download-dialog.component.html",
+  styleUrl: "./audit-download-dialog.component.scss",
   standalone: true,
   imports: [DialogWrapperComponent]
 })
-export class SearchTokenDialogComponent extends AbstractDialogComponent<string, boolean> {
+export class AuditDownloadDialogComponent extends AbstractDialogComponent<void, boolean> {
   action: DialogAction<true> = {
-    label: $localize`Start Search`,
+    label: $localize`Proceed`,
     value: true,
     type: "confirm",
     primary: true

@@ -18,71 +18,71 @@
  **/
 
 import { DatePipe, NgClass } from "@angular/common";
-import { Component, computed, inject } from "@angular/core";
-import { MatFabButton, MatIconButton } from "@angular/material/button";
+import { Component, HostListener, computed, inject, signal } from "@angular/core";
+import { MatIconButton } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 import { MatTooltip } from "@angular/material/tooltip";
 import { Router } from "@angular/router";
-import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
-import { ThemeSwitcherComponent } from "@components/shared/theme-switcher/theme-switcher.component";
 import { from } from "rxjs";
-import { ROUTE_PATHS } from "../../../route_paths";
-import { AuditService, AuditServiceInterface } from "../../../services/audit/audit.service";
-import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
-import { CaConnectorService, CaConnectorServiceInterface } from "../../../services/ca-connector/ca-connector.service";
-import { ClientsService, ClientsServiceInterface } from "../../../services/clients/clients.service";
+import { SaveAndExitDialogComponent } from "src/app/components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
+import { ThemeSwitcherComponent } from "src/app/components/shared/theme-switcher/theme-switcher.component";
+import { ROUTE_PATHS } from "src/app/route_paths";
+import { AuditService, AuditServiceInterface } from "src/app/services/audit/audit.service";
+import { AuthService, AuthServiceInterface } from "src/app/services/auth/auth.service";
+import { CaConnectorService, CaConnectorServiceInterface } from "src/app/services/ca-connector/ca-connector.service";
+import { ClientsService, ClientsServiceInterface } from "src/app/services/clients/clients.service";
 import {
   ContainerTemplateService,
   ContainerTemplateServiceInterface
-} from "../../../services/container-template/container-template.service";
-import { ContainerService, ContainerServiceInterface } from "../../../services/container/container.service";
-import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
-import { DialogService, DialogServiceInterface } from "../../../services/dialog/dialog.service";
+} from "src/app/services/container-template/container-template.service";
+import { ContainerService, ContainerServiceInterface } from "src/app/services/container/container.service";
+import { ContentService, ContentServiceInterface } from "src/app/services/content/content.service";
+import { DialogService, DialogServiceInterface } from "src/app/services/dialog/dialog.service";
 import {
   DocumentationService,
   DocumentationServiceInterface
-} from "../../../services/documentation/documentation.service";
-import { EventService, EventServiceInterface } from "../../../services/event/event.service";
+} from "src/app/services/documentation/documentation.service";
+import { EventService, EventServiceInterface } from "src/app/services/event/event.service";
 import {
   MachineResolverService,
   MachineResolverServiceInterface
-} from "../../../services/machine-resolver/machine-resolver.service";
-import { MachineService, MachineServiceInterface } from "../../../services/machine/machine.service";
-import { NotificationService, NotificationServiceInterface } from "../../../services/notification/notification.service";
+} from "src/app/services/machine-resolver/machine-resolver.service";
+import { MachineService, MachineServiceInterface } from "src/app/services/machine/machine.service";
+import { NotificationService, NotificationServiceInterface } from "src/app/services/notification/notification.service";
 import {
   PendingChangesService,
   PendingChangesServiceInterface
-} from "../../../services/pending-changes/pending-changes.service";
-import { PeriodicTaskService } from "../../../services/periodic-task/periodic-task.service";
-import { PolicyService, PolicyServiceInterface } from "../../../services/policies/policies.service";
+} from "src/app/services/pending-changes/pending-changes.service";
+import { PeriodicTaskService } from "src/app/services/periodic-task/periodic-task.service";
+import { PolicyService, PolicyServiceInterface } from "src/app/services/policies/policies.service";
 import {
   PrivacyideaServerService,
   PrivacyideaServerServiceInterface
-} from "../../../services/privacyidea-server/privacyidea-server.service";
+} from "src/app/services/privacyidea-server/privacyidea-server.service";
 import {
   RadiusServerService,
   RadiusServerServiceInterface
-} from "../../../services/radius-server/radius-server.service";
-import { RealmService, RealmServiceInterface } from "../../../services/realm/realm.service";
-import { ResolverService, ResolverServiceInterface } from "../../../services/resolver/resolver.service";
-import { ServiceIdService, ServiceIdServiceInterface } from "../../../services/service-id/service-id.service";
+} from "src/app/services/radius-server/radius-server.service";
+import { RealmService, RealmServiceInterface } from "src/app/services/realm/realm.service";
+import { ResolverService, ResolverServiceInterface } from "src/app/services/resolver/resolver.service";
+import { ServiceIdService, ServiceIdServiceInterface } from "src/app/services/service-id/service-id.service";
 import {
   SessionTimerService,
   SessionTimerServiceInterface
-} from "../../../services/session-timer/session-timer.service";
-import { SmsGatewayService, SmsGatewayServiceInterface } from "../../../services/sms-gateway/sms-gateway.service";
-import { SmtpService, SmtpServiceInterface } from "../../../services/smtp/smtp.service";
-import { SubscriptionService } from "../../../services/subscription/subscription.service";
-import { SystemService, SystemServiceInterface } from "../../../services/system/system.service";
-import { ChallengesService, ChallengesServiceInterface } from "../../../services/token/challenges/challenges.service";
-import { TokenService, TokenServiceInterface } from "../../../services/token/token.service";
-import { TokengroupService, TokengroupServiceInterface } from "../../../services/tokengroup/tokengroup.service";
-import { UserService, UserServiceInterface } from "../../../services/user/user.service";
-import { VersioningService, VersioningServiceInterface } from "../../../services/version/version.service";
+} from "src/app/services/session-timer/session-timer.service";
+import { SmsGatewayService, SmsGatewayServiceInterface } from "src/app/services/sms-gateway/sms-gateway.service";
+import { SmtpService, SmtpServiceInterface } from "src/app/services/smtp/smtp.service";
+import { SubscriptionService } from "src/app/services/subscription/subscription.service";
+import { SystemService, SystemServiceInterface } from "src/app/services/system/system.service";
+import { ChallengesService, ChallengesServiceInterface } from "src/app/services/token/challenges/challenges.service";
+import { TokenService, TokenServiceInterface } from "src/app/services/token/token.service";
+import { TokengroupService, TokengroupServiceInterface } from "src/app/services/tokengroup/tokengroup.service";
+import { UserService, UserServiceInterface } from "src/app/services/user/user.service";
+import { VersioningService, VersioningServiceInterface } from "src/app/services/version/version.service";
 
 @Component({
   selector: "app-user-utils-panel",
-  imports: [MatIcon, MatIconButton, MatTooltip, ThemeSwitcherComponent, MatFabButton, NgClass, DatePipe],
+  imports: [MatIcon, MatIconButton, MatTooltip, ThemeSwitcherComponent, NgClass, DatePipe],
   templateUrl: "./user-utils-panel.component.html",
   styleUrl: "./user-utils-panel.component.scss"
 })
@@ -120,6 +120,12 @@ export class UserUtilsPanelComponent {
   private readonly dialogService: DialogServiceInterface = inject(DialogService);
   protected readonly router: Router = inject(Router);
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
+  isLargeScreen = signal(window.innerWidth > 1630);
+
+  @HostListener("window:resize")
+  onResize() {
+    this.isLargeScreen.set(window.innerWidth > 1630);
+  }
 
   profileText = computed(() => {
     let profileText = this.authService.username();
@@ -146,6 +152,14 @@ export class UserUtilsPanelComponent {
   });
 
   localNode = computed(() => this.authService.showNode());
+
+  profileTooltip = computed(() => {
+    let tooltip = this.profileText();
+    if (this.localNode()) {
+      tooltip += " – " + this.localNode();
+    }
+    return tooltip;
+  });
 
   logout(): void {
     if (this.pendingChangesService.hasChanges) {

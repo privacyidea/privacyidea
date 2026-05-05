@@ -22,7 +22,7 @@ import { MatProgressBar } from "@angular/material/progress-bar";
 import { RouterOutlet } from "@angular/router";
 import { AuthService, AuthServiceInterface } from "../../services/auth/auth.service";
 import { LoadingService, LoadingServiceInterface } from "../../services/loading/loading-service";
-import { MatDrawer, MatDrawerContainer, MatDrawerContent } from "@angular/material/sidenav";
+
 import { NavigationComponent } from "./navigation/navigation.component";
 import { ContentService, ContentServiceInterface } from "../../services/content/content.service";
 import { NavigationSelfServiceComponent } from "./navigation-self-service/navigation-self-service.component";
@@ -32,7 +32,7 @@ import { NavigationSelfServiceWizardComponent } from "./navigation-self-service/
   selector: "layout",
   templateUrl: "layout.component.html",
   standalone: true,
-  imports: [RouterOutlet, MatProgressBar, MatDrawer, MatDrawerContainer, MatDrawerContent, NavigationComponent, NavigationSelfServiceComponent, NavigationSelfServiceWizardComponent],
+  imports: [RouterOutlet, MatProgressBar, NavigationComponent, NavigationSelfServiceComponent, NavigationSelfServiceWizardComponent],
   styleUrl: "./layout.component.scss"
 })
 export class LayoutComponent {
