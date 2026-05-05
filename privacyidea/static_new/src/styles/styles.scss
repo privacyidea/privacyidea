@@ -126,7 +126,6 @@ body {
   --mat-select-focused-arrow-color: var(--mat-sys-primary-light);
   --mdc-outlined-text-field-focus-outline-color: var(--mat-sys-primary-light);
 
-  --drawer-width-admin: var(--overlay-margin);
   --drawer-width-self-service: 256px;
 
   --mat-menu-container-color: var(--mat-sys-surface-container-low);
@@ -139,7 +138,7 @@ body {
   background-color: var(--table-color);
   // subtract double global padding to preserve margin around the component
   // subtract single global padding which is the defined padding above to correctly get the displayed width of the component
-  max-width: calc(100vw - var(--drawer-width) - 2 * var(--double-global-padding) - 2 * var(--global-padding));
+  max-width: calc(100vw - 2 * var(--double-global-padding) - 2 * var(--global-padding));
   max-height: var(--max-height);
   overflow: auto;
 }
@@ -530,6 +529,10 @@ body.self-service-layout {
 
 .margin-left-64 {
   margin-left: 64px;
+}
+
+.width-300 {
+  width: 300px;
 }
 
 .max-width-300 {
