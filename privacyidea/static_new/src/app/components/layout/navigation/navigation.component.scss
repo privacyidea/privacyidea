@@ -63,6 +63,12 @@ $breakpoint-compact: 1822px;
   @include mat.elevation(3);
 }
 
+.toolbar-logo-custom {
+  border-radius: 0;
+  box-shadow: none;
+  object-fit: contain;
+}
+
 .toolbar-logo-text {
   height: 36px;
   width: auto;
@@ -215,6 +221,10 @@ $breakpoint-compact: 1822px;
   color: var(--mat-sys-primary) !important;
 }
 
+:host.has-custom-logo .secondary-toolbar {
+  padding-left: 85px;
+}
+
 @media (max-width: $breakpoint-compact) {
   .toolbar-logo-text {
     display: none;
@@ -255,5 +265,9 @@ $breakpoint-compact: 1822px;
     .docs-button-icon {
       display: inline-flex !important;
     }
+  }
+
+  :host.has-custom-logo .secondary-toolbar {
+    padding-left: 104px;
   }
 }

@@ -78,6 +78,7 @@ export interface SubNavSection {
 
 @Component({
   selector: "app-navigation",
+  host: { "[class.has-custom-logo]": "customLogo()" },
   imports: [
     MatToolbar,
     MatIconButton,

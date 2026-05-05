@@ -26,21 +26,19 @@
       @if (customLogo()) {
         <img
           alt="logo"
-          class="toolbar-logo"
-          height="307"
+          class="toolbar-logo toolbar-logo-custom"
+          height="48"
           ngSrc="{{customLogo()}}"
           ngSrcset="1x"
-          sizes="(max-width: 307px) 100vw, 307px"
-          width="307" />
+          width="48" />
       } @else {
         <img
           alt="logo"
           class="toolbar-logo"
-          height="307"
+          height="48"
           ngSrc="assets/privacyIDEA1.png"
           ngSrcset="1x"
-          sizes="(max-width: 307px) 100vw, 307px"
-          width="307" />
+          width="48" />
 
         <img
           alt="logo-text"
@@ -48,7 +46,6 @@
           height="109"
           ngSrc="assets/logo-text.png"
           ngSrcset="1x"
-          sizes="(max-width: 307px) 100vw, 307px"
           width="575" />
       }
     </a>
@@ -105,36 +102,38 @@
 
 <!-- SECONDARY TOP BAR -->
 <ng-template #footerText>
-  <div class="flex-column footer-text">
-    <div class="footer-text-height"> An open-source project
-      <a
-        href="https://netknights.it/"
-        target="_blank">maintained by NetKnights
-      </a>
+  @if (!customLogo()) {
+    <div class="flex-column footer-text">
+      <div class="footer-text-height"> An open-source project
+        <a
+          href="https://netknights.it/"
+          target="_blank">maintained by NetKnights
+        </a>
+      </div>
+      <div> in collaboration with
+        <a
+          href="https://github.com/privacyidea/privacyidea"
+          target="_blank">community contributors
+        </a>
+      </div>
     </div>
-    <div> in collaboration with
-      <a
-        href="https://github.com/privacyidea/privacyidea"
-        target="_blank">community contributors
-      </a>
+    <div class="footer-icons">
+      <button
+        mat-icon-button
+        (click)="openExternalLink('https://netknights.it/')"
+        aria-label="NetKnights"
+        matTooltip="Maintained by NetKnights">
+        <mat-icon class="mdi--netknights"></mat-icon>
+      </button>
+      <button
+        mat-icon-button
+        (click)="openExternalLink('https://github.com/privacyidea/privacyidea')"
+        aria-label="GitHub"
+        matTooltip="Community contributors on GitHub">
+        <mat-icon class="mdi--github"></mat-icon>
+      </button>
     </div>
-  </div>
-  <div class="footer-icons">
-    <button
-      mat-icon-button
-      (click)="openExternalLink('https://netknights.it/')"
-      aria-label="NetKnights"
-      matTooltip="Maintained by NetKnights">
-      <mat-icon class="mdi--netknights"></mat-icon>
-    </button>
-    <button
-      mat-icon-button
-      (click)="openExternalLink('https://github.com/privacyidea/privacyidea')"
-      aria-label="GitHub"
-      matTooltip="Community contributors on GitHub">
-      <mat-icon class="mdi--github"></mat-icon>
-    </button>
-  </div>
+  }
 </ng-template>
 
 <ng-template #supportDocs>
