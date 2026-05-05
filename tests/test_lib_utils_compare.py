@@ -151,7 +151,6 @@ class UtilsCompareTestCase(MyTestCase):
         # Invalid format
         self.assertRaises(CompareError, _get_datetime, "1. January 2025")
 
-
     def test_09_date_after(self):
         # Test with datetime objects
         condition_date = datetime.datetime(2025, 1, 1, 12, 0, tzinfo=datetime.timezone.utc)

@@ -23,10 +23,10 @@ import { MatPaginator, MatPaginatorModule } from "@angular/material/paginator";
 import { MatSort, MatSortModule } from "@angular/material/sort";
 import { MatIconModule } from "@angular/material/icon";
 import { MatButtonModule } from "@angular/material/button";
-import { MatDialog, MatDialogModule } from "@angular/material/dialog";
-import { MachineDetailsDialogComponent } from "./machine-details-dialog/machine-details-dialog.component";
 import { MatTooltipModule } from "@angular/material/tooltip";
-import { CommonModule } from "@angular/common";
+import { Router } from "@angular/router";
+import { ROUTE_PATHS } from "../../../route_paths";
+
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
@@ -41,13 +41,11 @@ import { TableUtilsService, TableUtilsServiceInterface } from "../../../services
   selector: "app-machines",
   standalone: true,
   imports: [
-    CommonModule,
     MatTableModule,
     MatPaginatorModule,
     MatSortModule,
     MatIconModule,
     MatButtonModule,
-    MatDialogModule,
     MatTooltipModule,
     ScrollToTopDirective,
     MatFormFieldModule,
@@ -60,7 +58,7 @@ import { TableUtilsService, TableUtilsServiceInterface } from "../../../services
 })
 export class MachinesComponent {
   protected readonly machineService: MachineServiceInterface = inject(MachineService);
-  protected readonly dialog: MatDialog = inject(MatDialog);
+  protected readonly router: Router = inject(Router);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
@@ -86,11 +84,7 @@ export class MachinesComponent {
   });
 
   openDetailsDialog(machine: Machine): void {
-    this.dialog.open(MachineDetailsDialogComponent, {
-      data: { ...machine },
-      width: "auto",
-      maxWidth: "100vw"
-    });
+    this.router.navigateByUrl(ROUTE_PATHS.CONFIGURATION_MACHINES_DETAILS + machine.id + "?resolver=" + encodeURIComponent(machine.resolver_name));
   }
 
   onFilterInput(value: string): void {

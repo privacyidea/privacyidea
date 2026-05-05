@@ -44,11 +44,11 @@ def upgrade():
         mysql_row_format='DYNAMIC'
         )
     except Exception as exx:
-        print("Could not create table policycondition: {!r}".format(exx))
+        print(f"Could not create table policycondition: {exx!r}")
     try:
         op.drop_column('policy', 'condition')
     except Exception as exx:
-        print("Could not drop column policy.condition: {!r}".format(exx))
+        print(f"Could not drop column policy.condition: {exx!r}")
 
 def downgrade():
     op.add_column('policy', sa.Column('condition', sa.INTEGER(), nullable=False))

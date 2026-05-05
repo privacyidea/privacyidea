@@ -18,7 +18,7 @@
  **/
 
 import { Component, computed, inject, output, signal, linkedSignal, input } from "@angular/core";
-import { CommonModule } from "@angular/common";
+
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
@@ -46,7 +46,6 @@ import {
   selector: "app-edit-additional-conditions",
   standalone: true,
   imports: [
-    CommonModule,
     MatExpansionModule,
     MatFormFieldModule,
     MatInputModule,

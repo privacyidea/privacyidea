@@ -61,14 +61,14 @@ class Monitoring(MonitoringBase):
         # resources
         connect_string = self.config.get("PI_MONITORING_SQL_URI", self.config.get(
             "SQLALCHEMY_DATABASE_URI"))
-        log.debug("using the connect string {0!s}".format(censor_connect_string(connect_string)))
+        log.debug(f"using the connect string {censor_connect_string(connect_string)!s}")
         try:
             pool_size = self.config.get("PI_MONITORING_POOL_SIZE", 20)
             engine = create_engine(
                 connect_string,
                 pool_size=pool_size,
                 pool_recycle=self.config.get("PI_MONITORING_POOL_RECYCLE", 600))
-            log.debug("Using SQL pool size of {}".format(pool_size))
+            log.debug(f"Using SQL pool size of {pool_size}")
         except TypeError:
             # SQLite does not support pool_size
             engine = create_engine(connect_string)
@@ -83,13 +83,14 @@ class Monitoring(MonitoringBase):
             self.session.commit()
             if reset_values:
                 # Successfully saved the new stats entry, so remove old entries
-                delete_stmt = delete(MonitoringStats).where(MonitoringStats.stats_key == stats_key, MonitoringStats.timestamp < utc_timestamp)
+                delete_stmt = delete(MonitoringStats).where(MonitoringStats.stats_key == stats_key,
+                                                            MonitoringStats.timestamp < utc_timestamp)
                 self.session.execute(delete_stmt)
                 self.session.commit()
         except Exception as exx:  # pragma: no cover
-            log.error("exception {0!r}".format(exx))
-            log.error("DATA: {0!s} -> {1!s}".format(stats_key, stats_value))
-            log.debug("{0!s}".format(traceback.format_exc()))
+            log.error(f"exception {exx!r}")
+            log.error(f"DATA: {stats_key!s} -> {stats_value!s}")
+            log.debug(f"{traceback.format_exc()!s}")
             self.session.rollback()
 
         finally:
@@ -110,9 +111,9 @@ class Monitoring(MonitoringBase):
             r = result.rowcount
             self.session.commit()
         except Exception as exx:  # pragma: no cover
-            log.error("exception {0!r}".format(exx))
-            log.error("could not delete statskeys {0!s}".format(stats_key))
-            log.debug("{0!s}".format(traceback.format_exc()))
+            log.error(f"exception {exx!r}")
+            log.error(f"could not delete statskeys {stats_key!s}")
+            log.debug(f"{traceback.format_exc()!s}")
             self.session.rollback()
 
         finally:
@@ -132,9 +133,9 @@ class Monitoring(MonitoringBase):
             for stat_key in monitoring_stats_keys:
                 keys.append(stat_key)
         except Exception as exx:  # pragma: no cover
-            log.error("exception {0!r}".format(exx))
+            log.error(f"exception {exx!r}")
             log.error("could not fetch list of keys")
-            log.debug("{0!s}".format(traceback.format_exc()))
+            log.debug(f"{traceback.format_exc()!s}")
             self.session.rollback()
 
         finally:
@@ -157,9 +158,9 @@ class Monitoring(MonitoringBase):
                 aware_timestamp = ms.timestamp.replace(tzinfo=tzutc())
                 values.append((aware_timestamp, ms.stats_value))
         except Exception as exx:  # pragma: no cover
-            log.error("exception {0!r}".format(exx))
+            log.error(f"exception {exx!r}")
             log.error("could not fetch list of keys")
-            log.debug("{0!s}".format(traceback.format_exc()))
+            log.debug(f"{traceback.format_exc()!s}")
             self.session.rollback()
         finally:
             self.session.close()
@@ -168,14 +169,15 @@ class Monitoring(MonitoringBase):
     def get_last_value(self, stats_key):
         val = None
         try:
-            stmt = select(MonitoringStats).where(MonitoringStats.stats_key == stats_key).order_by(MonitoringStats.timestamp.desc())
+            stmt = (select(MonitoringStats).where(MonitoringStats.stats_key == stats_key)
+                    .order_by(MonitoringStats.timestamp.desc()))
             monitoring_stat = self.session.scalars(stmt).first()
             if monitoring_stat:
                 val = monitoring_stat.stats_value
         except Exception as exx:  # pragma: no cover
-            log.error("exception {0!r}".format(exx))
+            log.error(f"exception {exx!r}")
             log.error("could not fetch list of keys")
-            log.debug("{0!s}".format(traceback.format_exc()))
+            log.debug(f"{traceback.format_exc()!s}")
             self.session.rollback()
         finally:
             self.session.close()

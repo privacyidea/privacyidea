@@ -46,8 +46,8 @@ import { MatInput } from "@angular/material/input";
 import { NgClass } from "@angular/common";
 import { RouterLink } from "@angular/router";
 import { ScrollToTopDirective } from "../shared/directives/app-scroll-to-top.directive";
-import { MatIconButton } from "@angular/material/button";
-import { MatIcon } from "@angular/material/icon";
+import { MatButtonModule } from "@angular/material/button";
+import { MatIcon, MatIconModule } from "@angular/material/icon";
 import { FilterValue } from "../../core/models/filter_value/filter_value";
 
 const columnKeysMap = [
@@ -104,9 +104,9 @@ const columnKeysMap = [
     RouterLink,
     ScrollToTopDirective,
     ClearableInputComponent,
-    RouterLink,
     MatIcon,
-    MatIconButton
+    MatButtonModule,
+    MatIconModule
   ],
   templateUrl: "./audit.component.html",
   styleUrl: "./audit.component.scss"
@@ -125,12 +125,9 @@ export class AuditComponent {
   filterInput!: ElementRef<HTMLInputElement>;
 
   totalLength: WritableSignal<number> = linkedSignal({
-    source: this.auditService.auditResource.value,
+    source: () => this.auditService.auditResource.hasValue() ? this.auditService.auditResource.value() : undefined,
     computation: (auditResource, previous) => {
-      if (auditResource) {
-        return auditResource.result?.value?.count ?? 0;
-      }
-      return previous?.value ?? 0;
+      return auditResource?.result?.value?.count ?? previous?.value ?? 0;
     }
   });
   emptyResource: WritableSignal<AuditData[]> = linkedSignal({
@@ -139,7 +136,7 @@ export class AuditComponent {
       Array.from({ length: pageSize }, () => Object.fromEntries(this.columnKeysMap.map((col) => [col.key, ""])))
   });
   auditDataSource: WritableSignal<MatTableDataSource<AuditData>> = linkedSignal({
-    source: this.auditService.auditResource.value,
+    source: () => this.auditService.auditResource.hasValue() ? this.auditService.auditResource.value() : undefined,
     computation: (auditResource, previous) => {
       if (auditResource) {
         return new MatTableDataSource(auditResource.result?.value?.auditdata);

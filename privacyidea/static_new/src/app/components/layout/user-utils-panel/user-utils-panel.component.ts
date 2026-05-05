@@ -25,6 +25,7 @@ import { MatFabButton, MatIconButton } from "@angular/material/button";
 import { ThemeSwitcherComponent } from "@components/shared/theme-switcher/theme-switcher.component";
 import { DatePipe, NgClass } from "@angular/common";
 import { Router } from "@angular/router";
+import { from } from "rxjs";
 import { NotificationService, NotificationServiceInterface } from "../../../services/notification/notification.service";
 import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
 import { TokenService, TokenServiceInterface } from "../../../services/token/token.service";
@@ -56,7 +57,7 @@ import {
 } from "../../../services/session-timer/session-timer.service";
 import { ResolverService, ResolverServiceInterface } from "../../../services/resolver/resolver.service";
 import { SmtpService, SmtpServiceInterface } from "../../../services/smtp/smtp.service";
-import { RadiusService, RadiusServiceInterface } from "../../../services/radius/radius.service";
+import { RadiusServerService, RadiusServerServiceInterface } from "../../../services/radius-server/radius-server.service";
 import { SmsGatewayService, SmsGatewayServiceInterface } from "../../../services/sms-gateway/sms-gateway.service";
 import {
   PrivacyideaServerService,
@@ -69,6 +70,12 @@ import { PeriodicTaskService } from "../../../services/periodic-task/periodic-ta
 import { EventService, EventServiceInterface } from "../../../services/event/event.service";
 import { SystemService, SystemServiceInterface } from "../../../services/system/system.service";
 import { ROUTE_PATHS } from "../../../route_paths";
+import {
+  PendingChangesService,
+  PendingChangesServiceInterface
+} from "../../../services/pending-changes/pending-changes.service";
+import { DialogService, DialogServiceInterface } from "../../../services/dialog/dialog.service";
+import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 
 @Component({
   selector: "app-user-utils-panel",
@@ -97,7 +104,7 @@ export class UserUtilsPanelComponent {
   protected readonly sessionTimerService: SessionTimerServiceInterface = inject(SessionTimerService);
   private readonly resolverService: ResolverServiceInterface = inject(ResolverService);
   private readonly smtpService: SmtpServiceInterface = inject(SmtpService);
-  private readonly radiusService: RadiusServiceInterface = inject(RadiusService);
+  private readonly radiusService: RadiusServerServiceInterface = inject(RadiusServerService);
   private readonly smsGatewayService: SmsGatewayServiceInterface = inject(SmsGatewayService);
   private readonly privacyideaService: PrivacyideaServerServiceInterface = inject(PrivacyideaServerService);
   private readonly tokengroupService: TokengroupServiceInterface = inject(TokengroupService);
@@ -106,6 +113,8 @@ export class UserUtilsPanelComponent {
   protected readonly periodicTaskService = inject(PeriodicTaskService);
   protected readonly eventService: EventServiceInterface = inject(EventService);
   protected readonly systemService: SystemServiceInterface = inject(SystemService);
+  private readonly pendingChangesService: PendingChangesServiceInterface = inject(PendingChangesService);
+  private readonly dialogService: DialogServiceInterface = inject(DialogService);
   protected readonly router: Router = inject(Router);
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
 
@@ -136,7 +145,33 @@ export class UserUtilsPanelComponent {
   localNode = computed(() => this.authService.showNode());
 
   logout(): void {
-    this.authService.logout();
+    if (this.pendingChangesService.hasChanges) {
+      this.dialogService
+        .openDialog({
+          component: SaveAndExitDialogComponent,
+          data: {
+            saveExitDisabled: !this.pendingChangesService.validChanges,
+            allowSaveExit: true
+          }
+        })
+        .afterClosed()
+        .subscribe((result) => {
+          if (result === "discard") {
+            this.pendingChangesService.clearAllRegistrations();
+            this.authService.logout();
+          } else if (result === "save-exit") {
+            const saveResult = this.pendingChangesService.save();
+            from(Promise.resolve(saveResult)).subscribe((success) => {
+              if (success) {
+                this.pendingChangesService.clearAllRegistrations();
+                this.authService.logout();
+              }
+            });
+          }
+        });
+    } else {
+      this.authService.logout();
+    }
   }
 
   refreshPage() {

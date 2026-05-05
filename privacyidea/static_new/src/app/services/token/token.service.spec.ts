@@ -26,7 +26,7 @@ import { TestBed } from "@angular/core/testing";
 import { TokenService } from "./token.service";
 import { AuthService } from "../auth/auth.service";
 import { FilterValue } from "../../core/models/filter_value/filter_value";
-import { MockContentService } from "../../../testing/mock-services";
+import { MockContentService, MockPiResponse } from "../../../testing/mock-services";
 import { ROUTE_PATHS } from "../../route_paths";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
 import { environment } from "../../../environments/environment";
@@ -34,9 +34,10 @@ import { MockAuthService } from "../../../testing/mock-services/mock-auth-servic
 import { DialogService } from "../dialog/dialog.service";
 import { MockDialogService } from "../../../testing/mock-services/mock-dialog-service";
 import { MockMatDialogRef } from "../../../testing/mock-mat-dialog-ref";
+import { signal } from "@angular/core";
 
 class MockNotificationService {
-  openSnackBar = jest.fn();
+  success = jest.fn(); error = jest.fn(); warning = jest.fn(); handleResourceError = jest.fn();
 }
 
 describe("TokenService", () => {
@@ -49,6 +50,7 @@ describe("TokenService", () => {
   let contentServiceMock: MockContentService;
   let dialogServiceMock: MockDialogService;
   let getSpy: jest.SpyInstance;
+  let mockBackend: HttpTestingController;
 
   beforeEach(() => {
     TestBed.resetTestingModule();
@@ -68,6 +70,7 @@ describe("TokenService", () => {
     contentServiceMock = TestBed.inject(ContentService) as unknown as MockContentService;
     dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
     http = TestBed.inject(HttpClient);
+    mockBackend = TestBed.inject(HttpTestingController);
     postSpy = jest.spyOn(http, "post");
     deleteSpy = jest.spyOn(http, "delete");
     authService = TestBed.inject(AuthService) as any;
@@ -126,7 +129,7 @@ describe("TokenService", () => {
         },
         error: (err) => {
           expect(err).toBe(error);
-          expect(notificationService.openSnackBar).toHaveBeenCalledWith("Failed to toggle active. boom");
+          expect(notificationService.error).toHaveBeenCalledWith("Failed to toggle active. boom");
           done();
         }
       });
@@ -148,9 +151,9 @@ describe("TokenService", () => {
   it("deleteToken delegates to HttpClient.delete", () => {
     deleteSpy.mockReturnValue(of({ success: true } as any));
 
-    tokenService.deleteToken("DEL1").subscribe();
+    tokenService.deleteToken("DEL/1").subscribe();
 
-    expect(deleteSpy).toHaveBeenCalledWith(`${tokenService.tokenBaseUrl}DEL1`, {
+    expect(deleteSpy).toHaveBeenCalledWith(`${tokenService.tokenBaseUrl}${encodeURIComponent("DEL/1")}`, {
       headers: authService.getHeaders()
     });
   });
@@ -185,20 +188,20 @@ describe("TokenService", () => {
     beforeEach(() => postSpy.mockClear());
 
     it("routes special keys via /set and others via /info", () => {
-      const infos = { hashlib: "sha1", custom: "foo" };
+      const infos = { hashlib: "sha1", "custom/1": "foo" };
       postSpy.mockReturnValue(of({ success: true } as any));
 
-      tokenService.setTokenInfos("serial", infos).subscribe();
+      tokenService.setTokenInfos("serial/1", infos).subscribe();
 
       expect(postSpy).toHaveBeenNthCalledWith(
         1,
         `${tokenService.tokenBaseUrl}set`,
-        { serial: "serial", hashlib: "sha1" },
+        { serial: "serial/1", hashlib: "sha1" },
         { headers: authService.getHeaders() }
       );
       expect(postSpy).toHaveBeenNthCalledWith(
         2,
-        `${tokenService.tokenBaseUrl}info/serial/custom`,
+        `${tokenService.tokenBaseUrl}info/${encodeURIComponent("serial/1")}/${encodeURIComponent("custom/1")}`,
         { value: "foo" },
         { headers: authService.getHeaders() }
       );
@@ -277,7 +280,7 @@ describe("TokenService", () => {
       await Promise.resolve();
 
       expect(errors[0]).toBe(boom);
-      expect(notificationService.openSnackBar).toHaveBeenCalledWith("Failed to poll token state. poll-error");
+      expect(notificationService.error).toHaveBeenCalledWith("Failed to poll token state. poll-error");
     });
     jest.useRealTimers();
   });
@@ -361,7 +364,7 @@ describe("TokenService", () => {
       tokenService.revokeToken("serial").subscribe({
         error: (e) => {
           expect(e).toBe(boom);
-          expect(notificationService.openSnackBar).toHaveBeenCalledWith("Failed to revoke token. rvk");
+          expect(notificationService.error).toHaveBeenCalledWith("Failed to revoke token. rvk");
           done();
         }
       });
@@ -473,7 +476,7 @@ describe("TokenService", () => {
         error: { result: { error: { message: "boom" } } }
       });
 
-      expect(notificationService.openSnackBar).toHaveBeenCalledWith(expected);
+      expect(notificationService.error).toHaveBeenCalledWith(expected);
     });
 
     it("assignUserToAll stops on first error and shows snackbar", (done) => {
@@ -492,7 +495,7 @@ describe("TokenService", () => {
           next: () => fail("should error"),
           error: (e) => {
             expect(e.error.result.error.message).toBe("first");
-            expect(notificationService.openSnackBar).toHaveBeenCalledWith("Failed to assign user to all tokens. first");
+            expect(notificationService.error).toHaveBeenCalledWith("Failed to assign user to all tokens. first");
             done();
           }
         });
@@ -508,7 +511,7 @@ describe("TokenService", () => {
         next: () => fail("should error"),
         error: (e) => {
           expect(e.error.result.error.message).toBe("oops");
-          expect(notificationService.openSnackBar).toHaveBeenCalledWith(
+          expect(notificationService.error).toHaveBeenCalledWith(
             "Failed to unassign user from all tokens. oops"
           );
           done();
@@ -544,7 +547,7 @@ describe("TokenService", () => {
         error: (e) => {
           expect(e).toBe(boom);
           // service reads error.result?.error?.message; keep assertion loose
-          expect(notificationService.openSnackBar).toHaveBeenCalledWith(
+          expect(notificationService.error).toHaveBeenCalledWith(
             expect.stringContaining("Failed to delete tokens.")
           );
           done();
@@ -583,7 +586,7 @@ describe("TokenService", () => {
 
       expect(bulkDeleteSpy).toHaveBeenCalledWith(["S1"]);
       setTimeout(() => {
-        expect(notificationService.openSnackBar).toHaveBeenCalledWith("Successfully deleted 1 token.");
+        expect(notificationService.success).toHaveBeenCalledWith("Successfully deleted 1 token.");
         expect(afterDeleteCallback).toHaveBeenCalled();
         done();
       }, 0);
@@ -604,7 +607,7 @@ describe("TokenService", () => {
       tokenService.bulkDeleteWithConfirmDialog(["S1", "TOKEN1", "TOKEN2"]);
 
       setTimeout(() => {
-        expect(notificationService.openSnackBar).toHaveBeenCalledWith(
+        expect(notificationService.success).toHaveBeenCalledWith(
           "Successfully deleted 1 token.\nThe following tokens failed to delete: TOKEN1\nYou are not authorized to delete the following tokens: TOKEN2"
         );
         done();
@@ -621,7 +624,7 @@ describe("TokenService", () => {
       tokenService.bulkDeleteWithConfirmDialog(["S1"]);
 
       setTimeout(() => {
-        expect(notificationService.openSnackBar).toHaveBeenCalledWith("An error occurred while deleting tokens.");
+        expect(notificationService.error).toHaveBeenCalledWith("An error occurred while deleting tokens.");
         done();
       }, 0);
     });
@@ -647,7 +650,7 @@ describe("TokenService", () => {
       tokenService.deleteInfo("SER", "infokey").subscribe({
         error: (e) => {
           expect(e).toBe(boom);
-          expect(notificationService.openSnackBar).toHaveBeenCalledWith("Failed to delete token info. di");
+          expect(notificationService.error).toHaveBeenCalledWith("Failed to delete token info. di");
           done();
         }
       });
@@ -665,7 +668,7 @@ describe("TokenService", () => {
       tokenService.unassignUser("SER").subscribe({
         error: (e) => {
           expect(e).toBe(boom);
-          expect(notificationService.openSnackBar).toHaveBeenCalledWith("Failed to unassign user. uu");
+          expect(notificationService.error).toHaveBeenCalledWith("Failed to unassign user. uu");
           done();
         }
       });
@@ -683,7 +686,7 @@ describe("TokenService", () => {
       tokenService.assignUser({ tokenSerial: "S", username: "u", realm: "r" }).subscribe({
         error: (e) => {
           expect(e).toBe(boom);
-          expect(notificationService.openSnackBar).toHaveBeenCalledWith("Failed to assign user. au");
+          expect(notificationService.error).toHaveBeenCalledWith("Failed to assign user. au");
           done();
         }
       });
@@ -701,7 +704,7 @@ describe("TokenService", () => {
       tokenService.resetFailCount("SER").subscribe({
         error: (e) => {
           expect(e).toBe(boom);
-          expect(notificationService.openSnackBar).toHaveBeenCalledWith("Failed to reset fail count. rf");
+          expect(notificationService.error).toHaveBeenCalledWith("Failed to reset fail count. rf");
           done();
         }
       });
@@ -719,7 +722,7 @@ describe("TokenService", () => {
       tokenService.setTokengroup("SER", ["g"]).subscribe({
         error: (e) => {
           expect(e).toBe(boom);
-          expect(notificationService.openSnackBar).toHaveBeenCalledWith("Failed to set token group. stg");
+          expect(notificationService.error).toHaveBeenCalledWith("Failed to set token group. stg");
           done();
         }
       });
@@ -738,7 +741,7 @@ describe("TokenService", () => {
       tokenService.setTokenInfos("SER", { hashlib: "sha1", custom: "x" }).subscribe({
         next: () => fail("expected error"),
         error: (e) => {
-          expect(notificationService.openSnackBar).toHaveBeenCalledWith("Failed to set token info. oops");
+          expect(notificationService.error).toHaveBeenCalledWith("Failed to set token info. oops");
           done();
         }
       });
@@ -768,7 +771,7 @@ describe("TokenService", () => {
       tokenService.getSerial("111111", new HttpParams()).subscribe({
         error: (e) => {
           expect(e).toBe(boom);
-          expect(notificationService.openSnackBar).toHaveBeenCalledWith("Failed to get count. cnt");
+          expect(notificationService.error).toHaveBeenCalledWith("Failed to get count. cnt");
           done();
         }
       });
@@ -808,7 +811,7 @@ describe("TokenService", () => {
       tokenService.getTokengroups().subscribe({
         error: (e) => {
           expect(e).toBe(boom);
-          expect(notificationService.openSnackBar).toHaveBeenCalledWith("Failed to get tokengroups. tg");
+          expect(notificationService.error).toHaveBeenCalledWith("Failed to get tokengroups. tg");
           done();
         }
       });
@@ -826,7 +829,7 @@ describe("TokenService", () => {
       tokenService.saveTokenDetail("S", "description", "d").subscribe({
         error: (e) => {
           expect(e).toBe(boom);
-          expect(notificationService.openSnackBar).toHaveBeenCalledWith("Failed to set token detail. std");
+          expect(notificationService.error).toHaveBeenCalledWith("Failed to set token detail. std");
           done();
         }
       });
@@ -852,7 +855,7 @@ describe("TokenService", () => {
     it("should return undefined if route is not USER_DETAILS", async () => {
       contentServiceMock.routeUrl.update(() => ROUTE_PATHS.TOKENS);
       const mockBackend = TestBed.inject(HttpTestingController);
-      TestBed.flushEffects();
+      TestBed.tick();
 
       // Expect and flush the HTTP request
       mockBackend.expectNone(environment.proxyUrl + "/token/");
@@ -868,7 +871,7 @@ describe("TokenService", () => {
       contentServiceMock.detailsUsername.set(user);
       tokenService.userRealm.set(realm);
       const mockBackend = TestBed.inject(HttpTestingController);
-      TestBed.flushEffects();
+      TestBed.tick();
 
       // Expect and flush the HTTP request
       const req = mockBackend.expectOne(environment.proxyUrl + "/token/?user=" + user + "&realm=" + realm);
@@ -876,6 +879,121 @@ describe("TokenService", () => {
       await Promise.resolve();
 
       expect(tokenService.userTokenResource.value()).toBeDefined();
+    });
+  });
+
+  describe("tokenSerialResource / tokenOptions", () => {
+
+    it("tokenOptions falls back to default when resource empty", () => {
+      expect(tokenService.tokenOptions()).toEqual([]);
+    });
+
+    it("should update tokenOptions from tokenSerialResource on successful response", async () => {
+      tokenService.selectedToken.set("OATH123");
+      TestBed.tick();
+
+      const req = mockBackend.expectOne((r) => r.url === "/token/");
+      expect(req.request.method).toBe("GET");
+      const tokens = [{ serial: "OATH123" }];
+      req.flush(MockPiResponse.fromValue({ count: 1, current: 1, tokens: tokens }));
+      await Promise.resolve();
+
+      expect(tokenService.tokenSerialResource.hasValue()).toBe(true);
+      expect(tokenService.tokenOptions()).toEqual(["OATH123"]);
+    });
+
+    it("should handle error state from tokenSerialResource", async () => {
+      tokenService.selectedToken.set("OATH123");
+      TestBed.tick();
+
+      const req = mockBackend.expectOne((r) => r.url === "/token/");
+      expect(req.request.method).toBe("GET");
+      req.flush(MockPiResponse.fromError({ message: "Permission denied" }), {
+        status: 403, statusText: "Permission denied"
+      });
+      await Promise.resolve();
+
+      expect(tokenService.tokenSerialResource.hasValue()).toBe(false);
+      expect(tokenService.tokenOptions()).toEqual([]);
+    });
+  });
+
+  describe("tokenTypesResource / tokenTypeOptions", () => {
+
+    it("tokenTypeOptions falls back to default when resource empty", () => {
+      expect(tokenService.tokenTypeOptions()).toEqual([]);
+    });
+
+    it("should update tokenTypeOptions from tokenTypesResource on successful response", async () => {
+      contentServiceMock.onTokens = signal(true);
+      TestBed.tick();
+
+      const req = mockBackend.expectOne((r) => r.url === "/auth/rights");
+      expect(req.request.method).toBe("GET");
+      const responseValue = { hotp: "text" };
+      req.flush(MockPiResponse.fromValue(responseValue));
+      await Promise.resolve();
+
+      expect(tokenService.tokenTypesResource.hasValue()).toBe(true);
+      expect(tokenService.tokenTypeOptions()).toHaveLength(1);
+      expect(tokenService.tokenTypeOptions()).toEqual([{
+        key: "hotp",
+        name: "HOTP",
+        info: "text",
+        text: "The HOTP token is an event based token. With a smartphone app like the privacyIDEA Authenticator" +
+          " you can turn your smartphone into an authentication device."
+      }]);
+    });
+
+    it("should handle error state from tokenTypesResource", async () => {
+      contentServiceMock.onTokens = signal(true);
+      TestBed.tick();
+
+      const req = mockBackend.expectOne((r) => r.url === "/auth/rights");
+      expect(req.request.method).toBe("GET");
+      req.flush(MockPiResponse.fromError({ message: "Permission denied" }), {
+        status: 403, statusText: "Permission denied"
+      });
+      await Promise.resolve();
+
+      expect(tokenService.tokenTypesResource.hasValue()).toBe(false);
+      expect(tokenService.tokenTypeOptions()).toEqual([]);
+    });
+  });
+
+  describe("tokenResource / tokenResourceValue", () => {
+
+    it("tokenResourceValue falls back to default when resource empty", () => {
+      expect(tokenService.tokenResourceValue()).toBeNull();
+    });
+
+    it("should update tokenResourceValue from tokenResource on successful response", async () => {
+      contentServiceMock.onTokens = signal(true);
+      TestBed.tick();
+
+      const req = mockBackend.expectOne((r) => r.url === "/token/");
+      expect(req.request.method).toBe("GET");
+      const responseValue = { count: 1, current: 1, tokens: [{ serial: "OATH123" }] };
+      req.flush(MockPiResponse.fromValue(responseValue));
+      await Promise.resolve();
+
+      expect(tokenService.tokenResource.hasValue()).toBe(true);
+      expect(tokenService.tokenResourceValue()).toEqual(responseValue);
+    });
+
+    it("should handle error state from tokenResource", async () => {
+      contentServiceMock.onTokens = signal(true);
+      TestBed.tick();
+
+      const req = mockBackend.expectOne((r) => r.url === "/token/");
+      expect(req.request.method).toBe("GET");
+      req.flush(MockPiResponse.fromError({ message: "Permission denied" }), {
+        status: 403, statusText: "Permission denied"
+      });
+      await Promise.resolve();
+
+      expect(tokenService.tokenResource.hasValue()).toBe(false);
+      expect(tokenService.tokenResourceValue()).toBeNull();
     });
   });
 });

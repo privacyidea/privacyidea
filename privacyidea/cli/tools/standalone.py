@@ -110,8 +110,8 @@ def cli():
   / _ \/ __/ / |/ / _ `/ __/ // // // // / _// __ |
  / .__/_/ /_/|___/\_,_/\__/\_, /___/____/___/_/ |_|  Standalone
 /_/                       /___/
-{0!s:>51}
-    """.format('v{0!s}'.format(get_version_number())))
+{!s:>51}
+    """.format(f'v{get_version_number()!s}'))
 
 
 @click.command()
@@ -146,7 +146,7 @@ def create(ctx, instance):
         secret_key = DefaultSecurityModule.random(24)
         pi_pepper = create_pepper()
 
-        secret_key_hex = ''.join('\\x{:02x}'.format(b) for b in secret_key)
+        secret_key_hex = ''.join(f'\\x{b:02x}' for b in secret_key)
         # create a pi.cfg
         pi_cfg = instance / 'pi.cfg'
         with open(pi_cfg, 'w') as f:

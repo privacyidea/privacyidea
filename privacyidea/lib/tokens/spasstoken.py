@@ -42,8 +42,6 @@ from privacyidea.lib.decorators import check_token_locked
 from privacyidea.lib.policy import SCOPE, GROUP
 from privacyidea.lib.policies.actions import PolicyAction
 
-optional = True
-required = False
 
 log = logging.getLogger(__name__)
 

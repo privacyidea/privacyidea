@@ -18,6 +18,7 @@
  **/
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { provideZonelessChangeDetection } from "@angular/core";
 
 import { UserUtilsPanelComponent } from "./user-utils-panel.component";
 import { ActivatedRoute, provideRouter, Router } from "@angular/router";
@@ -34,9 +35,11 @@ import {
   MockLocalService,
   MockMachineService,
   MockNotificationService,
+  MockPendingChangesService,
   MockSessionTimerService,
   MockTokenService,
-  MockUserService
+  MockUserService,
+  MockDialogService
 } from "../../../../testing/mock-services";
 import { ContainerService } from "../../../services/container/container.service";
 import { ChallengesService } from "../../../services/token/challenges/challenges.service";
@@ -48,6 +51,8 @@ import { AuthService } from "../../../services/auth/auth.service";
 import { MockAuthService } from "../../../../testing/mock-services/mock-auth-service";
 import { SessionTimerService } from "../../../services/session-timer/session-timer.service";
 import { NotificationService } from "../../../services/notification/notification.service";
+import { PendingChangesService } from "../../../services/pending-changes/pending-changes.service";
+import { DialogService } from "../../../services/dialog/dialog.service";
 import { MatSnackBar } from "@angular/material/snack-bar";
 import { ROUTE_PATHS } from "../../../route_paths";
 
@@ -64,6 +69,8 @@ describe("UserUtilsPanelComponent", () => {
   let authService: MockAuthService;
   let sessionTimerService: MockSessionTimerService;
   let notificationService: MockNotificationService;
+  let pendingChangesService: MockPendingChangesService;
+  let dialogService: MockDialogService;
   let router: Router;
 
   beforeAll(async () => {
@@ -101,7 +108,10 @@ describe("UserUtilsPanelComponent", () => {
         { provide: AuthService, useClass: MockAuthService },
         { provide: SessionTimerService, useClass: MockSessionTimerService },
         { provide: NotificationService, useClass: MockNotificationService },
+        { provide: PendingChangesService, useClass: MockPendingChangesService },
+        { provide: DialogService, useClass: MockDialogService },
         { provide: MatSnackBar, useValue: { open: jest.fn() } },
+        provideZonelessChangeDetection(),
         MockLocalService,
         MockNotificationService
       ]
@@ -121,6 +131,8 @@ describe("UserUtilsPanelComponent", () => {
     authService = TestBed.inject(AuthService) as unknown as MockAuthService;
     sessionTimerService = TestBed.inject(SessionTimerService) as unknown as MockSessionTimerService;
     notificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;
+    pendingChangesService = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
+    dialogService = TestBed.inject(DialogService) as unknown as MockDialogService;
     router = TestBed.inject(Router);
 
     fixture.detectChanges();
@@ -238,8 +250,46 @@ describe("UserUtilsPanelComponent", () => {
   });
 
   describe("logout", () => {
-    it("calls authService.logout", async () => {
-      await component.logout();
+    it("calls authService.logout if no pending changes", async () => {
+      pendingChangesService.hasChangesMockValue = false;
+      component.logout();
+      await fixture.whenStable();
+      expect(authService.logout).toHaveBeenCalled();
+    });
+
+    it("opens SaveAndExitDialog if there are pending changes", async () => {
+      pendingChangesService.hasChangesMockValue = true;
+      component.logout();
+      await fixture.whenStable();
+      expect(dialogService.openDialog).toHaveBeenCalled();
+      expect(authService.logout).not.toHaveBeenCalled();
+    });
+
+    it("calls authService.logout if pending changes are discarded", async () => {
+      pendingChangesService.hasChangesMockValue = true;
+      const dialogRef = dialogService.openDialog();
+      dialogService.openDialog.mockReturnValue(dialogRef);
+      jest.spyOn(dialogRef, "afterClosed").mockReturnValue(of("discard"));
+
+      component.logout();
+      await fixture.whenStable();
+
+      expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
+      expect(authService.logout).toHaveBeenCalled();
+    });
+
+    it("calls pendingChangesService.save and logout if save-exit is chosen", async () => {
+      pendingChangesService.hasChangesMockValue = true;
+      const dialogRef = dialogService.openDialog();
+      dialogService.openDialog.mockReturnValue(dialogRef);
+      jest.spyOn(dialogRef, "afterClosed").mockReturnValue(of("save-exit"));
+      pendingChangesService.save.mockReturnValue(true);
+
+      component.logout();
+      await fixture.whenStable();
+
+      expect(pendingChangesService.save).toHaveBeenCalled();
+      expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
       expect(authService.logout).toHaveBeenCalled();
     });
   });

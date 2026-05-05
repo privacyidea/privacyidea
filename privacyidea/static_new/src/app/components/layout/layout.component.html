@@ -24,7 +24,7 @@
     aria-label="Main Router Outlet"
     i18n-aria-label>
     @if (authService.role() === "admin") {
-      <mat-drawer-container class="drawer-container">
+      <mat-drawer-container class="admin-layout">
         <mat-drawer
           [disableClose]="true"
           class="drawer"
@@ -39,7 +39,7 @@
         </mat-drawer-content>
       </mat-drawer-container>
     } @else {
-      <div class="selfservice-layout">
+      <div class="self-service-layout">
         @if (authService.tokenWizard() || authService.containerWizard().enabled) {
           <app-navigation-self-service-wizard class="flex-size-1" />
         } @else {

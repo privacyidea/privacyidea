@@ -127,7 +127,9 @@ export class EnrollSmsComponent implements OnInit {
   smsGatewayOptions = computed(() => {
     // Find the first right that starts with "sms_gateways="
     const right = this.authService.rights().find((r) => r.startsWith("sms_gateways="));
-    const defaultId = this.systemService.systemConfigResource.value()?.result?.value?.["sms.identifier"];
+    const defaultId = this.systemService.systemConfigResource.hasValue()
+      ? this.systemService.systemConfigResource.value()?.result?.value?.["sms.identifier"]
+      : undefined;
     let gateways: string[] = [];
 
     if (right) {
@@ -150,6 +152,7 @@ export class EnrollSmsComponent implements OnInit {
   });
 
   defaultSMSGatewayIsSet = computed(() => {
+    if (!this.systemService.systemConfigResource.hasValue()) return false;
     const cfg = this.systemService.systemConfigResource.value()?.result?.value;
     return !!cfg?.[SMS_GATEWAY];
   });
@@ -159,19 +162,16 @@ export class EnrollSmsComponent implements OnInit {
   constructor() {
     effect(() => (this.disabled() ? this.smsForm.disable({ emitEvent: false }) : this._enableFormControls()));
     effect(() => {
+      if (!this.systemService.systemConfigResource.hasValue()) return;
       const id = this.systemService.systemConfigResource.value()?.result?.value?.[SMS_GATEWAY];
       if (id && this.smsGatewayControl.pristine) {
         this.smsGatewayControl.setValue(id);
       }
     });
-    effect(() => {
-      if (this.enrollmentData()) {
-        this._setInitialFormValues();
-      }
-    });
   }
 
   ngOnInit(): void {
+    this._setInitialFormValues();
     this.additionalFormFieldsChange.emit({
       smsGateway: this.smsGatewayControl,
       phoneNumber: this.phoneNumberControl,

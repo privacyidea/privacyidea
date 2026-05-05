@@ -39,7 +39,7 @@ import { TokenService, TokenServiceInterface } from "../../../../services/token/
   templateUrl: "./enroll-yubikey.component.html",
   styleUrls: ["./enroll-yubikey.component.scss"],
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, MatFormFieldModule, MatInputModule, MatOptionModule]
+  imports: [ReactiveFormsModule, MatFormFieldModule, MatInputModule, MatOptionModule]
 })
 export class EnrollYubikeyComponent implements OnInit {
   protected readonly enrollmentMapper: YubikeyApiPayloadMapper = inject(YubikeyApiPayloadMapper);

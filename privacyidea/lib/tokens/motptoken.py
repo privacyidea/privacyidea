@@ -41,7 +41,7 @@ The code is tested in tests/test_lib_tokens_motp
 import logging
 import traceback
 
-from privacyidea.api.lib.utils import getParam
+from privacyidea.lib.params import get_required
 from privacyidea.lib import _
 from privacyidea.lib.apps import create_motp_url
 from privacyidea.lib.crypto import generate_otpkey
@@ -53,8 +53,6 @@ from privacyidea.lib.utils import create_img, is_true
 from .mOTP import mTimeOtp
 from ..policies.actions import PolicyAction
 
-optional = True
-required = False
 log = logging.getLogger(__name__)
 
 
@@ -163,8 +161,8 @@ class MotpTokenClass(TokenClass):
                                                   "img": create_img(motp_url)
                                                   }
                 except Exception as ex:  # pragma: no cover
-                    log.debug("{0!s}".format(traceback.format_exc()))
-                    log.error('failed to set motp url: {0!r}'.format(ex))
+                    log.debug(f"{traceback.format_exc()!s}")
+                    log.error(f'failed to set motp url: {ex!r}')
 
         return response_detail
 
@@ -192,12 +190,12 @@ class MotpTokenClass(TokenClass):
         else:
             # genkey not set: check otpkey is given
             # this will raise an exception if otpkey is not present
-            otpKey = getParam(param, "otpkey", required)
+            otpKey = get_required(param, "otpkey")
 
         param['otpkey'] = otpKey
 
         # motp token specific
-        mOTPPin = getParam(param, "motppin", required)
+        mOTPPin = get_required(param, "motppin")
         self.token.set_user_pin(mOTPPin)
 
         TokenClass.update(self, param, reset_failcount)
@@ -236,9 +234,8 @@ class MotpTokenClass(TokenClass):
         res = mtimeOtp.checkOtp(anOtpVal, window, options=options)
 
         if res != -1 and oCount != 0 and res <= oCount:
-            log.warning("a previous OTP value was used again! former "
-                        "tokencounter: %i, presented counter %i" %
-                        (oCount, res))
+            log.warning(f"a previous OTP value was used again! former "
+                        f"tokencounter: {oCount}, presented counter {res}")
             res = -1
             return res
 

@@ -59,7 +59,7 @@ from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.utils import (modhex_decode, hexlify_and_unicode, checksum,
                                    to_bytes, b64encode_and_unicode)
 from privacyidea.lib.decorators import check_token_locked, check_token_otp_length
-from privacyidea.api.lib.utils import getParam
+from privacyidea.lib.params import get_optional
 import datetime
 import base64
 import hmac
@@ -70,8 +70,6 @@ from privacyidea.lib import _
 from privacyidea.lib.policy import SCOPE, GROUP
 from privacyidea.lib.policies.actions import PolicyAction
 
-optional = True
-required = False
 
 
 log = logging.getLogger(__name__)
@@ -104,7 +102,7 @@ def yubico_api_signature(data, api_key):
     """
     r = {k: v for k, v in data.items() if k in _YUBICO_PROTOCOL_KEYS}
     data_string = "&".join(
-        "{0!s}={1!s}".format(k, r[k]) for k in sorted(r)
+        f"{k!s}={r[k]!s}" for k in sorted(r)
     )
     api_key_bin = base64.b64decode(api_key)
     h = hmac.new(api_key_bin, to_bytes(data_string), sha1).digest()
@@ -300,14 +298,13 @@ class YubikeyTokenClass(TokenClass):
         # residual
         # of 0xf0b8 (see Yubikey-Manual - Chapter 6: Implementation details).
         crc16 = checksum(msg_bin)
-        log.debug("calculated checksum (61624): {0!r}".format(crc16))
+        log.debug(f"calculated checksum (61624): {crc16!r}")
         if crc16 != 0xf0b8:  # pragma: no cover
-            log.info("CRC checksum for token {0!r} failed".format(serial))
+            log.info(f"CRC checksum for token {serial!r} failed")
             return -3
 
         uid = msg_hex[0:12]
-        log.debug("uid: {0!r}".format(uid))
-        log.debug("prefix: {0!r}".format(yubi_prefix))
+        log.debug(f"prefix: {yubi_prefix!r}")
         # usage_counter can go from 1 – 0x7fff
         usage_counter = msg_hex[12:16]
         _timestamp = msg_hex[16:22]
@@ -315,35 +312,34 @@ class YubikeyTokenClass(TokenClass):
         session_counter = msg_hex[22:24]
         _random = msg_hex[24:28]
         _crc = msg_hex[28:]
-        log.debug("decrypted: usage_count: {0!r}, session_count: {1!r}".format(usage_counter, session_counter))
+        log.debug(f"decrypted: usage_count: {usage_counter!r}, session_count: {session_counter!r}")
 
         # create the counter as integer
         # Note: The usage counter is stored LSB!
 
         count_hex = usage_counter[2:4] + usage_counter[0:2] + session_counter
         count_int = int(count_hex, 16)
-        log.debug('decrypted counter: {0!r}'.format(count_int))
+        log.debug(f'decrypted counter: {count_int!r}')
 
         tokenid = self.get_tokeninfo("yubikey.tokenid")
         if not tokenid:
-            log.debug("Got no tokenid for {0!r}. Setting to {1!r}.".format(serial, uid))
+            log.debug(f"Got no tokenid for {serial!r}. Initializing.")
             tokenid = uid
             self.add_tokeninfo("yubikey.tokenid", tokenid)
 
         prefix = self.get_tokeninfo("yubikey.prefix")
         if not prefix:
-            log.debug("Got no prefix for {0!r}. Setting to {1!r}.".format(serial, yubi_prefix))
+            log.debug(f"Got no prefix for {serial!r}. Setting to {yubi_prefix!r}.")
             self.add_tokeninfo("yubikey.prefix", yubi_prefix)
 
         if tokenid != uid:
             # wrong token!
-            log.warning(f"The wrong token was presented for {serial}. "
-                        f"Got {uid}, expected {tokenid}.")
+            log.warning(f"The wrong token was presented for {serial!r}.")
             return -2
 
         # TODO: We also could check the timestamp
         # see http://www.yubico.com/wp-content/uploads/2013/04/YubiKey-Manual-v3_1.pdf
-        log.debug('compare counter to database counter: {0!r}'.format(self.token.count))
+        log.debug(f'compare counter to database counter: {self.token.count!r}')
         if count_int >= self.token.count:
             res = count_int
             # on success we save the used counter
@@ -359,7 +355,7 @@ class YubikeyTokenClass(TokenClass):
         :param api_id: The base64 encoded API ID
         :return: the base64 encoded API Key or None
         """
-        api_key = get_from_config("yubikey.apiid.{0!s}".format(api_id))
+        api_key = get_from_config(f"yubikey.apiid.{api_id!s}")
         return api_key
 
     @classmethod
@@ -385,10 +381,10 @@ class YubikeyTokenClass(TokenClass):
         Optional parameters timestamp, sl, timeout are not supported at the
         moment.
         """
-        id = getParam(request.all_data, "id")
-        otp = getParam(request.all_data, "otp")
-        nonce = getParam(request.all_data, "nonce")
-        signature = getParam(request.all_data, "h")
+        id = get_optional(request.all_data, "id")
+        otp = get_optional(request.all_data, "otp")
+        nonce = get_optional(request.all_data, "nonce")
+        signature = get_optional(request.all_data, "h")
         status = "MISSING_PARAMETER"
 
         timestamp = datetime.datetime.now().strftime("%Y-%m-%dT%H:%M:%SZ%f")
@@ -459,11 +455,11 @@ h={h}
                 # Keep the backward compatibility
                 serialnum = "UBAM" + str(modhex_decode(prefix))
                 for i in range(1, 3):
-                    s = "{0!s}_{1!s}".format(serialnum, i)
+                    s = f"{serialnum!s}_{i!s}"
                     toks = get_tokens(serial=s, tokentype='yubikey')
                     token_list.extend(toks)
             except TypeError as exx:  # pragma: no cover
-                log.error("Failed to convert serialnumber: {0!r}".format(exx))
+                log.error(f"Failed to convert serialnumber: {exx!r}")
 
         # Now, we see, if the prefix matches the new version
         if not token_list:
@@ -474,8 +470,7 @@ h={h}
             token_list.extend(token_candidate_list)
 
         if not token_list:
-            opt['action_detail'] = ("The prefix {0!s} could not be found!".format(
-                                    prefix))
+            opt['action_detail'] = (f"The prefix {prefix!s} could not be found!")
             return res, opt
 
         (res, opt) = check_token_list(token_list, passw, allow_reset_all_tokens=True)

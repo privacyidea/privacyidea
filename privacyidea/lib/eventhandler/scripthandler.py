@@ -57,7 +57,7 @@ class ScriptEventHandler(BaseEventHandler):
     description = "This event handler can trigger external scripts."
 
     def __init__(self):
-        super(ScriptEventHandler, self).__init__()
+        super().__init__()
         self.script_directory = get_app_config_value("PI_SCRIPT_HANDLER_DIRECTORY",
                                                      "/etc/privacyidea/scripts")
 
@@ -192,10 +192,10 @@ class ScriptEventHandler(BaseEventHandler):
 
         rcode = 0
         try:
-            log.info("Starting script {script!r}.".format(script=script_name))
+            log.info(f"Starting script {script_name!r}.")
             if is_true(handler_options.get('sync_to_database', False)):
                 log.debug('Committing current transaction for script '
-                          '{0!s}'.format(script_name))
+                          f'{script_name!s}')
                 db.session.commit()
             # Trusted input/no user input: The scripts are created by user root and read from hard disk
             p = subprocess.Popen(proc_args, cwd=self.script_directory, universal_newlines=True)  # nosec B603
@@ -203,15 +203,13 @@ class ScriptEventHandler(BaseEventHandler):
                 rcode = p.wait()
 
         except Exception as e:
-            log.warning("Failed to execute script {0!r}: {1!r}".format(
-                script_name, e))
+            log.warning(f"Failed to execute script {script_name!r}: {e!r}")
             log.warning(traceback.format_exc())
             if handler_options.get("background") == SCRIPT_WAIT and is_true(handler_options.get("raise_error")):
                 raise ServerError("Failed to start script.")
 
         if rcode:
-            log.warning("Script {script!r} failed to execute with error code {error!r}".format(script=script_name,
-                                                                                               error=rcode))
+            log.warning(f"Script {script_name!r} failed to execute with error code {rcode!r}")
             if is_true(handler_options.get("raise_error")):
                 raise ServerError("Error during execution of the script.")
 

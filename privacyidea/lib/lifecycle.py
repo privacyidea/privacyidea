@@ -47,6 +47,6 @@ def call_finalizers():
             try:
                 func()
             except Exception as exx:
-                log.warning("Caught exception in finalizer: {!r}".format(exx))
+                log.warning(f"Caught exception in finalizer: {exx!r}")
                 log.debug("Exception in finalizer:", exc_info=True)
         store['call_on_teardown'] = []

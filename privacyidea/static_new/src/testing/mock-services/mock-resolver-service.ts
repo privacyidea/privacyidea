@@ -32,7 +32,7 @@ export class MockResolverService implements ResolverServiceInterface {
   selectedResolverName: WritableSignal<string> = signal("");
   selectedResolverResource: any = {
     value: signal(undefined),
-    status: signal(ResourceStatus.Resolved),
+    status: signal("resolved"),
     reload: jest.fn()
   };
   resolvers: Signal<Resolver[]> = this._resolversValue.asReadonly();

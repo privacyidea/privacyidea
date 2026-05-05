@@ -136,6 +136,20 @@ export class UserService implements UserServiceInterface {
       // Ensure the users are loaded for the autocomplete on allowed routes.
       this.selectionFilteredUsernames();
     });
+
+    effect(() => {
+      this.notificationService.handleResourceError(this.userResource.error(), "user details");
+    });
+
+    effect(() => {
+      this.notificationService.handleResourceError(this.usersResource.error(), "users");
+    });
+    effect(() => {
+      this.notificationService.handleResourceError(this.editableAttributesResource.error(), "editable attributes");
+    });
+    effect(() => {
+      this.notificationService.handleResourceError(this.userAttributesResource.error(), "user attributes");
+    });
   }
 
   readonly apiFilter = apiFilter;
@@ -157,9 +171,13 @@ export class UserService implements UserServiceInterface {
   });
   readonly apiFilterOptions = apiFilter;
 
-  attributePolicy = computed<UserAttributePolicy>(
-    () => this.editableAttributesResource.value()?.result?.value ?? { delete: [], set: {} }
-  );
+  attributePolicy = computed<UserAttributePolicy>(() => {
+    let policies: UserAttributePolicy | undefined = { delete: [], set: {} };
+    if (this.editableAttributesResource.hasValue()) {
+      policies = this.editableAttributesResource.value()?.result?.value ?? { delete: [], set: {} };
+    }
+    return policies;
+  });
 
   deletableAttributes = computed<string[]>(() => this.attributePolicy().delete ?? []);
 
@@ -187,7 +205,10 @@ export class UserService implements UserServiceInterface {
       .sort()
   );
 
-  userAttributes = computed<Record<string, string>>(() => this.userAttributesResource.value()?.result?.value ?? {});
+  userAttributes = computed<Record<string, string>>(() => {
+    if (!this.userAttributesResource.hasValue()) return {};
+    return this.userAttributesResource.value()?.result?.value ?? {};
+  });
 
   userAttributesList = computed(() =>
     Object.entries(this.userAttributes()).map(([key, raw]) => ({
@@ -298,24 +319,23 @@ export class UserService implements UserServiceInterface {
 
   user: WritableSignal<UserData> = linkedSignal({
     source: () => ({
-      userResource: this.userResource.value,
+      userRes: this.userResource.hasValue() ? this.userResource.value() : undefined,
       detailsUsername: this.detailsUsername()
     }),
-    computation: (source, previous) => {
-      return (
-        source?.userResource()?.result?.value?.[0] ?? {
-          description: "",
-          editable: false,
-          email: "",
-          givenname: "",
-          mobile: "",
-          phone: "",
-          resolver: "",
-          surname: "",
-          userid: "",
-          username: ""
-        }
-      );
+    computation: (source) => {
+      const emptyDetails: UserData = {
+        description: "",
+        editable: false,
+        email: "",
+        givenname: "",
+        mobile: "",
+        phone: "",
+        resolver: "",
+        surname: "",
+        userid: "",
+        username: ""
+      };
+      return source.userRes?.result?.value?.[0] ?? emptyDetails;
     }
   });
 
@@ -361,11 +381,11 @@ export class UserService implements UserServiceInterface {
 
   users: WritableSignal<UserData[]> = linkedSignal({
     source: () => ({
-      resourceValue: this.usersResource.value(),
+      userRes: this.usersResource.hasValue() ? this.usersResource.value() : undefined,
       realm: this.selectedUserRealm()
     }),
     computation: (source, previous) => {
-      const users = source.resourceValue?.result?.value
+      const users = source.userRes?.result?.value;
       if (!users && source.realm !== previous?.source.realm) {
         // If the realm changed we do not fall back on the previous user list
         return [];
@@ -376,7 +396,7 @@ export class UserService implements UserServiceInterface {
 
   selectedUser = computed<UserData | null>(() => {
     let tokenUsername = "";
-    if (this.contentService.onTokenDetails()) {
+    if (this.contentService.onTokenDetails() && this.tokenService.tokenDetailResource.hasValue()) {
       const token = this.tokenService.tokenDetailResource.value()?.result?.value?.tokens?.[0];
       tokenUsername = token?.username ?? "";
     }
@@ -451,7 +471,14 @@ export class UserService implements UserServiceInterface {
     return this.http.post<PiResponse<number>>(this.baseUrl + "attribute", null, {
       headers: this.authService.getHeaders(),
       params
-    });
+    }).pipe(
+      catchError((error) => {
+        console.error("Failed to set user attribute.", error);
+        const message = error.error?.result?.error?.message || "";
+        this.notificationService.error($localize`Failed to set user attribute. ` + message);
+        return of(undefined as any);
+      })
+    );
   }
 
   deleteUserAttribute(key: string) {
@@ -460,7 +487,14 @@ export class UserService implements UserServiceInterface {
     const url =
       this.baseUrl +
       `attribute/${encodeURIComponent(key)}/${encodeURIComponent(username)}/${encodeURIComponent(realm)}`;
-    return this.http.delete<PiResponse<any>>(url, { headers: this.authService.getHeaders() });
+    return this.http.delete<PiResponse<any>>(url, { headers: this.authService.getHeaders() }).pipe(
+      catchError((error) => {
+        console.error("Failed to delete user attribute.", error);
+        const message = error.error?.result?.error?.message || "";
+        this.notificationService.error($localize`Failed to delete user attribute. ` + message);
+        return of(undefined as any);
+      })
+    );
   }
 
   createUser(resolver: string, userData: EditUserData) {
@@ -477,7 +511,7 @@ export class UserService implements UserServiceInterface {
       catchError((error) => {
         console.warn("Failed to create user", error);
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.openSnackBar($localize`Failed to create user ${userData.username}. ` + message);
+        this.notificationService.error($localize`Failed to create user ${userData.username}. ` + message);
         return of(false);
       })
     );
@@ -497,7 +531,7 @@ export class UserService implements UserServiceInterface {
         catchError((error) => {
           console.warn("Failed to update user", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.openSnackBar($localize`Failed to update user ${userData.username}. ` + message);
+          this.notificationService.error($localize`Failed to update user ${userData.username}. ` + message);
           return of(false);
         })
       );
@@ -511,7 +545,7 @@ export class UserService implements UserServiceInterface {
         catchError((error) => {
           console.warn("Failed to delete user", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.openSnackBar($localize`Failed to delete user ${username}. ` + message);
+          this.notificationService.error($localize`Failed to delete user ${username}. ` + message);
           return of(false);
         })
       );

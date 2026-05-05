@@ -37,7 +37,6 @@ import { MultiSelectOnlyComponent } from "@components/shared/multi-select-only/m
   selector: "app-policy-action-item-new",
   standalone: true,
   imports: [
-    CommonModule,
     FormsModule,
     MatIconModule,
     MatTooltipModule,

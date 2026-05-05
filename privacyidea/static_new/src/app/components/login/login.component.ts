@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { CommonModule, NgOptimizedImage } from "@angular/common";
+import { NgOptimizedImage } from "@angular/common";
 import {
   Component,
   computed,
@@ -55,7 +55,6 @@ const PUSH_POLLING_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
   templateUrl: "./login.component.html",
   standalone: true,
   imports: [
-    CommonModule,
     FormsModule,
     MatFormField,
     MatInput,
@@ -83,8 +82,9 @@ export class LoginComponent implements OnDestroy {
   @ViewChild("otpInput") otpInput!: ElementRef<HTMLInputElement>;
   username = signal<string>("");
   password = signal<string>("");
+  hidePassword = signal<boolean>(true);
   otp = signal<string>("");
-  authMessage = signal<string[]>([]);  // messages returned from the auth endpoint
+  authMessage = signal<string[]>([]); // messages returned from the auth endpoint
   errorMessage = signal<string>("");
 
   showOtpField = signal<boolean>(false);
@@ -101,7 +101,10 @@ export class LoginComponent implements OnDestroy {
   });
 
   realms = computed(() => {
-    return (this.configService.config()?.realms || "").split(",").map((r: string) => r.trim()).filter((r: string) => r);
+    return (this.configService.config()?.realms || "")
+      .split(",")
+      .map((r: string) => r.trim())
+      .filter((r: string) => r);
   });
 
   realm = linkedSignal({
@@ -139,7 +142,7 @@ export class LoginComponent implements OnDestroy {
   constructor() {
     if (this.authService.isAuthenticated()) {
       console.warn("User is already logged in.");
-      this.notificationService.openSnackBar("User is already logged in.");
+      this.notificationService.warning("User is already logged in.");
     } else {
       this.showOtpField.set(false);
     }
@@ -179,7 +182,7 @@ export class LoginComponent implements OnDestroy {
 
   remoteLogin(): void {
     if (!this.remoteUser()) {
-      this.notificationService.openSnackBar($localize`Remote user not available. Remote Login not possible.`);
+      this.notificationService.warning($localize`Remote user not available. Remote Login not possible.`);
       return;
     }
     const params: any = { username: this.remoteUser() };
@@ -218,7 +221,7 @@ export class LoginComponent implements OnDestroy {
   logout(): void {
     this.authService.logout();
     this.localService.removeData("bearer_token");
-    this.router.navigate(["login"]).then(() => this.notificationService.openSnackBar("Logout successful."));
+    this.router.navigate(["login"]).then(() => this.notificationService.success("Logout successful."));
   }
 
   resetLogin(): void {
@@ -226,6 +229,7 @@ export class LoginComponent implements OnDestroy {
     this.showOtpField.set(false);
     this.otp.set("");
     this.password.set("");
+    this.hidePassword.set(true);
   }
 
   ngOnDestroy(): void {
@@ -302,7 +306,6 @@ export class LoginComponent implements OnDestroy {
       } else {
         this.router.navigateByUrl(ROUTE_PATHS.TOKENS).then();
       }
-
     } else if (challengesTriggered(response)) {
       // Setup depending on what kind of challenges were triggered
       if (response.detail.multi_challenge?.length) {
@@ -361,6 +364,7 @@ export class LoginComponent implements OnDestroy {
 
     if (context === "password") {
       this.password.set("");
+      this.hidePassword.set(true);
       if (this.showOtpField()) {
         // Empty the value and focus again
         this.otp.set("");

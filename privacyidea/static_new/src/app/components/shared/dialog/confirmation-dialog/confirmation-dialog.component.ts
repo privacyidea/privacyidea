@@ -18,13 +18,13 @@
  **/
 import { Component } from "@angular/core";
 import { DialogWrapperComponent } from "../dialog-wrapper/dialog-wrapper.component";
-import { CommonModule } from "@angular/common";
+
 import { DialogAction } from "../../../../models/dialog";
 import { AbstractDialogComponent } from "../abstract-dialog/abstract-dialog.component";
 
 @Component({
   selector: "app-simple-confirmation-dialog",
-  imports: [DialogWrapperComponent, CommonModule],
+  imports: [DialogWrapperComponent],
   templateUrl: "./confirmation-dialog.component.html",
   styleUrl: "./confirmation-dialog.component.scss"
 })

@@ -43,7 +43,7 @@ def fn_clob_to_varchar_default(element, compiler, **kw):
 
 @compiles(clob_to_varchar, 'oracle')
 def fn_clob_to_varchar_oracle(element, compiler, **kw):
-    return "to_char(%s)" % compiler.process(element.clauses, **kw)
+    return f"to_char({compiler.process(element.clauses, **kw)})"
 
 
 class MethodsMixin:

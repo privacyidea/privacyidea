@@ -18,11 +18,12 @@
  **/
 import { httpResource, HttpResourceRef } from "@angular/common/http";
 import { PiResponse } from "../../app.component";
-import { inject, Injectable } from "@angular/core";
+import { effect, inject, Injectable } from "@angular/core";
 import { ROUTE_PATHS } from "../../route_paths";
 import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
 import { environment } from "../../../environments/environment";
+import { NotificationService } from "../notification/notification.service";
 
 export interface ClientData {
   hostname?: string;
@@ -43,7 +44,14 @@ export interface ClientsServiceInterface {
 export class ClientsService implements ClientsServiceInterface {
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
+  private readonly notificationService = inject(NotificationService);
   private clientsBaseUrl = environment.proxyUrl + "/client/";
+
+  constructor() {
+    effect(() => {
+      this.notificationService.handleResourceError(this.clientsResource.error(), "clients");
+    });
+  }
 
   clientsResource = httpResource<PiResponse<ClientsDict>>(() => {
     if (this.contentService.routeUrl() !== ROUTE_PATHS.CLIENTS || !this.authService.actionAllowed("clienttype")) {

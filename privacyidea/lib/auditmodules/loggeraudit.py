@@ -68,7 +68,7 @@ class Audit(AuditBase):
     """
 
     def __init__(self, config=None, startdate=None):
-        super(Audit, self).__init__(config, startdate)
+        super().__init__(config, startdate)
         self.name = "loggeraudit"
         self.qualname = self.config.get('PI_AUDIT_LOGGER_QUALNAME', __name__)
         self.logger = logging.getLogger(self.qualname)
@@ -82,7 +82,7 @@ class Audit(AuditBase):
         self.audit_data["timestamp"] = datetime.utcnow().isoformat()
         if self.audit_data.get("startdate"):
             duration = datetime.utcnow() - self.audit_data.get("startdate")
-            self.audit_data["duration"] = "{0!s}".format(duration)
+            self.audit_data["duration"] = f"{duration!s}"
             self.audit_data["startdate"] = self.audit_data.get("startdate").isoformat()
-        self.logger.info("{0!s}".format(json.dumps(self.audit_data, sort_keys=True)))
+        self.logger.info(f"{json.dumps(self.audit_data, sort_keys=True)!s}")
         self.audit_data = {}

@@ -34,7 +34,6 @@ The code is tested in tests/test_lib_smsprovider
 """
 from privacyidea.lib.smsprovider.SMSProvider import ISMSProvider, SMSError
 from privacyidea.lib.smtpserver import send_email_identifier, send_email_data
-from privacyidea.lib import _
 import logging
 log = logging.getLogger(__name__)
 
@@ -73,8 +72,8 @@ class SmtpSMSProvider(ISMSProvider):
 
             if not (server and recipient and sender) and not (identifier and \
                     recipient):
-                log.error("incomplete config: %s. MAILTO and (IDENTIFIER or "
-                          "MAILSERVER and MAILSENDER) needed" % self.config)
+                log.error(f"incomplete config: {self.config}. MAILTO and (IDENTIFIER or "
+                          "MAILSERVER and MAILSENDER) needed")
                 raise SMSError(-1, "Incomplete SMS config.")
 
             recipient = recipient.replace(PHONE_TAG, phone)
@@ -83,7 +82,7 @@ class SmtpSMSProvider(ISMSProvider):
             body = body.replace(PHONE_TAG, phone)
             body = body.replace(MSG_TAG, message)
 
-        log.debug("submitting message {0!r} to {1!s}".format(body, phone))
+        log.debug(f"submitting message {body!r} to {phone!s}")
         if identifier:
             r = send_email_identifier(identifier, recipient, subject, body)
         else:

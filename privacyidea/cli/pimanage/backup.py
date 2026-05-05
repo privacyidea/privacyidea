@@ -106,7 +106,7 @@ def backup_create(backup_dir, config_dir, radius_dir, enckey):
         defaults_file = conf_dir.joinpath("mysql.cnf")
         _write_mysql_defaults(defaults_file, parsed_sqluri)
         # call mysqldump to get a copy of the database
-        cmd = ['mysqldump', '--defaults-file={!s}'.format(defaults_file), '-h',
+        cmd = ['mysqldump', f'--defaults-file={defaults_file!s}', '-h',
                shlex.quote(parsed_sqluri.hostname)]
         if parsed_sqluri.port:
             cmd.extend(['-P', str(parsed_sqluri.port)])
@@ -164,9 +164,9 @@ def backup_restore(backup_file, keep_db_uri):
         sys.exit(2)
     for line in p.stdout.split("\n"):
         if re.search(r"/pi.cfg$", line):
-            config_file = "/{0!s}".format(line.strip())
+            config_file = f"/{line.strip()!s}"
         elif re.search(r"dbdump-\d{8}-\d{4}\.sql", line):
-            sqlfile = "/{0!s}".format(line.strip())
+            sqlfile = f"/{line.strip()!s}"
         elif re.search(r"/enc[kK]ey", line):
             enckey_contained = True
 
@@ -257,12 +257,12 @@ def backup_restore(backup_file, keep_db_uri):
         if parsed_sqluri.port:
             cmd.extend(['-P', str(parsed_sqluri.port)])
         cmd.extend(['-B', shlex.quote(database)])
-        with open(sqlfile, "r") as sql_file:
+        with open(sqlfile) as sql_file:
             p = subprocess.run(cmd, input=sql_file.read(), text=True)
             if p.returncode == 0:
                 os.unlink(sqlfile)
     else:
-        print("unsupported SQL syntax: %s" % sqltype)
+        print(f"unsupported SQL syntax: {sqltype}")
         sys.exit(2)
 
 

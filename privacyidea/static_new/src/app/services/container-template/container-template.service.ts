@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { computed, inject, Injectable, linkedSignal, Signal, WritableSignal } from "@angular/core";
+import { computed, effect, inject, Injectable, linkedSignal, Signal, WritableSignal } from "@angular/core";
 import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
 import { PiResponse } from "../../app.component";
 import { ContentService, ContentServiceInterface } from "../content/content.service";
@@ -46,10 +46,15 @@ export interface ContainerTemplateServiceInterface {
   availableContainerTypes: Signal<string[]>;
 
   canSaveTemplate(template: ContainerTemplate): boolean;
+
   copyTemplate(template: ContainerTemplate, newName: string): Promise<boolean>;
+
   deleteTemplate(name: string): Promise<void>;
+
   deleteTemplates(name: string[]): Promise<void>;
+
   getTokenTypesForContainerType(containerType: string): string[];
+
   postTemplateEdits(template: ContainerTemplate): Promise<boolean>;
 }
 
@@ -76,6 +81,15 @@ export class ContainerTemplateService implements ContainerTemplateServiceInterfa
   readonly notificationService: NotificationServiceInterface = inject(NotificationService);
 
   // --- Resources ---
+
+  constructor() {
+    effect(() => {
+      this.notificationService.handleResourceError(this.templatesResource.error(), "container templates");
+    });
+    effect(() => {
+      this.notificationService.handleResourceError(this.templateTokenTypesResource.error(), "template token types");
+    });
+  }
   readonly templatesResource = httpResource<PiResponse<{ templates: ContainerTemplate[] }>>(() => {
     if (!this.authService.actionAllowed("container_template_list")) return undefined;
     if (!this.contentService.onTokensContainersCreate() && !this.contentService.onTokensContainersTemplates())
@@ -108,11 +122,12 @@ export class ContainerTemplateService implements ContainerTemplateServiceInterfa
 
   // --- Signals & Computed ---
   readonly templates: WritableSignal<ContainerTemplate[]> = linkedSignal({
-    source: () => this.templatesResource.value(),
+    source: () => this.templatesResource.hasValue() ? this.templatesResource.value() : undefined,
     computation: (templatesResource, previous) => templatesResource?.result?.value?.templates ?? previous?.value ?? []
   });
 
   readonly templateTokenTypes = computed<TemplateTokenTypes>(() => {
+    if (!this.templateTokenTypesResource.hasValue()) return {};
     return this.templateTokenTypesResource.value()?.result?.value ?? {};
   });
 
@@ -123,6 +138,7 @@ export class ContainerTemplateService implements ContainerTemplateServiceInterfa
   // --- Public Methods ---
   canSaveTemplate(template: ContainerTemplate): boolean {
     if (template.name.trim().length === 0) return false;
+    if (!/^[a-zA-Z0-9._-]*$/.test(template.name)) return false;
     if (template.container_type.trim().length === 0) return false;
     if (template.template_options.tokens.length === 0) return false;
     return true;
@@ -139,24 +155,24 @@ export class ContainerTemplateService implements ContainerTemplateServiceInterfa
 
   async deleteTemplate(name: string) {
     if (!this.authService.actionAllowed("container_template_delete")) {
-      this.notificationService.openSnackBar("You are not allowed to delete container templates.");
+      this.notificationService.error("You are not allowed to delete container templates.");
       throw new Error("Permission denied");
     }
 
     try {
       await lastValueFrom(this._performDeleteRequest(name));
       this.templatesResource.reload();
-      this.notificationService.openSnackBar("Successfully deleted template.");
+      this.notificationService.success("Successfully deleted template.");
     } catch (error: any) {
       const message = error.error?.result?.error?.message || "";
-      this.notificationService.openSnackBar("Failed to delete template. " + message);
+      this.notificationService.error("Failed to delete template. " + message);
       throw error;
     }
   }
 
   async deleteTemplates(names: string[]) {
     if (!this.authService.actionAllowed("container_template_delete")) {
-      this.notificationService.openSnackBar("You are not allowed to delete container templates.");
+      this.notificationService.error("You are not allowed to delete container templates.");
       throw new Error("Permission denied");
     }
 
@@ -165,10 +181,10 @@ export class ContainerTemplateService implements ContainerTemplateServiceInterfa
         await lastValueFrom(this._performDeleteRequest(n));
       }
       this.templatesResource.reload();
-      this.notificationService.openSnackBar("Successfully deleted templates.");
+      this.notificationService.success("Successfully deleted templates.");
     } catch (error: any) {
       const message = error.error?.result?.error?.message || "";
-      this.notificationService.openSnackBar("Failed to delete templates. " + message);
+      this.notificationService.error("Failed to delete templates. " + message);
       throw error;
     }
   }
@@ -179,16 +195,16 @@ export class ContainerTemplateService implements ContainerTemplateServiceInterfa
   }
 
   async postTemplateEdits(template: ContainerTemplate): Promise<boolean> {
-    const url = environment.proxyUrl + `/container/${template.container_type}/template/${template.name}`;
+    const url = environment.proxyUrl + `/container/${encodeURIComponent(template.container_type)}/template/${encodeURIComponent(template.name)}`;
     try {
       await lastValueFrom(this.http.post<PiResponse<any>>(url, template, { headers: this.authService.getHeaders() }));
       this.templatesResource.reload();
-      this.notificationService.openSnackBar(`Successfully saved template edits.`);
+      this.notificationService.success(`Successfully saved template edits.`);
       return true;
     } catch (error: any) {
       console.warn("Failed to save template edits:", error);
       const message = error.error?.result?.error?.message || "";
-      this.notificationService.openSnackBar("Failed to save template edits. " + message);
+      this.notificationService.error("Failed to save template edits. " + message);
       return false;
     }
   }
@@ -196,7 +212,7 @@ export class ContainerTemplateService implements ContainerTemplateServiceInterfa
   // --- Private Methods ---
   private _performDeleteRequest(name: string) {
     return this.http
-      .delete<PiResponse<any>>(`${environment.proxyUrl}/container/template/${name}`, {
+      .delete<PiResponse<any>>(`${environment.proxyUrl}/container/template/${encodeURIComponent(name)}`, {
         headers: this.authService.getHeaders()
       })
       .pipe(

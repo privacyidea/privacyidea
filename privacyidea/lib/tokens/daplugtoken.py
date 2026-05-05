@@ -34,6 +34,8 @@ This code is tested in tests/test_lib_tokens_daplug
 """
 
 import binascii
+import logging
+
 from privacyidea.lib.tokens.hotptoken import HotpTokenClass
 from privacyidea.lib.log import log_with
 from privacyidea.lib.config import get_prepend_pin
@@ -43,10 +45,7 @@ from privacyidea.lib import _
 from privacyidea.lib.policy import SCOPE, GROUP
 from privacyidea.lib.policies.actions import PolicyAction
 
-optional = True
-required = False
 
-import logging
 log = logging.getLogger(__name__)
 
 MAPPING = {"b": "0",
@@ -222,7 +221,6 @@ class DaplugTokenClass(HotpTokenClass):
         # convert the response
         rdict = {'type': self.get_class_type(),
                  'otp': {}}
-        otp_dict = {}
         for k, v in res[2].get('otp').items():
             rdict['otp'][k] = _digi2daplug(v)
 
@@ -257,7 +255,7 @@ class DaplugTokenClass(HotpTokenClass):
         # For splitting the value we use 12 characters.
         # For internal calculation we use 6 digits.
         otplen *= 2
-        
+
         if get_prepend_pin():
             pin = passw[0:-otplen]
             otpval = passw[-otplen:]

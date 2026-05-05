@@ -20,12 +20,11 @@ import copy
 import json
 import logging
 from enum import Enum
-from typing import Union, Optional
 
 import msal
 from requests import Response
 
-from privacyidea.api.lib.utils import get_required, get_optional
+from privacyidea.lib.params import get_required, get_optional
 from privacyidea.lib.error import ResolverError, ParameterError
 from privacyidea.lib.log import log_with
 from privacyidea.lib.resolvers.HTTPResolver import (HTTPResolver, METHOD, ENDPOINT,
@@ -58,7 +57,7 @@ class EntraIDResolver(HTTPResolver):
 
     @log_with(log)
     def __init__(self):
-        super(EntraIDResolver, self).__init__()
+        super().__init__()
         self.base_url = "https://graph.microsoft.com/v1.0"
         self.attribute_mapping_pi_to_user_store = {"username": "userPrincipalName",
                                                    "userid": "id",
@@ -205,7 +204,7 @@ class EntraIDResolver(HTTPResolver):
         return EntraIDResolver.getResolverClassDescriptor()
 
     @log_with(log, hide_args=[2])
-    def checkPass(self, uid: str, password: str, username: Optional[str] = None) -> bool:
+    def checkPass(self, uid: str, password: str, username: str | None = None) -> bool:
         """
         This function checks the password for a given user. The user can either be identified by the uid or the
         username. EntraID provides the OAuth 2.0 ROPC flow to check the password. This flow only supports using
@@ -267,7 +266,8 @@ class EntraIDResolver(HTTPResolver):
         ``<entra_key> eq '<value>'``. If wildcards are contained in the value, we use the syntax
         ``startswith(<entra_key>, '<value>')`` where all '*' characters are removed from the value as entraID does not
         support advanced wildcard searches. If advanced query capabilities are activated, it also searches for values
-        that ends with the substring. Syntax: ``(startswith(<entra_key>, '<value>') or endswith(<entra_key>, '<value>'))``
+        that ends with the substring.
+        Syntax: ``(startswith(<entra_key>, '<value>') or endswith(<entra_key>, '<value>'))``
         Multiple search attributes are concatenated with `` and ``.
         The complete search query is stored und the key ``$filer`` in the request parameters dictionary.
         """
@@ -326,7 +326,7 @@ class EntraIDResolver(HTTPResolver):
             user["businessPhones"] = [user["businessPhones"]]
         return user
 
-    def _get_user_list_from_response(self, response: Union[dict, list]) -> list[dict]:
+    def _get_user_list_from_response(self, response: dict | list) -> list[dict]:
         """
         Extracts the user attributes dictionary from the response body.
 
@@ -373,7 +373,7 @@ class EntraIDResolver(HTTPResolver):
             success = self._custom_error_handling(response, config)
 
         if not success:
-            raise ResolverError(f"Failed to get the user list!")
+            raise ResolverError("Failed to get the user list!")
 
     def _get_user_error_handling(self, response: Response, config: RequestConfig, user_identifier: str) -> bool:
         """

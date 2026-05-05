@@ -29,10 +29,10 @@ import json
 import requests
 
 __doc__ = """
-This is the library for creating, listing and deleting remote privacyIDEA 
+This is the library for creating, listing and deleting remote privacyIDEA
 server objects in the Database.
 
-It depends on the PrivacyIDEAServver in the database model models.py. This 
+It depends on the PrivacyIDEAServver in the database model models.py. This
 module can be tested standalone without any webservices.
 This module is tested in tests/test_lib_privacyideaserver.py
 """
@@ -40,7 +40,7 @@ This module is tested in tests/test_lib_privacyideaserver.py
 log = logging.getLogger(__name__)
 
 
-class PrivacyIDEAServer(object):
+class PrivacyIDEAServer:
     """
     privacyIDEA Server object with configuration. The privacyIDEA Server object
     contains a test functionality so that the configuration can be tested.
@@ -107,11 +107,10 @@ class PrivacyIDEAServer(object):
                                  timeout=60
                           )
         log.debug("Sent request to privacyIDEA server. status code returned: "
-                  "{0!s}".format(response.status_code))
+                  f"{response.status_code!s}")
         if response.status_code != 200:
-            log.warning("The request to the remote privacyIDEA server {0!s} "
-                        "returned a status code: {1!s}".format(config.url,
-                                                               response.status_code))
+            log.warning(f"The request to the remote privacyIDEA server {config.url!s} "
+                        f"returned a status code: {response.status_code!s}")
             return False
 
         j_response = json.loads(to_unicode(response.content))
@@ -153,7 +152,7 @@ def get_privacyideaserver(identifier=None, id=None):
 def get_privacyideaservers(identifier=None, url=None, id=None):
     """
     This returns a list of all privacyIDEA Servers matching the criterion.
-    If no identifier or url is provided, it will return a list of all 
+    If no identifier or url is provided, it will return a list of all
     privacyIDEA server definitions.
 
     :param identifier: The identifier or the name of the privacyIDEA Server
@@ -243,10 +242,10 @@ def export_privacyideaservers(name=None):
 @register_import('privacyideaserver')
 def import_privacyideaservers(data, name=None):
     """Import privacyideaservers configuration"""
-    log.debug('Import privacyideaservers config: {0!s}'.format(data))
+    log.debug(f'Import privacyideaservers config: {data!s}')
     for res_name, res_data in data.items():
         if name and name != res_name:
             continue
         rid = add_privacyideaserver(res_name, **res_data)
-        log.info('Import of privacyideaservers "{0!s}" finished,'
-                 ' id: {1!s}'.format(res_name, rid))
+        log.info(f'Import of privacyideaservers "{res_name!s}" finished,'
+                 f' id: {rid!s}')

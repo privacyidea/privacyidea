@@ -1,11 +1,9 @@
 @use "../../../../styles" as styles;
 
 .system-config-container {
-  @include styles.table-container-styles;
-  max-width: 100%;
-  max-height: var(--max-height);
-  overflow: auto;
+  @include styles.main-component-style;
   display: grid;
+  min-width: 616px;
 }
 
 .system-config-scroll-container {

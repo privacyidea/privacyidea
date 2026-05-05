@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { computed, linkedSignal, Signal, WritableSignal } from "@angular/core";
+import { computed, linkedSignal, signal, Signal, WritableSignal } from "@angular/core";
 import { Observable, of } from "rxjs";
 import { HttpResourceRef } from "@angular/common/http";
 import { NodeInfo, SystemServiceInterface } from "../../app/services/system/system.service";
@@ -69,6 +69,7 @@ export class MockSystemService implements SystemServiceInterface {
       return this.nodesResource.value()?.result?.value ?? [];
     });
   }
+  radiusServers = signal([]);
 
   caConnectorResource?: HttpResourceRef<any> | undefined;
   caConnectors?: WritableSignal<CaConnectors> | undefined;

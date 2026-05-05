@@ -21,7 +21,7 @@ class QueueError(Exception):
     pass
 
 
-class BaseQueue(object):
+class BaseQueue:
     """
     A queue object represents an external job queue and is configured with
     a dictionary of options.

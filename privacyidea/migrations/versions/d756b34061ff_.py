@@ -77,9 +77,7 @@ def upgrade():
                                       counter_value=old_ctr.counter_value,
                                       node=node)
             session.add(new_ctr)
-            print("Migrating counter {!r}={} on node={!r} ...".format(new_ctr.counter_name,
-                                                                      new_ctr.counter_value,
-                                                                      node))
+            print(f"Migrating counter {new_ctr.counter_name!r}={new_ctr.counter_value} on node={node!r} ...")
         session.commit()
         # Step 4: Remove eventcounter
         op.drop_table("eventcounter")

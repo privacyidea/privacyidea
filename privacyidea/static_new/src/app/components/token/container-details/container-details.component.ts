@@ -41,7 +41,6 @@ import { FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
 import { MatCell, MatColumnDef, MatTableDataSource, MatTableModule } from "@angular/material/table";
 import { MatPaginator, PageEvent } from "@angular/material/paginator";
-import { OverflowService, OverflowServiceInterface } from "../../../services/overflow/overflow.service";
 import { RealmService, RealmServiceInterface } from "../../../services/realm/realm.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "../../../services/table-utils/table-utils.service";
 import { TokenDetails, TokenService, TokenServiceInterface } from "../../../services/token/token.service";
@@ -70,6 +69,8 @@ import { ContainerDetailsActionsComponent } from "./container-details-actions/co
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { ContainerDetailsTokenActionsComponent } from "./container-details-token-actions/container-details-token-actions.component";
 import { FilterValue } from "../../../core/models/filter_value/filter_value";
+import { DetailsHeaderComponent } from "@components/shared/details-shared/details-header/details-header.component";
+import { ContainerAddTokenComponent } from "../../shared/container-add-token/container-add-token.component";
 
 export const containerDetailsKeyMap = [
   { key: "type", label: "Type" },
@@ -119,23 +120,18 @@ interface TokenOption {
     MatIconButton,
     ContainerDetailsInfoComponent,
     ContainerDetailsTokenTableComponent,
-    MatPaginator,
     MatDivider,
-    MatCheckbox,
-    CopyButtonComponent,
-    ClearableInputComponent,
-    MatTooltip,
     ClearableInputComponent,
     ContainerDetailsActionsComponent,
     ScrollToTopDirective,
     ContainerDetailsTokenActionsComponent,
-    RouterLink
+    DetailsHeaderComponent,
+    ContainerAddTokenComponent
   ],
   templateUrl: "./container-details.component.html",
   styleUrls: ["./container-details.component.scss"]
 })
 export class ContainerDetailsComponent implements OnDestroy {
-  protected readonly overflowService: OverflowServiceInterface = inject(OverflowService);
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   protected readonly realmService: RealmServiceInterface = inject(RealmService);
@@ -158,19 +154,19 @@ export class ContainerDetailsComponent implements OnDestroy {
   pageIndex = this.tokenService.pageIndex;
   pageSize = this.tokenService.pageSize;
   tokenDataSource: WritableSignal<MatTableDataSource<TokenDetails>> = linkedSignal({
-    source: this.tokenResource.value,
-    computation: (tokenResource, previous) => {
-      if (tokenResource && tokenResource.result?.value) {
-        return new MatTableDataSource(tokenResource.result?.value.tokens);
+    source: this.tokenService.tokenResourceValue,
+    computation: (tokenResourceValue, previous) => {
+      if (tokenResourceValue) {
+        return new MatTableDataSource(tokenResourceValue.tokens);
       }
       return previous?.value ?? new MatTableDataSource();
     }
   });
   total: WritableSignal<number> = linkedSignal({
-    source: this.tokenResource.value,
-    computation: (tokenResource, previous) => {
-      if (tokenResource && tokenResource.result?.value) {
-        return tokenResource.result?.value.count;
+    source: this.tokenService.tokenResourceValue,
+    computation: (tokenResourceValue, previous) => {
+      if (tokenResourceValue) {
+        return tokenResourceValue.count;
       }
       return previous?.value ?? 0;
     }
@@ -313,6 +309,7 @@ export class ContainerDetailsComponent implements OnDestroy {
       }
     });
     effect(() => {
+      if (!this.containerDetailResource.hasValue()) return;
       const res = this.containerDetailResource.value();
       if (res && res?.result?.value?.containers.length === 0) {
         setTimeout(() => {

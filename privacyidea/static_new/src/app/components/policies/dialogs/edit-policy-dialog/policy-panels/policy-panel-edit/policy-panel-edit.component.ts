@@ -18,7 +18,7 @@
  **/
 
 import { Component, computed, inject, input, linkedSignal, output, signal } from "@angular/core";
-import { CommonModule } from "@angular/common";
+
 import { MatButtonModule } from "@angular/material/button";
 import { FormsModule } from "@angular/forms";
 import { PolicyDetail } from "../../../../../../services/policies/policies.service";
@@ -35,7 +35,6 @@ export type PolicyTab = "actions" | "conditions";
   selector: "app-policy-panel-edit",
   standalone: true,
   imports: [
-    CommonModule,
     MatButtonModule,
     FormsModule,
     EditActionTabComponent,

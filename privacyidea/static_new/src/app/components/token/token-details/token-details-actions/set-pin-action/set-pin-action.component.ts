@@ -50,12 +50,12 @@ export class SetPinActionComponent {
   setPin() {
     if (this.setPinValue() !== this.repeatPinValue()) {
       console.error("PINs do not match.");
-      this.notificationService.openSnackBar("PINs do not match.");
+      this.notificationService.warning("PINs do not match.");
       return;
     }
     this.tokenService.setPin(this.tokenService.tokenSerial(), this.setPinValue()).subscribe({
       next: () => {
-        this.notificationService.openSnackBar("PIN set successfully.");
+        this.notificationService.success("PIN set successfully.");
         this.setPinValue.set("");
         this.repeatPinValue.set("");
       }

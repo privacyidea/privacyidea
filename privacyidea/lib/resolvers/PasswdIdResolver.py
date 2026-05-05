@@ -42,7 +42,6 @@ import re
 import os
 import logging
 import codecs
-from typing import List
 
 from passlib.context import CryptContext
 
@@ -128,8 +127,7 @@ class IdResolver (UserIdResolver):
         if not self.file_name:
             self.file_name = "/etc/passwd"
 
-        log.info('loading users from file {0!s} from within {1!r}'.format(self.file_name,
-                                                                          os.getcwd()))
+        log.info(f'loading users from file {self.file_name!s} from within {os.getcwd()!r}')
         with codecs.open(self.file_name, "r", ENCODING) as file_handle:
             ID = self.search_field_indices["userid"]
             NAME = self.search_field_indices["username"]
@@ -194,19 +192,19 @@ class IdResolver (UserIdResolver):
         :return: True or False
         :rtype: bool
         """
-        log.info("checking password for user uid {0!s}".format(uid))
+        log.info(f"checking password for user uid {uid!s}")
         cryptedpasswd = self.pass_dict.get(uid)
-        log.debug("We found the encrypted pass {0!s} for uid {1!s}".format(cryptedpasswd, uid))
+        log.debug(f"We found the encrypted pass {cryptedpasswd!s} for uid {uid!s}")
         if cryptedpasswd:
             if cryptedpasswd in ['x', '*']:
                 err = "Sorry, currently no support for shadow passwords"
-                log.error("{0!s}".format(err))
+                log.error(f"{err!s}")
                 raise NotImplementedError(err)
             if crypt_ctx.verify(password, cryptedpasswd):
-                log.info("successfully authenticated user uid {0!s}".format(uid))
+                log.info(f"successfully authenticated user uid {uid!s}")
                 return True
             else:
-                log.warning("user uid {0!s} failed to authenticate".format(uid))
+                log.warning(f"user uid {uid!s} failed to authenticate")
                 return False
         else:
             log.warning("Failed to verify password. No encrypted password "
@@ -356,7 +354,7 @@ class IdResolver (UserIdResolver):
 
         return ret
 
-    def check_attribute(self, line: List[str], pattern: str, attribute_name: str) -> bool:
+    def check_attribute(self, line: list[str], pattern: str, attribute_name: str) -> bool:
         """
         Checks if a given attribute matches a pattern.
 
@@ -427,7 +425,7 @@ class IdResolver (UserIdResolver):
 
         try:
             cUserId = int(line[self.search_field_indices["userid"]])
-        except:  # pragma: no cover
+        except ValueError:  # pragma: no cover
             return ret
 
         (op, val) = tokenise(">=|<=|>|<|=|between")(pattern)
@@ -441,7 +439,7 @@ class IdResolver (UserIdResolver):
                     v = ihVal
                     ihVal = ilVal
                     ilVal = v
-            except:  # pragma: no cover
+            except ValueError:  # pragma: no cover
                 return ret
 
             if ilVal <= cUserId <= ihVal:
@@ -449,7 +447,7 @@ class IdResolver (UserIdResolver):
         else:
             try:
                 ival = int(val)
-            except:  # pragma: no cover
+            except ValueError:  # pragma: no cover
                 return ret
 
             if op == "=" and cUserId == ival:

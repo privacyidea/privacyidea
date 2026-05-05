@@ -55,16 +55,16 @@ from sqlalchemy import select, delete
 from privacyidea.lib.error import ParameterError, ResolverError, UserError
 from privacyidea.models import CustomUserAttribute, db
 from .config import get_from_config, SYSCONF
-from .framework import get_app_config_value
 from .log import log_with
 from .realm import (get_realms, realm_is_defined,
                     get_default_realm,
-                    get_realm, get_realm_id)
+                    get_ordered_resolvers,
+                    get_realm_id,
+                    get_realms_of_resolver)
 from .resolver import (get_resolver_object,
                        get_resolver_type)
 from .usercache import (user_cache, cache_username, user_init, delete_user_cache)
-from ..api.lib.utils import (getParam,
-                             optional)
+from privacyidea.lib.params import get_optional, get_required
 
 log = logging.getLogger(__name__)
 
@@ -127,8 +127,7 @@ class User:
         if self.resolver:
             resolver = get_resolver_object(self.resolver)
             if resolver is None:
-                raise UserError("The resolver '{0!s}' does not exist!".format(
-                    self.resolver))
+                raise UserError(f"The resolver '{self.resolver!s}' does not exist!")
             if self.uid is None:
                 # Determine the uid
                 self.uid = resolver.getUserId(self.login)
@@ -157,16 +156,16 @@ class User:
         :rtype: bool
         """
         if not isinstance(other, type(self)):
-            log.info("Comparing a non-user object: {0!s} != {1!s}.".format(self, type(other)))
+            log.info(f"Comparing a non-user object: {self!s} != {type(other)!s}.")
             return False
         if (self.resolver != other.resolver) or (self.realm != other.realm):
             log.info("Users are not in the same resolver and realm: "
-                     "{0!s} != {1!s}.".format(self, other))
+                     f"{self!s} != {other!s}.")
             return False
         if self.uid and other.uid:
-            log.debug("Comparing based on uid: {0!s} vs {1!s}".format(self.uid, other.uid))
+            log.debug(f"Comparing based on uid: {self.uid!s} vs {other.uid!s}")
             return self.uid == other.uid
-        log.debug("Comparing based on login: {0!s} vs {1!s}".format(self.login, other.login))
+        log.debug(f"Comparing based on login: {self.login!s} vs {other.login!s}")
         return self.login == other.login
 
     def __ne__(self, other):
@@ -187,47 +186,18 @@ class User:
             # Realm and resolver should always be ASCII
             conf = ''
             if self.resolver:
-                conf = '.{0!s}'.format(self.resolver)
-            ret = '<{0!s}{1!s}@{2!s}>'.format(self.login, conf, self.realm)
+                conf = f'.{self.resolver!s}'
+            ret = f'<{self.login!s}{conf!s}@{self.realm!s}>'
         return ret
 
     def __repr__(self):
-        ret = ("User(login={0!r}, realm={1!r}, resolver={2!r})".format(
-            self.login, self.realm, self.resolver))
+        ret = (f"User(login={self.login!r}, realm={self.realm!r}, resolver={self.resolver!r})")
         return ret
 
     def __bool__(self):
         return not self.is_empty()
 
     __nonzero__ = __bool__
-
-    @log_with(log)
-    def get_ordered_resolvers(self) -> list[str]:
-        """
-        returns a list of resolver names ordered by priority.
-        The resolver with the lowest priority is the first.
-        If resolvers have the same priority, they are ordered alphabetically.
-
-        :return: list of resolver names
-        :rtype: list
-        """
-        resolver_tuples = []
-        realm_config = get_realms(self.realm)
-        resolvers_in_realm = realm_config.get(self.realm, {}).get("resolver", [])
-        for resolver in resolvers_in_realm:
-            # append a tuple
-            resolver_tuples.append((resolver.get("name"),
-                                    resolver.get("priority") or 1000,
-                                    resolver.get("node")))
-
-        # sort the resolvers by the 2nd entry in the tuple, the priority
-        sorted_resolvers = sorted(resolver_tuples, key=lambda res: res[1])
-        # if the resolver contains a node setting, we only add it if it is on the correct node
-        local_node_uuid = get_app_config_value("PI_NODE_UUID")
-        resolvers = [r[0] for r in sorted_resolvers if not r[2] or r[2] == local_node_uuid]
-        # remove duplicate resolver names but keeping the order
-        seen = set()
-        return [x for x in resolvers if not (x in seen or seen.add(x))]
 
     def _get_resolvers(self, all_resolvers=False) -> list[str]:
         """
@@ -248,7 +218,7 @@ class User:
             return [self.resolver]
 
         resolvers = []
-        for resolver_name in self.get_ordered_resolvers():
+        for resolver_name in get_ordered_resolvers(self.realm):
             # test, if the user is contained in this resolver
             if self._locate_user_in_resolver(resolver_name):
                 break
@@ -267,21 +237,20 @@ class User:
         """
         resolver = get_resolver_object(resolvername)
         if resolver is None:  # pragma: no cover
-            log.info("Resolver {0!r} not found!".format(resolvername))
+            log.info(f"Resolver {resolvername!r} not found!")
             return False
         else:
             uid = resolver.getUserId(self.login)
             if uid not in ["", None]:
-                log.info("user {0!r} found in resolver {1!r}".format(self.login,
-                                                                     resolvername))
-                log.info("userid resolved to {0!r} ".format(uid))
+                log.info(f"user {self.login!r} found in resolver {resolvername!r}")
+                log.info(f"userid resolved to {uid!r} ")
                 self.resolver = resolvername
                 self.uid = uid
                 # We do not need to search other resolvers!
                 return True
             else:
-                log.debug("user {0!r} not found"
-                          " in resolver {1!r}".format(self.login, resolvername))
+                log.debug(f"user {self.login!r} not found"
+                          f" in resolver {resolvername!r}")
                 return False
 
     def get_user_identifiers(self) -> tuple[str or int, str, str]:
@@ -431,18 +400,18 @@ class User:
         userinfo = self.get_specific_info([phone_type])
         if phone_type in userinfo:
             phone = userinfo[phone_type]
-            log.debug("got user phone {0!r} of type {1!r}".format(phone, phone_type))
+            log.debug(f"got user phone {phone!r} of type {phone_type!r}")
             if isinstance(phone, list) and index is not None:
                 if len(phone) > index:
                     return phone[index]
                 else:
-                    log.warning("userobject ({0!r}) has not that much "
-                                "phone numbers ({1!r} of {2!r}).".format(self, index, phone))
+                    log.warning(f"userobject ({self!r}) has not that much "
+                                f"phone numbers ({index!r} of {phone!r}).")
                     return ""
             else:
                 return phone
         else:
-            log.warning("userobject ({0!r}) has no phone of type {1!r}.".format(self, phone_type))
+            log.warning(f"userobject ({self!r}) has no phone of type {phone_type!r}.")
             return ""
 
     @log_with(log)
@@ -470,13 +439,13 @@ class User:
             # we have got a resolver and will get all realms
             # the resolver belongs to.
             for key, val in all_realms.items():
-                log.debug("evaluating realm {0!r}: {1!r} ".format(key, val))
+                log.debug(f"evaluating realm {key!r}: {val!r} ")
                 for reso in val.get('resolver', []):
                     resoname = reso.get("name")
                     if resoname == self.resolver:
                         user_realms.append(key.lower())
-                        log.debug("added realm %r to Realms due to "
-                                  "resolver %r" % (key, self.resolver))
+                        log.debug(f"added realm {key!r} to Realms due to "
+                                  f"resolver {self.resolver!r}")
         return user_realms
 
     @log_with(log, log_entry=False)
@@ -552,7 +521,7 @@ class User:
                 search_fields[reso] = sf
 
             except Exception as e:  # pragma: no cover
-                log.warning("module {0!r}: {1!r}".format(reso, e))
+                log.warning(f"module {reso!r}: {e!r}")
 
         return search_fields
 
@@ -572,15 +541,15 @@ class User:
             attributes["password"] = password
         success = False
         try:
-            log.info("User info for user {0!r}@{1!r} about to "
-                     "be updated.".format(self.login, self.realm))
+            log.info(f"User info for user {self.login!r}@{self.realm!r} about to "
+                     "be updated.")
             res = self._get_resolvers()
             # Now we know, the resolvers of this user and we can update the
             # user
             if len(res) == 1:
                 resolver = get_resolver_object(self.resolver)
                 if not resolver.updateable:  # pragma: no cover
-                    log.warning("The resolver {0!r} is not updateable.".format(resolver))
+                    log.warning(f"The resolver {resolver!r} is not updateable.")
                 else:
                     uid, _rtype, _rname = self.get_user_identifiers()
                     if resolver.update_user(uid, attributes):
@@ -590,14 +559,14 @@ class User:
                         # If necessary, update the username
                         if attributes.get("username"):
                             self.login = attributes.get("username")
-                        log.info("Successfully updated user {0!r}.".format(self))
+                        log.info(f"Successfully updated user {self!r}.")
                     else:  # pragma: no cover
-                        log.info("user {0!r} failed to update.".format(self))
+                        log.info(f"user {self!r} failed to update.")
 
             elif not res:  # pragma: no cover
-                log.error("The user {0!r} exists in NO resolver.".format(self))
+                log.error(f"The user {self!r} exists in NO resolver.")
         except UserError as exx:  # pragma: no cover
-            log.error("Error while trying to verify the username: {0!r}".format(exx))
+            log.error(f"Error while trying to verify the username: {exx!r}")
 
         return success
 
@@ -611,30 +580,30 @@ class User:
         """
         success = False
         try:
-            log.info("User {0!r}@{1!r} about to be deleted.".format(self.login, self.realm))
+            log.info(f"User {self.login!r}@{self.realm!r} about to be deleted.")
             res = self._get_resolvers()
             # Now we know, the resolvers of this user and we can delete it
             if len(res) == 1:
                 resolver = get_resolver_object(self.resolver)
                 if not resolver.updateable:  # pragma: no cover
-                    log.warning("The resolver {0!r} is not updateable.".format(resolver))
+                    log.warning(f"The resolver {resolver!r} is not updateable.")
                 else:
                     uid, _rtype, _rname = self.get_user_identifiers()
                     if resolver.delete_user(uid):
                         success = True
-                        log.info("Successfully deleted user {0!r}.".format(self))
+                        log.info(f"Successfully deleted user {self!r}.")
                         # Delete corresponding entry from the user cache
                         delete_user_cache(username=self.login, resolver=self.resolver)
                     else:  # pragma: no cover
-                        log.info("user {0!r} failed to update.".format(self))
+                        log.info(f"user {self!r} failed to update.")
 
             elif not res:  # pragma: no cover
-                log.error("The user {0!r} exists in NO resolver.".format(self))
+                log.error(f"The user {self!r} exists in NO resolver.")
         except UserError as exx:  # pragma: no cover
-            log.error("Error while trying to verify the username: {0!r}".format(exx))
+            log.error(f"Error while trying to verify the username: {exx!r}")
         except Exception as exx:  # pragma: no cover
-            log.error("Error checking password within module {0!r}".format(exx))
-            log.debug("{0!s}".format(traceback.format_exc()))
+            log.error(f"Error checking password within module {exx!r}")
+            log.debug(f"{traceback.format_exc()!s}")
 
         return success
 
@@ -652,7 +621,6 @@ class User:
             "uid": self.uid,
             "custom_attributes": self.attributes
         }
-
 
 @log_with(log, hide_kwargs=["password"])
 def create_user(resolvername: str, attributes: dict, password: str = None) -> int or str:
@@ -721,7 +689,7 @@ def split_user(username: str) -> tuple[str, str]:
 
 
 @log_with(log, hide_args_keywords={0: ["pass", "password"]})
-def get_user_from_param(param: dict, optional_or_required: bool = optional) -> User:
+def get_user_from_param(param: dict, optional_or_required: bool = True) -> User:
     """
     Find the parameter user, realm and resolver and
     create a user object from these parameters.
@@ -730,11 +698,15 @@ def get_user_from_param(param: dict, optional_or_required: bool = optional) -> U
     than one resolver.
 
     :param param: The dictionary of request parameters
-    :param optional_or_required: whether the user is required
+    :param optional_or_required: ``True`` (default) if the user param is optional,
+        ``False`` if it is required (raises ParameterError when absent).
     :return: User as found in the parameters
     """
     realm = ""
-    username = getParam(param, "user", optional_or_required)
+    if optional_or_required:
+        username = get_optional(param, "user")
+    else:
+        username = get_required(param, "user")
 
     if username is None:
         username = ""
@@ -758,15 +730,28 @@ def get_user_from_param(param: dict, optional_or_required: bool = optional) -> U
 def get_user_list(param: dict = None, user: User = None, include_custom_attributes: bool = False,
                   requested_attributes: list[str] = None) -> list[dict]:
     """
-    This function returns a list of user dictionaries.
+    This function returns a list of user dictionaries. The user dict contains the resolver and custom user attributes,
+    if requested.
+    If no realm is given in the param, the users from all realms are returned.
+    The ``realm``, ``resolver`` and ``editable`` keys are added on the lib layer and are only included in the
+    returned user dictionaries when ``requested_attributes`` is None/empty or explicitly lists them.
+    If only a resolver is given (no realm), the function looks up all realms containing that resolver and
+    iterates through them, so users are always returned in a realm context with proper masking.
+
+    Fixme: Please note: If a realm and a resolver is given, the resolver is currently ignored. So all users
+    of this realm are returned. This is the old/current behaviour. When filtering for a resolver in a realm, we
+    should probably take care, that masked users (in low priority resolvers) are not returned.
 
     :param param: search parameters
     :param user:  a specific user object to return
     :param include_custom_attributes:  Set to True, if you want to receive custom attributes of external users.
-    :param requested_attributes: A list of attributes to return for each user. If None or empty, all attributes are returned.
+    :param requested_attributes: A list of attributes to return for each user. If None or empty, all
+        attributes are returned.
     :return: list of user info as dictionaries
     """
-    users = []
+    # The user dictionary, what we use to avoid duplicates in realms, while searching for users. The key will be the
+    # tuple of (username, realm)
+    users_dict = {}
     resolvers = []
     search_dict = {"username": "*"}
     param = param or {}
@@ -778,9 +763,9 @@ def get_user_list(param: dict = None, user: User = None, include_custom_attribut
         if key in ["realm", "resolver", "user", "username"]:
             continue
         search_dict[key] = lval
-        log.debug("Parameter key:{0!r}={1!r}".format(key, lval))
+        log.debug(f"Parameter key:{key!r}={lval!r}")
 
-    # update searchdict depending on existence of 'user' or 'username' in param
+    # update search_dict depending on existence of 'user' or 'username' in param
     # Since 'user' takes precedence over 'username' we have to check the order
     if 'username' in param:
         search_dict['username'] = param['username']
@@ -789,80 +774,91 @@ def get_user_list(param: dict = None, user: User = None, include_custom_attribut
     log.debug('Changed search key to username: %s.', search_dict['username'])
 
     # determine which scope we want to show
-    param_resolver = getParam(param, "resolver")
-    param_realm = getParam(param, "realm")
+    param_resolver = get_optional(param, "resolver")
+    param_realm = get_optional(param, "realm")
     user_resolver = None
     user_realm = None
+    # list of realms to iterate through
+    realm_iteration = []
     if user is not None:
         user_resolver = user.resolver
         user_realm = user.realm
 
-    # Append all possible resolvers
-    if param_resolver:
-        resolvers.append(param_resolver)
-    if user_resolver:
-        resolvers.append(user_resolver)
-
-    local_node_uuid = get_app_config_value("PI_NODE_UUID")
-    for pu_realm in [param_realm, user_realm]:
-        if pu_realm:
-            realm_config = get_realm(pu_realm)
-            for r in realm_config.get("resolver", {}):
-                if r.get("name"):
-                    if not r.get("node") or r["node"] == local_node_uuid:
-                        resolvers.append(r.get("name"))
+    # Determine the realms to iterate through. Dedupe while preserving order in case param_realm == user_realm.
+    if param_realm:
+        realm_iteration.append(param_realm)
+    if user_realm:
+        realm_iteration.append(user_realm)
+    realm_iteration = list(dict.fromkeys(realm_iteration))
 
     if not (param_resolver or user_resolver or param_realm or user_realm):
-        # if no realm or resolver was specified, we search the resolvers
-        # in all realms
+        # if no realm or resolver was specified, we search the resolvers in all realms
+        log.debug("Seldom event: Calling get_user_list with absolutely no information on realms or resolvers!")
         all_realms = get_realms()
-        for _name, res_list in all_realms.items():
-            for resolver_entry in res_list.get("resolver"):
-                if not resolver_entry.get("node") or resolver_entry["node"] == local_node_uuid:
-                    resolvers.append(resolver_entry.get("name"))
+        realm_iteration = list(all_realms)
 
+    if not realm_iteration:
+        # No realm given but a resolver is given. Find all realms that contain this resolver.
+        resolver_name = param_resolver or user_resolver
+        realm_iteration = get_realms_of_resolver(resolver_name)
+        if not realm_iteration:
+            log.warning(f"Resolver '{resolver_name}' is not assigned to any realm.")
+            return []
+
+    # Determine some display values.
     remove_user_id = False
     if include_custom_attributes and requested_attributes and "userid" not in requested_attributes:
         # user id is required to later get the custom attributes for the user
         requested_attributes.append("userid")
         remove_user_id = True
-    for resolver_name in set(resolvers):
-        try:
-            log.debug("Check for resolver class: {0!r}".format(resolver_name))
-            resolver = get_resolver_object(resolver_name)
-            # Continue if we couldn't find a resolver with the given name
-            if not resolver:
+    log.debug(f"With this search dictionary: {search_dict!r}")
+    requested_pi_user_attributes = list({"realm", "resolver", "editable"}.intersection(requested_attributes or []))
+    requested_user_store_attributes = list(set(requested_attributes or []) - set(requested_pi_user_attributes))
+
+    for realm in realm_iteration:
+        resolvers = get_ordered_resolvers(realm)
+        realm_id = get_realm_id(realm)
+
+        for resolver_name in resolvers:
+            try:
+                log.debug(f"Check for resolver class: {resolver_name!r}")
+                resolver = get_resolver_object(resolver_name)
+                # Continue if we couldn't find a resolver with the given name
+                if not resolver:
+                    log.info(f"Can not find a resolver with the name '{resolver_name}'")
+                    continue
+                user_list = resolver.getUserList(search_dict, requested_user_store_attributes)
+                for user_info in user_list:
+                    if not requested_attributes or "realm" in requested_pi_user_attributes:
+                        user_info["realm"] = realm
+                    if not requested_attributes or "resolver" in requested_pi_user_attributes:
+                        user_info["resolver"] = resolver_name
+                    if not requested_attributes or "editable" in requested_pi_user_attributes:
+                        user_info["editable"] = resolver.editable
+                    if include_custom_attributes and realm_id is not None:
+                        # Add the custom attributes, by class method from User
+                        # with uid, resolvername and realm_id, which we need to determine by the realm name
+                        custom_attributes = get_attributes(user_info.get("userid"), resolver_name, realm_id,
+                                                           requested_attributes)
+                        user_info.update(custom_attributes)
+                    if remove_user_id:
+                        # Remove the userid if it is not requested, as it is only needed for the custom attributes
+                        user_info.pop("userid", None)
+                    # Add user to users_dict, if it is not contained, yet
+                    user_tuple = (user_info.get("username"), realm)
+                    if user_tuple not in users_dict:
+                        users_dict[user_tuple] = user_info
+                log.debug(f"Found this userlist: {user_list!r}")
+
+            except (ResolverError, ParameterError) as ex:
+                # In case of wrong search parameters or broken resolver we continue
+                # All other errors will be passed down.
+                # TODO: Reflect the broken resolver/query in the result data
+                log.warning(f"Unable to get user list for resolver '{resolver_name}': {ex!r}")
+                log.debug(f"{traceback.format_exc()!s}")
                 continue
-            log.debug("With this search dictionary: %r", search_dict)
-            requested_pi_user_attributes = list({"resolver", "editable"}.intersection(requested_attributes or []))
-            requested_user_store_attributes = list(set(requested_attributes or []) - set(requested_pi_user_attributes))
-            user_list = resolver.getUserList(search_dict, requested_user_store_attributes)
-            # Add resolvername to the list
-            realm_id = get_realm_id(param_realm or user_realm)
-            for user_info in user_list:
-                if not requested_attributes or "resolver" in requested_pi_user_attributes:
-                    user_info["resolver"] = resolver_name
-                if not requested_attributes or "editable" in requested_pi_user_attributes:
-                    user_info["editable"] = resolver.editable
-                if include_custom_attributes and realm_id is not None:
-                    # Add the custom attributes, by class method from User
-                    # with uid, resolvername and realm_id, which we need to determine by the realm name
-                    custom_attributes = get_attributes(user_info.get("userid"), resolver_name, realm_id, requested_attributes)
-                    user_info.update(custom_attributes)
-                if remove_user_id:
-                    # Remove the userid if it is not requested, as it is only needed for the custom attributes
-                    user_info.pop("userid", None)
-            log.debug("Found this userlist: {0!r}".format(user_list))
-            users.extend(user_list)
 
-        except (ResolverError, ParameterError) as ex:
-            # In case of wrong search parameters or broken resolver we continue
-            # All other errors will be passed down.
-            # TODO: Reflect the broken resolver/query in the result data
-            log.warning(f"Unable to get user list for resolver '{resolver_name}': {ex!r}")
-            log.debug("{0!s}".format(traceback.format_exc()))
-            continue
-
+    users = list(users_dict.values())
     return users
 
 
@@ -896,7 +892,7 @@ def log_used_user(user: User, other_text: str = "") -> str:
     :param other_text: Some additional text
     :return: str
     """
-    return "logged in as {0}. {1}".format(user.used_login, other_text) if user.used_login != user.login else other_text
+    return f"logged in as {user.used_login}. {other_text}" if user.used_login != user.login else other_text
 
 
 def get_attributes(uid: str, resolver: str, realm_id: int, requested_attributes: list[str] = None) -> dict:

@@ -127,11 +127,38 @@ The old `python logging config file format <https://docs.python.org/3/library/lo
    level=ERROR
    handlers=file
 
+
 .. note:: These examples define a mail handler, that will send emails
    to certain email addresses, if an ERROR occurs. All other DEBUG messages will
    be logged to a file.
 
 .. note:: The filename extension is irrelevant in this case
+
+The logging config can also be used to send the log to a syslog server::
+
+    [formatters]
+    keys=detail
+
+    [formatter_detail]
+    class=privacyidea.lib.log.SecureFormatter
+    format=[%(asctime)s][%(process)d][%(thread)d][%(levelname)s][%(name)s:%(lineno)d] %(message)s
+
+    [handlers]
+    keys=audit
+
+    [handler_audit]
+    class=logging.handlers.SysLogHandler
+    args=(('192.168.121.193', handlers.SYSLOG_UDP_PORT), handlers.SysLogHandler.LOG_LOCAL0)
+    formatter=detail
+    level=INFO
+    propagate=0
+
+    [loggers]
+    keys=root
+
+    [logger_root]
+    level=INFO
+    handlers=audit
 
 .. rubric:: Footnotes
 

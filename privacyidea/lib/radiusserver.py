@@ -56,7 +56,7 @@ from privacyidea.models import db, RADIUSServer as RADIUSServerDB
 log = logging.getLogger(__name__)
 
 
-class RADIUSServer(object):
+class RADIUSServer:
     """
     RADIUS Server object with configuration. The RADIUS Server object
     contains a test functionality so that the configuration can be tested.
@@ -101,9 +101,8 @@ class RADIUSServer(object):
         verify_message_authenticator = False
         if self.config.options:
             verify_message_authenticator = self.config.options.get("message_authenticator", False)
-        log.debug("NAS Identifier: %r, Dictionary: %r" % (nas_identifier, radius_dictionary))
-        log.debug("Constructing client object with server: %r, port: %r" %
-                  (self.config.server, self.config.port))
+        log.debug(f"NAS Identifier: {nas_identifier!r}, Dictionary: {radius_dictionary!r}")
+        log.debug(f"Constructing client object with server: {self.config.server!r}, port: {self.config.port!r}")
         log.debug("Using Message-Authenticator: %r", verify_message_authenticator)
 
         srv = Client(server=self.config.server,
@@ -125,14 +124,14 @@ class RADIUSServer(object):
 
         if radius_state:
             req["State"] = radius_state
-            log.debug("Sending Challenge to RADIUS server: %r" % radius_state)
+            log.debug(f"Sending Challenge to RADIUS server: {radius_state!r}")
 
         try:
             # The authenticator is available after the call to PwCrypt
             request_authenticator = req.authenticator
             response = srv.SendPacket(req)
         except Timeout:
-            log.warning("Timeout while contacting remote radius server {0!s}".format(self.config.server))
+            log.warning(f"Timeout while contacting remote radius server {self.config.server!s}")
             return None
 
         # Check the Message-Authenticator attribute in the Response
@@ -342,7 +341,7 @@ def test_radius(identifier, server, secret, user, password, port=1812, descripti
             result = True
         elif response.code == pyrad.packet.AccessChallenge:
             log.info("RADIUS Server test failed! Server requires "
-                     "Challenge-Response (Answer: %r)" % response["Reply-Message"])
+                     "Challenge-Response (Answer: {!r})".format(response["Reply-Message"]))
             result = False
         else:
             log.info("RADIUS Server test failed! Server rejected authentication.")
@@ -371,11 +370,11 @@ def export_radiusserver(name=None):
 @register_import('radiusserver')
 def import_radiusserver(data, name=None):
     """Import radiusserver configuration"""
-    log.debug('Import radiusserver config: {0!s}'.format(data))
+    log.debug(f'Import radiusserver config: {data!s}')
     for res_name, res_data in data.items():
         if name and name != res_name:
             continue
         res_data['secret'] = res_data.pop('password')
         rid = add_radius(res_name, **res_data)
-        log.info('Import of smtpserver "{0!s}" finished,'
-                 ' id: {1!s}'.format(res_name, rid))
+        log.info(f'Import of smtpserver "{res_name!s}" finished,'
+                 f' id: {rid!s}')

@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { inject, Injectable, signal } from "@angular/core";
+import { effect, inject, Injectable, signal } from "@angular/core";
 import { HttpClient, httpResource } from "@angular/common/http";
 import { AuthService } from "../auth/auth.service";
 import { ContentService } from "../content/content.service";
@@ -59,7 +59,13 @@ export class SubscriptionService {
   private notificationService = inject(NotificationService);
 
   private baseUrl = environment.proxyUrl + "/subscriptions";
-  
+
+  constructor() {
+    effect(() => {
+      this.notificationService.handleResourceError(this.subscriptionsResource.error(), "subscriptions");
+    });
+  }
+
   private reloadTrigger = signal(0);
 
   subscriptionsResource = httpResource<PiResponse<Record<string, Subscription>>>(() => {
@@ -80,11 +86,11 @@ export class SubscriptionService {
 
   deleteSubscription(application: string): Observable<PiResponse<boolean>> {
     const headers = this.authService.getHeaders();
-    return this.http.delete<PiResponse<boolean>>(`${this.baseUrl}/${application}`, { headers }).pipe(
+    return this.http.delete<PiResponse<boolean>>(`${this.baseUrl}/${encodeURIComponent(application)}`, { headers }).pipe(
       catchError((error) => {
         console.error("Failed to delete subscription.", error);
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.openSnackBar("Failed to delete subscription. " + message);
+        this.notificationService.error("Failed to delete subscription. " + message);
         return throwError(() => error);
       })
     );
@@ -99,7 +105,7 @@ export class SubscriptionService {
       catchError((error) => {
         console.error("Failed to upload subscription file.", error);
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.openSnackBar("Failed to upload subscription file. " + message);
+        this.notificationService.error("Failed to upload subscription file. " + message);
         return throwError(() => error);
       })
     );

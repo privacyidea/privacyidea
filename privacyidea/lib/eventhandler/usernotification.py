@@ -72,7 +72,7 @@ To check your tokens you may login to the Web UI:
 """
 
 
-class NOTIFY_TYPE(object):
+class NOTIFY_TYPE:
     """
     Allowed token owner
     """
@@ -398,7 +398,7 @@ class UserNotificationEventHandler(BaseEventHandler):
                 # We read the template from the file.
                 filename = body[5:]
                 try:
-                    with open(filename, "r", encoding="utf-8") as f:
+                    with open(filename, encoding="utf-8") as f:
                         body = f.read()
                 except Exception as e:
                     log.warning(f"Failed to read email template from file {filename}: {e}")

@@ -18,7 +18,7 @@
  **/
 
 import { Component, inject, computed, linkedSignal, effect } from "@angular/core";
-import { CommonModule } from "@angular/common";
+
 import { FormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCardModule } from "@angular/material/card";
@@ -29,8 +29,8 @@ import { MatInputModule } from "@angular/material/input";
 import { MatCheckboxModule } from "@angular/material/checkbox";
 import { MatListModule } from "@angular/material/list";
 import {
-  ContainerTemplateServiceInterface,
-  ContainerTemplateService
+  ContainerTemplateService,
+  ContainerTemplateServiceInterface
 } from "../../../../../services/container-template/container-template.service";
 import { ContainerTemplate } from "../../../../../services/container/container.service";
 import { deepCopy } from "../../../../../utils/deep-copy.utils";
@@ -44,12 +44,15 @@ import { TokenEnrollmentPayload } from "src/app/mappers/token-api-payload/_token
 import { TokenTypeKey } from "src/app/services/token/token.service";
 import { ROUTE_PATHS } from "../../../../../route_paths";
 import { ContentService, ContentServiceInterface } from "../../../../../services/content/content.service";
+import { NAVIGATION_ACCESSIBLE_DIALOG_CLASS } from "../../../../../constants/global.constants";
 
 @Component({
   selector: "app-container-template-edit-dialog",
   standalone: true,
+  host: {
+    class: NAVIGATION_ACCESSIBLE_DIALOG_CLASS
+  },
   imports: [
-    CommonModule,
     MatInputModule,
     MatCardModule,
     MatIconModule,
@@ -130,6 +133,7 @@ export class ContainerTemplateEditDialogComponent extends PendingChangesDialogCo
   readonly hasToken = computed(() => this.tokens().length > 0);
 
   // --- Computed - Validation & Conflict ---
+  readonly nameInvalidPattern = computed(() => !/^[a-zA-Z0-9._-]*$/.test(this.template().name));
   readonly nameConflict = computed(() =>
     this.containerTemplateService.templates().some((t) => t.name === this.template().name && t.name !== this.data?.name)
   );
@@ -137,7 +141,7 @@ export class ContainerTemplateEditDialogComponent extends PendingChangesDialogCo
     return this.containerTemplateService.canSaveTemplate(this.template()) && !this.nameConflict();
   });
   readonly nameErrorMatcher = {
-    isErrorState: () => this.nameConflict()
+    isErrorState: () => this.nameConflict() || (this.template().name.length > 0 && this.nameInvalidPattern())
   };
 
   // --- Computed - Dialog Actions ---

@@ -16,8 +16,8 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, inject } from "@angular/core";
-import { DOCUMENT } from "@angular/common";
+import { Component, inject, DOCUMENT } from "@angular/core";
+
 import { MatButtonModule } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 import { MatTooltipModule } from "@angular/material/tooltip";
@@ -167,7 +167,7 @@ export class TokenTableActionsComponent {
           if (err.error?.result?.error?.message) {
             message = err.error.result.error.message;
           }
-          this.notificationService.openSnackBar(message);
+          this.notificationService.error(message);
           return EMPTY;
         })
       )
@@ -212,7 +212,7 @@ export class TokenTableActionsComponent {
                 }
 
                 if (messages.length > 0) {
-                  this.notificationService.openSnackBar(messages.join("\n"));
+                  this.notificationService.success(messages.join("\n"));
                 }
                 this.tokenService.tokenResource.reload();
               },
@@ -221,7 +221,7 @@ export class TokenTableActionsComponent {
                 if (err.error?.result?.error?.message) {
                   message = err.error.result.error.message;
                 }
-                this.notificationService.openSnackBar(message);
+                this.notificationService.error(message);
               }
             });
           }

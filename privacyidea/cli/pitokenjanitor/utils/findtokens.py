@@ -37,7 +37,7 @@ import re
 import sys
 from collections import defaultdict
 from datetime import datetime
-from typing import Generator, Callable, Union
+from collections.abc import Generator, Callable
 
 import click
 from cryptography.fernet import Fernet
@@ -77,8 +77,8 @@ def _try_convert_to_datetime(given_value_string: str) -> datetime:
         raise
 
 
-def _compare_regex_or_equal(given_regex: str) -> Callable[[Union[int, bool, str]], bool]:
-    def comparator(value: Union[int, bool, str]) -> bool:
+def _compare_regex_or_equal(given_regex: str) -> Callable[[int | bool | str], bool]:
+    def comparator(value: int | bool | str) -> bool:
         if type(value) in (int, bool):
             # If the value from the database is an integer, we compare "equals integer"
             given_value = _try_convert_to_integer(given_regex)
@@ -90,8 +90,8 @@ def _compare_regex_or_equal(given_regex: str) -> Callable[[Union[int, bool, str]
     return comparator
 
 
-def _compare_not(given_regex: str) -> Callable[[Union[int, bool, str]], bool]:
-    def comparator(value: Union[int, bool, str]) -> bool:
+def _compare_not(given_regex: str) -> Callable[[int | bool | str], bool]:
+    def comparator(value: int | bool | str) -> bool:
         if type(value) in (int, bool):
             # If the value from the database is an integer, we compare "equals integer"
             given_value = _try_convert_to_integer(given_regex)
@@ -103,7 +103,7 @@ def _compare_not(given_regex: str) -> Callable[[Union[int, bool, str]], bool]:
     return comparator
 
 
-def _compare_greater_than(given_value: Union[int, str]) -> Callable[[int], bool]:
+def _compare_greater_than(given_value: int | str) -> Callable[[int], bool]:
     """
     :return: a function which returns True if its parameter (converted to an integer)
              is greater than *given_value_string* (converted to an integer).
@@ -119,7 +119,7 @@ def _compare_greater_than(given_value: Union[int, str]) -> Callable[[int], bool]
     return comparator
 
 
-def _compare_less_than(given_value: Union[int, str]) -> Callable[[int], bool]:
+def _compare_less_than(given_value: int | str) -> Callable[[int], bool]:
     """
     :return: a function which returns True if its parameter (converted to an integer)
              is less than *given_value_string* (converted to an integer).
@@ -330,10 +330,10 @@ def export_user_data(token_list: list, user_attributes: list = None) -> dict:
     return users
 
 
-def _get_token_list(assigned: Union[bool, None], active: Union[bool, None], range_of_serial: str,
+def _get_token_list(assigned: bool | None, active: bool | None, range_of_serial: str,
                     tokeninfo_filter, tokenattribute_filter: list[tuple[str, Callable]],
                     tokenowner_filter, tokencontainer_filter, tokentype, realm, resolver, rollout_state,
-                    orphaned: Union[bool, None], chunksize: int, has_not_tokeninfo_key, has_tokeninfo_key,
+                    orphaned: bool | None, chunksize: int, has_not_tokeninfo_key, has_tokeninfo_key,
                     orphaned_on_error: bool = False) -> Generator[TokenClass, None, None]:
     if assigned is not None:
         assigned = is_true(assigned)
@@ -599,7 +599,7 @@ def export(ctx, export_format, b32, file, user):
             click.echo(f"Failed to export {len(failed_exports)} tokens:")
             for serial in failed_exports:
                 click.echo(f"{serial}")
-            click.echo(f"Check the logfile for the cause of the failures.")
+            click.echo("Check the logfile for the cause of the failures.")
 
         click.secho(f'\nThe key to import the tokens is:\n\n\t{key}\n\n', fg='red', err=True)
         if file != sys.stdout:

@@ -23,7 +23,7 @@ def upgrade():
         # the ``node`` of all existing rows is set to the current node.
         op.add_column('clientapplication', sa.Column('node', sa.Unicode(length=255),
                                                      nullable=False, server_default=node))
-        op.drop_constraint(u'caix', 'clientapplication', type_='unique')
+        op.drop_constraint('caix', 'clientapplication', type_='unique')
         op.create_unique_constraint('caix', 'clientapplication', ['ip', 'clienttype', 'node'])
     except Exception as exx:
         print("Failed to add 'node' column to 'clientapplication' table")
@@ -32,6 +32,6 @@ def upgrade():
 
 def downgrade():
     op.drop_constraint('caix', 'clientapplication', type_='unique')
-    op.create_unique_constraint(u'caix', 'clientapplication', ['ip', 'clienttype'])
+    op.create_unique_constraint('caix', 'clientapplication', ['ip', 'clienttype'])
     # This will probably raise errors about violated UNIQUE constraints
     op.drop_column('clientapplication', 'node')

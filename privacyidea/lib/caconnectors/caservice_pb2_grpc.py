@@ -5,7 +5,7 @@ import grpc
 import privacyidea.lib.caconnectors.caservice_pb2 as caservice__pb2
 
 
-class CAServiceStub(object):
+class CAServiceStub:
     """Disposition values:
     0 - Incomplete
     1 - Error
@@ -69,7 +69,7 @@ class CAServiceStub(object):
                 )
 
 
-class CAServiceServicer(object):
+class CAServiceServicer:
     """Disposition values:
     0 - Incomplete
     1 - Error
@@ -189,7 +189,7 @@ def add_CAServiceServicer_to_server(servicer, server):
 
 
  # This class is part of an EXPERIMENTAL API.
-class CAService(object):
+class CAService:
     """Disposition values:
     0 - Incomplete
     1 - Error

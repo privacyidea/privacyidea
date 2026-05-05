@@ -2,16 +2,8 @@
 @use "@angular/material" as mat;
 
 .privacyidea-servers-container {
-  @include styles.table-container-styles;
+  @include styles.main-component-style;
   @include styles.base-table-structure(".privacyidea-servers-table", ".table-filter", ".table-scroll-container");
-  max-height: var(--max-height);
-  max-width: calc(100vw - var(--global-padding) * 5 - 48px);
-  display: grid;
-  overflow: auto;
-}
-
-.privacyidea-servers-layout {
-  padding: 24px;
 }
 
 .actions-container {

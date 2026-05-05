@@ -78,6 +78,7 @@ import { ContainerCreatedDialogWizardComponent } from "./container-created-dialo
 import { UserAssignmentComponent } from "../user-assignment/user-assignment.component";
 import { ContainerTemplateService } from "../../../services/container-template/container-template.service";
 import { ClearButtonComponent } from "../../shared/clear-button/clear-button.component";
+import { ContainerCreateFormComponent } from "../../shared/container-create-form/container-create-form.component";
 
 @Component({
   selector: "app-container-create",
@@ -88,22 +89,13 @@ import { ClearButtonComponent } from "../../shared/clear-button/clear-button.com
     MatOption,
     MatSelect,
     FormsModule,
-    MatInput,
-    MatLabel,
-    MatCheckbox,
     MatIconButton,
-    MatAccordion,
-    MatExpansionPanel,
-    MatExpansionPanelTitle,
-    MatExpansionPanelHeader,
     MatTooltip,
     ScrollToTopDirective,
     NgClass,
     CommonModule,
-    ContainerRegistrationConfigComponent,
     UserAssignmentComponent,
-    MatSuffix,
-    ClearButtonComponent
+    ContainerCreateFormComponent
   ],
   templateUrl: "./container-create.component.html",
   styleUrl: "./container-create.component.scss"
@@ -169,13 +161,17 @@ export class ContainerCreateComponent {
     });
 
     effect(() => {
-      const containerDetailResource = this.containerService.containerDetailResource.value();
       const serial = this.containerService.containerSerial();
 
       if (!serial) {
         return;
       }
 
+      if (!this.containerService.containerDetailResource.hasValue()) {
+        return;
+      }
+
+      const containerDetailResource = this.containerService.containerDetailResource.value();
       if (containerDetailResource?.result?.value) {
         const container = containerDetailResource.result.value.containers[0];
         const registrationState = container?.info?.registration_state;
@@ -270,7 +266,7 @@ export class ContainerCreateComponent {
       next: (response) => {
         const containerSerial = response.result?.value?.container_serial;
         if (!containerSerial) {
-          this.notificationService.openSnackBar("Container creation failed. No container serial returned.");
+          this.notificationService.error("Container creation failed. No container serial returned.");
           return;
         }
         if (this.generateQRCode()) {

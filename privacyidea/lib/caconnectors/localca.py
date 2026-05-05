@@ -35,7 +35,6 @@ import yaml
 import datetime
 from pathlib import Path
 import shlex
-from typing import Union
 import re
 import logging
 import os
@@ -196,13 +195,13 @@ def _get_crl_next_update(filename: str) -> datetime.datetime:
     :type filename: str
     :rtype: datetime.datetime
     """
-    with open(filename, 'r') as f:
+    with open(filename) as f:
         crl_buff = f.read()
         crl_obj = x509.load_pem_x509_crl(crl_buff.encode())
         return crl_obj.next_update_utc
 
 
-class CONFIG(object):
+class CONFIG:
     def __init__(self, name):
         self.directory = "./ca"
         self.keysize = 4096
@@ -210,24 +209,24 @@ class CONFIG(object):
         self.validity_cert = 365
         self.crl_days = 30
         self.crl_overlap = 5
-        self.dn = "/CN={0!s}".format(name)
+        self.dn = f"/CN={name!s}"
 
     def __str__(self):
-        s = """
-        Directory  : {ca.directory}
-        CA DN      : {ca.dn}
-        CA Keysize : {ca.keysize}
-        CA Validity: {ca.validity_ca}
+        s = f"""
+        Directory  : {self.directory}
+        CA DN      : {self.dn}
+        CA Keysize : {self.keysize}
+        CA Validity: {self.validity_ca}
 
-        Validity of issued certificates: {ca.validity_cert}
+        Validity of issued certificates: {self.validity_cert}
 
-        CRL validity: {ca.crl_days}
-        CRL overlap : {ca.crl_overlap}
-        """.format(ca=self)
+        CRL validity: {self.crl_days}
+        CRL overlap : {self.crl_overlap}
+        """
         return s
 
 
-class ATTR(object):
+class ATTR:
     __doc__ = """This is the list Attributes of the Local CA."""
     CAKEY = "cakey"
     CACERT = "cacert"
@@ -302,7 +301,7 @@ class LocalCAConnector(BaseCAConnector):
     def _check_attributes(self):
         for req_key in [ATTR.CAKEY, ATTR.CACERT]:
             if req_key not in self.config:
-                raise CAError("required argument '{0!s}' is missing.".format(req_key))
+                raise CAError(f"required argument '{req_key!s}' is missing.")
 
     def set_config(self, config=None):
         self.config = config or {}
@@ -333,7 +332,7 @@ class LocalCAConnector(BaseCAConnector):
         filename = "_".join([to_unicode(name_attribute.value) for name_attribute in x509_name])
         return ".".join([filename, file_extension])
 
-    def sign_request(self, csr: str, options: dict = None) -> tuple[int, Union[str, None]]:
+    def sign_request(self, csr: str, options: dict = None) -> tuple[int, str | None]:
         """
         Signs a certificate request with the key of the CA.
 
@@ -449,13 +448,13 @@ class LocalCAConnector(BaseCAConnector):
         content = {}
         if self.template_file:
             try:
-                with open(self.template_file, 'r') as content_file:
+                with open(self.template_file) as content_file:
                     file_content = content_file.read()
                     content = yaml.safe_load(file_content)
-            except EnvironmentError:
-                log.warning("Template file {0!s} for {1!s} not found or "
-                            "not permitted.".format(self.template_file, self.name))
-                log.debug('{0!s}'.format(traceback.format_exc()))
+            except OSError:
+                log.warning(f"Template file {self.template_file!s} for {self.name!s} not found or "
+                            "not permitted.")
+                log.debug(f'{traceback.format_exc()!s}')
         return content
 
     def revoke_cert(self, certificate: str, request_id=None, reason=CRL_REASONS[0]) -> str:
@@ -522,8 +521,7 @@ class LocalCAConnector(BaseCAConnector):
                          "the new CRL.")
             else:
                 log.info("No need to create a new CRL, yet. Next Update: "
-                         "{0!s}, overlap: {1!s}".format(next_update,
-                                                        self.overlap))
+                         f"{next_update!s}, overlap: {self.overlap!s}")
                 create_new_crl = False
 
         if create_new_crl:
@@ -577,20 +575,20 @@ class LocalCAConnector(BaseCAConnector):
 
         while 1:
             directory = input("In which directory do you want to create "
-                              "the CA [{0!s}]: ".format(config.directory))
+                              f"the CA [{config.directory!s}]: ")
             config.directory = directory or config.directory
             if not config.directory.startswith("/"):
                 config.directory = os.path.abspath(config.directory)
 
             keysize = input("What should be the keysize of the CA (2048/4096/8192)"
-                            "[{0!s}]: ".format(config.keysize))
+                            f"[{config.keysize!s}]: ")
             config.keysize = keysize or config.keysize
 
             validity_ca = input("How many days should the CA be valid ["
-                                "{0!s}]: ".format(config.validity_ca))
+                                f"{config.validity_ca!s}]: ")
             config.validity_ca = validity_ca or config.validity_ca
 
-            dn = input("What is the DN of the CA [{0!s}]: ".format(config.dn))
+            dn = input(f"What is the DN of the CA [{config.dn!s}]: ")
             config.dn = dn or config.dn
             # At the moment we do not use this. This would be written to the
             # templates file.
@@ -599,14 +597,14 @@ class LocalCAConnector(BaseCAConnector):
             #    config.validity_cert))
             # config.validity_cert = validity_cert or config.validity_cert
             crl_days = input("How many days should the CRL be valid "
-                             "[{0!s}]: ".format(config.crl_days))
+                             f"[{config.crl_days!s}]: ")
             config.crl_days = crl_days or config.crl_days
             crl_overlap = input("What should be the overlap period of the CRL in days "
-                                "[{0!s}]: ".format(config.crl_overlap))
+                                f"[{config.crl_overlap!s}]: ")
             config.crl_overlap = crl_overlap or config.crl_overlap
 
             print("=" * 60)
-            print("{0!s}".format(config))
+            print(f"{config!s}")
             answer = input("Is this configuration correct? [y/n] ")
             if answer.lower() == "y":
                 break
@@ -626,14 +624,14 @@ class LocalCAConnector(BaseCAConnector):
         caparms = {"caconnector": name,
                    "type": "local",
                    ATTR.WORKING_DIR: config.directory,
-                   ATTR.CACERT: "{0!s}/cacert.pem".format(config.directory),
-                   ATTR.CAKEY: "{0!s}/cakey.pem".format(config.directory),
+                   ATTR.CACERT: f"{config.directory!s}/cacert.pem",
+                   ATTR.CAKEY: f"{config.directory!s}/cakey.pem",
                    ATTR.CERT_DIR: config.directory,
-                   ATTR.CRL: "{0!s}/crl.pem".format(config.directory),
+                   ATTR.CRL: f"{config.directory!s}/crl.pem",
                    ATTR.CSR_DIR: config.directory,
                    ATTR.CRL_VALIDITY_PERIOD: config.crl_days,
                    ATTR.CRL_OVERLAP_PERIOD: config.crl_overlap,
-                   ATTR.OPENSSL_CNF: "{0!s}/openssl.cnf".format(config.directory)
+                   ATTR.OPENSSL_CNF: f"{config.directory!s}/openssl.cnf"
                    }
         return caparms
 
@@ -647,7 +645,7 @@ def _generate_openssl_cnf(config):
     """
     conf_file = OPENSSL_TEMPLATE.format(crl_days=config.crl_days,
                                         ca_days=config.validity_ca)
-    with open("{0!s}/openssl.cnf".format(config.directory), "w") as f:
+    with open(f"{config.directory!s}/openssl.cnf", "w") as f:
         f.write(conf_file)
 
 
@@ -659,21 +657,20 @@ def _init_ca(config):
     :return:
     """
     # Write the database
-    with open("{0!s}/index.txt".format(config.directory), "w") as f:
+    with open(f"{config.directory!s}/index.txt", "w") as f:
         f.write("")
 
     # Write the serial file
-    with open("{0!s}/serial".format(config.directory), "w") as f:
+    with open(f"{config.directory!s}/serial", "w") as f:
         f.write("1000")
 
     # create the privacy key and set accesss rights
-    with open("{0!s}/cakey.pem".format(config.directory), "w") as f:
+    with open(f"{config.directory!s}/cakey.pem", "w") as f:
         f.write("")
     import stat
-    os.chmod("{0!s}/cakey.pem".format(config.directory),
+    os.chmod(f"{config.directory!s}/cakey.pem",
              stat.S_IRUSR | stat.S_IWUSR)
-    command = "openssl genrsa -out {0!s}/cakey.pem {1!s}".format(
-        config.directory, config.keysize)
+    command = f"openssl genrsa -out {config.directory!s}/cakey.pem {config.keysize!s}"
     print("Running command...")
     print(command)
     args = shlex.split(command)
@@ -685,10 +682,9 @@ def _init_ca(config):
         raise CAError(error)
 
     # create the CA certificate
-    command = """openssl req -config openssl.cnf -key cakey.pem \
-      -new -x509 -days {ca_days!s} -sha256 -extensions v3_ca \
-      -out cacert.pem -subj {ca_dn!s}""".format(ca_days=config.validity_ca,
-                                                ca_dn=config.dn)
+    command = f"""openssl req -config openssl.cnf -key cakey.pem \
+      -new -x509 -days {config.validity_ca!s} -sha256 -extensions v3_ca \
+      -out cacert.pem -subj {config.dn!s}"""
     print("Running command...")
     print(command)
     args = shlex.split(command)
@@ -701,5 +697,5 @@ def _init_ca(config):
 
     print("!" * 60)
     print("Please check the ownership of the private key")
-    print("{0!s}/cakey.pem".format(config.directory))
+    print(f"{config.directory!s}/cakey.pem")
     print("!" * 60)

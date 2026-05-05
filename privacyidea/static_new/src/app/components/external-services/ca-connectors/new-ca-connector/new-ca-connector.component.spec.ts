@@ -21,12 +21,10 @@ import { NewCaConnectorComponent } from "./new-ca-connector.component";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from "@angular/material/dialog";
-import { of } from "rxjs";
 import { CaConnectorService } from "../../../../services/ca-connector/ca-connector.service";
 import { MockCaConnectorService } from "../../../../../testing/mock-services/mock-ca-connector-service";
-import { ContentService } from "../../../../services/content/content.service";
 import { PendingChangesService } from "../../../../services/pending-changes/pending-changes.service";
+import { provideRouter, Router } from "@angular/router";
 import { ROUTE_PATHS } from "../../../../route_paths";
 import { MockPendingChangesService } from "../../../../../testing/mock-services";
 
@@ -34,41 +32,23 @@ describe("NewCaConnectorComponent", () => {
   let component: NewCaConnectorComponent;
   let fixture: ComponentFixture<NewCaConnectorComponent>;
   let caConnectorServiceMock: any;
-  let dialogRefMock: any;
-  let dialogMock: any;
+  let router: Router;
 
   beforeEach(async () => {
-    dialogRefMock = {
-      disableClose: false,
-      backdropClick: jest.fn().mockReturnValue(of()),
-      keydownEvents: jest.fn().mockReturnValue(of()),
-      close: jest.fn()
-    };
-
-    dialogMock = {
-      open: jest.fn().mockReturnValue({ afterClosed: () => of(true) })
-    };
-
-    const contentServiceMock = {
-      routeUrl: () => ROUTE_PATHS.EXTERNAL_SERVICES_CA_CONNECTORS
-    };
-
     await TestBed.configureTestingModule({
       imports: [NewCaConnectorComponent, NoopAnimationsModule],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
-        { provide: MAT_DIALOG_DATA, useValue: null },
-        { provide: MatDialogRef, useValue: dialogRefMock },
-        { provide: MatDialog, useValue: dialogMock },
+        provideRouter([]),
         { provide: CaConnectorService, useClass: MockCaConnectorService },
-        { provide: ContentService, useValue: contentServiceMock },
         { provide: PendingChangesService, useClass: MockPendingChangesService }
       ]
     }).compileComponents();
 
     caConnectorServiceMock = TestBed.inject(CaConnectorService);
     caConnectorServiceMock.getCaSpecificOptions.mockResolvedValue({ available_cas: ["CA1", "CA2"] });
+    router = TestBed.inject(Router);
 
     fixture = TestBed.createComponent(NewCaConnectorComponent);
     component = fixture.componentInstance;
@@ -105,6 +85,7 @@ describe("NewCaConnectorComponent", () => {
   });
 
   it("should call save when form is valid", async () => {
+    const navigateSpy = jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
     component.caConnectorForm.patchValue({
       connectorname: "test",
       type: "local",
@@ -117,10 +98,11 @@ describe("NewCaConnectorComponent", () => {
 
     expect(success).toBe(true);
     expect(caConnectorServiceMock.postCaConnector).toHaveBeenCalled();
-    expect(dialogRefMock.close).toHaveBeenCalledWith(true);
+    expect(navigateSpy).toHaveBeenCalledWith(ROUTE_PATHS.EXTERNAL_SERVICES_CA_CONNECTORS);
   });
 
   it("save should return false on error", async () => {
+    const navigateSpy = jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
     component.caConnectorForm.patchValue({
       connectorname: "test",
       type: "local",
@@ -129,13 +111,11 @@ describe("NewCaConnectorComponent", () => {
       "openssl.cnf": "cnf"
     });
     caConnectorServiceMock.postCaConnector = jest.fn().mockRejectedValue(new Error("Save failed"));
-    // Clear any previous calls to close from setup
-    dialogRefMock.close.mockClear();
 
     const success = await component.save();
 
     expect(success).toBe(false);
     expect(caConnectorServiceMock.postCaConnector).toHaveBeenCalled();
-    expect(dialogRefMock.close).not.toHaveBeenCalled();
+    expect(navigateSpy).not.toHaveBeenCalledWith(ROUTE_PATHS.EXTERNAL_SERVICES_CA_CONNECTORS);
   });
 });

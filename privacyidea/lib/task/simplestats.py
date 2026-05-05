@@ -88,7 +88,7 @@ class SimpleStatsTask(BaseTask):
     def do(self, params):
         for opt in self.options.keys():
             if is_true(params.get(opt)):
-                log.debug("Got param {0}".format(opt))
+                log.debug(f"Got param {opt}")
                 write_stats(opt, getattr(self, '_' + opt))
 
         return True

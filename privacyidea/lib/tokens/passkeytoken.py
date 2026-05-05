@@ -36,7 +36,6 @@ from webauthn.helpers.structs import (AttestationConveyancePreference, Authentic
                                       PublicKeyCredentialCreationOptions)
 from webauthn.registration.verify_registration_response import VerifiedRegistration
 
-from privacyidea.api.lib.utils import get_optional, get_required, get_required_one_of, get_optional_one_of
 from privacyidea.lib import _, fido2
 from privacyidea.lib.challenge import get_challenges
 from privacyidea.lib.config import get_from_config
@@ -47,10 +46,12 @@ from privacyidea.lib.fido2.policy_action import FIDO2PolicyAction, PasskeyAction
 from privacyidea.lib.fido2.token_info import FIDO2TokenInfo
 from privacyidea.lib.fido2.util import hash_credential_id, save_credential_id_hash
 from privacyidea.lib.log import log_with
+from privacyidea.lib.params import get_optional, get_required, get_required_one_of, get_optional_one_of
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import SCOPE
-from privacyidea.lib.tokenclass import TokenClass, RolloutState, ClientMode, AuthenticationMode
 from privacyidea.lib.token import create_challenge
+from privacyidea.lib.tokenclass import TokenClass, ClientMode, AuthenticationMode
+from privacyidea.lib.tokenrolloutstate import RolloutState
 
 log = logging.getLogger(__name__)
 
@@ -264,7 +265,7 @@ class PasskeyTokenClass(TokenClass):
 
             if not len(challenges):
                 raise EnrollmentError(f"The enrollment challenge does not exist or has timed out for {serial}")
-            challenge: Challenge = challenges[0]
+            challenge = challenges[0]
             try:
                 registration_verification: VerifiedRegistration = verify_registration_response(
                     credential={
@@ -461,13 +462,13 @@ class PasskeyTokenClass(TokenClass):
         authentication could be made.
         """
         try:
-            authenticator_data = get_required_one_of(options, ["authenticatorData", "authenticatordata"])
-            client_data_json = get_required_one_of(options, ["clientDataJSON", "clientdata"])
-            signature = get_required_one_of(options, ["signature", "signaturedata"])
-            user_handle = get_optional_one_of(options, ["userHandle", "userhandle"])
-            expected_challenge = get_required(options, "challenge").encode("utf-8")
-            expected_origin = get_required(options, "HTTP_ORIGIN")
-            user_verification = get_optional(options, FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT, "preferred")
+            get_required_one_of(options, ["authenticatorData", "authenticatordata"])
+            get_required_one_of(options, ["clientDataJSON", "clientdata"])
+            get_required_one_of(options, ["signature", "signaturedata"])
+            get_optional_one_of(options, ["userHandle", "userhandle"])
+            get_required(options, "challenge")
+            get_required(options, "HTTP_ORIGIN")
+            get_optional(options, FIDO2PolicyAction.USER_VERIFICATION_REQUIREMENT, "preferred")
         except ParameterError as e:
             log.debug(f"Missing parameter for authentication with passkey: {e}")
             # TODO authenticate has horrible return values

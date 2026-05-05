@@ -41,6 +41,8 @@ import { ContainerDetailsActionsComponent } from "./container-details-actions/co
 import { ContainerDetailsTokenActionsComponent } from "./container-details-token-actions/container-details-token-actions.component";
 import { RouterLink } from "@angular/router";
 import { MatTooltip } from "@angular/material/tooltip";
+import { DetailsHeaderComponent } from "@components/shared/details-shared/details-header/details-header.component";
+import { ContainerAddTokenComponent } from "../../shared/container-add-token/container-add-token.component";
 
 @Component({
   selector: "app-container-details-self-service",
@@ -62,17 +64,14 @@ import { MatTooltip } from "@angular/material/tooltip";
     MatIcon,
     MatIconButton,
     ContainerDetailsInfoComponent,
-    MatPaginator,
     MatDivider,
-    MatCheckbox,
-    CopyButtonComponent,
     ClearableInputComponent,
     ScrollToTopDirective,
     ContainerDetailsTokenTableComponent,
     ContainerDetailsActionsComponent,
     ContainerDetailsTokenActionsComponent,
-    RouterLink,
-    MatTooltip
+    DetailsHeaderComponent,
+    ContainerAddTokenComponent
   ],
   templateUrl: "./container-details.self-service.component.html",
   styleUrls: ["./container-details.component.scss"]

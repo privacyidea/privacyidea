@@ -23,13 +23,12 @@ In this first implementation it is only a local certificate authority.
 
 This module is tested in tests/test_lib_caconnector.py
 """
-from typing import Union
 
 # This takes a set of all CA Connector modules.
 AvailableCAConnectors = []
 
 
-class BaseCAConnector(object):
+class BaseCAConnector:
     def revoke_cert(self, certificate: str, request_id=None, reason=None):
         """
         Revoke the specified certificate. At this point only the database
@@ -46,7 +45,7 @@ class BaseCAConnector(object):
         """
         pass
 
-    def sign_request(self, csr: str, options: dict = None) -> tuple[int, Union[str, None]]:
+    def sign_request(self, csr: str, options: dict = None) -> tuple[int, str | None]:
         """
         Signs a certificate request with the key of the CA.
 

@@ -17,7 +17,6 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from datetime import datetime
-from typing import Optional
 
 from sqlalchemy import (
     Integer,
@@ -66,34 +65,34 @@ class Audit(MethodsMixin, db.Model):
     __tablename__ = AUDIT_TABLE_NAME
     id: Mapped[int] = mapped_column(BigIntegerType,
                                     Sequence("audit_seq", data_type=BigInteger), primary_key=True)
-    date: Mapped[Optional[datetime]] = mapped_column(default=datetime.now, index=True)
-    startdate: Mapped[Optional[datetime]]
-    duration: Mapped[Optional[Interval]] = mapped_column(Interval(second_precision=6))
-    signature: Mapped[Optional[str]] = mapped_column(Unicode(audit_column_length.get("signature")), default="")
-    action: Mapped[Optional[str]] = mapped_column(Unicode(audit_column_length.get("action")), default="")
-    success: Mapped[Optional[int]] = mapped_column(Integer, default=0)
-    authentication: Mapped[Optional[str]] = mapped_column(Unicode(audit_column_length.get("authentication")),
+    date: Mapped[datetime | None] = mapped_column(default=datetime.now, index=True)
+    startdate: Mapped[datetime | None]
+    duration: Mapped[Interval | None] = mapped_column(Interval(second_precision=6))
+    signature: Mapped[str | None] = mapped_column(Unicode(audit_column_length.get("signature")), default="")
+    action: Mapped[str | None] = mapped_column(Unicode(audit_column_length.get("action")), default="")
+    success: Mapped[int | None] = mapped_column(Integer, default=0)
+    authentication: Mapped[str | None] = mapped_column(Unicode(audit_column_length.get("authentication")),
                                                           default="")
-    serial: Mapped[Optional[str]] = mapped_column(Unicode(audit_column_length.get("serial")), default="")
-    token_type: Mapped[Optional[str]] = mapped_column(Unicode(audit_column_length.get("token_type")), default="")
-    container_serial: Mapped[Optional[str]] = mapped_column(Unicode(audit_column_length.get("container_serial")),
+    serial: Mapped[str | None] = mapped_column(Unicode(audit_column_length.get("serial")), default="")
+    token_type: Mapped[str | None] = mapped_column(Unicode(audit_column_length.get("token_type")), default="")
+    container_serial: Mapped[str | None] = mapped_column(Unicode(audit_column_length.get("container_serial")),
                                                             default="")
-    container_type: Mapped[Optional[str]] = mapped_column(Unicode(audit_column_length.get("container_type")),
+    container_type: Mapped[str | None] = mapped_column(Unicode(audit_column_length.get("container_type")),
                                                           default="")
-    user: Mapped[Optional[str]] = mapped_column(Unicode(audit_column_length.get("user")), default="", index=True)
-    realm: Mapped[Optional[str]] = mapped_column(Unicode(audit_column_length.get("realm")), default="")
-    resolver: Mapped[Optional[str]] = mapped_column(Unicode(audit_column_length.get("resolver")), default="")
-    administrator: Mapped[Optional[str]] = mapped_column(Unicode(audit_column_length.get("administrator")), default="")
-    action_detail: Mapped[Optional[str]] = mapped_column(Unicode(audit_column_length.get("action_detail")), default="")
-    info: Mapped[Optional[str]] = mapped_column(Unicode(audit_column_length.get("info")), default="")
-    privacyidea_server: Mapped[Optional[str]] = mapped_column(Unicode(audit_column_length.get("privacyidea_server")),
+    user: Mapped[str | None] = mapped_column(Unicode(audit_column_length.get("user")), default="", index=True)
+    realm: Mapped[str | None] = mapped_column(Unicode(audit_column_length.get("realm")), default="")
+    resolver: Mapped[str | None] = mapped_column(Unicode(audit_column_length.get("resolver")), default="")
+    administrator: Mapped[str | None] = mapped_column(Unicode(audit_column_length.get("administrator")), default="")
+    action_detail: Mapped[str | None] = mapped_column(Unicode(audit_column_length.get("action_detail")), default="")
+    info: Mapped[str | None] = mapped_column(Unicode(audit_column_length.get("info")), default="")
+    privacyidea_server: Mapped[str | None] = mapped_column(Unicode(audit_column_length.get("privacyidea_server")),
                                                               default="")
-    client: Mapped[Optional[str]] = mapped_column(Unicode(audit_column_length.get("client")), default="")
-    user_agent: Mapped[Optional[str]] = mapped_column(Unicode(audit_column_length.get("user_agent")), default="")
-    user_agent_version: Mapped[Optional[str]] = mapped_column(Unicode(audit_column_length.get("user_agent_version")),
+    client: Mapped[str | None] = mapped_column(Unicode(audit_column_length.get("client")), default="")
+    user_agent: Mapped[str | None] = mapped_column(Unicode(audit_column_length.get("user_agent")), default="")
+    user_agent_version: Mapped[str | None] = mapped_column(Unicode(audit_column_length.get("user_agent_version")),
                                                               default="")
-    loglevel: Mapped[Optional[str]] = mapped_column(Unicode(audit_column_length.get("loglevel")), default="default")
-    clearance_level: Mapped[Optional[str]] = mapped_column(Unicode(audit_column_length.get("clearance_level")),
+    loglevel: Mapped[str | None] = mapped_column(Unicode(audit_column_length.get("loglevel")), default="default")
+    clearance_level: Mapped[str | None] = mapped_column(Unicode(audit_column_length.get("clearance_level")),
                                                            default="default")
-    thread_id: Mapped[Optional[str]] = mapped_column(Unicode(audit_column_length.get("thread_id")), default="0")
-    policies: Mapped[Optional[str]] = mapped_column(Unicode(audit_column_length.get("policies")), default="")
+    thread_id: Mapped[str | None] = mapped_column(Unicode(audit_column_length.get("thread_id")), default="0")
+    policies: Mapped[str | None] = mapped_column(Unicode(audit_column_length.get("policies")), default="")

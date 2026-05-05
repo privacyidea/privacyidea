@@ -98,7 +98,7 @@ class MachineApplication(MachineApplicationBase):
         :return: dictionary
         """
         if amount < 0:
-            raise ParameterError("Invalid refill amount: {!r}".format(amount))
+            raise ParameterError(f"Invalid refill amount: {amount!r}")
         (res, err, otp_dict) = token.get_multi_otp(count=amount, counter_index=True)
         otps = otp_dict.get("otp")
         prepend_pin = get_prepend_pin()

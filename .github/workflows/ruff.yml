@@ -1,0 +1,27 @@
+# Ruff is a fast Python linter that catches real bugs beyond style issues.
+# https://github.com/astral-sh/ruff
+# https://pypi.org/project/ruff/ is MIT licensed, by Astral
+
+name: Ruff
+on:
+  pull_request:
+    branches:
+      - "master"
+      - 'branch-*'
+
+permissions: {}
+
+jobs:
+  ruff:
+    name: Run Ruff linter
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - name: Install Ruff
+        run: python -m pip install -U ruff
+      - name: Run Ruff
+        run: ruff check privacyidea

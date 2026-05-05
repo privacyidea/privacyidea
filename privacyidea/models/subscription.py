@@ -17,7 +17,6 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import logging
 from datetime import datetime
-from typing import Optional
 
 from sqlalchemy import Sequence, Unicode, Integer, DateTime, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
@@ -36,9 +35,9 @@ class ClientApplication(MethodsMixin, db.Model):
     __tablename__ = 'clientapplication'
     id: Mapped[int] = mapped_column(Integer, Sequence("clientapp_seq"), primary_key=True)
     ip: Mapped[str] = mapped_column(Unicode(255), nullable=False, index=True)
-    hostname: Mapped[Optional[str]] = mapped_column(Unicode(255))
+    hostname: Mapped[str | None] = mapped_column(Unicode(255))
     clienttype: Mapped[str] = mapped_column(Unicode(255), nullable=False, index=True)
-    lastseen: Mapped[Optional[datetime]] = mapped_column(DateTime, index=True, default=datetime.now)
+    lastseen: Mapped[datetime | None] = mapped_column(DateTime, index=True, default=datetime.now)
     node: Mapped[str] = mapped_column(Unicode(255), nullable=False)
     __table_args__ = (UniqueConstraint('ip', 'clienttype', 'node', name='caix'),)
 
@@ -52,25 +51,25 @@ class Subscription(MethodsMixin, db.Model):
     """
     __tablename__ = 'subscription'
     id: Mapped[int] = mapped_column(Integer, Sequence("subscription_seq"), primary_key=True)
-    application: Mapped[Optional[str]] = mapped_column(Unicode(80), index=True)
+    application: Mapped[str | None] = mapped_column(Unicode(80), index=True)
     for_name: Mapped[str] = mapped_column(Unicode(80), nullable=False)
-    for_address: Mapped[Optional[str]] = mapped_column(Unicode(128))
+    for_address: Mapped[str | None] = mapped_column(Unicode(128))
     for_email: Mapped[str] = mapped_column(Unicode(128), nullable=False)
     for_phone: Mapped[str] = mapped_column(Unicode(50), nullable=False)
-    for_url: Mapped[Optional[str]] = mapped_column(Unicode(80))
-    for_comment: Mapped[Optional[str]] = mapped_column(Unicode(255))
+    for_url: Mapped[str | None] = mapped_column(Unicode(80))
+    for_comment: Mapped[str | None] = mapped_column(Unicode(255))
     by_name: Mapped[str] = mapped_column(Unicode(50), nullable=False)
     by_email: Mapped[str] = mapped_column(Unicode(128), nullable=False)
-    by_address: Mapped[Optional[str]] = mapped_column(Unicode(128))
-    by_phone: Mapped[Optional[str]] = mapped_column(Unicode(50))
-    by_url: Mapped[Optional[str]] = mapped_column(Unicode(80))
-    date_from: Mapped[Optional[datetime]] = mapped_column(DateTime)
-    date_till: Mapped[Optional[datetime]] = mapped_column(DateTime)
-    num_users: Mapped[Optional[int]] = mapped_column(Integer)
-    num_tokens: Mapped[Optional[int]] = mapped_column(Integer)
-    num_clients: Mapped[Optional[int]] = mapped_column(Integer)
-    level: Mapped[Optional[str]] = mapped_column(Unicode(80))
-    signature: Mapped[Optional[str]] = mapped_column(Unicode(640))
+    by_address: Mapped[str | None] = mapped_column(Unicode(128))
+    by_phone: Mapped[str | None] = mapped_column(Unicode(50))
+    by_url: Mapped[str | None] = mapped_column(Unicode(80))
+    date_from: Mapped[datetime | None] = mapped_column(DateTime)
+    date_till: Mapped[datetime | None] = mapped_column(DateTime)
+    num_users: Mapped[int | None] = mapped_column(Integer)
+    num_tokens: Mapped[int | None] = mapped_column(Integer)
+    num_clients: Mapped[int | None] = mapped_column(Integer)
+    level: Mapped[str | None] = mapped_column(Unicode(80))
+    signature: Mapped[str | None] = mapped_column(Unicode(640))
 
     def __repr__(self):
         return f"<Subscription [{self.id}][{self.application}:{self.for_name}:{self.by_name}]>"

@@ -17,16 +17,15 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-__doc__ = """This endpoint is used to create, update, list and delete 
-privacyIDEA server definitions. privacyIDEA server definitions can be used for 
+__doc__ = """This endpoint is used to create, update, list and delete
+privacyIDEA server definitions. privacyIDEA server definitions can be used for
 Remote-Tokens and for Federation-Events.
 
 The code of this module is tested in tests/test_api_privacyideaserver.py
 """
 from flask import (Blueprint, request)
-from .lib.utils import (getParam,
-                        required,
-                        send_result)
+from .lib.utils import (send_result)
+from ..lib.params import get_optional, get_required
 from ..lib.log import log_with
 from ..lib.policies.actions import PolicyAction
 from ..api.lib.prepolicy import prepolicy, check_base_action
@@ -59,9 +58,9 @@ def create(identifier=None):
     """
     param = request.all_data
     identifier = identifier.replace(" ", "_")
-    url = getParam(param, "url", required)
-    tls = is_true(getParam(param, "tls", default="1"))
-    description = getParam(param, "description", default="")
+    url = get_required(param, "url")
+    tls = is_true(get_optional(param, "tls", default="1"))
+    description = get_optional(param, "description", default="")
 
     r = add_privacyideaserver(identifier, url=url, tls=tls,
                               description=description)
@@ -109,11 +108,11 @@ def test():
     :return:
     """
     param = request.all_data
-    identifier = getParam(param, "identifier", required)
-    url = getParam(param, "url", required)
-    tls = is_true(getParam(param, "tls", default="1"))
-    user = getParam(param, "username", required)
-    password = getParam(param, "password", required)
+    identifier = get_required(param, "identifier")
+    url = get_required(param, "url")
+    tls = is_true(get_optional(param, "tls", default="1"))
+    user = get_required(param, "username")
+    password = get_required(param, "password")
 
 
     s = PrivacyIDEAServerDB(identifier=identifier, url=url, tls=tls)

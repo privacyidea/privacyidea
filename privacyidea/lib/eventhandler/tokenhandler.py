@@ -66,7 +66,7 @@ from dateutil.tz import tzlocal
 log = logging.getLogger(__name__)
 
 
-class ACTION_TYPE(object):
+class ACTION_TYPE:
     """
     Allowed actions
     """
@@ -91,13 +91,13 @@ class ACTION_TYPE(object):
     ATTACH_APPLICATION = "attach application"
 
 
-class TOKEN_APPLICATIONS(object):
+class TOKEN_APPLICATIONS:
     SSH = "ssh"
     OFFLINE = "offline"
     LUKS = "luks"
 
 
-class VALIDITY(object):
+class VALIDITY:
     """
     Allowed validity options
     """
@@ -545,9 +545,9 @@ class TokenEventHandler(BaseEventHandler):
                             increment = int(handler_options.get("increment") or 1)
                             current_value = int(get_tokeninfo(serial, handler_options.get("key")) or 0)
                             add_tokeninfo(serial, handler_options.get("key"),
-                                          "{}".format(current_value + increment))
+                                          f"{current_value + increment}")
                         except ValueError:
-                            log.warning("Can not increase the tokeninfo {0!s}".format(handler_options.get("key")))
+                            log.warning("Can not increase the tokeninfo {!s}".format(handler_options.get("key")))
                     elif action.lower() == ACTION_TYPE.DELETE_TOKENINFO:
                         delete_tokeninfo(serial, handler_options.get("key"))
                     elif action.lower() == ACTION_TYPE.SET_VALIDITY:
@@ -565,14 +565,14 @@ class TokenEventHandler(BaseEventHandler):
                         try:
                             set_failcounter(serial,
                                             int(handler_options.get("fail counter")))
-                        except Exception as exx:
+                        except Exception:
                             log.warning("Misconfiguration: Failed to set fail "
                                         "counter!")
                     elif action.lower() == ACTION_TYPE.SET_MAXFAIL:
                         try:
                             set_max_failcount(serial,
                                               int(handler_options.get("max failcount")))
-                        except Exception as exx:
+                        except Exception:
                             log.warning("Misconfiguration: Failed to set max failcount!")
                     elif action.lower() == ACTION_TYPE.CHANGE_FAILCOUNTER:
                         try:
@@ -580,21 +580,21 @@ class TokenEventHandler(BaseEventHandler):
                             token_obj.set_failcount(
                                 token_obj.token.failcount + int(handler_options.get("change fail counter")))
                             token_obj.save()
-                        except Exception as exx:
+                        except Exception:
                             log.warning("Misconfiguration: Failed to increase or decrease fail "
                                         "counter!")
                     elif action.lower() == ACTION_TYPE.ADD_TOKENGROUP:
                         try:
                             assign_tokengroup(serial, handler_options.get("tokengroup"))
-                        except Exception as exx:
+                        except Exception:
                             log.warning("Misconfiguration: Failed to add tokengroup "
-                                        "to token {0!s}!".format(serial))
+                                        f"to token {serial!s}!")
                     elif action.lower() == ACTION_TYPE.REMOVE_TOKENGROUP:
                         try:
                             unassign_tokengroup(serial, handler_options.get("tokengroup"))
-                        except Exception as exx:
+                        except Exception:
                             log.warning("Misconfiguration: Failed to remove tokengroup "
-                                        "from token {0!s}!".format(serial))
+                                        f"from token {serial!s}!")
                     elif action.lower() == ACTION_TYPE.ATTACH_APPLICATION:
                         try:
                             machine = handler_options.get("machine ID")
@@ -616,7 +616,7 @@ class TokenEventHandler(BaseEventHandler):
                             if user is not None:
                                 application_options.update({"user": user})
                             attach_token(serial, application, machine_id=machine, options=application_options)
-                        except Exception as exx:
+                        except Exception:
                             log.warning(f"Misconfiguration: Failed to attach token "
                                         f"to machine. Token serial: {serial}")
             else:
@@ -648,7 +648,7 @@ class TokenEventHandler(BaseEventHandler):
                                 phone_type='mobile', index=0)
                             if not init_param['phone']:
                                 log.warning("Enrolling SMS token. But the user "
-                                            "{0!r} has no mobile number!".format(user))
+                                            f"{user!r} has no mobile number!")
                         if handler_options.get("sms_identifier"):
                             init_param["sms.identifier"] = handler_options.get("sms_identifier")
                     elif tokentype == "email":
@@ -657,15 +657,15 @@ class TokenEventHandler(BaseEventHandler):
                         else:
                             init_param['email'] = user.get_specific_info(["email"]).get("email", "")
                             if not init_param['email']:
-                                log.warning("Enrolling EMail token. But the user {0!s}"
-                                            "has no email address!".format(user))
+                                log.warning(f"Enrolling EMail token. But the user {user!s}"
+                                            "has no email address!")
                         if handler_options.get("smtp_identifier"):
                             init_param["email.identifier"] = handler_options.get("smtp_identifier")
                     elif tokentype == "motp":
                         init_param['motppin'] = handler_options.get("motppin")
 
                 t = init_token(param=init_param, user=user)
-                log.info("New token {0!s} enrolled.".format(t.token.serial))
+                log.info(f"New token {t.token.serial!s} enrolled.")
 
                 if is_true(handler_options.get("container")):
                     container_serial = self._get_container_serial(request, content)

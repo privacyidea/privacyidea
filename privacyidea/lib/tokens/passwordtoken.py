@@ -18,7 +18,6 @@ This file contains the definition of the password token class
 
 import logging
 
-from flask_babel import lazy_gettext
 
 from privacyidea.lib.crypto import zerome, safe_compare
 from privacyidea.lib.utils import to_unicode
@@ -31,8 +30,6 @@ from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.api.lib.prepolicy import _generate_pin_from_policy
 from privacyidea.lib.utils import is_true
 
-optional = True
-required = False
 
 # We use an easier length of 12 for password tokens
 DEFAULT_LENGTH = 12
@@ -52,7 +49,7 @@ class PasswordTokenClass(TokenClass):
     default_length = DEFAULT_LENGTH
     default_contents = DEFAULT_CONTENTS
 
-    class SecretPassword(object):
+    class SecretPassword:
 
         def __init__(self, secObj):
             self.secretObject = secObj
@@ -153,7 +150,8 @@ class PasswordTokenClass(TokenClass):
         :return: None
         """
         otp_key = param.get("otpkey")
-        force_genkey = param.get("policies", {}).get(f"{self.get_tokentype()}_{PolicyAction.FORCE_SERVER_GENERATE}", False)
+        force_genkey = param.get("policies", {}).get(
+            f"{self.get_tokentype()}_{PolicyAction.FORCE_SERVER_GENERATE}", False)
         if force_genkey or not otp_key:
             param["genkey"] = True
         genkey = is_true(param.get("genkey"))

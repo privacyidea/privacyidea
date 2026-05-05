@@ -25,8 +25,8 @@ contains additional information in the section
     }
 
 The "client_mode" gives the plugin even more information how to respond.
-The authentication mode ``challenge`` can either result in client_mode ``interactive``,
-``webauthn`` of ``u2f`` and the authentication mode ``outofband`` can currently result in
+The authentication mode ``challenge`` can either result in client_mode ``interactive``
+or ``webauthn``, and the authentication mode ``outofband`` can currently result in
 client mode ``poll``.
 
 Here are examples for the flows:
@@ -47,10 +47,10 @@ Here are examples for the flows:
   The "client_mode" is set to ``interactive``. This indicates that
   the plugin should display an input field, so that the user can enter the response
   interactively.
-* WebAuthn tokens and U2F tokens also implement the ``challenge`` mode. However,
+* WebAuthn tokens also implement the ``challenge`` mode. However,
   the plugin needs to handle these challenges differently, since the user does
   not need to enter the response to the challenge manually.
-  The "client_mode" is either set to ``webauthn`` or ``u2f`` so that the plugin
+  The "client_mode" is set to ``webauthn`` so that the plugin
   can handle the cryptographic challenge accordingly.
 * The PUSH and TiQR token types implement the ``outofband`` mode.
   With a PUSH token, the authentication step also consists of two steps:

@@ -74,7 +74,6 @@ def cert_enroll():
     # The backend URL should come from the configuration of the system.
     backend_url = ""
 
-    r = request
     request_key = request.form.get("requestkey")
     # Firefox creates line breaks, Google Chrome does not
     request_key = request_key.replace('\n', "")
@@ -82,14 +81,10 @@ def cert_enroll():
     ca = request.form.get("ca")
     # TODO: Read the email address from the user source
     email = "meine"
-    csr = """SPKAC={0!s}
-CN={1!s},CN={2!s},O={3!s}
-emailAddress={4!s}
-""".format(request_key,
-           request.PI_username,
-           request.PI_role,
-           request.PI_realm,
-           email)
+    csr = f"""SPKAC={request_key!s}
+CN={request.PI_username!s},CN={request.PI_role!s},O={request.PI_realm!s}
+emailAddress={email!s}
+"""
     # Take the CSR and run a token init
     from privacyidea.lib.token import init_token
     tokenobject = init_token({"request": csr,
@@ -103,8 +98,7 @@ emailAddress={4!s}
     cert_pem = cert_pem.replace("-----END CERTIFICATE-----", "")
     render_context = {'instance': instance,
                       'backendUrl': backend_url,
-                      'username': "{0!s}@{1!s}".format(request.PI_username,
-                                                       request.PI_realm),
+                      'username': f"{request.PI_username!s}@{request.PI_realm!s}",
                       'role': request.PI_role,
                       'serial': serial,
                       'certificate': certificate,

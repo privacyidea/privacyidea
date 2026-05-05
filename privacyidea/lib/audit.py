@@ -55,7 +55,6 @@ storage.
 
 import logging
 from collections import OrderedDict
-from typing import Optional
 
 from privacyidea.config import ConfigKey
 from privacyidea.lib.log import log_with
@@ -85,7 +84,7 @@ def getAudit(config, startdate=None):
 
 
 @log_with(log)
-def search(config, param=None, admin_params: Optional[dict] = None):
+def search(config, param=None, admin_params: dict | None = None):
     """
     Returns a list of audit entries, supports pagination
 

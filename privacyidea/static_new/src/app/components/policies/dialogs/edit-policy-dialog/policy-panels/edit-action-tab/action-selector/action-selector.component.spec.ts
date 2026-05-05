@@ -55,7 +55,7 @@ class MockSelectorButtonsComponent {
 
 @Component({
   standalone: true,
-  imports: [ActionSelectorComponent, CommonModule, ClearableInputComponent, FormsModule],
+  imports: [ActionSelectorComponent, ClearableInputComponent, FormsModule],
   template: ` <app-action-selector [(policy)]="policy" /> `
 })
 class TestHostComponent {
@@ -125,7 +125,7 @@ describe("ActionSelectorComponent", () => {
   it("should handle scope change", () => {
     const spy = jest.spyOn(component.scopeChange, "emit");
     component.selectActionScope("admin");
-    TestBed.flushEffects();
+    TestBed.tick();
     fixture.detectChanges();
 
     expect(spy).toHaveBeenCalledWith("admin");

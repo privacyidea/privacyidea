@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, input, output } from "@angular/core";
-import { CommonModule } from "@angular/common";
+
 import { FormsModule } from "@angular/forms";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { MatFormFieldModule } from "@angular/material/form-field";
@@ -32,7 +32,6 @@ import { SMS_GATEWAY, SMS_PROVIDER_TIMEOUT } from "../../../../../constants/toke
   selector: "app-sms-config",
   standalone: true,
   imports: [
-    CommonModule,
     FormsModule,
     MatExpansionModule,
     MatFormFieldModule,

@@ -24,13 +24,11 @@ import { TokenService, TokenTypeKey } from "../../../../services/token/token.ser
 import { ValidateService } from "../../../../services/validate/validate.service";
 import { MachineService } from "../../../../services/machine/machine.service";
 import { NotificationService } from "../../../../services/notification/notification.service";
-import { OverflowService } from "../../../../services/overflow/overflow.service";
 import { AuthService } from "../../../../services/auth/auth.service";
 import {
   MockLocalService,
   MockMachineService,
   MockNotificationService,
-  MockOverflowService,
   MockTokenService,
   MockValidateService
 } from "../../../../../testing/mock-services";
@@ -66,7 +64,6 @@ describe("TokenDetailsActionsComponent", () => {
         { provide: ValidateService, useClass: MockValidateService },
         { provide: MachineService, useClass: MockMachineService },
         { provide: NotificationService, useClass: MockNotificationService },
-        { provide: OverflowService, useClass: MockOverflowService },
         { provide: AuthService, useClass: MockAuthService },
         { provide: MatDialog, useValue: matDialogMock },
         MockLocalService,
@@ -103,8 +100,8 @@ describe("TokenDetailsActionsComponent", () => {
 
   it("testPasskey notifies on success", () => {
     component.testPasskey();
-    expect(notifSvc.openSnackBar).toHaveBeenCalled();
-    const msg = (notifSvc.openSnackBar as jest.Mock).mock.calls[0][0] as string;
+    expect(notifSvc.success).toHaveBeenCalled();
+    const msg = (notifSvc.success as jest.Mock).mock.calls[0][0] as string;
     expect(msg).toMatch(/Test successful/i);
   });
 

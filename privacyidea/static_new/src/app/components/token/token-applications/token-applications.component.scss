@@ -3,11 +3,6 @@
 @use "@angular/material" as mat;
 
 .token-applications {
-  padding: var(--global-padding);
-  border-radius: var(--border-radius);
-  @include mat.elevation(5);
-  background-color: var(--table-color);
-  max-height: var(--max-height);
-  overflow: auto;
+  @include styles.main-component-style;
   display: grid;
 }

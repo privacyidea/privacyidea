@@ -127,7 +127,7 @@ export class UserTableComponent {
   });
 
   totalLength: WritableSignal<number> = linkedSignal({
-    source: this.userService.usersResource.value,
+    source: () => this.userService.usersResource.hasValue() ? this.userService.usersResource.value() : undefined,
     computation: (userResource, previous) => {
       if (userResource) {
         return userResource.result?.value?.length ?? 0;
@@ -144,7 +144,7 @@ export class UserTableComponent {
   });
   usersDataSource: WritableSignal<MatTableDataSource<UserData>> = linkedSignal({
     source: () => ({
-      userRes: this.userService.usersResource.value(),
+      userRes: this.userService.usersResource.hasValue() ? this.userService.usersResource.value() : undefined,
       sort: this.sort()
     }),
     computation: (src, prev) => {

@@ -3,8 +3,16 @@
 @use "@angular/material" as mat;
 
 .token-enrollment-container {
-  @include table.table-container-styles;
-  max-height: var(--max-height);
-  overflow: auto;
+  @include styles.main-component-style;
   display: grid;
+}
+
+.type-select {
+  width: 616px;
+}
+
+@media (max-width: 1040px) {
+  .type-select {
+    width: 100%;
+  }
 }

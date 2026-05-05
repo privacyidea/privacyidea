@@ -27,7 +27,8 @@ The code of this module is tested in tests/test_api_smsgateway.py
 """
 from flask import (Blueprint,
                    request)
-from .lib.utils import getParam, send_result
+from .lib.utils import send_result
+from ..lib.params import get_optional, get_required
 from ..lib.log import log_with
 from flask import g
 import logging
@@ -92,9 +93,9 @@ def set_gateway():
         specific)
     """
     param = request.all_data
-    identifier = getParam(param, "name", optional=False)
-    providermodule = getParam(param, "module", optional=False)
-    description = getParam(param, "description", optional=True)
+    identifier = get_required(param, "name")
+    providermodule = get_required(param, "module")
+    description = get_optional(param, "description")
     options = {}
     headers = {}
     for k, v in param.items():
@@ -143,6 +144,6 @@ def delete_gateway_option(gwid=None, key=None):
 
     res = delete_smsgateway_key_generic(gwid, key, Type=type)
     g.audit_object.log({"success": res,
-                        "info": "{0!s}/{1!s}".format(gwid, key)})
+                        "info": f"{gwid!s}/{key!s}"})
 
     return send_result(res)

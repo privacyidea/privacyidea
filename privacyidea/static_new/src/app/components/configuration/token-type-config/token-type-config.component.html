@@ -16,12 +16,13 @@
 
  SPDX-License-Identifier: AGPL-3.0-or-later
 -->
-<div class="token-type-config-container">
-  <div class="flex-row just-space-between ali-center margin-bottom-16">
+<div class="token-type-config-container" #scrollContainer>
+  <div #stickySentinel></div>
+  <div class="flex-row just-space-between ali-center sticky-header" #stickyHeader>
     <h3 class="margin-8" i18n>Token Type Configuration</h3>
     <button
       (click)="save()"
-      [disabled]="!authService.actionAllowed('configwrite')"
+      [disabled]="!authService.actionAllowed('configwrite') || !hasChanges()"
       class="action-button-primary button-width-m"
       mat-stroked-button>
       <mat-icon>save</mat-icon>
@@ -46,7 +47,7 @@
     <app-radius-config
       (formDataChange)="formData.set($event)"
       [formData]="formData()"
-      [radiusServers]="systemService.radiusServerResource.value()?.result?.value ?? []"
+      [radiusServers]="systemService.radiusServers()"
       [expanded]="expandedPanel === 'radius'"></app-radius-config>
     <app-remote-config
       (formDataChange)="formData.set($event)"

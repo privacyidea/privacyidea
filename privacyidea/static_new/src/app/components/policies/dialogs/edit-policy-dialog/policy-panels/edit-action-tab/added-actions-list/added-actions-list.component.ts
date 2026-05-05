@@ -30,14 +30,7 @@ import { PolicyActionItemEditComponent } from "./added-action-edit/policy-action
 @Component({
   selector: "app-added-actions-list",
   standalone: true,
-  imports: [
-    CommonModule,
-    MatIconModule,
-    MatButtonModule,
-    MatSlideToggleModule,
-    MatExpansionModule,
-    PolicyActionItemEditComponent
-  ],
+  imports: [MatIconModule, MatButtonModule, MatSlideToggleModule, MatExpansionModule, PolicyActionItemEditComponent],
   templateUrl: "./added-actions-list.component.html",
   styleUrl: "./added-actions-list.component.scss"
 })

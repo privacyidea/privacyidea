@@ -105,7 +105,7 @@ class HttpSMSProvider(ISMSProvider):
             parameter = self._get_parameters(message, phone)
             timeout = self.config.get("TIMEOUT") or 3
 
-        log.debug("submitting message {0!r} to {1!s}".format(message, phone))
+        log.debug(f"submitting message {message!r} to {phone!s}")
 
         if url is None:
             log.warning("can not submit message. URL is missing.")
@@ -143,7 +143,7 @@ class HttpSMSProvider(ISMSProvider):
             params = None
             if json_data:
                 json_param = parameter
-                log.debug("passing JSON data: {0!s}".format(json_param))
+                log.debug(f"passing JSON data: {json_param!s}")
             else:
                 data = parameter
 
@@ -165,14 +165,13 @@ class HttpSMSProvider(ISMSProvider):
                       auth=basic_auth,
                       timeout=float(timeout),
                       proxies=proxies)
-        log.debug("queued SMS on the HTTP gateway. status code returned: {0!s}".format(
-                  r.status_code))
+        log.debug(f"queued SMS on the HTTP gateway. status code returned: {r.status_code!s}")
 
         # We assume, that all gateways return with HTTP Status Code 200,
         # 201 or 202
         if r.status_code not in [200, 201, 202]:
             raise SMSError(r.status_code, "SMS could not be "
-                                          "sent: %s" % r.status_code)
+                                          f"sent: {r.status_code}")
         success = self._check_success(r)
         return success
 
@@ -187,7 +186,7 @@ class HttpSMSProvider(ISMSProvider):
         urldata[messageKey] = message
         params = self.config.get('PARAMETER', {})
         urldata.update(params)
-        log.debug("[getParameters] urldata: {0!s}".format(urldata))
+        log.debug(f"[getParameters] urldata: {urldata!s}")
         return urldata
 
     def _check_success(self, response):
@@ -211,17 +210,16 @@ class HttpSMSProvider(ISMSProvider):
                 log.debug("sending sms success")
                 ret = True
             else:
-                log.warning("failed to send sms. Reply %s does not match "
-                            "the RETURN_SUCCESS definition" % reply)
+                log.warning(f"failed to send sms. Reply {reply} does not match "
+                            "the RETURN_SUCCESS definition")
                 raise SMSError(response.status_code,
                                "We received a none success reply from the "
-                               "SMS Gateway: {0!s} ({1!s})".format(reply,
-                                                                   return_success))
+                               f"SMS Gateway: {reply!s} ({return_success!s})")
 
         elif return_fail:
             if return_fail in reply:
-                log.warning("sending sms failed. %s was not found "
-                            "in %s" % (return_fail, reply))
+                log.warning(f"sending sms failed. {return_fail} was not found "
+                            f"in {reply}")
                 raise SMSError(response.status_code,
                                "We received the predefined error from the "
                                "SMS Gateway.")

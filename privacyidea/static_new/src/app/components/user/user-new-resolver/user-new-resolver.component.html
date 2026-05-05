@@ -40,7 +40,7 @@
 
     <div
       #leftColumn
-      class="flex-row margin-bottom-0 margin-left-16 margin-top-16">
+      class="flex-row margin-bottom-0 margin-left-16 margin-top-16 container-template-fix">
       <mat-form-field class="input-width-l">
         <mat-label i18n>Resolver Name</mat-label>
         <mat-hint>
@@ -58,19 +58,27 @@
             [(ngModel)]="resolverName"
             [disabled]="isEditMode"
             matInput
+            pattern="^[a-zA-Z0-9._-]*$"
             placeholder="resolver1"
             required />
         </app-clearable-input>
-        @if (nameInput.invalid && (nameInput.dirty || nameInput.touched)) {
+        @if (nameInput.errors?.['required'] && (nameInput.dirty || nameInput.touched)) {
           <mat-error i18n>
             Resolver name is
             <strong>required</strong>
             .
           </mat-error>
         }
+        @if (nameInput.errors?.['pattern'] && (nameInput.dirty || nameInput.touched)) {
+          <mat-error i18n>
+            Resolver name contains
+            <strong>invalid characters</strong>
+            . Only alphanumeric characters, dots, underscores and hyphens are allowed.
+          </mat-error>
+        }
       </mat-form-field>
 
-      <mat-form-field class="input-width-l margin-left-16">
+      <mat-form-field class="input-width-l resolver-type-select">
         <mat-label i18n>Type</mat-label>
         <mat-select
           (ngModelChange)="onTypeChange($event)"

@@ -3,12 +3,8 @@
 @use "@angular/material" as mat;
 
 .audit-table-container {
-  @include table.table-container-styles;
+  @include styles.main-component-style;
   @include table.base-table-structure(".token-table", ".token-table-filter", ".table-scroll-container");
-  max-height: var(--max-height);
-  max-width: calc(80vw - var(--global-padding) * 4);
-  display: grid;
-  overflow: auto;
 }
 .filter-max-width {
   max-width: 1466px;

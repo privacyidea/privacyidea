@@ -121,9 +121,9 @@ $button-low-contrast-variant: linear-gradient(
 
 .mat-mdc-outlined-button.card-button-1,
 .mat-mdc-outlined-button[class*="card-button-1"] {
-  --mat-outlined-button-state-layer-color: var(--mat-sys-surface-container-highest);
-  --mat-outlined-button-ripple-color: var(--mat-sys-surface-container-highest);
-  --mdc-ripple-color: var(--mat-sys-surface-container-high);
+  --mat-button-outlined-state-layer-color: var(--mat-sys-surface-container-highest);
+  --mat-button-outlined-ripple-color: var(--mat-sys-surface-container-highest);
+  --mat-ripple-color: var(--mat-sys-surface-container-high);
 
   &:hover {
     background-color: var(--mat-sys-surface-container-high) !important;
@@ -131,13 +131,13 @@ $button-low-contrast-variant: linear-gradient(
 }
 
 .mat-mdc-outlined-button[class*="card-button-active"] {
-  --mdc-ripple-color: var(--mat-sys-surface-container-lowest);
+  --mat-ripple-color: var(--mat-sys-surface-container-lowest);
 }
 
 .mat-mdc-outlined-button[class*="card-button-support"] {
-  --mat-outlined-button-state-layer-color: var(--mint-bg);
-  --mat-outlined-button-ripple-color: var(--mint-bg);
-  --mdc-ripple-color: var(--mat-sys-surface-container-lowest);
+  --mat-button-outlined-state-layer-color: var(--mint-bg);
+  --mat-button-outlined-ripple-color: var(--mint-bg);
+  --mat-ripple-color: var(--mat-sys-surface-container-lowest);
 
   &:hover {
     background-color: var(--mint-bg) !important;
@@ -251,6 +251,7 @@ $button-low-contrast-variant: linear-gradient(
 .enroll-button-container {
   display: flex;
   flex-direction: row;
+  flex-wrap: wrap;
   justify-content: left;
   gap: var(--global-gap);
 }
@@ -430,7 +431,6 @@ $button-low-contrast-variant: linear-gradient(
   width: 24px;
 }
 
-
 %action-button-base {
   border-radius: var(--border-radius);
   border-style: solid;
@@ -454,20 +454,29 @@ $button-low-contrast-variant: linear-gradient(
   }
 }
 
-@mixin action-button($bg, $color, $hover-bg, $ripple: null, $ripple-mdc: null, $layer: null, $border: true, $primary: false) {
+@mixin action-button(
+  $bg,
+  $color,
+  $hover-bg,
+  $ripple: null,
+  $ripple-mdc: null,
+  $layer: null,
+  $border: true,
+  $primary: false
+) {
   @extend %action-button-base;
   background-color: $bg;
 
   @if $layer {
-    --mat-outlined-button-state-layer-color: #{$layer};
+    --mat-button-outlined-state-layer-color: #{$layer};
     --mat-stroked-button-state-layer-color: #{$layer};
   }
   @if $ripple {
-    --mat-outlined-button-ripple-color: #{$ripple};
+    --mat-button-outlined-ripple-color: #{$ripple};
     --mat-stroked-button-ripple-color: #{$ripple};
   }
   @if $ripple-mdc {
-    --mdc-ripple-color: #{$ripple-mdc};
+    --mat-ripple-color: #{$ripple-mdc};
   }
 
   @if not $border {
@@ -498,44 +507,44 @@ $button-low-contrast-variant: linear-gradient(
 
 .action-button-primary {
   @include action-button(
-                  var(--mat-sys-primary),
-                  var(--mat-sys-surface-container-lowest),
-                  var(--mat-sys-primary-base-active),
-                  $border: false,
-                  $primary: true
+    var(--mat-sys-primary),
+    var(--mat-sys-surface-container-lowest),
+    var(--mat-sys-primary-base-active),
+    $border: false,
+    $primary: true
   );
 }
 
 .action-button-secondary {
   @include action-button(
-                  var(--mat-sys-surface-container-lowest),
-                  var(--mat-sys-primary),
-                  var(--sky-blue),
-                  $ripple-mdc: var(--sky-bg)
+    var(--mat-sys-surface-container-lowest),
+    var(--mat-sys-primary),
+    var(--sky-blue),
+    $ripple-mdc: var(--sky-bg)
   );
 }
 
 .action-button-delete-primary {
   @include action-button(
-                  var(--red-base),
-                  var(--mat-sys-surface-container-lowest),
-                  var(--red-light),
-                  $ripple: var(--red-light-active),
-                  $ripple-mdc: var(--rose-bg),
-                  $layer: var(--rose-bg),
-                  $border: false,
-                  $primary: true
+    var(--red-base),
+    var(--mat-sys-surface-container-lowest),
+    var(--red-light),
+    $ripple: var(--red-light-active),
+    $ripple-mdc: var(--rose-bg),
+    $layer: var(--rose-bg),
+    $border: false,
+    $primary: true
   );
 }
 
 .action-button-delete-secondary {
   @include action-button(
-                  var(--mat-sys-surface-container-lowest),
-                  var(--red-base),
-                  var(--rose-bg),
-                  $ripple: var(--rose-ripple),
-                  $ripple-mdc: var(--rose-bg),
-                  $layer: var(--rose-bg)
+    var(--mat-sys-surface-container-lowest),
+    var(--red-base),
+    var(--rose-bg),
+    $ripple: var(--rose-ripple),
+    $ripple-mdc: var(--rose-bg),
+    $layer: var(--rose-bg)
   );
 }
 
@@ -666,7 +675,7 @@ $button-low-contrast-variant: linear-gradient(
   width: 24px;
 }
 
-::ng-deep mat-icon {
+mat-icon {
   display: flex !important;
   align-items: center !important;
 }

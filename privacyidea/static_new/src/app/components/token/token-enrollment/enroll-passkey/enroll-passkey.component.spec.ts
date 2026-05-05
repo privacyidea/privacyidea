@@ -95,7 +95,7 @@ describe("EnrollPasskeyComponent", () => {
     expect(() => component.enrollmentArgsGetter({} as TokenEnrollmentData)).toThrow(
       /Passkey\/WebAuthn is not supported/i
     );
-    expect(notif.openSnackBar).toHaveBeenCalledWith("Passkey/WebAuthn is not supported by this browser.");
+    expect(notif.error).toHaveBeenCalledWith("Passkey/WebAuthn is not supported by this browser.");
   });
 
   it("happy path: init -> open dialog -> create cred -> finalize -> close", async () => {
@@ -170,7 +170,7 @@ describe("EnrollPasskeyComponent", () => {
     const initResponse = await lastValueFrom(tokenSvc.enrollToken(enrollmentArgs));
     const finalResponse = component.onEnrollmentResponse(initResponse as EnrollmentResponse, enrollmentArgs!.data);
     await expect(finalResponse).rejects.toThrow(/Invalid server response/i);
-    expect(notif.openSnackBar).toHaveBeenCalledWith(
+    expect(notif.error).toHaveBeenCalledWith(
       "Failed to initiate Passkey registration: Invalid server response."
     );
     expect(dialogSvc.openDialog).not.toHaveBeenCalled();
@@ -218,7 +218,7 @@ describe("EnrollPasskeyComponent", () => {
 
     await expect(finalResponse).rejects.toThrow();
 
-    expect(notif.openSnackBar).toHaveBeenCalledWith(
+    expect(notif.error).toHaveBeenCalledWith(
       "Error during final Passkey registration step. Attempting to clean up token."
     );
     expect(tokenSvc.deleteToken).toHaveBeenCalledWith("S-2");

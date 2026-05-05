@@ -28,7 +28,6 @@ import { MatList, MatListItem } from "@angular/material/list";
 import { MatCell, MatColumnDef, MatRow, MatTableModule } from "@angular/material/table";
 import { Observable, switchMap } from "rxjs";
 import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
-import { OverflowService, OverflowServiceInterface } from "../../../../services/overflow/overflow.service";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
 import { EditableElement, EditButtonsComponent } from "../../../shared/edit-buttons/edit-buttons.component";
 
@@ -70,7 +69,6 @@ export class TokenDetailsInfoComponent {
       return { key: "", value: "" };
     }
   });
-  protected overflowService: OverflowServiceInterface = inject(OverflowService);
   protected authService: AuthServiceInterface = inject(AuthService);
 
   toggleInfoEdit(): void {

@@ -16,25 +16,24 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, inject } from "@angular/core";
-import { DOCUMENT } from "@angular/common";
-import { MatIcon } from "@angular/material/icon";
+import { Component, DOCUMENT, inject } from "@angular/core";
+
 import { MatButtonModule } from "@angular/material/button";
+import { MatIcon } from "@angular/material/icon";
+import { MatMenuModule } from "@angular/material/menu";
 import { MatTooltipModule } from "@angular/material/tooltip";
-import { SimpleConfirmationDialogComponent } from "../../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { RouterLink } from "@angular/router";
 import { forkJoin } from "rxjs";
-import { MatDialog } from "@angular/material/dialog";
+import { ROUTE_PATHS } from "../../../../route_paths";
+import { AuthService } from "../../../../services/auth/auth.service";
 import { ContainerService, ContainerServiceInterface } from "../../../../services/container/container.service";
 import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
-import { VersioningService, VersioningServiceInterface } from "../../../../services/version/version.service";
-import { AuthService } from "../../../../services/auth/auth.service";
-import { ROUTE_PATHS } from "../../../../route_paths";
-import { RouterLink } from "@angular/router";
+import { DialogService, DialogServiceInterface } from "../../../../services/dialog/dialog.service";
 import { DocumentationService } from "../../../../services/documentation/documentation.service";
 import { NotificationService } from "../../../../services/notification/notification.service";
-import { DialogService, DialogServiceInterface } from "../../../../services/dialog/dialog.service";
-import { MatMenuModule } from "@angular/material/menu";
 import { TableUtilsService, TableUtilsServiceInterface } from "../../../../services/table-utils/table-utils.service";
+import { VersioningService, VersioningServiceInterface } from "../../../../services/version/version.service";
+import { SimpleConfirmationDialogComponent } from "../../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
 
 @Component({
   selector: "app-container-table-actions",
@@ -78,6 +77,9 @@ export class ContainerTableActionsComponent {
               selectedContainers.map((container) => this.containerService.deleteContainer(container.serial))
             ).subscribe({
               next: () => {
+                this.notificationService.success(
+                  $localize`Successfully deleted ${selectedContainers.length} containers.`
+                );
                 this.containerSelection.set([]);
                 this.containerService.containerResource.reload();
               },

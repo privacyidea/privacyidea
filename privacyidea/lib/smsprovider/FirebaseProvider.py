@@ -70,14 +70,14 @@ def get_firebase_access_token(config_file_name):
         credentials = service_account.Credentials.from_service_account_file(config_file_name,
                                                                             scopes=SCOPES)
 
-        log.debug("Fetching a new access_token for {!r} from firebase...".format(config_file_name))
+        log.debug(f"Fetching a new access_token for {config_file_name!r} from firebase...")
         # We do not use a lock here: The worst that could happen is that two threads
         # fetch new auth tokens concurrently. In this case, one of them wins and
         # is written to the dictionary.
         app_store[fbt][config_file_name] = credentials
         readable_time = credentials.expiry.isoformat() if credentials.expiry else 'Never'
-        log.debug("Setting the expiration for {!r} of the new access_token "
-                  "to {!s}.".format(config_file_name, readable_time))
+        log.debug(f"Setting the expiration for {config_file_name!r} of the new access_token "
+                  f"to {readable_time!s}.")
 
     return app_store[fbt][config_file_name]
 

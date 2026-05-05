@@ -50,7 +50,7 @@ TIMEOUT = 10
 SEND_EMAIL_JOB_NAME = "smtpserver.send_email"
 
 
-class SMTPServer(object):
+class SMTPServer:
     """
     SMTP Object that holds a SMTP Database Object but can also send emails.
     """
@@ -93,7 +93,7 @@ class SMTPServer(object):
         :param mimetype: The type of the email to send. Can by plain or html
         :return: True or False
         """
-        if type(recipient) != list:
+        if not isinstance(recipient, list):
             recipient = [recipient]
         mail_from = sender or config['sender']
         reply_to = reply_to or mail_from
@@ -120,17 +120,17 @@ class SMTPServer(object):
             mail = smtplib.SMTP(smtp_url.hostname,
                                 port=smtp_url.port or int(config['port']),
                                 timeout=config.get('timeout', TIMEOUT))
-        log.debug("submitting message to {0!s}".format(msg["To"]))
-        log.debug("Saying EHLO to mailserver {0!s}".format(config['server']))
+        log.debug("submitting message to {!s}".format(msg["To"]))
+        log.debug("Saying EHLO to mailserver {!s}".format(config['server']))
         r = mail.ehlo()
-        log.debug("mailserver responded with {0!s}".format(r))
+        log.debug(f"mailserver responded with {r!s}")
         # Start TLS if required
         if not smtp_url.scheme == 'smtps' and config.get('tls', False):
-            log.debug("Trying to STARTTLS: {0!s}".format(config['tls']))
+            log.debug("Trying to STARTTLS: {!s}".format(config['tls']))
             mail.starttls()
         # Authenticate, if a username is given.
         if config.get('username', ''):
-            log.debug("Doing authentication with {0!s}".format(config['username']))
+            log.debug("Doing authentication with {!s}".format(config['username']))
             password = decryptPassword(config['password'])
             if password == FAILED_TO_DECRYPT_PASSWORD:
                 password = config['password']
@@ -165,7 +165,7 @@ class SMTPServer(object):
                 if abort:
                     return False
         r = mail.sendmail(mail_from, recipient, msg)
-        log.info("Mail sent: {0!s}".format(r))
+        log.info(f"Mail sent: {r!s}")
         # r is a dictionary like {"recp@destination.com": (200, 'OK')}
         # we change this to True or False
         success = True
@@ -173,9 +173,7 @@ class SMTPServer(object):
             res_id, res_text = r.get(one_recipient, (200, "OK"))
             if res_id != 200 and res_text != "OK":
                 success = False
-                log.error("Failed to send email to {0!r}: {1!r}, {2!r}".format(one_recipient,
-                                                                               res_id,
-                                                                               res_text))
+                log.error(f"Failed to send email to {one_recipient!r}: {res_id!r}, {res_text!r}")
         mail.quit()
         log.debug("I am done sending your email.")
         return success
@@ -406,11 +404,11 @@ def export_smtpserver(name=None):
 @register_import('smtpserver')
 def import_smtpserver(data, name=None):
     """Import policy configuration"""
-    log.debug('Import smtpserver config: {0!s}'.format(data))
+    log.debug(f'Import smtpserver config: {data!s}')
     for res_name, res_data in data.items():
         if name and name != res_name:
             continue
         # condition is apparently not used anymore
         rid = add_smtpserver(res_name, **res_data)
-        log.info('Import of smtpserver "{0!s}" finished,'
-                 ' id: {1!s}'.format(res_name, rid))
+        log.info(f'Import of smtpserver "{res_name!s}" finished,'
+                 f' id: {rid!s}')

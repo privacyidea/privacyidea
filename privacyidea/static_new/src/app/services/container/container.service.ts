@@ -16,19 +16,19 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { AuthService, AuthServiceInterface } from "../auth/auth.service";
-import { ContentService, ContentServiceInterface } from "../content/content.service";
 import { HttpClient, HttpErrorResponse, httpResource, HttpResourceRef } from "@angular/common/http";
 import { computed, effect, inject, Injectable, linkedSignal, Signal, signal, WritableSignal } from "@angular/core";
-import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
+import { Sort } from "@angular/material/sort";
 import { catchError, forkJoin, Observable, of, Subject, throwError } from "rxjs";
 import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
-import { EnrollmentUrl, TokenEnrollmentPayload } from "../../mappers/token-api-payload/_token-api-payload.mapper";
 import { FilterValue } from "../../core/models/filter_value/filter_value";
-import { Sort } from "@angular/material/sort";
-import { TokenService, TokenServiceInterface } from "../token/token.service";
+import { EnrollmentUrl, TokenEnrollmentPayload } from "../../mappers/token-api-payload/_token-api-payload.mapper";
 import { StringUtils } from "../../utils/string.utils";
+import { AuthService, AuthServiceInterface } from "../auth/auth.service";
+import { ContentService, ContentServiceInterface } from "../content/content.service";
+import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
+import { TokenService, TokenServiceInterface } from "../token/token.service";
 import { UserService, UserServiceInterface } from "../user/user.service";
 
 const apiFilter = ["container_serial", "type", "description", "container_realm"];
@@ -315,8 +315,11 @@ export class ContainerService implements ContainerServiceInterface {
   });
 
   private readonly tokenInContainer = computed<boolean>(() => {
-    const tokenDetailsRes = this.tokenService.tokenDetailResource.value();
-    const assigned = tokenDetailsRes?.result?.value?.tokens?.[0]?.container_serial ?? "";
+    let assigned = "";
+    if (this.tokenService.tokenDetailResource.hasValue()) {
+      const tokenDetailsRes = this.tokenService.tokenDetailResource.value();
+      assigned = tokenDetailsRes?.result?.value?.tokens?.[0]?.container_serial ?? "";
+    }
     return String(assigned).trim() !== "";
   });
 
@@ -328,6 +331,7 @@ export class ContainerService implements ContainerServiceInterface {
 
     // On token details only load containers if details are available and the token is not already in a container.
     if (this.contentService.onTokenDetails()) {
+      if (!this.tokenService.tokenDetailResource.hasValue()) return undefined;
       const tokenRes = this.tokenService.tokenDetailResource.value();
       if (!tokenRes) {
         return undefined;
@@ -383,9 +387,10 @@ export class ContainerService implements ContainerServiceInterface {
   });
 
   containerOptions = linkedSignal({
-    source: this.containerResource.value,
+    source: () => (this.containerResource.hasValue() ? this.containerResource.value() : undefined),
     computation: (containerResource) => {
-      return containerResource?.result?.value?.containers.map((container) => container.serial) ?? [];
+      if (!containerResource) return [];
+      return containerResource.result?.value?.containers.map((container) => container.serial) ?? [];
     }
   });
 
@@ -395,10 +400,11 @@ export class ContainerService implements ContainerServiceInterface {
   });
 
   containersForTokenType = linkedSignal({
-    source: this.containerResource.value,
+    source: () => (this.containerResource.hasValue() ? this.containerResource.value() : undefined),
     computation: (containerResource) => {
+      if (!containerResource) return [];
       return (
-        containerResource?.result?.value?.containers
+        containerResource.result?.value?.containers
           .filter((container) => this.compatibleTypes().includes(container.type))
           .map((container) => container.serial) ?? []
       );
@@ -436,6 +442,7 @@ export class ContainerService implements ContainerServiceInterface {
   });
 
   containerTypeOptions = computed<ContainerType[]>(() => {
+    if (!this.containerTypesResource.hasValue()) return [];
     const value = this.containerTypesResource.value()?.result?.value;
     if (!value) {
       return [];
@@ -488,10 +495,11 @@ export class ContainerService implements ContainerServiceInterface {
   });
 
   containerDetail: WritableSignal<ContainerDetails> = linkedSignal({
-    source: this.containerDetailResource.value,
+    source: () => (this.containerDetailResource.hasValue() ? this.containerDetailResource.value() : undefined),
     computation: (containerDetailResource, previous) => {
-      if (containerDetailResource?.result?.value) {
-        return containerDetailResource.result?.value;
+      const containerDetail = containerDetailResource?.result?.value;
+      if (containerDetail) {
+        return containerDetail;
       }
       return (
         previous?.value ?? {
@@ -505,12 +513,14 @@ export class ContainerService implements ContainerServiceInterface {
   addToken(tokenSerial: string, containerSerial: string): Observable<any> {
     const headers = this.authService.getHeaders();
     return this.http
-      .post<PiResponse<boolean>>(`${this.containerBaseUrl}${containerSerial}/add`, { serial: tokenSerial }, { headers })
+      .post<
+        PiResponse<boolean>
+      >(`${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/add`, { serial: tokenSerial }, { headers })
       .pipe(
         catchError((error) => {
           console.error("Failed to assign container.", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.openSnackBar("Failed to assign container. " + message);
+          this.notificationService.error("Failed to assign container. " + message);
           return throwError(() => error);
         })
       );
@@ -521,12 +531,12 @@ export class ContainerService implements ContainerServiceInterface {
     return this.http
       .post<
         PiResponse<boolean>
-      >(`${this.containerBaseUrl}${containerSerial}/remove`, { serial: tokenSerial }, { headers })
+      >(`${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/remove`, { serial: tokenSerial }, { headers })
       .pipe(
         catchError((error) => {
           console.error("Failed to unassign container.", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.openSnackBar("Failed to unassign container. " + message);
+          this.notificationService.error("Failed to unassign container. " + message);
           return throwError(() => error);
         })
       );
@@ -536,12 +546,16 @@ export class ContainerService implements ContainerServiceInterface {
     const headers = this.authService.getHeaders();
     const valueString = value ? value.join(",") : "";
     return this.http
-      .post(`${this.containerBaseUrl}${containerSerial}/realms`, { realms: valueString }, { headers })
+      .post(
+        `${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/realms`,
+        { realms: valueString },
+        { headers }
+      )
       .pipe(
         catchError((error) => {
           console.error("Failed to set container realm.", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.openSnackBar("Failed to set container realm. " + message);
+          this.notificationService.error("Failed to set container realm. " + message);
           return throwError(() => error);
         })
       );
@@ -550,12 +564,16 @@ export class ContainerService implements ContainerServiceInterface {
   setContainerDescription(containerSerial: string, value: string): Observable<any> {
     const headers = this.authService.getHeaders();
     return this.http
-      .post(`${this.containerBaseUrl}${containerSerial}/description`, { description: value }, { headers })
+      .post(
+        `${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/description`,
+        { description: value },
+        { headers }
+      )
       .pipe(
         catchError((error) => {
           console.error("Failed to set container description.", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.openSnackBar("Failed to set container description. " + message);
+          this.notificationService.error("Failed to set container description. " + message);
           return throwError(() => error);
         })
       );
@@ -583,12 +601,12 @@ export class ContainerService implements ContainerServiceInterface {
     return this.http
       .post<
         PiResponse<{ disabled: boolean } | { active: boolean }>
-      >(`${this.containerBaseUrl}${containerSerial}/states`, { states: new_states }, { headers })
+      >(`${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/states`, { states: new_states }, { headers })
       .pipe(
         catchError((error) => {
           console.error("Failed to toggle active.", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.openSnackBar("Failed to toggle active. " + message);
+          this.notificationService.error("Failed to toggle active. " + message);
           return throwError(() => error);
         })
       );
@@ -597,12 +615,16 @@ export class ContainerService implements ContainerServiceInterface {
   unassignUser(containerSerial: string, username: string, userRealm: string): Observable<any> {
     const headers = this.authService.getHeaders();
     return this.http
-      .post(`${this.containerBaseUrl}${containerSerial}/unassign`, { user: username, realm: userRealm }, { headers })
+      .post(
+        `${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/unassign`,
+        { user: username, realm: userRealm },
+        { headers }
+      )
       .pipe(
         catchError((error) => {
           console.error("Failed to unassign user.", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.openSnackBar("Failed to unassign user. " + message);
+          this.notificationService.error("Failed to unassign user. " + message);
           return throwError(() => error);
         })
       );
@@ -612,7 +634,7 @@ export class ContainerService implements ContainerServiceInterface {
     const headers = this.authService.getHeaders();
     return this.http
       .post(
-        `${this.containerBaseUrl}${args.containerSerial}/assign`,
+        `${this.containerBaseUrl}${encodeURIComponent(args.containerSerial)}/assign`,
         { user: args.username, realm: args.userRealm },
         { headers }
       )
@@ -620,7 +642,7 @@ export class ContainerService implements ContainerServiceInterface {
         catchError((error) => {
           console.error("Failed to assign user.", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.openSnackBar("Failed to assign user. " + message);
+          this.notificationService.error("Failed to assign user. " + message);
           return throwError(() => error);
         })
       );
@@ -628,14 +650,14 @@ export class ContainerService implements ContainerServiceInterface {
 
   setContainerInfos(containerSerial: string, infos: any): Observable<Object>[] {
     const headers = this.authService.getHeaders();
-    const info_url = `${this.containerBaseUrl}${containerSerial}/info`;
+    const info_url = `${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/info`;
     return Object.keys(infos).map((info) => {
       const infoValue = infos[info];
-      return this.http.post(`${info_url}/${info}`, { value: infoValue }, { headers }).pipe(
+      return this.http.post(`${info_url}/${encodeURIComponent(info)}`, { value: infoValue }, { headers }).pipe(
         catchError((error) => {
           console.error("Failed to save container infos.", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.openSnackBar("Failed to save container infos. " + message);
+          this.notificationService.error("Failed to save container infos. " + message);
           return throwError(() => error);
         })
       );
@@ -645,14 +667,14 @@ export class ContainerService implements ContainerServiceInterface {
   deleteInfo(containerSerial: string, key: string): Observable<any> {
     const headers = this.authService.getHeaders();
     return this.http
-      .delete(`${this.containerBaseUrl}${containerSerial}/info/delete/${key}`, {
+      .delete(`${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/info/delete/${encodeURIComponent(key)}`, {
         headers
       })
       .pipe(
         catchError((error) => {
           console.error("Failed to delete info.", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.openSnackBar("Failed to delete info. " + message);
+          this.notificationService.error("Failed to delete info. " + message);
           return throwError(() => error);
         })
       );
@@ -660,25 +682,31 @@ export class ContainerService implements ContainerServiceInterface {
 
   addTokenToContainer(containerSerial: string, tokenSerial: string): Observable<any> {
     const headers = this.authService.getHeaders();
-    return this.http.post(`${this.containerBaseUrl}${containerSerial}/add`, { serial: tokenSerial }, { headers }).pipe(
-      catchError((error) => {
-        console.error("Failed to add token to container.", error);
-        const message = error.error?.result?.error?.message || "";
-        this.notificationService.openSnackBar("Failed to add token to container. " + message);
-        return throwError(() => error);
-      })
-    );
+    return this.http
+      .post(`${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/add`, { serial: tokenSerial }, { headers })
+      .pipe(
+        catchError((error) => {
+          console.error("Failed to add token to container.", error);
+          const message = error.error?.result?.error?.message || "";
+          this.notificationService.error("Failed to add token to container. " + message);
+          return throwError(() => error);
+        })
+      );
   }
 
   removeTokenFromContainer(containerSerial: string, tokenSerial: string): Observable<any> {
     const headers = this.authService.getHeaders();
     return this.http
-      .post(`${this.containerBaseUrl}${containerSerial}/remove`, { serial: tokenSerial }, { headers })
+      .post(
+        `${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/remove`,
+        { serial: tokenSerial },
+        { headers }
+      )
       .pipe(
         catchError((error) => {
           console.error("Failed to remove token from container.", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.openSnackBar("Failed to remove token from container. " + message);
+          this.notificationService.error("Failed to remove token from container. " + message);
           return throwError(() => error);
         })
       );
@@ -688,7 +716,7 @@ export class ContainerService implements ContainerServiceInterface {
     const data = this.containerDetail();
 
     if (!data || !Array.isArray(data.containers[0].tokens)) {
-      this.notificationService.openSnackBar("No valid tokens array found in data.");
+      this.notificationService.warning("No valid tokens array found in data.");
       return of(null);
     }
 
@@ -698,7 +726,7 @@ export class ContainerService implements ContainerServiceInterface {
         : data.containers[0].tokens.filter((token) => token.active);
 
     if (tokensForAction.length === 0) {
-      this.notificationService.openSnackBar("No tokens for action.");
+      this.notificationService.warning("No tokens for action.");
       return of(null);
     }
     return forkJoin(
@@ -709,7 +737,7 @@ export class ContainerService implements ContainerServiceInterface {
       catchError((error) => {
         console.error("Failed to toggle all.", error);
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.openSnackBar("Failed to toggle all. " + message);
+        this.notificationService.error("Failed to toggle all. " + message);
         return throwError(() => error);
       })
     );
@@ -720,7 +748,7 @@ export class ContainerService implements ContainerServiceInterface {
 
     if (!data || !Array.isArray(data.containers[0].tokens)) {
       console.error("No valid tokens array found in data.", data);
-      this.notificationService.openSnackBar("No valid tokens array found in data.");
+      this.notificationService.warning("No valid tokens array found in data.");
       return of(null);
     }
 
@@ -728,7 +756,7 @@ export class ContainerService implements ContainerServiceInterface {
 
     if (tokensForAction.length === 0) {
       console.error("No tokens to remove. Returning []");
-      this.notificationService.openSnackBar("No tokens to remove.");
+      this.notificationService.warning("No tokens to remove.");
       return of(null);
     }
 
@@ -737,12 +765,12 @@ export class ContainerService implements ContainerServiceInterface {
     return this.http
       .post<
         PiResponse<boolean>
-      >(`${this.containerBaseUrl}${containerSerial}/removeall`, { serial: tokensForAction.join(",") }, { headers })
+      >(`${this.containerBaseUrl}${encodeURIComponent(containerSerial)}/removeall`, { serial: tokensForAction.join(",") }, { headers })
       .pipe(
         catchError((error) => {
           console.error("Failed to remove all.", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.openSnackBar("Failed to remove all. " + message);
+          this.notificationService.error("Failed to remove all. " + message);
           return throwError(() => error);
         })
       );
@@ -750,11 +778,11 @@ export class ContainerService implements ContainerServiceInterface {
 
   deleteContainer(containerSerial: string): Observable<any> {
     const headers = this.authService.getHeaders();
-    return this.http.delete(`${this.containerBaseUrl}${containerSerial}`, { headers }).pipe(
+    return this.http.delete(`${this.containerBaseUrl}${encodeURIComponent(containerSerial)}`, { headers }).pipe(
       catchError((error) => {
         console.error("Failed to delete container.", error);
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.openSnackBar("Failed to delete container. " + message);
+        this.notificationService.error("Failed to delete container. " + message);
         return throwError(() => error);
       })
     );
@@ -763,12 +791,16 @@ export class ContainerService implements ContainerServiceInterface {
   deleteAllTokens(param: { containerSerial: string; serialList: string }): Observable<any> {
     const headers = this.authService.getHeaders();
     return this.http
-      .post(`${this.containerBaseUrl}${param.containerSerial}/removeall`, { serial: param.serialList }, { headers })
+      .post(
+        `${this.containerBaseUrl}${encodeURIComponent(param.containerSerial)}/removeall`,
+        { serial: param.serialList },
+        { headers }
+      )
       .pipe(
         catchError((error) => {
           console.error("Failed to delete all tokens.", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.openSnackBar("Failed to delete all tokens. " + message);
+          this.notificationService.error("Failed to delete all tokens. " + message);
           return throwError(() => error);
         })
       );
@@ -788,7 +820,7 @@ export class ContainerService implements ContainerServiceInterface {
         catchError((error) => {
           console.error("Failed to register container.", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.openSnackBar("Failed to register container. " + message);
+          this.notificationService.error("Failed to register container. " + message);
           return throwError(() => error);
         })
       );
@@ -800,18 +832,21 @@ export class ContainerService implements ContainerServiceInterface {
     return this.http
       .post<
         PiResponse<ContainerUnregisterData>
-      >(`${this.containerBaseUrl}register/${containerSerial}/terminate`, {}, { headers })
+      >(`${this.containerBaseUrl}register/${encodeURIComponent(containerSerial)}/terminate`, {}, { headers })
       .pipe(
         catchError((error) => {
           console.error("Failed to unregister container.", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.openSnackBar("Failed to unregister container. " + message);
+          this.notificationService.error("Failed to unregister container. " + message);
           return throwError(() => error);
         })
       );
   }
 
   containerBelongsToUser(containerSerial: any): false | true | undefined {
+    if (!this.containerResource.hasValue()) {
+      return undefined;
+    }
     return this.containerResource
       .value()
       ?.result?.value?.containers?.some((container) => container.serial === containerSerial);
@@ -851,7 +886,7 @@ export class ContainerService implements ContainerServiceInterface {
         catchError((error) => {
           console.error("Failed to create container.", error);
           const message = error.error?.result?.error?.message || "";
-          this.notificationService.openSnackBar("Failed to create container. " + message);
+          this.notificationService.error("Failed to create container. " + message);
           return throwError(() => error);
         })
       );
@@ -875,13 +910,13 @@ export class ContainerService implements ContainerServiceInterface {
         const containerDetailError = this.containerDetailResource.error() as HttpErrorResponse;
         console.error("Failed to get container details.", containerDetailError.message);
         const message = containerDetailError.error?.result?.error?.message || containerDetailError.message;
-        this.notificationService.openSnackBar("Failed to get container details." + message);
+        this.notificationService.error("Failed to get container details." + message);
       }
     });
     effect(() => {
       if (this.containerResource.error()) {
         const error = this.containerResource.error() as HttpErrorResponse;
-        this.notificationService.openSnackBar(error.message);
+        this.notificationService.error(error.message);
       }
     });
 
@@ -889,13 +924,17 @@ export class ContainerService implements ContainerServiceInterface {
       clearTimeout(this.pollingTimeoutId);
       this.pollingTrigger();
       const serial = this.containerSerial();
-      const resourceValue = this.containerDetailResource.value();
       const active = this.isPollingActive();
 
       const onAllowedRoute =
         this.contentService.onTokensContainersCreate() || this.contentService.onTokensContainersDetails();
 
-      if (!active || !serial || !resourceValue?.result?.value || !onAllowedRoute) {
+      if (!active || !serial || !this.containerDetailResource.hasValue() || !onAllowedRoute) {
+        return;
+      }
+
+      const resourceValue = this.containerDetailResource.value();
+      if (!resourceValue?.result?.value) {
         return;
       }
 
@@ -909,9 +948,9 @@ export class ContainerService implements ContainerServiceInterface {
       } else {
         const isRollover = this.isRolloverPolling();
         if (isRollover) {
-          this.notificationService.openSnackBar("Container rollover completed successfully.");
+          this.notificationService.success("Container rollover completed successfully.");
         } else if (!this.contentService.onTokensContainersCreate()) {
-          this.notificationService.openSnackBar("Container registered successfully.");
+          this.notificationService.success("Container registered successfully.");
         }
         this.isPollingActive.set(false);
         this.isRolloverPolling.set(false);

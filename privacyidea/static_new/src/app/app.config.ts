@@ -22,7 +22,7 @@ import {
   ApplicationConfig,
   inject,
   provideAppInitializer,
-  provideExperimentalZonelessChangeDetection
+  provideZonelessChangeDetection
 } from "@angular/core";
 import { provideAnimationsAsync } from "@angular/platform-browser/animations/async";
 import { provideRouter } from "@angular/router";
@@ -39,7 +39,7 @@ export const appConfig: ApplicationConfig = {
       const configService = inject(ConfigService);
       configService.loadConfig();
     }),
-    provideExperimentalZonelessChangeDetection(),
+    provideZonelessChangeDetection(),
     provideRouter(routes),
     provideAnimationsAsync(),
     { provide: APP_BASE_HREF, useValue: "/app/v2/" },

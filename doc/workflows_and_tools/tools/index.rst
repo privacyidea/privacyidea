@@ -60,6 +60,10 @@ Example::
 
 This returns all orphaned tokens for later processing.
 
+``--orphaned-on-error True``
+
+Add this parameter to additionally check, if there is an error when finding tokens, due to a connection error with the resolver. Set this to True, to display tokens that are orphaned, due to a resolver error. Set this to False to exclude Tokens that are orphaned, due to a resolver error.
+
 Active
 ******
 
@@ -527,7 +531,7 @@ You can use several options to filter the tokens.
 
 ``--orphaned-on-error``
     When searching for orphaned tokens, mark the token as orphaned if the user
-    can not be found due to a resolver error.
+    can not be found due to a resolver error. By default this parameter is set to False.
 
 ``--range-of-serials``
     Find tokens with serials in a specific range.

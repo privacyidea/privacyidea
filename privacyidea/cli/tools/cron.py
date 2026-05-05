@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
 #
 # 2018-06-29 Friedrich Weber <friedrich.weber@netknights.it>
 #            Implement periodic task runner
@@ -37,7 +36,6 @@ from privacyidea.lib.periodictask import (get_scheduled_periodic_tasks,
                                           execute_task, get_periodic_tasks,
                                           get_periodic_task_by_name,
                                           set_periodic_task_last_run)
-from privacyidea.lib.utils import get_version_number
 
 warnings.simplefilter("ignore")
 
@@ -178,7 +176,7 @@ def run_scheduled(node_string=None, dryrun=False, cron_mode=False):
     current_time = datetime.now(tz.tzlocal())
     scheduled_tasks = get_scheduled_periodic_tasks(node, current_time)
     if scheduled_tasks:
-        print_stdout("The following tasks are scheduled to run on node {!s}:".format(node))
+        print_stdout(f"The following tasks are scheduled to run on node {node!s}:")
         print_stdout()
         for ptask in scheduled_tasks:
             print_stdout("  {name} ({interval!r}, {taskmodule})".format(**ptask))
@@ -197,7 +195,7 @@ def run_scheduled(node_string=None, dryrun=False, cron_mode=False):
         else:
             print_stdout("Not running any tasks because --dryrun was passed.")
     else:
-        print_stdout("There are no tasks scheduled on node {!s}.".format(node))
+        print_stdout(f"There are no tasks scheduled on node {node!s}.")
 
 
 if __name__ == '__main__':

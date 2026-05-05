@@ -21,13 +21,14 @@ import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { signal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { MatDialogModule, MatDialog } from "@angular/material/dialog";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
+import { provideRouter, Router } from "@angular/router";
 import { Subject } from "rxjs";
 import { MockMatDialogRef } from "../../../../testing/mock-mat-dialog-ref";
 import { MockDialogService } from "../../../../testing/mock-services";
 import { CaConnectorService } from "../../../services/ca-connector/ca-connector.service";
 import { DialogService } from "../../../services/dialog/dialog.service";
+import { ROUTE_PATHS } from "../../../route_paths";
 import { CaConnectorsComponent } from "./ca-connectors.component";
 
 describe("CaConnectorsComponent", () => {
@@ -36,6 +37,7 @@ describe("CaConnectorsComponent", () => {
   let caConnectorServiceMock: any;
   let dialogServiceMock: MockDialogService;
   let confirmClosed: Subject<boolean>;
+  let router: Router;
 
   beforeEach(async () => {
     caConnectorServiceMock = {
@@ -47,23 +49,20 @@ describe("CaConnectorsComponent", () => {
     };
 
     await TestBed.configureTestingModule({
-      imports: [CaConnectorsComponent, NoopAnimationsModule, MatDialogModule],
+      imports: [CaConnectorsComponent, NoopAnimationsModule],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
+        provideRouter([]),
         { provide: CaConnectorService, useValue: caConnectorServiceMock },
         { provide: DialogService, useClass: MockDialogService }
       ]
     })
-      .overrideComponent(CaConnectorsComponent, {
-        add: {
-          providers: [{ provide: MatDialog, useValue: { open: jest.fn() } }]
-        }
-      })
       .compileComponents();
 
     fixture = TestBed.createComponent(CaConnectorsComponent);
     dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;
+    router = TestBed.inject(Router);
     confirmClosed = new Subject();
     let dialogRefMock = new MockMatDialogRef();
     dialogRefMock.afterClosed.mockReturnValue(confirmClosed);
@@ -86,11 +85,17 @@ describe("CaConnectorsComponent", () => {
     expect(component.caConnectorDataSource().filter).toBe("conn1");
   });
 
-  it("should open edit dialog", () => {
-    const dialog = fixture.debugElement.injector.get(MatDialog);
+  it("should navigate to new connector route on openEditDialog without connector", () => {
+    const spy = jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
+    component.openEditDialog();
+    expect(spy).toHaveBeenCalledWith(ROUTE_PATHS.EXTERNAL_SERVICES_CA_CONNECTORS_NEW);
+  });
+
+  it("should navigate to details route on openEditDialog with connector", () => {
+    const spy = jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
     const connector = caConnectorServiceMock.caConnectors()[0];
     component.openEditDialog(connector);
-    expect(dialog.open).toHaveBeenCalled();
+    expect(spy).toHaveBeenCalledWith(ROUTE_PATHS.EXTERNAL_SERVICES_CA_CONNECTORS_DETAILS + connector.connectorname);
   });
 
   it("should delete connector after confirmation", () => {

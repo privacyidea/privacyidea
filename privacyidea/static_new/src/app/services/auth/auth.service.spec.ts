@@ -270,12 +270,12 @@ describe("AuthService", () => {
     expect(mockLocal.removeData).toHaveBeenCalled();
     expect(routerMock.navigate).toHaveBeenCalledWith(["login"]);
     await (routerMock.navigate as jest.Mock).mock.results[0].value;
-    expect(notifications.openSnackBar).toHaveBeenCalledWith("Logout successful.");
-    expect(notifications.openSnackBar).toHaveBeenCalledTimes(1);
+    expect(notifications.success).toHaveBeenCalledWith("Logout successful.");
+    expect(notifications.success).toHaveBeenCalledTimes(1);
   });
 
   it("authtype, jwtExpDate and logoutTimeSeconds compute correctly", () => {
-    jest.useFakeTimers().setSystemTime(new Date("2025-01-01T00:00:00Z"));
+    jest.useFakeTimers().setSystemTime(Date.parse("2025-01-01T00:00:00Z"));
 
     expect(authService.authtype()).toBe("none");
     expect(authService.jwtExpDate()).toBeNull();
@@ -299,7 +299,7 @@ describe("AuthService", () => {
   });
 
   it("jwtExpDate and jwtLogoutTimeS are null if expiration or no jwt data at all are defined", () => {
-    jest.useFakeTimers().setSystemTime(new Date("2025-01-01T00:00:00Z"));
+    jest.useFakeTimers().setSystemTime(Date.parse("2025-01-01T00:00:00Z"));
 
     expect(authService.jwtExpDate()).toBeNull();
     expect(authService.jwtLogoutTimeS()).toBeNull();

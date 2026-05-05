@@ -19,7 +19,6 @@ from sqlalchemy import select
 from testfixtures import log_capture
 from werkzeug.test import EnvironBuilder
 
-from privacyidea.api.event import get_eventhandling
 from privacyidea.lib.audit import getAudit
 from privacyidea.lib.config import get_config_object
 from privacyidea.lib.container import (init_container, find_container_by_serial, get_all_containers,
@@ -48,23 +47,6 @@ from privacyidea.lib.eventhandler.webhookeventhandler import (ActionType as WHEH
                                                               ContentType,
                                                               DB_CONTENT_TYPE_MAP)
 from privacyidea.lib.machine import list_token_machines
-from .base import MyTestCase, FakeFlaskG, FakeAudit
-from privacyidea.lib.config import get_config_object
-from privacyidea.lib.eventhandler.tokenhandler import (TokenEventHandler,
-                                                       ACTION_TYPE, VALIDITY)
-from privacyidea.lib.eventhandler.scripthandler import ScriptEventHandler, SCRIPT_WAIT
-from privacyidea.lib.eventhandler.counterhandler import CounterEventHandler
-from privacyidea.lib.eventhandler.responsemangler import ResponseManglerEventHandler
-from privacyidea.models import EventCounter, TokenOwner, db, EventHandler
-from privacyidea.lib.eventhandler.federationhandler import FederationEventHandler
-from privacyidea.lib.eventhandler.requestmangler import RequestManglerEventHandler
-from privacyidea.lib.eventhandler.base import BaseEventHandler, CONDITION
-from privacyidea.lib.counter import increase as counter_increase
-from flask import Request, Response
-from werkzeug.test import EnvironBuilder
-from privacyidea.lib.event import (delete_event, set_event,
-                                   EventConfiguration, get_handler_object,
-                                   enable_event)
 from privacyidea.lib.token import (init_token, remove_token, get_realms_of_token, get_tokens,
                                    add_tokeninfo, unassign_token, get_tokens_paginate)
 from privacyidea.lib.tokenclass import DATE_FORMAT, ChallengeSession
@@ -72,6 +54,7 @@ from privacyidea.lib.user import User
 from privacyidea.lib.utils import is_true
 from privacyidea.models import Challenge
 from privacyidea.models import EventCounter, TokenOwner
+from privacyidea.models import db, EventHandler
 from .base import MyTestCase, FakeFlaskG, FakeAudit
 from .test_lib_tokencontainer import MockSmartphone
 
@@ -1271,6 +1254,100 @@ class BaseEventHandlerTestCase(MyTestCase):
         self.assertEqual(container_serial, context.container.serial)
 
         delete_container_by_serial(container_serial)
+
+    def test_30_user_info_condition(self):
+        self.setUp_user_realms()
+        serial = "pw01"
+        user = User("cornelius", "realm1")
+        remove_token(user=user)
+        tok = init_token({"serial": serial,
+                          "type": "pw", "otppin": "test",
+                          "otpkey": "secret"},
+                         user=user)
+        self.assertEqual(tok.type, "pw")
+        uhandler = BaseEventHandler()
+        req_data = {'user': "cornelius@realm1", "pass": "secret"}
+        resp_data = """{"result": {"value": true}}"""
+        options = self.setup_request(req_data=req_data, all_data=req_data, user=user, resp_data=resp_data)
+
+        # Verify the user info is what we expect from the passwd resolver
+        info = user.info
+        self.assertEqual("Cornelius", info.get("givenname"))
+        self.assertEqual("user@localhost.localdomain", info.get("email"))
+
+        # Test string equality: givenname matches
+        options["handler_def"] = {"conditions": {CONDITION.USER_INFO: "givenname == Cornelius"}}
+        r = uhandler.check_condition(options)
+        self.assertTrue(r)
+
+        # Test string equality: givenname does not match
+        options["handler_def"] = {"conditions": {CONDITION.USER_INFO: "givenname == NotCornelius"}}
+        r = uhandler.check_condition(options)
+        self.assertFalse(r)
+
+        # Test email string equality
+        options["handler_def"] = {"conditions": {CONDITION.USER_INFO: "email == user@localhost.localdomain"}}
+        r = uhandler.check_condition(options)
+        self.assertTrue(r)
+
+        # Test email string inequality
+        options["handler_def"] = {"conditions": {CONDITION.USER_INFO: "email == other@example.com"}}
+        r = uhandler.check_condition(options)
+        self.assertFalse(r)
+
+        # Test non-existent key returns False
+        options["handler_def"] = {"conditions": {CONDITION.USER_INFO: "nonexistent == somevalue"}}
+        r = uhandler.check_condition(options)
+        self.assertFalse(r)
+
+        # Test numeric comparison with userid (1000 for cornelius)
+        options["handler_def"] = {"conditions": {CONDITION.USER_INFO: "userid < 1001"}}
+        r = uhandler.check_condition(options)
+        self.assertTrue(r)
+
+        options["handler_def"] = {"conditions": {CONDITION.USER_INFO: "userid > 1001"}}
+        r = uhandler.check_condition(options)
+        self.assertFalse(r)
+
+        # Test {now} replacement and time offset in user info condition.
+        # We mock get_specific_info to return a date value and verify that
+        # {now} is correctly replaced and compared.
+        future_date = (datetime.now(tzlocal()) + timedelta(days=10)).strftime(DATE_FORMAT)
+        past_date = (datetime.now(tzlocal()) - timedelta(days=10)).strftime(DATE_FORMAT)
+
+        # A user info field set to a future date should be > {now}
+        with mock.patch.object(user, 'get_specific_info', return_value={"expiration": future_date}):
+            options["handler_def"] = {"conditions": {CONDITION.USER_INFO: "expiration > {now}"}}
+            r = uhandler.check_condition(options)
+            self.assertTrue(r)
+
+        # A user info field set to a past date should be < {now}
+        with mock.patch.object(user, 'get_specific_info', return_value={"expiration": past_date}):
+            options["handler_def"] = {"conditions": {CONDITION.USER_INFO: "expiration < {now}"}}
+            r = uhandler.check_condition(options)
+            self.assertTrue(r)
+
+        # Test {now} with a time offset: past_date should be < {now}-5d (now minus 5 days)
+        # past_date is 10 days ago, {now}-5d is 5 days ago, so past_date < {now}-5d
+        with mock.patch.object(user, 'get_specific_info', return_value={"expiration": past_date}):
+            options["handler_def"] = {"conditions": {CONDITION.USER_INFO: "expiration < {now}-5d"}}
+            r = uhandler.check_condition(options)
+            self.assertTrue(r)
+
+        # future_date should NOT be < {now}+5d ... actually future_date is +10d, {now}+5d is +5d
+        # so future_date > {now}+5d should be True
+        with mock.patch.object(user, 'get_specific_info', return_value={"expiration": future_date}):
+            options["handler_def"] = {"conditions": {CONDITION.USER_INFO: "expiration > {now}+5d"}}
+            r = uhandler.check_condition(options)
+            self.assertTrue(r)
+
+        # future_date (+10d) should NOT be > {now}+15d
+        with mock.patch.object(user, 'get_specific_info', return_value={"expiration": future_date}):
+            options["handler_def"] = {"conditions": {CONDITION.USER_INFO: "expiration > {now}+15d"}}
+            r = uhandler.check_condition(options)
+            self.assertFalse(r)
+
+        remove_token(serial)
 
 
 class CounterEventTestCase(MyTestCase):
@@ -4449,4 +4526,3 @@ class WebhookTestCase(MyTestCase):
         self.assertTrue(res)
         _, kwargs = mock_post.call_args
         self.assertEqual(kwargs["headers"]["Content-Type"], ContentType.URLENCODED)
-

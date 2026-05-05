@@ -60,7 +60,7 @@ describe("SubscriptionExpiryService", () => {
 
     const service = TestBed.inject(SubscriptionExpiryService);
 
-    TestBed.flushEffects();
+    TestBed.tick();
 
     expect(service.opened()).toBe(true);
     expect(dialogMock.open).toHaveBeenCalled();
@@ -88,12 +88,12 @@ describe("SubscriptionExpiryService", () => {
     authMock.isAuthenticated.set(true);
 
     TestBed.inject(SubscriptionExpiryService);
-    TestBed.flushEffects();
+    TestBed.tick();
 
     expect(dialogMock.open).toHaveBeenCalledTimes(1);
 
     subsMock.subscriptionsResource.set(makeSubs({ a: { application: "app1", timedelta: -6, date_till: "d" } }));
-    TestBed.flushEffects();
+    TestBed.tick();
 
     expect(dialogMock.open).toHaveBeenCalledTimes(1);
   });

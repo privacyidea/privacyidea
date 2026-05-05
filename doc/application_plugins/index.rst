@@ -26,7 +26,7 @@ authentication. In this case you need to configure an offline token (See
 :ref:`application_offline`).
 
 For more information about building and configuring the PAM module see the
-`README <https://github.com/privacyidea/privacyidea-pam/blob/main/README.md>`.
+`README <https://github.com/privacyidea/privacyidea-pam/blob/main/README.md>`_.
 
 try_first_pass
 ~~~~~~~~~~~~~~

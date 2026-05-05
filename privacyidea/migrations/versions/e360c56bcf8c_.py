@@ -24,7 +24,7 @@ class SMSGateway(Base):
     __table_args__ = {'mysql_row_format': 'DYNAMIC'}
     id = sa.Column(sa.Integer, Sequence("smsgateway_seq"), primary_key=True)
     identifier = sa.Column(sa.Unicode(255), nullable=False, unique=True)
-    description = sa.Column(sa.Unicode(1024), default=u"")
+    description = sa.Column(sa.Unicode(1024), default="")
     providermodule = sa.Column(sa.Unicode(1024), nullable=False)
     options = orm.relationship('SMSGatewayOption',
                               lazy='dynamic',
@@ -35,8 +35,8 @@ class SMSGatewayOption(Base):
     __tablename__ = 'smsgatewayoption'
     id = sa.Column(sa.Integer, Sequence("smsgwoption_seq"), primary_key=True)
     Key = sa.Column(sa.Unicode(255), nullable=False)
-    Value = sa.Column(sa.UnicodeText(), default=u'')
-    Type = sa.Column(sa.Unicode(100), default=u'option')
+    Value = sa.Column(sa.UnicodeText(), default='')
+    Type = sa.Column(sa.Unicode(100), default='option')
     gateway_id = sa.Column(sa.Integer(),
                            sa.ForeignKey('smsgateway.id'), index=True)
     __table_args__ = (sa.UniqueConstraint('gateway_id',

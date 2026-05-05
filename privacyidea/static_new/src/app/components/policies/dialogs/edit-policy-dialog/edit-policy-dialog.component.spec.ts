@@ -19,23 +19,17 @@
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { EditPolicyDialogComponent } from "./edit-policy-dialog.component";
-import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { PolicyService } from "../../../../services/policies/policies.service";
 import { DialogService } from "../../../../services/dialog/dialog.service";
 import { MockPolicyService } from "src/testing/mock-services/mock-policies-service";
 import { MockDialogService } from "src/testing/mock-services/mock-dialog-service";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { Component, input, output } from "@angular/core";
-import { MockMatDialogRef } from "../../../../../testing/mock-mat-dialog-ref";
-import { of, Subject } from "rxjs";
-
-@Component({ selector: "app-dialog-wrapper", standalone: true, template: "<ng-content></ng-content>" })
-class MockWrapper {
-  title = input<string>();
-  actions = input<any[]>();
-  close = output();
-  onAction = output<any>();
-}
+import { ActivatedRoute, Router } from "@angular/router";
+import { of } from "rxjs";
+import { ROUTE_PATHS } from "../../../../route_paths";
+import { PendingChangesService } from "../../../../services/pending-changes/pending-changes.service";
+import { MockPendingChangesService } from "src/testing/mock-services/mock-pending-changes-service";
 
 @Component({ selector: "app-policy-panel-edit", standalone: true, template: "" })
 class MockPanel {
@@ -43,49 +37,51 @@ class MockPanel {
   onPolicyEdit = output<any>();
 }
 
-describe("EditPolicyDialogComponent", () => {
+function createTestBed(paramName: string | null) {
+  return TestBed.configureTestingModule({
+    imports: [EditPolicyDialogComponent, NoopAnimationsModule],
+    providers: [
+      {
+        provide: ActivatedRoute,
+        useValue: { paramMap: of({ get: (key: string) => (key === "name" ? paramName : null) }) }
+      },
+      {
+        provide: Router,
+        useValue: { navigateByUrl: jest.fn(), events: of(), url: ROUTE_PATHS.POLICIES }
+      },
+      { provide: PolicyService, useClass: MockPolicyService },
+      { provide: DialogService, useClass: MockDialogService },
+      { provide: PendingChangesService, useClass: MockPendingChangesService }
+    ]
+  })
+    .overrideComponent(EditPolicyDialogComponent, { set: { imports: [MockPanel] } })
+    .compileComponents();
+}
+
+describe("EditPolicyDialogComponent – create mode", () => {
   let component: EditPolicyDialogComponent;
   let fixture: ComponentFixture<EditPolicyDialogComponent>;
   let policyService: MockPolicyService;
   let dialogService: MockDialogService;
-  let mockDialogRef: any;
-
-  const mockData = {
-    policyDetail: { name: "TestPolicy", scope: "user" },
-    mode: "edit"
-  };
+  let router: Router;
 
   beforeEach(async () => {
-    mockDialogRef = {
-      backdropClick: () => mockDialogRef._backdropClick,
-      keydownEvents: () => mockDialogRef._keydownEvents,
-      _backdropClick: new Subject<any>(),
-      _keydownEvents: new Subject<any>(),
-      close: jest.fn()
-    };
-    await TestBed.configureTestingModule({
-      imports: [EditPolicyDialogComponent, NoopAnimationsModule],
-      providers: [
-        { provide: MatDialogRef, useValue: mockDialogRef },
-        { provide: MAT_DIALOG_DATA, useValue: mockData },
-        { provide: PolicyService, useClass: MockPolicyService },
-        { provide: DialogService, useClass: MockDialogService }
-      ]
-    })
-      .overrideComponent(EditPolicyDialogComponent, {
-        set: { imports: [MockWrapper, MockPanel] }
-      })
-      .compileComponents();
+    await createTestBed(null);
 
     fixture = TestBed.createComponent(EditPolicyDialogComponent);
     component = fixture.componentInstance;
     policyService = TestBed.inject(PolicyService) as unknown as MockPolicyService;
     dialogService = TestBed.inject(DialogService) as unknown as MockDialogService;
+    router = TestBed.inject(Router);
     fixture.detectChanges();
   });
 
   it("should create", () => {
     expect(component).toBeTruthy();
+  });
+
+  it("should be in create mode when no name param", () => {
+    expect(component.mode()).toBe("create");
   });
 
   it("should merge edits into the policy", () => {
@@ -108,71 +104,72 @@ describe("EditPolicyDialogComponent", () => {
     expect(component.canSave()).toBe(true);
   });
 
-  it("onAction does not call savePolicy if value is not submit", () => {
+  it("onAction does not call onSave if value is not submit", () => {
     const spy = jest.spyOn(component, "onSave");
     component.onAction(null);
     expect(spy).not.toHaveBeenCalled();
   });
 
-  it("onAction calls savePolicy if value is submit", () => {
+  it("onAction calls onSave if value is submit", () => {
     const spy = jest.spyOn(component, "onSave");
     component.onAction("submit");
     expect(spy).toHaveBeenCalled();
   });
 
-  it("close does not opens discard dialog if there are no changes", () => {
-    const saveSpy = jest.spyOn(component, "onSave").mockResolvedValue(true);
-
-    component["close"]();
-
+  it("onCancel navigates back directly when no changes", () => {
+    component.onCancel();
     expect(dialogService.openDialog).not.toHaveBeenCalled();
-    expect(saveSpy).not.toHaveBeenCalled();
+    expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.POLICIES);
   });
 
-  it("savePolicy calls savePolicyEdits in edit mode and closes the dialog", async () => {
-    const spy = jest.spyOn(policyService, "savePolicyEdits").mockResolvedValue(true);
-    await component.onSave();
-    expect(spy).toHaveBeenCalledWith("TestPolicy", expect.any(Object));
-    expect(mockDialogRef.close).toHaveBeenCalled();
+  it("savePolicy calls saveNewPolicy in create mode and navigates back", async () => {
+    const spy = jest.spyOn(policyService, "saveNewPolicy").mockResolvedValue(true);
+    const success = await component.onSave();
+    expect(spy).toHaveBeenCalled();
+    expect(success).toBe(true);
+    expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.POLICIES);
+  });
+
+  it("savePolicy does not navigate when saveNewPolicy returns false", async () => {
+    jest.spyOn(policyService, "saveNewPolicy").mockResolvedValue(false);
+    const success = await component.onSave();
+    expect(success).toBe(false);
+    expect(router.navigateByUrl).not.toHaveBeenCalled();
   });
 });
 
-describe("Create Policy in EditPolicyDialogComponent", () => {
+describe("EditPolicyDialogComponent – edit mode", () => {
   let component: EditPolicyDialogComponent;
   let fixture: ComponentFixture<EditPolicyDialogComponent>;
   let policyService: MockPolicyService;
-
-  const mockData = {
-    policyDetail: { name: "TestPolicy", scope: "user" },
-    mode: "create"
-  };
+  let router: Router;
 
   beforeEach(async () => {
-    await TestBed.configureTestingModule({
-      imports: [EditPolicyDialogComponent, NoopAnimationsModule],
-      providers: [
-        { provide: MatDialogRef, useClass: MockMatDialogRef },
-        { provide: MAT_DIALOG_DATA, useValue: mockData },
-        { provide: PolicyService, useClass: MockPolicyService },
-        { provide: DialogService, useClass: MockDialogService }
-      ]
-    })
-      .overrideComponent(EditPolicyDialogComponent, {
-        set: { imports: [MockWrapper, MockPanel] }
-      })
-      .compileComponents();
+    await createTestBed("TestPolicy");
 
     fixture = TestBed.createComponent(EditPolicyDialogComponent);
     component = fixture.componentInstance;
     policyService = TestBed.inject(PolicyService) as unknown as MockPolicyService;
+    router = TestBed.inject(Router);
     fixture.detectChanges();
   });
 
-  it("savePolicy calls saveNewPolicy in create mode and closes the dialog", async () => {
-    const spy = jest.spyOn(policyService, "saveNewPolicy").mockResolvedValue(true);
-    const closeSpy = jest.spyOn(component["dialogRef"], "close");
-    await component.onSave();
+  it("should be in edit mode when name param is present", () => {
+    expect(component.mode()).toBe("edit");
+  });
+
+  it("savePolicy calls savePolicyEdits in edit mode and navigates back", async () => {
+    const spy = jest.spyOn(policyService, "savePolicyEdits").mockResolvedValue(true);
+    const success = await component.onSave();
     expect(spy).toHaveBeenCalled();
-    expect(closeSpy).toHaveBeenCalled();
+    expect(success).toBe(true);
+    expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.POLICIES);
+  });
+
+  it("savePolicy does not navigate when savePolicyEdits returns false", async () => {
+    jest.spyOn(policyService, "savePolicyEdits").mockResolvedValue(false);
+    const success = await component.onSave();
+    expect(success).toBe(false);
+    expect(router.navigateByUrl).not.toHaveBeenCalled();
   });
 });

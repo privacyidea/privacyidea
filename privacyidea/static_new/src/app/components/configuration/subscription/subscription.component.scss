@@ -1,12 +1,8 @@
 @use "../../../../styles" as styles;
 
 .subscription-layout {
-  @include styles.table-container-styles;
+  @include styles.main-component-style;
   @include styles.base-table-structure(".token-table", ".token-table-filter", ".table-scroll-container");
-  max-height: var(--max-height);
-  max-width: calc(100vw - var(--global-padding) * 5 - 48px);
-  overflow: auto;
-  display: grid;
 }
 
 .application-color {
@@ -86,5 +82,14 @@
 .subscriptions-grid {
   display: grid;
   gap: 1rem;
-  grid-template-columns: auto auto;
+  grid-template-columns: 1fr 1fr;
+
+  // single subscription should take full width
+  > *:only-child {
+    grid-column: 1 / -1;
+  }
+
+  @media (max-width: 1040px) {
+    grid-template-columns: 1fr;
+  }
 }

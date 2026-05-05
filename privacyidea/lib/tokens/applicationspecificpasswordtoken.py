@@ -25,7 +25,7 @@ from privacyidea.lib.log import log_with
 from privacyidea.lib import _
 from privacyidea.lib.policy import SCOPE, GROUP
 from privacyidea.lib.policies.actions import PolicyAction
-from privacyidea.api.lib.utils import getParam
+from privacyidea.lib.params import get_required
 
 
 TOKENINFO_KEY = "service_id"
@@ -123,12 +123,11 @@ class ApplicationSpecificPasswordTokenClass(PasswordTokenClass):
         """
         PasswordTokenClass.update(self, param)
         # In addition to the initialization from the parent class, we also need to set the service_id
-        service_id = getParam(param, TOKENINFO_KEY, optional=False)
+        service_id = get_required(param, TOKENINFO_KEY)
         self.add_tokeninfo(TOKENINFO_KEY, service_id)
 
     @property
     def service_id(self):
-        r = self.get_tokeninfo()
         service_id = self.get_tokeninfo(TOKENINFO_KEY)
         return service_id
 
@@ -145,10 +144,10 @@ class ApplicationSpecificPasswordTokenClass(PasswordTokenClass):
         """
         service_id = options.get(TOKENINFO_KEY)
         if not service_id:
-            log.debug("The request has no {0!s}.".format(TOKENINFO_KEY))
+            log.debug(f"The request has no {TOKENINFO_KEY!s}.")
             return False
         if not self.service_id:
             # A token could be missing the service_id
-            log.debug("The token has no {0!s}.".format(TOKENINFO_KEY))
+            log.debug(f"The token has no {TOKENINFO_KEY!s}.")
             return False
         return self.service_id.lower() == service_id.lower()

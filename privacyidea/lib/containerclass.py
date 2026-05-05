@@ -19,7 +19,6 @@
 #
 import logging
 from datetime import datetime, timezone
-from typing import List, Union
 
 from cryptography.exceptions import InvalidSignature
 from cryptography.hazmat.primitives.asymmetric.ec import EllipticCurvePublicKey
@@ -42,7 +41,7 @@ from privacyidea.lib.tokenclass import TokenClass, ChallengeSession
 from privacyidea.lib.user import User
 from privacyidea.lib.utils import is_true
 from privacyidea.models import (TokenContainerOwner, Realm, Token, db, TokenContainerStates,
-                                TokenContainerInfo, TokenContainerRealm, TokenContainerTemplate)
+                                TokenContainerInfo, TokenContainerTemplate)
 
 log = logging.getLogger(__name__)
 
@@ -132,7 +131,7 @@ class TokenContainerClass:
         return self._db_container.id
 
     @property
-    def last_authentication(self) -> Union[datetime, None]:
+    def last_authentication(self) -> datetime | None:
         """
         Returns the timestamp of the last seen field in the database.
         It is the time when a token of the container was last used successfully for authentication.
@@ -162,7 +161,7 @@ class TokenContainerClass:
         self._db_container.save()
 
     @property
-    def last_synchronization(self) -> Union[datetime, None]:
+    def last_synchronization(self) -> datetime | None:
         """
         Returns the timestamp of the last updated field in the database.
         It is the time when the container was last synchronized with the privacyIDEA server.
@@ -194,7 +193,7 @@ class TokenContainerClass:
     def realms(self) -> list[Realm]:
         return self._db_container.realms
 
-    def set_realms(self, realms: List[str], add=False) -> dict[str, bool]:
+    def set_realms(self, realms: list[str], add=False) -> dict[str, bool]:
         """
         Set the realms of the container. If `add` is True, the realms will be added to the existing realms, otherwise
         the existing realms will be removed.

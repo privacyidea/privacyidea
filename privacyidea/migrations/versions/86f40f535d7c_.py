@@ -23,9 +23,9 @@ def upgrade():
                   ('monitoringstats', 'timestamp')]
     for k, v in index_data:
         try:
-            op.create_index(op.f('ix_{0!s}_{1!s}'.format(k, v)), k, [v])
+            op.create_index(op.f(f'ix_{k!s}_{v!s}'), k, [v])
         except Exception as exx:
-            print("Could not add index for column {1!s} in table {0!s}.".format(k, v))
+            print(f"Could not add index for column {v!s} in table {k!s}.")
             print(exx)
 
 

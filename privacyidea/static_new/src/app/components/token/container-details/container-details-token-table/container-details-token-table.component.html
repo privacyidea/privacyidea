@@ -51,7 +51,7 @@
         [pageSize]="pageSize" />
     </div>
   </div>
-  <div [ngClass]="[overflowService.isWidthOverflowing('body', 1580) ? 'flex-column' : 'flex-row']">
+  <div class="responsive-flex-row-1580">
     <table
       [dataSource]="dataSource"
       aria-label="Token of Container Data Table"
@@ -85,16 +85,18 @@
               <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
                 @switch (column.key) {
                   @case ("serial") {
-                    @if (element.username === authService.username() || authService.role() === "admin") {
-                      <a
-                        (click)="contentService.tokenSelected(element.serial)"
-                        attr.aria-label="{{ column.label }} Link">
-                        {{ element[column.key] }}
-                      </a>
-                    } @else {
-                      <span> {{ element[column.key] }} </span>
-                    }
-                    <app-copy-button [copyText]="element.serial"></app-copy-button>
+                    <div class="flex-row flex-nowrap ali-center">
+                      @if (element.username === authService.username() || authService.role() === "admin") {
+                        <a
+                          (click)="contentService.tokenSelected(element.serial)"
+                          attr.aria-label="{{ column.label }} Link">
+                          {{ element[column.key] }}
+                        </a>
+                      } @else {
+                        <span> {{ element[column.key] }} </span>
+                      }
+                      <app-copy-button [copyText]="element.serial"></app-copy-button>
+                    </div>
                   }
                   @case ("active") {
                     <span

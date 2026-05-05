@@ -398,6 +398,25 @@ code can be easily and automatically sent to the user. If the token does not
 exist yet (like with a pre-event handler for token_init), this condition gets
 ignored.
 
+**user_info**
+
+The user_info condition can check any arbitrary user info field against a fixed value.
+You can compare strings, integers, and dates. You need to enter the condition in the format::
+
+    <fieldname> '==' <fieldvalue>
+    <fieldname> '>' <fieldvalue>
+    <fieldname> '<' <fieldvalue>
+
+where ``<fieldname>`` is the name of any user info field and ``<fieldvalue>`` is the value to compare against.
+
+You can use the tag ``{now}`` for time-based comparisons. It is also possible to add offsets to ``{now}``
+in seconds (``s``), minutes (``m``), hours (``h``) or days (``d``)::
+
+    last_login '<' {now} - 7d
+    created '>' {now} - 1h
+
+This can be useful to e.g. trigger actions for users who have not logged in for a certain period of time.
+
 **user_token_number**
 
 The action is only triggered, if the user in the event has the given number

@@ -31,14 +31,13 @@
       [pageSize]="pageSize()"
       showFirstLastButtons />
   </div>
-  <div class="table-container">
-    <table
-      [dataSource]="containerDataSource()"
-      aria-label="Container Data Table"
-      class="container-table"
-      i18n-aria-label
-      mat-table
-      multiTemplateDataRows>
+  <table
+    [dataSource]="containerDataSource()"
+    aria-label="Container Data Table"
+    class="container-table"
+    i18n-aria-label
+    mat-table
+    multiTemplateDataRows>
       @for (column of columnKeysMapSelfService; track column) {
         <ng-container [matColumnDef]="column.key">
           @if (column.key === "select") {
@@ -89,14 +88,16 @@
                     [disabled]="total() === 0" />
                 }
                 @case ("serial") {
-                  <a
-                    (click)="contentService.containerSelected(element.serial)"
-                    attr.aria-label="{{ column.label }} Link">
-                    {{ element[column.key] }}
-                  </a>
-                  @if (element.serial !== "") {
-                    <app-copy-button [copyText]="element.serial" />
-                  }
+                  <div class="flex-row flex-nowrap ali-center">
+                    <a
+                      (click)="contentService.containerSelected(element.serial)"
+                      attr.aria-label="{{ column.label }} Link">
+                      {{ element[column.key] }}
+                    </a>
+                    @if (element.serial !== "") {
+                      <app-copy-button [copyText]="element.serial" />
+                    }
+                  </div>
                 }
                 @case ("realms") {
                   <div [ngClass]="(element[column.key]?.length || 0) > 1 ? 'realm-list' : 'realm'">
@@ -203,5 +204,4 @@
         </td>
       </tr>
     </table>
-  </div>
 </div>

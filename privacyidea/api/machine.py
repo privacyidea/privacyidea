@@ -25,7 +25,8 @@ The code is tested in tests/test_api_machines
 
 from flask import (Blueprint,
                    request, g)
-from .lib.utils import (getParam, send_result)
+from .lib.utils import (send_result)
+from ..lib.params import get_optional, get_required
 from ..api.lib.prepolicy import prepolicy, check_base_action, mangle
 from ..lib.policies.actions import PolicyAction
 
@@ -95,18 +96,18 @@ def list_machines_api():
           "version": "privacyIDEA unknown"
         }
     """
-    hostname = getParam(request.all_data, "hostname")
-    ip = getParam(request.all_data, "ip")
+    hostname = get_optional(request.all_data, "hostname")
+    ip = get_optional(request.all_data, "ip")
     if ip:
         try:
             ip = netaddr.IPAddress(ip)
         except netaddr.AddrFormatError:
             # This happens when filtering in the machine view
             ip = None
-    id = getParam(request.all_data, "id")
-    resolver = getParam(request.all_data, "resolver")
+    id = get_optional(request.all_data, "id")
+    resolver = get_optional(request.all_data, "resolver")
 
-    any = getParam(request.all_data, "any")
+    any = get_optional(request.all_data, "any")
 
     machines = get_machines(hostname=hostname, ip=ip, id=id, resolver=resolver,
                             any=any)
@@ -114,7 +115,7 @@ def list_machines_api():
     # so we need to convert the Machine Object to dict
     machines = [mobject.get_dict() for mobject in machines]
     g.audit_object.log({'success': True,
-                        'info': "hostname: {0!s}, ip: {1!s}".format(hostname, ip)})
+                        'info': f"hostname: {hostname!s}, ip: {ip!s}"})
 
     return send_result(machines)
 
@@ -151,11 +152,11 @@ def attach_token_api():
          "application": "luks" }
 
     """
-    hostname = getParam(request.all_data, "hostname")
-    machine_id = getParam(request.all_data, "machineid")
-    resolver = getParam(request.all_data, "resolver")
-    serial = getParam(request.all_data, "serial", optional=False)
-    application = getParam(request.all_data, "application", optional=False)
+    hostname = get_optional(request.all_data, "hostname")
+    machine_id = get_optional(request.all_data, "machineid")
+    resolver = get_optional(request.all_data, "resolver")
+    serial = get_required(request.all_data, "serial")
+    application = get_required(request.all_data, "application")
     if resolver == "":
         resolver = None
         machine_id = None
@@ -209,8 +210,7 @@ def detach_token_api(serial, machineid=None, resolver=None, application=None, mt
                      machine_id=machineid, resolver_name=resolver, machine_token_id=mtid)
 
     g.audit_object.log({'success': True,
-                        'info': "serial: {0!s}, application: {1!s}".format(serial,
-                                                                           application)})
+                        'info': f"serial: {serial!s}, application: {application!s}"})
 
     return send_result(r)
 
@@ -243,13 +243,13 @@ def list_machinetokens_api():
        ...
        ]
     """
-    hostname = getParam(request.all_data, "hostname")
-    machineid = getParam(request.all_data, "machineid")
-    resolver = getParam(request.all_data, "resolver")
-    serial = getParam(request.all_data, "serial")
-    application = getParam(request.all_data, "application")
-    sortby = getParam(request.all_data, "sortby", "serial")
-    sortdir = getParam(request.all_data, "sortdir", "asc")
+    hostname = get_optional(request.all_data, "hostname")
+    machineid = get_optional(request.all_data, "machineid")
+    resolver = get_optional(request.all_data, "resolver")
+    serial = get_optional(request.all_data, "serial")
+    application = get_optional(request.all_data, "application")
+    sortby = get_optional(request.all_data, "sortby", default="serial")
+    sortdir = get_optional(request.all_data, "sortdir", default="asc")
     filter_params = {}
     # Use remaining params as filters
     for key, value in {k: v for k, v in request.all_data.items() if k not in [
@@ -281,8 +281,7 @@ def list_machinetokens_api():
         res.sort(key=lambda x: x.get("options", {}).get(sortby, ""), reverse=sortdir == "desc")
 
     g.audit_object.log({'success': True,
-                        'info': "serial: {0!s}, hostname: {1!s}".format(serial,
-                                                                        hostname)})
+                        'info': f"serial: {serial!s}, hostname: {hostname!s}"})
     return send_result(res)
 
 
@@ -304,12 +303,12 @@ def set_option_api():
 
     :return:
     """
-    hostname = getParam(request.all_data, "hostname")
-    machineid = getParam(request.all_data, "machineid")
-    resolver = getParam(request.all_data, "resolver")
-    serial = getParam(request.all_data, "serial")
-    application = getParam(request.all_data, "application")
-    mtid = getParam(request.all_data, "mtid")
+    hostname = get_optional(request.all_data, "hostname")
+    machineid = get_optional(request.all_data, "machineid")
+    resolver = get_optional(request.all_data, "resolver")
+    serial = get_optional(request.all_data, "serial")
+    application = get_optional(request.all_data, "application")
+    mtid = get_optional(request.all_data, "mtid")
 
     # get additional options:
     options_add = {}
@@ -340,8 +339,7 @@ def set_option_api():
                           key=k)
 
     g.audit_object.log({'success': True,
-                        'info': "serial: {0!s}, application: {1!s}".format(serial,
-                                                                           application)})
+                        'info': f"serial: {serial!s}, application: {application!s}"})
 
     return send_result({"added": o_add, "deleted": o_del})
 
@@ -391,8 +389,8 @@ def get_auth_items_api(application=None):
           "version": "privacyIDEA unknown"
         }
     """
-    challenge = getParam(request.all_data, "challenge")
-    hostname = getParam(request.all_data, "hostname", optional=False)
+    challenge = get_optional(request.all_data, "challenge")
+    hostname = get_required(request.all_data, "hostname")
     # Get optional additional filter parameters
     filter_param = request.all_data
     for key in ["challenge", "hostname", "application"]:
@@ -402,6 +400,5 @@ def get_auth_items_api(application=None):
     ret = get_auth_items(hostname, application=application, challenge=challenge,
                          filter_param=filter_param)
     g.audit_object.log({'success': True,
-                        'info': "host: {0!s}, application: {1!s}".format(hostname,
-                                                                         application)})
+                        'info': f"host: {hostname!s}, application: {application!s}"})
     return send_result(ret)

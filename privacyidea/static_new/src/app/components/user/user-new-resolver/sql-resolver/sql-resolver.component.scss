@@ -13,15 +13,15 @@
 
 .preset-buttons-container {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
   flex-direction: column;
+  align-items: center;
   width: fit-content;
+  max-width: 100%;
 
   .preset-buttons {
-    display: grid;
+    display: flex;
+    flex-wrap: wrap;
     gap: 8px;
-    grid-template-columns: repeat(5, auto);
   }
 }
 

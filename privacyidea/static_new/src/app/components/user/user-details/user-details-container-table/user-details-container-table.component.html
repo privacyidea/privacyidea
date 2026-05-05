@@ -84,14 +84,16 @@
             <div [ngClass]="tableUtilsService.getClassForColumnKey(column.key)">
               @switch (column.key) {
                 @case ("serial") {
-                  <a
-                    (click)="contentService.containerSelected(element.serial)"
-                    attr.aria-label="{{ column.label }} Link">
-                    {{ element.serial }}
-                  </a>
-                  @if (element.serial !== "") {
-                    <app-copy-button [copyText]="element.serial"></app-copy-button>
-                  }
+                  <div class="flex-row flex-nowrap ali-center">
+                    <a
+                      (click)="contentService.containerSelected(element.serial)"
+                      attr.aria-label="{{ column.label }} Link">
+                      {{ element.serial }}
+                    </a>
+                    @if (element.serial !== "") {
+                      <app-copy-button [copyText]="element.serial"></app-copy-button>
+                    }
+                  </div>
                 }
                 @case ("states") {
                   <span

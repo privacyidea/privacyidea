@@ -26,7 +26,6 @@ __doc__="""This module provides sending SMS via sipgate
 The code is tested in tests/test_lib_smsprovider
 """
 from privacyidea.lib.smsprovider.SMSProvider import ISMSProvider, SMSError
-from privacyidea.lib import _
 import logging
 import requests
 log = logging.getLogger(__name__)
@@ -81,7 +80,7 @@ class SipgateSMSProvider(ISMSProvider):
             protocol = proxy.split(":")[0]
             proxies = {protocol: proxy}
 
-        log.debug("submitting message {0!r} to {1!s}".format(message, phone))
+        log.debug(f"submitting message {message!r} to {phone!s}")
         r = requests.post(URL,
                           data=REQUEST_XML % (phone.strip().strip("+"),
                                               message),
@@ -90,12 +89,12 @@ class SipgateSMSProvider(ISMSProvider):
                           proxies=proxies,
                           timeout=60)
 
-        log.debug("SMS submitted: {0!s}".format(r.status_code))
-        log.debug("response content: {0!s}".format(r.text))
+        log.debug(f"SMS submitted: {r.status_code!s}")
+        log.debug(f"response content: {r.text!s}")
 
         if r.status_code != 200:
             raise SMSError(r.status_code, "SMS could not be "
-                                          "sent: %s" % r.status_code)
+                                          f"sent: {r.status_code}")
         return True
 
     @classmethod
@@ -107,7 +106,6 @@ class SipgateSMSProvider(ISMSProvider):
 
         :return: dict
         """
-        from privacyidea.lib.smtpserver import get_smtpservers
         params = {"options_allowed": False,
                   "headers_allowed": False,
                   "parameters": {
