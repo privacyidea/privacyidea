@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
-import { computed, effect, inject, Injectable, linkedSignal, signal, WritableSignal } from "@angular/core";
+import { computed, inject, Injectable, linkedSignal, signal, WritableSignal } from "@angular/core";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
@@ -26,7 +26,6 @@ import { Observable } from "rxjs";
 import { Sort } from "@angular/material/sort";
 import { PiResponse } from "@app/app.component";
 import { FilterValue } from "@core/models/filter_value/filter_value";
-import { NotificationService } from "@services/notification/notification.service";
 import { StringUtils } from "@utils/string.utils";
 
 const apiFilter = ["serial", "transaction_id"];
@@ -77,13 +76,6 @@ export class ChallengesService implements ChallengesServiceInterface {
   private readonly tokenService: TokenServiceInterface = inject(TokenService);
   private readonly authService: AuthServiceInterface = inject(AuthService);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
-  private readonly notificationService = inject(NotificationService);
-
-  constructor() {
-    effect(() => {
-      this.notificationService.handleResourceError(this.challengesResource.error(), "challenges");
-    });
-  }
   readonly apiFilter = apiFilter;
   readonly advancedApiFilter = advancedApiFilter;
   challengesFilter = linkedSignal({
@@ -132,7 +124,9 @@ export class ChallengesService implements ChallengesServiceInterface {
     }
 
     const { params: filterParams, serial } = this.filterParams();
-    const url = serial ? `${this.tokenBaseUrl}challenges/${serial}` : `${this.tokenBaseUrl}challenges/`;
+    const url = serial
+      ? `${this.tokenBaseUrl}challenges/${encodeURIComponent(serial)}`
+      : `${this.tokenBaseUrl}challenges/`;
 
     return {
       url,

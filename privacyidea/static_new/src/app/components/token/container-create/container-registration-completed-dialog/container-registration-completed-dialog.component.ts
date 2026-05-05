@@ -20,12 +20,12 @@
 import { Component, inject } from "@angular/core";
 import { MatButton } from "@angular/material/button";
 import {
-    MAT_DIALOG_DATA,
-    MatDialogActions,
-    MatDialogClose,
-    MatDialogContent,
-    MatDialogRef,
-    MatDialogTitle
+  MAT_DIALOG_DATA,
+  MatDialogActions,
+  MatDialogClose,
+  MatDialogContent,
+  MatDialogRef,
+  MatDialogTitle
 } from "@angular/material/dialog";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 

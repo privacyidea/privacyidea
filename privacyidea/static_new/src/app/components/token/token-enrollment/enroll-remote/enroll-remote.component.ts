@@ -24,19 +24,16 @@ import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
 import { MatSelect } from "@angular/material/select";
 import {
-    PrivacyideaServerService,
-    PrivacyideaServerServiceInterface,
-    RemoteServer
+  PrivacyideaServerService,
+  PrivacyideaServerServiceInterface,
+  RemoteServer
 } from "@services/privacyidea-server/privacyidea-server.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 
+import { TokenApiPayloadMapper, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import {
-    TokenApiPayloadMapper,
-    TokenEnrollmentData
-} from "@app/mappers/token-api-payload/_token-api-payload.mapper";
-import {
-    RemoteApiPayloadMapper,
-    RemoteEnrollmentData
+  RemoteApiPayloadMapper,
+  RemoteEnrollmentData
 } from "@app/mappers/token-api-payload/remote-token-api-payload.mapper";
 
 export class RemoteErrorStateMatcher implements ErrorStateMatcher {

@@ -33,12 +33,12 @@ import { TestOtpPinActionComponent } from "@components/token/token-details/token
 import { TokenRolloverComponent } from "@components/token/token-details/token-details-actions/token-rollover/token-rollover.component";
 import { VerifyEnrollmentComponent } from "@components/token/token-details/token-details-actions/verify-enrollment/verify-enrollment.component";
 import {
-    HotpMachineAssignDialogData,
-    TokenHotpMachineAssignDialogComponent
+  HotpMachineAssignDialogData,
+  TokenHotpMachineAssignDialogComponent
 } from "@components/token/token-details/token-machine-attach-dialog/token-hotp-machine-attach-dialog/token-hotp-machine-attach-dialog";
 import {
-    SshMachineAssignDialogData,
-    TokenSshMachineAssignDialogComponent
+  SshMachineAssignDialogData,
+  TokenSshMachineAssignDialogComponent
 } from "@components/token/token-details/token-machine-attach-dialog/token-ssh-machine-attach-dialog/token-ssh-machine-attach-dialog";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
@@ -157,11 +157,11 @@ export class TokenDetailsActionsComponent {
     this.validateService.authenticatePasskey({ isTest: true }).subscribe({
       next: (checkResponse) => {
         if (checkResponse.result?.value) {
-          this.notificationService.openSnackBar(
+          this.notificationService.success(
             "Test successful. You would have been logged in as: " + (checkResponse.detail?.username ?? "Unknown User")
           );
         } else {
-          this.notificationService.openSnackBar("No user found.");
+          this.notificationService.warning("No user found.");
         }
       }
     });

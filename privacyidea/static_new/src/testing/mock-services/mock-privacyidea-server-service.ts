@@ -20,9 +20,9 @@ import { HttpResourceRef } from "@angular/common/http";
 import { computed, signal } from "@angular/core";
 import { PiResponse } from "@app/app.component";
 import {
-    PrivacyideaServer,
-    PrivacyideaServers,
-    PrivacyideaServerServiceInterface
+  PrivacyideaServer,
+  PrivacyideaServers,
+  PrivacyideaServerServiceInterface
 } from "@services/privacyidea-server/privacyidea-server.service";
 
 export class MockPrivacyideaServerService implements PrivacyideaServerServiceInterface {

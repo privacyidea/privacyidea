@@ -19,14 +19,14 @@
 
 import { TitleCasePipe } from "@angular/common";
 import {
-    ChangeDetectionStrategy,
-    Component,
-    computed,
-    inject,
-    input,
-    linkedSignal,
-    output,
-    signal
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  input,
+  linkedSignal,
+  output,
+  signal
 } from "@angular/core";
 import { FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { MatCardModule } from "@angular/material/card";

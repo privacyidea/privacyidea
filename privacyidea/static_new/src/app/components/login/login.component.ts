@@ -19,15 +19,15 @@
 
 import { NgOptimizedImage } from "@angular/common";
 import {
-    Component,
-    computed,
-    effect,
-    ElementRef,
-    inject,
-    linkedSignal,
-    OnDestroy,
-    signal,
-    ViewChild
+  Component,
+  computed,
+  effect,
+  ElementRef,
+  inject,
+  linkedSignal,
+  OnDestroy,
+  signal,
+  ViewChild
 } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
@@ -37,18 +37,15 @@ import { MatOption, MatSelect } from "@angular/material/select";
 import { Router } from "@angular/router";
 import { challengesTriggered, isAuthenticationSuccessful } from "@app/app.component";
 import { ROUTE_PATHS } from "@app/route_paths";
+import { ClearButtonComponent } from "@components/shared/clear-button/clear-button.component";
 import { environment } from "@env/environment";
 import { AuthResponse, AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ConfigService } from "@services/config/config.service";
 import { LocalService, LocalServiceInterface } from "@services/local/local.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
-import {
-    SessionTimerService,
-    SessionTimerServiceInterface
-} from "@services/session-timer/session-timer.service";
+import { SessionTimerService, SessionTimerServiceInterface } from "@services/session-timer/session-timer.service";
 import { ValidateService, ValidateServiceInterface } from "@services/validate/validate.service";
 import { catchError, EMPTY, filter, Subscription, switchMap, take, timeout, timer } from "rxjs";
-import { ClearButtonComponent } from "../shared/clear-button/clear-button.component";
 
 const PUSH_POLLING_INTERVAL_MS = 500;
 const PUSH_POLLING_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
@@ -145,7 +142,7 @@ export class LoginComponent implements OnDestroy {
   constructor() {
     if (this.authService.isAuthenticated()) {
       console.warn("User is already logged in.");
-      this.notificationService.openSnackBar("User is already logged in.");
+      this.notificationService.warning("User is already logged in.");
     } else {
       this.showOtpField.set(false);
     }
@@ -185,7 +182,7 @@ export class LoginComponent implements OnDestroy {
 
   remoteLogin(): void {
     if (!this.remoteUser()) {
-      this.notificationService.openSnackBar($localize`Remote user not available. Remote Login not possible.`);
+      this.notificationService.warning($localize`Remote user not available. Remote Login not possible.`);
       return;
     }
     const params: any = { username: this.remoteUser() };
@@ -224,7 +221,7 @@ export class LoginComponent implements OnDestroy {
   logout(): void {
     this.authService.logout();
     this.localService.removeData("bearer_token");
-    this.router.navigate(["login"]).then(() => this.notificationService.openSnackBar("Logout successful."));
+    this.router.navigate(["login"]).then(() => this.notificationService.success("Logout successful."));
   }
 
   resetLogin(): void {

@@ -18,13 +18,10 @@
  **/
 import { Component, EventEmitter, inject, Input, OnInit, Output } from "@angular/core";
 import { FormControl, FormsModule, ReactiveFormsModule } from "@angular/forms";
+import { TokenApiPayloadMapper, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import {
-    TokenApiPayloadMapper,
-    TokenEnrollmentData
-} from "@app/mappers/token-api-payload/_token-api-payload.mapper";
-import {
-    PaperApiPayloadMapper,
-    PaperEnrollmentData
+  PaperApiPayloadMapper,
+  PaperEnrollmentData
 } from "@app/mappers/token-api-payload/paper-token-api-payload.mapper";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 

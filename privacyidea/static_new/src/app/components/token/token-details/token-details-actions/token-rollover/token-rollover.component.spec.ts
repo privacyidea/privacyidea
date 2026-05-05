@@ -98,14 +98,14 @@ describe("TokenRolloverComponent", () => {
   it("should show snackbar if no token is set", async () => {
     component.token.set(null);
     await component.rolloverToken();
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith("No token selected for rollover.");
+    expect(notificationService.warning).toHaveBeenCalledWith("No token selected for rollover.");
   });
 
   it("should show snackbar if enrollmentArgsGetter is missing", async () => {
     component.token.set({ type: "hotp", serial: "ABC123" });
     component.enrollmentArgsGetter = undefined;
     await component.rolloverToken();
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith(
+    expect(notificationService.warning).toHaveBeenCalledWith(
       "Rollover action is not available for the selected token type."
     );
   });

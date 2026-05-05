@@ -24,36 +24,29 @@ import { environment } from "@env/environment";
 import { AuthService } from "@services/auth/auth.service";
 import { ContentService } from "@services/content/content.service";
 import { NotificationService } from "@services/notification/notification.service";
-import { MockContentService, MockPiResponse } from "@testing/mock-services";
+import { MockContentService, MockNotificationService, MockPiResponse } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { RadiusServerService } from "./radius-server.service";
 
 describe("RadiusServerService", () => {
   let service: RadiusServerService;
   let httpMock: HttpTestingController;
-  let notificationService: NotificationService;
-  let authServiceMock: MockAuthService;
+  let notificationServiceMock: MockNotificationService;
   let contentServiceMock: MockContentService;
 
   beforeEach(() => {
-    const notificationServiceMock = {
-      openSnackBar: jest.fn(),
-      handleResourceError: jest.fn()
-    };
-
     TestBed.configureTestingModule({
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: AuthService, useClass: MockAuthService },
-        { provide: NotificationService, useValue: notificationServiceMock },
+        { provide: NotificationService, useClass: MockNotificationService },
         { provide: ContentService, useClass: MockContentService }
       ]
     });
     service = TestBed.inject(RadiusServerService);
     httpMock = TestBed.inject(HttpTestingController);
-    notificationService = TestBed.inject(NotificationService);
-    authServiceMock = TestBed.inject(AuthService) as unknown as MockAuthService;
+    notificationServiceMock = TestBed.inject(NotificationService) as unknown as MockNotificationService;
     contentServiceMock = TestBed.inject(ContentService) as any;
   });
 
@@ -74,7 +67,21 @@ describe("RadiusServerService", () => {
     req.flush({ result: { status: true } });
 
     await promise;
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith("Successfully saved RADIUS server.");
+    expect(notificationServiceMock.success).toHaveBeenCalledWith("Successfully saved RADIUS server.");
+  });
+
+  it("should show error notification when posting RADIUS server fails", async () => {
+    const server = { identifier: "test", server: "1.2.3.4", secret: "secret" } as any;
+    const promise = service.postRadiusServer(server);
+
+    const req = httpMock.expectOne(`${environment.proxyUrl}/radiusserver/test`);
+    req.flush(MockPiResponse.fromError({ message: "Something went wrong" }), {
+      status: 400,
+      statusText: "Bad Request"
+    });
+
+    await expect(promise).rejects.toThrow();
+    expect(notificationServiceMock.error).toHaveBeenCalledWith("Failed to save RADIUS server. Something went wrong");
   });
 
   it("should delete RADIUS server", async () => {
@@ -85,7 +92,20 @@ describe("RadiusServerService", () => {
     req.flush({ result: { status: true } });
 
     await promise;
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith("Successfully deleted RADIUS server: test.");
+    expect(notificationServiceMock.success).toHaveBeenCalledWith("Successfully deleted RADIUS server: test.");
+  });
+
+  it("should show error notification when deleting RADIUS server fails", async () => {
+    const promise = service.deleteRadiusServer("test");
+
+    const req = httpMock.expectOne(`${environment.proxyUrl}/radiusserver/test`);
+    req.flush(MockPiResponse.fromError({ message: "Something went wrong" }), {
+      status: 400,
+      statusText: "Bad Request"
+    });
+
+    await expect(promise).rejects.toThrow();
+    expect(notificationServiceMock.error).toHaveBeenCalledWith("Failed to delete RADIUS server. Something went wrong");
   });
 
   it("should test RADIUS server", async () => {
@@ -98,7 +118,35 @@ describe("RadiusServerService", () => {
 
     const result = await promise;
     expect(result).toBe(true);
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith("RADIUS request successful.");
+    expect(notificationServiceMock.success).toHaveBeenCalledWith("RADIUS request successful.");
+  });
+
+  it("should show error notification when RADIUS test returns false", async () => {
+    const params = { server: "1.2.3.4", secret: "secret" };
+    const promise = service.testRadiusServer(params);
+
+    const req = httpMock.expectOne(`${environment.proxyUrl}/radiusserver/test_request`);
+    req.flush({ result: { value: false } });
+
+    const result = await promise;
+    expect(result).toBe(false);
+    expect(notificationServiceMock.error).toHaveBeenCalledWith("RADIUS request failed!");
+  });
+
+  it("should show error notification when RADIUS test request fails", async () => {
+    const params = { server: "1.2.3.4", secret: "secret" };
+    const promise = service.testRadiusServer(params);
+
+    const req = httpMock.expectOne(`${environment.proxyUrl}/radiusserver/test_request`);
+    req.flush(MockPiResponse.fromError({ message: "Something went wrong" }), {
+      status: 400,
+      statusText: "Bad Request"
+    });
+
+    await promise;
+    expect(notificationServiceMock.error).toHaveBeenCalledWith(
+      "Failed to send RADIUS test request. Something went wrong"
+    );
   });
 
   describe("radiusServers", () => {

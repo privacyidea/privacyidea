@@ -107,9 +107,9 @@ describe("PolicyService", () => {
       service.allPolicies.set([policy]);
 
       const changes = { description: "updated description" };
-      service.savePolicyEdits(policyName, { ...policy, ...changes });
+      service.savePolicyEdits("test/policy", { ...policy, ...changes, name: "test/policy" });
 
-      const req = httpTestingController.expectOne(`${service.policyBaseUrl}${policyName}`);
+      const req = httpTestingController.expectOne(`${service.policyBaseUrl}${encodeURIComponent("test/policy")}`);
 
       expect(req.request.method).toBe("POST");
       expect(req.request.body).toMatchObject(changes);
@@ -117,18 +117,18 @@ describe("PolicyService", () => {
       req.flush(MockPiResponse.fromValue({}));
     });
     it("should toggle policy active state optimistically", () => {
-      const policy: PolicyDetail = { ...service.getEmptyPolicy(), name: "test", active: true };
+      const policy: PolicyDetail = { ...service.getEmptyPolicy(), name: "test/1", active: true };
       service.allPolicies.set([policy]);
       service.togglePolicyActive(policy);
       expect(service.allPolicies()[0].active).toBeFalsy();
-      const req = httpTestingController.expectOne(`${service.policyBaseUrl}disable/test`);
+      const req = httpTestingController.expectOne(`${service.policyBaseUrl}disable/${encodeURIComponent("test/1")}`);
       req.flush(MockPiResponse.fromValue({}));
     });
     it("should delete a policy and update the signal", async () => {
-      const policy = { ...service.getEmptyPolicy(), name: "to-delete" };
+      const policy = { ...service.getEmptyPolicy(), name: "to/delete" };
       service.allPolicies.set([policy]);
-      const deletePromise = service.deletePolicy("to-delete");
-      const req = httpTestingController.expectOne(`${service.policyBaseUrl}to-delete`);
+      const deletePromise = service.deletePolicy("to/delete");
+      const req = httpTestingController.expectOne(`${service.policyBaseUrl}${encodeURIComponent("to/delete")}`);
       expect(req.request.method).toBe("DELETE");
       req.flush(MockPiResponse.fromValue(1));
       const response = await deletePromise;
@@ -159,7 +159,7 @@ describe("PolicyService", () => {
         action: { "test-action": true }
       };
       // Reset notification service mock
-      notificationService.openSnackBar.mockClear();
+      notificationService.warning.mockClear();
     });
 
     it("should return true and show success notification when policy is created successfully", async () => {
@@ -168,16 +168,14 @@ describe("PolicyService", () => {
 
       const savePromise = service.saveNewPolicy(newPolicy);
 
-      const req = httpTestingController.expectOne(`${service.policyBaseUrl}${newPolicy.name}`);
+      const req = httpTestingController.expectOne(`${service.policyBaseUrl}${encodeURIComponent(newPolicy.name)}`);
       expect(req.request.method).toBe("POST");
       expect(req.request.body).toMatchObject(newPolicy);
       req.flush(MockPiResponse.fromValue({ status: true }));
 
       const result = await savePromise;
       expect(result).toBe(true);
-      expect(notificationService.openSnackBar).toHaveBeenCalledWith(
-        expect.stringContaining("Policy created successfully")
-      );
+      expect(notificationService.success).toHaveBeenCalledWith(expect.stringContaining("Policy created successfully"));
       expect(reloadSpy).toHaveBeenCalled();
     });
 
@@ -188,15 +186,15 @@ describe("PolicyService", () => {
 
       const savePromise = service.saveNewPolicy(newPolicy);
 
-      const req = httpTestingController.expectOne(`${service.policyBaseUrl}${newPolicy.name}`);
+      const req = httpTestingController.expectOne(`${service.policyBaseUrl}${encodeURIComponent(newPolicy.name)}`);
       req.flush(MockPiResponse.fromError({ message: errorMessage }));
 
       const result = await savePromise;
       expect(result).toBe(false);
-      expect(notificationService.openSnackBar).toHaveBeenCalledWith(
+      expect(notificationService.error).toHaveBeenCalledWith(
         expect.stringContaining(`Creating policy failed: ${errorMessage}`)
       );
-      expect(notificationService.openSnackBar).toHaveBeenCalledWith(expect.stringContaining(errorMessage));
+      expect(notificationService.error).toHaveBeenCalledWith(expect.stringContaining(errorMessage));
       expect(reloadSpy).toHaveBeenCalled();
     });
 
@@ -207,7 +205,7 @@ describe("PolicyService", () => {
 
       const savePromise = service.saveNewPolicy(newPolicy);
 
-      const req = httpTestingController.expectOne(`${service.policyBaseUrl}${newPolicy.name}`);
+      const req = httpTestingController.expectOne(`${service.policyBaseUrl}${encodeURIComponent(newPolicy.name)}`);
       const errorBody = {
         result: {
           error: {
@@ -223,7 +221,7 @@ describe("PolicyService", () => {
       const result = await savePromise;
 
       expect(result).toBe(false);
-      expect(notificationService.openSnackBar).toHaveBeenCalledWith(
+      expect(notificationService.error).toHaveBeenCalledWith(
         expect.stringContaining(`Creating policy failed: ${errorMessage}`)
       );
       expect(reloadSpy).toHaveBeenCalled();
@@ -234,7 +232,7 @@ describe("PolicyService", () => {
 
       const savePromise = service.saveNewPolicy(newPolicy);
 
-      const req = httpTestingController.expectOne(`${service.policyBaseUrl}${newPolicy.name}`);
+      const req = httpTestingController.expectOne(`${service.policyBaseUrl}${encodeURIComponent(newPolicy.name)}`);
       req.flush(null, {
         status: 0,
         statusText: "Unknown Error"
@@ -243,7 +241,7 @@ describe("PolicyService", () => {
       const result = await savePromise;
 
       expect(result).toBe(false);
-      expect(notificationService.openSnackBar).toHaveBeenCalledWith(expect.stringContaining("Creating policy failed"));
+      expect(notificationService.error).toHaveBeenCalledWith(expect.stringContaining("Creating policy failed"));
     });
   });
 
@@ -263,7 +261,7 @@ describe("PolicyService", () => {
         action: { "updated-action": true }
       };
       service.allPolicies.set([originalPolicy]);
-      notificationService.openSnackBar.mockClear();
+      notificationService.success.mockClear();
     });
 
     describe("Update policy without name change", () => {
@@ -283,7 +281,7 @@ describe("PolicyService", () => {
         const result = await savePromise;
         expect(result).toBe(true);
         expect(reloadSpy).toHaveBeenCalled();
-        expect(notificationService.openSnackBar).toHaveBeenCalledWith(
+        expect(notificationService.success).toHaveBeenCalledWith(
           expect.stringContaining("Policy updated successfully")
         );
       });
@@ -313,7 +311,7 @@ describe("PolicyService", () => {
         expect(result).toBe(false);
         // Verify rollback - should still have original policy
         expect(service.allPolicies()[0].action).toEqual({ "test-action": true });
-        expect(notificationService.openSnackBar).toHaveBeenCalledWith(
+        expect(notificationService.error).toHaveBeenCalledWith(
           expect.stringContaining(`Saving policy failed: ${errorMessage}`)
         );
       });
@@ -355,7 +353,7 @@ describe("PolicyService", () => {
         const result = await savePromise;
         expect(result).toBe(true);
         expect(reloadSpy).toHaveBeenCalled();
-        expect(notificationService.openSnackBar).toHaveBeenCalledWith(
+        expect(notificationService.success).toHaveBeenCalledWith(
           expect.stringContaining("Policy updated successfully")
         );
       });
@@ -385,7 +383,7 @@ describe("PolicyService", () => {
         // Verify rollback - should have original policy with original name
         expect(service.allPolicies()[0].name).toBe("existing-policy");
         expect(service.allPolicies()[0].action).toEqual({ "test-action": true });
-        expect(notificationService.openSnackBar).toHaveBeenCalledWith(
+        expect(notificationService.error).toHaveBeenCalledWith(
           expect.stringContaining("Saving policy failed: " + errorMessage)
         );
       });
@@ -421,7 +419,7 @@ describe("PolicyService", () => {
         // Verify rollback - should have updated action but original name (last stable state after POST)
         expect(service.allPolicies()[0].name).toBe("existing-policy");
         expect(service.allPolicies()[0].action).toEqual({ "updated-action": true });
-        expect(notificationService.openSnackBar).toHaveBeenCalledWith(
+        expect(notificationService.error).toHaveBeenCalledWith(
           expect.stringContaining("Saving policy failed: " + errorMessage)
         );
       });
@@ -439,7 +437,7 @@ describe("PolicyService", () => {
         expect(result).toBe(false);
         // Verify rollback
         expect(service.allPolicies()[0].action).toEqual({ "test-action": true });
-        expect(notificationService.openSnackBar).toHaveBeenCalledWith(expect.stringContaining("Saving policy failed"));
+        expect(notificationService.error).toHaveBeenCalledWith(expect.stringContaining("Saving policy failed"));
       });
 
       it("should handle error without message gracefully", async () => {
@@ -450,7 +448,7 @@ describe("PolicyService", () => {
 
         const result = await savePromise;
         expect(result).toBe(false);
-        expect(notificationService.openSnackBar).toHaveBeenCalledWith("Saving policy failed");
+        expect(notificationService.error).toHaveBeenCalledWith("Saving policy failed");
       });
     });
   });

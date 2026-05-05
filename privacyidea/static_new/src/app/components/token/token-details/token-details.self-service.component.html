@@ -22,25 +22,19 @@
   class="details-container"
   i18n-aria-label>
   <div class="details-flex-layout flex-column">
-    <div class="details-header">
-      <h3 i18n>Details for Token:</h3>
-      <div class="flex-row flex-nowrap ali-center">
-        <h3 class="token-serial">{{ tokenSerial() }}</h3>
-        <app-copy-button [copyText]="tokenSerial()"></app-copy-button>
-      </div>
-      @if ((tokenType() === "passkey" || tokenType() === "hotp") && isAttachedToMachine()) {
-        <h3 i18n>{{ " (Offline)" }}</h3>
-      }
-      @if (authService.actionAllowed("auditlog")) {
-        <button
-          (click)="showTokenAuditLog()"
-          [routerLink]="[ROUTE_PATHS.AUDIT]"
-          mat-icon-button
-          matTooltip="Show token in audit log">
-          <mat-icon>receipt_long</mat-icon>
-        </button>
-      }
-    </div>
+    <app-details-header
+      [serial]="tokenSerial()"
+      entityLabel="Token"
+      [showAuditButton]="authService.actionAllowed('auditlog')"
+      [auditRoute]="ROUTE_PATHS.AUDIT"
+      auditTooltip="Show token in audit log"
+      (auditClick)="showTokenAuditLog()">
+      <ng-container headerExtra>
+        @if ((tokenType() === "passkey" || tokenType() === "hotp") && isAttachedToMachine()) {
+          <h3 i18n>{{ " (Offline)" }}</h3>
+        }
+      </ng-container>
+    </app-details-header>
     <div
       class="details-flex-layout responsive-flex-row-1310">
       <div>

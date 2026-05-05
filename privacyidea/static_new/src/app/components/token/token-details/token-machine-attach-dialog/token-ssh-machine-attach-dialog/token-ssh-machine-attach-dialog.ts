@@ -18,12 +18,12 @@
  **/
 import { Component, computed, inject, linkedSignal, signal, WritableSignal } from "@angular/core";
 import {
-    AbstractControl,
-    FormControl,
-    FormGroup,
-    ReactiveFormsModule,
-    ValidationErrors,
-    Validators
+  AbstractControl,
+  FormControl,
+  FormGroup,
+  ReactiveFormsModule,
+  ValidationErrors,
+  Validators
 } from "@angular/forms";
 import { MatOptionModule } from "@angular/material/core";
 import { MatDialogModule } from "@angular/material/dialog";
@@ -78,7 +78,8 @@ export class TokenSshMachineAssignDialogComponent extends AbstractDialogComponen
   assignAction: DialogAction<string> = {
     label: "Assign",
     value: "assign",
-    type: "confirm"
+    type: "confirm",
+    primary: true
   };
   onAction(actionValue: string): void {
     if (actionValue === "assign") {

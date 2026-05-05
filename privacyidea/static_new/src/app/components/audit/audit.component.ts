@@ -20,18 +20,18 @@ import { Component, computed, ElementRef, inject, linkedSignal, ViewChild, Writa
 import { MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatPaginator, PageEvent } from "@angular/material/paginator";
 import {
-    MatCell,
-    MatCellDef,
-    MatColumnDef,
-    MatHeaderCell,
-    MatHeaderCellDef,
-    MatHeaderRow,
-    MatHeaderRowDef,
-    MatNoDataRow,
-    MatRow,
-    MatRowDef,
-    MatTable,
-    MatTableDataSource
+  MatCell,
+  MatCellDef,
+  MatColumnDef,
+  MatHeaderCell,
+  MatHeaderCellDef,
+  MatHeaderRow,
+  MatHeaderRowDef,
+  MatNoDataRow,
+  MatRow,
+  MatRowDef,
+  MatTable,
+  MatTableDataSource
 } from "@angular/material/table";
 import { AuditData, AuditService, AuditServiceInterface } from "@services/audit/audit.service";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
@@ -40,9 +40,9 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
 
 import { NgClass } from "@angular/common";
 import { FormsModule } from "@angular/forms";
-import { MatIconButton } from "@angular/material/button";
+import { MatButtonModule } from "@angular/material/button";
 import { MatCardModule } from "@angular/material/card";
-import { MatIcon } from "@angular/material/icon";
+import { MatIcon, MatIconModule } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
 import { RouterLink } from "@angular/router";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
@@ -104,9 +104,9 @@ const columnKeysMap = [
     RouterLink,
     ScrollToTopDirective,
     ClearableInputComponent,
-    RouterLink,
     MatIcon,
-    MatIconButton
+    MatButtonModule,
+    MatIconModule
   ],
   templateUrl: "./audit.component.html",
   styleUrl: "./audit.component.scss"

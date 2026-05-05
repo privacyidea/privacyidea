@@ -19,23 +19,23 @@
 
 import { ENTER } from "@angular/cdk/keycodes";
 import {
-    Component,
-    effect,
-    inject,
-    input,
-    linkedSignal,
-    model,
-    output,
-    ViewChild,
-    ViewEncapsulation
+  Component,
+  effect,
+  inject,
+  input,
+  linkedSignal,
+  model,
+  output,
+  ViewChild,
+  ViewEncapsulation
 } from "@angular/core";
 import { toSignal } from "@angular/core/rxjs-interop";
 import { FormControl, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import {
-    MatAutocomplete,
-    MatAutocompleteSelectedEvent,
-    MatAutocompleteTrigger,
-    MatOption
+  MatAutocomplete,
+  MatAutocompleteSelectedEvent,
+  MatAutocompleteTrigger,
+  MatOption
 } from "@angular/material/autocomplete";
 import { MatChipsModule } from "@angular/material/chips";
 import { MatFormFieldModule, MatHint, MatLabel } from "@angular/material/form-field";

@@ -25,8 +25,8 @@ import { MatInput } from "@angular/material/input";
 import { MatSelect } from "@angular/material/select";
 import { TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import {
-    DaypasswordApiPayloadMapper,
-    DaypasswordEnrollmentData
+  DaypasswordApiPayloadMapper,
+  DaypasswordEnrollmentData
 } from "@app/mappers/token-api-payload/daypassword-token-api-payload.mapper";
 import { DAYPASSWORD_HASHLIB, DAYPASSWORD_OTP_LENGTH, DAYPASSWORD_TIME_STEP } from "@constants/token.constants";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
@@ -167,7 +167,7 @@ export class EnrollDaypasswordComponent implements OnInit {
   } | null => {
     if (this.daypasswordForm.invalid) {
       this.daypasswordForm.markAllAsTouched();
-      this.notificationService.openSnackBar($localize`Invalid enrollment data.`);
+      this.notificationService.warning($localize`Invalid enrollment data.`);
       return null;
     }
     const enrollmentData: DaypasswordEnrollmentOptions = {

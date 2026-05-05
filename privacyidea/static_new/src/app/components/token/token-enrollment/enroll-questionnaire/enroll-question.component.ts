@@ -17,36 +17,33 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import {
-    ChangeDetectionStrategy,
-    Component,
-    computed,
-    effect,
-    EventEmitter,
-    inject,
-    input,
-    linkedSignal,
-    OnInit,
-    Output,
-    Signal
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  EventEmitter,
+  inject,
+  input,
+  linkedSignal,
+  OnInit,
+  Output,
+  Signal
 } from "@angular/core";
 import {
-    AbstractControl,
-    FormControl,
-    FormRecord,
-    FormsModule,
-    ReactiveFormsModule,
-    ValidationErrors,
-    ValidatorFn
+  AbstractControl,
+  FormControl,
+  FormRecord,
+  FormsModule,
+  ReactiveFormsModule,
+  ValidationErrors,
+  ValidatorFn
 } from "@angular/forms";
 import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
+import { TokenApiPayloadMapper, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import {
-    TokenApiPayloadMapper,
-    TokenEnrollmentData
-} from "@app/mappers/token-api-payload/_token-api-payload.mapper";
-import {
-    QuestionApiPayloadMapper,
-    QuestionEnrollmentData
+  QuestionApiPayloadMapper,
+  QuestionEnrollmentData
 } from "@app/mappers/token-api-payload/question-token-api-payload.mapper";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { QUESTION_CONFIG_PREFIX, QUESTION_NUMBER_OF_ANSWERS } from "@constants/token.constants";

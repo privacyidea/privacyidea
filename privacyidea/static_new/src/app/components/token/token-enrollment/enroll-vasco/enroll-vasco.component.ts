@@ -24,13 +24,10 @@ import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 
+import { TokenApiPayloadMapper, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import {
-    TokenApiPayloadMapper,
-    TokenEnrollmentData
-} from "@app/mappers/token-api-payload/_token-api-payload.mapper";
-import {
-    VascoApiPayloadMapper,
-    VascoEnrollmentData
+  VascoApiPayloadMapper,
+  VascoEnrollmentData
 } from "@app/mappers/token-api-payload/vasco-token-api-payload.mapper";
 
 export interface VascoEnrollmentOptions extends TokenEnrollmentData {

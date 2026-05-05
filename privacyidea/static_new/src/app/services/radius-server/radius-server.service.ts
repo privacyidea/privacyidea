@@ -90,17 +90,17 @@ export class RadiusServerService implements RadiusServerServiceInterface {
   });
 
   async postRadiusServer(server: RadiusServer): Promise<void> {
-    const url = `${this.radiusServerBaseUrl}${server.identifier}`;
+    const url = `${this.radiusServerBaseUrl}${encodeURIComponent(server.identifier)}`;
     const request = this.http.post<PiResponse<any>>(url, server, { headers: this.authService.getHeaders() });
 
     return lastValueFrom(request)
       .then(() => {
-        this.notificationService.openSnackBar($localize`Successfully saved RADIUS server.`);
+        this.notificationService.success($localize`Successfully saved RADIUS server.`);
         this.radiusServerResource.reload();
       })
       .catch((error) => {
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.openSnackBar($localize`Failed to save RADIUS server. ` + message);
+        this.notificationService.error($localize`Failed to save RADIUS server. ` + message);
         throw new Error("post-failed");
       });
   }
@@ -111,32 +111,32 @@ export class RadiusServerService implements RadiusServerServiceInterface {
     return lastValueFrom(request)
       .then((res) => {
         if (res?.result?.value) {
-          this.notificationService.openSnackBar($localize`RADIUS request successful.`);
+          this.notificationService.success($localize`RADIUS request successful.`);
           return true;
         } else {
-          this.notificationService.openSnackBar($localize`RADIUS request failed!`);
+          this.notificationService.error($localize`RADIUS request failed!`);
           return false;
         }
       })
       .catch((error) => {
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.openSnackBar($localize`Failed to send RADIUS test request. ` + message);
+        this.notificationService.error($localize`Failed to send RADIUS test request. ` + message);
         return false;
       });
   }
 
   async deleteRadiusServer(identifier: string): Promise<void> {
-    const request = this.http.delete<PiResponse<any>>(`${this.radiusServerBaseUrl}${identifier}`, {
+    const request = this.http.delete<PiResponse<any>>(`${this.radiusServerBaseUrl}${encodeURIComponent(identifier)}`, {
       headers: this.authService.getHeaders()
     });
     return lastValueFrom(request)
       .then(() => {
-        this.notificationService.openSnackBar($localize`Successfully deleted RADIUS server: ${identifier}.`);
+        this.notificationService.success($localize`Successfully deleted RADIUS server: ${identifier}.`);
         this.radiusServerResource.reload();
       })
       .catch((error) => {
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.openSnackBar($localize`Failed to delete RADIUS server. ` + message);
+        this.notificationService.error($localize`Failed to delete RADIUS server. ` + message);
         throw new Error("delete-failed");
       });
   }

@@ -39,12 +39,7 @@ import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-t
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { AuditService } from "@services/audit/audit.service";
 import { AuthService } from "@services/auth/auth.service";
-import {
-  ClientData,
-  ClientsDict,
-  ClientsService,
-  ClientsServiceInterface
-} from "@services/clients/clients.service";
+import { ClientData, ClientsDict, ClientsService, ClientsServiceInterface } from "@services/clients/clients.service";
 
 import { MatIconButton } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";

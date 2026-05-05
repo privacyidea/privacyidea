@@ -21,7 +21,6 @@ import { Component, effect, inject, OnInit, signal, ViewChild } from "@angular/c
 import { FormsModule } from "@angular/forms";
 import { MatAutocompleteModule } from "@angular/material/autocomplete";
 import { MatButtonModule } from "@angular/material/button";
-import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from "@angular/material/dialog";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
@@ -29,10 +28,10 @@ import { MatPaginator, MatPaginatorModule } from "@angular/material/paginator";
 import { MatSelectModule } from "@angular/material/select";
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
 import { MatTooltipModule } from "@angular/material/tooltip";
+import { ActivatedRoute, Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
-import { NAVIGATION_ACCESSIBLE_DIALOG_CLASS } from "@constants/global.constants";
 import { ApplicationService, ApplicationServiceInterface } from "@services/application/application.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
@@ -49,12 +48,8 @@ import { lastValueFrom } from "rxjs";
 @Component({
   selector: "app-machine-details-dialog",
   standalone: true,
-  host: {
-    class: NAVIGATION_ACCESSIBLE_DIALOG_CLASS
-  },
   imports: [
     CommonModule,
-    MatDialogModule,
     MatFormFieldModule,
     MatInputModule,
     MatButtonModule,
@@ -71,14 +66,18 @@ import { lastValueFrom } from "rxjs";
   styleUrl: "./machine-details-dialog.component.scss"
 })
 export class MachineDetailsDialogComponent implements OnInit {
-  protected readonly data = inject<Machine>(MAT_DIALOG_DATA);
   private readonly machineService: MachineServiceInterface = inject(MachineService);
   private readonly applicationService: ApplicationServiceInterface = inject(ApplicationService);
   private readonly dialogService: DialogServiceInterface = inject(DialogService);
-  private readonly dialogRef = inject(MatDialogRef<MachineDetailsDialogComponent>);
   private readonly contentService: ContentServiceInterface = inject(ContentService);
+  private readonly router: Router = inject(Router);
+  private readonly route: ActivatedRoute = inject(ActivatedRoute);
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
+
+  data = signal<Machine | undefined>(history.state?.machine as Machine | undefined);
+  private readonly routeMachineId: string | null;
+  private readonly routeResolver: string | null;
   tokenApplications = signal<TokenApplications>([]);
   dataSource = new MatTableDataSource<TokenApplication>([]);
   displayedColumns: string[] = ["serial", "application", "options", "actions"];
@@ -91,28 +90,29 @@ export class MachineDetailsDialogComponent implements OnInit {
   editedOptions: { [id: number]: Record<string, any> } = {};
 
   constructor() {
-    if (this.dialogRef) {
-      this.dialogRef.disableClose = true;
-      this.dialogRef.backdropClick().subscribe(() => {
-        this.close();
-      });
-      this.dialogRef.keydownEvents().subscribe((event) => {
-        if (event.key === "Escape") {
-          this.close();
-        }
-      });
-    }
+    this.routeMachineId = this.route.snapshot.paramMap.get("id");
+    this.routeResolver = this.route.snapshot.queryParamMap.get("resolver");
 
     effect(() => {
-      if (!this.contentService.routeUrl().startsWith(ROUTE_PATHS.CONFIGURATION_MACHINES)) {
-        this.dialogRef?.close(true);
+      const machines = this.machineService.machines();
+      if (!this.data() && this.routeMachineId && machines?.length) {
+        const found = machines.find(
+          (m) => String(m.id) === this.routeMachineId && (!this.routeResolver || m.resolver_name === this.routeResolver)
+        );
+        if (found) {
+          this.data.set(found);
+          this.loadTokenApplications();
+        }
       }
     });
   }
 
   ngOnInit(): void {
-    this.loadTokenApplications();
     this.applicationOptions = Object.keys(this.applicationsDef()).filter((k) => k !== "offline");
+    if (this.data()) {
+      this.loadTokenApplications();
+    }
+    // If data() is still undefined, the effect() will handle it once machines signal resolves.
   }
 
   onTokenSerialInput(value: string): void {
@@ -120,10 +120,12 @@ export class MachineDetailsDialogComponent implements OnInit {
   }
 
   loadTokenApplications(): void {
+    const machine = this.data();
+    if (!machine) return;
     this.machineService
       .getMachineTokens({
-        machineid: this.data.id,
-        resolver: this.data.resolver_name
+        machineid: machine.id,
+        resolver: machine.resolver_name
       })
       .subscribe((response) => {
         if (response.result?.value) {
@@ -149,12 +151,14 @@ export class MachineDetailsDialogComponent implements OnInit {
   }
 
   saveOptions(token: TokenApplication): void {
+    const machine = this.data();
+    if (!machine) return;
     const edited = this.editedOptions[token.id] || {};
     this.machineService
       .postTokenOption(
         token.hostname,
-        String(this.data.id),
-        this.data.resolver_name,
+        String(machine.id),
+        machine.resolver_name,
         token.serial,
         token.application,
         String(token.id),
@@ -189,7 +193,8 @@ export class MachineDetailsDialogComponent implements OnInit {
   }
 
   attachToken(): void {
-    if (!this.newTokenSerial || !this.selectedApplication) {
+    const machine = this.data();
+    if (!this.newTokenSerial || !this.selectedApplication || !machine) {
       return;
     }
 
@@ -197,8 +202,8 @@ export class MachineDetailsDialogComponent implements OnInit {
       .postAssignMachineToToken({
         serial: this.newTokenSerial,
         application: this.selectedApplication,
-        machineid: this.data.id,
-        resolver: this.data.resolver_name
+        machineid: machine.id,
+        resolver: machine.resolver_name
       })
       .subscribe(() => {
         this.newTokenSerial = "";
@@ -209,15 +214,9 @@ export class MachineDetailsDialogComponent implements OnInit {
 
   onTokenClick(serial: string): void {
     this.contentService.tokenSelected(serial);
-    this.dialogRef.close();
   }
 
   onMachineResolverClick(resolverName: string): void {
     this.contentService.machineResolverSelected(resolverName);
-    this.dialogRef.close();
-  }
-
-  close(): void {
-    this.dialogRef.close();
   }
 }

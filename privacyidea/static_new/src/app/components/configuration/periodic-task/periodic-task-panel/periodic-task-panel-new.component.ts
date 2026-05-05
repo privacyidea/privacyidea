@@ -20,10 +20,10 @@
 import { Component, EventEmitter, Output, ViewChild } from "@angular/core";
 import { MatIconButton } from "@angular/material/button";
 import {
-    MatExpansionPanel,
-    MatExpansionPanelDescription,
-    MatExpansionPanelHeader,
-    MatExpansionPanelTitle
+  MatExpansionPanel,
+  MatExpansionPanelDescription,
+  MatExpansionPanelHeader,
+  MatExpansionPanelTitle
 } from "@angular/material/expansion";
 import { MatIcon } from "@angular/material/icon";
 import { MatSlideToggle } from "@angular/material/slide-toggle";

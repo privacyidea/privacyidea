@@ -26,8 +26,8 @@ import { MatInput } from "@angular/material/input";
 import { MatSelect } from "@angular/material/select";
 import { TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import {
-    ApplspecApiPayloadMapper,
-    ApplspecEnrollmentData
+  ApplspecApiPayloadMapper,
+  ApplspecEnrollmentData
 } from "@app/mappers/token-api-payload/applspec-token-api-payload.mapper";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ServiceIdService, ServiceIdServiceInterface } from "@services/service-id/service-id.service";

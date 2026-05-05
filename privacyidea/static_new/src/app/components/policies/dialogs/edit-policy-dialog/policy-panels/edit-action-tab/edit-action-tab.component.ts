@@ -18,15 +18,15 @@
  **/
 
 import {
-    Component,
-    computed,
-    inject,
-    input,
-    linkedSignal,
-    output,
-    signal,
-    Signal,
-    WritableSignal
+  Component,
+  computed,
+  inject,
+  input,
+  linkedSignal,
+  output,
+  signal,
+  Signal,
+  WritableSignal
 } from "@angular/core";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { PolicyActionDetail, PolicyDetail } from "@services/policies/policies.service";

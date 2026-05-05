@@ -266,8 +266,8 @@ describe("AuthService", () => {
     expect(mockLocal.removeData).toHaveBeenCalled();
     expect(routerMock.navigate).toHaveBeenCalledWith(["login"]);
     await (routerMock.navigate as jest.Mock).mock.results[0].value;
-    expect(notifications.openSnackBar).toHaveBeenCalledWith("Logout successful.");
-    expect(notifications.openSnackBar).toHaveBeenCalledTimes(1);
+    expect(notifications.success).toHaveBeenCalledWith("Logout successful.");
+    expect(notifications.success).toHaveBeenCalledTimes(1);
   });
 
   it("authtype, jwtExpDate and logoutTimeSeconds compute correctly", () => {

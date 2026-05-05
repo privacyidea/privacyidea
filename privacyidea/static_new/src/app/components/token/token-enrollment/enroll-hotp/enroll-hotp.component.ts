@@ -22,14 +22,8 @@ import { MatCheckbox } from "@angular/material/checkbox";
 import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
 import { MatOption, MatSelect } from "@angular/material/select";
-import {
-    TokenApiPayloadMapper,
-    TokenEnrollmentData
-} from "@app/mappers/token-api-payload/_token-api-payload.mapper";
-import {
-    HotpApiPayloadMapper,
-    HotpEnrollmentData
-} from "@app/mappers/token-api-payload/hotp-token-api-payload.mapper";
+import { TokenApiPayloadMapper, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { HotpApiPayloadMapper, HotpEnrollmentData } from "@app/mappers/token-api-payload/hotp-token-api-payload.mapper";
 import { HOTP_HASHLIB, HOTP_OTP_LENGTH } from "@constants/token.constants";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";

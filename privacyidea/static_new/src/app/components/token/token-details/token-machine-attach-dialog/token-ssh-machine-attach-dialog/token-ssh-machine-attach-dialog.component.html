@@ -21,7 +21,8 @@
   title="Assign SSH Machine"
   (close)="close()"
   (onAction)="onAction($event)"
-  [actions]="[assignAction]">
+  [actions]="[assignAction]"
+  [showCancelButton]="true">
   <form [formGroup]="formGroup">
     <mat-form-field
       appearance="fill"

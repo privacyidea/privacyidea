@@ -26,11 +26,11 @@ import { MatSlideToggle } from "@angular/material/slide-toggle";
 import { MatTooltip } from "@angular/material/tooltip";
 import { AuthService } from "@services/auth/auth.service";
 import {
-    EMPTY_PERIODIC_TASK,
-    PERIODIC_TASK_MODULE_MAPPING,
-    PeriodicTask,
-    PeriodicTaskModule,
-    PeriodicTaskService
+  EMPTY_PERIODIC_TASK,
+  PERIODIC_TASK_MODULE_MAPPING,
+  PeriodicTask,
+  PeriodicTaskModule,
+  PeriodicTaskService
 } from "@services/periodic-task/periodic-task.service";
 import { PeriodicTaskEditComponent } from "./periodic-task-edit/periodic-task-edit.component";
 import { PeriodicTaskReadComponent } from "./periodic-task-read/periodic-task-read.component";
@@ -71,10 +71,14 @@ export class PeriodicTaskPanelComponent {
     }
     this.task()!.active = activate;
     if (!this.isEditMode()) {
+      const taskId = this.task()!.id;
+      if (taskId == null) {
+        return;
+      }
       if (activate) {
-        this.periodicTaskService.enablePeriodicTask(this.task()!.id);
+        this.periodicTaskService.enablePeriodicTask(taskId);
       } else {
-        this.periodicTaskService.disablePeriodicTask(this.task()!.id);
+        this.periodicTaskService.disablePeriodicTask(taskId);
       }
     }
   }

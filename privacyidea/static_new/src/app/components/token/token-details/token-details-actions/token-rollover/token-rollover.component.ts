@@ -45,19 +45,19 @@ import { EnrollWebauthnComponent } from "@components/token/token-enrollment/enro
 import { TokenCompleteEnrollmentComponent } from "@components/token/token-enrollment/token-complete-enrollment/token-complete-enrollment.component";
 import { TokenEnrollmentLastStepDialogComponent } from "@components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
 import {
-    OnEnrollmentResponseFn,
-    enrollmentArgsGetterFn
+  OnEnrollmentResponseFn,
+  enrollmentArgsGetterFn
 } from "@components/token/token-enrollment/token-enrollment.component";
 import { TokenVerifyEnrollmentComponent } from "@components/token/token-enrollment/token-verify-enrollment/token-verify-enrollment.component";
 import { DialogAction } from "@models/dialog";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import {
-    TokenDetails,
-    TokenEnrollmentDialogData,
-    TokenService,
-    TokenServiceInterface,
-    TokenType
+  TokenDetails,
+  TokenEnrollmentDialogData,
+  TokenService,
+  TokenServiceInterface,
+  TokenType
 } from "@services/token/token.service";
 import { UserService, UserServiceInterface } from "@services/user/user.service";
 import { Observable, lastValueFrom } from "rxjs";
@@ -164,12 +164,12 @@ export class TokenRolloverComponent extends AbstractDialogComponent<
 
   async rolloverToken() {
     if (!this.token()) {
-      this.notificationService.openSnackBar("No token selected for rollover.");
+      this.notificationService.warning("No token selected for rollover.");
       return;
     }
 
     if (!this.enrollmentArgsGetter) {
-      this.notificationService.openSnackBar("Rollover action is not available for the selected token type.");
+      this.notificationService.warning("Rollover action is not available for the selected token type.");
       return;
     }
 
@@ -188,7 +188,7 @@ export class TokenRolloverComponent extends AbstractDialogComponent<
 
     enrollPromise.catch((error) => {
       const message = error.error?.result?.error?.message || "";
-      this.notificationService.openSnackBar(`Failed to enroll token: ${message || error.message || error}`);
+      this.notificationService.error(`Failed to enroll token: ${message || error.message || error}`);
     });
     let enrollmentResponse: EnrollmentResponse | null = await enrollPromise;
 
@@ -271,7 +271,7 @@ export class TokenRolloverComponent extends AbstractDialogComponent<
 
   protected openLastStepDialog(response: EnrollmentResponse | null): void {
     if (!response) {
-      this.notificationService.openSnackBar("No rollover response available.");
+      this.notificationService.warning("No rollover response available.");
       return;
     }
 

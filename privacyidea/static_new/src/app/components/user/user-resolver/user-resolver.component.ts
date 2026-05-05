@@ -20,7 +20,6 @@
 import { Component, inject, linkedSignal, signal, viewChild, WritableSignal } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
-import { MatDialog } from "@angular/material/dialog";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
@@ -29,10 +28,11 @@ import { MatSelectModule } from "@angular/material/select";
 import { MatSort, MatSortModule } from "@angular/material/sort";
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
 import { MatTooltipModule } from "@angular/material/tooltip";
+import { Router } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
-import { UserNewResolverComponent } from "@components/user/user-new-resolver/user-new-resolver.component";
 import { ResolverTableActionsComponent } from "@components/user/user-resolver/resolver-table-actions/resolver-table-actions.component";
 import { AuthService } from "@services/auth/auth.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
@@ -73,9 +73,9 @@ export class UserResolversComponent {
   protected readonly resolverService = inject(ResolverService);
   protected readonly tableUtilsService = inject(TableUtilsService);
   protected readonly notificationService = inject(NotificationService);
-  protected readonly dialog = inject(MatDialog);
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
   protected readonly authService = inject(AuthService);
+  private readonly router = inject(Router);
 
   paginator = viewChild(MatPaginator);
   sort = viewChild(MatSort);
@@ -122,17 +122,7 @@ export class UserResolversComponent {
   }
 
   onEditResolver(resolver: Resolver): void {
-    this.openResolverDialog(resolver);
-  }
-
-  private openResolverDialog(resolver?: Resolver): void {
-    this.dialog.open(UserNewResolverComponent, {
-      data: { resolver },
-      width: "auto",
-      height: "auto",
-      maxWidth: "100vw",
-      maxHeight: "100vh"
-    });
+    this.router.navigateByUrl(ROUTE_PATHS.USERS_RESOLVERS_DETAILS + resolver.resolvername);
   }
 
   onDeleteResolver(resolver: Resolver): void {
@@ -153,12 +143,12 @@ export class UserResolversComponent {
         }
         this.resolverService.deleteResolver(resolver.resolvername).subscribe({
           next: () => {
-            this.notificationService.openSnackBar($localize`Resolver "${resolver.resolvername}" deleted.`);
+            this.notificationService.success($localize`Resolver "${resolver.resolvername}" deleted.`);
             this.resolverService.resolversResource.reload?.();
           },
           error: (err) => {
             const message = err.error?.result?.error?.message || err.message;
-            this.notificationService.openSnackBar($localize`Failed to delete resolver. ${message}`);
+            this.notificationService.error($localize`Failed to delete resolver. ${message}`);
           }
         });
       });

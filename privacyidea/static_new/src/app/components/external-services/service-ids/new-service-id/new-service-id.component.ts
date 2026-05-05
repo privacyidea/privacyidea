@@ -16,34 +16,28 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, effect, inject, OnDestroy, OnInit } from "@angular/core";
+import { Component, effect, inject, OnDestroy } from "@angular/core";
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
-import { MAT_DIALOG_DATA, MatDialogModule, MatDialogRef } from "@angular/material/dialog";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 import { ServiceId, ServiceIdService, ServiceIdServiceInterface } from "@services/service-id/service-id.service";
 
 import { MatIconModule } from "@angular/material/icon";
 
-import { Router } from "@angular/router";
+import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
+import { ActivatedRoute, Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
-import { NAVIGATION_ACCESSIBLE_DIALOG_CLASS } from "@constants/global.constants";
-import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 
 @Component({
   selector: "app-new-service-id",
   standalone: true,
-  host: {
-    class: NAVIGATION_ACCESSIBLE_DIALOG_CLASS
-  },
   imports: [
     ReactiveFormsModule,
-    MatDialogModule,
     MatFormFieldModule,
     MatInputModule,
     MatButtonModule,
@@ -53,39 +47,45 @@ import { PendingChangesService } from "@services/pending-changes/pending-changes
   templateUrl: "./new-service-id.component.html",
   styleUrl: "./new-service-id.component.scss"
 })
-export class NewServiceIdComponent implements OnInit, OnDestroy {
+export class NewServiceIdComponent implements OnDestroy {
   private readonly formBuilder = inject(FormBuilder);
-  private readonly dialogRef = inject(MatDialogRef<NewServiceIdComponent>);
-  protected readonly data = inject<ServiceId | null>(MAT_DIALOG_DATA);
   protected readonly serviceIdService: ServiceIdServiceInterface = inject(ServiceIdService);
   private readonly dialogService: DialogServiceInterface = inject(DialogService);
   private readonly router = inject(Router);
-  private readonly contentService: ContentServiceInterface = inject(ContentService);
+  private readonly route = inject(ActivatedRoute);
   private readonly pendingChangesService = inject(PendingChangesService);
 
   serviceIdForm!: FormGroup;
   isEditMode = false;
+  private editServiceName: string | null = null;
 
   constructor() {
-    if (this.dialogRef) {
-      this.dialogRef.disableClose = true;
-      this.dialogRef.backdropClick().subscribe(() => {
-        this.onCancel();
-      });
-      this.dialogRef.keydownEvents().subscribe((event) => {
-        if (event.key === "Escape") {
-          this.onCancel();
-        }
-      });
-    }
-
     this.pendingChangesService.registerHasChanges(() => this.hasChanges);
     this.pendingChangesService.registerSave(() => this.save());
     this.pendingChangesService.registerValidChanges(() => this.canSave);
 
+    this.route.paramMap.pipe(takeUntilDestroyed()).subscribe((params) => {
+      const serviceName = params.get("name");
+      if (serviceName) {
+        this.isEditMode = true;
+        this.editServiceName = serviceName;
+        const serviceId = this.serviceIdService.serviceIds().find((s) => s.servicename === serviceName);
+        this.initForm(serviceId ?? null);
+      } else {
+        this.isEditMode = false;
+        this.editServiceName = null;
+        this.initForm(null);
+      }
+    });
+
+    // Re-initialize once the async list arrives, but only if the user hasn't started editing yet.
     effect(() => {
-      if (!this.contentService.routeUrl().startsWith(ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS)) {
-        this.dialogRef?.close(true);
+      const serviceIds = this.serviceIdService.serviceIds();
+      if (this.isEditMode && this.editServiceName && this.serviceIdForm?.pristine) {
+        const serviceId = serviceIds.find((s) => s.servicename === this.editServiceName);
+        if (serviceId) {
+          this.initForm(serviceId);
+        }
       }
     });
   }
@@ -98,20 +98,19 @@ export class NewServiceIdComponent implements OnInit, OnDestroy {
     return this.serviceIdForm.valid;
   }
 
-  ngOnInit(): void {
-    this.isEditMode = !!this.data;
+  ngOnDestroy(): void {
+    this.pendingChangesService.clearAllRegistrations();
+  }
+
+  private initForm(data: ServiceId | null): void {
     this.serviceIdForm = this.formBuilder.group({
-      servicename: [this.data?.servicename || "", [Validators.required]],
-      description: [this.data?.description || ""]
+      servicename: [data?.servicename || "", [Validators.required, Validators.pattern(/^[a-zA-Z0-9._-]*$/)]],
+      description: [data?.description || ""]
     });
 
     if (this.isEditMode) {
       this.serviceIdForm.get("servicename")?.disable();
     }
-  }
-
-  ngOnDestroy(): void {
-    this.pendingChangesService.clearAllRegistrations();
   }
 
   async save(): Promise<boolean> {
@@ -124,7 +123,8 @@ export class NewServiceIdComponent implements OnInit, OnDestroy {
 
     try {
       await this.serviceIdService.postServiceId(serviceId);
-      this.dialogRef.close(true);
+      this.pendingChangesService.clearAllRegistrations();
+      this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS);
       return true;
     } catch (error) {
       return false;
@@ -145,24 +145,16 @@ export class NewServiceIdComponent implements OnInit, OnDestroy {
         .subscribe((result) => {
           if (result === "discard") {
             this.pendingChangesService.clearAllRegistrations();
-            this.closeCurrent();
+            this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS);
           } else if (result === "save-exit") {
             if (!this.canSave) return;
             Promise.resolve(this.pendingChangesService.save()).then((success) => {
               if (!success) return;
               this.pendingChangesService.clearAllRegistrations();
-              this.closeCurrent();
+              this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS);
             });
           }
         });
-    } else {
-      this.closeCurrent();
-    }
-  }
-
-  private closeCurrent(): void {
-    if (this.dialogRef) {
-      this.dialogRef.close();
     } else {
       this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS);
     }

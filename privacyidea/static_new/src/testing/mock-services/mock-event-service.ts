@@ -19,12 +19,7 @@
 import { HttpResourceRef } from "@angular/common/http";
 import { computed, signal, Signal, WritableSignal } from "@angular/core";
 import { PiResponse } from "@app/app.component";
-import {
-    EventActions,
-    EventCondition,
-    EventHandler,
-    EventServiceInterface
-} from "@services/event/event.service";
+import { EventActions, EventCondition, EventHandler, EventServiceInterface } from "@services/event/event.service";
 import { of } from "rxjs";
 
 export class MockEventService implements EventServiceInterface {
@@ -39,11 +34,11 @@ export class MockEventService implements EventServiceInterface {
 
   saveEventHandler = jest.fn((event: Record<string, any>) => of({ result: { value: 1 } } as PiResponse<number, any>));
 
-  enableEvent = jest.fn((eventId: string) => Promise.resolve({}));
+  enableEvent = jest.fn((eventId: number) => Promise.resolve({}));
 
-  disableEvent = jest.fn((eventId: string) => Promise.resolve({}));
+  disableEvent = jest.fn((eventId: number) => Promise.resolve({}));
 
-  deleteEvent = jest.fn((eventId: string) => of({ result: { value: 1 } } as PiResponse<number, any>));
+  deleteEvent = jest.fn((eventId: number) => of({ result: { value: 1 } } as PiResponse<number, any>));
 
   deleteWithConfirmDialog = jest.fn((event: EventHandler, dialog: any, afterDelete?: () => void) => {
     if (afterDelete) afterDelete();

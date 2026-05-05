@@ -22,9 +22,9 @@ import { MatPaginatorModule, PageEvent } from "@angular/material/paginator";
 import { Sort } from "@angular/material/sort";
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
 import {
-    ContainerDetailData,
-    ContainerService,
-    ContainerServiceInterface
+  ContainerDetailData,
+  ContainerService,
+  ContainerServiceInterface
 } from "@services/container/container.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";

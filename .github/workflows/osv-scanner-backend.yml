@@ -1,0 +1,61 @@
+# osv-scanner scans the Python backend dependencies for known vulnerabilities
+# using the OSV database (the same upstream that feeds GitHub's advisory DB).
+# Results are uploaded to the Security tab as SARIF and do not block merging.
+# Findings require manual triage — presence of a CVE does not imply reachability.
+#
+# https://github.com/google/osv-scanner
+
+name: osv-scanner-backend
+
+on:
+  pull_request:
+    branches:
+      - "master"
+      - "branch-*"
+    paths:
+      - "requirements.txt"
+      - ".github/workflows/osv-scanner-backend.yml"
+  schedule:
+    # Nightly at 22:47 UTC — offset from frontend scan (22:53) to avoid simultaneous load.
+    - cron: '47 22 * * *'
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  scan:
+    name: Scan Python dependencies
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write  # upload SARIF to the Security tab
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Install osv-scanner
+        env:
+          OSV_SCANNER_VERSION: v2.3.5
+        run: |
+          set -euo pipefail
+          curl -sSL -o osv-scanner \
+            "https://github.com/google/osv-scanner/releases/download/${OSV_SCANNER_VERSION}/osv-scanner_linux_amd64"
+          chmod +x osv-scanner
+          sudo mv osv-scanner /usr/local/bin/osv-scanner
+          osv-scanner --version
+
+      - name: Run osv-scanner
+        # Reporting-only: surface findings but don't block merges. Triage via the Security tab.
+        continue-on-error: true
+        run: |
+          osv-scanner scan \
+            --lockfile=requirements.txt \
+            --format=sarif \
+            --output=osv-results.sarif
+
+      - name: Upload SARIF to the Security tab
+        uses: github/codeql-action/upload-sarif@95e58e9a2cdfd71adc6e0353d5c52f41a045d225 # v4.35.2
+        with:
+          sarif_file: osv-results.sarif
+          category: osv-scanner-backend

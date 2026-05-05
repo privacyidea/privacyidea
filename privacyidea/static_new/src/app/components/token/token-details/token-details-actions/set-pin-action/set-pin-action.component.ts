@@ -22,8 +22,8 @@ import { MatButtonModule } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
 import {
-    MessageDialogComponent,
-    MessageDialogData
+  MessageDialogComponent,
+  MessageDialogData
 } from "@components/shared/dialog/message-dialog/message-dialog.component";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
@@ -47,12 +47,12 @@ export class SetPinActionComponent {
   setPin() {
     if (this.setPinValue() !== this.repeatPinValue()) {
       console.error("PINs do not match.");
-      this.notificationService.openSnackBar("PINs do not match.");
+      this.notificationService.warning("PINs do not match.");
       return;
     }
     this.tokenService.setPin(this.tokenService.tokenSerial(), this.setPinValue()).subscribe({
       next: () => {
-        this.notificationService.openSnackBar("PIN set successfully.");
+        this.notificationService.success("PIN set successfully.");
         this.setPinValue.set("");
         this.repeatPinValue.set("");
       }

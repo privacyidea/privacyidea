@@ -22,10 +22,10 @@ import { Sort } from "@angular/material/sort";
 import { PiResponse } from "@app/app.component";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import {
-    MachineServiceInterface,
-    Machines,
-    TokenApplication,
-    TokenApplications
+  MachineServiceInterface,
+  Machines,
+  TokenApplication,
+  TokenApplications
 } from "@services/machine/machine.service";
 import { Observable, of } from "rxjs";
 import { MockHttpResourceRef, MockPiResponse } from "./mock-utils";

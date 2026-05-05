@@ -133,8 +133,10 @@ The list shows the users from the select realm. The username, surname,
 given name, email and phone are filled according to the definition of
 the useridresolver.
 
-Even if a realm contains several useridresolvers all users from all
-resolvers within this realm are displayed.
+Even if a realm contains several useridresolvers, users from all
+resolvers within this realm are displayed. However, if a user with the
+same login name exists in more than one resolver, only the user from the
+highest-priority resolver is shown. See :ref:`resolver_priority` for details.
 
 Read about the functionality of the users view in the following sections.
 

@@ -19,7 +19,6 @@
 
 import { Component, computed, inject, signal, ViewChild, WritableSignal } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
-import { MatDialog, MatDialogModule } from "@angular/material/dialog";
 import { MatIconModule } from "@angular/material/icon";
 import { MatPaginator } from "@angular/material/paginator";
 import { MatSort, MatSortModule } from "@angular/material/sort";
@@ -27,7 +26,6 @@ import { MatTableDataSource, MatTableModule } from "@angular/material/table";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { SmtpServer, SmtpService, SmtpServiceInterface } from "@services/smtp/smtp.service";
-import { NewSmtpServerComponent } from "./new-smtp-server/new-smtp-server.component";
 
 import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
@@ -46,7 +44,6 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
     MatSortModule,
     MatIconModule,
     MatButtonModule,
-    MatDialogModule,
     MatTooltipModule,
     ScrollToTopDirective,
     MatFormField,
@@ -60,10 +57,11 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
 })
 export class SmtpServersComponent {
   protected readonly smtpService: SmtpServiceInterface = inject(SmtpService);
-  protected readonly dialog: MatDialog = inject(MatDialog);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
+  protected readonly ROUTE_PATHS = ROUTE_PATHS;
+  private readonly router = inject(Router);
 
   filterString = signal<string>("");
   pageSizeOptions = this.tableUtilsService.pageSizeOptions;
@@ -83,13 +81,12 @@ export class SmtpServersComponent {
     return dataSource;
   });
 
-  openEditDialog(server?: SmtpServer): void {
-    this.dialog.open(NewSmtpServerComponent, {
-      data: server ? { ...server } : null,
-      width: "auto",
-      maxWidth: "65vw",
-      maxHeight: "90vh"
-    });
+  onCreateNewServer(): void {
+    this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_SMTP_NEW);
+  }
+
+  onEditServer(server: SmtpServer): void {
+    this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_SMTP_DETAILS + server.identifier);
   }
 
   deleteServer(server: SmtpServer): void {

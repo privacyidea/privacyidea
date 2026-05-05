@@ -677,7 +677,8 @@ class APIUsersTestCase(MyApiTestCase):
         user.set_attribute("custom2", "value2")
         user.set_attribute("custom3", "value3")
 
-        # Request without realm does not return custom attributes
+        # Request with only resolver (no realm) resolves the resolver to its realm(s)
+        # and returns users in realm context, including custom attributes
         with self.app.test_request_context('/user/',
                                            method='GET',
                                            query_string=urlencode(
@@ -688,9 +689,10 @@ class APIUsersTestCase(MyApiTestCase):
             result = res.json.get("result")
             self.assertTrue(result.get("status"))
             user = result.get("value")[0]
-            # should contain all attributes ( resolver and editable are added on lib layer not by the resolver itself)
+            # should contain all attributes including custom attributes since realm is resolved
             expected_attributes = {"userid", "username", "surname", "givenname", "email", "phone", "mobile",
-                                   "description", "resolver", "editable"}
+                                   "description", "resolver", "editable", "realm",
+                                   "custom1", "custom2", "custom3"}
             self.assertSetEqual(expected_attributes, set(user.keys()))
             self.assertEqual("1000", user.get("userid"))
             self.assertEqual("cornelius", user.get("username"))
@@ -703,6 +705,7 @@ class APIUsersTestCase(MyApiTestCase):
                              user.get("description"))
             self.assertEqual(self.resolvername1, user.get("resolver"))
             self.assertEqual(False, user.get("editable"))
+            self.assertEqual(self.realm1, user.get("realm"))
 
         # With realm as request parameter we also get the custom attributes of the users
         with self.app.test_request_context('/user/',
@@ -714,9 +717,10 @@ class APIUsersTestCase(MyApiTestCase):
             result = res.json.get("result")
             self.assertTrue(result.get("status"))
             user = result.get("value")[0]
-            # should contain all attributes ( resolver and editable are added on lib layer not by the resolver itself)
+            # should contain all attributes ( resolver, editable and realm are added on lib layer not by the resolver itself)
             expected_attributes = {"userid", "username", "surname", "givenname", "email", "phone", "mobile",
-                                   "description", "resolver", "editable", "custom1", "custom2", "custom3"}
+                                   "description", "resolver", "editable", "realm",
+                                   "custom1", "custom2", "custom3"}
             self.assertSetEqual(expected_attributes, set(user.keys()))
             self.assertEqual("1000", user.get("userid"))
             self.assertEqual("cornelius", user.get("username"))
@@ -729,6 +733,7 @@ class APIUsersTestCase(MyApiTestCase):
                              user.get("description"))
             self.assertEqual(self.resolvername1, user.get("resolver"))
             self.assertEqual(False, user.get("editable"))
+            self.assertEqual(self.realm1, user.get("realm"))
             self.assertEqual("value1", user.get("custom1"))
             self.assertEqual("value2", user.get("custom2"))
             self.assertEqual("value3", user.get("custom3"))
@@ -745,7 +750,7 @@ class APIUsersTestCase(MyApiTestCase):
             result = res.json.get("result")
             self.assertTrue(result.get("status"))
             user = result.get("value")[0]
-            # should contain all attributes ( resolver and editable are added on lib layer not by the resolver itself)
+            # realm is only added when explicitly requested
             self.assertDictEqual({"username": "cornelius", "email": "user@localhost.localdomain"}, user)
 
         # Request specific attributes with editable and resolver which are not set in the user store itself
@@ -760,7 +765,7 @@ class APIUsersTestCase(MyApiTestCase):
             result = res.json.get("result")
             self.assertTrue(result.get("status"))
             user = result.get("value")[0]
-            # should contain all attributes ( resolver and editable are added on lib layer not by the resolver itself)
+            # realm is only added when explicitly requested
             self.assertDictEqual({"username": "cornelius", "email": "user@localhost.localdomain", "editable": False,
                                   "resolver": self.resolvername1}, user)
 
@@ -776,7 +781,7 @@ class APIUsersTestCase(MyApiTestCase):
             result = res.json.get("result")
             self.assertTrue(result.get("status"))
             user = result.get("value")[0]
-            # should contain all attributes ( resolver and editable are added on lib layer not by the resolver itself)
+            # realm is only added when explicitly requested
             expected_user = {"username": "cornelius", "email": "user@localhost.localdomain", "custom1": "value1",
                              "custom2": "value2"}
             self.assertDictEqual(expected_user, user)

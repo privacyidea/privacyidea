@@ -38,15 +38,4 @@ $padding-horizontal: 16px;
     margin-top: auto;
     padding: 0 16px;
   }
-
-  ::ng-deep {
-    .mat-mdc-text-field-wrapper {
-      padding-right: 10px;
-    }
-
-    .mat-mdc-form-field-infix {
-      margin-bottom: -8px;
-      width: 17rem;
-    }
-  }
 }

@@ -28,11 +28,11 @@ describe("SubscriptionService", () => {
   let service: SubscriptionService;
   let httpMock: HttpTestingController;
   let authMock: { getHeaders: jest.Mock };
-  let notifyMock: { openSnackBar: jest.Mock };
+  let notifyMock: { warning: jest.Mock };
 
   beforeEach(() => {
     authMock = { getHeaders: jest.fn(() => ({}) as any) } as any;
-    notifyMock = { openSnackBar: jest.fn() } as any;
+    notifyMock = { success: jest.fn(), error: jest.fn(), warning: jest.fn() } as any;
 
     TestBed.configureTestingModule({
       providers: [
@@ -56,7 +56,7 @@ describe("SubscriptionService", () => {
     service.deleteSubscription("app1").subscribe({
       next: () => done.fail("should error"),
       error: () => {
-        expect(notifyMock.openSnackBar).toHaveBeenCalled();
+        expect(notifyMock.error).toHaveBeenCalled();
         done();
       }
     });
@@ -71,7 +71,7 @@ describe("SubscriptionService", () => {
     service.uploadSubscriptionFile(file).subscribe({
       next: () => done.fail("should error"),
       error: () => {
-        expect(notifyMock.openSnackBar).toHaveBeenCalled();
+        expect(notifyMock.error).toHaveBeenCalled();
         done();
       }
     });

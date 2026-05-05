@@ -22,13 +22,10 @@ import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 
+import { TokenApiPayloadMapper, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import {
-    TokenApiPayloadMapper,
-    TokenEnrollmentData
-} from "@app/mappers/token-api-payload/_token-api-payload.mapper";
-import {
-    SshkeyApiPayloadMapper,
-    SshkeyEnrollmentData
+  SshkeyApiPayloadMapper,
+  SshkeyEnrollmentData
 } from "@app/mappers/token-api-payload/sshkey-token-api-payload.mapper";
 
 export interface SshkeyEnrollmentOptions extends TokenEnrollmentData {

@@ -21,13 +21,13 @@ import { Sort } from "@angular/material/sort";
 import { PiResponse } from "@app/app.component";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import {
-    BulkResult,
-    LostTokenResponse,
-    TokenDetails,
-    Tokens,
-    TokenService,
-    TokenServiceInterface,
-    TokenType
+  BulkResult,
+  LostTokenResponse,
+  TokenDetails,
+  Tokens,
+  TokenService,
+  TokenServiceInterface,
+  TokenType
 } from "@services/token/token.service";
 import { of, Subject } from "rxjs";
 import { MockHttpResourceRef, MockPiResponse } from "./mock-utils";
@@ -81,6 +81,7 @@ export class MockTokenService implements TokenServiceInterface {
   apiFilterKeyMap: Record<string, string> = {};
   stopPolling$: Subject<void> = new Subject<void>();
   tokenBaseUrl: string = "mockEnvironment.proxyUrl + '/token'";
+  maxDescriptionLength = 80;
   readonly eventPageSize = 10;
   tokenSerial = signal("");
   selectedTokenType: WritableSignal<TokenType> = signal({

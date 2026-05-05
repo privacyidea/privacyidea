@@ -19,11 +19,7 @@
 import { HttpResourceRef } from "@angular/common/http";
 import { signal } from "@angular/core";
 import { PiResponse } from "@app/app.component";
-import {
-    CaConnector,
-    CaConnectors,
-    CaConnectorServiceInterface
-} from "@services/ca-connector/ca-connector.service";
+import { CaConnector, CaConnectors, CaConnectorServiceInterface } from "@services/ca-connector/ca-connector.service";
 
 export class MockCaConnectorService implements CaConnectorServiceInterface {
   caConnectorResource: HttpResourceRef<PiResponse<CaConnectors> | undefined> = {

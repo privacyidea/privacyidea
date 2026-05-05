@@ -33,7 +33,8 @@ from privacyidea.lib.fido2.util import get_credential_ids_for_user, get_fido2_to
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import SCOPE
 from privacyidea.lib.token import (init_token, remove_token, unassign_token, import_tokens, get_tokens)
-from privacyidea.lib.tokenclass import RolloutState, TokenClass
+from privacyidea.lib.tokenclass import TokenClass
+from privacyidea.lib.tokenrolloutstate import RolloutState
 from privacyidea.lib.tokens.passkeytoken import PasskeyTokenClass
 from privacyidea.lib.user import User
 from privacyidea.models import TokenCredentialIdHash

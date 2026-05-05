@@ -19,43 +19,50 @@
 
 import { CommonModule, NgClass } from "@angular/common";
 import {
-    Component,
-    computed,
-    effect,
-    ElementRef,
-    inject,
-    linkedSignal,
-    Renderer2,
-    signal,
-    untracked,
-    ViewChild,
-    WritableSignal
+  Component,
+  computed,
+  effect,
+  ElementRef,
+  inject,
+  linkedSignal,
+  Renderer2,
+  signal,
+  untracked,
+  ViewChild,
+  WritableSignal
 } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { MatButton, MatIconButton } from "@angular/material/button";
-import { MatCheckbox } from "@angular/material/checkbox";
 import { MatDialog } from "@angular/material/dialog";
-import {
-    MatAccordion,
-    MatExpansionPanel,
-    MatExpansionPanelHeader,
-    MatExpansionPanelTitle
-} from "@angular/material/expansion";
 import { MatIcon } from "@angular/material/icon";
-import { MatFormField, MatInput, MatLabel, MatSuffix } from "@angular/material/input";
+import { MatFormField } from "@angular/material/input";
 import { MatOption, MatSelect } from "@angular/material/select";
 import { MatTooltip } from "@angular/material/tooltip";
 import { Router } from "@angular/router";
 import { PiResponse } from "@app/app.component";
 import { ROUTE_PATHS } from "@app/route_paths";
+import { ContainerCreateFormComponent } from "@components/shared/container-create-form/container-create-form.component";
+import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import {
+  ContainerCreatedDialogComponent,
+  ContainerCreationDialogData
+} from "@components/token/container-create/container-created-dialog/container-created-dialog.component";
+import { ContainerCreatedDialogWizardComponent } from "@components/token/container-create/container-created-dialog/container-created-dialog.wizard.component";
+import {
+  ContainerRegistrationCompletedDialogComponent,
+  ContainerRegistrationCompletedDialogData
+} from "@components/token/container-create/container-registration-completed-dialog/container-registration-completed-dialog.component";
+import { ContainerRegistrationCompletedDialogWizardComponent } from "@components/token/container-create/container-registration-completed-dialog/container-registration-completed-dialog.wizard.component";
+import { ContainerRegistrationConfigComponent } from "@components/token/container-registration/container-registration-config/container-registration-config.component";
+import { UserAssignmentComponent } from "@components/token/user-assignment/user-assignment.component";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContainerTemplateService } from "@services/container-template/container-template.service";
 import {
-    ContainerCreateData,
-    ContainerRegisterData,
-    ContainerService,
-    ContainerServiceInterface,
-    ContainerType
+  ContainerCreateData,
+  ContainerRegisterData,
+  ContainerService,
+  ContainerServiceInterface,
+  ContainerType
 } from "@services/container/container.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
@@ -63,20 +70,6 @@ import { RealmService, RealmServiceInterface } from "@services/realm/realm.servi
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 import { UserService, UserServiceInterface } from "@services/user/user.service";
 import { VersioningService, VersioningServiceInterface } from "@services/version/version.service";
-import { ClearButtonComponent } from "../../shared/clear-button/clear-button.component";
-import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
-import { ContainerRegistrationConfigComponent } from "../container-registration/container-registration-config/container-registration-config.component";
-import { UserAssignmentComponent } from "../user-assignment/user-assignment.component";
-import {
-    ContainerCreatedDialogComponent,
-    ContainerCreationDialogData
-} from "./container-created-dialog/container-created-dialog.component";
-import { ContainerCreatedDialogWizardComponent } from "./container-created-dialog/container-created-dialog.wizard.component";
-import {
-    ContainerRegistrationCompletedDialogComponent,
-    ContainerRegistrationCompletedDialogData
-} from "./container-registration-completed-dialog/container-registration-completed-dialog.component";
-import { ContainerRegistrationCompletedDialogWizardComponent } from "./container-registration-completed-dialog/container-registration-completed-dialog.wizard.component";
 
 @Component({
   selector: "app-container-create",
@@ -87,22 +80,13 @@ import { ContainerRegistrationCompletedDialogWizardComponent } from "./container
     MatOption,
     MatSelect,
     FormsModule,
-    MatInput,
-    MatLabel,
-    MatCheckbox,
     MatIconButton,
-    MatAccordion,
-    MatExpansionPanel,
-    MatExpansionPanelTitle,
-    MatExpansionPanelHeader,
     MatTooltip,
     ScrollToTopDirective,
     NgClass,
     CommonModule,
-    ContainerRegistrationConfigComponent,
     UserAssignmentComponent,
-    MatSuffix,
-    ClearButtonComponent
+    ContainerCreateFormComponent
   ],
   templateUrl: "./container-create.component.html",
   styleUrl: "./container-create.component.scss"
@@ -279,7 +263,7 @@ export class ContainerCreateComponent {
       next: (response) => {
         const containerSerial = response.result?.value?.container_serial;
         if (!containerSerial) {
-          this.notificationService.openSnackBar("Container creation failed. No container serial returned.");
+          this.notificationService.error("Container creation failed. No container serial returned.");
           return;
         }
         if (this.generateQRCode()) {

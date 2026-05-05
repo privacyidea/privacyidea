@@ -133,7 +133,7 @@ describe("TokenEnrollmentDataComponent", () => {
 
   it("should open notification if no enrollmentParameters are available on regenerateQRCode", () => {
     component.regenerateQRCode();
-    expect(mockNotificationService.openSnackBar).toHaveBeenCalledWith(
+    expect(mockNotificationService.warning).toHaveBeenCalledWith(
       "Enrollment parameters are missing. Cannot regenerate token."
     );
   });

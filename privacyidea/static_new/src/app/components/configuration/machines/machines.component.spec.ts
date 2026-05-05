@@ -21,8 +21,9 @@ import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { signal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { MatDialog, MatDialogModule } from "@angular/material/dialog";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
+import { provideRouter, Router } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
 import { MachineService } from "@services/machine/machine.service";
 import { MachinesComponent } from "./machines.component";
 
@@ -40,19 +41,14 @@ describe("MachinesComponent", () => {
     };
 
     await TestBed.configureTestingModule({
-      imports: [MachinesComponent, NoopAnimationsModule, MatDialogModule],
+      imports: [MachinesComponent, NoopAnimationsModule],
       providers: [
         provideHttpClient(),
         provideHttpClientTesting(),
+        provideRouter([]),
         { provide: MachineService, useValue: machineServiceMock }
       ]
-    })
-      .overrideComponent(MachinesComponent, {
-        set: {
-          providers: [{ provide: MatDialog, useValue: { open: jest.fn() } }]
-        }
-      })
-      .compileComponents();
+    }).compileComponents();
 
     fixture = TestBed.createComponent(MachinesComponent);
     component = fixture.componentInstance;
@@ -73,10 +69,13 @@ describe("MachinesComponent", () => {
     expect(component.machineDataSource().filter).toBe("host1");
   });
 
-  it("should open details dialog", () => {
-    const dialog = fixture.debugElement.injector.get(MatDialog);
+  it("should navigate to details page", () => {
+    const router = TestBed.inject(Router);
+    jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
     const machine = machineServiceMock.machines()[0];
     component.openDetailsDialog(machine);
-    expect(dialog.open).toHaveBeenCalled();
+    expect(router.navigateByUrl).toHaveBeenCalledWith(
+      ROUTE_PATHS.CONFIGURATION_MACHINES_DETAILS + machine.id + "?resolver=" + encodeURIComponent(machine.resolver_name)
+    );
   });
 });

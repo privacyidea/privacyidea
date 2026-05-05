@@ -32,7 +32,8 @@ export class SearchTokenDialogComponent extends AbstractDialogComponent<string, 
   action: DialogAction<true> = {
     label: $localize`Start Search`,
     value: true,
-    type: "confirm"
+    type: "confirm",
+    primary: true
   };
   onAction(value: boolean) {
     this.close(value);

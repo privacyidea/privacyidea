@@ -29,8 +29,8 @@ import { FilterOption } from "@core/models/filter_value_generic/filter-option";
 import { FilterValueGeneric } from "@core/models/filter_value_generic/filter-value-generic";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import {
-    ContainerTemplateService,
-    ContainerTemplateServiceInterface
+  ContainerTemplateService,
+  ContainerTemplateServiceInterface
 } from "@services/container-template/container-template.service";
 import { ContainerTemplate } from "@services/container/container.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";

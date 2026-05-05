@@ -22,13 +22,10 @@ import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
 
 import { MatOptionModule } from "@angular/material/core";
+import { TokenApiPayloadMapper, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import {
-    TokenApiPayloadMapper,
-    TokenEnrollmentData
-} from "@app/mappers/token-api-payload/_token-api-payload.mapper";
-import {
-    YubikeyApiPayloadMapper,
-    YubikeyEnrollmentData
+  YubikeyApiPayloadMapper,
+  YubikeyEnrollmentData
 } from "@app/mappers/token-api-payload/yubikey-token-api-payload.mapper";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 import { distinctUntilChanged, map } from "rxjs";

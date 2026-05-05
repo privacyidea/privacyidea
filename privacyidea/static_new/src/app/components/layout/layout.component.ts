@@ -19,7 +19,6 @@
 import { Component, DOCUMENT, effect, inject, Renderer2, signal } from "@angular/core";
 
 import { MatProgressBar } from "@angular/material/progress-bar";
-import { MatDrawer, MatDrawerContainer, MatDrawerContent } from "@angular/material/sidenav";
 import { RouterOutlet } from "@angular/router";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
@@ -35,9 +34,6 @@ import { NavigationComponent } from "./navigation/navigation.component";
   imports: [
     RouterOutlet,
     MatProgressBar,
-    MatDrawer,
-    MatDrawerContainer,
-    MatDrawerContent,
     NavigationComponent,
     NavigationSelfServiceComponent,
     NavigationSelfServiceWizardComponent

@@ -19,83 +19,59 @@
 
 import { NgClass } from "@angular/common";
 import {
-    AfterViewInit,
-    Component,
-    ElementRef,
-    Injectable,
-    OnDestroy,
-    Renderer2,
-    ViewChild,
-    WritableSignal,
-    computed,
-    effect,
-    inject,
-    linkedSignal,
-    signal
+  AfterViewInit,
+  Component,
+  ElementRef,
+  Injectable,
+  OnDestroy,
+  Renderer2,
+  ViewChild,
+  WritableSignal,
+  computed,
+  effect,
+  inject,
+  linkedSignal,
+  signal
 } from "@angular/core";
 import {
-    AbstractControl,
-    FormControl,
-    FormGroup,
-    FormsModule,
-    ReactiveFormsModule,
-    ValidationErrors,
-    ValidatorFn,
-    Validators
+  AbstractControl,
+  FormControl,
+  FormGroup,
+  FormsModule,
+  ReactiveFormsModule,
+  ValidationErrors,
+  ValidatorFn,
+  Validators
 } from "@angular/forms";
 import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
 import { MatButton, MatIconButton } from "@angular/material/button";
 import {
-    DateAdapter,
-    MAT_DATE_FORMATS,
-    MatNativeDateModule,
-    NativeDateAdapter,
-    provideNativeDateAdapter
+  DateAdapter,
+  MAT_DATE_FORMATS,
+  MatNativeDateModule,
+  NativeDateAdapter,
+  provideNativeDateAdapter
 } from "@angular/material/core";
 import { MatDatepickerModule } from "@angular/material/datepicker";
 import {
-    MatAccordion,
-    MatExpansionPanel,
-    MatExpansionPanelHeader,
-    MatExpansionPanelTitle
+  MatAccordion,
+  MatExpansionPanel,
+  MatExpansionPanelHeader,
+  MatExpansionPanelTitle
 } from "@angular/material/expansion";
 import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
-import { MatError, MatFormField, MatHint, MatLabel, MatOption, MatSelect, MatSuffix } from "@angular/material/select";
+import { MatFormField, MatHint, MatLabel, MatOption, MatSelect, MatSuffix } from "@angular/material/select";
 import { MAT_TOOLTIP_DEFAULT_OPTIONS, MatTooltipDefaultOptions, MatTooltipModule } from "@angular/material/tooltip";
 import {
-    EnrollmentResponse,
-    TokenApiPayloadMapper,
-    TokenEnrollmentData
+  EnrollmentResponse,
+  TokenApiPayloadMapper,
+  TokenEnrollmentData
 } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
-import { EnrollApplspecComponent } from "@components/token/token-enrollment/enroll-asp/enroll-applspec.component";
-import { EnrollCertificateComponent } from "@components/token/token-enrollment/enroll-certificate/enroll-certificate.component";
-import { EnrollDaypasswordComponent } from "@components/token/token-enrollment/enroll-daypassword/enroll-daypassword.component";
-import { EnrollEmailComponent } from "@components/token/token-enrollment/enroll-email/enroll-email.component";
-import { EnrollFoureyesComponent } from "@components/token/token-enrollment/enroll-foureyes/enroll-foureyes.component";
-import { EnrollHotpComponent } from "@components/token/token-enrollment/enroll-hotp/enroll-hotp.component";
-import { EnrollIndexedsecretComponent } from "@components/token/token-enrollment/enroll-indexsecret/enroll-indexedsecret.component";
-import { EnrollMotpComponent } from "@components/token/token-enrollment/enroll-motp/enroll-motp.component";
-import { EnrollPaperComponent } from "@components/token/token-enrollment/enroll-paper/enroll-paper.component";
-import { EnrollPasskeyComponent } from "@components/token/token-enrollment/enroll-passkey/enroll-passkey.component";
-import { EnrollPushComponent } from "@components/token/token-enrollment/enroll-push/enroll-push.component";
-import { EnrollQuestionComponent } from "@components/token/token-enrollment/enroll-questionnaire/enroll-question.component";
-import { EnrollRadiusComponent } from "@components/token/token-enrollment/enroll-radius/enroll-radius.component";
-import { EnrollRegistrationComponent } from "@components/token/token-enrollment/enroll-registration/enroll-registration.component";
-import { EnrollRemoteComponent } from "@components/token/token-enrollment/enroll-remote/enroll-remote.component";
-import { EnrollSmsComponent } from "@components/token/token-enrollment/enroll-sms/enroll-sms.component";
-import { EnrollSpassComponent } from "@components/token/token-enrollment/enroll-spass/enroll-spass.component";
-import { EnrollSshkeyComponent } from "@components/token/token-enrollment/enroll-sshkey/enroll-sshkey.component";
-import { EnrollTanComponent } from "@components/token/token-enrollment/enroll-tan/enroll-tan.component";
-import { EnrollTiqrComponent } from "@components/token/token-enrollment/enroll-tiqr/enroll-tiqr.component";
-import { EnrollTotpComponent } from "@components/token/token-enrollment/enroll-totp/enroll-totp.component";
-import { EnrollU2fComponent } from "@components/token/token-enrollment/enroll-u2f/enroll-u2f.component";
-import { EnrollVascoComponent } from "@components/token/token-enrollment/enroll-vasco/enroll-vasco.component";
-import { EnrollWebauthnComponent } from "@components/token/token-enrollment/enroll-webauthn/enroll-webauthn.component";
-import { EnrollYubicoComponent } from "@components/token/token-enrollment/enroll-yubico/enroll-yubico.component";
-import { EnrollYubikeyComponent } from "@components/token/token-enrollment/enroll-yubikey/enroll-yubikey.component";
+import { EnrollTokenTypeSwitchComponent } from "@components/shared/enroll-token-type-switch/enroll-token-type-switch.component";
+import { EnrollmentPinComponent } from "@components/shared/enrollment-pin/enrollment-pin.component";
 import { TokenCompleteEnrollmentComponent } from "@components/token/token-enrollment/token-complete-enrollment/token-complete-enrollment.component";
 import { TokenEnrollmentLastStepDialogComponent } from "@components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
 import { TokenEnrollmentLastStepDialogData } from "@components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.self-service.component";
@@ -108,11 +84,11 @@ import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.s
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
 import {
-    EnrollTokenArguments,
-    TokenEnrollmentDialogData,
-    TokenService,
-    TokenServiceInterface,
-    TokenType
+  EnrollTokenArguments,
+  TokenEnrollmentDialogData,
+  TokenService,
+  TokenServiceInterface,
+  TokenType
 } from "@services/token/token.service";
 import { UserData, UserService, UserServiceInterface } from "@services/user/user.service";
 import { VersioningService, VersioningServiceInterface } from "@services/version/version.service";
@@ -192,7 +168,6 @@ export class CustomDateAdapter extends NativeDateAdapter {
     ReactiveFormsModule,
     FormsModule,
     MatHint,
-    EnrollHotpComponent,
     MatInput,
     MatLabel,
     MatAutocomplete,
@@ -206,38 +181,14 @@ export class CustomDateAdapter extends NativeDateAdapter {
     MatSuffix,
     MatButton,
     MatIcon,
-    EnrollTotpComponent,
     MatIconButton,
-    EnrollSpassComponent,
-    EnrollMotpComponent,
     NgClass,
-    EnrollSshkeyComponent,
-    EnrollYubikeyComponent,
-    EnrollRemoteComponent,
-    EnrollYubicoComponent,
-    EnrollRadiusComponent,
-    EnrollSmsComponent,
-    EnrollFoureyesComponent,
-    EnrollApplspecComponent,
-    EnrollDaypasswordComponent,
-    EnrollCertificateComponent,
-    EnrollEmailComponent,
-    EnrollIndexedsecretComponent,
-    EnrollPaperComponent,
-    EnrollPushComponent,
-    EnrollQuestionComponent,
-    EnrollRegistrationComponent,
-    EnrollTanComponent,
-    EnrollTiqrComponent,
-    EnrollU2fComponent,
-    EnrollVascoComponent,
-    EnrollWebauthnComponent,
-    MatError,
-    EnrollPasskeyComponent,
     MatTooltipModule,
     ClearableInputComponent,
     ScrollToTopDirective,
-    UserAssignmentComponent
+    UserAssignmentComponent,
+    EnrollTokenTypeSwitchComponent,
+    EnrollmentPinComponent
   ],
   providers: [
     provideNativeDateAdapter(),
@@ -297,7 +248,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
   enrolledDialogData: WritableSignal<TokenEnrollmentDialogData | null> = signal(null);
   descriptionControl = new FormControl<string>("", {
     nonNullable: true,
-    validators: [Validators.maxLength(80)]
+    validators: [Validators.maxLength(this.tokenService.maxDescriptionLength)]
   });
 
   descriptionRequired = computed(() => {
@@ -515,7 +466,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     const currentTokenType = this.tokenService.selectedTokenType();
     let everythingIsValid = true;
     if (!currentTokenType) {
-      this.notificationService.openSnackBar("Please select a token type.");
+      this.notificationService.warning("Please select a token type.");
       return;
     }
 
@@ -530,12 +481,12 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     }
 
     if (!everythingIsValid) {
-      this.notificationService.openSnackBar("Please fill in all required fields or correct invalid entries.");
+      this.notificationService.warning("Please fill in all required fields or correct invalid entries.");
       return;
     }
 
     if (!this.enrollmentArgsGetter) {
-      this.notificationService.openSnackBar("Enrollment action is not available for the selected token type.");
+      this.notificationService.warning("Enrollment action is not available for the selected token type.");
       return;
     }
 
@@ -577,7 +528,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
 
     enrollPromise.catch((error) => {
       const message = error.error?.result?.error?.message || "";
-      this.notificationService.openSnackBar(`Failed to enroll token: ${message || error.message || error}`);
+      this.notificationService.error(`Failed to enroll token: ${message || error.message || error}`);
     });
     let enrollmentResponse: EnrollmentResponse | null = await enrollPromise;
 
@@ -659,7 +610,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
 
   protected openLastStepDialog(response: EnrollmentResponse | null): void {
     if (!response) {
-      this.notificationService.openSnackBar("No enrollment response available.");
+      this.notificationService.warning("No enrollment response available.");
       return;
     }
 
@@ -683,7 +634,7 @@ export class TokenEnrollmentComponent implements AfterViewInit, OnDestroy {
     }
 
     if (this.isUserRequired() && !this.userService.selectedUser() && !this.enrolledDialogData()?.rollover) {
-      this.notificationService.openSnackBar("User is required for this token type, but no user was provided.");
+      this.notificationService.warning("User is required for this token type, but no user was provided.");
       return;
     }
 

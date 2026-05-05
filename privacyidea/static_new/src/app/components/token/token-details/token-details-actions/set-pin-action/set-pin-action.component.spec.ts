@@ -48,7 +48,7 @@ describe("SetPinActionComponent", () => {
   } as unknown as MatDialog;
 
   const notificationServiceStub = {
-    openSnackBar: jest.fn()
+    success: jest.fn(), error: jest.fn(), warning: jest.fn()
   };
 
   beforeEach(async () => {
@@ -81,14 +81,14 @@ describe("SetPinActionComponent", () => {
   it("setPin() success", () => {
     component.setPin();
     expect(tokenServiceStub.setPin).toHaveBeenCalledWith("Mock serial", "1234");
-    expect(notificationServiceStub.openSnackBar).toHaveBeenCalledWith("PIN set successfully.");
+    expect(notificationServiceStub.success).toHaveBeenCalledWith("PIN set successfully.");
   });
 
   it("setPin() should raise error if pins does not match", () => {
     component.repeatPinValue.set("4321");
     component.setPin();
     expect(tokenServiceStub.setPin).not.toHaveBeenCalled();
-    expect(notificationServiceStub.openSnackBar).toHaveBeenCalledWith("PINs do not match.");
+    expect(notificationServiceStub.warning).toHaveBeenCalledWith("PINs do not match.");
   });
 
   it("setRandomPin()", () => {

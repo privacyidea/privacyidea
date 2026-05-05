@@ -24,12 +24,12 @@ import { Router } from "@angular/router";
 import { PiResponse } from "@app/app.component";
 import { BEARER_TOKEN_STORAGE_KEY } from "@core/constants";
 import { environment } from "@env/environment";
+import { PolicyAction } from "@services/auth/policy-actions";
+import { LocalService, LocalServiceInterface } from "@services/local/local.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
+import { VersioningService, VersioningServiceInterface } from "@services/version/version.service";
 import { tokenTypes } from "@utils/token.utils";
 import { Observable, catchError, tap, throwError } from "rxjs";
-import { LocalService, LocalServiceInterface } from "../local/local.service";
-import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
-import { VersioningService, VersioningServiceInterface } from "../version/version.service";
-import { PolicyAction } from "./policy-actions";
 
 export type AuthResponse = PiResponse<AuthData, AuthDetail>;
 
@@ -339,7 +339,7 @@ export class AuthService implements AuthServiceInterface {
     this.jwtData.set(null);
     this.localService.removeData(BEARER_TOKEN_STORAGE_KEY);
     this.authenticationAccepted.set(false);
-    this.router.navigate(["login"]).then(() => this.notificationService.openSnackBar($localize`Logout successful.`));
+    this.router.navigate(["login"]).then(() => this.notificationService.success($localize`Logout successful.`));
   }
 
   actionAllowed(action: PolicyAction): boolean {

@@ -62,7 +62,7 @@ describe("ChallengesTableActionsComponent", () => {
 
     expect(deleteSpy).toHaveBeenCalled();
     expect(reloadSpy).toHaveBeenCalled();
-    expect(mockNotificationService.openSnackBar).not.toHaveBeenCalled();
+    expect(mockNotificationService.warning).not.toHaveBeenCalled();
   });
 
   it("should show api error message from response on failure", () => {
@@ -73,7 +73,7 @@ describe("ChallengesTableActionsComponent", () => {
     component.onDeleteExpiredChallenges();
 
     expect(reloadSpy).not.toHaveBeenCalled();
-    expect(mockNotificationService.openSnackBar).toHaveBeenCalledWith("Delete failed");
+    expect(mockNotificationService.error).toHaveBeenCalledWith("Delete failed");
   });
 
   it("should show fallback message when error has no api message", () => {
@@ -85,6 +85,6 @@ describe("ChallengesTableActionsComponent", () => {
     component.onDeleteExpiredChallenges();
 
     expect(reloadSpy).not.toHaveBeenCalled();
-    expect(mockNotificationService.openSnackBar).toHaveBeenCalledWith("Failed to delete expired challenges.");
+    expect(mockNotificationService.error).toHaveBeenCalledWith("Failed to delete expired challenges.");
   });
 });

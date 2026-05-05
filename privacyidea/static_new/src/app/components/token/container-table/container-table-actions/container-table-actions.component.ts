@@ -77,6 +77,9 @@ export class ContainerTableActionsComponent {
               selectedContainers.map((container) => this.containerService.deleteContainer(container.serial))
             ).subscribe({
               next: () => {
+                this.notificationService.success(
+                  $localize`Successfully deleted ${selectedContainers.length} containers.`
+                );
                 this.containerSelection.set([]);
                 this.containerService.containerResource.reload();
               },

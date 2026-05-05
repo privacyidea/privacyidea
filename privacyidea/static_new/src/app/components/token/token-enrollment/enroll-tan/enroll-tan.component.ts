@@ -20,10 +20,7 @@ import { Component, EventEmitter, inject, Input, OnInit, Output } from "@angular
 import { FormControl, FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 
-import {
-    TokenApiPayloadMapper,
-    TokenEnrollmentData
-} from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { TokenApiPayloadMapper, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { TanApiPayloadMapper, TanEnrollmentData } from "@app/mappers/token-api-payload/tan-token-api-payload.mapper";
 
 export interface TanEnrollmentOptions extends TokenEnrollmentData {

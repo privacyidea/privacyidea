@@ -18,13 +18,11 @@
  **/
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { signal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from "@angular/material/dialog";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
+import { ActivatedRoute, Router, convertToParamMap, provideRouter } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
-import { ContentService } from "@services/content/content.service";
 import { DialogService } from "@services/dialog/dialog.service";
 import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 import { SmtpService } from "@services/smtp/smtp.service";
@@ -36,28 +34,11 @@ import { NewSmtpServerComponent } from "./new-smtp-server.component";
 
 describe("NewSmtpServerComponent", () => {
   let smtpServiceMock: any;
-  let dialogRefMock: any;
-  let dialogMock: any;
-  let contentServiceMock: any;
+  let router: Router;
   let pendingChangesService: MockPendingChangesService;
   let dialogService: MockDialogService;
 
-  beforeEach(() => {
-    dialogRefMock = {
-      disableClose: false,
-      backdropClick: jest.fn().mockReturnValue(of()),
-      keydownEvents: jest.fn().mockReturnValue(of()),
-      close: jest.fn()
-    };
-
-    dialogMock = {
-      open: jest.fn().mockReturnValue({ afterClosed: () => of(true) })
-    };
-
-    contentServiceMock = {
-      routeUrl: signal(ROUTE_PATHS.EXTERNAL_SERVICES_SMTP)
-    };
-  });
+  beforeEach(() => {});
 
   afterEach(() => {
     jest.clearAllMocks();
@@ -73,24 +54,19 @@ describe("NewSmtpServerComponent", () => {
         providers: [
           provideHttpClient(),
           provideHttpClientTesting(),
-          { provide: MAT_DIALOG_DATA, useValue: null },
-          { provide: MatDialogRef, useValue: dialogRefMock },
+          provideRouter([]),
+          { provide: ActivatedRoute, useValue: { paramMap: of(convertToParamMap({})) } },
           { provide: SmtpService, useClass: MockSmtpService },
-          { provide: ContentService, useValue: contentServiceMock },
           { provide: PendingChangesService, useClass: MockPendingChangesService },
           { provide: DialogService, useClass: MockDialogService }
         ]
-      })
-        .overrideComponent(NewSmtpServerComponent, {
-          add: {
-            providers: [{ provide: MatDialog, useValue: dialogMock }]
-          }
-        })
-        .compileComponents();
+      }).compileComponents();
 
       smtpServiceMock = TestBed.inject(SmtpService);
       pendingChangesService = TestBed.inject(PendingChangesService) as unknown as MockPendingChangesService;
       dialogService = TestBed.inject(DialogService) as unknown as MockDialogService;
+      router = TestBed.inject(Router);
+      jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
       fixture = TestBed.createComponent(NewSmtpServerComponent);
       component = fixture.componentInstance;
       fixture.detectChanges();
@@ -137,7 +113,7 @@ describe("NewSmtpServerComponent", () => {
 
       expect(success).toBe(true);
       expect(smtpServiceMock.postSmtpServer).toHaveBeenCalled();
-      expect(dialogRefMock.close).toHaveBeenCalledWith(true);
+      expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.EXTERNAL_SERVICES_SMTP);
     });
 
     it("Save should handle error", async () => {
@@ -149,14 +125,12 @@ describe("NewSmtpServerComponent", () => {
         timeout: 5
       });
       smtpServiceMock.postSmtpServer.mockRejectedValue(new Error("Save failed"));
-      // Clear any previous calls to close from setup
-      dialogRefMock.close.mockClear();
 
       const success = await component.save();
 
       expect(success).toBe(false);
       expect(smtpServiceMock.postSmtpServer).toHaveBeenCalled();
-      expect(dialogRefMock.close).not.toHaveBeenCalled();
+      expect(router.navigateByUrl).not.toHaveBeenCalled();
     });
 
     it("should not call smtpService.postSmtpServer if the form is invalid", async () => {
@@ -170,7 +144,7 @@ describe("NewSmtpServerComponent", () => {
       expect(component.smtpForm.valid).toBe(false);
       await component.save();
       expect(smtpServiceMock.postSmtpServer).not.toHaveBeenCalled();
-      expect(dialogRefMock.close).not.toHaveBeenCalled();
+      expect(router.navigateByUrl).not.toHaveBeenCalled();
     });
 
     it("should call test when form is valid", async () => {
@@ -205,13 +179,11 @@ describe("NewSmtpServerComponent", () => {
         dialogService.openDialog.mockReturnValue(mockSaveExitDialogRef);
       });
 
-      it("should close directly when there are no changes", () => {
-        dialogRefMock.close.mockClear();
-
+      it("should navigate back directly when there are no changes", () => {
         component.onCancel();
 
         expect(dialogService.openDialog).not.toHaveBeenCalled();
-        expect(dialogRefMock.close).toHaveBeenCalled();
+        expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.EXTERNAL_SERVICES_SMTP);
       });
 
       it("should open SaveAndExitDialog when there are changes", () => {
@@ -247,14 +219,13 @@ describe("NewSmtpServerComponent", () => {
           timeout: 5
         });
         component.smtpForm.markAsDirty();
-        dialogRefMock.close.mockClear();
 
         component.onCancel();
 
         await new Promise((resolve) => setTimeout(resolve, 10));
 
         expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
-        expect(dialogRefMock.close).toHaveBeenCalled();
+        expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.EXTERNAL_SERVICES_SMTP);
       });
 
       it("should close when user selects 'save-exit' and save succeeds", async () => {
@@ -269,14 +240,12 @@ describe("NewSmtpServerComponent", () => {
         mockSaveExitDialogRef.afterClosed.mockReturnValue(of("save-exit"));
         pendingChangesService.save.mockReturnValue(Promise.resolve(true));
 
-        dialogRefMock.close.mockClear();
-
         component.onCancel();
 
         await new Promise((resolve) => setTimeout(resolve, 100));
 
         expect(pendingChangesService.clearAllRegistrations).toHaveBeenCalled();
-        expect(dialogRefMock.close).toHaveBeenCalled();
+        expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.EXTERNAL_SERVICES_SMTP);
       });
 
       it("should NOT close when user selects 'save-exit' but save fails", async () => {
@@ -292,14 +261,12 @@ describe("NewSmtpServerComponent", () => {
         mockSaveExitDialogRef.afterClosed.mockReturnValue(of("save-exit"));
         pendingChangesService.save.mockReturnValue(Promise.resolve(false));
 
-        dialogRefMock.close.mockClear();
-
         component.onCancel();
 
         await new Promise((resolve) => setTimeout(resolve, 100));
 
         expect(pendingChangesService.clearAllRegistrations).not.toHaveBeenCalled();
-        expect(dialogRefMock.close).not.toHaveBeenCalled();
+        expect(router.navigateByUrl).not.toHaveBeenCalled();
       });
 
       it("should do nothing when user selects 'save-exit' but canSave is false", async () => {
@@ -307,15 +274,13 @@ describe("NewSmtpServerComponent", () => {
         component.smtpForm.markAsDirty();
         mockSaveExitDialogRef.afterClosed.mockReturnValue(of("save-exit"));
 
-        dialogRefMock.close.mockClear();
-
         component.onCancel();
 
         await new Promise((resolve) => setTimeout(resolve, 100));
 
         expect(pendingChangesService.save).not.toHaveBeenCalled();
         expect(pendingChangesService.clearAllRegistrations).not.toHaveBeenCalled();
-        expect(dialogRefMock.close).not.toHaveBeenCalled();
+        expect(router.navigateByUrl).not.toHaveBeenCalled();
       });
 
       it("should do nothing when user closes dialog without selecting an option", async () => {
@@ -329,14 +294,12 @@ describe("NewSmtpServerComponent", () => {
         });
         component.smtpForm.markAsDirty();
 
-        dialogRefMock.close.mockClear();
-
         component.onCancel();
 
         await new Promise((resolve) => setTimeout(resolve, 10));
 
         expect(pendingChangesService.clearAllRegistrations).not.toHaveBeenCalled();
-        expect(dialogRefMock.close).not.toHaveBeenCalled();
+        expect(router.navigateByUrl).not.toHaveBeenCalled();
       });
     });
   });
@@ -359,18 +322,19 @@ describe("NewSmtpServerComponent", () => {
         providers: [
           provideHttpClient(),
           provideHttpClientTesting(),
-          { provide: MAT_DIALOG_DATA, useValue: editData },
-          { provide: MatDialogRef, useValue: dialogRefMock },
-          { provide: SmtpService, useClass: MockSmtpService },
-          { provide: ContentService, useValue: contentServiceMock }
+          provideRouter([]),
+          {
+            provide: ActivatedRoute,
+            useValue: { paramMap: of(convertToParamMap({ identifier: editData.identifier })) }
+          },
+          {
+            provide: SmtpService,
+            useValue: { smtpServers: () => [editData], postSmtpServer: jest.fn(), testSmtpServer: jest.fn() }
+          },
+          { provide: PendingChangesService, useClass: MockPendingChangesService },
+          { provide: DialogService, useClass: MockDialogService }
         ]
-      })
-        .overrideComponent(NewSmtpServerComponent, {
-          add: {
-            providers: [{ provide: MatDialog, useValue: dialogMock }]
-          }
-        })
-        .compileComponents();
+      }).compileComponents();
 
       editFixture = TestBed.createComponent(NewSmtpServerComponent);
       editComponent = editFixture.componentInstance;

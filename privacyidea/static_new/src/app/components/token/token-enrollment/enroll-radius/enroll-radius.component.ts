@@ -26,13 +26,10 @@ import { MatSelect } from "@angular/material/select";
 import { SystemService, SystemServiceInterface } from "@services/system/system.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 
+import { TokenApiPayloadMapper, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import {
-    TokenApiPayloadMapper,
-    TokenEnrollmentData
-} from "@app/mappers/token-api-payload/_token-api-payload.mapper";
-import {
-    RadiusApiPayloadMapper,
-    RadiusEnrollmentData
+  RadiusApiPayloadMapper,
+  RadiusEnrollmentData
 } from "@app/mappers/token-api-payload/radius-token-api-payload.mapper";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { RADIUS_SERVER } from "@constants/token.constants";

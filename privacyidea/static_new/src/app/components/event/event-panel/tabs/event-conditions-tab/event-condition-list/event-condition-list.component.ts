@@ -18,16 +18,16 @@
  **/
 
 import {
-    Component,
-    computed,
-    effect,
-    ElementRef,
-    inject,
-    input,
-    linkedSignal,
-    output,
-    QueryList,
-    ViewChildren
+  Component,
+  computed,
+  effect,
+  ElementRef,
+  inject,
+  input,
+  linkedSignal,
+  output,
+  QueryList,
+  ViewChildren
 } from "@angular/core";
 import { FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { MatIconButton } from "@angular/material/button";

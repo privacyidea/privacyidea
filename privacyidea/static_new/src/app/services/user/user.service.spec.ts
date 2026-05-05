@@ -31,13 +31,13 @@ import { ROUTE_PATHS } from "@app/route_paths";
 import { environment } from "@env/environment";
 import { NotificationService } from "@services/notification/notification.service";
 import {
-    MockContentService,
-    MockHttpResourceRef,
-    MockLocalService,
-    MockNotificationService,
-    MockPiResponse,
-    MockRealmService,
-    MockTokenService
+  MockContentService,
+  MockHttpResourceRef,
+  MockLocalService,
+  MockNotificationService,
+  MockPiResponse,
+  MockRealmService,
+  MockTokenService
 } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 
@@ -579,9 +579,7 @@ describe("UserService", () => {
         { status: 500, statusText: "Server Error" }
       );
       expect(resultValue).toBe(false);
-      expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith(
-        "Failed to create user fail-user. fail" + " message"
-      );
+      expect(notificationServiceMock.error).toHaveBeenCalledWith("Failed to create user fail-user. fail" + " message");
     });
   });
 
@@ -622,7 +620,7 @@ describe("UserService", () => {
       const req = httpMock.expectOne((r) => r.method === "PUT" && r.url.includes("/user/"));
       req.flush({ result: { status: false, error: { message: "fail" } } }, { status: 500, statusText: "Server Error" });
       expect(resultValue).toBe(false);
-      expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith("Failed to update user fail-user. fail");
+      expect(notificationServiceMock.error).toHaveBeenCalledWith("Failed to update user fail-user. fail");
     });
   });
 
@@ -661,7 +659,7 @@ describe("UserService", () => {
       const req = httpMock.expectOne((r) => r.method === "DELETE" && r.url.includes("/user/"));
       req.flush({ result: { error: { message: "fail" } } }, { status: 500, statusText: "Server Error" });
       expect(resultValue).toBe(false);
-      expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith("Failed to delete user fail-user. fail");
+      expect(notificationServiceMock.error).toHaveBeenCalledWith("Failed to delete user fail-user. fail");
     });
   });
 });

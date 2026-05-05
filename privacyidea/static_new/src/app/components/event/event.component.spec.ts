@@ -20,6 +20,7 @@
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 
 import { provideHttpClient } from "@angular/common/http";
+import { provideRouter, Router } from "@angular/router";
 import { EventHandler, EventService } from "@services/event/event.service";
 import { MockEventService } from "@testing/mock-services/mock-event-service";
 import { EventComponent } from "./event.component";
@@ -32,7 +33,7 @@ describe("EventComponent", () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [EventComponent],
-      providers: [provideHttpClient(), { provide: EventService, useClass: MockEventService }]
+      providers: [provideHttpClient(), provideRouter([]), { provide: EventService, useClass: MockEventService }]
     }).compileComponents();
 
     fixture = TestBed.createComponent(EventComponent);
@@ -83,9 +84,11 @@ describe("EventComponent", () => {
     expect(ds.filter).toBe("test");
   });
 
-  it("should open dialog for edit event handler", () => {
-    const spy = jest.spyOn(component["dialog"], "open");
+  it("onEditEventHandler should navigate to edit event handler route", () => {
+    const router = TestBed.inject(Router);
+    const spy = jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
     const handler = {
+      id: 1,
       name: "foo",
       event: [],
       handlermodule: "",
@@ -100,8 +103,9 @@ describe("EventComponent", () => {
     expect(spy).toHaveBeenCalled();
   });
 
-  it("should open dialog for create new event handler", () => {
-    const spy = jest.spyOn(component["dialog"], "open");
+  it("should navigate to create new event handler route", () => {
+    const router = TestBed.inject(Router);
+    const spy = jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
     component.onCreateNewEventHandler();
     expect(spy).toHaveBeenCalled();
   });
@@ -267,7 +271,7 @@ describe("EventComponent", () => {
     // Simulate eventHandlers signal update
     const eventHandlers: EventHandler[] = [
       {
-        id: "1",
+        id: 1,
         name: "a",
         event: [],
         handlermodule: "",
@@ -279,7 +283,7 @@ describe("EventComponent", () => {
         ordering: 1
       },
       {
-        id: "2",
+        id: 2,
         name: "b",
         event: [],
         handlermodule: "",
@@ -300,7 +304,7 @@ describe("EventComponent", () => {
   it("should return previous value for totalLength if eventHandlers is null/undefined", () => {
     const eventHandlers: EventHandler[] = [
       {
-        id: "1",
+        id: 1,
         name: "a",
         event: [],
         handlermodule: "",

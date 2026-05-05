@@ -104,12 +104,12 @@ describe("LostTokenComponent", () => {
     expect(isLost()).toBe(true);
     expect(component.lostTokenData).toBeTruthy();
     expect(component.lostTokenData?.serial).toBe("SER-123");
-    expect(notification.openSnackBar).toHaveBeenCalledWith("Token marked as lost: SER-123");
+    expect(notification.success).toHaveBeenCalledWith("Token marked as lost: SER-123");
   });
 
   it("tokenSelected() without value shows warning and does not close dialog", () => {
     component.tokenSelected(undefined);
-    expect(notification.openSnackBar).toHaveBeenCalledWith("No token selected, please select a token.");
+    expect(notification.warning).toHaveBeenCalledWith("No token selected, please select a token.");
     expect(dialogRefMock.close).not.toHaveBeenCalled();
   });
 

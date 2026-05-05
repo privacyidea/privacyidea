@@ -19,26 +19,27 @@
 
 import { Component, computed, inject, signal, ViewChild, WritableSignal } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
-import { MatDialog, MatDialogModule } from "@angular/material/dialog";
+import { MatTooltipModule } from "@angular/material/tooltip";
+import { Router } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import {
+  PrivacyideaServer,
+  PrivacyideaServerService,
+  PrivacyideaServerServiceInterface
+} from "@services/privacyidea-server/privacyidea-server.service";
+
 import { MatIconModule } from "@angular/material/icon";
 import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
 import { MatPaginator } from "@angular/material/paginator";
 import { MatSort, MatSortModule } from "@angular/material/sort";
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
-import { MatTooltipModule } from "@angular/material/tooltip";
-import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
+import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
+import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
-import {
-    PrivacyideaServer,
-    PrivacyideaServerService,
-    PrivacyideaServerServiceInterface
-} from "@services/privacyidea-server/privacyidea-server.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
-import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
-import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
-import { SimpleConfirmationDialogComponent } from "../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
-import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
-import { NewPrivacyideaServerComponent } from "./new-privacyidea-server/new-privacyidea-server.component";
 
 @Component({
   selector: "app-privacyidea-servers",
@@ -49,7 +50,6 @@ import { NewPrivacyideaServerComponent } from "./new-privacyidea-server/new-priv
     MatSortModule,
     MatIconModule,
     MatButtonModule,
-    MatDialogModule,
     MatTooltipModule,
     ScrollToTopDirective,
     MatFormField,
@@ -63,10 +63,10 @@ import { NewPrivacyideaServerComponent } from "./new-privacyidea-server/new-priv
 })
 export class PrivacyideaServersComponent {
   protected readonly privacyideaServerService: PrivacyideaServerServiceInterface = inject(PrivacyideaServerService);
-  protected readonly dialog: MatDialog = inject(MatDialog);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
+  private readonly router = inject(Router);
 
   filterString = signal<string>("");
   pageSizeOptions = this.tableUtilsService.pageSizeOptions;
@@ -89,12 +89,11 @@ export class PrivacyideaServersComponent {
   });
 
   openEditDialog(server?: PrivacyideaServer): void {
-    this.dialog.open(NewPrivacyideaServerComponent, {
-      data: server ? { ...server } : null,
-      width: "auto",
-      maxWidth: "65vw",
-      maxHeight: "90vh"
-    });
+    if (server) {
+      this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_PRIVACYIDEA_DETAILS + server.identifier);
+    } else {
+      this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_PRIVACYIDEA_NEW);
+    }
   }
 
   deleteServer(server: PrivacyideaServer): void {

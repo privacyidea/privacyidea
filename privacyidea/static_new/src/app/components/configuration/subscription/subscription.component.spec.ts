@@ -147,7 +147,7 @@ describe("SubscriptionComponent", () => {
     component.upload(event);
 
     expect(subscriptionService.uploadSubscriptionFile).toHaveBeenCalledWith(file);
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith("File uploaded successfully.");
+    expect(notificationService.success).toHaveBeenCalledWith("File uploaded successfully.");
     expect(subscriptionService.reload).toHaveBeenCalled();
   });
 
@@ -170,7 +170,7 @@ describe("SubscriptionComponent", () => {
       }
     });
     expect(subscriptionService.deleteSubscription).toHaveBeenCalledWith("app1");
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith("Subscription deleted successfully.");
+    expect(notificationService.success).toHaveBeenCalledWith("Subscription deleted successfully.");
     expect(subscriptionService.reload).toHaveBeenCalled();
   });
 
@@ -184,7 +184,7 @@ describe("SubscriptionComponent", () => {
 
     expect(dialogService.openDialog).toHaveBeenCalled();
     expect(subscriptionService.deleteSubscription).not.toHaveBeenCalled();
-    expect(notificationService.openSnackBar).not.toHaveBeenCalled();
+    expect(notificationService.warning).not.toHaveBeenCalled();
     expect(subscriptionService.reload).not.toHaveBeenCalled();
   });
 

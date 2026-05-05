@@ -166,7 +166,7 @@ export class CreateUserDialogComponent extends PendingChangesDialogComponent<Cre
   create() {
     if (this.inputGroup.invalid) {
       this.inputGroup.markAllAsTouched();
-      this.notificationService.openSnackBar($localize`Please fill in all required fields.`);
+      this.notificationService.warning($localize`Please fill in all required fields.`);
       return;
     }
     this.editedUserData().username = this.username.value;

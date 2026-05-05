@@ -1,32 +1,33 @@
 # SPDX-FileCopyrightText: 2020 NetKnights GmbH <https://netknights.it>
 # SPDX-License-Identifier: AGPL-3.0-or-later
+import datetime
+import logging
 import time
 from base64 import b32encode
+
+from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.primitives.asymmetric import rsa, padding
 from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
-from cryptography.hazmat.backends import default_backend
-import datetime
-import logging
-
 from testfixtures import LogCapture
 
-from .base import MyApiTestCase
-from privacyidea.lib.user import User
-from privacyidea.lib.token import (get_tokens, init_token, remove_token,
-                                   get_one_token, enable_token)
-from privacyidea.lib.tokenclass import ClientMode, RolloutState
-from privacyidea.lib.policy import SCOPE, set_policy, delete_policy
-from privacyidea.lib.tokens.pushtoken import (PushAction, strip_pem_headers, POLL_ONLY,
-                                              DEFAULT_CHALLENGE_TEXT, PushMode)
 from privacyidea.lib.challenge import get_challenges
-from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway
-from privacyidea.lib.smsprovider.FirebaseProvider import FirebaseConfig
-from privacyidea.lib.utils import to_bytes, to_unicode, AUTH_RESPONSE
 from privacyidea.lib.policies.actions import PolicyAction
+from privacyidea.lib.policy import SCOPE, set_policy, delete_policy
 from privacyidea.lib.realm import set_realm, set_default_realm, delete_realm
 from privacyidea.lib.resolver import save_resolver, delete_resolver
+from privacyidea.lib.smsprovider.FirebaseProvider import FirebaseConfig
+from privacyidea.lib.smsprovider.SMSProvider import set_smsgateway
+from privacyidea.lib.token import (get_tokens, init_token, remove_token,
+                                   get_one_token, enable_token)
+from privacyidea.lib.tokenclass import ClientMode
+from privacyidea.lib.tokenrolloutstate import RolloutState
+from privacyidea.lib.tokens.pushtoken import (PushAction, strip_pem_headers, POLL_ONLY,
+                                              DEFAULT_CHALLENGE_TEXT, PushMode)
+from privacyidea.lib.user import User
+from privacyidea.lib.utils import to_bytes, to_unicode, AUTH_RESPONSE
 from . import ldap3mock
+from .base import MyApiTestCase
 
 PWFILE = "tests/testdata/passwords"
 HOSTSFILE = "tests/testdata/hosts"
@@ -109,7 +110,7 @@ class PushAPITestCase(MyApiTestCase):
             self.assertEqual(res.status_code, 200)
             detail = res.json.get("detail")
             serial = detail.get("serial")
-            self.assertEqual(detail.get("rollout_state"), "clientwait")
+            self.assertEqual(detail.get("rollout_state"), RolloutState.CLIENTWAIT)
             self.assertTrue("pushurl" in detail)
             # check that the new URL contains the serial number
             self.assertTrue("&serial=PIPU" in detail.get("pushurl").get("value"))
@@ -128,7 +129,7 @@ class PushAPITestCase(MyApiTestCase):
             detail = res.json.get("detail")
             # still the same serial number
             self.assertEqual(serial, detail.get("serial"))
-            self.assertEqual(detail.get("rollout_state"), "enrolled")
+            self.assertEqual(detail.get("rollout_state"), RolloutState.ENROLLED)
             # Now the smartphone gets a public key from the server
             augmented_pubkey = f"-----BEGIN RSA PUBLIC KEY-----\n{detail.get('public_key')}\n-----END RSA PUBLIC KEY-----\n"
             parsed_server_pubkey = serialization.load_pem_public_key(
@@ -141,7 +142,7 @@ class PushAPITestCase(MyApiTestCase):
             tokens = get_tokens(serial=serial)
             self.assertEqual(len(tokens), 1)
             token_obj = tokens[0]
-            self.assertEqual(token_obj.token.rollout_state, "enrolled")
+            self.assertEqual(token_obj.token.rollout_state, RolloutState.ENROLLED)
             self.assertTrue(token_obj.token.active)
             tokeninfo = token_obj.get_tokeninfo()
             self.assertEqual(tokeninfo.get("public_key_smartphone"), self.smartphone_public_key_pem_urlsafe)
@@ -215,7 +216,7 @@ class PushAPITestCase(MyApiTestCase):
             self.assertEqual(res.status_code, 200)
             detail = res.json.get("detail")
             serial = detail.get("serial")
-            self.assertEqual(detail.get("rollout_state"), "clientwait")
+            self.assertEqual(detail.get("rollout_state"), RolloutState.CLIENTWAIT)
             self.assertTrue("pushurl" in detail)
             # check that the new URL contains the serial number
             self.assertTrue("&serial=PIPU" in detail.get("pushurl").get("value"))
@@ -234,7 +235,7 @@ class PushAPITestCase(MyApiTestCase):
             detail = res.json.get("detail")
             # still the same serial number
             self.assertEqual(serial, detail.get("serial"))
-            self.assertEqual(detail.get("rollout_state"), "enrolled")
+            self.assertEqual(detail.get("rollout_state"), RolloutState.ENROLLED)
             # Now the smartphone gets a public key from the server
             augmented_pubkey = f"-----BEGIN RSA PUBLIC KEY-----\n{detail.get('public_key')}\n-----END RSA PUBLIC KEY-----\n"
             parsed_server_pubkey = serialization.load_pem_public_key(
@@ -247,7 +248,7 @@ class PushAPITestCase(MyApiTestCase):
             tokens = get_tokens(serial=serial)
             self.assertEqual(len(tokens), 1)
             token_obj = tokens[0]
-            self.assertEqual(token_obj.token.rollout_state, "enrolled")
+            self.assertEqual(token_obj.token.rollout_state, RolloutState.ENROLLED)
             self.assertTrue(token_obj.token.active)
             tokeninfo = token_obj.get_tokeninfo()
             self.assertEqual(tokeninfo.get("public_key_smartphone"), self.smartphone_public_key_pem_urlsafe)
@@ -324,7 +325,7 @@ class PushAPITestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertEqual(res.status_code, 200)
             detail = res.json.get("detail")
-            self.assertEqual(detail.get("rollout_state"), "clientwait")
+            self.assertEqual(detail.get("rollout_state"), RolloutState.CLIENTWAIT)
             self.assertTrue("pushurl" in detail)
             # check that the new URL contains the serial number
             self.assertTrue("&serial=PIPU" in detail.get("pushurl").get("value"))
@@ -461,7 +462,7 @@ class PushAPITestCase(MyApiTestCase):
             detail = res.json.get("detail")
             # still the same serial number
             self.assertEqual(serial, detail.get("serial"))
-            self.assertEqual(detail.get("rollout_state"), "enrolled")
+            self.assertEqual(detail.get("rollout_state"), RolloutState.ENROLLED)
             # Now the smartphone gets a public key from the server
             augmented_pubkey = f"-----BEGIN RSA PUBLIC KEY-----\n{detail.get('public_key')}\n-----END RSA PUBLIC KEY-----\n"
             parsed_server_pubkey = serialization.load_pem_public_key(
@@ -474,7 +475,7 @@ class PushAPITestCase(MyApiTestCase):
             toks = get_tokens(serial=serial)
             self.assertEqual(len(toks), 1)
             token_obj = toks[0]
-            self.assertEqual(token_obj.token.rollout_state, "enrolled")
+            self.assertEqual(token_obj.token.rollout_state, RolloutState.ENROLLED)
             self.assertTrue(token_obj.token.active)
             tokeninfo = token_obj.get_tokeninfo()
             self.assertEqual(tokeninfo.get("public_key_smartphone"), self.smartphone_public_key_pem_urlsafe)
@@ -1377,7 +1378,7 @@ class PushAPITestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertEqual(200, res.status_code, res)
             # Check that we actually waited
-            self.assertGreater(time.time() - start_time, push_wait_time_seconds-1)
+            self.assertGreater(time.time() - start_time, push_wait_time_seconds - 1)
             result = res.json.get("result")
             # The challenge was not answered in time, so we get reject
             self.assertTrue(result.get("status"))

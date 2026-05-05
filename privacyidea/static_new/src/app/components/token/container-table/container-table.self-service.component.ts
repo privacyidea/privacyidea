@@ -32,6 +32,7 @@ import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-t
 import { ContainerService, ContainerServiceInterface } from "@services/container/container.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 import { ContainerTableComponent } from "./container-table.component";
@@ -60,6 +61,7 @@ export class ContainerTableSelfServiceComponent extends ContainerTableComponent 
   protected override readonly tokenService: TokenServiceInterface = inject(TokenService);
   protected override readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
   protected override readonly contentService: ContentServiceInterface = inject(ContentService);
+  protected readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
 
   readonly columnKeysMapSelfService = [
@@ -94,6 +96,7 @@ export class ContainerTableSelfServiceComponent extends ContainerTableComponent 
           if (result) {
             this.containerService.deleteContainer(serial).subscribe({
               next: () => {
+                this.notificationService.success($localize`Container deleted successfully.`);
                 this.containerService.containerResource.reload();
               }
             });

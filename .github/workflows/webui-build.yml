@@ -1,0 +1,40 @@
+# SPDX-FileCopyrightText: (C) 2014 NetKnights GmbH <https://netknights.it>
+# SPDX-License-Identifier: CC0-1.0
+#
+name: Build WebUI
+on:
+  pull_request:
+    branches:
+      - 'master'
+      - 'branch-*'
+    paths:
+      - 'privacyidea/static_new/**'
+  schedule:
+    # Nightly at 01:00 UTC
+    - cron: '0 1 * * *'
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    working-directory: ./privacyidea/static_new
+
+jobs:
+  build-webui:
+    name: npm run build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - name: Set up Node.js for building the new WebUI
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: lts/*  # Use the latest LTS-release
+          cache: npm
+          cache-dependency-path: privacyidea/static_new/package-lock.json
+      - name: Install Node.js dependencies
+        run: npm ci
+      - name: Build the new WebUI
+        run: npm run build

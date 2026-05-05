@@ -37,10 +37,7 @@ import { SelectedUserAssignDialogComponent } from "./selected-user-attach-dialog
 import { MatMenuModule } from "@angular/material/menu";
 import { Router, RouterLink } from "@angular/router";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
-import {
-    DocumentationService,
-    DocumentationServiceInterface
-} from "@services/documentation/documentation.service";
+import { DocumentationService, DocumentationServiceInterface } from "@services/documentation/documentation.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 
 @Component({
@@ -163,7 +160,7 @@ export class TokenTableActionsComponent {
           if (err.error?.result?.error?.message) {
             message = err.error.result.error.message;
           }
-          this.notificationService.openSnackBar(message);
+          this.notificationService.error(message);
           return EMPTY;
         })
       )
@@ -208,7 +205,7 @@ export class TokenTableActionsComponent {
                 }
 
                 if (messages.length > 0) {
-                  this.notificationService.openSnackBar(messages.join("\n"));
+                  this.notificationService.success(messages.join("\n"));
                 }
                 this.tokenService.tokenResource.reload();
               },
@@ -217,7 +214,7 @@ export class TokenTableActionsComponent {
                 if (err.error?.result?.error?.message) {
                   message = err.error.result.error.message;
                 }
-                this.notificationService.openSnackBar(message);
+                this.notificationService.error(message);
               }
             });
           }

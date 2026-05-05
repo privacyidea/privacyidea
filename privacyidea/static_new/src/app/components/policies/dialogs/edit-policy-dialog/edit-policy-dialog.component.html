@@ -17,16 +17,39 @@
  SPDX-License-Identifier: AGPL-3.0-or-later
  -->
 
-<app-dialog-wrapper
-  class="dialog-content"
-  [title]="data.mode === 'create' ? 'Create Policy' : 'Edit Policy'"
-  (close)="close()"
-  [showCancelButton]="true"
-  [handleCloseExternally]="true"
-  [actions]="actions()"
-  (onAction)="onAction($event)">
+<div
+  #scrollContainer
+  class="edit-policy-layout">
+  <h3 class="margin-8">
+    {{ title() }}
+  </h3>
+
+  <div
+    #stickySentinel
+    class="sticky-sentinel"></div>
+
+  <div
+    #stickyHeader
+    class="sticky-header">
+    <div class="sticky-controls ali-center">
+      <button
+        (click)="onCancel()"
+        class="action-button-secondary button-width-s"
+        mat-stroked-button>
+        <span i18n>Cancel</span>
+      </button>
+      <button
+        (click)="onSave()"
+        [disabled]="!canSave()"
+        class="action-button-primary button-width-s"
+        mat-stroked-button>
+        <mat-icon>save</mat-icon>
+        <span i18n>Save</span>
+      </button>
+    </div>
+  </div>
+
   <app-policy-panel-edit
     [policy]="editedPolicy()"
-    (onPolicyEdit)="addPolicyEdit($event)">
-  </app-policy-panel-edit>
-</app-dialog-wrapper>
+    (onPolicyEdit)="addPolicyEdit($event)"></app-policy-panel-edit>
+</div>

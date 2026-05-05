@@ -18,10 +18,10 @@
  **/
 import { Injectable } from "@angular/core";
 import {
-    BaseApiPayloadMapper,
-    TokenApiPayloadMapper,
-    TokenEnrollmentData,
-    TokenEnrollmentPayload
+  BaseApiPayloadMapper,
+  TokenApiPayloadMapper,
+  TokenEnrollmentData,
+  TokenEnrollmentPayload
 } from "./_token-api-payload.mapper";
 
 export interface VascoEnrollmentData extends TokenEnrollmentData {

@@ -29,10 +29,10 @@ import { MatTableModule } from "@angular/material/table";
 
 import { MatButtonToggle, MatButtonToggleGroup } from "@angular/material/button-toggle";
 import {
-    MatAccordion,
-    MatExpansionPanel,
-    MatExpansionPanelHeader,
-    MatExpansionPanelTitle
+  MatAccordion,
+  MatExpansionPanel,
+  MatExpansionPanelHeader,
+  MatExpansionPanelTitle
 } from "@angular/material/expansion";
 import { MatError } from "@angular/material/form-field";
 import { MatDivider } from "@angular/material/list";

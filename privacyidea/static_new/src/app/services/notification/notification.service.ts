@@ -26,7 +26,9 @@ export interface NotificationServiceInterface {
   timerSub: Subscription;
   startTime: number;
 
-  openSnackBar(message: string): void;
+  success(message: string, options?: { duration?: number }): void;
+  error(message: string, options?: { duration?: number }): void;
+  warning(message: string, options?: { duration?: number }): void;
   handleResourceError(error: Error | undefined, subject: string): void;
 }
 
@@ -35,52 +37,66 @@ export interface NotificationServiceInterface {
 })
 export class NotificationService implements NotificationServiceInterface {
   readonly snackBar = inject(MatSnackBar);
-  private totalDuration: number = 5000;
-  remainingTime: number = this.totalDuration;
+  private _totalDuration: number = 5000;
+  remainingTime: number = this._totalDuration;
   timerSub: Subscription = new Subscription();
   startTime: number = 0;
 
-  openSnackBar(message: string, duration?: number): void {
+  success(message: string, options?: { duration?: number }): void {
+    this._open(message, "success-snackbar", options?.duration);
+  }
+
+  error(message: string, options?: { duration?: number }): void {
+    this._open(message, "error-snackbar", options?.duration);
+  }
+
+  warning(message: string, options?: { duration?: number }): void {
+    this._open(message, "warning-snackbar", options?.duration);
+  }
+
+  private _open(message: string, panelClass: string, duration?: number): void {
+    const totalDuration = duration ?? this._totalDuration;
     const snackBarRef = this.snackBar.open(message, "🗙", {
       horizontalPosition: "center",
       verticalPosition: "bottom",
-      duration: undefined
+      duration: undefined,
+      panelClass: [panelClass]
     });
 
-    this.remainingTime = duration ?? this.totalDuration;
+    this.remainingTime = totalDuration;
     this.startTime = Date.now();
-    this.startTimer(snackBarRef);
+    this._startTimer(snackBarRef);
 
     snackBarRef.afterOpened().subscribe(() => {
       const snackBarElement = (snackBarRef.containerInstance as any)._elementRef.nativeElement;
-      snackBarElement.addEventListener("mouseenter", () => this.onMouseEnter());
-      snackBarElement.addEventListener("mouseleave", () => this.onMouseLeave(snackBarRef));
+      snackBarElement.addEventListener("mouseenter", () => this._onMouseEnter());
+      snackBarElement.addEventListener("mouseleave", () => this._onMouseLeave(snackBarRef));
     });
   }
 
-  private startTimer<T>(snackBarRef: MatSnackBarRef<T>): void {
-    this.clearTimer();
+  private _startTimer<T>(snackBarRef: MatSnackBarRef<T>): void {
+    this._clearTimer();
     this.timerSub = timer(this.remainingTime).subscribe(() => {
       snackBarRef.dismiss();
     });
   }
 
-  private clearTimer(): void {
+  private _clearTimer(): void {
     if (this.timerSub) {
       this.timerSub.unsubscribe();
     }
   }
 
-  private onMouseEnter(): void {
-    this.clearTimer();
+  private _onMouseEnter(): void {
+    this._clearTimer();
     const elapsed = Date.now() - this.startTime;
     this.remainingTime = Math.max(this.remainingTime - elapsed, 0);
   }
 
-  private onMouseLeave<T>(snackBarRef: MatSnackBarRef<T>): void {
+  private _onMouseLeave<T>(snackBarRef: MatSnackBarRef<T>): void {
     if (this.remainingTime > 0) {
       this.startTime = Date.now();
-      this.startTimer(snackBarRef);
+      this._startTimer(snackBarRef);
     }
   }
 
@@ -88,7 +104,7 @@ export class NotificationService implements NotificationServiceInterface {
     if (error) {
       const err = error as HttpErrorResponse;
       const message = err.error?.result?.error?.message || error.message;
-      this.openSnackBar(`Failed to get ${subject}. ${message}`);
+      this.error(`Failed to get ${subject}. ${message}`);
     }
   }
 }

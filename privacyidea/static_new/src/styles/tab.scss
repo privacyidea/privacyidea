@@ -12,10 +12,8 @@ $list-width: 240px;
     padding: 0;
   }
 
-  ::ng-deep {
-    .mat-mdc-tab {
-      padding-left: $tab-padding;
-      padding-right: $tab-padding;
-    }
+  .mat-mdc-tab {
+    padding-left: $tab-padding;
+    padding-right: $tab-padding;
   }
 }

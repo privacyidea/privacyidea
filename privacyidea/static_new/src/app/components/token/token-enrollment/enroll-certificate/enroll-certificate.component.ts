@@ -26,8 +26,8 @@ import { MatInput } from "@angular/material/input";
 import { MatSelect } from "@angular/material/select";
 import { TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import {
-    CertificateApiPayloadMapper,
-    CertificateEnrollmentData
+  CertificateApiPayloadMapper,
+  CertificateEnrollmentData
 } from "@app/mappers/token-api-payload/certificate-token-api-payload.mapper";
 import { ClearButtonComponent } from "@components/shared/clear-button/clear-button.component";
 import { SystemService, SystemServiceInterface } from "@services/system/system.service";

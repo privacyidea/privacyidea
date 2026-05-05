@@ -28,8 +28,8 @@ import { PendingChangesDialogComponent } from "@components/shared/dialog/abstrac
 import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
 import { DialogAction } from "@models/dialog";
 import {
-    ContainerTemplateService,
-    ContainerTemplateServiceInterface
+  ContainerTemplateService,
+  ContainerTemplateServiceInterface
 } from "@services/container-template/container-template.service";
 import { ContainerTemplate } from "@services/container/container.service";
 import { deepCopy } from "@utils/deep-copy.utils";
@@ -60,6 +60,8 @@ export class ContainerTemplateCopyDialogComponent extends PendingChangesDialogCo
   });
 
   // --- Computed & Matchers ---
+  readonly nameInvalidPattern = computed(() => !/^[a-zA-Z0-9._-]*$/.test(this.template().name));
+
   readonly actions = computed<DialogAction<string>[]>(() => [
     {
       label: $localize`Copy Template`,
@@ -72,7 +74,7 @@ export class ContainerTemplateCopyDialogComponent extends PendingChangesDialogCo
   readonly canSave = computed(() => {
     const newName = this.template().name.trim();
     const originalName = this.data;
-    return newName.length > 0 && !this.nameConflict() && newName !== originalName;
+    return newName.length > 0 && !this.nameConflict() && !this.nameInvalidPattern() && newName !== originalName;
   });
 
   readonly isDirty = computed(() => {
@@ -85,7 +87,8 @@ export class ContainerTemplateCopyDialogComponent extends PendingChangesDialogCo
   });
 
   readonly nameErrorMatcher = {
-    isErrorState: () => this.nameConflict()
+    isErrorState: () =>
+      this.nameConflict() || (this.isNameDirty() && this.template().name.length > 0 && this.nameInvalidPattern())
   };
 
   // --- Methods ---

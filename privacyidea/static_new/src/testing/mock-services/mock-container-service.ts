@@ -23,12 +23,12 @@ import { Sort } from "@angular/material/sort";
 import { PiResponse } from "@app/app.component";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import {
-    ContainerDetailData,
-    ContainerDetails,
-    ContainerServiceInterface,
-    ContainerTemplate,
-    ContainerType,
-    ContainerTypes
+  ContainerDetailData,
+  ContainerDetails,
+  ContainerServiceInterface,
+  ContainerTemplate,
+  ContainerType,
+  ContainerTypes
 } from "@services/container/container.service";
 import { MockHttpResourceRef, MockPiResponse } from "./mock-utils";
 

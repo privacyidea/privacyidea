@@ -26,10 +26,10 @@ import { MatList, MatListItem } from "@angular/material/list";
 import { MatCell, MatColumnDef, MatRow, MatTableModule } from "@angular/material/table";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import {
-    MachineService,
-    MachineServiceInterface,
-    TokenApplication,
-    TokenApplications
+  MachineService,
+  MachineServiceInterface,
+  TokenApplication,
+  TokenApplications
 } from "@services/machine/machine.service";
 
 @Component({

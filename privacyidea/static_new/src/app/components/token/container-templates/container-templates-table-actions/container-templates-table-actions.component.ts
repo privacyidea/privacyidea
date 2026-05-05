@@ -24,8 +24,8 @@ import { ContainerTemplateCopyDialogComponent } from "@components/token/containe
 import { ContainerTemplateDeleteDialogComponent } from "@components/token/container-templates/dialogs/container-template-delete-dialog/container-template-delete-dialog.component";
 import { ContainerTemplateEditDialogComponent } from "@components/token/container-templates/dialogs/container-template-edit-dialog/container-template-edit-dialog.component";
 import {
-    ContainerTemplateService,
-    ContainerTemplateServiceInterface
+  ContainerTemplateService,
+  ContainerTemplateServiceInterface
 } from "@services/container-template/container-template.service";
 import { ContainerTemplate } from "@services/container/container.service";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";

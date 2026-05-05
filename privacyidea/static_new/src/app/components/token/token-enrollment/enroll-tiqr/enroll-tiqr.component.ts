@@ -21,14 +21,8 @@ import { FormControl, FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { SystemService, SystemServiceInterface } from "@services/system/system.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 
-import {
-    TokenApiPayloadMapper,
-    TokenEnrollmentData
-} from "@app/mappers/token-api-payload/_token-api-payload.mapper";
-import {
-    TiqrApiPayloadMapper,
-    TiqrEnrollmentData
-} from "@app/mappers/token-api-payload/tiqr-token-api-payload.mapper";
+import { TokenApiPayloadMapper, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { TiqrApiPayloadMapper, TiqrEnrollmentData } from "@app/mappers/token-api-payload/tiqr-token-api-payload.mapper";
 import { TIQR_INFO_URL, TIQR_LOGO_URL, TIQR_REG_SERVER } from "@constants/token.constants";
 
 export interface TiqrEnrollmentOptions extends TokenEnrollmentData {

@@ -118,7 +118,7 @@ describe("TokenImportComponent", () => {
     );
     component.importTokens();
     expect(tokenService.importTokens).toHaveBeenCalled();
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith("2/3 tokens imported successfully.");
+    expect(notificationService.success).toHaveBeenCalledWith("2/3 tokens imported successfully.");
   });
 
   it("should not call importTokens if form is invalid", () => {

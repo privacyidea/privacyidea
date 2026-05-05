@@ -47,7 +47,7 @@ const config: Config = {
   coverageReporters: [
     //   "json",
     "text",
-    //   "lcov",
+    "lcov",
     //   "clover"
     "html"
   ],
@@ -169,7 +169,7 @@ const config: Config = {
   // snapshotSerializers: [],
 
   // The test environment that will be used for testing
-  testEnvironment: "jsdom"
+  testEnvironment: "jsdom",
 
   // Options that will be passed to the testEnvironment
   // testEnvironmentOptions: {},
@@ -207,6 +207,8 @@ const config: Config = {
   //   "/node_modules/",
   //   "\\.pnp\\.[^\\/]+$"
   // ],
+  // uuid v14 dropped its CommonJS build and is now ESM-only, so it must be transformed by Jest
+  transformIgnorePatterns: ["node_modules/(?!(.*\\.mjs$|@angular/common/locales/.*\\.js$|uuid))"],
 
   // An array of regexp pattern strings that are matched against all modules before the module loader will automatically return a mock for them
   // unmockedModulePathPatterns: undefined,

@@ -25,17 +25,17 @@ import { MatExpansionModule, MatExpansionPanel } from "@angular/material/expansi
 import { MatIcon, MatIconModule } from "@angular/material/icon";
 import { MatInputModule } from "@angular/material/input";
 import { MatSelectModule } from "@angular/material/select";
+import { MachineResolverHostsTabComponent } from "@components/machine-resolver/machine-resolver-hosts-tab/machine-resolver-hosts-tab.component";
+import { MachineResolverLdapTabComponent } from "@components/machine-resolver/machine-resolver-ldap-tab/machine-resolver-ldap-tab.component";
+import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 import {
-    MachineResolver,
-    MachineResolverData,
-    MachineResolverService,
-    MachineResolverServiceInterface
+  MachineResolver,
+  MachineResolverData,
+  MachineResolverService,
+  MachineResolverServiceInterface
 } from "@services/machine-resolver/machine-resolver.service";
 import { lastValueFrom } from "rxjs";
-import { SimpleConfirmationDialogComponent } from "../../shared/dialog/confirmation-dialog/confirmation-dialog.component";
-import { MachineResolverHostsTabComponent } from "../machine-resolver-hosts-tab/machine-resolver-hosts-tab.component";
-import { MachineResolverLdapTabComponent } from "../machine-resolver-ldap-tab/machine-resolver-ldap-tab.component";
 
 @Component({
   selector: "app-machine-resolver-panel-new",
@@ -86,7 +86,7 @@ export class MachineResolverPanelNewComponent {
 
   readonly canSaveMachineResolver = computed(() => {
     const current = this.newMachineResolver();
-    if (!current.resolvername.trim()) return false;
+    if (!current.resolvername.trim() || !/^[a-zA-Z0-9._-]*$/.test(current.resolvername)) return false;
 
     const dataValidator = this.dataValidatorSignal();
     return dataValidator(current.data);

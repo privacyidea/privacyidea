@@ -119,13 +119,13 @@ export class SessionTimerService implements SessionTimerServiceInterface {
     effect(() => {
       const remainingTime = this.remainingTime();
       if (remainingTime && remainingTime > 30_000 && remainingTime < 31_000) {
-        this.notificationService.openSnackBar("Session will expire in 30 seconds.");
+        this.notificationService.warning("Session will expire in 30 seconds.");
       }
     });
   }
 
   private handleSessionTimeout(): void {
-    this.notificationService.openSnackBar(
+    this.notificationService.warning(
       $localize`Your session has expired. You will be logged out and redirected to the login page.`
     );
     // Keep notification visible for 1.5s before logging out to ensure the user sees it

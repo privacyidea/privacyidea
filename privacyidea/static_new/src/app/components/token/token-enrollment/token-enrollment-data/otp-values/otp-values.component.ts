@@ -20,10 +20,10 @@
 import { Component, Input } from "@angular/core";
 import { MatIconButton } from "@angular/material/button";
 import {
-    MatAccordion,
-    MatExpansionPanel,
-    MatExpansionPanelHeader,
-    MatExpansionPanelTitle
+  MatAccordion,
+  MatExpansionPanel,
+  MatExpansionPanelHeader,
+  MatExpansionPanelTitle
 } from "@angular/material/expansion";
 import { MatIcon } from "@angular/material/icon";
 

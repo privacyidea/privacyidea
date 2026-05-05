@@ -21,8 +21,9 @@ import { Component, inject, input } from "@angular/core";
 
 import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
+import { Router } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
 import { CopyPolicyDialogComponent } from "@components/policies/dialogs/copy-policy-dialog/copy-policy-dialog.component";
-import { EditPolicyDialogComponent } from "@components/policies/dialogs/edit-policy-dialog/edit-policy-dialog.component";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
 import { AuthService } from "@services/auth/auth.service";
 import { DialogService } from "@services/dialog/dialog.service";
@@ -42,12 +43,10 @@ export class PoliciesTableActionsComponent {
   readonly dialogService = inject(DialogService);
   readonly authService = inject(AuthService);
   readonly policyService = inject(PolicyService);
+  private readonly router = inject(Router);
 
   createNewPolicy(): void {
-    this.dialogService.openDialog({
-      component: EditPolicyDialogComponent,
-      data: { mode: "create", policyDetail: this.policyService.getEmptyPolicy() }
-    });
+    this.router.navigateByUrl(ROUTE_PATHS.POLICIES_NEW);
   }
 
   async deleteSelectedPolicies(): Promise<void> {

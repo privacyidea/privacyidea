@@ -20,9 +20,9 @@ import { HttpResourceRef } from "@angular/common/http";
 import { computed, signal } from "@angular/core";
 import { PiResponse } from "@app/app.component";
 import {
-    RadiusServer,
-    RadiusServers,
-    RadiusServerServiceInterface
+  RadiusServer,
+  RadiusServers,
+  RadiusServerServiceInterface
 } from "@services/radius-server/radius-server.service";
 
 export class MockRadiusService implements RadiusServerServiceInterface {

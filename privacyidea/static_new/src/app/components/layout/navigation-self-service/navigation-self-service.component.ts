@@ -19,17 +19,17 @@
 
 import { Component, computed, inject } from "@angular/core";
 import {
-    MatAccordion,
-    MatExpansionPanel,
-    MatExpansionPanelHeader,
-    MatExpansionPanelTitle
+  MatAccordion,
+  MatExpansionPanel,
+  MatExpansionPanelHeader,
+  MatExpansionPanelTitle
 } from "@angular/material/expansion";
 import { MatIcon } from "@angular/material/icon";
 import { ROUTE_PATHS } from "@app/route_paths";
+import { NavigationSelfServiceButtonComponent } from "@components/layout/navigation-self-service/navigation-self-service-button/navigation-self-service-button.component";
+import { UserUtilsPanelSelfServiceComponent } from "@components/layout/user-utils-panel/user-utils-panel.self-service.component";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { UserService, UserServiceInterface } from "@services/user/user.service";
-import { UserUtilsPanelSelfServiceComponent } from "../user-utils-panel/user-utils-panel.self-service.component";
-import { NavigationSelfServiceButtonComponent } from "./navigation-self-service-button/navigation-self-service-button.component";
 
 @Component({
   selector: "app-navigation-self-service",

@@ -22,12 +22,12 @@ import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper
 
 import { toSignal } from "@angular/core/rxjs-interop";
 import {
-    AbstractControl,
-    FormControl,
-    ReactiveFormsModule,
-    ValidationErrors,
-    ValidatorFn,
-    Validators
+  AbstractControl,
+  FormControl,
+  ReactiveFormsModule,
+  ValidationErrors,
+  ValidatorFn,
+  Validators
 } from "@angular/forms";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";

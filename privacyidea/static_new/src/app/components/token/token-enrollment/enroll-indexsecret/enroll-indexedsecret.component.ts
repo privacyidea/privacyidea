@@ -22,13 +22,10 @@ import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 
+import { TokenApiPayloadMapper, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import {
-    TokenApiPayloadMapper,
-    TokenEnrollmentData
-} from "@app/mappers/token-api-payload/_token-api-payload.mapper";
-import {
-    IndexedSecretApiPayloadMapper,
-    IndexedSecretEnrollmentData
+  IndexedSecretApiPayloadMapper,
+  IndexedSecretEnrollmentData
 } from "@app/mappers/token-api-payload/indexedsecret-token-api-payload.mapper";
 
 export interface IndexedSecretEnrollmentOptions extends TokenEnrollmentData {

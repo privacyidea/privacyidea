@@ -38,8 +38,9 @@ describe("CaConnectorService", () => {
       getHeaders: jest.fn().mockReturnValue({})
     };
     const notificationServiceMock = {
-      openSnackBar: jest.fn(),
-      handleResourceError: jest.fn()
+      success: jest.fn(),
+      error: jest.fn(),
+      warning: jest.fn()
     };
 
     TestBed.configureTestingModule({
@@ -67,37 +68,81 @@ describe("CaConnectorService", () => {
   });
 
   it("should post CA connector", async () => {
-    const connector = { connectorname: "test", type: "local", data: {} } as any;
+    const connector = { connectorname: "test/1", type: "local", data: {} } as any;
     const promise = service.postCaConnector(connector);
 
-    const req = httpMock.expectOne(`${environment.proxyUrl}/caconnector/test`);
+    const req = httpMock.expectOne(`${environment.proxyUrl}/caconnector/${encodeURIComponent("test/1")}`);
     expect(req.request.method).toBe("POST");
     req.flush({ result: { status: true } });
 
     await promise;
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith("Successfully saved CA connector.");
+    expect(notificationService.success).toHaveBeenCalledWith("Successfully saved CA connector.");
+  });
+
+  it("should show error notification when posting CA connector fails", async () => {
+    const connector = { connectorname: "test/1", type: "local", data: {} } as any;
+    const promise = service.postCaConnector(connector);
+
+    const req = httpMock.expectOne(`${environment.proxyUrl}/caconnector/${encodeURIComponent("test/1")}`);
+    req.flush(MockPiResponse.fromError({ message: "Something went wrong" }), {
+      status: 400,
+      statusText: "Bad Request"
+    });
+
+    await expect(promise).rejects.toThrow();
+    expect(notificationService.error).toHaveBeenCalledWith("Failed to save CA connector. Something went wrong");
   });
 
   it("should delete CA connector", async () => {
-    const promise = service.deleteCaConnector("test");
+    const promise = service.deleteCaConnector("test/1");
 
-    const req = httpMock.expectOne(`${environment.proxyUrl}/caconnector/test`);
+    const req = httpMock.expectOne(`${environment.proxyUrl}/caconnector/${encodeURIComponent("test/1")}`);
     expect(req.request.method).toBe("DELETE");
     req.flush({ result: { status: true } });
 
     await promise;
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith("Successfully deleted CA connector: test.");
+    expect(notificationService.success).toHaveBeenCalledWith("Successfully deleted CA connector: test/1.");
+  });
+
+  it("should show error notification when deleting CA connector fails", async () => {
+    const promise = service.deleteCaConnector("test/1");
+
+    const req = httpMock.expectOne(`${environment.proxyUrl}/caconnector/${encodeURIComponent("test/1")}`);
+    req.flush(MockPiResponse.fromError({ message: "Something went wrong" }), {
+      status: 400,
+      statusText: "Bad Request"
+    });
+
+    await expect(promise).rejects.toThrow();
+    expect(notificationService.error).toHaveBeenCalledWith("Failed to delete CA connector. Something went wrong");
   });
 
   it("should get CA specific options", async () => {
-    const promise = service.getCaSpecificOptions("microsoft", { hostname: "test" });
+    const promise = service.getCaSpecificOptions("microsoft/1", { hostname: "test" });
 
-    const req = httpMock.expectOne(`${environment.proxyUrl}/caconnector/specific/microsoft?hostname=test`);
+    const req = httpMock.expectOne(
+      `${environment.proxyUrl}/caconnector/specific/${encodeURIComponent("microsoft/1")}?hostname=test`
+    );
     expect(req.request.method).toBe("GET");
     req.flush({ result: { value: { available_cas: ["CA1"] } } });
 
     const result = await promise;
     expect(result).toEqual({ available_cas: ["CA1"] });
+  });
+
+  it("should show error notification when fetching CA specific options fails", async () => {
+    const promise = service.getCaSpecificOptions("microsoft/1", { hostname: "test" });
+
+    const req = httpMock.expectOne(
+      `${environment.proxyUrl}/caconnector/specific/${encodeURIComponent("microsoft/1")}?hostname=test`
+    );
+    req.flush(MockPiResponse.fromError({ message: "Something went wrong" }), {
+      status: 400,
+      statusText: "Bad Request"
+    });
+
+    await expect(promise).rejects.toThrow();
+    expect(notificationService.error).toHaveBeenCalledWith("Failed to fetch CA specific options. Something went wrong");
   });
 
   it("should get caConnectors", async () => {

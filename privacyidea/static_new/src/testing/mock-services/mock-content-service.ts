@@ -76,7 +76,7 @@ export class MockContentService implements ContentServiceInterface {
   onExternalServiceIds = computed(() => this.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS);
   onUsersResolvers = computed(() => this.routeUrl() === ROUTE_PATHS.USERS_RESOLVERS);
   onConfigurationPeriodicTasks = computed(() => this.routeUrl() === ROUTE_PATHS.CONFIGURATION_PERIODIC_TASKS);
-  onConfigurationSubscription = computed(() => this.routeUrl() === ROUTE_PATHS.SUBSCRIPTION);
+  onSubscription = computed(() => this.routeUrl() === ROUTE_PATHS.SUBSCRIPTION);
   onMachineResolver = computed(() => this.routeUrl() === ROUTE_PATHS.MACHINE_RESOLVER);
 
   tokenSelected = jest.fn();

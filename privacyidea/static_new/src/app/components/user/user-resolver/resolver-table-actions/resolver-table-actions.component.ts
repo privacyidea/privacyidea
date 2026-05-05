@@ -19,34 +19,23 @@
 
 import { Component, inject } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
-import { MatDialog, MatDialogModule } from "@angular/material/dialog";
 import { MatIconModule } from "@angular/material/icon";
-import { UserNewResolverComponent } from "@components/user/user-new-resolver/user-new-resolver.component";
+import { Router } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
 import { AuthService } from "@services/auth/auth.service";
-import { Resolver } from "@services/resolver/resolver.service";
 
 @Component({
   selector: "app-resolver-table-actions",
   standalone: true,
-  imports: [MatButtonModule, MatIconModule, MatDialogModule],
+  imports: [MatButtonModule, MatIconModule],
   templateUrl: "./resolver-table-actions.component.html",
   styleUrl: "./resolver-table-actions.component.scss"
 })
 export class ResolverTableActionsComponent {
   protected readonly authService = inject(AuthService);
-  private readonly dialog = inject(MatDialog);
+  private readonly router = inject(Router);
 
   onNewResolver(): void {
-    this.openResolverDialog();
-  }
-
-  private openResolverDialog(resolver?: Resolver): void {
-    this.dialog.open(UserNewResolverComponent, {
-      data: { resolver },
-      width: "auto",
-      height: "auto",
-      maxWidth: "100vw",
-      maxHeight: "100vh"
-    });
+    this.router.navigate([ROUTE_PATHS.USERS_RESOLVERS, "new"]);
   }
 }

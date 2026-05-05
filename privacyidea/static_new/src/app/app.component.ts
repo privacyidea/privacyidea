@@ -118,7 +118,7 @@ export class AppComponent implements OnInit {
   constructor() {
     if (this.authService.isAuthenticated()) {
       console.warn("User is already logged in.");
-      this.notificationService.openSnackBar("User is already logged in.");
+      this.notificationService.warning("User is already logged in.");
     }
 
     const _welcomeInit = inject(WelcomeDialogService);

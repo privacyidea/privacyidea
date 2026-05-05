@@ -23,10 +23,10 @@ import { MatButtonModule } from "@angular/material/button";
 import { MatButtonToggle, MatButtonToggleGroup } from "@angular/material/button-toggle";
 import { MatCheckbox } from "@angular/material/checkbox";
 import {
-    MatAccordion,
-    MatExpansionPanel,
-    MatExpansionPanelHeader,
-    MatExpansionPanelTitle
+  MatAccordion,
+  MatExpansionPanel,
+  MatExpansionPanelHeader,
+  MatExpansionPanelTitle
 } from "@angular/material/expansion";
 import { MatIconModule } from "@angular/material/icon";
 import { MatFormField, MatHint, MatInput, MatLabel } from "@angular/material/input";
@@ -37,8 +37,8 @@ import { ClearableInputComponent } from "@components/shared/clearable-input/clea
 import { HttpConfigComponent } from "@components/user/user-new-resolver/http-resolver/http-config/http-config.component";
 import { HttpGroupsAttributeComponent } from "@components/user/user-new-resolver/http-resolver/http-groups-attribute/http-groups-attribute.component";
 import {
-    AttributeMappingRow,
-    HttpResolverComponent
+  AttributeMappingRow,
+  HttpResolverComponent
 } from "@components/user/user-new-resolver/http-resolver/http-resolver.component";
 
 @Component({

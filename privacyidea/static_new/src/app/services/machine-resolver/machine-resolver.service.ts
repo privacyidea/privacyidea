@@ -110,7 +110,7 @@ export class MachineResolverService implements MachineResolverServiceInterface {
       return undefined;
     }
     if (!this.authService.actionAllowed("mresolverread")) {
-      this.notificationService.openSnackBar("You are not allowed to read Machine Resolvers.");
+      this.notificationService.error("You are not allowed to read Machine Resolvers.");
       return undefined;
     }
     return {
@@ -130,28 +130,28 @@ export class MachineResolverService implements MachineResolverServiceInterface {
 
   async postMachineResolver(resolver: MachineResolver): Promise<void> {
     if (!this.authService.actionAllowed("mresolverwrite")) {
-      this.notificationService.openSnackBar("You are not allowed to update Machine Resolvers.");
+      this.notificationService.error("You are not allowed to update Machine Resolvers.");
       throw new Error("not-allowed");
     }
-    const url = `${this.machineResolverBaseUrl}${resolver.resolvername}`;
+    const url = `${this.machineResolverBaseUrl}${encodeURIComponent(resolver.resolvername)}`;
     const request = this.http.post<PiResponse<any>>(url, resolver.data, { headers: this.authService.getHeaders() });
 
     return lastValueFrom(request)
       .then(() => {
-        this.notificationService.openSnackBar(`Successfully updated machineResolver.`);
+        this.notificationService.success(`Successfully updated machineResolver.`);
         this.machineResolverResource.reload();
       })
       .catch((error) => {
         console.warn("Failed to update machineResolver:", error);
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.openSnackBar("Failed to update machineResolver. " + message);
+        this.notificationService.error("Failed to update machineResolver. " + message);
         throw new Error("post-failed");
       });
   }
 
   async postTestMachineResolver(resolver: MachineResolver): Promise<void> {
     if (!this.authService.actionAllowed("mresolverwrite")) {
-      this.notificationService.openSnackBar("You are not allowed to update Machine Resolvers.");
+      this.notificationService.error("You are not allowed to update Machine Resolvers.");
       throw new Error("not-allowed");
     }
     const url = `${this.machineResolverBaseUrl}test`;
@@ -160,28 +160,28 @@ export class MachineResolverService implements MachineResolverServiceInterface {
       .then(() => {})
       .catch((error) => {
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.openSnackBar("Failed to update machineResolver. " + message);
+        this.notificationService.error("Failed to update machineResolver. " + message);
         throw new Error("post-failed");
       });
   }
 
   async deleteMachineResolver(name: string): Promise<void> {
     if (!this.authService.actionAllowed("mresolverdelete")) {
-      this.notificationService.openSnackBar("You are not allowed to delete Machine Resolvers.");
+      this.notificationService.error("You are not allowed to delete Machine Resolvers.");
       throw new Error("not-allowed");
     }
-    const request = this.http.delete<PiResponse<any>>(`${this.machineResolverBaseUrl}${name}`, {
+    const request = this.http.delete<PiResponse<any>>(`${this.machineResolverBaseUrl}${encodeURIComponent(name)}`, {
       headers: this.authService.getHeaders()
     });
     return lastValueFrom(request)
       .then(() => {
-        this.notificationService.openSnackBar(`Successfully deleted machineResolver: ${name}.`);
+        this.notificationService.success(`Successfully deleted machineResolver: ${name}.`);
         this.machineResolverResource.reload();
       })
       .catch((error) => {
         console.warn("Failed to delete machineResolver:", error);
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.openSnackBar("Failed to delete machineResolver. " + message);
+        this.notificationService.error("Failed to delete machineResolver. " + message);
         throw new Error("delete-failed");
       });
   }

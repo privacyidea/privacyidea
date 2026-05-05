@@ -22,9 +22,9 @@ import { MAT_DIALOG_DATA, MatDialogContent, MatDialogRef, MatDialogTitle } from 
 import { MatIcon } from "@angular/material/icon";
 import { PiResponse } from "@app/app.component";
 import {
-    ContainerRegisterData,
-    ContainerService,
-    ContainerServiceInterface
+  ContainerRegisterData,
+  ContainerService,
+  ContainerServiceInterface
 } from "@services/container/container.service";
 import { ContentService } from "@services/content/content.service";
 

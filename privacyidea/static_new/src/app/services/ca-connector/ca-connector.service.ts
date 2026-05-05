@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
-import { effect, inject, Injectable, linkedSignal, WritableSignal } from "@angular/core";
+import { inject, Injectable, linkedSignal, WritableSignal } from "@angular/core";
 import { PiResponse } from "@app/app.component";
 import { environment } from "@env/environment";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
@@ -68,12 +68,6 @@ export class CaConnectorService implements CaConnectorServiceInterface {
 
   readonly caConnectorBaseUrl = environment.proxyUrl + "/caconnector/";
 
-  constructor() {
-    effect(() => {
-      this.notificationService.handleResourceError(this.caConnectorResource.error(), "CA connectors");
-    });
-  }
-
   caConnectorResource = httpResource<PiResponse<CaConnectors>>(() => {
     if (!this.contentService.onExternalCaConnectors()) {
       return undefined;
@@ -91,40 +85,43 @@ export class CaConnectorService implements CaConnectorServiceInterface {
   });
 
   async postCaConnector(connector: CaConnector): Promise<void> {
-    const url = `${this.caConnectorBaseUrl}${connector.connectorname}`;
+    const url = `${this.caConnectorBaseUrl}${encodeURIComponent(connector.connectorname)}`;
     const request = this.http.post<PiResponse<any>>(url, connector.data, { headers: this.authService.getHeaders() });
 
     return lastValueFrom(request)
       .then(() => {
-        this.notificationService.openSnackBar($localize`Successfully saved CA connector.`);
+        this.notificationService.success($localize`Successfully saved CA connector.`);
         this.caConnectorResource.reload();
       })
       .catch((error) => {
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.openSnackBar($localize`Failed to save CA connector. ` + message);
+        this.notificationService.error($localize`Failed to save CA connector. ` + message);
         throw new Error("post-failed");
       });
   }
 
   async deleteCaConnector(connectorname: string): Promise<void> {
-    const request = this.http.delete<PiResponse<any>>(`${this.caConnectorBaseUrl}${connectorname}`, {
-      headers: this.authService.getHeaders()
-    });
+    const request = this.http.delete<PiResponse<any>>(
+      `${this.caConnectorBaseUrl}${encodeURIComponent(connectorname)}`,
+      {
+        headers: this.authService.getHeaders()
+      }
+    );
     return lastValueFrom(request)
       .then(() => {
-        this.notificationService.openSnackBar($localize`Successfully deleted CA connector: ${connectorname}.`);
+        this.notificationService.success($localize`Successfully deleted CA connector: ${connectorname}.`);
         this.caConnectorResource.reload();
       })
       .catch((error) => {
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.openSnackBar($localize`Failed to delete CA connector. ` + message);
+        this.notificationService.error($localize`Failed to delete CA connector. ` + message);
         throw new Error("delete-failed");
       });
   }
 
   async getCaSpecificOptions(catype: string, params: any): Promise<any> {
     const pstring = new URLSearchParams(params).toString();
-    const url = `${this.caConnectorBaseUrl}specific/${catype}?${pstring}`;
+    const url = `${this.caConnectorBaseUrl}specific/${encodeURIComponent(catype)}?${pstring}`;
     const request = this.http.get<PiResponse<any>>(url, { headers: this.authService.getHeaders() });
 
     return lastValueFrom(request)
@@ -133,7 +130,7 @@ export class CaConnectorService implements CaConnectorServiceInterface {
       })
       .catch((error) => {
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.openSnackBar($localize`Failed to fetch CA specific options. ` + message);
+        this.notificationService.error($localize`Failed to fetch CA specific options. ` + message);
         throw new Error("fetch-failed");
       });
   }

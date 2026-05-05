@@ -24,13 +24,10 @@ import { MatInput } from "@angular/material/input";
 import { SystemService, SystemServiceInterface } from "@services/system/system.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 
+import { TokenApiPayloadMapper, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import {
-    TokenApiPayloadMapper,
-    TokenEnrollmentData
-} from "@app/mappers/token-api-payload/_token-api-payload.mapper";
-import {
-    YubicoApiPayloadMapper,
-    YubicoEnrollmentData
+  YubicoApiPayloadMapper,
+  YubicoEnrollmentData
 } from "@app/mappers/token-api-payload/yubico-token-api-payload.mapper";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { YUBICO_ID, YUBICO_SECRET, YUBICO_URL } from "@constants/token.constants";

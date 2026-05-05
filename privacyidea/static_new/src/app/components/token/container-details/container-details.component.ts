@@ -19,21 +19,20 @@
 
 import { NgClass } from "@angular/common";
 import {
-    Component,
-    ElementRef,
-    OnDestroy,
-    ViewChild,
-    WritableSignal,
-    computed,
-    effect,
-    inject,
-    linkedSignal,
-    signal
+  Component,
+  ElementRef,
+  OnDestroy,
+  ViewChild,
+  WritableSignal,
+  computed,
+  effect,
+  inject,
+  linkedSignal,
+  signal
 } from "@angular/core";
 import { FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
 import { MatIconButton } from "@angular/material/button";
-import { MatCheckbox } from "@angular/material/checkbox";
 import { MatDivider } from "@angular/material/divider";
 import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
@@ -41,11 +40,11 @@ import { MatListItem } from "@angular/material/list";
 import { MatPaginator, PageEvent } from "@angular/material/paginator";
 import { MatFormField, MatSelectModule } from "@angular/material/select";
 import { MatCell, MatColumnDef, MatTableDataSource, MatTableModule } from "@angular/material/table";
-import { MatTooltip } from "@angular/material/tooltip";
-import { Router, RouterLink } from "@angular/router";
+import { Router } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
-import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
+import { ContainerAddTokenComponent } from "@components/shared/container-add-token/container-add-token.component";
+import { DetailsHeaderComponent } from "@components/shared/details-shared/details-header/details-header.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { EditButtonsComponent, EditableElement } from "@components/shared/edit-buttons/edit-buttons.component";
 import { ContainerDetailsActionsComponent } from "@components/token/container-details/container-details-actions/container-details-actions.component";
@@ -57,10 +56,10 @@ import { FilterValue } from "@core/models/filter_value/filter_value";
 import { AuditService, AuditServiceInterface } from "@services/audit/audit.service";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import {
-    ContainerDetailData,
-    ContainerDetailToken,
-    ContainerService,
-    ContainerServiceInterface
+  ContainerDetailData,
+  ContainerDetailToken,
+  ContainerService,
+  ContainerServiceInterface
 } from "@services/container/container.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { NotificationService } from "@services/notification/notification.service";
@@ -117,17 +116,13 @@ interface TokenOption {
     MatIconButton,
     ContainerDetailsInfoComponent,
     ContainerDetailsTokenTableComponent,
-    MatPaginator,
     MatDivider,
-    MatCheckbox,
-    CopyButtonComponent,
-    ClearableInputComponent,
-    MatTooltip,
     ClearableInputComponent,
     ContainerDetailsActionsComponent,
     ScrollToTopDirective,
     ContainerDetailsTokenActionsComponent,
-    RouterLink
+    DetailsHeaderComponent,
+    ContainerAddTokenComponent
   ],
   templateUrl: "./container-details.component.html",
   styleUrls: ["./container-details.component.scss"]

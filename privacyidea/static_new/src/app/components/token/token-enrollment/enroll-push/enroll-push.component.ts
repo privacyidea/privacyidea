@@ -22,14 +22,11 @@ import { FormControl, FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { MatDialogRef } from "@angular/material/dialog";
 import { PiResponse } from "@app/app.component";
 import {
-    EnrollmentResponse,
-    TokenApiPayloadMapper,
-    TokenEnrollmentData
+  EnrollmentResponse,
+  TokenApiPayloadMapper,
+  TokenEnrollmentData
 } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
-import {
-    PushApiPayloadMapper,
-    PushEnrollmentData
-} from "@app/mappers/token-api-payload/push-token-api-payload.mapper";
+import { PushApiPayloadMapper, PushEnrollmentData } from "@app/mappers/token-api-payload/push-token-api-payload.mapper";
 import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
 import { TokenEnrollmentFirstStepDialogComponent } from "@components/token/token-enrollment/token-enrollment-firtst-step-dialog/token-enrollment-first-step-dialog.component";
 import { ReopenDialogFn } from "@components/token/token-enrollment/token-enrollment.component";

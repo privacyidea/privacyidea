@@ -42,6 +42,11 @@
           @if (nameConflict()) {
             <mat-error i18n>Another template with this name already exists.</mat-error>
           }
+          @if (template().name.length > 0 && nameInvalidPattern()) {
+            <mat-error
+              i18n>Template name contains <strong>invalid characters</strong>. Only alphanumeric characters, dots, underscores and hyphens are allowed.
+            </mat-error>
+          }
         </mat-form-field>
 
         <mat-card-content>

@@ -255,7 +255,7 @@ describe("ContainerTemplateService", () => {
       await deletePromise;
 
       expect(spy).toHaveBeenCalled();
-      expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith("Successfully deleted template.");
+      expect(notificationServiceMock.success).toHaveBeenCalledWith("Successfully deleted template.");
     });
 
     it("should throw error on delete", async () => {
@@ -266,7 +266,7 @@ describe("ContainerTemplateService", () => {
       req.flush("Error", { status: 500, statusText: "Server Error" });
 
       await deletePromise;
-      expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith(
+      expect(notificationServiceMock.error).toHaveBeenCalledWith(
         expect.stringContaining("Failed to delete template")
       );
     });
@@ -281,7 +281,7 @@ describe("ContainerTemplateService", () => {
 
       httpMock.expectNone(`/container/template/${templateName}`);
       expect(authServiceMock.actionAllowed).toHaveBeenCalledWith("container_template_delete");
-      expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith(
+      expect(notificationServiceMock.error).toHaveBeenCalledWith(
         "You are not allowed to delete container templates."
       );
     });
@@ -306,7 +306,7 @@ describe("ContainerTemplateService", () => {
       await deletePromise;
 
       expect(spy).toHaveBeenCalledTimes(1);
-      expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith("Successfully deleted templates.");
+      expect(notificationServiceMock.success).toHaveBeenCalledWith("Successfully deleted templates.");
     });
 
     it("should stop execution if one deletion fails and show error notification", async () => {
@@ -326,7 +326,7 @@ describe("ContainerTemplateService", () => {
       httpMock.expectNone((req) => req.url.includes(`/container/template/${templateNames[1]}`));
 
       expect(spy).not.toHaveBeenCalled();
-      expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith(
+      expect(notificationServiceMock.error).toHaveBeenCalledWith(
         expect.stringContaining("Failed to delete templates. Internal Server Error")
       );
     });
@@ -363,7 +363,7 @@ describe("ContainerTemplateService", () => {
       await promise;
 
       expect(spy).toHaveBeenCalled();
-      expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith(`Successfully saved template edits.`);
+      expect(notificationServiceMock.success).toHaveBeenCalledWith(`Successfully saved template edits.`);
     });
 
     it("should handle error on post and show error notification", async () => {
@@ -376,7 +376,7 @@ describe("ContainerTemplateService", () => {
 
       await promise;
 
-      expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith("Failed to save template edits. Error message");
+      expect(notificationServiceMock.error).toHaveBeenCalledWith("Failed to save template edits. Error message");
     });
   });
 
@@ -427,7 +427,7 @@ describe("ContainerTemplateService", () => {
 
       await deletePromise;
 
-      expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith("Failed to delete template. ");
+      expect(notificationServiceMock.error).toHaveBeenCalledWith("Failed to delete template. ");
     });
 
     it("should show a generic error notification on post if error response contains no message", async () => {
@@ -444,7 +444,7 @@ describe("ContainerTemplateService", () => {
       req.flush({ result: { error: {} } }, { status: 500, statusText: "Internal Server Error" });
 
       await promise;
-      expect(notificationServiceMock.openSnackBar).toHaveBeenCalledWith("Failed to save template edits. ");
+      expect(notificationServiceMock.error).toHaveBeenCalledWith("Failed to save template edits. ");
     });
   });
 });

@@ -17,16 +17,16 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import {
-    AfterViewInit,
-    Component,
-    computed,
-    ElementRef,
-    inject,
-    linkedSignal,
-    OnDestroy,
-    Renderer2,
-    ViewChild,
-    WritableSignal
+  AfterViewInit,
+  Component,
+  computed,
+  ElementRef,
+  inject,
+  linkedSignal,
+  OnDestroy,
+  Renderer2,
+  ViewChild,
+  WritableSignal
 } from "@angular/core";
 import { MatDividerModule } from "@angular/material/divider";
 import { MatMenuModule } from "@angular/material/menu";

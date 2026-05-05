@@ -18,9 +18,9 @@
  **/
 
 import { Component } from "@angular/core";
+import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
+import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
 import { DialogAction } from "@models/dialog";
-import { AbstractDialogComponent } from "../abstract-dialog/abstract-dialog.component";
-import { DialogWrapperComponent } from "../dialog-wrapper/dialog-wrapper.component";
 
 @Component({
   selector: "app-simple-confirmation-dialog",

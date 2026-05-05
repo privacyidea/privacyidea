@@ -21,8 +21,8 @@ import { Component, inject } from "@angular/core";
 import { MatExpansionModule } from "@angular/material/expansion";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import {
-    MachineResolverService,
-    MachineResolverServiceInterface
+  MachineResolverService,
+  MachineResolverServiceInterface
 } from "@services/machine-resolver/machine-resolver.service";
 import { MachineResolverPanelEditComponent } from "./machine-resolver-panel-edit/machine-resolver-panel-edit.component";
 import { MachineResolverPanelNewComponent } from "./machine-resolver-panel-new/machine-resolver-panel-new.component";

@@ -35,6 +35,7 @@ import {
   MockNotificationService,
   MockPiResponse,
   MockRealmService,
+  MockRouter,
   MockSystemService,
   MockTableUtilsService
 } from "@testing/mock-services";
@@ -56,6 +57,7 @@ describe("RealmTableComponent", () => {
   let notificationService: MockNotificationService;
   let dialog: LocalMockMatDialog;
   let resolverService: MockResolverService;
+  let router: Router;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -69,7 +71,8 @@ describe("RealmTableComponent", () => {
         { provide: ContentService, useClass: MockContentService },
         { provide: NotificationService, useClass: MockNotificationService },
         { provide: MatDialog, useClass: LocalMockMatDialog },
-        { provide: ResolverService, useClass: MockResolverService }
+        { provide: ResolverService, useClass: MockResolverService },
+        { provide: Router, useClass: MockRouter }
       ]
     }).compileComponents();
 
@@ -81,6 +84,7 @@ describe("RealmTableComponent", () => {
     notificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;
     dialog = TestBed.inject(MatDialog) as unknown as LocalMockMatDialog;
     resolverService = TestBed.inject(ResolverService) as unknown as MockResolverService;
+    router = TestBed.inject(Router);
 
     fixture.detectChanges();
   });
@@ -341,7 +345,7 @@ describe("RealmTableComponent", () => {
     expect(callNode[1]).toBe("node-1");
     expect(callNode[2]).toEqual([{ name: "res3", priority: 5 }, { name: "res4" }]);
 
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith("Realm created.");
+    expect(notificationService.success).toHaveBeenCalledWith("Realm created.");
     expect(component.newRealmName()).toBe("");
     expect(component.newRealmNodeResolvers()).toEqual({});
     expect(component.isCreatingRealm()).toBe(false);
@@ -430,7 +434,7 @@ describe("RealmTableComponent", () => {
 
     component.saveEditedRealm(row);
 
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith("No resolvers configured.");
+    expect(notificationService.warning).toHaveBeenCalledWith("No resolvers configured.");
     expect(realmService.createRealm).not.toHaveBeenCalled();
     expect(component.isSavingEditedRealm()).toBe(false);
   });
@@ -461,7 +465,7 @@ describe("RealmTableComponent", () => {
     expect(callNode[1]).toBe("node-1");
     expect(callNode[2]).toEqual([{ name: "res3", priority: 7 }]);
 
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith('Realm "realmA" updated.');
+    expect(notificationService.success).toHaveBeenCalledWith('Realm "realmA" updated.');
     expect(component.editingRealmName()).toBeNull();
     expect(component.isSavingEditedRealm()).toBe(false);
     expect(realmService.realmResource.reload).toHaveBeenCalled();
@@ -480,7 +484,7 @@ describe("RealmTableComponent", () => {
 
     expect(dialog.open).toHaveBeenCalled();
     expect(realmService.deleteRealm).toHaveBeenCalledWith("realmA");
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith('Realm "realmA" deleted.');
+    expect(notificationService.success).toHaveBeenCalledWith('Realm "realmA" deleted.');
     expect(realmService.realmResource.reload).toHaveBeenCalled();
   });
 
@@ -505,24 +509,18 @@ describe("RealmTableComponent", () => {
     component.onSetDefaultRealm(row);
 
     expect(realmService.setDefaultRealm).toHaveBeenCalledWith("realmA");
-    expect(notificationService.openSnackBar).toHaveBeenCalledWith('Realm "realmA" set as default.');
+    expect(notificationService.success).toHaveBeenCalledWith('Realm "realmA" set as default.');
     expect(realmService.realmResource.reload).toHaveBeenCalled();
     expect(realmService.defaultRealmResource.reload).toHaveBeenCalled();
   });
 
-  it("onClickResolver should open UserNewResolverComponent with resolver data", () => {
+  it("onClickResolver should redirect to resolver details page", () => {
     const resolver = { resolvername: "res1", type: "ldapresolver" } as any;
     resolverService.setResolvers([resolver]);
 
     component.onClickResolver("res1");
 
-    expect(dialog.open).toHaveBeenCalledWith(UserNewResolverComponent, {
-      data: { resolver },
-      width: "auto",
-      height: "auto",
-      maxWidth: "100vw",
-      maxHeight: "100vh"
-    });
+    expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.USERS_RESOLVERS_DETAILS + "res1");
   });
 
   it("onClickResolver should do nothing if resolver not found", () => {

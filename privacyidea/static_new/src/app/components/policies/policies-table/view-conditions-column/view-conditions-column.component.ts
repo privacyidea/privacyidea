@@ -20,14 +20,14 @@
 import { Component, computed, input } from "@angular/core";
 import { MatIconModule } from "@angular/material/icon";
 import {
-    AdditionalCondition,
-    COMPARATOR_OPTIONS,
-    ComparatorOptionKey,
-    HANDLE_MISSING_DATA_OPTIONS,
-    HandleMissingDataOptionKey,
-    PolicyDetail,
-    SECTION_OPTIONS,
-    SectionOptionKey
+  AdditionalCondition,
+  COMPARATOR_OPTIONS,
+  ComparatorOptionKey,
+  HANDLE_MISSING_DATA_OPTIONS,
+  HandleMissingDataOptionKey,
+  PolicyDetail,
+  SECTION_OPTIONS,
+  SectionOptionKey
 } from "@services/policies/policies.service";
 import { ViewConditionSectionComponent } from "./view-condition-section/view-condition-section.component";
 

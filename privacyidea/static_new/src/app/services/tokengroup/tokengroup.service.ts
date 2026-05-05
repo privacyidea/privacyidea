@@ -91,33 +91,33 @@ export class TokengroupService implements TokengroupServiceInterface {
   });
 
   async postTokengroup(tokengroup: Tokengroup): Promise<void> {
-    const url = `${this.tokengroupBaseUrl}${tokengroup.groupname}`;
+    const url = `${this.tokengroupBaseUrl}${encodeURIComponent(tokengroup.groupname)}`;
     const request = this.http.post<PiResponse<any>>(url, tokengroup, { headers: this.authService.getHeaders() });
 
     return lastValueFrom(request)
       .then(() => {
-        this.notificationService.openSnackBar($localize`Successfully saved tokengroup.`);
+        this.notificationService.success($localize`Successfully saved tokengroup.`);
         this.tokengroupResource.reload();
       })
       .catch((error) => {
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.openSnackBar($localize`Failed to save tokengroup. ` + message);
+        this.notificationService.error($localize`Failed to save tokengroup. ` + message);
         throw new Error("post-failed");
       });
   }
 
   async deleteTokengroup(groupname: string): Promise<void> {
-    const request = this.http.delete<PiResponse<any>>(`${this.tokengroupBaseUrl}${groupname}`, {
+    const request = this.http.delete<PiResponse<any>>(`${this.tokengroupBaseUrl}${encodeURIComponent(groupname)}`, {
       headers: this.authService.getHeaders()
     });
     return lastValueFrom(request)
       .then(() => {
-        this.notificationService.openSnackBar($localize`Successfully deleted tokengroup: ${groupname}.`);
+        this.notificationService.success($localize`Successfully deleted tokengroup: ${groupname}.`);
         this.tokengroupResource.reload();
       })
       .catch((error) => {
         const message = error.error?.result?.error?.message || "";
-        this.notificationService.openSnackBar($localize`Failed to delete tokengroup. ` + message);
+        this.notificationService.error($localize`Failed to delete tokengroup. ` + message);
         throw new Error("delete-failed");
       });
   }

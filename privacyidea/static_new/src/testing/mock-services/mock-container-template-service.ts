@@ -21,8 +21,8 @@ import { HttpResourceRef } from "@angular/common/http";
 import { signal } from "@angular/core";
 import { PiResponse } from "@app/app.component";
 import {
-    ContainerTemplateServiceInterface,
-    TemplateTokenTypes
+  ContainerTemplateServiceInterface,
+  TemplateTokenTypes
 } from "@services/container-template/container-template.service";
 import { ContainerTemplate } from "@services/container/container.service";
 import { MockHttpResourceRef } from "./mock-utils";

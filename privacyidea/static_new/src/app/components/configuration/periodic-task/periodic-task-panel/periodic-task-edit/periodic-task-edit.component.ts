@@ -18,17 +18,17 @@
  **/
 
 import {
-    Component,
-    computed,
-    EventEmitter,
-    inject,
-    input,
-    linkedSignal,
-    Output,
-    Signal,
-    signal,
-    ViewChild,
-    WritableSignal
+  Component,
+  computed,
+  EventEmitter,
+  inject,
+  input,
+  linkedSignal,
+  Output,
+  Signal,
+  signal,
+  ViewChild,
+  WritableSignal
 } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { MatIconButton } from "@angular/material/button";
@@ -37,16 +37,16 @@ import { MatExpansionPanel, MatExpansionPanelHeader, MatExpansionPanelTitle } fr
 import { MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
-import { MatOption, MatSelect } from "@angular/material/select";
+import { MatError, MatOption, MatSelect } from "@angular/material/select";
 import { MatTooltip } from "@angular/material/tooltip";
 import {
-    EMPTY_PERIODIC_TASK,
-    EMPTY_PERIODIC_TASK_OPTION,
-    PERIODIC_TASK_MODULE_MAPPING,
-    PeriodicTask,
-    PeriodicTaskModule,
-    PeriodicTaskOption,
-    PeriodicTaskService
+  EMPTY_PERIODIC_TASK,
+  EMPTY_PERIODIC_TASK_OPTION,
+  PERIODIC_TASK_MODULE_MAPPING,
+  PeriodicTask,
+  PeriodicTaskModule,
+  PeriodicTaskOption,
+  PeriodicTaskService
 } from "@services/periodic-task/periodic-task.service";
 import { SystemService } from "@services/system/system.service";
 import { parseBooleanValue } from "@utils/parse-boolean-value";
@@ -69,7 +69,8 @@ import { PeriodicTaskOptionDetailComponent } from "./periodic-task-option-detail
     MatTooltip,
     MatExpansionPanel,
     MatExpansionPanelTitle,
-    MatExpansionPanelHeader
+    MatExpansionPanelHeader,
+    MatError
   ],
   templateUrl: "./periodic-task-edit.component.html",
   styleUrl: "./periodic-task-edit.component.scss"
@@ -103,7 +104,7 @@ export class PeriodicTaskEditComponent {
   });
 
   get allowSave() {
-    if (this.editTask().name === "") return false;
+    if (this.editTask().name === "" || !/^[a-zA-Z0-9._-]*$/.test(this.editTask().name)) return false;
     if (this.editTask().taskmodule === "") return false;
     if (this.editTask().interval === "") return false;
     if (this.editTask().nodes.length === 0) return false;

@@ -19,21 +19,17 @@
 
 import { Component, computed, inject, signal, ViewChild, WritableSignal } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
-import { MatDialog, MatDialogModule } from "@angular/material/dialog";
+import { MatTooltipModule } from "@angular/material/tooltip";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { SmsGateway, SmsGatewayService, SmsGatewayServiceInterface } from "@services/sms-gateway/sms-gateway.service";
+
 import { MatIconModule } from "@angular/material/icon";
+import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
 import { MatPaginator } from "@angular/material/paginator";
 import { MatSort, MatSortModule } from "@angular/material/sort";
 import { MatTableDataSource, MatTableModule } from "@angular/material/table";
-import { MatTooltipModule } from "@angular/material/tooltip";
-import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
-import {
-    SmsGateway,
-    SmsGatewayService,
-    SmsGatewayServiceInterface
-} from "@services/sms-gateway/sms-gateway.service";
-import { NewSmsGatewayComponent } from "./new-sms-gateway/new-sms-gateway.component";
-
-import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
+import { Router } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
 import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
@@ -50,7 +46,6 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
     MatSortModule,
     MatIconModule,
     MatButtonModule,
-    MatDialogModule,
     MatTooltipModule,
     ScrollToTopDirective,
     MatFormField,
@@ -64,10 +59,11 @@ import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-u
 })
 export class SmsGatewaysComponent {
   protected readonly smsGatewayService: SmsGatewayServiceInterface = inject(SmsGatewayService);
-  protected readonly dialog: MatDialog = inject(MatDialog);
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly dialogService: DialogServiceInterface = inject(DialogService);
   protected readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
+  protected readonly ROUTE_PATHS = ROUTE_PATHS;
+  private readonly router = inject(Router);
 
   filterString = signal<string>("");
   pageSizeOptions = this.tableUtilsService.pageSizeOptions;
@@ -89,13 +85,12 @@ export class SmsGatewaysComponent {
     return dataSource;
   });
 
-  openEditDialog(gateway?: SmsGateway): void {
-    this.dialog.open(NewSmsGatewayComponent, {
-      data: gateway ? { ...gateway } : null,
-      width: "auto",
-      maxWidth: "65vw",
-      maxHeight: "90vh"
-    });
+  onCreateNewGateway(): void {
+    this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_SMS_NEW);
+  }
+
+  onEditGateway(gateway: SmsGateway): void {
+    this.router.navigateByUrl(ROUTE_PATHS.EXTERNAL_SERVICES_SMS_DETAILS + gateway.name);
   }
 
   deleteGateway(gateway: SmsGateway): void {

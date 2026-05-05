@@ -19,16 +19,16 @@
 import { BreakpointObserver } from "@angular/cdk/layout";
 import { NgClass } from "@angular/common";
 import {
-    Component,
-    computed,
-    effect,
-    ElementRef,
-    inject,
-    linkedSignal,
-    Signal,
-    signal,
-    ViewChild,
-    WritableSignal
+  Component,
+  computed,
+  effect,
+  ElementRef,
+  inject,
+  linkedSignal,
+  Signal,
+  signal,
+  ViewChild,
+  WritableSignal
 } from "@angular/core";
 import { toSignal } from "@angular/core/rxjs-interop";
 import { FormsModule } from "@angular/forms";

@@ -21,10 +21,10 @@ import { Component, computed, inject, input, linkedSignal, signal, WritableSigna
 import { MatExpansionModule, MatExpansionPanel } from "@angular/material/expansion";
 import { MatIcon, MatIconModule } from "@angular/material/icon";
 import {
-    MachineResolver,
-    MachineResolverData,
-    MachineResolverService,
-    MachineResolverServiceInterface
+  MachineResolver,
+  MachineResolverData,
+  MachineResolverService,
+  MachineResolverServiceInterface
 } from "@services/machine-resolver/machine-resolver.service";
 
 import { FormsModule } from "@angular/forms";

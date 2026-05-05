@@ -20,10 +20,7 @@ import { Component, EventEmitter, inject, OnInit, Output } from "@angular/core";
 import { FormControl, FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 
-import {
-    TokenApiPayloadMapper,
-    TokenEnrollmentData
-} from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { TokenApiPayloadMapper, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { U2fApiPayloadMapper, U2fEnrollmentData } from "@app/mappers/token-api-payload/u2f-token-api-payload.mapper";
 
 export interface U2fEnrollmentOptions extends TokenEnrollmentData {

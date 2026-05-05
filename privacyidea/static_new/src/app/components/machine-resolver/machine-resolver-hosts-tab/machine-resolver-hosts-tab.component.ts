@@ -21,10 +21,7 @@ import { Component, input, linkedSignal, output, ViewEncapsulation } from "@angu
 import { FormsModule } from "@angular/forms";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
-import {
-    HostsMachineResolverData,
-    MachineResolverData
-} from "@services/machine-resolver/machine-resolver.service";
+import { HostsMachineResolverData, MachineResolverData } from "@services/machine-resolver/machine-resolver.service";
 
 @Component({
   selector: "app-machine-resolver-hosts-tab",

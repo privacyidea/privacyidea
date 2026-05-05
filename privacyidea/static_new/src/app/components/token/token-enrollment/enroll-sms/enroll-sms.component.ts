@@ -18,23 +18,20 @@
  **/
 import { Component, computed, effect, EventEmitter, inject, input, Input, OnInit, Output } from "@angular/core";
 import {
-    AbstractControl,
-    FormControl,
-    FormGroup,
-    FormsModule,
-    ReactiveFormsModule,
-    ValidatorFn,
-    Validators
+  AbstractControl,
+  FormControl,
+  FormGroup,
+  FormsModule,
+  ReactiveFormsModule,
+  ValidatorFn,
+  Validators
 } from "@angular/forms";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatOption } from "@angular/material/core";
 import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
 import { MatSelect } from "@angular/material/select";
-import {
-    TokenApiPayloadMapper,
-    TokenEnrollmentData
-} from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { TokenApiPayloadMapper, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { SmsApiPayloadMapper, SmsEnrollmentData } from "@app/mappers/token-api-payload/sms-token-api-payload.mapper";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { SMS_GATEWAY } from "@constants/token.constants";

@@ -113,14 +113,14 @@ export class SystemConfigComponent implements OnInit {
     this.systemService.saveSystemConfig(body).subscribe({
       next: (response: any) => {
         if (response.result.status) {
-          this.notificationService.openSnackBar("System configuration saved successfully.");
+          this.notificationService.success("System configuration saved successfully.");
         } else {
-          this.notificationService.openSnackBar("Failed to save system configuration.");
+          this.notificationService.error("Failed to save system configuration.");
         }
       },
       error: (error: any) => {
         console.error("Error saving system configuration:", error);
-        this.notificationService.openSnackBar("Error saving system configuration.");
+        this.notificationService.error("Error saving system configuration.");
       }
     });
   }
@@ -129,14 +129,14 @@ export class SystemConfigComponent implements OnInit {
     this.systemService.deleteUserCache().subscribe({
       next: (response: any) => {
         if (response.result.status) {
-          this.notificationService.openSnackBar("User cache deleted successfully.");
+          this.notificationService.success("User cache deleted successfully.");
         } else {
-          this.notificationService.openSnackBar("Failed to delete user cache.");
+          this.notificationService.error("Failed to delete user cache.");
         }
       },
       error: (error: any) => {
         console.error("Error deleting user cache:", error);
-        this.notificationService.openSnackBar("Error deleting user cache.");
+        this.notificationService.error("Error deleting user cache.");
       }
     });
   }
@@ -156,7 +156,7 @@ export class SystemConfigComponent implements OnInit {
       },
       error: (error: any) => {
         console.error("Error loading system documentation:", error);
-        this.notificationService.openSnackBar("Error loading system documentation.");
+        this.notificationService.error("Error loading system documentation.");
       }
     });
   }

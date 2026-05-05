@@ -4,16 +4,11 @@
 .token-table-layout {
   @include styles.main-component-style;
   @include table.base-table-structure(".token-table", ".token-table-filter", ".table-scroll-container");
-}
 
-.realm-break {
-  margin-top: 3px;
-}
-
-.sticky-header {
-  z-index: 120;
-}
-
-::ng-deep .token-table-filter-menu {
-  max-height: 400px;
+  .realm-break {
+    margin-top: 3px;
+  }
+  .sticky-header {
+    z-index: 120;
+  }
 }

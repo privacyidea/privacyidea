@@ -17,28 +17,28 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import {
-    Component,
-    ElementRef,
-    ViewChild,
-    WritableSignal,
-    computed,
-    inject,
-    linkedSignal,
-    signal
+  Component,
+  ElementRef,
+  ViewChild,
+  WritableSignal,
+  computed,
+  inject,
+  linkedSignal,
+  signal
 } from "@angular/core";
 import {
-    MatCell,
-    MatCellDef,
-    MatColumnDef,
-    MatHeaderCell,
-    MatHeaderCellDef,
-    MatHeaderRow,
-    MatHeaderRowDef,
-    MatNoDataRow,
-    MatRow,
-    MatRowDef,
-    MatTable,
-    MatTableDataSource
+  MatCell,
+  MatCellDef,
+  MatColumnDef,
+  MatHeaderCell,
+  MatHeaderCellDef,
+  MatHeaderRow,
+  MatHeaderRowDef,
+  MatNoDataRow,
+  MatRow,
+  MatRowDef,
+  MatTable,
+  MatTableDataSource
 } from "@angular/material/table";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";

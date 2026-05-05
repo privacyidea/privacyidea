@@ -17,34 +17,34 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import {
-    Component,
-    computed,
-    effect,
-    ElementRef,
-    inject,
-    Input,
-    linkedSignal,
-    signal,
-    ViewChild,
-    WritableSignal
+  Component,
+  computed,
+  effect,
+  ElementRef,
+  inject,
+  Input,
+  linkedSignal,
+  signal,
+  ViewChild,
+  WritableSignal
 } from "@angular/core";
 import { FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { MatIconButton } from "@angular/material/button";
 import { MatFormField, MatLabel } from "@angular/material/form-field";
 import {
-    MatCell,
-    MatHeaderCell,
-    MatHeaderRow,
-    MatRow,
-    MatTable,
-    MatTableDataSource,
-    MatTableModule
+  MatCell,
+  MatHeaderCell,
+  MatHeaderRow,
+  MatRow,
+  MatTable,
+  MatTableDataSource,
+  MatTableModule
 } from "@angular/material/table";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import {
-    ContainerDetailToken,
-    ContainerService,
-    ContainerServiceInterface
+  ContainerDetailToken,
+  ContainerService,
+  ContainerServiceInterface
 } from "@services/container/container.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";

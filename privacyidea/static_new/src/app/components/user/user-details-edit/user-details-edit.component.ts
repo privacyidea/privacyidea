@@ -18,15 +18,15 @@
  **/
 
 import {
-    Component,
-    computed,
-    effect,
-    inject,
-    input,
-    linkedSignal,
-    output,
-    signal,
-    WritableSignal
+  Component,
+  computed,
+  effect,
+  inject,
+  input,
+  linkedSignal,
+  output,
+  signal,
+  WritableSignal
 } from "@angular/core";
 import { MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";

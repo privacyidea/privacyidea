@@ -18,12 +18,12 @@
  **/
 import { Component, inject } from "@angular/core";
 import {
-    AbstractControl,
-    FormControl,
-    FormGroup,
-    ReactiveFormsModule,
-    ValidationErrors,
-    Validators
+  AbstractControl,
+  FormControl,
+  FormGroup,
+  ReactiveFormsModule,
+  ValidationErrors,
+  Validators
 } from "@angular/forms";
 import { MatAutocompleteModule } from "@angular/material/autocomplete";
 import { MatButtonModule } from "@angular/material/button";
@@ -70,7 +70,8 @@ export class TokenHotpMachineAssignDialogComponent extends AbstractDialogCompone
   assignAction: DialogAction<string> = {
     label: "Assign",
     value: "assign",
-    type: "confirm"
+    type: "confirm",
+    primary: true
   };
   onAction(actionValue: string): void {
     if (actionValue === "assign") {

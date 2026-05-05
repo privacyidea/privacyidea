@@ -27,9 +27,9 @@ import { MatSlideToggleModule } from "@angular/material/slide-toggle";
 import { MatSortModule, Sort } from "@angular/material/sort";
 import { MatTableModule } from "@angular/material/table";
 import { MatTooltipModule } from "@angular/material/tooltip";
-import { lastValueFrom } from "rxjs";
 
-import { EditPolicyDialogComponent } from "@components/policies/dialogs/edit-policy-dialog/edit-policy-dialog.component";
+import { Router } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
 import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
 import { FilterOption } from "@core/models/filter_value_generic/filter-option";
 import { FilterValueGeneric } from "@core/models/filter_value_generic/filter-value-generic";
@@ -70,6 +70,7 @@ export class PoliciesTableComponent {
   readonly dialogService: DialogServiceInterface = inject(DialogService);
   readonly authService: AuthServiceInterface = inject(AuthService);
   readonly tableUtilsService: TableUtilsServiceInterface = inject(TableUtilsService);
+  private readonly router = inject(Router);
 
   readonly filterComponent = viewChild<PolicyFilterComponent>("filterComponent");
 
@@ -201,14 +202,7 @@ export class PoliciesTableComponent {
 
   async editPolicy(policy: PolicyDetail): Promise<void> {
     if (!policy.name) return;
-    const _ = await lastValueFrom(
-      this.dialogService
-        .openDialog({
-          component: EditPolicyDialogComponent,
-          data: { mode: "edit", policyDetail: policy }
-        })
-        .afterClosed()
-    );
+    this.router.navigateByUrl(ROUTE_PATHS.POLICIES_DETAILS + policy.name);
   }
 }
 

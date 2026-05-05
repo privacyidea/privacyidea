@@ -21,9 +21,9 @@ import { Component, computed, inject, input, linkedSignal } from "@angular/core"
 import { MatButton } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 import {
-    BaseApiPayloadMapper,
-    EnrollmentResponseDetail,
-    TokenEnrollmentData
+  BaseApiPayloadMapper,
+  EnrollmentResponseDetail,
+  TokenEnrollmentData
 } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { OtpKeyComponent } from "@components/token/token-enrollment/token-enrollment-data/otp-key/otp-key.component";
 import { OtpValuesComponent } from "@components/token/token-enrollment/token-enrollment-data/otp-values/otp-values.component";
@@ -31,9 +31,9 @@ import { QrCodeTextComponent } from "@components/token/token-enrollment/token-en
 import { RegistrationCodeComponent } from "@components/token/token-enrollment/token-enrollment-data/registration-code/registration-code.component";
 import { TiqrEnrollUrlComponent } from "@components/token/token-enrollment/token-enrollment-data/tiqr-enroll-url/tiqr-enroll-url.component";
 import {
-    NO_QR_CODE_TOKEN_TYPES,
-    NO_REGENERATE_TOKEN_TYPES,
-    REGENERATE_AS_VALUES_TOKEN_TYPES
+  NO_QR_CODE_TOKEN_TYPES,
+  NO_REGENERATE_TOKEN_TYPES,
+  REGENERATE_AS_VALUES_TOKEN_TYPES
 } from "@components/token/token-enrollment/token-enrollment.constants";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
@@ -94,7 +94,7 @@ export class TokenEnrollmentDataComponent {
 
   regenerateQRCode() {
     if (!this.enrollmentParameters()) {
-      this.notificationService.openSnackBar($localize`Enrollment parameters are missing. Cannot regenerate token.`);
+      this.notificationService.warning($localize`Enrollment parameters are missing. Cannot regenerate token.`);
       return;
     }
     const newEnrollmentData: TokenEnrollmentData = {

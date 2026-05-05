@@ -33,9 +33,9 @@ import { ContentService, ContentServiceInterface } from "@services/content/conte
 import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import {
-    Challenge,
-    ChallengesService,
-    ChallengesServiceInterface
+  Challenge,
+  ChallengesService,
+  ChallengesServiceInterface
 } from "@services/token/challenges/challenges.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 

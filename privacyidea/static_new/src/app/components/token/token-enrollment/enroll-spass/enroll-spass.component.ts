@@ -20,13 +20,10 @@ import { Component, EventEmitter, inject, Input, OnInit, Output } from "@angular
 import { FormControl, FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 
+import { TokenApiPayloadMapper, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import {
-    TokenApiPayloadMapper,
-    TokenEnrollmentData
-} from "@app/mappers/token-api-payload/_token-api-payload.mapper";
-import {
-    SpassApiPayloadMapper,
-    SpassEnrollmentData
+  SpassApiPayloadMapper,
+  SpassEnrollmentData
 } from "@app/mappers/token-api-payload/spass-token-api-payload.mapper";
 
 export interface SpassEnrollmentOptions extends TokenEnrollmentData {

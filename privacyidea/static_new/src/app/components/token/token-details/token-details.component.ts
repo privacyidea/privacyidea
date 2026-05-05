@@ -35,11 +35,10 @@ import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
 import { MatListItem } from "@angular/material/list";
 import { MatSelectModule } from "@angular/material/select";
-import { MatTooltip } from "@angular/material/tooltip";
-import { RouterLink } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
+import { DetailsHeaderComponent } from "@components/shared/details-shared/details-header/details-header.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { AuditService, AuditServiceInterface } from "@services/audit/audit.service";
@@ -51,8 +50,8 @@ import { TokenDetailsInfoComponent } from "./token-details-info/token-details-in
 import { TokenDetailsMachineComponent } from "./token-details-machine/token-details-machine.component";
 import { TokenDetailsUserComponent } from "./token-details-user/token-details-user.component";
 import {
-    SshMachineAssignDialogData,
-    TokenSshMachineAssignDialogComponent
+  SshMachineAssignDialogData,
+  TokenSshMachineAssignDialogComponent
 } from "./token-machine-attach-dialog/token-ssh-machine-attach-dialog/token-ssh-machine-attach-dialog";
 
 export const tokenDetailsKeyMap = [
@@ -118,9 +117,7 @@ export const infoDetailsKeyMap = [{ key: "info", label: "Information" }];
     CopyButtonComponent,
     ClearableInputComponent,
     TokenDetailsMachineComponent,
-    MatTooltip,
-    RouterLink,
-    MatTooltip
+    DetailsHeaderComponent
   ],
   templateUrl: "./token-details.component.html",
   styleUrls: ["./token-details.component.scss"]

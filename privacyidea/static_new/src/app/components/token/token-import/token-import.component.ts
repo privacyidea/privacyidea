@@ -18,14 +18,14 @@
  **/
 import { Component, ElementRef, inject, Renderer2, signal, ViewChild } from "@angular/core";
 import {
-    AbstractControl,
-    FormControl,
-    FormGroup,
-    FormsModule,
-    ReactiveFormsModule,
-    ValidationErrors,
-    ValidatorFn,
-    Validators
+  AbstractControl,
+  FormControl,
+  FormGroup,
+  FormsModule,
+  ReactiveFormsModule,
+  ValidationErrors,
+  ValidatorFn,
+  Validators
 } from "@angular/forms";
 import { MatButton, MatIconButton } from "@angular/material/button";
 import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
@@ -158,7 +158,7 @@ export class TokenImportComponent {
           const success = result.result?.value?.n_imported || 0;
           const failed = result.result?.value?.n_not_imported || 0;
           const total = success + failed;
-          this.notificationService.openSnackBar(success + "/" + total + " tokens imported successfully.");
+          this.notificationService.success(success + "/" + total + " tokens imported successfully.");
         },
         error: (error) => {
           // error handled in the token service

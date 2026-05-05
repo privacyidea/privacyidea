@@ -31,15 +31,15 @@ import { MatInputModule } from "@angular/material/input";
 import { MatSelectModule } from "@angular/material/select";
 import { MatSlideToggleModule } from "@angular/material/slide-toggle";
 import {
-    AdditionalCondition,
-    COMPARATOR_OPTIONS,
-    ComparatorOptionKey,
-    HANDLE_MISSING_DATA_OPTIONS,
-    HandleMissingDataOptionKey,
-    PolicyDetail,
-    PolicyService,
-    SECTION_OPTIONS,
-    SectionOptionKey
+  AdditionalCondition,
+  COMPARATOR_OPTIONS,
+  ComparatorOptionKey,
+  HANDLE_MISSING_DATA_OPTIONS,
+  HandleMissingDataOptionKey,
+  PolicyDetail,
+  PolicyService,
+  SECTION_OPTIONS,
+  SectionOptionKey
 } from "@services/policies/policies.service";
 
 @Component({

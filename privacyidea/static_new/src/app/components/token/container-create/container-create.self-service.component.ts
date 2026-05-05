@@ -20,22 +20,13 @@ import { NgClass } from "@angular/common";
 import { Component, computed } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { MatButton, MatIconButton } from "@angular/material/button";
-import { MatCheckbox } from "@angular/material/checkbox";
 import { MatOption } from "@angular/material/core";
-import {
-    MatAccordion,
-    MatExpansionPanel,
-    MatExpansionPanelHeader,
-    MatExpansionPanelTitle
-} from "@angular/material/expansion";
-import { MatFormField, MatLabel, MatSuffix } from "@angular/material/form-field";
+import { MatFormField } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
-import { MatInput } from "@angular/material/input";
 import { MatSelect } from "@angular/material/select";
 import { MatTooltip } from "@angular/material/tooltip";
-import { ClearButtonComponent } from "@components/shared/clear-button/clear-button.component";
+import { ContainerCreateFormComponent } from "@components/shared/container-create-form/container-create-form.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
-import { ContainerRegistrationConfigComponent } from "@components/token/container-registration/container-registration-config/container-registration-config.component";
 import { ContainerCreateComponent } from "./container-create.component";
 
 @Component({
@@ -47,20 +38,11 @@ import { ContainerCreateComponent } from "./container-create.component";
     MatOption,
     MatSelect,
     FormsModule,
-    MatInput,
-    MatLabel,
-    MatCheckbox,
     MatIconButton,
-    MatAccordion,
-    MatExpansionPanel,
-    MatExpansionPanelTitle,
-    MatExpansionPanelHeader,
     MatTooltip,
     ScrollToTopDirective,
     NgClass,
-    ContainerRegistrationConfigComponent,
-    ClearButtonComponent,
-    MatSuffix
+    ContainerCreateFormComponent
   ],
   templateUrl: "./container-create.self-service.component.html",
   styleUrl: "./container-create.component.scss"

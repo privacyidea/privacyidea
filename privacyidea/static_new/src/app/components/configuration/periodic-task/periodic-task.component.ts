@@ -21,11 +21,7 @@ import { MatDivider } from "@angular/material/divider";
 import { MatAccordion } from "@angular/material/expansion";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
 import { AuthService } from "@services/auth/auth.service";
-import {
-    EMPTY_PERIODIC_TASK,
-    PeriodicTask,
-    PeriodicTaskService
-} from "@services/periodic-task/periodic-task.service";
+import { EMPTY_PERIODIC_TASK, PeriodicTask, PeriodicTaskService } from "@services/periodic-task/periodic-task.service";
 import { PeriodicTaskPanelNewComponent } from "./periodic-task-panel/periodic-task-panel-new.component";
 import { PeriodicTaskPanelComponent } from "./periodic-task-panel/periodic-task-panel.component";
 

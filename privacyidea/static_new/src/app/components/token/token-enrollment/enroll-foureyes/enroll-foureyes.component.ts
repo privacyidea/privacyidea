@@ -23,13 +23,10 @@ import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
 import { MatSelect } from "@angular/material/select";
 import {
-    FourEyesApiPayloadMapper,
-    FourEyesEnrollmentData
+  FourEyesApiPayloadMapper,
+  FourEyesEnrollmentData
 } from "@app/mappers/token-api-payload/4eyes-token-api-payload.mapper";
-import {
-    TokenApiPayloadMapper,
-    TokenEnrollmentData
-} from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { TokenApiPayloadMapper, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 
