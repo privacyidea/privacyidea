@@ -71,6 +71,7 @@ class ConfigKey:
     DB_EXTRA_PARAMS = "PI_DB_EXTRA_PARAMS"
 
     REDIS_URL = "PI_REDIS_URL"
+    REDIS_CACHE_CHALLENGES = "PI_REDIS_CACHE_CHALLENGES"
 
     AUDIT_SQL_URI = "PI_AUDIT_SQL_URI"
     AUDIT_SQL_OPTIONS = "PI_AUDIT_SQL_OPTIONS"
@@ -148,7 +149,7 @@ class DevelopmentConfig(Config):
     SECRET_KEY = os.environ.get(ConfigKey.SECRET_KEY) or 't0p s3cr3t'
     SQLALCHEMY_DATABASE_URI = os.environ.get(ConfigKey.DEV_DATABASE_URL) or \
                               'sqlite:///' + os.path.join(basedir, 'data-dev.sqlite')
-    PI_REDIS_URL = os.environ.get(ConfigKey.REDIS_URL) or 'redis://127.0.0.1:6379/0'
+    PI_REDIS_URL = os.environ.get(ConfigKey.REDIS_URL)
     PI_LOGLEVEL = logging.DEBUG
     PI_TRANSLATION_WARNING = "[Missing]"
 

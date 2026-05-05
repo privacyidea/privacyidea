@@ -3133,16 +3133,16 @@ def create_challenge(serial: str, transaction_id: str = None, challenge: str = '
     :param validitytime: Validity period in seconds (default: 120)
     :return: The created Challenge object
     """
-    from privacyidea.lib.cache import cache_challenge, get_redis
+    from privacyidea.lib.cache import cache_challenge, redis_feature_enabled
     db_challenge = Challenge(serial,
                              transaction_id=transaction_id,
                              challenge=challenge,
                              data=data if data is not None else '',
                              session=session if session is not None else '',
                              validitytime=validitytime)
-    if get_redis() is not None:
-        # Redis available: cache only, skip the DB write.
-        # Redis TTL handles expiry; challenges are ephemeral by nature.
+    if redis_feature_enabled("challenges"):
+        # Cache only, skip the DB write. Redis TTL handles expiry;
+        # challenges are ephemeral by nature.
         cache_challenge(
             serial=db_challenge.serial,
             transaction_id=db_challenge.transaction_id,
@@ -3152,9 +3152,9 @@ def create_challenge(serial: str, transaction_id: str = None, challenge: str = '
             timestamp=db_challenge.timestamp,
             expiration=db_challenge.expiration,
         )
-        # If cache_challenge() failed it called _disable_redis(), so get_redis()
-        # now returns None. Fall back to DB so the challenge is not lost.
-        if get_redis() is None:
+        # If cache_challenge() failed it called _disable_redis(), so the flag
+        # check now returns False. Fall back to DB so the challenge is not lost.
+        if not redis_feature_enabled("challenges"):
             db_challenge.save()
     else:
         db_challenge.save()

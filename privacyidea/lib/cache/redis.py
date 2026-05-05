@@ -28,6 +28,12 @@ Configuration (pi.cfg or environment):
     PI_REDIS_URL = "redis://localhost:6379/0"
     # or for Docker secrets:
     PI_REDIS_URL_FILE = "/run/secrets/redis_url"
+
+Setting PI_REDIS_URL alone does nothing — each cacheable workload has its own
+opt-in flag (e.g. PI_REDIS_CACHE_CHALLENGES) so they can be rolled out and
+rolled back independently.  Use ``redis_feature_enabled("challenges")`` to gate
+caller code; it returns True only when the client is connected *and* the
+per-feature flag is set.
 """
 import json
 import logging
@@ -79,6 +85,21 @@ def get_redis():
         else:
             store['_redis_client'] = None
     return store.get('_redis_client')
+
+
+def redis_feature_enabled(feature: str) -> bool:
+    """
+    Return True if Redis is reachable AND caching is enabled for ``feature``.
+
+    Each cacheable workload has its own boolean flag (PI_REDIS_CACHE_<FEATURE>)
+    so operators can stage rollouts and turn one workload off without touching
+    the others.  All callers should gate on this rather than on get_redis()
+    directly.
+    """
+    if get_redis() is None:
+        return False
+    key = f"PI_REDIS_CACHE_{feature.upper()}"
+    return bool(get_app_config_value(key, False))
 
 
 def _disable_redis(e: Exception):
@@ -183,11 +204,11 @@ def cache_challenge(serial: str, transaction_id: str, challenge: str, data: str,
                     received_count: int = 0, otp_valid: bool = False):
     """
     Store a newly created challenge in Redis.
-    Called from create_challenge() as the primary (and only) persistence when Redis is up.
+    Called from create_challenge() as the primary (and only) persistence when caching is enabled.
     """
-    r = get_redis()
-    if r is None:
+    if not redis_feature_enabled("challenges"):
         return
+    r = get_redis()
     try:
         ttl = max(1, int((expiration - utc_now()).total_seconds()) + _TTL_BUFFER_SECONDS)
         payload = json.dumps({
@@ -206,7 +227,6 @@ def cache_challenge(serial: str, transaction_id: str, challenge: str, data: str,
         pipe.sadd(_SERIAL_KEY.format(serial), transaction_id)
         pipe.expire(_SERIAL_KEY.format(serial), ttl)
         pipe.execute()
-        print(f"[REDIS] WRITE challenge txn={transaction_id} serial={serial} ttl={ttl}s")
     except Exception as e:
         _disable_redis(e)
 
@@ -216,9 +236,9 @@ def evict_challenge(transaction_id: str, serial: str):
     Remove a challenge from Redis.
     Called from ChallengeDTO.delete() and can be called on explicit invalidation.
     """
-    r = get_redis()
-    if r is None:
+    if not redis_feature_enabled("challenges"):
         return
+    r = get_redis()
     try:
         pipe = r.pipeline()
         pipe.delete(_TXN_KEY.format(transaction_id))
@@ -238,15 +258,14 @@ def get_challenges_from_cache(serial: str = None, transaction_id: str = None,
 
     A None return means "don't know" — an empty list means "found nothing".
     """
-    r = get_redis()
-    if r is None:
+    if not redis_feature_enabled("challenges"):
         return None
+    r = get_redis()
 
     try:
         if transaction_id:
             raw = r.get(_TXN_KEY.format(transaction_id))
             if raw is None:
-                print(f"[REDIS] MISS  txn={transaction_id}")
                 return None  # cache miss
             dto = _deserialize(raw)
             if dto is None:
@@ -256,14 +275,12 @@ def get_challenges_from_cache(serial: str = None, transaction_id: str = None,
         elif serial:
             txn_ids = r.smembers(_SERIAL_KEY.format(serial))
             if not txn_ids:
-                print(f"[REDIS] MISS  serial={serial}")
                 return None  # cache miss
             raws = r.mget([_TXN_KEY.format(tid) for tid in txn_ids])
             candidates = [_deserialize(raw) for raw in raws if raw is not None]
             candidates = [c for c in candidates if c is not None]
             if not candidates:
                 # All individual keys expired → treat as miss so DB is consulted
-                print(f"[REDIS] MISS  serial={serial} (all keys expired)")
                 return None
 
         else:
@@ -276,10 +293,6 @@ def get_challenges_from_cache(serial: str = None, transaction_id: str = None,
         if challenge is not None:
             candidates = [c for c in candidates if c.challenge == challenge]
 
-        result_serials = [c.serial for c in candidates]
-        print(f"[REDIS] HIT   {len(candidates)} challenge(s) "
-              f"query(txn={transaction_id or '-'} serial={serial or '-'}) "
-              f"result_serials={result_serials}")
         return candidates
 
     except Exception as e:
@@ -308,9 +321,9 @@ def _deserialize(raw: str) -> ChallengeDTO | None:
 
 def _update_challenge_in_cache(dto: ChallengeDTO):
     """Re-serialise a mutated ChallengeDTO back into Redis."""
-    r = get_redis()
-    if r is None:
+    if not redis_feature_enabled("challenges"):
         return
+    r = get_redis()
     try:
         remaining = int((dto.expiration - utc_now()).total_seconds()) + _TTL_BUFFER_SECONDS
         if remaining <= 0:

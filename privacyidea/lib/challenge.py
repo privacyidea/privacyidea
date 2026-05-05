@@ -34,8 +34,7 @@ import sqlalchemy
 from sqlalchemy import select, delete
 from sqlalchemy.sql import Select
 
-from .cache import get_challenges_from_cache
-from .cache.redis import get_redis
+from .cache import get_challenges_from_cache, redis_feature_enabled
 from .log import log_with
 from .policies.actions import PolicyAction
 from .sqlutils import delete_matching_rows
@@ -108,7 +107,7 @@ def get_challenges_paginate(serial=None, transaction_id=None,
     """
     # When Redis is active and a specific filter is given, serve from cache.
     # Pagination/sorting are applied in-memory since Redis has no native support.
-    if get_redis() is not None and (serial or transaction_id):
+    if redis_feature_enabled("challenges") and (serial or transaction_id):
         cached = get_challenges_from_cache(serial=serial, transaction_id=transaction_id)
         if cached is not None:
             # Apply in-memory sort

@@ -141,13 +141,14 @@ class _FakePipeline:
 
 
 @contextmanager
-def fake_redis_in_store(fake: FakeRedis | None = None):
+def fake_redis_in_store(fake: FakeRedis | None = None, enable_challenges: bool = True):
     """
     Context manager: inject *fake* (or None) into the app-local store so that
-    get_redis() returns it without network I/O.  Cleans up on exit.
+    get_redis() returns it without network I/O, and flip on the per-feature
+    cache flag so callers actually exercise the cache path.  Cleans up on exit.
     """
+    from flask import current_app
     store = get_app_local_store()
-    # Save and replace
     had_init = '_redis_initialized' in store
     had_client = '_redis_client' in store
     old_init = store.get('_redis_initialized')
@@ -155,6 +156,11 @@ def fake_redis_in_store(fake: FakeRedis | None = None):
 
     store['_redis_initialized'] = True
     store['_redis_client'] = fake
+
+    flag_key = 'PI_REDIS_CACHE_CHALLENGES'
+    had_flag = flag_key in current_app.config
+    old_flag = current_app.config.get(flag_key)
+    current_app.config[flag_key] = enable_challenges
     try:
         yield fake
     finally:
@@ -166,6 +172,10 @@ def fake_redis_in_store(fake: FakeRedis | None = None):
             store['_redis_client'] = old_client
         else:
             store.pop('_redis_client', None)
+        if had_flag:
+            current_app.config[flag_key] = old_flag
+        else:
+            current_app.config.pop(flag_key, None)
 
 
 def _make_dto(serial='SE_CACHE_1', txn='txn-test-001', challenge='abc',
@@ -456,6 +466,41 @@ class TestCreateChallengeIntegration(MyTestCase):
         self.assertIsNone(row, "Challenge must NOT be written to DB when Redis is available")
 
         self._assert_challenge_readable(txn_id, fake)
+
+    def test_create_challenge_flag_disabled_writes_to_db(self):
+        """
+        With Redis reachable but PI_REDIS_CACHE_CHALLENGES off, create_challenge()
+        must write through to the DB and skip the cache entirely.
+        """
+        fake = FakeRedis()
+        with fake_redis_in_store(fake, enable_challenges=False):
+            ch = create_challenge(self.serial, challenge='flag_off', validitytime=120)
+            txn_id = ch.transaction_id
+
+        row = Challenge.query.filter_by(transaction_id=txn_id).first()
+        self.assertIsNotNone(row, "Challenge must be written to DB when feature flag is off")
+        # And nothing should have been written to Redis
+        self.assertEqual(len(fake._data), 0,
+                         "No keys should exist in Redis when feature flag is off")
+
+    def test_get_challenges_flag_disabled_reads_from_db(self):
+        """
+        Even if a stale key happens to be in Redis, get_challenges() must skip
+        the cache and serve from the DB when the feature flag is off.
+        """
+        ch = Challenge(self.serial, transaction_id=None, challenge='db_only',
+                       data='', session='', validitytime=120)
+        ch.save()
+        txn_id = ch.transaction_id
+
+        fake = FakeRedis()
+        with fake_redis_in_store(fake, enable_challenges=False):
+            result = get_challenges(serial=self.serial, transaction_id=txn_id)
+
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].transaction_id, txn_id)
+        # Confirm the DB type came back, not a DTO
+        self.assertIsInstance(result[0], Challenge)
 
     def test_create_challenge_redis_fallback_to_db_on_write_failure(self):
         """If cache_challenge() fails, create_challenge() must fall back to DB."""
