@@ -66,6 +66,10 @@ import {
   ContainerRegistrationCompletedDialogComponent,
   ContainerRegistrationCompletedDialogData
 } from "./container-registration-completed-dialog/container-registration-completed-dialog.component";
+import {
+  ContainerTokensEnrolledDialogComponent,
+  ContainerTokensEnrolledDialogData
+} from "./container-tokens-enrolled-dialog/container-tokens-enrolled-dialog.component";
 
 @Component({
   selector: "app-container-create",
@@ -231,7 +235,7 @@ export class ContainerCreateComponent {
     }
 
     this.containerService.createContainer(createData).subscribe({
-      next: (response: PiResponse<{ container_serial: string }>) => {
+      next: (response) => {
         const containerSerial = response.result?.value?.container_serial;
         if (!containerSerial) {
           this.notificationService.error("Container creation failed. No container serial returned.");
@@ -240,7 +244,15 @@ export class ContainerCreateComponent {
         if (this.generateQRCode()) {
           this.registerContainer(containerSerial);
         } else {
-          this.onCreationSuccess(containerSerial);
+          const tokensRecord = response.result?.value?.tokens;
+          const enrolledTokens = tokensRecord
+            ? Object.entries(tokensRecord).map(([serial, detail]) => ({ ...detail, serial }))
+            : [];
+          if (enrolledTokens.length > 0) {
+            this.openTokensEnrolledDialog({ enrolledTokens, containerSerial });
+          } else {
+            this.onCreationSuccess(containerSerial);
+          }
         }
       }
     });
@@ -264,6 +276,7 @@ export class ContainerCreateComponent {
         if (regenerate) {
           this.dialogData.update((data) => (data ? { ...data, response: registerResponse } : data));
         } else {
+          this.containerSerial.set(serial);
           this.openRegistrationDialog(registerResponse, serial);
         }
       });
@@ -290,6 +303,14 @@ export class ContainerCreateComponent {
 
     this.containerService.startPolling(serial);
     dialogRef.afterClosed().subscribe(() => this.containerService.stopPolling());
+  }
+
+  protected openTokensEnrolledDialog(data: ContainerTokensEnrolledDialogData) {
+    this.dialogService.openDialog({
+      component: ContainerTokensEnrolledDialogComponent,
+      data,
+      configOverride: { minWidth: "750px", disableClose: true }
+    });
   }
 
   protected openRegistrationCompletedDialog(serial: string) {

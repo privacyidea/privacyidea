@@ -23,7 +23,11 @@ import { Sort } from "@angular/material/sort";
 import { Observable, Subject, catchError, forkJoin, lastValueFrom, of, throwError } from "rxjs";
 import { PiResponse } from "src/app/app.component";
 import { FilterValue } from "src/app/core/models/filter_value/filter_value";
-import { EnrollmentUrl, TokenEnrollmentPayload } from "src/app/mappers/token-api-payload/_token-api-payload.mapper";
+import {
+  EnrollmentResponseDetail,
+  EnrollmentUrl,
+  TokenEnrollmentPayload
+} from "src/app/mappers/token-api-payload/_token-api-payload.mapper";
 import { AuthService, AuthServiceInterface } from "src/app/services/auth/auth.service";
 import { ContentService, ContentServiceInterface } from "src/app/services/content/content.service";
 import { NotificationService, NotificationServiceInterface } from "src/app/services/notification/notification.service";
@@ -139,6 +143,11 @@ export interface ContainerTemplate {
   };
 }
 
+export interface ContainerCreateResult {
+  container_serial: string;
+  tokens?: Record<string, EnrollmentResponseDetail & { type: string }>;
+}
+
 export interface ContainerRegisterData {
   container_url: EnrollmentUrl;
   hash_algorithm: string;
@@ -221,7 +230,7 @@ export interface ContainerServiceInterface {
 
   stopPolling(): void;
 
-  createContainer(param: ContainerCreateData): Observable<PiResponse<{ container_serial: string }>>;
+  createContainer(param: ContainerCreateData): Observable<PiResponse<ContainerCreateResult>>;
 
   startPolling(containerSerial: string): void;
 }
@@ -887,10 +896,10 @@ export class ContainerService implements ContainerServiceInterface {
     this.stopPolling$.next();
   }
 
-  createContainer(createData: ContainerCreateData): Observable<PiResponse<{ container_serial: string }>> {
+  createContainer(createData: ContainerCreateData): Observable<PiResponse<ContainerCreateResult>> {
     const headers = this.authService.getHeaders();
     return this.http
-      .post<PiResponse<{ container_serial: string }>>(`${this.containerBaseUrl}init`, createData, { headers })
+      .post<PiResponse<ContainerCreateResult>>(`${this.containerBaseUrl}init`, createData, { headers })
       .pipe(
         catchError((error) => {
           console.error("Failed to create container.", error);

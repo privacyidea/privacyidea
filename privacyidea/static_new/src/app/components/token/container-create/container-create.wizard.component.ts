@@ -18,7 +18,7 @@
  **/
 import { AsyncPipe, NgClass, TitleCasePipe } from "@angular/common";
 import { HttpClient } from "@angular/common/http";
-import { Component, inject, linkedSignal, SecurityContext, Signal, WritableSignal } from "@angular/core";
+import { Component, inject, linkedSignal, SecurityContext, WritableSignal } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { MatButton, MatIconButton } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
@@ -26,6 +26,7 @@ import { MatTooltip } from "@angular/material/tooltip";
 import { DomSanitizer } from "@angular/platform-browser";
 import { map } from "rxjs";
 import { PiResponse } from "src/app/app.component";
+import { ContainerCreatedDialogWizardComponent } from "src/app/components/token/container-create/container-created-dialog/container-created-dialog.wizard.component";
 import { environment } from "../../../../environments/environment";
 import {
   ContainerRegisterData,
@@ -37,8 +38,6 @@ import { TokenService, TokenServiceInterface } from "../../../services/token/tok
 import { UserService, UserServiceInterface } from "../../../services/user/user.service";
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { ContainerCreateComponent } from "./container-create.component";
-import { ContainerCreationDialogData } from "./container-created-dialog/container-created-dialog.component";
-import { ContainerCreatedDialogWizardComponent } from "./container-created-dialog/container-created-dialog.wizard.component";
 import { ContainerRegistrationCompletedDialogData } from "./container-registration-completed-dialog/container-registration-completed-dialog.component";
 import { ContainerRegistrationCompletedDialogWizardComponent } from "./container-registration-completed-dialog/container-registration-completed-dialog.wizard.component";
 @Component({
@@ -80,6 +79,9 @@ export class ContainerCreateWizardComponent extends ContainerCreateComponent {
     this.description.set("");
   };
 
+  private readonly http = inject(HttpClient);
+  private readonly sanitizer = inject(DomSanitizer);
+
   customizationPath = "/static/public/customize/";
 
   readonly preTopHtml$ = this.http
@@ -99,13 +101,6 @@ export class ContainerCreateWizardComponent extends ContainerCreateComponent {
     })
     .pipe(map((raw) => this.sanitizer.sanitize(SecurityContext.HTML, raw)));
 
-  constructor(
-    private http: HttpClient,
-    private sanitizer: DomSanitizer
-  ) {
-    super();
-  }
-
   protected override onCreationSuccess(serial: string) {
     this.containerSerial.set(serial);
     this.openRegistrationDialog({
@@ -119,9 +114,10 @@ export class ContainerCreateWizardComponent extends ContainerCreateComponent {
       containerSerial: this.containerSerial,
       registerContainer: this.registerContainer.bind(this)
     });
+
     this.dialogService.openDialog({
       component: ContainerCreatedDialogWizardComponent,
-      data: this.dialogData as Signal<ContainerCreationDialogData>
+      data: this.dialogData
     });
   }
 
