@@ -3,8 +3,7 @@
 
 .tokengroups-container {
   @include styles.main-component-style;
-  @include styles.base-table-structure(".tokengroups-table", ".table-filter", ".table-scroll-container");
-  width: 664px;
+  @include styles.base-table-structure(".tokengroups-table", ".tokengroups-table-filter", ".table-scroll-container");
 }
 
 .actions-container {
