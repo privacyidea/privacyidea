@@ -51,7 +51,7 @@ $description-width: 18rem;
     max-width: 932px;
     min-width: 300px;
     width: 100%;
-    flex: 7 1 300px;
+    flex: 7 1;
 
     @media (max-width: 600px) {
       min-width: 0;

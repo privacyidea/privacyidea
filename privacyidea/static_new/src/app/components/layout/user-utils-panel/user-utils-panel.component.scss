@@ -1,10 +1,27 @@
 @use "styles";
 @use "@angular/material" as mat;
 
+$font-size-default: 14px;
+$breakpoint-compact: 1701px;
+
+@mixin text-label {
+  font-size: $font-size-default;
+  white-space: nowrap;
+}
+
+:host {
+  font-size: $font-size-default;
+}
+
 .utils-group {
-  border: solid 1px var(--mat-sys-surface-container-highest);
-  border-radius: var(--border-radius);
-  margin-bottom: 6px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 4px;
+  padding: 12px;
+  background-color: var(--table-color);
+  border-left: 1px solid var(--nav-item-border);
+  border-right: 1px solid var(--nav-item-border);
 }
 
 .utils-group-self-service {
@@ -13,43 +30,51 @@
   background-color: var(--mat-sys-surface-container-low);
   border-radius: var(--border-radius);
   @include mat.elevation(3);
+
+  &.utils {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-around;
+    align-items: center;
+  }
+
+  .session-timer {
+    width: auto;
+    text-align: right;
+    white-space: break-spaces;
+  }
 }
 
-.account-div {
+.profile-text-wrapper {
   display: flex;
-  flex-direction: row;
-  width: 248px;
-  justify-content: space-around;
   align-items: center;
-  background: var(--mat-sys-surface-container);
-  border-radius: var(--border-radius);
-  min-height: 40px;
-  padding: 4px;
-  gap: 4px;
-}
-
-.utils {
-  display: flex;
-  flex-direction: row;
-  justify-content: space-around;
-  align-items: center;
-}
-
-.session-timer {
-  width: auto;
-  text-align: right;
-  white-space: break-spaces;
+  overflow: hidden;
+  max-width: 300px;
 }
 
 .profile-text {
+  @include text-label;
   font-weight: bold;
-  text-align: center;
-  margin: 0;
-  padding: 0;
+  margin-right: 16px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.text-div {
-  display: flex;
-  flex-direction: column;
-  padding: 8px 0;
+.node-text {
+  @include text-label;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.session-timer {
+  @include text-label;
+  padding: 2px 6px;
+  border-radius: var(--border-radius);
+}
+
+@media (max-width: $breakpoint-compact) {
+  .profile-text,
+  .node-text {
+    display: none;
+  }
 }
