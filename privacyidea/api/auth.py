@@ -270,7 +270,7 @@ def get_auth_token():
                                 "success": False,
                                 "authentication": AUTH_RESPONSE.REJECT,
                                 "serial": token.get_serial(),
-                                "token_type": details.get("type")})
+                                "token_type": token.get_type()})
             return send_result(False, rid=2, details={"message": "Token is disabled"})
 
         if not token.user:
@@ -347,6 +347,8 @@ def get_auth_token():
             "user": user.login,
             "realm": user.realm,
             "resolver": user.resolver,
+            "serial": token.get_serial(),
+            "token_type": token.get_type(),
             "info": log_used_user(user)
         })
     # Check if the remote user is allowed
@@ -417,8 +419,13 @@ def get_auth_token():
             user_auth, role, details = check_webui_user(user, password, options=options,
                                                         superuser_realms=superuser_realms)
             details = details or {}
-            serials = (",".join([challenge_info["serial"] for challenge_info in details["multi_challenge"]])
-                       if 'multi_challenge' in details else details.get('serial'))
+            if 'multi_challenge' in details:
+                serials = ",".join([challenge_info["serial"] for challenge_info in details["multi_challenge"]])
+                token_types = ",".join([challenge_info["type"] for challenge_info in details["multi_challenge"]
+                                        if challenge_info.get("type")])
+            else:
+                serials = details.get('serial')
+                token_types = details.get('type')
             if local_admin_exist and user_auth and realm == get_default_realm():
                 # If there is a local admin with the same login name as the user
                 # in the default realm, we inform about this in the log file.
@@ -429,6 +436,7 @@ def get_auth_token():
                 "realm": user.realm,
                 "resolver": user.resolver,
                 "serial": serials,
+                "token_type": token_types,
                 "info": log_used_user(user, f"loginmode={details.get('loginmode')}")})
             if role == ROLE.ADMIN:
                 g.audit_object.log({"user": "", "administrator": user.login})
