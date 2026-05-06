@@ -16,6 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { NgClass, NgOptimizedImage, NgTemplateOutlet } from "@angular/common";
 import {
   AfterViewInit,
   Component,
@@ -27,35 +28,34 @@ import {
   signal,
   ViewChild
 } from "@angular/core";
-import { NgClass, NgOptimizedImage, NgTemplateOutlet } from "@angular/common";
-import { MatToolbar } from "@angular/material/toolbar";
-import { ROUTE_PATHS } from "src/app/route_paths";
+import { FormsModule } from "@angular/forms";
 import { MatIconButton } from "@angular/material/button";
 import { MatIcon, MatIconModule } from "@angular/material/icon";
-import { Router, RouterLink } from "@angular/router";
-import { UserService, UserServiceInterface } from "../../../services/user/user.service";
-import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
-import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
-import { NotificationService, NotificationServiceInterface } from "../../../services/notification/notification.service";
-import {
-  SessionTimerService,
-  SessionTimerServiceInterface
-} from "../../../services/session-timer/session-timer.service";
-import { VersioningService, VersioningServiceInterface } from "../../../services/version/version.service";
+import { MatMenuModule } from "@angular/material/menu";
+import { MatToolbar } from "@angular/material/toolbar";
 import { MatTooltipModule } from "@angular/material/tooltip";
+import { Router, RouterLink } from "@angular/router";
+import { UserUtilsPanelComponent } from "@components/layout/user-utils-panel/user-utils-panel.component";
+import { ROUTE_PATHS } from "src/app/route_paths";
+import { environment } from "../../../../environments/environment";
+import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
+import { ConfigService, ConfigServiceInterface } from "../../../services/config/config.service";
+import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
 import {
   DocumentationService,
   DocumentationServiceInterface
 } from "../../../services/documentation/documentation.service";
-import { FormsModule } from "@angular/forms";
-import { RealmService, RealmServiceInterface } from "../../../services/realm/realm.service";
-import { PeriodicTaskService } from "../../../services/periodic-task/periodic-task.service";
 import { EventService, EventServiceInterface } from "../../../services/event/event.service";
+import { NotificationService, NotificationServiceInterface } from "../../../services/notification/notification.service";
+import { PeriodicTaskService } from "../../../services/periodic-task/periodic-task.service";
+import { RealmService, RealmServiceInterface } from "../../../services/realm/realm.service";
+import {
+  SessionTimerService,
+  SessionTimerServiceInterface
+} from "../../../services/session-timer/session-timer.service";
 import { SystemService, SystemServiceInterface } from "../../../services/system/system.service";
-import { ConfigService, ConfigServiceInterface } from "../../../services/config/config.service";
-import { environment } from "../../../../environments/environment";
-import { UserUtilsPanelComponent } from "@components/layout/user-utils-panel/user-utils-panel.component";
-import { MatMenuModule } from "@angular/material/menu";
+import { UserService, UserServiceInterface } from "../../../services/user/user.service";
+import { VersioningService, VersioningServiceInterface } from "../../../services/version/version.service";
 import { OverflowNavDirective } from "./overflow-nav.directive";
 
 export interface NavItem {
@@ -162,14 +162,14 @@ export class NavigationComponent implements AfterViewInit, OnDestroy {
     return "token";
   });
   isOverflowSectionActive = computed(() => {
-    return this.overflowNavItems.some(item => item.section === this.activeSection());
+    return this.overflowNavItems.some((item) => item.section === this.activeSection());
   });
 
   get visibleNavItems(): NavItem[] {
     const items = this.getFilteredNavItems();
     const count = this.visibleNavCount();
     const activeSection = this.activeSection();
-    const activeIdx = items.findIndex(item => item.section === activeSection);
+    const activeIdx = items.findIndex((item) => item.section === activeSection);
 
     if (activeIdx !== -1 && activeIdx >= count && count > 0) {
       return [...items.slice(0, count - 1), items[activeIdx]];
@@ -182,12 +182,12 @@ export class NavigationComponent implements AfterViewInit, OnDestroy {
     const items = this.getFilteredNavItems();
     const count = this.visibleNavCount();
     const activeSection = this.activeSection();
-    const activeIdx = items.findIndex(item => item.section === activeSection);
+    const activeIdx = items.findIndex((item) => item.section === activeSection);
 
     if (activeIdx !== -1 && activeIdx >= count && count > 0) {
       const head = items.slice(0, count - 1);
       const activeItem = items[activeIdx];
-      return items.filter(item => item !== activeItem && !head.includes(item));
+      return items.filter((item) => item !== activeItem && !head.includes(item));
     }
 
     return items.slice(count);
@@ -218,7 +218,7 @@ export class NavigationComponent implements AfterViewInit, OnDestroy {
   }
 
   private getFilteredNavItems(): NavItem[] {
-    return this.primaryNavItems.filter(item => {
+    return this.primaryNavItems.filter((item) => {
       switch (item.section) {
         case "token":
           return this.authService.anyTokenActionAllowed();
@@ -269,7 +269,7 @@ export class NavigationComponent implements AfterViewInit, OnDestroy {
   private calculateVisibleItems(navEl: HTMLElement): void {
     const filteredItems = this.getFilteredNavItems();
     const activeSection = this.activeSection();
-    const activeIdx = filteredItems.findIndex(item => item.section === activeSection);
+    const activeIdx = filteredItems.findIndex((item) => item.section === activeSection);
 
     const currentNavItems = Array.from(navEl.querySelectorAll<HTMLElement>(".nav-item[data-section]"));
 

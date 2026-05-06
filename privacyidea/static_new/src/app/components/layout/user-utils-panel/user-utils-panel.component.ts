@@ -17,68 +17,68 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, HostListener, inject, signal } from "@angular/core";
-import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
+import { DatePipe, NgClass } from "@angular/common";
+import { Component, HostListener, computed, inject, signal } from "@angular/core";
+import { MatIconButton } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
 import { MatTooltip } from "@angular/material/tooltip";
-import { MatIconButton } from "@angular/material/button";
-import { ThemeSwitcherComponent } from "@components/shared/theme-switcher/theme-switcher.component";
-import { DatePipe, NgClass } from "@angular/common";
 import { Router } from "@angular/router";
 import { from } from "rxjs";
-import { NotificationService, NotificationServiceInterface } from "../../../services/notification/notification.service";
-import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
-import { TokenService, TokenServiceInterface } from "../../../services/token/token.service";
-import { ContainerService, ContainerServiceInterface } from "../../../services/container/container.service";
-import { ChallengesService, ChallengesServiceInterface } from "../../../services/token/challenges/challenges.service";
-import { MachineService, MachineServiceInterface } from "../../../services/machine/machine.service";
-import { UserService, UserServiceInterface } from "../../../services/user/user.service";
-import { RealmService, RealmServiceInterface } from "../../../services/realm/realm.service";
-import { VersioningService, VersioningServiceInterface } from "../../../services/version/version.service";
-import {
-  DocumentationService,
-  DocumentationServiceInterface
-} from "../../../services/documentation/documentation.service";
-import { AuditService, AuditServiceInterface } from "../../../services/audit/audit.service";
-import { ClientsService, ClientsServiceInterface } from "../../../services/clients/clients.service";
-import { PolicyService, PolicyServiceInterface } from "../../../services/policies/policies.service";
-import { SubscriptionService } from "../../../services/subscription/subscription.service";
-import {
-  MachineResolverService,
-  MachineResolverServiceInterface
-} from "../../../services/machine-resolver/machine-resolver.service";
+import { SaveAndExitDialogComponent } from "src/app/components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
+import { ThemeSwitcherComponent } from "src/app/components/shared/theme-switcher/theme-switcher.component";
+import { ROUTE_PATHS } from "src/app/route_paths";
+import { AuditService, AuditServiceInterface } from "src/app/services/audit/audit.service";
+import { AuthService, AuthServiceInterface } from "src/app/services/auth/auth.service";
+import { CaConnectorService, CaConnectorServiceInterface } from "src/app/services/ca-connector/ca-connector.service";
+import { ClientsService, ClientsServiceInterface } from "src/app/services/clients/clients.service";
 import {
   ContainerTemplateService,
   ContainerTemplateServiceInterface
-} from "../../../services/container-template/container-template.service";
+} from "src/app/services/container-template/container-template.service";
+import { ContainerService, ContainerServiceInterface } from "src/app/services/container/container.service";
+import { ContentService, ContentServiceInterface } from "src/app/services/content/content.service";
+import { DialogService, DialogServiceInterface } from "src/app/services/dialog/dialog.service";
 import {
-  SessionTimerService,
-  SessionTimerServiceInterface
-} from "../../../services/session-timer/session-timer.service";
-import { ResolverService, ResolverServiceInterface } from "../../../services/resolver/resolver.service";
-import { SmtpService, SmtpServiceInterface } from "../../../services/smtp/smtp.service";
+  DocumentationService,
+  DocumentationServiceInterface
+} from "src/app/services/documentation/documentation.service";
+import { EventService, EventServiceInterface } from "src/app/services/event/event.service";
 import {
-  RadiusServerService,
-  RadiusServerServiceInterface
-} from "../../../services/radius-server/radius-server.service";
-import { SmsGatewayService, SmsGatewayServiceInterface } from "../../../services/sms-gateway/sms-gateway.service";
-import {
-  PrivacyideaServerService,
-  PrivacyideaServerServiceInterface
-} from "../../../services/privacyidea-server/privacyidea-server.service";
-import { TokengroupService, TokengroupServiceInterface } from "../../../services/tokengroup/tokengroup.service";
-import { CaConnectorService, CaConnectorServiceInterface } from "../../../services/ca-connector/ca-connector.service";
-import { ServiceIdService, ServiceIdServiceInterface } from "../../../services/service-id/service-id.service";
-import { PeriodicTaskService } from "../../../services/periodic-task/periodic-task.service";
-import { EventService, EventServiceInterface } from "../../../services/event/event.service";
-import { SystemService, SystemServiceInterface } from "../../../services/system/system.service";
-import { ROUTE_PATHS } from "../../../route_paths";
+  MachineResolverService,
+  MachineResolverServiceInterface
+} from "src/app/services/machine-resolver/machine-resolver.service";
+import { MachineService, MachineServiceInterface } from "src/app/services/machine/machine.service";
+import { NotificationService, NotificationServiceInterface } from "src/app/services/notification/notification.service";
 import {
   PendingChangesService,
   PendingChangesServiceInterface
-} from "../../../services/pending-changes/pending-changes.service";
-import { DialogService, DialogServiceInterface } from "../../../services/dialog/dialog.service";
-import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
+} from "src/app/services/pending-changes/pending-changes.service";
+import { PeriodicTaskService } from "src/app/services/periodic-task/periodic-task.service";
+import { PolicyService, PolicyServiceInterface } from "src/app/services/policies/policies.service";
+import {
+  PrivacyideaServerService,
+  PrivacyideaServerServiceInterface
+} from "src/app/services/privacyidea-server/privacyidea-server.service";
+import {
+  RadiusServerService,
+  RadiusServerServiceInterface
+} from "src/app/services/radius-server/radius-server.service";
+import { RealmService, RealmServiceInterface } from "src/app/services/realm/realm.service";
+import { ResolverService, ResolverServiceInterface } from "src/app/services/resolver/resolver.service";
+import { ServiceIdService, ServiceIdServiceInterface } from "src/app/services/service-id/service-id.service";
+import {
+  SessionTimerService,
+  SessionTimerServiceInterface
+} from "src/app/services/session-timer/session-timer.service";
+import { SmsGatewayService, SmsGatewayServiceInterface } from "src/app/services/sms-gateway/sms-gateway.service";
+import { SmtpService, SmtpServiceInterface } from "src/app/services/smtp/smtp.service";
+import { SubscriptionService } from "src/app/services/subscription/subscription.service";
+import { SystemService, SystemServiceInterface } from "src/app/services/system/system.service";
+import { ChallengesService, ChallengesServiceInterface } from "src/app/services/token/challenges/challenges.service";
+import { TokenService, TokenServiceInterface } from "src/app/services/token/token.service";
+import { TokengroupService, TokengroupServiceInterface } from "src/app/services/tokengroup/tokengroup.service";
+import { UserService, UserServiceInterface } from "src/app/services/user/user.service";
+import { VersioningService, VersioningServiceInterface } from "src/app/services/version/version.service";
 
 @Component({
   selector: "app-user-utils-panel",
@@ -156,7 +156,7 @@ export class UserUtilsPanelComponent {
   profileTooltip = computed(() => {
     let tooltip = this.profileText();
     if (this.localNode()) {
-      tooltip += ' – ' + this.localNode();
+      tooltip += " – " + this.localNode();
     }
     return tooltip;
   });
@@ -197,7 +197,7 @@ export class UserUtilsPanelComponent {
       this.containerService.containerResource.reload();
       return;
     } else if (this.contentService.onTokensContainersDetails()) {
-      this.containerService.containerDetailResource.reload();
+      this.containerService.containerDetailsResource.reload();
       this.tokenService.tokenResource.reload();
       this.userService.usersResource.reload();
       return;

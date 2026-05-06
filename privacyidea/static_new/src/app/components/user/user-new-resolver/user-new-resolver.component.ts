@@ -17,12 +17,10 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-
 import {
   AfterViewInit,
   Component,
   computed,
-  DestroyRef,
   effect,
   ElementRef,
   inject,
@@ -36,14 +34,15 @@ import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { AbstractControl, FormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCardModule } from "@angular/material/card";
+import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatIconModule } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
-import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatOption, MatSelect, MatSelectModule } from "@angular/material/select";
 import { ActivatedRoute, Router } from "@angular/router";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { finalize } from "rxjs";
 import { ROUTE_PATHS } from "src/app/route_paths";
 import { DialogService, DialogServiceInterface } from "src/app/services/dialog/dialog.service";
 import { NotificationService } from "src/app/services/notification/notification.service";
@@ -56,7 +55,6 @@ import { LdapResolverComponent } from "./ldap-resolver/ldap-resolver.component";
 import { PasswdResolverComponent } from "./passwd-resolver/passwd-resolver.component";
 import { ScimResolverComponent } from "./scim-resolver/scim-resolver.component";
 import { SqlResolverComponent } from "./sql-resolver/sql-resolver.component";
-import { finalize } from "rxjs";
 
 @Component({
   selector: "app-user-new-resolver",
@@ -93,9 +91,8 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
   private readonly _route = inject(ActivatedRoute);
   private readonly _dialogService: DialogServiceInterface = inject(DialogService);
   private readonly _pendingChangesService = inject(PendingChangesService);
-  private readonly _destroyRef = inject(DestroyRef);
-  protected readonly _renderer: Renderer2 = inject(Renderer2);
 
+  protected readonly _renderer: Renderer2 = inject(Renderer2);
 
   private _observer!: IntersectionObserver;
   private _editInitialized = false;
@@ -143,7 +140,6 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
     this._pendingChangesService.registerSave(() => this.onSave());
     this._pendingChangesService.registerValidChanges(() => this.canSave);
 
-
     effect(() => {
       const selectedName = this._resolverService.selectedResolverName();
       const resourceRef = this._resolverService.selectedResolverResource;
@@ -175,7 +171,6 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
         }
       }
     });
-
   }
 
   get isEditMode(): boolean {

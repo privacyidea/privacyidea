@@ -1,0 +1,25 @@
+.progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.progress-label {
+  font-size: 14px;
+  color: var(--mat-sys-on-surface-variant);
+}
+
+.token-type {
+  font-weight: 500;
+}
+
+.progress-bar {
+  margin-bottom: 24px;
+  border-radius: 4px;
+}
+
+.enrollment-data {
+  height: 600px;
+  overflow-y: auto;
+}

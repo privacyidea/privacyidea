@@ -8,6 +8,18 @@
     ".table-scroll-container"
   );
 
+  .container-details-token-table {
+    .mat-mdc-row {
+      &.comparison-status-excess {
+        background-color: color-mix(in srgb, var(--yellow-light), transparent 40%);
+      }
+
+      &.comparison-status-missing {
+        background-color: color-mix(in srgb, var(--red-light), transparent 40%);
+      }
+    }
+  }
+
   .container-details-action-row {
     padding: 0 16px 0 32px;
     display: flex;
@@ -21,5 +33,28 @@
     flex-direction: column;
     gap: 8px;
     align-items: center;
+  }
+
+  .table-link-button {
+    background: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+    font-family: inherit;
+    font-size: inherit;
+    cursor: pointer;
+
+    color: var(--mat-sys-primary);
+    text-decoration: underline;
+    transition: color 0.2s ease-in-out;
+
+    &:hover {
+      color: var(--mat-sys-primary-base-hover);
+      text-decoration: none;
+    }
+
+    &:active {
+      color: var(--mat-sys-primary-base-active);
+    }
   }
 }

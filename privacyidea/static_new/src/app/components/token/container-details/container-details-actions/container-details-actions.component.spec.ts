@@ -16,24 +16,24 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { provideHttpClient } from "@angular/common/http";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { ContainerDetailsActionsComponent } from "./container-details-actions.component";
+import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from "@angular/material/dialog";
+import { NavigationEnd, Router } from "@angular/router";
+import { of, Subject } from "rxjs";
 import {
   MockContainerService,
-  MockNotificationService,
   MockContentService,
-  MockLocalService
+  MockLocalService,
+  MockNotificationService
 } from "../../../../../testing/mock-services";
+import { MockAuthService } from "../../../../../testing/mock-services/mock-auth-service";
+import { PiResponse } from "../../../../app.component";
 import { AuthService } from "../../../../services/auth/auth.service";
 import { ContainerService } from "../../../../services/container/container.service";
-import { NotificationService } from "../../../../services/notification/notification.service";
 import { ContentService } from "../../../../services/content/content.service";
-import { MAT_DIALOG_DATA, MatDialog, MatDialogRef } from "@angular/material/dialog";
-import { of, Subject } from "rxjs";
-import { PiResponse } from "../../../../app.component";
-import { provideHttpClient } from "@angular/common/http";
-import { NavigationEnd, Router } from "@angular/router";
-import { MockAuthService } from "../../../../../testing/mock-services/mock-auth-service";
+import { NotificationService } from "../../../../services/notification/notification.service";
+import { ContainerDetailsActionsComponent } from "./container-details-actions.component";
 
 const routerEvents$ = new Subject<NavigationEnd>();
 routerEvents$.next(new NavigationEnd(1, "/", "/"));
@@ -133,10 +133,10 @@ describe("ContainerDetailsActionsComponent", () => {
     const unregisterResponse = { result: { value: { success: true } } } as PiResponse<any>;
     mockContainerService.unregister.mockReturnValue(of(unregisterResponse));
     jest.spyOn(mockNotificationService, "success");
-    jest.spyOn(mockContainerService.containerDetailResource, "reload");
+    jest.spyOn(mockContainerService.containerDetailsResource, "reload");
     component.unregisterContainer();
     expect(mockContainerService.unregister).toHaveBeenCalledWith("SMPH-1");
     expect(mockNotificationService.success).toHaveBeenCalledWith("Container unregistered successfully.");
-    expect(mockContainerService.containerDetailResource.reload).toHaveBeenCalled();
+    expect(mockContainerService.containerDetailsResource.reload).toHaveBeenCalled();
   });
 });

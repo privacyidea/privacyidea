@@ -74,16 +74,28 @@ export class TokenEnrollmentDataComponent {
     this.enrolledData()?.motpurl?.img ??
     this.enrolledData()?.otpkey?.img ??
     this.enrolledData()?.tiqrenroll?.img ??
+    this.enrolledData()?.pushurl?.img ??
     "");
   protected readonly url = computed(() =>
     this.enrolledData()?.googleurl?.value ??
     this.enrolledData()?.motpurl?.value ??
     this.enrolledData()?.otpkey?.value ??
     this.enrolledData()?.tiqrenroll?.value ??
+    this.enrolledData()?.pushurl?.value ??
     "");
   protected readonly verify_message = computed(() => this.enrolledData()?.verify?.message ?? null);
 
   showQRCode = computed(() => !NO_QR_CODE_TOKEN_TYPES.includes(this.tokenType()));
+  protected readonly hasEnrollmentData = computed(() =>
+    !!(
+      (this.showQRCode() && this.qrCode()) ||
+      this.enrolledData()?.["password"] ||
+      (this.enrolledData()?.otpkey?.value && !this.enrolledData()?.["otps"] && this.showQRCode()) ||
+      this.tokenType() === "tiqr" ||
+      this.tokenType() === "registration" ||
+      this.enrolledData()?.["otps"]
+    )
+  );
   showRegenerateButton = computed(() => !NO_REGENERATE_TOKEN_TYPES.includes(this.tokenType()));
   regenerateButtonText = computed(() =>
     REGENERATE_AS_VALUES_TOKEN_TYPES.includes(this.tokenType()) ? $localize`Regenerate Values` : $localize`Regenerate QR Code`);

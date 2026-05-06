@@ -18,18 +18,18 @@
  **/
 import { HttpClient, HttpHeaders } from "@angular/common/http";
 import { computed, inject, Injectable, Signal, signal, WritableSignal } from "@angular/core";
+import { MatDialog } from "@angular/material/dialog";
+import { Router } from "@angular/router";
 import { Observable, throwError } from "rxjs";
 import { catchError, tap } from "rxjs/operators";
 import { environment } from "../../../environments/environment";
 import { PiResponse } from "../../app.component";
 import { BEARER_TOKEN_STORAGE_KEY } from "../../core/constants";
-import { LocalService, LocalServiceInterface } from "../local/local.service";
-import { VersioningService, VersioningServiceInterface } from "../version/version.service";
 import { tokenTypes } from "../../utils/token.utils";
-import { PolicyAction } from "./policy-actions";
-import { Router } from "@angular/router";
+import { LocalService, LocalServiceInterface } from "../local/local.service";
 import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
-import { MatDialog } from "@angular/material/dialog";
+import { VersioningService, VersioningServiceInterface } from "../version/version.service";
+import { PolicyAction } from "./policy-actions";
 
 export type AuthResponse = PiResponse<AuthData, AuthDetail>;
 
@@ -180,27 +180,16 @@ export interface AuthServiceInterface {
 
   // Methods
   getHeaders(): HttpHeaders;
-
   authenticate(params: any): Observable<AuthResponse>;
-
   acceptAuthentication(): void;
-
   logout(): void;
-
   actionAllowed(action: PolicyAction): boolean;
-
   actionsAllowed(actions: PolicyAction[]): boolean;
-
   oneActionAllowed(actions: PolicyAction[]): boolean;
-
   anyContainerActionAllowed(): boolean;
-
   tokenEnrollmentAllowed(): boolean;
-
   anyTokenActionAllowed(): boolean;
-
   checkForceServerGenerateOTPKey(tokenType: string): boolean;
-
   check2Step(tokenType: string): TwoStepValue;
 }
 
@@ -236,7 +225,7 @@ export class AuthService implements AuthServiceInterface {
   readonly rightsWithValues = computed(() => {
     const rightsList = this.rights();
     const result: Record<string, string | null> = {};
-    rightsList.forEach(entry => {
+    rightsList.forEach((entry) => {
       const equation_index = entry.indexOf("=");
       if (equation_index === -1) {
         if (!(entry in result)) {

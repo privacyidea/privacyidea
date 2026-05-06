@@ -16,7 +16,13 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { Component, effect, inject, linkedSignal, ViewChild, WritableSignal, ElementRef, signal } from "@angular/core";
+import { NgClass } from "@angular/common";
+import { Component, effect, ElementRef, inject, linkedSignal, signal, ViewChild, WritableSignal } from "@angular/core";
+import { MatIconButton } from "@angular/material/button";
+import { MatIcon } from "@angular/material/icon";
+import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
+import { MatPaginator } from "@angular/material/paginator";
+import { Sort } from "@angular/material/sort";
 import {
   MatCell,
   MatCellDef,
@@ -31,24 +37,18 @@ import {
   MatTable,
   MatTableDataSource
 } from "@angular/material/table";
-import { MatPaginator } from "@angular/material/paginator";
-import { CopyButtonComponent } from "../../../shared/copy-button/copy-button.component";
+import { MatTooltip } from "@angular/material/tooltip";
+import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
 import {
   ContainerDetailData,
   ContainerService,
   ContainerServiceInterface
 } from "../../../../services/container/container.service";
-import { TableUtilsService, TableUtilsServiceInterface } from "../../../../services/table-utils/table-utils.service";
 import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
-import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
+import { TableUtilsService, TableUtilsServiceInterface } from "../../../../services/table-utils/table-utils.service";
 import { UserService, UserServiceInterface } from "../../../../services/user/user.service";
 import { ClearableInputComponent } from "../../../shared/clearable-input/clearable-input.component";
-import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
-import { NgClass } from "@angular/common";
-import { MatTooltip } from "@angular/material/tooltip";
-import { MatIcon } from "@angular/material/icon";
-import { MatIconButton } from "@angular/material/button";
-import { Sort } from "@angular/material/sort";
+import { CopyButtonComponent } from "../../../shared/copy-button/copy-button.component";
 
 @Component({
   selector: "app-user-details-container-table",
@@ -87,15 +87,9 @@ export class UserDetailsContainerTableComponent {
   protected readonly authService: AuthServiceInterface = inject(AuthService);
   protected readonly userService: UserServiceInterface = inject(UserService);
 
-  readonly columnsKeyMap = this.tableUtilsService.pickColumns(
-    "serial",
-    "type",
-    "states",
-    "description",
-    "realms"
-  );
+  readonly columnsKeyMap = this.tableUtilsService.pickColumns("serial", "type", "states", "description", "realms");
   readonly columnKeys = [...this.tableUtilsService.getColumnKeys(this.columnsKeyMap)];
-  displayedColumns: string[] = this.columnsKeyMap.map(c => c.key);
+  displayedColumns: string[] = this.columnsKeyMap.map((c) => c.key);
 
   dataSource = new MatTableDataSource<ContainerDetailData>([]);
   filterValue = "";
@@ -105,7 +99,7 @@ export class UserDetailsContainerTableComponent {
   pageSizeOptions = this.tableUtilsService.pageSizeOptions;
 
   @ViewChild(MatPaginator) paginator!: MatPaginator;
-  @ViewChild('filterInput', { static: false }) filterInput!: ElementRef<HTMLInputElement>;
+  @ViewChild("filterInput", { static: false }) filterInput!: ElementRef<HTMLInputElement>;
 
   userContainers: WritableSignal<ContainerDetailData[]> = linkedSignal({
     source: this.containerService.containerResource.value,
@@ -137,13 +131,9 @@ export class UserDetailsContainerTableComponent {
     this.dataSource.filterPredicate = (row: ContainerDetailData, filter: string) => {
       const currentState = (row.states?.[0] ?? "").toString();
       const realmsJoined = (row.realms ?? []).join(" ");
-      const haystack = [
-        row.serial,
-        row.type,
-        row.description ?? "",
-        currentState,
-        realmsJoined
-      ].join(" ").toLowerCase();
+      const haystack = [row.serial, row.type, row.description ?? "", currentState, realmsJoined]
+        .join(" ")
+        .toLowerCase();
 
       return haystack.includes(filter);
     };

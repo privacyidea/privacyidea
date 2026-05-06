@@ -19,20 +19,23 @@
 import { computed, Signal, signal, WritableSignal } from "@angular/core";
 import { of, Subject } from "rxjs";
 
+import { Sort } from "@angular/material/sort";
 import { FilterValue } from "src/app/core/models/filter_value/filter_value";
+import { PiResponse } from "../../app/app.component";
 import {
   ContainerDetailData,
   ContainerDetails,
   ContainerServiceInterface,
   ContainerTemplate,
   ContainerType,
-  ContainerTypes
+  ContainerTypes,
+  TemplateComparisonResult
 } from "../../app/services/container/container.service";
-import { PiResponse } from "../../app/app.component";
-import { Sort } from "@angular/material/sort";
 import { MockHttpResourceRef, MockPiResponse } from "./mock-utils";
 
 export class MockContainerService implements ContainerServiceInterface {
+  containersForTokenType: Signal<string[]> = signal([]);
+  compareWithTemplate: Signal<() => void> = signal(() => {});
   compatibleWithSelectedTokenType = signal<string | null>(null);
   isPollingActive: Signal<boolean> = signal(false);
   apiFilter: string[] = [];
@@ -42,7 +45,7 @@ export class MockContainerService implements ContainerServiceInterface {
   eventPageSize: number = 10;
   states = signal<string[]>([]);
   readonly containerSerial = signal("CONT-1");
-  readonly selectedContainer = signal("");
+  readonly selectedContainerSerial = signal("");
   readonly sort = signal<Sort>({ active: "serial", direction: "asc" });
   readonly containerFilter = signal<FilterValue>(new FilterValue());
   readonly filterParams = computed<Record<string, string>>(() =>
@@ -75,7 +78,7 @@ export class MockContainerService implements ContainerServiceInterface {
     ];
   });
   selectedContainerType = signal<ContainerType | undefined>(undefined);
-  containerDetailResource = new MockHttpResourceRef(
+  containerDetailsResource = new MockHttpResourceRef(
     MockPiResponse.fromValue({
       containers: [
         {
@@ -93,7 +96,9 @@ export class MockContainerService implements ContainerServiceInterface {
       count: 1
     })
   );
-  containerDetail = signal<ContainerDetails>({ containers: [], count: 0 });
+  containerDetails = signal<ContainerDetails>({ containers: [], count: 0 });
+  containerDetail = signal<ContainerDetailData | null>(null);
+  templateComparison: WritableSignal<TemplateComparisonResult | null> = signal(null);
   addToken = jest.fn().mockReturnValue(of(null));
   removeToken = jest.fn().mockReturnValue(of(null));
   setContainerRealm = jest.fn().mockReturnValue(of(null));
@@ -110,9 +115,7 @@ export class MockContainerService implements ContainerServiceInterface {
   deleteContainer = jest.fn().mockReturnValue(of({}));
   deleteAllTokens = jest.fn().mockReturnValue(of(null));
 
-  registerContainer = jest.fn(() =>
-    of(MockPiResponse.fromValue({})) as any
-  );
+  registerContainer = jest.fn(() => of(MockPiResponse.fromValue({})) as any);
 
   readonly unregister = jest.fn().mockReturnValue(of({}));
   containerBelongsToUser = jest.fn().mockReturnValue(false);
