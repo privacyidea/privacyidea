@@ -862,8 +862,9 @@ describe("ContainerService", () => {
         .spyOn(http, "get")
         .mockReturnValue(throwError(() => ({ error: { result: { error: { message: "Comparison failed" } } } })));
 
-      await expect(containerService.compareWithTemplate()).rejects.toBeDefined();
+      await containerService.compareWithTemplate();
       expect(notificationServiceMock.error).toHaveBeenCalledWith("Failed to compare: Comparison failed");
+      expect(containerService.templateComparison()).toBeNull();
     });
   });
 
