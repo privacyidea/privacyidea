@@ -28,6 +28,7 @@ import {
 import { LostTokenData, TokenService, TokenServiceInterface } from "../../../../../services/token/token.service";
 import { AbstractDialogComponent } from "../../../../shared/dialog/abstract-dialog/abstract-dialog.component";
 import { DialogWrapperComponent } from "../../../../shared/dialog/dialog-wrapper/dialog-wrapper.component";
+import { DialogAction } from "src/app/models/dialog";
 
 @Component({
   selector: "app-lost-token",
@@ -46,6 +47,12 @@ export class LostTokenComponent extends AbstractDialogComponent<
   protected readonly tokenService: TokenServiceInterface = inject(TokenService);
   private readonly notificationService: NotificationServiceInterface = inject(NotificationService);
   lostTokenData?: LostTokenData;
+  protected closeAction: DialogAction<void> = {
+    label: "Close",
+    type: "cancel",
+    value: undefined,
+    primary: this.data.isLost(),
+  }
 
   constructor() {
     super();
@@ -71,5 +78,11 @@ export class LostTokenComponent extends AbstractDialogComponent<
     }
     this.dialogRef.close();
     this.data.tokenSerial.set(tokenSerial);
+  }
+
+  onCloseAction(): void {
+    this.data.isLost.set(false);
+    this.lostTokenData = undefined;
+    this.dialogRef.close();
   }
 }

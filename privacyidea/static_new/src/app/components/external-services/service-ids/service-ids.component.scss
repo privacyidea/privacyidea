@@ -1,5 +1,4 @@
-@use "../../../../styles";
-@use "@angular/material" as mat;
+@use "styles";
 
 .service-ids-container {
   @include styles.main-component-style;
