@@ -491,9 +491,12 @@ myApp.controller("policyDetailsController", ["$scope", "$stateParams",
                 }
             });
             if (policy.user_agents) {
-                angular.forEach($scope.userAgents, function (value, key) {
-                    if (policy.user_agents.indexOf(value.identifier) > -1) {
-                        $scope.userAgents[key].ticked = true;
+                angular.forEach(policy.user_agents, function (identifier) {
+                    const existing = $scope.userAgents.find(a => a.identifier === identifier);
+                    if (existing) {
+                        existing.ticked = true;
+                    } else {
+                        $scope.userAgents.push({name: identifier, identifier: identifier, ticked: true});
                     }
                 });
             }
