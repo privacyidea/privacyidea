@@ -60,7 +60,8 @@ from privacyidea.lib.error import (ResourceNotFoundError, ValidateError,
 from privacyidea.lib.log import log_with
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import (SCOPE, GROUP, Match,
-                                    get_action_values_from_options)
+                                    get_action_values_from_options,
+                                    comma_escape_text)
 from privacyidea.lib.smsprovider.SMSProvider import get_smsgateway, create_sms_instance
 from privacyidea.lib.token import get_one_token, init_token
 from privacyidea.lib.tokenclass import (TokenClass, AuthenticationMode, ClientMode,
@@ -464,6 +465,13 @@ class PushTokenClass(TokenClass):
                            PushAction.PUSH_CODE_TO_PHONE_MESSAGE: {
                                'type': 'str',
                                'desc': _('The message that is shown above the code on the smartphone.'),
+                               'group': 'PUSH'
+                           },
+                           PolicyAction.CHALLENGETEXT: {
+                               'type': 'str',
+                               'desc': _('Use an alternative challenge text for telling the '
+                                         'user to confirm the authentication on his mobile device.')
+                                       + " " + comma_escape_text,
                                'group': 'PUSH'
                            },
                            PushAction.PRESENCE_OPTIONS: {
@@ -1119,7 +1127,8 @@ class PushTokenClass(TokenClass):
         """
         options = options or {}
         message = get_action_values_from_options(SCOPE.AUTH,
-                                                 PolicyAction.CHALLENGETEXT,
+                                                 "{0!s}_{1!s}".format(self.get_class_type(),
+                                                                      PolicyAction.CHALLENGETEXT),
                                                  options) or str(DEFAULT_CHALLENGE_TEXT)
 
         message = message.replace(r'\,', ',')
