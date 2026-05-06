@@ -1,6 +1,5 @@
 @use "styles";
 @use "table";
-@use "@angular/material" as mat;
 
 .audit-table-container {
   @include styles.main-component-style;

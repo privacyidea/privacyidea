@@ -1,6 +1,5 @@
 @use "styles";
 @use "table";
-@use "@angular/material" as mat;
 
 .container-templates-layout {
   @include styles.main-component-style;

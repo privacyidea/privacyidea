@@ -1,5 +1,4 @@
-@use "../../../../styles";
-@use "@angular/material" as mat;
+@use "styles";
 
 .tokengroups-container {
   @include styles.main-component-style;

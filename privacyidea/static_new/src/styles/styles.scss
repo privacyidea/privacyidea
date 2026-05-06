@@ -3,6 +3,7 @@
 @use "@angular/material/core/style/elevation" as mat-elevation;
 @use "theme";
 @use "material-icons/iconfont/material-icons.scss";
+@forward "table" show base-table-structure;
 
 @include meta.load-css("mixins.scss");
 @include meta.load-css("buttons.scss");
@@ -11,7 +12,6 @@
 @include meta.load-css("info.scss");
 @include meta.load-css("inputs.scss");
 @include meta.load-css("tab.scss");
-@include meta.load-css("table.scss");
 @include meta.load-css("panel.scss");
 @include meta.load-css("list.scss");
 @include meta.load-css("actions.scss");

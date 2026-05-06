@@ -1,6 +1,5 @@
 @use "styles";
 @use "table";
-@use "@angular/material" as mat;
 
 .machine-resolver-layout {
   @include styles.main-component-style;
