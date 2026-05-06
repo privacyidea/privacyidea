@@ -30,7 +30,7 @@ $breakpoint-compact: 1701px;
   min-height: 48px;
   background-color: var(--mat-sys-surface-container-low);
   border-radius: var(--border-radius);
-  @include mat.elevation(3);
+  box-shadow: var(--elevation-3);
 
   &.utils {
     display: flex;

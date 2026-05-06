@@ -1,5 +1,6 @@
 @use "sass:meta";
 @use "@angular/material" as mat;
+@use "@angular/material/core/style/elevation" as mat-elevation;
 @use "theme";
 @use "material-icons/iconfont/material-icons.scss";
 
@@ -45,6 +46,18 @@ body {
   --border-radius: 4px;
   --light-distance: -4px;
   --shadow-distance: 2px;
+
+  // Pre-baked Material elevation shadows (0..24) as CSS variables.
+  // Generated at build time so that elevation can be re-skinned at runtime
+  // by reassigning --elevation-3 / --elevation-5 / --elevation-8.
+  @for $z from 0 through 24 {
+    --mat-elevation-#{$z}: #{mat-elevation.get-box-shadow($z)};
+  }
+
+  // User-tunable "current" elevations. Override at runtime to change look & feel.
+  --elevation-3: var(--mat-elevation-3);
+  --elevation-5: var(--mat-elevation-5);
+  --elevation-8: var(--mat-elevation-8);
 
   --double-global-padding: calc(var(--global-padding) * 2);
   --global-padding: 16px;
@@ -134,7 +147,7 @@ body {
 @mixin main-component-style {
   padding: var(--global-padding);
   border-radius: var(--border-radius);
-  @include mat.elevation(5);
+  box-shadow: var(--elevation-5);
   background-color: var(--table-color);
   // subtract double global padding to preserve margin around the component
   // subtract single global padding which is the defined padding above to correctly get the displayed width of the component
@@ -597,7 +610,7 @@ body.self-service-layout {
 }
 
 .select-option {
-  @include mat.elevation(3);
+  box-shadow: var(--elevation-3);
   border-radius: var(--border-radius);
   margin: 0 0 var(--third-global-padding) 0;
 }
@@ -613,7 +626,7 @@ body.self-service-layout {
 }
 
 .sticky-header.is-sticky {
-  @include mat.elevation(3);
+  box-shadow: var(--elevation-3);
 }
 
 .sticky-controls {

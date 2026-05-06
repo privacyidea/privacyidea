@@ -270,7 +270,7 @@ $button-low-contrast-variant: linear-gradient(
   width: 48px;
   color: var(--mat-sys-on-surface);
   border-radius: var(--border-radius);
-  @include mat.elevation(5);
+  box-shadow: var(--elevation-5);
 }
 
 .back-button {
@@ -278,7 +278,7 @@ $button-low-contrast-variant: linear-gradient(
   margin: 32px 16px 0 16px;
 
   &:hover {
-    @include mat.elevation(8);
+    box-shadow: var(--elevation-8);
   }
 }
 
@@ -421,10 +421,10 @@ $button-low-contrast-variant: linear-gradient(
   width: calc(var(--header-height) / 3);
   color: var(--mat-sys-on-surface);
   border-radius: var(--border-radius);
-  @include mat.elevation(5);
+  box-shadow: var(--elevation-5);
 
   &:hover {
-    @include mat.elevation(8);
+    box-shadow: var(--elevation-8);
     background: var(--mat-sys-surface-container-low);
     color: var(--mat-sys-on-surface-variant);
   }
@@ -691,10 +691,10 @@ $button-low-contrast-variant: linear-gradient(
   color: var(--mat-sys-on-surface-variant);
   border-radius: var(--border-radius);
   border: unset;
-  @include mat.elevation(5);
+  box-shadow: var(--elevation-5);
 
   &:hover {
-    @include mat.elevation(8);
+    box-shadow: var(--elevation-8);
   }
 }
 

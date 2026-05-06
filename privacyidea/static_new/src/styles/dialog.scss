@@ -9,7 +9,7 @@
 @mixin dialog-container-styles {
   padding: var(--global-padding);
   border-radius: var(--border-radius);
-  @include mat.elevation(5);
+  box-shadow: var(--elevation-5);
   background-color: var(--table-color);
 
   // subtract double global padding to preserve margin around the component
