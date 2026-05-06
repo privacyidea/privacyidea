@@ -16,17 +16,14 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-// src/app/shared/directives/scroll-adjuster.directive.ts
+
 import { AfterViewInit, Directive, ElementRef, Input, OnDestroy } from "@angular/core";
-import { Subject } from "rxjs"; // fromEvent and debounceTime are not directly used in the directive, but for context if you add back window resize listener.
-// For current implementation, they are not needed here if ResizeObserver handles container resize.
 
 @Directive({
   selector: "[appScrollAdjuster]",
   standalone: true
 })
 export class ScrollAdjusterDirective implements AfterViewInit, OnDestroy {
-  private destroy$ = new Subject<void>();
   private resizeObserver!: ResizeObserver;
   private mutationObserver!: MutationObserver;
   @Input() scrollItemSelector: string = ".scroll-item"; // Default selector, can be overridden
@@ -58,8 +55,6 @@ export class ScrollAdjusterDirective implements AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    this.destroy$.next();
-    this.destroy$.complete();
     if (this.resizeObserver) {
       this.resizeObserver.disconnect();
     }
