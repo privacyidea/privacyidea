@@ -53,8 +53,7 @@ export class ContainerTableActionsComponent {
   protected readonly notificationService = inject(NotificationService);
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
   containerSelection = this.containerService.containerSelection;
-  containerSerial = this.containerService.containerSerial;
-  selectedContainer = this.containerService.selectedContainer;
+  selectedContainer = this.containerService.selectedContainerSerial;
   readonly advancedApiFilter = this.containerService.advancedApiFilter;
 
   deleteSelectedContainer(): void {

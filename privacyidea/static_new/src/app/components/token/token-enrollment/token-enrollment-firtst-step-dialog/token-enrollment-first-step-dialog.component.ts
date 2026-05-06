@@ -21,8 +21,8 @@ import { MatDialogContent } from "@angular/material/dialog";
 import { EnrollmentResponse } from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
 import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
 import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
-import { DialogWrapperComponent } from "../../../shared/dialog/dialog-wrapper/dialog-wrapper.component";
 import { AbstractDialogComponent } from "../../../shared/dialog/abstract-dialog/abstract-dialog.component";
+import { DialogWrapperComponent } from "../../../shared/dialog/dialog-wrapper/dialog-wrapper.component";
 
 @Component({
   selector: "app-token-enrollment-first-step-dialog",
@@ -47,6 +47,6 @@ export class TokenEnrollmentFirstStepDialogComponent extends AbstractDialogCompo
 
   containerSelected(containerSerial: string) {
     this.dialogRef.close();
-    this.contentService.containerSelected(containerSerial);
+    this.contentService.navigateContainerDetails(containerSerial);
   }
 }

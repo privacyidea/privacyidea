@@ -16,45 +16,43 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
 import { Component, computed, effect, inject, linkedSignal, signal, WritableSignal } from "@angular/core";
-import { ContainerService, ContainerServiceInterface } from "../../../services/container/container.service";
-import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
-import { EditableElement, EditButtonsComponent } from "../../shared/edit-buttons/edit-buttons.component";
 import { FormsModule, ReactiveFormsModule } from "@angular/forms";
 import { MatAutocomplete, MatAutocompleteTrigger } from "@angular/material/autocomplete";
 import { MatCell, MatColumnDef, MatRow, MatTable, MatTableModule } from "@angular/material/table";
+import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
+import { ContainerService, ContainerServiceInterface } from "../../../services/container/container.service";
+import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
 import { RealmService, RealmServiceInterface } from "../../../services/realm/realm.service";
 import { TableUtilsService, TableUtilsServiceInterface } from "../../../services/table-utils/table-utils.service";
 import { TokenDetails, TokenService, TokenServiceInterface } from "../../../services/token/token.service";
+import { EditableElement, EditButtonsComponent } from "../../shared/edit-buttons/edit-buttons.component";
 
-import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
-import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
+import { NgClass } from "@angular/common";
+import { MatIconButton } from "@angular/material/button";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
-import { MatIconButton } from "@angular/material/button";
 import { MatInput } from "@angular/material/input";
 import { MatListItem } from "@angular/material/list";
 import { MatSelectModule } from "@angular/material/select";
-import { NgClass } from "@angular/common";
+import { DetailsHeaderComponent } from "@components/shared/details-shared/details-header/details-header.component";
+import { FilterValue } from "../../../core/models/filter_value/filter_value";
 import { ROUTE_PATHS } from "../../../route_paths";
-import { RouterLink } from "@angular/router";
+import { AuditService, AuditServiceInterface } from "../../../services/audit/audit.service";
+import { PolicyAction } from "../../../services/auth/policy-actions";
+import { DialogService, DialogServiceInterface } from "../../../services/dialog/dialog.service";
+import { MachineService, MachineServiceInterface } from "../../../services/machine/machine.service";
+import { ClearableInputComponent } from "../../shared/clearable-input/clearable-input.component";
+import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { TokenDetailsActionsComponent } from "./token-details-actions/token-details-actions.component";
 import { TokenDetailsInfoComponent } from "./token-details-info/token-details-info.component";
+import { TokenDetailsMachineComponent } from "./token-details-machine/token-details-machine.component";
 import { TokenDetailsUserComponent } from "./token-details-user/token-details-user.component";
 import {
   SshMachineAssignDialogData,
   TokenSshMachineAssignDialogComponent
 } from "./token-machine-attach-dialog/token-ssh-machine-attach-dialog/token-ssh-machine-attach-dialog";
-import { TokenDetailsMachineComponent } from "./token-details-machine/token-details-machine.component";
-import { DetailsHeaderComponent } from "@components/shared/details-shared/details-header/details-header.component";
-import { PolicyAction } from "../../../services/auth/policy-actions";
-import { MachineService, MachineServiceInterface } from "../../../services/machine/machine.service";
-import { FilterValue } from "../../../core/models/filter_value/filter_value";
-import { MatTooltip } from "@angular/material/tooltip";
-import { AuditService, AuditServiceInterface } from "../../../services/audit/audit.service";
-import { DialogService, DialogServiceInterface } from "../../../services/dialog/dialog.service";
 
 export const tokenDetailsKeyMap = [
   { key: "tokentype", label: "Type" },
@@ -137,7 +135,6 @@ export class TokenDetailsComponent {
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
   tokenIsActive = this.tokenService.tokenIsActive;
   tokenIsRevoked = this.tokenService.tokenIsRevoked;
-  containerSerial = this.containerService.containerSerial;
   tokenSerial = this.tokenService.tokenSerial;
   isEditingUser = signal(false);
   isEditingInfo = signal(false);
@@ -151,33 +148,35 @@ export class TokenDetailsComponent {
   });
   tokenDetailResource = this.tokenService.tokenDetailResource;
   tokenDetails: WritableSignal<TokenDetails> = linkedSignal({
-    source: () => this.tokenDetailResource.hasValue() ? this.tokenDetailResource.value() : undefined,
+    source: () => (this.tokenDetailResource.hasValue() ? this.tokenDetailResource.value() : undefined),
     computation: (tokenDetailResource) => {
       const tokenDetail = tokenDetailResource?.result?.value?.tokens[0] as TokenDetails | undefined;
-      return tokenDetail ?? {
-        active: false,
-        container_serial: "",
-        count: 0,
-        count_window: 0,
-        description: "",
-        failcount: 0,
-        id: 0,
-        info: {},
-        locked: false,
-        maxfail: 0,
-        otplen: 0,
-        realms: [],
-        resolver: "",
-        revoked: false,
-        rollout_state: "",
-        serial: "",
-        sync_window: 0,
-        tokengroup: [],
-        tokentype: "hotp",
-        user_id: "",
-        user_realm: "",
-        username: ""
-      };
+      return (
+        tokenDetail ?? {
+          active: false,
+          container_serial: "",
+          count: 0,
+          count_window: 0,
+          description: "",
+          failcount: 0,
+          id: 0,
+          info: {},
+          locked: false,
+          maxfail: 0,
+          otplen: 0,
+          realms: [],
+          resolver: "",
+          revoked: false,
+          rollout_state: "",
+          serial: "",
+          sync_window: 0,
+          tokengroup: [],
+          tokentype: "hotp",
+          user_id: "",
+          user_realm: "",
+          username: ""
+        }
+      );
     }
   });
   tokenDetailData = linkedSignal({
@@ -282,7 +281,9 @@ export class TokenDetailsComponent {
   saveTokenEdit(element: EditableElement<string>) {
     switch (element.keyMap.key) {
       case "container_serial":
-        this.containerService.selectedContainer.set(this.containerService.selectedContainer()?.trim() ?? null);
+        this.containerService.selectedContainerSerial.set(
+          this.containerService.selectedContainerSerial()?.trim() ?? null
+        );
         this.saveContainer();
         break;
       case "tokengroup":
@@ -326,7 +327,7 @@ export class TokenDetailsComponent {
   }
 
   saveContainer() {
-    const selectedContainer = this.containerService.selectedContainer();
+    const selectedContainer = this.containerService.selectedContainerSerial();
     if (selectedContainer) {
       this.containerService.addToken(this.tokenSerial(), selectedContainer).subscribe({
         next: () => {
@@ -345,7 +346,7 @@ export class TokenDetailsComponent {
 
     this.containerService.removeToken(this.tokenSerial(), containerSerial).subscribe({
       next: () => {
-        this.containerService.selectedContainer.set("");
+        this.containerService.selectedContainerSerial.set("");
         this.tokenDetailResource.reload();
       }
     });
@@ -377,7 +378,7 @@ export class TokenDetailsComponent {
   private resetEdit(type: string): void {
     switch (type) {
       case "container_serial":
-        this.containerService.selectedContainer.set("");
+        this.containerService.selectedContainerSerial.set("");
         break;
       case "tokengroup":
         this.selectedTokengroup.set(this.tokenDetailData().find((detail) => detail.keyMap.key === "tokengroup")?.value);

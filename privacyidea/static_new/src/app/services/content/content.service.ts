@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { computed, inject, Injectable, Signal, signal, WritableSignal } from "@angular/core";
+import { computed, inject, Injectable, linkedSignal, Signal, signal, WritableSignal } from "@angular/core";
 import { toSignal } from "@angular/core/rxjs-interop";
 import { NavigationEnd, Router } from "@angular/router";
 import { filter, map, pairwise, startWith } from "rxjs";
@@ -55,6 +55,8 @@ export interface ContentServiceInterface {
   onAnyTokensRoute: Signal<boolean>;
   onAnyUsersRoute: Signal<boolean>;
   onTokensContainersTemplates: Signal<boolean>;
+  onTokensContainersTemplatesCreate: Signal<boolean>;
+  onTokensContainersTemplatesDetails: Signal<boolean>;
   onEvents: Signal<boolean>;
   onConfigurationSystem: Signal<boolean>;
   onConfigurationTokenTypes: Signal<boolean>;
@@ -73,7 +75,7 @@ export interface ContentServiceInterface {
   onMachineResolver: Signal<boolean>;
 
   tokenSelected: (serial: string) => void;
-  containerSelected: (containerSerial: string) => void;
+  navigateContainerDetails: (containerSerial: string) => void;
   userSelected: (username: string, realm: string) => void;
   machineResolverSelected: (resolverName: string) => void;
 }
@@ -94,7 +96,15 @@ export class ContentService implements ContentServiceInterface {
   readonly routeUrl = computed(() => this._urlPair()[1]);
   readonly previousUrl = computed(() => this._urlPair()[0]);
   tokenSerial = signal("");
-  containerSerial = signal("");
+  containerSerial: WritableSignal<string> = linkedSignal({
+    source: this.routeUrl,
+    computation: (url, previous) => {
+      if (url.startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS)) {
+        return previous?.value ?? "";
+      }
+      return "";
+    }
+  });
   machineResolver = signal("");
   onLogin = computed(() => this.routeUrl() === ROUTE_PATHS.LOGIN);
   onAudit = computed(() => this.routeUrl() === ROUTE_PATHS.AUDIT);
@@ -133,6 +143,12 @@ export class ContentService implements ContentServiceInterface {
       this.routeUrl() === ROUTE_PATHS.USERS_NEW
   );
   onTokensContainersTemplates = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS_CONTAINERS_TEMPLATES);
+  onTokensContainersTemplatesCreate = computed(
+    () => this.routeUrl() === ROUTE_PATHS.TOKENS_CONTAINERS_TEMPLATES_CREATE
+  );
+  onTokensContainersTemplatesDetails = computed(() =>
+    this.routeUrl().startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_TEMPLATES_DETAILS)
+  );
   onEvents = computed(
     () =>
       this.routeUrl() === ROUTE_PATHS.EVENTS ||
@@ -199,7 +215,7 @@ export class ContentService implements ContentServiceInterface {
     this.tokenSerial.set(serial);
   }
 
-  containerSelected(containerSerial: string): void {
+  navigateContainerDetails(containerSerial: string): void {
     this.router.navigateByUrl(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + encodeURIComponent(containerSerial));
     this.containerSerial.set(containerSerial);
   }

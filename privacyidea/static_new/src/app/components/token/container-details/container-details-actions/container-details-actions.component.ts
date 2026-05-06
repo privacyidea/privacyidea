@@ -74,24 +74,21 @@ export class ContainerDetailsActionsComponent {
   passphraseResponse: string = "";
   userStorePW: boolean = false;
   dialogData = signal<ContainerRegisterFinalizeData | undefined>(undefined);
-  registrationState = computed(() => {
-    return this.containerService.containerDetail()?.containers[0]?.info?.registration_state ?? "";
-  });
+  registrationState = computed(
+    () => this.containerService.containerDetails()?.containers[0]?.info?.registration_state ?? ""
+  );
 
-  registrationAllowed = computed(() => {
-    return (
-      ["client_wait", ""].includes(this.registrationState()) && this.authService.actionAllowed("container_register")
-    );
-  });
-  rolloverAllowed = computed(() => {
-    return (
+  registrationAllowed = computed(
+    () => ["client_wait", ""].includes(this.registrationState()) && this.authService.actionAllowed("container_register")
+  );
+  rolloverAllowed = computed(
+    () =>
       ["registered", "rollover", "rollover_completed"].includes(this.registrationState()) &&
       this.authService.actionAllowed("container_rollover")
-    );
-  });
-  unregisterAllowed = computed(() => {
-    return this.registrationState() !== "" && this.authService.actionAllowed("container_unregister");
-  });
+  );
+  unregisterAllowed = computed(
+    () => this.registrationState() !== "" && this.authService.actionAllowed("container_unregister")
+  );
   anyActionsAllowed = computed(() => {
     const container_delete_allowed = this.authService.actionAllowed("container_delete");
     return (
@@ -106,7 +103,6 @@ export class ContainerDetailsActionsComponent {
   }
 
   constructor() {
-    // Effect to close dialog when polling stops
     effect(() => {
       if (!this.containerService.isPollingActive()) {
         this.dialogService.closeAllDialogs();
@@ -115,7 +111,7 @@ export class ContainerDetailsActionsComponent {
   }
 
   enrollTokenInContainer() {
-    this.containerService.selectedContainer.set(this.containerSerial);
+    this.containerService.selectedContainerSerial.set(this.containerSerial);
     this.router.navigateByUrl(ROUTE_PATHS.TOKENS_ENROLLMENT);
   }
 
@@ -151,8 +147,8 @@ export class ContainerDetailsActionsComponent {
   }
 
   openRegisterInitDialog(rollover: boolean) {
-    const container = this.containerService.containerDetailResource.hasValue()
-      ? this.containerService.containerDetailResource.value()?.result?.value?.containers?.[0]
+    const container = this.containerService.containerDetailsResource.hasValue()
+      ? this.containerService.containerDetailsResource.value()?.result?.value?.containers?.[0]
       : undefined;
     this.dialogService.openDialog({
       component: ContainerRegistrationInitDialogComponent,
@@ -204,7 +200,7 @@ export class ContainerDetailsActionsComponent {
         } else {
           this.notificationService.error("Failed to unregister container.");
         }
-        this.containerService.containerDetailResource.reload();
+        this.containerService.containerDetailsResource.reload();
       });
   }
 

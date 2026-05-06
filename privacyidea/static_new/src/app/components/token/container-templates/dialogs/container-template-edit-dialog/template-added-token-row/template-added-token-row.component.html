@@ -24,6 +24,13 @@
       {{ tokenEnrollmentPayload().type }}
     </mat-panel-title>
     <div class="token-actions">
+      <mat-checkbox
+        [checked]="userAssign()"
+        (change)="toggleUserAssign($event.checked)"
+        (click)="$event.stopPropagation()"
+        i18n>
+        Assign to user
+      </mat-checkbox>
       <button
         mat-icon-button
         (click)="removeToken(); $event.stopPropagation()">

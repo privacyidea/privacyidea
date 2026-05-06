@@ -100,32 +100,32 @@
 
         <td
           mat-cell
-          *matCellDef="let element"
+          *matCellDef="let template"
           [class]="'col-' + column.key">
-          @if (element.name) {
+          @if (template.name) {
             @switch (column.key) {
               @case ("name") {
                 <a
                   role="button"
                   tabindex="0"
-                  (click)="$event.stopPropagation(); openEditDialog(element)"
-                  (keydown.enter)="$event.stopPropagation(); openEditDialog(element)"
-                  (keydown.space)="$event.preventDefault(); $event.stopPropagation(); openEditDialog(element)"
+                  (click)="$event.stopPropagation(); onClickTemplateName(template)"
+                  (keydown.enter)="$event.stopPropagation(); onClickTemplateName(template)"
+                  (keydown.space)="$event.preventDefault(); $event.stopPropagation(); onClickTemplateName(template)"
                   class="text-link-button cursor-pointer"
-                  [attr.aria-label]="element.name ? 'Edit template ' + element.name : 'Edit template'"
+                  [attr.aria-label]="template.name ? 'Edit template ' + template.name : 'Edit template'"
                   i18n-aria-label>
-                  {{ element.name }}
+                  {{ template.name }}
                 </a>
               }
               @case ("tokens") {
-                <app-view-template-tokens [templateTokens]="element.template_options.tokens">
+                <app-view-template-tokens [templateTokens]="template.template_options.tokens">
                 </app-view-template-tokens>
               }
               @case ("default") {
-                {{ element.default }}
+                {{ template.default }}
               }
               @default {
-                {{ element[column.key] }}
+                {{ template[column.key] }}
               }
             }
           }

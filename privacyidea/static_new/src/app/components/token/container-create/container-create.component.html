@@ -1,5 +1,5 @@
 <!--
- (c) NetKnights GmbH 2025,  https://netknights.it
+ (c) NetKnights GmbH 2026,  https://netknights.it
 
  This code is free software; you can redistribute it and/or
  modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -28,8 +28,7 @@
     #stickyHeader
     class="sticky-header">
     <div class="sticky-controls ali-center">
-      <mat-form-field
-        class="input-width-xl type-select">
+      <mat-form-field class="input-width-xl type-select">
         <mat-select
           [(ngModel)]="containerService.selectedContainerType"
           [ngModelOptions]="{ standalone: true }"
@@ -39,7 +38,9 @@
             <mat-option
               [value]="type"
               class="select-option">
-              {{ type.description }}
+              <div>
+                {{ type.description }}
+              </div>
             </mat-option>
           }
         </mat-select>
@@ -73,21 +74,26 @@
       [description]="description"
       [selectedTemplate]="selectedTemplate"
       [templateOptions]="templateOptions"
+      [availableTokenTypes]="availableTokenTypes"
       [generateQRCode]="generateQRCode"
       [passphrasePrompt]="passphrasePrompt"
       [passphraseResponse]="passphraseResponse"
       [userStorePassphrase]="userStorePassphrase"
-      [showRegistration]="containerService.selectedContainerType()?.containerType === 'smartphone' && authService.actionAllowed('container_register')"
-      [containerHasOwner]="userSelected()"
+      [showRegistration]="containerService.selectedContainerType()?.containerType === 'smartphone'"
+      [containerHasOwner]="isUserSelected()"
+      [templateFieldClass]="'input-width-l'"
       (validInputChange)="onValidInputChange($event)"
-      (clearTemplate)="clearTemplateSelection()">
-      <div userAssignment>
-        <h4 i18n>
-          Assign the Container to a User
-        </h4>
-        <div class="flex-row gap-16">
-          <app-user-assignment [showOnlyAddToRealm]="true"></app-user-assignment>
-        </div>
+      (clearTemplate)="clearTemplateSelection()"
+      (templateChange)="onTemplateChange($event)">
+      <h4
+        userAssignment
+        i18n>
+        Assign the Container to a User
+      </h4>
+      <div
+        userAssignment
+        class="flex-row gap-16">
+        <app-user-assignment [showOnlyAddToRealm]="true"></app-user-assignment>
       </div>
     </app-container-create-form>
   </div>

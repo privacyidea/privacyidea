@@ -28,8 +28,7 @@
     #stickyHeader
     class="sticky-header">
     <div class="sticky-controls ali-center">
-      <mat-form-field
-        class="input-width-xl">
+      <mat-form-field class="input-width-xl type-select">
         <mat-select
           [(ngModel)]="containerService.selectedContainerType"
           [ngModelOptions]="{ standalone: true }"
@@ -39,19 +38,21 @@
             <mat-option
               [value]="type"
               class="select-option">
-              {{ type.description }}
+              <div>
+                {{ type.description }}
+              </div>
             </mat-option>
           }
         </mat-select>
       </mat-form-field>
-      <div class="enroll-button-container">
+      <div class="enroll-button-container margin-left-auto">
         <button
           (click)="createContainer()"
           [disabled]="!validInput"
-          class="action-button-primary button-width-m margin-left-auto"
+          class="action-button-primary button-width-m"
           mat-stroked-button>
           <mat-icon>create_new_folder</mat-icon>
-          Create
+          Create Container
         </button>
         <button
           (click)="reopenEnrollmentDialog()"
@@ -73,15 +74,17 @@
       [description]="description"
       [selectedTemplate]="selectedTemplate"
       [templateOptions]="templateOptions"
+      [availableTokenTypes]="availableTokenTypes"
       [generateQRCode]="generateQRCode"
       [passphrasePrompt]="passphrasePrompt"
       [passphraseResponse]="passphraseResponse"
       [userStorePassphrase]="userStorePassphrase"
       [showRegistration]="containerService.selectedContainerType()?.containerType === 'smartphone'"
-      [containerHasOwner]="userSelected()"
-      [templateFieldClass]="'input-width-xl'"
+      [containerHasOwner]="isUserSelected()"
+      [templateFieldClass]="'input-width-l'"
       (validInputChange)="onValidInputChange($event)"
-      (clearTemplate)="clearTemplateSelection()">
+      (clearTemplate)="clearTemplateSelection()"
+      (templateChange)="onTemplateChange($event)">
     </app-container-create-form>
   </div>
 </div>

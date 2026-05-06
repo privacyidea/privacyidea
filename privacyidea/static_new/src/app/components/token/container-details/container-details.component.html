@@ -50,8 +50,9 @@
           <ng-container matColumnDef="value">
             <td
               *matCellDef="let element"
-              [ngClass]="tableUtilsService.getTdClassForKey(element.keyMap.key)
-              .concat(element.isEditing() ? ['padding-0'] : [])"
+              [ngClass]="
+                tableUtilsService.getTdClassForKey(element.keyMap.key).concat(element.isEditing() ? ['padding-0'] : [])
+              "
               mat-cell>
               @switch (element.keyMap.key) {
                 @case ("states") {
@@ -163,8 +164,9 @@
           <ng-container matColumnDef="value">
             <td
               *matCellDef="let element"
-              [ngClass]="tableUtilsService.getTdClassForKey(element.keyMap.key)
-              .concat(isEditingUser() ? ['padding-0'] : [])"
+              [ngClass]="
+                tableUtilsService.getTdClassForKey(element.keyMap.key).concat(isEditingUser() ? ['padding-0'] : [])
+              "
               mat-cell>
               @switch (element.keyMap.key) {
                 @case ("user_name") {
@@ -266,8 +268,7 @@
           [isEditingUser]="isEditingUser" />
         <mat-divider class="responsive-divider-1310" />
       </div>
-      <div
-        class="flex-column responsive-margin-left-1310">
+      <div class="flex-column responsive-margin-left-1310">
         <app-container-details-token-table [containerTokenData]="containerTokenData" />
         <div class="flex-row gap-32">
           <app-container-add-token
@@ -286,8 +287,7 @@
           </app-container-add-token>
         </div>
       </div>
-      <div
-        class="flex-column gap-16 ali-center responsive-margin-left-1310">
+      <div class="flex-column gap-16 ali-center responsive-margin-left-1310">
         <app-container-details-actions
           [containerSerial]="containerSerial()"
           [containerType]="containerType()"></app-container-details-actions>
