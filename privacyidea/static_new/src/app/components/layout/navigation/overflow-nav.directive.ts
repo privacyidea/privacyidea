@@ -256,6 +256,7 @@ export class OverflowNavDirective implements AfterViewInit, OnDestroy {
   private determineVisibleButtons(buttons: HTMLElement[], maxWidth: number): boolean[] {
     const visible = new Array(buttons.length).fill(false);
     let usedWidth = 0;
+    const priorityIndices = new Set<number>();
 
     const activeIndex = buttons.findIndex(isActive);
     if (activeIndex >= 0) {
@@ -263,11 +264,23 @@ export class OverflowNavDirective implements AfterViewInit, OnDestroy {
       if (w <= maxWidth) {
         usedWidth += w;
         visible[activeIndex] = true;
+        priorityIndices.add(activeIndex);
+      }
+      // Keep the parent item (immediately preceding the active item in the DOM) visible too.
+      // Only applies to contextual child items (detail/create pages) marked with data-overflow-child.
+      if (activeIndex > 0 && buttons[activeIndex].hasAttribute('data-overflow-child')) {
+        const parentIndex = activeIndex - 1;
+        const pw = buttons[parentIndex].offsetWidth + GAP;
+        if (usedWidth + pw <= maxWidth) {
+          usedWidth += pw;
+          visible[parentIndex] = true;
+          priorityIndices.add(parentIndex);
+        }
       }
     }
 
     for (let i = 0; i < buttons.length; i++) {
-      if (i === activeIndex) continue;
+      if (priorityIndices.has(i)) continue;
       const w = buttons[i].offsetWidth + GAP;
       if (usedWidth + w <= maxWidth) {
         usedWidth += w;

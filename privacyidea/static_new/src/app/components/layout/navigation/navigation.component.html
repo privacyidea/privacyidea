@@ -288,14 +288,16 @@
     @if (contentService.routeUrl().startsWith(ROUTE_PATHS.USERS_DETAILS)) {
       <a
         href="javascript:void(0)"
-        class="sub-nav-active">
+        class="sub-nav-active"
+        data-overflow-child>
         <mat-icon>manage_accounts</mat-icon>
         <span i18n>User Details</span>
       </a>
     }
     @if (contentService.routeUrl().startsWith(ROUTE_PATHS.USERS_NEW)) {
       <a
-        class="sub-nav-active">
+        class="sub-nav-active"
+        data-overflow-child>
         <mat-icon>person_add</mat-icon>
         <span i18n>Create User</span>
       </a>
@@ -306,6 +308,18 @@
       <mat-icon class="ms--database"></mat-icon>
       <span i18n>Resolvers</span>
     </a>
+    @if (contentService.routeUrl().startsWith(ROUTE_PATHS.USERS_RESOLVERS_DETAILS)) {
+      <a class="sub-nav-active" data-overflow-child>
+        <mat-icon class="ms--database"></mat-icon>
+        <span i18n>Resolver Details</span>
+      </a>
+    }
+    @if (contentService.routeUrl() === ROUTE_PATHS.USERS_RESOLVERS_NEW) {
+      <a class="sub-nav-active" data-overflow-child>
+        <mat-icon>add</mat-icon>
+        <span i18n>Create Resolver</span>
+      </a>
+    }
     <a
       [ngClass]="contentService.routeUrl() === ROUTE_PATHS.USERS_REALMS ? 'sub-nav-active' : ''"
       [routerLink]="[ROUTE_PATHS.USERS_REALMS]">
@@ -326,6 +340,18 @@
       [routerLink]="[ROUTE_PATHS.POLICIES]">
       <mat-icon>gavel</mat-icon>
       <span i18n>Overview</span>
+    </a>
+    @if (contentService.routeUrl().startsWith(ROUTE_PATHS.POLICIES_DETAILS)) {
+      <a class="sub-nav-active">
+        <mat-icon>gavel</mat-icon>
+        <span i18n>Details</span>
+      </a>
+    }
+    <a
+      [ngClass]="contentService.routeUrl() === ROUTE_PATHS.POLICIES_NEW ? 'sub-nav-active' : ''"
+      [routerLink]="[ROUTE_PATHS.POLICIES_NEW]">
+      <mat-icon>add</mat-icon>
+      <span i18n>Create</span>
     </a>
     <ng-container *ngTemplateOutlet="supportDocs"></ng-container>
   </mat-toolbar>
@@ -398,6 +424,12 @@
         <span i18n>Machines</span>
       </a>
     }
+    @if (contentService.routeUrl().startsWith(ROUTE_PATHS.CONFIGURATION_MACHINES_DETAILS)) {
+      <a class="sub-nav-active" data-overflow-child>
+        <mat-icon>point_of_sale</mat-icon>
+        <span i18n>Machine Details</span>
+      </a>
+    }
     @if (authService.actionAllowed("mresolverread")) {
       <a
         [ngClass]="contentService.routeUrl() === ROUTE_PATHS.MACHINE_RESOLVER ? 'sub-nav-active' : ''"
@@ -412,6 +444,18 @@
         [routerLink]="[ROUTE_PATHS.EVENTS]">
         <mat-icon>flag</mat-icon>
         <span i18n>Events</span>
+      </a>
+    }
+    @if (contentService.routeUrl().startsWith(ROUTE_PATHS.EVENTS_DETAILS)) {
+      <a class="sub-nav-active" data-overflow-child>
+        <mat-icon>flag</mat-icon>
+        <span i18n>Event Details</span>
+      </a>
+    }
+    @if (contentService.routeUrl() === ROUTE_PATHS.EVENTS_NEW) {
+      <a class="sub-nav-active" data-overflow-child>
+        <mat-icon>add</mat-icon>
+        <span i18n>Create Event</span>
       </a>
     }
     @if (authService.actionAllowed("periodictask_read")) {
@@ -439,12 +483,36 @@
         <span i18n>SMTP Servers</span>
       </a>
     }
+    @if (contentService.routeUrl().startsWith(ROUTE_PATHS.EXTERNAL_SERVICES_SMTP_DETAILS)) {
+      <a class="sub-nav-active" data-overflow-child>
+        <mat-icon>email</mat-icon>
+        <span i18n>SMTP Details</span>
+      </a>
+    }
+    @if (contentService.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_SMTP_NEW) {
+      <a class="sub-nav-active" data-overflow-child>
+        <mat-icon>add</mat-icon>
+        <span i18n>Create SMTP Server</span>
+      </a>
+    }
     @if (authService.actionAllowed("radiusserver_read")) {
       <a
         [ngClass]="contentService.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS ? 'sub-nav-active' : ''"
         [routerLink]="[ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS]">
         <mat-icon>vpn_lock</mat-icon>
         <span i18n>RADIUS Servers</span>
+      </a>
+    }
+    @if (contentService.routeUrl().startsWith(ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS_DETAILS)) {
+      <a class="sub-nav-active" data-overflow-child>
+        <mat-icon>vpn_lock</mat-icon>
+        <span i18n>RADIUS Details</span>
+      </a>
+    }
+    @if (contentService.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS_NEW) {
+      <a class="sub-nav-active" data-overflow-child>
+        <mat-icon>add</mat-icon>
+        <span i18n>Create RADIUS Server</span>
       </a>
     }
     @if (authService.actionAllowed("smtpserver_read")) {
@@ -455,12 +523,36 @@
         <span i18n>SMS Gateways</span>
       </a>
     }
+    @if (contentService.routeUrl().startsWith(ROUTE_PATHS.EXTERNAL_SERVICES_SMS_DETAILS)) {
+      <a class="sub-nav-active" data-overflow-child>
+        <mat-icon>sms</mat-icon>
+        <span i18n>SMS Gateway Details</span>
+      </a>
+    }
+    @if (contentService.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_SMS_NEW) {
+      <a class="sub-nav-active" data-overflow-child>
+        <mat-icon>add</mat-icon>
+        <span i18n>Create SMS Gateway</span>
+      </a>
+    }
     @if (authService.actionAllowed("caconnectorread")) {
       <a
         [ngClass]="contentService.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_CA_CONNECTORS ? 'sub-nav-active' : ''"
         [routerLink]="[ROUTE_PATHS.EXTERNAL_SERVICES_CA_CONNECTORS]">
         <mat-icon>assured_workload</mat-icon>
         <span i18n>CA Connectors</span>
+      </a>
+    }
+    @if (contentService.routeUrl().startsWith(ROUTE_PATHS.EXTERNAL_SERVICES_CA_CONNECTORS_DETAILS)) {
+      <a class="sub-nav-active" data-overflow-child>
+        <mat-icon>assured_workload</mat-icon>
+        <span i18n>CA Connector Details</span>
+      </a>
+    }
+    @if (contentService.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_CA_CONNECTORS_NEW) {
+      <a class="sub-nav-active" data-overflow-child>
+        <mat-icon>add</mat-icon>
+        <span i18n>Create CA Connector</span>
       </a>
     }
     @if (authService.actionAllowed("privacyideaserver_read")) {
@@ -471,6 +563,18 @@
         <span i18n>PrivacyIDEA Servers</span>
       </a>
     }
+    @if (contentService.routeUrl().startsWith(ROUTE_PATHS.EXTERNAL_SERVICES_PRIVACYIDEA_DETAILS)) {
+      <a class="sub-nav-active" data-overflow-child>
+        <mat-icon class="mdi--pi-logo"></mat-icon>
+        <span i18n>PrivacyIDEA Server Details</span>
+      </a>
+    }
+    @if (contentService.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_PRIVACYIDEA_NEW) {
+      <a class="sub-nav-active" data-overflow-child>
+        <mat-icon>add</mat-icon>
+        <span i18n>Create PrivacyIDEA Server</span>
+      </a>
+    }
     @if (authService.actionAllowed("tokengroup_list")) {
       <a
         [ngClass]="contentService.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_TOKENGROUPS ? 'sub-nav-active' : ''"
@@ -479,12 +583,36 @@
         <span i18n>Tokengroups</span>
       </a>
     }
+    @if (contentService.routeUrl().startsWith(ROUTE_PATHS.EXTERNAL_SERVICES_TOKENGROUPS_DETAILS)) {
+      <a class="sub-nav-active" data-overflow-child>
+        <mat-icon>local_police</mat-icon>
+        <span i18n>Tokengroup Details</span>
+      </a>
+    }
+    @if (contentService.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_TOKENGROUPS_NEW) {
+      <a class="sub-nav-active" data-overflow-child>
+        <mat-icon>add</mat-icon>
+        <span i18n>Create Tokengroup</span>
+      </a>
+    }
     @if (authService.actionAllowed("serviceid_list")) {
       <a
         [ngClass]="contentService.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS ? 'sub-nav-active' : ''"
         [routerLink]="[ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS]">
         <mat-icon>storage</mat-icon>
         <span i18n>Service IDs</span>
+      </a>
+    }
+    @if (contentService.routeUrl().startsWith(ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS_DETAILS)) {
+      <a class="sub-nav-active" data-overflow-child>
+        <mat-icon>storage</mat-icon>
+        <span i18n>Service ID Details</span>
+      </a>
+    }
+    @if (contentService.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS_NEW) {
+      <a class="sub-nav-active" data-overflow-child>
+        <mat-icon>add</mat-icon>
+        <span i18n>Create Service ID</span>
       </a>
     }
     <ng-container *ngTemplateOutlet="supportDocs"></ng-container>
