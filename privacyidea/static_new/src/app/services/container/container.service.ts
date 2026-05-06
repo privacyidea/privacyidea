@@ -204,7 +204,7 @@ export interface ContainerServiceInterface {
   ) => Observable<PiResponse<{ disabled: boolean } | { active: boolean }>>;
   unassignUser: (containerSerial: string, username: string, userRealm: string) => Observable<any>;
   assignUser: (args: { containerSerial: string; username: string; userRealm: string }) => Observable<any>;
-  compareWithTemplate: () => void;
+  compareWithTemplate: () => Promise<void>;
   setContainerInfos: (containerSerial: string, infos: any) => Observable<Object>[];
   deleteInfo: (containerSerial: string, key: string) => Observable<any>;
   addTokenToContainer: (containerSerial: string, tokenSerial: string) => Observable<any>;
