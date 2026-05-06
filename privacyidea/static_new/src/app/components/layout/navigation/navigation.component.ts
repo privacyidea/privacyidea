@@ -23,7 +23,6 @@ import {
   computed,
   ElementRef,
   inject,
-  NgZone,
   OnDestroy,
   signal,
   ViewChild
@@ -114,7 +113,6 @@ export class NavigationComponent implements AfterViewInit, OnDestroy {
   protected readonly ROUTE_PATHS = ROUTE_PATHS;
   private itemWidths = new Map<string, number>();
   private resizeObserver: ResizeObserver | null = null;
-  private ngZone = inject(NgZone);
   @ViewChild("mainNavRef", { static: false }) mainNavRef!: ElementRef<HTMLElement>;
   primaryNavItems: NavItem[] = [
     { icon: "shield", label: $localize`Token`, route: ROUTE_PATHS.TOKENS, section: "token" },
@@ -259,7 +257,7 @@ export class NavigationComponent implements AfterViewInit, OnDestroy {
     const navEl = this.mainNavRef.nativeElement;
 
     this.resizeObserver = new ResizeObserver(() => {
-      this.ngZone.run(() => this.calculateVisibleItems(navEl));
+      this.calculateVisibleItems(navEl);
     });
     this.resizeObserver.observe(navEl);
 

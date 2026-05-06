@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { AfterViewInit, Directive, ElementRef, inject, NgZone, OnDestroy, Renderer2 } from "@angular/core";
+import { AfterViewInit, Directive, ElementRef, inject, OnDestroy, Renderer2 } from "@angular/core";
 
 const GAP = 8;
 const PADDING = 16;
@@ -44,7 +44,6 @@ function getOuterWidth(el: HTMLElement): number {
 })
 export class OverflowNavDirective implements AfterViewInit, OnDestroy {
   private el = inject(ElementRef<HTMLElement>);
-  private ngZone = inject(NgZone);
   private renderer = inject(Renderer2);
   private resizeObserver: ResizeObserver | null = null;
   private mutationObserver: MutationObserver | null = null;
@@ -135,7 +134,7 @@ export class OverflowNavDirective implements AfterViewInit, OnDestroy {
   private setupObservers(): void {
     this.resizeObserver = new ResizeObserver(() => {
       if (!this.isCalculating) {
-        this.ngZone.run(() => this.calculateOverflow());
+        this.calculateOverflow();
       }
     });
     this.resizeObserver.observe(this.container);
@@ -158,7 +157,7 @@ export class OverflowNavDirective implements AfterViewInit, OnDestroy {
         return false;
       });
       if (hasRelevantChange) {
-        this.ngZone.run(() => this.calculateOverflow());
+        this.calculateOverflow();
       }
     });
     this.mutationObserver.observe(this.container, {

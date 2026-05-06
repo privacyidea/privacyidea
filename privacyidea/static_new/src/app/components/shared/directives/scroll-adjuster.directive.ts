@@ -17,7 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 // src/app/shared/directives/scroll-adjuster.directive.ts
-import { AfterViewInit, Directive, ElementRef, Input, NgZone, OnDestroy } from "@angular/core";
+import { AfterViewInit, Directive, ElementRef, Input, OnDestroy } from "@angular/core";
 import { Subject } from "rxjs"; // fromEvent and debounceTime are not directly used in the directive, but for context if you add back window resize listener.
 // For current implementation, they are not needed here if ResizeObserver handles container resize.
 
@@ -31,10 +31,7 @@ export class ScrollAdjusterDirective implements AfterViewInit, OnDestroy {
   private mutationObserver!: MutationObserver;
   @Input() scrollItemSelector: string = ".scroll-item"; // Default selector, can be overridden
 
-  constructor(
-    private el: ElementRef<HTMLElement>,
-    private ngZone: NgZone
-  ) {}
+  constructor(private el: ElementRef<HTMLElement>) {}
 
   ngAfterViewInit(): void {
     const container = this.el.nativeElement;
@@ -45,25 +42,19 @@ export class ScrollAdjusterDirective implements AfterViewInit, OnDestroy {
     }
 
     this.resizeObserver = new ResizeObserver(() => {
-      this.ngZone.runOutsideAngular(() => {
-        this.adjustPadding();
-      });
+      this.adjustPadding();
     });
     this.resizeObserver.observe(container);
 
     this.mutationObserver = new MutationObserver(() => {
-      this.ngZone.runOutsideAngular(() => {
-        this.adjustPadding();
-      });
+      this.adjustPadding();
     });
     this.mutationObserver.observe(container, {
       childList: true,
       subtree: true
     });
 
-    this.ngZone.runOutsideAngular(() => {
-      this.adjustPadding();
-    });
+    this.adjustPadding();
   }
 
   ngOnDestroy(): void {
