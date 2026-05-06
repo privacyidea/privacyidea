@@ -714,10 +714,10 @@ push_challenge_text
 
 type: ``string``
 
-An alternative message to display in the application to tell the user, to confirm the authentication on his mobile
+An alternative message to display in the application to tell the user to confirm the authentication on his mobile
 device with the PUSH token.
 
-This can be used to display different messages, if the user e.g. has different token types, that triggered a challenge
+This can be used to display different messages, if the user e.g. has different token types that triggered a challenge
 or in combination with :ref:`push_code_to_phone` to tell the user in more detail what to do.
 
 If this policy is not set, the PUSH token falls back to the generic :ref:`policy_challenge_text` policy and finally
