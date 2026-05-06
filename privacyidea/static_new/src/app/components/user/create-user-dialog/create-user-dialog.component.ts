@@ -18,7 +18,7 @@
  **/
 
 import { ResolverService } from "../../../services/resolver/resolver.service";
-import { Component, computed, inject, linkedSignal, OnDestroy, OnInit, signal, Signal, WritableSignal } from "@angular/core";
+import { Component, computed, DestroyRef, inject, linkedSignal, OnDestroy, OnInit, signal, Signal, WritableSignal } from "@angular/core";
 import { EditUserData, UserService } from "../../../services/user/user.service";
 import { UserDetailsEditComponent } from "@components/user/user-details-edit/user-details-edit.component";
 import { NotificationService } from "../../../services/notification/notification.service";
@@ -27,7 +27,7 @@ import { MatOption, MatSelect } from "@angular/material/select";
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { RealmService } from "../../../services/realm/realm.service";
 import { MatInput } from "@angular/material/input";
-import { toSignal } from "@angular/core/rxjs-interop";
+import { takeUntilDestroyed, toSignal } from "@angular/core/rxjs-interop";
 import { ROUTE_PATHS } from "../../../route_paths";
 import { Router } from "@angular/router";
 import { PendingChangesService } from "../../../services/pending-changes/pending-changes.service";
@@ -66,6 +66,7 @@ export class CreateUserDialogComponent implements OnInit, OnDestroy {
   private readonly router = inject(Router);
   private readonly pendingChangesService = inject(PendingChangesService);
   private readonly dialogService: DialogServiceInterface = inject(DialogService);
+  private readonly destroyRef = inject(DestroyRef);
 
   realm = linkedSignal(() => this.userService.selectedUserRealm() || "");
   username = new FormControl("", { nonNullable: true, validators: [Validators.required] });
@@ -81,11 +82,11 @@ export class CreateUserDialogComponent implements OnInit, OnDestroy {
   isDirty = computed(() => !this.inputGroupPristine() || !this.editUserDataIsEmpty());
 
   constructor() {
-    this.inputGroup.statusChanges.subscribe(() => {
+    this.inputGroup.statusChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
       this.canSave.set(this.inputGroup.valid);
       this.inputGroupPristine.set(this.inputGroup.pristine);
     });
-    this.inputGroup.valueChanges.subscribe(() => {
+    this.inputGroup.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
       this.inputGroupPristine.set(this.inputGroup.pristine);
     });
 
@@ -166,9 +167,7 @@ export class CreateUserDialogComponent implements OnInit, OnDestroy {
       .subscribe((result) => {
         if (result === "save-exit") {
           if (!this.canSave()) return;
-          Promise.resolve(this.pendingChangesService.save()).then((success) => {
-            if (success) this._navigateBack();
-          });
+          Promise.resolve(this.pendingChangesService.save());
         } else if (result === "discard") {
           this._navigateBack();
         }
