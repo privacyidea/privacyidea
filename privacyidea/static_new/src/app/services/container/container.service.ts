@@ -992,7 +992,7 @@ export class ContainerService implements ContainerServiceInterface {
         catchError((error) => {
           const message = error.error?.result?.error?.message || "";
           this.notificationService.error("Failed to compare: " + message);
-          return throwError(() => error);
+          return of(null);
         })
       );
 

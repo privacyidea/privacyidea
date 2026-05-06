@@ -218,16 +218,4 @@ export class ContainerDetailsActionsComponent {
       this.containerService.stopPolling();
     });
   }
-
-  async compareWithTemplate() {
-    if (!this.authService.actionAllowed("container_template_list")) {
-      this.notificationService.warning("You do not have permission to compare with template.");
-      return;
-    }
-    try {
-      await this.containerService.compareWithTemplate();
-    } catch (error) {
-      this.notificationService.error("Failed to compare container with template.");
-    }
-  }
 }
