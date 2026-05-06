@@ -224,14 +224,22 @@ def cache_challenge(serial: str, transaction_id: str, challenge: str, data: str,
         })
         pipe = r.pipeline()
         pipe.setex(_TXN_KEY.format(transaction_id), ttl, payload)
-        pipe.sadd(_SERIAL_KEY.format(serial), transaction_id)
-        # The serial set is shared across all open challenges for the token, so
-        # its TTL must cover the longest-lived member. NX seeds the TTL on the
-        # first write; GT extends it only when the new TTL is larger, so a
-        # shorter-lived challenge added later cannot shrink it and expire
-        # still-valid siblings early. Both flags require Redis 7+.
-        pipe.expire(_SERIAL_KEY.format(serial), ttl, nx=True)
-        pipe.expire(_SERIAL_KEY.format(serial), ttl, gt=True)
+        # Only index by serial when one is given. Usernameless passkey auth
+        # creates challenges with serial="", and indexing those would funnel
+        # every such request into one shared set whose TTL never settles
+        # (each new write extends it via GT) and whose membership grows
+        # unbounded. Those challenges are only ever retrieved by
+        # transaction_id, so the set serves no purpose for them.
+        if serial:
+            pipe.sadd(_SERIAL_KEY.format(serial), transaction_id)
+            # The serial set is shared across all open challenges for the
+            # token, so its TTL must cover the longest-lived member. NX
+            # seeds the TTL on the first write; GT extends it only when the
+            # new TTL is larger, so a shorter-lived challenge added later
+            # cannot shrink it and expire still-valid siblings early. Both
+            # flags require Redis 7+.
+            pipe.expire(_SERIAL_KEY.format(serial), ttl, nx=True)
+            pipe.expire(_SERIAL_KEY.format(serial), ttl, gt=True)
         pipe.execute()
     except Exception as e:
         _disable_redis(e)
@@ -248,7 +256,10 @@ def evict_challenge(transaction_id: str, serial: str):
     try:
         pipe = r.pipeline()
         pipe.delete(_TXN_KEY.format(transaction_id))
-        pipe.srem(_SERIAL_KEY.format(serial), transaction_id)
+        # cache_challenge() only writes the serial set when serial is truthy,
+        # so don't try to remove from it otherwise — it doesn't exist.
+        if serial:
+            pipe.srem(_SERIAL_KEY.format(serial), transaction_id)
         pipe.execute()
     except Exception as e:
         _disable_redis(e)

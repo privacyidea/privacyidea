@@ -28,7 +28,9 @@ challenge_cli = AppGroup("challenge", help="Manage challenge data")
 
 
 @challenge_cli.command("cleanup",
-                       help="Clean up all expired challenges.")
+                       help="Clean up all expired challenges in the database. "
+                            "Redis-cached challenges expire automatically via TTL "
+                            "and are not affected by this command.")
 @click.option('--chunksize', type=int,
               help="Delete entries in chunks of the given size to avoid deadlocks")
 @click.option('--age', type=int,
@@ -38,7 +40,12 @@ challenge_cli = AppGroup("challenge", help="Manage challenge data")
               help="Do not actually delete, only show what would be done.")
 def cleanup_challenge(chunksize: int, age: int, dryrun: bool = False) -> int:
     """
-    Delete all expired challenges from the challenge table
+    Delete all expired challenges from the challenge table.
+
+    Note: when the Redis challenge cache is active, new challenges are stored
+    in Redis only and have no DB rows. Redis manages their lifetime via TTL,
+    so this command will report 0 deletions in a fully Redis-backed
+    deployment — that is expected, not a sign of a leak.
     """
     if age:
         # Delete challenges created earlier than age minutes ago

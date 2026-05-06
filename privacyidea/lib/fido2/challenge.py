@@ -1,5 +1,4 @@
 import logging
-import json
 from datetime import datetime, timezone
 from dataclasses import dataclass
 from sqlalchemy import select

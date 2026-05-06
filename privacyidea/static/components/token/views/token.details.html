@@ -838,11 +838,22 @@
                     <span class="label label-default" ng-hide="challenge.otp_valid" translate>no</span>
                 </td>
                 <td>
-                    <button class="btn btn-danger btn-sm"
-                            ng-click="cancelChallenge(challenge.transaction_id)"
+                    <button class="btn btn-transparent btn-danger btn-sm"
+                            ng-click="cancelChallenge(challenge.transaction_id, true)"
+                            ng-hide="showCancelChallengeDialog[challenge.transaction_id]"
                             uib-tooltip="{{ 'Cancel this challenge'|translate }}">
                         <span class="glyphicon glyphicon-trash"></span>
                         <span translate>Cancel</span>
+                    </button>
+                    <button class="btn btn-danger btn-sm"
+                            ng-click="cancelChallenge(challenge.transaction_id, false)"
+                            ng-show="showCancelChallengeDialog[challenge.transaction_id]">
+                        <span translate>Cancel Challenge</span>
+                    </button>
+                    <button class="btn btn-default btn-sm"
+                            ng-click="showCancelChallengeDialog[challenge.transaction_id]=false"
+                            ng-show="showCancelChallengeDialog[challenge.transaction_id]">
+                        <span translate>Keep</span>
                     </button>
                 </td>
             </tr>

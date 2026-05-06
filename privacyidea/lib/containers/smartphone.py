@@ -38,7 +38,6 @@ from privacyidea.lib.crypto import (geturandom, encryptPassword, b64url_str_key_
 from privacyidea.lib.error import ContainerInvalidChallenge, ContainerNotRegistered, ParameterError
 from privacyidea.lib.tokenclass import TokenClass
 from privacyidea.lib.utils import create_img
-from privacyidea.models import Challenge
 
 log = logging.getLogger(__name__)
 

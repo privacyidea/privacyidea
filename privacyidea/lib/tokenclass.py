@@ -749,8 +749,11 @@ class TokenClass:
         # Routed through delete_challenges() so Redis-cached challenges
         # for this serial are invalidated alongside any DB rows; otherwise
         # transaction IDs would keep resolving until their TTL expires.
+        # commit=False keeps the SQL DELETE inside this method's outer
+        # transaction so token + challenge removal stays atomic on the DB
+        # side (Redis eviction has no transaction concept and runs up-front).
         from privacyidea.lib.challenge import delete_challenges
-        delete_challenges(serial=self.token.serial)
+        delete_challenges(serial=self.token.serial, commit=False)
 
         if self.get_tokentype().lower() in ["webauthn", "passkey"]:
             delete_stmt_token_credential = delete(TokenCredentialIdHash).where(

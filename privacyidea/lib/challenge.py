@@ -198,7 +198,7 @@ def extract_answered_challenges(challenges):
     return answered_challenges
 
 
-def delete_challenges(serial: str = None, transaction_id: str = None) -> int:
+def delete_challenges(serial: str = None, transaction_id: str = None, commit: bool = True) -> int:
     """
     Delete challenges from both the Redis cache (when active) and the
     database. With Redis enabled there are no SQL rows for new challenges,
@@ -207,6 +207,12 @@ def delete_challenges(serial: str = None, transaction_id: str = None) -> int:
 
     :param serial: challenges for this very serial number
     :param transaction_id: challenges with this very transaction id
+    :param commit: When False, the SQL DELETE is staged on the session but
+        not committed, so callers can keep this delete inside a larger
+        transaction (e.g. ``TokenClass.delete_token``). Redis eviction is
+        always performed up-front and is not rolled back if the outer
+        transaction aborts; on rollback the DB rows are restored and the
+        normal cache-miss → DB-fallback path takes over.
     :return: number of challenges removed across both stores
     """
     removed = 0
@@ -231,7 +237,8 @@ def delete_challenges(serial: str = None, transaction_id: str = None) -> int:
     if transaction_id is not None:
         delete_stmt = delete_stmt.where(Challenge.transaction_id == transaction_id)
     result = db.session.execute(delete_stmt)
-    db.session.commit()
+    if commit:
+        db.session.commit()
     return removed + result.rowcount
 
 

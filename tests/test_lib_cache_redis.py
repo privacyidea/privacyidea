@@ -383,9 +383,9 @@ class TestRedisCacheOperations(MyTestCase):
         short_dto = _make_dto(serial='RCACHE_TTL', txn='txn-short', offset_seconds=30)
 
         self._write_dto(fake, long_dto)
-        ttl_after_long = fake.ttl(f'pi:challenge:serial:RCACHE_TTL')
+        ttl_after_long = fake.ttl('pi:challenge:serial:RCACHE_TTL')
         self._write_dto(fake, short_dto)
-        ttl_after_short = fake.ttl(f'pi:challenge:serial:RCACHE_TTL')
+        ttl_after_short = fake.ttl('pi:challenge:serial:RCACHE_TTL')
 
         # The shorter write must not have shrunk the set TTL.
         self.assertGreaterEqual(ttl_after_short, ttl_after_long)
@@ -479,6 +479,45 @@ class TestRedisCacheOperations(MyTestCase):
         with fake_redis_in_store(fake):
             self.assertIsNone(get_challenges_from_cache(transaction_id='whatever'))
             self.assertIsNone(get_redis())
+
+    def test_empty_serial_does_not_create_shared_set(self):
+        # Usernameless passkey auth init writes challenges with serial="".
+        # Those must NOT all be funneled into the single shared key
+        # `pi:challenge:serial:`, otherwise its membership grows unbounded
+        # across the worker lifetime and its TTL never settles (each new
+        # write extends it via GT). They are only ever fetched by
+        # transaction_id, so the set is pointless for them.
+        fake = FakeRedis()
+        with fake_redis_in_store(fake):
+            cache_challenge(serial='', transaction_id='txn-empty-1', challenge='c1',
+                            data='', session='',
+                            timestamp=utc_now(), expiration=utc_now() + timedelta(seconds=120))
+            cache_challenge(serial='', transaction_id='txn-empty-2', challenge='c2',
+                            data='', session='',
+                            timestamp=utc_now(), expiration=utc_now() + timedelta(seconds=120))
+
+        # Per-transaction keys must exist, but the shared serial set must not.
+        self.assertIn('pi:challenge:txn:txn-empty-1', fake._data)
+        self.assertIn('pi:challenge:txn:txn-empty-2', fake._data)
+        self.assertNotIn('pi:challenge:serial:', fake._sets)
+
+        # And txn-keyed retrieval must still work for both.
+        with fake_redis_in_store(fake):
+            self.assertEqual(len(get_challenges_from_cache(transaction_id='txn-empty-1')), 1)
+            self.assertEqual(len(get_challenges_from_cache(transaction_id='txn-empty-2')), 1)
+
+    def test_evict_with_empty_serial(self):
+        # evict_challenge() must tolerate serial="" too — there is no set to
+        # SREM from, but the txn key must still go.
+        from privacyidea.lib.cache import evict_challenge
+        fake = FakeRedis()
+        with fake_redis_in_store(fake):
+            cache_challenge(serial='', transaction_id='txn-evict-empty', challenge='c',
+                            data='', session='',
+                            timestamp=utc_now(), expiration=utc_now() + timedelta(seconds=120))
+            self.assertIn('pi:challenge:txn:txn-evict-empty', fake._data)
+            evict_challenge('txn-evict-empty', '')
+        self.assertNotIn('pi:challenge:txn:txn-evict-empty', fake._data)
 
     def test_get_from_cache_filters_by_challenge_value(self):
         # Two challenges on the same serial; query must apply the

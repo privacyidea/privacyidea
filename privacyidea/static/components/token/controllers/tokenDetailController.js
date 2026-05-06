@@ -562,7 +562,18 @@ myApp.controller("tokenDetailController", ['$scope', 'TokenFactory',
                 $scope.getChallenges();
             };
 
-            $scope.cancelChallenge = function (transactionId) {
+            // Two-step confirm: ask=true flips the row into the confirm
+            // state (mirrors how deleteToken works on the user-detail page);
+            // ask=false performs the actual cancellation. Cancel itself is
+            // destructive — the user retries the auth and a new challenge
+            // is issued — so we want a deliberate second click before doing it.
+            $scope.showCancelChallengeDialog = {};
+            $scope.cancelChallenge = function (transactionId, ask) {
+                if (ask) {
+                    $scope.showCancelChallengeDialog[transactionId] = true;
+                    return;
+                }
+                $scope.showCancelChallengeDialog[transactionId] = false;
                 TokenFactory.cancelChallenge(function () {
                     $scope.getChallenges();
                 }, transactionId);
