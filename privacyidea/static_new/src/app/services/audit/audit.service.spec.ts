@@ -134,7 +134,7 @@ describe("AuditService (signals & helpers)", () => {
     expect(params).not.toHaveProperty("container_serial");
   });
 
-  it("downloadCSV triggers a GET request with correct params and headers after dialog confirmation", () => {
+  it("downloadCSV triggers a GET request with correct params and headers after dialog confirmation", async () => {
     const getHeadersMock = jest.spyOn(authService, "getHeaders").mockReturnValue({} as any);
     auditService.auditFilter.set(new FilterValue({ value: "action: LOGIN" }));
 
@@ -143,6 +143,7 @@ describe("AuditService (signals & helpers)", () => {
     expect(dialogService.openDialog).toHaveBeenCalled();
     const dialogRef = (dialogService.openDialog as jest.Mock).mock.results[0].value;
     dialogRef.close(true);
+    await Promise.resolve();
 
     const req = httpMock.expectOne((req) => req.url.endsWith("/audit/audit.csv"));
     expect(req.request.method).toBe("GET");
@@ -162,10 +163,11 @@ describe("AuditService (signals & helpers)", () => {
     expect(auditService.isDownloading()).toBe(false);
   });
 
-  it("should set isDownloading to true while downloading and false after completion", () => {
+  it("should set isDownloading to true while downloading and false after completion", async () => {
     auditService.downloadCSV();
     const dialogRef = (dialogService.openDialog as jest.Mock).mock.results[0].value;
     dialogRef.close(true);
+    await Promise.resolve();
 
     expect(auditService.isDownloading()).toBe(true);
     const req = httpMock.expectOne((req) => req.url.endsWith("/audit/audit.csv"));
@@ -173,10 +175,11 @@ describe("AuditService (signals & helpers)", () => {
     expect(auditService.isDownloading()).toBe(false);
   });
 
-  it("should set isDownloading to false on error", () => {
+  it("should set isDownloading to false on error", async () => {
     auditService.downloadCSV();
     const dialogRef = (dialogService.openDialog as jest.Mock).mock.results[0].value;
     dialogRef.close(true);
+    await Promise.resolve();
 
     expect(auditService.isDownloading()).toBe(true);
     const req = httpMock.expectOne((req) => req.url.endsWith("/audit/audit.csv"));

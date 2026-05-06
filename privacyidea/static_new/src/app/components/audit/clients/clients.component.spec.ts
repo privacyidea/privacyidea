@@ -19,11 +19,11 @@
 
 import { provideHttpClient } from "@angular/common/http";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { ClientsComponent } from "@components/audit/clients/clients.component";
 import { FilterValue } from "@core/models/filter_value/filter_value";
 import { ClientsDict } from "@services/clients/clients.service";
 import { MockAuditService, MockContentService, MockPiResponse } from "@testing/mock-services";
 import { MockAuthService } from "@testing/mock-services/mock-auth-service";
-import { ClientsComponent } from "./clients.component";
 
 describe("ClientsComponent", () => {
   let fixture: ComponentFixture<ClientsComponent>;

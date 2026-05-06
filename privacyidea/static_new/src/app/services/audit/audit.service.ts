@@ -16,17 +16,20 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { HttpClient, HttpParams, httpResource, HttpResourceRef } from "@angular/common/http";
-import { computed, effect, inject, Injectable, linkedSignal, signal, WritableSignal } from "@angular/core";
+
+import { HttpClient, HttpParams, HttpResourceRef, httpResource } from "@angular/common/http";
+import { Injectable, WritableSignal, computed, effect, inject, linkedSignal, signal } from "@angular/core";
+import { Sort } from "@angular/material/sort";
 import { PiResponse } from "@app/app.component";
+import { AuditDownloadDialogComponent } from "@components/audit/audit-download-dialog/audit-download-dialog.component";
+import { FilterValue } from "@core/models/filter_value/filter_value";
 import { environment } from "@env/environment";
 import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
 import { ContentService, ContentServiceInterface } from "@services/content/content.service";
-import { NotificationService } from "@services/notification/notification.service";
-
-import { Sort } from "@angular/material/sort";
-import { FilterValue } from "@core/models/filter_value/filter_value";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { StringUtils } from "@utils/string.utils";
+import { Subscription, finalize } from "rxjs";
 
 export interface Audit {
   auditcolumns: string[];

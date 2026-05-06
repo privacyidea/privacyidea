@@ -16,6 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { signal } from "@angular/core";
@@ -23,12 +24,12 @@ import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { Router, provideRouter } from "@angular/router";
 import { ROUTE_PATHS } from "@app/route_paths";
+import { SmtpServersComponent } from "@components/external-services/smtp-servers/smtp-servers.component";
 import { DialogService } from "@services/dialog/dialog.service";
 import { SmtpService } from "@services/smtp/smtp.service";
 import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
 import { MockDialogService } from "@testing/mock-services";
 import { Subject } from "rxjs";
-import { SmtpServersComponent } from "./smtp-servers.component";
 
 describe("SmtpServersComponent", () => {
   let component: SmtpServersComponent;

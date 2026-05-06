@@ -16,13 +16,13 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { ComponentFixture, TestBed } from "@angular/core/testing";
 
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { ActivatedRoute } from "@angular/router";
+import { LayoutComponent } from "@components/layout/layout.component";
 import { of } from "rxjs";
-import { LayoutComponent } from "./layout.component";
 
 describe("LayoutComponent", () => {
   let component: LayoutComponent;

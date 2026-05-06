@@ -25,6 +25,7 @@ import { of } from "rxjs";
 
 import { MatDialog } from "@angular/material/dialog";
 import { ActivatedRoute } from "@angular/router";
+import { AuditService } from "@services/audit/audit.service";
 import { AuthService } from "@services/auth/auth.service";
 import { ContainerService } from "@services/container/container.service";
 import { ContentService } from "@services/content/content.service";
@@ -34,6 +35,7 @@ import { TableUtilsService } from "@services/table-utils/table-utils.service";
 import { TokenService } from "@services/token/token.service";
 import { ValidateService } from "@services/validate/validate.service";
 import {
+    MockAuditService,
     MockContainerService,
     MockContentService,
     MockLocalService,
@@ -75,6 +77,7 @@ describe("TokenDetailsComponent", () => {
             params: of({ id: "123" })
           }
         },
+        { provide: AuditService, useClass: MockAuditService },
         { provide: TokenService, useClass: MockTokenService },
         { provide: ContainerService, useClass: MockContainerService },
         { provide: ValidateService, useClass: MockValidateService },

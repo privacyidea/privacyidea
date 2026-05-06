@@ -31,6 +31,7 @@ import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { MockContentService } from "@testing/mock-services/mock-content-service";
 import { MockResolverService } from "@testing/mock-services/mock-resolver-service";
 import { MockTableUtilsService } from "@testing/mock-services/mock-table-utils-service";
+import { ROUTE_PATHS } from "@app/route_paths";
 import { of } from "rxjs";
 import { UserResolversComponent } from "./user-resolver.component";
 

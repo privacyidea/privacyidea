@@ -16,28 +16,30 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { signal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
-import { of } from "rxjs";
-
 import { ActivatedRoute } from "@angular/router";
+import { ContainerDetailsComponent } from "@components/token/container-details/container-details.component";
+import { ContainerDetailsSelfServiceComponent } from "@components/token/container-details/container-details.self-service.component";
 import { TokenDetailsComponent } from "@components/token/token-details/token-details.component";
+import { AuditService } from "@services/audit/audit.service";
 import { ContainerService, ContainerServiceInterface } from "@services/container/container.service";
 import { NotificationService } from "@services/notification/notification.service";
 import { TokenService } from "@services/token/token.service";
 import { UserService, UserServiceInterface } from "@services/user/user.service";
 import { ValidateService } from "@services/validate/validate.service";
 import {
+  MockAuditService,
   MockContainerService,
   MockNotificationService,
   MockTokenService,
   MockUserService
 } from "@testing/mock-services";
-import { ContainerDetailsComponent } from "./container-details.component";
-import { ContainerDetailsSelfServiceComponent } from "./container-details.self-service.component";
+import { of } from "rxjs";
 
 class MockValidateService {
   testToken = jest.fn().mockReturnValue(of(null));
@@ -64,6 +66,7 @@ describe("ContainerDetailsComponent", () => {
             params: of({ id: "123" })
           }
         },
+        { provide: AuditService, useClass: MockAuditService },
         { provide: TokenService, useClass: MockTokenService },
         { provide: ValidateService, useClass: MockValidateService },
         { provide: NotificationService, useClass: MockNotificationService },

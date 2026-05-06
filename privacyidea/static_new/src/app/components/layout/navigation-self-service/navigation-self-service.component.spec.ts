@@ -16,13 +16,14 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+
 import { provideHttpClient } from "@angular/common/http";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { provideAnimationsAsync } from "@angular/platform-browser/animations/async";
 import { ActivatedRoute } from "@angular/router";
+import { NavigationSelfServiceComponent } from "@components/layout/navigation-self-service/navigation-self-service.component";
 import { of } from "rxjs";
-import { NavigationSelfServiceComponent } from "./navigation-self-service.component";
 
 describe("NavigationSelfServiceComponent", () => {
   let component: NavigationSelfServiceComponent;
