@@ -271,8 +271,7 @@ export class OverflowNavDirective implements AfterViewInit, OnDestroy {
         visible[activeIndex] = true;
         priorityIndices.add(activeIndex);
       }
-      // Keep the parent item (immediately preceding the active item in the DOM) visible too.
-      // Only applies to contextual child items (detail/create pages) marked with data-overflow-child.
+      // Keep parents of contextual child items (detail/create pages) marked with data-overflow-child visible too
       if (activeIndex > 0 && buttons[activeIndex].hasAttribute("data-overflow-child")) {
         const parentIndex = activeIndex - 1;
         const pw = buttons[parentIndex].offsetWidth + GAP;
