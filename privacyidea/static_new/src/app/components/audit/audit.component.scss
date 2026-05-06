@@ -6,7 +6,3 @@
   @include styles.main-component-style;
   @include table.base-table-structure(".audit-table", ".audit-table-filter", ".table-scroll-container");
 }
-
-.self-service-width {
-  max-width: 81.7vw;
-}
