@@ -313,6 +313,11 @@ def create_app(config_name="development",
             return send_html(
                 render_template(
                     index_html))
+        if request.method == "GET" and not request.path.startswith("/static/"):
+            from privacyidea.webui.login import _serve_locale
+            new_ui = _serve_locale("en")
+            if new_ui:
+                return new_ui
         return jsonify(error="Not found"), 404
 
     # Overwrite default config with environment setting

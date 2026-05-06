@@ -42,7 +42,13 @@ export const appConfig: ApplicationConfig = {
     provideZonelessChangeDetection(),
     provideRouter(routes),
     provideAnimationsAsync(),
-    { provide: APP_BASE_HREF, useValue: "/app/v2/" },
+    {
+      provide: APP_BASE_HREF,
+      useFactory: () => {
+        const localeMatch = window.location.pathname.match(/^\/(de|fr)\//);
+        return localeMatch ? `/${localeMatch[1]}/` : "/";
+      }
+    },
     AuthService,
     provideHttpClient(withInterceptors([loadingInterceptor, userAgentInterceptor])),
     provideAppInitializer(() => {

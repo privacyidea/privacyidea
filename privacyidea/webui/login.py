@@ -28,8 +28,9 @@ Other html code is dynamically loaded via angularJS and located in
 """
 __author__ = "Cornelius Kölbel <cornelius@privacyidea.org>"
 
+import os
 from flask import (Blueprint, render_template, request,
-                   current_app, g)
+                   current_app, g, send_from_directory, redirect)
 
 from privacyidea.api.lib.prepolicy import is_remote_user_allowed
 from privacyidea.api.lib.utils import send_html, send_result
@@ -213,14 +214,39 @@ def get_render_context():
     return render_context
 
 
+def _serve_locale(locale):
+    dist = os.path.join(current_app.static_folder, "dist", "privacyidea-webui", "browser", locale)
+    if not os.path.isfile(os.path.join(dist, "index.html")):
+        return None
+    return send_from_directory(dist, "index.html")
+
+
 @login_blueprint.route('/', methods=['GET'])
 def single_page_application():
-    render_context = get_render_context()
     if current_app.config.get("PI_UI_DEACTIVATED"):
         # Do not provide the UI
         return send_html(render_template("deactivated.html"))
+    locale = get_accepted_language()
+    if locale and locale != "en":
+        dist = os.path.join(current_app.static_folder, "dist", "privacyidea-webui", "browser", locale)
+        if os.path.isdir(dist):
+            return redirect(f"/{locale}/")
+    new_ui = _serve_locale("en")
+    if new_ui:
+        return new_ui
+    render_context = get_render_context()
     index_page = current_app.config.get("PI_INDEX_HTML") or "index.html"
     return send_html(render_template(index_page, **render_context))
+
+
+@login_blueprint.route('/<locale>/', defaults={'subpath': ''}, methods=['GET'])
+@login_blueprint.route('/<locale>/<path:subpath>', methods=['GET'])
+def single_page_application_locale(locale, subpath):
+    dist = os.path.join(current_app.static_folder, "dist", "privacyidea-webui", "browser", locale)
+    if not os.path.isdir(dist):
+        from flask import abort
+        abort(404)
+    return _serve_locale(locale)
 
 
 @login_blueprint.route('/config', methods=['GET'])

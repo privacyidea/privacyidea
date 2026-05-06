@@ -46,6 +46,7 @@
           "configurations": {
             "production": {
               "baseHref": "/static/dist/privacyidea-webui/browser/",
+              "localize": true,
               "optimization": true,
               "budgets": [
                 {
@@ -59,12 +60,35 @@
                   "maximumError": "100MB"
                 }
               ],
-              "outputHashing": "all",
-              "deployUrl": "/static/dist/privacyidea-webui/browser/"
+              "outputHashing": "all"
             },
             "development": {
               "optimization": false,
               "sourceMap": true,
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.development.ts"
+                }
+              ]
+            },
+            "de": {
+              "optimization": false,
+              "sourceMap": true,
+              "localize": ["de"],
+              "baseHref": "/de/",
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.development.ts"
+                }
+              ]
+            },
+            "fr": {
+              "optimization": false,
+              "sourceMap": true,
+              "localize": ["fr"],
+              "baseHref": "/fr/",
               "fileReplacements": [
                 {
                   "replace": "src/environments/environment.ts",
@@ -86,6 +110,12 @@
             },
             "development": {
               "buildTarget": "privacyidea-webui:build:development"
+            },
+            "de": {
+              "buildTarget": "privacyidea-webui:build:de"
+            },
+            "fr": {
+              "buildTarget": "privacyidea-webui:build:fr"
             }
           },
           "defaultConfiguration": "development"
