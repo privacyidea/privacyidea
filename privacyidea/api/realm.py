@@ -26,18 +26,19 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-__doc__ = """The realm endpoints are used to define realms.
-A realm groups together many users. Administrators can manage the tokens of
-the users in such a realm. Policies and tokens can be assigned to realms.
+__doc__ = """
+The realm REST API manages realms. A realm composes one or more
+:ref:`useridresolvers` into a single user space; tokens and policies
+are scoped against realms, and only users that belong to a realm are
+visible to privacyIDEA. The same blueprint also exposes the
+``/defaultrealm`` endpoints that read, set and clear which realm new
+users are looked up in when no realm is supplied explicitly.
 
-A realm consists of several resolvers. Thus you can create a realm and gather
-users from LDAP and flat file source into one realm or you can pick resolvers
-that collect users from different points from your vast LDAP directory and
-group these users into a realm.
-
-You will only be able to see and use user object, that are contained in a realm.
-
-The code of this module is tested in tests/test_api_system.py
+All endpoints require admin authentication. Listing realms is allowed
+for any admin but the response is filtered by the calling admin's
+policy match — realm-admins only see realms their policies cover.
+Create / update / delete are gated by :ref:`resolverwrite` and
+:ref:`resolverdelete`.
 """
 from flask_babel import _
 from flask import Blueprint, request, current_app, g
@@ -77,36 +78,37 @@ defaultrealm_blueprint = Blueprint('defaultrealm_blueprint', __name__)
 @prepolicy(check_base_action, request, PolicyAction.RESOLVERWRITE)
 def set_realm_api(realm=None):
     """
-    This call creates a new realm or reconfigures a realm.
-    The realm contains a list of resolvers.
+    Create or reconfigure a realm. The realm is defined as a list of
+    resolvers, optionally with a per-resolver priority used to
+    disambiguate when the same login name resolves in more than one
+    resolver. Resolvers attached to specific nodes are preserved
+    across this call (use :http:post:`/realm/(realm)/node/(nodeid)`
+    to manage them).
 
-    In the result it returns a list of added resolvers and a list of
-    resolvers, that could not be added.
+    Requires admin authentication and the policy action :ref:`resolverwrite`.
 
-    :arg realm: The unique name of the realm
-    :<json string/list resolvers: A comma separated list of unique resolver
-        names or a list object
-    :<json integer priority: Additional priority parameters ``priority.<resolvername>``
-        to define the priority of the resolvers within this realm
-    :>json bool status: Status of the request
-    :>json value: object with a list of added and failed resolvers
-    :reqheader PI-Authorization: The authorization token
+    :param realm: path component, the unique name of the realm.
+    :jsonparam resolvers: comma-separated string or JSON list of
+        resolver names that should make up this realm (required).
+    :jsonparam priority.<resolvername>: integer priority for the
+        named resolver (optional).
+    :reqheader PI-Authorization: authentication token.
+    :status 200: ``{"added": [...], "failed": [...]}`` in
+        ``result.value``.
 
     **Example request**:
-
-    To create a new realm ``newrealm``, that consists of the resolvers
-    ``reso1_with_realm`` and ``reso2_with_realm`` call:
 
     .. sourcecode:: http
 
        POST /realm/newrealm HTTP/1.1
        Host: example.com
-       Accept: application/json
        Content-Type: application/json
 
-       "resolvers": "reso1_with_realm, reso2_with_realm"
-       "priority.reso1_with_realm": 1
-       "priority.reso2_with_realm": 2
+       {
+         "resolvers": "reso1_with_realm,reso2_with_realm",
+         "priority.reso1_with_realm": 1,
+         "priority.reso2_with_realm": 2
+       }
 
     **Example response**:
 
@@ -116,16 +118,16 @@ def set_realm_api(realm=None):
        Content-Type: application/json
 
        {
-          "id": 1,
-          "jsonrpc": "2.0",
-          "result": {
-                    "status": true,
-                    "value": {
-                        "added": ["reso1_with_realm", "reso2_with_realm"],
-                        "failed": []
-                    }
-          }
-          "version": "privacyIDEA unknown"
+         "id": 1,
+         "jsonrpc": "2.0",
+         "result": {
+           "status": true,
+           "value": {
+             "added": ["reso1_with_realm", "reso2_with_realm"],
+             "failed": []
+           }
+         },
+         "version": "privacyIDEA unknown"
        }
     """
     param = request.all_data
@@ -160,11 +162,18 @@ def set_realm_api(realm=None):
 @log_with(log)
 def get_realms_api():
     """
-    This call returns the list of all defined realms.
-    It takes no arguments.
+    Return all realms visible to the calling admin. The response is
+    a dictionary keyed by realm name; each entry carries the
+    ``default`` flag and a list of resolver records with
+    ``name``, ``type``, ``node`` and ``priority``.
 
-    :return: a json result with a list of realms
-    :reqheader PI-Authorization: The authorization token
+    The result is filtered against the calling admin's policy match —
+    realm-admins only see realms their policies cover.
+
+    Requires admin authentication.
+
+    :reqheader PI-Authorization: authentication token.
+    :status 200: dict of realm definitions in ``result.value``.
 
     **Example request**:
 
@@ -178,30 +187,30 @@ def get_realms_api():
 
     .. sourcecode:: http
 
-        HTTP/1.1 200 OK
-        Content-Type: application/json
+       HTTP/1.1 200 OK
+       Content-Type: application/json
 
-        {
-          "id": 1,
-          "jsonrpc": "2.0",
-          "result": {
-            "status": true,
-            "value": {
-              "realm1_with_resolver": {
-                "default": true,
-                "resolver": [
-                  {
-                    "name": "reso1_with_realm",
-                    "node": "",
-                    "priority": null,
-                    "type": "passwdresolver"
-                  }
-                ]
-              }
-            }
-          },
-          "version": "privacyIDEA unknown"
-        }
+       {
+         "id": 1,
+         "jsonrpc": "2.0",
+         "result": {
+           "status": true,
+           "value": {
+             "realm1_with_resolver": {
+               "default": true,
+               "resolver": [
+                 {
+                   "name": "reso1_with_realm",
+                   "node": "",
+                   "priority": null,
+                   "type": "passwdresolver"
+                 }
+               ]
+             }
+           }
+         },
+         "version": "privacyIDEA unknown"
+       }
 
     .. versionchanged:: 3.10 The response contains the node and priority of the resolver
     """
@@ -223,40 +232,31 @@ def get_realms_api():
 @log_with(log)
 def get_super_user_realms():
     """
-    This call returns the list of all superuser realms
-    as they are defined in *pi.cfg*.
-    See :ref:`cfgfile` for more information about this.
+    Return the list of superuser realms — the realms whose users are
+    treated as administrators. The list is taken from the
+    ``SUPERUSER_REALM`` setting in ``pi.cfg``; see :ref:`cfgfile`.
 
-    :return: a json result with a list of superuser realms
-    :reqheader PI-Authorization: The authorization token
+    Requires admin authentication.
 
-    **Example request**:
-
-    .. sourcecode:: http
-
-       GET /realm/superuser HTTP/1.1
-       Host: example.com
-       Accept: application/json
+    :reqheader PI-Authorization: authentication token.
+    :status 200: list of superuser-realm names in ``result.value``.
 
     **Example response**:
 
     .. sourcecode:: http
 
-        HTTP/1.1 200 OK
-        Content-Type: application/json
+       HTTP/1.1 200 OK
+       Content-Type: application/json
 
-        {
-          "id": 1,
-          "jsonrpc": "2.0",
-          "result": {
-            "status": true,
-            "value": [
-              "superuser",
-              "realm2"
-            ]
-          },
-          "version": "privacyIDEA unknown"
-        }
+       {
+         "id": 1,
+         "jsonrpc": "2.0",
+         "result": {
+           "status": true,
+           "value": ["superuser", "realm2"]
+         },
+         "version": "privacyIDEA unknown"
+       }
     """
     superuser_realms = current_app.config.get("SUPERUSER_REALM", [])
     g.audit_object.log({"success": True})
@@ -268,12 +268,17 @@ def get_super_user_realms():
 @prepolicy(check_base_action, request, PolicyAction.RESOLVERWRITE)
 def set_default_realm_api(realm=None):
     """
-    This call sets the default realm.
+    Set the default realm. The previous default (if any) is cleared
+    in the same transaction.
 
-    :param realm: the name of the realm, that should be the default realm
-    :>json bool status: Status of the request
-    :>json integer value: The id of the new default realm
-    :reqheader PI-Authorization: The authorization token
+    Requires admin authentication and the policy action :ref:`resolverwrite`.
+
+    :param realm: path component, the name of the realm to make the
+        default. Lower-cased and stripped before lookup.
+    :reqheader PI-Authorization: authentication token.
+    :status 200: database id of the new default realm in
+        ``result.value``.
+    :status 404: no realm with the given name exists.
 
     **Example request**:
 
@@ -286,18 +291,18 @@ def set_default_realm_api(realm=None):
 
     .. sourcecode:: http
 
-        HTTP/1.1 200 OK
-        Content-Type: application/json
+       HTTP/1.1 200 OK
+       Content-Type: application/json
 
-        {
-          "id": 1,
-          "jsonrpc": "2.0",
-          "result": {
-            "status": true,
-            "value": 1
-          },
-          "version": "privacyIDEA unknown"
-        }
+       {
+         "id": 1,
+         "jsonrpc": "2.0",
+         "result": {
+           "status": true,
+           "value": 1
+         },
+         "version": "privacyIDEA unknown"
+       }
     """
     realm = realm.lower().strip()
     r = set_default_realm(realm)
@@ -311,12 +316,17 @@ def set_default_realm_api(realm=None):
 @prepolicy(check_base_action, request, PolicyAction.RESOLVERDELETE)
 def delete_default_realm_api(realm=None):
     """
-    This call deletes the default realm.
+    Clear the default realm. The realm definitions themselves are not
+    touched; only the ``default`` flag is removed from whichever realm
+    currently carries it. After this call, requests that omit the
+    realm parameter will no longer resolve a default and must specify
+    ``realm`` explicitly.
 
-    :>json bool status: Status of the request
-    :>json integer value: The id of the realm which used to be default
-        or ``0`` in case no default realm was found
-    :reqheader PI-Authorization: The authorization token
+    Requires admin authentication and the policy action :ref:`resolverdelete`.
+
+    :reqheader PI-Authorization: authentication token.
+    :status 200: database id of the realm that was the default in
+        ``result.value``, or ``0`` if no default was set.
 
     **Example request**:
 
@@ -329,18 +339,18 @@ def delete_default_realm_api(realm=None):
 
     .. sourcecode:: http
 
-        HTTP/1.1 200 OK
-        Content-Type: application/json
+       HTTP/1.1 200 OK
+       Content-Type: application/json
 
-        {
-          "id": 1,
-          "jsonrpc": "2.0",
-          "result": {
-            "status": true,
-            "value": 1
-          },
-          "version": "privacyIDEA unknown"
-        }
+       {
+         "id": 1,
+         "jsonrpc": "2.0",
+         "result": {
+           "status": true,
+           "value": 1
+         },
+         "version": "privacyIDEA unknown"
+       }
     """
     r = set_default_realm("")
     g.audit_object.log({"success": True,
@@ -352,47 +362,45 @@ def delete_default_realm_api(realm=None):
 @log_with(log)
 def get_default_realm_api():
     """
-    This call returns the default realm
+    Return the default realm with its resolver list. If no realm is
+    currently flagged as default, the response value is an empty
+    dictionary.
 
-    :return: a json description of the default realm with the resolvers
-    :reqheader PI-Authorization: The authorization token
+    Requires admin authentication.
 
-    **Example request**:
-
-    .. sourcecode:: http
-
-       GET /defaultrealm HTTP/1.1
-       Host: example.com
+    :reqheader PI-Authorization: authentication token.
+    :status 200: single-entry dict keyed by the default-realm name,
+        or ``{}`` when no default is set.
 
     **Example response**:
 
     .. sourcecode:: http
 
-        HTTP/1.1 200 OK
-        Content-Type: application/json
+       HTTP/1.1 200 OK
+       Content-Type: application/json
 
-        {
-          "id": 1,
-          "jsonrpc": "2.0",
-          "result": {
-            "status": true,
-            "value": {
-              "defrealm": {
-                "default": true,
-                "id": 1,
-                "resolver": [
-                  {
-                    "name": "defresolver",
-                    "node": "",
-                    "priority": null,
-                    "type": "passwdresolver"
-                  }
-                ]
-              }
-            }
-          },
-          "version": "privacyIDEA unknown"
-        }
+       {
+         "id": 1,
+         "jsonrpc": "2.0",
+         "result": {
+           "status": true,
+           "value": {
+             "defrealm": {
+               "default": true,
+               "id": 1,
+               "resolver": [
+                 {
+                   "name": "defresolver",
+                   "node": "",
+                   "priority": null,
+                   "type": "passwdresolver"
+                 }
+               ]
+             }
+           }
+         },
+         "version": "privacyIDEA unknown"
+       }
     """
     res = {}
     defRealm = get_default_realm()
@@ -410,13 +418,21 @@ def get_default_realm_api():
 @prepolicy(check_base_action, request, PolicyAction.RESOLVERDELETE)
 def delete_realm_api(realm=None):
     """
-    This call deletes the given realm. A realm can only be deleted if no user of this realm is assigned to a token or
-    container.
+    Delete a realm. The realm can only be deleted if no user from
+    this realm is still attached to a token or a container.
 
-    :param realm: The name of the realm to delete
-    :>json bool status: Status of the request
-    :>json integer value: The id of the deleted realm
-    :reqheader PI-Authorization: The authorization token
+    If the deleted realm was the default realm and exactly one realm
+    remains afterwards, that remaining realm is automatically promoted
+    to default.
+
+    Requires admin authentication and the policy action :ref:`resolverdelete`.
+
+    :param realm: path component, the name of the realm to delete.
+    :reqheader PI-Authorization: authentication token.
+    :status 200: database id of the deleted realm in ``result.value``.
+    :status 400: a token or container in this realm still has a user
+        assigned.
+    :status 404: no realm with the given name exists.
 
     **Example request**:
 
@@ -433,15 +449,15 @@ def delete_realm_api(realm=None):
        HTTP/1.1 200 OK
        Content-Type: application/json
 
-        {
-          "id": 1,
-          "jsonrpc": "2.0",
-          "result": {
-            "status": true,
-            "value": 1
-          },
-          "version": "privacyIDEA unknown"
-        }
+       {
+         "id": 1,
+         "jsonrpc": "2.0",
+         "result": {
+           "status": true,
+           "value": 1
+         },
+         "version": "privacyIDEA unknown"
+       }
     """
     ret = delete_realm(realm)
     g.audit_object.log({"success": ret > 0,
@@ -459,49 +475,45 @@ def delete_realm_api(realm=None):
 @prepolicy(check_base_action, request, PolicyAction.RESOLVERWRITE)
 def set_realm_node_api(realm, nodeid):
     """
-    This call creates or reconfigures a realm with node specific settings.
+    Create or reconfigure the resolver assignment for a realm on a
+    specific privacyIDEA node. Resolvers attached to *other* nodes
+    (and node-less resolvers in this realm) are preserved across the
+    call; only the resolvers bound to ``nodeid`` are replaced.
 
-    The realm contains a list of resolvers and corresponding priorities per node.
-    If the node UUID can not be found in the database, the realm will be
-    configured without a specific node.
-    In the result it returns a list of added resolvers and a list of
-    resolvers, that could not be added.
+    The body must be JSON (``Content-Type: application/json``) and
+    contain a ``resolver`` list of ``{name, priority}`` objects.
 
-    :arg string realm: The unique name of the realm
-    :arg string nodeid: The UUID of the node
-    :<json resolver: A JSON object with a list consisting of objects with the
-      resolver name and priority
-    :reqheader PI-Authorization: The authorization token
-    :statuscode 200: no error
-    :statuscode 400:
-      - The given node UUID does not exist
-      - Could not verify data in request
+    Requires admin authentication and the policy action :ref:`resolverwrite`.
+
+    :param realm: path component, the unique name of the realm.
+    :param nodeid: path component, the UUID of the node.
+    :reqheader Content-Type: ``application/json`` (required).
+    :reqheader PI-Authorization: authentication token.
+    :<json list resolver: list of objects, each with ``name`` (string,
+        required) and ``priority`` (integer, optional).
+    :status 200: ``{"added": [...], "failed": [...]}`` in
+        ``result.value``.
+    :status 400: the node UUID is unknown, the body is missing the
+        ``resolver`` key, or a resolver entry could not be parsed.
 
     **Example request**:
 
-    Create a new realm ``newrealm``, that consists of the resolvers
-    ``resolver1`` and ``resolver2`` on the node with
-    UUID ``8e4272a9-9037-40df-8aa3-976e4a04b5a9``:
+    Replace the resolvers of realm ``newrealm`` on the node with UUID
+    ``8e4272a9-9037-40df-8aa3-976e4a04b5a9`` with ``resolver1`` and
+    ``resolver2``:
 
     .. sourcecode:: http
 
-      POST /realm/newrealm/node/8e4272a9-9037-40df-8aa3-976e4a04b5a9 HTTP/1.1
-      Host: example.com
-      Accept: application/json
-      Content-Type: application/json
+       POST /realm/newrealm/node/8e4272a9-9037-40df-8aa3-976e4a04b5a9 HTTP/1.1
+       Host: example.com
+       Content-Type: application/json
 
-      {
-        "resolver": [
-          {
-            "name": "resolver1",
-            "priority": 1
-          },
-          {
-            "name": "resolver2",
-            "priority": 2
-          }
-        ]
-      }
+       {
+         "resolver": [
+           {"name": "resolver1", "priority": 1},
+           {"name": "resolver2", "priority": 2}
+         ]
+       }
 
     **Example response**:
 
@@ -511,16 +523,16 @@ def set_realm_node_api(realm, nodeid):
        Content-Type: application/json
 
        {
-          "id": 1,
-          "jsonrpc": "2.0",
-          "result": {
-                    "status": true,
-                    "value": {
-                        "added": ["resolver1", "resolver2"],
-                        "failed": []
-                    }
-          }
-          "version": "privacyIDEA unknown"
+         "id": 1,
+         "jsonrpc": "2.0",
+         "result": {
+           "status": true,
+           "value": {
+             "added": ["resolver1", "resolver2"],
+             "failed": []
+           }
+         },
+         "version": "privacyIDEA unknown"
        }
 
     .. versionadded:: 3.10 Node specific realm configuration

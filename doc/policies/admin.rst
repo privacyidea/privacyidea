@@ -350,6 +350,8 @@ type: ``integer``
 These policy actions define the required minimal and allowed maximal pin length
 for a :ref:`spass_token`.
 
+.. _policy_userlist:
+
 userlist
 ~~~~~~~~
 
@@ -363,6 +365,8 @@ they should only work with tokens, but not see all users at once.
 .. note:: If an administrator has any right in a realm, the administrator
    is also allowed to view the token list.
 
+.. _policy_getchallenges:
+
 getchallenges
 ~~~~~~~~~~~~~
 
@@ -370,6 +374,8 @@ type: ``bool``
 
 If the ``getchallenges`` action is defined, the administrator is
 allowed to check the status of open challenge requests.
+
+.. _policy_tokenrealms:
 
 tokenrealms
 ~~~~~~~~~~~
@@ -403,12 +409,16 @@ addressed in certain situations.
 
 Administrators can also be allowed to define tokengroups and delete tokengroup definitions.
 
+.. _policy_tokengroup_list:
+
 tokengroup_list
 ~~~~~~~~~~~~~~~
 
 type: ``bool``
 
 This allows the administrator to list all defined tokengroups.
+
+.. _policy_tokengroup_add:
 
 tokengroup_add
 ~~~~~~~~~~~~~~
@@ -417,6 +427,8 @@ type: ``bool``
 
 If the policy ``tokengroup_add`` is defined, the administrator is allowed to
 define new tokengroups.
+
+.. _policy_tokengroup_delete:
 
 tokengroup_delete
 ~~~~~~~~~~~~~~~~~
@@ -427,6 +439,7 @@ If the policy ``tokengroup_delete`` is defined, the administrator is allowed to
 delete existing tokengroup definitions.
 
 .. _policy_serviceids:
+.. _policy_serviceid_add:
 
 serviceid_add
 ~~~~~~~~~~~~~
@@ -441,6 +454,8 @@ application specific passwords.
 
 See :ref:`serviceids`.
 
+.. _policy_serviceid_delete:
+
 serviceid_delete
 ~~~~~~~~~~~~~~~~
 
@@ -448,12 +463,16 @@ type: ``bool``
 
 This policy allows the administrator to delete a service ID definition.
 
-servivceid_list
-~~~~~~~~~~~~~~~
+.. _policy_serviceid_list:
+
+serviceid_list
+~~~~~~~~~~~~~~
 
 type: ``bool``
 
 This policy allows the administrator to list all defined service IDs.
+
+.. _policy_getserial:
 
 getserial
 ~~~~~~~~~
@@ -466,6 +485,8 @@ If the ``getserial`` action is defined, the administrator is
 allowed to calculate the token serial number for a given OTP
 value.
 
+
+.. _policy_getrandom:
 
 getrandom
 ~~~~~~~~~
@@ -506,6 +527,8 @@ To only perform the lost token process the actions ``copytokenuser``
 and ``copytokenpin`` are not necessary!
 
 
+.. _policy_adduser:
+
 adduser
 ~~~~~~~
 
@@ -519,6 +542,8 @@ users to a user store.
 .. note:: The user store still must be defined as editable, otherwise no
    users can be added, edited or deleted.
 
+.. _policy_updateuser:
+
 updateuser
 ~~~~~~~~~~
 
@@ -528,6 +553,8 @@ type: ``bool``
 
 If the ``updateuser`` action is defined, the administrator is allowed to edit
 users in the user store.
+
+.. _policy_deleteuser:
 
 deleteuser
 ~~~~~~~~~~
@@ -540,6 +567,8 @@ If the ``deleteuser`` action is defined, the administrator is allowed to
 delete an existing user from the user store.
 
 
+.. _policy_copytokenuser:
+
 copytokenuser
 ~~~~~~~~~~~~~
 
@@ -551,6 +580,8 @@ allowed to copy the user assignment of one token to another.
 This functionality is also used during the lost token process.
 But you only need to define this action, if the administrator
 should be able to perform this task manually.
+
+.. _policy_copytokenpin:
 
 copytokenpin
 ~~~~~~~~~~~~
@@ -565,6 +596,8 @@ This functionality is also used during the lost token process.
 But you only need to define this action, if the administrator
 should be able to perform this task manually.
 
+.. _policy_smtpserver_write:
+
 smtpserver_write
 ~~~~~~~~~~~~~~~~
 
@@ -573,12 +606,16 @@ type: ``bool``
 To be able to define new :ref:`smtpserver` or delete existing ones, the
 administrator needs this rights ``smtpserver_write``.
 
+.. _policy_smtpserver_read:
+
 smtpserver_read
 ~~~~~~~~~~~~~~~
 
 type: ``bool``
 
 Allow the administrator to read the :ref:`smtpserver`.
+
+.. _policy_smsgateway_write:
 
 smsgateway_write
 ~~~~~~~~~~~~~~~~
@@ -588,12 +625,16 @@ type: ``bool``
 To be able to define new :ref:`sms_gateway_config` or delete existing ones, the
 administrator needs the right ``smsgateway_write``.
 
+.. _policy_smsgateway_read:
+
 smsgateway_read
 ~~~~~~~~~~~~~~~
 
 type: ``bool``
 
 Allow the administrator to read the :ref:`sms_gateway_config`.
+
+.. _policy_periodictask_write:
 
 periodictask_write
 ~~~~~~~~~~~~~~~~~~
@@ -602,6 +643,8 @@ type: ``bool``
 
 Allow the administrator to write or delete :ref:`periodic_tasks` definitions.
 
+.. _policy_periodictask_read:
+
 periodictask_read
 ~~~~~~~~~~~~~~~~~
 
@@ -609,12 +652,16 @@ type: ``bool``
 
 Allow the administrator to read the :ref:`periodic_tasks` definitions.
 
+.. _policy_eventhandling_write:
+
 eventhandling_write
 ~~~~~~~~~~~~~~~~~~~
 
 type: ``bool``
 
 Allow the administrator to configure :ref:`Event Handlers<eventhandler>`.
+
+.. _policy_eventhandling_read:
 
 eventhandling_read
 ~~~~~~~~~~~~~~~~~~
@@ -627,12 +674,16 @@ Allow the administrator to read :ref:`Event Handlers<eventhandler>`.
    or realms. Having the right to read event handlers will allow the
    administrator to see all event handler definitions.
 
+.. _policy_radiusserver_write:
+
 radiusserver_write
 ~~~~~~~~~~~~~~~~~~
 
 type: ``bool``
 
 Allow the administrator to write or delete :ref:`radiusserver_config` definitions.
+
+.. _policy_radiusserver_read:
 
 radiusserver_read
 ~~~~~~~~~~~~~~~~~
@@ -641,12 +692,16 @@ type: ``bool``
 
 Allow the administrator to read the :ref:`radiusserver_config` definitions.
 
+.. _policy_privacyideaserver_write:
+
 privacyideaserver_write
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 type: ``bool``
 
 Allow the administrator to write or delete :ref:`privacyideaserver_config` definitions.
+
+.. _policy_privacyideaserver_read:
 
 privacyideaserver_read
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -719,6 +774,8 @@ type: ``bool``
 Allow the administrator to write, read or delete CA connectors.
 
 
+.. _policy_statistics_read:
+
 statistics_read
 ~~~~~~~~~~~~~~~
 
@@ -727,6 +784,8 @@ type: ``bool``
 This action allows the reading of the statistics at the :ref:`rest_monitoring`.
 
 
+.. _policy_statistics_delete:
+
 statistics_delete
 ~~~~~~~~~~~~~~~~~
 
@@ -734,6 +793,8 @@ type: ``bool``
 
 This action allows deleting statistics at the :ref:`rest_monitoring`.
 
+
+.. _policy_auditlog:
 
 auditlog
 ~~~~~~~~
@@ -746,6 +807,8 @@ contain this very user realm. A list of user realms may be defined.
 
 To learn more about the audit log, see :ref:`audit`.
 
+.. _policy_auditlog_download:
+
 auditlog_download
 ~~~~~~~~~~~~~~~~~
 
@@ -753,10 +816,14 @@ type: ``bool``
 
 The administrator is allowed to download the audit log.
 
-.. note:: The download is **not** restricted to filters, hidden columns and audit age.
-   Thus, if you want to avoid that an administrator can see older
-   logs or columns, hidden by `hide_audit_columns`, you need to disallow downloading the data.
-   Otherwise, they may download the audit log and look at older entries manually.
+.. note:: The :ref:`policy_auditlog_age` policy **is** applied to the
+   download — older entries are excluded just as in the search view.
+   The :ref:`policy_hide_audit_columns` policy, however, is **not**
+   applied to the download: hidden columns are still present in the
+   exported CSV. If you need that restriction, disallow downloading
+   the data.
+
+.. _policy_auditlog_age:
 
 auditlog_age
 ~~~~~~~~~~~~
@@ -769,6 +836,8 @@ view older entries.
 
 Can be something like 10m (10 minutes), 10h (10 hours) or 10d (ten days).
 
+.. _policy_hide_audit_columns:
+
 hide_audit_columns
 ~~~~~~~~~~~~~~~~~~
 
@@ -780,6 +849,8 @@ For example a value ``sig_check log_level`` will hide these two columns.
 
 The list of available columns can be checked by examining the response of the
 request to the :ref:`rest_audit`.
+
+.. _policy_triggerchallenge:
 
 triggerchallenge
 ~~~~~~~~~~~~~~~~~
@@ -872,6 +943,8 @@ Possible values are *30* or *60*, default is *30*.
 
 .. versionadded:: 3.2
 
+.. _policy_system_documentation:
+
 system_documentation
 ~~~~~~~~~~~~~~~~~~~~
 
@@ -926,6 +999,7 @@ If an attestation certificate is required, see the enrollment policy
 .. versionadded:: 3.5
 
 .. _admin_set_custom_user_attributes:
+.. _policy_set_custom_user_attributes:
 
 set_custom_user_attributes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -959,6 +1033,8 @@ either to the value "1" or to the value "2".
 
 .. _admin_delete_custom_user_attributes:
 
+.. _policy_delete_custom_user_attributes:
+
 delete_custom_user_attributes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -981,6 +1057,7 @@ the attributes "department" of the corresponding users.
 .. versionadded:: 3.6
 
 .. _admin_machinelist:
+.. _policy_machinelist:
 
 machinelist
 ~~~~~~~~~~~
@@ -988,6 +1065,8 @@ machinelist
 type: ``bool``
 
 The administrator is allowed to list the machines.
+
+.. _policy_manage_machine_tokens:
 
 manage_machine_tokens
 ~~~~~~~~~~~~~~~~~~~~~
@@ -997,6 +1076,8 @@ type: ``bool``
 The administrator is allowed to attach and detach tokens to machines to enable the use with
 one of the available appliactions. See :ref:`machines`.
 
+.. _policy_fetch_authentication_items:
+
 fetch_authentication_items
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -1004,6 +1085,8 @@ type: ``bool``
 
 The administrator is allowed to fetch authentication items of tokens assigned to machines.
 It grants access to the ``/machine/authitem`` endpoints (see :ref:`rest_machine`).
+
+.. _policy_clienttype:
 
 clienttype
 ~~~~~~~~~~
@@ -1013,6 +1096,8 @@ type: ``bool``
 This policy action allows the admin to view the list of clients which authenticate to privacyIDEA
 at the :ref:`rest_client`.
 
+.. _policy_managesubscription:
+
 managesubscription
 ~~~~~~~~~~~~~~~~~~
 
@@ -1021,12 +1106,16 @@ type: ``bool``
 The administrator is able to view and change the subscriptions.
 It grants access to the :ref:`rest_subscriptions`.
 
+.. _policy_set_hsm_password:
+
 set_hsm_password
 ~~~~~~~~~~~~~~~~
 
 The administrator is able to set the password of the hardware security module.
 It grants access to the `/system/hsm` endpoint (see :ref:`rest_system`).
 
+
+.. _policy_container_info:
 
 container_info
 ~~~~~~~~~~~~~~
@@ -1037,6 +1126,8 @@ The administrator is allowed to edit the container information.
 
 .. versionadded:: 3.10
 
+.. _policy_container_state:
+
 container_state
 ~~~~~~~~~~~~~~~
 
@@ -1045,6 +1136,8 @@ type: ``bool``
 The administrator is allowed to edit the container states.
 
 .. versionadded:: 3.10
+
+.. _policy_container_description:
 
 container_description
 ~~~~~~~~~~~~~~~~~~~~~
@@ -1055,6 +1148,8 @@ The administrator is allowed to edit the container description.
 
 .. versionadded:: 3.10
 
+.. _policy_container_create:
+
 container_create
 ~~~~~~~~~~~~~~~~
 
@@ -1063,6 +1158,8 @@ type: ``bool``
 The administrator is allowed to create containers.
 
 .. versionadded:: 3.10
+
+.. _policy_container_delete:
 
 container_delete
 ~~~~~~~~~~~~~~~~
@@ -1073,6 +1170,8 @@ The administrator is allowed to delete containers.
 
 .. versionadded:: 3.10
 
+.. _policy_container_add_token:
+
 container_add_token
 ~~~~~~~~~~~~~~~~~~~
 
@@ -1082,6 +1181,8 @@ The administrator is allowed to add tokens to a container.
 
 .. versionadded:: 3.10
 
+.. _policy_container_remove_token:
+
 container_remove_token
 ~~~~~~~~~~~~~~~~~~~~~~
 
@@ -1090,6 +1191,8 @@ type: ``bool``
 The administrator is allowed to remove tokens from containers.
 
 .. versionadded:: 3.10
+
+.. _policy_container_assign_user:
 
 container_assign_user
 ~~~~~~~~~~~~~~~~~~~~~
@@ -1102,6 +1205,8 @@ Note that the condition ``realm`` for this action is also evaluated to true if t
 
 .. versionadded:: 3.10
 
+.. _policy_container_unassign_user:
+
 container_unassign_user
 ~~~~~~~~~~~~~~~~~~~~~~~
 type: ``bool``
@@ -1109,6 +1214,8 @@ type: ``bool``
 The administrator is allowed to unassign users from containers.
 
 .. versionadded:: 3.10
+
+.. _policy_container_realms:
 
 container_realms
 ~~~~~~~~~~~~~~~~
@@ -1128,6 +1235,8 @@ The administrator is allowed to generate the QR code for the registration of a c
 
 .. versionadded:: 3.11
 
+.. _policy_container_unregister:
+
 container_unregister
 ~~~~~~~~~~~~~~~~~~~~
 type: ``bool``
@@ -1137,6 +1246,8 @@ with the server.
 
 .. versionadded:: 3.11
 
+.. _policy_container_rollover:
+
 container_rollover
 ~~~~~~~~~~~~~~~~~~
 type: ``bool``
@@ -1144,6 +1255,8 @@ type: ``bool``
 The administrator is allowed to perform a rollover of a container and all contained tokens.
 
 .. versionadded:: 3.11
+
+.. _policy_container_template_create:
 
 container_template_create
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1153,6 +1266,8 @@ The administrator is allowed to create and edit container templates.
 
 .. versionadded:: 3.11
 
+.. _policy_container_template_delete:
+
 container_template_delete
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 type: ``bool``
@@ -1160,6 +1275,8 @@ type: ``bool``
 The administrator is allowed to delete container templates.
 
 .. versionadded:: 3.11
+
+.. _policy_container_template_list:
 
 container_template_list
 ~~~~~~~~~~~~~~~~~~~~~~~

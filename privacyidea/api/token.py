@@ -119,15 +119,31 @@ token_blueprint = Blueprint('token_blueprint', __name__)
 log = logging.getLogger(__name__)
 
 __doc__ = """
-The token API can be accessed via /token.
+The token REST API manages the lifecycle of authentication tokens —
+enrollment, listing, assignment to users, PIN management, realm
+membership, tokengroup membership, token info, lost-token handling,
+bulk import, and admin-only attribute editing.
 
-You need to authenticate to gain access to these token
-functions.
-If you are authenticated as administrator, you can manage all tokens.
-If you are authenticated as normal user, you can only manage your own tokens.
-Some API calls are only allowed to be accessed by administrators.
+All endpoints require authentication. Admins may operate on any token
+that their realm-scoped admin policies permit; regular users may only
+operate on their own tokens (the request hooks force the
+``user`` / ``realm`` / ``resolver`` parameters to the calling user's
+identity for non-admin callers). Per-action authorization is enforced
+by the token-scope policies (``enroll<TOKENTYPE>``, ``assign``,
+``unassign``, ``revoke``, ``enable``, ``disable``, ``delete``,
+``reset``, ``resync``, ``setpin``, ``setrandompin``,
+``setdescription``, ``set``, ``tokenrealms``, ``losttoken``,
+``getserial``, ``getchallenges``, ``settokeninfo``, ``tokengroups``,
+``copytokenpin``, ``copytokenuser``, ``import``).
 
-To see how to authenticate read :ref:`rest_auth`.
+Many endpoints operate on either a single token (via ``serial``) or
+on a user's full set of tokens (when ``user`` and ``realm`` are
+supplied without a serial); the
+:func:`~privacyidea.api.lib.prepolicy.check_token_action` decorator
+expands the user-only call to every token the user owns.
+
+See :ref:`rest_auth` for authentication and :ref:`policies` for the
+overall policy concept.
 """
 
 
@@ -169,38 +185,61 @@ To see how to authenticate read :ref:`rest_auth`.
 @log_with(log, log_entry=False)
 def init():
     """
-    Create a new token with the specified parameters.
+    Create or roll over a token. The token type drives both the
+    request shape (each token class accepts its own parameters; see
+    the corresponding ``TokenClass.update`` method) and the response
+    shape (each token class returns its own enrollment payload —
+    typically QR codes, ``otpauth://`` URLs, seeds, etc.).
 
-    :jsonparam otpkey: required: the secret key of the token
-    :jsonparam genkey: set to =1, if key should be generated. We either
-                   need otpkey or genkey
-    :jsonparam keysize: the size (byte) of the key. Either 20 or 32. Default is 20
-    :jsonparam serial: the serial number/identifier of the token
-    :jsonparam description: A description for the token
-    :jsonparam pin: the pin of the token. "OTP PIN"
-    :jsonparam user: the login user name. This user gets the token assigned
-    :jsonparam realm: the realm of the user, or, if no user is given, just the token will be assigned to this realm
-    :jsonparam type: the type of the token
-    :jsonparam tokenrealm: additional realms, the token should be put into
-    :jsonparam otplen: length of the OTP value
-    :jsonparam hashlib: used hashlib sha1, sha256 or sha512
-    :jsonparam validity_period_start: The beginning of the validity period
-    :jsonparam validity_period_end: The end of the validity period
-    :jsonparam 2stepinit: set to =1 in conjunction with genkey=1 if you want
-                    a 2 step initialization process. Additional policies have to be set
-                    see :ref:`2step_enrollment`.
-    :jsonparam otpkeyformat: used to supply the OTP key in alternate formats, currently
-                            hex or base32check (see :ref:`2step_enrollment`)
-    :jsonparam rollover: Set this to 1 or true to indicate, that you want to rollover a token.
-                    This is mandatory to rollover tokens, that are in the clientwait state.
+    Requires authentication. Authorization is gated by the
+    ``enroll<TOKENTYPE>`` policy in the calling principal's scope
+    (admin or user); a request without an explicit ``type`` defaults
+    to ``HOTP`` and is therefore checked against ``enrollHOTP``.
 
-    :return: a json result with a boolean "result": true
+    For user callers, the ``user`` / ``realm`` / ``resolver`` fields
+    are bound to the calling user before the view runs; a regular
+    user can only enroll tokens for themselves.
 
-    Depending on the token type there can be additional parameters.
-    In the tokenclass you can see additional parameters in the method ``update``
-    when looking for ``getParam`` functions.
+    :jsonparam type: token type (e.g. ``hotp``, ``totp``, ``push``,
+        ``webauthn``, ``passkey``, ...). Defaults to ``hotp`` when
+        omitted.
+    :jsonparam serial: optional serial; auto-generated when omitted.
+    :jsonparam description: free-form description.
+    :jsonparam pin: the OTP PIN.
+    :jsonparam user: login name of the user to assign the token to.
+    :jsonparam realm: realm of the user; if no ``user`` is given,
+        the token is assigned to the realm directly.
+    :jsonparam tokenrealm: additional realms to add the token to.
+    :jsonparam otpkey: the token secret. Either ``otpkey`` or
+        ``genkey`` is required for OTP token types.
+    :jsonparam genkey: ``1`` to have the server generate the secret.
+    :jsonparam keysize: byte length of the generated key. The
+        accepted values depend on the token class.
+    :jsonparam otplen: length of the OTP value (typically ``6`` or
+        ``8``).
+    :jsonparam hashlib: HMAC hash algorithm — ``sha1``, ``sha256`` or
+        ``sha512``.
+    :jsonparam validity_period_start: start of the validity period.
+    :jsonparam validity_period_end: end of the validity period.
+    :jsonparam 2stepinit: ``1`` together with ``genkey=1`` to start
+        a two-step enrollment (see :ref:`2step_enrollment`).
+    :jsonparam otpkeyformat: alternate encoding for the supplied
+        ``otpkey`` (``hex`` or ``base32check``).
+    :jsonparam rollover: ``1`` or ``true`` to roll over a token that
+        is already in the ``clientwait`` state.
+    :jsonparam container_serial: optional, attach the new token to
+        this container. Requires the
+        :ref:`policy_container_add_token` policy on the caller; if
+        the policy is missing, the enrollment still succeeds but the
+        token is not added to the container.
+    :status 200: ``True`` in ``result.value`` plus a token-type-specific
+        enrollment payload in ``detail`` (QR codes, URLs, seeds,
+        challenge/verify hand-shake info, ...).
 
-    **Example response**:
+    Depending on the token type there can be additional parameters;
+    see each class' ``update`` method for the full list.
+
+    **Example response** (HOTP token):
 
        .. sourcecode:: http
 
@@ -208,32 +247,36 @@ def init():
            Content-Type: application/json
 
            {
-              "detail": {
-                "googleurl": {
-                  "description": "URL for google Authenticator",
-                  "img": "<img width=250 src=\\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAcIAAAHCAQAAAABUY/ToAAADsUlEQVR4nO2czY3bMBCF34QCfKSALcClyB2kpCAlpQOxlBQQgDwaoPBy4I+p9W4OSRaWF28OgizxgylgMJw/0oi/k/DlL0FApEiRIkWKFCnyeKRVmdrjNAFh3srTMuSS2qjLg2cr8pDkQpKMgF3SBITz1QA4YolVfQA4kiT35CNmK/JQZLM8aQaWH+3pEkEgTZlhBojksgGAAS7/83+K/ORkOF/NLtismiCfYXbOd+AxZivygCTXdCLCDJRLfTbhTo4wW5FHIJtyeAJIAJb4AobLBIP/ZQRAwMcyakxIPtd3ivw4EqObXJzody9t1EKS63N9p8iPI4sO3QTwGSSbA1Q0x+cWunWRDolsUjSnxvau6VB0xMIMrp4EPAnAkWsjpEMiu+ysD1mUZomuKk1/i6WtedIhkXupS1MEsMRmaVafh7dVfXwGV0D+kMj3yXDOsIsngXQiV59R0tZIE7jC0b4VA3WE2Yo8CtkTPy7b8sPA8HWbWML6dCKAqxG4GgADw+weOVuRRyTHuGztbk+PwdqQPIzTWibyDbJWVdOJQDLj9xkod4yOCK2gbzZvVpyip/xOkR9B4maCbnF8c53vHGuuLVaTHRLZpBgYgweAVP0hLPElA+mFtVrvf3W/aTM+brYij0j23o8JthAweNc1J5cCmSFNYDCAS5wfOVuRRyT7QpVL9F6XLN/zjhG4ZSAHj1trmcgmLcfoWoq6/B4LZLeqBxmVpxb5WobYfl8vaxfU7DSA4mdLh0S+TW5W2xXTiaWZ0WbALqiXmi5KU/n5tN8p8r+TzaqUH936MKNW6/2uIkvZIZF/IEleDfAZZnYi1zSB/DmVpa2YJZtVLxP5JmnfWCutty5qwNcFrWSsV2xGxs3+03+K/Cxk74WtTWflDr652L0XtoZuylOLvJNb9H7XPzQ0DOX9RTokcpAhAzRYpN4LO5TsI1rQLx0SOci4z7VcSuvQZgxWX1gfbfBX1ctEvhLupbZSe5bNQK0Jv/dTe9U6RL6WtoIBqDs33NA7Xdey3SYzrWUi99L8IfJW4cC4pYNjg+Ow/+O5vlPkx5OpnSsUzler2cbS29g8pmBmWH6elGMU+UqaFwS0NBBa9O45Rmhr26Mof0jkTt440MNlC9aOGQqzA8McaQs34xJfsv3rf4r8XOTduR+lezHN5fyh0sdY76qz/cDZijwwGcxqs0c9gNFx5w9t7e18hNmKPBRZ7NDtXKF6V1qp2e9qtZ7DkOf6TpEiRYoUKVKkyPfkNyq7YXtdjZCIAAAAAElFTkSuQmCC\\"/>",
-                  "value": "otpauth://hotp/mylabel?secret=GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ&counter=0"
-                },
-                "oathurl": {
-                  "description": "URL for OATH token",
-                  "img": "<img width=250 src=\\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAcIAAAHCAQAAAABUY/ToAAADfElEQVR4nO2cTYrjMBCFX40EvZRvkKPIN5gz9c3so/QBBqxlwObNQpIlp2cYaBI6zrxamDjyhywo6leyEV+T+ccXQUCkSJEiRYoUKfL5SCviy7+zmZWBAbARmwGpPjXeZU6RL0ZGkuQCAMkMCCTmqlJ8HwAb4UiSPJJfn1Pki5Fpty8AED/MEBeAU/JoA52pOuk6Rd6f9H/60xBWbwCMyG7Mg0j3mlPky5OOiB9v5AQACCQnONr4yDlFnpisdigQQAIM4WpE2oyAWy0umyfCku1QX5A81zpFPo5EHybDEXH566U+FUlyOtc6RT6OzHao2RfOgwMQVqBYJADz5WrFVN1jTpGvRRY7FLmCExwR8y3JKbAm84HkFFawieyQyCpFJRagaMniikqRK4C9KpSVa3GULxN5lGZp8n3kinrr2H5xCmsZlQ6JPEiLqbPzKh5sRefL4uJILq4MyJeJPEjzZb2jQnFopQmSH3FZw2SHRB6lC3bQeatDiI2wghOAaoykQyKb7L2OzQPpjZjNEUgDDNiMSAMAOFpchjvNKfK1yGqHlkNetofYxclVs5RzNfkykZ/J4rc+So+++S2zy1ofDVezMXmURtoZ1ynyEeRuh1xXSiwJPtCFRyUygupDIm+l5fa9Q+Na0rT8yCG3lw6JPEqtMZaCUNfmyPWhBajtMx46Iedap8jHkV2/DK0cDWBXqapczY0ptxd5kFZjLEqzlJi6C4WyHYJjHZAOieyk2aGsSNyjoF2l0Jsg9TpE/oVMHpgvK8wupRZkIwDMQy0S5QMfbVfsOdcp8v5kF1M3N9ZaGrX/sbf2g+yQyFtpPdW2/75pTtGX5tWCcnuRt9L1OtguLcFve9DazmrpkMheOn3Ju4aA4tX6gVopiurbi7yV3Lc3IJ+vh0VuHoBbAWyeSH41hF+fzzKea50iH012QdE8OPJ92MzG9HY4NJRDpqt9+9uKfEayffeDU/J7z3UzG8PVSlqfPMrlm99W5FOSsUY8Noarmdkb+T7UTSF7Wv8kbyvyqcguL+u23k/7cDvdmm9Vpxb5LzLbobErObbc/lFzijw3eZtvcR4WAtjKx2Lmn1djztBAWN5ZPX3X24p8RrI719HcWNnsEVoz1vWPyJeJ7KXYoTln7A4Wcz6/eQL7xxxyRr95IlwNskMiezF941ykSJEiRYoU+Z+TvwF49nApsKFZZAAAAABJRU5ErkJggg==\\"/>",
-                  "value": "oathtoken:///addToken?name=mylabel&lockdown=true&key=3132333435363738393031323334353637383930"
-                },
-                "otpkey": {
-                  "description": "OTP seed",
-                  "img": "<img width=200 src=\\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAUoAAAFKAQAAAABTUiuoAAAB70lEQVR4nO2aTY6jQAyFPw9IWYI0B+ijwNHhKH0DWLZU6PXCVYSOZkF6xM/CXkQkfIsnWRU/22ViZ4x/9pIQaKCBBhpooEeilqPGrAWzdjGYy8/94QICfQftJEkTAIsBlYBKkqSf6DECAn0HnfMRkj4fnjfrATOrzxEQ6I6oX74bYGJuzxIQ6H9kqySqSjCfISDQX6CNpKE8mX18lT9GpXMEBLofHc3M7WA/19B9PgQsbgnPEBDonrCXyZMB/HMaFZOnu6DWz2aMZqaBZ79Vw9gu0W/dBsU7qm4CL16aKq9geonhcq2BlqR4jirRSYImoaF8eO8c2boeXR38YnRavIwJkNFUsg1xudZAy5ywreSFyqcabgxr8lE7XECgu8JPjpj/Ao2AJtXAYoIEYzsVi3i51kBz3Rq8O658RFhKVn4Rdesu6MYTemZoEm468kh+TejlWgNdjXoeMGVjOJXXnVJk6zboa1uFb7Wm1csTZ+tu6HN3TKcEYwvZIlLJ+sMFBPoO+twdjz7GXQy8Mf6Kqe7t0HV37FaDSp630R7Rb90WtR6ytxiaFPute6Gvu2OY6wRzC92EtguUy7UGWvqtzWgX8DtPZZ8cnvAuKNs7aH4v7ZnBPH6PWcZd0DInLPHjqSTvSAGBBhpooIEG+gb6DeDWV0l+Ofz2AAAAAElFTkSuQmCC\\"/>",
-                  "value": "seed://3132333435363738393031323334353637383930"
-                },
-                "serial": "OATH00096020"
-              },
-              "id": 1,
-              "jsonrpc": "2.0",
-              "result": {
-                "status": true,
-                "value": true
-              },
-              "version": "privacyIDEA unknown"
-            }
+             "detail": {
+               "googleurl": {
+                 "description": "URL for google Authenticator",
+                 "img": "<img width=250 src=\\"data:image/png;base64,...\\"/>",
+                 "value": "otpauth://hotp/mylabel?secret=GEZDGNBVGY3TQOJQGEZDGNBVGY3TQOJQ&counter=0"
+               },
+               "oathurl": {
+                 "description": "URL for OATH token",
+                 "img": "<img width=250 src=\\"data:image/png;base64,...\\"/>",
+                 "value": "oathtoken:///addToken?name=mylabel&lockdown=true&key=3132...3930"
+               },
+               "otpkey": {
+                 "description": "OTP seed",
+                 "img": "<img width=200 src=\\"data:image/png;base64,...\\"/>",
+                 "value": "seed://3132...3930"
+               },
+               "serial": "OATH00096020"
+             },
+             "id": 1,
+             "jsonrpc": "2.0",
+             "result": {
+               "status": true,
+               "value": true
+             },
+             "version": "privacyIDEA unknown"
+           }
+
+    The ``img`` fields carry inline base64-encoded PNGs (the QR codes
+    shown in the WebUI); they have been abbreviated above for
+    readability.
 
     **2 Step Enrollment**
 
@@ -362,18 +405,21 @@ def init():
 @log_with(log)
 def get_challenges_api(serial=None):
     """
-    This endpoint returns the active challenges in the database or returns
-    the challenges for a single token by its serial number
+    Return the open challenges. With ``<serial>`` only the challenges
+    for that token are returned; without it, all open challenges
+    across the server are returned (paginated).
 
-    :query serial: The optional serial number of the token for which the
-        challenges should be returned
-    :query sortby: sort the output by column
-    :query sortdir: asc/desc
-    :query page: request a certain page
-    :query pagesize: limit the number of returned tokens
-    :query transaction_id: only returns challenges for this
-        transaction_id. This is useful when working with push or tiqr tokens.
-    :return: json
+    Requires admin authentication and the policy action
+    :ref:`policy_getchallenges`.
+
+    :param serial: optional path component, the token serial.
+    :query sortby: sort column, default ``timestamp``.
+    :query sortdir: ``asc`` (default) or ``desc``.
+    :query page: 1-indexed page number.
+    :query pagesize: page size (default ``15``).
+    :query transaction_id: restrict to challenges with this
+        transaction id (useful for push or TiQR tokens).
+    :status 200: paginated challenge list in ``result.value``.
     """
     param = request.all_data
     page = int(getParam(param, "page", optional, default=1))
@@ -394,27 +440,31 @@ def get_challenges_api(serial=None):
 @log_with(log)
 def delete_expired_challenges_api():
     """
-    Delete all expired entries in the challenge table.
+    Remove all expired entries from the challenge table. Useful as a
+    periodic-task target on busy installations.
 
-    :>json bool status: Status of the request
-    :reqheader PI-Authorization: The authorization token
+    Requires admin authentication.
+
+    :reqheader PI-Authorization: authentication token.
+    :status 200: ``{"status": True, "deleted": <n>}`` in
+        ``result.value``, where ``n`` is the number of removed rows.
 
     **Example response**:
 
     .. sourcecode:: http
 
-        HTTP/1.1 200 OK
-        Content-Type: application/json
+       HTTP/1.1 200 OK
+       Content-Type: application/json
 
-        {
-          "id": 1,
-          "jsonrpc": "2.0",
-          "result": {
-            "status": true,
-            "deleted": 42
-          },
-          "version": "privacyIDEA unknown"
-        }
+       {
+         "id": 1,
+         "jsonrpc": "2.0",
+         "result": {
+           "status": true,
+           "value": {"status": true, "deleted": 42}
+         },
+         "version": "privacyIDEA unknown"
+       }
     """
     row_count = cleanup_expired_challenges(chunk_size=None, age=None)
     g.audit_object.log({"success": True, "info": f"Deleted {row_count} entries from challenges"})
@@ -428,48 +478,56 @@ def delete_expired_challenges_api():
 @log_with(log)
 def list_api():
     """
-    Display the list of tokens. Using different parameters you can choose,
-    which tokens you want to get and also in which format you want to get the
-    information.
+    Return tokens, paginated and filtered by the supplied query
+    parameters. Realm-admins are restricted by their policies; user
+    callers always see only their own tokens regardless of the
+    ``user`` / ``realm`` parameters (the request hooks bind those
+    fields to the calling user).
 
-    The result will be paginated (even with ``outform=csv``) with a default
-    page size of 15 entries.
+    Requires authentication and the policy action ``tokenlist``. The
+    ``hide_tokeninfo`` policy may strip configured token-info keys
+    from the response.
 
-    :query serial: Display the token data of this single token. You can do a not strict matching by specifying a serial
-        like "*OATH*". Multiple serials can be passed as comma separated list.
-    :query type: Display only token of type. You can do a not strict matching by
-        specifying a tokentype like "*otp*", to find hotp and totp tokens.
-    :query type_list: Comma separated list of token types. Display only tokens of the types in the list.
-    :query user: **Admin only.** Filter by this username. Can include the realm as ``user@realm``. When
-        combined with the ``realm`` parameter the realm from ``realm`` takes
-        precedence. This parameter is ignored for callers with the ``user`` role —
-        they always see only their own tokens.
-    :query realm: **Admin only.** Realm of the user given in the ``user`` parameter. When provided
-        without a ``user`` parameter, returns tokens assigned to any user in that realm.
-        Ignored for callers with the ``user`` role.
-    :query tokenrealm: takes a realm, only the tokens in this realm will be
-        displayed
-    :query basestring description: Display token with this kind of description
-    :query sortby: sort the output by column
-    :query sortdir: asc/desc
-    :query page: request a certain page
-    :query assigned: Only return assigned (True) or not assigned (False) tokens
-    :query active: Only return active (True) or inactive (False) tokens
-    :query pagesize: limit the number of returned tokens
-    :query outform: if set to "csv", the token list will be given in CSV
-    :query rollout_state: only list tokens with the given rollout_state
-    :query infokey: only list tokens, where the infokey has the given infovalue
-    :query infovalue: only list tokens, where the infokey has the given infovalue
-    :query hidden_tokeninfo: A list of token-info keys which should be removed
-        from the response. Will be overwritten by the "hide_tokeninfo" policy.
-    :query container_serial: only list tokens, which are assigned to the container with the given serial
-                            or tokens without container if the value is an empty string ""
-
-    :return: a json result with the data being a list of token dictionaries::
-
-        { "data": [ { <token1> }, { <token2> } ]}
-
-    :rtype: json
+    :query serial: filter by serial. Substring match via ``*``
+        (e.g. ``*OATH*``); comma-separated list of serials also
+        supported.
+    :query type: filter by token type. Substring match via ``*``
+        (e.g. ``*otp*`` matches hotp and totp).
+    :query type_list: comma-separated list of token types.
+    :query user: **admin only** — filter by this user. Accepts
+        ``user@realm`` syntax. If both ``user`` and ``realm`` are
+        given, ``realm`` wins. Ignored for user-role callers.
+    :query realm: **admin only** — filter by realm of the assigned
+        user. Without a ``user`` parameter, returns every token
+        assigned to any user in this realm. Ignored for user-role
+        callers.
+    :query tokenrealm: filter to tokens that belong to this realm
+        (independent of the user's realm).
+    :query description: filter by description.
+    :query assigned: ``True`` or ``False`` to limit to assigned or
+        unassigned tokens.
+    :query active: ``True`` or ``False`` to limit to active or
+        inactive tokens.
+    :query rollout_state: filter by rollout state (e.g.
+        ``clientwait``).
+    :query infokey: filter by token-info key (combine with
+        ``infovalue``).
+    :query infovalue: filter by token-info value (combine with
+        ``infokey``).
+    :query container_serial: filter to tokens attached to the given
+        container; pass an empty string to limit to tokens without
+        any container.
+    :query hidden_tokeninfo: list of token-info keys to strip from
+        the response. Overridden by the ``hide_tokeninfo`` policy if
+        active.
+    :query sortby: sort column, default ``serial``.
+    :query sortdir: ``asc`` (default) or ``desc``.
+    :query page: 1-indexed page number, default ``1``.
+    :query pagesize: page size, default ``15``.
+    :query outform: ``csv`` to return ``text/csv`` instead of JSON.
+        Pagination still applies.
+    :status 200: paginated token list in ``result.value`` (or as a
+        CSV body when ``outform=csv``).
     """
     param = request.all_data
     serial = getParam(param, "serial", optional)
@@ -552,14 +610,21 @@ def list_api():
 @log_with(log)
 def assign_api():
     """
-    Assign a token to a user.
-    It also adds the user's realm to the token realms. Existing token realms are preserved.
+    Assign a token to a user. The user's realm is added to the
+    token's realm list; existing realms are preserved. An optional
+    PIN may be set on the same call.
 
-    :jsonparam serial: The token, which should be assigned to a user
-    :jsonparam user: The username of the user
-    :jsonparam realm: The realm of the user
-    :return: In case of success it returns "value": True.
-    :rtype: json object
+    Requires authentication and the policy action ``assign``.
+    User-role callers can only assign tokens to themselves.
+
+    :jsonparam serial: token serial (required, must be non-empty).
+    :jsonparam user: login name of the user (required).
+    :jsonparam realm: realm of the user (required if not the default
+        realm).
+    :jsonparam pin: optional OTP PIN to set in the same call.
+    :jsonparam encryptpin: ``True`` to store the PIN encrypted (the
+        default behavior is governed by the ``encrypt_pin`` policy).
+    :status 200: ``True`` on success in ``result.value``.
     """
     user = get_user_from_param(request.all_data, required)
     serial = getParam(request.all_data, "serial", required, allow_empty=False)
@@ -581,26 +646,30 @@ def assign_api():
 @log_with(log)
 def unassign_api():
     """
-    Unassign token(s) from a user.
-    You can either provide "serial" or "serials" as an argument to unassign token(s), or you can provide user and
-    realm, to unassign all tokens of a user. (old API behavior, TODO this should be split)
-    All errors during the unassignment of multiple tokens are fetched to be able to unassign the remaining tokens.
+    Remove the user assignment from a token. Three call shapes are
+    supported:
 
-    :jsonparam serial: The serial number of a single token, or comma-separated list of serials.
-    :jsonparam serials: A list of serial numbers of multiple tokens.
-    authorized to manage.
-    :jsonparam user: Username of the user to unassign all token from. Does only work if serial and serials are not
-    given and realm parameter is also provided.
-    :jsonparam realm: Realm of the user to unassign all token from.  Does only work if serial and serials are not
-    given and user parameter is also provided.
-    :return: In case of success, it returns 1 if only one serial is given.
-            If multiple serials were given, the response will contain "count_success" as int for the number of
-            unassigned token, "failed" with a list of serials for which the operation failed and "unauthorized" with a
-            list of serials that were not authorized for the operation.
-            If no authorized serials are provided, returns status 403.
-            If none of the serials could be found, returns status 404.
-            For mixed results, the data described above is returned with status 200.
-    :rtype: JSON object
+    * ``serial=...`` (single, or comma-separated list) — operate on
+      these tokens.
+    * ``serials=[...]`` — operate on this list of tokens.
+    * ``user=...&realm=...`` (no serial) — operate on every token
+      currently assigned to that user.
+
+    Requires authentication and the policy action ``unassign``.
+    Tokens the caller is not authorized to manage are silently
+    skipped and reported back; missing serials are reported in
+    ``failed``.
+
+    :jsonparam serial: single serial or comma-separated list.
+    :jsonparam serials: list of serials.
+    :jsonparam user: user name (only when ``serial`` / ``serials``
+        is omitted; requires ``realm``).
+    :jsonparam realm: realm name (only when ``serial`` / ``serials``
+        is omitted; requires ``user``).
+    :status 200: for a single-serial call the response is ``True``
+        in ``result.value``; for any multi-serial call (or any case
+        with skipped tokens), the response value is
+        ``{"count_success": <n>, "failed": [...], "unauthorized": [...]}``.
     """
     user = request.User
     serial_list = get_optional(request.all_data, "serials")
@@ -645,18 +714,23 @@ def unassign_api():
 @log_with(log)
 def revoke_api(serial=None):
     """
-    Revoke a single token or all the tokens of a user.
-    A revoked token will usually be locked. A locked token can not be used
-    anymore.
-    For certain token types, additional actions might occur when revoking a
-    token.
+    Revoke a token. A revoked token is locked and can no longer
+    authenticate; some token types perform additional teardown
+    (e.g. push tokens unsubscribe, certificate tokens revoke their
+    cert).
 
-    :jsonparam basestring serial: the serial number of the single token to revoke
-    :jsonparam basestring user: The login name of the user
-    :jsonparam basestring realm: the realm name of the user
-    :return: In case of success it returns the number of revoked
-        tokens in "value".
-    :rtype: JSON object
+    Without ``serial`` and with ``user`` set, every token of that
+    user is revoked.
+
+    Requires authentication and the policy action ``revoke``.
+
+    :param serial: optional path component, the token serial.
+    :jsonparam serial: token serial (alternative to the path
+        component).
+    :jsonparam user: login name (only when no serial is given —
+        revokes every token of the user).
+    :jsonparam realm: realm of the user.
+    :status 200: number of revoked tokens in ``result.value``.
     """
     user = request.User
     if not serial:
@@ -676,13 +750,19 @@ def revoke_api(serial=None):
 @log_with(log)
 def enable_api(serial=None):
     """
-    Enable a single token or all the tokens of a user.
+    Enable a token. Without ``serial`` and with ``user`` set, every
+    token of that user is enabled.
 
-    :jsonparam basestring serial: the serial number of the single token to enable
-    :jsonparam basestring user: The login name of the user
-    :jsonparam basestring realm: the realm name of the user
-    :return: In case of success it returns the number of enabled tokens in "value".
-    :rtype: json object
+    Requires authentication and the policy action ``enable``. Subject
+    to the per-user token-count limit (``check_max_token_user``).
+
+    :param serial: optional path component, the token serial.
+    :jsonparam serial: token serial (alternative to the path
+        component).
+    :jsonparam user: login name (only when no serial is given —
+        enables every token of the user).
+    :jsonparam realm: realm of the user.
+    :status 200: number of enabled tokens in ``result.value``.
     """
     user = request.User
     if not serial:
@@ -701,16 +781,19 @@ def enable_api(serial=None):
 @log_with(log)
 def disable_api(serial=None):
     """
-    Disable a single token or all the tokens of a user either by providing
-    the serial number of the single token or a username and realm.
+    Disable a token. Disabled tokens cannot authenticate but can be
+    re-enabled later. Without ``serial`` and with ``user`` set,
+    every token of that user is disabled.
 
-    Disabled tokens can not be used to authenticate but can be enabled again.
+    Requires authentication and the policy action ``disable``.
 
-    :jsonparam basestring serial: the serial number of the single token to disable
-    :jsonparam basestring user: The login name of the user
-    :jsonparam basestring realm: the realm name of the user
-    :return: In case of success it returns the number of disabled tokens in "value".
-    :rtype: json object
+    :param serial: optional path component, the token serial.
+    :jsonparam serial: token serial (alternative to the path
+        component).
+    :jsonparam user: login name (only when no serial is given —
+        disables every token of the user).
+    :jsonparam realm: realm of the user.
+    :status 200: number of disabled tokens in ``result.value``.
     """
     user = request.User
     if not serial:
@@ -729,19 +812,30 @@ def disable_api(serial=None):
 @log_with(log)
 def delete_api(serial=None):
     """
-    Delete tokens by their serial number.
+    Delete tokens. Three call shapes are supported, mirroring
+    :http:post:`/token/unassign`:
 
-    :jsonparam serial: The serial number of a single token, or comma-separated list of serials.
-    :jsonparam serials: A list of serial numbers of multiple tokens.
+    * single serial via the ``<serial>`` path component, or
+      ``serial=...`` (or comma-separated list);
+    * ``serials=[...]`` list;
+    * ``user=...&realm=...`` (no serial) — delete every token of
+      that user.
 
-     :return: In case of success, it returns 1 if only one serial is given.
-            If multiple serials were given, the response will contain "count_success" as int for the number of
-            deleted token, "failed" with a list of serials for which the operation failed and "unauthorized" with a
-            list of serials that were not authorized for the operation.
-            If no authorized serials are provided, returns status 403.
-            If none of the serials could be found, returns status 404.
-            For mixed results, the data described above is returned with status 200.
-    :rtype: json object
+    Requires authentication and the policy action ``delete``.
+    Tokens the caller is not authorized to manage are silently
+    skipped and reported back; missing serials are reported in
+    ``failed``.
+
+    :param serial: optional path component, the token serial.
+    :jsonparam serial: single serial or comma-separated list.
+    :jsonparam serials: list of serials.
+    :jsonparam user: login name.
+    :jsonparam realm: realm of the user.
+    :status 200: for a single-serial call the response is the
+        number of deleted tokens in ``result.value``; for any
+        multi-serial call (or any case with skipped tokens), the
+        response value is
+        ``{"count_success": <n>, "failed": [...], "unauthorized": [...]}``.
     """
     user = request.User
     serial_list = get_optional(request.all_data, "serials")
@@ -781,13 +875,18 @@ def delete_api(serial=None):
 @log_with(log)
 def reset_api(serial=None):
     """
-    Reset the failcounter of a single token or of all tokens of a user.
+    Reset the fail counter of a token. Without ``serial`` and with
+    ``user`` set, every token of that user is reset.
 
-    :jsonparam basestring serial: the serial number of the single token to reset
-    :jsonparam basestring user: The login name of the user
-    :jsonparam basestring realm: the realm name of the user
-    :return: In case of success it returns "value"=True
-    :rtype: json object
+    Requires authentication and the policy action ``reset``.
+
+    :param serial: optional path component, the token serial.
+    :jsonparam serial: token serial (alternative to the path
+        component).
+    :jsonparam user: login name (only when no serial is given —
+        resets every token of the user).
+    :jsonparam realm: realm of the user.
+    :status 200: ``True`` on success in ``result.value``.
     """
     user = request.User
     if not serial:
@@ -806,13 +905,20 @@ def reset_api(serial=None):
 @log_with(log)
 def resync_api(serial=None):
     """
-    Resync the OTP token by providing two consecutive OTP values.
+    Resynchronize an OTP token by submitting two consecutive OTP
+    values it produced. Used when an event-based token (HOTP) has
+    drifted out of sync with the server's counter, or when a
+    time-based token (TOTP) is on a clock the server cannot reach.
 
-    :jsonparam basestring serial: the serial number of the single token to reset
-    :jsonparam basestring otp1: First OTP value
-    :jsonparam basestring otp2: Second OTP value
-    :return: In case of success it returns "value"=True
-    :rtype: json object
+    Requires authentication and the policy action ``resync``.
+
+    :param serial: optional path component, the token serial.
+    :jsonparam serial: token serial (required if not in the path).
+    :jsonparam otp1: first OTP value (required).
+    :jsonparam otp2: second OTP value, immediately following ``otp1``
+        (required).
+    :status 200: ``True`` if the token resynchronized, ``False``
+        otherwise.
     """
     user = request.User
     if not serial:
@@ -836,19 +942,26 @@ def resync_api(serial=None):
 @log_with(log)
 def setpin_api(serial=None):
     """
-    Set the the user pin or the SO PIN of the specific token.
-    Usually these are smartcard or token specific PINs.
-    E.g. the userpin is used with mOTP tokens to store the mOTP PIN.
+    Set one or more PINs on a token. Three PIN slots are supported:
 
-    The token is identified by the unique serial number.
+    * ``userpin`` — the user PIN of a smartcard, also used by mOTP
+      tokens to store the mOTP PIN.
+    * ``sopin`` — the security-officer PIN of a smartcard.
+    * ``otppin`` — the regular OTP PIN that gates token use.
 
-    :jsonparam basestring serial: the serial number of the single
-        token to reset
-    :jsonparam basestring userpin: The user PIN of a smartcard
-    :jsonparam basestring sopin: The SO PIN of a smartcard
-    :jsonparam basestring otppin: The OTP PIN of a token
-    :return: In "value" returns the number of PINs set.
-    :rtype: json object
+    Each supplied field is set independently; omitted fields are
+    untouched.
+
+    Requires authentication and the policy action ``setpin``.
+
+    :param serial: optional path component, the token serial.
+    :jsonparam serial: token serial (required if not in the path).
+    :jsonparam userpin: smartcard user PIN.
+    :jsonparam sopin: smartcard SO PIN.
+    :jsonparam otppin: OTP PIN.
+    :jsonparam encryptpin: ``True`` to store the OTP PIN encrypted
+        (default behavior is governed by the ``encrypt_pin`` policy).
+    :status 200: number of PINs set in ``result.value``.
     """
     if not serial:
         serial = getParam(request.all_data, "serial", required)
@@ -886,15 +999,23 @@ def setpin_api(serial=None):
 @log_with(log)
 def setrandompin_api(serial=None):
     """
-    Set the OTP PIN for a specific token to a random value.
+    Generate a random OTP PIN and set it on the token. The PIN
+    length and content rules come from the ``otp_pin_set_random``
+    policy; if that policy is not configured the call fails.
 
-    The token is identified by the unique serial number.
+    The freshly generated PIN is included in the response under
+    ``detail.pin`` so that the calling principal can show or relay
+    it once. Treat the response body accordingly — do not log or
+    persist it past handing it to the user.
 
-    :jsonparam basestring serial: the serial number of the single
-        token to reset
-    :return: In "value" returns the number of PINs set.
-        The detail-section contains the key "pin" with the set PIN.
-    :rtype: json object
+    Requires authentication and the policy action ``setrandompin``.
+
+    :param serial: optional path component, the token serial.
+    :jsonparam serial: token serial (required if not in the path).
+    :jsonparam encryptpin: ``True`` to store the PIN encrypted
+        (default behavior is governed by the ``encrypt_pin`` policy).
+    :status 200: number of PINs set in ``result.value``; the
+        generated PIN is in ``detail.pin``.
     """
     if not serial:
         serial = getParam(request.all_data, "serial", required)
@@ -919,12 +1040,15 @@ def setrandompin_api(serial=None):
 @log_with(log)
 def set_description_api(serial=None):
     """
-    This endpoint can be used by the user or by the admin to set
-    the description of a token. Setting a description may be required by a policy.
+    Set the description of a token. May be required by the
+    ``require_description_on_edit`` policy.
 
-    :jsonparam basestring description: The description for the token
-    :param serial:
-    :return:
+    Requires authentication and the policy action ``setdescription``.
+
+    :param serial: optional path component, the token serial.
+    :jsonparam serial: token serial (required if not in the path).
+    :jsonparam description: new description (required).
+    :status 200: ``True`` on success in ``result.value``.
     """
     user = request.User
     if not serial:
@@ -948,30 +1072,34 @@ def set_description_api(serial=None):
 @log_with(log)
 def set_api(serial=None):
     """
-    This API is only to be used by the admin!
-    This can be used to set token specific attributes like
+    Admin-only. Set one or more low-level token attributes on a
+    token (or on every token of a user). Each supplied field is
+    applied independently; omitted fields are untouched.
 
-        * description
-        * count_window
-        * sync_window
-        * count_auth_max
-        * count_auth_success_max
-        * hashlib,
-        * max_failcount
-        * validity_period_start
-        * validity_period_end
+    Requires admin authentication and the policy action ``set``.
 
-    The token is identified by the unique serial number or by the token owner.
-    In the later case all tokens of the owner will be modified.
-
-    The validity period needs to be provided in the format
-    YYYY-MM-DDThh:mm+oooo
-
-    :jsonparam basestring serial: the serial number of the single token to reset
-    :jsonparam basestring user: The username of the token owner
-    :jsonparam basestring realm: The realm name of the token owner
-    :return: returns the number of attributes set in "value"
-    :rtype: json object
+    :param serial: optional path component, the token serial.
+    :jsonparam serial: token serial (alternative to the path
+        component). Either ``serial`` or ``user`` is required; with
+        ``user`` and no serial, every token of that user is
+        modified.
+    :jsonparam user: login name.
+    :jsonparam realm: realm of the user.
+    :jsonparam description: free-form description.
+    :jsonparam count_window: counter look-ahead window (HOTP).
+    :jsonparam sync_window: synchronization window.
+    :jsonparam count_auth_max: maximum authentication count before
+        the token is locked.
+    :jsonparam count_auth_success_max: maximum number of successful
+        authentications before the token is locked.
+    :jsonparam hashlib: HMAC hash algorithm (``sha1``, ``sha256``,
+        ``sha512``).
+    :jsonparam max_failcount: maximum allowed failed authentications.
+    :jsonparam validity_period_start: ISO 8601 start of validity
+        (``YYYY-MM-DDThh:mm+oooo``).
+    :jsonparam validity_period_end: ISO 8601 end of validity.
+    :status 200: number of attribute updates applied in
+        ``result.value``.
     """
     if not serial:
         serial = getParam(request.all_data, "serial", required)
@@ -1052,19 +1180,29 @@ def set_api(serial=None):
 @event("token_realm", request, g)
 def tokenrealm_api(serial=None):
     """
-    Set the realms of a token.
-    The token is identified by the unique serial number
+    Replace the realms a token belongs to. The full set of realms is
+    replaced — realms not listed in the request are removed. For
+    realm-admin callers, the call is restricted to realms the
+    caller's policies cover.
 
-    You can call the function like this:
-        POST /token/realm?serial=<serial>&realms=<something>
-        POST /token/realm/<serial>?realms=<hash>
+    Requires admin authentication and the policy action
+    :ref:`policy_tokenrealms`. Subject to the per-realm token-count
+    limit (``check_max_token_realm``).
 
+    :param serial: path component, the token serial.
+    :jsonparam realms: comma-separated string or JSON list of realm
+        names (required; empty list removes all realms).
+    :status 200: ``True`` on success in ``result.value``.
 
-    :jsonparam basestring serial: the serial number of the single token to reset
-    :jsonparam basestring realms: The realms the token should be assigned to.
-        Comma separated
-    :return: returns value=True in case of success
-    :rtype: bool
+    **Example request**:
+
+    .. sourcecode:: http
+
+       POST /token/realm/<serial> HTTP/1.1
+       Host: example.com
+       Content-Type: application/json
+
+       {"realms": "realm1,realm2"}
     """
     realms = getParam(request.all_data, "realms", required)
     if isinstance(realms, list):
@@ -1087,21 +1225,40 @@ def tokenrealm_api(serial=None):
 @event("token_load", request, g)
 def loadtokens_api(filename=None):
     """
-    The call imports the given file containing token definitions.
-    The file can be an OATH CSV file, an aladdin XML file or a Yubikey CSV file
-    exported from the yubikey initialization tool.
+    Bulk-import tokens from a file. Accepts OATH CSV, Aladdin XML,
+    Yubikey CSV (as exported by the Yubikey initialization tool) and
+    PSKC. PGP-encrypted files (``-----BEGIN PGP MESSAGE-----``
+    header) are decrypted in-place using the configured GPG keyring
+    before parsing.
 
-    The function is called as a POST request with the file upload.
+    The request body must be ``multipart/form-data`` with the file in
+    the ``file`` field; the path component ``filename`` is used only
+    for logging.
 
-    :jsonparam filename: The name of the token file, that is imported
-    :jsonparam type: The file type. Can be "aladdin-xml",
-        "oathcsv" or "yubikeycsv".
-    :jsonparam tokenrealms: comma separated list of realms.
-    :jsonparam psk: Pre Shared Key, when importing PSKC
-    :jsonparam pskcValidateMAC: Determines how invalid MACs should be handled when importing PSKC.
-               Allowed values are 'no_check', 'check_fail_soft' and 'check_fail_hard'.
-    :return: The number of the imported tokens
-    :rtype: int
+    Requires admin authentication and the import policy in scope
+    ADMIN. The check honors the supplied ``tokenrealms``: the admin
+    must be allowed to import into every named realm.
+
+    :param filename: path component, used as a log/audit label for
+        the imported file.
+    :reqheader Content-Type: ``multipart/form-data`` (required).
+    :formparam file: the file contents (required).
+    :jsonparam type: file format — ``aladdin-xml``, ``oathcsv``
+        (alias ``OATH CSV``), ``yubikeycsv`` (alias ``Yubikey CSV``),
+        or ``pskc`` (required).
+    :jsonparam tokenrealms: comma-separated list of realms to assign
+        the imported tokens to.
+    :jsonparam psk: Pre-Shared Key for PSKC import (32 hex
+        characters / 128 bits).
+    :jsonparam password: passphrase for PSKC import when keys are
+        password-derived.
+    :jsonparam pskcValidateMAC: PSKC MAC handling — ``no_check``
+        skips MAC verification, ``check_fail_soft`` warns,
+        ``check_fail_hard`` (default) rejects on bad MAC.
+    :status 200: ``{"n_imported": <int>, "n_not_imported": <int>}``
+        in ``result.value``.
+    :status 400: empty file, undecodable file, unknown ``type``, or
+        bad pre-shared-key length.
     """
     if not filename:
         filename = getParam(request.all_data, "filename", required)
@@ -1191,14 +1348,19 @@ def loadtokens_api(filename=None):
 @event("token_copypin", request, g)
 def copypin_api():
     """
-    Copy the token PIN from one token to the other.
+    Copy the OTP PIN of one token onto another. Used by helpdesk
+    flows where a replacement token is issued without forcing the
+    user to set a new PIN.
 
-    :jsonparam basestring from: the serial number of the token, from where you
-        want to copy the pin.
-    :jsonparam basestring to: the serial number of the token, to where you
-        want to copy the pin.
-    :return: returns value=True in case of success
-    :rtype: bool
+    Requires admin authentication and the policy action
+    :ref:`policy_copytokenpin`. The check is global rather than
+    realm-scoped, so an admin holding ``copytokenpin`` can copy a
+    PIN between tokens regardless of which realms those tokens
+    belong to.
+
+    :jsonparam from: serial of the source token (required).
+    :jsonparam to: serial of the destination token (required).
+    :status 200: ``True`` on success in ``result.value``.
     """
     serial_from = getParam(request.all_data, "from", required)
     serial_to = getParam(request.all_data, "to", required)
@@ -1214,14 +1376,17 @@ def copypin_api():
 @log_with(log)
 def copyuser_api():
     """
-    Copy the token user from one token to the other.
+    Copy the user assignment of one token onto another. Used by
+    helpdesk flows where a replacement token must inherit the
+    original token's owner without re-running the assign workflow.
 
-    :jsonparam basestring from: the serial number of the token, from where you
-        want to copy the user.
-    :jsonparam basestring to: the serial number of the token, to where you
-        want to copy the user.
-    :return: returns value=True in case of success
-    :rtype: bool
+    Requires admin authentication and the policy action
+    :ref:`policy_copytokenuser`. The check is global rather than
+    realm-scoped; see ``copypin`` above for the same caveat.
+
+    :jsonparam from: serial of the source token (required).
+    :jsonparam to: serial of the destination token (required).
+    :status 200: ``True`` on success in ``result.value``.
     """
     serial_from = getParam(request.all_data, "from", required)
     serial_to = getParam(request.all_data, "to", required)
@@ -1236,18 +1401,19 @@ def copyuser_api():
 @log_with(log)
 def lost_api(serial=None):
     """
-    Mark the specified token as lost and create a new temporary token.
-    This new token gets the new serial number "lost<old-serial>" and
-    a certain validity period and the PIN of the lost token.
+    Mark a token as lost and issue a temporary replacement. The
+    replacement carries a derived serial (``lost<original-serial>``),
+    a generated password, the original token's PIN, and a limited
+    validity period. The original token is disabled.
 
-    This method can be called by either the admin or the user on his own tokens.
+    Callable by both admins and users; user-role callers may only
+    operate on their own tokens (the view enforces ownership).
 
-    You can call the function like this:
-        POST /token/lost/serial
+    Requires authentication and the policy action ``losttoken``.
 
-    :jsonparam basestring serial: the serial number of the lost token.
-    :return: returns value=dictionary in case of success
-    :rtype: bool
+    :param serial: path component, the serial of the lost token.
+    :status 200: dict carrying the new serial, the temporary
+        password, and the validity window in ``result.value``.
     """
     # check if a user is given, that the user matches the token owner.
     g.audit_object.log({"serial": serial})
@@ -1273,20 +1439,24 @@ def lost_api(serial=None):
 @log_with(log)
 def get_serial_by_otp_api(otp=None):
     """
-    Get the serial number for a given OTP value.
-    If the administrator has a token, he does not know to whom it belongs,
-    he can type in the OTP value and gets the serial number of the token, that
-    generates this very OTP value.
+    Identify a token by an OTP value. Useful when an admin holds an
+    unlabeled token and wants to know which token (and therefore
+    which user) it belongs to.
 
-    :query otp: The given OTP value
-    :query type: Limit the search to this token type
-    :query unassigned: If set=1, only search in unassigned tokens
-    :query assigned: If set=1, only search in assigned tokens
-    :query count: if set=1, only return the number of tokens, that will be
-        searched
-    :query serial: This can be a substring of serial numbers to search in.
-    :query window: The number of OTP look ahead (default=10)
-    :return: The serial number of the token found
+    Requires admin authentication and the policy action
+    :ref:`policy_getserial`.
+
+    :param otp: path component, the observed OTP value.
+    :query type: limit the search to this token type.
+    :query serial: substring filter against token serials (e.g.
+        ``OATH``).
+    :query unassigned: ``1`` to search only unassigned tokens.
+    :query assigned: ``1`` to search only assigned tokens.
+    :query count: ``1`` to return only the number of tokens that
+        would be searched, without performing the OTP check.
+    :query window: OTP look-ahead window, default ``10``.
+    :status 200: ``{"serial": <serial-or-null>, "count": <int>}`` in
+        ``result.value``.
     """
     ttype = getParam(request.all_data, "type")
     unassigned_param = getParam(request.all_data, "unassigned")
@@ -1327,14 +1497,16 @@ def get_serial_by_otp_api(otp=None):
 @log_with(log)
 def set_tokeninfo_api(serial, key):
     """
-    Add a specific tokeninfo entry to a token. Already existing entries
-    with the same key are overwritten.
+    Set a single tokeninfo entry on a token. If an entry with this
+    key already exists, the value is overwritten.
 
-    :param serial: the serial number/identifier of the token
-    :param key: token info key that should be set
-    :query value: token info value that should be set
-    :return: returns value=True in case the token info could be set
-    :rtype: bool
+    Requires admin authentication and the policy action
+    ``settokeninfo``.
+
+    :param serial: path component, the token serial.
+    :param key: path component, the tokeninfo key.
+    :jsonparam value: tokeninfo value to set (required).
+    :status 200: ``True`` on success in ``result.value``.
     """
     value = getParam(request.all_data, "value", required)
     g.audit_object.log({"serial": serial})
@@ -1351,13 +1523,16 @@ def set_tokeninfo_api(serial, key):
 @log_with(log)
 def delete_tokeninfo_api(serial, key):
     """
-    Delete a specific tokeninfo entry of a token.
+    Delete a tokeninfo entry from a token.
 
-    :param serial: the serial number/identifier of the token
-    :param key: token info key that should be deleted
-    :return: returns value=True in case a matching token was found, which does not necessarily mean
-    that the matching token had a tokeninfo value set in the first place.
-    :rtype: bool
+    Requires admin authentication and the policy action
+    ``settokeninfo``.
+
+    :param serial: path component, the token serial.
+    :param key: path component, the tokeninfo key.
+    :status 200: ``True`` if a matching token existed (which does
+        not necessarily mean the key was set on it), ``False``
+        otherwise.
     """
     g.audit_object.log({"serial": serial})
     count = delete_tokeninfo(serial, key)
@@ -1374,17 +1549,25 @@ def delete_tokeninfo_api(serial, key):
 @log_with(log)
 def assign_tokengroup_api(serial, groupname=None):
     """
-    Assigns a token to a given tokengroup.
+    Modify the tokengroup membership of a token. The endpoint has
+    two shapes:
 
-    If no groupname is given, we expect a body data "groups", that
-    contains a list of tokengroups. tokengroups that are
-    not contained in this list, will be removed.
+    * with the ``<groupname>`` path component, the named tokengroup
+      is added to the token (additive, single membership).
+    * without the path component, the body must carry ``groups`` —
+      the token's membership is **replaced** with that list, so any
+      tokengroup not in ``groups`` is removed.
 
-    :jsonparam basestring serial: the serial number of the token
-    :jsonparam basestring groupname: The name of the tokengroup
-    :jsonparam list groups: A list of tokengroups
-    :return:
-    :rtype: json object
+    Requires admin authentication and the policy action
+    ``tokengroups``.
+
+    :param serial: path component, the token serial.
+    :param groupname: optional path component — if present, add this
+        tokengroup; if absent, replace membership from ``groups``.
+    :jsonparam groups: list (or comma-separated string) of
+        tokengroup names. Required when ``groupname`` is omitted;
+        ignored otherwise.
+    :status 200: ``1`` in ``result.value``.
     """
     g.audit_object.log({"serial": serial})
     if groupname:
@@ -1409,14 +1592,16 @@ def assign_tokengroup_api(serial, groupname=None):
 @log_with(log)
 def unassign_tokengroup_api(serial, groupname):
     """
-    Unassigned a token from a tokengroup.
+    Remove a single tokengroup from a token.
 
-    :jsonparam basestring serial: the serial number of the token
-    :jsonparam basestring groupname: The name of the tokengroup
-    :return:
-    :rtype: json object
+    Requires admin authentication and the policy action
+    ``tokengroups``.
+
+    :param serial: path component, the token serial.
+    :param groupname: path component, the tokengroup name.
+    :status 200: ``1`` in ``result.value``.
     """
     g.audit_object.add_to_log({'action_detail': groupname})
     unassign_tokengroup(serial, tokengroup=groupname)
-    g.audit_object.add_to_log({'success': True})
+    g.audit_object.log({'success': True})
     return send_result(1)

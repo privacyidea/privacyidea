@@ -47,12 +47,17 @@ To see how to authenticate read :ref:`rest_auth`.
 @log_with(log, log_entry=False)
 def rss():
     """
-    Get the news from the configured RSS feeds.
+    Return news items aggregated from the configured RSS feeds.
 
-    :jsonparam channel: The channel to get the news from. If not given, the news from all channels are returned.
-    :type channel: str
+    The set of feeds that is polled is controlled by the WebUI-scope policy
+    action :ref:`policy_rss_feeds`. The maximum age of returned items
+    defaults to 180 days and can be overridden per request via the policy
+    action :ref:`policy_rss_age`. If no ``rss_feeds`` policy is set for the
+    user, a built-in default feed list is used.
 
-    :return: JSON response with the news
+    :query channel: Optional channel name to filter on. If omitted, items
+        from every configured channel are returned.
+    :status 200: JSON response; news items are in ``result.value``.
     """
     feeds = None
     param = request.all_data
