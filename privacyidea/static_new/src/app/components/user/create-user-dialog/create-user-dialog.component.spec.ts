@@ -52,7 +52,7 @@ describe("CreateUserDialogComponent", () => {
         { provide: ResolverService, useClass: MockResolverService },
         { provide: NotificationService, useClass: MockNotificationService },
         { provide: DialogService, useClass: MockDialogService },
-        provideRouter([])
+        provideRouter([{ path: "users", component: CreateUserDialogComponent }])
       ]
     }).compileComponents();
 
