@@ -28,20 +28,36 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-"""This REST API is used to authenticate the users. A user needs to
-authenticate when he wants to use the API for administrative tasks like
-enrolling a token.
+"""
+The auth REST API issues the JWT-based authentication tokens that
+every other administrative or user-self endpoint expects. Four
+authentication paths are supported:
 
-This API must not be confused with the validate API, which is used to check,
-if a OTP value is valid. See :ref:`rest_validate`.
+* **Password** — username and password verified against the local
+  admin database, then against the user store. Token authentication
+  may be required on top by the WebUI ``login_mode`` policy.
+* **FIDO2 / Passkey** — ``credential_id`` plus ``transaction_id``
+  from a prior call to :http:post:`/validate/initialize`.
+* **REMOTE_USER** — when an upstream web server (Apache, nginx) has
+  already authenticated the request, ``REMOTE_USER`` is honored if
+  the WebUI ``remote_user`` policy is active.
+* **Trusted JWT** — JWTs signed by an external IdP are accepted on
+  any authenticated endpoint when the IdP's public key, algorithm
+  and a username regex are listed in ``PI_TRUSTED_JWT``.
 
-Authentication of users and admins is tested in tests/test_api_roles.py
+A successful login returns a JWT carrying ``username``, ``realm``,
+``role`` (``user`` or ``admin``), ``rights`` (the policy-derived list
+of allowed actions), ``authtype`` (``password`` / ``pi`` /
+``remote_user``) and an ``exp`` claim. The default validity is one
+hour; the WebUI ``jwt_validity`` policy overrides it.
 
-You need to authenticate for all administrative tasks. If you are not
-authenticated, the API returns a 401 response.
+Subsequent requests carry the token in the ``PI-Authorization``
+header (``Authorization`` is also accepted as a fallback). Calls
+that require authentication return a 401 response if the token is
+absent, malformed or expired.
 
-To authenticate you need to send a POST request to /auth containing username
-and password.
+This API is distinct from :ref:`rest_validate`, which checks OTP
+values for end users.
 """
 from flask_babel import _
 import copy
@@ -170,77 +186,91 @@ def before_request():
 @event("auth", request, g)
 def get_auth_token():
     """
-    This call verifies the credentials of the user and issues an
-    authentication token, that is used for the later API calls. The
-    authentication token has a validity, that is usually 1 hour.
+    Verify credentials and issue a JWT authentication token.
 
-    :jsonparam username: The username of the user who wants to authenticate to
-        the API.
-    :jsonparam password: The password/credentials of the user who wants to
-        authenticate to the API.
-    :jsonparam realm: The realm where the user will be searched.
+    Four credential shapes are accepted, see the module-level
+    description for the full picture:
 
-    :return: A json response with an authentication token, that needs to be
-        used in any further request.
+    * password (``username`` + ``password``);
+    * passkey / FIDO2 (``credential_id`` + ``transaction_id``);
+    * REMOTE_USER, when allowed by the WebUI ``remote_user`` policy;
+    * a trusted external JWT, when configured via ``PI_TRUSTED_JWT``.
 
-    :status 200: in case of success
-    :status 401: if authentication fails
+    The returned JWT carries ``username``, ``realm``, ``role`` (``user``
+    or ``admin``), ``rights``, ``authtype`` and ``exp``. The default
+    validity is one hour; this is overridable per user/realm via the
+    WebUI :ref:`policy_jwt_validity` policy. The WebUI also reads
+    ``log_level`` and ``menus`` from the response to render the right
+    chrome.
 
-    **Example Authentication Request**:
+    Several policy actions affect this endpoint, including
+    :ref:`policy_login_mode` (whether token auth is required on top of
+    password), :ref:`policy_remote_user` (whether REMOTE_USER is
+    honored) and the FIDO2/passkey, push, WebAuthn and time-limit
+    policies enforced by the registered prepolicies.
+
+    Multi-step (challenge-response) login: when the user is configured
+    with a challenge-response token type, the first call returns a
+    200 with ``result.value=False`` and ``detail.multi_challenge``
+    listing the active challenges. The caller submits the OTP via a
+    second :http:post:`/auth` call carrying the same fields plus
+    ``transaction_id``.
+
+    :jsonparam username: login name (required for password / REMOTE_USER
+        flows).
+    :jsonparam password: password / credentials (required for password
+        flow).
+    :jsonparam realm: optional realm to scope the user lookup; defaults
+        to the realm in ``username@realm`` syntax, otherwise the
+        default realm.
+    :jsonparam credential_id: FIDO2 credential id (required for passkey
+        flow).
+    :jsonparam transaction_id: transaction id from a prior
+        :http:post:`/validate/initialize` (required for passkey and
+        for the second leg of a challenge-response flow).
+
+    :status 200: success — the JWT is in ``result.value.token``;
+        or first leg of a challenge-response — ``result.value`` is
+        ``False`` and ``detail.multi_challenge`` describes the next
+        step.
+    :status 401: authentication failed (wrong or missing credentials,
+        unknown realm, expired token).
+
+    **Example request**:
 
     .. sourcecode:: http
 
        POST /auth HTTP/1.1
        Host: example.com
-       Accept: application/json
+       Content-Type: application/x-www-form-urlencoded
 
-       username=admin
-       password=topsecret
+       username=admin&password=topsecret
 
-    **Example Authentication Response**:
-
-    .. sourcecode:: http
-
-       HTTP/1.0 200 OK
-       Content-Length: 354
-       Content-Type: application/json
-
-       {
-            "id": 1,
-            "jsonrpc": "2.0",
-            "result": {
-                "status": true,
-                "value": {
-                    "token": "eyJhbGciOiJIUz....jdpn9kIjuGRnGejmbFbM"
-                }
-            },
-            "version": "privacyIDEA unknown"
-       }
-
-    **Response for failed authentication**:
+    **Example response**:
 
     .. sourcecode:: http
 
-       HTTP/1.1 401 UNAUTHORIZED
+       HTTP/1.1 200 OK
        Content-Type: application/json
-       Content-Length: 203
 
        {
-          "id": 1,
-          "jsonrpc": "2.0",
-          "result": {
-            "error": {
-              "code": -401,
-              "message": "missing Authorization header"
-            },
-            "status": false
-          },
-          "version": "privacyIDEA unknown",
-          "config": {
-            "logout_time": 30
-          }
+         "id": 1,
+         "jsonrpc": "2.0",
+         "result": {
+           "status": true,
+           "value": {
+             "token": "eyJhbGciOiJIUz....jdpn9kIjuGRnGejmbFbM",
+             "role": "admin",
+             "username": "admin",
+             "realm": "",
+             "log_level": 30,
+             "rights": ["enrollHOTP", "enrollTOTP", ...],
+             "menus": ["tokens", "users", ...],
+             "auth": true
+           }
+         },
+         "version": "privacyIDEA unknown"
        }
-
     """
     # TODO: Get rid of username / realm params and use a user object
     #  maybe a new user object that is not directly evaluated against the user store and where we can store some more
@@ -359,7 +389,7 @@ def get_auth_token():
         # 2. in a realm
         # 2a. is an admin realm
         log.debug(f"Checking remote user: {username}")
-        authtype = "remote_user "
+        authtype = "remote_user"
         if db_admin_exists(username):
             role = ROLE.ADMIN
             admin_auth = True
@@ -500,7 +530,9 @@ def get_auth_token():
 
 def admin_required(f):
     """
-    This is a decorator for routes, that require to be authenticated.
+    Route decorator that requires the request to carry a valid auth
+    token belonging to a principal with the ``admin`` role. Raises
+    ``AuthError`` (HTTP 401) otherwise.
     """
 
     @wraps(f)
@@ -513,7 +545,9 @@ def admin_required(f):
 
 def user_required(f):
     """
-    This is a decorator for routes, that require to be authenticated.
+    Route decorator that requires the request to carry a valid auth
+    token belonging to either a ``user`` or an ``admin`` principal.
+    Raises ``AuthError`` (HTTP 401) otherwise.
     """
 
     @wraps(f)
@@ -526,15 +560,20 @@ def user_required(f):
 
 def check_auth_token(required_role=None):
     """
-    This checks the authentication token
+    Verify the JWT auth token carried by the current request.
 
-    You need to pass an authentication header:
+    The token is read from the ``PI-Authorization`` header; for
+    backwards compatibility the standard ``Authorization`` header is
+    accepted as a fallback. Raises ``AuthError`` (HTTP 401) if the
+    token is missing, malformed, expired, or if its role does not
+    match ``required_role``.
 
-        PI-Authorization: <token>
+    On success ``g.logged_in_user`` is populated with ``username``,
+    ``realm`` and ``role``.
 
-    You can do this using httpie like this:
-
-        http -j POST http://localhost:5000/system/getConfig Authorization:ewrt
+    :param required_role: a list restricting which roles may pass —
+        e.g. ``["admin"]`` or ``["user", "admin"]``. ``None`` means
+        either role is acceptable.
     """
     auth_token = request.headers.get('PI-Authorization')
     if not auth_token:
@@ -547,9 +586,18 @@ def check_auth_token(required_role=None):
 @user_required
 def get_rights():
     """
-    This returns the rights of the logged-in user.
+    Return the token types the logged-in principal is allowed to
+    enroll, computed from the active enrollment policies and the
+    request's IP, user-agent and identity. The WebUI calls this
+    immediately after login to render the enrollment UI.
 
-    :reqheader Authorization: The authorization token acquired by /auth request
+    Requires authentication (any role).
+
+    :reqheader PI-Authorization: JWT auth token returned by
+        :http:post:`/auth`. ``Authorization`` is accepted as a
+        fallback.
+    :status 200: list of allowed enrollment token types in
+        ``result.value``.
     """
     enroll_types = g.policy_object.ui_get_enroll_tokentypes(g.client_ip, g.logged_in_user, g.get("user_agent"))
     g.audit_object.log({"success": True})

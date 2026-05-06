@@ -62,7 +62,32 @@ container_blueprint = Blueprint('container_blueprint', __name__)
 log = logging.getLogger(__name__)
 
 __doc__ = """
-API for managing token containers
+The container REST API manages token containers and the templates
+they are created from. A container groups several tokens together for
+joint enrollment, synchronization, rollover, and lifecycle management
+— for example a smartphone holding several push and OTP tokens, or a
+hardware key holding multiple WebAuthn credentials. See
+:ref:`container` for the conceptual chapter.
+
+The endpoints fall in three audiences:
+
+* Admin / WebUI flows — listing, creation, assignment, realm and
+  state management, template administration. These require admin
+  authentication and are gated by the corresponding container
+  :ref:`container_policies` (``container_create``,
+  ``container_list``, ``container_assign_user``, ...).
+* End-user self-service — a regular user with the matching user-scope
+  policies can invoke the same endpoints on their own containers
+  (e.g. assign a fresh smartphone to themselves, add a token to it).
+* Client device flows — the registered container itself calls
+  :http:post:`/container/register/finalize`,
+  :http:post:`/container/register/terminate/client`,
+  :http:post:`/container/challenge`,
+  :http:post:`/container/synchronize` and
+  :http:post:`/container/rollover` directly. These five endpoints are
+  anonymous (no auth header); the request is authenticated by a
+  cryptographic signature over a server-issued challenge that the
+  device generated during registration.
 """
 
 
@@ -75,31 +100,53 @@ API for managing token containers
 @log_with(log)
 def list_containers():
     """
-    Get containers depending on the query parameters. If pagesize and page are not provided, all containers are returned
-    at once.
+    Return containers, optionally filtered, paginated and sorted.
+    Without ``page`` / ``pagesize`` all matching containers are
+    returned at once.
 
-    :query user: Username of a user assigned to the containers
-    :query container_serial: Serial of a single container (case-insensitive, can contain '*' as wildcards)
-    :query type: Type of the containers to return (case-insensitive, can contain '*' as wildcards)
-    :query token_serial: Serial of a token assigned to the container (case-insensitive, can contain '*' as wildcards)
-    :query template: Name of the template the container is created from (case-sensitive, can contain '*' as wildcards)
-    :query container_realm: Name of the realm the container is assigned to (case-insensitive, can contain '*' as
-        wildcards)
-    :query description: Description of the container (case-insensitive, can contain '*' as wildcards)
-    :query resolver: Resolver of the user assigned to the container  (case-insensitive, can contain '*' as wildcards)
-    :query assigned: Filter for assigned or unassigned containers (True or False)
-    :query info_key: Key of the container info (case-sensitive, can contain '*' as wildcards)
-    :query info_value: Value of the container info (case-insensitive, can contain '*' as wildcards)
-    :query last_auth_delta: The maximum time difference the last authentication may have to now, e.g. "1y", "14d", "1h"
-        The following units are supported: y (years), d (days), h (hours), m (minutes), s (seconds)
-    :query last_sync_delta: The maximum time difference the last synchronization may have to now, e.g. "1y", "14d", "1h"
-        The following units are supported: y (years), d (days), h (hours), m (minutes), s (seconds)
-    :query state: State the container should have (case-insensitive and allows "*" as wildcard), optional
-    :query sortby: Sort by a container attribute (serial or type)
-    :query sortdir: Sort direction (asc or desc)
-    :query pagesize: Number of containers per page
-    :query page: Page number
-    :query no_token: no_token=1: Do not return tokens assigned to the container
+    For admin callers, the response is restricted to containers in
+    realms the calling admin's policies allow. For user callers, only
+    the calling user's containers are returned. The ``hide_container_info``
+    and ``hide_tokeninfo`` policies may strip configured info keys
+    from the response.
+
+    Requires authentication and the policy action ``container_list``.
+
+    :query user: filter by the username of an assigned user.
+    :query container_serial: filter by container serial
+        (case-insensitive, ``*`` wildcard).
+    :query type: filter by container type (case-insensitive, ``*``
+        wildcard).
+    :query token_serial: filter to containers that hold a token with
+        this serial (case-insensitive, ``*`` wildcard).
+    :query template: filter by the name of the template the
+        container was created from (case-sensitive, ``*`` wildcard).
+    :query container_realm: filter by realm (case-insensitive, ``*``
+        wildcard).
+    :query description: filter by description (case-insensitive,
+        ``*`` wildcard).
+    :query resolver: filter by the resolver of the assigned user
+        (case-insensitive, ``*`` wildcard).
+    :query assigned: ``true`` or ``false`` to limit to assigned or
+        unassigned containers.
+    :query info_key: filter by container-info key (case-sensitive,
+        ``*`` wildcard).
+    :query info_value: filter by container-info value
+        (case-insensitive, ``*`` wildcard).
+    :query last_auth_delta: maximum age of the last authentication
+        (e.g. ``1y``, ``14d``, ``1h``, ``5m``, ``30s``).
+    :query last_sync_delta: maximum age of the last synchronization,
+        same format as ``last_auth_delta``.
+    :query state: state the container should be in (case-insensitive,
+        ``*`` wildcard).
+    :query sortby: column to sort by (``serial`` or ``type``).
+    :query sortdir: ``asc`` (default) or ``desc``.
+    :query pagesize: page size; omit for no pagination.
+    :query page: 1-indexed page number.
+    :query no_token: ``1`` to omit the token list from each container
+        entry.
+    :status 200: paginated container list in ``result.value`` with
+        ``containers``, ``count``, ``current``, ``next``, ``prev``.
     """
     param = request.all_data
     user = request.User
@@ -159,9 +206,14 @@ def assign(container_serial):
     """
     Assign a container to a user.
 
-    :param container_serial: serial of the container
-    :jsonparam user: Username of the user
-    :jsonparam realm: Name of the realm of the user
+    Requires authentication and the policy action
+    :ref:`policy_container_assign_user`.
+
+    :param container_serial: path component, the container serial.
+    :jsonparam user: login name of the user (required).
+    :jsonparam realm: realm of the user (required if the user is not
+        in the default realm).
+    :status 200: ``True`` on success in ``result.value``.
     """
     user = get_user_from_param(request.all_data, required)
     res = assign_user(container_serial, user)
@@ -181,14 +233,22 @@ def assign(container_serial):
 @log_with(log)
 def unassign(container_serial):
     """
-    Unassign a user from a container
-    In case the user does not exist anymore, the user_id is required.
+    Unassign a user from a container. If the user no longer exists in
+    the resolver (deleted user), supply ``user_id`` together with
+    ``resolver`` so the assignment row can still be located.
 
-    :param container_serial: serial of the container
-    :jsonparam user: Username of the user
-    :jsonparam realm: Realm of the user
-    :jsonparam resolver: Resolver of the user
-    :jsonparam user_id: User ID of the user, to be able to unassign non-existing users
+    Requires authentication and the policy action
+    :ref:`policy_container_unassign_user`.
+
+    :param container_serial: path component, the container serial.
+    :jsonparam user: login name of the user.
+    :jsonparam realm: realm of the user.
+    :jsonparam resolver: resolver of the user.
+    :jsonparam user_id: user id (required for users that no longer
+        resolve through their store).
+    :status 200: ``True`` on success in ``result.value``.
+    :status 400: neither ``user`` nor ``user_id`` was supplied, or
+        the supplied identification is incomplete.
     """
     # Get user
     user = request.User
@@ -220,19 +280,36 @@ def unassign(container_serial):
 def init():
     """
     Create a new container.
-    Raises an EnrollmentError if an invalid type or an already existing serial is provided.
 
-    To create a container from a template, the template can either be passed as a dictionary, containing all necessary
-    information for all tokens or only the name of an already existing template in the db. If both are given, a
-    ParameterError is raised.
+    A container can optionally be created from a template, in which
+    case the listed tokens are also created and added to the new
+    container in the same call. The template may be supplied either
+    inline as a dictionary (``template``) or by reference to an
+    existing template (``template_name``); supplying both is an error.
 
-    :jsonparam description: Description for the container
-    :jsonparam type: Type of the container. If the type is unknown, an error will be returned
-    :jsonparam container_serial: Optional unique serial (not case-sensitive)
-    :jsonparam user: Optional username to assign the container to. Requires realm param to be present as well.
-    :jsonparam realm: Optional realm to assign the container to. Requires user param to be present as well.
-    :jsonparam template: The template to create the container from (dictionary), optional
-    :jsonparam template_name: The name of the template to create the container from, optional
+    Requires authentication and the policy action
+    :ref:`policy_container_create`. Realm-admins are restricted to
+    realms their policies cover; if the caller does not specify a
+    realm, the first realm allowed by the policy is used.
+
+    :jsonparam type: container type (e.g. ``smartphone``, ``yubikey``,
+        ``generic``). Required.
+    :jsonparam description: free-form description.
+    :jsonparam container_serial: optional unique serial. Stored
+        case-normalized.
+    :jsonparam user: optional login name of an initial assignee
+        (requires ``realm``).
+    :jsonparam realm: optional realm of the assignee (requires
+        ``user``).
+    :jsonparam template: optional template definition (dict) to use
+        for token creation.
+    :jsonparam template_name: optional name of an existing template
+        to use.
+    :status 200: ``{"container_serial": ..., "tokens": [...]}`` in
+        ``result.value``; ``tokens`` is only present when a template
+        was used.
+    :status 400: invalid type, serial collision, or both ``template``
+        and ``template_name`` supplied.
     """
     user_role = g.logged_in_user.get("role")
     allowed_realms = getattr(request, "pi_allowed_realms", None)
@@ -273,9 +350,15 @@ def init():
 @log_with(log)
 def delete(container_serial):
     """
-    Delete a container.
+    Delete a container. The tokens assigned to the container are not
+    deleted; they remain in the database and become un-attached.
 
-    :param container_serial: serial of the container
+    Requires authentication and the policy action
+    :ref:`policy_container_delete`.
+
+    :param container_serial: path component, the container serial.
+    :status 200: ``True`` on success in ``result.value``.
+    :status 404: no container with that serial exists.
     """
     # Audit log
     container = find_container_by_serial(container_serial)
@@ -304,8 +387,12 @@ def add_token(container_serial):
     """
     Add a single token to a container.
 
-    :param container_serial: serial of the container
-    :jsonparam serial: Serial of the token to add.
+    Requires authentication and the policy action
+    :ref:`policy_container_add_token`.
+
+    :param container_serial: path component, the container serial.
+    :jsonparam serial: serial of the token to add (required).
+    :status 200: ``True`` on success in ``result.value``.
     """
     token_serial = getParam(request.all_data, "serial", optional=False, allow_empty=False)
 
@@ -333,10 +420,16 @@ def add_token(container_serial):
 @log_with(log)
 def add_all_tokens(container_serial):
     """
-    Add multiple tokens to a container.
+    Add several tokens to a container in a single call.
 
-    :param container_serial: serial of the container
-    :jsonparam serial: Comma separated list of token serials
+    Requires authentication and the policy action
+    :ref:`policy_container_add_token`.
+
+    :param container_serial: path component, the container serial.
+    :jsonparam serial: comma-separated list of token serials
+        (whitespace tolerated; required).
+    :status 200: dict mapping each requested serial to a per-token
+        success boolean in ``result.value``.
     """
     serial = getParam(request.all_data, "serial", optional=False, allow_empty=False)
     token_serials = serial.replace(' ', '').split(',')
@@ -371,10 +464,15 @@ def add_all_tokens(container_serial):
 @log_with(log)
 def remove_token(container_serial):
     """
-    Remove a single token from a container.
+    Remove a single token from a container. The token itself is not
+    deleted.
 
-    :param container_serial: serial of the container
-    :jsonparam serial: Serial of the token to remove.
+    Requires authentication and the policy action
+    :ref:`policy_container_remove_token`.
+
+    :param container_serial: path component, the container serial.
+    :jsonparam serial: serial of the token to remove (required).
+    :status 200: ``True`` on success in ``result.value``.
     """
     token_serial = getParam(request.all_data, "serial", optional=False, allow_empty=False)
 
@@ -402,10 +500,18 @@ def remove_token(container_serial):
 @log_with(log)
 def remove_all_tokens(container_serial):
     """
-    Remove multiple tokens from a container.
+    Remove several tokens from a container in a single call. The
+    tokens themselves are not deleted.
 
-    :param container_serial: serial of the container
-    :jsonparam serial: Comma separated list of token serials.
+    Requires authentication and the policy action
+    :ref:`policy_container_remove_token`.
+
+    :param container_serial: path component, the container serial.
+    :jsonparam serial: comma-separated list of token serials
+        (whitespace tolerated; required, but may be empty when a
+        prepolicy is configured to remove all tokens).
+    :status 200: dict mapping each requested serial to a per-token
+        success boolean in ``result.value``.
     """
     # allow serial to be empty if the pre-policy removes all tokens
     serial = getParam(request.all_data, "serial", optional=False, allow_empty=True)
@@ -439,13 +545,24 @@ def remove_all_tokens(container_serial):
 @log_with(log)
 def get_types():
     """
-    Returns a dictionary with the container types as keys and their descriptions and supported token types as values.
+    Return the container types known to this server with their
+    descriptions and the token types each can hold. The route is
+    available under both ``/container/types`` and the alias
+    ``/container/tokentypes`` — same response.
 
-    ::
+    Requires authentication.
+
+    :status 200: dict keyed by container type with
+        ``description`` and ``token_types`` for each, in
+        ``result.value``.
+
+    Example response value::
 
         {
-            type: { description: "Description", token_types: ["hotp", "totp", "push", "daypassword", "sms"] },
-            type: { description: "Description", token_types: ["hotp", "totp", "push", "daypassword", "sms"] }
+          "smartphone": {"description": "...",
+                          "token_types": ["hotp", "totp", "push", "sms"]},
+          "yubikey":    {"description": "...",
+                          "token_types": ["hotp", "webauthn"]}
         }
     """
     descriptions = get_container_classes_descriptions()
@@ -461,10 +578,14 @@ def get_types():
 @log_with(log)
 def set_description(container_serial):
     """
-    Set the description of a container.
+    Replace the free-form description of a container.
 
-    :param container_serial: Serial of the container
-    :jsonparam description: New description to be set
+    Requires authentication and the policy action
+    :ref:`policy_container_description`.
+
+    :param container_serial: path component, the container serial.
+    :jsonparam description: new description (required).
+    :status 200: ``True`` on success in ``result.value``.
     """
     new_description = getParam(request.all_data, "description", optional=required)
     set_container_description(container_serial, new_description)
@@ -490,9 +611,20 @@ def set_description(container_serial):
 @log_with(log)
 def set_states(container_serial):
     """
-    Set the states of a container.
+    Set the states of a container. The full set of states is
+    replaced by the provided list; mutually-exclusive states cancel
+    each other out.
 
-    :jsonparam states: string of comma separated states
+    Requires authentication and the policy action
+    :ref:`policy_container_state`. See
+    :http:get:`/container/statetypes` for the supported states and
+    their exclusion rules.
+
+    :param container_serial: path component, the container serial.
+    :jsonparam states: comma-separated list of state names
+        (whitespace tolerated; required, must be non-empty).
+    :status 200: dict mapping each requested state to whether it was
+        set, in ``result.value``.
     """
     states_string = getParam(request.all_data, "states", required, allow_empty=False)
     states_string = states_string.replace(" ", "")
@@ -522,9 +654,13 @@ def set_states(container_serial):
 @log_with(log)
 def get_state_types():
     """
-    Get the supported state types as dictionary.
-    The types are the keys and the value is a list containing all states that are excluded when the key state is
-    selected.
+    Return the supported container states with their mutual-exclusion
+    map. The keys are the state names; the value for each state is
+    the list of states that the key state excludes.
+
+    Requires authentication.
+
+    :status 200: dict of state-exclusion lists in ``result.value``.
     """
     state_types_exclusions_enums = ContainerStates.get_exclusive_states()
     # Get string representation from enums
@@ -544,10 +680,21 @@ def get_state_types():
 @log_with(log)
 def set_realms(container_serial):
     """
-    Set the realms of a container. Old realms will be deleted.
+    Replace the realms a container belongs to. Realms not listed in
+    the request are removed; realms listed are added or kept. For
+    realm-admin callers, the call is restricted to the realms the
+    caller is allowed to manage.
 
-    :param container_serial: Serial of the container
-    :jsonparam realms: comma separated string of realms, e.g. "realm1,realm2"
+    Requires admin authentication and the policy action
+    :ref:`policy_container_realms`.
+
+    :param container_serial: path component, the container serial.
+    :jsonparam realms: comma-separated list of realm names
+        (whitespace tolerated; pass an empty string to remove all
+        realms).
+    :status 200: dict mapping each realm to whether it was applied
+        (plus a ``deleted`` entry counting removed realms), in
+        ``result.value``.
     """
     # Get parameters
     container_realms = getParam(request.all_data, "realms", required, allow_empty=True)
@@ -582,12 +729,19 @@ def set_realms(container_serial):
 @log_with(log)
 def set_container_info(container_serial, key):
     """
-    Set the value of a container info key. Overwrites the old value if the key already exists.
-    However, existing entries of type PI_INTERNAL are not overwritten and a PolicyError is raised.
+    Set or update a container-info entry. If an entry with this key
+    already exists it is overwritten — except entries marked
+    ``PI_INTERNAL``, which are reserved for the server and cannot be
+    modified through this endpoint.
 
-    :param container_serial: Serial of the container
-    :param key: Key of the container info
-    :jsonparam value: Value to set
+    Requires admin authentication and the policy action
+    :ref:`policy_container_info`.
+
+    :param container_serial: path component, the container serial.
+    :param key: path component, the info key to set.
+    :jsonparam value: value to store (required).
+    :status 200: ``True`` on success in ``result.value``.
+    :status 403: the key is reserved as ``PI_INTERNAL``.
     """
     value = getParam(request.all_data, "value", required)
     res = add_container_info(container_serial, key, value)
@@ -606,10 +760,17 @@ def set_container_info(container_serial, key):
 @log_with(log)
 def delete_container_info_entry(container_serial, key):
     """
-    Deletes the container info for the given key. Entries of type PI_INTERNAL can not be deleted.
+    Delete a container-info entry. Entries marked ``PI_INTERNAL``
+    are reserved for the server and cannot be removed through this
+    endpoint.
 
-    :param container_serial: Serial of the container
-    :param key: Key of the container info
+    Requires admin authentication and the policy action
+    :ref:`policy_container_info`.
+
+    :param container_serial: path component, the container serial.
+    :param key: path component, the info key to delete.
+    :status 200: ``True`` on success in ``result.value``.
+    :status 403: the key is reserved as ``PI_INTERNAL``.
     """
     res = delete_container_info(container_serial, key)
 
@@ -627,27 +788,47 @@ def delete_container_info_entry(container_serial, key):
 @log_with(log)
 def registration_init():
     """
-    Prepares the registration of a container. It returns all information required for the container to register.
+    Step 1 of container registration: prepare a container for being
+    paired with a client device. The response carries everything the
+    client device needs to complete the second step at
+    :http:post:`/container/register/finalize` — typically a deep link
+    or QR code that encodes the server URL, the registration TTL,
+    and a nonce.
 
-    :jsonparam container_serial: Serial of the container
-    :return: Result of the registration process as dictionary. The information may differ depending on the container
-        type.
+    Server-side parameters (server URL, challenge TTL, registration
+    TTL, TLS verification) are injected by the
+    ``container_registration_config`` prepolicy from the corresponding
+    container policies; pass ``rollover=1`` when re-pairing an
+    already registered container with a new device.
 
-    An example response for smartphones looks like this:
-        ::
+    Requires authentication. The exact policy gate depends on the
+    rollover state — see the ``container_register_rollover`` prepolicy.
 
-            {
-                "container_url": {"description": "URL for privacyIDEA Container Registration",
-                                  "img": <QR code>,
-                                  "value": "pia://container/SMPH0006D5BC?issuer=privacyIDEA&ttl=10..."},
-                "nonce": "c238392af49250804c25bbd7d86408839e91fe97",
-                "time_stamp": "2024-12-20T09:53:40.158319+00:00",
-                "server_url": "https://pi.net",
-                "ttl": 10,
-                "ssl_verify": "True",
-                "key_algorithm": "secp384r1",
-                "hash_algorithm": "sha256"
-            }
+    :jsonparam container_serial: container serial (required).
+    :jsonparam rollover: ``1`` to initiate a rollover registration
+        for an already-registered container; otherwise the container
+        must not yet be registered.
+    :status 200: container-type-specific registration payload in
+        ``result.value``. Always includes ``offline_tokens`` listing
+        any tokens already attached to the container for offline use.
+
+    Example response for a smartphone container::
+
+        {
+          "container_url": {
+            "description": "URL for privacyIDEA Container Registration",
+            "img": "<QR code>",
+            "value": "pia://container/SMPH0006D5BC?issuer=privacyIDEA&ttl=10..."
+          },
+          "nonce": "c238392af49250804c25bbd7d86408839e91fe97",
+          "time_stamp": "2024-12-20T09:53:40.158319+00:00",
+          "server_url": "https://pi.net",
+          "ttl": 10,
+          "ssl_verify": "True",
+          "key_algorithm": "secp384r1",
+          "hash_algorithm": "sha256",
+          "offline_tokens": []
+        }
     """
     params = request.all_data
     container_serial = getParam(params, "container_serial", required)
@@ -685,13 +866,22 @@ def registration_init():
 @log_with(log)
 def registration_finalize():
     """
-    This endpoint is called from a container as second step for the registration process.
-    At least the container serial has to be passed in the parameters. Further parameters might be required depending on
-    the container type.
+    Step 2 of container registration. Called by the client device
+    itself after it has consumed the registration payload from
+    :http:post:`/container/register/initialize`. The exact set of
+    parameters is container-type specific; for smartphone containers,
+    the body typically carries the device's public key and the
+    signed nonce.
 
-    :jsonparam container_serial: Serial of the container
-    :return: Result of the registration process as dictionary. The information may differ depending on the container
-        type.
+    This endpoint is **anonymous** — no auth header is required. The
+    request is authenticated by the container's signed challenge
+    response. Failures may be masked by the container-scope
+    ``hide_specific_error_message`` policy.
+
+    :jsonparam container_serial: container serial (required).
+    :status 200: container-type-specific registration result in
+        ``result.value``, including the ``policies`` block with
+        client-relevant settings.
     """
     params = request.all_data
     container_serial = getParam(params, "container_serial", required)
@@ -727,13 +917,17 @@ def registration_finalize():
 @log_with(log)
 def registration_terminate(container_serial: str):
     """
-    Terminates the synchronization of a container with privacyIDEA.
+    Unregister a container from the server side. The client device
+    is left in place but will no longer be able to synchronize with
+    the server. Use the client-side counterpart at
+    :http:post:`/container/register/terminate/client` for the
+    device-initiated unregister.
 
-    :param container_serial: Serial of the container
-    :return: dictionary with success information such as
-        ::
+    Requires authentication and the policy action
+    :ref:`policy_container_unregister`.
 
-            {"success": True}
+    :param container_serial: path component, the container serial.
+    :status 200: ``{"success": <bool>}`` in ``result.value``.
     """
     container = find_container_by_serial(container_serial)
 
@@ -753,15 +947,22 @@ def registration_terminate(container_serial: str):
 @log_with(log)
 def registration_terminate_client():
     """
-    Terminates the synchronization of a container with privacyIDEA.
-    This endpoint can only be called from clients that are registered at the container, providing a valid signature.
+    Client-initiated unregister. Called by the registered container
+    device itself when the user wants to drop the pairing from their
+    end (e.g. removing the privacyIDEA account from the smartphone
+    app).
 
-    :jsonparam container_serial: Serial of the container
-    :jsonparam signature: Signature of the client
-    :return: dictionary with success information such as
-        ::
+    This endpoint is **anonymous** — no auth header is required. The
+    caller authenticates by signing a challenge that the container
+    knows about. The container-scope policy
+    ``disable_client_container_unregister`` (see
+    :ref:`container_policy_disable_client_unregister`) can disable
+    this client-side path.
 
-            {"success": True}
+    :jsonparam container_serial: container serial (required).
+    :jsonparam signature: client's signature over the challenge data
+        (required).
+    :status 200: ``{"success": <bool>}`` in ``result.value``.
     """
     params = request.all_data
     container_serial = getParam(params, "container_serial", required)
@@ -801,22 +1002,30 @@ def registration_terminate_client():
 @log_with(log)
 def create_challenge():
     """
-    Creates a challenge for a container.
+    Issue a fresh challenge for a registered container. The client
+    device requests this before any operation that requires a signed
+    response (synchronize, client-side terminate). Only registered
+    containers (in state ``REGISTERED``, ``ROLLOVER``, or
+    ``ROLLOVER_COMPLETED``) may obtain a challenge.
 
-    :jsonparam container_serial: Serial of the container
-    :jsonparam scope: Scope of the challenge, e.g. 'https://pi.com/container/synchronize'
-    :return: dictionary with the challenge information
+    This endpoint is **anonymous** — no auth header is required.
 
-    An example response looks like this:
+    :jsonparam container_serial: container serial (required).
+    :jsonparam scope: full URL of the operation the challenge will be
+        bound to, e.g. ``https://pi.example.com/container/synchronize``
+        (required).
+    :status 200: challenge payload in ``result.value`` —
+        ``server_url``, ``nonce``, ``time_stamp``, and any
+        type-specific extras.
+    :status 400: container is not in a registered state.
 
-    ::
+    Example response::
 
         {
-            "server_url": "https://pi.net"
-            "nonce": "123456",
-            "time_stamp": "2024-10-23T05:45:02.484954+00:00",
+          "server_url": "https://pi.net",
+          "nonce": "123456",
+          "time_stamp": "2024-10-23T05:45:02.484954+00:00"
         }
-
     """
     # Get params
     params = request.all_data
@@ -864,48 +1073,68 @@ def create_challenge():
 @event('container_synchronize', request, g)
 def synchronize():
     """
-    Compares the client tokens with the server tokens and returns the differences. Returns a dictionary with the
-    container properties and the tokens to be added or updated. For the tokens to be added, the enroll information is
-    provided containing the tokens secret. For the tokens to be updated, the token details are returned as dictionary.
-    Additionally, the container rights read from the policies are included in the response.
-    Additional parameters and entries in the response are possible, depending on the container type.
-    The container is only authorized to synchronize if the challenge is valid.
+    Reconcile the token list of a registered container between client
+    and server. The client supplies its current token inventory; the
+    server returns the diff — tokens to add (with full enroll
+    information so the client can materialize them) and tokens to
+    update (with the updated token details). The response also
+    carries the container-side policies the client must honor
+    (``container_client_rollover``,
+    ``initially_add_tokens_to_container``,
+    ``disable_client_token_deletion``,
+    ``disable_client_container_unregister``).
 
-    :jsonparam container_serial: Serial of the container
-    :jsonparam container_dict_client: container data with included tokens from the client. The provided information
-        may differ for different container and token types. To identify tokens at least the serial shall be provided.
-        However, some clients might not have the serial. In this case, the client can provide a list of at least two
-        otp values for hotp, totp and daypassword tokens.
+    Tokens that the client cannot identify by serial may be
+    identified by submitting two consecutive OTP values for HOTP,
+    TOTP, or daypassword tokens.
 
-    An example container_dict_client looks like this:
-        ::
+    Synchronization completes a rollover that was initiated via
+    :http:post:`/container/rollover` — when the registration state
+    is ``ROLLOVER_COMPLETED`` the server flips it back to
+    ``REGISTERED`` here.
 
-            {
-                "serial": "SMPH001",
-                "type": "smartphone",
-                "tokens": [{"serial": "TOTP001", ...},
-                           {"otp": ["1234", "4567"], "tokentype": "hotp"}]
-            }
+    This endpoint is **anonymous** — no auth header is required. The
+    caller authenticates by signing the challenge previously obtained
+    from :http:post:`/container/challenge`.
 
-    :return: dictionary including the container properties, the tokens and the container policies.
-        The provided enroll information depends on the token type as well as the returned information for the tokens to
-        be updated.
+    :jsonparam container_serial: container serial (required).
+    :jsonparam container_dict_client: JSON-encoded dict describing
+        the client's container and its tokens; see the example below.
+    :status 200: synchronization payload in ``result.value`` — see
+        the example below; some fields are encrypted depending on
+        the container type.
 
-    Example response:
-        ::
+    Example ``container_dict_client``::
 
-            {
-                "container": {"type": "smartphone", "serial": "SMPH001"},
-                    "tokens": {"add": ["enroll_url1", "enroll_url2"],
-                               "update": [{"serial": "TOTP001", "tokentype": "totp"},
-                                          {"serial": "HOTP001", "otp": ["1234", "9876"],
-                                           "tokentype": "hotp", "counter": 2}]}
-                "policies": {"container_client_rollover": True,
-                             "initially_add_tokens_to_container": False,
-                             "disable_client_token_deletion": True,
-                             "disable_client_container_unregister": True}
-            }
+        {
+          "serial": "SMPH001",
+          "type": "smartphone",
+          "tokens": [
+            {"serial": "TOTP001", ...},
+            {"otp": ["1234", "4567"], "tokentype": "hotp"}
+          ]
+        }
 
+    Example response::
+
+        {
+          "container": {"type": "smartphone", "serial": "SMPH001"},
+          "tokens": {
+            "add": ["enroll_url1", "enroll_url2"],
+            "update": [
+              {"serial": "TOTP001", "tokentype": "totp"},
+              {"serial": "HOTP001", "otp": ["1234", "9876"],
+               "tokentype": "hotp", "counter": 2}
+            ]
+          },
+          "policies": {
+            "container_client_rollover": true,
+            "initially_add_tokens_to_container": false,
+            "disable_client_token_deletion": true,
+            "disable_client_container_unregister": true
+          },
+          "server_url": "https://pi.net"
+        }
     """
     params = request.all_data
     container_serial = getParam(params, "container_serial", optional=False)
@@ -1001,31 +1230,44 @@ def synchronize():
 @event('container_init_rollover', request, g)
 def rollover():
     """
-    Initiate a rollover for a container which will generate new token secrets for all tokens in the container.
-    The data or QR code is returned for the container to re-register.
-    This endpoint can be used to transfer a container from one device to another.
-    Parameters and entries in the returned dictionary are container type specific.
+    Initiate a rollover for a registered container. Rollover
+    generates new secrets for every token in the container and
+    returns a fresh registration payload (deep link / QR code) the
+    client must consume to complete the rollover via
+    :http:post:`/container/synchronize`. Used to transfer a
+    container to a new device.
 
-    :jsonparam container_serial: Serial of the container
-    :return: Result of the rollover process as dictionary. The information may differ depending on the container
-        type.
+    The container must be in a registered state (``REGISTERED``,
+    ``ROLLOVER`` or ``ROLLOVER_COMPLETED``).
 
-    An example response for smartphones looks like this:
-        ::
+    This endpoint is **anonymous** — no auth header is required. The
+    client-side ``container_client_rollover`` policy (see
+    :ref:`container_policy_client_rollover`) governs whether a client
+    is allowed to initiate this.
 
-            {
-                "container_url": {"description": "URL for privacyIDEA Container Registration",
-                                  "img": <QR code>,
-                                  "value": "pia://container/SMPH0006D5BC?issuer=privacyIDEA&ttl=10..."},
-                "nonce": "c238392af49250804c25bbd7d86408839e91fe97",
-                "time_stamp": "2024-12-20T09:53:40.158319+00:00",
-                "server_url": "https://pi.net",
-                "ttl": 10,
-                "ssl_verify": "True",
-                "key_algorithm": "secp384r1",
-                "hash_algorithm": "sha256",
-                "passphrase_prompt": ""
-            }
+    :jsonparam container_serial: container serial (required).
+    :status 200: rollover payload in ``result.value``; same shape as
+        the registration payload returned from
+        :http:post:`/container/register/initialize`.
+    :status 400: container is not in a registered state.
+
+    Example response for a smartphone container::
+
+        {
+          "container_url": {
+            "description": "URL for privacyIDEA Container Registration",
+            "img": "<QR code>",
+            "value": "pia://container/SMPH0006D5BC?issuer=privacyIDEA&ttl=10..."
+          },
+          "nonce": "c238392af49250804c25bbd7d86408839e91fe97",
+          "time_stamp": "2024-12-20T09:53:40.158319+00:00",
+          "server_url": "https://pi.net",
+          "ttl": 10,
+          "ssl_verify": "True",
+          "key_algorithm": "secp384r1",
+          "hash_algorithm": "sha256",
+          "passphrase_prompt": ""
+        }
     """
     params = request.all_data
     container_serial = getParam(params, "container_serial", optional=False)
@@ -1074,29 +1316,34 @@ def rollover():
 @log_with(log)
 def get_template():
     """
-    Get all container templates filtered by the given parameters.
+    Return container templates, optionally filtered, paginated and
+    sorted. Without pagination parameters all matching templates are
+    returned at once.
 
-    :query name: Name of the template, optional
-    :query container_type: Type of the container, optional
-    :query page: Number of the page (starts with 1), optional
-    :query pagesize: Number of templates displayed per page, optional
-    :query sortdir: Sort direction, optional, default is "asc"
-    :query sortby: column name to sort by, optional, default is "name"
+    Requires authentication and the policy action
+    :ref:`policy_container_template_list`.
 
-    :return: Dictionary with at least an entry "templates" and further entries if pagination is used.
+    :query name: filter by template name.
+    :query container_type: filter by container type.
+    :query page: 1-indexed page number.
+    :query pagesize: page size; omit for no pagination.
+    :query sortdir: ``asc`` (default) or ``desc``.
+    :query sortby: column to sort by, default ``name``.
+    :status 200: paginated dict with ``templates`` and pagination
+        metadata in ``result.value``.
 
-    An example response looks like this:
-    ::
+    Example response::
 
         {
-            "templates": [{"name": "template1", "container_type": "smartphone",
-                           "template_options": {"tokens": [{"type": "hotp", "genkey": True}, ...]}, ...},
-                           {"name": "template2", "container_type": "yubikey", ...},
-                           ...],
-            "count": 25,
-            "current": 1,
-            "prev": null,
-            "next": 2,
+          "templates": [
+            {"name": "template1", "container_type": "smartphone",
+             "template_options": {"tokens": [{"type": "hotp", "genkey": true}, ...]}},
+            {"name": "template2", "container_type": "yubikey", ...}
+          ],
+          "count": 25,
+          "current": 1,
+          "prev": null,
+          "next": 2
         }
     """
     params = request.all_data
@@ -1121,19 +1368,25 @@ def get_template():
 @log_with(log)
 def create_template_with_name(container_type, template_name):
     """
-    Creates a template for the given name. If a template with this name already exists, the template options will be
-    updated.
+    Create or update a container template. If a template with the
+    given name already exists its ``template_options`` are
+    overwritten; otherwise a new template is created with the
+    specified container type.
 
-    :param container_type: Type of the container
-    :param template_name: Name of the template
-    :jsonparam template_options: Dictionary with the template options
-    :jsonparam default: Set this template as default for the container type
-    :return: ID of the created template or the template that was updated as dictionary such as
-        ::
+    Requires authentication and the policy action
+    :ref:`policy_container_template_create`.
 
-            {
-                "template_id": 1
-            }
+    :param container_type: path component, the container type the
+        template applies to (e.g. ``smartphone``, ``yubikey``).
+    :param template_name: path component, the unique template name.
+    :jsonparam template_options: dict carrying the template options
+        (most importantly ``tokens`` — the list of token specs to
+        create when a container is built from this template).
+        Defaults to an empty dict.
+    :jsonparam default: ``True`` to mark this template as the default
+        for the container type.
+    :status 200: ``{"template_id": <id>}`` in ``result.value``.
+    :status 400: ``template_options`` is not a dictionary.
     """
     params = request.all_data
     template_options = getParam(params, "template_options", optional=True) or {}
@@ -1177,9 +1430,15 @@ def create_template_with_name(container_type, template_name):
 @log_with(log)
 def delete_template(template_name):
     """
-    Deletes the template of the given name.
+    Delete a container template. Existing containers that were
+    created from this template are not affected.
 
-    :return: True if the template was deleted successfully, raises an exception otherwise
+    Requires authentication and the policy action
+    :ref:`policy_container_template_delete`.
+
+    :param template_name: path component, the template name.
+    :status 200: ``True`` on success in ``result.value``.
+    :status 404: no template with that name exists.
     """
     # Audit log
     g.audit_object.log({"action_detail": f"template_name={template_name}"})
@@ -1200,24 +1459,35 @@ def delete_template(template_name):
 @log_with(log)
 def compare_template_with_containers(template_name):
     """
-    Compares a template with its created containers.
-    Only containers the user is allowed to manage are included in the comparison.
+    Compare a template against the containers built from it. The
+    response carries the per-container delta of missing and extra
+    tokens compared to what the template currently specifies. Only
+    containers the calling principal is allowed to manage (admin's
+    realms or user's own) are included.
 
-    If a container serial is provided, only this container will be compared to the template.
+    If ``container_serial`` is supplied, the comparison is limited to
+    that single container.
 
-    :param template_name: Name of the template
-    :jsonparam container_serial: Serial of the container to compare with the template, optional
-    :return: A dictionary with the differences between the template and each container in the format:
+    Requires authentication and both the
+    :ref:`policy_container_template_list` and
+    :ref:`policy_container_list` policy actions.
 
-        ::
+    :param template_name: path component, the template name.
+    :query container_serial: optional, restrict to a single
+        container.
+    :status 200: dict keyed by container serial with the per-token
+        diff in ``result.value``.
 
-            {"SMPH0001": {
-                            "tokens": {
-                                        "missing": ["hotp"],
-                                        "additional": ["totp"]
-                                        }
-                            }
+    Example response value::
+
+        {
+          "SMPH0001": {
+            "tokens": {
+              "missing": ["hotp"],
+              "additional": ["totp"]
             }
+          }
+        }
     """
     allowed_realms = getattr(request, "pi_allowed_container_realms", None)
     user = request.User
@@ -1265,16 +1535,16 @@ def compare_template_with_containers(template_name):
 @log_with(log)
 def get_template_token_types():
     """
-    Returns a dictionary with the template container types as keys and their description and supported token types as
-    values.
+    Return the container types that support templates with their
+    descriptions and the token types each can hold. The response
+    shape is the same as :http:get:`/container/types`, but limited
+    to template-capable container types.
 
-    ::
+    Requires authentication.
 
-        {
-            <type>: { description: "Description", token_types: ["hotp", "totp", "push", "daypassword", "sms"] },
-            <type>: { description: "Description", token_types: ["hotp", "totp", "push", "daypassword", "sms"] }
-        }
-
+    :status 200: dict keyed by container type with
+        ``description`` and ``token_types`` for each, in
+        ``result.value``.
     """
     token_types = {}
     template_classes = get_container_template_classes()

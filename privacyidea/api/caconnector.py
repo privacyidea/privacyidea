@@ -17,10 +17,15 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 #
-__doc__ = """This is the REST API for managing CA connector definitions.
-The CA connectors are written to the database table "caconnector".
+__doc__ = """
+The CA connector REST API manages connections to Certificate Authorities
+that privacyIDEA uses when enrolling certificate tokens. See
+:ref:`caconnectors` for the conceptual chapter that explains connector
+types and their configuration.
 
-The code is tested in tests/test_api_caconnector.py.
+All endpoints require admin authentication. Read access is gated by the
+admin policy action :ref:`caconnectorread`, write access by
+:ref:`caconnectorwrite`, and deletion by :ref:`caconnectordelete`.
 """
 from flask import (Blueprint, request)
 from .lib.utils import (send_result, getParam)
@@ -46,7 +51,15 @@ caconnector_blueprint = Blueprint('caconnector_blueprint', __name__)
 @prepolicy(check_base_action, request, PolicyAction.CACONNECTORREAD)
 def get_caconnector_api(name=None):
     """
-    returns a json list of the available CA connectors
+    Return CA connectors known to this server. If ``name`` is given as a
+    path component, only the matching connector is returned; otherwise all
+    connectors are listed. Each entry includes the full configuration of
+    the connector, including any secrets stored alongside it.
+
+    Requires admin authentication and the policy action :ref:`caconnectorread`.
+
+    :param name: optional path component selecting a single connector by name.
+    :status 200: list of connector dictionaries in ``result.value``.
     """
     g.audit_object.log({"detail": "{0!s}".format(name)})
     res = get_caconnector_list(filter_caconnector_name=name,
@@ -60,8 +73,21 @@ def get_caconnector_api(name=None):
 @prepolicy(check_base_action, request, PolicyAction.CACONNECTORREAD)
 def get_caconnector_specific(catype):
     """
-    It requires the configuration data of a CA connector in the GET parameters
-    and returns a dict of possible specific options.
+    Return the type-specific configuration options that are available for
+    a given CA connector type and an in-progress configuration. The WebUI
+    calls this after the admin has chosen a connector type and entered the
+    mandatory fields, in order to discover further options whose values
+    depend on the current configuration (for example: which CA templates
+    are available for a local openSSL connector).
+
+    Requires admin authentication and the policy action :ref:`caconnectorread`.
+
+    :param catype: path component naming the connector type
+        (e.g. ``local``, ``microsoft``).
+    :query: any connector-specific configuration fields entered so far —
+        they are passed verbatim to the connector class to compute the
+        available options.
+    :status 200: dict of available options in ``result.value``.
     """
     param = request.all_data
     # Create an object out of the type and the given request parameters.
@@ -75,7 +101,19 @@ def get_caconnector_specific(catype):
 @prepolicy(check_base_action, request, PolicyAction.CACONNECTORWRITE)
 def save_caconnector_api(name=None):
     """
-    Create a new CA connector
+    Create or update a CA connector. If a connector with the given ``name``
+    already exists, it is updated; otherwise it is created. On update only
+    fields that should be changed need to be supplied, but the connector
+    ``type`` must not be changed (it is bound to the connector class).
+
+    See :ref:`caconnectors` for the supported types and their attributes.
+
+    Requires admin authentication and the policy action :ref:`caconnectorwrite`.
+
+    :param name: path component, the connector name.
+    :jsonparam type: connector type (e.g. ``local``); required on creation.
+    :jsonparam: any connector-specific configuration fields.
+    :status 200: database id of the connector in ``result.value``.
     """
     param = request.all_data
     param["caconnector"] = name
@@ -90,7 +128,14 @@ def save_caconnector_api(name=None):
 @prepolicy(check_base_action, request, PolicyAction.CACONNECTORDELETE)
 def delete_caconnector_api(name=None):
     """
-    Delete a specific CA connector
+    Delete the CA connector with the given name and all its configuration
+    entries.
+
+    Requires admin authentication and the policy action :ref:`caconnectordelete`.
+
+    :param name: path component, the connector name.
+    :status 200: id of the deleted connector in ``result.value``.
+    :status 404: no connector with that name exists.
     """
     g.audit_object.log({"detail": "{0!s}".format(name)})
     res = delete_caconnector(name)

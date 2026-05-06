@@ -255,6 +255,8 @@ Certain token types like *certificate* may define special actions when
 revoking a token.
 
 
+.. _policy_password_reset:
+
 password_reset
 ~~~~~~~~~~~~~~
 

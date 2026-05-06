@@ -20,11 +20,18 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-__doc__ = """This module contains the REST API for registering as a new user.
-This endpoint can be used without any authentication, since a new user can
-register.
+__doc__ = """
+The register REST API lets an unauthenticated user create a new user
+account in an editable user resolver. Successful registration creates
+the user, issues a registration token, and emails the registration key
+to the user. The user can then complete enrollment by authenticating
+with their chosen password and that registration key.
 
-The methods are tested in the file tests/test_api_register.py
+Both endpoints are anonymous (no auth header). Registration is gated
+by a set of policies in scope ``register`` — a destination
+``resolver`` is required, plus ``smtpconfig`` for sending the email,
+optionally ``realm``, ``registration_body`` and ``requiredemail``. See
+:ref:`register_policy` for the full list.
 """
 from flask_babel import _
 from flask import (Blueprint, request, g)
@@ -56,10 +63,15 @@ register_blueprint = Blueprint('register_blueprint', __name__)
 @register_blueprint.route('', methods=['GET'])
 def register_status():
     """
-    This endpoint returns the information if registration is allowed or not.
-    This is used by the UI to either display the registration button or not.
+    Return whether self-registration is enabled on this server. The result
+    is ``True`` when at least one policy in scope ``register`` configures a
+    ``resolver`` action; otherwise ``False``. The WebUI uses this to decide
+    whether to show the registration button.
 
-    :return: JSON with value=True or value=False
+    This endpoint is anonymous — no authentication header is required.
+
+    :status 200: ``result.value`` is ``True`` if registration is configured,
+        ``False`` otherwise.
     """
     resolvername = Match.action_only(g, scope=SCOPE.REGISTER, action=PolicyAction.RESOLVER)\
         .action_values(unique=True)
@@ -73,34 +85,44 @@ def register_status():
 @prepolicy(required_email, request=request)
 def register_post():
     """
-    Register a new user in the realm/userresolver. To do so, the user
-    resolver must be writeable like an SQLResolver.
+    Register a new user in a configured user resolver. The destination
+    resolver must be editable (e.g. an SQL resolver). On success the call
+    creates the user account, issues a registration token, and emails the
+    registration key to ``email``.
 
-    Registering a user in fact creates a new user and also creates the first
-    token for the user. The following values are needed to register the user:
+    If the email cannot be sent, the just-created user and token are
+    removed before the request fails — failed registrations leave no
+    state behind.
 
-    * username (mandatory)
-    * givenname (mandatory)
-    * surname (mandatory)
-    * email address (mandatory)
-    * password (mandatory)
-    * mobile phone (optional)
-    * telephone (optional)
+    This endpoint is anonymous. Registration depends on policies in scope
+    ``register``:
 
-    The user receives a registration token via email to be able to login with
-    his self chosen password and the registration token.
+    * ``resolver`` (required) — the editable resolver to create the user in.
+    * ``smtpconfig`` (required) — identifier of the SMTP server used to
+      send the registration email.
+    * ``realm`` (optional) — the realm to register in. Defaults to the
+      default realm.
+    * ``registration_body`` (optional) — text template for the email body;
+      ``{regkey}`` is substituted with the registration key.
+    * ``requiredemail`` (optional) — restricts which email addresses may
+      register (enforced by the ``required_email`` prepolicy).
+    * ``hide_specific_error_message`` (optional) — masks specific error
+      messages with a generic registration error.
 
-    :jsonparam username: The login name of the new user. Check if it already
-        exists
-    :jsonparam givenname: The givenname of the new user
-    :jsonparam surname: The surname of the new user
-    :jsonparam email: The email address of the new user
-    :jsonparam password: The password of the new user. This is the resolver
-        password of the new user.
-    :jsonparam mobile: The mobile phone number
-    :jsonparam phone: The phone number (land line) of the new user
-
-    :return: a json result with a boolean "result": true
+    :jsonparam username: login name of the new user (required).
+    :jsonparam givenname: given name (required).
+    :jsonparam surname: surname (required).
+    :jsonparam email: email address (required); registration key is sent
+        here.
+    :jsonparam password: password the user will authenticate with
+        (required).
+    :jsonparam mobile: mobile phone number.
+    :jsonparam phone: land line phone number.
+    :status 200: ``result.value`` is ``True`` if the user was created and
+        the registration email was sent.
+    :status 400: registration prerequisites not met (no resolver
+        configured, SMTP not configured, username already registered,
+        email rejected by ``requiredemail``, send failure).
     """
     username = getParam(request.all_data, "username", required)
     surname = getParam(request.all_data, "surname", required)

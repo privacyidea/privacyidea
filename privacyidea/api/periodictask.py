@@ -15,10 +15,18 @@
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 #
-__doc__ = """These endpoints are used to create, modify and delete
-periodic tasks.
+__doc__ = """
+The periodic-tasks REST API manages scheduled jobs that privacyIDEA
+runs on its own nodes (cleanup tasks, statistics aggregation, expiring
+tokens, ...). See :ref:`periodic_tasks` for the conceptual chapter.
 
-This module is tested in tests/test_api_periodictask.py"""
+All endpoints require admin authentication. Read access for the task
+list and individual task definitions is gated by the admin policy
+action :ref:`policy_periodictask_read`; create, update, enable, disable
+and delete are gated by :ref:`policy_periodictask_write`. The lookup
+endpoints for available task modules, configured nodes and per-module
+option schemas are admin-only but not gated by a specific policy.
+"""
 
 from flask_babel import _
 import json
@@ -60,7 +68,11 @@ def convert_datetimes_to_string(ptask):
 @log_with(log)
 def list_taskmodules():
     """
-    Return a list of task module identifiers.
+    Return the list of task module identifiers known to this server.
+
+    Requires admin authentication.
+
+    :status 200: list of task module names in ``result.value``.
     """
     taskmodules = get_available_taskmodules()
     g.audit_object.log({"success": True})
@@ -71,7 +83,13 @@ def list_taskmodules():
 @log_with(log)
 def list_nodes():
     """
-    Return a list of available nodes
+    Return the list of privacyIDEA node names declared in the server
+    configuration. Periodic tasks are scheduled per node — only nodes
+    listed here can be assigned to a task.
+
+    Requires admin authentication.
+
+    :status 200: list of node names in ``result.value``.
     """
     nodes = get_privacyidea_node_names()
     g.audit_object.log({"success": True})
@@ -82,10 +100,14 @@ def list_nodes():
 @log_with(log)
 def get_taskmodule_options(taskmodule):
     """
-    Return the available options for the given taskmodule.
+    Return the option schema for a given task module: a dictionary mapping
+    each option key to a description dictionary that the WebUI uses to
+    render the per-task configuration form.
 
-    :param taskmodule: Identifier of the task module
-    :return: a dictionary mapping option keys to description dictionaries
+    Requires admin authentication.
+
+    :param taskmodule: path component, the task module identifier.
+    :status 200: dict of option descriptors in ``result.value``.
     """
     options = get_taskmodule(taskmodule).options
     g.audit_object.log({"success": True})
@@ -97,7 +119,15 @@ def get_taskmodule_options(taskmodule):
 @prepolicy(check_base_action, request, PolicyAction.PERIODICTASKREAD)
 def list_periodic_tasks():
     """
-    Return a list of objects of defined periodic tasks.
+    Return all periodic task definitions. Each entry includes its schedule,
+    the nodes it runs on, the task module, the per-module options, and
+    ``last_update`` / ``last_runs`` timestamps formatted as
+    ``%Y-%m-%d %H:%M:%S.%f%z``.
+
+    Requires admin authentication and the policy action
+    :ref:`policy_periodictask_read`.
+
+    :status 200: list of periodic task dictionaries in ``result.value``.
     """
     ptasks = get_periodic_tasks()
     result = [convert_datetimes_to_string(ptask) for ptask in ptasks]
@@ -110,9 +140,14 @@ def list_periodic_tasks():
 @prepolicy(check_base_action, request, PolicyAction.PERIODICTASKREAD)
 def get_periodic_task_api(ptaskid):
     """
-    Return the dictionary describing a periodic task.
+    Return the dictionary describing a single periodic task.
 
-    :param ptaskid: ID of the periodic task
+    Requires admin authentication and the policy action
+    :ref:`policy_periodictask_read`.
+
+    :param ptaskid: path component, the numeric id of the periodic task.
+    :status 200: periodic task dictionary in ``result.value``.
+    :status 404: no periodic task with that id exists.
     """
     ptask = get_periodic_task_by_id(int(ptaskid))
     g.audit_object.log({"success": True})
@@ -124,18 +159,29 @@ def get_periodic_task_api(ptaskid):
 @log_with(log)
 def set_periodic_task_api():
     """
-    Create or replace an existing periodic task definition.
+    Create or update a periodic task definition. Pass an existing ``id``
+    to update; omit it to create a new task.
 
-    :param id: ID of an existing periodic task definition that should be updated
-    :param name: Name of the periodic task
-    :param active: true if the periodic task should be active
-    :param retry_if_failed: privacyIDEA will retry to execute the task if failed
-    :param interval: Interval at which the periodic task should run (in cron syntax)
-    :param nodes: Comma-separated list of nodes on which the periodic task should run
-    :param taskmodule: Task module name of the task
-    :param ordering: Ordering of the task, must be a number >= 0.
-    :param options: A dictionary (possibly JSON) of periodic task options, mapping unicodes to unicodes
-    :return: ID of the periodic task
+    Requires admin authentication and the policy action
+    :ref:`policy_periodictask_write`.
+
+    :jsonparam id: id of an existing task to update; omit to create.
+    :jsonparam name: human-readable name of the task (required).
+    :jsonparam active: ``True`` (default) to enable the task, ``False`` to
+        create it disabled.
+    :jsonparam retry_if_failed: ``True`` (default) to retry the task if
+        a run fails.
+    :jsonparam interval: cron-style schedule string (required).
+    :jsonparam nodes: comma-separated list of node names the task runs on
+        (required, must be non-empty).
+    :jsonparam taskmodule: task module identifier (required); must be
+        listed in :http:get:`/periodictask/taskmodules/`.
+    :jsonparam ordering: integer >= 0; tasks with lower ordering run first.
+    :jsonparam options: dictionary of task-module-specific options (or a
+        JSON-encoded string of one).
+    :status 200: id of the task in ``result.value``.
+    :status 400: ``nodes`` is empty, ``taskmodule`` is unknown, or
+        ``options`` is not a dictionary.
     """
     param = request.all_data
     ptask_id = getParam(param, "id", optional=True)
@@ -172,10 +218,15 @@ def set_periodic_task_api():
 @log_with(log)
 def enable_periodic_task_api(ptaskid):
     """
-    Enable a certain periodic task.
+    Enable a periodic task. The task will run according to its configured
+    schedule on its assigned nodes from the next scheduling tick onwards.
 
-    :param ptaskid: ID of the periodic task
-    :return: ID of the periodic task
+    Requires admin authentication and the policy action
+    :ref:`policy_periodictask_write`.
+
+    :param ptaskid: path component, the numeric id of the periodic task.
+    :status 200: id of the task in ``result.value``.
+    :status 404: no periodic task with that id exists.
     """
     result = enable_periodic_task(int(ptaskid), True)
     g.audit_object.log({"success": True})
@@ -187,10 +238,15 @@ def enable_periodic_task_api(ptaskid):
 @log_with(log)
 def disable_periodic_task_api(ptaskid):
     """
-    Disable a certain periodic task.
+    Disable a periodic task. The task definition is preserved but no new
+    runs are scheduled until it is enabled again.
 
-    :param ptaskid: ID of the periodic task
-    :return: ID of the periodic task
+    Requires admin authentication and the policy action
+    :ref:`policy_periodictask_write`.
+
+    :param ptaskid: path component, the numeric id of the periodic task.
+    :status 200: id of the task in ``result.value``.
+    :status 404: no periodic task with that id exists.
     """
     result = enable_periodic_task(int(ptaskid), False)
     g.audit_object.log({"success": True})
@@ -202,10 +258,14 @@ def disable_periodic_task_api(ptaskid):
 @log_with(log)
 def delete_periodic_task_api(ptaskid):
     """
-    Delete a certain periodic task.
+    Delete a periodic task definition.
 
-    :param ptaskid: ID of the periodic task
-    :return: ID of the periodic task
+    Requires admin authentication and the policy action
+    :ref:`policy_periodictask_write`.
+
+    :param ptaskid: path component, the numeric id of the periodic task.
+    :status 200: id of the deleted task in ``result.value``.
+    :status 404: no periodic task with that id exists.
     """
     result = delete_periodic_task(int(ptaskid))
     g.audit_object.log({"success": True, "info": result})

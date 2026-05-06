@@ -18,9 +18,19 @@
 # You should have received a copy of the GNU Affero General Public
 # License along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-__doc__ = """This REST API is used to list machines from Machine Resolvers.
+__doc__ = """
+The machine REST API lists machines resolved by configured machine
+resolvers, attaches and detaches tokens to those machines via
+application plugins, and fetches the authentication items the plugins
+need at runtime. See :ref:`machines` for the conceptual chapter and
+:ref:`application_plugins` for the available applications.
 
-The code is tested in tests/test_api_machines
+All endpoints require admin authentication. Listing is gated by the
+admin policy action :ref:`policy_machinelist`; attaching, detaching
+and managing token-machine options by
+:ref:`policy_manage_machine_tokens`; the runtime
+``/machine/authitem`` endpoint by
+:ref:`policy_fetch_authentication_items`.
 """
 
 from flask import (Blueprint,
@@ -46,22 +56,25 @@ machine_blueprint = Blueprint('machine_blueprint', __name__)
 @prepolicy(check_base_action, request, PolicyAction.MACHINELIST)
 def list_machines_api():
     """
-    List all machines that can be found in the machine resolvers.
+    List machines from every configured machine resolver. Filters can
+    be combined; ``any`` performs a substring match across hostname,
+    IP and id at once.
 
-    :param hostname: only show machines, that match this hostname as substring
-    :param ip: only show machines, that exactly match this IP address
-    :param id: filter for substring matching ids
-    :param resolver: filter for substring matching resolvers
-    :param any: filter for a substring either matching in "hostname", "ip"
-        or "id"
+    Requires admin authentication and the policy action
+    :ref:`policy_machinelist`.
 
-    :return: json result with "status": true and the machine list in "value".
+    :query hostname: substring match against the machine's hostnames.
+    :query ip: exact match against the machine's IP address.
+    :query id: substring match against the machine id.
+    :query resolver: substring match against the resolver name.
+    :query any: substring match against ``hostname``, ``ip`` or ``id``.
+    :status 200: list of machine dictionaries in ``result.value``.
 
     **Example request**:
 
     .. sourcecode:: http
 
-       GET /hostname?hostname=on HTTP/1.1
+       GET /machine/?hostname=on HTTP/1.1
        Host: example.com
        Accept: application/json
 
@@ -72,28 +85,28 @@ def list_machines_api():
        HTTP/1.1 200 OK
        Content-Type: application/json
 
-        {
-          "id": 1,
-          "jsonrpc": "2.0",
-          "result": {
-            "status": true,
-            "value": [
-              {
-                "id": "908asljdas90ad0",
-                "hostname": [ "flavon.example.com", "test.example.com" ],
-                "ip": "1.2.3.4",
-                "resolver_name": "machineresolver1"
-              },
-              {
-                "id": "1908209x48x2183",
-                "hostname": [ "london.example.com" ],
-                "ip": "2.4.5.6",
-                "resolver_name": "machineresolver1"
-              }
-            ]
-          },
-          "version": "privacyIDEA unknown"
-        }
+       {
+         "id": 1,
+         "jsonrpc": "2.0",
+         "result": {
+           "status": true,
+           "value": [
+             {
+               "id": "908asljdas90ad0",
+               "hostname": ["flavon.example.com", "test.example.com"],
+               "ip": "1.2.3.4",
+               "resolver_name": "machineresolver1"
+             },
+             {
+               "id": "1908209x48x2183",
+               "hostname": ["london.example.com"],
+               "ip": "2.4.5.6",
+               "resolver_name": "machineresolver1"
+             }
+           ]
+         },
+         "version": "privacyIDEA unknown"
+       }
     """
     hostname = getParam(request.all_data, "hostname")
     ip = getParam(request.all_data, "ip")
@@ -123,33 +136,39 @@ def list_machines_api():
 @prepolicy(check_base_action, request, PolicyAction.MACHINETOKENS)
 def attach_token_api():
     """
-    Attach an existing token to a machine with a certain application.
+    Attach an existing token to a machine for use with a given
+    application plugin (``ssh``, ``luks``, ``offline``, ...). The
+    machine can be identified either by ``hostname`` or by the pair
+    (``machineid``, ``resolver``). Any body fields not listed below
+    are forwarded to the application plugin as options.
 
-    :param hostname: identify the machine by the hostname
-    :param machineid: identify the machine by the machine ID and the resolver
-        name
-    :param resolver: identify the machine by the machine ID and the resolver name
-    :param serial: identify the token by the serial number
-    :param application: the name of the application like "luks" or "ssh".
+    Requires admin authentication and the policy action
+    :ref:`policy_manage_machine_tokens`.
 
-    Parameters not listed will be treated as additional options.
-
-    :return: json result with "result": true and the machine list in "value".
+    :jsonparam hostname: identify the target machine by hostname.
+    :jsonparam machineid: identify the target machine by machine id
+        (combine with ``resolver``).
+    :jsonparam resolver: machine resolver name.
+    :jsonparam serial: token serial number (required).
+    :jsonparam application: application plugin name (required).
+    :jsonparam: any other field is treated as a plugin option.
+    :status 200: id of the new machine-token row in ``result.value``.
 
     **Example request**:
 
     .. sourcecode:: http
 
-       POST /token HTTP/1.1
+       POST /machine/token HTTP/1.1
        Host: example.com
-       Accept: application/json
+       Content-Type: application/json
 
-       { "hostname": "puckel.example.com",
-         "machienid": "12313098",
+       {
+         "hostname": "puckel.example.com",
+         "machineid": "12313098",
          "resolver": "machineresolver1",
          "serial": "tok123",
-         "application": "luks" }
-
+         "application": "luks"
+       }
     """
     hostname = getParam(request.all_data, "hostname")
     machine_id = getParam(request.all_data, "machineid")
@@ -181,29 +200,22 @@ def attach_token_api():
 @prepolicy(check_base_action, request, PolicyAction.MACHINETOKENS)
 def detach_token_api(serial, machineid=None, resolver=None, application=None, mtid=None):
     """
-    Detach a token from a machine with a certain application.
+    Detach a token from a machine. Two URL shapes are accepted:
+    ``/machine/token/<serial>/<machineid>/<resolver>/<application>``
+    identifies the binding by machine-id + resolver,
+    ``/machine/token/<serial>/<application>/<mtid>`` by the
+    machine-token row id directly.
 
-    :param machineid: identify the machine by the machine ID and the resolver
-        name
-    :param resolver: identify the machine by the machine ID and the resolver name
-    :param serial: identify the token by the serial number
-    :param application: the name of the application like "luks" or "ssh".
-    :param mtid: the ID of the machinetoken definition
+    Requires admin authentication and the policy action
+    :ref:`policy_manage_machine_tokens`.
 
-    :return: json result with "result": true and the machine list in "value".
-
-    **Example request**:
-
-    .. sourcecode:: http
-
-       DELETE /token HTTP/1.1
-       Host: example.com
-       Accept: application/json
-
-       { "hostname": "puckel.example.com",
-         "resolver": "machineresolver1",
-         "application": "luks" }
-
+    :param serial: path component, the token serial.
+    :param machineid: path component, the machine id.
+    :param resolver: path component, the machine resolver name.
+    :param application: path component, the application plugin name.
+    :param mtid: path component, the machine-token row id (alternative
+        to machineid + resolver).
+    :status 200: number of removed bindings in ``result.value``.
     """
     r = detach_token(serial, application,
                      machine_id=machineid, resolver_name=resolver, machine_token_id=mtid)
@@ -219,29 +231,41 @@ def detach_token_api(serial, machineid=None, resolver=None, application=None, mt
 @prepolicy(check_base_action, request, PolicyAction.MACHINETOKENS)
 def list_machinetokens_api():
     """
-    Return a list of MachineTokens either for a given machine or for a given
-    token.
+    List machine-token bindings, either for a given machine or for a
+    given token. Without machine identification but with ``serial``
+    and no extra filters, returns the machines that the given token
+    is attached to.
 
-    :param serial: Return the MachineTokens for a the given Token
-    :param hostname: Identify the machine by the hostname
-    :param machineid: Identify the machine by the machine ID and the resolver name
-    :param resolver: Identify the machine by the machine ID and the resolver name
-    :query sortby: sort the output by column. Can be 'serial', 'service_id'...
-    :query sortdir: asc/desc
-    :query application: The type of application like "ssh" or "offline".
-    :param <options>: You can also filter for options like the 'service_id' or 'user' for SSH applications, or
-        'count' and 'rounds' for offline applications. The filter allows the use of "*" to match substrings.
-    :return: JSON list of dicts
+    Requires admin authentication and the policy action
+    :ref:`policy_manage_machine_tokens`.
 
-    [{'application': 'ssh',
-      'id': 1,
-      'options': {'service_id': 'webserver',
-                  'user': 'root'},
-      'resolver': None,
-      'serial': 'SSHKEY1',
-      'type': 'sshkey'},
-       ...
-       ]
+    :query serial: token serial (supports the ``*`` wildcard for
+        substring matching).
+    :query hostname: identify the machine by hostname.
+    :query machineid: identify the machine by machine id.
+    :query resolver: machine resolver name.
+    :query application: filter by application plugin name (``ssh``,
+        ``offline``, ...).
+    :query sortby: column to sort by — ``serial`` or any option key
+        (e.g. ``service_id``). Default ``serial``.
+    :query sortdir: ``asc`` (default) or ``desc``.
+    :query: any other key is treated as an option filter (e.g.
+        ``service_id``, ``user`` for SSH; ``count``, ``rounds`` for
+        offline). Filter values support the ``*`` wildcard.
+    :status 200: list of machine-token bindings in ``result.value``.
+
+    Example response value::
+
+        [
+          {
+            "application": "ssh",
+            "id": 1,
+            "options": {"service_id": "webserver", "user": "root"},
+            "resolver": null,
+            "serial": "SSHKEY1",
+            "type": "sshkey"
+          }
+        ]
     """
     hostname = getParam(request.all_data, "hostname")
     machineid = getParam(request.all_data, "machineid")
@@ -290,19 +314,24 @@ def list_machinetokens_api():
 @prepolicy(check_base_action, request, PolicyAction.MACHINETOKENS)
 def set_option_api():
     """
-    This sets a Machine Token option or deletes it, if the value is empty.
+    Set or remove options on a machine-token binding. Body fields not
+    listed below are treated as options: a non-empty value adds or
+    updates the option, an empty value removes it. The binding may be
+    addressed either by ``mtid`` or by the (machine, token, application)
+    tuple.
 
-    :param hostname: identify the machine by the hostname
-    :param machineid: identify the machine by the machine ID and the resolver
-        name
-    :param resolver: identify the machine by the machine ID and the resolver name
-    :param serial: identify the token by the serial number
-    :param application: the name of the application like "luks" or "ssh".
-    :param mtid: the ID of the machinetoken definition
+    Requires admin authentication and the policy action
+    :ref:`policy_manage_machine_tokens`.
 
-    Parameters not listed will be treated as additional options.
-
-    :return:
+    :jsonparam hostname: identify the machine by hostname.
+    :jsonparam machineid: identify the machine by machine id.
+    :jsonparam resolver: machine resolver name.
+    :jsonparam serial: token serial.
+    :jsonparam application: application plugin name.
+    :jsonparam mtid: machine-token row id (alternative to the tuple).
+    :jsonparam: any other field — non-empty values add/update an
+        option, empty values remove it.
+    :status 200: ``{"added": <n>, "deleted": <m>}`` in ``result.value``.
     """
     hostname = getParam(request.all_data, "hostname")
     machineid = getParam(request.all_data, "machineid")
@@ -352,18 +381,27 @@ def set_option_api():
 @prepolicy(check_base_action, request, PolicyAction.AUTHITEMS)
 def get_auth_items_api(application=None):
     """
-    This fetches the authentication items for a given application and the
-    given client machine.
+    Fetch the authentication items the application plugin needs at
+    runtime for the given client machine. Each plugin defines its own
+    item shape — for example SSH returns a list of ``{username,
+    sshkey}`` records, LUKS returns a list of
+    ``{slot, challenge, response, partition}`` records.
 
-    :param challenge: A challenge for which the authentication item is
-        calculated. In case of the Yubikey this can be a challenge that produces
-        a response. The authentication item is the combination of the challenge
-        and the response.
-    :type challenge: basestring
-    :param hostname: The hostname of the machine
-    :type hostname: basestring
+    Without ``application`` in the path, items for every plugin
+    attached to the machine are returned, keyed by application name.
 
-    :return: dictionary with lists of authentication items
+    Requires admin authentication and the policy action
+    :ref:`policy_fetch_authentication_items`.
+
+    :param application: optional path component, the application
+        plugin name to limit the response to.
+    :query hostname: hostname of the calling client machine (required).
+    :query challenge: challenge value for plugins that compute a
+        challenge/response item (e.g. Yubikey). The returned item is
+        the combination of challenge and response.
+    :query: any other key is forwarded as an additional plugin filter.
+    :status 200: dict of authentication items keyed by application in
+        ``result.value``.
 
     **Example response**:
 
@@ -372,24 +410,23 @@ def get_auth_items_api(application=None):
        HTTP/1.1 200 OK
        Content-Type: application/json
 
-        {
-          "id": 1,
-          "jsonrpc": "2.0",
-          "result": {
-            "status": true,
-            "value": { "ssh": [ { "username": "....",
-                                  "sshkey": "...."
-                                }
-                              ],
-                       "luks": [ { "slot": ".....",
-                                   "challenge": "...",
-                                   "response": "...",
-                                   "partition": "..."
-                               ]
-                     }
-          },
-          "version": "privacyIDEA unknown"
-        }
+       {
+         "id": 1,
+         "jsonrpc": "2.0",
+         "result": {
+           "status": true,
+           "value": {
+             "ssh": [
+               {"username": "...", "sshkey": "..."}
+             ],
+             "luks": [
+               {"slot": "...", "challenge": "...", "response": "...",
+                "partition": "..."}
+             ]
+           }
+         },
+         "version": "privacyIDEA unknown"
+       }
     """
     challenge = getParam(request.all_data, "challenge")
     hostname = getParam(request.all_data, "hostname", optional=False)

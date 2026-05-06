@@ -4,8 +4,16 @@
 #            Initial writeup
 #
 #
-__doc__ = """This is the controller API for client component
-subscriptions like ownCloud plugin or RADIUS Credential Provider.
+__doc__ = """
+The subscriptions REST API manages subscription files for licensed
+client components (e.g. RADIUS Credential Provider, Keycloak provider,
+ownCloud plugin). Subscription files are YAML-encoded and cryptographically
+signed by the subscription issuer; uploading them registers the
+subscription, and the GET endpoint reports the current state including
+remaining validity and how many tokens/users are in use.
+
+All endpoints require admin authentication and the policy action
+:ref:`policy_managesubscription`.
 """
 from flask import (Blueprint, request, g)
 from privacyidea.api.lib.utils import (send_result)
@@ -35,7 +43,21 @@ subscriptions_blueprint = Blueprint('subscriptions_blueprint', __name__)
 @log_with(log)
 def api_get(application=None):
     """
-    Return the subscription object as JSON.
+    Return all subscriptions stored on this server. Each subscription is
+    enriched with usage information at request time:
+
+    * ``timedelta`` — integer, days between today and ``date_till``.
+      Negative while the subscription is still valid, positive after expiry.
+    * ``active_tokens`` — number of currently assigned active tokens on
+      this server.
+    * ``active_users`` — number of users with at least one active token.
+
+    Requires the admin policy action :ref:`policy_managesubscription`.
+
+    :param application: optional path component naming a single application
+        (e.g. ``privacyIDEA RADIUS``). *Currently ignored — the full list is
+        always returned.*
+    :status 200: list of subscription dictionaries in ``result.value``.
     """
     subscription = get_subscription()
     active_tokens = get_tokens(count=True, active=True, assigned=True)
@@ -55,7 +77,17 @@ def api_get(application=None):
 @log_with(log)
 def api_set():
     """
-    Upload a new subscription file
+    Upload a subscription file. The request body must be ``multipart/form-data``
+    with a single field named ``file`` carrying the YAML-encoded, signed
+    subscription document. The signature is verified before the subscription
+    is persisted; if a subscription already exists for the same
+    ``application``, it is replaced.
+
+    Requires the admin policy action :ref:`policy_managesubscription`.
+
+    :reqheader Content-Type: must be ``multipart/form-data``.
+    :formparam file: signed YAML subscription document.
+    :status 200: ``True`` on success.
     """
     subscription_file = request.files['file']
     file_contents = subscription_file.read()
@@ -71,7 +103,14 @@ def api_set():
 @log_with(log)
 def api_delete(application=None):
     """
-    Delete an existing subscription
+    Delete the subscription for the given application.
+
+    Requires the admin policy action :ref:`policy_managesubscription`.
+
+    :param application: path component naming the application whose
+        subscription should be removed.
+    :status 200: id of the deleted subscription, or ``-1`` if no
+        subscription existed for ``application``.
     """
     r = delete_subscription(application)
     g.audit_object.log({'success': True})
