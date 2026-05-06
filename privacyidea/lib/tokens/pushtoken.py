@@ -467,7 +467,7 @@ class PushTokenClass(TokenClass):
                                'desc': _('The message that is shown above the code on the smartphone.'),
                                'group': 'PUSH'
                            },
-                           PolicyAction.CHALLENGETEXT: {
+                           PushAction.CHALLENGE_TEXT: {
                                'type': 'str',
                                'desc': _('Use an alternative challenge text for telling the '
                                          'user to confirm the authentication on his mobile device.')
@@ -1127,7 +1127,7 @@ class PushTokenClass(TokenClass):
         """
         options = options or {}
         # Depending on the mode we have different default messages
-        default_message  = str(DEFAULT_CHALLENGE_TEXT)
+        default_message = str(DEFAULT_CHALLENGE_TEXT)
 
         # Determine if require presence is enabled
         g = options.get("g")
@@ -1162,11 +1162,12 @@ class PushTokenClass(TokenClass):
             default_message = _("Please enter the code displayed on your smartphone.")
             client_mode = ClientMode.INTERACTIVE
 
-        # Now potentially get a different message from policies
-        message = get_action_values_from_options(SCOPE.AUTH,
-                                                 "{0!s}_{1!s}".format(self.get_class_type(),
-                                                                      PolicyAction.CHALLENGETEXT),
-                                                 options) or default_message
+        # Now potentially get a different message from policies. The push-specific policy
+        # takes precedence; fall back to the generic challenge_text policy for backwards
+        # compatibility, then to the mode-dependent default.
+        message = (get_action_values_from_options(SCOPE.AUTH, PushAction.CHALLENGE_TEXT, options)
+                   or get_action_values_from_options(SCOPE.AUTH, PolicyAction.CHALLENGETEXT, options)
+                   or default_message)
         message = message.replace(r'\,', ',')
 
         # Initially we assume there is no error from Firebase

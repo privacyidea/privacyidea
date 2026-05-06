@@ -720,6 +720,9 @@ device with the PUSH token.
 This can be used to display different messages, if the user e.g. has different token types, that triggered a challenge
 or in combination with :ref:`push_code_to_phone` to tell the user in more detail what to do.
 
+If this policy is not set, the PUSH token falls back to the generic :ref:`policy_challenge_text` policy and finally
+to the built-in default text.
+
 .. versionadded:: 3.13
 
 .. _policy_push_require_presence:
