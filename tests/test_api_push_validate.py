@@ -776,11 +776,14 @@ class PushAPITestCase(MyApiTestCase):
 
         self.setUp_user_realms()
         # Setup PUSH policies
+        individual_message = "Please confirm on your smartphone an enter the code here."
         set_policy("push_config", scope=SCOPE.ENROLL,
                    action=f"{PushAction.FIREBASE_CONFIG}={POLL_ONLY},"
                           f"{PushAction.REGISTRATION_URL}={REGISTRATION_URL}")
         set_policy("push_mode_code_to_phone", scope=SCOPE.AUTH,
                    action=f"{PushAction.PUSH_CODE_TO_PHONE}=1")
+        set_policy("push_challenge_text", scope=SCOPE.AUTH,
+                   action=f"push_{PolicyAction.CHALLENGETEXT}={individual_message}")
 
         expected_message = 'test message'
         set_policy("code_to_phone_message", scope=SCOPE.AUTH,
@@ -822,6 +825,8 @@ class PushAPITestCase(MyApiTestCase):
             res = self.app.full_dispatch_request()
             self.assertEqual(200, res.status_code, res)
             detail = res.json.get("detail")
+            # Check the message
+            self.assertEqual(individual_message, detail.get("message"), res.json)
             # Get the challenge data
             transaction_id = detail.get("transaction_id")
             self.assertTrue(transaction_id)

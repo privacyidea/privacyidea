@@ -1126,12 +1126,8 @@ class PushTokenClass(TokenClass):
         additional challenge ``reply_dict``, which is displayed in the JSON challenges response.
         """
         options = options or {}
-        message = get_action_values_from_options(SCOPE.AUTH,
-                                                 "{0!s}_{1!s}".format(self.get_class_type(),
-                                                                      PolicyAction.CHALLENGETEXT),
-                                                 options) or str(DEFAULT_CHALLENGE_TEXT)
-
-        message = message.replace(r'\,', ',')
+        # Depending on the mode we have different default messages
+        default_message  = str(DEFAULT_CHALLENGE_TEXT)
 
         # Determine if require presence is enabled
         g = options.get("g")
@@ -1162,8 +1158,16 @@ class PushTokenClass(TokenClass):
                     "smartphone_confirmed": False,
                 }
 
-            message = _("Please enter the code displayed on your smartphone.")
+            # push_code_to_phone has a different default message
+            default_message = _("Please enter the code displayed on your smartphone.")
             client_mode = ClientMode.INTERACTIVE
+
+        # Now potentially get a different message from policies
+        message = get_action_values_from_options(SCOPE.AUTH,
+                                                 "{0!s}_{1!s}".format(self.get_class_type(),
+                                                                      PolicyAction.CHALLENGETEXT),
+                                                 options) or default_message
+        message = message.replace(r'\,', ',')
 
         # Initially we assume there is no error from Firebase
         res = True
