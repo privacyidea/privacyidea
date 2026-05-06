@@ -430,7 +430,7 @@ export class UserNewResolverComponent implements AfterViewInit, OnDestroy {
     if (!this.isEditMode) {
       this._resetForm();
     }
-    this._router.navigateByUrl(ROUTE_PATHS.USERS_RESOLVERS);
+    this._closeCurrent();
   }
 
   private _closeCurrent(): void {
