@@ -3,7 +3,13 @@
 @use "@angular/material" as mat;
 
 .layout {
-  --max-height: calc(100vh - 64px - var(--global-padding) * 2);
+  &:has(.self-service-layout) {
+    --max-height: calc(100vh - 64px - var(--global-padding) * 2);
+  }
+
+  &:has(.admin-layout) {
+    --max-height: calc(100vh - 192px - var(--global-padding) * 2);
+  }
 }
 
 .progress-bar {
