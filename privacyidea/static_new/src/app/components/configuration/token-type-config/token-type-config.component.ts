@@ -21,7 +21,6 @@ import {
   Component,
   computed,
   DestroyRef,
-  effect,
   ElementRef,
   inject,
   linkedSignal,
@@ -29,13 +28,13 @@ import {
   OnInit,
   Renderer2,
   signal,
-  untracked,
   ViewChild
 } from "@angular/core";
 
-import { MatExpansionModule } from "@angular/material/expansion";
+import { MatAccordion, MatExpansionModule } from "@angular/material/expansion";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIconModule } from "@angular/material/icon";
+import { MatTooltipModule } from "@angular/material/tooltip";
 import { SystemService, SystemServiceInterface } from "../../../services/system/system.service";
 import { SmsGatewayService, SmsGatewayServiceInterface } from "../../../services/sms-gateway/sms-gateway.service";
 import { SmtpService, SmtpServiceInterface } from "../../../services/smtp/smtp.service";
@@ -69,6 +68,7 @@ import { ActivatedRoute } from "@angular/router";
     MatExpansionModule,
     MatButtonModule,
     MatIconModule,
+    MatTooltipModule,
     HotpConfigComponent,
     TotpConfigComponent,
     U2fConfigComponent,
@@ -103,6 +103,19 @@ export class TokenTypeConfigComponent implements OnInit, AfterViewInit, OnDestro
   @ViewChild("scrollContainer") scrollContainer!: ElementRef;
   @ViewChild("stickyHeader") stickyHeader!: ElementRef;
   @ViewChild("stickySentinel") stickySentinel!: ElementRef;
+  @ViewChild(MatAccordion) accordion!: MatAccordion;
+
+  allPanelsOpen = signal(false);
+
+  toggleAllPanels(): void {
+    if (this.allPanelsOpen()) {
+      this.accordion?.closeAll();
+      this.allPanelsOpen.set(false);
+    } else {
+      this.accordion?.openAll();
+      this.allPanelsOpen.set(true);
+    }
+  }
 
   private observer!: IntersectionObserver;
 

@@ -67,3 +67,7 @@ mat-panel-title.mat-expansion-panel-header-title .mat-icon {
 .type-option.mat-mdc-option:hover:not(.mdc-list-item--selected, .mdc-list-item--disabled) {
   background-color: #f2f9fd;
 }
+
+.token-type-config-container p {
+  max-width: 750px;
+}
