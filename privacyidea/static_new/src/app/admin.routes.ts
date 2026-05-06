@@ -60,6 +60,7 @@ import { SystemConfigComponent } from "./components/configuration/system/system-
 import { TokenTypeConfigComponent } from "./components/configuration/token-type-config/token-type-config.component";
 import { ContainerTemplatesComponent } from "@components/token/container-templates/container-templates.component";
 import { UserNewResolverComponent } from "@components/user/user-new-resolver/user-new-resolver.component";
+import { CreateUserDialogComponent } from "@components/user/create-user-dialog/create-user-dialog.component";
 import { EditPolicyDialogComponent } from "./components/policies/dialogs/edit-policy-dialog/edit-policy-dialog.component";
 
 export const routes: Routes = [
@@ -87,7 +88,8 @@ export const routes: Routes = [
   {
     path: "users",
     children: [
-      { path: "", component: UserTableComponent, canDeactivate: [pendingChangesGuard] },
+      { path: "", component: UserTableComponent },
+      { path: "new", component: CreateUserDialogComponent, canDeactivate: [pendingChangesGuard] },
       { path: "details/:username", component: UserDetailsComponent, canDeactivate: [pendingChangesGuard] },
       { path: "realms", component: RealmTableComponent },
       { path: "resolvers", component: UserResolversComponent },

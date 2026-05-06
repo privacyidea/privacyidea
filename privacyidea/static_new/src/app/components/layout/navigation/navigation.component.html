@@ -290,7 +290,14 @@
         href="javascript:void(0)"
         class="sub-nav-active">
         <mat-icon>manage_accounts</mat-icon>
-        <span i18n>Details</span>
+        <span i18n>User Details</span>
+      </a>
+    }
+    @if (contentService.routeUrl().startsWith(ROUTE_PATHS.USERS_NEW)) {
+      <a
+        class="sub-nav-active">
+        <mat-icon>person_add</mat-icon>
+        <span i18n>Create User</span>
       </a>
     }
     <a

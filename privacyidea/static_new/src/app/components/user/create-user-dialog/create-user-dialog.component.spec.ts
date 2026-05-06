@@ -32,8 +32,8 @@ import {
 } from "../../../../testing/mock-services";
 import { MockResolverService } from "../../../../testing/mock-services/mock-resolver-service";
 import { DialogService } from "../../../services/dialog/dialog.service";
-import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
-import { MockMatDialogRef } from "../../../../testing/mock-mat-dialog-ref";
+import { provideRouter, Router } from "@angular/router";
+import { ROUTE_PATHS } from "../../../route_paths";
 
 describe("CreateUserDialogComponent", () => {
   let component: CreateUserDialogComponent;
@@ -42,8 +42,6 @@ describe("CreateUserDialogComponent", () => {
   let mockRealmService: MockRealmService;
   let mockResolverService: MockResolverService;
   let mockNotificationService: MockNotificationService;
-
-  const mockData = { realm: "realmA" };
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -54,8 +52,7 @@ describe("CreateUserDialogComponent", () => {
         { provide: ResolverService, useClass: MockResolverService },
         { provide: NotificationService, useClass: MockNotificationService },
         { provide: DialogService, useClass: MockDialogService },
-        { provide: MAT_DIALOG_DATA, useValue: mockData },
-        { provide: MatDialogRef, useClass: MockMatDialogRef }
+        provideRouter([])
       ]
     }).compileComponents();
 
@@ -64,6 +61,7 @@ describe("CreateUserDialogComponent", () => {
     mockResolverService = TestBed.inject(ResolverService) as unknown as MockResolverService;
     mockNotificationService = TestBed.inject(NotificationService) as unknown as MockNotificationService;
 
+    mockUserService.selectedUserRealm.set("realmA");
     mockRealmService.realms.set({
       realmA: { resolver: [{ name: "resolver1" } as RealmResolver, { name: "resolver3" } as RealmResolver] } as Realm,
       realmB: { resolver: [{ name: "resolver2" } as RealmResolver] } as Realm
@@ -119,40 +117,42 @@ describe("CreateUserDialogComponent", () => {
     expect(component.inputGroup.invalid).toBe(true);
   });
 
-  it("should call notificationService if form is invalid on create", () => {
+  it("should call notificationService if form is invalid on save", () => {
     component.username.setValue("");
     component.resolverControl.setValue("");
     fixture.detectChanges();
-    component.create();
+    component.onSave();
     expect(mockNotificationService.warning).toHaveBeenCalledWith(
       expect.stringContaining("Please fill in all required fields")
     );
   });
 
-  it("should call userService.createUser on valid form", () => {
+  it("should call userService.createUser on valid form", async () => {
     component.username.setValue("testuser");
     component.resolverControl.setValue("testresolver");
     mockUserService.createUser.mockReturnValue({
       subscribe: ({ next }: any) => next(true)
     });
     fixture.detectChanges();
-    component.create();
+    await component.onSave();
     expect(mockUserService.createUser).toHaveBeenCalledWith(
       "testresolver",
       expect.objectContaining({ username: "testuser" })
     );
   });
 
-  it("should reload usersResource and close dialog on successful user creation", () => {
+  it("should reload usersResource and navigate back on successful user creation", async () => {
     component.username.setValue("testuser");
     component.resolverControl.setValue("testresolver");
     mockUserService.createUser.mockReturnValue({
       subscribe: ({ next }: any) => next(true)
     });
     fixture.detectChanges();
-    component.create();
+    const router = TestBed.inject(Router);
+    jest.spyOn(router, "navigateByUrl").mockResolvedValue(true);
+    await component.onSave();
     expect(mockUserService.usersResource.reload).toHaveBeenCalled();
-    expect(component.dialogRef.close).toHaveBeenCalled();
+    expect(router.navigateByUrl).toHaveBeenCalledWith(ROUTE_PATHS.USERS);
   });
 
   it("should populate resolver options from mockResolverService", () => {
