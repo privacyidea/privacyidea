@@ -270,6 +270,20 @@
         <span i18n>Templates</span>
       </a>
     }
+    @if (contentService.routeUrl().startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_TEMPLATES_DETAILS)) {
+      <a
+        class="sub-nav-active">
+        <mat-icon>plagiarism</mat-icon>
+        <span i18n>Template Details</span>
+      </a>
+    }
+    @if (contentService.routeUrl() === ROUTE_PATHS.TOKENS_CONTAINERS_TEMPLATES_CREATE) {
+      <a
+        class="sub-nav-active">
+        <mat-icon>note_add</mat-icon>
+        <span i18n>Create Template</span>
+      </a>
+    }
     <ng-container *ngTemplateOutlet="supportDocs"></ng-container>
   </mat-toolbar>
 }
