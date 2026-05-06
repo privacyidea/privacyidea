@@ -72,12 +72,13 @@
       }
     </div>
 
-    @if (authService.oneActionAllowed(["enable", "disable", "unassign", "assign"]) &&
-    authService.oneActionAllowed(["container_remove_token", "delete"])) {
+    @if (
+      authService.oneActionAllowed(["enable", "disable", "unassign", "assign"]) &&
+      authService.oneActionAllowed(["container_template_list", "container_remove_token", "delete"])
+    ) {
       <mat-divider class="margin-top-8 margin-bottom-8"></mat-divider>
     }
     <div class="flex-column ali-center gap-8">
-
       @if (authService.actionAllowed("container_remove_token")) {
         <button
           (click)="removeAll()"

@@ -18,8 +18,15 @@
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 
-import { TokenEnrollmentComponent } from "./token-enrollment.component";
-import { UserService } from "../../../services/user/user.service";
+import { provideHttpClient } from "@angular/common/http";
+import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
+import { FormControl, FormGroup, Validators } from "@angular/forms";
+import { NoopAnimationsModule } from "@angular/platform-browser/animations";
+import { TokenCompleteEnrollmentComponent } from "@components/token/token-enrollment/token-complete-enrollment/token-complete-enrollment.component";
+import { TokenEnrollmentLastStepDialogComponent } from "@components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
+import { TokenVerifyEnrollmentComponent } from "@components/token/token-enrollment/token-verify-enrollment/token-verify-enrollment.component";
+import { of } from "rxjs";
+import { environment } from "../../../../environments/environment";
 import {
   MockContainerService,
   MockContentService,
@@ -30,33 +37,26 @@ import {
   MockUserService,
   MockVersioningService
 } from "../../../../testing/mock-services";
-import { TokenService } from "../../../services/token/token.service";
-import { LocalService } from "../../../services/local/local.service";
-import { NotificationService } from "../../../services/notification/notification.service";
-import { ContainerService } from "../../../services/container/container.service";
-import { RealmService } from "../../../services/realm/realm.service";
+import { MockAuthService } from "../../../../testing/mock-services/mock-auth-service";
+import { MockDialogService } from "../../../../testing/mock-services/mock-dialog-service";
 import { AuthService } from "../../../services/auth/auth.service";
-import { VersioningService } from "../../../services/version/version.service";
+import { ContainerService } from "../../../services/container/container.service";
 import { ContentService } from "../../../services/content/content.service";
 import { DialogService } from "../../../services/dialog/dialog.service";
-import { FormControl, FormGroup, Validators } from "@angular/forms";
-import { of } from "rxjs";
-import { provideHttpClient } from "@angular/common/http";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { TokenEnrollmentSelfServiceComponent } from "./token-enrollment.self-service.component";
+import { LocalService } from "../../../services/local/local.service";
+import { NotificationService } from "../../../services/notification/notification.service";
+import { RealmService } from "../../../services/realm/realm.service";
+import { TokenService } from "../../../services/token/token.service";
+import { UserService } from "../../../services/user/user.service";
+import { VersioningService } from "../../../services/version/version.service";
+import { TokenEnrollmentComponent } from "./token-enrollment.component";
 import {
   NO_QR_CODE_TOKEN_TYPES,
   NO_REGENERATE_TOKEN_TYPES,
   REGENERATE_AS_VALUES_TOKEN_TYPES
 } from "./token-enrollment.constants";
+import { TokenEnrollmentSelfServiceComponent } from "./token-enrollment.self-service.component";
 import { TokenEnrollmentWizardComponent } from "./token-enrollment.wizard.component";
-import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
-import { MockAuthService } from "../../../../testing/mock-services/mock-auth-service";
-import { environment } from "../../../../environments/environment";
-import { MockDialogService } from "../../../../testing/mock-services/mock-dialog-service";
-import { TokenCompleteEnrollmentComponent } from "@components/token/token-enrollment/token-complete-enrollment/token-complete-enrollment.component";
-import { TokenEnrollmentLastStepDialogComponent } from "@components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.component";
-import { TokenVerifyEnrollmentComponent } from "@components/token/token-enrollment/token-verify-enrollment/token-verify-enrollment.component";
 
 describe("TokenEnrollmentComponent", () => {
   let fixture: ComponentFixture<TokenEnrollmentComponent>;
@@ -607,7 +607,6 @@ describe("TokenEnrollmentComponent", () => {
           })
         );
       });
-
     });
   });
 
@@ -674,7 +673,7 @@ describe("TokenEnrollmentComponent", () => {
       component.ngOnInit();
       component.selectedContainerControl.setValue("CONT-42");
 
-      expect(containers.selectedContainer()).toBe("CONT-42");
+      expect(containers.selectedContainerSerial()).toBe("CONT-42");
     });
   });
 

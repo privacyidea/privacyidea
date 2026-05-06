@@ -18,8 +18,9 @@
  **/
 import { Component, inject, Signal, WritableSignal } from "@angular/core";
 import { MatButtonModule } from "@angular/material/button";
-import { MAT_DIALOG_DATA, MatDialogContent, MatDialogRef, MatDialogTitle } from "@angular/material/dialog";
+import { MatDialogContent, MatDialogTitle } from "@angular/material/dialog";
 import { MatIcon } from "@angular/material/icon";
+import { AbstractDialogComponent } from "src/app/components/shared/dialog/abstract-dialog/abstract-dialog.component";
 import { PiResponse } from "../../../../app.component";
 import {
   ContainerRegisterData,
@@ -40,24 +41,27 @@ export type ContainerCreationDialogData = {
   templateUrl: "./container-created-dialog.component.html",
   styleUrl: "./container-created-dialog.component.scss"
 })
-export class ContainerCreatedDialogComponent {
+export class ContainerCreatedDialogComponent extends AbstractDialogComponent<
+  Signal<ContainerCreationDialogData | null>
+> {
   protected readonly containerService: ContainerServiceInterface = inject(ContainerService);
-  protected readonly dialogRef: MatDialogRef<ContainerCreatedDialogComponent> = inject(MatDialogRef);
-  public readonly data: Signal<ContainerCreationDialogData> = inject(MAT_DIALOG_DATA);
   private contentService = inject(ContentService);
 
   constructor() {
+    super();
     this.dialogRef.afterClosed().subscribe(() => {
       this.containerService.stopPolling();
     });
   }
 
-  containerSelected(containerSerial: string) {
+  navigateContainerDetails(containerSerial: string) {
     this.dialogRef.close();
-    this.contentService.containerSelected(containerSerial);
+    this.contentService.navigateContainerDetails(containerSerial);
   }
 
   regenerateQRCode() {
-    this.data().registerContainer(this.data().containerSerial(), true);
+    const data = this.data();
+    if (!data) return;
+    data.registerContainer(data.containerSerial(), true);
   }
 }

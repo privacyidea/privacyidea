@@ -17,15 +17,15 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { computed, effect, inject, Injectable, linkedSignal, Signal, WritableSignal } from "@angular/core";
 import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
-import { PiResponse } from "../../app.component";
-import { ContentService, ContentServiceInterface } from "../content/content.service";
-import { AuthService, AuthServiceInterface } from "../auth/auth.service";
+import { computed, effect, inject, Injectable, linkedSignal, Signal, WritableSignal } from "@angular/core";
 import { catchError, lastValueFrom, throwError } from "rxjs";
-import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
-import { ContainerService, ContainerServiceInterface, ContainerTemplate } from "../container/container.service";
 import { environment } from "../../../environments/environment";
+import { PiResponse } from "../../app.component";
+import { AuthService, AuthServiceInterface } from "../auth/auth.service";
+import { ContainerService, ContainerServiceInterface, ContainerTemplate } from "../container/container.service";
+import { ContentService, ContentServiceInterface } from "../content/content.service";
+import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
 
 export interface TemplateTokenType {
   description: string;
@@ -92,8 +92,9 @@ export class ContainerTemplateService implements ContainerTemplateServiceInterfa
   }
   readonly templatesResource = httpResource<PiResponse<{ templates: ContainerTemplate[] }>>(() => {
     if (!this.authService.actionAllowed("container_template_list")) return undefined;
-    if (!this.contentService.onTokensContainersCreate() && !this.contentService.onTokensContainersTemplates())
+    if (!this.contentService.onTokensContainersCreate() && !this.contentService.onTokensContainersTemplates()) {
       return undefined;
+    }
 
     let params: any = {};
     if (this.containerService.selectedContainerType()) {
@@ -110,8 +111,14 @@ export class ContainerTemplateService implements ContainerTemplateServiceInterfa
 
   readonly templateTokenTypesResource = httpResource<PiResponse<TemplateTokenTypes>>(() => {
     if (!this.authService.actionAllowed("container_template_list")) return undefined;
-    if (!this.contentService.onTokensContainersCreate() && !this.contentService.onTokensContainersTemplates())
+    if (
+      !this.contentService.onTokensContainersCreate() &&
+      !this.contentService.onTokensContainersTemplates() &&
+      !this.contentService.onTokensContainersTemplatesCreate() &&
+      !this.contentService.onTokensContainersTemplatesDetails()
+    ) {
       return undefined;
+    }
 
     return {
       url: environment.proxyUrl + `/container/template/tokentypes`,
@@ -122,7 +129,7 @@ export class ContainerTemplateService implements ContainerTemplateServiceInterfa
 
   // --- Signals & Computed ---
   readonly templates: WritableSignal<ContainerTemplate[]> = linkedSignal({
-    source: () => this.templatesResource.hasValue() ? this.templatesResource.value() : undefined,
+    source: () => (this.templatesResource.hasValue() ? this.templatesResource.value() : undefined),
     computation: (templatesResource, previous) => templatesResource?.result?.value?.templates ?? previous?.value ?? []
   });
 

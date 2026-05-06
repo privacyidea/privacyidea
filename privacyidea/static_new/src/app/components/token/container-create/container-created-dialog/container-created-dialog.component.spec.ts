@@ -16,32 +16,32 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
-import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
-import { firstValueFrom, of } from "rxjs";
 import { signal } from "@angular/core";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { Router } from "@angular/router";
+import { firstValueFrom, Subject } from "rxjs";
 
-import { ContainerCreatedDialogComponent } from "./container-created-dialog.component";
-import { ContainerCreatedDialogWizardComponent } from "./container-created-dialog.wizard.component";
 import { ContainerService } from "../../../../services/container/container.service";
 import { ContentService } from "../../../../services/content/content.service";
-import { MockAuthService } from "../../../../../testing/mock-services/mock-auth-service";
+import { ContainerCreatedDialogComponent } from "./container-created-dialog.component";
+import { ContainerCreatedDialogWizardComponent } from "./container-created-dialog.wizard.component";
 
 describe("ContainerCreatedDialogComponent", () => {
   let fixture: ComponentFixture<ContainerCreatedDialogComponent>;
   let component: ContainerCreatedDialogComponent;
+  let afterClosed$: Subject<any>;
 
   const stopPolling = jest.fn();
   const containerServiceMock = { stopPolling };
 
-  const containerSelected = jest.fn();
-  const contentServiceMock = { containerSelected };
+  const navigateContainerDetails = jest.fn();
+  const contentServiceMock = { navigateContainerDetails };
 
   const dialogClose = jest.fn();
-  const dialogAfterClosed = jest.fn(() => of(true));
+  const dialogAfterClosed = jest.fn(() => afterClosed$.asObservable());
   const dialogRefMock = { close: dialogClose, afterClosed: dialogAfterClosed };
 
   const registerContainer = jest.fn((containerSerial: string, regenerate: boolean) => {});
@@ -52,6 +52,7 @@ describe("ContainerCreatedDialogComponent", () => {
   });
 
   beforeEach(async () => {
+    afterClosed$ = new Subject();
     jest.clearAllMocks();
 
     await TestBed.configureTestingModule({
@@ -77,13 +78,20 @@ describe("ContainerCreatedDialogComponent", () => {
 
   it("calls containerService.stopPolling() when dialog closes", () => {
     expect(dialogAfterClosed).toHaveBeenCalled();
+    expect(stopPolling).not.toHaveBeenCalled();
+    afterClosed$.next(undefined);
     expect(stopPolling).toHaveBeenCalledTimes(1);
   });
 
+  it("displays the container serial number in the dialog content", () => {
+    const content = fixture.nativeElement.textContent as string;
+    expect(content).toContain("C-001");
+  });
+
   it("containerSelected closes dialog and forwards selection", () => {
-    component.containerSelected("C-777");
+    component.navigateContainerDetails("C-777");
     expect(dialogClose).toHaveBeenCalled();
-    expect(containerSelected).toHaveBeenCalledWith("C-777");
+    expect(navigateContainerDetails).toHaveBeenCalledWith("C-777");
   });
 
   it("regenerateQRCode calls registerContainer with current serial and regenerate flag", () => {
@@ -98,15 +106,16 @@ describe("ContainerCreatedDialogWizardComponent", () => {
   let fixture: ComponentFixture<ContainerCreatedDialogWizardComponent>;
   let component: ContainerCreatedDialogWizardComponent;
   let httpMock: HttpTestingController;
+  let afterClosed$: Subject<any>;
 
   const stopPolling = jest.fn();
   const containerServiceMock = { stopPolling };
 
-  const containerSelected = jest.fn();
-  const contentServiceMock = { containerSelected };
+  const navigateContainerDetails = jest.fn();
+  const contentServiceMock = { navigateContainerDetails };
 
   const dialogClose = jest.fn();
-  const dialogAfterClosed = jest.fn(() => of(true));
+  const dialogAfterClosed = jest.fn(() => afterClosed$.asObservable());
   const dialogRefMock = { close: dialogClose, afterClosed: dialogAfterClosed };
 
   const registerContainer = jest.fn();
@@ -127,6 +136,7 @@ describe("ContainerCreatedDialogWizardComponent", () => {
   };
 
   beforeEach(async () => {
+    afterClosed$ = new Subject();
     jest.clearAllMocks();
 
     await TestBed.configureTestingModule({
@@ -161,6 +171,8 @@ describe("ContainerCreatedDialogWizardComponent", () => {
   it("subscribes to dialog close and calls stopPolling", () => {
     flushInitialWizardRequests();
     expect(dialogAfterClosed).toHaveBeenCalled();
+    expect(stopPolling).not.toHaveBeenCalled();
+    afterClosed$.next(undefined);
     expect(stopPolling).toHaveBeenCalledTimes(1);
   });
 

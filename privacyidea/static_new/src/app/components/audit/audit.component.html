@@ -145,7 +145,7 @@
               @case ("container_serial") {
                 <div class="flex-row flex-nowrap ali-center">
                   <a
-                    (click)="contentService.containerSelected(element.container_serial)"
+                    (click)="contentService.navigateContainerDetails(element.container_serial)"
                     attr.aria-label="{{ column.label }} Link"
                     routerLink="/token">
                     {{ element[column.key] }}

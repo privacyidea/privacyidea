@@ -35,21 +35,21 @@ export class TokenEnrolledTextComponent {
   userRealm = input<string>();
   onlyAddToRealm = input<boolean>();
   rollover = input<boolean>(false);
-  switchRoute = output();
+  onSwitchRoute = output();
 
   tokenSelected() {
     if (!this.serial()) {
       return;
     }
-    this.switchRoute.emit();
+    this.onSwitchRoute.emit();
     this.contentService.tokenSelected(this.serial() ?? "");
   }
 
-  containerSelected() {
+  natigateContainerDetails() {
     if (!this.containerSerial()) {
       return;
     }
-    this.switchRoute.emit();
-    this.contentService.containerSelected(this.containerSerial() ?? "");
+    this.onSwitchRoute.emit();
+    this.contentService.navigateContainerDetails(this.containerSerial() ?? "");
   }
 }

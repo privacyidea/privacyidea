@@ -16,28 +16,20 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+
 import { NgClass } from "@angular/common";
-import { Component, computed } from "@angular/core";
+import { Component, computed, inject, linkedSignal } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { MatButton, MatIconButton } from "@angular/material/button";
-import { MatCheckbox } from "@angular/material/checkbox";
-import { MatOption } from "@angular/material/core";
-import {
-  MatAccordion,
-  MatExpansionPanel,
-  MatExpansionPanelHeader,
-  MatExpansionPanelTitle
-} from "@angular/material/expansion";
-import { MatFormField, MatLabel, MatSuffix } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
-import { MatInput } from "@angular/material/input";
-import { MatSelect } from "@angular/material/select";
+import { MatFormField } from "@angular/material/input";
+import { MatOption, MatSelect } from "@angular/material/select";
 import { MatTooltip } from "@angular/material/tooltip";
+import { AuthService, AuthServiceInterface } from "src/app/services/auth/auth.service";
+import { assert } from "src/app/utils/assert";
+import { ContainerCreateFormComponent } from "../../shared/container-create-form/container-create-form.component";
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { ContainerCreateComponent } from "./container-create.component";
-import { ContainerRegistrationConfigComponent } from "../container-registration/container-registration-config/container-registration-config.component";
-import { ClearButtonComponent } from "../../shared/clear-button/clear-button.component";
-import { ContainerCreateFormComponent } from "../../shared/container-create-form/container-create-form.component";
 
 @Component({
   selector: "app-container-create-self-service",
@@ -58,5 +50,16 @@ import { ContainerCreateFormComponent } from "../../shared/container-create-form
   styleUrl: "./container-create.component.scss"
 })
 export class ContainerCreateSelfServiceComponent extends ContainerCreateComponent {
-  override userSelected = computed(() => true);
+  protected override authService: AuthServiceInterface = inject(AuthService);
+
+  override selectedUserRealm = linkedSignal(() => {
+    const realm = this.authService.authData()?.realm ?? "";
+    assert(realm != "", "User must have a realm to create a container in self-service");
+    return realm;
+  });
+  override selectedUser = computed(() => {
+    const userName = this.authService.authData()?.username ?? "";
+    assert(userName != "", "User must be authenticated to create a container in self-service");
+    return userName;
+  });
 }

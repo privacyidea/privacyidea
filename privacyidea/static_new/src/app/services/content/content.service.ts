@@ -16,7 +16,7 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { computed, inject, Injectable, Signal, signal, WritableSignal } from "@angular/core";
+import { computed, inject, Injectable, linkedSignal, Signal, signal, WritableSignal } from "@angular/core";
 import { toSignal } from "@angular/core/rxjs-interop";
 import { NavigationEnd, Router } from "@angular/router";
 import { filter, map, pairwise, startWith } from "rxjs";
@@ -55,6 +55,8 @@ export interface ContentServiceInterface {
   onAnyTokensRoute: Signal<boolean>;
   onAnyUsersRoute: Signal<boolean>;
   onTokensContainersTemplates: Signal<boolean>;
+  onTokensContainersTemplatesCreate: Signal<boolean>;
+  onTokensContainersTemplatesDetails: Signal<boolean>;
   onEvents: Signal<boolean>;
   onConfigurationSystem: Signal<boolean>;
   onConfigurationTokenTypes: Signal<boolean>;
@@ -73,7 +75,7 @@ export interface ContentServiceInterface {
   onMachineResolver: Signal<boolean>;
 
   tokenSelected: (serial: string) => void;
-  containerSelected: (containerSerial: string) => void;
+  navigateContainerDetails: (containerSerial: string) => void;
   userSelected: (username: string, realm: string) => void;
   machineResolverSelected: (resolverName: string) => void;
 }
@@ -94,7 +96,15 @@ export class ContentService implements ContentServiceInterface {
   readonly routeUrl = computed(() => this._urlPair()[1]);
   readonly previousUrl = computed(() => this._urlPair()[0]);
   tokenSerial = signal("");
-  containerSerial = signal("");
+  containerSerial: WritableSignal<string> = linkedSignal({
+    source: this.routeUrl,
+    computation: (url, previous) => {
+      if (url.startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS)) {
+        return previous?.value ?? "";
+      }
+      return "";
+    }
+  });
   machineResolver = signal("");
   onLogin = computed(() => this.routeUrl() === ROUTE_PATHS.LOGIN);
   onAudit = computed(() => this.routeUrl() === ROUTE_PATHS.AUDIT);
@@ -106,16 +116,19 @@ export class ContentService implements ContentServiceInterface {
   onUserDetails = computed(() => this.routeUrl().startsWith(ROUTE_PATHS.USERS_DETAILS + "/"));
   onUserRealms = computed(() => this.routeUrl() === ROUTE_PATHS.USERS_REALMS);
   onTokensEnrollment = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS_ENROLLMENT);
-  onTokenEnrollmentLikely = computed(() =>
-    // allow token details for rollover
-    this.onTokensEnrollment() || this.onTokenDetails() || this.onTokensWizard() || this.onTokensContainersTemplates()
+  onTokenEnrollmentLikely = computed(
+    () =>
+      // allow token details for rollover
+      this.onTokensEnrollment() || this.onTokenDetails() || this.onTokensWizard() || this.onTokensContainersTemplates()
   );
   onTokensChallenges = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS_CHALLENGES);
   onTokensApplications = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS_APPLICATIONS);
   onTokensGetSerial = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS_GET_SERIAL);
   onTokensImport = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS_IMPORT);
   onTokensContainers = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS_CONTAINERS);
-  onTokensContainersCreate = computed(() => [ROUTE_PATHS.TOKENS_CONTAINERS_CREATE, ROUTE_PATHS.TOKENS_CONTAINERS_WIZARD].includes(this.routeUrl()));
+  onTokensContainersCreate = computed(() =>
+    [ROUTE_PATHS.TOKENS_CONTAINERS_CREATE, ROUTE_PATHS.TOKENS_CONTAINERS_WIZARD].includes(this.routeUrl())
+  );
   onTokensContainersDetails = computed(() => this.routeUrl().startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS));
   onTokensAssignToken = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS_ASSIGN_TOKEN);
   onTokensWizard = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS_WIZARD);
@@ -127,49 +140,67 @@ export class ContentService implements ContentServiceInterface {
     () => this.routeUrl() === ROUTE_PATHS.USERS || this.routeUrl().startsWith(ROUTE_PATHS.USERS + "/")
   );
   onTokensContainersTemplates = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS_CONTAINERS_TEMPLATES);
-  onEvents = computed(() =>
-    this.routeUrl() === ROUTE_PATHS.EVENTS ||
-    this.routeUrl() === ROUTE_PATHS.EVENTS_NEW ||
-    this.routeUrl().startsWith(ROUTE_PATHS.EVENTS_DETAILS)
+  onTokensContainersTemplatesCreate = computed(
+    () => this.routeUrl() === ROUTE_PATHS.TOKENS_CONTAINERS_TEMPLATES_CREATE
+  );
+  onTokensContainersTemplatesDetails = computed(() =>
+    this.routeUrl().startsWith(ROUTE_PATHS.TOKENS_CONTAINERS_TEMPLATES_DETAILS)
+  );
+  onEvents = computed(
+    () =>
+      this.routeUrl() === ROUTE_PATHS.EVENTS ||
+      this.routeUrl() === ROUTE_PATHS.EVENTS_NEW ||
+      this.routeUrl().startsWith(ROUTE_PATHS.EVENTS_DETAILS)
   );
   onConfigurationSystem = computed(() => this.routeUrl() === ROUTE_PATHS.CONFIGURATION_SYSTEM);
   onConfigurationTokenTypes = computed(() => this.routeUrl() === ROUTE_PATHS.CONFIGURATION_TOKENTYPES);
-  onConfigurationMachines = computed(() => this.routeUrl() === ROUTE_PATHS.CONFIGURATION_MACHINES || this.routeUrl().startsWith(ROUTE_PATHS.CONFIGURATION_MACHINES_DETAILS));
+  onConfigurationMachines = computed(
+    () =>
+      this.routeUrl() === ROUTE_PATHS.CONFIGURATION_MACHINES ||
+      this.routeUrl().startsWith(ROUTE_PATHS.CONFIGURATION_MACHINES_DETAILS)
+  );
 
-  onExternalSmtp = computed(() =>
-    this.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_SMTP ||
-    this.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_SMTP_NEW ||
-    this.routeUrl().startsWith(ROUTE_PATHS.EXTERNAL_SERVICES_SMTP_DETAILS)
+  onExternalSmtp = computed(
+    () =>
+      this.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_SMTP ||
+      this.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_SMTP_NEW ||
+      this.routeUrl().startsWith(ROUTE_PATHS.EXTERNAL_SERVICES_SMTP_DETAILS)
   );
-  onExternalRadius = computed(() =>
-    this.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS ||
-    this.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS_NEW ||
-    this.routeUrl().startsWith(ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS_DETAILS)
+  onExternalRadius = computed(
+    () =>
+      this.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS ||
+      this.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS_NEW ||
+      this.routeUrl().startsWith(ROUTE_PATHS.EXTERNAL_SERVICES_RADIUS_DETAILS)
   );
-  onExternalSms = computed(() =>
-    this.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_SMS ||
-    this.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_SMS_NEW ||
-    this.routeUrl().startsWith(ROUTE_PATHS.EXTERNAL_SERVICES_SMS_DETAILS)
+  onExternalSms = computed(
+    () =>
+      this.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_SMS ||
+      this.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_SMS_NEW ||
+      this.routeUrl().startsWith(ROUTE_PATHS.EXTERNAL_SERVICES_SMS_DETAILS)
   );
-  onExternalCaConnectors = computed(() =>
-    this.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_CA_CONNECTORS ||
-    this.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_CA_CONNECTORS_NEW ||
-    this.routeUrl().startsWith(ROUTE_PATHS.EXTERNAL_SERVICES_CA_CONNECTORS_DETAILS)
+  onExternalCaConnectors = computed(
+    () =>
+      this.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_CA_CONNECTORS ||
+      this.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_CA_CONNECTORS_NEW ||
+      this.routeUrl().startsWith(ROUTE_PATHS.EXTERNAL_SERVICES_CA_CONNECTORS_DETAILS)
   );
-  onExternalPrivacyIdea = computed(() =>
-    this.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_PRIVACYIDEA ||
-    this.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_PRIVACYIDEA_NEW ||
-    this.routeUrl().startsWith(ROUTE_PATHS.EXTERNAL_SERVICES_PRIVACYIDEA_DETAILS)
+  onExternalPrivacyIdea = computed(
+    () =>
+      this.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_PRIVACYIDEA ||
+      this.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_PRIVACYIDEA_NEW ||
+      this.routeUrl().startsWith(ROUTE_PATHS.EXTERNAL_SERVICES_PRIVACYIDEA_DETAILS)
   );
-  onExternalTokenGroups = computed(() =>
-    this.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_TOKENGROUPS ||
-    this.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_TOKENGROUPS_NEW ||
-    this.routeUrl().startsWith(ROUTE_PATHS.EXTERNAL_SERVICES_TOKENGROUPS_DETAILS)
+  onExternalTokenGroups = computed(
+    () =>
+      this.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_TOKENGROUPS ||
+      this.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_TOKENGROUPS_NEW ||
+      this.routeUrl().startsWith(ROUTE_PATHS.EXTERNAL_SERVICES_TOKENGROUPS_DETAILS)
   );
-  onExternalServiceIds = computed(() =>
-    this.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS ||
-    this.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS_NEW ||
-    this.routeUrl().startsWith(ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS_DETAILS)
+  onExternalServiceIds = computed(
+    () =>
+      this.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS ||
+      this.routeUrl() === ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS_NEW ||
+      this.routeUrl().startsWith(ROUTE_PATHS.EXTERNAL_SERVICES_SERVICE_IDS_DETAILS)
   );
   onUsersResolvers = computed(() => this.routeUrl() === ROUTE_PATHS.USERS_RESOLVERS);
   onConfigurationPeriodicTasks = computed(() => this.routeUrl() === ROUTE_PATHS.CONFIGURATION_PERIODIC_TASKS);
@@ -181,13 +212,15 @@ export class ContentService implements ContentServiceInterface {
     this.tokenSerial.set(serial);
   }
 
-  containerSelected(containerSerial: string): void {
+  navigateContainerDetails(containerSerial: string): void {
     this.router.navigateByUrl(ROUTE_PATHS.TOKENS_CONTAINERS_DETAILS + encodeURIComponent(containerSerial));
     this.containerSerial.set(containerSerial);
   }
 
   userSelected(username: string, realm: string): void {
-    this.router.navigateByUrl(ROUTE_PATHS.USERS_DETAILS + "/" + encodeURIComponent(username) + `?realm=${encodeURIComponent(realm ?? "")}`);
+    this.router.navigateByUrl(
+      ROUTE_PATHS.USERS_DETAILS + "/" + encodeURIComponent(username) + `?realm=${encodeURIComponent(realm ?? "")}`
+    );
     this.detailsUsername.set(username);
   }
 

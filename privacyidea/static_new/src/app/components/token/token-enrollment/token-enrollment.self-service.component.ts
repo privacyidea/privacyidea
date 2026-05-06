@@ -28,6 +28,7 @@ import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
 import { MatOption, MatSelect } from "@angular/material/select";
 import { MAT_TOOLTIP_DEFAULT_OPTIONS, MatTooltip } from "@angular/material/tooltip";
+import { EnrollmentResponse } from "../../../mappers/token-api-payload/_token-api-payload.mapper";
 import { ContainerService, ContainerServiceInterface } from "../../../services/container/container.service";
 import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
 import { DialogService, DialogServiceInterface } from "../../../services/dialog/dialog.service";
@@ -40,14 +41,13 @@ import { ClearableInputComponent } from "../../shared/clearable-input/clearable-
 import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
 import { EnrollTokenTypeSwitchComponent } from "../../shared/enroll-token-type-switch/enroll-token-type-switch.component";
 import { EnrollmentPinComponent } from "../../shared/enrollment-pin/enrollment-pin.component";
+import { TokenEnrollmentLastStepDialogSelfServiceComponent } from "./token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.self-service.component";
 import {
   CUSTOM_DATE_FORMATS,
   CUSTOM_TOOLTIP_OPTIONS,
   CustomDateAdapter,
   TokenEnrollmentComponent
 } from "./token-enrollment.component";
-import { TokenEnrollmentLastStepDialogSelfServiceComponent } from "./token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.self-service.component";
-import { EnrollmentResponse } from "../../../mappers/token-api-payload/_token-api-payload.mapper";
 
 @Component({
   selector: "app-token-enrollment-self-service",

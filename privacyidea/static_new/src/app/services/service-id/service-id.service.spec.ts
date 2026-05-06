@@ -36,7 +36,8 @@ describe("ServiceIdService", () => {
 
   beforeEach(() => {
     const authServiceMock = {
-      getHeaders: jest.fn().mockReturnValue({})
+      getHeaders: jest.fn().mockReturnValue({}),
+      isSelfServiceUser: jest.fn().mockReturnValue(false)
     };
     const notificationServiceMock = {
       success: jest.fn(),
