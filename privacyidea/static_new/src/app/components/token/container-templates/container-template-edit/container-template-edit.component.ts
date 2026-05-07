@@ -31,8 +31,8 @@ import { SelectorButtonsComponent } from "@components/policies/dialogs/edit-poli
 import {
   ContainerTemplateService,
   ContainerTemplateServiceInterface
-} from "src/app/services/container-template/container-template.service";
-import { ContainerTemplate } from "src/app/services/container/container.service";
+} from "@services/container-template/container-template.service";
+import { ContainerTemplate } from "@services/container/container.service";
 import { ContainerTemplateEditBodyComponent } from "./container-template-edit-body/container-template-edit-body.component";
 
 @Component({

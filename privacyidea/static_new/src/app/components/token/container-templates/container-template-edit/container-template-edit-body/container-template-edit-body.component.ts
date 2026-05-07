@@ -20,10 +20,10 @@
 import { Component, computed, model } from "@angular/core";
 import { MatChipsModule } from "@angular/material/chips";
 import { MatIcon } from "@angular/material/icon";
-import { TokenEnrollmentPayload } from "src/app/mappers/token-api-payload/_token-api-payload.mapper";
-import { ContainerTemplate } from "src/app/services/container/container.service";
-import { TokenTypeKey } from "src/app/services/token/token.service";
-import { TemplateAddedTokenRowComponent } from "../../dialogs/container-template-edit-dialog/template-added-token-row/template-added-token-row.component";
+import { TokenEnrollmentPayload } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { TemplateAddedTokenRowComponent } from "@components/token/container-templates/dialogs/container-template-edit-dialog/template-added-token-row/template-added-token-row.component";
+import { ContainerTemplate } from "@services/container/container.service";
+import { TokenTypeKey } from "@services/token/token.service";
 
 @Component({
   selector: "app-container-template-edit-body",
