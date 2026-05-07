@@ -268,7 +268,7 @@ def backup_restore(backup_file, keep_db_uri):
 
 def _write_mysql_defaults(defaults_file, parsed_sqluri):
     # create a mysql config file to avoid adding username and password to the command
-    sql_defaults = configparser.ConfigParser()
+    sql_defaults = configparser.ConfigParser(interpolation=None)
     sql_defaults['client'] = {
         "user": str(parsed_sqluri.username or ""),
         "password": str(parsed_sqluri.password or "")
