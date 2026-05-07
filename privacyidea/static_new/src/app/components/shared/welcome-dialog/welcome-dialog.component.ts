@@ -21,7 +21,7 @@ import { MatButton } from "@angular/material/button";
 
 import { MatDialogRef } from "@angular/material/dialog";
 import { MatIcon } from "@angular/material/icon";
-import { AuthService } from "../../../services/auth/auth.service";
+import { AuthService } from "@services/auth/auth.service";
 
 @Component({
   selector: "app-welcome-dialog",

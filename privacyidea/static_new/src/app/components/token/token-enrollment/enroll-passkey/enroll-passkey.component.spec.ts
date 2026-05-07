@@ -17,23 +17,20 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { EnrollPasskeyComponent } from "./enroll-passkey.component";
-import { MockBase64Service, MockNotificationService, MockTokenService } from "../../../../../testing/mock-services";
-import { TokenService } from "../../../../services/token/token.service";
-import { DialogService } from "../../../../services/dialog/dialog.service";
-import { Base64Service } from "../../../../services/base64/base64.service";
-import { NotificationService } from "../../../../services/notification/notification.service";
-import {
-  EnrollmentResponse,
-  TokenEnrollmentData
-} from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { NoopAnimationsModule } from "@angular/platform-browser/animations";
+import { EnrollmentResponse, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { Base64Service } from "@services/base64/base64.service";
+import { DialogService } from "@services/dialog/dialog.service";
+import { NotificationService } from "@services/notification/notification.service";
+import { TokenService } from "@services/token/token.service";
+import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
+import { MockBase64Service, MockNotificationService, MockTokenService } from "@testing/mock-services";
+import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
 import { lastValueFrom, of, throwError } from "rxjs";
-import { MockDialogService } from "../../../../../testing/mock-services/mock-dialog-service";
-import { MockMatDialogRef } from "../../../../../testing/mock-mat-dialog-ref";
+import { EnrollPasskeyComponent } from "./enroll-passkey.component";
 
 describe("EnrollPasskeyComponent", () => {
   let component: EnrollPasskeyComponent;

@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -38,10 +38,26 @@ import { MatFormField } from "@angular/material/input";
 import { MatOption, MatSelect } from "@angular/material/select";
 import { MatTooltip } from "@angular/material/tooltip";
 import { Router } from "@angular/router";
-import { PiResponse } from "src/app/app.component";
-import { ROUTE_PATHS } from "src/app/route_paths";
-import { AuthService, AuthServiceInterface } from "src/app/services/auth/auth.service";
-import { ContainerTemplateService } from "src/app/services/container-template/container-template.service";
+import { PiResponse } from "@app/app.component";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { ContainerCreateFormComponent } from "@components/shared/container-create-form/container-create-form.component";
+import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import {
+  ContainerCreatedDialogComponent,
+  ContainerCreationDialogData
+} from "@components/token/container-create/container-created-dialog/container-created-dialog.component";
+import {
+  ContainerRegistrationCompletedDialogComponent,
+  ContainerRegistrationCompletedDialogData
+} from "@components/token/container-create/container-registration-completed-dialog/container-registration-completed-dialog.component";
+import {
+  ContainerTokensEnrolledDialogComponent,
+  ContainerTokensEnrolledDialogData
+} from "@components/token/container-create/container-tokens-enrolled-dialog/container-tokens-enrolled-dialog.component";
+import { ContainerRegistrationConfigComponent } from "@components/token/container-registration/container-registration-config/container-registration-config.component";
+import { UserAssignmentComponent } from "@components/token/user-assignment/user-assignment.component";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { ContainerTemplateService } from "@services/container-template/container-template.service";
 import {
   ContainerCreateData,
   ContainerRegisterData,
@@ -49,27 +65,11 @@ import {
   ContainerServiceInterface,
   ContainerTemplate,
   ContainerType
-} from "src/app/services/container/container.service";
-import { DialogService, DialogServiceInterface } from "src/app/services/dialog/dialog.service";
-import { NotificationService, NotificationServiceInterface } from "src/app/services/notification/notification.service";
-import { TokenService, TokenServiceInterface } from "src/app/services/token/token.service";
-import { UserService, UserServiceInterface } from "src/app/services/user/user.service";
-import { ContainerCreateFormComponent } from "../../shared/container-create-form/container-create-form.component";
-import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
-import { ContainerRegistrationConfigComponent } from "../container-registration/container-registration-config/container-registration-config.component";
-import { UserAssignmentComponent } from "../user-assignment/user-assignment.component";
-import {
-  ContainerCreatedDialogComponent,
-  ContainerCreationDialogData
-} from "./container-created-dialog/container-created-dialog.component";
-import {
-  ContainerRegistrationCompletedDialogComponent,
-  ContainerRegistrationCompletedDialogData
-} from "./container-registration-completed-dialog/container-registration-completed-dialog.component";
-import {
-  ContainerTokensEnrolledDialogComponent,
-  ContainerTokensEnrolledDialogData
-} from "./container-tokens-enrolled-dialog/container-tokens-enrolled-dialog.component";
+} from "@services/container/container.service";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
+import { TokenService, TokenServiceInterface } from "@services/token/token.service";
+import { UserService, UserServiceInterface } from "@services/user/user.service";
 
 @Component({
   selector: "app-container-create",

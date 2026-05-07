@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -17,12 +17,12 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { inject, Injectable, signal, WritableSignal } from "@angular/core";
-import { MatTableDataSource } from "@angular/material/table";
-import { FilterValue } from "../../core/models/filter_value/filter_value";
-import { AuthService, AuthServiceInterface } from "../auth/auth.service";
 import { Sort } from "@angular/material/sort";
-import { TokenService, TokenServiceInterface } from "../token/token.service";
-import { ContainerDetailToken } from "../container/container.service";
+import { MatTableDataSource } from "@angular/material/table";
+import { FilterValue } from "@core/models/filter_value/filter_value";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { ContainerDetailToken } from "@services/container/container.service";
+import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 
 export interface FilterPair {
   key: string;
@@ -74,7 +74,7 @@ export const COLUMN_REGISTRY: Readonly<Record<ColumnKey, ColumnDef>> = {
   rounds: { key: "rounds", label: "Rounds" },
   service_id: { key: "service_id", label: "Service ID" },
   user: { key: "user", label: "SSH User" },
-  actions: { key: "actions", label: "Actions" },
+  actions: { key: "actions", label: "Actions" }
 } as const;
 
 type ColumnsTuple<K extends readonly ColumnKey[]> = {

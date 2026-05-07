@@ -17,16 +17,15 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
+import { CommonModule } from "@angular/common";
 import { Component, input, model, output, ViewChild } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { FormsModule } from "@angular/forms";
-import { CommonModule } from "@angular/common";
-import { By } from "@angular/platform-browser";
 import { provideNoopAnimations } from "@angular/platform-browser/animations";
-import { PolicyDetail, PolicyService } from "src/app/services/policies/policies.service";
+import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { PolicyDetail, PolicyService } from "@services/policies/policies.service";
+import { MockPolicyService } from "@testing/mock-services/mock-policies-service";
 import { ActionSelectorComponent } from "./action-selector.component";
-import { MockPolicyService } from "src/testing/mock-services/mock-policies-service";
-import { ClearableInputComponent } from "src/app/components/shared/clearable-input/clearable-input.component";
 
 @Component({
   selector: "app-policy-action-item-new",

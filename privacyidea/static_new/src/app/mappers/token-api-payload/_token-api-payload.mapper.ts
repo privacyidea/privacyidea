@@ -18,7 +18,7 @@
  **/
 
 import { Injectable } from "@angular/core";
-import { TokenDetails, TokenTypeKey } from "../../services/token/token.service";
+import { TokenDetails, TokenTypeKey } from "@services/token/token.service";
 
 export interface EnrollmentResponse<D extends EnrollmentResponseDetail = EnrollmentResponseDetail> {
   type: string;

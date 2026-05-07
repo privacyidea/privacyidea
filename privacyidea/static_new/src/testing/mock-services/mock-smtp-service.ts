@@ -16,10 +16,10 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { computed, signal } from "@angular/core";
 import { HttpResourceRef } from "@angular/common/http";
-import { PiResponse } from "../../app/app.component";
-import { SmtpServer, SmtpServers } from "../../app/services/smtp/smtp.service";
+import { computed, signal } from "@angular/core";
+import { PiResponse } from "@app/app.component";
+import { SmtpServer, SmtpServers } from "@services/smtp/smtp.service";
 
 export class MockSmtpService {
   smtpServerResource: HttpResourceRef<PiResponse<SmtpServers> | undefined> = {

@@ -18,29 +18,26 @@
  **/
 
 import { Component, computed, inject, input, linkedSignal } from "@angular/core";
-import { EnrollTokenArguments, TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
-import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
-import {
-  NO_QR_CODE_TOKEN_TYPES,
-  NO_REGENERATE_TOKEN_TYPES,
-  REGENERATE_AS_VALUES_TOKEN_TYPES
-} from "../token-enrollment.constants";
+import { MatButton } from "@angular/material/button";
+import { MatIcon } from "@angular/material/icon";
 import {
   BaseApiPayloadMapper,
   EnrollmentResponseDetail,
   TokenEnrollmentData
-} from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
+} from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { OtpKeyComponent } from "@components/token/token-enrollment/token-enrollment-data/otp-key/otp-key.component";
 import { OtpValuesComponent } from "@components/token/token-enrollment/token-enrollment-data/otp-values/otp-values.component";
 import { QrCodeTextComponent } from "@components/token/token-enrollment/token-enrollment-data/qr-code-text/qr-code-text.component";
 import { RegistrationCodeComponent } from "@components/token/token-enrollment/token-enrollment-data/registration-code/registration-code.component";
 import { TiqrEnrollUrlComponent } from "@components/token/token-enrollment/token-enrollment-data/tiqr-enroll-url/tiqr-enroll-url.component";
-import { MatButton } from "@angular/material/button";
-import { MatIcon } from "@angular/material/icon";
 import {
-  NotificationService,
-  NotificationServiceInterface
-} from "../../../../services/notification/notification.service";
+  NO_QR_CODE_TOKEN_TYPES,
+  NO_REGENERATE_TOKEN_TYPES,
+  REGENERATE_AS_VALUES_TOKEN_TYPES
+} from "@components/token/token-enrollment/token-enrollment.constants";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
+import { EnrollTokenArguments, TokenService, TokenServiceInterface } from "@services/token/token.service";
 
 @Component({
   selector: "app-token-enrollment-data",
@@ -69,36 +66,44 @@ export class TokenEnrollmentDataComponent {
   enrolledData = linkedSignal(() => this.enrolledInputData());
   protected readonly serial = computed(() => this.enrolledData()?.serial ?? "");
   protected readonly containerSerial = computed(() => this.enrolledData()?.["container_serial"] ?? "");
-  protected readonly qrCode = computed(() =>
-    this.enrolledData()?.googleurl?.img ??
-    this.enrolledData()?.motpurl?.img ??
-    this.enrolledData()?.otpkey?.img ??
-    this.enrolledData()?.tiqrenroll?.img ??
-    this.enrolledData()?.pushurl?.img ??
-    "");
-  protected readonly url = computed(() =>
-    this.enrolledData()?.googleurl?.value ??
-    this.enrolledData()?.motpurl?.value ??
-    this.enrolledData()?.otpkey?.value ??
-    this.enrolledData()?.tiqrenroll?.value ??
-    this.enrolledData()?.pushurl?.value ??
-    "");
+  protected readonly qrCode = computed(
+    () =>
+      this.enrolledData()?.googleurl?.img ??
+      this.enrolledData()?.pushurl?.img ??
+      this.enrolledData()?.motpurl?.img ??
+      this.enrolledData()?.otpkey?.img ??
+      this.enrolledData()?.tiqrenroll?.img ??
+      ""
+  );
+  protected readonly url = computed(
+    () =>
+      this.enrolledData()?.googleurl?.value ??
+      this.enrolledData()?.pushurl?.value ??
+      this.enrolledData()?.motpurl?.value ??
+      this.enrolledData()?.otpkey?.value ??
+      this.enrolledData()?.tiqrenroll?.value ??
+      ""
+  );
   protected readonly verify_message = computed(() => this.enrolledData()?.verify?.message ?? null);
 
   showQRCode = computed(() => !NO_QR_CODE_TOKEN_TYPES.includes(this.tokenType()));
-  protected readonly hasEnrollmentData = computed(() =>
-    !!(
-      (this.showQRCode() && this.qrCode()) ||
-      this.enrolledData()?.["password"] ||
-      (this.enrolledData()?.otpkey?.value && !this.enrolledData()?.["otps"] && this.showQRCode()) ||
-      this.tokenType() === "tiqr" ||
-      this.tokenType() === "registration" ||
-      this.enrolledData()?.["otps"]
-    )
+  protected readonly hasEnrollmentData = computed(
+    () =>
+      !!(
+        (this.showQRCode() && this.qrCode()) ||
+        this.enrolledData()?.["password"] ||
+        (this.enrolledData()?.otpkey?.value && !this.enrolledData()?.["otps"] && this.showQRCode()) ||
+        this.tokenType() === "tiqr" ||
+        this.tokenType() === "registration" ||
+        this.enrolledData()?.["otps"]
+      )
   );
   showRegenerateButton = computed(() => !NO_REGENERATE_TOKEN_TYPES.includes(this.tokenType()));
   regenerateButtonText = computed(() =>
-    REGENERATE_AS_VALUES_TOKEN_TYPES.includes(this.tokenType()) ? $localize`Regenerate Values` : $localize`Regenerate QR Code`);
+    REGENERATE_AS_VALUES_TOKEN_TYPES.includes(this.tokenType())
+      ? $localize`Regenerate Values`
+      : $localize`Regenerate QR Code`
+  );
 
   regenerateQRCode() {
     if (!this.enrollmentParameters()) {
@@ -106,7 +111,7 @@ export class TokenEnrollmentDataComponent {
       return;
     }
     const newEnrollmentData: TokenEnrollmentData = {
-      ...(this.enrollmentParameters()?.data ?? {} as TokenEnrollmentData)
+      ...(this.enrollmentParameters()?.data ?? ({} as TokenEnrollmentData))
     };
     const mapper = this.enrollmentParameters()?.mapper ?? new BaseApiPayloadMapper();
 

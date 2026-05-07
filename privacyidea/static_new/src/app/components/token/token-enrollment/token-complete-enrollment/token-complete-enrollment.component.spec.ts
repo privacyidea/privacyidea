@@ -17,16 +17,16 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { TokenService } from "../../../../services/token/token.service";
-import { ContentService } from "../../../../services/content/content.service";
-import { MockTokenService } from "src/testing/mock-services/mock-token-service";
-import { MockContentService } from "src/testing/mock-services/mock-content-service";
-import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { NO_ERRORS_SCHEMA } from "@angular/core";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
+import { ContentService } from "@services/content/content.service";
+import { TokenService } from "@services/token/token.service";
+import { MockContentService } from "@testing/mock-services/mock-content-service";
+import { MockTokenService } from "@testing/mock-services/mock-token-service";
 
-import { TokenCompleteEnrollmentComponent } from "./token-complete-enrollment.component";
 import { of } from "rxjs";
+import { TokenCompleteEnrollmentComponent } from "./token-complete-enrollment.component";
 
 describe("TokenCompleteEnrollmentComponent", () => {
   let component: TokenCompleteEnrollmentComponent;
@@ -76,10 +76,12 @@ describe("TokenCompleteEnrollmentComponent", () => {
   });
 
   it("should call enrollToken and close dialog on successful enroll", () => {
-    mockTokenService.enrollToken = jest.fn().mockReturnValue(of({
-      detail: { serial: "X", rollout_state: "enrolled" },
-      result: { status: true }
-    } as any));
+    mockTokenService.enrollToken = jest.fn().mockReturnValue(
+      of({
+        detail: { serial: "X", rollout_state: "enrolled" },
+        result: { status: true }
+      } as any)
+    );
     component.clientPartControl.setValue("SOMEKEY");
     component.onDialogAction("enroll");
     expect(mockTokenService.enrollToken).toHaveBeenCalled();
@@ -87,24 +89,30 @@ describe("TokenCompleteEnrollmentComponent", () => {
   });
 
   it("should not close dialog if rollout_state is client_wait", () => {
-     mockTokenService.enrollToken = jest.fn().mockReturnValue(of({
-      detail: { serial: "X", rollout_state: "client_wait" },
-      result: { status: true }
-    } as any));
+    mockTokenService.enrollToken = jest.fn().mockReturnValue(
+      of({
+        detail: { serial: "X", rollout_state: "client_wait" },
+        result: { status: true }
+      } as any)
+    );
     component.clientPartControl.setValue("SOMEKEY");
     component.onDialogAction("enroll");
     expect(mockTokenService.enrollToken).toHaveBeenCalled();
     expect(dialogRefSpy.close).not.toHaveBeenCalled();
   });
 
-  it('should remove twoStepInit from enrollParameters.data when enrolling', () => {
-    component.clientPartControl.setValue('SOMEKEY');
+  it("should remove twoStepInit from enrollParameters.data when enrolling", () => {
+    component.clientPartControl.setValue("SOMEKEY");
     fixture.detectChanges();
-    jest.spyOn(component['tokenService'], 'enrollToken').mockImplementation((params) => {
+    jest.spyOn(component["tokenService"], "enrollToken").mockImplementation((params) => {
       expect(params.data.type).toEqual("hotp");
-      expect(params.data['twoStepInit']).toBeUndefined();
-      return of({ result: { status: true }, detail: { rollout_state: 'enrolled', type: 'hotp', serial: '123' }, type: 'hotp' });
+      expect(params.data["twoStepInit"]).toBeUndefined();
+      return of({
+        result: { status: true },
+        detail: { rollout_state: "enrolled", type: "hotp", serial: "123" },
+        type: "hotp"
+      });
     });
-    component.onDialogAction('enroll');
+    component.onDialogAction("enroll");
   });
 });

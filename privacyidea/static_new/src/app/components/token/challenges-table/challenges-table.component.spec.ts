@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -18,14 +18,13 @@
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 
-import { ChallengesTableComponent } from "./challenges-table.component";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
-import { ChallengesService } from "../../../services/token/challenges/challenges.service";
-import { NotificationService } from "../../../services/notification/notification.service";
-import { MockNotificationService } from "../../../../testing/mock-services";
-import { of, throwError } from "rxjs";
+import { NotificationService } from "@services/notification/notification.service";
+import { ChallengesService } from "@services/token/challenges/challenges.service";
+import { MockNotificationService } from "@testing/mock-services";
+import { ChallengesTableComponent } from "./challenges-table.component";
 
 describe("ChallengesTableComponent", () => {
   let component: ChallengesTableComponent;

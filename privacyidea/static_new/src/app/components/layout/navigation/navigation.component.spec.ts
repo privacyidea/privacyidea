@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,38 +16,27 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { NavigationComponent } from "./navigation.component";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { ActivatedRoute, provideRouter, Router } from "@angular/router";
 import { provideLocationMocks } from "@angular/common/testing";
-import { ROUTE_PATHS } from "../../../route_paths";
-import { of } from "rxjs";
-import { TokenService } from "../../../services/token/token.service";
-import { ContainerService } from "../../../services/container/container.service";
-import { ChallengesService } from "../../../services/token/challenges/challenges.service";
-import { MachineService } from "../../../services/machine/machine.service";
-import { UserService } from "../../../services/user/user.service";
-import { AuditService } from "../../../services/audit/audit.service";
-import { ContentService } from "../../../services/content/content.service";
-import { AuthService } from "../../../services/auth/auth.service";
-import { SessionTimerService } from "../../../services/session-timer/session-timer.service";
-import { NotificationService } from "../../../services/notification/notification.service";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { MatSnackBar } from "@angular/material/snack-bar";
+import { provideRouter } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { NavigationComponent } from "@components/layout/navigation/navigation.component";
+import { AuthService } from "@services/auth/auth.service";
+import { ContentService } from "@services/content/content.service";
+import { NotificationService } from "@services/notification/notification.service";
+import { SessionTimerService } from "@services/session-timer/session-timer.service";
+import { UserService } from "@services/user/user.service";
 import {
-  MockAuditService,
-  MockChallengesService,
-  MockContainerService,
   MockContentService,
   MockLocalService,
-  MockMachineService,
   MockNotificationService,
   MockSessionTimerService,
-  MockTokenService,
   MockUserService
-} from "../../../../testing/mock-services";
-import { MatSnackBar } from "@angular/material/snack-bar";
-import { MockAuthService } from "../../../../testing/mock-services/mock-auth-service";
+} from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 
 describe("NavigationComponent (async, no RouterTestingModule, no MatSnackBar)", () => {
   let component: NavigationComponent;
@@ -125,7 +114,7 @@ describe("NavigationComponent (async, no RouterTestingModule, no MatSnackBar)", 
     // Overflow should contain items that were displaced or were already there
     // Indices: 2, 3, 5, 7, 8 (users, policies, subscription, external, config)
     expect(overflow.length).toBe(5);
-    expect(overflow.some(item => item.section === "audit")).toBe(false);
+    expect(overflow.some((item) => item.section === "audit")).toBe(false);
     expect(overflow[0].section).toBe("users");
   });
 
@@ -166,10 +155,9 @@ describe("NavigationComponent (async, no RouterTestingModule, no MatSnackBar)", 
     navEl.appendChild(item1);
     navEl.appendChild(item2);
 
-    jest.spyOn(component as any, "getFilteredNavItems").mockReturnValue([
-      { section: "token" },
-      { section: "container" }
-    ]);
+    jest
+      .spyOn(component as any, "getFilteredNavItems")
+      .mockReturnValue([{ section: "token" }, { section: "container" }]);
 
     (component as any).calculateVisibleItems(navEl);
 
@@ -200,10 +188,9 @@ describe("NavigationComponent (async, no RouterTestingModule, no MatSnackBar)", 
     navEl.appendChild(item1);
     navEl.appendChild(item2);
 
-    jest.spyOn(component as any, "getFilteredNavItems").mockReturnValue([
-      { section: "token" },
-      { section: "container" }
-    ]);
+    jest
+      .spyOn(component as any, "getFilteredNavItems")
+      .mockReturnValue([{ section: "token" }, { section: "container" }]);
 
     // Initial calculation to store widths
     (component as any).calculateVisibleItems(navEl);

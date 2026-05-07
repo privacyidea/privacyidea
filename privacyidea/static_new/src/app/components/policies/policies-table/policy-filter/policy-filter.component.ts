@@ -20,8 +20,8 @@
 import { AfterViewInit, Component, ElementRef, Input, output, signal, viewChild } from "@angular/core";
 import { MatInputModule } from "@angular/material/input";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
-import { FilterValueGeneric } from "src/app/core/models/filter_value_generic/filter-value-generic";
-import { PolicyDetail } from "src/app/services/policies/policies.service";
+import { FilterValueGeneric } from "@core/models/filter_value_generic/filter-value-generic";
+import { PolicyDetail } from "@services/policies/policies.service";
 
 @Component({
   selector: "app-policy-filter",

@@ -17,28 +17,26 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { EventPanelComponent } from "./event-panel.component";
 import { provideHttpClient } from "@angular/common/http";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { MockEventService } from "../../../../testing/mock-services/mock-event-service";
-import { EMPTY_EVENT, EventHandler, EventService } from "../../../services/event/event.service";
-import { MockNotificationService, MockPendingChangesService, MockRouter } from "../../../../testing/mock-services";
-import { NotificationService } from "../../../services/notification/notification.service";
 import { ActivatedRoute, convertToParamMap, Router } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { EMPTY_EVENT, EventHandler, EventService } from "@services/event/event.service";
+import { NotificationService } from "@services/notification/notification.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+import { MockNotificationService, MockPendingChangesService, MockRouter } from "@testing/mock-services";
+import { MockEventService } from "@testing/mock-services/mock-event-service";
 import { BehaviorSubject } from "rxjs";
-import { PendingChangesService } from "../../../services/pending-changes/pending-changes.service";
-import { ROUTE_PATHS } from "../../../route_paths";
+import { EventPanelComponent } from "./event-panel.component";
 
 global.IntersectionObserver = class IntersectionObserver {
   constructor() {}
-
   disconnect() {}
-
   observe() {}
-
   unobserve() {}
-
-  takeRecords() { return []; }
+  takeRecords() {
+    return [];
+  }
 } as any;
 
 const mockEventHandler: EventHandler = {
@@ -74,7 +72,8 @@ describe("EventPanelComponent — edit mode", () => {
         { provide: NotificationService, useClass: MockNotificationService },
         { provide: PendingChangesService, useClass: MockPendingChangesService },
         { provide: Router, useClass: MockRouter },
-        { provide: ActivatedRoute,
+        {
+          provide: ActivatedRoute,
           useValue: {
             paramMap: paramMap$.asObservable(),
             snapshot: { paramMap: convertToParamMap({ id: mockEventHandler.id }) }
@@ -331,7 +330,8 @@ describe("EventPanelComponent — create new mode", () => {
         { provide: NotificationService, useClass: MockNotificationService },
         { provide: PendingChangesService, useClass: MockPendingChangesService },
         { provide: Router, useClass: MockRouter },
-        { provide: ActivatedRoute,
+        {
+          provide: ActivatedRoute,
           useValue: {
             paramMap: new BehaviorSubject(convertToParamMap({})).asObservable(),
             snapshot: { paramMap: convertToParamMap({}) }

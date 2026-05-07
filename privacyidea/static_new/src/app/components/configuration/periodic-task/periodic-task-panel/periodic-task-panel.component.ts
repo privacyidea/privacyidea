@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,24 +16,24 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { ChangeDetectorRef, Component, inject, input, signal, ViewChild } from "@angular/core";
+import { Component, inject, input, signal, ViewChild } from "@angular/core";
+import { FormsModule } from "@angular/forms";
+import { MatIconButton } from "@angular/material/button";
+import { MatDialog } from "@angular/material/dialog";
 import { MatExpansionModule, MatExpansionPanel, MatExpansionPanelTitle } from "@angular/material/expansion";
+import { MatIcon } from "@angular/material/icon";
+import { MatSlideToggle } from "@angular/material/slide-toggle";
+import { MatTooltip } from "@angular/material/tooltip";
+import { AuthService } from "@services/auth/auth.service";
 import {
   EMPTY_PERIODIC_TASK,
   PERIODIC_TASK_MODULE_MAPPING,
   PeriodicTask,
   PeriodicTaskModule,
   PeriodicTaskService
-} from "../../../../services/periodic-task/periodic-task.service";
-import { MatSlideToggle } from "@angular/material/slide-toggle";
-import { FormsModule } from "@angular/forms";
-import { MatIcon } from "@angular/material/icon";
-import { MatIconButton } from "@angular/material/button";
-import { PeriodicTaskReadComponent } from "./periodic-task-read/periodic-task-read.component";
-import { MatDialog } from "@angular/material/dialog";
-import { AuthService } from "../../../../services/auth/auth.service";
+} from "@services/periodic-task/periodic-task.service";
 import { PeriodicTaskEditComponent } from "./periodic-task-edit/periodic-task-edit.component";
-import { MatTooltip } from "@angular/material/tooltip";
+import { PeriodicTaskReadComponent } from "./periodic-task-read/periodic-task-read.component";
 
 @Component({
   selector: "app-periodic-task-panel",

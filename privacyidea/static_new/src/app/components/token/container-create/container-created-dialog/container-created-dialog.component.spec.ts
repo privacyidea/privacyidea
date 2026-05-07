@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -24,8 +24,8 @@ import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { Router } from "@angular/router";
 import { firstValueFrom, Subject } from "rxjs";
 
-import { ContainerService } from "../../../../services/container/container.service";
-import { ContentService } from "../../../../services/content/content.service";
+import { ContainerService } from "@services/container/container.service";
+import { ContentService } from "@services/content/content.service";
 import { ContainerCreatedDialogComponent } from "./container-created-dialog.component";
 import { ContainerCreatedDialogWizardComponent } from "./container-created-dialog.wizard.component";
 

@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -40,6 +40,7 @@ export const ROUTE_PATHS = {
   TOKENS_WIZARD: "/tokens/wizard",
   TOKENS_CONTAINERS_WIZARD: "/tokens/containers/wizard",
   USERS: "/users",
+  USERS_NEW: "/users/new",
   USERS_DETAILS: "/users/details",
   USERS_REALMS: "/users/realms",
   USERS_RESOLVERS: "/users/resolvers",

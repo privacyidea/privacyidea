@@ -18,17 +18,17 @@
  **/
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { FormControl, Validators } from "@angular/forms";
+import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 
-import { TokenRolloverComponent } from "./token-rollover.component";
-import { MockDialogService, MockNotificationService, MockTokenService } from "../../../../../../testing/mock-services";
-import { TokenService } from "../../../../../services/token/token.service";
-import { NotificationService } from "../../../../../services/notification/notification.service";
-import { DialogService } from "../../../../../services/dialog/dialog.service";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
+import { DialogService } from "@services/dialog/dialog.service";
+import { NotificationService } from "@services/notification/notification.service";
+import { TokenService } from "@services/token/token.service";
+import { MockDialogService, MockNotificationService, MockTokenService } from "@testing/mock-services";
 import { of } from "rxjs";
+import { TokenRolloverComponent } from "./token-rollover.component";
 
 describe("TokenRolloverComponent", () => {
   let component: TokenRolloverComponent;

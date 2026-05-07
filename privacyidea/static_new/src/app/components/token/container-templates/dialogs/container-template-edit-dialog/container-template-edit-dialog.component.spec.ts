@@ -17,20 +17,20 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { ActivatedRoute, Router, convertToParamMap } from "@angular/router";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { NoopAnimationsModule } from "@angular/platform-browser/animations";
+import { ActivatedRoute, convertToParamMap, Router } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { ContainerTemplateService } from "@services/container-template/container-template.service";
+import { ContentService } from "@services/content/content.service";
+import { DialogService } from "@services/dialog/dialog.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+import { MockContentService, MockDialogService, MockPendingChangesService } from "@testing/mock-services";
+import { MockContainerTemplateService } from "@testing/mock-services/mock-container-template-service";
 import { of } from "rxjs";
-import { ContainerTemplateService } from "../../../../../services/container-template/container-template.service";
-import { MockContainerTemplateService } from "../../../../../../testing/mock-services/mock-container-template-service";
 import { ContainerTemplateEditDialogComponent } from "./container-template-edit-dialog.component";
-import { DialogService } from "src/app/services/dialog/dialog.service";
-import { PendingChangesService } from "src/app/services/pending-changes/pending-changes.service";
-import { MockContentService, MockDialogService, MockPendingChangesService } from "src/testing/mock-services";
-import { ContentService } from "../../../../../services/content/content.service";
-import { ROUTE_PATHS } from "../../../../../route_paths";
 
 describe("ContainerTemplateEditDialogComponent", () => {
   let component: ContainerTemplateEditDialogComponent;
@@ -206,7 +206,12 @@ describe("ContainerTemplateEditDialogComponent", () => {
   });
 
   it("isNewTemplate is false when initTemplate is set", () => {
-    component.initTemplate.set({ name: "Existing", container_type: "generic", default: false, template_options: { tokens: [] } });
+    component.initTemplate.set({
+      name: "Existing",
+      container_type: "generic",
+      default: false,
+      template_options: { tokens: [] }
+    });
     expect(component.isNewTemplate()).toBe(false);
   });
 
@@ -226,7 +231,9 @@ describe("ContainerTemplateEditDialogComponent", () => {
   });
 
   it("nameErrorMatcher.isErrorState returns true on name conflict", () => {
-    containerTemplateServiceMock.templates.set([{ name: "Taken", container_type: "generic", default: false, template_options: { tokens: [] } }]);
+    containerTemplateServiceMock.templates.set([
+      { name: "Taken", container_type: "generic", default: false, template_options: { tokens: [] } }
+    ]);
     component.template.update((t) => ({ ...t, name: "Taken" }));
     expect(component.nameErrorMatcher.isErrorState()).toBe(true);
   });
@@ -242,7 +249,9 @@ describe("ContainerTemplateEditDialogComponent", () => {
   });
 
   it("actions contains a Save action that is disabled when there is a name conflict", () => {
-    containerTemplateServiceMock.templates.set([{ name: "Taken", container_type: "generic", default: false, template_options: { tokens: [] } }]);
+    containerTemplateServiceMock.templates.set([
+      { name: "Taken", container_type: "generic", default: false, template_options: { tokens: [] } }
+    ]);
     component.template.update((t) => ({ ...t, name: "Taken" }));
     const save = component.actions().find((a) => a.value === "save")!;
     expect(save).toBeDefined();

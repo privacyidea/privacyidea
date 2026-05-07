@@ -1,4 +1,5 @@
-@use "../../../../../styles";
+@use "styles";
+@use "table";
 
 .machine-details-layout {
   @include styles.main-component-style();
@@ -9,7 +10,7 @@
 }
 
 .machines-container {
-  @include styles.base-table-structure(".tokens-table");
+  @include table.base-table-structure(".tokens-table");
 
   & {
     margin-bottom: 16px;

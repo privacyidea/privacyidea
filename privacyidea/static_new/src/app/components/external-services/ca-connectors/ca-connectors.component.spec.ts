@@ -22,13 +22,13 @@ import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { signal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { provideRouter, Router } from "@angular/router";
+import { Router, provideRouter } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { CaConnectorService } from "@services/ca-connector/ca-connector.service";
+import { DialogService } from "@services/dialog/dialog.service";
+import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
+import { MockDialogService } from "@testing/mock-services";
 import { Subject } from "rxjs";
-import { MockMatDialogRef } from "../../../../testing/mock-mat-dialog-ref";
-import { MockDialogService } from "../../../../testing/mock-services";
-import { CaConnectorService } from "../../../services/ca-connector/ca-connector.service";
-import { DialogService } from "../../../services/dialog/dialog.service";
-import { ROUTE_PATHS } from "../../../route_paths";
 import { CaConnectorsComponent } from "./ca-connectors.component";
 
 describe("CaConnectorsComponent", () => {
@@ -57,8 +57,7 @@ describe("CaConnectorsComponent", () => {
         { provide: CaConnectorService, useValue: caConnectorServiceMock },
         { provide: DialogService, useClass: MockDialogService }
       ]
-    })
-      .compileComponents();
+    }).compileComponents();
 
     fixture = TestBed.createComponent(CaConnectorsComponent);
     dialogServiceMock = TestBed.inject(DialogService) as unknown as MockDialogService;

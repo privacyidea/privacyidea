@@ -16,10 +16,14 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { computed, signal } from "@angular/core";
 import { HttpResourceRef } from "@angular/common/http";
-import { PiResponse } from "../../app/app.component";
-import { RadiusServer, RadiusServers, RadiusServerServiceInterface } from "../../app/services/radius-server/radius-server.service";
+import { computed, signal } from "@angular/core";
+import { PiResponse } from "@app/app.component";
+import {
+  RadiusServer,
+  RadiusServers,
+  RadiusServerServiceInterface
+} from "@services/radius-server/radius-server.service";
 
 export class MockRadiusService implements RadiusServerServiceInterface {
   radiusServerResource: HttpResourceRef<PiResponse<RadiusServers> | undefined> = {

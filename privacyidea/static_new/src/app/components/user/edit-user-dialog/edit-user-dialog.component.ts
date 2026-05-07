@@ -18,14 +18,14 @@
  **/
 
 import { Component, computed, effect, inject, linkedSignal, signal, WritableSignal } from "@angular/core";
-import { EditUserData, UserData, UserService } from "../../../services/user/user.service";
-import { DialogAction } from "../../../models/dialog";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { PendingChangesDialogComponent } from "@components/shared/dialog/abstract-dialog/pending-changes-dialog.component";
 import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
 import { UserDetailsEditComponent } from "@components/user/user-details-edit/user-details-edit.component";
-import { PendingChangesDialogComponent } from "@components/shared/dialog/abstract-dialog/pending-changes-dialog.component";
-import { ROUTE_PATHS } from "../../../route_paths";
-import { ContentService } from "../../../services/content/content.service";
-import { NAVIGATION_ACCESSIBLE_DIALOG_CLASS } from "../../../constants/global.constants";
+import { NAVIGATION_ACCESSIBLE_DIALOG_CLASS } from "@constants/global.constants";
+import { DialogAction } from "@models/dialog";
+import { ContentService } from "@services/content/content.service";
+import { EditUserData, UserData, UserService } from "@services/user/user.service";
 
 @Component({
   selector: "app-edit-user-dialog",

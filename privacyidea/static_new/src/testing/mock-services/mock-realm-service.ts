@@ -2,12 +2,12 @@
  * (c) NetKnights GmbH 2025,  https://netknights.it
  * SPDX-License-Identifier: AGPL-3.0-or-later
  */
-import { computed, Signal, signal, WritableSignal } from "@angular/core";
-import { of } from "rxjs";
-import { AdminRealms, Realm, Realms, RealmServiceInterface } from "../../app/services/realm/realm.service";
-import { PiResponse } from "../../app/app.component";
-import { MockHttpResourceRef, MockPiResponse } from "./mock-utils";
 import { HttpResourceRef } from "@angular/common/http";
+import { computed, Signal, signal, WritableSignal } from "@angular/core";
+import { PiResponse } from "@app/app.component";
+import { AdminRealms, Realm, Realms, RealmServiceInterface } from "@services/realm/realm.service";
+import { of } from "rxjs";
+import { MockHttpResourceRef, MockPiResponse } from "./mock-utils";
 
 export class MockRealmService implements RealmServiceInterface {
   realms: WritableSignal<Realms> = signal({});

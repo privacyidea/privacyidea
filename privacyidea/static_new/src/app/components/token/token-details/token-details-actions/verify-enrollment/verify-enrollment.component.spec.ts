@@ -18,13 +18,13 @@
  **/
 
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { VerifyEnrollmentComponent } from "./verify-enrollment.component";
-import { MockTokenService } from "src/testing/mock-services/mock-token-service";
-import { NotificationService } from "../../../../../services/notification/notification.service";
 import { FormsModule, ReactiveFormsModule } from "@angular/forms";
+import { NotificationService } from "@services/notification/notification.service";
+import { TokenService } from "@services/token/token.service";
+import { MockNotificationService } from "@testing/mock-services";
+import { MockTokenService } from "@testing/mock-services/mock-token-service";
 import { of } from "rxjs";
-import { MockNotificationService } from "../../../../../../testing/mock-services";
-import { TokenService } from "../../../../../services/token/token.service";
+import { VerifyEnrollmentComponent } from "./verify-enrollment.component";
 
 describe("VerifyEnrollmentComponent", () => {
   let component: VerifyEnrollmentComponent;

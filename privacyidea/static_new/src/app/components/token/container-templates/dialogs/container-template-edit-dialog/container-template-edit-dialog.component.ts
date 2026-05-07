@@ -30,23 +30,23 @@ import { MatInputModule } from "@angular/material/input";
 import { MatListModule } from "@angular/material/list";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { ActivatedRoute, Router } from "@angular/router";
-import { SaveAndExitDialogComponent } from "src/app/components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
-import { DialogAction } from "src/app/models/dialog";
-import { DialogService, DialogServiceInterface } from "src/app/services/dialog/dialog.service";
-import {
-  PendingChangesService,
-  PendingChangesServiceInterface
-} from "src/app/services/pending-changes/pending-changes.service";
-import { NAVIGATION_ACCESSIBLE_DIALOG_CLASS } from "../../../../../constants/global.constants";
-import { ROUTE_PATHS } from "../../../../../route_paths";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
+import { ContainerTemplateEditComponent } from "@components/token/container-templates/container-template-edit/container-template-edit.component";
+import { NAVIGATION_ACCESSIBLE_DIALOG_CLASS } from "@constants/global.constants";
+import { DialogAction } from "@models/dialog";
 import {
   ContainerTemplateService,
   ContainerTemplateServiceInterface
-} from "../../../../../services/container-template/container-template.service";
-import { ContainerTemplate } from "../../../../../services/container/container.service";
-import { ContentService, ContentServiceInterface } from "../../../../../services/content/content.service";
-import { deepCopy } from "../../../../../utils/deep-copy.utils";
-import { ContainerTemplateEditComponent } from "../../container-template-edit/container-template-edit.component";
+} from "@services/container-template/container-template.service";
+import { ContainerTemplate } from "@services/container/container.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import {
+  PendingChangesService,
+  PendingChangesServiceInterface
+} from "@services/pending-changes/pending-changes.service";
+import { deepCopy } from "@utils/deep-copy.utils";
 
 @Component({
   selector: "app-container-template-edit-dialog",

@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,13 +16,13 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { MatFormFieldModule } from "@angular/material/form-field";
-import { MatAutocompleteModule } from "@angular/material/autocomplete";
-import { ReactiveFormsModule } from "@angular/forms";
-import { TokenEnrollmentFirstStepDialogComponent } from "./token-enrollment-first-step-dialog.component";
 import { provideHttpClient } from "@angular/common/http";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { ReactiveFormsModule } from "@angular/forms";
+import { MatAutocompleteModule } from "@angular/material/autocomplete";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
+import { MatFormFieldModule } from "@angular/material/form-field";
+import { TokenEnrollmentFirstStepDialogComponent } from "./token-enrollment-first-step-dialog.component";
 
 describe("TokenEnrollmentFirstStepDialogComponent", () => {
   let component: TokenEnrollmentFirstStepDialogComponent;

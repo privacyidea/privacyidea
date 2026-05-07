@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -18,11 +18,11 @@
  **/
 import { HttpClient, httpResource, HttpResourceRef } from "@angular/common/http";
 import { inject, Injectable, linkedSignal, WritableSignal } from "@angular/core";
-import { environment } from "../../../environments/environment";
-import { PiResponse } from "../../app.component";
-import { AuthService, AuthServiceInterface } from "../auth/auth.service";
-import { ContentService, ContentServiceInterface } from "../content/content.service";
-import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
+import { PiResponse } from "@app/app.component";
+import { environment } from "@env/environment";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { lastValueFrom } from "rxjs";
 
 type ServiceIds = {
@@ -71,7 +71,7 @@ export class ServiceIdService implements ServiceIdServiceInterface {
   });
 
   serviceIds: WritableSignal<ServiceId[]> = linkedSignal({
-    source: () => this.serviceIdResource.hasValue() ? this.serviceIdResource.value() : undefined,
+    source: () => (this.serviceIdResource.hasValue() ? this.serviceIdResource.value() : undefined),
     computation: (serviceIdResource, previous) => {
       const value = serviceIdResource?.result?.value;
       if (!value) {

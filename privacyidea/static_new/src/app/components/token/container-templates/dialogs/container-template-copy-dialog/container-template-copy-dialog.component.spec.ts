@@ -17,18 +17,18 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
+import { NoopAnimationsModule } from "@angular/platform-browser/animations";
+import { ContainerTemplateService } from "@services/container-template/container-template.service";
+import { DialogService } from "@services/dialog/dialog.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
+import { MockDialogService, MockPendingChangesService } from "@testing/mock-services";
+import { MockContainerTemplateService } from "@testing/mock-services/mock-container-template-service";
 import { ContainerTemplateCopyDialogComponent } from "./container-template-copy-dialog.component";
-import { ContainerTemplateService } from "../../../../../services/container-template/container-template.service";
-import { MockContainerTemplateService } from "../../../../../../testing/mock-services/mock-container-template-service";
-import { DialogService } from "src/app/services/dialog/dialog.service";
-import { PendingChangesService } from "src/app/services/pending-changes/pending-changes.service";
-import { MockDialogService, MockPendingChangesService } from "src/testing/mock-services";
-import { MockMatDialogRef } from "src/testing/mock-mat-dialog-ref";
 
 describe("ContainerTemplateCopyDialogComponent", () => {
   let component: ContainerTemplateCopyDialogComponent;

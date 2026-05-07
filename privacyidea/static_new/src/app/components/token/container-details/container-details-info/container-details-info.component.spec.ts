@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -22,10 +22,10 @@ import { of } from "rxjs";
 
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { MockContainerService, MockLocalService, MockNotificationService } from "../../../../../testing/mock-services";
-import { MockAuthService } from "../../../../../testing/mock-services/mock-auth-service";
-import { AuthService } from "../../../../services/auth/auth.service";
-import { ContainerService } from "../../../../services/container/container.service";
+import { AuthService } from "@services/auth/auth.service";
+import { ContainerService } from "@services/container/container.service";
+import { MockContainerService, MockLocalService, MockNotificationService } from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { ContainerDetailsInfoComponent, ContainerInfoDetail } from "./container-details-info.component";
 
 describe("ContainerDetailsInfoComponent", () => {

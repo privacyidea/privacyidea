@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -24,8 +24,18 @@ import { HttpClient, provideHttpClient } from "@angular/common/http";
 import { Renderer2, signal } from "@angular/core";
 import { MatDialog } from "@angular/material/dialog";
 import { Router } from "@angular/router";
-import { ContainerRegistrationCompletedDialogComponent } from "src/app/components/token/container-create/container-registration-completed-dialog/container-registration-completed-dialog.component";
-import { DialogService } from "src/app/services/dialog/dialog.service";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { ContainerRegistrationCompletedDialogComponent } from "@components/token/container-create/container-registration-completed-dialog/container-registration-completed-dialog.component";
+import { ContainerRegistrationCompletedDialogWizardComponent } from "@components/token/container-create/container-registration-completed-dialog/container-registration-completed-dialog.wizard.component";
+import { AuthService } from "@services/auth/auth.service";
+import { ContainerService } from "@services/container/container.service";
+import { ContentService } from "@services/content/content.service";
+import { DialogService } from "@services/dialog/dialog.service";
+import { NotificationService } from "@services/notification/notification.service";
+import { RealmService } from "@services/realm/realm.service";
+import { TokenService } from "@services/token/token.service";
+import { UserService } from "@services/user/user.service";
+import { VersioningService } from "@services/version/version.service";
 import {
   MockContainerService,
   MockContentService,
@@ -35,22 +45,12 @@ import {
   MockRealmService,
   MockTokenService,
   MockUserService
-} from "../../../../testing/mock-services";
-import { MockAuthService } from "../../../../testing/mock-services/mock-auth-service";
-import { ROUTE_PATHS } from "../../../route_paths";
-import { AuthService } from "../../../services/auth/auth.service";
-import { ContainerService } from "../../../services/container/container.service";
-import { ContentService } from "../../../services/content/content.service";
-import { NotificationService } from "../../../services/notification/notification.service";
-import { RealmService } from "../../../services/realm/realm.service";
-import { TokenService } from "../../../services/token/token.service";
-import { UserService } from "../../../services/user/user.service";
-import { VersioningService } from "../../../services/version/version.service";
+} from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 import { ContainerCreateComponent } from "./container-create.component";
 import { ContainerCreateSelfServiceComponent } from "./container-create.self-service.component";
 import { ContainerCreateWizardComponent } from "./container-create.wizard.component";
 import { ContainerCreatedDialogWizardComponent } from "./container-created-dialog/container-created-dialog.wizard.component";
-import { ContainerRegistrationCompletedDialogWizardComponent } from "./container-registration-completed-dialog/container-registration-completed-dialog.wizard.component";
 
 class MockIntersectionObserver {
   observe = jest.fn();

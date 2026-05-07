@@ -31,30 +31,30 @@ import {
   signal,
   ViewChild
 } from "@angular/core";
-import { MatIcon, MatIconModule } from "@angular/material/icon";
-import { MatButton } from "@angular/material/button";
-import { AuthService } from "../../../services/auth/auth.service";
-import { ActivatedRoute, Router } from "@angular/router";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
-import { EMPTY_EVENT, EventService } from "../../../services/event/event.service";
+import { FormsModule, ReactiveFormsModule } from "@angular/forms";
+import { MatAutocompleteModule } from "@angular/material/autocomplete";
+import { MatButton } from "@angular/material/button";
+import { MatChipsModule } from "@angular/material/chips";
+import { MatFormField, MatFormFieldModule, MatHint } from "@angular/material/form-field";
+import { MatIcon, MatIconModule } from "@angular/material/icon";
+import { MatInput, MatLabel } from "@angular/material/input";
+import { MatOption, MatSelect, MatSelectModule } from "@angular/material/select";
+import { MatSlideToggle } from "@angular/material/slide-toggle";
+import { MatTab, MatTabGroup } from "@angular/material/tabs";
+import { MatTooltip } from "@angular/material/tooltip";
+import { ActivatedRoute, Router } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
+import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { AuthService } from "@services/auth/auth.service";
+import { EMPTY_EVENT, EventService } from "@services/event/event.service";
+import { NotificationService } from "@services/notification/notification.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+import { deepCopy } from "@utils/deep-copy.utils";
+import { EventSelectionComponent } from "./event-selection/event-selection.component";
 import { EventActionTabComponent } from "./tabs/event-action-tab/event-action-tab.component";
 import { EventConditionsTabComponent } from "./tabs/event-conditions-tab/event-conditions-tab.component";
-import { MatInput, MatLabel } from "@angular/material/input";
-import { FormsModule, ReactiveFormsModule } from "@angular/forms";
-import { MatFormField, MatFormFieldModule, MatHint } from "@angular/material/form-field";
-import { MatOption, MatSelect, MatSelectModule } from "@angular/material/select";
-import { deepCopy } from "../../../utils/deep-copy.utils";
-import { NotificationService } from "../../../services/notification/notification.service";
-import { MatChipsModule } from "@angular/material/chips";
-import { MatAutocompleteModule } from "@angular/material/autocomplete";
-import { EventSelectionComponent } from "./event-selection/event-selection.component";
-import { MatTab, MatTabGroup } from "@angular/material/tabs";
-import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
-import { PendingChangesService } from "../../../services/pending-changes/pending-changes.service";
-import { ROUTE_PATHS } from "../../../route_paths";
-import { MatSlideToggle } from "@angular/material/slide-toggle";
-import { MatTooltip } from "@angular/material/tooltip";
-import { CopyButtonComponent } from "../../shared/copy-button/copy-button.component";
 
 export type eventTab = "events" | "action" | "conditions";
 
@@ -194,7 +194,6 @@ export class EventPanelComponent implements AfterViewInit, OnDestroy {
     this.pendingChangesService.clearAllRegistrations();
     this.observer?.disconnect();
   }
-
 
   cancelEdit(): void {
     this.router.navigateByUrl(ROUTE_PATHS.EVENTS);

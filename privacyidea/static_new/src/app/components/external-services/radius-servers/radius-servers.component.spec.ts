@@ -22,13 +22,13 @@ import { provideHttpClientTesting } from "@angular/common/http/testing";
 import { signal } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { provideRouter, Router } from "@angular/router";
+import { Router, provideRouter } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { DialogService } from "@services/dialog/dialog.service";
+import { RadiusServerService } from "@services/radius-server/radius-server.service";
+import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
+import { MockDialogService } from "@testing/mock-services";
 import { Subject } from "rxjs";
-import { MockMatDialogRef } from "../../../../testing/mock-mat-dialog-ref";
-import { MockDialogService } from "../../../../testing/mock-services";
-import { DialogService } from "../../../services/dialog/dialog.service";
-import { RadiusServerService } from "../../../services/radius-server/radius-server.service";
-import { ROUTE_PATHS } from "../../../route_paths";
 import { RadiusServersComponent } from "./radius-servers.component";
 
 describe("RadiusServersComponent", () => {

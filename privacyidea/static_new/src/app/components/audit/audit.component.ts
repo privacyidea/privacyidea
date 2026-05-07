@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,10 +16,9 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { AuditData, AuditService, AuditServiceInterface } from "../../services/audit/audit.service";
-import { AuthService, AuthServiceInterface } from "../../services/auth/auth.service";
 import { Component, computed, ElementRef, inject, linkedSignal, ViewChild, WritableSignal } from "@angular/core";
-import { ContentService, ContentServiceInterface } from "../../services/content/content.service";
+import { MatFormField, MatLabel } from "@angular/material/form-field";
+import { MatPaginator, PageEvent } from "@angular/material/paginator";
 import {
   MatCell,
   MatCellDef,
@@ -34,21 +33,22 @@ import {
   MatTable,
   MatTableDataSource
 } from "@angular/material/table";
-import { MatFormField, MatLabel } from "@angular/material/form-field";
-import { MatPaginator, PageEvent } from "@angular/material/paginator";
-import { TableUtilsService, TableUtilsServiceInterface } from "../../services/table-utils/table-utils.service";
+import { AuditData, AuditService, AuditServiceInterface } from "@services/audit/audit.service";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 
-import { ClearableInputComponent } from "../shared/clearable-input/clearable-input.component";
-import { CopyButtonComponent } from "../shared/copy-button/copy-button.component";
-import { FormsModule } from "@angular/forms";
-import { MatCardModule } from "@angular/material/card";
-import { MatInput } from "@angular/material/input";
 import { NgClass } from "@angular/common";
-import { RouterLink } from "@angular/router";
-import { ScrollToTopDirective } from "../shared/directives/app-scroll-to-top.directive";
+import { FormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
+import { MatCardModule } from "@angular/material/card";
 import { MatIcon, MatIconModule } from "@angular/material/icon";
-import { FilterValue } from "../../core/models/filter_value/filter_value";
+import { MatInput } from "@angular/material/input";
+import { RouterLink } from "@angular/router";
+import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
+import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { FilterValue } from "@core/models/filter_value/filter_value";
 
 const columnKeysMap = [
   { key: "number", label: "Number" },
@@ -125,7 +125,7 @@ export class AuditComponent {
   filterInput!: ElementRef<HTMLInputElement>;
 
   totalLength: WritableSignal<number> = linkedSignal({
-    source: () => this.auditService.auditResource.hasValue() ? this.auditService.auditResource.value() : undefined,
+    source: () => (this.auditService.auditResource.hasValue() ? this.auditService.auditResource.value() : undefined),
     computation: (auditResource, previous) => {
       return auditResource?.result?.value?.count ?? previous?.value ?? 0;
     }
@@ -136,7 +136,7 @@ export class AuditComponent {
       Array.from({ length: pageSize }, () => Object.fromEntries(this.columnKeysMap.map((col) => [col.key, ""])))
   });
   auditDataSource: WritableSignal<MatTableDataSource<AuditData>> = linkedSignal({
-    source: () => this.auditService.auditResource.hasValue() ? this.auditService.auditResource.value() : undefined,
+    source: () => (this.auditService.auditResource.hasValue() ? this.auditService.auditResource.value() : undefined),
     computation: (auditResource, previous) => {
       if (auditResource) {
         return new MatTableDataSource(auditResource.result?.value?.auditdata);

@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -17,17 +17,17 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { MachineResolverComponent } from "./machine-resolver.component";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { MachineResolverService } from "../../services/machine-resolver/machine-resolver.service";
-import { MockMachineResolverService } from "../../../testing/mock-services/mock-machine-resolver-service";
-import { Component } from "@angular/core";
-import { MatExpansionModule } from "@angular/material/expansion";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { MockAuthService } from "../../../testing/mock-services/mock-auth-service";
-import { AuthService } from "../../services/auth/auth.service";
+import { Component } from "@angular/core";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { MatExpansionModule } from "@angular/material/expansion";
+import { NoopAnimationsModule } from "@angular/platform-browser/animations";
+import { AuthService } from "@services/auth/auth.service";
+import { MachineResolverService } from "@services/machine-resolver/machine-resolver.service";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { MockMachineResolverService } from "@testing/mock-services/mock-machine-resolver-service";
+import { MachineResolverComponent } from "./machine-resolver.component";
 
 @Component({
   standalone: true,

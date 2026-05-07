@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -17,19 +17,17 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { userAgentInterceptor } from "./user-agent.interceptor";
-import { VersioningService, VersioningServiceInterface } from "../../services/version/version.service";
 import { HttpEvent, HttpHeaders, HttpRequest } from "@angular/common/http";
 import { TestBed } from "@angular/core/testing";
+import { VersioningService } from "@services/version/version.service";
+import { MockVersioningService } from "@testing/mock-services";
 import { Observable } from "rxjs";
-import { MockVersioningService } from "../../../testing/mock-services";
+import { userAgentInterceptor } from "./user-agent.interceptor";
 
 describe("userAgentInterceptor", () => {
-
   const run = (req: HttpRequest<any>, next: (req: HttpRequest<any>) => Observable<HttpEvent<any>>) =>
     TestBed.runInInjectionContext(() => userAgentInterceptor(req, next));
   let versioningService: MockVersioningService;
-
 
   beforeEach(() => {
     TestBed.resetTestingModule();

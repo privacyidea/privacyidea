@@ -20,8 +20,8 @@
 import { NO_ERRORS_SCHEMA } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
-import { ContentService } from "src/app/services/content/content.service";
-import { MockContentService } from "src/testing/mock-services/mock-content-service";
+import { ContentService } from "@services/content/content.service";
+import { MockContentService } from "@testing/mock-services/mock-content-service";
 import {
   ContainerTokensEnrolledDialogComponent,
   ContainerTokensEnrolledDialogData

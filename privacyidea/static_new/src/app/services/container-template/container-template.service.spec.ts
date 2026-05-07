@@ -17,23 +17,23 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { TestBed } from "@angular/core/testing";
-import { ContainerTemplateService } from "./container-template.service";
-import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
-import { ContainerService, ContainerTemplate } from "../container/container.service";
-import { ContentService } from "../content/content.service";
-import { AuthService } from "../auth/auth.service";
-import { NotificationService } from "../notification/notification.service";
-import { ROUTE_PATHS } from "../../route_paths";
-import { environment } from "../../../environments/environment";
 import { provideHttpClient } from "@angular/common/http";
+import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
+import { TestBed } from "@angular/core/testing";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { environment } from "@env/environment";
+import { AuthService } from "@services/auth/auth.service";
+import { ContainerService, ContainerTemplate } from "@services/container/container.service";
+import { ContentService } from "@services/content/content.service";
+import { NotificationService } from "@services/notification/notification.service";
 import {
-  MockContainerService,
-  MockContentService,
-  MockNotificationService,
-  MockPiResponse
-} from "../../../testing/mock-services";
-import { MockAuthService } from "../../../testing/mock-services/mock-auth-service";
+    MockContainerService,
+    MockContentService,
+    MockNotificationService,
+    MockPiResponse
+} from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { ContainerTemplateService } from "./container-template.service";
 
 describe("ContainerTemplateService", () => {
   let service: ContainerTemplateService;
@@ -126,7 +126,8 @@ describe("ContainerTemplateService", () => {
 
       const req = httpMock.expectOne(`${service.containerTemplateBaseUrl}`);
       req.flush(MockPiResponse.fromError({ message: "Permission denied" }), {
-        status: 403, statusText: "Permission denied"
+        status: 403,
+        statusText: "Permission denied"
       });
       await Promise.resolve();
 
@@ -167,7 +168,8 @@ describe("ContainerTemplateService", () => {
 
       const tokenTypesReq = httpMock.expectOne(`${environment.proxyUrl}/container/template/tokentypes`);
       tokenTypesReq.flush(MockPiResponse.fromError({ message: "Permission denied" }), {
-        status: 403, statusText: "Permission denied"
+        status: 403,
+        statusText: "Permission denied"
       });
       TestBed.tick();
       await Promise.resolve();
@@ -280,8 +282,7 @@ describe("ContainerTemplateService", () => {
 
     it("should throw error on delete", async () => {
       const templateName = "template-to-fail";
-      const deletePromise = service.deleteTemplate(templateName).catch(() => {
-      });
+      const deletePromise = service.deleteTemplate(templateName).catch(() => {});
       const req = httpMock.expectOne((req) => req.url.includes(`/container/template/${templateName}`));
 
       req.flush("Error", { status: 500, statusText: "Server Error" });
@@ -334,8 +335,7 @@ describe("ContainerTemplateService", () => {
       const spy = jest.spyOn(service.templatesResource, "reload");
       const templateNames = ["template-1", "template-2"];
 
-      const deletePromise = service.deleteTemplates(templateNames).catch(() => {
-      });
+      const deletePromise = service.deleteTemplates(templateNames).catch(() => {});
 
       const req1 = httpMock.expectOne((req) => req.url.includes(`/container/template/${templateNames[0]}`));
       req1.flush(
@@ -442,8 +442,7 @@ describe("ContainerTemplateService", () => {
     });
 
     it("should show a generic error notification on delete if error response contains no message", async () => {
-      const deletePromise = service.deleteTemplate("some-template").catch(() => {
-      });
+      const deletePromise = service.deleteTemplate("some-template").catch(() => {});
 
       const req = httpMock.expectOne((req) => req.url.includes(`/container/template/some-template`));
       req.flush({ result: { error: {} } }, { status: 500, statusText: "Internal Server Error" });

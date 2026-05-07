@@ -1,4 +1,5 @@
-@use "../../../../styles" as styles;
+@use "styles";
+@use "table";
 
 .system-config-container {
   @include styles.main-component-style;
@@ -7,7 +8,11 @@
 }
 
 .system-config-scroll-container {
-  @include styles.base-table-structure(".system-config-form", ".system-config-filter", ".system-config-scroll-container");
+  @include table.base-table-structure(
+    ".system-config-form",
+    ".system-config-filter",
+    ".system-config-scroll-container"
+  );
 }
 
 .well {

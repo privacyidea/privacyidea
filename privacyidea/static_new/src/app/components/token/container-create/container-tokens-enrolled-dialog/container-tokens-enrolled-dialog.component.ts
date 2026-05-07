@@ -20,12 +20,12 @@
 import { TitleCasePipe } from "@angular/common";
 import { Component, computed, inject, signal } from "@angular/core";
 import { MatProgressBar } from "@angular/material/progress-bar";
-import { AbstractDialogComponent } from "src/app/components/shared/dialog/abstract-dialog/abstract-dialog.component";
-import { DialogWrapperComponent } from "src/app/components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
-import { TokenEnrollmentDataComponent } from "src/app/components/token/token-enrollment/token-enrollment-data/token-enrollment-data.component";
-import { EnrollmentResponseDetail } from "src/app/mappers/token-api-payload/_token-api-payload.mapper";
-import { DialogAction } from "src/app/models/dialog";
-import { ContentService, ContentServiceInterface } from "src/app/services/content/content.service";
+import { EnrollmentResponseDetail } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
+import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
+import { TokenEnrollmentDataComponent } from "@components/token/token-enrollment/token-enrollment-data/token-enrollment-data.component";
+import { DialogAction } from "@models/dialog";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
 
 export type EnrolledTokenInfo = EnrollmentResponseDetail & { type: string; serial: string };
 

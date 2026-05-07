@@ -17,19 +17,18 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { EditPolicyDialogComponent } from "./edit-policy-dialog.component";
-import { PolicyService } from "../../../../services/policies/policies.service";
-import { DialogService } from "../../../../services/dialog/dialog.service";
-import { MockPolicyService } from "src/testing/mock-services/mock-policies-service";
-import { MockDialogService } from "src/testing/mock-services/mock-dialog-service";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { Component, input, output } from "@angular/core";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { NoopAnimationsModule } from "@angular/platform-browser/animations";
 import { ActivatedRoute, Router } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { EditPolicyDialogComponent } from "@components/policies/dialogs/edit-policy-dialog/edit-policy-dialog.component";
+import { DialogService } from "@services/dialog/dialog.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
+import { PolicyService } from "@services/policies/policies.service";
+import { MockPendingChangesService, MockPolicyService } from "@testing/mock-services";
+import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
 import { of } from "rxjs";
-import { ROUTE_PATHS } from "../../../../route_paths";
-import { PendingChangesService } from "../../../../services/pending-changes/pending-changes.service";
-import { MockPendingChangesService } from "src/testing/mock-services/mock-pending-changes-service";
 
 @Component({ selector: "app-policy-panel-edit", standalone: true, template: "" })
 class MockPanel {

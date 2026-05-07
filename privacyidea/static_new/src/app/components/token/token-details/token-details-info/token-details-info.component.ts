@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -26,10 +26,10 @@ import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
 import { MatList, MatListItem } from "@angular/material/list";
 import { MatCell, MatColumnDef, MatRow, MatTableModule } from "@angular/material/table";
+import { EditableElement, EditButtonsComponent } from "@components/shared/edit-buttons/edit-buttons.component";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 import { Observable, switchMap } from "rxjs";
-import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
-import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
-import { EditableElement, EditButtonsComponent } from "../../../shared/edit-buttons/edit-buttons.component";
 
 @Component({
   selector: "app-token-details-info",

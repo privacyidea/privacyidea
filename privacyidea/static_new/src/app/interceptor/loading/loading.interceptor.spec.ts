@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,12 +16,12 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { TestBed } from "@angular/core/testing";
 import { HttpEvent, HttpRequest, HttpResponse } from "@angular/common/http";
+import { TestBed } from "@angular/core/testing";
+import { LoadingService } from "@services/loading/loading-service";
+import { MockLoadingService } from "@testing/mock-services";
 import { Observable, of, Subject } from "rxjs";
 import { loadingInterceptor } from "./loading.interceptor";
-import { LoadingService } from "../../services/loading/loading-service";
-import { MockLoadingService } from "../../../testing/mock-services";
 
 jest.mock("uuid", () => ({ v4: jest.fn(() => "mock-uuid") }));
 

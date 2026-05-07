@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,8 +16,14 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
+import { NgClass } from "@angular/common";
 import { Component, effect, ElementRef, inject, linkedSignal, signal, ViewChild, WritableSignal } from "@angular/core";
-import { CopyButtonComponent } from "../../../shared/copy-button/copy-button.component";
+import { MatIconButton } from "@angular/material/button";
+import { MatFormField } from "@angular/material/form-field";
+import { MatIcon } from "@angular/material/icon";
+import { MatInput, MatLabel } from "@angular/material/input";
+import { MatPaginator } from "@angular/material/paginator";
+import { Sort } from "@angular/material/sort";
 import {
   MatCell,
   MatCellDef,
@@ -32,20 +38,14 @@ import {
   MatTable,
   MatTableDataSource
 } from "@angular/material/table";
-import { MatInput, MatLabel } from "@angular/material/input";
-import { MatIconButton } from "@angular/material/button";
-import { MatFormField } from "@angular/material/form-field";
-import { MatIcon } from "@angular/material/icon";
-import { MatPaginator } from "@angular/material/paginator";
 import { MatTooltip } from "@angular/material/tooltip";
-import { NgClass } from "@angular/common";
-import { ContainerDetailToken } from "../../../../services/container/container.service";
-import { TableUtilsService, TableUtilsServiceInterface } from "../../../../services/table-utils/table-utils.service";
-import { ContentService, ContentServiceInterface } from "../../../../services/content/content.service";
-import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
-import { TokenDetails, TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
-import { Sort } from "@angular/material/sort";
-import { UserService, UserServiceInterface } from "../../../../services/user/user.service";
+import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { ContainerDetailToken } from "@services/container/container.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
+import { TokenDetails, TokenService, TokenServiceInterface } from "@services/token/token.service";
+import { UserService, UserServiceInterface } from "@services/user/user.service";
 
 @Component({
   selector: "app-user-details-token-table",
@@ -98,7 +98,8 @@ export class UserDetailsTokenTableComponent {
   apiFilter = this.tokenService.apiFilter;
   @ViewChild("filterInput", { static: false }) filterInput!: ElementRef<HTMLInputElement>;
   userTokenData: WritableSignal<MatTableDataSource<any, MatPaginator>> = linkedSignal({
-    source: () => this.tokenService.userTokenResource.hasValue() ? this.tokenService.userTokenResource.value() : undefined,
+    source: () =>
+      this.tokenService.userTokenResource.hasValue() ? this.tokenService.userTokenResource.value() : undefined,
     computation: (userTokenResource, previous) => {
       if (!userTokenResource) {
         return previous?.value ?? new MatTableDataSource<any, MatPaginator>([]);

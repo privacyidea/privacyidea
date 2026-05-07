@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -17,18 +17,18 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, inject, input, computed, effect } from "@angular/core";
+import { Component, computed, effect, inject, input } from "@angular/core";
 import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
-import { FormsModule, ReactiveFormsModule, FormControl, Validators, AbstractControl } from "@angular/forms";
+import { AbstractControl, FormControl, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
 import { MatCheckboxModule } from "@angular/material/checkbox";
+import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
-import { MatFormField, MatLabel, MatError } from "@angular/material/form-field";
-import { MatSelectModule, MatSelect, MatOption } from "@angular/material/select";
+import { MatOption, MatSelect, MatSelectModule } from "@angular/material/select";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { BindType, LdapPreset, LDAPResolverData, ResolverService } from "@services/resolver/resolver.service";
+import { parseBooleanValue } from "@utils/parse-boolean-value";
 import { merge } from "rxjs";
-import { ResolverService, LdapPreset, LDAPResolverData, BindType } from "src/app/services/resolver/resolver.service";
-import { parseBooleanValue } from "src/app/utils/parse-boolean-value";
 
 @Component({
   selector: "app-ldap-resolver",

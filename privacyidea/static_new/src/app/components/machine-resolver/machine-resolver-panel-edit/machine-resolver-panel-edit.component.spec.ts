@@ -17,26 +17,25 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import {
-  HostsMachineResolver,
-  HostsMachineResolverData,
-  MachineResolverService
-} from "../../../services/machine-resolver/machine-resolver.service";
-import { DialogService } from "../../../services/dialog/dialog.service";
-import { NotificationService } from "../../../services/notification/notification.service";
-import { MockNotificationService } from "../../../../testing/mock-services";
-import { MockMachineResolverService } from "../../../../testing/mock-services/mock-machine-resolver-service";
-import { Component } from "@angular/core";
-import { MockDialogService } from "../../../../testing/mock-services/mock-dialog-service";
-import { MachineResolverPanelEditComponent } from "./machine-resolver-panel-edit.component";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { MockMatDialogRef } from "../../../../testing/mock-mat-dialog-ref";
+import { Component } from "@angular/core";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { NoopAnimationsModule } from "@angular/platform-browser/animations";
+import { ContentService } from "@services/content/content.service";
+import { DialogService } from "@services/dialog/dialog.service";
+import {
+    HostsMachineResolver,
+    HostsMachineResolverData,
+    MachineResolverService
+} from "@services/machine-resolver/machine-resolver.service";
+import { NotificationService } from "@services/notification/notification.service";
+import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
+import { MockContentService, MockNotificationService } from "@testing/mock-services";
+import { MockDialogService } from "@testing/mock-services/mock-dialog-service";
+import { MockMachineResolverService } from "@testing/mock-services/mock-machine-resolver-service";
 import { of } from "rxjs";
-import { ContentService } from "../../../services/content/content.service";
-import { MockContentService } from "../../../../testing/mock-services";
+import { MachineResolverPanelEditComponent } from "./machine-resolver-panel-edit.component";
 
 @Component({
   standalone: true,

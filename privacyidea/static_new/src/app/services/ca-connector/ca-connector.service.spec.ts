@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -20,11 +20,11 @@ import { provideHttpClient } from "@angular/common/http";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
 import { signal } from "@angular/core";
 import { TestBed } from "@angular/core/testing";
-import { environment } from "../../../environments/environment";
-import { MockContentService, MockPiResponse } from "../../../testing/mock-services";
-import { AuthService } from "../auth/auth.service";
-import { ContentService } from "../content/content.service";
-import { NotificationService } from "../notification/notification.service";
+import { environment } from "@env/environment";
+import { AuthService } from "@services/auth/auth.service";
+import { ContentService } from "@services/content/content.service";
+import { NotificationService } from "@services/notification/notification.service";
+import { MockContentService, MockPiResponse } from "@testing/mock-services";
 import { CaConnectorService } from "./ca-connector.service";
 
 describe("CaConnectorService", () => {
@@ -84,7 +84,10 @@ describe("CaConnectorService", () => {
     const promise = service.postCaConnector(connector);
 
     const req = httpMock.expectOne(`${environment.proxyUrl}/caconnector/${encodeURIComponent("test/1")}`);
-    req.flush(MockPiResponse.fromError({ message: "Something went wrong" }), { status: 400, statusText: "Bad Request" });
+    req.flush(MockPiResponse.fromError({ message: "Something went wrong" }), {
+      status: 400,
+      statusText: "Bad Request"
+    });
 
     await expect(promise).rejects.toThrow();
     expect(notificationService.error).toHaveBeenCalledWith("Failed to save CA connector. Something went wrong");
@@ -105,7 +108,10 @@ describe("CaConnectorService", () => {
     const promise = service.deleteCaConnector("test/1");
 
     const req = httpMock.expectOne(`${environment.proxyUrl}/caconnector/${encodeURIComponent("test/1")}`);
-    req.flush(MockPiResponse.fromError({ message: "Something went wrong" }), { status: 400, statusText: "Bad Request" });
+    req.flush(MockPiResponse.fromError({ message: "Something went wrong" }), {
+      status: 400,
+      statusText: "Bad Request"
+    });
 
     await expect(promise).rejects.toThrow();
     expect(notificationService.error).toHaveBeenCalledWith("Failed to delete CA connector. Something went wrong");
@@ -130,7 +136,10 @@ describe("CaConnectorService", () => {
     const req = httpMock.expectOne(
       `${environment.proxyUrl}/caconnector/specific/${encodeURIComponent("microsoft/1")}?hostname=test`
     );
-    req.flush(MockPiResponse.fromError({ message: "Something went wrong" }), { status: 400, statusText: "Bad Request" });
+    req.flush(MockPiResponse.fromError({ message: "Something went wrong" }), {
+      status: 400,
+      statusText: "Bad Request"
+    });
 
     await expect(promise).rejects.toThrow();
     expect(notificationService.error).toHaveBeenCalledWith("Failed to fetch CA specific options. Something went wrong");

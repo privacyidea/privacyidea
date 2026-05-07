@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -17,12 +17,12 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { ContainerRegistrationConfigComponent } from "./container-registration-config.component";
 import { FormsModule } from "@angular/forms";
 import { MatCheckbox } from "@angular/material/checkbox";
 import { MatFormField } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
 import { By } from "@angular/platform-browser";
+import { ContainerRegistrationConfigComponent } from "./container-registration-config.component";
 
 const detectChangesStable = async (fixture: ComponentFixture<any>) => {
   fixture.detectChanges();

@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -21,14 +21,15 @@ import { NgClass } from "@angular/common";
 import { Component, computed, inject, linkedSignal } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { MatButton, MatIconButton } from "@angular/material/button";
+import { MatOption } from "@angular/material/core";
+import { MatFormField } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
-import { MatFormField } from "@angular/material/input";
-import { MatOption, MatSelect } from "@angular/material/select";
+import { MatSelect } from "@angular/material/select";
 import { MatTooltip } from "@angular/material/tooltip";
-import { AuthService, AuthServiceInterface } from "src/app/services/auth/auth.service";
-import { assert } from "src/app/utils/assert";
-import { ContainerCreateFormComponent } from "../../shared/container-create-form/container-create-form.component";
-import { ScrollToTopDirective } from "../../shared/directives/app-scroll-to-top.directive";
+import { ContainerCreateFormComponent } from "@components/shared/container-create-form/container-create-form.component";
+import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { assert } from "@utils/assert";
 import { ContainerCreateComponent } from "./container-create.component";
 
 @Component({

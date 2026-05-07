@@ -30,7 +30,7 @@ import {
   TIQR_REG_SERVER,
   TIQR_SERVICE_DISPLAYNAME,
   TIQR_SERVICE_IDENTIFIER
-} from "../../../../../constants/token.constants";
+} from "@constants/token.constants";
 
 @Component({
   selector: "app-tiqr-config",

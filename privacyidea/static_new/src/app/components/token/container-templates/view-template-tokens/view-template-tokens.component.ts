@@ -17,10 +17,10 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
+import { CommonModule } from "@angular/common";
 import { Component, input } from "@angular/core";
 import { MatCardModule } from "@angular/material/card";
 import { MatListModule } from "@angular/material/list";
-import { CommonModule } from "@angular/common";
 @Component({
   selector: "app-view-template-tokens",
   standalone: true,

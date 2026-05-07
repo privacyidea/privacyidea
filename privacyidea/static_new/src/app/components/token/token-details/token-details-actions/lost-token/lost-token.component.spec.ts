@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -16,16 +16,16 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { LostTokenComponent } from "./lost-token.component";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
 import { signal, WritableSignal } from "@angular/core";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
+import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
+import { NotificationService } from "@services/notification/notification.service";
+import { TokenService } from "@services/token/token.service";
+import { MockNotificationService, MockTokenService } from "@testing/mock-services";
 import { Subject } from "rxjs";
-import { NotificationService } from "../../../../../services/notification/notification.service";
-import { MockNotificationService, MockTokenService } from "../../../../../../testing/mock-services";
-import { TokenService } from "../../../../../services/token/token.service";
+import { LostTokenComponent } from "./lost-token.component";
 
 describe("LostTokenComponent", () => {
   let component: LostTokenComponent;

@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -19,8 +19,8 @@
 import { computed, inject, Injectable, linkedSignal, Signal, signal, WritableSignal } from "@angular/core";
 import { toSignal } from "@angular/core/rxjs-interop";
 import { NavigationEnd, Router } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
 import { filter, map, pairwise, startWith } from "rxjs";
-import { ROUTE_PATHS } from "../../route_paths";
 
 export interface ContentServiceInterface {
   detailsUsername: WritableSignal<string>;
@@ -137,7 +137,10 @@ export class ContentService implements ContentServiceInterface {
     () => this.routeUrl() === ROUTE_PATHS.TOKENS || this.routeUrl().startsWith(ROUTE_PATHS.TOKENS + "/")
   );
   onAnyUsersRoute = computed(
-    () => this.routeUrl() === ROUTE_PATHS.USERS || this.routeUrl().startsWith(ROUTE_PATHS.USERS + "/")
+    () =>
+      this.routeUrl() === ROUTE_PATHS.USERS ||
+      this.routeUrl().startsWith(ROUTE_PATHS.USERS_DETAILS) ||
+      this.routeUrl() === ROUTE_PATHS.USERS_NEW
   );
   onTokensContainersTemplates = computed(() => this.routeUrl() === ROUTE_PATHS.TOKENS_CONTAINERS_TEMPLATES);
   onTokensContainersTemplatesCreate = computed(

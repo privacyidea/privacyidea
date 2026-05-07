@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -17,25 +17,20 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { HttpClient, HttpHeaders, HttpParams, provideHttpClient } from "@angular/common/http";
-import {
-  MockContentService,
-  MockLocalService,
-  MockPiResponse,
-  MockTableUtilsService
-} from "../../../testing/mock-services";
+import { MockContentService, MockLocalService, MockPiResponse, MockTableUtilsService } from "@testing/mock-services";
 import { lastValueFrom, of } from "rxjs";
 
-import { ContentService } from "../content/content.service";
-import { LocalService } from "../local/local.service";
-import { MachineService } from "./machine.service";
-import { TableUtilsService } from "../table-utils/table-utils.service";
-import { TestBed } from "@angular/core/testing";
-import { environment } from "../../../environments/environment";
-import { FilterValue } from "../../core/models/filter_value/filter_value";
-import { signal } from "@angular/core";
-import { MockAuthService } from "../../../testing/mock-services/mock-auth-service";
-import { AuthService } from "../auth/auth.service";
 import { HttpTestingController, provideHttpClientTesting } from "@angular/common/http/testing";
+import { signal } from "@angular/core";
+import { TestBed } from "@angular/core/testing";
+import { FilterValue } from "@core/models/filter_value/filter_value";
+import { environment } from "@env/environment";
+import { AuthService } from "@services/auth/auth.service";
+import { ContentService } from "@services/content/content.service";
+import { LocalService } from "@services/local/local.service";
+import { TableUtilsService } from "@services/table-utils/table-utils.service";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
+import { MachineService } from "./machine.service";
 
 environment.proxyUrl = "/api";
 
@@ -276,9 +271,7 @@ describe("MachineService resources and signals", () => {
 
       const req = httpMock.expectOne((r) => r.url.includes("/machine/"));
       expect(req.request.method).toBe("GET");
-      const machines = [
-        { hostname: "test", id: 1, ip: "127.0.0.1", resolver_name: "test" }
-      ];
+      const machines = [{ hostname: "test", id: 1, ip: "127.0.0.1", resolver_name: "test" }];
       req.flush(MockPiResponse.fromValue(machines));
       await Promise.resolve();
 
@@ -293,7 +286,8 @@ describe("MachineService resources and signals", () => {
       const req = httpMock.expectOne((r) => r.url.includes("/machine/"));
       expect(req.request.method).toBe("GET");
       req.flush(MockPiResponse.fromError({ message: "Permission denied" }), {
-        status: 403, statusText: "Permission denied"
+        status: 403,
+        statusText: "Permission denied"
       });
       await Promise.resolve();
 
@@ -314,7 +308,7 @@ describe("MachineService resources and signals", () => {
       const req = httpMock.expectOne((r) => r.url.includes("/machine/token"));
       expect(req.request.method).toBe("GET");
       const applications = [
-        { application: "test", hostname: "localhost", id: 0, options: {}, serial: "1234", type: "ssh"}
+        { application: "test", hostname: "localhost", id: 0, options: {}, serial: "1234", type: "ssh" }
       ];
       req.flush(MockPiResponse.fromValue(applications));
       await Promise.resolve();
@@ -330,7 +324,8 @@ describe("MachineService resources and signals", () => {
       const req = httpMock.expectOne((r) => r.url.includes("/machine/token"));
       expect(req.request.method).toBe("GET");
       req.flush(MockPiResponse.fromError({ message: "Permission denied" }), {
-        status: 403, statusText: "Permission denied"
+        status: 403,
+        statusText: "Permission denied"
       });
       await Promise.resolve();
 

@@ -16,22 +16,19 @@
  *
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
-import { AuthService, AuthServiceInterface } from "../../../../../services/auth/auth.service";
 import { Component, inject, Input, WritableSignal } from "@angular/core";
-import {
-  NotificationService,
-  NotificationServiceInterface
-} from "../../../../../services/notification/notification.service";
-import {
-  MessageDialogComponent as MessageDialogComponent,
-  MessageDialogData as MessageDialogData
-} from "../../../../shared/dialog/message-dialog/message-dialog.component";
-import { TokenService, TokenServiceInterface } from "../../../../../services/token/token.service";
 import { FormsModule } from "@angular/forms";
 import { MatButtonModule } from "@angular/material/button";
 import { MatIcon } from "@angular/material/icon";
-import { DialogService, DialogServiceInterface } from "../../../../../services/dialog/dialog.service";
 import { MatFormField, MatInput, MatLabel } from "@angular/material/input";
+import {
+  MessageDialogComponent,
+  MessageDialogData
+} from "@components/shared/dialog/message-dialog/message-dialog.component";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
+import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 
 @Component({
   selector: "app-set-pin-action",

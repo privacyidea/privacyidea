@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -17,29 +17,23 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { Component, computed, inject, Signal } from "@angular/core";
-import { MatDialogActions, MatDialogClose, MatDialogContent } from "@angular/material/dialog";
-import { MatButton } from "@angular/material/button";
-import { ContainerRegistrationCompletedDialogComponent } from "./container-registration-completed-dialog.component";
-import { AuthService, AuthServiceInterface } from "../../../../services/auth/auth.service";
-import { catchError, map, of } from "rxjs";
-import { StringUtils } from "../../../../utils/string.utils";
-import { HttpClient } from "@angular/common/http";
-import { DomSanitizer } from "@angular/platform-browser";
 import { AsyncPipe } from "@angular/common";
-import { environment } from "../../../../../environments/environment";
+import { HttpClient } from "@angular/common/http";
+import { Component, computed, inject, Signal } from "@angular/core";
+import { MatButton } from "@angular/material/button";
+import { MatDialogActions, MatDialogClose, MatDialogContent } from "@angular/material/dialog";
+import { DomSanitizer } from "@angular/platform-browser";
+import { environment } from "@env/environment";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { StringUtils } from "@utils/string.utils";
+import { catchError, map, of } from "rxjs";
+import { ContainerRegistrationCompletedDialogComponent } from "./container-registration-completed-dialog.component";
 
 @Component({
   selector: "app-container-registration-completed-dialog-wizard",
   templateUrl: "./container-registration-completed-dialog.wizard.component.html",
   styleUrls: ["./container-registration-completed-dialog.component.scss"],
-  imports: [
-    MatDialogContent,
-    MatDialogActions,
-    MatButton,
-    MatDialogClose,
-    AsyncPipe
-  ]
+  imports: [MatDialogContent, MatDialogActions, MatButton, MatDialogClose, AsyncPipe]
 })
 export class ContainerRegistrationCompletedDialogWizardComponent extends ContainerRegistrationCompletedDialogComponent {
   public readonly authService: AuthServiceInterface = inject(AuthService);

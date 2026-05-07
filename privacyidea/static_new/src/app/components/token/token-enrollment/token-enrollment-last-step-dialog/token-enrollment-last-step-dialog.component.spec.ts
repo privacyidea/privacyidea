@@ -17,13 +17,13 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { TokenEnrollmentLastStepDialogComponent } from "./token-enrollment-last-step-dialog.component";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
-import { ContentService } from "../../../../services/content/content.service";
-import { TokenEnrollmentDialogData, TokenService } from "../../../../services/token/token.service";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
-import { MockMatDialogRef } from "../../../../../testing/mock-mat-dialog-ref";
-import { MockContentService, MockTokenService } from "../../../../../testing/mock-services";
+import { ContentService } from "@services/content/content.service";
+import { TokenEnrollmentDialogData, TokenService } from "@services/token/token.service";
+import { MockMatDialogRef } from "@testing/mock-mat-dialog-ref";
+import { MockContentService, MockTokenService } from "@testing/mock-services";
+import { TokenEnrollmentLastStepDialogComponent } from "./token-enrollment-last-step-dialog.component";
 
 describe("TokenEnrollmentLastStepDialogComponent", () => {
   let component: TokenEnrollmentLastStepDialogComponent;

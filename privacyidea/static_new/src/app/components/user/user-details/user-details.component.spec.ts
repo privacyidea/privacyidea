@@ -17,34 +17,33 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { BehaviorSubject, map, of } from "rxjs";
 import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
+import { BehaviorSubject, map, of } from "rxjs";
 
-import { UserDetailsComponent } from "./user-details.component";
+import { BreakpointObserver } from "@angular/cdk/layout";
 import { provideHttpClient } from "@angular/common/http";
 import { provideHttpClientTesting } from "@angular/common/http/testing";
-import { BreakpointObserver, BreakpointState } from "@angular/cdk/layout";
+import { UserDetailsComponent } from "./user-details.component";
 
-import { AuthService } from "../../../services/auth/auth.service";
-import { ContentService } from "../../../services/content/content.service";
-import { TableUtilsService } from "../../../services/table-utils/table-utils.service";
-import { TokenService } from "../../../services/token/token.service";
-import { UserService } from "../../../services/user/user.service";
 import { MatDialog } from "@angular/material/dialog";
-import {
-  MockContentService,
-  MockDialogService,
-  MockLocalService,
-  MockNotificationService,
-  MockTableUtilsService,
-  MockTokenService,
-  MockUserService
-} from "../../../../testing/mock-services";
 import { ActivatedRoute } from "@angular/router";
-import { MockAuthService } from "../../../../testing/mock-services/mock-auth-service";
 import { EditUserDialogComponent } from "@components/user/edit-user-dialog/edit-user-dialog.component";
-import { SimpleConfirmationDialogComponent } from "@components/shared/dialog/confirmation-dialog/confirmation-dialog.component";
-import { DialogService } from "../../../services/dialog/dialog.service";
+import { AuthService } from "@services/auth/auth.service";
+import { ContentService } from "@services/content/content.service";
+import { DialogService } from "@services/dialog/dialog.service";
+import { TableUtilsService } from "@services/table-utils/table-utils.service";
+import { TokenService } from "@services/token/token.service";
+import { UserService } from "@services/user/user.service";
+import {
+    MockContentService,
+    MockDialogService,
+    MockLocalService,
+    MockNotificationService,
+    MockTableUtilsService,
+    MockTokenService,
+    MockUserService
+} from "@testing/mock-services";
+import { MockAuthService } from "@testing/mock-services/mock-auth-service";
 
 class MockMatDialog {
   open = jest.fn().mockReturnValue({
@@ -92,7 +91,8 @@ describe("UserDetailsComponent", () => {
         {
           provide: BreakpointObserver,
           useValue: {
-            observe: (query: string) => breakpointSubject.pipe(map((b) => ({ matches: b[query] || false, breakpoints: {} })))
+            observe: (query: string) =>
+              breakpointSubject.pipe(map((b) => ({ matches: b[query] || false, breakpoints: {} })))
           }
         },
         {

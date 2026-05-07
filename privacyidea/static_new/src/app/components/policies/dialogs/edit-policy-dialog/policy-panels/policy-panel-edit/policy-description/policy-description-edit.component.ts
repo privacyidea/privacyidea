@@ -17,15 +17,12 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
+import { TextFieldModule } from "@angular/cdk/text-field";
 import { Component, inject, input, output } from "@angular/core";
+import { FormsModule } from "@angular/forms";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
-import { FormsModule } from "@angular/forms";
-import { TextFieldModule } from "@angular/cdk/text-field";
-import {
-  DocumentationService,
-  DocumentationServiceInterface
-} from "../../../../../../../services/documentation/documentation.service";
+import { DocumentationService, DocumentationServiceInterface } from "@services/documentation/documentation.service";
 
 @Component({
   selector: "app-policy-description-edit",

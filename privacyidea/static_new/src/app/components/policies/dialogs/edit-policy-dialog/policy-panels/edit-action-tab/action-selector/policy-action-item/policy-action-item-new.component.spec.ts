@@ -17,14 +17,14 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 
-import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { PolicyActionItemComponent } from "./policy-action-item-new.component";
-import { PolicyService, PolicyActionDetail } from "../../../../../../../../services/policies/policies.service";
 import { Component, input, output } from "@angular/core";
-import { By } from "@angular/platform-browser";
-import { NoopAnimationsModule } from "@angular/platform-browser/animations";
+import { ComponentFixture, TestBed } from "@angular/core/testing";
 import { FormsModule } from "@angular/forms";
 import { MatSelectModule } from "@angular/material/select";
+import { By } from "@angular/platform-browser";
+import { NoopAnimationsModule } from "@angular/platform-browser/animations";
+import { PolicyActionDetail, PolicyService } from "@services/policies/policies.service";
+import { PolicyActionItemComponent } from "./policy-action-item-new.component";
 
 @Component({
   selector: "app-selector-buttons",

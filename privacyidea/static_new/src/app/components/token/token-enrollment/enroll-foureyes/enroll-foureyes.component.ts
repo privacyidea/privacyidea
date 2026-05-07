@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -25,13 +25,10 @@ import { MatSelect } from "@angular/material/select";
 import {
   FourEyesApiPayloadMapper,
   FourEyesEnrollmentData
-} from "../../../../mappers/token-api-payload/4eyes-token-api-payload.mapper";
-import {
-  TokenApiPayloadMapper,
-  TokenEnrollmentData
-} from "../../../../mappers/token-api-payload/_token-api-payload.mapper";
-import { RealmService, RealmServiceInterface } from "../../../../services/realm/realm.service";
-import { TokenService, TokenServiceInterface } from "../../../../services/token/token.service";
+} from "@app/mappers/token-api-payload/4eyes-token-api-payload.mapper";
+import { TokenApiPayloadMapper, TokenEnrollmentData } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
+import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
+import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 
 export interface FourEyesEnrollmentOptions extends TokenEnrollmentData {
   type: "4eyes";

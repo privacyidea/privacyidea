@@ -17,23 +17,21 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, effect, inject, OnDestroy } from "@angular/core";
-import { ActivatedRoute, Router } from "@angular/router";
-import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from "@angular/forms";
-import {
-  ServiceId,
-  ServiceIdService,
-  ServiceIdServiceInterface
-} from "../../../../services/service-id/service-id.service";
+import { MatButtonModule } from "@angular/material/button";
 import { MatFormFieldModule } from "@angular/material/form-field";
 import { MatInputModule } from "@angular/material/input";
-import { MatButtonModule } from "@angular/material/button";
+import { ServiceId, ServiceIdService, ServiceIdServiceInterface } from "@services/service-id/service-id.service";
+
 import { MatIconModule } from "@angular/material/icon";
-import { ROUTE_PATHS } from "../../../../route_paths";
-import { PendingChangesService } from "../../../../services/pending-changes/pending-changes.service";
-import { SaveAndExitDialogComponent } from "../../../shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
-import { DialogService, DialogServiceInterface } from "../../../../services/dialog/dialog.service";
-import { ClearableInputComponent } from "../../../shared/clearable-input/clearable-input.component";
+
+import { takeUntilDestroyed } from "@angular/core/rxjs-interop";
+import { ActivatedRoute, Router } from "@angular/router";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { SaveAndExitDialogComponent } from "@components/shared/dialog/save-and-exit-dialog/save-and-exit-dialog.component";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
+import { PendingChangesService } from "@services/pending-changes/pending-changes.service";
 
 @Component({
   selector: "app-new-service-id",

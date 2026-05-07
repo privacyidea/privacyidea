@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -18,13 +18,14 @@
  **/
 import { HttpClient } from "@angular/common/http";
 import { inject, Injectable } from "@angular/core";
+import { PiResponse } from "@app/app.component";
+import { AuthResponse, AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
 import { from, map, Observable, switchMap, throwError } from "rxjs";
 import { catchError } from "rxjs/operators";
-import { environment } from "../../../environments/environment";
-import { PiResponse } from "../../app.component";
-import { AuthResponse, AuthService, AuthServiceInterface } from "../auth/auth.service";
-import { Base64Service, Base64ServiceInterface } from "../base64/base64.service";
-import { NotificationService, NotificationServiceInterface } from "../notification/notification.service";
+
+import { environment } from "@env/environment";
+import { Base64Service, Base64ServiceInterface } from "@services/base64/base64.service";
 
 export interface ValidateCheckDetail {
   attributes?: {

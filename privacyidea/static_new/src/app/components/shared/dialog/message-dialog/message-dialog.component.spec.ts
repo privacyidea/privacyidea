@@ -17,10 +17,10 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { ComponentFixture, TestBed } from "@angular/core/testing";
-import { MessageDialogComponent, MessageDialogData } from "./message-dialog.component";
 import { MAT_DIALOG_DATA, MatDialogRef } from "@angular/material/dialog";
-import { DialogWrapperComponent } from "../dialog-wrapper/dialog-wrapper.component";
 import { NoopAnimationsModule } from "@angular/platform-browser/animations";
+import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
+import { MessageDialogComponent, MessageDialogData } from "./message-dialog.component";
 
 describe("MessageDialogComponent", () => {
   let component: MessageDialogComponent;

@@ -17,12 +17,12 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, inject } from "@angular/core";
-import { AbstractDialogComponent } from "../../../shared/dialog/abstract-dialog/abstract-dialog.component";
-import { DialogWrapperComponent } from "../../../shared/dialog/dialog-wrapper/dialog-wrapper.component";
-import { DialogAction } from "../../../../models/dialog";
 import { Router } from "@angular/router";
-import { ROUTE_PATHS } from "../../../../route_paths";
-import { DialogServiceInterface, DialogService } from "../../../../services/dialog/dialog.service";
+import { ROUTE_PATHS } from "@app/route_paths";
+import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
+import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
+import { DialogAction } from "@models/dialog";
+import { DialogService, DialogServiceInterface } from "@services/dialog/dialog.service";
 
 export type GetSerialResultDialogData = {
   foundSerial: string;

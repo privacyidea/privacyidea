@@ -17,6 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { Component, computed, inject, signal, WritableSignal } from "@angular/core";
+import { toSignal } from "@angular/core/rxjs-interop";
 import { FormControl, FormsModule, ReactiveFormsModule, Validators } from "@angular/forms";
 import { MatAutocomplete, MatAutocompleteTrigger, MatOption } from "@angular/material/autocomplete";
 import { MatButtonModule } from "@angular/material/button";
@@ -24,15 +25,14 @@ import { MatError, MatFormField, MatLabel } from "@angular/material/form-field";
 import { MatIcon } from "@angular/material/icon";
 import { MatInput } from "@angular/material/input";
 import { MatSelect } from "@angular/material/select";
-import { RealmService, RealmServiceInterface } from "../../../../../services/realm/realm.service";
-import { TokenService, TokenServiceInterface } from "../../../../../services/token/token.service";
-import { UserData, UserService, UserServiceInterface } from "../../../../../services/user/user.service";
-import { ClearableInputComponent } from "../../../../shared/clearable-input/clearable-input.component";
-import { AuthService, AuthServiceInterface } from "../../../../../services/auth/auth.service";
-import { AbstractDialogComponent } from "../../../../shared/dialog/abstract-dialog/abstract-dialog.component";
-import { DialogWrapperComponent } from "../../../../shared/dialog/dialog-wrapper/dialog-wrapper.component";
-import { DialogAction } from "../../../../../models/dialog";
-import { toSignal } from "@angular/core/rxjs-interop";
+import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
+import { AbstractDialogComponent } from "@components/shared/dialog/abstract-dialog/abstract-dialog.component";
+import { DialogWrapperComponent } from "@components/shared/dialog/dialog-wrapper/dialog-wrapper.component";
+import { DialogAction } from "@models/dialog";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
+import { TokenService, TokenServiceInterface } from "@services/token/token.service";
+import { UserData, UserService, UserServiceInterface } from "@services/user/user.service";
 import { map, startWith } from "rxjs";
 
 export interface SelectedUserAssignResult {

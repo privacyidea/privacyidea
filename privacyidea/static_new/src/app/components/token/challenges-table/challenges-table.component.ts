@@ -28,16 +28,16 @@ import { MatTableDataSource, MatTableModule } from "@angular/material/table";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { CopyButtonComponent } from "@components/shared/copy-button/copy-button.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
-import { FilterValue } from "src/app/core/models/filter_value/filter_value";
-import { ContentService, ContentServiceInterface } from "src/app/services/content/content.service";
-import { NotificationService, NotificationServiceInterface } from "src/app/services/notification/notification.service";
-import { TableUtilsService, TableUtilsServiceInterface } from "src/app/services/table-utils/table-utils.service";
+import { FilterValue } from "@core/models/filter_value/filter_value";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
+import { TableUtilsService, TableUtilsServiceInterface } from "@services/table-utils/table-utils.service";
 import {
   Challenge,
   ChallengesService,
   ChallengesServiceInterface
-} from "src/app/services/token/challenges/challenges.service";
-import { TokenService, TokenServiceInterface } from "src/app/services/token/token.service";
+} from "@services/token/challenges/challenges.service";
+import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 
 import { ChallengesTableActionsComponent } from "./challenges-table-actions/challenges-table-actions.component";
 

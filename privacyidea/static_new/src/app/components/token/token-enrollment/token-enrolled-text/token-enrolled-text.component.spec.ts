@@ -20,8 +20,8 @@
 import { NO_ERRORS_SCHEMA } from "@angular/core";
 import { ComponentFixture, TestBed } from "@angular/core/testing";
 
-import { MockContentService } from "src/testing/mock-services/mock-content-service";
-import { ContentService } from "../../../../services/content/content.service";
+import { ContentService } from "@services/content/content.service";
+import { MockContentService } from "@testing/mock-services/mock-content-service";
 import { TokenEnrolledTextComponent } from "./token-enrolled-text.component";
 
 describe("TokenEnrolledTextComponent", () => {

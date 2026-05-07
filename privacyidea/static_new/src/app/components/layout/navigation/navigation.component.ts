@@ -1,5 +1,5 @@
 /**
- * (c) NetKnights GmbH 2025,  https://netknights.it
+ * (c) NetKnights GmbH 2026,  https://netknights.it
  *
  * This code is free software; you can redistribute it and/or
  * modify it under the terms of the GNU AFFERO GENERAL PUBLIC LICENSE
@@ -17,16 +17,7 @@
  * SPDX-License-Identifier: AGPL-3.0-or-later
  **/
 import { NgClass, NgOptimizedImage, NgTemplateOutlet } from "@angular/common";
-import {
-  AfterViewInit,
-  Component,
-  computed,
-  ElementRef,
-  inject,
-  OnDestroy,
-  signal,
-  ViewChild
-} from "@angular/core";
+import { AfterViewInit, Component, computed, ElementRef, inject, OnDestroy, signal, ViewChild } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { MatIconButton } from "@angular/material/button";
 import { MatIcon, MatIconModule } from "@angular/material/icon";
@@ -35,26 +26,21 @@ import { MatToolbar } from "@angular/material/toolbar";
 import { MatTooltipModule } from "@angular/material/tooltip";
 import { Router, RouterLink } from "@angular/router";
 import { UserUtilsPanelComponent } from "@components/layout/user-utils-panel/user-utils-panel.component";
-import { ROUTE_PATHS } from "src/app/route_paths";
-import { environment } from "../../../../environments/environment";
-import { AuthService, AuthServiceInterface } from "../../../services/auth/auth.service";
-import { ConfigService, ConfigServiceInterface } from "../../../services/config/config.service";
-import { ContentService, ContentServiceInterface } from "../../../services/content/content.service";
-import {
-  DocumentationService,
-  DocumentationServiceInterface
-} from "../../../services/documentation/documentation.service";
-import { EventService, EventServiceInterface } from "../../../services/event/event.service";
-import { NotificationService, NotificationServiceInterface } from "../../../services/notification/notification.service";
-import { PeriodicTaskService } from "../../../services/periodic-task/periodic-task.service";
-import { RealmService, RealmServiceInterface } from "../../../services/realm/realm.service";
-import {
-  SessionTimerService,
-  SessionTimerServiceInterface
-} from "../../../services/session-timer/session-timer.service";
-import { SystemService, SystemServiceInterface } from "../../../services/system/system.service";
-import { UserService, UserServiceInterface } from "../../../services/user/user.service";
-import { VersioningService, VersioningServiceInterface } from "../../../services/version/version.service";
+import { environment } from "@env/environment";
+import { AuthService, AuthServiceInterface } from "@services/auth/auth.service";
+import { ConfigService, ConfigServiceInterface } from "@services/config/config.service";
+import { ContentService, ContentServiceInterface } from "@services/content/content.service";
+import { DocumentationService, DocumentationServiceInterface } from "@services/documentation/documentation.service";
+import { EventService, EventServiceInterface } from "@services/event/event.service";
+import { NotificationService, NotificationServiceInterface } from "@services/notification/notification.service";
+import { PeriodicTaskService } from "@services/periodic-task/periodic-task.service";
+import { RealmService, RealmServiceInterface } from "@services/realm/realm.service";
+import { SessionTimerService, SessionTimerServiceInterface } from "@services/session-timer/session-timer.service";
+import { SystemService, SystemServiceInterface } from "@services/system/system.service";
+import { UserService, UserServiceInterface } from "@services/user/user.service";
+import { VersioningService, VersioningServiceInterface } from "@services/version/version.service";
+
+import { ROUTE_PATHS } from "@app/route_paths";
 import { OverflowNavDirective } from "./overflow-nav.directive";
 
 export interface NavItem {
