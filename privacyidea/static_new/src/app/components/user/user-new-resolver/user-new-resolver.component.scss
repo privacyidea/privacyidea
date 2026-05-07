@@ -1,6 +1,5 @@
 @use "styles";
 @use "table";
-@use "dialog";
 
 .user-new-resolver-layout {
   display: flex;
@@ -8,9 +7,7 @@
 }
 
 .user-new-resolver-container {
-  @include dialog.dialog-container-styles;
-  @include table.base-table-structure(".token-table", ".token-table-filter", ".table-scroll-container");
-
+  @include styles.main-component-style;
   min-width: 632px;
 
   @media (max-width: 1000px) {
