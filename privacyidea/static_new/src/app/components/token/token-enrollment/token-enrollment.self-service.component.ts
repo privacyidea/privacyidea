@@ -23,17 +23,19 @@ import { DateAdapter, MAT_DATE_FORMATS, MatNativeDateModule, provideNativeDateAd
 import { MatDatepickerModule } from "@angular/material/datepicker";
 import { MatError, MatFormField, MatHint, MatLabel } from "@angular/material/form-field";
 import { MatInput } from "@angular/material/input";
-import { MatOption, MatSelect } from "@angular/material/select";
-import { MAT_TOOLTIP_DEFAULT_OPTIONS, MatTooltip } from "@angular/material/tooltip";
+import { MatOption } from "@angular/material/select";
 import { EnrollmentResponse } from "@app/mappers/token-api-payload/_token-api-payload.mapper";
 import { ClearableInputComponent } from "@components/shared/clearable-input/clearable-input.component";
 import { ScrollToTopDirective } from "@components/shared/directives/app-scroll-to-top.directive";
-import { EnrollTokenTypeSwitchComponent } from "@components/shared/enroll-token-type-switch/enroll-token-type-switch.component";
+import {
+  EnrollTokenTypeSwitchComponent
+} from "@components/shared/enroll-token-type-switch/enroll-token-type-switch.component";
 import { EnrollmentPinComponent } from "@components/shared/enrollment-pin/enrollment-pin.component";
-import { TokenEnrollmentLastStepDialogSelfServiceComponent } from "@components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.self-service.component";
+import {
+  TokenEnrollmentLastStepDialogSelfServiceComponent
+} from "@components/token/token-enrollment/token-enrollment-last-step-dialog/token-enrollment-last-step-dialog.self-service.component";
 import {
   CUSTOM_DATE_FORMATS,
-  CUSTOM_TOOLTIP_OPTIONS,
   CustomDateAdapter,
   TokenEnrollmentComponent
 } from "@components/token/token-enrollment/token-enrollment.component";
@@ -45,7 +47,9 @@ import { RealmService, RealmServiceInterface } from "@services/realm/realm.servi
 import { TokenService, TokenServiceInterface } from "@services/token/token.service";
 import { UserService, UserServiceInterface } from "@services/user/user.service";
 import { VersioningService, VersioningServiceInterface } from "@services/version/version.service";
-import { TokenEnrollmentTypeSelectorComponent } from "./token-enrollment-type-selector/token-enrollment-type-selector.component";
+import {
+  TokenEnrollmentTypeSelectorComponent
+} from "./token-enrollment-type-selector/token-enrollment-type-selector.component";
 
 @Component({
   selector: "app-token-enrollment-self-service",
