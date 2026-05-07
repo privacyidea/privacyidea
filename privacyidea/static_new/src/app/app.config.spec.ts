@@ -18,15 +18,9 @@
  **/
 
 import { APP_BASE_HREF } from "@angular/common";
-import { inject, LOCALE_ID } from "@angular/core";
+import { LOCALE_ID } from "@angular/core";
 import { TestBed } from "@angular/core/testing";
-
-const baseHrefFactory = () => {
-  const locale = inject(LOCALE_ID);
-  return locale === "en" || locale.toLowerCase().startsWith("en-")
-    ? "/app/v2/"
-    : `/app/v2/${locale}/`;
-};
+import { baseHrefFactory } from "./app.config";
 
 describe("APP_BASE_HREF factory", () => {
   afterEach(() => TestBed.resetTestingModule());

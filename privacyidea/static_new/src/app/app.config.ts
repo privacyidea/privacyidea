@@ -34,6 +34,13 @@ import { AuthService } from "./services/auth/auth.service";
 import { ConfigService } from "./services/config/config.service";
 import { ThemeService } from "./services/theme/theme.service";
 
+export function baseHrefFactory(): string {
+  const locale = inject(LOCALE_ID);
+  return locale === "en" || locale.toLowerCase().startsWith("en-")
+    ? "/app/v2/"
+    : `/app/v2/${locale}/`;
+}
+
 export const appConfig: ApplicationConfig = {
   providers: [
     provideAppInitializer(() => {
@@ -45,12 +52,7 @@ export const appConfig: ApplicationConfig = {
     provideAnimationsAsync(),
     {
       provide: APP_BASE_HREF,
-      useFactory: () => {
-        const locale = inject(LOCALE_ID);
-        return locale === "en" || locale.toLowerCase().startsWith("en-")
-          ? "/app/v2/"
-          : `/app/v2/${locale}/`;
-      }
+      useFactory: baseHrefFactory
     },
     AuthService,
     provideHttpClient(withInterceptors([loadingInterceptor, userAgentInterceptor])),

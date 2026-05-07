@@ -431,3 +431,57 @@ class NewUIRoutingTestCase(MyTestCase):
                     from privacyidea.webui.login import _serve_locale
                     result = _serve_locale("de")
         self.assertIsNotNone(result)
+
+    # --- Path traversal / injection security tests ---
+
+    def test_path_traversal_in_locale_route_no_file_served(self):
+        """GET /app/v2/../../etc/ must never serve a file outside the static folder.
+        Werkzeug normalizes the path to /etc/ before routing, so we get a redirect
+        rather than a 404 — both are safe, neither reads a file."""
+        with self.app.test_request_context("/app/v2/../../etc/", method="GET",
+                                           headers={"Accept": "text/html,*/*"}):
+            res = self.app.full_dispatch_request()
+        self.assertNotEqual(res.status_code, 200)
+
+    def test_path_traversal_url_encoded_no_file_served(self):
+        """URL-encoded traversal %2e%2e%2f must not bypass the whitelist.
+        The path is normalized/rejected — no real file content is returned."""
+        with self.app.test_request_context("/app/v2/%2e%2e%2fetc/", method="GET",
+                                           headers={"Accept": "text/html,*/*"}):
+            res = self.app.full_dispatch_request()
+        self.assertNotEqual(res.status_code, 200)
+
+    def test_serve_locale_path_traversal_rejected(self):
+        """_serve_locale rejects locales that contain path traversal sequences."""
+        with self.app.test_request_context("/"):
+            from privacyidea.webui.login import _serve_locale
+            self.assertIsNone(_serve_locale("../../etc/passwd"))
+            self.assertIsNone(_serve_locale("../de"))
+            self.assertIsNone(_serve_locale("de/../../etc"))
+
+    def test_serve_locale_home_directory_rejected(self):
+        """_serve_locale rejects attempts to access the home directory via ~ notation."""
+        with self.app.test_request_context("/"):
+            from privacyidea.webui.login import _serve_locale
+            self.assertIsNone(_serve_locale("~"))
+            self.assertIsNone(_serve_locale("~/"))
+            self.assertIsNone(_serve_locale("~root"))
+            self.assertIsNone(_serve_locale("~/.ssh/id_rsa"))
+
+    def test_home_directory_route_no_file_served(self):
+        """GET /app/v2/~/ and variants must never serve home directory content."""
+        for path in ["/app/v2/~/", "/app/v2/~root/"]:
+            with self.app.test_request_context(path, method="GET",
+                                               headers={"Accept": "text/html,*/*"}):
+                res = self.app.full_dispatch_request()
+            self.assertNotEqual(res.status_code, 200, f"Path {path!r} must not return 200")
+
+    def test_serve_locale_only_allows_whitelisted_locales(self):
+        """_serve_locale never constructs a path for any locale not in PI_PREFERRED_LANGUAGE."""
+        with mock.patch("privacyidea.webui.login.os.path.isfile") as mock_isfile:
+            mock_isfile.return_value = False
+            with self.app.test_request_context("/"):
+                from privacyidea.webui.login import _serve_locale
+                for bad_locale in ["unknown", "de/../fr", "DE", "EN", "zh_hant"]:
+                    result = _serve_locale(bad_locale)
+                    self.assertIsNone(result, f"Expected None for locale {bad_locale!r}")
