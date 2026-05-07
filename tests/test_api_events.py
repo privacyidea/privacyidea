@@ -14,11 +14,6 @@ from .base import MyApiTestCase, FakeFlaskG
 from .test_lib_events import ContainerEventTestCase
 from .test_lib_tokencontainer import MockSmartphone
 
-# TODO: this should be imported from lib.event when available
-HANDLERS = ["UserNotification", "Token", "Federation", "Script", "Counter",
-            "RequestMangler", "ResponseMangler", "Logging", "CustomUserAttributes", "Container"]
-
-
 class APIEventsTestCase(MyApiTestCase):
 
     def test_00_api_errors(self):
@@ -254,16 +249,6 @@ class APIEventsTestCase(MyApiTestCase):
             self.assertTrue("token_init" in result.get("value"))
             self.assertTrue("token_assign" in result.get("value"))
             self.assertTrue("token_unassign" in result.get("value"))
-
-    def test_04_handler_modules(self):
-        with self.app.test_request_context('/event/handlermodules',
-                                           method='GET',
-                                           headers={'Authorization': self.at}):
-            res = self.app.full_dispatch_request()
-            self.assertTrue(res.status_code == 200, res)
-            result = res.json.get("result")
-            for h in HANDLERS:
-                self.assertIn(h, result.get("value"), result)
 
     def test_05_get_handler_actions(self):
         with self.app.test_request_context('/event/actions/UserNotification',

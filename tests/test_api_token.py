@@ -1646,6 +1646,10 @@ class APITokenTestCase(MyApiTestCase):
             value = result.get("value")
             self.assertTrue(value is True, result)
 
+        # The realm list written to the token is recorded in the audit log.
+        audit_entry = self.find_most_recent_audit_entry(action='POST /token/realm/<serial>')
+        self.assertIn(self.realm1, audit_entry.get('action_detail', ''), audit_entry)
+
         with self.app.test_request_context('/token/',
                                            method="GET",
                                            query_string=urlencode({"serial": "REALM001"}),
@@ -2905,6 +2909,14 @@ class APITokenTestCase(MyApiTestCase):
             self.assertTrue(res.status_code == 200, res)
             detail = res.json.get("detail")
             self.assertEqual(10, len(detail.get("pin")))
+
+        # The audit ``action_detail`` distinguishes a generated PIN from a
+        # PIN set explicitly via /token/setpin.
+        set_policy("allowed_to_set_pin", scope=SCOPE.ADMIN,
+                   action=f"{PolicyAction.SETRANDOMPIN}, {PolicyAction.AUDIT}")
+        audit_entry = self.find_most_recent_audit_entry(action='POST /token/setrandompin')
+        self.assertIn("random", audit_entry.get('action_detail', ''), audit_entry)
+        set_policy("allowed_to_set_pin", scope=SCOPE.ADMIN, action=PolicyAction.SETRANDOMPIN)
 
         # What happens, if we have two contradicting policies:
         set_policy("pinpolrandom2", scope=SCOPE.ADMIN, action="{0!s}=9".format(PolicyAction.OTPPINSETRANDOM))

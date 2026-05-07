@@ -24,11 +24,10 @@ action and options. See :ref:`eventhandler` for the conceptual chapter
 covering the available handler modules and their actions.
 
 All endpoints require admin authentication. Read access for the
-binding list is gated by the admin policy action
+binding list and the lookup endpoints (handler module positions,
+actions, conditions) is gated by the admin policy action
 :ref:`policy_eventhandling_read`; create, update, enable, disable and
-delete are gated by :ref:`policy_eventhandling_write`. The lookup
-endpoints for available events, handler module positions, actions and
-conditions are admin-only but not gated by a specific policy.
+delete are gated by :ref:`policy_eventhandling_write`.
 """
 from flask import (Blueprint,
                    request)
@@ -39,7 +38,7 @@ from flask import g
 import logging
 from ..api.lib.prepolicy import prepolicy, check_base_action
 from ..lib.policies.actions import PolicyAction
-from privacyidea.lib.event import AVAILABLE_EVENTS, get_handler_object
+from privacyidea.lib.event import AVAILABLE_EVENTS, get_handler_object, get_handler_modules
 from privacyidea.lib.utils import is_true
 import json
 
@@ -81,9 +80,7 @@ def get_eventhandling(eventid=None):
     if eventid == "available":
         res = AVAILABLE_EVENTS
     elif eventid == "handlermodules":
-        # TODO: We need to provide a dynamic list of event handlers
-        res = ["UserNotification", "Token", "Federation", "Script", "Counter",
-               "RequestMangler", "ResponseMangler", "Logging", "CustomUserAttributes", "WebHook", "Container"]
+        res = get_handler_modules()
     else:
         res = g.event_config.get_event(eventid)
     g.audit_object.log({"success": True})
@@ -92,13 +89,15 @@ def get_eventhandling(eventid=None):
 
 @eventhandling_blueprint.route('/positions/<handlermodule>', methods=["GET"])
 @log_with(log)
+@prepolicy(check_base_action, request, PolicyAction.EVENTHANDLINGREAD)
 def get_module_positions(handlermodule=None):
     """
     Return the positions a handler module supports — typically ``pre``
     and/or ``post``, indicating where in the request lifecycle the handler
     can fire.
 
-    Requires admin authentication.
+    Requires admin authentication and the policy action
+    :ref:`policy_eventhandling_read`.
 
     :param handlermodule: path component, the handler module identifier
         (e.g. ``UserNotification``).
@@ -114,13 +113,15 @@ def get_module_positions(handlermodule=None):
 
 @eventhandling_blueprint.route('/actions/<handlermodule>', methods=["GET"])
 @log_with(log)
+@prepolicy(check_base_action, request, PolicyAction.EVENTHANDLINGREAD)
 def get_module_actions(handlermodule=None):
     """
     Return the actions a handler module supports. Each entry includes the
     action name and any per-action option schema the WebUI uses to render
     its form.
 
-    Requires admin authentication.
+    Requires admin authentication and the policy action
+    :ref:`policy_eventhandling_read`.
 
     :param handlermodule: path component, the handler module identifier
         (e.g. ``UserNotification``).
@@ -136,12 +137,14 @@ def get_module_actions(handlermodule=None):
 
 @eventhandling_blueprint.route('/conditions/<handlermodule>', methods=["GET"])
 @log_with(log)
+@prepolicy(check_base_action, request, PolicyAction.EVENTHANDLINGREAD)
 def get_module_conditions(handlermodule=None):
     """
     Return the conditions a handler module supports — the predicates that
     can gate whether the handler fires for a given event.
 
-    Requires admin authentication.
+    Requires admin authentication and the policy action
+    :ref:`policy_eventhandling_read`.
 
     :param handlermodule: path component, the handler module identifier
         (e.g. ``UserNotification``).

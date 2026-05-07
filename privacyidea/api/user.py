@@ -58,7 +58,7 @@ from flask import g, Blueprint, request
 from privacyidea.api.auth import admin_required
 from privacyidea.api.lib.prepolicy import prepolicy, check_base_action, realmadmin, check_custom_user_attributes
 from privacyidea.api.lib.utils import getParam, send_result
-from privacyidea.lib.error import ParameterError
+from privacyidea.lib.error import ParameterError, PolicyError
 from privacyidea.lib.event import event
 from privacyidea.lib.policies.actions import PolicyAction
 from privacyidea.lib.policy import get_allowed_custom_attributes
@@ -289,8 +289,19 @@ def delete_user_attribute(attrkey, username, realm=None):
     :param realm: path component, the target realm.
     :status 200: number of attribute rows removed in ``result.value``.
     :status 403: the active policy does not allow deleting this
-        attribute name.
+        attribute name, or a non-admin caller targeted a different user.
     """
+    # Non-admin callers may only delete attributes on themselves. The
+    # ``check_custom_user_attributes`` prepolicy evaluates the policy
+    # against ``request.User`` (which the request rewrite binds to the
+    # caller for role=user), but the path components below are not
+    # rewritten — without this check a user with a self-scoped policy
+    # could target a different user via the URL.
+    if g.logged_in_user.get("role") == "user":
+        caller_user = g.logged_in_user.get("username")
+        caller_realm = g.logged_in_user.get("realm")
+        if username != caller_user or (realm or "") != (caller_realm or ""):
+            raise PolicyError("User is not allowed to delete attributes of other users.")
     user = User(username, realm)
     r = user.delete_attribute(attrkey)
     g.audit_object.log({"success": True,

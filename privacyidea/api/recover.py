@@ -107,6 +107,6 @@ def reset_password():
     if check_recoverycode(user_obj, recoverycode):
         # set password
         r = user_obj.update_user_info({"password": password})
-        g.audit_object.log({"success": r,
-                            "info": "{0!s}".format(user_obj)})
+    g.audit_object.log({"success": r,
+                        "info": "{0!s}".format(user_obj)})
     return send_result(r)

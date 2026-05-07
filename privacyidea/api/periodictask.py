@@ -21,11 +21,11 @@ runs on its own nodes (cleanup tasks, statistics aggregation, expiring
 tokens, ...). See :ref:`periodic_tasks` for the conceptual chapter.
 
 All endpoints require admin authentication. Read access for the task
-list and individual task definitions is gated by the admin policy
-action :ref:`policy_periodictask_read`; create, update, enable, disable
-and delete are gated by :ref:`policy_periodictask_write`. The lookup
-endpoints for available task modules, configured nodes and per-module
-option schemas are admin-only but not gated by a specific policy.
+list, individual task definitions and the lookup endpoints (available
+task modules, configured nodes, per-module option schemas) is gated by
+the admin policy action :ref:`policy_periodictask_read`; create,
+update, enable, disable and delete are gated by
+:ref:`policy_periodictask_write`.
 """
 
 from flask_babel import _
@@ -66,11 +66,13 @@ def convert_datetimes_to_string(ptask):
 
 @periodictask_blueprint.route('/taskmodules/', methods=['GET'])
 @log_with(log)
+@prepolicy(check_base_action, request, PolicyAction.PERIODICTASKREAD)
 def list_taskmodules():
     """
     Return the list of task module identifiers known to this server.
 
-    Requires admin authentication.
+    Requires admin authentication and the policy action
+    :ref:`policy_periodictask_read`.
 
     :status 200: list of task module names in ``result.value``.
     """
@@ -81,13 +83,15 @@ def list_taskmodules():
 
 @periodictask_blueprint.route('/nodes/', methods=['GET'])
 @log_with(log)
+@prepolicy(check_base_action, request, PolicyAction.PERIODICTASKREAD)
 def list_nodes():
     """
     Return the list of privacyIDEA node names declared in the server
     configuration. Periodic tasks are scheduled per node — only nodes
     listed here can be assigned to a task.
 
-    Requires admin authentication.
+    Requires admin authentication and the policy action
+    :ref:`policy_periodictask_read`.
 
     :status 200: list of node names in ``result.value``.
     """
@@ -98,13 +102,15 @@ def list_nodes():
 
 @periodictask_blueprint.route('/options/<taskmodule>', methods=['GET'])
 @log_with(log)
+@prepolicy(check_base_action, request, PolicyAction.PERIODICTASKREAD)
 def get_taskmodule_options(taskmodule):
     """
     Return the option schema for a given task module: a dictionary mapping
     each option key to a description dictionary that the WebUI uses to
     render the per-task configuration form.
 
-    Requires admin authentication.
+    Requires admin authentication and the policy action
+    :ref:`policy_periodictask_read`.
 
     :param taskmodule: path component, the task module identifier.
     :status 200: dict of option descriptors in ``result.value``.

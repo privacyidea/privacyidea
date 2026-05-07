@@ -55,14 +55,15 @@ def api_get(application=None):
     Requires the admin policy action :ref:`policy_managesubscription`.
 
     :param application: optional path component naming a single application
-        (e.g. ``privacyIDEA RADIUS``). *Currently ignored — the full list is
-        always returned.*
+        (e.g. ``privacyIDEA RADIUS``); when given, the response is filtered
+        to that application only.
     :status 200: list of subscription dictionaries in ``result.value``.
     """
-    subscription = get_subscription()
+    subscription = get_subscription(application=application)
     active_tokens = get_tokens(count=True, active=True, assigned=True)
     for sub in subscription:
-        # If subscription is valid, we have a negative timedelta
+        # ``timedelta`` is negative while ``date_till`` is in the future
+        # (subscription still valid) and positive once it has passed.
         sub["timedelta"] = (datetime.datetime.now() - sub.get("date_till")).days
         sub["active_tokens"] = active_tokens
         sub["active_users"] = get_users_with_active_tokens()

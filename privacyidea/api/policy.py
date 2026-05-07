@@ -260,6 +260,7 @@ def set_policy_api(name=None):
     conditions = param.get("conditions")
     description = param.get("description")
     user_agents = param.get("user_agents", None)
+    user_case_insensitive = param.get("user_case_insensitive")
 
     # Validate admin realms here, because the allowed realms need to be read from the config file
     # (avoid flask imports on lib level)
@@ -274,7 +275,8 @@ def set_policy_api(name=None):
                      adminuser=admin_user, pinode=pinode,
                      check_all_resolvers=check_all_resolvers or False,
                      priority=priority, conditions=conditions,
-                     description=description, user_agents=user_agents)
+                     description=description, user_agents=user_agents,
+                     user_case_insensitive=user_case_insensitive)
     log.debug("policy {0!s} successfully saved.".format(name))
     string = "setPolicy " + name
     res[string] = ret
@@ -492,13 +494,15 @@ def import_policy_api(filename=None):
 
 @policy_blueprint.route('/check', methods=['GET'])
 @log_with(log)
+@prepolicy(check_base_action, request, PolicyAction.POLICYREAD)
 def check_policy_api():
     """
     Probe whether a given (user, realm, scope, action, client,
     resolver) tuple would match any active policy. Used by the WebUI
     "Test policy" feature and as a self-check tool.
 
-    Requires admin authentication.
+    Requires admin authentication and the policy action
+    :ref:`policy_policyread`.
 
     :query user: user name (required).
     :query realm: realm name (required).
@@ -545,6 +549,7 @@ def check_policy_api():
 @policy_blueprint.route('/defs', methods=['GET'])
 @policy_blueprint.route('/defs/<scope>', methods=['GET'])
 @log_with(log)
+@prepolicy(check_base_action, request, PolicyAction.POLICYREAD)
 def get_policy_defs(scope=None):
     """
     Return the catalogue of possible policy definitions — the
@@ -565,7 +570,8 @@ def get_policy_defs(scope=None):
     actions for each. With a regular scope name, only that scope's
     entry is returned.
 
-    Requires admin authentication.
+    Requires admin authentication and the policy action
+    :ref:`policy_policyread`.
 
     :param scope: optional path component — a scope name
         (``admin``, ``user``, ...) or one of the literals
